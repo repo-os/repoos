@@ -2081,9 +2081,11 @@ export function resolveRepoGuide(config: RepoOSConfig): Agent | null {
  * - qwen code: `qwen -p <prompt> --output-format stream-json` — stream-json
  *   emits one JSON event per line, which streams live and carries a
  *   `session_id` RepoOS can resume.
- * - codex: `codex exec <prompt> --json --sandbox workspace-write` — `--json`
- *   streams newline-delimited events; `--sandbox workspace-write` lets the
- *   agent edit files inside the worktree (the default is read-only).
+ * - codex: `codex exec <prompt> --json --sandbox workspace-write -c
+ *   sandbox_workspace_write.network_access=true` — `--json` streams
+ *   newline-delimited events; `--sandbox workspace-write` lets the agent edit
+ *   files inside the worktree (the default is read-only). See
+ *   CODEX_SANDBOX_ARGS for why network is on.
  * - opencode: `opencode run --format json --dir <cwd> --auto <prompt>` —
  *   `--auto` ("auto-approve permissions that are not explicitly denied") is
  *   REQUIRED for the same reason claude's flag is: stdin is ignored, so a
@@ -2093,8 +2095,21 @@ export function resolveRepoGuide(config: RepoOSConfig): Agent | null {
  *   killed. Same blast radius as the other engines: the task's own worktree.
  */
 function modelArgs(cli: string, model: string): string[] {
+  if (cli === "github copilot") {
+    // Copilot Auto chooses an account-available model. Keep `default` as the
+    // persisted sentinel used across RepoOS, but make its Copilot meaning the
+    // least-expensive Auto tier rather than the CLI's opaque current default.
+    const tier =
+      model === "copilot-auto-balance"
+        ? "balance"
+        : model === "copilot-auto-intelligence"
+          ? "intelligence"
+          : model === "default" || !model
+            ? "efficiency"
+            : null;
+    if (tier) return ["--model", "auto", "--auto-tier", tier];
+  }
   if (!model || model === "default") return [];
-  if (cli === "codex") return ["--model", model];
   return ["--model", model];
 }
 
@@ -2110,6 +2125,23 @@ function unsupportedCliMessage(cli: string): string {
 function ensureDrivableCli(cli: string): void {
   if (!DRIVABLE_CLIS.has(cli)) throw new Error(unsupportedCliMessage(cli));
 }
+
+/**
+ * Codex is the only driver RepoOS runs inside an OS sandbox (Seatbelt on
+ * macOS). `workspace-write` blocks ALL network by default — including binding
+ * 127.0.0.1 — so `repoos check`'s server/UI-smoke tests fail with EPERM inside
+ * it, the agent can never truthfully reach a green gate, and it never emits
+ * the handoff signal (#0406 lost three rounds to this). Codex has no
+ * localhost-only switch, so network is on in full: parity with every other
+ * driver, which already runs unsandboxed. Writes stay confined to the worktree.
+ * Placed before `resume`: exec-level options aren't accepted after it.
+ */
+const CODEX_SANDBOX_ARGS = [
+  "--sandbox",
+  "workspace-write",
+  "-c",
+  "sandbox_workspace_write.network_access=true",
+];
 
 const COPILOT_TOOL_PERMISSIONS = [
   "--allow-tool",
@@ -2201,7 +2233,7 @@ function cliCommand(agent: Agent, mission: string, cwd: string): { cmd: string; 
   if (cli === "codex") {
     return {
       cmd: "codex",
-      args: ["exec", mission, ...modelArgs(cli, model), "--json", "--sandbox", "workspace-write"],
+      args: ["exec", mission, ...modelArgs(cli, model), "--json", ...CODEX_SANDBOX_ARGS],
     };
   }
   if (cli === "github copilot") {
@@ -2309,8 +2341,7 @@ function resumeCommand(
       cmd: "codex",
       args: [
         "exec",
-        "--sandbox",
-        "workspace-write",
+        ...CODEX_SANDBOX_ARGS,
         "resume",
         ...modelArgs(cli, model),
         "--json",

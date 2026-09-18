@@ -14,7 +14,7 @@ RepoOS has a driver for eight CLIs:
 | `opencode` | The best-supported driver. Structured JSON output, live model discovery, and same-session resume. |
 | `claude code` | Structured stream output; resume/recovery is less proven. |
 | `codex` | Structured app-server protocol and a model list. |
-| `github copilot` | Driver present; capabilities vary. |
+| `github copilot` | JSON driver with Auto tier selection. |
 | `qwen code` | Driver present; no machine-parseable output format. |
 | `kiro` | Driver present. |
 | `cursor` | The Cursor Agent CLI (`cursor-agent`). Structured stream-JSON, session resume, and model selection. |
@@ -68,7 +68,17 @@ off, edit its instructions, and **Test** the combination to see whether the CLI
 and model actually respond. For `opencode`, **Refresh models** re-probes the
 live model list (`opencode models --refresh`) — model names change often, so
 pick from live discovery rather than a hardcoded list. A model of `default`
-uses whatever the CLI itself defaults to.
+uses whatever the CLI itself defaults to, except for GitHub Copilot: it means
+**Auto · Efficiency**, the lowest-cost Auto tier.
+
+### GitHub Copilot CLI
+
+RepoOS offers Copilot's three Auto tiers: **Auto · Efficiency** (the default),
+**Auto · Balance**, and **Auto · Intelligence**. They choose from models your
+Copilot account and policy make available; the tier controls the cost, quality,
+and latency trade-off rather than pinning a named model. RepoOS uses Copilot's
+documented `--model auto --auto-tier <tier>` flags, so it does not need to
+scrape the interactive `/model` picker.
 
 ### Antigravity CLI (`agy`)
 

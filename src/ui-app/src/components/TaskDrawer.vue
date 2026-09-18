@@ -1042,6 +1042,24 @@ const review = computed<ReviewState | null>(() =>
 );
 
 /**
+ * The skill-suggestion task auto-created from this task's session (#0405), if
+ * one was. The server records the created task's id in the origin task's
+ * frontmatter as `skill_suggestion`; it surfaces here as a one-line note in
+ * the Review tab so the reviewer sees it alongside the code review.
+ */
+const skillSuggestionId = computed<string | null>(() => {
+  const v = ui.active?.extra?.skill_suggestion;
+  return typeof v === "string" && v ? v : null;
+});
+
+function openSkillSuggestion(): void {
+  const id = skillSuggestionId.value;
+  if (!id) return;
+  const suggestion = repo.tasks.find((t) => t.id === id);
+  if (suggestion) void ui.openTask(suggestion);
+}
+
+/**
  * The current review substate for a task sitting in `review`:
  * `reviewing` (auto review in progress), `coding` (engineer making changes),
  * or `waiting for human` (review passed, human must approve/merge).
@@ -3593,6 +3611,15 @@ watch(
               {{ sendingToEngineer ? "Sending…" : "Send engineer" }}
             </Button>
           </div>
+
+          <button
+            v-if="skillSuggestionId"
+            type="button"
+            class="skill-suggestion-note"
+            @click="openSkillSuggestion"
+          >
+            Skill suggestion: #{{ skillSuggestionId }}
+          </button>
 
           <section
             v-if="review?.report && reviewPane === 'report'"

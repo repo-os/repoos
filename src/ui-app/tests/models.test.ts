@@ -115,6 +115,14 @@ describe("MODEL_SOURCES registry", () => {
     expect(MODEL_SOURCES.codex.supported).toBe(true);
     expect(MODEL_SOURCES["github copilot"].supported).toBe(true);
   });
+
+  it("offers stable Copilot Auto tiers without guessing account-specific models", async () => {
+    await expect(MODEL_SOURCES["github copilot"].list({})).resolves.toEqual({
+      supported: true,
+      models: ["default", "copilot-auto-balance", "copilot-auto-intelligence"],
+      refreshable: false,
+    });
+  });
 });
 
 describe("codex adapter", () => {

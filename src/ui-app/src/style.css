@@ -3601,6 +3601,28 @@
   margin-top: 8px;
   line-height: 1.5;
 }
+.skill-suggestion-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-solid);
+  color: var(--cyan);
+  font-size: 11px;
+  font-family: "JetBrains Mono", monospace;
+  cursor: pointer;
+  text-align: left;
+}
+.skill-suggestion-note::before {
+  content: "✦";
+  color: var(--violet);
+}
+.skill-suggestion-note:hover {
+  border-color: var(--cyan);
+}
 .review-toolbar {
   display: flex;
   align-items: center;
@@ -5492,9 +5514,53 @@
   color: var(--red);
 }
 
-/* raw repoos.toml editor (#0375) */
+/* raw repoos.toml editor (#0375) — its own Settings tab, filling the
+   available height: .main is a stretched flex item, so height:100% resolves,
+   and each level below is a flex column handing the leftover space down. */
+.settings-page--fill {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  /* reclaim most of .main's 60px bottom padding for the editor */
+  margin-bottom: -40px;
+}
+.settings-page--fill .settings-panels,
+.settings-page--fill .toml-panel,
+.settings-page--fill .toml-card,
+.settings-page--fill .toml-raw {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.toml-card {
+  padding: 0 18px;
+}
+@media (max-width: 760px) {
+  /* .main's 90px bottom padding clears the fixed tabbar; keep all of it */
+  .settings-page--fill {
+    margin-bottom: 0;
+  }
+  /* five tabs don't fit a phone: scroll the strip instead of clipping the
+     last ones. overflow clips at the padding box, so drop the -1px overlap
+     that normally lets the active underline sit on the strip's border. */
+  .settings-tabs {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .settings-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .settings-tab-btn {
+    flex-shrink: 0;
+    margin-bottom: 0;
+  }
+}
 .toml-raw {
-  padding: 14px 0 10px;
+  padding: 16px 0 10px;
+}
+.toml-raw-status {
+  padding: 8px 0 4px;
 }
 .toml-raw-head {
   display: flex;
@@ -5514,6 +5580,8 @@
 }
 .toml-editor {
   position: relative;
+  flex: 1;
+  min-height: 320px;
   border: 1px solid var(--border);
   border-radius: 11px;
   background: var(--panel-solid);
@@ -5521,7 +5589,10 @@
 }
 .toml-editor pre,
 .toml-editor textarea {
-  height: 360px;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   margin: 0;
   padding: 12px 14px;
   font-family: "JetBrains Mono", monospace;
@@ -5545,10 +5616,6 @@
   color: inherit;
 }
 .toml-editor textarea {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
   resize: none;
   border: 0;
   outline: none;

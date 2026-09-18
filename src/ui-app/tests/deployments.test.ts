@@ -772,7 +772,9 @@ describe("deploy API contract (real server + real git)", () => {
       expect(body.ok).toBe(true);
       expect(body.output).toContain("Fast-forwarded prod to main");
       // The bare origin's prod ref now matches local main.
-      const originProd = execSync("git rev-parse prod", { cwd: origin }).toString().trim();
+      // --git-dir, not cwd: implicit bare-repo discovery is refused under
+      // safe.bareRepository=explicit (Copilot CLI's shell sets it).
+      const originProd = execSync(`git --git-dir="${origin}" rev-parse prod`).toString().trim();
       const localMain = execSync("git rev-parse main", { cwd: root }).toString().trim();
       expect(originProd).toBe(localMain);
     });

@@ -148,6 +148,7 @@ function expectCodexExecOptionsBeforeResume(args: string[]): void {
   const resumeIndex = args.indexOf("resume");
   expect(resumeIndex).toBeGreaterThan(0);
   expect(args.indexOf("--sandbox")).toBeLessThan(resumeIndex);
+  expect(args.indexOf("-c")).toBeLessThan(resumeIndex);
 }
 
 afterEach(() => {
@@ -171,13 +172,22 @@ describe("model-aware driver commands", () => {
     expect(command.args).toEqual(expect.arrayContaining(["--model", "provider/model-x"]));
   });
 
-  it.each(["opencode", "claude code", "qwen code", "codex", "github copilot"])(
+  it.each(["opencode", "claude code", "qwen code", "codex"])(
     "omits the model flag for %s default",
     (cli) => {
       const command = promptCommand({ ...agent(cli), model: "default" }, "ping");
       expect(command.args).not.toContain("--model");
     },
   );
+
+  it.each([
+    ["default", "efficiency"],
+    ["copilot-auto-balance", "balance"],
+    ["copilot-auto-intelligence", "intelligence"],
+  ])("uses Copilot Auto %s tier", (model, tier) => {
+    const command = promptCommand({ ...agent("github copilot"), model }, "ping");
+    expect(command.args).toEqual(expect.arrayContaining(["--model", "auto", "--auto-tier", tier]));
+  });
 
   it("keeps Copilot one-shot prompts as markdown for freeform task creation", () => {
     const command = promptCommand(agent("github copilot"), "write a task file");
@@ -295,6 +305,11 @@ describe("codex driver", () => {
       expect(run.args[0]).toBe("exec");
       expect(run.args[1]).toContain("Task #0001");
       expect(run.args).toEqual(expect.arrayContaining(["--json", "--sandbox", "workspace-write"]));
+      // Network on, or `repoos check`'s localhost-binding tests fail with EPERM
+      // inside the Seatbelt sandbox (#0406).
+      expect(run.args).toEqual(
+        expect.arrayContaining(["-c", "sandbox_workspace_write.network_access=true"]),
+      );
 
       await waitFor(() => !runner.isRunning("0001"), "first turn exit");
       runner.send("0001", "continue the work", { ...agent("codex"), model: "gpt-5.6" });
@@ -306,6 +321,8 @@ describe("codex driver", () => {
         "exec",
         "--sandbox",
         "workspace-write",
+        "-c",
+        "sandbox_workspace_write.network_access=true",
         "resume",
         "--model",
         "gpt-5.6",
@@ -344,6 +361,8 @@ describe("codex driver", () => {
         "exec",
         "--sandbox",
         "workspace-write",
+        "-c",
+        "sandbox_workspace_write.network_access=true",
         "resume",
         "--json",
         "--last",

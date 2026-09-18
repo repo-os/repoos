@@ -35,13 +35,14 @@ const router = useRouter();
 
 // ---- Tab navigation ----
 
-type TabId = "general" | "notifications" | "security" | "advanced";
+type TabId = "general" | "notifications" | "security" | "advanced" | "toml";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "general", label: "General" },
   { id: "notifications", label: "Notifications" },
   { id: "security", label: "Security" },
   { id: "advanced", label: "Advanced" },
+  { id: "toml", label: "repoos.toml" },
 ];
 
 /** Which settings fields live on which tab (for ?focus= routing) */
@@ -59,7 +60,7 @@ const FIELD_TAB: Record<string, TabId> = {
 
 const activeTab = computed<TabId>(() => {
   const q = route.query.tab;
-  if (q === "notifications" || q === "security" || q === "advanced") return q;
+  if (q === "notifications" || q === "security" || q === "advanced" || q === "toml") return q;
   return "general";
 });
 
@@ -389,7 +390,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div>
+  <div class="settings-page" :class="{ 'settings-page--fill': activeTab === 'toml' }">
     <div class="page-title">Settings</div>
     <div class="page-desc">
       RepoOS configuration · <span class="mono" style="color: var(--cyan)">repoos.toml</span>
@@ -419,7 +420,7 @@ onUnmounted(() => {
 
     <div v-if="!config.loaded" class="spin"></div>
 
-    <div v-else>
+    <div v-else class="settings-panels">
       <!-- ─── General tab ─────────────────────────────────── -->
       <div
         id="settings-panel-general"
@@ -960,63 +961,65 @@ onUnmounted(() => {
             </div>
           </div>
         </Card>
+      </div>
 
-        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-          <div class="setting-group">
-            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-              <span class="live-dot"></span>Raw repoos.toml
+      <!-- ─── repoos.toml tab ─────────────────────────────── -->
+      <div
+        id="settings-panel-toml"
+        role="tabpanel"
+        :aria-labelledby="`settings-tab-toml`"
+        class="toml-panel"
+        v-show="activeTab === 'toml'"
+      >
+        <Card class="toml-card">
+          <div class="toml-raw">
+            <div class="toml-raw-head">
+              <div class="setting-desc" style="margin: 0">
+                The whole file, including sections the other tabs don't cover —
+                <code>[preview]</code>, <code>[check]</code>, <code>[release]</code>,
+                <code>[[deployments]]</code>, and anything you add. Values stay on one line:
+                RepoOS's config reader doesn't support multi-line arrays, multi-line strings, or
+                inline tables. Keep secrets in <code>.env</code>, not here.
+              </div>
+              <div class="toml-raw-actions">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  :disabled="config.rawLoading || config.rawSaving"
+                  @click="reloadRaw"
+                  >Reload</Button
+                >
+                <Button
+                  size="sm"
+                  :disabled="!config.rawDirty || config.rawLoading || config.rawSaving"
+                  @click="saveRaw"
+                  >{{ config.rawSaving ? "Saving…" : "Save" }}</Button
+                >
+              </div>
             </div>
-            <div class="toml-raw">
-              <div class="toml-raw-head">
-                <div class="setting-desc" style="margin: 0">
-                  The whole file, for sections the fields above don't cover —
-                  <code>[preview]</code>, <code>[check]</code>, <code>[release]</code>,
-                  <code>[[deployments]]</code>, and anything you add. Values stay on one line:
-                  RepoOS's config reader doesn't support multi-line arrays, multi-line strings, or
-                  inline tables. Keep secrets in <code>.env</code>, not here.
-                </div>
-                <div class="toml-raw-actions">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    :disabled="config.rawLoading || config.rawSaving"
-                    @click="reloadRaw"
-                    >Reload</Button
-                  >
-                  <Button
-                    size="sm"
-                    :disabled="!config.rawDirty || config.rawLoading || config.rawSaving"
-                    @click="saveRaw"
-                    >{{ config.rawSaving ? "Saving…" : "Save" }}</Button
-                  >
-                </div>
-              </div>
-              <div class="toml-editor">
-                <pre ref="rawPre" aria-hidden="true"><code v-html="highlightedRaw"></code></pre>
-                <textarea
-                  ref="rawTextarea"
-                  v-model="config.rawDraft"
-                  spellcheck="false"
-                  autocomplete="off"
-                  autocapitalize="off"
-                  autocorrect="off"
-                  aria-label="repoos.toml contents"
-                  :disabled="config.rawLoading"
-                  @scroll="syncRawScroll"
-                ></textarea>
-              </div>
-              <div v-if="config.rawLoading" class="setting-desc" style="padding: 8px 0 4px">
-                Loading…
-              </div>
-              <div v-else-if="config.rawError" class="toml-raw-error" role="alert">
-                {{ config.rawError }}
-              </div>
-              <div v-else-if="config.rawDirty" class="setting-desc" style="padding: 8px 0 4px">
-                Unsaved changes.
-              </div>
-              <div v-else class="setting-desc" style="padding: 8px 0 4px">
-                In sync with <span class="mono">repoos.toml</span>.
-              </div>
+            <div class="toml-editor">
+              <pre ref="rawPre" aria-hidden="true"><code v-html="highlightedRaw"></code></pre>
+              <textarea
+                ref="rawTextarea"
+                v-model="config.rawDraft"
+                spellcheck="false"
+                autocomplete="off"
+                autocapitalize="off"
+                autocorrect="off"
+                aria-label="repoos.toml contents"
+                :disabled="config.rawLoading"
+                @scroll="syncRawScroll"
+              ></textarea>
+            </div>
+            <div v-if="config.rawLoading" class="setting-desc toml-raw-status">Loading…</div>
+            <div v-else-if="config.rawError" class="toml-raw-error" role="alert">
+              {{ config.rawError }}
+            </div>
+            <div v-else-if="config.rawDirty" class="setting-desc toml-raw-status">
+              Unsaved changes.
+            </div>
+            <div v-else class="setting-desc toml-raw-status">
+              In sync with <span class="mono">repoos.toml</span>.
             </div>
           </div>
         </Card>

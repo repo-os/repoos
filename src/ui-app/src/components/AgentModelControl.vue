@@ -27,7 +27,7 @@ const emit = defineEmits<{
 const modalOpen = ref(false);
 
 const cliLabel = computed(() => props.cli || "Agent");
-const modelLabel = computed(() => (props.model ? labelForModel(props.model) : "Model"));
+const modelLabel = computed(() => (props.model ? labelForModel(props.model, props.cli) : "Model"));
 </script>
 
 <template>
