@@ -360,6 +360,7 @@ cannot tell from the code alone:
   code behind a screen, grep `router.ts` for the path or `views/` for the name.
   Dialog/modal content is body-teleported, so its CSS lives in
   `src/ui-app/src/style.css`, not the view's `<style scoped>` block.
+- **Any `position: fixed` or fullscreen overlay added to a component MUST be wrapped in `<Teleport to="body">` (or use a Radix `DialogPortal`, which does the same).** Without it, the overlay is trapped inside the drawer's stacking context and becomes unscrollable, unclickable, and unselectable. This applies even when the CSS looks correct — `position: fixed` does not escape `transform`/`will-change`/`overflow: hidden` ancestors.
 - After ANY UI change, rebuild (`bun run build:ui` for speed, or `bun run build`)
   so the worktree build is fresh. Do NOT automatically request a preview to
   verify it — previews are on request from the human, not something you spin up
