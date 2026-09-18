@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-18T05:01:29Z"
+review_passes: 2
 id: "0401"
 title: Add board view toggle to Inputs page
 type: feature
@@ -13,9 +15,7 @@ model_override: default
 review_cli_override: kiro
 review_model_override: auto
 created_at: "2026-09-18T04:26:52Z"
-updated_at: "2026-09-18T05:01:29Z"
 review_rounds: 1
-review_passes: 1
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -81,3 +81,4 @@ Add a board view toggle to inputs page (currently there's only a list view). Do 
 - 2026-09-18T04:58:44Z · review_cli_override
 - 2026-09-18T04:58:47Z · review_model_override
 - 2026-09-18T05:01:29Z · needs_input
+
