@@ -4,9 +4,10 @@ RepoOS is configured by `repoos.toml` at the repo root, with secrets kept in a
 gitignored `.env`. Every field is optional — a repo with no `repoos.toml` at all
 still works on defaults.
 
-The **Settings** page edits the common fields directly, and includes a **Raw
-repoos.toml** editor at the bottom for everything else — `[preview]`, `[check]`,
-`[release]`, `[[deployments]]`, and any section the fields above don't cover.
+The **Settings** page edits the common fields directly, and its last tab,
+**repoos.toml**, is a full-height editor for the whole file — `[preview]`,
+`[check]`, `[release]`, `[[deployments]]`, and any section the other tabs don't
+cover.
 The raw editor validates TOML before saving and refuses a save if the file
 changed underneath it (another tab, or a field auto-save), so neither editor
 silently overwrites the other. Values stay on a single line — RepoOS's config
