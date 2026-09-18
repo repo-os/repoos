@@ -1,5 +1,6 @@
 ---
-updated_at: "2026-09-18T17:31:51Z"
+updated_at: "2026-09-18T17:32:18Z"
+review_passes: 1
 skill_suggestion: "0424"
 id: "0410"
 title: Fix mobile horizontal overflow on the landing page and VitePress docs site
@@ -36,4 +37,5 @@ handoff_signal_retry_count: 1
 - 2026-09-18T17:22:37Z · status inbox→ready
 - 2026-09-18T17:23:04Z · status ready→active, branch
 - 2026-09-18T17:31:22Z · status active→review
+
 
