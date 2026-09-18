@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-18T13:11:20Z"
+review_passes: 1
 id: "0413"
 title: Make task and input numbers visible and copyable
 type: feature
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/make-task-and-input-numbers-visible-and-
 created_at: "2026-09-18T12:59:44Z"
-updated_at: "2026-09-18T13:08:41Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -54,3 +55,4 @@ let's make the task numbers and input numbers more visible, now they're hard to 
 - 2026-09-18T13:00:39Z · status inbox→ready
 - 2026-09-18T13:00:41Z · status ready→active, branch
 - 2026-09-18T13:08:41Z · status active→review
+
