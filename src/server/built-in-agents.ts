@@ -15,7 +15,11 @@ import {
   saveLastRunAt,
   type SkillGuidedFinding,
 } from "./built-in-agent-runner.js";
-import { DESIGN_SKILL_DOC, PERFORMANCE_SKILL_DOC } from "./built-in-agent-skill-docs.js";
+import {
+  ARCHITECTURE_SKILL_DOC,
+  DESIGN_SKILL_DOC,
+  PERFORMANCE_SKILL_DOC,
+} from "./built-in-agent-skill-docs.js";
 import { isSafeToAutoCommit } from "./auto-fix-gate.js";
 
 export type TechDebtIssueType =
@@ -820,6 +824,49 @@ function toPerformanceIssues(findings: SkillGuidedFinding[]): PerformanceIssue[]
 }
 
 /**
+ * Normalize a skill-guided finding type to the Architect agent's canonical
+ * issue types. The skill doc asks the model to use one of the five, but an
+ * unexpected label must never drop a real finding or misfile it into the wrong
+ * bucket.
+ */
+export function normalizeArchitectureIssueType(type: string): ArchitectureIssueType {
+  switch (type) {
+    case "layer-violation":
+    case "tight-coupling":
+    case "missing-abstraction":
+    case "over-engineering":
+    case "scalability-risk":
+      return type;
+    default: {
+      const t = type.toLowerCase();
+      // Checked before the broader "missing-abstraction" match below, which
+      // would otherwise catch "over-abstraction" too (it contains the
+      // substring "abstraction") and misfile it into the opposite category.
+      if (/over[- ]?abstract/.test(t)) return "over-engineering";
+      if (/(layer|violation|boundary|circular|depend.*wrong)/.test(t)) return "layer-violation";
+      if (/(coupl|depend|import|god|orchestrat|hard.?cod)/.test(t)) return "tight-coupling";
+      if (/(abstraction|duplicat|scattered|repeated|missing.*boundar)/.test(t))
+        return "missing-abstraction";
+      if (/(over.?engineer|abstrac|indirect|framework|factory|premature)/.test(t))
+        return "over-engineering";
+      return "scalability-risk";
+    }
+  }
+}
+
+/** Convert the shared runner's findings into the Architect agent's issue shape. */
+function toArchitectureIssues(findings: SkillGuidedFinding[]): ArchitectureIssue[] {
+  return findings.map((finding) => ({
+    type: normalizeArchitectureIssueType(finding.type),
+    file: finding.file ?? "(repository)",
+    line: finding.line,
+    description: finding.description || "Architecture issue reported by the agent",
+    severity: finding.severity,
+    recommendation: finding.recommendation,
+  }));
+}
+
+/**
  * Run the Performance Agent end to end through the shared skill-guided runner:
  * the configured CLI/model reviews the repo (in whatever language it uses) for
  * performance issues, findings become deduplicated inbox tasks, and lastRunAt
@@ -879,146 +926,6 @@ export async function runPerformanceAgent(
     scannedFiles: run.scannedFiles ?? 0,
     ...created,
   };
-}
-
-/**
- * Scan the repository for architectural issues and opportunities.
- */
-export async function scanForArchitectureIssues(
-  config: RepoOSConfig,
-): Promise<ArchitectureScanResult> {
-  const issues: ArchitectureIssue[] = [];
-  const insights: string[] = [];
-
-  const files = collectSourceFiles(config.root);
-  const scanned = readScannedFiles(config.root, files);
-
-  const dirCounts = new Map<string, number>();
-  for (const file of scanned) {
-    const parts = file.rel.split("/");
-    if (parts.length > 1) {
-      const dir = parts[0];
-      dirCounts.set(dir, (dirCounts.get(dir) ?? 0) + 1);
-    }
-  }
-
-  const smallDirs = Array.from(dirCounts.entries()).filter(([, count]) => count > 20);
-  if (smallDirs.length > 0) {
-    insights.push(
-      `Found ${smallDirs.length} directories with >20 files each. Consider consolidating or restructuring for better maintainability.`,
-    );
-  }
-
-  const importPattern = /(?:import|from)\s+['"](\.\.?\/[^'"]+)['"]/g;
-  let maxDependencies = 0;
-  let maxDepFile = "";
-  for (const file of scanned) {
-    const cleaned = stripCommentsAndStrings(file.content);
-    const fileImports = new Set<string>();
-    let m: RegExpExecArray | null;
-    while ((m = importPattern.exec(cleaned)) !== null) {
-      fileImports.add(m[1]);
-    }
-    if (fileImports.size > maxDependencies) {
-      maxDependencies = fileImports.size;
-      maxDepFile = file.rel;
-    }
-  }
-  if (maxDependencies > 8) {
-    issues.push({
-      type: "tight-coupling",
-      file: maxDepFile,
-      description: `File has ${maxDependencies} internal dependencies — consider refactoring to reduce coupling`,
-      severity: "medium",
-      recommendation:
-        "Extract common functionality into shared utilities and use dependency injection.",
-    });
-  }
-
-  const patternSignatures = [/\binterface\s+\w+/g, /\btype\s+\w+\s*=/g, /\bclass\s+\w+/g];
-  const patterns = new Map<string, { pattern: string; files: string[] }>();
-  for (const file of scanned) {
-    const cleaned = stripCommentsAndStrings(file.content);
-    for (const re of patternSignatures) {
-      let m: RegExpExecArray | null;
-      while ((m = re.exec(cleaned)) !== null) {
-        const sig = m[0];
-        if (!patterns.has(sig)) patterns.set(sig, { pattern: sig, files: [] });
-        patterns.get(sig)!.files.push(file.rel);
-      }
-    }
-  }
-  for (const [, match] of patterns) {
-    if (match.files.length >= 5 && match.files.length <= 10) {
-      issues.push({
-        type: "missing-abstraction",
-        description: `Pattern "${match.pattern}" repeated across ${match.files.length} files — consider extracting into a shared abstraction`,
-        severity: "low",
-        recommendation: "Review the pattern and create a reusable base type or utility.",
-      });
-      break;
-    }
-  }
-
-  const complexCount = scanned.filter(
-    (f) => f.content.includes("abstract") || f.content.includes("decorator"),
-  ).length;
-  if (complexCount > 5) {
-    issues.push({
-      type: "over-engineering",
-      description: `Repository uses advanced patterns in ${complexCount} files — ensure they justify the complexity`,
-      severity: "low",
-      recommendation: "Review whether all abstractions add value or could be simplified.",
-    });
-  }
-
-  const largeFiles = scanned.filter((f) => f.lineCount > 1000);
-  if (largeFiles.length > 3) {
-    issues.push({
-      type: "scalability-risk",
-      description: `${largeFiles.length} files exceed 1000 lines — these may be bottlenecks as the system scales`,
-      severity: "medium",
-      recommendation:
-        "Consider breaking large files into smaller modules with clear responsibilities.",
-    });
-  }
-
-  if (scanned.length > 0) {
-    insights.push(`Analyzed ${scanned.length} source files across ${dirCounts.size} directories.`);
-  }
-
-  const workDir = join(config.root, config.workDir);
-  let taskCount = 0;
-  let activeArchTasks = 0;
-  try {
-    const taskFiles = readdirSync(workDir);
-    taskCount = taskFiles.filter((f) => f.endsWith(".md")).length;
-    for (const taskFile of taskFiles) {
-      if (!taskFile.endsWith(".md")) continue;
-      try {
-        const content = readFileSync(join(workDir, taskFile), "utf8");
-        if (
-          content.includes("architecture") ||
-          content.includes("design") ||
-          content.includes("refactor")
-        ) {
-          activeArchTasks++;
-        }
-      } catch {
-        /* skip unreadable files */
-      }
-    }
-  } catch {
-    /* work directory might not exist */
-  }
-
-  if (activeArchTasks > 0) {
-    insights.push(
-      `Found ${activeArchTasks} active tasks related to architecture and design decisions.`,
-    );
-  }
-
-  return { issues, scannedFiles: scanned.length, taskCount, insights };
 }
 
 /**
@@ -1087,23 +994,68 @@ export async function generateArchitectureReport(
 }
 
 /**
- * Run the Architect Agent end to end: scan, generate report, record lastRunAt.
+ * Run the Architect Agent end to end through the shared skill-guided runner:
+ * the configured CLI/model reviews the repo (in whatever language it uses) for
+ * architecture issues, findings become a markdown report saved to
+ * `docs/agents/Architect/`, and lastRunAt is recorded.
+ *
+ * Replaces the old `SOURCE_EXTS`-filtered deterministic scan, which silently
+ * matched zero files in any non-JS/TS project. The caller owns overlap
+ * protection (a single in-flight guard in server.ts).
+ *
+ * A model/connector failure throws {@link ArchitectureError} with the agent
+ * named, so the run route surfaces it on this agent's own settings card rather
+ * than silently reporting "no issues found".
  */
-export async function runArchitectAgent(config: RepoOSConfig): Promise<ArchitectRunResult> {
-  const scan = await scanForArchitectureIssues(config);
+export async function runArchitectAgent(
+  config: RepoOSConfig,
+  logger?: Logger,
+): Promise<ArchitectRunResult> {
+  const run = await runSkillGuidedAgent(
+    "architect",
+    config,
+    ARCHITECTURE_SKILL_DOC,
+    "src/server/built-in-agent-skill-docs.ts",
+    logger,
+  );
+
+  if (!run.ok) {
+    const message = run.error ?? "Architect Agent run failed";
+    throw new ArchitectureError(message);
+  }
+
+  const issues = toArchitectureIssues(run.findings);
+
+  const workDir = join(config.root, config.workDir);
+  let taskCount = 0;
+  try {
+    const taskFiles = readdirSync(workDir);
+    taskCount = taskFiles.filter((f) => f.endsWith(".md")).length;
+  } catch {
+    /* work directory might not exist */
+  }
+
+  const insights: string[] = [];
+  if (run.scannedFiles && run.scannedFiles > 0) {
+    insights.push(`Analyzed ${run.scannedFiles} source files.`);
+  }
+
+  const scan: ArchitectureScanResult = {
+    issues,
+    scannedFiles: run.scannedFiles ?? 0,
+    taskCount,
+    insights,
+  };
   const report = await generateArchitectureReport(config, scan);
 
-  const agents = { ...(config.builtInAgents ?? {}) };
-  agents["architect"] = { ...(agents["architect"] ?? {}), lastRunAt: new Date().toISOString() };
-  saveBuiltInAgentsConfig(config.root, agents, config.cacheDir);
-  config.builtInAgents = agents;
+  saveLastRunAt(config.root, "architect", config);
 
   return {
     reportPath: report.reportPath,
     fileName: report.fileName,
-    issuesFound: scan.issues.length,
-    scannedFiles: scan.scannedFiles,
-    taskCount: scan.taskCount,
+    issuesFound: issues.length,
+    scannedFiles: run.scannedFiles ?? 0,
+    taskCount,
     created: 0,
     failed: 0,
     errors: [],
@@ -1904,7 +1856,7 @@ export async function runBuiltInAgent(
     return runPerformanceAgent(config, logger);
   }
   if (name === "architect") {
-    return runArchitectAgent(config);
+    return runArchitectAgent(config, logger);
   }
   if (name === "design") {
     return runDesignAgent(config, logger);

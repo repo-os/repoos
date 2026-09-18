@@ -59,7 +59,8 @@ The page is organised into tabs:
 - **Build Your Team** — built-in agents and chat assistants (see below).
 - **Detected Coding Agents** — what's installed on this machine.
 - **Model Playground** — try a prompt against a CLI/model and compare output.
-- **Model providers** — credentials/registration for the CLIs that need them.
+- **Model providers** — live spend where a provider exposes an API, plus links
+  to provider dashboards such as Cursor’s Spending page.
 
 Every role card lets you pick the coding agent and model, toggle the role on or
 off, edit its instructions, and **Test** the combination to see whether the CLI
