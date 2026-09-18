@@ -54,6 +54,54 @@ function providersFixture(over: Partial<ModelProvidersResponse["providers"][numb
       note: "No public billing/usage API.",
       hasKey: false,
     },
+    {
+      id: "claude-code",
+      label: "Claude Code",
+      kind: "link",
+      dashboardUrl: "https://claude.ai/settings/usage",
+      note: "Subscription usage lives in Claude.",
+      hasKey: false,
+    },
+    {
+      id: "qwen-code",
+      label: "Qwen Code",
+      kind: "link",
+      dashboardUrl: "https://chat.qwen.ai/",
+      note: "Account details live in Qwen.",
+      hasKey: false,
+    },
+    {
+      id: "codex",
+      label: "Codex",
+      kind: "link",
+      dashboardUrl: "https://chatgpt.com/codex/settings",
+      note: "Account details live in ChatGPT.",
+      hasKey: false,
+    },
+    {
+      id: "github-copilot",
+      label: "GitHub Copilot",
+      kind: "link",
+      dashboardUrl: "https://github.com/settings/copilot",
+      note: "Account details live in GitHub.",
+      hasKey: false,
+    },
+    {
+      id: "antigravity",
+      label: "Antigravity",
+      kind: "link",
+      dashboardUrl: "https://antigravity.google/",
+      note: "Account details live in Antigravity.",
+      hasKey: false,
+    },
+    {
+      id: "kiro",
+      label: "Kiro",
+      kind: "link",
+      dashboardUrl: "https://app.kiro.dev/account",
+      note: "Account details live in Kiro.",
+      hasKey: false,
+    },
   ];
   for (const [i, o] of over.entries()) base[i] = { ...base[i], ...o };
   return base;
@@ -114,18 +162,18 @@ afterEach(() => {
 });
 
 describe("ModelProvidersPanel — row rendering", () => {
-  it("renders all five rows; link rows get a dashboard link and no key form", async () => {
+  it("renders all integrated provider rows; link rows get a dashboard link and no key form", async () => {
     stubFetch([providersRoute(providersFixture())]);
     const wrapper = mount(ModelProvidersPanel);
     await flushPromises();
     await nextTick();
 
     const rows = wrapper.findAll(".mp-row");
-    expect(rows).toHaveLength(5);
+    expect(rows).toHaveLength(11);
     expect(rows[0].find(".agent-name").text()).toBe("OpenRouter");
     expect(rows[0].find(".pill-live").exists()).toBe(true);
 
-    for (const i of [2, 3, 4]) {
+    for (const i of [2, 3, 4, 5, 6, 7, 8, 9, 10]) {
       const link = rows[i].find(".mp-dash-link");
       expect(link.exists()).toBe(true);
       expect(link.attributes("href")).toMatch(/^https:\/\//);

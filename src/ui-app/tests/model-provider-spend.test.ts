@@ -31,6 +31,12 @@ describe("MODEL_PROVIDERS registry", () => {
       "cursor",
       "opencode-zen",
       "deepinfra",
+      "claude-code",
+      "qwen-code",
+      "codex",
+      "github-copilot",
+      "antigravity",
+      "kiro",
     ]);
   });
 
@@ -41,7 +47,17 @@ describe("MODEL_PROVIDERS registry", () => {
     const go = modelProviderById("opencode-go")!;
     expect(go.kind).toBe("live");
     expect(go.envVar).toBe("REPOOS_OPENCODE_GO_API_KEY");
-    for (const id of ["cursor", "opencode-zen", "deepinfra"]) {
+    for (const id of [
+      "cursor",
+      "opencode-zen",
+      "deepinfra",
+      "claude-code",
+      "qwen-code",
+      "codex",
+      "github-copilot",
+      "antigravity",
+      "kiro",
+    ]) {
       const row = modelProviderById(id)!;
       expect(row.kind).toBe("link");
       expect(row.envVar).toBeNull();
