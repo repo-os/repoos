@@ -117,7 +117,7 @@ describe("MODEL_SOURCES registry", () => {
   });
 
   it("offers stable Copilot Auto tiers without guessing account-specific models", async () => {
-    await expect(MODEL_SOURCES["github copilot"].list()).resolves.toEqual({
+    await expect(MODEL_SOURCES["github copilot"].list({})).resolves.toEqual({
       supported: true,
       models: ["default", "copilot-auto-balance", "copilot-auto-intelligence"],
       refreshable: false,
