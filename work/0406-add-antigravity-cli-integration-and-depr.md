@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-18T11:47:24Z"
-review_passes: 4
 id: "0406"
 title: Add Antigravity CLI integration and deprecate Gemini CLI
 type: feature
-status: review
+status: active
 priority: p1
 area: agent
 assigned_to: ai
@@ -15,6 +13,8 @@ model_override: gpt-5.6-luna
 review_cli_override: codex
 review_model_override: gpt-5.6-terra
 created_at: "2026-09-18T08:54:55Z"
+updated_at: "2026-09-18T11:51:34Z"
+review_passes: 4
 review_rounds: 2
 skill_suggestion: "0407"
 handoff_signal_retry_count: 2
@@ -83,4 +83,5 @@ Add a production-quality Antigravity CLI driver. A locally authenticated user ca
 - 2026-09-18T11:44:07Z · status review→active
 - 2026-09-18T11:44:07Z · note: Round-3 review findings fixed by interactive session in 1992a8dd (auto-bounce cap reached); full repoos check green in worktree
 - 2026-09-18T11:44:25Z · status active→review
-
+- 2026-09-18T11:51:34Z · status review→active
+- 2026-09-18T11:51:34Z · note: Round-4 review findings fixed in 1003d4f3 (board-chat guard, one-shot envelope validation); full repoos check green
