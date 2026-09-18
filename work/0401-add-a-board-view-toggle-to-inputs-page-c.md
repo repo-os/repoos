@@ -9,8 +9,10 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 model_override: auto
+review_cli_override: cursor
+review_model_override: default
 created_at: "2026-09-18T04:26:52Z"
-updated_at: "2026-09-18T04:31:52Z"
+updated_at: "2026-09-18T04:31:57Z"
 ---
 ## Problem
 
@@ -56,3 +58,4 @@ Add a board view toggle to inputs page (currently there's only a list view). Do 
 - 2026-09-18T04:26:52Z · created · hello@repoos.org
 - 2026-09-18T04:27:32Z · status draft→inbox, title, area, body
 - 2026-09-18T04:31:52Z · model_override
+- 2026-09-18T04:31:57Z · review_cli_override, review_model_override
