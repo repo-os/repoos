@@ -133,6 +133,8 @@ export interface PreviewTargetOption {
 interface PreviewCandidate {
   target: PreviewTarget;
   areas: string[];
+  /** An area match or the default command: servable without an explicit pick. */
+  implicit?: boolean;
 }
 
 /** Options for `PreviewManager.start` (#0379). */
@@ -206,7 +208,12 @@ function previewCandidates(config: RepoOSConfig, task: Task): PreviewCandidate[]
     }
   }
 
-  const candidates: PreviewCandidate[] = [...areaMatches, ...otherTargets];
+  // Rank: area matches, then the default command, then every other target.
+  // The default must beat unrelated targets, or a task whose area matches
+  // nothing (most tasks: "web", "server", …) would preview e.g. the landing
+  // page instead of the app. Other targets stay listed for explicit recovery
+  // from a wrong area (#0409), but are never picked implicitly.
+  const candidates: PreviewCandidate[] = [...areaMatches];
   const defaultCommand = preview?.command?.trim();
   if (defaultCommand) {
     candidates.push({
@@ -219,8 +226,11 @@ function previewCandidates(config: RepoOSConfig, task: Task): PreviewCandidate[]
         readyPath: preview?.readyPath ?? DEFAULT_READY_PATH,
         readyTimeoutMs: preview?.readyTimeoutMs ?? HEALTH_TIMEOUT_MS,
       },
+      implicit: true,
     });
   }
+  for (const c of areaMatches) c.implicit = true;
+  candidates.push(...otherTargets);
   return candidates;
 }
 
@@ -265,36 +275,9 @@ export function resolvePreviewTarget(
     };
   }
 
-  const allTargets = (preview?.targets ?? []).map((t) => ({
-    areas: [...t.areas],
-    target: {
-      kind: "command" as const,
-      label: t.name,
-      command: t.command,
-      cwd: t.cwd,
-      readyPath: t.readyPath ?? DEFAULT_READY_PATH,
-      readyTimeoutMs: t.readyTimeoutMs ?? HEALTH_TIMEOUT_MS,
-    },
-  }));
-  const defaultTarget = defaultCommand
-    ? {
-        areas: [],
-        target: {
-          kind: "command" as const,
-          label: "default",
-          command: defaultCommand,
-          cwd: preview?.cwd,
-          readyPath: preview?.readyPath ?? DEFAULT_READY_PATH,
-          readyTimeoutMs: preview?.readyTimeoutMs ?? HEALTH_TIMEOUT_MS,
-        },
-      }
-    : null;
-
   const candidates = previewCandidates(config, task);
   if (targetName) {
-    const chosen = [...allTargets, ...(defaultTarget ? [defaultTarget] : [])].find(
-      (c) => c.target.label === targetName,
-    );
+    const chosen = candidates.find((c) => c.target.label === targetName);
     if (chosen) return chosen.target;
     const area = (task.area ?? "").trim() || "(none)";
     const names = candidates.map((c) => `"${c.target.label}"`).join(", ");
@@ -306,7 +289,10 @@ export function resolvePreviewTarget(
     };
   }
 
-  if (candidates.length) return candidates[0]!.target;
+  // Without an explicit pick, serve only an area match or the default — never
+  // an unrelated target just because it's configured.
+  const implicit = candidates.find((c) => c.implicit);
+  if (implicit) return implicit.target;
   return { kind: "none", reason: noPreviewReason(task, "") };
 }
 
@@ -537,7 +523,12 @@ export class PreviewManager {
     // an ambiguous area with no explicit choice is never resolved to the first
     // target silently (#0379).
     if (!targetName && !opts.allowAmbiguous) {
-      const candidates = previewCandidates(this.config, task);
+      // Ambiguous = several targets claim this task's area. Out-of-area
+      // targets are listed for explicit recovery (#0411) but don't make a
+      // start ambiguous; without a pick the area match or default is served.
+      const candidates = previewCandidates(this.config, task).filter(
+        (c) => c.implicit && c.areas.length > 0,
+      );
       if (candidates.length > 1) {
         const names = candidates.map((c) => c.target.label).join(", ");
         const error =
