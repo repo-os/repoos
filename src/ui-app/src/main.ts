@@ -6,7 +6,12 @@ import "./style.css";
 
 createApp(App).use(createPinia()).use(router).mount("#app");
 
-if ("serviceWorker" in navigator) {
+const canUseServiceWorker =
+  "serviceWorker" in navigator &&
+  window.isSecureContext &&
+  !["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
+
+if (canUseServiceWorker) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register("/sw.js")
