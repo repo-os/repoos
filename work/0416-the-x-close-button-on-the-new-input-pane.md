@@ -2,14 +2,14 @@
 id: "0416"
 title: Align new input panel buttons with standard positioning
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/align-new-input-panel-buttons-with-stand
 created_at: "2026-09-18T14:45:27Z"
-updated_at: "2026-09-18T14:57:25Z"
+updated_at: "2026-09-18T14:59:23Z"
 ---
 ## Problem
 The close button positioning is inconsistent across all side panels (drawers on the right side of the screen). Some panels have the close button [x] properly positioned in the top right corner, while others—including the new input panel—have it positioned at the end of the title or elsewhere. Additionally, the new input panel's action buttons are positioned on the left side instead of the right side.
@@ -51,3 +51,4 @@ Additionally: ensure any and all side panels (on the right side of the screen) h
 - 2026-09-18T14:56:56Z · body
 - 2026-09-18T14:57:23Z · status inbox→ready
 - 2026-09-18T14:57:25Z · status ready→active, branch
+- 2026-09-18T14:59:23Z · status active→review
