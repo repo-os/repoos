@@ -814,6 +814,10 @@ export function normalizeArchitectureIssueType(type: string): ArchitectureIssueT
       return type;
     default: {
       const t = type.toLowerCase();
+      // Checked before the broader "missing-abstraction" match below, which
+      // would otherwise catch "over-abstraction" too (it contains the
+      // substring "abstraction") and misfile it into the opposite category.
+      if (/over[- ]?abstract/.test(t)) return "over-engineering";
       if (/(layer|violation|boundary|circular|depend.*wrong)/.test(t)) return "layer-violation";
       if (/(coupl|depend|import|god|orchestrat|hard.?cod)/.test(t)) return "tight-coupling";
       if (/(abstraction|duplicat|scattered|repeated|missing.*boundar)/.test(t))
@@ -829,7 +833,7 @@ export function normalizeArchitectureIssueType(type: string): ArchitectureIssueT
 function toArchitectureIssues(findings: SkillGuidedFinding[]): ArchitectureIssue[] {
   return findings.map((finding) => ({
     type: normalizeArchitectureIssueType(finding.type),
-    file: finding.file,
+    file: finding.file ?? "(repository)",
     line: finding.line,
     description: finding.description || "Architecture issue reported by the agent",
     severity: finding.severity,

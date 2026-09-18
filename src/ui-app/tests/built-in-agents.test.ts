@@ -28,6 +28,7 @@ import {
   TechDebtError,
   PerformanceError,
   DocsDebtError,
+  normalizeArchitectureIssueType,
   type TechDebtIssue,
   type PerformanceIssue,
 } from "../../server/built-in-agents.js";
@@ -1078,5 +1079,40 @@ describe("runDocsDebtAgent", () => {
     expect(result.error).toContain("quota exceeded");
     expect(result.taskCreated).toBe(0);
     expect(result.findingsFound).toBe(0);
+  });
+});
+
+describe("normalizeArchitectureIssueType", () => {
+  it("passes through canonical types unchanged", () => {
+    const types = [
+      "layer-violation",
+      "tight-coupling",
+      "missing-abstraction",
+      "over-engineering",
+      "scalability-risk",
+    ] as const;
+    for (const type of types) {
+      expect(normalizeArchitectureIssueType(type)).toBe(type);
+    }
+  });
+
+  it("buckets over-abstraction as over-engineering, not missing-abstraction", () => {
+    // Regression: "over-abstraction" contains the substring "abstraction",
+    // which used to match missing-abstraction's keyword check before
+    // over-engineering's own check ever ran, misfiling it into the opposite
+    // category.
+    expect(normalizeArchitectureIssueType("over-abstraction")).toBe("over-engineering");
+    expect(normalizeArchitectureIssueType("over abstraction")).toBe("over-engineering");
+  });
+
+  it("still buckets plain abstraction gaps as missing-abstraction", () => {
+    expect(normalizeArchitectureIssueType("no-abstraction-for-shared-logic")).toBe(
+      "missing-abstraction",
+    );
+    expect(normalizeArchitectureIssueType("duplicated-logic")).toBe("missing-abstraction");
+  });
+
+  it("falls back to scalability-risk for an unrecognized label", () => {
+    expect(normalizeArchitectureIssueType("something-weird")).toBe("scalability-risk");
   });
 });
