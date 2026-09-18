@@ -1,11 +1,12 @@
 /**
  * Live spend/usage data for the Agents page's "Model providers" tab (0327).
  *
- * Scoped to the four v1 providers: OpenRouter and opencode Go expose real
- * spend APIs and render live (each needs an API key the user pastes once —
- * stored via `setDotEnvSecret`, never logged, never echoed back); opencode
- * Zen and DeepInfra have no public balance/usage API and render as dashboard
- * link-outs. All upstream calls are plain `fetch` with a hard timeout — zero
+ * OpenRouter and opencode Go expose real spend APIs and render live (each
+ * needs an API key the user pastes once — stored via `setDotEnvSecret`, never
+ * logged, never echoed back). Cursor's CLI does not report usage, and its
+ * public dashboard is the supported view for individual-account usage, so it
+ * joins opencode Zen and DeepInfra as a dashboard link-out. All upstream calls
+ * are plain `fetch` with a hard timeout — zero
  * runtime dependencies, same rule as the playground adapters next door.
  *
  * The parsers (`parseOpenRouterCredits`, `parseOpenRouterKey`,
@@ -19,7 +20,12 @@ const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 const OPENCODE_GO_USAGE_URL = "https://opencode.ai/zen/go/v1/usage";
 const FETCH_TIMEOUT_MS = 8000;
 
-export type ModelProviderId = "openrouter" | "opencode-go" | "opencode-zen" | "deepinfra";
+export type ModelProviderId =
+  | "openrouter"
+  | "opencode-go"
+  | "cursor"
+  | "opencode-zen"
+  | "deepinfra";
 
 /**
  * One row of the Model providers tab. `kind: "live"` rows have a real spend
@@ -56,6 +62,15 @@ export const MODEL_PROVIDERS: ModelProviderRow[] = [
     note: "Rolling usage windows (5-hour / weekly / monthly), live from the Go usage API. No dollar balance exists.",
     envVar: "REPOOS_OPENCODE_GO_API_KEY",
     configKey: "opencodeGoApiKey",
+  },
+  {
+    id: "cursor",
+    label: "Cursor",
+    kind: "link",
+    dashboardUrl: "https://cursor.com/dashboard",
+    note: "Usage, remaining allowance, reset date, and any on-demand charges live in Cursor’s Spending dashboard.",
+    envVar: null,
+    configKey: null,
   },
   {
     id: "opencode-zen",

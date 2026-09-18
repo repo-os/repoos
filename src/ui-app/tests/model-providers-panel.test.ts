@@ -1,6 +1,7 @@
 /**
- * Component tests for ModelProvidersPanel.vue (0327): the four provider rows
- * must render with the right affordances — dashboard link-outs for the two
+ * Component tests for ModelProvidersPanel.vue (0327): provider rows must
+ * render with the right affordances — dashboard link-outs for providers with
+ * no public individual usage API, and
  * no-API providers, an inline key form for live providers without a saved
  * key, and live figures for the ones with — and the key save/clear flow must
  * hit the right endpoints and never put key material into the DOM.
@@ -27,6 +28,14 @@ function providersFixture(over: Partial<ModelProvidersResponse["providers"][numb
       kind: "live",
       dashboardUrl: "https://opencode.ai/auth",
       note: "Rolling usage windows. No dollar balance exists.",
+      hasKey: false,
+    },
+    {
+      id: "cursor",
+      label: "Cursor",
+      kind: "link",
+      dashboardUrl: "https://cursor.com/dashboard",
+      note: "Usage and allowance live in Cursor’s Spending dashboard.",
       hasKey: false,
     },
     {
@@ -105,18 +114,18 @@ afterEach(() => {
 });
 
 describe("ModelProvidersPanel — row rendering", () => {
-  it("renders all four rows; link rows get a dashboard link and no key form", async () => {
+  it("renders all five rows; link rows get a dashboard link and no key form", async () => {
     stubFetch([providersRoute(providersFixture())]);
     const wrapper = mount(ModelProvidersPanel);
     await flushPromises();
     await nextTick();
 
     const rows = wrapper.findAll(".mp-row");
-    expect(rows).toHaveLength(4);
+    expect(rows).toHaveLength(5);
     expect(rows[0].find(".agent-name").text()).toBe("OpenRouter");
     expect(rows[0].find(".pill-live").exists()).toBe(true);
 
-    for (const i of [2, 3]) {
+    for (const i of [2, 3, 4]) {
       const link = rows[i].find(".mp-dash-link");
       expect(link.exists()).toBe(true);
       expect(link.attributes("href")).toMatch(/^https:\/\//);

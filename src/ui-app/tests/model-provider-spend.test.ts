@@ -24,23 +24,24 @@ afterEach(() => {
 });
 
 describe("MODEL_PROVIDERS registry", () => {
-  it("scopes to exactly the four v1 providers", () => {
+  it("lists live providers followed by dashboard-only providers", () => {
     expect(MODEL_PROVIDERS.map((p) => p.id)).toEqual([
       "openrouter",
       "opencode-go",
+      "cursor",
       "opencode-zen",
       "deepinfra",
     ]);
   });
 
-  it("marks OpenRouter and opencode Go live with env vars; Zen/DeepInfra as link-outs", () => {
+  it("marks OpenRouter and opencode Go live with env vars; Cursor/Zen/DeepInfra as link-outs", () => {
     const openrouter = modelProviderById("openrouter")!;
     expect(openrouter.kind).toBe("live");
     expect(openrouter.envVar).toBe("REPOOS_OPENROUTER_API_KEY");
     const go = modelProviderById("opencode-go")!;
     expect(go.kind).toBe("live");
     expect(go.envVar).toBe("REPOOS_OPENCODE_GO_API_KEY");
-    for (const id of ["opencode-zen", "deepinfra"]) {
+    for (const id of ["cursor", "opencode-zen", "deepinfra"]) {
       const row = modelProviderById(id)!;
       expect(row.kind).toBe("link");
       expect(row.envVar).toBeNull();
