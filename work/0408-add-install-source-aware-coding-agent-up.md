@@ -8,8 +8,9 @@ area: agent
 assigned_to: ai
 created_by: ""
 branch: ""
+review_model_override: opencode-go/hy3
 created_at: "2026-09-18T11:16:48Z"
-updated_at: "2026-09-18T11:16:48Z"
+updated_at: "2026-09-18T11:17:40Z"
 ---
 ## Problem
 
@@ -50,3 +51,4 @@ Add an explicit Check for updates action to Detected Coding Agents. It checks su
 ## Activity
 
 - 2026-09-18T11:16:48Z · created · unknown
+- 2026-09-18T11:17:40Z · review_model_override
