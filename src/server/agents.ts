@@ -258,6 +258,8 @@ interface Session {
   cursorHints?: Set<string>;
   /** Antigravity recovery hints already surfaced for this session. */
   antigravityHints?: Set<string>;
+  /** The current Antigravity turn's terminal result, if one has arrived. */
+  antigravityTerminal?: "success" | "failure";
   /**
    * Edge-detection only, not part of the public stats shape: whether the last
    * `agent.stats` snapshot we pushed already reported `stalled: true`, so the
@@ -1655,6 +1657,8 @@ export interface AntigravityParseResult {
   entry?: AgentOutputEntry;
   sessionID?: string;
   model?: string;
+  /** Set on a terminal `result` record: whether the run reported SUCCESS. */
+  terminal?: "success" | "failure";
 }
 
 export function parseAntigravityEvent(
@@ -1709,6 +1713,7 @@ export function parseAntigravityEvent(
     const summary = [status || "UNKNOWN", duration, turns].filter(Boolean).join(" · ");
     return {
       ...(resultConversation ? { sessionID: resultConversation } : {}),
+      terminal: status === "SUCCESS" ? "success" : "failure",
       ...(status !== "SUCCESS"
         ? {
             entry: {
@@ -3844,7 +3849,13 @@ export class AgentRunner {
     const session = this.sessions.get(task.id) ?? this.loadSession(task.id) ?? this.emptySession();
     this.captureUsageBaseline(session);
     session.workdir = cwd;
-    session.engine = engineForCli(agent.cli);
+    // A session id belongs to the CLI that minted it. Switching engines must
+    // not carry it over, or the new CLI would never capture its own id (the
+    // parsers only set one when none is present) and follow-ups would hand a
+    // foreign id to the new CLI's resume flag.
+    const engine = engineForCli(agent.cli);
+    if (session.engine !== engine) session.sessionId = undefined;
+    session.engine = engine;
     session.task = task;
     session.branch = branch;
     session.agent = agent.name;
@@ -4043,7 +4054,12 @@ export class AgentRunner {
     // --resume flag (e.g. an opencode `ses_...` id passed to `claude
     // --resume`, which requires a UUID and errors out). Drop it and let
     // resumeCommand fall back to a fresh/most-recent-session start instead.
-    const sessionId = session.engine === engineForCli(agent.cli) ? session.sessionId : undefined;
+    const engine = engineForCli(agent.cli);
+    if (session.engine !== engine) {
+      session.sessionId = undefined;
+      session.engine = engine;
+    }
+    const sessionId = session.sessionId;
     if (agent.cli === "antigravity" && !sessionId) {
       this.recordEntry(taskId, session, "sys", {
         type: "sys",
@@ -4118,6 +4134,17 @@ export class AgentRunner {
     branch?: string,
     opts: { skipBoardDivergence?: boolean } = {},
   ): StartResult {
+    // Antigravity runs with --dangerously-skip-permissions, so a task turn must
+    // never land in the main checkout. Routes fall back to config.root when
+    // worktree creation fails (and hotfixes use it on purpose); refuse here,
+    // the one choke point every task spawn passes through, before anything runs.
+    if (cmd === "agy" && task && this.samePath(cwd, this.config.root)) {
+      return {
+        ok: false,
+        reason:
+          "Antigravity only runs in a RepoOS task worktree, and this turn would run in the main checkout (worktree creation failed, or this is a hotfix). Fix the worktree, or pick a different agent for this task.",
+      };
+    }
     if (this.entries.size < this.maxConcurrentAgents) {
       return this.spawnTurn(id, cmd, args, cwd, task, branch, opts);
     }
@@ -4252,6 +4279,7 @@ export class AgentRunner {
       session.turnStartedAt = now();
       session.lastOutputAt = now();
       session.stalledEmitted = false;
+      session.antigravityTerminal = undefined;
     }
     // Persist the durable registry entry so a restart can re-attach (0214).
     if (proc.pid) {
@@ -4586,6 +4614,7 @@ export class AgentRunner {
     }
     if (parsed.sessionID && !session.sessionId) session.sessionId = parsed.sessionID;
     if (parsed.model) session.model = parsed.model;
+    if (parsed.terminal) session.antigravityTerminal = parsed.terminal;
     if (parsed.entry) {
       this.recordEntry(
         taskId,
@@ -5087,6 +5116,27 @@ export class AgentRunner {
       const line = session.pending.trimEnd();
       this.appendLine(taskId, "out", line);
       session.pending = "";
+    }
+    // A zero exit is not success for Antigravity unless the stream ended with
+    // a SUCCESS `result` record. A malformed or changed protocol (only unknown
+    // or unreadable events) or a failed result must fail the turn visibly
+    // rather than read as a clean finish.
+    if (
+      exitedCleanly &&
+      session?.engine === "antigravity" &&
+      session.antigravityTerminal !== "success"
+    ) {
+      exitedCleanly = false;
+      this.recordEntry(taskId, session, "sys", {
+        type: "sys",
+        d:
+          session.antigravityTerminal === "failure"
+            ? "Antigravity reported a failed result, so this turn is marked failed despite a zero exit code."
+            : "Antigravity exited without a terminal result event — the output protocol may have changed. Update agy and retry; this turn is marked failed.",
+      });
+      this.logger?.agent(taskId, "error", "Antigravity turn ended without a SUCCESS result", {
+        runId: entry.runId,
+      });
     }
     if (entry.killTimer) clearTimeout(entry.killTimer);
     // claude stream (0109): a tool_use whose result never arrived before the

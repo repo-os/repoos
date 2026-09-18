@@ -92,6 +92,7 @@ describe("Antigravity stream-json protocol", () => {
       ),
     ).toEqual({
       sessionID: "agy-1",
+      terminal: "success",
       entry: {
         type: "step",
         kind: "finish",
@@ -153,9 +154,10 @@ describe("Antigravity stream-json protocol", () => {
       status: "SUCCESS",
       response: "answer",
     });
-    expect(parseAntigravityEvent(line)).toEqual({ sessionID: "agy-2" });
+    expect(parseAntigravityEvent(line)).toEqual({ sessionID: "agy-2", terminal: "success" });
     expect(parseAntigravityEvent(line, { surfaceResult: true })).toEqual({
       sessionID: "agy-2",
+      terminal: "success",
       entry: { type: "text", text: "answer" },
     });
   });
@@ -225,7 +227,8 @@ const emit = (value) => process.stdout.write(JSON.stringify(value) + "\\n");
 emit({ event: "init", init: { conversation_id: id, cwd: process.cwd(), model: "fake-model" } });
 emit({ event: "step_update", step_update: { conversation_id: id, state: "ACTIVE", step_type: "agent_response", text_delta: "working" } });
 emit({ event: "step_update", step_update: { conversation_id: id, state: "DONE", step_type: "tool", tool_name: "run_command", tool_info: { name: "run_command", parameters: { CommandLine: "bun run test" }, output: "ok" } } });
-emit({ event: "result", result: { conversation_id: id, status: "SUCCESS", response: "done", duration_seconds: 0.2, num_turns: 1, usage: { input_tokens: 3, output_tokens: 2, total_tokens: 5 } } });
+if (process.env.REPOOS_FAKE_AGY_NO_RESULT) { emit({ event: "future_event" }); process.exit(0); }
+emit({ event: "result", result: { conversation_id: id, status: process.env.REPOOS_FAKE_AGY_STATUS || "SUCCESS", response: "done", duration_seconds: 0.2, num_turns: 1, usage: { input_tokens: 3, output_tokens: 2, total_tokens: 5 } } });
 `;
 
 interface Fixture {
@@ -298,9 +301,100 @@ const agent: Agent = { name: "engineer", cli: "antigravity", model: "default", e
 afterEach(() => {
   delete process.env.REPOOS_FAKEBIN_LOG;
   delete process.env.REPOOS_FAKE_AGY_EXIT;
+  delete process.env.REPOOS_FAKE_AGY_NO_RESULT;
+  delete process.env.REPOOS_FAKE_AGY_STATUS;
   vi.unstubAllGlobals();
   localStorage.clear();
 });
+
+function spawnLog(fx: Fixture): { args: string[]; cwd: string }[] {
+  try {
+    return readFileSync(fx.log, "utf8")
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line) as { args: string[]; cwd: string });
+  } catch {
+    return [];
+  }
+}
+
+function withFakeAgy<T>(fn: (fx: Fixture) => Promise<T>): Promise<T> {
+  const fx = fixture();
+  const oldPath = process.env.PATH;
+  process.env.PATH = `${fx.bin}:${oldPath ?? ""}`;
+  process.env.REPOOS_FAKEBIN_LOG = fx.log;
+  return fn(fx).finally(() => {
+    process.env.PATH = oldPath;
+    fx.clean();
+  });
+}
+
+function sysText(runner: AgentRunner, id: string): string {
+  return (runner.output(id)?.lines ?? [])
+    .map((line) => ("d" in line && typeof line.d === "string" ? line.d : ""))
+    .join("\n");
+}
+
+it("refuses an Antigravity task turn in the main checkout before spawning", () =>
+  withFakeAgy(async (fx) => {
+    // config.root === cwd: what a failed ensureWorktree fallback or a hotfix produces.
+    const runner = new AgentRunner(config(fx.bin), () => {});
+    const res = runner.start(TASK, "feat/agy", agent, { cwd: fx.bin });
+    expect(res.ok).toBe(false);
+    expect(res.reason).toContain("task worktree");
+    expect(runner.isRunning(TASK.id)).toBe(false);
+    expect(spawnLog(fx)).toEqual([]);
+  }));
+
+it("drops another engine's session id when a task switches to Antigravity", () =>
+  withFakeAgy(async (fx) => {
+    const worktree = join(fx.bin, "worktree");
+    mkdirSync(worktree, { recursive: true });
+    const runner = new AgentRunner(config(fx.bin), () => {});
+    expect(runner.start(TASK, "feat/agy", agent, { cwd: worktree }).ok).toBe(true);
+    await waitFor(() => !runner.isRunning(TASK.id), "agy first turn");
+
+    // Simulate a session last driven by another CLI.
+    const session = runner.output(TASK.id)!;
+    session.engine = "codex";
+    session.sessionId = "codex-foreign-id";
+    runner.send(TASK.id, "continue", agent);
+    await waitFor(() => spawnLog(fx).length === 2, "agy follow-up spawn");
+    await waitFor(() => !runner.isRunning(TASK.id), "agy follow-up");
+    expect(spawnLog(fx).at(-1)?.args).not.toContain("codex-foreign-id");
+    expect(spawnLog(fx).at(-1)?.args).not.toContain("--conversation");
+    expect(runner.output(TASK.id)?.sessionId).toBe("conversation-1");
+
+    // Same on a fresh start() after an engine switch.
+    session.engine = "codex";
+    session.sessionId = "codex-foreign-id";
+    expect(runner.start(TASK, "feat/agy", agent, { cwd: worktree }).ok).toBe(true);
+    await waitFor(() => !runner.isRunning(TASK.id), "agy restart");
+    expect(runner.output(TASK.id)?.sessionId).toBe("conversation-1");
+  }));
+
+it("fails a zero-exit Antigravity turn with no terminal result", () =>
+  withFakeAgy(async (fx) => {
+    const worktree = join(fx.bin, "worktree");
+    mkdirSync(worktree, { recursive: true });
+    process.env.REPOOS_FAKE_AGY_NO_RESULT = "1";
+    const runner = new AgentRunner(config(fx.bin), () => {});
+    expect(runner.start(TASK, "feat/agy", agent, { cwd: worktree }).ok).toBe(true);
+    await waitFor(() => !runner.isRunning(TASK.id), "agy no-result turn");
+    expect(sysText(runner, TASK.id)).toContain("without a terminal result event");
+  }));
+
+it("fails a zero-exit Antigravity turn whose result is not SUCCESS", () =>
+  withFakeAgy(async (fx) => {
+    const worktree = join(fx.bin, "worktree");
+    mkdirSync(worktree, { recursive: true });
+    process.env.REPOOS_FAKE_AGY_STATUS = "ERROR";
+    const runner = new AgentRunner(config(fx.bin), () => {});
+    expect(runner.start(TASK, "feat/agy", agent, { cwd: worktree }).ok).toBe(true);
+    await waitFor(() => !runner.isRunning(TASK.id), "agy error-result turn");
+    expect(sysText(runner, TASK.id)).toContain("reported a failed result");
+  }));
 
 it("treats a non-zero one-shot exit as failure even with a SUCCESS envelope", async () => {
   const fx = fixture();
