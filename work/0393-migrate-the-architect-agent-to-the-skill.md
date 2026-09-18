@@ -2,14 +2,14 @@
 id: "0393"
 title: Migrate the Architect Agent to the skill-guided runner
 type: feature
-status: review
+status: done
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
 branch: feat/migrate-the-architect-agent-to-the-skill
 created_at: "2026-09-17T14:03:42Z"
-updated_at: "2026-09-17T18:57:33Z"
+updated_at: "2026-09-18T03:51:23Z"
 ---
 ## Problem
 
@@ -44,3 +44,4 @@ Replace the deterministic scan with a call through #0389's shared runner, driven
 - 2026-09-17T15:15:54Z · status inbox→ready
 - 2026-09-17T18:48:30Z · status ready→active, branch
 - 2026-09-17T18:57:33Z · status active→review
+- 2026-09-18T03:51:23Z · status review→done, release:success
