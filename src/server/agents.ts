@@ -2319,7 +2319,7 @@ export interface PromptResult {
 }
 
 /** Default ceiling on a one-shot agent run (agent rewrites can be slow). */
-const PROMPT_TIMEOUT_MS = 180_000;
+export const PROMPT_TIMEOUT_MS = 180_000;
 
 /**
  * Map an agent `cli` to a one-shot (print mode) invocation that writes its
@@ -2744,6 +2744,43 @@ export function runPrompt(
       resolve({ ok: false, error: `could not launch ${cmd}: ${err.message}` });
     });
   });
+}
+
+/**
+ * Reconstruct a one-shot `PromptResult` from durable stdout/stderr log files
+ * (#0403). Mirrors `runPrompt`'s own `done()` folding — usage is extracted from
+ * every line plus the whole accumulated stdout — so a freeform run adopted
+ * after a server reload books the same tokens/cost it would have live. The
+ * wall-clock span is not recoverable from the files, so the caller supplies
+ * `elapsedMs` (measured from the run's recorded start time).
+ */
+export function oneShotResultFromLog(
+  outLog: string,
+  errLog: string,
+  elapsedMs: number,
+): PromptResult {
+  const rawOut = existsSync(outLog) ? readFileSync(outLog, "utf8") : "";
+  const rawErr = existsSync(errLog) ? readFileSync(errLog, "utf8") : "";
+  const output = stripAnsi(rawOut.trim());
+  const stderr = stripAnsi(rawErr.trim());
+  const usage: ExtractedUsage = {};
+  for (const line of rawOut.split("\n")) {
+    if (line.trim()) foldUsage(usage, line);
+  }
+  foldUsage(usage, output);
+  const usageFields = {
+    elapsedMs,
+    inputTokens: usage.inputTokens,
+    outputTokens: usage.outputTokens,
+    totalTokens: usage.totalTokens,
+    costUsd: usage.costUsd,
+    cacheReadTokens: usage.cacheReadTokens,
+    cacheCreationTokens: usage.cacheCreationTokens,
+    turns: usage.turns,
+  };
+  if (output) return { ok: true, output, ...usageFields };
+  const reason = stderr ? stderr.split("\n").slice(-3).join(" ").trim() : "no output produced";
+  return { ok: false, error: `agent exited without output: ${reason}`, ...usageFields };
 }
 
 /**

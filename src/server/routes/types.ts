@@ -13,6 +13,7 @@ import type { JobCoordinator } from "../integration-job.js";
 import type { Logger } from "../../core/logger.js";
 import type { DoneStep } from "../done.js";
 import type { RemoteValidator } from "../remote-validation.js";
+import type { FreeformRunManager } from "../freeform-runs.js";
 
 export interface SyncResult {
   ok: boolean;
@@ -36,6 +37,12 @@ export interface RouteContext {
   previews: PreviewManager;
   reviews: ReviewManager;
   cto: CTOManager;
+  /**
+   * Durable, reload-resumable registry for freeform PM task-creation runs
+   * (#0403). The freeform route starts a run here instead of fire-and-forget
+   * `runPrompt`, so a server reload mid-run does not silently lose it.
+   */
+  freeformRuns: FreeformRunManager;
   repoos: RepoOS;
   logger: Logger;
   emitEvent: (e: RepoEvent) => void;
