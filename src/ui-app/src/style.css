@@ -160,6 +160,8 @@
   --ring: #0678b3;
   --radius: 0.75rem;
 }
+
+
 @layer base {
   * {
     box-sizing: border-box;
@@ -397,7 +399,6 @@
   background: var(--panel-solid);
   color: var(--txt);
   cursor: pointer;
-  opacity: 1;
   transition: 0.15s;
 }
 .theme-toggle:hover {

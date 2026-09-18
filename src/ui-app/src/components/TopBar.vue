@@ -464,7 +464,7 @@ watch(repoName, () => {
   top: 100%;
   left: 0;
   margin-top: 6px;
-  background: var(--panel);
+  background: var(--panel-solid);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 10px;
@@ -527,7 +527,6 @@ watch(repoName, () => {
   background: var(--panel-solid);
   color: var(--txt);
   cursor: pointer;
-  opacity: 1;
   transition: 0.15s;
 }
 .help-menu-trigger:hover {
@@ -540,7 +539,7 @@ watch(repoName, () => {
   top: 100%;
   right: 0;
   margin-top: 6px;
-  background: var(--panel);
+  background: var(--panel-solid);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 6px;
@@ -580,7 +579,6 @@ watch(repoName, () => {
   background: var(--panel-solid);
   color: var(--txt);
   cursor: pointer;
-  opacity: 1;
   transition: 0.15s;
 }
 .user-menu-trigger:hover {
@@ -593,7 +591,7 @@ watch(repoName, () => {
   top: 100%;
   right: 0;
   margin-top: 6px;
-  background: var(--panel);
+  background: var(--panel-solid);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 10px;
