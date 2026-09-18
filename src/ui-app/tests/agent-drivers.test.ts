@@ -148,6 +148,7 @@ function expectCodexExecOptionsBeforeResume(args: string[]): void {
   const resumeIndex = args.indexOf("resume");
   expect(resumeIndex).toBeGreaterThan(0);
   expect(args.indexOf("--sandbox")).toBeLessThan(resumeIndex);
+  expect(args.indexOf("-c")).toBeLessThan(resumeIndex);
 }
 
 afterEach(() => {
@@ -304,6 +305,11 @@ describe("codex driver", () => {
       expect(run.args[0]).toBe("exec");
       expect(run.args[1]).toContain("Task #0001");
       expect(run.args).toEqual(expect.arrayContaining(["--json", "--sandbox", "workspace-write"]));
+      // Network on, or `repoos check`'s localhost-binding tests fail with EPERM
+      // inside the Seatbelt sandbox (#0406).
+      expect(run.args).toEqual(
+        expect.arrayContaining(["-c", "sandbox_workspace_write.network_access=true"]),
+      );
 
       await waitFor(() => !runner.isRunning("0001"), "first turn exit");
       runner.send("0001", "continue the work", { ...agent("codex"), model: "gpt-5.6" });
@@ -315,6 +321,8 @@ describe("codex driver", () => {
         "exec",
         "--sandbox",
         "workspace-write",
+        "-c",
+        "sandbox_workspace_write.network_access=true",
         "resume",
         "--model",
         "gpt-5.6",
@@ -353,6 +361,8 @@ describe("codex driver", () => {
         "exec",
         "--sandbox",
         "workspace-write",
+        "-c",
+        "sandbox_workspace_write.network_access=true",
         "resume",
         "--json",
         "--last",
