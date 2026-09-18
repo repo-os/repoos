@@ -2,14 +2,14 @@
 id: "0414"
 title: Don't start a close-out while the server is mid-reload
 type: bug
-status: review
+status: done
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
 branch: feat/don-t-start-a-close-out-while-the-server
 created_at: "2026-09-18T14:06:27Z"
-updated_at: "2026-09-18T15:13:29Z"
+updated_at: "2026-09-18T15:37:30Z"
 ---
 ## Problem
 
@@ -37,3 +37,4 @@ The same merge and resolution succeed when run by hand, and a retry works.
 - 2026-09-18T14:57:49Z · status inbox→ready
 - 2026-09-18T14:57:51Z · status ready→active, branch
 - 2026-09-18T15:13:29Z · status active→review
+- 2026-09-18T15:37:30Z · status review→done, release:success
