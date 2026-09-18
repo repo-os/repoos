@@ -20,8 +20,10 @@ Make the new preview target dropdown in the same style as the status dropdown. a
 ## Screenshots
 
 ![Screenshot-2026-09-19-at-01.01.04](/api/tasks/0425/attachments/screenshot-1.png)
+![Screenshot-2026-09-19-at-01.42.34](/api/tasks/0425/attachments/screenshot-2.png)
 
 ## Activity
 
 - 2026-09-18T17:44:12Z · created · hello@repoos.org
+- 2026-09-18T17:44:13Z · screenshots
 - 2026-09-18T17:44:13Z · screenshots
