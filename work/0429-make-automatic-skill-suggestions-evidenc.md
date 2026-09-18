@@ -8,8 +8,9 @@ area: agent
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: claude code
 created_at: "2026-09-18T18:46:29Z"
-updated_at: "2026-09-18T18:46:29Z"
+updated_at: "2026-09-18T19:13:32Z"
 ---
 ## Problem
 
@@ -42,3 +43,4 @@ Treat a reusable skill as a high-bar artifact: a stable procedure useful on futu
 ## Activity
 
 - 2026-09-18T18:46:29Z · created · unknown
+- 2026-09-18T19:13:32Z · cli_override
