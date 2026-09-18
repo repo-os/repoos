@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-18T12:53:04Z"
-review_passes: 4
 id: "0408"
 title: Add install-source-aware coding-agent update checks
 type: feature
-status: review
+status: done
 priority: p1
 area: agent
 assigned_to: ai
@@ -12,6 +10,8 @@ created_by: ""
 branch: feat/add-install-source-aware-coding-agent-up
 review_model_override: opencode-go/hy3
 created_at: "2026-09-18T11:16:48Z"
+updated_at: "2026-09-18T12:58:33Z"
+review_passes: 4
 review_rounds: 2
 handoff_signal_retry_count: 2
 ---
@@ -63,4 +63,4 @@ Add an explicit Check for updates action to Detected Coding Agents. It checks su
 - 2026-09-18T12:45:53Z · status review→active
 - 2026-09-18T12:52:05Z · status active→review
 - 2026-09-18T12:52:05Z · note: Round-2 findings (anchored GitHub path check, cache-expiry test, sentence-case labels) plus the hotfix (aligned rows, single refresh button, Homebrew casks) are on the branch; main merged in; full repoos check green
-
+- 2026-09-18T12:58:33Z · status review→done, release:success
