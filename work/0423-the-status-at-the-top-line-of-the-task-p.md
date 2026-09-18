@@ -1,17 +1,42 @@
 ---
 id: "0423"
-title: The status at the top line of the task panel is not neces…
-type: feature
-status: draft
+title: Remove redundant status display from task panel header
+type: chore
+status: inbox
 priority: p2
-area: general
+area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-18T16:55:22Z"
-updated_at: "2026-09-18T16:55:23Z"
+updated_at: "2026-09-18T16:55:35Z"
 ---
-The status at the top line of the task panel is not necessary because it's shown in the dropdown right below the title. Let's remove it since it's a duplicate and causing the top line to be cramped anyway. Also please double check on the inputs panel that the status is not duplicated there as well.
+## Problem
+
+The task panel displays the status in two locations: as a label on the top line and in a dropdown selector directly below the title. This duplication wastes horizontal space and makes the top line cramped. Since the status is already visible and accessible in the dropdown, the top-line label is redundant.
+
+## Desired UX
+
+Remove the status label from the top line of the task panel to reduce visual clutter and cramping, while keeping the status fully accessible via the dropdown below the title. The panel should have more breathing room in its header area.
+
+## Acceptance criteria
+
+- [ ] Status label removed from the top line of the task panel
+- [ ] Status dropdown below the title remains fully functional
+- [ ] Verify the inputs panel does not have a similar duplicate status display
+- [ ] No console errors or visual regressions in the browser
+- [ ] Task panel header appears noticeably less cramped
+
+## Notes for AI
+
+- The UI is in `src/ui-app/src/views/`. The task panel is likely in a component related to task display or drawer rendering.
+- Check both the task panel (main view) and the inputs panel to ensure neither has duplicate status labels.
+- This is purely a visual/layout change with no functional impact — status selection and display via the dropdown should be unaffected.
+- Test in a browser to visually confirm the cramping is resolved.
+
+## Scope
+
+Removing duplicate status display from the UI only. Changes to status functionality, the dropdown itself, or other panel elements are out of scope.
 
 ## Original prompt
 
@@ -25,3 +50,4 @@ The status at the top line of the task panel is not necessary because it's shown
 
 - 2026-09-18T16:55:22Z · created · hello@repoos.org
 - 2026-09-18T16:55:23Z · screenshots
+- 2026-09-18T16:55:35Z · status draft→inbox, title, area, type, body
