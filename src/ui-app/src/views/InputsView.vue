@@ -43,8 +43,9 @@ const viewMode = ref<InputsViewMode>("list");
  *  so an empty first paint never collapses every column permanently. */
 const inputsLoaded = ref(false);
 const visible = computed(() => inputs.value.filter((i) => selected.value.has(i.status)));
-/** Board columns follow the status filters so list and board stay in sync. */
-const boardColumns = computed(() => statuses.filter((s) => selected.value.has(s.id)));
+/** Board view always shows every status as a column (like the Work board) —
+ *  it has no checkbox filter row of its own, so it isn't tied to `selected`. */
+const boardColumns = computed(() => statuses);
 function byStatus(statusId: string): Input[] {
   return inputs.value.filter((i) => i.status === statusId);
 }
@@ -269,19 +270,19 @@ function tryOpenInput(ref: string, attempt: number): void {
         >
       </div>
     </div>
-    <div class="input-filters" role="group" aria-label="Filter inputs by status">
-      <label v-for="s in statuses" :key="s.id" class="input-filter"
-        ><Checkbox :checked="selected.has(s.id)" @update:checked="toggle(s.id)" /><span
-          class="status-dot"
-          :style="{ background: s.color }"
-        ></span
-        >{{ s.label }}
-        <span class="filter-count">{{
-          inputs.filter((i) => i.status === s.id).length
-        }}</span></label
-      >
-    </div>
     <template v-if="viewMode === 'list'">
+      <div class="input-filters" role="group" aria-label="Filter inputs by status">
+        <label v-for="s in statuses" :key="s.id" class="input-filter"
+          ><Checkbox :checked="selected.has(s.id)" @update:checked="toggle(s.id)" /><span
+            class="status-dot"
+            :style="{ background: s.color }"
+          ></span
+          >{{ s.label }}
+          <span class="filter-count">{{
+            inputs.filter((i) => i.status === s.id).length
+          }}</span></label
+        >
+      </div>
       <div v-if="!visible.length" class="inputs-empty">
         <div class="empty-title">No inputs here yet</div>
         <div>Capture an idea, question, bug, or observation for the team.</div>
@@ -327,11 +328,7 @@ function tryOpenInput(ref: string, attempt: number): void {
       </div>
     </template>
     <template v-else>
-      <div v-if="!boardColumns.length" class="inputs-empty">
-        <div class="empty-title">No statuses selected</div>
-        <div>Turn on at least one status filter to show board columns.</div>
-      </div>
-      <div v-else class="board inputs-board">
+      <div class="board inputs-board">
         <InputBoardColumn
           v-for="col in boardColumns"
           :key="col.id"

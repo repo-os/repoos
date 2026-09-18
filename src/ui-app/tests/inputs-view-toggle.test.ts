@@ -107,7 +107,17 @@ describe("InputsView list/board toggle", () => {
     expect(wrapper.find(".inputs-board").exists()).toBe(true);
     expect(wrapper.find(".input-list").exists()).toBe(false);
     expect(localStorage.getItem("inputs-view-mode")).toBe("board");
-    expect(wrapper.findAll(".board-col").length).toBe(2);
+    // Board view always shows every status column, unfiltered — it has no
+    // checkbox filter row of its own (that only exists in list view).
+    expect(wrapper.findAll(".board-col").length).toBe(3);
+  });
+
+  it("board view has no status-filter checkboxes", async () => {
+    const wrapper = await mountView();
+    await wrapper.findAll(".view-toggle-btn")[1].trigger("click");
+    await flushPromises();
+
+    expect(wrapper.find(".input-filters").exists()).toBe(false);
   });
 
   it("restores board view from localStorage on mount", async () => {
