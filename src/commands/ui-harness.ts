@@ -40,11 +40,17 @@ export interface SmokePage {
   evaluate<R>(fn: () => R): Promise<R>;
   $(selector: string): Promise<unknown>;
   setViewportSize(viewport: { width: number; height: number }): Promise<void>;
+  waitForFunction(fn: () => unknown, options?: { timeout?: number }): Promise<unknown>;
   waitForTimeout(ms: number): Promise<void>;
 }
 export interface SmokeBrowser {
   newPage(): Promise<SmokePage>;
   newPage(options: { viewport: { width: number; height: number } }): Promise<SmokePage>;
+  newContext(options: { serviceWorkers: "allow" | "block" }): Promise<SmokeContext>;
+  close(): Promise<void>;
+}
+export interface SmokeContext {
+  newPage(): Promise<SmokePage>;
   close(): Promise<void>;
 }
 export interface SmokePlaywright {

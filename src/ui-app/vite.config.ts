@@ -3,8 +3,8 @@ import { createHash } from "node:crypto";
 import { defineConfig, type Plugin } from "vitest/config";
 import vue from "@vitejs/plugin-vue";
 import tailwindcss from "@tailwindcss/vite";
-import { shellPrecache } from "./src/lib/sw-precache";
-import { serviceWorkerSource } from "./src/lib/sw-source";
+import { shellPrecache } from "./src/lib/sw-precache.js";
+import { serviceWorkerSource } from "./src/lib/sw-source.js";
 
 /**
  * Emits the service worker (source and caching rules: `serviceWorkerSource`),

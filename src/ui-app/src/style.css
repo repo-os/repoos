@@ -173,7 +173,6 @@
     max-width: 100%;
   }
   body {
-    overflow-x: hidden;
     font-family: var(--font-sans);
     background: var(--body-gradient), var(--bg);
     background-attachment: fixed;
@@ -2698,6 +2697,7 @@
 }
 .doc-view {
   max-width: 100%;
+  min-width: 0;
   padding: 24px 28px;
   overflow-y: auto;
   min-height: 0;
@@ -2713,6 +2713,10 @@
 .doc-view svg,
 .doc-view code {
   max-width: 100%;
+}
+.doc-view .md-rendered {
+  max-width: 100%;
+  min-width: 0;
 }
 .doc-view .doc-title {
   font-family: "Sora", sans-serif;
