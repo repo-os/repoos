@@ -11,7 +11,6 @@ const repo = useRepoStore();
 const taskId = computed(() => route.params.taskId as string);
 const targetFile = computed(() => (route.query.file as string) ?? "");
 
-// Load diff if not already in store
 onMounted(async () => {
   if (!repo.diffFor(taskId.value)) {
     await repo.loadDiff(taskId.value);
@@ -59,7 +58,7 @@ const currentFile = computed(
   () => diffFiles.value.find((f) => f.filename === targetFile.value) ?? diffFiles.value[0] ?? null,
 );
 
-interface FullDiffRow {
+interface DiffRow {
   leftNum: number | null;
   rightNum: number | null;
   leftText: string | null;
@@ -70,11 +69,11 @@ interface FullDiffRow {
   skipped?: number;
 }
 
-function buildRows(file: DiffFile | null): FullDiffRow[] {
+function buildRows(file: DiffFile | null): DiffRow[] {
   if (!file) return [];
   const hunkRe = /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/;
   const lines = file.lines;
-  const rows: FullDiffRow[] = [];
+  const rows: DiffRow[] = [];
   let i = 0;
   while (i < lines.length && !lines[i]!.startsWith("@@")) i++;
   let first = true;
@@ -133,9 +132,29 @@ function buildRows(file: DiffFile | null): FullDiffRow[] {
 
 const rows = computed(() => buildRows(currentFile.value));
 
-// Minimap
-const contentEl = ref<HTMLDivElement | null>(null);
+// Two independent scroll panels, synced vertically via JS.
+const leftEl = ref<HTMLElement | null>(null);
+const rightEl = ref<HTMLElement | null>(null);
 const canvasEl = ref<HTMLCanvasElement | null>(null);
+let syncing = false;
+
+function onLeftScroll(): void {
+  if (!syncing && rightEl.value && leftEl.value) {
+    syncing = true;
+    rightEl.value.scrollTop = leftEl.value.scrollTop;
+    syncing = false;
+  }
+  drawMinimap();
+}
+
+function onRightScroll(): void {
+  if (!syncing && leftEl.value && rightEl.value) {
+    syncing = true;
+    leftEl.value.scrollTop = rightEl.value.scrollTop;
+    syncing = false;
+  }
+  drawMinimap();
+}
 
 function drawMinimap(): void {
   const canvas = canvasEl.value;
@@ -163,7 +182,7 @@ function drawMinimap(): void {
       ctx.fillRect(W / 2, y, W / 2, h);
     }
   }
-  const el = contentEl.value;
+  const el = leftEl.value;
   if (el && el.scrollHeight > el.clientHeight) {
     const scrollFrac = el.scrollTop / (el.scrollHeight - el.clientHeight);
     const viewFrac = el.clientHeight / el.scrollHeight;
@@ -177,14 +196,15 @@ function drawMinimap(): void {
   }
 }
 
-function onScroll(): void { drawMinimap(); }
-
 function onMinimapClick(e: MouseEvent): void {
   const canvas = canvasEl.value;
-  const el = contentEl.value;
-  if (!canvas || !el) return;
+  if (!canvas) return;
   const frac = e.offsetY / canvas.height;
-  el.scrollTop = frac * (el.scrollHeight - el.clientHeight);
+  const el = leftEl.value;
+  if (el) el.scrollTop = frac * (el.scrollHeight - el.clientHeight);
+  const er = rightEl.value;
+  if (er) er.scrollTop = el ? el.scrollTop : 0;
+  drawMinimap();
 }
 
 watchEffect(() => {
@@ -192,9 +212,7 @@ watchEffect(() => {
   nextTick(() => drawMinimap());
 });
 
-function goBack(): void {
-  router.back();
-}
+function goBack(): void { router.back(); }
 
 function switchFile(filename: string): void {
   router.replace({ name: "diff", params: { taskId: taskId.value }, query: { file: filename } });
@@ -233,28 +251,38 @@ function switchFile(filename: string): void {
       <div v-if="!taskDiff" class="diff-page-loading">Loading diff…</div>
       <div v-else-if="!currentFile" class="diff-page-loading">No diff available.</div>
       <template v-else>
-        <div ref="contentEl" class="diff-page-content" @scroll="onScroll">
-          <div class="diff-side-header">
-            <span class="diff-ln-col"></span>
-            <span>before</span>
-            <span class="diff-ln-col"></span>
-            <span>after</span>
-          </div>
-          <template v-for="(row, i) in rows" :key="i">
+        <!-- Left panel: before -->
+        <div ref="leftEl" class="diff-panel" @scroll.passive="onLeftScroll">
+          <div class="diff-panel-header">Before</div>
+          <template v-for="(row, i) in rows" :key="'l' + i">
             <div v-if="row.isSep" class="diff-sep-row">
-              <span class="diff-ln-col"></span>
-              <span class="diff-sep-cell">{{ row.skipped != null ? `… ${row.skipped} lines` : '…' }}</span>
-              <span class="diff-ln-col"></span>
+              <span class="diff-ln"></span>
               <span class="diff-sep-cell">{{ row.skipped != null ? `… ${row.skipped} lines` : '…' }}</span>
             </div>
-            <div v-else class="diff-side-row">
-              <span class="diff-ln-col" :class="'diff-ln-' + row.leftCls">{{ row.leftNum ?? '' }}</span>
-              <span class="diff-side-cell" :class="'diff-cell-' + row.leftCls">{{ row.leftText ?? '' }}</span>
-              <span class="diff-ln-col" :class="'diff-ln-' + row.rightCls">{{ row.rightNum ?? '' }}</span>
-              <span class="diff-side-cell" :class="'diff-cell-' + row.rightCls">{{ row.rightText ?? '' }}</span>
+            <div v-else class="diff-row" :class="'diff-row-' + row.leftCls">
+              <span class="diff-ln" :class="'diff-ln-' + row.leftCls">{{ row.leftNum ?? '' }}</span>
+              <span class="diff-cell" :class="'diff-cell-' + row.leftCls">{{ row.leftText ?? '' }}</span>
             </div>
           </template>
         </div>
+
+        <div class="diff-panel-divider"></div>
+
+        <!-- Right panel: after -->
+        <div ref="rightEl" class="diff-panel" @scroll.passive="onRightScroll">
+          <div class="diff-panel-header">After</div>
+          <template v-for="(row, i) in rows" :key="'r' + i">
+            <div v-if="row.isSep" class="diff-sep-row">
+              <span class="diff-ln"></span>
+              <span class="diff-sep-cell">{{ row.skipped != null ? `… ${row.skipped} lines` : '…' }}</span>
+            </div>
+            <div v-else class="diff-row" :class="'diff-row-' + row.rightCls">
+              <span class="diff-ln" :class="'diff-ln-' + row.rightCls">{{ row.rightNum ?? '' }}</span>
+              <span class="diff-cell" :class="'diff-cell-' + row.rightCls">{{ row.rightText ?? '' }}</span>
+            </div>
+          </template>
+        </div>
+
         <canvas ref="canvasEl" class="diff-minimap" width="60" @click="onMinimapClick"></canvas>
       </template>
     </div>
@@ -296,10 +324,7 @@ function switchFile(filename: string): void {
   transition: 0.15s;
   flex: none;
 }
-.diff-back-btn:hover {
-  background: var(--nav-hover-bg);
-  color: var(--txt);
-}
+.diff-back-btn:hover { background: var(--nav-hover-bg); color: var(--txt); }
 
 .diff-page-file {
   flex: 1;
@@ -335,20 +360,10 @@ function switchFile(filename: string): void {
   white-space: nowrap;
   transition: 0.12s;
 }
-.diff-page-filetab:hover {
-  background: var(--nav-hover-bg);
-  color: var(--txt);
-}
-.diff-page-filetab.active {
-  background: var(--nav-hover-bg);
-  border-color: var(--border);
-  color: var(--txt);
-}
+.diff-page-filetab:hover { background: var(--nav-hover-bg); color: var(--txt); }
+.diff-page-filetab.active { background: var(--nav-hover-bg); border-color: var(--border); color: var(--txt); }
 
-.diff-file-type-badge {
-  font: 11px/1 monospace;
-  opacity: 0.7;
-}
+.diff-file-type-badge { font: 11px/1 monospace; opacity: 0.7; }
 
 .diff-page-body {
   flex: 1;
@@ -366,18 +381,24 @@ function switchFile(filename: string): void {
   font: 13px/1 var(--font-sans);
 }
 
-.diff-page-content {
-  flex: 1;
+/* Each panel is exactly 50% of the available width and scrolls independently */
+.diff-panel {
+  flex: 1 1 0;
   min-width: 0;
   overflow: auto;
   font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, monospace;
   font-size: 12px;
   line-height: 1.6;
-  /* Single grid shared by all rows so both halves are always equal width */
-  display: grid;
-  grid-template-columns: 44px minmax(320px, 1fr) 44px minmax(320px, 1fr);
-  align-content: start;
-  min-width: max-content;
+  background: #0d1117;
+  color: #c9d1d9;
+  display: flex;
+  flex-direction: column;
+}
+
+.diff-panel-divider {
+  flex: none;
+  width: 1px;
+  background: var(--border);
 }
 
 .diff-minimap {
@@ -390,19 +411,12 @@ function switchFile(filename: string): void {
   cursor: pointer;
 }
 
-/* Rows use display:contents so their children become direct grid items of .diff-page-content */
-.diff-side-header,
-.diff-side-row,
-.diff-sep-row {
-  display: contents;
-}
-
-/* Sticky header — span all 4 columns via a pseudo-wrapper trick isn't possible with
-   display:contents, so instead make each header span individually sticky */
-.diff-side-header > span {
+.diff-panel-header {
   position: sticky;
   top: 0;
+  left: 0;
   z-index: 1;
+  flex: none;
   padding: 6px 12px;
   border-bottom: 1px solid var(--border);
   background: #0d1117;
@@ -410,12 +424,25 @@ function switchFile(filename: string): void {
   font: 600 10px/1 var(--font-sans);
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
-.diff-side-header > span:nth-child(1) { padding: 6px; text-align: right; }
-.diff-side-header > span:nth-child(3),
-.diff-side-header > span:nth-child(4) { border-left: 1px solid var(--border); }
 
-.diff-ln-col {
+.diff-row {
+  display: flex;
+  min-width: max-content;
+}
+
+.diff-sep-row {
+  display: flex;
+  min-width: max-content;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.015);
+}
+
+.diff-ln {
+  flex: none;
+  width: 44px;
   text-align: right;
   padding: 0 6px;
   color: rgba(140, 160, 180, 0.4);
@@ -424,39 +451,36 @@ function switchFile(filename: string): void {
   font-size: 11px;
   min-height: 1.6em;
 }
-.diff-ln-rem { background: rgba(255,80,80,0.12); color: rgba(255,120,120,0.65); }
-.diff-ln-add { background: rgba(70,210,100,0.10); color: rgba(100,210,100,0.65); }
-.diff-ln-empty { background: rgba(120,140,200,0.03); }
 
-/* 3rd and 4th children in a row are the right side */
-.diff-side-row > .diff-ln-col:nth-child(3),
-.diff-side-row > .diff-side-cell:nth-child(4),
-.diff-sep-row > .diff-ln-col:nth-child(3),
-.diff-sep-row > .diff-sep-cell:nth-child(4) { border-left: 1px solid var(--border); }
-
-.diff-side-cell {
+.diff-cell {
+  flex: 1;
   padding: 0 12px;
   white-space: pre;
   min-height: 1.6em;
-  overflow: hidden;
-  min-width: 0;
 }
-.diff-cell-ctx { color: #c9d1d9; }
-.diff-cell-rem { background: rgba(255,80,80,0.14); color: #ff9090; }
-.diff-cell-add { background: rgba(70,210,100,0.10); color: #7ee8a2; }
-.diff-cell-empty { background: rgba(120,140,200,0.03); }
 
-/* With display:contents, sep-row borders go on the cells */
-.diff-sep-row > * {
-  border-top: 1px solid rgba(255,255,255,0.05);
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  background: rgba(255,255,255,0.015);
-}
 .diff-sep-cell {
+  flex: 1;
   padding: 1px 12px;
   color: rgba(140,160,180,0.35);
   font-size: 11px;
 }
+
+/* Row backgrounds */
+.diff-row-rem { background: rgba(255,80,80,0.06); }
+.diff-row-add { background: rgba(70,210,100,0.06); }
+.diff-row-empty { background: rgba(120,140,200,0.03); }
+
+/* Line number column colours */
+.diff-ln-rem { background: rgba(255,80,80,0.12); color: rgba(255,120,120,0.65); }
+.diff-ln-add { background: rgba(70,210,100,0.10); color: rgba(100,210,100,0.65); }
+.diff-ln-empty { background: rgba(120,140,200,0.03); }
+
+/* Cell text colours */
+.diff-cell-ctx { color: #c9d1d9; }
+.diff-cell-rem { color: #ff9090; }
+.diff-cell-add { color: #7ee8a2; }
+.diff-cell-empty { }
 
 .diff-file-delta { display: flex; gap: 6px; flex: none; }
 .diff-file-add { color: #3fb950; font: 600 12px/1 var(--font-sans); }
