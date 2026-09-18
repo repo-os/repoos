@@ -93,6 +93,24 @@ async function runUISmokeTest(): Promise<void> {
     const hasBrand = await page.evaluate(() => document.body.innerText.includes("RepoOS"));
     if (!hasBrand) throw new Error('Expected "RepoOS" in rendered content');
 
+    const assertNoHorizontalOverflow = async (label: string, url: string) => {
+      await page.setViewportSize({ width: 375, height: 812 });
+      await page.goto(url, { waitUntil: "load", timeout: 20_000 });
+      await page.waitForTimeout(250);
+      const dims = await page.evaluate(() => ({
+        scrollWidth: document.body.scrollWidth,
+        innerWidth: window.innerWidth,
+      }));
+      if (dims.scrollWidth > dims.innerWidth) {
+        throw new Error(
+          `${label} overflow at 375px viewport: body scrollWidth ${dims.scrollWidth} > innerWidth ${dims.innerWidth}`,
+        );
+      }
+    };
+
+    await assertNoHorizontalOverflow("dashboard", server.url);
+    await assertNoHorizontalOverflow("docs", `${server.url}/repo`);
+
     // Navigate to work page and click +New Task
     await page.evaluate(() => {
       const navItems = document.querySelectorAll(".nav-item");

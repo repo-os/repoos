@@ -39,6 +39,7 @@ export interface SmokePage {
   title(): Promise<string>;
   evaluate<R>(fn: () => R): Promise<R>;
   $(selector: string): Promise<unknown>;
+  setViewportSize(viewport: { width: number; height: number }): Promise<void>;
   waitForTimeout(ms: number): Promise<void>;
 }
 export interface SmokeBrowser {
