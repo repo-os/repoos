@@ -16,6 +16,7 @@ import {
   oneShotResultFromLog,
   parseAntigravityEvent,
   promptCommand,
+  reviewCommand,
   runPrompt,
 } from "../../server/agents";
 import { detectAgents, KNOWN_AGENTS, type KnownAgent } from "../../core/detect";
@@ -354,6 +355,20 @@ it("refuses a board-level Antigravity chat, which would run in the main checkout
     const res = runner.startChat("ross", "hello", agent, "context");
     expect(res.ok).toBe(false);
     expect(res.reason).toContain("board-level chats");
+    expect(spawnLog(fx)).toEqual([]);
+  }));
+
+it("refuses a permission-bypassing Antigravity one-shot outside a linked worktree", () =>
+  withFakeAgy(async (fx) => {
+    // The CTO path: reviewCommand (which bypasses permissions) run in config.root.
+    const mission = "review the board";
+    const result = await runPrompt(agent, mission, {
+      cwd: fx.bin,
+      timeoutMs: 2_000,
+      command: reviewCommand(agent, mission, fx.bin),
+    });
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("task worktree");
     expect(spawnLog(fx)).toEqual([]);
   }));
 

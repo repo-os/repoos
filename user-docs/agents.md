@@ -105,7 +105,11 @@ interactive approval prompt. RepoOS therefore uses
 task cannot wait forever. This is a blanket permission bypass: it can approve
 commands beyond the worktree, so use Antigravity only with trusted prompts and
 remember that RepoOS's isolation is the worktree/lifecycle boundary, not a
-replacement for Antigravity's own sandbox.
+replacement for Antigravity's own sandbox. Because of that, RepoOS refuses to
+run Antigravity with the bypass anywhere but a task worktree: it can't drive
+board-level roles that work in the main checkout (Ross, the CTO, the debugger).
+Read-only uses, such as model tests and PM task authoring, run without the
+bypass.
 
 ### Gemini CLI deprecation
 

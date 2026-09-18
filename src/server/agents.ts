@@ -2976,6 +2976,18 @@ export function extractOneShotReportText(cli: string, rawOutput: string): string
  * NO `REPOOS_API_URL` / `REPOOS_TASK_ID` is injected, so a one-shot agent has
  * no pointer at the control plane's task endpoints.
  */
+/**
+ * True when `dir` is a linked git worktree: there `.git` is a file pointing at
+ * the shared repo, whereas the main checkout has a `.git` directory.
+ */
+function isLinkedWorktree(dir: string): boolean {
+  try {
+    return statSync(join(dir, ".git")).isFile();
+  } catch {
+    return false;
+  }
+}
+
 export function runPrompt(
   agent: Agent,
   prompt: string,
@@ -2999,6 +3011,22 @@ export function runPrompt(
       return;
     }
     const { cmd, args } = command;
+    // Read-only one-shots (model tests, PM authoring) run agy without the
+    // permission bypass and may use the main checkout like every other CLI.
+    // Anything that does bypass permissions (reviewCommand — e.g. the CTO,
+    // which runs in config.root) must be in a linked task worktree.
+    if (
+      cmd === "agy" &&
+      args.includes("--dangerously-skip-permissions") &&
+      !isLinkedWorktree(cwd)
+    ) {
+      resolve({
+        ok: false,
+        error:
+          "Antigravity runs with --dangerously-skip-permissions here, so it only runs inside a RepoOS task worktree — not the main checkout. Pick a different agent for this role.",
+      });
+      return;
+    }
     let proc: ChildProcess;
     const startedAt = Date.now();
     try {

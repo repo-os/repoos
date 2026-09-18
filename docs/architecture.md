@@ -254,7 +254,12 @@ prompt can be answered by RepoOS. The explicit permission bypass keeps ordinary
 worktree edits and permitted checks from hanging, but it is intentionally
 documented as a blanket bypass: Antigravity may approve commands outside the
 worktree. RepoOS still owns the worktree, task lifecycle, checks, review,
-handoff, and merge boundary, and never runs the driver in the main checkout.
+handoff, and merge boundary, and never runs the permission-bypassing driver in
+the main checkout: `AgentRunner.spawnOrQueue` refuses any `agy` turn whose cwd is
+`config.root` (task turns and board-level chats alike), and `runPrompt` refuses
+a bypassing one-shot (e.g. the CTO's `reviewCommand`) outside a linked worktree.
+Read-only one-shots — model tests, PM authoring — run `agy` without the bypass
+and may use the main checkout, like every other CLI.
 
 ## The three runtime states (don't conflate them)
 
