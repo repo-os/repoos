@@ -198,6 +198,27 @@ This convergence — API edits, raw file edits, and agent output all producing
 the same event stream — is the architectural payoff: agents participate by
 editing files, needing to know nothing about RepoOS itself.
 
+## Driver permissions: every engineer must be able to run the gate
+
+Each coding-agent CLI grants tool permissions differently (a bypass flag, an
+allowlist, an OS sandbox), and with no human to answer prompts, a command the
+launch doesn't cover is simply refused. The agent then can't pass `repoos
+check`, never emits the handoff signal, and the task stalls with an error that
+looks unrelated. This happened three times on 2026-09-18: Codex's sandbox
+blocked localhost binds (#0406), Copilot's allowlist lacked `repoos` and `bunx`
+(#0412), and Qwen was launched without approvals turned off.
+
+Two guards now exist, both in `src/server/agents.ts`:
+
+- `engineerPermissionGaps(cli, args)` declares each driver's permission model
+  and reports what its launch can't run from `ENGINEER_REQUIRED_COMMANDS`
+  (`repoos`, `bun`, `bunx`, `git`). `driver-permissions.test.ts` checks every
+  CLI in `AGENT_CLIS`, start and resume. A new driver without a declared
+  model fails that test — add its case when you add the driver.
+- `detectPermissionDenial(engine, line)` recognizes a denial in live output and
+  records a plain-language transcript note. The task's needs-input detail then
+  says "permission problem, not a code failure" instead of a generic error.
+
 ## GitHub Copilot CLI driver
 
 RepoOS runs GitHub Copilot CLI (`npm i -g @github/copilot`) in a task worktree
@@ -209,8 +230,9 @@ session.
 
 The driver intentionally never passes `--allow-all`, `--allow-all-tools`, or
 `--yolo`. It grants file writes and only the engineering command families
-needed for a RepoOS task (`bun`, `node`, `npm`, `npx`, `git`, `curl`, `ls`, and
-`cat`), while the CLI's default worktree path boundary remains in force.
+needed for a RepoOS task (`bun`, `bunx`, `repoos`, `node`, `npm`, `npx`, `git`,
+`curl`, `ls`, and `cat`), while the CLI's default worktree path boundary remains
+in force.
 Copilot's live model listing is not yet a stable CLI interface, so the Agents
 page offers its three documented Auto tiers instead of guessing account-specific
 model IDs. `default` means `Auto · Efficiency`; Balance and Intelligence pass

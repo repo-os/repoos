@@ -258,6 +258,8 @@ interface Session {
   cursorHints?: Set<string>;
   /** Antigravity recovery hints already surfaced for this session. */
   antigravityHints?: Set<string>;
+  /** The first permission denial seen this turn (detectPermissionDenial). */
+  permissionDenial?: string;
   /** The current Antigravity turn's terminal result, if one has arrived. */
   antigravityTerminal?: "success" | "failure";
   /**
@@ -2212,6 +2214,98 @@ function cursorArgs(options: { write: boolean; cwd?: string }): string[] {
   ];
 }
 
+/**
+ * Shell commands an engineer turn must be able to run unattended: the gate
+ * (`repoos check`), builds and tests (`bun`, `bunx`), and commits (`git`).
+ */
+export const ENGINEER_REQUIRED_COMMANDS = ["repoos", "bun", "bunx", "git"] as const;
+
+/**
+ * What an engineer launch can't do, given how its driver grants permissions.
+ * Every write-capable driver must have a case here: an unknown CLI reports a
+ * gap, so adding a driver without declaring its permission model fails the
+ * driver-permissions test instead of failing silently mid-task. Empty = OK.
+ *
+ * Each driver's model, and the incident that proved it load-bearing:
+ * - claude code / antigravity: --dangerously-skip-permissions.
+ * - opencode: --auto (#0069 hung ~2h on an unanswerable prompt without it).
+ * - kiro: --trust-all-tools. cursor: --force.
+ * - qwen code: --yolo (headless qwen denies every approval-gated tool).
+ * - codex: workspace-write sandbox WITH network, or localhost binds fail with
+ *   EPERM and `repoos check` can never pass (#0406).
+ * - github copilot: an explicit shell(<cmd>:*) allowlist under --no-ask-user;
+ *   a missing command is denied outright (#0412: repoos and bunx).
+ */
+export function engineerPermissionGaps(cli: string, args: readonly string[]): string[] {
+  const needFlag = (flag: string): string[] =>
+    args.includes(flag) ? [] : [`${flag} is missing, so every approval-gated command is blocked`];
+  switch (cli) {
+    case "claude code":
+    case "antigravity":
+      return needFlag("--dangerously-skip-permissions");
+    case "opencode":
+      return needFlag("--auto");
+    case "kiro":
+      return needFlag("--trust-all-tools");
+    case "cursor":
+      return needFlag("--force");
+    case "qwen code":
+      return needFlag("--yolo");
+    case "codex": {
+      const i = args.indexOf("--sandbox");
+      const mode = i >= 0 ? args[i + 1] : undefined;
+      if (mode === "danger-full-access") return [];
+      const gaps: string[] = [];
+      if (mode !== "workspace-write") gaps.push("sandbox is not workspace-write, so it can't edit");
+      if (!args.includes("sandbox_workspace_write.network_access=true")) {
+        gaps.push("sandbox network is off, so localhost binds in `repoos check` fail with EPERM");
+      }
+      return gaps;
+    }
+    case "github copilot":
+      if (args.includes("--allow-all-tools") || args.includes("--allow-all")) return [];
+      return ENGINEER_REQUIRED_COMMANDS.filter((cmd) => !args.includes(`shell(${cmd}:*)`)).map(
+        (cmd) => `\`${cmd}\` is not in the --allow-tool list, so --no-ask-user denies it`,
+      );
+    default:
+      return [`no permission model is declared for "${cli}" in engineerPermissionGaps`];
+  }
+}
+
+/** The start and resume launches an engineer turn can use, for permission checks. */
+export function engineerLaunches(agent: Agent, cwd: string): { cmd: string; args: string[] }[] {
+  return [cliCommand(agent, "mission", cwd), resumeCommand(agent, "continue", "session-id", cwd)];
+}
+
+/**
+ * Recognize a CLI refusing a command for lack of permission, from one raw
+ * output line. Patterns are engine-scoped and structural (a failed tool
+ * result, a non-empty denial list) so an agent merely reading source code
+ * that contains these strings doesn't trigger them. Returns a short
+ * description, or null.
+ */
+export function detectPermissionDenial(engine: string | undefined, raw: string): string | null {
+  if (
+    engine === "copilot" &&
+    raw.includes("Permission denied and could not request permission") &&
+    /"success"\s*:\s*false/.test(raw)
+  ) {
+    return "GitHub Copilot denied a shell command that isn't on RepoOS's --allow-tool list";
+  }
+  if ((engine === "claude" || engine === "qwen") && /"type"\s*:\s*"result"/.test(raw)) {
+    if (/"permission_denials"\s*:\s*\[\s*\{/.test(raw)) {
+      return `${engine === "claude" ? "Claude Code" : "Qwen Code"} reported permission denials for tool calls`;
+    }
+  }
+  if (
+    engine === "codex" &&
+    /\b(?:listen|bind|connect) EPERM\b|EPERM: operation not permitted/.test(raw)
+  ) {
+    return "Codex's sandbox blocked a network operation (EPERM), e.g. a localhost server in `repoos check`";
+  }
+  return null;
+}
+
 function cliCommand(agent: Agent, mission: string, cwd: string): { cmd: string; args: string[] } {
   const { cli, model } = agent;
   ensureDrivableCli(cli);
@@ -2240,6 +2334,11 @@ function cliCommand(agent: Agent, mission: string, cwd: string): { cmd: string; 
         "--output-format",
         "stream-json",
         "--include-partial-messages",
+        // Headless qwen (a Gemini CLI fork) denies every tool call that needs
+        // approval — shell included — unless approvals are off, so without
+        // this it can't run `repoos check`. Same blast radius as claude's
+        // --dangerously-skip-permissions: the task's own worktree.
+        "--yolo",
       ],
     };
   }
@@ -2346,6 +2445,7 @@ function resumeCommand(
         "--output-format",
         "stream-json",
         "--include-partial-messages",
+        "--yolo",
       ],
     };
   }
@@ -4362,6 +4462,7 @@ export class AgentRunner {
       session.lastOutputAt = now();
       session.stalledEmitted = false;
       session.antigravityTerminal = undefined;
+      session.permissionDenial = undefined;
     }
     // Persist the durable registry entry so a restart can re-attach (0214).
     if (proc.pid) {
@@ -4421,6 +4522,17 @@ export class AgentRunner {
   private appendLine(taskId: string, stream: "out" | "err" | "sys", raw: string): void {
     const session = this.sessions.get(taskId);
     if (!session) return;
+
+    if (stream !== "sys" && !session.permissionDenial) {
+      const denial = detectPermissionDenial(session.engine, raw);
+      if (denial) {
+        session.permissionDenial = denial;
+        this.recordEntry(taskId, session, "sys", {
+          type: "sys",
+          d: `Permission problem, not a code failure: ${denial}. RepoOS's launch settings for this agent don't cover a command the task needs; see engineerPermissionGaps in src/server/agents.ts, or switch this task to another agent.`,
+        });
+      }
+    }
 
     // claude's stream-json event shapes (nested under `message.content[]`)
     // differ from opencode's `part` shapes, so it gets its own parser branch
@@ -5674,6 +5786,9 @@ export class AgentRunner {
    * parsed out of the CLI's own JSON stream, then a generic fallback.
    */
   private lastFailureLine(session: Session | undefined): string {
+    if (session?.permissionDenial) {
+      return `permission problem, not a code failure: ${session.permissionDenial}`;
+    }
     if (session) {
       for (let i = session.lines.length - 1; i >= 0; i--) {
         const line = session.lines[i];
