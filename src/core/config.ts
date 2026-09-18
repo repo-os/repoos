@@ -174,6 +174,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     autoTransition: true,
   },
   autoEngineeringMode: false,
+  skillSuggestions: true,
   maxActiveTasks: 3,
   worktreeWarnThreshold: 20,
   whisper: {
@@ -693,6 +694,8 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
     if (Array.isArray(parsed.agents)) cfg.agents = parsed.agents as Agent[];
     if (typeof get("autoEngineeringMode") === "boolean")
       cfg.autoEngineeringMode = get("autoEngineeringMode") as boolean;
+    if (typeof get("skillSuggestions") === "boolean")
+      cfg.skillSuggestions = get("skillSuggestions") as boolean;
     const maxActiveTasks = get("maxActiveTasks");
     if (typeof maxActiveTasks === "number" && maxActiveTasks >= 1 && maxActiveTasks <= 20)
       cfg.maxActiveTasks = maxActiveTasks as number;
@@ -1152,6 +1155,18 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: DEFAULT_CONFIG.autoEngineeringMode,
       description: "Automatically select and start ready tasks up to the maximum",
+    },
+    {
+      key: "skillSuggestions",
+      label: "Auto-suggest skills from completed sessions",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.skillSuggestions,
+      description:
+        "When a task is reviewed, analyse its session and create a 'New Skill Suggestion' task " +
+        "if a reusable multi-step procedure was detected. Nothing goes live as a skill until you " +
+        "approve the suggestion.",
     },
     {
       key: "maxActiveTasks",
