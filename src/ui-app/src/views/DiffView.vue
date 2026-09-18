@@ -2,7 +2,7 @@
 import { computed, nextTick, onMounted, ref, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useRepoStore } from "../stores/repo";
-import { ArrowLeft } from "lucide-vue-next";
+import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-vue-next";
 
 const route = useRoute();
 const router = useRouter();
@@ -217,6 +217,22 @@ function goBack(): void { router.back(); }
 function switchFile(filename: string): void {
   router.replace({ name: "diff", params: { taskId: taskId.value }, query: { file: filename } });
 }
+
+function basename(path: string): string {
+  return path.split("/").pop() ?? path;
+}
+
+const currentIndex = computed(() => diffFiles.value.findIndex((f) => f.filename === currentFile.value?.filename));
+
+function prevFile(): void {
+  const i = currentIndex.value;
+  if (i > 0) switchFile(diffFiles.value[i - 1]!.filename);
+}
+
+function nextFile(): void {
+  const i = currentIndex.value;
+  if (i < diffFiles.value.length - 1) switchFile(diffFiles.value[i + 1]!.filename);
+}
 </script>
 
 <template>
@@ -235,15 +251,31 @@ function switchFile(filename: string): void {
 
     <div v-if="diffFiles.length > 1" class="diff-page-filetabs">
       <button
+        class="diff-tab-arrow"
+        type="button"
+        :disabled="currentIndex <= 0"
+        title="Previous file"
+        @click="prevFile"
+      ><ChevronLeft class="size-4" /></button>
+      <button
+        class="diff-tab-arrow"
+        type="button"
+        :disabled="currentIndex >= diffFiles.length - 1"
+        title="Next file"
+        @click="nextFile"
+      ><ChevronRight class="size-4" /></button>
+      <div class="diff-tab-divider"></div>
+      <button
         v-for="f in diffFiles"
         :key="f.filename"
         type="button"
         class="diff-page-filetab"
         :class="{ active: f.filename === currentFile?.filename }"
+        :title="f.filename"
         @click="switchFile(f.filename)"
       >
         <span class="diff-file-type-badge" :class="f.type">{{ f.type === 'added' ? '+' : f.type === 'deleted' ? '−' : '~' }}</span>
-        {{ f.filename }}
+        {{ basename(f.filename) }}
       </button>
     </div>
 
@@ -344,6 +376,31 @@ function switchFile(filename: string): void {
   border-bottom: 1px solid var(--border);
   background: var(--panel-solid);
   overflow-x: auto;
+}
+
+.diff-tab-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--txt-dim);
+  cursor: pointer;
+  transition: 0.12s;
+}
+.diff-tab-arrow:hover:not(:disabled) { background: var(--nav-hover-bg); color: var(--txt); }
+.diff-tab-arrow:disabled { opacity: 0.3; cursor: default; }
+
+.diff-tab-divider {
+  flex: none;
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 0 4px;
 }
 
 .diff-page-filetab {
