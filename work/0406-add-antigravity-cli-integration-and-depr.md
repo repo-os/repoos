@@ -2,18 +2,18 @@
 id: "0406"
 title: Add Antigravity CLI integration and deprecate Gemini CLI
 type: feature
-status: ready
+status: active
 priority: p1
 area: agent
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/add-antigravity-cli-integration-and-depr
 cli_override: codex
 model_override: gpt-5.6-luna
 review_cli_override: codex
 review_model_override: gpt-5.6-terra
 created_at: "2026-09-18T08:54:55Z"
-updated_at: "2026-09-18T09:16:27Z"
+updated_at: "2026-09-18T09:16:28Z"
 ---
 ## Problem
 
@@ -67,3 +67,4 @@ Add a production-quality Antigravity CLI driver. A locally authenticated user ca
 - 2026-09-18T09:16:07Z · review_cli_override, review_model_override
 - 2026-09-18T09:16:12Z · review_model_override
 - 2026-09-18T09:16:27Z · status inbox→ready
+- 2026-09-18T09:16:28Z · status ready→active, branch
