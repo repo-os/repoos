@@ -2,14 +2,14 @@
 id: "0405"
 title: Auto-suggest reusable skills from completed task sessions
 type: feature
-status: ready
+status: active
 priority: p2
 area: core
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/auto-suggest-reusable-skills-from-comple
 created_at: "2026-09-18T06:54:58Z"
-updated_at: "2026-09-18T06:56:22Z"
+updated_at: "2026-09-18T06:58:12Z"
 ---
 ## Problem
 
@@ -78,3 +78,4 @@ Analyze each completed session and draft a reusable SKILL.md when a non-trivial 
 - 2026-09-18T06:54:58Z · created · hello@repoos.org
 - 2026-09-18T06:55:33Z · status draft→inbox, title, area, body
 - 2026-09-18T06:56:22Z · status inbox→ready
+- 2026-09-18T06:58:12Z · status ready→active, branch
