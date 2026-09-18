@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+review_model_override: opencode-go/hy3
 created_at: "2026-09-18T12:54:04Z"
-updated_at: "2026-09-18T12:54:23Z"
+updated_at: "2026-09-18T12:57:29Z"
 ---
 ## Problem
 
@@ -52,3 +53,4 @@ In "Model Providers" we don't cover all of the coding agents yet, please add all
 
 - 2026-09-18T12:54:04Z · created · hello@repoos.org
 - 2026-09-18T12:54:23Z · status draft→inbox, title, area, body
+- 2026-09-18T12:57:29Z · review_model_override
