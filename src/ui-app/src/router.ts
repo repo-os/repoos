@@ -45,10 +45,14 @@ export const router = createRouter({
 // again, so without this guard an unauthenticated visitor who lands on the
 // app (or a session that's since expired) just sees the dashboard chrome
 // with every API call failing 401 instead of being sent to /login.
-router.beforeEach(async (to, from) => {
-  const pending = consumeRouteIntent();
-  if (pending && pending !== to.fullPath && pending !== from.fullPath) {
-    return { path: pending, replace: true };
+let initialNavigation = true;
+router.beforeEach(async (to) => {
+  if (initialNavigation) {
+    initialNavigation = false;
+    const pending = consumeRouteIntent();
+    if (pending && pending !== to.fullPath) {
+      return { path: pending, replace: true };
+    }
   }
   if (to.meta.public) return true;
   const auth = useAuthStore();

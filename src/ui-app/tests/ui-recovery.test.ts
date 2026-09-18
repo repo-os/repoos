@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   consumeRouteIntent,
+  dismissRecovery,
   isStaleImportError,
+  showOffline,
   shouldAutoReload,
   showStaleUi,
   uiRecoveryState,
@@ -60,5 +62,20 @@ describe("stale UI recovery", () => {
     expect(isStaleImportError("Loading chunk admins failed.")).toBe(true);
     expect(isStaleImportError("Image MIME type mismatch for /logo.png")).toBe(false);
     expect(isStaleImportError("The uploaded file is not valid JSON")).toBe(false);
+  });
+
+  it("dismisses a recovery state and clears its saved route intent", () => {
+    showStaleUi("/agents");
+    expect(uiRecoveryState().kind).toBe("stale");
+    dismissRecovery();
+    expect(uiRecoveryState().kind).toBeNull();
+    expect(consumeRouteIntent()).toBeNull();
+  });
+
+  it("shows offline recovery as dismissible state", () => {
+    showOffline("The server timed out");
+    expect(uiRecoveryState().kind).toBe("offline");
+    dismissRecovery();
+    expect(uiRecoveryState().kind).toBeNull();
   });
 });

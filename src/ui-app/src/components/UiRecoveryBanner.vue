@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { RotateCcw, WifiOff } from "lucide-vue-next";
-import { reloadNow, uiRecoveryState } from "../lib/uiRecovery";
+import { dismissRecovery, reloadNow, uiRecoveryState } from "../lib/uiRecovery";
 
 const recovery = uiRecoveryState();
 const title = computed(() =>
@@ -21,6 +21,7 @@ const title = computed(() =>
     <button type="button" class="ui-recovery-action" @click="reloadNow">
       {{ recovery.kind === "stale" ? "Reload now" : "Retry / reload" }}
     </button>
+    <button type="button" class="ui-recovery-dismiss" @click="dismissRecovery">Dismiss</button>
   </div>
 </template>
 
@@ -52,5 +53,9 @@ const title = computed(() =>
 }
 .ui-recovery-action {
   white-space: nowrap;
+}
+.ui-recovery-dismiss {
+  white-space: nowrap;
+  color: var(--txt-muted, #b7bdd1);
 }
 </style>

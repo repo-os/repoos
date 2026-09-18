@@ -131,6 +131,21 @@ export function showOffline(
   state.message = message;
 }
 
+export function dismissRecovery(): void {
+  const storage = getSessionStorage();
+  try {
+    storage?.removeItem(INTENT_KEY);
+  } catch {
+    /* private browsing can disable session storage */
+  }
+  state.kind = null;
+  state.message = "";
+  state.attemptedRoute = null;
+  state.currentBuild = null;
+  state.newBuild = null;
+  state.newBuildAt = null;
+}
+
 export function reloadNow(): void {
   const intent = consumeRouteIntent() ?? state.attemptedRoute;
   if (intent) rememberIntent(intent);
@@ -156,6 +171,9 @@ export async function checkUiBuild(): Promise<void> {
           health.buildHash,
           health.buildAt,
         );
+      } else if (state.kind === "offline") {
+        state.kind = null;
+        state.message = "";
       }
     } catch (err) {
       if (err instanceof Error && /timed out|can't reach/i.test(err.message))
