@@ -523,10 +523,11 @@ watch(repoName, () => {
   height: 30px;
   flex-shrink: 0;
   border-radius: 50%;
-  border: 1px solid var(--border);
-  background: var(--panel);
-  color: var(--txt-dim);
+  border: 1px solid var(--border-bright);
+  background: var(--panel-solid);
+  color: var(--txt);
   cursor: pointer;
+  opacity: 1;
   transition: 0.15s;
 }
 .help-menu-trigger:hover {
@@ -575,10 +576,11 @@ watch(repoName, () => {
   height: 30px;
   flex-shrink: 0;
   border-radius: 50%;
-  border: 1px solid var(--border);
-  background: var(--panel);
-  color: var(--txt-dim);
+  border: 1px solid var(--border-bright);
+  background: var(--panel-solid);
+  color: var(--txt);
   cursor: pointer;
+  opacity: 1;
   transition: 0.15s;
 }
 .user-menu-trigger:hover {
