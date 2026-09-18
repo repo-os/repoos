@@ -226,5 +226,9 @@ describe("move-to-done inline error placement", () => {
     // the drawer keeps its own — a failed attempt is still one click from
     // retrying once the human has looked at (or fixed) the cause.
     expect(wrapper.text()).toContain("Move to done");
+    // The copy-link task number leads the drawer header, like the input panel (#0413).
+    const number = wrapper.find(".drawer-head .copyable-number");
+    expect(number.text()).toBe("#0042");
+    expect(number.attributes("aria-label")).toBe("Copy link to task 0042");
   });
 });

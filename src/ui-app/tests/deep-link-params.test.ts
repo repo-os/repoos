@@ -286,7 +286,7 @@ describe("inputs ?input= deep-link (#0345)", () => {
     const wrapper = mount(InputsView, { attachTo: document.body });
     await flushPromises();
 
-    expect(wrapper.find(".input-row .input-number").text()).toBe("Input #0001");
+    expect(wrapper.find(".input-row .input-number").text()).toBe("#0001");
     wrapper.unmount();
   });
 });
