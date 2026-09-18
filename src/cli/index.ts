@@ -109,7 +109,10 @@ function help(): void {
       "One-screen health snapshot: server, build freshness, board, worktrees, tunnel, git",
     ),
     cmdRow("show <id>", "Show a task's full spec"),
-    cmdRow("mv <id> <status>", `Move a task to a new status   ${c.dim('flags: --note "..."')}`),
+    cmdRow(
+      "mv <id> <status>",
+      `Move a task to a new status — never merges code   ${c.dim('flags: --note "...", --force-not-merged')}`,
+    ),
     cmdRow('note <id> "<text>"', "Append a free-form note to a task's activity log"),
     cmdRow(
       "update <id>",
@@ -243,11 +246,13 @@ function main(): void {
     case "mv":
     case "move": {
       let note: string | undefined;
+      let force = false;
       const args = rest.slice();
       for (let i = 0; i < args.length; i++) {
         if (args[i] === "--note") note = args[++i];
+        else if (args[i] === "--force-not-merged") force = true;
       }
-      cmdMv(args[0], args[1], note);
+      cmdMv(args[0], args[1], note, { force });
       break;
     }
     case "note":
