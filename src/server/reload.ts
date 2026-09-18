@@ -197,6 +197,8 @@ export class ReloadManager {
   private stopped = false;
   private child: ChildProcess | null = null;
   private childExited = false;
+  private closeOutRequested = false;
+  private closeOutWaiters = new Set<() => void>();
   /** Whether we released our own HTTP listener for the replacement to bind. */
   private drained = false;
   /** Consecutive failed handoffs. Reset on the next successful one. */
@@ -223,6 +225,27 @@ export class ReloadManager {
   /** True while the manager is actively handing over to a replacement process. */
   get isReloading(): boolean {
     return this.reloading;
+  }
+
+  /**
+   * Reserve the close-out window before queueing work. A reload may already
+   * have drained the listener, so the reservation asks it to abort and waits
+   * until the old server has rebound before the close-out can start.
+   */
+  async prepareForCloseOut(): Promise<void> {
+    this.closeOutRequested = true;
+    if (!this.reloading) return;
+    await new Promise<void>((resolve) => this.closeOutWaiters.add(resolve));
+  }
+
+  /** Allow future reloads after the close-out pipeline has released its lock. */
+  releaseCloseOut(): void {
+    this.closeOutRequested = false;
+  }
+
+  private notifyCloseOutWaiters(): void {
+    for (const resolve of this.closeOutWaiters) resolve();
+    this.closeOutWaiters.clear();
   }
 
   /**
@@ -300,7 +323,7 @@ export class ReloadManager {
     // runs build/screenshots/check, all of which would be killed if the server
     // reloaded itself mid-flight. Park the new build and surface it to the UI —
     // the user reloads when they choose (POST /api/server/restart).
-    if (this.options.closingOut()) {
+    if (this.options.closingOut() || this.closeOutRequested) {
       const current = readBuildHash(this.options.root);
       if (this.loadedHash !== null && current !== null && current !== this.loadedHash) {
         this.parkBuild(current);
@@ -334,7 +357,7 @@ export class ReloadManager {
     // A close-out landed a new build on disk: park it for the user instead of
     // reloading under the pipeline that is orchestrating the close-out. This
     // runs even while a busy-deferral is armed — the park supersedes it.
-    if (this.options.closingOut()) {
+    if (this.options.closingOut() || this.closeOutRequested) {
       this.parkBuild(current);
       return;
     }
@@ -405,6 +428,7 @@ export class ReloadManager {
     const entry = this.options.cliEntry();
     if (!entry) {
       this.reloading = false;
+      this.notifyCloseOutWaiters();
       this.log("reload: could not locate the repoos CLI — staying on this build");
       return;
     }
@@ -430,7 +454,11 @@ export class ReloadManager {
           // old process; once it hands over and exits, a later console write
           // in the replacement can hit EPIPE and leave the control port down.
           stdio: ["ignore", "inherit", "inherit"],
-          env: { ...process.env, REPOOS_RELOAD: "1", REPOOS_RELOAD_SECRET: secret },
+          env: {
+            ...process.env,
+            REPOOS_RELOAD: "1",
+            REPOOS_RELOAD_SECRET: secret,
+          },
         },
       );
     } catch (err) {
@@ -459,7 +487,7 @@ export class ReloadManager {
     // process is still alive at the moment of handover. If it died during the
     // sustained-health window or right at confirmation, we must NOT log
     // "replacement is up" or exit — we re-bind and keep serving instead.
-    if (confirmed && !this.childExited && this.options.closingOut()) {
+    if (confirmed && !this.childExited && (this.options.closingOut() || this.closeOutRequested)) {
       // A close-out started while the replacement was warming up. Handing over
       // now would kill the server mid-pipeline (0143), so abort the reload:
       // kill the replacement, re-bind, and park the new build for the user.
@@ -468,6 +496,7 @@ export class ReloadManager {
       await this.killChild();
       const rebound = await this.tryRebind();
       this.reloading = false;
+      this.notifyCloseOutWaiters();
       const current = readBuildHash(this.options.root);
       if (current !== null && this.loadedHash !== null && current !== this.loadedHash) {
         this.parkBuild(current);
@@ -498,6 +527,7 @@ export class ReloadManager {
       await this.killChild();
       const rebound = await this.tryRebind();
       this.reloading = false;
+      this.notifyCloseOutWaiters();
       // Backoff (#0271 incident): a genuine failure to become ready — not a
       // close-out abort, that's handled in the branch above — arms a cooldown
       // so the next AUTOMATIC trigger (poll tick, boot self-heal) doesn't

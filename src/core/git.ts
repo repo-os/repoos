@@ -545,7 +545,12 @@ export function ensureWorktree(
   taskRelPath?: string,
 ): EnsureWorktreeResult {
   if (!isGitRepo(root)) {
-    return { ok: false, path: "", created: false, reason: "not a git repository" };
+    return {
+      ok: false,
+      path: "",
+      created: false,
+      reason: "not a git repository",
+    };
   }
   if (currentBranch(root) === branch) {
     return { ok: true, path: root, created: false };
@@ -815,7 +820,10 @@ export async function resolveWorktreeStatuses(
         const ahead = needAheadFallback
           ? count !== null && Number(count) > 0
           : (aheadCounts.get(job.branch) ?? 0) > 0;
-        statuses.set(job.branch, { path: job.path, dirty: uncommitted || ahead });
+        statuses.set(job.branch, {
+          path: job.path,
+          dirty: uncommitted || ahead,
+        });
         cache.set(job.branch, { head: job.head, uncommitted });
         changed = true;
       }
@@ -1073,10 +1081,16 @@ export function commitNewFile(root: string, absPath: string, message: string): C
     return { ok: false, reason: "not a git repository (is git installed?)" };
   }
   if (git(root, ["add", "-N", "--", relPath]) === null) {
-    return { ok: false, reason: "could not stage the file (mid-merge conflict?)" };
+    return {
+      ok: false,
+      reason: "could not stage the file (mid-merge conflict?)",
+    };
   }
   if (git(root, ["commit", "-o", "-m", message, "--", relPath]) === null) {
-    return { ok: false, reason: "commit failed (unconfigured identity, conflicts, or a hook)" };
+    return {
+      ok: false,
+      reason: "commit failed (unconfigured identity, conflicts, or a hook)",
+    };
   }
   const hash = git(root, ["rev-parse", "--short", "HEAD"]);
   return hash ? { ok: true, hash } : { ok: true };
@@ -1144,7 +1158,12 @@ export async function preflightMerge(
   // with an explicit reason instead — the close-out's `alreadyMerged` handling
   // resumes those retries before this is ever reached (#0130).
   if (!localBranches(root).has(branch)) {
-    return { ok: false, drifted, conflicts: [], reason: `branch \`${branch}\` does not exist` };
+    return {
+      ok: false,
+      drifted,
+      conflicts: [],
+      reason: `branch \`${branch}\` does not exist`,
+    };
   }
 
   let run = await runGit(root, ["merge", "--no-commit", "--no-ff", branch], 60_000);
@@ -1415,7 +1434,12 @@ async function dryRunMergeBranch(
     };
   }
   if (blocking.length > 0) {
-    return { merged: false, ff: false, conflicts: blocking, reason: "merge conflict" };
+    return {
+      merged: false,
+      ff: false,
+      conflicts: blocking,
+      reason: "merge conflict",
+    };
   }
   if (conflicts.length > 0) {
     // Every conflicted path auto-resolves, so the real merge completes cleanly.
@@ -1455,7 +1479,11 @@ async function dryRunMergeBranch(
 export async function mergeBranch(
   root: string,
   branch: string,
-  opts: { autoResolve?: string[]; autoResolveOurs?: string[]; dryRun?: boolean } = {},
+  opts: {
+    autoResolve?: string[];
+    autoResolveOurs?: string[];
+    dryRun?: boolean;
+  } = {},
 ): Promise<MergeBranchResult> {
   if (opts.dryRun) return dryRunMergeBranch(root, branch, opts);
   const head = currentBranch(root);
@@ -1500,7 +1528,9 @@ export async function mergeBranch(
         if (resolved.status !== 0) break;
       }
       const staged = await runGit(root, ["add", "-A", "--", ...conflicts], 10_000);
-      if (staged.status === 0 && git(root, ["commit", "--no-edit"]) !== null) {
+      const commit =
+        staged.status === 0 ? await runGit(root, ["commit", "--no-edit"], 15_000) : null;
+      if (commit?.status === 0) {
         return { merged: true, ff: false, conflicts: [] };
       }
       await runGit(root, ["merge", "--abort"], 4000);
@@ -1512,7 +1542,9 @@ export async function mergeBranch(
         merged: false,
         ff: false,
         conflicts: [],
-        reason: `auto-resolve failed for ${conflicts.join(", ")}`,
+        reason:
+          `auto-resolve failed for ${conflicts.join(", ")}` +
+          (commit && commit.stderr.trim() ? `: ${commit.stderr.trim()}` : ""),
       };
     }
     // A genuine, non-auto-resolvable conflict (or a mix of one with auto-
@@ -1524,7 +1556,12 @@ export async function mergeBranch(
     // unresolved (non-auto-resolvable) paths.
     // Nothing may be left half-applied: back out of the merge entirely.
     await runGit(root, ["merge", "--abort"], 4000);
-    return { merged: false, ff: false, conflicts: blocking, reason: "merge conflict" };
+    return {
+      merged: false,
+      ff: false,
+      conflicts: blocking,
+      reason: "merge conflict",
+    };
   }
   return {
     merged: false,
@@ -1673,7 +1710,12 @@ export function ensureHotfix(
   }
   const head = currentBranch(root);
   if (!head) {
-    return { ok: false, path: root, branch, reason: "could not determine current branch" };
+    return {
+      ok: false,
+      path: root,
+      branch,
+      reason: "could not determine current branch",
+    };
   }
 
   // For branch-mode hotfixes: create the hotfix branch if it doesn't exist,
@@ -1682,11 +1724,21 @@ export function ensureHotfix(
     if (head !== branch) {
       if (!localBranches(root).has(branch)) {
         if (git(root, ["checkout", "-b", branch]) === null) {
-          return { ok: false, path: root, branch, reason: `could not create branch ${branch}` };
+          return {
+            ok: false,
+            path: root,
+            branch,
+            reason: `could not create branch ${branch}`,
+          };
         }
       } else {
         if (git(root, ["checkout", branch]) === null) {
-          return { ok: false, path: root, branch, reason: `could not checkout branch ${branch}` };
+          return {
+            ok: false,
+            path: root,
+            branch,
+            reason: `could not checkout branch ${branch}`,
+          };
         }
       }
     }

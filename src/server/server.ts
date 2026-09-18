@@ -376,7 +376,10 @@ function usableOriginCertificate(path: string): boolean {
 function serviceRunning(): boolean {
   try {
     if (process.platform === "darwin") {
-      const out = execFileSync("launchctl", ["list"], { encoding: "utf8", timeout: 2000 });
+      const out = execFileSync("launchctl", ["list"], {
+        encoding: "utf8",
+        timeout: 2000,
+      });
       return out
         .split("\n")
         .some((line) => line.includes("com.cloudflare.cloudflared") && /^\s*\d+\s+/.test(line));
@@ -703,7 +706,12 @@ function manifestFor(root: string): string {
       icons: [
         { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
         { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
-        { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+        {
+          src: "/icons/icon-512.png",
+          sizes: "512x512",
+          type: "image/png",
+          purpose: "maskable",
+        },
       ],
     },
     null,
@@ -879,6 +887,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     },
     release: () => {
       closeOutInProgress = false;
+      reload?.releaseCloseOut();
     },
   };
 
@@ -1178,7 +1187,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       if (pmTaskId) {
         clearPmChatSession(e.id);
         if (!isPmWorking(pmTaskId)) {
-          emitEvent({ type: "task.pmFinished", id: pmTaskId, at: new Date().toISOString() });
+          emitEvent({
+            type: "task.pmFinished",
+            id: pmTaskId,
+            at: new Date().toISOString(),
+          });
         }
       }
       if (pendingReview.delete(e.id)) {
@@ -1288,7 +1301,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         // the port and owns the process lifecycle. Never a parallel implementation.
         // The agent request has no picker, so it opts into the first match when
         // the area is ambiguous (#0379) — the label below makes the pick visible.
-        const result = await previews.start(task, undefined, { allowAmbiguous: true });
+        const result = await previews.start(task, undefined, {
+          allowAmbiguous: true,
+        });
         if (!result.ok) {
           runner.system(
             request.taskId,
@@ -1504,7 +1519,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         })
         .catch((err: any) => {
           console.error(`[built-in-agents] scheduled run of "${name}" failed:`, err);
-          logger.agent(name, "error", `Built-in agent run failed`, { error: String(err) });
+          logger.agent(name, "error", `Built-in agent run failed`, {
+            error: String(err),
+          });
         })
         .finally(() => {
           builtInRun.inFlight = false;
@@ -1732,7 +1749,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
    */
   async function syncTaskBranch(task: Task): Promise<SyncResult> {
     const rel = relative(config.root, task.absPath);
-    const result = await syncBranchWithMain(config.root, task.branch, { autoResolve: [rel] });
+    const result = await syncBranchWithMain(config.root, task.branch, {
+      autoResolve: [rel],
+    });
     const wtPath = worktreePathForBranch(config.root, task.branch);
 
     const setNeedsMerge = async (value: boolean): Promise<void> => {
@@ -1749,7 +1768,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       if (wtPath) {
         const wtAbsPath = join(wtPath, task.path);
         if (existsSync(wtAbsPath)) {
-          patchTaskFile({ ...config, root: wtPath }, wtAbsPath, { needsMerge: value });
+          patchTaskFile({ ...config, root: wtPath }, wtAbsPath, {
+            needsMerge: value,
+          });
         }
       }
     };
@@ -1837,7 +1858,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       return json(res, 400, { error: "pid must be a positive integer" });
     }
     if (pid === process.pid) {
-      return json(res, 400, { error: "refusing to kill the control-plane process itself" });
+      return json(res, 400, {
+        error: "refusing to kill the control-plane process itself",
+      });
     }
     // Only ever kill a PID RepoOS itself is currently tracking — a fresh
     // sample, not the client's say-so, is what authorizes the kill. This is
@@ -1851,7 +1874,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     const known = new Set(stats.processes.map((p) => p.pid));
     for (const p of stats.serve?.processes ?? []) known.add(p.pid);
     if (!known.has(pid)) {
-      return json(res, 404, { error: `pid ${pid} is not a RepoOS-tracked process` });
+      return json(res, 404, {
+        error: `pid ${pid} is not a RepoOS-tracked process`,
+      });
     }
     const ok = killTrackedProcess(pid);
     return json(res, ok ? 200 : 404, ok ? { ok: true } : { error: "process was already gone" });
@@ -1867,8 +1892,18 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/system/run-tests", (_ctx, _req, res) => {
     const result = testRuns.start(
       config,
-      (chunk) => emitEvent({ type: "test-run.output", chunk, at: new Date().toISOString() }),
-      (code) => emitEvent({ type: "test-run.done", code, at: new Date().toISOString() }),
+      (chunk) =>
+        emitEvent({
+          type: "test-run.output",
+          chunk,
+          at: new Date().toISOString(),
+        }),
+      (code) =>
+        emitEvent({
+          type: "test-run.done",
+          code,
+          at: new Date().toISOString(),
+        }),
     );
     if (!result.ok) return json(res, 409, { error: result.reason });
     emitEvent({ type: "test-run.started", at: new Date().toISOString() });
@@ -1891,7 +1926,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // the Debug tab (0310). The currently-running entry (if any) streams its
   // output live over the existing SSE bus as task-check.* events.
   router.register("GET", /^\/api\/tasks\/([^/]+)\/checks$/, (_ctx, _req, res, params) => {
-    return json(res, 200, { ok: true, runs: taskChecks.getRuns(params.param1) });
+    return json(res, 200, {
+      ok: true,
+      runs: taskChecks.getRuns(params.param1),
+    });
   });
   router.register("GET", /^\/api\/tasks\/([^/]+)\/stats$/, getTaskStats);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/diff-stats$/, getDiffStatsForTask);
@@ -2018,7 +2056,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       try {
         const result = await runBuiltInAgent(agentName, cfg, logger);
         if (!result) {
-          return json(res, 404, { error: `Unknown built-in agent: ${agentName}` });
+          return json(res, 404, {
+            error: `Unknown built-in agent: ${agentName}`,
+          });
         }
         ctx.index.refreshAll();
         return json(res, 200, {
@@ -2216,7 +2256,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           return json(res, 503, { error: "Supervisor not available" });
         }
         void supervisor.runCycle();
-        return json(res, 202, { ok: true, message: "Supervisor check started" });
+        return json(res, 202, {
+          ok: true,
+          message: "Supervisor check started",
+        });
       }
 
       // Create the route context with all necessary dependencies
@@ -2286,7 +2329,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           res.end(readFileSync(indexPath, "utf8"));
           return;
         }
-        return json(res, 500, { error: "UI asset not found — run `bun run build`" });
+        return json(res, 500, {
+          error: "UI asset not found — run `bun run build`",
+        });
       }
 
       return json(res, 404, { error: "Not found", path });

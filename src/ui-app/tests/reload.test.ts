@@ -181,8 +181,12 @@ async function makeFixture(): Promise<Fixture> {
   writeFileSync(join(bin, "repoos"), FAKEBIN, { mode: 0o755 });
   writeFileSync(join(bin, "repoos-dead"), FAKEBIN_DEAD, { mode: 0o755 });
   writeFileSync(join(bin, "repoos-flash"), FAKEBIN_FLASH, { mode: 0o755 });
-  writeFileSync(join(bin, "repoos-descendant"), FAKEBIN_WITH_DESCENDANT, { mode: 0o755 });
-  writeFileSync(join(bin, "repoos-never-confirm"), FAKEBIN_NEVER_CONFIRM, { mode: 0o755 });
+  writeFileSync(join(bin, "repoos-descendant"), FAKEBIN_WITH_DESCENDANT, {
+    mode: 0o755,
+  });
+  writeFileSync(join(bin, "repoos-never-confirm"), FAKEBIN_NEVER_CONFIRM, {
+    mode: 0o755,
+  });
   writeFileSync(join(bin, "repoos-idle"), FAKEBIN_IDLE, { mode: 0o755 });
   const port = await reservePort();
   return {
@@ -368,7 +372,10 @@ describe("ReloadManager", () => {
     // (that is the parent's job — it would race the handover). bootSelfHeal is
     // the only trigger here: the watcher/timer are never started (the poll would
     // be a red herring — a real replacement boots with a fresh loadedHash).
-    const { manager } = makeManager(fx, { isReplacement: true, pollMs: 100_000 });
+    const { manager } = makeManager(fx, {
+      isReplacement: true,
+      pollMs: 100_000,
+    });
     try {
       manager.bootSelfHeal();
       await sleep(250);
@@ -383,7 +390,9 @@ describe("ReloadManager", () => {
     const fx = await makeFixture();
     process.env.REPOOS_RELOAD_FAKE_LOG = fx.log;
     let busy = true;
-    const { manager, calls } = makeManager(fx, { isBusy: () => (busy ? 1 : 0) });
+    const { manager, calls } = makeManager(fx, {
+      isBusy: () => (busy ? 1 : 0),
+    });
     try {
       manager.start();
       // Write a new build hash so the reload actually fires (not not-stale).
@@ -495,6 +504,7 @@ describe("ReloadManager", () => {
         available = hash;
       },
     });
+
     try {
       manager.start();
       writeFileSync(
@@ -517,6 +527,30 @@ describe("ReloadManager", () => {
       manager.requestReload("manual restart");
       await waitFor(() => calls.confirmed > 0, "manual restart applies parked build");
       expect(spawns(fx)).toHaveLength(1);
+    } finally {
+      await killReplacement(fx);
+      manager.stop();
+      fx.clean();
+    }
+  });
+
+  it("aborts an in-flight handover before a close-out starts", async () => {
+    const fx = await makeFixture();
+    process.env.REPOOS_RELOAD_FAKE_LOG = fx.log;
+    const { manager, calls } = makeManager(fx, { confirmMs: 500 });
+    try {
+      writeFileSync(
+        join(fx.repo, "dist", ".build-info.json"),
+        JSON.stringify({ hash: "hash-closeout-race" }),
+      );
+      expect(manager.requestReload("test").state).toBe("reloading");
+      await waitFor(() => spawns(fx).length === 1, "replacement spawn");
+
+      await manager.prepareForCloseOut();
+      expect(calls.confirmed).toBe(0);
+      expect(calls.reListen).toBeGreaterThan(0);
+
+      manager.releaseCloseOut();
     } finally {
       await killReplacement(fx);
       manager.stop();
@@ -560,7 +594,10 @@ describe("ReloadManager", () => {
       expect(manager.buildAvailable).toBeNull();
       writeFileSync(
         join(fx.repo, "dist", ".build-info.json"),
-        JSON.stringify({ hash: "hash-closeout", generatedAt: "2026-08-13T12:00:00.000Z" }),
+        JSON.stringify({
+          hash: "hash-closeout",
+          generatedAt: "2026-08-13T12:00:00.000Z",
+        }),
       );
       manager.requestReload("manual restart");
       expect(available).toBe("hash-closeout");
@@ -1307,7 +1344,9 @@ describe("POST /api/server/restart", () => {
   it.skip("returns a reload state from the running server", async () => {
     const server = await startServer({ host: "127.0.0.1", port: 0 });
     try {
-      const res = await fetch(`${server.url}/api/server/restart`, { method: "POST" });
+      const res = await fetch(`${server.url}/api/server/restart`, {
+        method: "POST",
+      });
       expect(res.status).toBe(200);
       const body = (await res.json()) as { state: string };
       expect(["reloading", "deferred", "not-stale"]).toContain(body.state);
