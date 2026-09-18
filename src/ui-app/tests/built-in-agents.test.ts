@@ -19,6 +19,7 @@ import {
   scanForDesignIssues,
   generateDesignReport,
   runDesignAgent,
+  normalizeDesignFindingCategory,
   scanForDocsDebt,
   applyDocsDebtFixes,
   createDocsDebtTask,
@@ -27,11 +28,13 @@ import {
   MAX_TRIVIAL_FIXES_PER_RUN,
   TechDebtError,
   PerformanceError,
+  DesignError,
   DocsDebtError,
   normalizeTechDebtIssueType,
   normalizeArchitectureIssueType,
   type TechDebtIssue,
   type PerformanceIssue,
+  type DesignScanResult,
 } from "../../server/built-in-agents.js";
 import {
   loadConfig,
@@ -527,107 +530,196 @@ describe("createPerformanceTasks", () => {
   });
 });
 
-describe("scanForDesignIssues", () => {
-  it("returns a scan result with scanned file counts", async () => {
-    const root = makeRepo({
-      "src/ui-app/src/views/Home.vue": "<template><div>Hello</div></template>",
-    });
-    const result = await scanForDesignIssues(configFor(root));
-    expect(result.scannedFiles).toBe(1);
-    expect(Array.isArray(result.findings)).toBe(true);
-  });
-
-  it("flags hardcoded inline styles as UI bugs on vue files", async () => {
-    const root = makeRepo({
-      "src/ui-app/src/views/Page.vue": '<div style="color: red; background: blue">Hi</div>',
-    });
-    const result = await scanForDesignIssues(configFor(root));
-    const bugs = result.findings.filter(
-      (f) => f.category === "ui-bug" && f.description.includes("inline style"),
+describe("scanForDesignIssues (skill-guided)", () => {
+  it("converts runner findings into design findings and reports the files reviewed", async () => {
+    const root = makeRepo({ "package.json": "{}" });
+    vi.mocked(runSkillGuidedAgent).mockResolvedValue(
+      runnerResult({
+        scannedFiles: 7,
+        findings: [
+          {
+            type: "ui-bug",
+            file: "src/components/Card.tsx",
+            line: 12,
+            description: "Card overflows its container on narrow viewports",
+            evidence: "Fixed widths break the layout at small sizes",
+            recommendation: "Use a responsive grid",
+            severity: "medium",
+          },
+          {
+            type: "something-weird",
+            file: "src/components/Card.tsx",
+            description: "Inconsistent spacing between cards",
+            severity: "low",
+          },
+        ],
+      }),
     );
-    expect(bugs.length).toBeGreaterThan(0);
-    expect(bugs[0].file).toBe("views/Page.vue");
-    expect(bugs[0].recommendation).toContain("theme");
-  });
 
-  it("flags click handlers on non-interactive elements", async () => {
-    const root = makeRepo({
-      "src/ui-app/src/components/Item.vue": '<div @click="select()">Item</div>',
+    const result = await scanForDesignIssues(configFor(root));
+
+    expect(runSkillGuidedAgent).toHaveBeenCalledOnce();
+    const [agentName, , skillDoc] = vi.mocked(runSkillGuidedAgent).mock.calls[0];
+    expect(agentName).toBe("design");
+    expect(skillDoc).toContain("UI/UX design review");
+    expect(result.scannedFiles).toBe(7);
+    expect(result.noUiDetected).toBe(false);
+    expect(result.findings).toHaveLength(2);
+    expect(result.findings[0]).toMatchObject({
+      category: "ui-bug",
+      file: "src/components/Card.tsx",
+      line: 12,
+      rationale: "Fixed widths break the layout at small sizes",
     });
-    const result = await scanForDesignIssues(configFor(root));
-    const friction = result.findings.filter(
-      (f) => f.category === "ux-friction" && f.description.includes("@click"),
-    );
-    expect(friction.length).toBeGreaterThan(0);
-    expect(friction[0].recommendation).toContain("role");
+    expect(result.findings[1].category).toBe("design-recommendation");
   });
 
-  it("flags inputs without a label or aria-label", async () => {
-    const root = makeRepo({
-      "src/ui-app/src/components/Form.vue": '<input type="text" />',
-    });
-    const result = await scanForDesignIssues(configFor(root));
-    const friction = result.findings.filter(
-      (f) => f.category === "ux-friction" && f.description.includes("input"),
-    );
-    expect(friction.length).toBeGreaterThan(0);
+  it("normalizes free-form model categories into real buckets", () => {
+    expect(normalizeDesignFindingCategory("ui-bug")).toBe("ui-bug");
+    expect(normalizeDesignFindingCategory("accessibility-issue")).toBe("ux-friction");
+    expect(normalizeDesignFindingCategory("keyboard-trap")).toBe("ux-friction");
+    expect(normalizeDesignFindingCategory("layout-overflow")).toBe("ui-bug");
+    expect(normalizeDesignFindingCategory("polish")).toBe("design-recommendation");
   });
 
-  it("flags v-html usage as a ui-bug", async () => {
-    const root = makeRepo({
-      "src/ui-app/src/components/Blob.vue": '<div v-html="html"></div>',
-    });
-    const result = await scanForDesignIssues(configFor(root));
-    const bugs = result.findings.filter(
-      (f) => f.category === "ui-bug" && f.description.includes("v-html"),
+  it("reports 'no web UI detected' clearly instead of a silent zero", async () => {
+    const root = makeRepo({ "src/cli.ts": "export const a = 1;" });
+    vi.mocked(runSkillGuidedAgent).mockResolvedValue(
+      runnerResult({
+        scannedFiles: 3,
+        findings: [
+          {
+            type: "no-ui-detected",
+            description: "No front-end framework dependency and no HTML/CSS sources",
+            severity: "low",
+          },
+        ],
+      }),
     );
-    expect(bugs.length).toBeGreaterThan(0);
-  });
 
-  it("analyzes nothing (empty findings) when src/ui-app is absent", async () => {
-    const root = makeRepo({ "src/other.ts": "export const a = 1;" });
     const result = await scanForDesignIssues(configFor(root));
-    expect(result.scannedFiles).toBe(0);
+
+    expect(result.noUiDetected).toBe(true);
     expect(result.findings).toHaveLength(0);
+    expect(result.scannedFiles).toBe(3);
+    expect(result.insights.join(" ")).toMatch(/No web UI detected/);
+  });
+
+  it("throws a named DesignError when the model run fails", async () => {
+    const root = makeRepo({ "package.json": "{}" });
+    vi.mocked(runSkillGuidedAgent).mockResolvedValue(
+      runnerResult({ ok: false, error: "connector quota exceeded" }),
+    );
+
+    await expect(scanForDesignIssues(configFor(root))).rejects.toThrow(DesignError);
+    await expect(scanForDesignIssues(configFor(root))).rejects.toThrow(/quota/i);
+  });
+
+  it("caps findings per category so a verbose model run can't flood the report", async () => {
+    // Regression: the old deterministic scan capped findings per category at
+    // 8; the skill-guided migration dropped that guardrail, so a rambling
+    // model could return an unbounded number of findings straight into the
+    // report and the created task.
+    const root = makeRepo({ "package.json": "{}" });
+    const manyUiBugs = Array.from({ length: 40 }, (_, i) => ({
+      type: "ui-bug",
+      file: `src/components/Card${i}.tsx`,
+      description: `Issue number ${i}`,
+      severity: "low" as const,
+    }));
+    vi.mocked(runSkillGuidedAgent).mockResolvedValue(
+      runnerResult({ scannedFiles: 40, findings: manyUiBugs }),
+    );
+
+    const result = await scanForDesignIssues(configFor(root));
+
+    expect(result.findings).toHaveLength(25);
+    expect(result.findings.every((f) => f.category === "ui-bug")).toBe(true);
   });
 });
 
 describe("generateDesignReport", () => {
   it("writes a timestamped markdown report with the Design_report_YYYY-MM-DD-HHMM name", async () => {
-    const root = makeRepo({ "src/ui-app/src/views/Page.vue": '<div style="color:red">x</div>' });
-    const scan = await scanForDesignIssues(configFor(root));
+    const root = makeRepo({});
+    const scan: DesignScanResult = {
+      scannedFiles: 5,
+      insights: ["Reviewed the repository for web UI sources; 5 files were included."],
+      findings: [
+        {
+          category: "ui-bug",
+          file: "src/components/Card.tsx",
+          line: 12,
+          description: "Card overflows its container",
+          rationale: "Fixed widths break narrow layouts",
+          recommendation: "Use a responsive grid",
+          severity: "medium",
+        },
+      ],
+    };
     const { reportPath, fileName } = await generateDesignReport(configFor(root), scan);
     expect(fileName).toMatch(/^Design_report_\d{4}-\d{2}-\d{2}-\d{4}\.md$/);
     expect(reportPath).toContain(join("docs", "agents", "Design"));
     const content = readFileSync(reportPath, "utf8");
     expect(content).toContain("# UI/UX Design Review Report");
     expect(content).toContain("UI Bugs");
+    expect(content).toContain("Card overflows its container");
   });
 
-  it("produces a readable report even with no findings", async () => {
-    const root = makeRepo({ "src/other.ts": "export const a = 1;" });
-    const scan = await scanForDesignIssues(configFor(root));
+  it("produces a readable report with no findings when the UI is clean", async () => {
+    const root = makeRepo({});
+    const scan: DesignScanResult = { scannedFiles: 9, insights: [], findings: [] };
     const { reportPath } = await generateDesignReport(configFor(root), scan);
     const content = readFileSync(reportPath, "utf8");
     expect(content).toContain("No significant UI/UX issues detected");
+    expect(content).toContain("Web UI Detected**: Yes");
+  });
+
+  it("says plainly when no web UI was detected", async () => {
+    const root = makeRepo({});
+    const scan: DesignScanResult = {
+      scannedFiles: 3,
+      insights: ["No web UI detected in this repository"],
+      findings: [],
+      noUiDetected: true,
+    };
+    const { reportPath } = await generateDesignReport(configFor(root), scan);
+    const content = readFileSync(reportPath, "utf8");
+    expect(content).toContain("No web UI detected in this repository");
+    expect(content).toContain("Web UI Detected**: No");
+    expect(content).not.toContain("No significant UI/UX issues detected");
   });
 });
 
 describe("runDesignAgent", () => {
   it("runs the pipeline, writes the report, and records lastRunAt", async () => {
-    const root = makeRepo({
-      "src/ui-app/src/views/Page.vue": '<div style="color:red">x</div>',
-    });
-    const config = configFor(root);
+    const root = makeRepo({ "package.json": "{}" });
+    vi.mocked(runSkillGuidedAgent).mockResolvedValue(
+      runnerResult({
+        scannedFiles: 4,
+        findings: [
+          {
+            type: "ux-friction",
+            file: "src/App.tsx",
+            line: 3,
+            description: "Icon-only button has no accessible name",
+            evidence: "Screen readers announce nothing",
+            recommendation: "Add aria-label",
+            severity: "medium",
+          },
+        ],
+      }),
+    );
+
+    const config = configFor(root, { builtInAgents: { design: { enabled: true } } });
     const result = await runDesignAgent(config);
 
-    expect(result.findingsFound).toBeGreaterThan(0);
-    expect(result.scannedFiles).toBeGreaterThan(0);
+    expect(result.findingsFound).toBe(1);
+    expect(result.scannedFiles).toBe(4);
     expect(result.created).toBe(0);
     expect(result.failed).toBe(0);
 
     expect(result.fileName).toMatch(/^Design_report_\d{4}-\d{2}-\d{2}-\d{4}\.md$/);
-    expect(readFileSync(result.reportPath, "utf8")).toContain("UI Bugs");
+    expect(readFileSync(result.reportPath, "utf8")).toContain("UX Friction");
 
     const persisted = loadBuiltInAgentsConfig(root);
     expect(persisted?.["design"]?.lastRunAt).toBeTruthy();

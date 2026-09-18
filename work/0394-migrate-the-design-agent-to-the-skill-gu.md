@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-17T19:00:39Z"
-review_passes: 1
 id: "0394"
 title: Migrate the Design Agent to the skill-guided runner
 type: feature
-status: review
+status: done
 priority: p1
 area: server
 assigned_to: ai
@@ -13,6 +11,9 @@ branch: feat/migrate-the-design-agent-to-the-skill-gu
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-17T14:03:53Z"
+updated_at: "2026-09-18T04:35:07Z"
+merge_conflict_retry_count: 1
+review_passes: 1
 ---
 ## Problem
 
@@ -51,4 +52,4 @@ Replace the deterministic scan with a call through #0389's shared runner, driven
 - 2026-09-17T18:49:43Z · model_override
 - 2026-09-17T18:49:44Z · status ready→active, branch
 - 2026-09-17T18:56:40Z · status active→review
-
+- 2026-09-18T04:35:07Z · status review→done, release:success

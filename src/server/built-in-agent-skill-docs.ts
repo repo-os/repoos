@@ -147,6 +147,90 @@ Uses of APIs, patterns, or language features that are outdated or discouraged.
 `;
 
 /**
+ * Guidance for the Design Agent. Deliberately does not name a framework or a
+ * source path: the agent first works out from the repo's own manifests and
+ * structure whether it has a web UI at all and where the sources live, then
+ * reviews them. This is what replaces the old scan hardcoded to
+ * `src/ui-app/src/**\/*.vue`.
+ */
+export const DESIGN_SKILL_DOC = `# UI/UX design review
+
+You are reviewing this repository's **web UI** for design quality — layout,
+styling consistency, accessibility, and interaction-flow quality. Do not assume
+a framework or a folder layout. First work out from the repository itself
+whether it has a web UI at all, and where its sources actually live.
+
+## Find the web UI first
+
+- Read manifests and lockfiles (\`package.json\`, \`bun.lock\`, \`pnpm-lock.yaml\`,
+  \`yarn.lock\`, \`pom.xml\`, \`build.gradle\`, \`*.csproj\`, \`pubspec.yaml\`,
+  \`Gemfile\`, …) and the directory tree for front-end tooling or frameworks:
+  React, Vue, Svelte, Solid, Angular, Astro, Preact, Lit, Alpine, or plain
+  HTML/CSS/JS.
+- Sources commonly sit under \`src/\`, \`app/\`, \`pages/\`, \`components/\`,
+  \`views/\`, \`frontend/\`, \`web/\`, \`client/\`, \`ui/\`, \`apps/*/\`, or a static
+  \`public/\`/\`assets/\` tree — but treat these as hints, not a rulebook. Follow
+  what this repository actually uses, whatever its layout or language.
+- If the repository is a library, CLI, server, or data pipeline with no web UI
+  (no front-end framework dependency and no HTML/CSS/template sources), do not
+  invent a review. Return a single finding whose \`type\` is exactly
+  \`no-ui-detected\`, with a short \`description\` naming what you looked at and a
+  \`severity\` of \`low\`. Return no other findings in that case.
+
+## What to review
+
+Once you have found the UI, judge it in these terms. Every finding's \`type\`
+must be exactly one of these three values:
+
+### \`ui-bug\`
+Something that demonstrably renders or behaves wrongly.
+- Layout that breaks at common widths (overflow, overlap, clipping, fixed
+  heights that cut content off).
+- Styling that bypasses the project's own design system: hardcoded colors,
+  inline styles, or magic pixel values where tokens/variables exist.
+- Contrast or theming failures (text unreadable on its background, a component
+  that ignores the light/dark theme).
+- Broken or missing states: loading, empty, error, disabled.
+
+### \`ux-friction\`
+An interaction that is hard or confusing to use.
+- Interactive elements unreachable or inoperable by keyboard (a click handler
+  on a \`div\`/\`span\` with no role or tabindex), missing focus styles, or a
+  focus order that jumps.
+- Controls without an accessible name: icon-only buttons, inputs with no label,
+  images with no alt text.
+- Unclear destructive/primary actions, missing confirmation, or no feedback
+  telling the user what happened.
+- Confusing navigation, or a call-to-action that does not say what it does.
+
+### \`design-recommendation\`
+A concrete improvement that is not a defect.
+- Inconsistent spacing, typography, or component styling across similar
+  screens.
+- Overly large or duplicated components that should be split or extracted.
+- Opportunities to reuse an existing design-system primitive instead of
+  re-implementing it.
+- Missing UI or states that should exist (e.g. an empty state, a mobile
+  layout).
+
+## How to review
+
+- Read the actual UI source for each finding; do not report from a filename
+  alone. Cite the repo-relative \`file\` and the \`line\` where the issue starts.
+- Ground each finding: put the UI/UX best practice it violates in \`evidence\`,
+  and a concrete, actionable \`recommendation\` naming the file/component to
+  change.
+- Prefer a few high-confidence findings over a long speculative list. If the UI
+  is already clean, return an empty findings list. Do not invent issues to fill
+  a quota.
+- Ignore generated/vendored code, \`node_modules\`, build output, lockfiles and
+  test fixtures unless the fixture is the product.
+- Do **not** report performance, architecture, dependency, or docs issues —
+  those belong to other agents.
+- This agent only reports; it never edits UI source.
+`;
+
+/**
  * Guidance for the Architect Agent. Describes what "architecture" means in a
  * language-agnostic way so the agent reasons about whatever the repo is
  * actually written in, not a JS/TS-only extension list.
