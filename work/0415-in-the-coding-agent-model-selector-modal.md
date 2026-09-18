@@ -2,7 +2,7 @@
 id: "0415"
 title: Rank favorited models by most recently used in model selector
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: ""
 review_model_override: opencode-go/hy3
 created_at: "2026-09-18T14:19:22Z"
-updated_at: "2026-09-18T14:38:45Z"
+updated_at: "2026-09-18T14:38:46Z"
 ---
 ## Problem
 
@@ -55,3 +55,4 @@ In the coding agent + model selector modal I want to rank favorited models by mo
 - 2026-09-18T14:19:22Z · screenshots
 - 2026-09-18T14:19:38Z · status draft→inbox, title, area, body
 - 2026-09-18T14:38:45Z · review_model_override
+- 2026-09-18T14:38:46Z · status inbox→ready
