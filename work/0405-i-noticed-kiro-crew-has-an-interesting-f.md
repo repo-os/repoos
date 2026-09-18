@@ -3,8 +3,6 @@ id: "0405"
 title: Auto-suggest reusable skills from completed task sessions
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
 priority: p2
 area: core
 assigned_to: ai
@@ -13,7 +11,7 @@ branch: feat/auto-suggest-reusable-skills-from-comple
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-18T06:54:58Z"
-updated_at: "2026-09-18T07:21:51Z"
+updated_at: "2026-09-18T07:21:52Z"
 dev_error_count: 2
 ---
 ## Problem
@@ -89,3 +87,4 @@ Analyze each completed session and draft a reusable SKILL.md when a non-trivial 
 - 2026-09-18T07:13:25Z · agent exited with an error (kiro) · Error: Internal error
 - 2026-09-18T07:21:45Z · cli_override
 - 2026-09-18T07:21:51Z · model_override
+- 2026-09-18T07:21:52Z · needs_input
