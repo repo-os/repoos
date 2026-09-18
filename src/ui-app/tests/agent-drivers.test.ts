@@ -461,6 +461,10 @@ describe("claude code driver", () => {
             "--allow-tool",
             "write",
             "shell(git:*)",
+            // The gate and single-file test runs; without these Copilot's
+            // --no-ask-user denies them and the engineer can't hand off (#0412).
+            "shell(repoos:*)",
+            "shell(bunx:*)",
           ]),
         );
         expect(run.args).not.toEqual(

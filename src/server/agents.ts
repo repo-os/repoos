@@ -2143,11 +2143,24 @@ const CODEX_SANDBOX_ARGS = [
   "sandbox_workspace_write.network_access=true",
 ];
 
+/**
+ * Copilot runs with --no-ask-user, so any shell command not on this list is
+ * denied outright ("Permission denied and could not request permission").
+ * `repoos` and `bunx` must be here: the mission requires `repoos check`, and
+ * this repo runs single test files and tools via `bunx` — without them the
+ * engineer can't reach a green gate and stops without a handoff (#0412).
+ * Verified live: `shell(repoos:*)` also covers `REPOOS_CHECK_CHANGED=main
+ * repoos check`.
+ */
 const COPILOT_TOOL_PERMISSIONS = [
   "--allow-tool",
   "write",
   "--allow-tool",
   "shell(bun:*)",
+  "--allow-tool",
+  "shell(bunx:*)",
+  "--allow-tool",
+  "shell(repoos:*)",
   "--allow-tool",
   "shell(node:*)",
   "--allow-tool",
