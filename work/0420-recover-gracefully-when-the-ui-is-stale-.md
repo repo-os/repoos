@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-18T17:12:43Z"
+review_passes: 1
 id: "0420"
 title: Recover gracefully when the UI is stale after a rebuild
 type: bug
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: ""
 branch: feat/recover-gracefully-when-the-ui-is-stale-
 created_at: "2026-09-18T15:33:49Z"
-updated_at: "2026-09-18T17:10:28Z"
 ---
 ---
 ## Problem
@@ -56,3 +57,4 @@ RepoOS should detect stale UI/build state and recover with clear user feedback i
 - 2026-09-18T17:00:00Z · status inbox→ready
 - 2026-09-18T17:00:03Z · status ready→active, branch
 - 2026-09-18T17:10:28Z · status active→review
+
