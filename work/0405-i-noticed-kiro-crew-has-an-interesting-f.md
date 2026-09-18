@@ -10,8 +10,10 @@ created_by: hello@repoos.org
 branch: feat/auto-suggest-reusable-skills-from-comple
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
+review_cli_override: github copilot
+review_model_override: default
 created_at: "2026-09-18T06:54:58Z"
-updated_at: "2026-09-18T09:08:36Z"
+updated_at: "2026-09-18T09:59:10Z"
 handoff_signal_retry_count: 1
 dev_error_count: 3
 ---
@@ -91,3 +93,4 @@ Analyze each completed session and draft a reusable SKILL.md when a non-trivial 
 - 2026-09-18T07:21:52Z · needs_input
 - 2026-09-18T08:45:10Z · agent exited with an error (opencode) · [91m[1mError: [0mSession not found
 - 2026-09-18T09:08:36Z · needs_input
+- 2026-09-18T09:59:10Z · review_cli_override, review_model_override
