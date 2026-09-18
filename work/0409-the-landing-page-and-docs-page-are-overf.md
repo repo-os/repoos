@@ -20,8 +20,10 @@ the landing page and docs page are overflowing horizontally on mobile. please fi
 ## Screenshots
 
 ![photo_2026-09-18-11.30.49](/api/tasks/0409/attachments/screenshot-1.jpg)
+![photo_2026-09-18-11.30.34](/api/tasks/0409/attachments/screenshot-2.jpg)
 
 ## Activity
 
 - 2026-09-18T11:21:42Z · created · hello@repoos.org
+- 2026-09-18T11:21:42Z · screenshots
 - 2026-09-18T11:21:42Z · screenshots
