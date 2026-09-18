@@ -255,20 +255,31 @@ export function finalizeFreeformRun(
       { onStatusChange: deps.onServerStatusChange },
     );
     index.applyFileChange(updated.absPath);
-    logger.task(taskId, "info", "PM agent fleshed out draft task", { title: updated.title });
+    logger.task(taskId, "info", "PM agent fleshed out draft task", {
+      title: updated.title,
+    });
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
     logger.task(taskId, "warn", "PM agent update failed; keeping draft with original prompt", {
       reason,
     });
-    emitEvent({ type: "task.aiCreateFailed", id: taskId, reason, at: new Date().toISOString() });
+    emitEvent({
+      type: "task.aiCreateFailed",
+      id: taskId,
+      reason,
+      at: new Date().toISOString(),
+    });
   } finally {
     // 0335: cleared on EVERY exit path so the indicator can never get stuck.
     // 0381: a live PM chat session on this task keeps the flag up.
     clearPmWorking(taskId);
     cleanupFreeformWorktree(config, run.pmWorktreeBranch);
     if (!isPmWorking(taskId)) {
-      emitEvent({ type: "task.pmFinished", id: taskId, at: new Date().toISOString() });
+      emitEvent({
+        type: "task.pmFinished",
+        id: taskId,
+        at: new Date().toISOString(),
+      });
     }
   }
 }
@@ -366,7 +377,9 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
           skipped.push(att.name);
           continue;
         }
-        const updated = patchTaskFile(config, created.absPath, { addScreenshot: result });
+        const updated = patchTaskFile(config, created.absPath, {
+          addScreenshot: result,
+        });
         index.applyFileChange(updated.absPath);
         carried++;
       }
@@ -424,7 +437,11 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
   // the task panel. Cleared in `finalizeFreeformRun` on every exit path below
   // so a failed run can never leave the task looking like it is still worked.
   markPmWorking(created.id);
-  emitEvent({ type: "task.pmWorking", id: created.id, at: new Date().toISOString() });
+  emitEvent({
+    type: "task.pmWorking",
+    id: created.id,
+    at: new Date().toISOString(),
+  });
 
   // Spawn the PM agent as a durable, detached run (#0403). The response is
   // returned immediately so the user gets their draft right away; completion
@@ -511,7 +528,11 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
         onServerStatusChange: ctx.onServerStatusChange,
       },
       record,
-      { ok: false, error: startRes.reason ?? "could not launch the PM agent", elapsedMs: 0 },
+      {
+        ok: false,
+        error: startRes.reason ?? "could not launch the PM agent",
+        elapsedMs: 0,
+      },
     );
     return json(res, 201, {
       ok: true,
@@ -660,12 +681,18 @@ export const uploadScreenshot: RouteHandler = async (ctx, req, res, params) => {
   if (!task) {
     return json(res, 404, { error: `Task #${taskId} not found` });
   }
-  const body = (await readBody(req)) as { name?: unknown; mime?: unknown; data?: unknown };
+  const body = (await readBody(req)) as {
+    name?: unknown;
+    mime?: unknown;
+    data?: unknown;
+  };
   const result = saveScreenshot(config, task, body ?? {});
   if ("error" in result) {
     return json(res, 400, { error: result.error });
   }
-  const updated = patchTaskFile(config, task.absPath, { addScreenshot: result });
+  const updated = patchTaskFile(config, task.absPath, {
+    addScreenshot: result,
+  });
   index.applyFileChange(updated.absPath);
   return json(res, 201, { ok: true, attachment: result });
 };
@@ -735,7 +762,10 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         error: "No enabled engineer agent is configured on the Agents page",
       });
     }
-    const body = (await readBody(req)) as { mode?: unknown; instruction?: unknown };
+    const body = (await readBody(req)) as {
+      mode?: unknown;
+      instruction?: unknown;
+    };
     const clean = body?.mode === "clean" && !existing.hotfix;
     // A task returned from review needs its repair brief in the initial
     // resumed turn. Sending it as a follow-up would race the agent's start
@@ -843,7 +873,9 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     // serialize against other close-outs.
     if (isBranchlessReleaseEligible(existing)) {
       if (runner.isRunning(id)) {
-        return json(res, 409, { error: `Task #${id} has an agent turn in progress` });
+        return json(res, 409, {
+          error: `Task #${id} has an agent turn in progress`,
+        });
       }
       const result = await releaseBranchless(config, existing);
       if (!result.ok) {
@@ -965,9 +997,14 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       }
     }
 
+    // Reserve the close-out window before queueing: a reload may already have
+    // drained the listener, so wait for it to abort and re-bind first.
+    if (ctx.reload) await ctx.reload.prepareForCloseOut();
+
     // Enqueue the close-out job (idempotent per task).
     const job = ctx.jobCoordinator.enqueue(taskStillExists);
     if (!job) {
+      ctx.reload?.releaseCloseOut();
       return json(res, 400, { error: `Task #${id} has no branch to merge` });
     }
 
@@ -1035,7 +1072,9 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       return json(res, 400, { error: "message text is required" });
     }
     if (existing.needsInput) {
-      const cleared = patchTaskFile(config, existing.absPath, { needsInput: false });
+      const cleared = patchTaskFile(config, existing.absPath, {
+        needsInput: false,
+      });
       index.applyFileChange(cleared.absPath);
     }
     let preamble: string | undefined;
@@ -1050,7 +1089,9 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       return json(res, 409, { error: sendRes.reason ?? "agent is busy" });
     }
     if (!sendRes.ok) {
-      return json(res, 400, { error: sendRes.reason ?? "could not send message" });
+      return json(res, 400, {
+        error: sendRes.reason ?? "could not send message",
+      });
     }
     return json(res, 200, {
       ok: true,
@@ -1253,7 +1294,12 @@ export const startPreview: RouteHandler = async (ctx, req, res, params) => {
   if (!result.ok) {
     return json(res, 400, { error: result.error ?? "could not start preview" });
   }
-  return json(res, 200, { ok: true, port: result.port, url: result.url, label: result.label });
+  return json(res, 200, {
+    ok: true,
+    port: result.port,
+    url: result.url,
+    label: result.label,
+  });
 };
 
 export const stopPreview: RouteHandler = async (ctx, _req, res, params) => {
@@ -1295,7 +1341,9 @@ export const reviewAgain: RouteHandler = async (ctx, _req, res, params) => {
   }
   const gate = reviews.canRun(existing);
   if (!gate.ok) {
-    return json(res, 400, { error: gate.reason ?? "could not start the review" });
+    return json(res, 400, {
+      error: gate.reason ?? "could not start the review",
+    });
   }
   void reviews.run(existing);
   return json(res, 200, { ok: true });
@@ -1320,7 +1368,9 @@ export const reviewMessage: RouteHandler = async (ctx, req, res, params) => {
   }
   const gate = reviews.canSend(existing);
   if (!gate.ok) {
-    return json(res, 400, { error: gate.reason ?? "could not send to the reviewer" });
+    return json(res, 400, {
+      error: gate.reason ?? "could not send to the reviewer",
+    });
   }
   void reviews.send(existing, text);
   return json(res, 200, { ok: true });
@@ -1525,7 +1575,9 @@ ${existing.body || "(no description)"}`;
   }
   if (!result.ok) {
     dropPmImages(imageBatchId);
-    return json(res, 400, { error: result.reason ?? "could not send message to PM" });
+    return json(res, 400, {
+      error: result.reason ?? "could not send message to PM",
+    });
   }
 
   // 0381: the runner accepted the turn (running now, or queued behind
@@ -1638,7 +1690,10 @@ export const retryIntegration: RouteHandler = (ctx, _req, res, params) => {
   if (!reenqueued) {
     return json(res, 400, { error: `Task #${id} has no branch to integrate` });
   }
-  ctx.emitEvent({ type: "integration", pipeline: buildIntegrationSnapshot(jobCoordinator, {}) });
+  ctx.emitEvent({
+    type: "integration",
+    pipeline: buildIntegrationSnapshot(jobCoordinator, {}),
+  });
   ctx.triggerJobProcessing();
   return json(res, 200, {
     ok: true,
@@ -1677,7 +1732,9 @@ export const getBoardStats: RouteHandler = (ctx, req, res) => {
     if (raw === "1d" || raw === "7d" || raw === "30d" || raw === "all") {
       range = raw;
     } else {
-      return json(res, 400, { error: `Invalid range '${raw}' — expected 1d, 7d, 30d, or all` });
+      return json(res, 400, {
+        error: `Invalid range '${raw}' — expected 1d, 7d, 30d, or all`,
+      });
     }
   }
   const stats = runner.boardStats(range);
@@ -1710,7 +1767,11 @@ export const getDiffStatsForTask: RouteHandler = async (ctx, _req, res, params) 
     const snapshot =
       task.status === "done" ? loadDiffSnapshot(config.root, config.cacheDir, task.id) : null;
     if (snapshot) {
-      return json(res, 200, { ok: true, stats: snapshot.stats, snapshot: true });
+      return json(res, 200, {
+        ok: true,
+        stats: snapshot.stats,
+        snapshot: true,
+      });
     }
     return json(res, 200, {
       ok: true,
@@ -1735,7 +1796,11 @@ export const getDiffForTask: RouteHandler = async (ctx, _req, res, params) => {
     return json(res, 404, { error: `Task #${id} not found` });
   }
   if (!task.branch) {
-    return json(res, 200, { ok: true, diff: { patch: "", truncated: false }, noBranch: true });
+    return json(res, 200, {
+      ok: true,
+      diff: { patch: "", truncated: false },
+      noBranch: true,
+    });
   }
   const worktreePath = worktreePathForBranch(config.root, task.branch);
   if (!worktreePath) {
@@ -1744,7 +1809,11 @@ export const getDiffForTask: RouteHandler = async (ctx, _req, res, params) => {
     if (snapshot) {
       return json(res, 200, { ok: true, diff: snapshot.diff, snapshot: true });
     }
-    return json(res, 200, { ok: true, diff: { patch: "", truncated: false }, noWorktree: true });
+    return json(res, 200, {
+      ok: true,
+      diff: { patch: "", truncated: false },
+      noWorktree: true,
+    });
   }
   const diff = await getDiff(worktreePath, "main");
   return json(res, 200, { ok: true, diff });
