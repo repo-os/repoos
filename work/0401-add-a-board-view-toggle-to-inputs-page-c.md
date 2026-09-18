@@ -2,7 +2,7 @@
 id: "0401"
 title: Add board view toggle to Inputs page
 type: feature
-status: review
+status: active
 priority: p2
 area: ui
 assigned_to: ai
@@ -12,7 +12,7 @@ model_override: auto
 review_cli_override: cursor
 review_model_override: auto
 created_at: "2026-09-18T04:26:52Z"
-updated_at: "2026-09-18T04:49:05Z"
+updated_at: "2026-09-18T04:49:06Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 1
@@ -68,3 +68,4 @@ Add a board view toggle to inputs page (currently there's only a list view). Do 
 - 2026-09-18T04:44:18Z · status active→review
 - 2026-09-18T04:45:34Z · status review→active
 - 2026-09-18T04:49:05Z · status active→review
+- 2026-09-18T04:49:06Z · status review→active
