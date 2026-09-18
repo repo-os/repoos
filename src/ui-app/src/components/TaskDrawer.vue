@@ -76,6 +76,12 @@ const auth = useAuthStore();
 const router = useRouter();
 const { recall: recallModelForCli } = useModelMemory();
 
+const GEMINI_MIGRATION_URL = "https://antigravity.google/docs/cli/gcli-migration/";
+
+function isLegacyGeminiCli(cli: string): boolean {
+  return cli.toLowerCase() === "gemini";
+}
+
 /**
  * Model to apply when a picker's CLI changes. Prefer a remembered pin for this
  * context+CLI (#0342 / #0360); never blindly take `modelsFor(cli)[0]` ("default").
@@ -3283,6 +3289,17 @@ watch(
                   v-model:model="overrideDraft.model"
                   :disabled="ui.saving"
                 />
+                <div
+                  v-if="isLegacyGeminiCli(overrideDraft.cli)"
+                  class="agent-legacy-notice"
+                  role="status"
+                >
+                  <strong>Deprecated Gemini CLI</strong> — this saved task override is preserved,
+                  but new runs should use
+                  <a :href="GEMINI_MIGRATION_URL" target="_blank" rel="noopener noreferrer"
+                    >Antigravity CLI (agy)</a
+                  >.
+                </div>
               </div>
               <div class="agent-field">
                 <div v-if="overrideDirty" class="agent-override-actions" style="padding-top: 20px">
@@ -3462,6 +3479,17 @@ watch(
                   v-model:model="reviewOverrideDraft.model"
                   :disabled="ui.saving"
                 />
+                <div
+                  v-if="isLegacyGeminiCli(reviewOverrideDraft.cli)"
+                  class="agent-legacy-notice"
+                  role="status"
+                >
+                  <strong>Deprecated Gemini CLI</strong> — this saved review override is preserved,
+                  but new runs should use
+                  <a :href="GEMINI_MIGRATION_URL" target="_blank" rel="noopener noreferrer"
+                    >Antigravity CLI (agy)</a
+                  >.
+                </div>
               </div>
               <div class="agent-field">
                 <div
@@ -4052,6 +4080,17 @@ watch(
                   v-model:model="pmOverrideDraft.model"
                   :disabled="ui.saving"
                 />
+                <div
+                  v-if="isLegacyGeminiCli(pmOverrideDraft.cli)"
+                  class="agent-legacy-notice"
+                  role="status"
+                >
+                  <strong>Deprecated Gemini CLI</strong> — this saved PM override is preserved, but
+                  new runs should use
+                  <a :href="GEMINI_MIGRATION_URL" target="_blank" rel="noopener noreferrer"
+                    >Antigravity CLI (agy)</a
+                  >.
+                </div>
               </div>
               <div class="agent-field">
                 <div

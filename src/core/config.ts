@@ -53,6 +53,7 @@ export const AGENT_CLIS = [
   "codex",
   "github copilot",
   "cursor",
+  "antigravity",
 ] as const;
 /** Models an Agent can pin (or "default" for the coding agent's default). */
 export const AGENT_MODELS = ["default", "big pickle", "deepseek v4"] as const;

@@ -50,10 +50,11 @@ Pure logic, no transport. Everything else calls into this.
   updateStatus, updateTask, createTask, reindex. The CLI and server both go
   through this; no business logic lives outside it.
 - `detect.ts` — probes PATH for installed coding agents (opencode, Claude Code,
-  Qwen, Codex, GitHub Copilot CLI) and reports version + availability.
-- `models.ts` — per-CLI model list adapters (e.g. sources `opencode models`
-  live for the Agents page dropdown). Copilot model discovery is not stable, so
-  it offers its default and supports per-model compatibility probes.
+  Qwen, Codex, GitHub Copilot CLI, and Antigravity CLI) and reports version,
+  availability, auth state, and migration guidance for deprecated Gemini CLI.
+- `models.ts` — per-CLI model list adapters (e.g. sources `opencode models` and
+  `agy models` live for the Agents page dropdown). Copilot model discovery is not
+  stable, so it offers its default and supports per-model compatibility probes.
 - `build.ts` — build staleness check (hash of `src/` vs `dist/.build-info.json`,
   which holds `{ hash, version }` and is deterministic across rebuilds) plus
   `readBuildStamp()`, the single reader for the build timestamp in the
@@ -131,8 +132,11 @@ Adds liveness over the one-shot core. No new business logic.
   output as structured events over SSE, manages session transcripts for resume,
   self-heals board state when the agent exits, and hosts the persistent
   repository-level RepoOS Guide conversation using the same session model. Its
-  Copilot CLI driver uses JSONL output and explicit, narrow write/shell
-  permissions; it never uses the CLI's unrestricted permission switches.
+  Antigravity driver consumes the documented `init`/`step_update`/`result` stream,
+  preserves CLI-reported conversation and usage metadata, and surfaces
+  permission/auth recovery guidance. Its Copilot CLI driver uses JSONL output
+  and explicit, narrow write/shell permissions; Antigravity's blanket permission
+  bypass is documented as a security tradeoff in `user-docs/agents.md`.
 - `freeform.ts` — parses freeform task description output from the PM agent
   into structured task frontmatter + body.
 - `done.ts` — review-to-done close-out: merges the task branch into main,
@@ -233,6 +237,24 @@ could attach a different task's most recent session). Recognizable stderr
 failures (auth, permission, stale CLI) are mapped to an actionable hint once per
 session. Models come from `cursor-agent --list-models`; `default` omits
 `--model` and lets Cursor choose.
+
+## Antigravity CLI driver
+
+The Antigravity integration invokes only the official `agy` executable. Task
+turns use `agy -p <mission> --output-format stream-json
+--dangerously-skip-permissions` from the task's linked worktree. Its protocol is
+distinct from Gemini/Claude/Cursor: `init`, `step_update`, and terminal `result`
+events are parsed by the dedicated Antigravity parser. `conversation_id` is
+captured and passed back as `--conversation <id>` for exact follow-ups; when it
+is absent, RepoOS labels the next turn as fresh rather than guessing with a
+most-recent-session flag.
+
+Antigravity's headless default soft-denies shell commands because no approval
+prompt can be answered by RepoOS. The explicit permission bypass keeps ordinary
+worktree edits and permitted checks from hanging, but it is intentionally
+documented as a blanket bypass: Antigravity may approve commands outside the
+worktree. RepoOS still owns the worktree, task lifecycle, checks, review,
+handoff, and merge boundary, and never runs the driver in the main checkout.
 
 ## The three runtime states (don't conflate them)
 

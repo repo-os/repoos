@@ -7,7 +7,7 @@ output into the task, and recording its token spend.
 
 ## Supported coding agents
 
-RepoOS has a driver for seven CLIs:
+RepoOS has a driver for eight CLIs:
 
 | CLI | Notes |
 | --- | --- |
@@ -18,6 +18,7 @@ RepoOS has a driver for seven CLIs:
 | `qwen code` | Driver present; no machine-parseable output format. |
 | `kiro` | Driver present. |
 | `cursor` | The Cursor Agent CLI (`cursor-agent`). Structured stream-JSON, session resume, and model selection. |
+| `antigravity` | Google Antigravity CLI (`agy`). Structured stream-JSON, model discovery, and exact conversation resume. |
 
 A CLI has to be installable headless and drivable over stdin/stdout to be
 useful here. If a tool is missing from `PATH`, the **Detected Coding Agents**
@@ -68,6 +69,54 @@ and model actually respond. For `opencode`, **Refresh models** re-probes the
 live model list (`opencode models --refresh`) — model names change often, so
 pick from live discovery rather than a hardcoded list. A model of `default`
 uses whatever the CLI itself defaults to.
+
+### Antigravity CLI (`agy`)
+
+Install the official CLI with:
+
+```bash
+curl -fsSL https://antigravity.google/cli/install.sh | bash
+```
+
+On Windows, use the official PowerShell installer from the [Installation & auth
+guide](https://antigravity.google/docs/cli-install). Sign in once by running
+`agy` interactively. Local runs use the operating system keyring; SSH runs show
+a browser URL and one-time code to paste back into the remote terminal. A
+headless API-key setup requires `modelProvider = "gemini"` in Antigravity's
+settings and `GEMINI_API_KEY` in the process environment. RepoOS never reads,
+stores, or displays that key.
+
+RepoOS invokes only the official `agy` binary from `PATH`, in the task's linked
+worktree, with the documented `-p --output-format stream-json` protocol. It
+parses only Antigravity's `init`, `step_update`, and `result` events, including
+tool output, stderr diagnostics, terminal status, duration, model, and usage
+fields that `agy` actually reports. Unknown or malformed events are shown as a
+helpful protocol error rather than copied into the transcript as JSON.
+
+Models are read from `agy models`; a pinned model is passed with `--model`, and
+an unavailable pin fails instead of silently falling back. Follow-ups resume
+the exact `conversation_id` with `--conversation`. If Antigravity does not
+report an id, RepoOS starts a labelled fresh turn rather than risking another
+task's conversation.
+
+Headless Antigravity normally soft-denies shell commands because there is no
+interactive approval prompt. RepoOS therefore uses
+`--dangerously-skip-permissions` for managed task, review, and check runs so a
+task cannot wait forever. This is a blanket permission bypass: it can approve
+commands beyond the worktree, so use Antigravity only with trusted prompts and
+remember that RepoOS's isolation is the worktree/lifecycle boundary, not a
+replacement for Antigravity's own sandbox.
+
+### Gemini CLI deprecation
+
+The legacy `gemini` executable remains visible in **Detected Coding Agents** so
+installed tooling and historical task/config records are not erased. It is
+marked **Deprecated** for individual and free users, and new agent assignments
+offer Antigravity instead. The UI says `Use Antigravity CLI (agy) instead` and
+links to the [official Gemini migration guide](https://antigravity.google/docs/cli/gcli-migration/).
+Enterprise and paid API-key Gemini CLI users may still have access. A saved
+legacy Gemini selection is preserved and shown with a migration warning; RepoOS
+does not silently rewrite it or invoke Gemini as a fallback driver.
 
 ## The lifecycle roles
 

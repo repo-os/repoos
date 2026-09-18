@@ -605,6 +605,10 @@ export interface DetectedAgent {
   authHint?: string;
   /** One-line capability note shown beside the agent. */
   capability?: string;
+  /** Installed legacy tooling kept visible for migration, not new assignments. */
+  deprecated?: boolean;
+  migrationUrl?: string;
+  migrationNote?: string;
   /** Auth state from the CLI's own status probe: true/false/null (unknown). */
   auth: boolean | null;
 }
