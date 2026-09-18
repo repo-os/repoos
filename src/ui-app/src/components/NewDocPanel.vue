@@ -256,8 +256,10 @@ function onDocBodyTranscribed(text: string): void {
       <div class="drawer-resize" @mousedown.prevent="ui.startResize"></div>
 
       <div class="drawer-head">
-        <DialogTitle>New doc</DialogTitle>
-        <DialogDescription class="sr-only">Create a new document</DialogDescription>
+        <div class="drawer-head-title">
+          <DialogTitle>New doc</DialogTitle>
+          <DialogDescription class="sr-only">Create a new document</DialogDescription>
+        </div>
         <DialogClose class="close-x">
           <X class="size-[15px]" />
         </DialogClose>
