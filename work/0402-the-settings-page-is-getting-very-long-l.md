@@ -5,11 +5,13 @@ type: feature
 status: draft
 priority: p2
 area: general
-assigned_to: ""
+assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+pm_cli_override: claude code
+pm_model_override: default
 created_at: "2026-09-18T04:37:15Z"
-updated_at: "2026-09-18T04:37:15Z"
+updated_at: "2026-09-18T04:51:57Z"
 ---
 The settings page is getting very long, let's add tabs. First move the repoos.toml to it's own tab (the last tab). Then break out "advanced" to it's own tab. And if you think of any other useful tabs to have let me know. also make sure the tabs work via deeplink url like /settings?tab=advanced.
 
@@ -20,3 +22,4 @@ The settings page is getting very long, let's add tabs. First move the repoos.to
 ## Activity
 
 - 2026-09-18T04:37:15Z · created · hello@repoos.org
+- 2026-09-18T04:51:57Z · pm_cli_override, pm_model_override
