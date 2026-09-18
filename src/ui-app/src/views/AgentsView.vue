@@ -328,6 +328,18 @@ const detectHintCopied = ref<string>("");
 
 const { isAgentFavorite, toggleAgentFavorite } = useAgentFavorites();
 
+/**
+ * The key favorites are stored/matched under: `agent.cli` (the `AGENT_CLIS`
+ * string, e.g. "claude code") when drivable, else `agent.id`. Favoriting by
+ * `agent.id` alone used to silently break the agent+model selector's
+ * favorites filter for multi-word/hyphenated agents (`claude-code`,
+ * `qwen-code`, `copilot`) whose `id` doesn't match the `AGENT_CLIS` string
+ * that filter matches against — see `core/detect.ts`'s `cli` field doc.
+ */
+function favoriteKey(agent: DetectedAgent): string {
+  return agent.cli ?? agent.id;
+}
+
 type DetectStatus = "ok" | "desktop" | "auth" | "missing";
 
 interface DetectRow {
@@ -841,19 +853,23 @@ onUnmounted(() => {
               <button
                 type="button"
                 class="detect-star-btn"
-                :class="{ on: isAgentFavorite(r.agent.id) }"
-                :aria-pressed="isAgentFavorite(r.agent.id)"
+                :class="{ on: isAgentFavorite(favoriteKey(r.agent)) }"
+                :aria-pressed="isAgentFavorite(favoriteKey(r.agent))"
                 :aria-label="
-                  isAgentFavorite(r.agent.id)
+                  isAgentFavorite(favoriteKey(r.agent))
                     ? `Remove ${r.agent.name} from favorites`
                     : `Add ${r.agent.name} to favorites`
                 "
-                :title="isAgentFavorite(r.agent.id) ? 'Remove from favorites' : 'Add to favorites'"
-                @click="toggleAgentFavorite(r.agent.id)"
+                :title="
+                  isAgentFavorite(favoriteKey(r.agent))
+                    ? 'Remove from favorites'
+                    : 'Add to favorites'
+                "
+                @click="toggleAgentFavorite(favoriteKey(r.agent))"
               >
                 <Star
                   class="size-3.5"
-                  :fill="isAgentFavorite(r.agent.id) ? 'currentColor' : 'none'"
+                  :fill="isAgentFavorite(favoriteKey(r.agent)) ? 'currentColor' : 'none'"
                 />
               </button>
             </div>

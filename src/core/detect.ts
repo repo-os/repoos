@@ -10,6 +10,7 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { accessSync, constants } from "node:fs";
 import { delimiter, join } from "node:path";
+import { AGENT_CLIS } from "./config.js";
 
 /** A coding agent RepoOS knows about, regardless of whether it is installed. */
 export interface KnownAgent {
@@ -17,6 +18,19 @@ export interface KnownAgent {
   id: string;
   /** Display name, e.g. "claude code". */
   name: string;
+  /**
+   * The `AGENT_CLIS` identifier this agent corresponds to when `drivable`,
+   * e.g. "claude code" for the `id: "claude-code"` entry, or "cursor" for
+   * `id: "cursor"` (whose display `name` is "cursor agent"). `id` and this
+   * value diverge for exactly the multi-word/hyphenated agents, which used to
+   * make any code that favorited or filtered by `id` silently fail to match
+   * `AGENT_CLIS`-keyed data (#0404 follow-up: favoriting "claude code" in the
+   * detected-agents list didn't make it through the agent+model selector's
+   * favorites filter, because that filter matches against `AGENT_CLIS`
+   * strings while the favorite was stored under `id`). `undefined` when
+   * `drivable` is false — there is no `AGENT_CLIS` entry to map to.
+   */
+  cli?: (typeof AGENT_CLIS)[number];
   /** The binary searched on PATH. */
   binary: string;
   /** True when RepoOS has a driver for this CLI (can start headless runs). */
@@ -70,6 +84,7 @@ export const KNOWN_AGENTS: KnownAgent[] = [
   {
     id: "opencode",
     name: "opencode",
+    cli: "opencode",
     binary: "opencode",
     drivable: true,
     installHint: "npm i -g opencode-ai",
@@ -77,6 +92,7 @@ export const KNOWN_AGENTS: KnownAgent[] = [
   {
     id: "claude-code",
     name: "claude code",
+    cli: "claude code",
     binary: "claude",
     drivable: true,
     installHint: "npm i -g @anthropic-ai/claude-code",
@@ -84,6 +100,7 @@ export const KNOWN_AGENTS: KnownAgent[] = [
   {
     id: "qwen-code",
     name: "qwen code",
+    cli: "qwen code",
     binary: "qwen",
     drivable: true,
     installHint: "npm i -g @qwen-code/qwen-code",
@@ -91,6 +108,7 @@ export const KNOWN_AGENTS: KnownAgent[] = [
   {
     id: "codex",
     name: "codex",
+    cli: "codex",
     binary: "codex",
     drivable: true,
     installHint: "npm i -g @openai/codex",
@@ -105,6 +123,7 @@ export const KNOWN_AGENTS: KnownAgent[] = [
   {
     id: "copilot",
     name: "github copilot",
+    cli: "github copilot",
     binary: "copilot",
     drivable: true,
     installHint: "npm i -g @github/copilot",
@@ -134,6 +153,7 @@ export const KNOWN_AGENTS: KnownAgent[] = [
   {
     id: "kiro",
     name: "kiro",
+    cli: "kiro",
     binary: "kiro-cli",
     drivable: true,
     installHint: "npm i -g kiro-cli",
@@ -148,6 +168,7 @@ export const KNOWN_AGENTS: KnownAgent[] = [
   {
     id: "cursor",
     name: "cursor agent",
+    cli: "cursor",
     binary: "cursor-agent",
     drivable: true,
     installHint: "curl https://cursor.com/install -fsS | bash",
