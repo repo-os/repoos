@@ -2,14 +2,14 @@
 id: "0430"
 title: Remove target name from starting preview button
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-18T19:06:04Z"
-updated_at: "2026-09-18T19:06:18Z"
+updated_at: "2026-09-18T19:06:26Z"
 ---
 ## Problem
 
@@ -45,3 +45,4 @@ the "starting preview" button should not show the name of the target, because it
 - 2026-09-18T19:06:04Z · created · hello@repoos.org
 - 2026-09-18T19:06:05Z · screenshots
 - 2026-09-18T19:06:18Z · status draft→inbox, title, area, body
+- 2026-09-18T19:06:26Z · status inbox→ready
