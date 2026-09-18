@@ -1,6 +1,12 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "./stores/auth";
-import { checkUiBuild, showStaleUi } from "./lib/uiRecovery";
+import {
+  checkUiBuild,
+  consumeRouteIntent,
+  isStaleImportError,
+  showStaleUi,
+  uiRecoveryState,
+} from "./lib/uiRecovery";
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -39,7 +45,11 @@ export const router = createRouter({
 // again, so without this guard an unauthenticated visitor who lands on the
 // app (or a session that's since expired) just sees the dashboard chrome
 // with every API call failing 401 instead of being sent to /login.
-router.beforeEach(async (to) => {
+router.beforeEach(async (to, from) => {
+  const pending = consumeRouteIntent();
+  if (pending && pending !== to.fullPath && pending !== from.fullPath) {
+    return { path: pending, replace: true };
+  }
   if (to.meta.public) return true;
   const auth = useAuthStore();
   if (!auth.loaded) await auth.loadMe();
@@ -50,12 +60,9 @@ router.beforeEach(async (to) => {
 });
 
 router.onError((error, to) => {
+  if (uiRecoveryState().kind === "stale") return;
   const message = error instanceof Error ? error.message : String(error);
-  if (
-    /chunk|dynamically imported module|importing a module script failed|failed to fetch|mime/i.test(
-      message,
-    )
-  ) {
+  if (isStaleImportError(message)) {
     showStaleUi(to?.fullPath ?? window.location.pathname + window.location.search);
   }
 });

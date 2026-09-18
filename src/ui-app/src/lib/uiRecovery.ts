@@ -26,8 +26,22 @@ const state = reactive<UiRecoveryState>({
 let isDirty = () => false;
 let isBusy = () => false;
 let configured = false;
-let clientBuild = (): string | null =>
-  typeof window !== "undefined" ? (window.__REPOOS_BUILD_HASH__ ?? null) : null;
+let healthCheckInFlight: Promise<void> | null = null;
+let clientBuild = (): string | null => {
+  if (typeof document !== "undefined") {
+    const meta = document.querySelector('meta[name="repoos-build-hash"]');
+    const metaValue = meta?.getAttribute("content");
+    if (metaValue) return metaValue;
+  }
+  if (typeof globalThis !== "undefined") {
+    const buildHash = (globalThis as { __REPOOS_BUILD_HASH__?: string }).__REPOOS_BUILD_HASH__;
+    if (buildHash) return buildHash;
+  }
+  if (typeof window !== "undefined") {
+    return window.__REPOOS_BUILD_HASH__ ?? null;
+  }
+  return null;
+};
 
 export function configureUiRecovery(options: {
   isDirty: () => boolean;
@@ -40,10 +54,19 @@ export function configureUiRecovery(options: {
   configured = true;
 }
 
+function getSessionStorage(): Storage | null {
+  try {
+    return typeof sessionStorage !== "undefined" ? sessionStorage : null;
+  } catch {
+    return null;
+  }
+}
+
 function rememberIntent(route: string): void {
   state.attemptedRoute = route;
   try {
-    sessionStorage.setItem(INTENT_KEY, route);
+    const storage = getSessionStorage();
+    storage?.setItem(INTENT_KEY, route);
   } catch {
     /* private browsing can disable session storage */
   }
@@ -51,8 +74,10 @@ function rememberIntent(route: string): void {
 
 export function consumeRouteIntent(): string | null {
   try {
-    const route = sessionStorage.getItem(INTENT_KEY);
-    sessionStorage.removeItem(INTENT_KEY);
+    const storage = getSessionStorage();
+    if (!storage) return null;
+    const route = storage.getItem(INTENT_KEY);
+    storage.removeItem(INTENT_KEY);
     return route;
   } catch {
     return null;
@@ -71,7 +96,8 @@ export function showStaleUi(
   state.newBuild = newBuild;
   state.newBuildAt = buildAt;
   if (shouldAutoReload(isDirty(), isBusy())) {
-    window.setTimeout(() => {
+    const schedule = typeof window !== "undefined" ? window.setTimeout : globalThis.setTimeout;
+    schedule(() => {
       if (state.kind === "stale" && !isDirty() && !isBusy()) reloadNow();
     }, 250);
   }
@@ -81,37 +107,64 @@ export function shouldAutoReload(dirty: boolean, busy: boolean): boolean {
   return !dirty && !busy;
 }
 
+export function isStaleImportError(message: string): boolean {
+  const normalized = message.toLowerCase();
+  if (
+    /loading chunk|failed to fetch dynamically imported module|dynamically imported module|importing a module script failed|chunk load error|unexpected token </i.test(
+      message,
+    ) ||
+    (normalized.includes("mime") && /\/assets\/|\.js|\.css/i.test(message))
+  ) {
+    return true;
+  }
+  return (
+    /(?:^|[^a-z])(?:failed to fetch|networkerror)(?:[^a-z]|$)/i.test(message) &&
+    /(?:chunk|module|asset)/i.test(message)
+  );
+}
+
 export function showOffline(
   message = "The RepoOS server is offline or stalled. Retry or reload when it is ready.",
 ): void {
+  if (state.kind === "stale") return;
   state.kind = "offline";
   state.message = message;
 }
 
 export function reloadNow(): void {
-  const intent = state.attemptedRoute;
+  const intent = consumeRouteIntent() ?? state.attemptedRoute;
   if (intent) rememberIntent(intent);
+  if (typeof window === "undefined") return;
   const current = window.location.pathname + window.location.search + window.location.hash;
-  if (intent && intent !== current) window.location.assign(intent);
-  else window.location.reload();
+  if (intent && intent !== current) {
+    window.location.assign(intent);
+    return;
+  }
+  window.location.reload();
 }
 
 export async function checkUiBuild(): Promise<void> {
-  if (!configured) return;
-  try {
-    const health = await api<Health>("/api/health");
-    const local = clientBuild();
-    if (local && health.buildHash && local !== health.buildHash) {
-      showStaleUi(
-        window.location.pathname + window.location.search,
-        health.buildHash,
-        health.buildAt,
-      );
+  if (!configured || state.kind === "stale") return;
+  if (healthCheckInFlight) return healthCheckInFlight;
+  healthCheckInFlight = (async () => {
+    try {
+      const health = await api<Health>("/api/health");
+      const local = clientBuild();
+      if (local && health.buildHash && local !== health.buildHash) {
+        showStaleUi(
+          window.location.pathname + window.location.search,
+          health.buildHash,
+          health.buildAt,
+        );
+      }
+    } catch (err) {
+      if (err instanceof Error && /timed out|can't reach/i.test(err.message))
+        showOffline(err.message);
+    } finally {
+      healthCheckInFlight = null;
     }
-  } catch (err) {
-    if (err instanceof Error && /timed out|can't reach/i.test(err.message))
-      showOffline(err.message);
-  }
+  })();
+  await healthCheckInFlight;
 }
 
 export function uiRecoveryState(): UiRecoveryState {

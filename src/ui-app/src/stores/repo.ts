@@ -1,7 +1,7 @@
 import { computed, reactive, ref } from "vue";
 import { defineStore } from "pinia";
 import { api, JSON_OPTS } from "../api";
-import { checkUiBuild, showStaleUi } from "../lib/uiRecovery";
+import { checkUiBuild, showStaleUi, uiRecoveryState } from "../lib/uiRecovery";
 import { useUiStore, type PendingScreenshot } from "./ui";
 import { useNotificationsStore, type NotificationType } from "./notifications";
 import { describeCloseOutFailure } from "../lib/closeOutFailure";
@@ -1415,9 +1415,14 @@ export const useRepoStore = defineStore("repo", () => {
     try {
       const h = await api<Health>("/api/health");
       health.value = h;
-      const clientBuild = window.__REPOOS_BUILD_HASH__;
+      const clientBuild =
+        window.__REPOOS_BUILD_HASH__ ??
+        document.querySelector('meta[name="repoos-build-hash"]')?.getAttribute("content") ??
+        null;
       if (clientBuild && h.buildHash && clientBuild !== h.buildHash) {
+        clearNewVersion();
         showStaleUi(window.location.pathname + window.location.search, h.buildHash, h.buildAt);
+        return;
       }
       const v = newVersion.value;
       // Normalize against servers/tests that predate these fields.
@@ -1459,6 +1464,7 @@ export const useRepoStore = defineStore("repo", () => {
 
   /** Persist the "new version available" notice (survives a page reload). */
   function setNewVersion(hash: string, buildAt: string | null): void {
+    if (uiRecoveryState().kind === "stale") return;
     const v = { hash, buildAt };
     newVersion.value = v;
     try {
