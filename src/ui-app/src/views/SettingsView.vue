@@ -33,6 +33,57 @@ const notificationTypes = ["review", "paused", "stuck", "needsInput"] as Notific
 const route = useRoute();
 const router = useRouter();
 
+// ---- Tab navigation ----
+
+type TabId = "general" | "notifications" | "security" | "advanced";
+
+const TABS: { id: TabId; label: string }[] = [
+  { id: "general", label: "General" },
+  { id: "notifications", label: "Notifications" },
+  { id: "security", label: "Security" },
+  { id: "advanced", label: "Advanced" },
+];
+
+/** Which settings fields live on which tab (for ?focus= routing) */
+const FIELD_TAB: Record<string, TabId> = {
+  // General tab
+  tunnelEnabled: "general",
+  "remoteValidation.enabled": "general",
+  // Notifications tab
+  ntfyEnabled: "notifications",
+  ntfyTopic: "notifications",
+  // Security tab
+  "auth.enabled": "security",
+  "auth.sessionMaxAge": "security",
+};
+
+const activeTab = computed<TabId>(() => {
+  const q = route.query.tab;
+  if (q === "notifications" || q === "security" || q === "advanced") return q;
+  return "general";
+});
+
+function setTab(id: TabId): void {
+  void router.replace({ name: "settings", query: { ...route.query, tab: id } });
+}
+
+// Keyboard navigation across tabs (arrow keys, Home, End)
+const tablistRef = ref<HTMLElement | null>(null);
+
+function onTabKeydown(e: KeyboardEvent, idx: number): void {
+  let next = idx;
+  if (e.key === "ArrowRight") next = (idx + 1) % TABS.length;
+  else if (e.key === "ArrowLeft") next = (idx - 1 + TABS.length) % TABS.length;
+  else if (e.key === "Home") next = 0;
+  else if (e.key === "End") next = TABS.length - 1;
+  else return;
+  e.preventDefault();
+  setTab(TABS[next].id);
+  // Move focus to the newly activated tab button
+  const btns = tablistRef.value?.querySelectorAll<HTMLElement>("[role='tab']");
+  btns?.[next]?.focus();
+}
+
 // --- Attention (browser) notifications diagnostics (#0316) ---
 const testSending = ref(false);
 async function runTestNotification(): Promise<void> {
@@ -208,15 +259,33 @@ function toggleThemeFavorite(id: string): void {
 // scroll to and focus a specific setting row. ?setting= wins when both are
 // present. The original ?focus= behavior (SearchBar navigates here with
 // focus=<key>) is unchanged.
+// When a focus key targets a setting on a specific tab, switch to that tab first.
 const focusKey = computed(() => (route.query.setting ?? route.query.focus) as string | undefined);
 watch(
   focusKey,
   (key) => {
     if (!key) return;
+    // Switch to the tab that owns this setting key, if known.
+    // Capture the resolved tab now so the async cleanup replace below uses
+    // the *target* tab, not the stale activeTab.value (router.replace is
+    // async; activeTab won't reflect the new tab until the navigation settles).
+    const targetTab = key ? FIELD_TAB[key] : undefined;
+    const resolvedTab: TabId = targetTab ?? activeTab.value;
+    if (targetTab && activeTab.value !== targetTab) {
+      void router.replace({
+        name: "settings",
+        query: { ...route.query, tab: targetTab },
+      });
+    }
     const tryFocus = (attempt = 0): void => {
       if (config.loaded && document.getElementById(`setting-${key}`)) {
         focusSetting(key);
-        void router.replace({ name: "settings" });
+        // Strip the focus/setting query param; use resolvedTab (not activeTab.value)
+        // to avoid undoing the tab switch above before the navigation has settled.
+        void router.replace({
+          name: "settings",
+          query: { tab: resolvedTab },
+        });
       } else if (attempt < 20) {
         window.setTimeout(() => tryFocus(attempt + 1), 100);
       }
@@ -253,7 +322,6 @@ watch(
 function buildBody(): Record<string, unknown> {
   const body: Record<string, unknown> = {};
   for (const f of config.schema) {
-    if (f.tier === "guarded" && !config.showAdvanced) continue;
     // Board column labels are raw TOML-only — never sent via the curated save.
     if (f.key.startsWith("board.columns.")) continue;
     let val = form[f.key];
@@ -330,480 +398,534 @@ onUnmounted(() => {
       <span v-else-if="config.msg" class="save-msg ok"> · {{ config.msg }}</span>
     </div>
 
+    <!-- Tab strip -->
+    <div ref="tablistRef" class="settings-tabs" role="tablist" aria-label="Settings sections">
+      <button
+        v-for="(tab, idx) in TABS"
+        :key="tab.id"
+        :id="`settings-tab-${tab.id}`"
+        role="tab"
+        :aria-selected="activeTab === tab.id"
+        :aria-controls="`settings-panel-${tab.id}`"
+        :tabindex="activeTab === tab.id ? 0 : -1"
+        class="settings-tab-btn"
+        :class="{ active: activeTab === tab.id }"
+        @click="setTab(tab.id)"
+        @keydown="onTabKeydown($event, idx)"
+      >
+        {{ tab.label }}
+      </button>
+    </div>
+
     <div v-if="!config.loaded" class="spin"></div>
 
     <div v-else>
-      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-        <div class="setting-group">
-          <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-            <span class="live-dot"></span>General
-          </div>
-          <div v-for="f in generalFields" :key="f.key" :id="`setting-${f.key}`" class="setting-row">
-            <div class="setting-info">
-              <div class="setting-label">{{ f.label }}</div>
-              <div class="setting-desc">{{ f.description }}</div>
+      <!-- ─── General tab ─────────────────────────────────── -->
+      <div
+        id="settings-panel-general"
+        role="tabpanel"
+        :aria-labelledby="`settings-tab-general`"
+        v-show="activeTab === 'general'"
+      >
+        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+          <div class="setting-group">
+            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+              <span class="live-dot"></span>General
             </div>
-            <div class="setting-input">
-              <Select
-                v-if="f.type === 'select'"
-                :model-value="String(form[f.key])"
-                :disabled="config.saving"
-                @update:model-value="(v) => (form[f.key] = v)"
-              >
-                <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent position="popper">
-                  <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                    <SelectItem v-for="o in f.options" :key="o.value" :value="o.value">{{
-                      o.label
-                    }}</SelectItem>
-                  </SelectViewport>
-                </SelectContent>
-              </Select>
-              <Switch
-                v-else-if="f.type === 'boolean'"
-                :checked="!!form[f.key]"
-                :disabled="config.saving"
-                @update:checked="(v: boolean) => (form[f.key] = v)"
-              />
-            </div>
-            <span v-if="f.restartRequired" class="restart-badge">restart required</span>
-          </div>
-        </div>
-      </Card>
-
-      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-        <div class="setting-group">
-          <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-            <span class="live-dot"></span>Themes
-          </div>
-          <div class="theme-list">
             <div
-              v-for="t in DESIGN_THEMES"
-              :key="t.id"
-              class="theme-row"
-              :class="{ current: config.uiTheme === t.id }"
-              role="button"
-              tabindex="0"
-              :aria-pressed="config.uiTheme === t.id"
-              :aria-label="`Use the ${t.label} theme`"
-              @click="config.setUiTheme(t.id)"
-              @keydown.enter.prevent="config.setUiTheme(t.id)"
+              v-for="f in generalFields"
+              :key="f.key"
+              :id="`setting-${f.key}`"
+              class="setting-row"
             >
-              <span
-                class="theme-swatch"
-                :style="{
-                  background: swatchFor(t.id).bg,
-                  '--sw-a': swatchFor(t.id).a,
-                  '--sw-b': swatchFor(t.id).b,
-                }"
-                aria-hidden="true"
-              >
-                <i></i><i></i>
-              </span>
-              <span class="theme-name">
-                {{ t.label }}
-                <span v-if="config.uiTheme === t.id" class="theme-active-badge">active</span>
-              </span>
-              <button
-                type="button"
-                class="theme-star"
-                :class="{ on: config.isThemeFavorite(t.id) }"
-                :aria-pressed="config.isThemeFavorite(t.id)"
-                :aria-label="
-                  config.isThemeFavorite(t.id)
-                    ? `Remove ${t.label} from favorites`
-                    : `Add ${t.label} to favorites`
-                "
-                :title="config.isThemeFavorite(t.id) ? 'Remove from favorites' : 'Add to favorites'"
-                @click.stop="toggleThemeFavorite(t.id)"
-              >
-                {{ config.isThemeFavorite(t.id) ? "★" : "☆" }}
-              </button>
+              <div class="setting-info">
+                <div class="setting-label">{{ f.label }}</div>
+                <div class="setting-desc">{{ f.description }}</div>
+              </div>
+              <div class="setting-input">
+                <Select
+                  v-if="f.type === 'select'"
+                  :model-value="String(form[f.key])"
+                  :disabled="config.saving"
+                  @update:model-value="(v) => (form[f.key] = v)"
+                >
+                  <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                      <SelectItem v-for="o in f.options" :key="o.value" :value="o.value">{{
+                        o.label
+                      }}</SelectItem>
+                    </SelectViewport>
+                  </SelectContent>
+                </Select>
+                <Switch
+                  v-else-if="f.type === 'boolean'"
+                  :checked="!!form[f.key]"
+                  :disabled="config.saving"
+                  @update:checked="(v: boolean) => (form[f.key] = v)"
+                />
+              </div>
+              <span v-if="f.restartRequired" class="restart-badge">restart required</span>
             </div>
           </div>
-          <div v-if="config.themeFavoritesNotice" class="theme-fav-note" role="status">
-            {{ config.themeFavoritesNotice }}
-          </div>
-          <div class="setting-desc" style="padding: 4px 0 10px">
-            Star up to 3 favorites — starred themes appear in the sidebar quick switcher. Click a
-            theme to apply it.
-          </div>
-        </div>
-      </Card>
+        </Card>
 
-      <ServiceSettings />
-
-      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-        <div class="setting-group">
-          <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-            <span class="live-dot"></span>Publishing
-          </div>
-          <div id="setting-tunnelEnabled" class="setting-row">
-            <div class="setting-info">
-              <div class="setting-label">Cloudflare publishing</div>
-              <div class="setting-desc">
-                Configure a protected public hostname for a local RepoOS service. This card reports
-                status; it does not start or stop cloudflared.
+        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+          <div class="setting-group">
+            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+              <span class="live-dot"></span>Themes
+            </div>
+            <div class="theme-list">
+              <div
+                v-for="t in DESIGN_THEMES"
+                :key="t.id"
+                class="theme-row"
+                :class="{ current: config.uiTheme === t.id }"
+                role="button"
+                tabindex="0"
+                :aria-pressed="config.uiTheme === t.id"
+                :aria-label="`Use the ${t.label} theme`"
+                @click="config.setUiTheme(t.id)"
+                @keydown.enter.prevent="config.setUiTheme(t.id)"
+              >
+                <span
+                  class="theme-swatch"
+                  :style="{
+                    background: swatchFor(t.id).bg,
+                    '--sw-a': swatchFor(t.id).a,
+                    '--sw-b': swatchFor(t.id).b,
+                  }"
+                  aria-hidden="true"
+                >
+                  <i></i><i></i>
+                </span>
+                <span class="theme-name">
+                  {{ t.label }}
+                  <span v-if="config.uiTheme === t.id" class="theme-active-badge">active</span>
+                </span>
+                <button
+                  type="button"
+                  class="theme-star"
+                  :class="{ on: config.isThemeFavorite(t.id) }"
+                  :aria-pressed="config.isThemeFavorite(t.id)"
+                  :aria-label="
+                    config.isThemeFavorite(t.id)
+                      ? `Remove ${t.label} from favorites`
+                      : `Add ${t.label} to favorites`
+                  "
+                  :title="
+                    config.isThemeFavorite(t.id) ? 'Remove from favorites' : 'Add to favorites'
+                  "
+                  @click.stop="toggleThemeFavorite(t.id)"
+                >
+                  {{ config.isThemeFavorite(t.id) ? "★" : "☆" }}
+                </button>
               </div>
             </div>
-            <div class="setting-input tunnel-setting-actions">
-              <span class="tunnel-status-chip">{{ tunnelStatus }}</span>
-              <Button variant="outline" size="sm" @click="ui.openTunnel()"
-                >Configure publishing</Button
-              >
+            <div v-if="config.themeFavoritesNotice" class="theme-fav-note" role="status">
+              {{ config.themeFavoritesNotice }}
+            </div>
+            <div class="setting-desc" style="padding: 4px 0 10px">
+              Star up to 3 favorites — starred themes appear in the sidebar quick switcher. Click a
+              theme to apply it.
             </div>
           </div>
-        </div>
-      </Card>
+        </Card>
 
-      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-        <div class="setting-group">
-          <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-            <span class="live-dot"></span>Remote validation
-          </div>
-          <div id="setting-remoteValidation.enabled" class="setting-row">
-            <div class="setting-info">
-              <div class="setting-label">Remote validation runner</div>
-              <div class="setting-desc">
-                Run the close-out build + test suite on a disposable Hetzner VM instead of this
-                machine, so MTD isn't blocked by local memory pressure. Off by default; enabling
-                sends repo contents to Hetzner.
+        <ServiceSettings />
+
+        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+          <div class="setting-group">
+            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+              <span class="live-dot"></span>Publishing
+            </div>
+            <div id="setting-tunnelEnabled" class="setting-row">
+              <div class="setting-info">
+                <div class="setting-label">Cloudflare publishing</div>
+                <div class="setting-desc">
+                  Configure a protected public hostname for a local RepoOS service. This card
+                  reports status; it does not start or stop cloudflared.
+                </div>
+              </div>
+              <div class="setting-input tunnel-setting-actions">
+                <span class="tunnel-status-chip">{{ tunnelStatus }}</span>
+                <Button variant="outline" size="sm" @click="ui.openTunnel()"
+                  >Configure publishing</Button
+                >
               </div>
             </div>
-            <div class="setting-input tunnel-setting-actions">
-              <span class="tunnel-status-chip">{{ rvStatusLabel }}</span>
-              <Button variant="outline" size="sm" @click="ui.openRemoteValidation()">
-                Configure runner
-              </Button>
+          </div>
+        </Card>
+
+        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+          <div class="setting-group">
+            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+              <span class="live-dot"></span>Remote validation
+            </div>
+            <div id="setting-remoteValidation.enabled" class="setting-row">
+              <div class="setting-info">
+                <div class="setting-label">Remote validation runner</div>
+                <div class="setting-desc">
+                  Run the close-out build + test suite on a disposable Hetzner VM instead of this
+                  machine, so MTD isn't blocked by local memory pressure. Off by default; enabling
+                  sends repo contents to Hetzner.
+                </div>
+              </div>
+              <div class="setting-input tunnel-setting-actions">
+                <span class="tunnel-status-chip">{{ rvStatusLabel }}</span>
+                <Button variant="outline" size="sm" @click="ui.openRemoteValidation()">
+                  Configure runner
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      </Card>
+        </Card>
 
-      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-        <div class="setting-group">
-          <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-            <span class="live-dot"></span>ntfy Notifications
+        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+          <div class="setting-group">
+            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+              <span class="live-dot"></span>Board
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-label">Glide animations</div>
+                <div class="setting-desc">
+                  When a card changes state, animate it gliding between columns to show where it
+                  came from and where it went. Off by default; when off, cards change state
+                  instantly as before.
+                </div>
+              </div>
+              <div class="setting-input">
+                <Switch :checked="ui.glideAnimations" @update:checked="ui.setGlideAnimations" />
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-label">Keyboard navigation</div>
+                <div class="setting-desc">
+                  Power-user shortcut mode: move around the board with the keyboard —
+                  <span class="mono">j</span>/<span class="mono">k</span> (
+                  <span class="mono">h</span>/<span class="mono">l</span> between columns),
+                  <span class="mono">Enter</span> to open, <span class="mono">Esc</span> to close or
+                  clear. Off by default; when off the board behaves exactly as before.
+                </div>
+              </div>
+              <div class="setting-input">
+                <Switch
+                  :checked="ui.keyboardNavEnabled"
+                  @update:checked="ui.setKeyboardNavEnabled"
+                />
+              </div>
+            </div>
           </div>
-          <div class="ntfy-layout">
-            <div class="ntfy-controls">
-              <div id="setting-ntfyEnabled" class="setting-row">
-                <div class="setting-info">
-                  <div class="setting-label">Enable ntfy notifications</div>
-                  <div class="setting-desc">
-                    When on, RepoOS publishes a message to your topic on task lifecycle events
-                    (moved to review, approved, or returned with issues).
+        </Card>
+      </div>
+
+      <!-- ─── Notifications tab ───────────────────────────── -->
+      <div
+        id="settings-panel-notifications"
+        role="tabpanel"
+        :aria-labelledby="`settings-tab-notifications`"
+        v-show="activeTab === 'notifications'"
+      >
+        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+          <div class="setting-group">
+            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+              <span class="live-dot"></span>ntfy Notifications
+            </div>
+            <div class="ntfy-layout">
+              <div class="ntfy-controls">
+                <div id="setting-ntfyEnabled" class="setting-row">
+                  <div class="setting-info">
+                    <div class="setting-label">Enable ntfy notifications</div>
+                    <div class="setting-desc">
+                      When on, RepoOS publishes a message to your topic on task lifecycle events
+                      (moved to review, approved, or returned with issues).
+                    </div>
+                  </div>
+                  <div class="setting-input">
+                    <Switch
+                      :checked="!!form.ntfyEnabled"
+                      :disabled="config.saving"
+                      @update:checked="(v: boolean) => (form.ntfyEnabled = v)"
+                    />
                   </div>
                 </div>
-                <div class="setting-input">
-                  <Switch
-                    :checked="!!form.ntfyEnabled"
-                    :disabled="config.saving"
-                    @update:checked="(v: boolean) => (form.ntfyEnabled = v)"
-                  />
-                </div>
-              </div>
-              <div id="setting-ntfyTopic" class="setting-row">
-                <div class="setting-info">
-                  <div class="setting-label">Subscription topic</div>
-                  <div class="setting-desc">
-                    The ntfy topic RepoOS publishes events to, e.g. <code>repoos_myproject</code>.
-                    Leave empty to never send.
+                <div id="setting-ntfyTopic" class="setting-row">
+                  <div class="setting-info">
+                    <div class="setting-label">Subscription topic</div>
+                    <div class="setting-desc">
+                      The ntfy topic RepoOS publishes events to, e.g. <code>repoos_myproject</code>.
+                      Leave empty to never send.
+                    </div>
+                  </div>
+                  <div class="setting-input" style="display: flex; gap: 8px; align-items: center">
+                    <Input
+                      :model-value="String(form.ntfyTopic ?? '')"
+                      type="text"
+                      placeholder="repoos_myproject"
+                      @update:model-value="(v) => (form.ntfyTopic = v)"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      :disabled="!form.ntfyEnabled || !String(form.ntfyTopic ?? '').trim()"
+                      @click="sendTestNotification"
+                    >
+                      {{
+                        testState === "sent"
+                          ? "✓ Sent!"
+                          : testState === "failed"
+                            ? "✗ Failed"
+                            : "Send test"
+                      }}
+                    </Button>
                   </div>
                 </div>
-                <div class="setting-input" style="display: flex; gap: 8px; align-items: center">
-                  <Input
-                    :model-value="String(form.ntfyTopic ?? '')"
-                    type="text"
-                    placeholder="repoos_myproject"
-                    @update:model-value="(v) => (form.ntfyTopic = v)"
-                  />
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    :disabled="!form.ntfyEnabled || !String(form.ntfyTopic ?? '').trim()"
-                    @click="sendTestNotification"
-                  >
-                    {{
-                      testState === "sent"
-                        ? "✓ Sent!"
-                        : testState === "failed"
-                          ? "✗ Failed"
-                          : "Send test"
-                    }}
-                  </Button>
+              </div>
+              <aside class="ntfy-info">
+                <h3>About ntfy</h3>
+                <p>
+                  ntfy is a free, open-source push notification service. Install the ntfy app on
+                  your phone from the App Store or Google Play, subscribe to a unique topic (e.g.
+                  <code>repoos_myproject</code>), and enter that topic below.
+                </p>
+                <p>
+                  Notifications are sent to <code>ntfy.sh</code> by default. Self-hosted ntfy
+                  instances work too — set the <code>NTFY_BASE_URL</code> environment variable (or
+                  the <code>ntfyBaseUrl</code> config key in <code>repoos.toml</code>).
+                </p>
+                <a href="https://ntfy.sh/docs/subscribe/phone/" target="_blank" rel="noreferrer">
+                  ntfy install + subscribe guide →
+                </a>
+              </aside>
+            </div>
+          </div>
+        </Card>
+
+        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+          <div class="setting-group">
+            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+              <span class="live-dot"></span>Attention Notifications
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-label">Sound notifications</div>
+                <div class="setting-desc">
+                  Play a bell sound on your computer when a task moves into a state that needs you.
+                  Off by default.
                 </div>
               </div>
-            </div>
-            <aside class="ntfy-info">
-              <h3>About ntfy</h3>
-              <p>
-                ntfy is a free, open-source push notification service. Install the ntfy app on your
-                phone from the App Store or Google Play, subscribe to a unique topic (e.g.
-                <code>repoos_myproject</code>), and enter that topic below.
-              </p>
-              <p>
-                Notifications are sent to <code>ntfy.sh</code> by default. Self-hosted ntfy
-                instances work too — set the <code>NTFY_BASE_URL</code> environment variable (or the
-                <code>ntfyBaseUrl</code> config key in <code>repoos.toml</code>).
-              </p>
-              <a href="https://ntfy.sh/docs/subscribe/phone/" target="_blank" rel="noreferrer">
-                ntfy install + subscribe guide →
-              </a>
-            </aside>
-          </div>
-        </div>
-      </Card>
-
-      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-        <div class="setting-group">
-          <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-            <span class="live-dot"></span>Authentication
-          </div>
-          <div id="setting-auth.enabled" class="setting-row">
-            <div class="setting-info">
-              <div class="setting-label">Authentication</div>
-              <div class="setting-desc">
-                Require login to access RepoOS (email OTP or Google OAuth).
+              <div class="setting-input">
+                <Switch
+                  :checked="notifications.soundEnabled"
+                  @update:checked="notifications.setSoundEnabled"
+                />
               </div>
             </div>
-            <div class="setting-input">
-              <Switch
-                :checked="!!form['auth.enabled']"
-                :disabled="config.saving"
-                @update:checked="(v: boolean) => (form['auth.enabled'] = v)"
-              />
-            </div>
-            <span class="restart-badge">restart required</span>
-          </div>
-          <div id="setting-auth.sessionMaxAge" class="setting-row">
-            <div class="setting-info">
-              <div class="setting-label">Session duration (days)</div>
-              <div class="setting-desc">
-                How long a login session lasts before requiring sign-in again. Default 30 days.
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-label">Push notifications</div>
+                <div class="setting-desc">
+                  Send a notification through your computer's notification system when a task moves
+                  into a state that needs you. Turning this on will ask for permission. Requires a
+                  RepoOS tab to stay open — there's no background service worker.
+                </div>
+              </div>
+              <div class="setting-input">
+                <Switch
+                  :checked="notifications.pushEnabled"
+                  @update:checked="notifications.setPushEnabled"
+                />
               </div>
             </div>
-            <div class="setting-input">
-              <Input
-                :model-value="sessionMaxAgeDays"
-                type="number"
-                min="1"
-                step="1"
-                style="width: 100px"
-                @update:model-value="(v) => (sessionMaxAgeDays = Number(v))"
-              />
-            </div>
-            <span class="restart-badge">restart required</span>
-          </div>
-        </div>
-      </Card>
-
-      <AuthSettingsPanel />
-
-      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-        <div class="setting-group">
-          <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-            <span class="live-dot"></span>Voice transcription
-          </div>
-          <div
-            v-for="f in config.voiceFields"
-            :key="f.key"
-            :id="`setting-${f.key}`"
-            class="setting-row"
-          >
-            <div class="setting-info">
-              <div class="setting-label">{{ f.label }}</div>
-              <div class="setting-desc">{{ f.description }}</div>
-            </div>
-            <div class="setting-input">
-              <Select
-                v-if="f.type === 'select'"
-                :model-value="String(form[f.key])"
-                :disabled="config.saving"
-                @update:model-value="(v) => (form[f.key] = v)"
-              >
-                <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent position="popper">
-                  <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                    <SelectItem v-for="o in f.options" :key="o.value" :value="o.value">{{
-                      o.label
-                    }}</SelectItem>
-                  </SelectViewport>
-                </SelectContent>
-              </Select>
-              <Input
-                v-else-if="f.type === 'string'"
-                :model-value="String(form[f.key] ?? '')"
-                type="password"
-                autocomplete="new-password"
-                placeholder="sk-… or gsk_…"
-                @update:model-value="(v) => (form[f.key] = v)"
-              />
-            </div>
-            <span v-if="f.restartRequired" class="restart-badge">restart required</span>
-          </div>
-        </div>
-      </Card>
-
-      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-        <div class="setting-group">
-          <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-            <span class="live-dot"></span>Attention Notifications
-          </div>
-          <div class="setting-row">
-            <div class="setting-info">
-              <div class="setting-label">Sound notifications</div>
-              <div class="setting-desc">
-                Play a bell sound on your computer when a task moves into a state that needs you.
-                Off by default.
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-label" style="font-weight: 500">
+                  Browser permission:
+                  <span :style="{ color: pushStatus.color }">{{ pushStatus.label }}</span>
+                </div>
+                <div
+                  v-if="pushStatus.help"
+                  class="setting-desc"
+                  :style="{ color: pushStatus.tone === 'error' ? 'var(--red)' : 'var(--txt-dim)' }"
+                >
+                  {{ pushStatus.help }}
+                </div>
+                <div
+                  v-if="notifications.testResult"
+                  class="setting-desc"
+                  :style="{
+                    marginTop: '4px',
+                    color: notifications.testResult.ok ? 'var(--green)' : 'var(--red)',
+                  }"
+                >
+                  {{ notifications.testResult.detail }}
+                </div>
+              </div>
+              <div class="setting-input">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  :disabled="testSending"
+                  @click="runTestNotification"
+                >
+                  {{ testSending ? "Sending…" : "Send test" }}
+                </Button>
               </div>
             </div>
-            <div class="setting-input">
-              <Switch
-                :checked="notifications.soundEnabled"
-                @update:checked="notifications.setSoundEnabled"
-              />
-            </div>
-          </div>
-          <div class="setting-row">
-            <div class="setting-info">
-              <div class="setting-label">Push notifications</div>
-              <div class="setting-desc">
-                Send a notification through your computer's notification system when a task moves
-                into a state that needs you. Turning this on will ask for permission. Requires a
-                RepoOS tab to stay open — there's no background service worker.
-              </div>
-            </div>
-            <div class="setting-input">
-              <Switch
-                :checked="notifications.pushEnabled"
-                @update:checked="notifications.setPushEnabled"
-              />
-            </div>
-          </div>
-          <div class="setting-row">
-            <div class="setting-info">
-              <div class="setting-label" style="font-weight: 500">
-                Browser permission:
-                <span :style="{ color: pushStatus.color }">{{ pushStatus.label }}</span>
-              </div>
-              <div
-                v-if="pushStatus.help"
-                class="setting-desc"
-                :style="{ color: pushStatus.tone === 'error' ? 'var(--red)' : 'var(--txt-dim)' }"
-              >
-                {{ pushStatus.help }}
-              </div>
-              <div
-                v-if="notifications.testResult"
-                class="setting-desc"
-                :style="{
-                  marginTop: '4px',
-                  color: notifications.testResult.ok ? 'var(--green)' : 'var(--red)',
-                }"
-              >
-                {{ notifications.testResult.detail }}
-              </div>
-            </div>
-            <div class="setting-input">
-              <Button
-                variant="outline"
-                size="sm"
-                :disabled="testSending"
-                @click="runTestNotification"
-              >
-                {{ testSending ? "Sending…" : "Send test" }}
-              </Button>
-            </div>
-          </div>
-          <div
-            style="
-              font-size: 11px;
-              letter-spacing: 0.1em;
-              text-transform: uppercase;
-              color: var(--txt-faint);
-              font-weight: 600;
-              padding-top: 8px;
-            "
-          >
-            Events
-          </div>
-          <div v-for="t in notificationTypes" :key="t" class="setting-row">
-            <div class="setting-info">
-              <div class="setting-label">{{ NOTIFICATION_TYPE_LABELS[t] }}</div>
-              <div class="setting-desc">
-                {{
-                  t === "review"
-                    ? "A task moved from active to review, ready for your sign-off."
-                    : t === "paused"
-                      ? "A running task was paused."
-                      : t === "stuck"
-                        ? "A task was surfaced as stuck (no progress detected)."
-                        : "A task explicitly needs your attention."
-                }}
-              </div>
-            </div>
-            <div class="setting-input">
-              <Switch
-                :checked="notifications.types[t]"
-                @update:checked="notifications.setTypeEnabled(t, $event)"
-              />
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-        <div class="setting-group">
-          <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-            <span class="live-dot"></span>Board
-          </div>
-          <div class="setting-row">
-            <div class="setting-info">
-              <div class="setting-label">Glide animations</div>
-              <div class="setting-desc">
-                When a card changes state, animate it gliding between columns to show where it came
-                from and where it went. Off by default; when off, cards change state instantly as
-                before.
-              </div>
-            </div>
-            <div class="setting-input">
-              <Switch :checked="ui.glideAnimations" @update:checked="ui.setGlideAnimations" />
-            </div>
-          </div>
-          <div class="setting-row">
-            <div class="setting-info">
-              <div class="setting-label">Keyboard navigation</div>
-              <div class="setting-desc">
-                Power-user shortcut mode: move around the board with the keyboard —
-                <span class="mono">j</span>/<span class="mono">k</span> (
-                <span class="mono">h</span>/<span class="mono">l</span> between columns),
-                <span class="mono">Enter</span> to open, <span class="mono">Esc</span> to close or
-                clear. Off by default; when off the board behaves exactly as before.
-              </div>
-            </div>
-            <div class="setting-input">
-              <Switch :checked="ui.keyboardNavEnabled" @update:checked="ui.setKeyboardNavEnabled" />
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-        <div class="setting-group">
-          <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-            <span
-              style="cursor: pointer; user-select: none"
-              @click="config.showAdvanced = !config.showAdvanced"
+            <div
+              style="
+                font-size: 11px;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+                color: var(--txt-faint);
+                font-weight: 600;
+                padding-top: 8px;
+              "
             >
-              <span v-if="config.showAdvanced">▾</span><span v-else>▸</span> Advanced
-            </span>
+              Events
+            </div>
+            <div v-for="t in notificationTypes" :key="t" class="setting-row">
+              <div class="setting-info">
+                <div class="setting-label">{{ NOTIFICATION_TYPE_LABELS[t] }}</div>
+                <div class="setting-desc">
+                  {{
+                    t === "review"
+                      ? "A task moved from active to review, ready for your sign-off."
+                      : t === "paused"
+                        ? "A running task was paused."
+                        : t === "stuck"
+                          ? "A task was surfaced as stuck (no progress detected)."
+                          : "A task explicitly needs your attention."
+                  }}
+                </div>
+              </div>
+              <div class="setting-input">
+                <Switch
+                  :checked="notifications.types[t]"
+                  @update:checked="notifications.setTypeEnabled(t, $event)"
+                />
+              </div>
+            </div>
           </div>
-          <div v-if="config.showAdvanced">
+        </Card>
+      </div>
+
+      <!-- ─── Security tab ────────────────────────────────── -->
+      <div
+        id="settings-panel-security"
+        role="tabpanel"
+        :aria-labelledby="`settings-tab-security`"
+        v-show="activeTab === 'security'"
+      >
+        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+          <div class="setting-group">
+            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+              <span class="live-dot"></span>Authentication
+            </div>
+            <div id="setting-auth.enabled" class="setting-row">
+              <div class="setting-info">
+                <div class="setting-label">Authentication</div>
+                <div class="setting-desc">
+                  Require login to access RepoOS (email OTP or Google OAuth).
+                </div>
+              </div>
+              <div class="setting-input">
+                <Switch
+                  :checked="!!form['auth.enabled']"
+                  :disabled="config.saving"
+                  @update:checked="(v: boolean) => (form['auth.enabled'] = v)"
+                />
+              </div>
+              <span class="restart-badge">restart required</span>
+            </div>
+            <div id="setting-auth.sessionMaxAge" class="setting-row">
+              <div class="setting-info">
+                <div class="setting-label">Session duration (days)</div>
+                <div class="setting-desc">
+                  How long a login session lasts before requiring sign-in again. Default 30 days.
+                </div>
+              </div>
+              <div class="setting-input">
+                <Input
+                  :model-value="sessionMaxAgeDays"
+                  type="number"
+                  min="1"
+                  step="1"
+                  style="width: 100px"
+                  @update:model-value="(v) => (sessionMaxAgeDays = Number(v))"
+                />
+              </div>
+              <span class="restart-badge">restart required</span>
+            </div>
+          </div>
+        </Card>
+
+        <AuthSettingsPanel />
+
+        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+          <div class="setting-group">
+            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+              <span class="live-dot"></span>Voice transcription
+            </div>
+            <div
+              v-for="f in config.voiceFields"
+              :key="f.key"
+              :id="`setting-${f.key}`"
+              class="setting-row"
+            >
+              <div class="setting-info">
+                <div class="setting-label">{{ f.label }}</div>
+                <div class="setting-desc">{{ f.description }}</div>
+              </div>
+              <div class="setting-input">
+                <Select
+                  v-if="f.type === 'select'"
+                  :model-value="String(form[f.key])"
+                  :disabled="config.saving"
+                  @update:model-value="(v) => (form[f.key] = v)"
+                >
+                  <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                      <SelectItem v-for="o in f.options" :key="o.value" :value="o.value">{{
+                        o.label
+                      }}</SelectItem>
+                    </SelectViewport>
+                  </SelectContent>
+                </Select>
+                <Input
+                  v-else-if="f.type === 'string'"
+                  :model-value="String(form[f.key] ?? '')"
+                  type="password"
+                  autocomplete="new-password"
+                  placeholder="sk-… or gsk_…"
+                  @update:model-value="(v) => (form[f.key] = v)"
+                />
+              </div>
+              <span v-if="f.restartRequired" class="restart-badge">restart required</span>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      <!-- ─── Advanced tab ────────────────────────────────── -->
+      <div
+        id="settings-panel-advanced"
+        role="tabpanel"
+        :aria-labelledby="`settings-tab-advanced`"
+        v-show="activeTab === 'advanced'"
+      >
+        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+          <div class="setting-group">
+            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+              <span class="live-dot"></span>Advanced
+            </div>
             <div class="adv-gate">
               <div class="warning">
                 ⚠ Changing these may break the running server. Edit with care.
@@ -837,68 +959,68 @@ onUnmounted(() => {
               <span v-if="f.restartRequired" class="restart-badge">restart required</span>
             </div>
           </div>
-        </div>
-      </Card>
+        </Card>
 
-      <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-        <div class="setting-group">
-          <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-            <span class="live-dot"></span>Raw repoos.toml
-          </div>
-          <div class="toml-raw">
-            <div class="toml-raw-head">
-              <div class="setting-desc" style="margin: 0">
-                The whole file, for sections the fields above don't cover —
-                <code>[preview]</code>, <code>[check]</code>, <code>[release]</code>,
-                <code>[[deployments]]</code>, and anything you add. Values stay on one line:
-                RepoOS's config reader doesn't support multi-line arrays, multi-line strings, or
-                inline tables. Keep secrets in <code>.env</code>, not here.
+        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+          <div class="setting-group">
+            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+              <span class="live-dot"></span>Raw repoos.toml
+            </div>
+            <div class="toml-raw">
+              <div class="toml-raw-head">
+                <div class="setting-desc" style="margin: 0">
+                  The whole file, for sections the fields above don't cover —
+                  <code>[preview]</code>, <code>[check]</code>, <code>[release]</code>,
+                  <code>[[deployments]]</code>, and anything you add. Values stay on one line:
+                  RepoOS's config reader doesn't support multi-line arrays, multi-line strings, or
+                  inline tables. Keep secrets in <code>.env</code>, not here.
+                </div>
+                <div class="toml-raw-actions">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    :disabled="config.rawLoading || config.rawSaving"
+                    @click="reloadRaw"
+                    >Reload</Button
+                  >
+                  <Button
+                    size="sm"
+                    :disabled="!config.rawDirty || config.rawLoading || config.rawSaving"
+                    @click="saveRaw"
+                    >{{ config.rawSaving ? "Saving…" : "Save" }}</Button
+                  >
+                </div>
               </div>
-              <div class="toml-raw-actions">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  :disabled="config.rawLoading || config.rawSaving"
-                  @click="reloadRaw"
-                  >Reload</Button
-                >
-                <Button
-                  size="sm"
-                  :disabled="!config.rawDirty || config.rawLoading || config.rawSaving"
-                  @click="saveRaw"
-                  >{{ config.rawSaving ? "Saving…" : "Save" }}</Button
-                >
+              <div class="toml-editor">
+                <pre ref="rawPre" aria-hidden="true"><code v-html="highlightedRaw"></code></pre>
+                <textarea
+                  ref="rawTextarea"
+                  v-model="config.rawDraft"
+                  spellcheck="false"
+                  autocomplete="off"
+                  autocapitalize="off"
+                  autocorrect="off"
+                  aria-label="repoos.toml contents"
+                  :disabled="config.rawLoading"
+                  @scroll="syncRawScroll"
+                ></textarea>
+              </div>
+              <div v-if="config.rawLoading" class="setting-desc" style="padding: 8px 0 4px">
+                Loading…
+              </div>
+              <div v-else-if="config.rawError" class="toml-raw-error" role="alert">
+                {{ config.rawError }}
+              </div>
+              <div v-else-if="config.rawDirty" class="setting-desc" style="padding: 8px 0 4px">
+                Unsaved changes.
+              </div>
+              <div v-else class="setting-desc" style="padding: 8px 0 4px">
+                In sync with <span class="mono">repoos.toml</span>.
               </div>
             </div>
-            <div class="toml-editor">
-              <pre ref="rawPre" aria-hidden="true"><code v-html="highlightedRaw"></code></pre>
-              <textarea
-                ref="rawTextarea"
-                v-model="config.rawDraft"
-                spellcheck="false"
-                autocomplete="off"
-                autocapitalize="off"
-                autocorrect="off"
-                aria-label="repoos.toml contents"
-                :disabled="config.rawLoading"
-                @scroll="syncRawScroll"
-              ></textarea>
-            </div>
-            <div v-if="config.rawLoading" class="setting-desc" style="padding: 8px 0 4px">
-              Loading…
-            </div>
-            <div v-else-if="config.rawError" class="toml-raw-error" role="alert">
-              {{ config.rawError }}
-            </div>
-            <div v-else-if="config.rawDirty" class="setting-desc" style="padding: 8px 0 4px">
-              Unsaved changes.
-            </div>
-            <div v-else class="setting-desc" style="padding: 8px 0 4px">
-              In sync with <span class="mono">repoos.toml</span>.
-            </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      </div>
     </div>
   </div>
 </template>

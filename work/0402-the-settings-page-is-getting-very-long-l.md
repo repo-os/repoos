@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-18T07:21:37Z"
-review_passes: 2
 id: "0402"
 title: "The settings page is getting very long, let's add tabs"
 type: feature
@@ -11,6 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/0402-settings-tabs
 created_at: "2026-09-18T04:37:15Z"
+updated_at: "2026-09-18T05:41:48Z"
 ---
 ## Problem
 
@@ -86,6 +85,3 @@ This creates excessive scrolling and visual clutter. Users need a way to organiz
 - 2026-09-18T13:26:00Z · status draft→ready
 - 2026-09-18T05:36:36Z · status ready→active
 - 2026-09-18T05:41:48Z · status active→review
-- 2026-09-18T07:15:24Z · status review→active
-- 2026-09-18T07:16:38Z · status active→review
-
