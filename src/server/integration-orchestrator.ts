@@ -393,7 +393,12 @@ interface ProcessRunResult {
 function runProcess(
   cmd: string,
   args: string[],
-  opts: { cwd: string; timeout: number; env?: NodeJS.ProcessEnv; onChunk?: (text: string) => void },
+  opts: {
+    cwd: string;
+    timeout: number;
+    env?: NodeJS.ProcessEnv;
+    onChunk?: (text: string) => void;
+  },
 ): Promise<ProcessRunResult> {
   return new Promise((resolve) => {
     const child = spawn(cmd, args, { cwd: opts.cwd, env: opts.env });
@@ -554,7 +559,11 @@ export class CloseOutOrchestrator {
       this.coordinator.removeJob(job.taskId);
       return { ok: true };
     }
-    this.coordinator.updateJob(job.taskId, { phase: PHASE_FAILED, failedPhase, reason });
+    this.coordinator.updateJob(job.taskId, {
+      phase: PHASE_FAILED,
+      failedPhase,
+      reason,
+    });
     onRecorded?.();
     return { ok: false, reason };
   }
@@ -564,7 +573,11 @@ export class CloseOutOrchestrator {
    * Phases are atomic; a retry at any phase resumes from that phase.
    * May return early if the job transitions back to an earlier phase (e.g., on main drift).
    */
-  async processNext(): Promise<{ ok: boolean; reason?: string; requiresRetry?: boolean }> {
+  async processNext(): Promise<{
+    ok: boolean;
+    reason?: string;
+    requiresRetry?: boolean;
+  }> {
     const job = this.coordinator.peekNext();
     if (!job) return { ok: true, reason: "queue empty" };
 
@@ -598,7 +611,9 @@ export class CloseOutOrchestrator {
       if (job.phase === "syncing") {
         const syncRes = await this.syncCandidate(job);
         if (!syncRes.ok) {
-          this.logger?.integration(job.taskId, "error", "sync failed", { reason: syncRes.reason });
+          this.logger?.integration(job.taskId, "error", "sync failed", {
+            reason: syncRes.reason,
+          });
           if (syncRes.conflict) {
             // A real conflict caught by the pre-flight (#0358): the candidate
             // worktree was never created, but the outcome is identical to one
@@ -731,7 +746,9 @@ export class CloseOutOrchestrator {
       return { ok: true };
     } catch (err) {
       const reason = err instanceof Error ? err.message : "unknown error";
-      this.logger?.integration(job.taskId, "error", "orchestrator error", { reason });
+      this.logger?.integration(job.taskId, "error", "orchestrator error", {
+        reason,
+      });
       return this.failOrReconcile(job, job.phase ?? "unknown", `orchestrator error: ${reason}`);
     }
   }
@@ -795,9 +812,12 @@ export class CloseOutOrchestrator {
     );
   }
 
-  private async syncCandidate(
-    job: IntegrationJob,
-  ): Promise<{ ok: boolean; reason?: string; candidateSha?: string; conflict?: boolean }> {
+  private async syncCandidate(job: IntegrationJob): Promise<{
+    ok: boolean;
+    reason?: string;
+    candidateSha?: string;
+    conflict?: boolean;
+  }> {
     this.onProgress?.("sync");
     const root = this.config.root;
     const branch = candidateBranchName(job.taskId);
@@ -829,7 +849,10 @@ export class CloseOutOrchestrator {
     // Ensure candidate worktree exists and is on main.
     const wtRes = ensureWorktree(root, branch, `candidate-${job.taskId}`);
     if (!wtRes.ok) {
-      return { ok: false, reason: `could not create candidate worktree: ${wtRes.reason}` };
+      return {
+        ok: false,
+        reason: `could not create candidate worktree: ${wtRes.reason}`,
+      };
     }
 
     // A fresh candidate worktree has no dependencies, and the gate below runs a
@@ -851,7 +874,10 @@ export class CloseOutOrchestrator {
     // Reset candidate to main so it's a clean base for the merge.
     const resetRes = await runGit(wtRes.path, ["reset", "--hard", mainBranch], 30_000);
     if (resetRes.status !== 0) {
-      return { ok: false, reason: `could not reset candidate to main: ${resetRes.stderr}` };
+      return {
+        ok: false,
+        reason: `could not reset candidate to main: ${resetRes.stderr}`,
+      };
     }
 
     // Validate and record the feature branch SHA.
@@ -859,7 +885,10 @@ export class CloseOutOrchestrator {
     // Check if the feature branch exists (critical: avoid merging unrelated history)
     const taskWtPath = worktreePathForBranch(root, taskBranch);
     if (!taskWtPath) {
-      return { ok: false, reason: `feature branch ${taskBranch} worktree not found` };
+      return {
+        ok: false,
+        reason: `feature branch ${taskBranch} worktree not found`,
+      };
     }
 
     const branchShaRes = await runGit(taskWtPath, ["rev-parse", "HEAD"], 4000);
@@ -867,7 +896,9 @@ export class CloseOutOrchestrator {
       return { ok: false, reason: "could not get feature branch SHA" };
     }
 
-    this.coordinator.updateJob(job.taskId, { branchSha: branchShaRes.stdout.trim() });
+    this.coordinator.updateJob(job.taskId, {
+      branchSha: branchShaRes.stdout.trim(),
+    });
 
     return { ok: true, candidateSha: baseMainSha };
   }
@@ -955,7 +986,10 @@ export class CloseOutOrchestrator {
     // Verify feature branch still exists before attempting merge
     const branchListRes = await runGit(root, ["branch", "--list", featureBranch], 4000);
     if (branchListRes.status !== 0 || !branchListRes.stdout.trim()) {
-      return { ok: false, reason: `feature branch ${featureBranch} no longer exists` };
+      return {
+        ok: false,
+        reason: `feature branch ${featureBranch} no longer exists`,
+      };
     }
 
     // In the candidate worktree, merge the feature branch from its location.
@@ -982,14 +1016,17 @@ export class CloseOutOrchestrator {
     // preserve main's version for those rather than blocking close-out.
     const autoResolveOurs = ["work/"];
     this.onProgress?.("merge");
-    const merge = await mergeBranch(wtPath, featureBranch, { autoResolve, autoResolveOurs });
+    const merge = await mergeBranch(wtPath, featureBranch, {
+      autoResolve,
+      autoResolveOurs,
+    });
     if (!merge.merged) {
       // A conflict is a property of the two trees, not of the machine. Retrying
       // re-derives the identical conflict; the fix is always to merge main into
       // the feature branch and resolve it there (see docs/close-out-pipeline.md).
       return {
         ok: false,
-        retryable: false,
+        retryable: merge.conflicts.length > 0 ? false : true,
         reason: merge.conflicts.length
           ? `merge conflict in ${merge.conflicts.join(", ")} — resolve it in the feature branch's own worktree (merge main into the branch), then retry`
           : (merge.reason ?? "merge failed"),
@@ -1054,7 +1091,10 @@ export class CloseOutOrchestrator {
             const content = readFileSync(join(wtPath, file), "utf8");
             // Check for git conflict markers: exactly 7 of each character at line start
             if (/^<{7}$|^={7}$|^>{7}$/m.test(content)) {
-              return { ok: false, reason: `unresolved conflict markers in ${file}` };
+              return {
+                ok: false,
+                reason: `unresolved conflict markers in ${file}`,
+              };
             }
           } catch {
             /* skip unreadable files */
@@ -1082,12 +1122,21 @@ export class CloseOutOrchestrator {
     } else {
       // Run the post-merge gate: build + check via bun/npm.
       this.onProgress?.("build");
-      let buildRes = await runProcess("bun", ["run", "build"], { cwd: wtPath, timeout: 300_000 });
+      let buildRes = await runProcess("bun", ["run", "build"], {
+        cwd: wtPath,
+        timeout: 300_000,
+      });
       if (commandMissing(buildRes)) {
-        buildRes = await runProcess("npm", ["run", "build"], { cwd: wtPath, timeout: 300_000 });
+        buildRes = await runProcess("npm", ["run", "build"], {
+          cwd: wtPath,
+          timeout: 300_000,
+        });
       }
       if (buildRes.status !== 0) {
-        return { ok: false, reason: `build failed: ${tailLine(buildRes.stdout, buildRes.stderr)}` };
+        return {
+          ok: false,
+          reason: `build failed: ${tailLine(buildRes.stdout, buildRes.stderr)}`,
+        };
       }
 
       // Remote Validation Runner (docs/remote-validation.md): hand the expensive
@@ -1103,7 +1152,10 @@ export class CloseOutOrchestrator {
         this.onProgress?.("check");
         const headRes = await runGit(wtPath, ["rev-parse", "HEAD"], 4000);
         if (headRes.status !== 0) {
-          return { ok: false, reason: "could not resolve candidate HEAD before remote validation" };
+          return {
+            ok: false,
+            reason: "could not resolve candidate HEAD before remote validation",
+          };
         }
         const remote = await this.remoteValidator.validate({
           taskId: job.taskId,
@@ -1228,7 +1280,10 @@ export class CloseOutOrchestrator {
             "info",
             "check reported self-resolving build staleness — refreshing marker and re-checking the same tree in place (no debugger detour)",
           );
-          await runProcess("bun", ["run", "build"], { cwd: wtPath, timeout: 300_000 });
+          await runProcess("bun", ["run", "build"], {
+            cwd: wtPath,
+            timeout: 300_000,
+          });
           checkRes = await rawCheck(process.execPath, [localCli, "check"]);
           if (checkRes.status !== 0) {
             checkHandle?.done(checkRes.status);
@@ -1264,7 +1319,10 @@ export class CloseOutOrchestrator {
     // Candidate is green. Capture its SHA.
     const candidateShaRes = await runGit(wtPath, ["rev-parse", "HEAD"], 4000);
     if (candidateShaRes.status !== 0) {
-      return { ok: false, reason: "could not get candidate SHA after validation" };
+      return {
+        ok: false,
+        reason: "could not get candidate SHA after validation",
+      };
     }
 
     // Capture the reviewable source diff before publication removes the task
@@ -1285,7 +1343,10 @@ export class CloseOutOrchestrator {
     const branch = candidateBranchName(job.taskId);
     const wtPath = worktreePathForBranch(root, branch);
     if (!wtPath) {
-      return { ok: false, reason: "candidate worktree missing at publish time" };
+      return {
+        ok: false,
+        reason: "candidate worktree missing at publish time",
+      };
     }
 
     // Acquire the repository lock before publishing.
@@ -1296,7 +1357,10 @@ export class CloseOutOrchestrator {
         acquireAttempts++;
       }
       if (acquireAttempts >= 60) {
-        return { ok: false, reason: "could not acquire publication lock (timeout)" };
+        return {
+          ok: false,
+          reason: "could not acquire publication lock (timeout)",
+        };
       }
     }
 
@@ -1346,7 +1410,9 @@ export class CloseOutOrchestrator {
             "main advanced with bookkeeping-only commits — publishing without a resync",
             { from: job.baseMainSha, to: currentMainSha },
           );
-          this.coordinator.updateJob(job.taskId, { baseMainSha: currentMainSha });
+          this.coordinator.updateJob(job.taskId, {
+            baseMainSha: currentMainSha,
+          });
         } else {
           // Main advanced with a real code change between validation and
           // publishing. Every OTHER retry path in this close-out pipeline is
@@ -1554,9 +1620,15 @@ export class CloseOutOrchestrator {
       const canBuild = existsSync(join(root, "package.json"));
       let rebuildRes: ProcessRunResult | undefined;
       if (canBuild) {
-        rebuildRes = await runProcess("bun", ["run", "build"], { cwd: root, timeout: 300_000 });
+        rebuildRes = await runProcess("bun", ["run", "build"], {
+          cwd: root,
+          timeout: 300_000,
+        });
         if (commandMissing(rebuildRes)) {
-          rebuildRes = await runProcess("npm", ["run", "build"], { cwd: root, timeout: 300_000 });
+          rebuildRes = await runProcess("npm", ["run", "build"], {
+            cwd: root,
+            timeout: 300_000,
+          });
         }
       }
       if (!canBuild) {
