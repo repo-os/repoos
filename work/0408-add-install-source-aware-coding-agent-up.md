@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-09-18T11:51:31Z"
-review_passes: 2
+updated_at: "2026-09-18T12:45:52Z"
+review_passes: 3
 id: "0408"
 title: Add install-source-aware coding-agent update checks
 type: feature
@@ -60,4 +60,5 @@ Add an explicit Check for updates action to Detected Coding Agents. It checks su
 - 2026-09-18T11:42:56Z · status active→review
 - 2026-09-18T11:43:46Z · status review→active
 - 2026-09-18T11:49:51Z · status active→review
+
 
