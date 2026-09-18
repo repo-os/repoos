@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-18T12:03:25Z"
+review_passes: 6
 id: "0406"
 title: Add Antigravity CLI integration and deprecate Gemini CLI
 type: feature
@@ -13,8 +15,6 @@ model_override: gpt-5.6-luna
 review_cli_override: codex
 review_model_override: gpt-5.6-terra
 created_at: "2026-09-18T08:54:55Z"
-updated_at: "2026-09-18T12:00:13Z"
-review_passes: 5
 review_rounds: 2
 skill_suggestion: "0407"
 handoff_signal_retry_count: 2
@@ -90,3 +90,4 @@ Add a production-quality Antigravity CLI driver. A locally authenticated user ca
 - 2026-09-18T11:59:58Z · note: Round-5 findings fixed (a022feca bypassing one-shots + docs, 81? team selector), main merged in to clear the agents.ts conflict; full repoos check green on the merged branch
 - 2026-09-18T12:00:04Z · note: Correction to previous note: the team-selector fix is 7029304f.
 - 2026-09-18T12:00:13Z · status active→review
+
