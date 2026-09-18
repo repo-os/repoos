@@ -29,7 +29,10 @@ const args = process.argv.slice(2);
 fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args, cwd: process.cwd(), agent: process.env.REPOOS_AGENT || "", task: process.env.REPOOS_TASK_ID || "", api: process.env.REPOOS_API_URL || "" }) + "\\n");
 if (path.basename(process.argv[1]) === "copilot") {
   process.stdout.write(JSON.stringify({ type: "assistant.message", data: { content: "Copilot response" } }) + "\\n");
-  process.stdout.write(JSON.stringify({ type: "tool.execution_complete", data: { toolName: "shell", arguments: { command: "git status" }, result: "clean" } }) + "\\n");
+  process.stdout.write(JSON.stringify({ type: "tool.execution_start", data: { toolCallId: "call-1", toolName: "shell", arguments: { command: "git status" } } }) + "\\n");
+  process.stdout.write(JSON.stringify({ type: "tool.execution_partial_result", data: { toolCallId: "call-1", partialOutput: "clean" } }) + "\\n");
+  process.stdout.write(JSON.stringify({ type: "tool.execution_partial_result", data: { toolCallId: "call-1", partialOutput: "clean" } }) + "\\n");
+  process.stdout.write(JSON.stringify({ type: "tool.execution_complete", data: { toolCallId: "call-1", toolName: "shell", result: "clean" } }) + "\\n");
   process.stdout.write(JSON.stringify({ type: "result", sessionId: "copilot-session-123" }) + "\\n");
   process.exit(0);
 }
@@ -453,6 +456,11 @@ describe("claude code driver", () => {
             }),
           ]),
         );
+        expect(
+          runner
+            .output("0001")!
+            .lines.some((line) => "s" in line && line.d.includes("tool.execution_partial_result")),
+        ).toBe(false);
         const [run] = spawns(fx);
         expect(run.args).toEqual(
           expect.arrayContaining([
