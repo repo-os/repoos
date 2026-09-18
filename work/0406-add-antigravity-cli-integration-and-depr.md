@@ -2,7 +2,7 @@
 id: "0406"
 title: Add Antigravity CLI integration and deprecate Gemini CLI
 type: feature
-status: review
+status: active
 priority: p1
 area: agent
 assigned_to: ai
@@ -78,3 +78,4 @@ Add a production-quality Antigravity CLI driver. A locally authenticated user ca
 - 2026-09-18T10:53:13Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-09-18T10:53:13Z · status review→active
 - 2026-09-18T11:08:13Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-09-18T11:08:13Z · status review→active
