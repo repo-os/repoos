@@ -179,7 +179,7 @@ describe("Antigravity discovery and commands", () => {
   it("parses documented model-table rows and drops diagnostics", () => {
     expect(
       parseAntigravityModels(
-        "Available models\n\ngemini-3.8-flash-medium Gemini 3.8 Flash (Medium)\nclaude-sonnet-4-6 Claude Sonnet 4.6\nwarning: sign in required\n",
+        "Available models\n\ngemini-3.8-flash-medium Gemini 3.8 Flash (Medium)\nclaude-sonnet-4-6 Claude Sonnet 4.6\nwarning: sign in required\nAuthentication required\nFailed to start\n",
       ),
     ).toEqual(["gemini-3.8-flash-medium", "claude-sonnet-4-6"]);
   });
@@ -332,6 +332,12 @@ function withFakeAgy<T>(fn: (fx: Fixture) => Promise<T>): Promise<T> {
   });
 }
 
+/** A linked git worktree has a `.git` *file*; that's what RepoOS checks for. */
+function makeWorktree(dir: string): void {
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, ".git"), "gitdir: /tmp/repo/.git/worktrees/agy\n");
+}
+
 function sysText(runner: AgentRunner, id: string): string {
   return (runner.output(id)?.lines ?? [])
     .map((line) => ("d" in line && typeof line.d === "string" ? line.d : ""))
@@ -346,6 +352,21 @@ it("refuses an Antigravity task turn in the main checkout before spawning", () =
     expect(res.ok).toBe(false);
     expect(res.reason).toContain("task worktree");
     expect(runner.isRunning(TASK.id)).toBe(false);
+    expect(spawnLog(fx)).toEqual([]);
+  }));
+
+it("refuses an Antigravity turn in a directory that isn't a linked worktree", () =>
+  withFakeAgy(async (fx) => {
+    const plain = join(fx.bin, "not-a-worktree");
+    mkdirSync(plain, { recursive: true });
+    const runner = new AgentRunner(config(fx.bin), () => {});
+    const res = runner.start(TASK, "feat/agy", agent, { cwd: plain });
+    expect(res.ok).toBe(false);
+    expect(res.reason).toContain("task worktree");
+    // Review starts reach spawnTurn directly; the guard must hold there too.
+    const review = runner.startReview(`review:${TASK.id}`, agent, "review this", plain);
+    expect(review.ok).toBe(false);
+    expect(review.reason).toContain("task worktree");
     expect(spawnLog(fx)).toEqual([]);
   }));
 
@@ -398,7 +419,7 @@ it("rejects a zero-exit Antigravity one-shot envelope that reports an error", ()
 it("drops another engine's session id when a task switches to Antigravity", () =>
   withFakeAgy(async (fx) => {
     const worktree = join(fx.bin, "worktree");
-    mkdirSync(worktree, { recursive: true });
+    makeWorktree(worktree);
     const runner = new AgentRunner(config(fx.bin), () => {});
     expect(runner.start(TASK, "feat/agy", agent, { cwd: worktree }).ok).toBe(true);
     await waitFor(() => !runner.isRunning(TASK.id), "agy first turn");
@@ -425,7 +446,7 @@ it("drops another engine's session id when a task switches to Antigravity", () =
 it("fails a zero-exit Antigravity turn with no terminal result", () =>
   withFakeAgy(async (fx) => {
     const worktree = join(fx.bin, "worktree");
-    mkdirSync(worktree, { recursive: true });
+    makeWorktree(worktree);
     process.env.REPOOS_FAKE_AGY_NO_RESULT = "1";
     const runner = new AgentRunner(config(fx.bin), () => {});
     expect(runner.start(TASK, "feat/agy", agent, { cwd: worktree }).ok).toBe(true);
@@ -436,7 +457,7 @@ it("fails a zero-exit Antigravity turn with no terminal result", () =>
 it("fails a zero-exit Antigravity turn whose result is not SUCCESS", () =>
   withFakeAgy(async (fx) => {
     const worktree = join(fx.bin, "worktree");
-    mkdirSync(worktree, { recursive: true });
+    makeWorktree(worktree);
     process.env.REPOOS_FAKE_AGY_STATUS = "ERROR";
     const runner = new AgentRunner(config(fx.bin), () => {});
     expect(runner.start(TASK, "feat/agy", agent, { cwd: worktree }).ok).toBe(true);
@@ -508,7 +529,7 @@ it("detects auth, lists models, and runs/resumes in the exact task worktree", as
     const models = await MODEL_SOURCES.antigravity.list({ cwd: fx.bin });
     expect(models.models).toEqual(["default", "gemini-3.8-flash-medium", "claude-sonnet-4-6"]);
     const worktree = join(fx.bin, "worktree");
-    mkdirSync(worktree, { recursive: true });
+    makeWorktree(worktree);
     const runner = new AgentRunner(config(fx.bin), () => {});
     expect(runner.start(TASK, "feat/agy", agent, { cwd: worktree }).ok).toBe(true);
     await waitFor(() => !runner.isRunning(TASK.id), "agy first turn");

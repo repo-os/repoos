@@ -85,6 +85,10 @@ export function parseAntigravityModels(text: string): string[] {
     // A model row has a display label after the slug. Requiring it keeps a
     // lone diagnostic word from being presented as a model option.
     if (!/^\S+\s+\S/.test(line)) continue;
+    // Real model ids carry a version or a hyphen (gemini-3.8-flash,
+    // claude-sonnet-4-6); diagnostics like "Authentication required" or
+    // "Failed to start" don't, and must never become selectable pins.
+    if (!/[-\d]/.test(slug)) continue;
     seen.add(slug);
   }
   return [...seen];

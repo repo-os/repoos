@@ -3019,6 +3019,25 @@ function isLinkedWorktree(dir: string): boolean {
   }
 }
 
+/**
+ * Antigravity runs with --dangerously-skip-permissions for unattended work, so
+ * a bypassing `agy` spawn is only allowed inside a linked task worktree — never
+ * the main checkout (a failed-worktree fallback, a hotfix, or a board-level
+ * chat) and never an arbitrary directory. Returns the refusal, or null.
+ */
+function antigravityWorktreeRefusal(
+  cmd: string,
+  args: string[],
+  cwd: string,
+  task?: Task,
+): string | null {
+  if (cmd !== "agy" || !args.includes("--dangerously-skip-permissions")) return null;
+  if (isLinkedWorktree(cwd)) return null;
+  return task
+    ? "Antigravity only runs in a RepoOS task worktree, and this turn would run outside one (worktree creation failed, or this is a hotfix). Fix the worktree, or pick a different agent for this task."
+    : "Antigravity only runs in a RepoOS task worktree, so it can't drive board-level chats that run in the main checkout. Pick a different agent for this role.";
+}
+
 export function runPrompt(
   agent: Agent,
   prompt: string,
@@ -3046,16 +3065,9 @@ export function runPrompt(
     // permission bypass and may use the main checkout like every other CLI.
     // Anything that does bypass permissions (reviewCommand — e.g. the CTO,
     // which runs in config.root) must be in a linked task worktree.
-    if (
-      cmd === "agy" &&
-      args.includes("--dangerously-skip-permissions") &&
-      !isLinkedWorktree(cwd)
-    ) {
-      resolve({
-        ok: false,
-        error:
-          "Antigravity runs with --dangerously-skip-permissions here, so it only runs inside a RepoOS task worktree — not the main checkout. Pick a different agent for this role.",
-      });
+    const refusal = antigravityWorktreeRefusal(cmd, args, cwd);
+    if (refusal) {
+      resolve({ ok: false, error: refusal });
       return;
     }
     let proc: ChildProcess;
@@ -4195,20 +4207,8 @@ export class AgentRunner {
     branch?: string,
     opts: { skipBoardDivergence?: boolean } = {},
   ): StartResult {
-    // Antigravity runs with --dangerously-skip-permissions, so it must never
-    // land in the main checkout: not a task turn (routes fall back to
-    // config.root when worktree creation fails, and hotfixes use it on
-    // purpose) and not a board-level chat (Ross, debugger, PM), which has no
-    // worktree at all. Refuse here, the one choke point every runner spawn
-    // passes through, before anything runs.
-    if (cmd === "agy" && this.samePath(cwd, this.config.root)) {
-      return {
-        ok: false,
-        reason: task
-          ? "Antigravity only runs in a RepoOS task worktree, and this turn would run in the main checkout (worktree creation failed, or this is a hotfix). Fix the worktree, or pick a different agent for this task."
-          : "Antigravity only runs in a RepoOS task worktree, so it can't drive board-level chats that run in the main checkout. Pick a different agent for this role.",
-      };
-    }
+    const refusal = antigravityWorktreeRefusal(cmd, args, cwd, task);
+    if (refusal) return { ok: false, reason: refusal };
     if (this.entries.size < this.maxConcurrentAgents) {
       return this.spawnTurn(id, cmd, args, cwd, task, branch, opts);
     }
@@ -4253,6 +4253,11 @@ export class AgentRunner {
     branch?: string,
     opts: { skipBoardDivergence?: boolean; review?: boolean; reviewKind?: "run" | "chat" } = {},
   ): StartResult {
+    // Backstop for callers that reach spawnTurn directly (review starts) and
+    // for queued turns: never launch a permission-bypassing agy outside a
+    // linked task worktree.
+    const refusal = antigravityWorktreeRefusal(cmd, args, cwd, task);
+    if (refusal) return { ok: false, reason: refusal };
     const runId = randomUUID();
     // A new turn means the task is active again — a human restarted a paused
     // task, or sent a follow-up — so the pause marker no longer applies.
