@@ -2,7 +2,7 @@
 id: "0412"
 title: Add integrated coding agents to Model Providers
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/add-integrated-coding-agents-to-model-pr
 review_model_override: opencode-go/hy3
 created_at: "2026-09-18T12:54:04Z"
-updated_at: "2026-09-18T13:13:46Z"
+updated_at: "2026-09-18T14:13:46Z"
 ---
 ## Problem
 
@@ -57,3 +57,4 @@ In "Model Providers" we don't cover all of the coding agents yet, please add all
 - 2026-09-18T12:57:30Z · status inbox→ready
 - 2026-09-18T12:57:32Z · status ready→active, branch
 - 2026-09-18T13:13:46Z · status active→review
+- 2026-09-18T14:13:46Z · status review→done, release:success
