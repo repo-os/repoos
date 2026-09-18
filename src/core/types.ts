@@ -340,6 +340,13 @@ export interface RepoOSConfig {
   agents?: Agent[];
   /** When true, RepoOS automatically selects and starts ready tasks up to maxActiveTasks. */
   autoEngineeringMode?: boolean;
+  /**
+   * When true (the default), a completed task's session is analysed and — if a
+   * non-trivial reusable multi-step procedure was performed — exactly one
+   * `New Skill Suggestion: …` task is created for human review. Nothing is
+   * saved as an actual skill until a human works that suggestion task.
+   */
+  skillSuggestions?: boolean;
   /** Maximum number of simultaneously active tasks when auto-engineering mode is enabled. */
   maxActiveTasks?: number;
   /**

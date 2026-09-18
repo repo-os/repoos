@@ -32,8 +32,15 @@ defaultAssignee = "ai"        # "ai" or "human"
 defaultTaskMode = "freeform"
 maxActiveTasks  = 3           # how many tasks may be active at once
 autoEngineeringMode = false   # automatically dispatch ready tasks to agents
+skillSuggestions    = true    # suggest a reusable skill after a reviewed task
 worktreeWarnThreshold = 20    # warn once this many task worktrees exist
 ```
+
+`skillSuggestions` controls the auto-suggest pass described in
+[Review and close-out](/review-and-close-out#skill-suggestions): when on, a
+reviewed task's session may produce a single `New Skill Suggestion: …` task for
+you to approve. Off means no suggestion tasks and no review-drawer note. Default
+`true`.
 
 ### Board column labels
 

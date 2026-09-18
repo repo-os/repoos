@@ -43,6 +43,28 @@ RepoOS stops and leaves the task for a human rather than looping forever. It
 also stops early and escalates if the reviewer flags the task's own relevance —
 an obsolete task needs a scoping decision, not more engineering.
 
+## Skill suggestions
+
+When a task lands in `review` (or `done`, if it skipped review), RepoOS also
+analyses the task's session transcript. If it finds a non-trivial, reusable
+multi-step procedure, it creates **one** task titled
+`New Skill Suggestion: <procedure name>` with a draft `SKILL.md` in its body. The
+draft is a normal task in your inbox — it is **not** a live skill. Nothing goes
+live until you read the draft, create `skills/<name>/SKILL.md` from it, and close
+the task.
+
+- At most **one** suggestion task is created per originating task. Any other
+  candidate procedures are listed inside that one task's body, never as
+  separate tasks.
+- The originating task's **Review** tab shows a one-line `Skill suggestion: #<id>`
+  note linking to the created task.
+- It is **on by default**. Turn it off under **Settings → Auto-suggest skills
+  from completed sessions** (`skillSuggestions = false` in `repoos.toml`); off
+  means no suggestion tasks and no note.
+
+The analysis runs on the same LLM infrastructure as the reviewer, and its token
+spend appears in the task's Tokens tab like any other role.
+
 ## Approve and merge
 
 When you're happy, move the task to `done` — from the board, the task drawer,
