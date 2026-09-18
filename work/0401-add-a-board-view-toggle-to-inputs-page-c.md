@@ -10,11 +10,12 @@ area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-board-view-toggle-to-inputs-page
-model_override: auto
+cli_override: claude code
+model_override: default
 review_cli_override: cursor
 review_model_override: auto
 created_at: "2026-09-18T04:26:52Z"
-updated_at: "2026-09-18T04:49:12Z"
+updated_at: "2026-09-18T04:53:20Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 1
@@ -72,3 +73,4 @@ Add a board view toggle to inputs page (currently there's only a list view). Do 
 - 2026-09-18T04:49:05Z · status active→review
 - 2026-09-18T04:49:06Z · status review→active
 - 2026-09-18T04:49:12Z · needs_input
+- 2026-09-18T04:53:20Z · cli_override, model_override
