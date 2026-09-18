@@ -1,7 +1,4 @@
 ---
-updated_at: "2026-09-18T10:55:15Z"
-review_passes: 1
-skill_suggestion: "0407"
 id: "0406"
 title: Add Antigravity CLI integration and deprecate Gemini CLI
 type: feature
@@ -16,6 +13,10 @@ model_override: gpt-5.6-luna
 review_cli_override: codex
 review_model_override: gpt-5.6-terra
 created_at: "2026-09-18T08:54:55Z"
+updated_at: "2026-09-18T10:55:15Z"
+review_rounds: 1
+review_passes: 1
+skill_suggestion: "0407"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 ---
@@ -76,5 +77,6 @@ Add a production-quality Antigravity CLI driver. A locally authenticated user ca
 - 2026-09-18T10:28:23Z · needs_input
 - 2026-09-18T10:53:13Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-09-18T10:53:13Z · status review→active
+
 
 
