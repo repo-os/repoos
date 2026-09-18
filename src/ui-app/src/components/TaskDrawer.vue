@@ -937,11 +937,26 @@ const effectivePreviewTarget = computed<string | null>(
 const previewStartingTarget = ref<string | null>(null);
 // A target picked for one task must never carry over to another — reset the
 // choice (not the targets, which come from the task) whenever the drawer swaps.
+// When several targets are listed, the top-ranked one is already the default
+// choice, so the dropdown shows the same selection the server would resolve.
 watch(
   () => ui.active?.id,
   () => {
-    previewTarget.value = null;
+    previewTarget.value = previewTargets.value[0]?.name ?? null;
   },
+);
+watch(
+  () => previewTargets.value.map((t) => t.name).join("|"),
+  () => {
+    if (!previewTargets.value.length) {
+      previewTarget.value = null;
+      return;
+    }
+    if (!previewTarget.value || !previewTargets.value.some((t) => t.name === previewTarget.value)) {
+      previewTarget.value = previewTargets.value[0]?.name ?? null;
+    }
+  },
+  { immediate: true },
 );
 /** When the in-flight preview action began, for the live elapsed readout. */
 const previewStartedAt = ref<number | null>(null);
@@ -3005,15 +3020,20 @@ watch(
             <span class="mono">{{ ui.active.branch }}</span
             >.
           </p>
-          <div v-else-if="ui.active.status === 'review' && !ui.active.preview" class="quickbar-row">
+          <div
+            v-else-if="
+              (ui.active.status === 'active' || ui.active.status === 'review') && !ui.active.preview
+            "
+            class="quickbar-row"
+          >
             <p class="preview-hint">
               <template v-if="previewTargetChoiceRequired">
-                This task's area matches more than one preview target — choose which to serve.
+                Choose which preview target to serve.
               </template>
               <template v-else> No preview running. </template>
             </p>
-            <!-- #0379: when several targets match the task's area, make the
-                 choice explicit rather than silently serving the first one. -->
+            <!-- #0379: when several configured targets exist, make the choice
+                 explicit rather than silently serving the first one. -->
             <select
               v-if="previewTargetChoiceRequired"
               v-model="previewTarget"
@@ -3021,7 +3041,6 @@ watch(
               :disabled="ui.saving || isPreviewBusyForActive"
               aria-label="Preview target"
             >
-              <option :value="null" disabled>Choose target…</option>
               <option v-for="t in previewTargets" :key="t.name" :value="t.name">
                 {{ t.name }}
               </option>

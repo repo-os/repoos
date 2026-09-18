@@ -133,6 +133,8 @@ export interface PreviewTargetOption {
 interface PreviewCandidate {
   target: PreviewTarget;
   areas: string[];
+  /** An area match or the default command: servable without an explicit pick. */
+  implicit?: boolean;
 }
 
 /** Options for `PreviewManager.start` (#0379). */
@@ -174,19 +176,21 @@ function noPreviewReason(task: Task, lead: string): string {
 }
 
 /**
- * Every runnable target for `task`, in precedence order: all named targets
- * whose `areas` include the task's `area` (config order), else the single
- * default `[preview] command`. Empty when nothing resolves for the area
- * (#0370). Returning the whole list — not just the first match — is what lets
- * #0379 surface a picker instead of silently choosing.
+ * Every runnable target for `task`, ranked so task-area matches stay at the top,
+ * then the remaining configured targets (for out-of-area recovery), and finally
+ * the default `[preview] command` as a last-resort fallback. Returning the
+ * whole list — not just the first match — is what lets #0379 surface a
+ * ranked picker instead of silently choosing.
  */
 function previewCandidates(config: RepoOSConfig, task: Task): PreviewCandidate[] {
   const preview = config.preview;
   const area = (task.area ?? "").trim().toLowerCase();
-  const candidates: PreviewCandidate[] = [];
-  for (const t of preview?.targets ?? []) {
-    if (!t.areas.some((a) => a.trim().toLowerCase() === area)) continue;
-    candidates.push({
+  const namedTargets = preview?.targets ?? [];
+  const areaMatches: PreviewCandidate[] = [];
+  const otherTargets: PreviewCandidate[] = [];
+
+  for (const t of namedTargets) {
+    const candidate: PreviewCandidate = {
       areas: [...t.areas],
       target: {
         kind: "command",
@@ -196,9 +200,20 @@ function previewCandidates(config: RepoOSConfig, task: Task): PreviewCandidate[]
         readyPath: t.readyPath ?? DEFAULT_READY_PATH,
         readyTimeoutMs: t.readyTimeoutMs ?? HEALTH_TIMEOUT_MS,
       },
-    });
+    };
+    if (t.areas.some((a) => a.trim().toLowerCase() === area)) {
+      areaMatches.push(candidate);
+    } else {
+      otherTargets.push(candidate);
+    }
   }
-  if (candidates.length) return candidates;
+
+  // Rank: area matches, then the default command, then every other target.
+  // The default must beat unrelated targets, or a task whose area matches
+  // nothing (most tasks: "web", "server", …) would preview e.g. the landing
+  // page instead of the app. Other targets stay listed for explicit recovery
+  // from a wrong area (#0409), but are never picked implicitly.
+  const candidates: PreviewCandidate[] = [...areaMatches];
   const defaultCommand = preview?.command?.trim();
   if (defaultCommand) {
     candidates.push({
@@ -211,15 +226,19 @@ function previewCandidates(config: RepoOSConfig, task: Task): PreviewCandidate[]
         readyPath: preview?.readyPath ?? DEFAULT_READY_PATH,
         readyTimeoutMs: preview?.readyTimeoutMs ?? HEALTH_TIMEOUT_MS,
       },
+      implicit: true,
     });
   }
+  for (const c of areaMatches) c.implicit = true;
+  candidates.push(...otherTargets);
   return candidates;
 }
 
 /**
- * The preview targets the UI can offer for `task` (#0379). One entry for the
- * common single-match case; several when the task's `area` is claimed by more
- * than one `[[preview.targets]]`; empty when nothing is configured for it.
+ * The preview targets the UI can offer for `task` (#0379). All configured
+ * targets are listed, ranked with area matches first and the default command
+ * last, so the user can recover from a wrong `area` without losing the usual
+ * area-aware default behavior.
  * Exported for the board/task routes and tests.
  */
 export function previewTargetOptions(config: RepoOSConfig, task: Task): PreviewTargetOption[] {
@@ -232,13 +251,14 @@ export function previewTargetOptions(config: RepoOSConfig, task: Task): PreviewT
 /**
  * Decide how to preview `task` from the repo's `[preview]` config (#0362).
  *
- * Precedence: named targets whose `areas` include the task's `area` (config
- * order); then a default `[preview] command`; then a `none` result with an
+ * Ranking: area-matching named targets first, then any remaining named targets,
+ * then the default `[preview] command`, then a clean `none` result with an
  * actionable message (never a spawn failure). A project with no `[preview]`
  * config at all is the same clean `none`, not an implicit RepoOS-board preview
  * (#0370). When `targetName` is given — the UI's picker choice (#0379) — that
- * exact target is used; an unknown name is a clean `none`, never a silent
- * fallback to a different target. Exported for tests.
+ * exact target is used even if it is outside the task's area; an unknown name
+ * is a clean `none`, never a silent fallback to a different target. Exported
+ * for tests.
  */
 export function resolvePreviewTarget(
   config: RepoOSConfig,
@@ -264,11 +284,15 @@ export function resolvePreviewTarget(
     return {
       kind: "none",
       reason:
-        `No preview target named "${targetName}" matches area "${area}" (#${task.id}).` +
+        `No preview target named "${targetName}" is configured for area "${area}" (#${task.id}).` +
         (names ? ` Available targets: ${names}.` : ""),
     };
   }
-  if (candidates.length) return candidates[0]!.target;
+
+  // Without an explicit pick, serve only an area match or the default — never
+  // an unrelated target just because it's configured.
+  const implicit = candidates.find((c) => c.implicit);
+  if (implicit) return implicit.target;
   return { kind: "none", reason: noPreviewReason(task, "") };
 }
 
@@ -499,7 +523,12 @@ export class PreviewManager {
     // an ambiguous area with no explicit choice is never resolved to the first
     // target silently (#0379).
     if (!targetName && !opts.allowAmbiguous) {
-      const candidates = previewCandidates(this.config, task);
+      // Ambiguous = several targets claim this task's area. Out-of-area
+      // targets are listed for explicit recovery (#0411) but don't make a
+      // start ambiguous; without a pick the area match or default is served.
+      const candidates = previewCandidates(this.config, task).filter(
+        (c) => c.implicit && c.areas.length > 0,
+      );
       if (candidates.length > 1) {
         const names = candidates.map((c) => c.target.label).join(", ");
         const error =
