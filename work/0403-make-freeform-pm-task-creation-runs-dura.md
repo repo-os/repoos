@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-18T04:50:04Z"
-updated_at: "2026-09-18T05:12:42Z"
+updated_at: "2026-09-18T05:12:55Z"
 ---
 ## Problem
 
@@ -126,3 +127,4 @@ the natural key to use instead of a task id.
 - 2026-09-18T04:50:04Z · created · unknown
 - 2026-09-18T04:58:05Z · note: Confirmed live (2026-09-18): the real trigger was a Cursor usage-limit error (ActionRequiredError: 'You've hit your usage limit'), not (only) a reload race. This sharpened the diagnosis: the server ALREADY captures a specific reason for every freeform-PM failure and both logs it durably (logger.task warn, when the process survives to log it) and emits it on task.aiCreateFailed's reason field -- but the UI discarded that reason and showed a generic 'PM agent failed' toast. FIXED separately and already landed on main (src/ui-app/src/stores/repo.ts): the feed toast now includes the real reason text. Remaining scope for this task, now narrowed: (1) the reload-mid-flight case where the closure dies before EVER reaching its catch/log/emit (confirmed: 0402's durable per-task log has only the 'created as draft' line, nothing after -- the failure path never ran) still needs the detached-spawn + durable-log + registry + adoptRunningAgents-style fix described above; (2) even in the non-reload case, the reason only ever reaches the user via an ephemeral feed toast/SSE event -- there is still no durable, revisit-later place (e.g. reopening the draft task after navigating away) to see why a past freeform creation failed, unlike the task-card error states (done/review) this task's acceptance criteria reference. Both remain open.
 - 2026-09-18T05:12:42Z · cli_override
+- 2026-09-18T05:12:55Z · model_override
