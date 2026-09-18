@@ -2,14 +2,14 @@
 id: "0413"
 title: Make task and input numbers visible and copyable
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-18T12:59:44Z"
-updated_at: "2026-09-18T13:00:00Z"
+updated_at: "2026-09-18T13:00:39Z"
 ---
 ## Problem
 
@@ -50,3 +50,4 @@ let's make the task numbers and input numbers more visible, now they're hard to 
 
 - 2026-09-18T12:59:44Z · created · hello@repoos.org
 - 2026-09-18T13:00:00Z · status draft→inbox, title, area, body
+- 2026-09-18T13:00:39Z · status inbox→ready
