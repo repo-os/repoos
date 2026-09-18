@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-09-18T17:59:58Z"
-review_passes: 3
+updated_at: "2026-09-18T18:14:11Z"
+review_passes: 4
 id: "0417"
 title: Add fullscreen diff modal in changes tab
 type: feature
@@ -71,6 +71,7 @@ In the changes tab for each file I'd like to have a way to expand to see it full
 - 2026-09-18T15:35:00Z · status inbox→ready
 - 2026-09-18T15:35:12Z · status ready→active, branch
 - 2026-09-18T15:46:03Z · status active→review
+
 
 
 
