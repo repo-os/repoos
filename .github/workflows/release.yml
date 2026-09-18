@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write # npm trusted publishing (OIDC)
 
 jobs:
   build-and-release:
@@ -59,3 +60,37 @@ jobs:
           generate_release_notes: true
           prerelease: ${{ steps.meta.outputs.prerelease }}
           make_latest: ${{ steps.meta.outputs.prerelease == 'false' }}
+
+      # Stable releases are published from this exact tag. npm's trusted
+      # publisher is configured for this workflow, so no long-lived npm token
+      # is stored in GitHub secrets.
+      - name: Publish npm package
+        if: steps.meta.outputs.prerelease == 'false'
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          PUBLISHED="$(npm view "@repo-os/repoos@$VERSION" version 2>/dev/null || true)"
+          if [[ "$PUBLISHED" == "$VERSION" ]]; then
+            echo "@repo-os/repoos@$VERSION is already published; continuing."
+          else
+            npm publish --access public --provenance
+          fi
+
+      # The tap owns the formula and commits the update with its own
+      # repository-scoped GITHUB_TOKEN. This token only needs permission to
+      # dispatch an event to repo-os/homebrew-tap.
+      - name: Request Homebrew tap update
+        if: steps.meta.outputs.prerelease == 'false'
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          test -n "$HOMEBREW_TAP_TOKEN" || {
+            echo "HOMEBREW_TAP_TOKEN is not configured." >&2
+            exit 1
+          }
+          VERSION="${GITHUB_REF_NAME#v}"
+          curl --fail-with-body --silent --show-error \
+            -X POST "https://api.github.com/repos/repo-os/homebrew-tap/dispatches" \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $HOMEBREW_TAP_TOKEN" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -d "{\"event_type\":\"repoos-release\",\"client_payload\":{\"version\":\"$VERSION\"}}"
