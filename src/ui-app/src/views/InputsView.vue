@@ -21,6 +21,7 @@ import SelectTrigger from "../components/ui/select/trigger.vue";
 import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
 import Checkbox from "../components/ui/checkbox.vue";
+import { applyInputCollapseDefaults, revealInputArrivals } from "../lib/inputsBoardCollapse";
 
 type InputsViewMode = "list" | "board";
 
@@ -33,19 +34,36 @@ const statuses = [
   { id: "reviewing", label: "Reviewing", color: "#ffb454" },
   { id: "processed", label: "Processed", color: "#4ef0a8" },
 ] as const;
+const ALL_STATUS_IDS = statuses.map((s) => s.id);
 const storageKey = "inputs-filter-selected";
 const viewStorageKey = "inputs-view-mode";
 const selected = ref(new Set(["new", "reviewing"]));
 const viewMode = ref<InputsViewMode>("list");
+/** Gates collapse defaults + reveal-on-arrival until the first load finishes,
+ *  so an empty first paint never collapses every column permanently. */
+const inputsLoaded = ref(false);
 const visible = computed(() => inputs.value.filter((i) => selected.value.has(i.status)));
 /** Board columns follow the status filters so list and board stay in sync. */
 const boardColumns = computed(() => statuses.filter((s) => selected.value.has(s.id)));
-const boardColumnIds = computed(() => boardColumns.value.map((c) => c.id));
 function byStatus(statusId: string): Input[] {
   return inputs.value.filter((i) => i.status === statusId);
 }
+const statusCounts = computed<Record<string, number>>(() => {
+  const out: Record<string, number> = {};
+  for (const id of ALL_STATUS_IDS) out[id] = byStatus(id).length;
+  return out;
+});
+watch(statusCounts, (now, prev) => {
+  if (!inputsLoaded.value) return;
+  revealInputArrivals(prev ?? {}, now);
+});
 async function load(): Promise<void> {
   inputs.value = await repo.loadInputs();
+  const firstLoad = !inputsLoaded.value;
+  inputsLoaded.value = true;
+  // Defer empty-column defaults until real data is in — mirrors BoardColumn
+  // waiting for !repo.loading before applyCollapseDefaults.
+  if (firstLoad) applyInputCollapseDefaults(byStatus, ALL_STATUS_IDS);
 }
 function loadFiltersFromStorage(): void {
   try {
@@ -319,8 +337,6 @@ function tryOpenInput(ref: string, attempt: number): void {
           :key="col.id"
           :col="col"
           :items="byStatus(col.id)"
-          :all-column-ids="boardColumnIds"
-          :by-status="byStatus"
           :input-label="inputLabel"
           :next-status="nextStatus"
           empty-text="—"

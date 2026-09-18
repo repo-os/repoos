@@ -2,11 +2,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import type { Input } from "../../../core/input.js";
 import InputCard from "./InputCard.vue";
-import {
-  applyInputCollapseDefaults,
-  isInputColumnCollapsed,
-  toggleInputColumnCollapsed,
-} from "../lib/inputsBoardCollapse";
+import { isInputColumnCollapsed, toggleInputColumnCollapsed } from "../lib/inputsBoardCollapse";
 
 export interface InputColumn {
   id: string;
@@ -19,9 +15,6 @@ const props = withDefaults(
     col: InputColumn;
     items: Input[];
     emptyText?: string;
-    /** All Inputs board column ids — used once to seed empty-column defaults. */
-    allColumnIds: readonly string[];
-    byStatus: (statusId: string) => Input[];
     inputLabel: (input: Input) => string;
     nextStatus: (status: Input["status"]) => Input["status"] | null;
   }>(),
@@ -34,14 +27,6 @@ const emit = defineEmits<{
 }>();
 
 const collapsed = computed(() => isInputColumnCollapsed(props.col.id));
-
-watch(
-  () => props.items,
-  () => {
-    applyInputCollapseDefaults(props.byStatus, props.allColumnIds);
-  },
-  { immediate: true },
-);
 
 const bodyEl = ref<HTMLElement | null>(null);
 const scrollable = ref(false);

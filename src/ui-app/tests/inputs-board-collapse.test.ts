@@ -59,4 +59,26 @@ describe("inputsBoardCollapse", () => {
     expect(bc.isInputColumnCollapsed("reviewing")).toBe(false);
     expect(bc.isInputColumnCollapsed("processed")).toBe(false);
   });
+
+  it("revealInputColumnOnArrival expands a collapsed column", async () => {
+    localStorage.setItem(COLLAPSE_KEY, JSON.stringify(["reviewing"]));
+    const bc = await load();
+
+    expect(bc.revealInputColumnOnArrival("reviewing")).toBe(true);
+    expect(bc.isInputColumnCollapsed("reviewing")).toBe(false);
+    expect(JSON.parse(localStorage.getItem(COLLAPSE_KEY)!)).toEqual([]);
+  });
+
+  it("revealInputArrivals only expands columns that went 0 → ≥1", async () => {
+    localStorage.setItem(COLLAPSE_KEY, JSON.stringify(["reviewing", "processed"]));
+    const bc = await load();
+
+    bc.revealInputArrivals(
+      { new: 1, reviewing: 0, processed: 0 },
+      { new: 1, reviewing: 1, processed: 0 },
+    );
+
+    expect(bc.isInputColumnCollapsed("reviewing")).toBe(false);
+    expect(bc.isInputColumnCollapsed("processed")).toBe(true);
+  });
 });
