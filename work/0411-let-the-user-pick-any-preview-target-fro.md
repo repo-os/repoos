@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-09-18T14:35:00Z"
-review_passes: 2
+updated_at: "2026-09-18T15:07:06Z"
+review_passes: 3
 id: "0411"
 title: Let the user pick any preview target from a ranked dropdown
 type: feature
@@ -41,4 +41,5 @@ A task's `area` decides which `[[preview.targets]]` it can preview, and it's oft
 - 2026-09-18T14:22:58Z · status active→review
 - 2026-09-18T14:27:43Z · status review→active
 - 2026-09-18T14:32:22Z · status active→review
+
 
