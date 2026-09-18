@@ -2,14 +2,14 @@
 id: "0409"
 title: Fix horizontal overflow on landing and docs pages for mobile
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-18T11:21:42Z"
-updated_at: "2026-09-18T11:21:59Z"
+updated_at: "2026-09-18T11:26:42Z"
 ---
 ## Problem
 
@@ -63,3 +63,4 @@ the landing page and docs page are overflowing horizontally on mobile. please fi
 - 2026-09-18T11:21:42Z · screenshots
 - 2026-09-18T11:21:42Z · screenshots
 - 2026-09-18T11:21:59Z · status draft→inbox, title, area, type, body
+- 2026-09-18T11:26:42Z · status inbox→ready
