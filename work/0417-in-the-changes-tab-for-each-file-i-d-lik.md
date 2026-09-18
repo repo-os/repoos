@@ -2,14 +2,14 @@
 id: "0417"
 title: Add fullscreen diff modal in changes tab
 type: feature
-status: draft
+status: inbox
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-18T14:45:38Z"
-updated_at: "2026-09-18T15:19:15Z"
+updated_at: "2026-09-18T15:19:16Z"
 ---
 ## Problem
 
@@ -65,3 +65,5 @@ In the changes tab for each file I'd like to have a way to expand to see it full
 - 2026-09-18T14:45:38Z · screenshots
 - 2026-09-18T14:45:54Z · note: Freeform PM run failed: the PM agent returned unusable output
 - 2026-09-18T15:19:15Z · title, area, body
+- 2026-09-18T15:19:16Z · status draft→inbox
+- 2026-09-18T15:19:16Z · note: Spec applied from the original PM run's output (the run was wrongly rejected because the model wrapped it in a code block; parser fixed on main)
