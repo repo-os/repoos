@@ -3,14 +3,17 @@ id: "0405"
 title: Auto-suggest reusable skills from completed task sessions
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
 priority: p2
 area: core
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/auto-suggest-reusable-skills-from-comple
+cli_override: opencode
 created_at: "2026-09-18T06:54:58Z"
-updated_at: "2026-09-18T07:10:02Z"
-dev_error_count: 1
+updated_at: "2026-09-18T07:21:45Z"
+dev_error_count: 2
 ---
 ## Problem
 
@@ -82,3 +85,5 @@ Analyze each completed session and draft a reusable SKILL.md when a non-trivial 
 - 2026-09-18T06:58:12Z · status ready→active, branch
 - 2026-09-18T07:03:23Z · agent exited with an error (kiro) · Error: Internal error
 - 2026-09-18T07:10:02Z · needs_input
+- 2026-09-18T07:13:25Z · agent exited with an error (kiro) · Error: Internal error
+- 2026-09-18T07:21:45Z · cli_override
