@@ -155,28 +155,66 @@ describe("resolvePreviewTarget", () => {
     expect(resolvePreviewTarget(cfg, task("server"))).toMatchObject({ readyTimeoutMs: 240_000 });
   });
 
-  it("lists every target whose areas match the task, in config order (#0379)", () => {
+  it("ranks area matches before the rest of the configured targets, with the default last (#0411)", () => {
     const cfg = baseConfig({
       command: "bun run default --port {port}",
       targets: [
         { name: "App", areas: ["web"], command: "bun run app --port {port}" },
         { name: "Landing", areas: ["landing"], command: "bun run landing --port {port}" },
         { name: "Web v2", areas: ["web"], command: "bun run web2 --port {port}" },
+        { name: "Docs", areas: ["docs"], command: "bun run docs --port {port}" },
       ],
     });
-    // Several targets claim `web`: both are offered, in config order.
+    // Area matches stay ahead of unmatched targets, and the default is the
+    // fallback at the end, not the first thing the user sees.
     expect(previewTargetOptions(cfg, task("web"))).toEqual([
       { name: "App", areas: ["web"] },
       { name: "Web v2", areas: ["web"] },
+      { name: "Landing", areas: ["landing"] },
+      { name: "Docs", areas: ["docs"] },
+      { name: "default", areas: [] },
     ]);
-    // Exactly one match stays a single-entry list (today's common case).
+    // Still a single-entry list when only one target is available.
     expect(previewTargetOptions(cfg, task("landing"))).toEqual([
       { name: "Landing", areas: ["landing"] },
+      { name: "App", areas: ["web"] },
+      { name: "Web v2", areas: ["web"] },
+      { name: "Docs", areas: ["docs"] },
+      { name: "default", areas: [] },
     ]);
-    // The default command is offered only when no named target matches.
-    expect(previewTargetOptions(cfg, task("server"))).toEqual([{ name: "default", areas: [] }]);
+    // A task with no area match can still pick any named target, with the default
+    // as the last fallback.
+    expect(previewTargetOptions(cfg, task("server"))).toEqual([
+      { name: "App", areas: ["web"] },
+      { name: "Landing", areas: ["landing"] },
+      { name: "Web v2", areas: ["web"] },
+      { name: "Docs", areas: ["docs"] },
+      { name: "default", areas: [] },
+    ]);
     // Nothing configured for the area → no options at all.
     expect(previewTargetOptions(baseConfig(), task("web"))).toEqual([]);
+  });
+
+  it("accepts an out-of-area target by name, and rejects an unknown one (#0411)", () => {
+    const cfg = baseConfig({
+      command: "bun run default --port {port}",
+      targets: [
+        { name: "App", areas: ["web"], command: "bun run app --port {port}" },
+        { name: "Docs", areas: ["docs"], command: "bun run docs --port {port}" },
+      ],
+    });
+    expect(resolvePreviewTarget(cfg, task("web"), "Docs")).toMatchObject({
+      kind: "command",
+      label: "Docs",
+      command: "bun run docs --port {port}",
+    });
+    const missing = resolvePreviewTarget(cfg, task("web"), "Nope");
+    expect(missing.kind).toBe("none");
+    if (missing.kind === "none") {
+      expect(missing.reason).toContain('No preview target named "Nope"');
+      expect(missing.reason).toContain('"App"');
+      expect(missing.reason).toContain('"Docs"');
+    }
   });
 
   it("selects the requested target by name, and rejects an unknown one (#0379)", () => {

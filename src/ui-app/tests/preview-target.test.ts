@@ -180,7 +180,7 @@ describe("preview target identity (#0379)", () => {
     expect(chip.text()).toBe("docs");
   });
 
-  it("offers a picker when several targets match and posts the chosen one", async () => {
+  it("offers a picker when several targets match and preselects the top-ranked one", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const calls: Array<{ target?: string }> = [];
@@ -202,9 +202,8 @@ describe("preview target identity (#0379)", () => {
     const options = select.findAll("option").map((o) => o.text());
     expect(options).toContain("App");
     expect(options).toContain("Web v2");
-
-    // Never a silent first pick: Start stays disabled until one is chosen.
-    expect(startButton(wrapper)?.attributes("disabled")).toBeDefined();
+    expect((select.element as HTMLSelectElement).value).toBe("App");
+    expect(startButton(wrapper)?.attributes("disabled")).toBeUndefined();
 
     await select.setValue("Web v2");
     await flush();

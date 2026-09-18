@@ -937,11 +937,26 @@ const effectivePreviewTarget = computed<string | null>(
 const previewStartingTarget = ref<string | null>(null);
 // A target picked for one task must never carry over to another — reset the
 // choice (not the targets, which come from the task) whenever the drawer swaps.
+// When several targets are listed, the top-ranked one is already the default
+// choice, so the dropdown shows the same selection the server would resolve.
 watch(
   () => ui.active?.id,
   () => {
-    previewTarget.value = null;
+    previewTarget.value = previewTargets.value[0]?.name ?? null;
   },
+);
+watch(
+  () => previewTargets.value.map((t) => t.name).join("|"),
+  () => {
+    if (!previewTargets.value.length) {
+      previewTarget.value = null;
+      return;
+    }
+    if (!previewTarget.value || !previewTargets.value.some((t) => t.name === previewTarget.value)) {
+      previewTarget.value = previewTargets.value[0]?.name ?? null;
+    }
+  },
+  { immediate: true },
 );
 /** When the in-flight preview action began, for the live elapsed readout. */
 const previewStartedAt = ref<number | null>(null);

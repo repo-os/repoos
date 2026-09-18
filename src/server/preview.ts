@@ -174,19 +174,21 @@ function noPreviewReason(task: Task, lead: string): string {
 }
 
 /**
- * Every runnable target for `task`, in precedence order: all named targets
- * whose `areas` include the task's `area` (config order), else the single
- * default `[preview] command`. Empty when nothing resolves for the area
- * (#0370). Returning the whole list — not just the first match — is what lets
- * #0379 surface a picker instead of silently choosing.
+ * Every runnable target for `task`, ranked so task-area matches stay at the top,
+ * then the remaining configured targets (for out-of-area recovery), and finally
+ * the default `[preview] command` as a last-resort fallback. Returning the
+ * whole list — not just the first match — is what lets #0379 surface a
+ * ranked picker instead of silently choosing.
  */
 function previewCandidates(config: RepoOSConfig, task: Task): PreviewCandidate[] {
   const preview = config.preview;
   const area = (task.area ?? "").trim().toLowerCase();
-  const candidates: PreviewCandidate[] = [];
-  for (const t of preview?.targets ?? []) {
-    if (!t.areas.some((a) => a.trim().toLowerCase() === area)) continue;
-    candidates.push({
+  const namedTargets = preview?.targets ?? [];
+  const areaMatches: PreviewCandidate[] = [];
+  const otherTargets: PreviewCandidate[] = [];
+
+  for (const t of namedTargets) {
+    const candidate: PreviewCandidate = {
       areas: [...t.areas],
       target: {
         kind: "command",
@@ -196,9 +198,15 @@ function previewCandidates(config: RepoOSConfig, task: Task): PreviewCandidate[]
         readyPath: t.readyPath ?? DEFAULT_READY_PATH,
         readyTimeoutMs: t.readyTimeoutMs ?? HEALTH_TIMEOUT_MS,
       },
-    });
+    };
+    if (t.areas.some((a) => a.trim().toLowerCase() === area)) {
+      areaMatches.push(candidate);
+    } else {
+      otherTargets.push(candidate);
+    }
   }
-  if (candidates.length) return candidates;
+
+  const candidates: PreviewCandidate[] = [...areaMatches, ...otherTargets];
   const defaultCommand = preview?.command?.trim();
   if (defaultCommand) {
     candidates.push({
@@ -217,9 +225,10 @@ function previewCandidates(config: RepoOSConfig, task: Task): PreviewCandidate[]
 }
 
 /**
- * The preview targets the UI can offer for `task` (#0379). One entry for the
- * common single-match case; several when the task's `area` is claimed by more
- * than one `[[preview.targets]]`; empty when nothing is configured for it.
+ * The preview targets the UI can offer for `task` (#0379). All configured
+ * targets are listed, ranked with area matches first and the default command
+ * last, so the user can recover from a wrong `area` without losing the usual
+ * area-aware default behavior.
  * Exported for the board/task routes and tests.
  */
 export function previewTargetOptions(config: RepoOSConfig, task: Task): PreviewTargetOption[] {
@@ -232,13 +241,14 @@ export function previewTargetOptions(config: RepoOSConfig, task: Task): PreviewT
 /**
  * Decide how to preview `task` from the repo's `[preview]` config (#0362).
  *
- * Precedence: named targets whose `areas` include the task's `area` (config
- * order); then a default `[preview] command`; then a `none` result with an
+ * Ranking: area-matching named targets first, then any remaining named targets,
+ * then the default `[preview] command`, then a clean `none` result with an
  * actionable message (never a spawn failure). A project with no `[preview]`
  * config at all is the same clean `none`, not an implicit RepoOS-board preview
  * (#0370). When `targetName` is given — the UI's picker choice (#0379) — that
- * exact target is used; an unknown name is a clean `none`, never a silent
- * fallback to a different target. Exported for tests.
+ * exact target is used even if it is outside the task's area; an unknown name
+ * is a clean `none`, never a silent fallback to a different target. Exported
+ * for tests.
  */
 export function resolvePreviewTarget(
   config: RepoOSConfig,
@@ -255,9 +265,36 @@ export function resolvePreviewTarget(
     };
   }
 
+  const allTargets = (preview?.targets ?? []).map((t) => ({
+    areas: [...t.areas],
+    target: {
+      kind: "command" as const,
+      label: t.name,
+      command: t.command,
+      cwd: t.cwd,
+      readyPath: t.readyPath ?? DEFAULT_READY_PATH,
+      readyTimeoutMs: t.readyTimeoutMs ?? HEALTH_TIMEOUT_MS,
+    },
+  }));
+  const defaultTarget = defaultCommand
+    ? {
+        areas: [],
+        target: {
+          kind: "command" as const,
+          label: "default",
+          command: defaultCommand,
+          cwd: preview?.cwd,
+          readyPath: preview?.readyPath ?? DEFAULT_READY_PATH,
+          readyTimeoutMs: preview?.readyTimeoutMs ?? HEALTH_TIMEOUT_MS,
+        },
+      }
+    : null;
+
   const candidates = previewCandidates(config, task);
   if (targetName) {
-    const chosen = candidates.find((c) => c.target.label === targetName);
+    const chosen = [...allTargets, ...(defaultTarget ? [defaultTarget] : [])].find(
+      (c) => c.target.label === targetName,
+    );
     if (chosen) return chosen.target;
     const area = (task.area ?? "").trim() || "(none)";
     const names = candidates.map((c) => `"${c.target.label}"`).join(", ");
@@ -268,7 +305,12 @@ export function resolvePreviewTarget(
         (names ? ` Available targets: ${names}.` : ""),
     };
   }
-  if (candidates.length) return candidates[0]!.target;
+
+  const areaMatch = allTargets.find((c) =>
+    c.areas.some((a) => a.trim().toLowerCase() === (task.area ?? "").trim().toLowerCase()),
+  );
+  if (areaMatch) return areaMatch.target;
+  if (defaultTarget) return defaultTarget.target;
   return { kind: "none", reason: noPreviewReason(task, "") };
 }
 
