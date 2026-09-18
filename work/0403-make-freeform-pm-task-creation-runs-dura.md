@@ -2,7 +2,7 @@
 id: "0403"
 title: Make freeform PM task-creation runs durable and reload-resumable
 type: feature
-status: active
+status: review
 priority: p2
 area: server
 assigned_to: ai
@@ -11,7 +11,8 @@ branch: feat/make-freeform-pm-task-creation-runs-dura
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-18T04:50:04Z"
-updated_at: "2026-09-18T05:13:10Z"
+updated_at: "2026-09-18T05:43:58Z"
+handoff_signal_retry_count: 1
 ---
 ## Problem
 
@@ -130,3 +131,4 @@ the natural key to use instead of a task id.
 - 2026-09-18T05:12:55Z · model_override
 - 2026-09-18T05:12:56Z · status inbox→ready
 - 2026-09-18T05:13:10Z · status ready→active, branch
+- 2026-09-18T05:43:58Z · status active→review
