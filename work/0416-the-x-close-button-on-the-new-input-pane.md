@@ -20,8 +20,10 @@ The [x] close button on the "new input" panel should be in the top right corner 
 ## Screenshots
 
 ![Screenshot-2026-09-18-at-22.42.40](/api/tasks/0416/attachments/screenshot-1.png)
+![Screenshot-2026-09-18-at-22.41.54](/api/tasks/0416/attachments/screenshot-2.png)
 
 ## Activity
 
 - 2026-09-18T14:45:27Z · created · hello@repoos.org
+- 2026-09-18T14:45:28Z · screenshots
 - 2026-09-18T14:45:28Z · screenshots
