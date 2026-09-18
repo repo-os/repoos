@@ -5,6 +5,7 @@ import type { Task } from "../types";
 
 export interface NewTaskForm {
   title: string;
+  body: string;
   type: string;
   priority: string;
   area: string;
@@ -134,6 +135,7 @@ export const useUiStore = defineStore("ui", () => {
 
   const nt = reactive<NewTaskForm>({
     title: "",
+    body: "",
     type: "feature",
     priority: "p2",
     area: "web",
@@ -170,6 +172,7 @@ export const useUiStore = defineStore("ui", () => {
     isNewSkill.value = false;
     isNewInput.value = false;
     nt.title = "";
+    nt.body = "";
     nt.area = "web";
     nt.priority = "p2";
     nt.type = "feature";

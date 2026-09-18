@@ -414,6 +414,7 @@ async function createTask(): Promise<void> {
     await uploadPendingScreenshots(created.id);
     ui.close();
     ui.nt.title = "";
+    ui.nt.body = "";
     ui.nt.area = "web";
     ui.nt.priority = "p2";
     ui.nt.type = "feature";
@@ -2683,6 +2684,16 @@ watch(
                 placeholder="Add company dashboard"
                 @keyup.enter="createTask"
               />
+            </div>
+            <div class="field">
+              <label for="nt-body">Body <span class="field-optional">(optional)</span></label>
+              <textarea
+                id="nt-body"
+                v-model="ui.nt.body"
+                class="nt-body-textarea"
+                rows="5"
+                placeholder="Add any additional context or markdown for this task"
+              ></textarea>
             </div>
             <div class="field-row">
               <div class="field">
@@ -5042,6 +5053,32 @@ watch(
 
 .diff-section-chevron.collapsed {
   transform: rotate(-90deg);
+}
+
+.field-optional {
+  color: var(--txt-muted);
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.nt-body-textarea {
+  width: 100%;
+  min-height: 112px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel-solid);
+  color: var(--txt);
+  font: 13px/1.5 var(--font-sans);
+  resize: vertical;
+}
+
+.nt-body-textarea:focus {
+  outline: none;
+  border-color: var(--border-bright);
 }
 
 .diff-section-name {
