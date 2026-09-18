@@ -2,14 +2,14 @@
 id: "0411"
 title: Let the user pick any preview target from a ranked dropdown
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-18T12:51:51Z"
-updated_at: "2026-09-18T12:51:51Z"
+updated_at: "2026-09-18T14:03:40Z"
 ---
 ## Problem
 
@@ -32,3 +32,4 @@ A task's `area` decides which `[[preview.targets]]` it can preview, and it's oft
 ## Activity
 
 - 2026-09-18T12:51:51Z · created · unknown
+- 2026-09-18T14:03:40Z · status inbox→ready
