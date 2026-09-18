@@ -7,11 +7,13 @@
  * board command (see boardRepoOS()'s own comment for why).
  */
 import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { createRepoOS } from "../core/repoos.js";
 import { boardRoot, loadConfig, resolveColumnLabels } from "../core/config.js";
 import { STATUSES, type Status, type Task } from "../core/types.js";
 import { c, statusColor, priorityColor } from "../cli/colors.js";
 import { patchTaskFile, type TaskPatch } from "../server/write.js";
+import { isAncestor } from "../core/git.js";
 
 /**
  * RepoOS facade rooted at the LIVE BOARD's checkout (the main checkout), even
@@ -131,6 +133,20 @@ export function cmdShow(id?: string): void {
   console.log("");
 }
 
+/** "main" if it exists, else "master" if it exists, else null (fail open — the
+ * caller skips the merge check rather than guessing wrong and blocking a
+ * legitimate move). */
+function detectMainBranch(root: string): string | null {
+  for (const name of ["main", "master"]) {
+    const run = spawnSync("git", ["show-ref", "--verify", "--quiet", `refs/heads/${name}`], {
+      cwd: root,
+      timeout: 4000,
+    });
+    if (run.status === 0) return name;
+  }
+  return null;
+}
+
 /**
  * `repoos mv <id> <status>` — change status (frontmatter edit).
  *
@@ -150,11 +166,32 @@ export function cmdShow(id?: string): void {
  * the write itself is never left as an untrusted dirty file. Agents that want
  * the full handoff guarantee (implementation committed + non-vacuous) should
  * go through the trusted handoff/PATCH path, not this CLI shortcut.
+ *
+ * `done` gets one narrow exception to the "generic, no side checks" rule
+ * above (confirmed live, 2026-09-17 — see #0399 and the #0185/#0389 incidents
+ * in this session): unlike every other status, `done` claims the task's code
+ * is actually on `main`. The server's own HTTP PATCH route already refuses a
+ * bare `status: "done"` for exactly this reason (routes/tasks.ts) and forces
+ * callers through `POST /api/tasks/:id/done`, the real close-out pipeline —
+ * but this CLI command never went through that route to begin with, so it
+ * silently flips the flag with zero merge awareness. If the task has a
+ * `branch` that still exists locally and is NOT an ancestor of main, that
+ * branch's code has not landed; refuse rather than mark it done from under
+ * the user. This intentionally fails OPEN (allows the move) whenever it
+ * can't tell for sure — no branch recorded, the branch was already deleted
+ * (the normal post-merge cleanup), or git can't answer the ancestry question
+ * — so it never blocks the many legitimate `mv` calls that have nothing to
+ * do with code at all.
  */
-export function cmdMv(id?: string, status?: string, note?: string): void {
+export function cmdMv(
+  id?: string,
+  status?: string,
+  note?: string,
+  opts: { force?: boolean } = {},
+): void {
   if (!id || !status) {
     console.error(
-      c.red('  Usage: repoos mv <id> <status> [--note "..."]') +
+      c.red('  Usage: repoos mv <id> <status> [--note "..."] [--force-not-merged]') +
         c.dim(`   (${STATUSES.join(" | ")})`),
     );
     process.exitCode = 1;
@@ -167,6 +204,34 @@ export function cmdMv(id?: string, status?: string, note?: string): void {
   // .git) is a silent no-op from the board's perspective.
   const repoos = boardRepoOS();
   try {
+    if (status === "done" && !opts.force) {
+      const existing = repoos.getTask(id);
+      if (existing && existing.status !== "done" && existing.branch) {
+        const { root } = boardRoot();
+        const branchExists =
+          spawnSync("git", ["show-ref", "--verify", "--quiet", `refs/heads/${existing.branch}`], {
+            cwd: root,
+            timeout: 4000,
+          }).status === 0;
+        const mainBranch = branchExists ? detectMainBranch(root) : null;
+        const merged = mainBranch ? isAncestor(root, existing.branch, mainBranch) : null;
+        if (merged === false) {
+          console.error(
+            c.red(`  Refusing to mark #${id} done — `) +
+              c.dim(`branch "${existing.branch}" is not merged into ${mainBranch}.`),
+          );
+          console.error(
+            c.dim(
+              `  "repoos mv done" only flips the status flag; it never merges code. ` +
+                `Merge the branch into ${mainBranch} yourself first (see docs/close-out-pipeline.md), ` +
+                `or pass --force-not-merged if you have already landed the code some other way.`,
+            ),
+          );
+          process.exitCode = 1;
+          return;
+        }
+      }
+    }
     const t = repoos.updateStatus(id, status as Status, note);
     console.log(
       "  " + c.green("moved ") + c.dim("#" + t.id) + " → " + statusColor(t.status)(t.status),

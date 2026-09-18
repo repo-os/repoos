@@ -254,6 +254,23 @@ cannot tell from the code alone:
 - **The Product Manager agent is authorized to create and update tasks.** It
   must use those same RepoOS CLI commands or HTTP API endpoints for task body,
   metadata, and status changes; it must never edit task Markdown directly.
+- **`repoos mv <id> done` never merges code — it only flips the status
+  frontmatter.** Confirmed live twice in one session (2026-09-17): #0389 and
+  #0185 were both marked `done` this way while their actual branches sat
+  unmerged on `main`. The server's own HTTP `PATCH /api/tasks/:id` route
+  already refuses a bare `status: "done"` for exactly this reason and forces
+  callers through `POST /api/tasks/:id/done` (the real close-out pipeline,
+  see `docs/close-out-pipeline.md`) — but the CLI command bypasses the server
+  entirely, so nothing stopped it from silently doing the wrong thing. `cmdMv`
+  (`src/commands/tasks.ts`) now refuses to move to `done` when the task's
+  recorded `branch` still exists locally and is not an ancestor of `main`,
+  unless `--force-not-merged` is passed — but that guard is a backstop, not a
+  substitute for doing this correctly: if you are an interactive/external
+  agent landing a task yourself (no server, or skipping review per the
+  section below), **merge the branch into `main` yourself BEFORE** running
+  `repoos mv <id> done`, exactly as this file's own workflow steps say. Never
+  assume the status flag flipping means the code landed — verify with
+  `git show main:<a file the task added>` if in doubt.
 - Keep frontmatter tidy; `repoos` normalizes key order on write.
 - One task = one focused worktree.
 - **Never `git add` binaries under `work/` or `inputs/`.** Task and input
