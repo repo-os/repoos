@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-18T18:40:01Z"
+review_passes: 2
 id: "0410"
 title: Fix mobile horizontal overflow on the landing page and VitePress docs site
 type: bug
@@ -9,9 +11,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/fix-mobile-horizontal-overflow-on-the-la
 created_at: "2026-09-18T12:51:45Z"
-updated_at: "2026-09-18T18:39:26Z"
 handoff_signal_retry_count: 2
-review_passes: 1
 skill_suggestion: "0424"
 ---
 #0409 was meant to fix horizontal overflow on the landing page (landing/) and VitePress docs site (user-docs/), but it changed only the in-app RepoOS UI. #0410 then suppressed the symptom with root-level overflow-x: clip; that prevents page scrolling but clips oversized content. The attached mobile screenshot shows the landing hero, body copy, installation tabs, and command box still wider than the viewport.
@@ -52,3 +52,4 @@ Docs:
 - 2026-09-18T18:33:43Z · body
 - 2026-09-18T18:33:43Z · status review→active
 - 2026-09-18T18:39:26Z · status active→review
+
