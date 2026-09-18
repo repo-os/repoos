@@ -265,8 +265,12 @@ watch(
   focusKey,
   (key) => {
     if (!key) return;
-    // Switch to the tab that owns this setting key, if known
+    // Switch to the tab that owns this setting key, if known.
+    // Capture the resolved tab now so the async cleanup replace below uses
+    // the *target* tab, not the stale activeTab.value (router.replace is
+    // async; activeTab won't reflect the new tab until the navigation settles).
     const targetTab = key ? FIELD_TAB[key] : undefined;
+    const resolvedTab: TabId = targetTab ?? activeTab.value;
     if (targetTab && activeTab.value !== targetTab) {
       void router.replace({
         name: "settings",
@@ -276,7 +280,12 @@ watch(
     const tryFocus = (attempt = 0): void => {
       if (config.loaded && document.getElementById(`setting-${key}`)) {
         focusSetting(key);
-        void router.replace({ name: "settings", query: { tab: activeTab.value } });
+        // Strip the focus/setting query param; use resolvedTab (not activeTab.value)
+        // to avoid undoing the tab switch above before the navigation has settled.
+        void router.replace({
+          name: "settings",
+          query: { tab: resolvedTab },
+        });
       } else if (attempt < 20) {
         window.setTimeout(() => tryFocus(attempt + 1), 100);
       }
@@ -313,7 +322,6 @@ watch(
 function buildBody(): Record<string, unknown> {
   const body: Record<string, unknown> = {};
   for (const f of config.schema) {
-    if (f.tier === "guarded" && !config.showAdvanced) continue;
     // Board column labels are raw TOML-only — never sent via the curated save.
     if (f.key.startsWith("board.columns.")) continue;
     let val = form[f.key];
