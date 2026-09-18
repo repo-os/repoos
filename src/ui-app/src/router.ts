@@ -22,6 +22,11 @@ export const router = createRouter({
     { path: "/repo", name: "repo", component: () => import("./views/ContextView.vue") },
     { path: "/settings", name: "settings", component: () => import("./views/SettingsView.vue") },
     { path: "/agents", name: "agents", component: () => import("./views/AgentsView.vue") },
+    {
+      path: "/tasks/:taskId/diff",
+      name: "diff",
+      component: () => import("./views/DiffView.vue"),
+    },
     { path: "/:pathMatch(.*)*", redirect: "/" },
   ],
 });
