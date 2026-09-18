@@ -2,14 +2,14 @@
 id: "0419"
 title: Add optional body text area to manual task creation
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/add-optional-body-text-area-to-manual-ta
 created_at: "2026-09-18T15:15:49Z"
-updated_at: "2026-09-18T15:16:54Z"
+updated_at: "2026-09-18T15:19:26Z"
 ---
 ## Problem
 
@@ -47,3 +47,4 @@ In the "new task" panel the manual tab needs a text area field for the user to m
 - 2026-09-18T15:15:49Z · created · hello@repoos.org
 - 2026-09-18T15:16:04Z · status draft→inbox, title, area, body
 - 2026-09-18T15:16:54Z · status inbox→ready
+- 2026-09-18T15:19:26Z · status ready→active, branch
