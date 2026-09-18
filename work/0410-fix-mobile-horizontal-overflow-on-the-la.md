@@ -4,12 +4,12 @@ title: Fix mobile horizontal overflow on the landing page and VitePress docs sit
 type: bug
 status: inbox
 priority: p2
-area: landing
-assigned_to: ""
+area: "landing, user-docs"
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-18T12:51:45Z"
-updated_at: "2026-09-18T12:51:45Z"
+updated_at: "2026-09-18T15:01:27Z"
 ---
 ## Problem
 
@@ -30,3 +30,4 @@ updated_at: "2026-09-18T12:51:45Z"
 ## Activity
 
 - 2026-09-18T12:51:45Z · created · unknown
+- 2026-09-18T15:01:27Z · area
