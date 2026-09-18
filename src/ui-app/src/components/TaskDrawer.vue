@@ -21,6 +21,7 @@ import {
   ChevronsDownUp,
   Coins,
   Bug,
+  Expand,
 } from "lucide-vue-next";
 import type { ReviewState, Task, AgentOutputEntry, SessionUsage, DetectedAgent } from "../types";
 import {
@@ -2179,6 +2180,64 @@ const diffFiles = computed<DiffFile[]>(() => {
   return files;
 });
 
+const expandedDiffFile = ref<DiffFile | null>(null);
+const expandedDiffModalOpen = computed(() => expandedDiffFile.value !== null);
+const lastFocusedDiffButton = ref<HTMLElement | null>(null);
+
+function openFullDiff(file: DiffFile, event?: MouseEvent | KeyboardEvent): void {
+  const target = (event?.currentTarget as HTMLElement | null) ?? document.activeElement;
+  lastFocusedDiffButton.value = target instanceof HTMLElement ? target : null;
+  expandedDiffFile.value = file;
+}
+
+function closeFullDiff(): void {
+  expandedDiffFile.value = null;
+  nextTick(() => {
+    lastFocusedDiffButton.value?.focus();
+  });
+}
+
+function onFullDiffKeydown(event: KeyboardEvent): void {
+  if (event.key === "Escape") {
+    closeFullDiff();
+  }
+}
+
+watch(expandedDiffModalOpen, (open) => {
+  if (!open) return;
+  nextTick(() => {
+    const el = document.getElementById("fullscreen-diff-close-button");
+    el?.focus();
+  });
+});
+
+function onWindowKeydown(event: KeyboardEvent): void {
+  if (expandedDiffModalOpen.value && event.key === "Escape") {
+    event.preventDefault();
+    closeFullDiff();
+  }
+}
+
+onMounted(() => {
+  window.addEventListener("keydown", onWindowKeydown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("keydown", onWindowKeydown);
+});
+
+watch(
+  () => diffFiles.value.map((f) => f.filename),
+  () => {
+    if (
+      expandedDiffFile.value &&
+      !diffFiles.value.some((f) => f.filename === expandedDiffFile.value?.filename)
+    ) {
+      expandedDiffFile.value = null;
+    }
+  },
+);
+
 /** File IDs that are currently collapsed (all expanded by default). */
 const collapsedFiles = reactive(new Set<string>());
 
@@ -3878,6 +3937,15 @@ watch(
                     <span v-if="file.added > 0" class="diff-file-add">+{{ file.added }}</span>
                     <span v-if="file.removed > 0" class="diff-file-rem">−{{ file.removed }}</span>
                   </span>
+                  <button
+                    type="button"
+                    class="diff-file-expand"
+                    :aria-label="`Expand diff for ${file.filename}`"
+                    title="Open full-screen diff"
+                    @click.stop="openFullDiff(file, $event)"
+                  >
+                    <Expand class="size-3.5" />
+                  </button>
                 </button>
                 <button
                   v-if="diffFiles.length > 8"
@@ -3932,6 +4000,15 @@ watch(
                       <span v-if="file.added > 0" class="diff-file-add">+{{ file.added }}</span>
                       <span v-if="file.removed > 0" class="diff-file-rem">−{{ file.removed }}</span>
                     </span>
+                    <button
+                      type="button"
+                      class="diff-file-expand diff-file-expand-inline"
+                      :aria-label="`Expand diff for ${file.filename}`"
+                      title="Open full-screen diff"
+                      @click.stop="openFullDiff(file, $event)"
+                    >
+                      <Expand class="size-3.5" />
+                    </button>
                   </div>
                   <pre
                     v-if="!collapsedFiles.has(file.filename)"
@@ -4344,6 +4421,49 @@ watch(
       </template>
     </DialogContent>
   </Dialog>
+
+  <div
+    v-if="expandedDiffModalOpen"
+    class="diff-fullscreen-backdrop"
+    @click.self="closeFullDiff()"
+    @keydown="onFullDiffKeydown"
+    tabindex="-1"
+  >
+    <div
+      class="diff-fullscreen-modal"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="`File diff: ${expandedDiffFile?.filename ?? ''}`"
+    >
+      <button
+        id="fullscreen-diff-close-button"
+        type="button"
+        class="diff-fullscreen-close"
+        aria-label="Close full-screen diff"
+        title="Close"
+        @click="closeFullDiff()"
+      >
+        <X class="size-4" />
+      </button>
+      <div class="diff-fullscreen-header">
+        <div class="diff-fullscreen-title">{{ expandedDiffFile?.filename }}</div>
+        <div class="diff-file-delta diff-fullscreen-meta">
+          <span v-if="expandedDiffFile?.added && expandedDiffFile.added > 0" class="diff-file-add"
+            >+{{ expandedDiffFile.added }}</span
+          >
+          <span
+            v-if="expandedDiffFile?.removed && expandedDiffFile.removed > 0"
+            class="diff-file-rem"
+            >−{{ expandedDiffFile.removed }}</span
+          >
+        </div>
+      </div>
+      <pre
+        class="diff-fullscreen-content"
+      ><code><template v-for="(line, i) in expandedDiffFile?.lines ?? []" :key="i"><span :class="diffLineClass(line)">{{ line }}</span>
+</template></code></pre>
+    </div>
+  </div>
 
   <RestartTaskDialog
     :task="restartTask"
@@ -4940,6 +5060,37 @@ watch(
   background: rgba(255, 255, 255, 0.04);
 }
 
+.diff-file-expand {
+  margin-left: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--txt-dim);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.diff-file-expand:hover,
+.diff-file-expand:focus-visible {
+  border-color: var(--border-bright);
+  color: var(--txt);
+  background: rgba(57, 224, 255, 0.08);
+  outline: none;
+}
+
+.diff-file-expand-inline {
+  margin-left: 0;
+}
+
 .diff-file-badge {
   display: inline-flex;
   align-items: center;
@@ -5009,6 +5160,92 @@ watch(
 }
 
 /* Diff sections */
+.diff-fullscreen-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(3, 6, 12, 0.72);
+  backdrop-filter: blur(8px);
+}
+
+.diff-fullscreen-modal {
+  position: relative;
+  width: min(100%, 1600px);
+  height: min(92vh, 1000px);
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, rgba(11, 16, 32, 0.98), rgba(7, 10, 18, 0.98));
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.diff-fullscreen-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.diff-fullscreen-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 600 14px/1.4 var(--font-sans);
+  color: var(--txt);
+}
+
+.diff-fullscreen-meta {
+  flex: none;
+}
+
+.diff-fullscreen-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--txt);
+  cursor: pointer;
+  z-index: 2;
+}
+
+.diff-fullscreen-close:hover,
+.diff-fullscreen-close:focus-visible {
+  border-color: var(--border-bright);
+  background: rgba(57, 224, 255, 0.08);
+  outline: none;
+}
+
+.diff-fullscreen-content {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 16px 20px 20px;
+  background: #0d1117;
+  overflow: auto;
+  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre;
+  color: #c9d1d9;
+}
+
 .diff-sections {
   display: flex;
   flex-direction: column;
