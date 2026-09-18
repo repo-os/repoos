@@ -2205,6 +2205,7 @@ interface FullDiffRow {
   leftCls: "ctx" | "rem" | "empty";
   rightCls: "ctx" | "add" | "empty";
   isSep: boolean;
+  skipped?: number;
 }
 
 function buildFullDiffRows(file: DiffFile | null): FullDiffRow[] {
@@ -2215,17 +2216,21 @@ function buildFullDiffRows(file: DiffFile | null): FullDiffRow[] {
   let i = 0;
   while (i < lines.length && !lines[i]!.startsWith("@@")) i++;
   let first = true;
+  let prevLeftEnd = 0;
   while (i < lines.length) {
     const line = lines[i]!;
     const m = line.match(hunkRe);
     if (!m) { i++; continue; }
+    const leftStart = parseInt(m[1]!, 10);
+    const rightStart = parseInt(m[2]!, 10);
     if (!first) {
-      rows.push({ leftNum: null, rightNum: null, leftText: null, rightText: null, leftCls: "empty", rightCls: "empty", isSep: true });
+      const skipped = leftStart - prevLeftEnd - 1;
+      rows.push({ leftNum: null, rightNum: null, leftText: null, rightText: null, leftCls: "empty", rightCls: "empty", isSep: true, skipped: skipped > 0 ? skipped : undefined });
     }
     first = false;
     i++;
-    let leftNum = parseInt(m[1]!, 10);
-    let rightNum = parseInt(m[2]!, 10);
+    let leftNum = leftStart;
+    let rightNum = rightStart;
     const hunk: string[] = [];
     while (i < lines.length && !lines[i]!.startsWith("@@")) { hunk.push(lines[i]!); i++; }
     let j = 0;
@@ -2260,6 +2265,7 @@ function buildFullDiffRows(file: DiffFile | null): FullDiffRow[] {
         j++;
       }
     }
+    prevLeftEnd = leftNum - 1;
   }
   return rows;
 }
@@ -4559,6 +4565,7 @@ watch(
         role="dialog"
         aria-modal="true"
         :aria-label="`File diff: ${expandedDiffFile?.filename ?? ''}`"
+        @pointerdown.stop
       >
         <button
           id="fullscreen-diff-close-button"
@@ -4600,9 +4607,9 @@ watch(
             <template v-for="(row, i) in fullDiffRows" :key="i">
               <div v-if="row.isSep" class="diff-sep-row">
                 <span class="diff-ln-col"></span>
-                <span class="diff-sep-cell">⋯</span>
+                <span class="diff-sep-cell">{{ row.skipped != null ? `… ${row.skipped} lines` : '…' }}</span>
                 <span class="diff-ln-col"></span>
-                <span class="diff-sep-cell">⋯</span>
+                <span class="diff-sep-cell">{{ row.skipped != null ? `… ${row.skipped} lines` : '…' }}</span>
               </div>
               <div v-else class="diff-side-row">
                 <span class="diff-ln-col" :class="'diff-ln-' + row.leftCls">{{ row.leftNum ?? '' }}</span>
@@ -5423,8 +5430,8 @@ watch(
 .diff-side-row,
 .diff-sep-row {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) 44px minmax(0, 1fr);
-  min-width: 600px;
+  grid-template-columns: 44px minmax(320px, 1fr) 44px minmax(320px, 1fr);
+  min-width: max-content;
 }
 
 .diff-side-header {
@@ -5477,6 +5484,7 @@ watch(
   padding: 0 12px;
   white-space: pre;
   min-height: 1.6em;
+  overflow: hidden;
 }
 
 .diff-side-row > .diff-ln-col:nth-child(3),
