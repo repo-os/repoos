@@ -34,6 +34,7 @@ import {
   recordFreeformFailure,
   readFreeformStore,
   freeformLogPaths,
+  cleanupFreeformWorktree,
   type FreeformRunRecord,
 } from "../freeform-runs.js";
 import { randomUUID } from "node:crypto";
@@ -265,6 +266,7 @@ export function finalizeFreeformRun(
     // 0335: cleared on EVERY exit path so the indicator can never get stuck.
     // 0381: a live PM chat session on this task keeps the flag up.
     clearPmWorking(taskId);
+    cleanupFreeformWorktree(config, run.pmWorktreeBranch);
     if (!isPmWorking(taskId)) {
       emitEvent({ type: "task.pmFinished", id: taskId, at: new Date().toISOString() });
     }
@@ -432,11 +434,56 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
   // radius while letting usage extraction see real tokens/cost (0335).
   const effectiveRunId = runId ?? `freeform-${created.id}-${randomUUID()}`;
   const prompt = pmPrompt(explanation);
+  // Antigravity is explicitly worktree-bound: even its read-only PM pass must
+  // not start in the main checkout. Reserve a short-lived, task-scoped
+  // worktree for this run; the durable finalizer removes it on every exit
+  // path, including a server reload or a launch failure.
+  const pmWorktreeBranch = pm.cli === "antigravity" ? `repoos/pm/${created.id}` : undefined;
+  let pmCwd = config.root;
+  if (pmWorktreeBranch) {
+    const worktree = ensureWorktree(config.root, pmWorktreeBranch);
+    if (!worktree.ok) {
+      const record: FreeformRunRecord = {
+        runId: effectiveRunId,
+        taskId: created.id,
+        pid: 0,
+        cwd: config.root,
+        pmWorktreeBranch,
+        explanation,
+        agent: pm,
+        startedAt: new Date().toISOString(),
+      };
+      finalizeFreeformRun(
+        {
+          config,
+          index,
+          logger,
+          emitEvent,
+          onServerStatusChange: ctx.onServerStatusChange,
+        },
+        record,
+        {
+          ok: false,
+          error: `Antigravity PM requires a task worktree: ${worktree.reason ?? "could not create worktree"}`,
+          elapsedMs: 0,
+        },
+      );
+      return json(res, 201, {
+        ok: true,
+        fallback: true,
+        fallbackReason: "agent-failed",
+        reason: worktree.reason ?? "could not create Antigravity PM worktree",
+        task: withPmWorking(index.getTask(created.id)),
+      });
+    }
+    pmCwd = worktree.path;
+  }
   const record: FreeformRunRecord = {
     runId: effectiveRunId,
     taskId: created.id,
     pid: 0,
-    cwd: config.root,
+    cwd: pmCwd,
+    pmWorktreeBranch,
     explanation,
     agent: pm,
     startedAt: new Date().toISOString(),
@@ -444,10 +491,11 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
   const startRes = ctx.freeformRuns.start({
     runId: effectiveRunId,
     taskId: created.id,
-    cwd: config.root,
+    cwd: pmCwd,
+    pmWorktreeBranch,
     explanation,
     agent: pm,
-    command: pmCommand(pm, prompt, config.root),
+    command: pmCommand(pm, prompt, pmCwd),
   });
   if (!startRes.ok) {
     // The child never launched: finalize immediately so the same durable
@@ -1405,6 +1453,24 @@ export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
     });
   }
 
+  // Antigravity is worktree-bound for every turn, including an existing PM
+  // chat. Refuse to fall back to the main checkout when a task has no managed
+  // worktree or its registration has gone stale.
+  let pmCwd: string | undefined;
+  if (pm.cli === "antigravity") {
+    if (!existing.branch) {
+      return json(res, 400, {
+        error: "Antigravity PM chat requires a managed task worktree",
+      });
+    }
+    pmCwd = worktreePathForBranch(config.root, existing.branch) ?? undefined;
+    if (!pmCwd) {
+      return json(res, 400, {
+        error: `No managed worktree exists for task #${id}; start the task before using Antigravity PM chat`,
+      });
+    }
+  }
+
   // 0381: chat-input screenshots ride along as a pending batch keyed to this
   // PM session. The task the PM creates from the message doesn't exist yet,
   // so the batch is parked on disk now and attached to the created task by
@@ -1447,8 +1513,11 @@ ${existing.body || "(no description)"}`;
   const result = existing_session
     ? runner.send(pmSessionId, text, pm, {
         resumePreamble: `Task context:\n${fullContext}`,
+        ...(pmCwd ? { cwd: pmCwd } : {}),
       })
-    : runner.startChat(pmSessionId, text, pm, fullContext, taskPmPrompt);
+    : runner.startChat(pmSessionId, text, pm, fullContext, taskPmPrompt, {
+        ...(pmCwd ? { cwd: pmCwd } : {}),
+      });
 
   if (!result.ok && result.busy) {
     dropPmImages(imageBatchId);

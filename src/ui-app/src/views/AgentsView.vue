@@ -144,7 +144,12 @@ const CLI_LABELS: Record<string, string> = {
   "github copilot": "GitHub Copilot CLI",
   "qwen code": "qwen code",
   codex: "codex",
+  antigravity: "Antigravity CLI (agy)",
 };
+
+function isLegacyGemini(cli: string): boolean {
+  return cli.toLowerCase() === "gemini";
+}
 
 const defaultInstrRefs = new Map<string, HTMLTextAreaElement | null>();
 const customInstrRefs = new Map<string, HTMLTextAreaElement | null>();
@@ -166,8 +171,6 @@ function onCustomInstrTranscribed(agentName: string, text: string): void {
 const clis = computed(() =>
   config.agentsMeta.clis.map((c) => ({ value: c, label: CLI_LABELS[c] ?? c })),
 );
-
-const cliOptions = computed(() => config.agentsMeta.clis ?? []);
 
 // ---- Live model list (opencode) ----
 // Fetched on mount from /api/models; the dropdown shows the static fallback
@@ -325,6 +328,21 @@ const detected = ref<DetectedAgent[]>([]);
 const detectLoading = ref(false);
 const detectError = ref(false);
 const detectHintCopied = ref<string>("");
+
+const installedDrivableClis = computed(
+  () =>
+    new Set(detected.value.filter((a) => a.installed && a.drivable && a.cli).map((a) => a.cli!)),
+);
+
+function cliOptionsFor(currentCli: string, opts: { team?: boolean } = {}): string[] {
+  return (config.agentsMeta.clis ?? []).filter((cli) => {
+    if (cli !== "antigravity" || cli === currentCli) return true;
+    // Team agents (Ross, CTO) work in the main checkout, where RepoOS refuses
+    // to run Antigravity's permission bypass — so don't offer it for them.
+    if (opts.team) return false;
+    return installedDrivableClis.value.has(cli);
+  });
+}
 
 const { isAgentFavorite, toggleAgentFavorite } = useAgentFavorites();
 
@@ -505,12 +523,19 @@ onUnmounted(() => {
               <div class="agent-field">
                 <label>Coding agent + Model</label>
                 <AgentModelControl
-                  :cli-options="cliOptions"
+                  :cli-options="cliOptionsFor(a.cli)"
                   :model-options="config.modelsFor(a.cli, a.model)"
                   :memory-key="'headless:' + a.name"
                   v-model:cli="a.cli"
                   v-model:model="a.model"
                 />
+                <div v-if="isLegacyGemini(a.cli)" class="agent-legacy-notice" role="status">
+                  <strong>Deprecated Gemini CLI</strong> — this saved value is preserved for
+                  history, but new assignments use Antigravity CLI (agy).
+                  <button type="button" class="model-pricing-link" @click="openRecommendations">
+                    Migrate in the agent guide →
+                  </button>
+                </div>
               </div>
               <div class="agent-field agent-test-result">
                 <label>Compatibility</label>
@@ -622,12 +647,19 @@ onUnmounted(() => {
               <div class="agent-field">
                 <label>Coding agent + Model</label>
                 <AgentModelControl
-                  :cli-options="cliOptions"
+                  :cli-options="cliOptionsFor(a.cli)"
                   :model-options="config.modelsFor(a.cli, a.model)"
                   :memory-key="'custom:' + a.name"
                   v-model:cli="a.cli"
                   v-model:model="a.model"
                 />
+                <div v-if="isLegacyGemini(a.cli)" class="agent-legacy-notice" role="status">
+                  <strong>Deprecated Gemini CLI</strong> — this saved value is preserved for
+                  history, but new assignments use Antigravity CLI (agy).
+                  <button type="button" class="model-pricing-link" @click="openRecommendations">
+                    Migrate in the agent guide →
+                  </button>
+                </div>
               </div>
               <div class="agent-field agent-test-result">
                 <label>Compatibility</label>
@@ -714,12 +746,19 @@ onUnmounted(() => {
               <div class="agent-field">
                 <label>Coding agent + Model</label>
                 <AgentModelControl
-                  :cli-options="cliOptions"
+                  :cli-options="cliOptionsFor(a.cli, { team: true })"
                   :model-options="config.modelsFor(a.cli, a.model)"
                   :memory-key="'team:' + a.name"
                   v-model:cli="a.cli"
                   v-model:model="a.model"
                 />
+                <div v-if="isLegacyGemini(a.cli)" class="agent-legacy-notice" role="status">
+                  <strong>Deprecated Gemini CLI</strong> — this saved value is preserved for
+                  history, but new assignments use Antigravity CLI (agy).
+                  <button type="button" class="model-pricing-link" @click="openRecommendations">
+                    Migrate in the agent guide →
+                  </button>
+                </div>
               </div>
               <div class="agent-field agent-test-result">
                 <label>Compatibility</label>
@@ -810,6 +849,9 @@ onUnmounted(() => {
                 :style="{ background: r.color, boxShadow: '0 0 8px ' + r.color }"
               ></span>
               <span class="agent-name detect-agent-name">{{ r.agent.name }}</span>
+              <span v-if="r.agent.deprecated" class="agent-badge detect-deprecated"
+                >Deprecated</span
+              >
               <span class="detect-pill" :style="{ color: r.color }">{{ r.statusLabel }}</span>
               <span
                 class="agent-badge"
@@ -849,6 +891,18 @@ onUnmounted(() => {
                 <button class="detect-copy" @click="copyHint(r.agent.installHint)">
                   {{ detectHintCopied === r.agent.installHint ? "copied" : "copy" }}
                 </button>
+              </span>
+              <span v-if="r.agent.deprecated" class="detect-migration-inline">
+                {{ r.agent.installHint }}
+                <a
+                  v-if="r.agent.migrationUrl"
+                  :href="r.agent.migrationUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Official migration and auth docs
+                </a>
+                <span v-if="r.agent.migrationNote">{{ r.agent.migrationNote }}</span>
               </span>
               <button
                 type="button"

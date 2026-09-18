@@ -294,6 +294,34 @@ describe("POST /api/models/test", () => {
 });
 
 describe("PATCH /api/config agents validation", () => {
+  it("preserves an existing Gemini CLI configuration for migration", async () => {
+    const root = tmpDir();
+    writeFileSync(
+      join(root, "repoos.toml"),
+      [
+        "[[agents]]",
+        'name = "engineer"',
+        'cli = "gemini"',
+        'model = "default"',
+        "enabled = true",
+      ].join("\n"),
+    );
+    const server = await startServer({ root, host: "127.0.0.1", port: 0 });
+    try {
+      const res = await fetch(`${server.url}/api/config`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agents: [{ name: "engineer", cli: "gemini", model: "default", enabled: true }],
+        }),
+      });
+      expect(res.status).toBe(200);
+      expect(readFileSync(join(root, "repoos.toml"), "utf8")).toContain('cli = "gemini"');
+    } finally {
+      await server.close();
+    }
+  });
+
   it("lists repository skills and persists an agent's enabled skill names", async () => {
     const root = tmpDir();
     mkdirSync(join(root, "skills", "frontend-design"), { recursive: true });

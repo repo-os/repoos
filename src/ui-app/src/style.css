@@ -5941,6 +5941,37 @@
 }
 
 /* detected coding agents panel */
+.detect-deprecated {
+  color: var(--amber);
+  border-color: color-mix(in srgb, var(--amber) 55%, transparent);
+}
+
+.detect-migration-inline {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: center;
+  color: var(--txt-muted);
+  font-size: 11px;
+}
+
+.detect-migration-inline a {
+  color: var(--cyan);
+}
+
+.agent-legacy-notice {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-left: 2px solid var(--amber);
+  background: color-mix(in srgb, var(--amber) 8%, transparent);
+  color: var(--txt-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.agent-legacy-notice strong {
+  color: var(--amber);
+}
 .detect-row {
   display: flex;
   align-items: center;

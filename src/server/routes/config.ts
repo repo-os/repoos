@@ -107,7 +107,14 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
       if (typeof a?.name !== "string" || !a.name.trim()) {
         return json(res, 400, { error: "each agent needs a non-empty name" });
       }
-      if (!AGENT_CLIS.includes(a.cli as (typeof AGENT_CLIS)[number])) {
+      const preservesLegacyGemini =
+        a.cli === "gemini" &&
+        (repoos.config.agents ?? []).some(
+          (existing) =>
+            existing.name.toLowerCase() === String(a.name).trim().toLowerCase() &&
+            existing.cli === "gemini",
+        );
+      if (!AGENT_CLIS.includes(a.cli as (typeof AGENT_CLIS)[number]) && !preservesLegacyGemini) {
         return json(res, 400, { error: `cli must be one of: ${AGENT_CLIS.join(", ")}` });
       }
       if (typeof a.model !== "string" || !a.model.trim()) {

@@ -66,6 +66,34 @@ export function parseLiveModels(text: string): string[] {
   return [...seen].sort();
 }
 
+/**
+ * Parse the documented `agy models` table. The first whitespace-delimited
+ * token is the model slug; human-readable labels and headers are ignored.
+ * This intentionally accepts only slug-shaped rows so login/help diagnostics
+ * never become selectable models.
+ */
+export function parseAntigravityModels(text: string): string[] {
+  const seen = new Set<string>();
+  const clean = text.replace(/\x1b\[[0-9;?]*[a-zA-Z]/g, "");
+  for (const raw of clean.split("\n")) {
+    const line = raw.trim();
+    if (!line) continue;
+    const slug = line.split(/\s+/)[0];
+    if (!slug || slug.length > MODEL_ID_MAX_LEN) continue;
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(slug)) continue;
+    if (/^(available|models|model|usage|error|warning)$/i.test(slug)) continue;
+    // A model row has a display label after the slug. Requiring it keeps a
+    // lone diagnostic word from being presented as a model option.
+    if (!/^\S+\s+\S/.test(line)) continue;
+    // Real model ids carry a version or a hyphen (gemini-3.8-flash,
+    // claude-sonnet-4-6); diagnostics like "Authentication required" or
+    // "Failed to start" don't, and must never become selectable pins.
+    if (!/[-\d]/.test(slug)) continue;
+    seen.add(slug);
+  }
+  return [...seen];
+}
+
 /** Spawn `<bin> <args>` and collect stdout up to MODELS_MAX_BYTES. */
 function spawnModels(
   bin: string,
@@ -316,6 +344,25 @@ const cursorAdapter: ModelSourceAdapter = {
   },
 };
 
+const antigravityAdapter: ModelSourceAdapter = {
+  id: "antigravity",
+  cli: "antigravity",
+  supported: true,
+  async list(opts: ListModelsOptions = {}): Promise<ModelSourceResult> {
+    const bin = resolveBinary("agy", process.env.PATH ?? "");
+    if (!bin) return { supported: true, models: ["default"], refreshable: false };
+    const out = await spawnModels(bin, ["models"], {
+      timeoutMs: MODELS_TIMEOUT_MS,
+      cwd: opts.cwd,
+    });
+    return {
+      supported: true,
+      models: ["default", ...parseAntigravityModels(out)],
+      refreshable: false,
+    };
+  },
+};
+
 /** Placeholder adapter for CLIs with no machine-readable model list. */
 function unsupported(id: string, cli: string): ModelSourceAdapter {
   return {
@@ -335,6 +382,7 @@ export const MODEL_SOURCES: Record<string, ModelSourceAdapter> = {
   "github copilot": copilotAdapter,
   kiro: kiroAdapter,
   cursor: cursorAdapter,
+  antigravity: antigravityAdapter,
 };
 for (const known of KNOWN_AGENTS) {
   if (
@@ -342,7 +390,8 @@ for (const known of KNOWN_AGENTS) {
     known.id === "codex" ||
     known.id === "copilot" ||
     known.id === "kiro" ||
-    known.id === "cursor"
+    known.id === "cursor" ||
+    known.id === "antigravity"
   )
     continue;
   MODEL_SOURCES[known.name] = unsupported(known.id, known.name);

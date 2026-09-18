@@ -48,6 +48,12 @@ export interface KnownAgent {
   authCheckArgs?: string[];
   /** One-line capability note shown in the Agents UI. */
   capability?: string;
+  /** Legacy tooling that remains visible but must not be offered for new assignments. */
+  deprecated?: boolean;
+  /** Official migration/install documentation for a deprecated tool. */
+  migrationUrl?: string;
+  /** Short caveat shown alongside deprecated tooling. */
+  migrationNote?: string;
 }
 
 /** One row of the detection result. */
@@ -118,7 +124,10 @@ export const KNOWN_AGENTS: KnownAgent[] = [
     name: "gemini",
     binary: "gemini",
     drivable: false,
-    installHint: "npm i -g @google/gemini-cli",
+    installHint: "Use Antigravity CLI (agy) instead.",
+    deprecated: true,
+    migrationUrl: "https://antigravity.google/docs/cli/gcli-migration/",
+    migrationNote: "Enterprise and paid API-key Gemini CLI users may still have access.",
   },
   {
     id: "copilot",
@@ -146,9 +155,14 @@ export const KNOWN_AGENTS: KnownAgent[] = [
   {
     id: "antigravity",
     name: "antigravity",
+    cli: "antigravity",
     binary: "agy",
-    drivable: false,
-    installHint: "npm i -g @google/antigravity",
+    drivable: true,
+    installHint: "curl -fsSL https://antigravity.google/cli/install.sh | bash",
+    authHint:
+      "Run `agy` once to sign in (local keyring or SSH browser code), or configure GEMINI_API_KEY with modelProvider=gemini.",
+    authCheckArgs: ["-p", "/model", "--output-format", "json"],
+    capability: "Headless stream-JSON, verified model discovery, and conversation resume",
   },
   {
     id: "kiro",
@@ -326,7 +340,23 @@ export function parseAuthState(text: string): boolean | null {
   const obj = value as Record<string, unknown>;
   if (typeof obj.isAuthenticated === "boolean") return obj.isAuthenticated;
   if (typeof obj.authenticated === "boolean") return obj.authenticated;
-  if (typeof obj.status === "string") return obj.status.trim().toLowerCase() === "authenticated";
+  if (typeof obj.status === "string") {
+    const status = obj.status.trim().toLowerCase();
+    if (status === "authenticated" || status === "success") return true;
+    if (status === "unauthenticated" || status === "not_authenticated") return false;
+    if (status === "error") {
+      const error = obj.error;
+      const message =
+        typeof error === "string"
+          ? error
+          : error &&
+              typeof error === "object" &&
+              typeof (error as Record<string, unknown>).message === "string"
+            ? ((error as Record<string, unknown>).message as string)
+            : "";
+      if (/auth|sign[ -]?in|credential|api key|login/i.test(message)) return false;
+    }
+  }
   return null;
 }
 

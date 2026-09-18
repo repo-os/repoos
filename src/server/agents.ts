@@ -31,7 +31,7 @@ import type {
   SkillMeta,
   Task,
 } from "../core/types.js";
-import { agentsForConfig, defaultMaxConcurrentAgents } from "../core/config.js";
+import { AGENT_CLIS, agentsForConfig, defaultMaxConcurrentAgents } from "../core/config.js";
 import { fileCommittedClean, currentBranch } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
@@ -191,7 +191,16 @@ interface Session {
   /** Model name (e.g., "big pickle", "default"). */
   model?: string;
   /** Which session engine parses the CLI output into AgentOutputEntry cards. */
-  engine: "opencode" | "claude" | "copilot" | "qwen" | "codex" | "kiro" | "cursor" | "plain";
+  engine:
+    | "opencode"
+    | "claude"
+    | "copilot"
+    | "qwen"
+    | "codex"
+    | "kiro"
+    | "cursor"
+    | "antigravity"
+    | "plain";
   /** Cumulative ms across completed turns — excludes any turn in flight (0080). */
   accumulatedMs: number;
   /** ISO timestamp when the session was first created (never changes). */
@@ -247,6 +256,10 @@ interface Session {
    * transcript with the same advice on every line.
    */
   cursorHints?: Set<string>;
+  /** Antigravity recovery hints already surfaced for this session. */
+  antigravityHints?: Set<string>;
+  /** The current Antigravity turn's terminal result, if one has arrived. */
+  antigravityTerminal?: "success" | "failure";
   /**
    * Edge-detection only, not part of the public stats shape: whether the last
    * `agent.stats` snapshot we pushed already reported `stalled: true`, so the
@@ -398,6 +411,8 @@ export interface ExtractedUsage {
    * (e.g. #0310 showed "177k tokens" when the real non-cached input was 236).
    */
   authoritative?: boolean;
+  /** Antigravity result metadata is cumulative across a conversation. */
+  cumulative?: boolean;
   /**
    * True when parsed from a per-round-trip event (opencode's `step_finish`),
    * whose token/cost figures are DELTAS for that one model call — NOT a running
@@ -439,9 +454,16 @@ export function extractUsage(raw: string): ExtractedUsage {
       // opencode emits one `step_finish` per model round-trip; its token/cost
       // figures are that step's delta, never a running total — fold by SUM.
       if (obj.type === "step_finish" || obj.type === "step-finish") out.deltas = true;
+      if (obj.event === "step_update") out.deltas = true;
       // claude's terminal turn summary — authoritative for the whole turn.
       if (obj.type === "result" && typeof obj.total_cost_usd === "number") {
         out.authoritative = true;
+      }
+      // Antigravity's terminal result carries the authoritative total for the
+      // conversation; its step_update usage records are per-step deltas.
+      if (obj.event === "result") {
+        out.authoritative = true;
+        out.cumulative = true;
       }
     }
   } catch {
@@ -501,11 +523,13 @@ export function foldUsage(total: ExtractedUsage, raw: string): void {
   ): void => {
     const v = found[key];
     if (v === undefined) return;
-    total[key] = found.authoritative
-      ? v
-      : found.deltas
-        ? (total[key] ?? 0) + v
-        : Math.max(total[key] ?? 0, v);
+    total[key] = found.cumulative
+      ? Math.max(total[key] ?? 0, v)
+      : found.authoritative
+        ? v
+        : found.deltas
+          ? (total[key] ?? 0) + v
+          : Math.max(total[key] ?? 0, v);
   };
   merge("inputTokens");
   merge("outputTokens");
@@ -653,6 +677,15 @@ function outputTokensFromObject(obj: Record<string, unknown>): number | undefine
  */
 function findUsage(obj: Record<string, unknown>): Record<string, unknown> | undefined {
   if (obj.usage && typeof obj.usage === "object") return obj.usage as Record<string, unknown>;
+  if (obj.result && typeof obj.result === "object") {
+    const result = obj.result as Record<string, unknown>;
+    if (result.usage && typeof result.usage === "object")
+      return result.usage as Record<string, unknown>;
+  }
+  if (obj.step_update && typeof obj.step_update === "object") {
+    const step = obj.step_update as Record<string, unknown>;
+    if (step.usage && typeof step.usage === "object") return step.usage as Record<string, unknown>;
+  }
   const msg = obj.message;
   if (msg && typeof msg === "object") {
     const m = msg as Record<string, unknown>;
@@ -752,6 +785,10 @@ function turnsFromObject(obj: Record<string, unknown>): number | undefined {
   if (obj.type === "result" && typeof obj.num_turns === "number" && obj.num_turns >= 0) {
     return obj.num_turns;
   }
+  if (obj.event === "result" && obj.result && typeof obj.result === "object") {
+    const result = obj.result as Record<string, unknown>;
+    if (typeof result.num_turns === "number" && result.num_turns >= 0) return result.num_turns;
+  }
   return undefined;
 }
 
@@ -805,6 +842,7 @@ function engineForCli(cli: string): Session["engine"] {
   if (cli === "codex") return "codex";
   if (cli === "kiro") return "kiro";
   if (cli === "cursor") return "cursor";
+  if (cli === "antigravity") return "antigravity";
   return "opencode";
 }
 
@@ -833,6 +871,8 @@ function toolInputText(input: unknown): string | undefined {
   if (typeof input === "object") {
     const obj = input as Record<string, unknown>;
     if (typeof obj.command === "string" && obj.command) return obj.command;
+    if (typeof obj.CommandLine === "string" && obj.CommandLine) return obj.CommandLine;
+    if (typeof obj.commandLine === "string" && obj.commandLine) return obj.commandLine;
     try {
       const s = JSON.stringify(obj, null, 2);
       return s && s !== "{}" ? s : undefined;
@@ -1606,6 +1646,175 @@ export function parseCursorEvent(raw: string): CursorParseResult | null {
 }
 
 /**
+ * Antigravity's documented `--output-format stream-json` dialect. It is not
+ * Gemini, Claude, or Cursor JSON: the protocol is an `event` envelope with
+ * `init`, `step_update`, and terminal `result` records. Keep this parser
+ * deliberately narrow so a CLI upgrade cannot turn a transcript into opaque
+ * JSON. `surfaceResult` is used by one-shot JSON envelopes, where the final
+ * response is the only text available to render.
+ */
+export interface AntigravityParseResult {
+  entry?: AgentOutputEntry;
+  sessionID?: string;
+  model?: string;
+  /** Set on a terminal `result` record: whether the run reported SUCCESS. */
+  terminal?: "success" | "failure";
+}
+
+export function parseAntigravityEvent(
+  raw: string,
+  opts: { surfaceResult?: boolean } = {},
+): AntigravityParseResult | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return {
+      entry: { type: "sys", d: "Antigravity emitted malformed JSON; the event was ignored." },
+    };
+  }
+  if (!parsed || typeof parsed !== "object") {
+    return {
+      entry: { type: "sys", d: "Antigravity emitted a malformed event; the event was ignored." },
+    };
+  }
+  const ev = parsed as Record<string, unknown>;
+  const conversationID =
+    typeof ev.conversation_id === "string" && ev.conversation_id ? ev.conversation_id : undefined;
+  const withMeta = (base: AntigravityParseResult): AntigravityParseResult => ({
+    ...base,
+    ...(conversationID ? { sessionID: conversationID } : {}),
+  });
+
+  // One-shot `--output-format json` uses the same terminal envelope nested
+  // nowhere, while stream-json wraps it in { event: "result", result: ... }.
+  const envelope = typeof ev.status === "string" ? ev : undefined;
+  const event = typeof ev.event === "string" ? ev.event : undefined;
+  const result =
+    event === "result" && ev.result && typeof ev.result === "object"
+      ? (ev.result as Record<string, unknown>)
+      : envelope;
+  if (result) {
+    const resultConversation =
+      typeof result.conversation_id === "string" && result.conversation_id
+        ? result.conversation_id
+        : conversationID;
+    const status = typeof result.status === "string" ? result.status.toUpperCase() : "";
+    const response = typeof result.response === "string" ? result.response : "";
+    const error = typeof result.error === "string" ? result.error : "";
+    const duration =
+      typeof result.duration_seconds === "number" && result.duration_seconds >= 0
+        ? `${result.duration_seconds.toFixed(2)}s`
+        : undefined;
+    const turns =
+      typeof result.num_turns === "number" && result.num_turns >= 0
+        ? `${result.num_turns} ${result.num_turns === 1 ? "turn" : "turns"}`
+        : undefined;
+    const summary = [status || "UNKNOWN", duration, turns].filter(Boolean).join(" · ");
+    return {
+      ...(resultConversation ? { sessionID: resultConversation } : {}),
+      terminal: status === "SUCCESS" ? "success" : "failure",
+      ...(status !== "SUCCESS"
+        ? {
+            entry: {
+              type: "sys",
+              d: `Antigravity run ${status || "failed"}: ${error || "no response"}`,
+            },
+          }
+        : opts.surfaceResult && response.trim()
+          ? { entry: { type: "text", text: response } }
+          : event === "result"
+            ? {
+                entry: {
+                  type: "step",
+                  kind: "finish",
+                  ...(summary ? { reason: `Antigravity result: ${summary}` } : {}),
+                },
+              }
+            : {}),
+    };
+  }
+
+  if (event === "init") {
+    const init = ev.init && typeof ev.init === "object" ? (ev.init as Record<string, unknown>) : {};
+    const model = typeof init.model === "string" && init.model ? init.model : undefined;
+    const initConversation =
+      typeof init.conversation_id === "string" && init.conversation_id
+        ? init.conversation_id
+        : conversationID;
+    return {
+      ...(initConversation ? { sessionID: initConversation } : {}),
+      ...(model ? { model } : {}),
+    };
+  }
+
+  if (event === "step_update") {
+    const step = ev.step_update;
+    if (!step || typeof step !== "object") {
+      return withMeta({
+        entry: { type: "sys", d: "Antigravity emitted an invalid step_update event." },
+      });
+    }
+    const update = step as Record<string, unknown>;
+    const stepConversation =
+      typeof update.conversation_id === "string" && update.conversation_id
+        ? update.conversation_id
+        : conversationID;
+    const meta = stepConversation ? { sessionID: stepConversation } : {};
+    const stepType = typeof update.step_type === "string" ? update.step_type : "";
+    const delta = typeof update.text_delta === "string" ? update.text_delta : "";
+    if (stepType === "agent_response" && delta)
+      return { ...meta, entry: { type: "text", text: delta } };
+    if (stepType === "tool") {
+      const info =
+        update.tool_info && typeof update.tool_info === "object"
+          ? (update.tool_info as Record<string, unknown>)
+          : {};
+      const tool =
+        typeof info.name === "string" && info.name
+          ? info.name
+          : typeof update.tool_name === "string"
+            ? update.tool_name
+            : "tool";
+      const input = toolInputText(info.parameters);
+      const error =
+        info.error && typeof info.error === "object"
+          ? (info.error as Record<string, unknown>)
+          : undefined;
+      const output = toolOutputText(info.output ?? error);
+      return {
+        ...meta,
+        entry: {
+          type: "tool",
+          tool,
+          ...(input ? { input } : {}),
+          ...(output ? { output } : {}),
+          ...(error ? { state: "error" } : { state: "completed" }),
+        },
+      };
+    }
+    if (update.state === "DONE" || update.state === "ACTIVE") {
+      return {
+        ...meta,
+        entry: {
+          type: "step",
+          kind: update.state === "DONE" ? "finish" : "start",
+          ...(typeof update.step_type === "string" ? { reason: update.step_type } : {}),
+        },
+      };
+    }
+    return meta;
+  }
+
+  return withMeta({
+    entry: {
+      type: "sys",
+      d: `Antigravity emitted an unknown protocol event${event ? ` "${event}"` : ""}.`,
+    },
+  });
+}
+
+/**
  * Actionable recovery advice for recognizable Cursor failures. Cursor surfaces
  * auth/permission/version failures as stderr text or `error` events; this maps
  * the common ones to the next thing the user should do. Matching is narrow so
@@ -1633,6 +1842,33 @@ const CURSOR_ERROR_HINTS: ReadonlyArray<{ re: RegExp; hint: string }> = [
 /** The actionable hint for a Cursor failure line, or null when none applies. */
 export function cursorErrorHint(text: string): string | null {
   for (const { re, hint } of CURSOR_ERROR_HINTS) {
+    if (re.test(text)) return hint;
+  }
+  return null;
+}
+
+const ANTIGRAVITY_ERROR_HINTS: ReadonlyArray<{ re: RegExp; hint: string }> = [
+  {
+    re: /authentication required|not (?:logged in|authenticated|signed in)|unauthorized|invalid (?:api|gemini) key|credential/i,
+    hint: "Antigravity authentication required — run `agy` once interactively to sign in, or configure modelProvider=gemini with GEMINI_API_KEY. RepoOS never reads or stores that key.",
+  },
+  {
+    re: /permission denied|soft[- ]denied|approval required|requires? (?:user )?approval|not allowed/i,
+    hint: "Antigravity denied a tool or command. RepoOS uses --dangerously-skip-permissions for unattended task work, but this is a blanket bypass; review agy permissions/sandbox settings rather than broadening RepoOS access.",
+  },
+  {
+    re: /invalid model|unknown model|model .*not (?:recognized|found)|does-not-exist/i,
+    hint: "Antigravity rejected the selected model — run `agy models` and choose an available model instead of silently falling back.",
+  },
+  {
+    re: /unknown (?:option|argument|command)|unsupported (?:flag|option)|unrecognized (?:option|argument)/i,
+    hint: "The installed Antigravity CLI may be too old for RepoOS's driver; update `agy` with the official installer and retry.",
+  },
+];
+
+/** Actionable recovery advice for recognizable Antigravity failures. */
+export function antigravityErrorHint(text: string): string | null {
+  for (const { re, hint } of ANTIGRAVITY_ERROR_HINTS) {
     if (re.test(text)) return hint;
   }
   return null;
@@ -1877,6 +2113,19 @@ function modelArgs(cli: string, model: string): string[] {
   return ["--model", model];
 }
 
+const DRIVABLE_CLIS = new Set<string>(AGENT_CLIS);
+
+function unsupportedCliMessage(cli: string): string {
+  if (cli === "gemini") {
+    return "Gemini CLI is deprecated for new RepoOS assignments. Choose Antigravity CLI (agy); existing Gemini configuration was preserved and was not run.";
+  }
+  return `RepoOS has no driver for ${cli || "the selected coding agent"}. Choose an installed CLI from the Agents page.`;
+}
+
+function ensureDrivableCli(cli: string): void {
+  if (!DRIVABLE_CLIS.has(cli)) throw new Error(unsupportedCliMessage(cli));
+}
+
 /**
  * Codex is the only driver RepoOS runs inside an OS sandbox (Seatbelt on
  * macOS). `workspace-write` blocks ALL network by default — including binding
@@ -1952,6 +2201,7 @@ function cursorArgs(options: { write: boolean; cwd?: string }): string[] {
 
 function cliCommand(agent: Agent, mission: string, cwd: string): { cmd: string; args: string[] } {
   const { cli, model } = agent;
+  ensureDrivableCli(cli);
   if (cli === "claude code") {
     return {
       cmd: "claude",
@@ -2012,6 +2262,23 @@ function cliCommand(agent: Agent, mission: string, cwd: string): { cmd: string; 
       args: [...cursorArgs({ write: true, cwd }), ...modelArgs(cli, model), mission],
     };
   }
+  if (cli === "antigravity") {
+    // Antigravity has no interactive approval channel in RepoOS. The flag is
+    // intentionally explicit: the process is launched only in the task's
+    // managed worktree, but this is still a blanket permission bypass and may
+    // allow commands outside that directory. See user-docs/agents.md.
+    return {
+      cmd: "agy",
+      args: [
+        "-p",
+        mission,
+        ...modelArgs(cli, model),
+        "--output-format",
+        "stream-json",
+        "--dangerously-skip-permissions",
+      ],
+    };
+  }
   // default: opencode's headless `run` mode. `--format json` streams one JSON
   // event per line (step_start / text / tool_use / step_finish / error) that
   // the runner parses into structured transcript entries. `--dir` (0044) keeps
@@ -2038,6 +2305,7 @@ function resumeCommand(
   cwd?: string,
 ): { cmd: string; args: string[] } {
   const { cli, model } = agent;
+  ensureDrivableCli(cli);
   if (cli === "claude code") {
     return {
       cmd: "claude",
@@ -2124,6 +2392,20 @@ function resumeCommand(
         ...(sessionId ? ["--resume", sessionId] : []),
         ...modelArgs(cli, model),
         text,
+      ],
+    };
+  }
+  if (cli === "antigravity") {
+    return {
+      cmd: "agy",
+      args: [
+        "-p",
+        text,
+        ...(sessionId ? ["--conversation", sessionId] : []),
+        ...modelArgs(cli, model),
+        "--output-format",
+        "stream-json",
+        "--dangerously-skip-permissions",
       ],
     };
   }
@@ -2386,6 +2668,7 @@ export const PROMPT_TIMEOUT_MS = 180_000;
  * flag; `default` intentionally omits the flag and lets the CLI resolve it.
  */
 export function promptCommand(agent: Agent, prompt: string): { cmd: string; args: string[] } {
+  ensureDrivableCli(agent.cli);
   const extra = modelArgs(agent.cli, agent.model);
   if (agent.cli === "claude code") return { cmd: "claude", args: ["-p", prompt, ...extra] };
   if (agent.cli === "qwen code") return { cmd: "qwen", args: ["-p", prompt, ...extra] };
@@ -2418,6 +2701,12 @@ export function promptCommand(agent: Agent, prompt: string): { cmd: string; args
     // headless print run does not stall on a workspace-trust prompt.
     return { cmd: "cursor-agent", args: [...cursorArgs({ write: false }), ...extra, prompt] };
   }
+  if (agent.cli === "antigravity") {
+    return {
+      cmd: "agy",
+      args: ["-p", prompt, ...extra, "--output-format", "json"],
+    };
+  }
   return { cmd: "opencode", args: ["run", ...extra, prompt] };
 }
 
@@ -2440,6 +2729,7 @@ export function pmCommand(
   prompt: string,
   cwd: string,
 ): { cmd: string; args: string[] } {
+  ensureDrivableCli(agent.cli);
   const extra = modelArgs(agent.cli, agent.model);
   if (agent.cli === "claude code") {
     // stream-json — the terminal `result` event carries authoritative tokens
@@ -2501,6 +2791,12 @@ export function pmCommand(
       args: [...cursorArgs({ write: false, cwd }), ...extra, prompt],
     };
   }
+  if (agent.cli === "antigravity") {
+    return {
+      cmd: "agy",
+      args: ["-p", prompt, ...extra, "--output-format", "json"],
+    };
+  }
   // opencode: `--format json` separates the final answer from step-by-step
   // narration (0264 vs 0253) and its `step_finish` events carry per-call
   // usage deltas; `--dir` pins the repo root. Deliberately NO `--auto`: that
@@ -2542,6 +2838,7 @@ export function reviewCommand(
   prompt: string,
   cwd: string,
 ): { cmd: string; args: string[] } {
+  ensureDrivableCli(agent.cli);
   const extra = modelArgs(agent.cli, agent.model);
   if (agent.cli === "claude code") {
     // stream-json — same structured usage output the engineer's `cliCommand`
@@ -2605,6 +2902,12 @@ export function reviewCommand(
       args: [...cursorArgs({ write: true, cwd }), ...extra, prompt],
     };
   }
+  if (agent.cli === "antigravity") {
+    return {
+      cmd: "agy",
+      args: ["-p", prompt, ...extra, "--output-format", "json", "--dangerously-skip-permissions"],
+    };
+  }
   return {
     cmd: "opencode",
     args: ["run", "--format", "json", "--dir", cwd, ...extra, "--auto", prompt],
@@ -2654,6 +2957,10 @@ export function parseOneShotLine(cli: string, raw: string): AgentOutputEntry | n
     const parsed = parseCursorEvent(raw);
     return parsed?.entry ?? null;
   }
+  if (cli === "antigravity") {
+    const parsed = parseAntigravityEvent(raw, { surfaceResult: true });
+    return parsed?.entry ?? null;
+  }
   return { s: "out", d: raw };
 }
 
@@ -2700,6 +3007,37 @@ export function extractOneShotReportText(cli: string, rawOutput: string): string
  * NO `REPOOS_API_URL` / `REPOOS_TASK_ID` is injected, so a one-shot agent has
  * no pointer at the control plane's task endpoints.
  */
+/**
+ * True when `dir` is a linked git worktree: there `.git` is a file pointing at
+ * the shared repo, whereas the main checkout has a `.git` directory.
+ */
+function isLinkedWorktree(dir: string): boolean {
+  try {
+    return statSync(join(dir, ".git")).isFile();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Antigravity runs with --dangerously-skip-permissions for unattended work, so
+ * a bypassing `agy` spawn is only allowed inside a linked task worktree — never
+ * the main checkout (a failed-worktree fallback, a hotfix, or a board-level
+ * chat) and never an arbitrary directory. Returns the refusal, or null.
+ */
+function antigravityWorktreeRefusal(
+  cmd: string,
+  args: string[],
+  cwd: string,
+  task?: Task,
+): string | null {
+  if (cmd !== "agy" || !args.includes("--dangerously-skip-permissions")) return null;
+  if (isLinkedWorktree(cwd)) return null;
+  return task
+    ? "Antigravity only runs in a RepoOS task worktree, and this turn would run outside one (worktree creation failed, or this is a hotfix). Fix the worktree, or pick a different agent for this task."
+    : "Antigravity only runs in a RepoOS task worktree, so it can't drive board-level chats that run in the main checkout. Pick a different agent for this role.";
+}
+
 export function runPrompt(
   agent: Agent,
   prompt: string,
@@ -2714,7 +3052,24 @@ export function runPrompt(
   const cwd = opts.cwd ?? process.cwd();
   const timeoutMs = opts.timeoutMs ?? PROMPT_TIMEOUT_MS;
   return new Promise((resolve) => {
-    const { cmd, args } = opts.command ?? promptCommand(agent, prompt);
+    let command: { cmd: string; args: string[] };
+    try {
+      command = opts.command ?? promptCommand(agent, prompt);
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      resolve({ ok: false, error: reason });
+      return;
+    }
+    const { cmd, args } = command;
+    // Read-only one-shots (model tests, PM authoring) run agy without the
+    // permission bypass and may use the main checkout like every other CLI.
+    // Anything that does bypass permissions (reviewCommand — e.g. the CTO,
+    // which runs in config.root) must be in a linked task worktree.
+    const refusal = antigravityWorktreeRefusal(cmd, args, cwd);
+    if (refusal) {
+      resolve({ ok: false, error: refusal });
+      return;
+    }
     let proc: ChildProcess;
     const startedAt = Date.now();
     try {
@@ -2763,7 +3118,7 @@ export function runPrompt(
       });
     }, timeoutMs);
 
-    const done = (): void => {
+    const done = (exitCode: number | null, signal: NodeJS.Signals | null): void => {
       clearTimeout(timer);
       const elapsedMs = Date.now() - startedAt;
       // Flush a trailing line with no final newline so nothing is held back.
@@ -2787,21 +3142,70 @@ export function runPrompt(
         cacheCreationTokens: usage.cacheCreationTokens,
         turns: usage.turns,
       };
+      if (exitCode !== 0 || signal) {
+        const detail = stderr ? stderr.split("\n").slice(-3).join(" ").trim() : "no stderr output";
+        const termination = signal ? `signal ${signal}` : `code ${exitCode ?? "unknown"}`;
+        const hint = agent.cli === "antigravity" ? antigravityErrorHint(stderr) : null;
+        resolve({
+          ok: false,
+          error: `${cmd} exited with ${termination}: ${detail}${hint ? ` ${hint}` : ""}`,
+          ...usageFields,
+        });
+        return;
+      }
+      if (agent.cli === "antigravity" && output) {
+        const error = antigravityOneShotError(output, stderr);
+        if (error) {
+          resolve({ ok: false, error, ...usageFields });
+          return;
+        }
+      }
       if (output) {
         resolve({ ok: true, output, ...usageFields });
         return;
       }
       const reason = stderr ? stderr.split("\n").slice(-3).join(" ").trim() : "no output produced";
-      resolve({ ok: false, error: `${cmd} exited without output: ${reason}`, ...usageFields });
+      const hint = agent.cli === "antigravity" ? antigravityErrorHint(stderr) : null;
+      resolve({
+        ok: false,
+        error: `${cmd} exited without output: ${reason}${hint ? ` ${hint}` : ""}`,
+        ...usageFields,
+      });
     };
     // `close` (not `exit`) fires only after stdio has drained, so a trailing
     // line with no final newline is still readable when we flush it.
-    proc.on("close", () => done());
+    proc.on("close", (code, signal) => done(code, signal));
     proc.on("error", (err) => {
       clearTimeout(timer);
       resolve({ ok: false, error: `could not launch ${cmd}: ${err.message}` });
     });
   });
+}
+
+/**
+ * Validate an Antigravity one-shot `--output-format json` envelope. Exit code
+ * alone is not enough: agy can exit 0 with `{status: "ERROR"}`, and a reloaded
+ * server adopting a run from its logs has no exit code at all. Returns an
+ * actionable error, or null when the envelope reports SUCCESS.
+ */
+export function antigravityOneShotError(output: string, stderr: string): string | null {
+  const malformed = "agy returned malformed JSON; update Antigravity CLI and retry.";
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(output);
+  } catch {
+    return malformed;
+  }
+  const envelope =
+    parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : null;
+  if (!envelope || typeof envelope.status !== "string") return malformed;
+  if (envelope.status.toUpperCase() === "SUCCESS") return null;
+  const detail =
+    typeof envelope.error === "string" && envelope.error
+      ? envelope.error
+      : `status ${envelope.status}`;
+  const hint = antigravityErrorHint(detail) ?? antigravityErrorHint(stderr);
+  return `agy run failed: ${detail}${hint ? ` ${hint}` : ""}`;
 }
 
 /**
@@ -2816,6 +3220,8 @@ export function oneShotResultFromLog(
   outLog: string,
   errLog: string,
   elapsedMs: number,
+  exitCode?: number | null,
+  commandName = "agent",
 ): PromptResult {
   const rawOut = existsSync(outLog) ? readFileSync(outLog, "utf8") : "";
   const rawErr = existsSync(errLog) ? readFileSync(errLog, "utf8") : "";
@@ -2836,6 +3242,18 @@ export function oneShotResultFromLog(
     cacheCreationTokens: usage.cacheCreationTokens,
     turns: usage.turns,
   };
+  if (exitCode !== undefined && exitCode !== 0) {
+    const detail = stderr ? stderr.split("\n").slice(-3).join(" ").trim() : "no stderr output";
+    return {
+      ok: false,
+      error: `${commandName} exited with code ${exitCode ?? "unknown"}: ${detail}`,
+      ...usageFields,
+    };
+  }
+  if (output && commandName === "antigravity") {
+    const error = antigravityOneShotError(output, stderr);
+    if (error) return { ok: false, error, ...usageFields };
+  }
   if (output) return { ok: true, output, ...usageFields };
   const reason = stderr ? stderr.split("\n").slice(-3).join(" ").trim() : "no output produced";
   return { ok: false, error: `agent exited without output: ${reason}`, ...usageFields };
@@ -3490,6 +3908,9 @@ export class AgentRunner {
     agent: Agent,
     opts: { cwd?: string; contextPack?: string; resumePreamble?: string } = {},
   ): StartResult {
+    if (!DRIVABLE_CLIS.has(agent.cli)) {
+      return { ok: false, reason: unsupportedCliMessage(agent.cli) };
+    }
     if (
       this.entries.has(task.id) ||
       this.handoffsInFlight.has(task.id) ||
@@ -3501,7 +3922,13 @@ export class AgentRunner {
     const session = this.sessions.get(task.id) ?? this.loadSession(task.id) ?? this.emptySession();
     this.captureUsageBaseline(session);
     session.workdir = cwd;
-    session.engine = engineForCli(agent.cli);
+    // A session id belongs to the CLI that minted it. Switching engines must
+    // not carry it over, or the new CLI would never capture its own id (the
+    // parsers only set one when none is present) and follow-ups would hand a
+    // foreign id to the new CLI's resume flag.
+    const engine = engineForCli(agent.cli);
+    if (session.engine !== engine) session.sessionId = undefined;
+    session.engine = engine;
     session.task = task;
     session.branch = branch;
     session.agent = agent.name;
@@ -3538,7 +3965,11 @@ export class AgentRunner {
     agent: Agent,
     repositoryContext: string,
     promptBuilder: (text: string, context: string, agent: Agent) => string = repoGuidePrompt,
+    opts: { cwd?: string } = {},
   ): StartResult {
+    if (!DRIVABLE_CLIS.has(agent.cli)) {
+      return { ok: false, reason: unsupportedCliMessage(agent.cli) };
+    }
     if (this.entries.has(sessionId) || this.queuedIds.has(sessionId)) {
       return {
         ok: false,
@@ -3549,12 +3980,13 @@ export class AgentRunner {
     if (this.sessions.has(sessionId)) {
       return { ok: false, reason: "conversation already exists — send a follow-up instead" };
     }
+    const cwd = opts.cwd ?? this.config.root;
     const human: AgentOutputEntry = { type: "human", text, at: new Date().toISOString() };
     const session: Session = {
       lines: [human],
       pending: "",
       bytes: entryBytes(human),
-      workdir: this.config.root,
+      workdir: cwd,
       engine: engineForCli(agent.cli),
       agent: agent.name,
       model: agent.model,
@@ -3566,8 +3998,8 @@ export class AgentRunner {
       agent.name === DEBUGGER_NAME
         ? debuggerPrompt(text, repositoryContext, agent)
         : promptBuilder(text, repositoryContext, agent);
-    const { cmd, args } = cliCommand(agent, mission, this.config.root);
-    return this.spawnOrQueue(sessionId, cmd, args, this.config.root);
+    const { cmd, args } = cliCommand(agent, mission, cwd);
+    return this.spawnOrQueue(sessionId, cmd, args, cwd);
   }
 
   /**
@@ -3594,6 +4026,9 @@ export class AgentRunner {
     cwd: string,
     opts: { humanEntry?: AgentOutputEntry; reset?: boolean; reviewKind?: "run" | "chat" } = {},
   ): StartResult {
+    if (!DRIVABLE_CLIS.has(agent.cli)) {
+      return { ok: false, reason: unsupportedCliMessage(agent.cli) };
+    }
     if (this.entries.has(sessionKey)) {
       return { ok: false, busy: true, reason: "a review is already running for this task" };
     }
@@ -3640,8 +4075,11 @@ export class AgentRunner {
     taskId: string,
     text: string,
     agent: Agent,
-    opts: { resumePreamble?: string; skipBoardDivergence?: boolean } = {},
+    opts: { resumePreamble?: string; skipBoardDivergence?: boolean; cwd?: string } = {},
   ): StartResult {
+    if (!DRIVABLE_CLIS.has(agent.cli)) {
+      return { ok: false, reason: unsupportedCliMessage(agent.cli) };
+    }
     // Completed/non-task conversations are deliberately not preloaded at boot.
     // Hydrate one on demand so a persisted RepoOS Guide transcript can resume
     // after a server reload instead of being visible-but-unsendable.
@@ -3661,6 +4099,8 @@ export class AgentRunner {
       };
     }
     this.sessions.set(taskId, session);
+    const cwd = opts.cwd ?? session.workdir ?? this.config.root;
+    session.workdir = cwd;
     this.captureUsageBaseline(session);
     const entry: AgentOutputEntry = { type: "human", text, at: new Date().toISOString() };
     session.lines.push(entry);
@@ -3687,22 +4127,22 @@ export class AgentRunner {
     // --resume flag (e.g. an opencode `ses_...` id passed to `claude
     // --resume`, which requires a UUID and errors out). Drop it and let
     // resumeCommand fall back to a fresh/most-recent-session start instead.
-    const sessionId = session.engine === engineForCli(agent.cli) ? session.sessionId : undefined;
-    const { cmd, args } = resumeCommand(
-      agent,
-      fullText,
-      sessionId,
-      session.workdir ?? this.config.root,
-    );
-    return this.spawnOrQueue(
-      taskId,
-      cmd,
-      args,
-      session.workdir ?? this.config.root,
-      session.task,
-      session.branch,
-      { skipBoardDivergence: opts.skipBoardDivergence },
-    );
+    const engine = engineForCli(agent.cli);
+    if (session.engine !== engine) {
+      session.sessionId = undefined;
+      session.engine = engine;
+    }
+    const sessionId = session.sessionId;
+    if (agent.cli === "antigravity" && !sessionId) {
+      this.recordEntry(taskId, session, "sys", {
+        type: "sys",
+        d: "Antigravity conversation id unavailable; starting a clearly-labelled fresh turn instead of guessing a session.",
+      });
+    }
+    const { cmd, args } = resumeCommand(agent, fullText, sessionId, cwd);
+    return this.spawnOrQueue(taskId, cmd, args, cwd, session.task, session.branch, {
+      skipBoardDivergence: opts.skipBoardDivergence,
+    });
   }
 
   /** The retained transcript for a task, or null when no session exists. */
@@ -3767,6 +4207,8 @@ export class AgentRunner {
     branch?: string,
     opts: { skipBoardDivergence?: boolean } = {},
   ): StartResult {
+    const refusal = antigravityWorktreeRefusal(cmd, args, cwd, task);
+    if (refusal) return { ok: false, reason: refusal };
     if (this.entries.size < this.maxConcurrentAgents) {
       return this.spawnTurn(id, cmd, args, cwd, task, branch, opts);
     }
@@ -3811,6 +4253,11 @@ export class AgentRunner {
     branch?: string,
     opts: { skipBoardDivergence?: boolean; review?: boolean; reviewKind?: "run" | "chat" } = {},
   ): StartResult {
+    // Backstop for callers that reach spawnTurn directly (review starts) and
+    // for queued turns: never launch a permission-bypassing agy outside a
+    // linked task worktree.
+    const refusal = antigravityWorktreeRefusal(cmd, args, cwd, task);
+    if (refusal) return { ok: false, reason: refusal };
     const runId = randomUUID();
     // A new turn means the task is active again — a human restarted a paused
     // task, or sent a follow-up — so the pause marker no longer applies.
@@ -3901,6 +4348,7 @@ export class AgentRunner {
       session.turnStartedAt = now();
       session.lastOutputAt = now();
       session.stalledEmitted = false;
+      session.antigravityTerminal = undefined;
     }
     // Persist the durable registry entry so a restart can re-attach (0214).
     if (proc.pid) {
@@ -3984,10 +4432,17 @@ export class AgentRunner {
       this.appendCursorLine(taskId, session, raw);
       return;
     }
+    if (stream === "out" && session.engine === "antigravity") {
+      this.appendAntigravityLine(taskId, session, raw);
+      return;
+    }
     // Cursor surfaces auth/permission/version failures on stderr; map the
     // recognizable ones to an actionable recovery hint.
     if (stream === "err" && session.engine === "cursor") {
       this.maybeCursorHint(taskId, session, raw);
+    }
+    if (stream === "err" && session.engine === "antigravity") {
+      this.maybeAntigravityHint(taskId, session, raw);
     }
 
     const parsed = stream === "out" && session.engine === "opencode" ? parseJsonEvent(raw) : null;
@@ -4214,6 +4669,45 @@ export class AgentRunner {
     this.lineTouched(taskId, session, raw);
   }
 
+  /** Antigravity's event envelope is self-contained: tool steps already carry
+   * their result, so no pending tool buffer is needed. */
+  private appendAntigravityLine(taskId: string, session: Session, raw: string): void {
+    const parsed = parseAntigravityEvent(raw);
+    if (!parsed) {
+      this.recordEntry(taskId, session, "out", {
+        type: "sys",
+        d: "Antigravity emitted an unreadable protocol event; retry with a supported CLI version.",
+      });
+      this.lineTouched(taskId, session, raw);
+      return;
+    }
+    if (parsed.sessionID && !session.sessionId) session.sessionId = parsed.sessionID;
+    if (parsed.model) session.model = parsed.model;
+    if (parsed.terminal) session.antigravityTerminal = parsed.terminal;
+    if (parsed.entry) {
+      this.recordEntry(
+        taskId,
+        session,
+        "out",
+        this.applySignals(taskId, raw, parsed.entry, session),
+      );
+      if ("type" in parsed.entry && parsed.entry.type === "sys") {
+        this.maybeAntigravityHint(taskId, session, raw);
+      }
+    }
+    this.lineTouched(taskId, session, raw);
+  }
+
+  /** Emit one actionable recovery hint for a recognizable Antigravity error. */
+  private maybeAntigravityHint(taskId: string, session: Session, raw: string): void {
+    const hint = antigravityErrorHint(raw);
+    if (!hint) return;
+    const seen = (session.antigravityHints ??= new Set<string>());
+    if (seen.has(hint)) return;
+    seen.add(hint);
+    this.recordEntry(taskId, session, "sys", { type: "sys", d: hint });
+  }
+
   /** Emit an actionable recovery hint for a Cursor error line, once per session. */
   private maybeCursorHint(taskId: string, session: Session, raw: string): void {
     const hint = cursorErrorHint(raw);
@@ -4340,11 +4834,13 @@ export class AgentRunner {
     if (this.replayingUsage) return false;
     let changed = false;
     const set = (cur: number | undefined, v: number, baseline = 0): number =>
-      found.authoritative
-        ? v + baseline
-        : found.deltas
-          ? (cur ?? 0) + v
-          : Math.max(cur ?? 0, v + baseline);
+      found.cumulative
+        ? Math.max(cur ?? 0, v)
+        : found.authoritative
+          ? v + baseline
+          : found.deltas
+            ? (cur ?? 0) + v
+            : Math.max(cur ?? 0, v + baseline);
     const baseline = session.usageBaseline;
     if (found.inputTokens !== undefined) {
       const next = set(session.inputTokens, found.inputTokens, baseline?.inputTokens);
@@ -4393,7 +4889,9 @@ export class AgentRunner {
       }
     }
     if (found.turns !== undefined && found.turns > 0) {
-      session.turns = (session.turns ?? 0) + found.turns; // delta — accumulate
+      session.turns = found.cumulative
+        ? Math.max(session.turns ?? 0, found.turns)
+        : (session.turns ?? 0) + found.turns;
       changed = true;
     }
     return changed;
@@ -4688,6 +5186,27 @@ export class AgentRunner {
       this.appendLine(taskId, "out", line);
       session.pending = "";
     }
+    // A zero exit is not success for Antigravity unless the stream ended with
+    // a SUCCESS `result` record. A malformed or changed protocol (only unknown
+    // or unreadable events) or a failed result must fail the turn visibly
+    // rather than read as a clean finish.
+    if (
+      exitedCleanly &&
+      session?.engine === "antigravity" &&
+      session.antigravityTerminal !== "success"
+    ) {
+      exitedCleanly = false;
+      this.recordEntry(taskId, session, "sys", {
+        type: "sys",
+        d:
+          session.antigravityTerminal === "failure"
+            ? "Antigravity reported a failed result, so this turn is marked failed despite a zero exit code."
+            : "Antigravity exited without a terminal result event — the output protocol may have changed. Update agy and retry; this turn is marked failed.",
+      });
+      this.logger?.agent(taskId, "error", "Antigravity turn ended without a SUCCESS result", {
+        runId: entry.runId,
+      });
+    }
     if (entry.killTimer) clearTimeout(entry.killTimer);
     // claude stream (0109): a tool_use whose result never arrived before the
     // turn ended still gets its card, so a call is never silently invisible.
@@ -4944,9 +5463,17 @@ export class AgentRunner {
         value.version !== SESSION_FILE_VERSION ||
         !Array.isArray(value.lines) ||
         !value.lines.every((line) => typeof line === "object" && line !== null) ||
-        !["opencode", "claude", "copilot", "qwen", "codex", "kiro", "cursor", "plain"].includes(
-          value.engine as string,
-        ) ||
+        ![
+          "opencode",
+          "claude",
+          "copilot",
+          "qwen",
+          "codex",
+          "kiro",
+          "cursor",
+          "antigravity",
+          "plain",
+        ].includes(value.engine as string) ||
         typeof value.updatedAt !== "string" ||
         (value.sessionId !== undefined && typeof value.sessionId !== "string") ||
         (value.workdir !== undefined && typeof value.workdir !== "string") ||
