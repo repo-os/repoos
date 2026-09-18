@@ -2,7 +2,7 @@
 id: "0408"
 title: Add install-source-aware coding-agent update checks
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: agent
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: ""
 review_model_override: opencode-go/hy3
 created_at: "2026-09-18T11:16:48Z"
-updated_at: "2026-09-18T11:17:40Z"
+updated_at: "2026-09-18T11:17:42Z"
 ---
 ## Problem
 
@@ -52,3 +52,4 @@ Add an explicit Check for updates action to Detected Coding Agents. It checks su
 
 - 2026-09-18T11:16:48Z · created · unknown
 - 2026-09-18T11:17:40Z · review_model_override
+- 2026-09-18T11:17:42Z · status inbox→ready
