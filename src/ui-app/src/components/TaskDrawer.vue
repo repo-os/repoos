@@ -64,6 +64,7 @@ import SelectTrigger from "./ui/select/trigger.vue";
 import SelectValue from "./ui/select/value.vue";
 import SelectViewport from "./ui/select/viewport.vue";
 import AgentModelControl from "./AgentModelControl.vue";
+import { useModelMemory } from "../composables/useModelMemory";
 import { GENERIC_PATCH_TARGETS } from "../lib/taskTransitions";
 import { parseReviewVerdict } from "../lib/reviewVerdict";
 import { autoRepairHint, retryCountFrom } from "../lib/retryHints";
@@ -73,6 +74,17 @@ const ui = useUiStore();
 const config = useConfigStore();
 const auth = useAuthStore();
 const router = useRouter();
+const { recall: recallModelForCli } = useModelMemory();
+
+/**
+ * Model to apply when a picker's CLI changes. Prefer a remembered pin for this
+ * context+CLI (#0342 / #0360); never blindly take `modelsFor(cli)[0]` ("default").
+ */
+function modelForCliSwitch(memoryKey: string, cli: string): string {
+  const remembered = recallModelForCli(memoryKey, cli);
+  if (!remembered) return "default";
+  return config.isKnownModelForCli(cli, remembered) ? remembered : "default";
+}
 
 /** Task whose dirty-worktree restart choice is awaiting an answer. */
 const restartTask = ref<Task | null>(null);
@@ -1570,8 +1582,8 @@ watch(
   (newCli, oldCli) => {
     if (pmCliResetSuppressed) return;
     if (!newCli || newCli === oldCli) return;
-    const opts = config.modelsFor(newCli);
-    pmOverrideDraft.model = opts.length > 0 ? opts[0].value : "default";
+    const key = ui.active ? `task:${ui.active.id}:pm` : "";
+    pmOverrideDraft.model = modelForCliSwitch(key, newCli);
   },
 );
 
@@ -1678,8 +1690,8 @@ watch(
   (newCli, oldCli) => {
     if (reviewCliResetSuppressed) return;
     if (!newCli || newCli === oldCli) return;
-    const opts = config.modelsFor(newCli);
-    reviewOverrideDraft.model = opts.length > 0 ? opts[0].value : "default";
+    const key = ui.active ? `task:${ui.active.id}:review` : "";
+    reviewOverrideDraft.model = modelForCliSwitch(key, newCli);
   },
 );
 
@@ -2262,18 +2274,18 @@ function scheduleAgentOverrideSave(): void {
 }
 
 /**
- * When the CLI changes, reset the model to the new CLI's default.
- * This must happen synchronously during the same microtask as the v-model
- * update so the auto-save (which fires via a separate watch) captures the
- * correct model value — no flicker, no stale-model-then-fix cycle.
+ * When the CLI changes, restore a remembered pin for this task+CLI (#0342 /
+ * #0360) — never blindly take `modelsFor(cli)[0]` ("default"). Runs in the
+ * same flush as the v-model update so the auto-save watch captures the
+ * correct model — no flicker, no stale-model-then-fix cycle.
  */
 watch(
   () => overrideDraft.cli,
   (newCli, oldCli) => {
     if (agentCliResetSuppressed) return;
     if (!newCli || newCli === oldCli) return;
-    const opts = config.modelsFor(newCli);
-    overrideDraft.model = opts.length > 0 ? opts[0].value : "default";
+    const key = ui.active ? `task:${ui.active.id}:agent` : "";
+    overrideDraft.model = modelForCliSwitch(key, newCli);
   },
 );
 
@@ -2308,12 +2320,23 @@ const freeformOverride = reactive({
   model: "",
 });
 
+/**
+ * True while `initFreeformOverrides` is assigning from the PM base. Without
+ * this, the CLI→model watcher sees `"" → "opencode"` on first open and wipes
+ * the just-copied PM pin with `"default"` (#0400).
+ */
+let freeformCliResetSuppressed = false;
+
 /** Initialize freeform overrides from the PM agent defaults. */
 function initFreeformOverrides(): void {
   const base = freeformPmBase.value;
+  freeformCliResetSuppressed = true;
   freeformOverride.agent = base?.name || "";
   freeformOverride.cli = base?.cli || "";
   freeformOverride.model = base?.model || "";
+  nextTick(() => {
+    freeformCliResetSuppressed = false;
+  });
 }
 
 /** Whether the freeform overrides differ from the PM agent defaults. */
@@ -2331,9 +2354,9 @@ const freeformIsCustom = computed(() => {
 watch(
   () => freeformOverride.cli,
   (newCli, oldCli) => {
+    if (freeformCliResetSuppressed) return;
     if (!newCli || newCli === oldCli) return;
-    const opts = config.modelsFor(newCli);
-    freeformOverride.model = opts.length > 0 ? opts[0].value : "default";
+    freeformOverride.model = modelForCliSwitch("panel:new-task", newCli);
   },
 );
 
@@ -2374,8 +2397,10 @@ watch(
       <!-- NEW TASK -->
       <template v-if="ui.isNew">
         <div class="drawer-head">
-          <DialogTitle>New task</DialogTitle>
-          <DialogDescription class="sr-only">Create a new task</DialogDescription>
+          <div class="drawer-head-title">
+            <DialogTitle>New task</DialogTitle>
+            <DialogDescription class="sr-only">Create a new task</DialogDescription>
+          </div>
           <DialogClose class="close-x">
             <X class="size-[15px]" />
           </DialogClose>
