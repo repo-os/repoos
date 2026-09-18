@@ -334,10 +334,14 @@ const installedDrivableClis = computed(
     new Set(detected.value.filter((a) => a.installed && a.drivable && a.cli).map((a) => a.cli!)),
 );
 
-function cliOptionsFor(currentCli: string): string[] {
-  return (config.agentsMeta.clis ?? []).filter(
-    (cli) => cli !== "antigravity" || installedDrivableClis.value.has(cli) || cli === currentCli,
-  );
+function cliOptionsFor(currentCli: string, opts: { team?: boolean } = {}): string[] {
+  return (config.agentsMeta.clis ?? []).filter((cli) => {
+    if (cli !== "antigravity" || cli === currentCli) return true;
+    // Team agents (Ross, CTO) work in the main checkout, where RepoOS refuses
+    // to run Antigravity's permission bypass — so don't offer it for them.
+    if (opts.team) return false;
+    return installedDrivableClis.value.has(cli);
+  });
 }
 
 const { isAgentFavorite, toggleAgentFavorite } = useAgentFavorites();
@@ -742,7 +746,7 @@ onUnmounted(() => {
               <div class="agent-field">
                 <label>Coding agent + Model</label>
                 <AgentModelControl
-                  :cli-options="cliOptionsFor(a.cli)"
+                  :cli-options="cliOptionsFor(a.cli, { team: true })"
                   :model-options="config.modelsFor(a.cli, a.model)"
                   :memory-key="'team:' + a.name"
                   v-model:cli="a.cli"

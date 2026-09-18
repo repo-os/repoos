@@ -648,3 +648,95 @@ it("renders Gemini deprecation guidance and hides unavailable Antigravity select
   expect(defaultPanel.findAll(".am-cli-btn").map((button) => button.text())).toEqual(["opencode"]);
   wrapper.unmount();
 });
+
+it("offers an installed Antigravity to task agents but never to team agents", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string) => {
+      if (url.includes("/api/agents/detect")) {
+        return json({
+          agents: [
+            {
+              id: "antigravity",
+              name: "Antigravity CLI",
+              cli: "antigravity",
+              binary: "agy",
+              installed: true,
+              path: "/usr/local/bin/agy",
+              version: "agy 1.2.6",
+              headless: true,
+              drivable: true,
+              installHint: "install",
+              auth: true,
+            },
+          ],
+        });
+      }
+      if (url.includes("/api/models")) {
+        return json({
+          byCli: {
+            opencode: { supported: true, models: ["default"], refreshable: false },
+            antigravity: { supported: true, models: ["default"], refreshable: false },
+          },
+        });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    }),
+  );
+  const pinia = createPinia();
+  setActivePinia(pinia);
+  const config = useConfigStore();
+  const engineer = { name: "engineer", cli: "opencode", model: "default", enabled: true };
+  const ross = { name: "ross", cli: "opencode", model: "default", enabled: true };
+  config.agents = [engineer, ross];
+  config.agentsMeta = {
+    clis: ["opencode", "antigravity"],
+    models: ["default"],
+    defaults: [engineer, ross],
+    skills: [],
+  };
+  config.loaded = true;
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [{ path: "/", component: { template: "<div />" } }],
+  });
+  await router.push("/");
+  const wrapper = mount(AgentsView, {
+    global: {
+      plugins: [pinia, router],
+      stubs: {
+        teleport: true,
+        Transition: true,
+        AgentModelControl: {
+          props: ["cliOptions", "cli", "memoryKey"],
+          template:
+            '<div class="am-control" :data-key="memoryKey"><button v-for="option in cliOptions" :key="option" class="am-cli-btn">{{ option }}</button></div>',
+        },
+      },
+    },
+  });
+  await flush();
+  await wrapper
+    .findAll("button.tab-btn")
+    .find((button) => button.text() === "Detected Coding Agents")!
+    .trigger("click");
+  await flush();
+  await wrapper
+    .findAll("button.tab-btn")
+    .find((button) => button.text() === "Default Agents")!
+    .trigger("click");
+  await flush();
+  const optionsFor = (key: string): string[] =>
+    wrapper
+      .find(`.am-control[data-key="${key}"]`)
+      .findAll(".am-cli-btn")
+      .map((button) => button.text());
+  expect(optionsFor("team:ross")).toEqual(["opencode"]);
+  const engineerKey = wrapper
+    .findAll(".am-control")
+    .map((control) => control.attributes("data-key"))
+    .find((key) => key && !key.startsWith("team:"));
+  expect(engineerKey).toBeTruthy();
+  expect(optionsFor(engineerKey!)).toEqual(["opencode", "antigravity"]);
+  wrapper.unmount();
+});
