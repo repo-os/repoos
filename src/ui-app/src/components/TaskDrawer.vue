@@ -2776,12 +2776,6 @@ watch(
                 :aria-label="`Copy link to task ${ui.active.id}`"
               />
               <span class="tc-id mono">{{ ui.active.path }}</span>
-              <span class="cdot" :style="{ background: statusColor(ui.active.status) }"></span>
-              <span
-                :style="{ color: statusColor(ui.active.status), fontSize: '11px', fontWeight: 600 }"
-              >
-                {{ ui.active.status }}
-              </span>
               <span
                 v-if="ui.active.needsInput"
                 class="tc-waiting"

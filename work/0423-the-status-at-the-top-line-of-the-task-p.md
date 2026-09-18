@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-18T17:22:07Z"
-review_passes: 1
 id: "0423"
 title: Remove redundant status display from task panel header
 type: chore
@@ -11,6 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/remove-redundant-status-display-from-tas
 created_at: "2026-09-18T16:55:22Z"
+updated_at: "2026-09-18T17:21:44Z"
 ---
 ## Problem
 
@@ -55,4 +54,3 @@ The status at the top line of the task panel is not necessary because it's shown
 - 2026-09-18T17:20:00Z · status inbox→ready
 - 2026-09-18T17:20:10Z · status ready→active, branch
 - 2026-09-18T17:21:44Z · status active→review
-
