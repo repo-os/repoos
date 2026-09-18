@@ -113,7 +113,7 @@ describe("readProviderKey", () => {
 });
 
 describe("GET /api/model-providers", () => {
-  it("lists all four rows with hasKey booleans and never any key material", async () => {
+  it("lists all five rows with hasKey booleans and never any key material", async () => {
     const root = tmpRoot();
     process.env.REPOOS_OPENROUTER_API_KEY = "sk-or-v1-secret-value";
     const ctx = makeCtx(root);
@@ -123,12 +123,16 @@ describe("GET /api/model-providers", () => {
     expect(capture.body.providers.map((p: { id: string }) => p.id)).toEqual([
       "openrouter",
       "opencode-go",
+      "cursor",
       "opencode-zen",
       "deepinfra",
     ]);
     const openrouter = capture.body.providers.find((p: { id: string }) => p.id === "openrouter");
     expect(openrouter.hasKey).toBe(true);
     expect(openrouter.kind).toBe("live");
+    const cursor = capture.body.providers.find((p: { id: string }) => p.id === "cursor");
+    expect(cursor.hasKey).toBe(false);
+    expect(cursor.kind).toBe("link");
     const deepinfra = capture.body.providers.find((p: { id: string }) => p.id === "deepinfra");
     expect(deepinfra.hasKey).toBe(false);
     expect(deepinfra.kind).toBe("link");
