@@ -359,9 +359,11 @@ function tryOpenInput(ref: string, attempt: number): void {
         :style="{ width: ui.drawerWidth + 'px', 'max-width': '100vw' }"
         ><div class="drawer-resize" @mousedown.prevent="ui.startResize"></div>
         <div class="drawer-head">
-          <DialogTitle>{{ activeInput?.title }}</DialogTitle
-          ><DialogDescription class="sr-only">Input details</DialogDescription
-          ><DialogClose class="close-x"><X class="size-[15px]" /></DialogClose>
+          <div class="drawer-head-title">
+            <DialogTitle>{{ activeInput?.title }}</DialogTitle>
+            <DialogDescription class="sr-only">Input details</DialogDescription>
+          </div>
+          <DialogClose class="close-x"><X class="size-[15px]" /></DialogClose>
         </div>
         <div v-if="activeInput" class="drawer-body input-detail">
           <div class="detail-status">
@@ -420,10 +422,10 @@ function tryOpenInput(ref: string, attempt: number): void {
           </div>
           <div class="detail-body">{{ activeInput.body }}</div>
           <div v-if="activeInput.status !== 'processed'" class="detail-actions">
+            <Button variant="outline" :disabled="resolving" @click="doNothing">Do nothing</Button>
             <Button variant="accent" :disabled="resolving" @click="createTaskFromInput">{{
               resolving ? "Creating task…" : "Create task"
             }}</Button>
-            <Button variant="outline" :disabled="resolving" @click="doNothing">Do nothing</Button>
           </div>
           <div v-if="resolveError" class="resolve-error" role="alert">{{ resolveError }}</div>
           <div v-if="activeInput.attachments.length" class="detail-attachments">
@@ -723,6 +725,7 @@ function tryOpenInput(ref: string, attempt: number): void {
   display: flex;
   flex-wrap: wrap;
   gap: 9px;
+  justify-content: flex-end;
   padding-top: 4px;
 }
 .resolve-error {
