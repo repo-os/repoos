@@ -166,34 +166,6 @@
   --vp-home-hero-image-filter: drop-shadow(0 0 24px rgba(57, 224, 255, 0.12));
 }
 
-html,
-body {
-  overflow-x: clip;
-}
-
-img,
-svg,
-video,
-canvas,
-iframe,
-table {
-  max-width: 100%;
-}
-
-.vp-doc pre,
-.vp-doc [class*="language-"] {
-  max-width: 100%;
-}
-
-.vp-doc pre {
-  overflow-x: auto;
-}
-
-.vp-doc .install-command [class*="language-"] {
-  max-width: 100%;
-  overflow-x: auto;
-}
-
 ::selection {
   background: var(--vp-selection-bg);
   color: var(--vp-selection-text);
@@ -201,8 +173,22 @@ table {
 
 /* keep Sora's wide glyphs in check for long-form prose */
 .vp-doc {
+  min-inline-size: 0;
   font-size: 16px;
   line-height: 1.75;
+}
+
+.vp-doc > * {
+  min-inline-size: 0;
+}
+
+.vp-doc p,
+.vp-doc li {
+  min-inline-size: 0;
+}
+
+.vp-doc a {
+  overflow-wrap: anywhere;
 }
 
 /* the softened prose color is a dark-mode readability choice; light prose

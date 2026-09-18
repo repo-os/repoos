@@ -120,11 +120,6 @@ html {
   }
 }
 
-html,
-body {
-  overflow-x: clip;
-}
-
 body {
   background-color: var(--bg);
   background-image:
@@ -135,17 +130,6 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-}
-
-img,
-svg,
-video,
-canvas,
-pre,
-code,
-iframe,
-table {
-  max-width: 100%;
 }
 
 ::selection {
@@ -195,13 +179,17 @@ table {
 /* install command box */
 .install-tabs {
   display: inline-flex;
+  max-width: 100%;
   gap: 2px;
   padding: 3px;
   background: var(--chip-bg);
   border: 1px solid var(--border);
   border-radius: 10px;
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 .install-tab {
+  flex: none;
   font-family: var(--font-mono);
   font-size: 12px;
   letter-spacing: 0.02em;
@@ -214,6 +202,12 @@ table {
   transition:
     color 0.15s ease,
     background 0.15s ease;
+}
+
+@media (min-width: 640px) and (max-width: 767px) {
+  .hero-title {
+    font-size: 44px;
+  }
 }
 .install-tab:hover {
   color: var(--txt-dim);
