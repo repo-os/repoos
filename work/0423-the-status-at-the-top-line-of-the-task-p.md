@@ -2,14 +2,14 @@
 id: "0423"
 title: Remove redundant status display from task panel header
 type: chore
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/remove-redundant-status-display-from-tas
 created_at: "2026-09-18T16:55:22Z"
-updated_at: "2026-09-18T17:20:00Z"
+updated_at: "2026-09-18T17:20:10Z"
 ---
 ## Problem
 
@@ -52,3 +52,4 @@ The status at the top line of the task panel is not necessary because it's shown
 - 2026-09-18T16:55:23Z · screenshots
 - 2026-09-18T16:55:35Z · status draft→inbox, title, area, type, body
 - 2026-09-18T17:20:00Z · status inbox→ready
+- 2026-09-18T17:20:10Z · status ready→active, branch
