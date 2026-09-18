@@ -11,10 +11,10 @@ branch: ""
 model_override: auto
 pm_cli_override: cursor
 pm_model_override: auto
-review_cli_override: cursor
+review_cli_override: claude code
 review_model_override: default
 created_at: "2026-09-18T03:42:22Z"
-updated_at: "2026-09-18T03:50:30Z"
+updated_at: "2026-09-18T03:50:37Z"
 ---
 ## Problem
 
@@ -139,3 +139,4 @@ when I open the "New task" panel why does it show the agent as "opencode + Defau
 - 2026-09-18T03:50:22Z · status draft→inbox
 - 2026-09-18T03:50:23Z · status inbox→ready
 - 2026-09-18T03:50:30Z · review_cli_override, review_model_override
+- 2026-09-18T03:50:37Z · review_cli_override
