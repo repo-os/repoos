@@ -43,6 +43,7 @@ const favoritesExpanded = ref(true);
 const {
   isFavorite,
   toggleFavorite,
+  markRecentlyUsed,
   getFavoritesForCli,
   hasFavorites: hasAnyFavorites,
 } = useFavorites();
@@ -130,6 +131,7 @@ function selectCli(cli: string): void {
 }
 
 function selectModel(model: string): void {
+  markRecentlyUsed(props.cli, model);
   remember(memoryContext.value, props.cli, model);
   resetNotice.value = null;
   emit("update:model", model);

@@ -216,6 +216,34 @@ describe("AgentModelModal CLI switching", () => {
     expect(wrapper.emitted("update:cli")).toBeUndefined();
     expect(wrapper.emitted("update:model")).toBeUndefined();
   });
+
+  it("ranks favorite models by most recently selected", async () => {
+    localStorage.setItem(
+      "agent-model-favorites",
+      JSON.stringify([
+        { cli: "opencode", model: PIN, addedAt: 1_000 },
+        { cli: "opencode", model: CLAUDE_PIN, addedAt: 2_000 },
+      ]),
+    );
+    const wrapper = mountModal("opencode", PIN);
+
+    await wrapper.find(".am-favorite-item").trigger("click");
+    await wrapper.setProps({ open: true, model: PIN });
+    await wrapper
+      .findAll(".am-favorite-item")
+      .find((item) => item.text().includes("Claude Sonnet"))!
+      .trigger("click");
+
+    const favoriteLabels = wrapper
+      .findAll(".am-favorite-item .am-model-label")
+      .map((item) => item.text());
+    expect(favoriteLabels).toEqual(["Claude Sonnet", "DeepSeek V4 Flash"]);
+    expect(JSON.parse(localStorage.getItem("agent-model-favorites") || "[]")).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ model: CLAUDE_PIN, recentlyUsedAt: expect.any(Number) }),
+      ]),
+    );
+  });
 });
 
 describe("AgentModelModal reset notice", () => {
