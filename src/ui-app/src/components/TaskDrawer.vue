@@ -2197,58 +2197,134 @@ function closeFullDiff(): void {
   });
 }
 
-interface DiffSideRow {
-  left: string;
-  right: string;
-  leftClass: string;
-  rightClass: string;
+interface FullDiffRow {
+  leftNum: number | null;
+  rightNum: number | null;
+  leftText: string | null;
+  rightText: string | null;
+  leftCls: "ctx" | "rem" | "empty";
+  rightCls: "ctx" | "add" | "empty";
+  isSep: boolean;
 }
 
-function diffSideRows(file: DiffFile | null): DiffSideRow[] {
+function buildFullDiffRows(file: DiffFile | null): FullDiffRow[] {
   if (!file) return [];
-  const rows: DiffSideRow[] = [];
-  for (let i = 0; i < file.lines.length; i += 1) {
-    const line = file.lines[i] ?? "";
-    if (
-      line.startsWith("diff --git ") ||
-      line.startsWith("index ") ||
-      line.startsWith("--- ") ||
-      line.startsWith("+++ ")
-    )
-      continue;
-    if (line.startsWith("@@")) {
-      rows.push({ left: line, right: line, leftClass: "diff-hunk", rightClass: "diff-hunk" });
-      continue;
+  const hunkRe = /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/;
+  const lines = file.lines;
+  const rows: FullDiffRow[] = [];
+  let i = 0;
+  while (i < lines.length && !lines[i]!.startsWith("@@")) i++;
+  let first = true;
+  while (i < lines.length) {
+    const line = lines[i]!;
+    const m = line.match(hunkRe);
+    if (!m) { i++; continue; }
+    if (!first) {
+      rows.push({ leftNum: null, rightNum: null, leftText: null, rightText: null, leftCls: "empty", rightCls: "empty", isSep: true });
     }
-
-    const removed: string[] = [];
-    const added: string[] = [];
-    while (i < file.lines.length && file.lines[i]?.startsWith("-")) {
-      removed.push(file.lines[i]?.slice(1) ?? "");
-      i += 1;
-    }
-    while (i < file.lines.length && file.lines[i]?.startsWith("+")) {
-      added.push(file.lines[i]?.slice(1) ?? "");
-      i += 1;
-    }
-    if (removed.length || added.length) {
-      const count = Math.max(removed.length, added.length);
-      for (let j = 0; j < count; j += 1) {
-        rows.push({
-          left: removed[j] ?? "",
-          right: added[j] ?? "",
-          leftClass: removed[j] === undefined ? "diff-side-empty" : "diff-rem",
-          rightClass: added[j] === undefined ? "diff-side-empty" : "diff-add",
-        });
+    first = false;
+    i++;
+    let leftNum = parseInt(m[1]!, 10);
+    let rightNum = parseInt(m[2]!, 10);
+    const hunk: string[] = [];
+    while (i < lines.length && !lines[i]!.startsWith("@@")) { hunk.push(lines[i]!); i++; }
+    let j = 0;
+    while (j < hunk.length) {
+      const hl = hunk[j]!;
+      if (hl === "\\ No newline at end of file") { j++; continue; }
+      if (hl.startsWith("-")) {
+        const removed: string[] = [];
+        const added: string[] = [];
+        while (j < hunk.length && hunk[j]!.startsWith("-")) { removed.push(hunk[j]!.slice(1)); j++; }
+        while (j < hunk.length && hunk[j]!.startsWith("+")) { added.push(hunk[j]!.slice(1)); j++; }
+        const count = Math.max(removed.length, added.length);
+        for (let k = 0; k < count; k++) {
+          const l = removed[k];
+          const r = added[k];
+          rows.push({
+            leftNum: l !== undefined ? leftNum++ : null,
+            rightNum: r !== undefined ? rightNum++ : null,
+            leftText: l ?? null,
+            rightText: r ?? null,
+            leftCls: l !== undefined ? "rem" : "empty",
+            rightCls: r !== undefined ? "add" : "empty",
+            isSep: false,
+          });
+        }
+      } else if (hl.startsWith("+")) {
+        rows.push({ leftNum: null, rightNum: rightNum++, leftText: null, rightText: hl.slice(1), leftCls: "empty", rightCls: "add", isSep: false });
+        j++;
+      } else {
+        const text = hl.startsWith(" ") ? hl.slice(1) : hl;
+        rows.push({ leftNum: leftNum++, rightNum: rightNum++, leftText: text, rightText: text, leftCls: "ctx", rightCls: "ctx", isSep: false });
+        j++;
       }
-      i -= 1;
-      continue;
     }
-
-    rows.push({ left: line, right: line, leftClass: "diff-ctx", rightClass: "diff-ctx" });
   }
   return rows;
 }
+
+const fullDiffRows = computed(() => buildFullDiffRows(expandedDiffFile.value));
+
+const diffContentEl = ref<HTMLDivElement | null>(null);
+const minimapCanvasEl = ref<HTMLCanvasElement | null>(null);
+
+function drawMinimap(): void {
+  const canvas = minimapCanvasEl.value;
+  if (!canvas) return;
+  const rows = fullDiffRows.value;
+  const natural = canvas.clientHeight;
+  if (natural > 0) canvas.height = natural;
+  const W = canvas.width;
+  const H = canvas.height;
+  const ctx2 = canvas.getContext("2d");
+  if (!ctx2) return;
+  ctx2.clearRect(0, 0, W, H);
+  if (!rows.length) return;
+  const rowH = H / rows.length;
+  for (let idx = 0; idx < rows.length; idx++) {
+    const row = rows[idx]!;
+    const y = idx * rowH;
+    const h = Math.max(rowH, 1);
+    if (row.leftCls === "rem") {
+      ctx2.fillStyle = "rgba(255,80,80,0.55)";
+      ctx2.fillRect(0, y, W / 2, h);
+    }
+    if (row.rightCls === "add") {
+      ctx2.fillStyle = "rgba(80,210,100,0.55)";
+      ctx2.fillRect(W / 2, y, W / 2, h);
+    }
+  }
+  const content = diffContentEl.value;
+  if (content && content.scrollHeight > content.clientHeight) {
+    const scrollFrac = content.scrollTop / (content.scrollHeight - content.clientHeight);
+    const viewFrac = content.clientHeight / content.scrollHeight;
+    const vy = scrollFrac * H;
+    const vh = Math.max(viewFrac * H, 8);
+    ctx2.fillStyle = "rgba(255,255,255,0.07)";
+    ctx2.fillRect(0, vy, W, vh);
+    ctx2.strokeStyle = "rgba(255,255,255,0.18)";
+    ctx2.lineWidth = 1;
+    ctx2.strokeRect(0.5, vy + 0.5, W - 1, Math.max(vh - 1, 1));
+  }
+}
+
+function onDiffContentScroll(): void {
+  drawMinimap();
+}
+
+function onMinimapClick(e: MouseEvent): void {
+  const canvas = minimapCanvasEl.value;
+  const content = diffContentEl.value;
+  if (!canvas || !content) return;
+  const frac = e.offsetY / canvas.height;
+  content.scrollTop = frac * (content.scrollHeight - content.clientHeight);
+}
+
+watchEffect(() => {
+  void fullDiffRows.value;
+  nextTick(() => drawMinimap());
+});
 
 watch(expandedDiffModalOpen, (open) => {
   if (!open) return;
@@ -4471,53 +4547,81 @@ watch(
     </DialogContent>
   </Dialog>
 
-  <div
-    v-if="expandedDiffModalOpen"
-    class="diff-fullscreen-backdrop"
-    @click.self="closeFullDiff()"
-    tabindex="-1"
-  >
+  <Teleport to="body">
     <div
-      class="diff-fullscreen-modal"
-      role="dialog"
-      aria-modal="true"
-      :aria-label="`File diff: ${expandedDiffFile?.filename ?? ''}`"
+      v-if="expandedDiffModalOpen"
+      class="diff-fullscreen-backdrop"
+      @click.self="closeFullDiff()"
+      tabindex="-1"
     >
-      <button
-        id="fullscreen-diff-close-button"
-        type="button"
-        class="diff-fullscreen-close"
-        aria-label="Close full-screen diff"
-        title="Close"
-        @click="closeFullDiff()"
+      <div
+        class="diff-fullscreen-modal"
+        role="dialog"
+        aria-modal="true"
+        :aria-label="`File diff: ${expandedDiffFile?.filename ?? ''}`"
       >
-        <X class="size-4" />
-      </button>
-      <div class="diff-fullscreen-header">
-        <div class="diff-fullscreen-title">{{ expandedDiffFile?.filename }}</div>
-        <div class="diff-file-delta diff-fullscreen-meta">
-          <span v-if="expandedDiffFile?.added && expandedDiffFile.added > 0" class="diff-file-add"
-            >+{{ expandedDiffFile.added }}</span
-          >
-          <span
-            v-if="expandedDiffFile?.removed && expandedDiffFile.removed > 0"
-            class="diff-file-rem"
-            >−{{ expandedDiffFile.removed }}</span
-          >
+        <button
+          id="fullscreen-diff-close-button"
+          type="button"
+          class="diff-fullscreen-close"
+          aria-label="Close full-screen diff"
+          title="Close"
+          @click="closeFullDiff()"
+        >
+          <X class="size-4" />
+        </button>
+        <div class="diff-fullscreen-header">
+          <div class="diff-fullscreen-title">{{ expandedDiffFile?.filename }}</div>
+          <div class="diff-file-delta diff-fullscreen-meta">
+            <span v-if="expandedDiffFile?.added && expandedDiffFile.added > 0" class="diff-file-add"
+              >+{{ expandedDiffFile.added }}</span
+            >
+            <span
+              v-if="expandedDiffFile?.removed && expandedDiffFile.removed > 0"
+              class="diff-file-rem"
+              >−{{ expandedDiffFile.removed }}</span
+            >
+          </div>
         </div>
-      </div>
-      <div class="diff-fullscreen-content" role="group" aria-label="Side-by-side file diff">
-        <div class="diff-side-header">
-          <span>before</span>
-          <span>after</span>
-        </div>
-        <div v-for="(row, i) in diffSideRows(expandedDiffFile)" :key="i" class="diff-side-row">
-          <span class="diff-side-cell" :class="row.leftClass">{{ row.left }}</span>
-          <span class="diff-side-cell" :class="row.rightClass">{{ row.right }}</span>
+        <div class="diff-fullscreen-body">
+          <div
+            ref="diffContentEl"
+            class="diff-fullscreen-content"
+            role="group"
+            aria-label="Side-by-side file diff"
+            @scroll="onDiffContentScroll"
+          >
+            <div class="diff-side-header">
+              <span class="diff-ln-col"></span>
+              <span>before</span>
+              <span class="diff-ln-col"></span>
+              <span>after</span>
+            </div>
+            <template v-for="(row, i) in fullDiffRows" :key="i">
+              <div v-if="row.isSep" class="diff-sep-row">
+                <span class="diff-ln-col"></span>
+                <span class="diff-sep-cell">⋯</span>
+                <span class="diff-ln-col"></span>
+                <span class="diff-sep-cell">⋯</span>
+              </div>
+              <div v-else class="diff-side-row">
+                <span class="diff-ln-col" :class="'diff-ln-' + row.leftCls">{{ row.leftNum ?? '' }}</span>
+                <span class="diff-side-cell" :class="'diff-cell-' + row.leftCls">{{ row.leftText ?? '' }}</span>
+                <span class="diff-ln-col" :class="'diff-ln-' + row.rightCls">{{ row.rightNum ?? '' }}</span>
+                <span class="diff-side-cell" :class="'diff-cell-' + row.rightCls">{{ row.rightText ?? '' }}</span>
+              </div>
+            </template>
+          </div>
+          <canvas
+            ref="minimapCanvasEl"
+            class="diff-minimap"
+            width="60"
+            @click="onMinimapClick"
+          ></canvas>
         </div>
       </div>
     </div>
-  </div>
+  </Teleport>
 
   <RestartTaskDialog
     :task="restartTask"
@@ -5217,7 +5321,7 @@ watch(
 .diff-fullscreen-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 200;
+  z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5247,6 +5351,7 @@ watch(
   padding: 16px 60px 12px 20px;
   border-bottom: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.02);
+  flex: none;
 }
 
 .diff-fullscreen-title {
@@ -5286,31 +5391,47 @@ watch(
   outline: none;
 }
 
-.diff-fullscreen-content {
+.diff-fullscreen-body {
   flex: 1;
   min-height: 0;
-  margin: 0;
-  padding: 0 20px 20px;
-  background: #0d1117;
+  display: flex;
+  overflow: hidden;
+}
+
+.diff-fullscreen-content {
+  flex: 1;
+  min-width: 0;
   overflow: auto;
+  background: #0d1117;
   font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, monospace;
   font-size: 12px;
   line-height: 1.6;
   color: #c9d1d9;
 }
 
+.diff-minimap {
+  flex: none;
+  width: 60px;
+  height: 100%;
+  display: block;
+  background: #070b12;
+  border-left: 1px solid var(--border);
+  cursor: pointer;
+}
+
 .diff-side-header,
-.diff-side-row {
+.diff-side-row,
+.diff-sep-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  min-width: 720px;
+  grid-template-columns: 44px minmax(0, 1fr) 44px minmax(0, 1fr);
+  min-width: 600px;
 }
 
 .diff-side-header {
   position: sticky;
   top: 0;
   z-index: 1;
-  padding: 12px 0 8px;
+  padding: 8px 0;
   border-bottom: 1px solid var(--border);
   background: #0d1117;
   color: var(--txt-faint);
@@ -5319,25 +5440,83 @@ watch(
   text-transform: uppercase;
 }
 
-.diff-side-header span,
-.diff-side-cell {
-  min-width: 0;
+.diff-side-header > span {
   padding: 0 12px;
-  white-space: pre;
 }
 
-.diff-side-header span + span,
-.diff-side-cell + .diff-side-cell {
+.diff-side-header > span:nth-child(3),
+.diff-side-header > span:nth-child(4) {
   border-left: 1px solid var(--border);
 }
 
-.diff-side-cell {
+.diff-ln-col {
+  text-align: right;
+  padding: 0 6px;
+  color: rgba(140, 160, 180, 0.4);
+  user-select: none;
+  white-space: pre;
+  font-size: 11px;
   min-height: 1.6em;
-  overflow-wrap: normal;
 }
 
-.diff-side-empty {
-  background: rgba(120, 140, 200, 0.04);
+.diff-ln-rem {
+  background: rgba(255, 80, 80, 0.12);
+  color: rgba(255, 120, 120, 0.65);
+}
+
+.diff-ln-add {
+  background: rgba(70, 210, 100, 0.1);
+  color: rgba(100, 210, 100, 0.65);
+}
+
+.diff-ln-empty {
+  background: rgba(120, 140, 200, 0.03);
+}
+
+.diff-side-cell {
+  padding: 0 12px;
+  white-space: pre;
+  min-height: 1.6em;
+}
+
+.diff-side-row > .diff-ln-col:nth-child(3),
+.diff-side-row > .diff-side-cell:nth-child(4) {
+  border-left: 1px solid var(--border);
+}
+
+.diff-cell-ctx {
+  color: #c9d1d9;
+}
+
+.diff-cell-rem {
+  background: rgba(255, 80, 80, 0.14);
+  color: #ff9090;
+}
+
+.diff-cell-add {
+  background: rgba(70, 210, 100, 0.1);
+  color: #7ee8a2;
+}
+
+.diff-cell-empty {
+  background: rgba(120, 140, 200, 0.03);
+}
+
+.diff-sep-row {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.diff-sep-row > .diff-ln-col:nth-child(3),
+.diff-sep-row > .diff-sep-cell:nth-child(4) {
+  border-left: 1px solid var(--border);
+}
+
+.diff-sep-cell {
+  padding: 1px 12px;
+  color: rgba(140, 160, 180, 0.35);
+  font-size: 11px;
 }
 
 .diff-sections {
