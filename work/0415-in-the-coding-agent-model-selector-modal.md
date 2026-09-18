@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+review_model_override: opencode-go/hy3
 created_at: "2026-09-18T14:19:22Z"
-updated_at: "2026-09-18T14:19:38Z"
+updated_at: "2026-09-18T14:38:45Z"
 ---
 ## Problem
 
@@ -53,3 +54,4 @@ In the coding agent + model selector modal I want to rank favorited models by mo
 - 2026-09-18T14:19:22Z · created · hello@repoos.org
 - 2026-09-18T14:19:22Z · screenshots
 - 2026-09-18T14:19:38Z · status draft→inbox, title, area, body
+- 2026-09-18T14:38:45Z · review_model_override
