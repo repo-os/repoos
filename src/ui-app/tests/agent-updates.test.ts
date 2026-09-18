@@ -33,6 +33,7 @@ afterEach(() => {
 describe("safe version comparison", () => {
   it("compares ordinary semver and ignores opaque or date-style versions", () => {
     expect(parseSemver("codex v0.155.0")).toEqual([0, 155, 0]);
+    expect(parseSemver("1.2.3.4")).toEqual([1, 2, 3]);
     expect(compareSemver("v1.2.0", "1.10.0")).toBe(-1);
     expect(compareSemver("2026.09.18", "2026.10.01")).toBeNull();
     expect(compareSemver("build-2026-09-18", "1.0.0")).toBeNull();

@@ -663,7 +663,7 @@ describe("navFor deployments gating", () => {
  * api() wrapper reads on a non-2xx response.
  */
 function git(root: string, args: string): void {
-  execSync(`git -c safe.bareRepository=all ${args}`, { cwd: root, stdio: "pipe" });
+  execSync(`git ${args}`, { cwd: root, stdio: "pipe" });
 }
 
 /**
@@ -678,7 +678,7 @@ function makeSiteRepo(opts: { dirty?: boolean; extraRow?: string[] } = {}): {
 } {
   const root = tmpDir();
   const origin = tmpDir();
-  execSync(`git -c safe.bareRepository=all init -q --bare "${origin}"`);
+  execSync(`git init -q --bare "${origin}"`);
   git(root, "init -q -b main");
   git(root, "config user.email t@t");
   git(root, "config user.name t");
@@ -772,16 +772,10 @@ describe("deploy API contract (real server + real git)", () => {
       expect(body.ok).toBe(true);
       expect(body.output).toContain("Fast-forwarded prod to main");
       // The bare origin's prod ref now matches local main.
-      const originProd = execSync("git -c safe.bareRepository=all rev-parse prod", {
-        cwd: origin,
-      })
-        .toString()
-        .trim();
-      const localMain = execSync("git -c safe.bareRepository=all rev-parse main", {
-        cwd: root,
-      })
-        .toString()
-        .trim();
+      // --git-dir, not cwd: implicit bare-repo discovery is refused under
+      // safe.bareRepository=explicit (Copilot CLI's shell sets it).
+      const originProd = execSync(`git --git-dir="${origin}" rev-parse prod`).toString().trim();
+      const localMain = execSync("git rev-parse main", { cwd: root }).toString().trim();
       expect(originProd).toBe(localMain);
     });
   });

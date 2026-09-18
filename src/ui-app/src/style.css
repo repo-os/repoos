@@ -6012,6 +6012,9 @@
   color: var(--txt-faint);
   margin-top: 4px;
 }
+.detect-update-reason {
+  color: var(--red);
+}
 .detect-hint-inline {
   display: flex;
   align-items: center;

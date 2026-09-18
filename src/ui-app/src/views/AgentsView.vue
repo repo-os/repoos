@@ -409,47 +409,47 @@ async function checkAgents(): Promise<void> {
   } finally {
     detectLoading.value = false;
   }
+}
 
-  async function checkForUpdates(refresh = false): Promise<void> {
-    updateLoading.value = true;
-    updateError.value = false;
-    try {
-      const data = await api<{ updates: Record<string, AgentUpdate> }>(
-        "/api/agents/updates",
-        JSON_OPTS("POST", { refresh }),
-      );
-      updates.value = data.updates;
-      detected.value = detected.value.map((agent) => ({
-        ...agent,
-        update: data.updates[agent.id],
-      }));
-    } catch {
-      updateError.value = true;
-    } finally {
-      updateLoading.value = false;
-    }
+async function checkForUpdates(refresh = false): Promise<void> {
+  updateLoading.value = true;
+  updateError.value = false;
+  try {
+    const data = await api<{ updates: Record<string, AgentUpdate> }>(
+      "/api/agents/updates",
+      JSON_OPTS("POST", { refresh }),
+    );
+    updates.value = data.updates;
+    detected.value = detected.value.map((agent) => ({
+      ...agent,
+      update: data.updates[agent.id],
+    }));
+  } catch {
+    updateError.value = true;
+  } finally {
+    updateLoading.value = false;
   }
+}
 
-  function updateLabel(update: AgentUpdate | undefined): string {
-    if (!update) return "not checked";
-    if (update.status === "up_to_date") return "up to date";
-    if (update.status === "update_available") {
-      return `Update available: ${update.installedVersion} → ${update.latestVersion}`;
-    }
-    if (update.status === "unavailable") return "could not check";
-    return "check manually";
+function updateLabel(update: AgentUpdate | undefined): string {
+  if (!update) return "not checked";
+  if (update.status === "up_to_date") return "up to date";
+  if (update.status === "update_available") {
+    return `Update available: ${update.installedVersion} → ${update.latestVersion}`;
   }
+  if (update.status === "unavailable") return "could not check";
+  return "check manually";
+}
 
-  function updateColor(update: AgentUpdate | undefined): string {
-    if (update?.status === "update_available") return "var(--amber)";
-    if (update?.status === "up_to_date") return "var(--green)";
-    if (update?.status === "unavailable") return "var(--red)";
-    return "var(--muted)";
-  }
+function updateColor(update: AgentUpdate | undefined): string {
+  if (update?.status === "update_available") return "var(--amber)";
+  if (update?.status === "up_to_date") return "var(--green)";
+  if (update?.status === "unavailable") return "var(--red)";
+  return "var(--muted)";
+}
 
-  function checkedLabel(update: AgentUpdate | undefined): string {
-    return update?.checkedAt ? `checked ${new Date(update.checkedAt).toLocaleString()}` : "";
-  }
+function checkedLabel(update: AgentUpdate | undefined): string {
+  return update?.checkedAt ? `checked ${new Date(update.checkedAt).toLocaleString()}` : "";
 }
 
 function copyHint(hint: string): void {
@@ -842,9 +842,15 @@ onUnmounted(() => {
               size="sm"
               class="detect-updates-btn"
               :disabled="updateLoading || detectLoading"
-              @click="checkForUpdates(true)"
+              @click="checkForUpdates(Object.keys(updates).length > 0)"
             >
-              {{ updateLoading ? "Checking for updates…" : "Check for updates" }}
+              {{
+                updateLoading
+                  ? "Checking for updates…"
+                  : Object.keys(updates).length > 0
+                    ? "Refresh update checks"
+                    : "Check for updates"
+              }}
             </Button>
           </div>
           <div class="agent-desc">
@@ -886,6 +892,9 @@ onUnmounted(() => {
                   <span v-if="r.agent.update.source">{{ r.agent.update.source }}</span>
                   <span v-if="checkedLabel(r.agent.update)">{{
                     checkedLabel(r.agent.update)
+                  }}</span>
+                  <span v-if="r.agent.update.error" class="detect-update-reason">{{
+                    r.agent.update.error
                   }}</span>
                   <button
                     v-if="r.agent.update.updateCommand"

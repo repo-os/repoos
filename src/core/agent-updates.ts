@@ -58,7 +58,7 @@ export function parseSemver(value: string | null): [number, number, number] | nu
   if (!value) return null;
   const match = value
     .trim()
-    .match(/(?:^|[^\d])v?(\d+)\.(\d+)\.(\d+)(?:[-+][0-9A-Za-z.-]+)?(?:\s|$)/);
+    .match(/(?:^|[^\d])v?(\d+)\.(\d+)\.(\d+)(?:\.\d+)*(?:[-+][0-9A-Za-z.-]+)?(?:\s|$)/);
   if (!match) return null;
   const major = Number(match[1]);
   // Date-style vendor releases (for example 2026.09.18) are not ordered as semver.
@@ -109,7 +109,7 @@ function githubSource(agent: DetectedAgent, path: string): UpdateSource | null {
     url: `https://api.github.com/repos/${release.owner}/${release.repo}/releases/latest`,
     owner: release.owner,
     repo: release.repo,
-    updateCommand: agent.id === "goose" ? "brew upgrade goose" : null,
+    updateCommand: null,
   };
 }
 
@@ -177,7 +177,7 @@ export async function checkAgentUpdate(
       return { ...manualUpdate(agent, now), source: source.label, sourceUrl: source.url };
     }
     return {
-      status: comparison < 0 ? "update_available" : comparison === 0 ? "up_to_date" : "up_to_date",
+      status: comparison < 0 ? "update_available" : "up_to_date",
       installedVersion: agent.version,
       latestVersion,
       source: source.label,
@@ -213,7 +213,7 @@ export async function checkAgentUpdates(
         const key = `${agent.id}:${agent.path}:${agent.version}`;
         const cached = cache.get(key);
         if (!force && cached && cached.expiresAt > nowMs) return [agent.id, cached.value] as const;
-        const value = await checkAgentUpdate(agent);
+        const value = await checkAgentUpdate(agent, undefined, new Date(nowMs).toISOString());
         cache.set(key, { expiresAt: nowMs + UPDATE_CACHE_TTL_MS, value });
         return [agent.id, value] as const;
       }),
