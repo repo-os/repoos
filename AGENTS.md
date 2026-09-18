@@ -318,6 +318,8 @@ cannot tell from the code alone:
 
 ## Conventions
 
+- **Dropdowns:** Use the custom styled dropdown component for every new
+  dropdown in the UI. Never use default, unstyled `<select>` elements.
 - **Runtime: Bun. Node is only the fallback for machines without Bun.**
   Every `repoos` command re-execs under Bun when it's installed, `bunfig.toml`
   (`[run] bun = true`) runs `package.json` scripts and the Node-shebang tools
