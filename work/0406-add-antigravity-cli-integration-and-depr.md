@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 cli_override: codex
+model_override: gpt-5.6-luna
 created_at: "2026-09-18T08:54:55Z"
-updated_at: "2026-09-18T09:14:28Z"
+updated_at: "2026-09-18T09:15:47Z"
 ---
 ## Problem
 
@@ -60,3 +61,4 @@ Add a production-quality Antigravity CLI driver. A locally authenticated user ca
 
 - 2026-09-18T08:54:55Z · created · unknown
 - 2026-09-18T09:14:28Z · cli_override
+- 2026-09-18T09:15:47Z · model_override
