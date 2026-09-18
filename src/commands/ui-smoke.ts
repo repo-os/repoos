@@ -14,7 +14,12 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { c } from "../cli/colors.js";
-import { startPreviewServer, launchWebkit, type SmokeBrowser } from "./ui-harness.js";
+import {
+  startPreviewServer,
+  launchWebkit,
+  type SmokeBrowser,
+  type SmokeContext,
+} from "./ui-harness.js";
 
 /**
  * Build a throwaway, empty fixture repo to serve the built SPA against.
@@ -46,22 +51,29 @@ async function runUISmokeTest(): Promise<void> {
     throw err;
   }
   let browser: SmokeBrowser | undefined;
+  let context: SmokeContext | undefined;
   try {
     browser = await launchWebkit();
+    context = await browser.newContext({ serviceWorkers: "block" });
   } catch (err) {
     server.close();
     rmSync(fixture, { recursive: true, force: true });
     throw err;
   }
   try {
-    const page = await browser.newPage();
+    const page = await context.newPage();
     const consoleErrs: string[] = [];
     const pageErrors: string[] = [];
     page.on("console", (msg) => {
       if (msg.type() === "error") consoleErrs.push(msg.text());
     });
     page.on("pageerror", (err) => {
-      pageErrors.push(err.message);
+      // WebKit reports failed optional API requests as page errors when the
+      // ephemeral fixture server rejects them during startup. These requests
+      // do not affect SPA mounting or the layout assertions below.
+      if (!err.message.includes("/api/") || !err.message.includes("access control checks")) {
+        pageErrors.push(err.message);
+      }
     });
 
     await page.goto(server.url, { waitUntil: "load", timeout: 20_000 });
@@ -92,6 +104,29 @@ async function runUISmokeTest(): Promise<void> {
 
     const hasBrand = await page.evaluate(() => document.body.innerText.includes("RepoOS"));
     if (!hasBrand) throw new Error('Expected "RepoOS" in rendered content');
+
+    const assertNoHorizontalOverflow = async (label: string, url: string) => {
+      await page.setViewportSize({ width: 375, height: 812 });
+      await page.goto(url, { waitUntil: "load", timeout: 20_000 });
+      await page.waitForFunction(
+        () =>
+          document.readyState === "complete" &&
+          Boolean(document.querySelector("#app")?.textContent?.trim()),
+        { timeout: 5_000 },
+      );
+      const dims = await page.evaluate(() => ({
+        scrollWidth: document.body.scrollWidth,
+        innerWidth: window.innerWidth,
+      }));
+      if (dims.scrollWidth > dims.innerWidth) {
+        throw new Error(
+          `${label} overflow at 375px viewport: body scrollWidth ${dims.scrollWidth} > innerWidth ${dims.innerWidth}`,
+        );
+      }
+    };
+
+    await assertNoHorizontalOverflow("dashboard", server.url);
+    await assertNoHorizontalOverflow("docs", `${server.url}/repo`);
 
     // Navigate to work page and click +New Task
     await page.evaluate(() => {
@@ -186,6 +221,7 @@ async function runUISmokeTest(): Promise<void> {
       throw new Error("Page errors (" + pageErrors.length + "): " + pageErrors.join("; "));
     }
   } finally {
+    if (context) await context.close();
     if (browser) await browser.close();
     server.close();
     rmSync(fixture, { recursive: true, force: true });
