@@ -2,7 +2,7 @@
 id: "0429"
 title: Make automatic skill suggestions evidence-gated and conservative
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: agent
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 cli_override: claude code
 model_override: haiku
 created_at: "2026-09-18T18:46:29Z"
-updated_at: "2026-09-18T19:13:42Z"
+updated_at: "2026-09-18T19:13:45Z"
 ---
 ## Problem
 
@@ -46,3 +46,4 @@ Treat a reusable skill as a high-bar artifact: a stable procedure useful on futu
 - 2026-09-18T18:46:29Z · created · unknown
 - 2026-09-18T19:13:32Z · cli_override
 - 2026-09-18T19:13:42Z · model_override
+- 2026-09-18T19:13:45Z · status inbox→ready
