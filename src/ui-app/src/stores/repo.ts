@@ -916,8 +916,13 @@ export const useRepoStore = defineStore("repo", () => {
       const wasPending = aiCreatePending.value.has(e.id);
       dropAiCreatePending(e.id);
       if (wasPending) {
+        // The server captures a specific reason (a CLI error, a usage-limit
+        // rejection, unparseable output, ...) and puts it on this very
+        // event — show it instead of a generic "failed" with no clue why,
+        // which used to hide even a clean, actionable error like a Cursor
+        // usage-limit message.
         pushFeed(
-          `<b>PM agent failed</b> on #${e.id} — draft kept as-is`,
+          `<b>PM agent failed</b> on #${e.id} — draft kept as-is: ${e.reason}`,
           "#ffb454",
           "task.aiCreateFailed",
         );

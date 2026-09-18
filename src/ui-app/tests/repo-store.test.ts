@@ -1455,7 +1455,13 @@ describe("AI-created card acknowledgement (0320)", () => {
     });
     expect(repo.aiCreatePending.has("0043")).toBe(false);
     expect(repo.needsCreateAck("0043")).toBe(false);
-    expect(repo.feed.some((f) => f.kind === "task.aiCreateFailed")).toBe(true);
+    // Regression: the feed used to show a generic "PM agent failed" message
+    // with no clue why, discarding the server's specific reason (a CLI
+    // error, a usage-limit rejection, etc.) even though it was captured and
+    // sent right there on the event.
+    const entry = repo.feed.find((f) => f.kind === "task.aiCreateFailed");
+    expect(entry).toBeTruthy();
+    expect(entry?.msg).toContain("the PM agent returned no usable output");
 
     // The human then moves the stale draft by hand (here or in another tab):
     // the transition must not flag the card.
