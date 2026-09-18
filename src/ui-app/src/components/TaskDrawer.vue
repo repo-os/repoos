@@ -2197,10 +2197,26 @@ function closeFullDiff(): void {
   });
 }
 
-function onFullDiffKeydown(event: KeyboardEvent): void {
-  if (event.key === "Escape") {
-    closeFullDiff();
-  }
+interface DiffSideRow {
+  left: string;
+  right: string;
+  leftClass: string;
+  rightClass: string;
+}
+
+function diffSideRows(file: DiffFile | null): DiffSideRow[] {
+  if (!file) return [];
+  return file.lines.map((line) => {
+    const isAdded = line.startsWith("+") && !line.startsWith("+++ ");
+    const isRemoved = line.startsWith("-") && !line.startsWith("--- ");
+    const content = isAdded || isRemoved ? line.slice(1) : line;
+    const lineClass = diffLineClass(line);
+    if (isAdded)
+      return { left: "", right: content, leftClass: "diff-side-empty", rightClass: lineClass };
+    if (isRemoved)
+      return { left: content, right: "", leftClass: lineClass, rightClass: "diff-side-empty" };
+    return { left: content, right: content, leftClass: lineClass, rightClass: lineClass };
+  });
 }
 
 watch(expandedDiffModalOpen, (open) => {
@@ -4426,7 +4442,6 @@ watch(
     v-if="expandedDiffModalOpen"
     class="diff-fullscreen-backdrop"
     @click.self="closeFullDiff()"
-    @keydown="onFullDiffKeydown"
     tabindex="-1"
   >
     <div
@@ -4458,10 +4473,16 @@ watch(
           >
         </div>
       </div>
-      <pre
-        class="diff-fullscreen-content"
-      ><code><template v-for="(line, i) in expandedDiffFile?.lines ?? []" :key="i"><span :class="diffLineClass(line)">{{ line }}</span>
-</template></code></pre>
+      <div class="diff-fullscreen-content" role="group" aria-label="Side-by-side file diff">
+        <div class="diff-side-header">
+          <span>before</span>
+          <span>after</span>
+        </div>
+        <div v-for="(row, i) in diffSideRows(expandedDiffFile)" :key="i" class="diff-side-row">
+          <span class="diff-side-cell" :class="row.leftClass">{{ row.left }}</span>
+          <span class="diff-side-cell" :class="row.rightClass">{{ row.right }}</span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -5190,7 +5211,7 @@ watch(
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 16px 20px 12px;
+  padding: 16px 60px 12px 20px;
   border-bottom: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.02);
 }
@@ -5236,14 +5257,54 @@ watch(
   flex: 1;
   min-height: 0;
   margin: 0;
-  padding: 16px 20px 20px;
+  padding: 0 20px 20px;
   background: #0d1117;
   overflow: auto;
   font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, monospace;
   font-size: 12px;
   line-height: 1.6;
-  white-space: pre;
   color: #c9d1d9;
+}
+
+.diff-side-header,
+.diff-side-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  min-width: 720px;
+}
+
+.diff-side-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 12px 0 8px;
+  border-bottom: 1px solid var(--border);
+  background: #0d1117;
+  color: var(--txt-faint);
+  font: 600 10px/1 var(--font-sans);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.diff-side-header span,
+.diff-side-cell {
+  min-width: 0;
+  padding: 0 12px;
+  white-space: pre;
+}
+
+.diff-side-header span + span,
+.diff-side-cell + .diff-side-cell {
+  border-left: 1px solid var(--border);
+}
+
+.diff-side-cell {
+  min-height: 1.6em;
+  overflow-wrap: normal;
+}
+
+.diff-side-empty {
+  background: rgba(120, 140, 200, 0.04);
 }
 
 .diff-sections {
