@@ -2,7 +2,7 @@
 id: "0411"
 title: Let the user pick any preview target from a ranked dropdown
 type: feature
-status: active
+status: review
 priority: p1
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/let-the-user-pick-any-preview-target-fro
 review_model_override: opencode-go/hy3
 created_at: "2026-09-18T12:51:51Z"
-updated_at: "2026-09-18T14:17:30Z"
+updated_at: "2026-09-18T14:22:58Z"
 ---
 ## Problem
 
@@ -36,3 +36,4 @@ A task's `area` decides which `[[preview.targets]]` it can preview, and it's oft
 - 2026-09-18T14:03:40Z · status inbox→ready
 - 2026-09-18T14:17:27Z · review_model_override
 - 2026-09-18T14:17:30Z · status ready→active, branch
+- 2026-09-18T14:22:58Z · status active→review
