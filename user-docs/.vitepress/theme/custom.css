@@ -166,6 +166,34 @@
   --vp-home-hero-image-filter: drop-shadow(0 0 24px rgba(57, 224, 255, 0.12));
 }
 
+html,
+body {
+  overflow-x: clip;
+}
+
+img,
+svg,
+video,
+canvas,
+iframe,
+table {
+  max-width: 100%;
+}
+
+.vp-doc pre,
+.vp-doc [class*="language-"] {
+  max-width: 100%;
+}
+
+.vp-doc pre {
+  overflow-x: auto;
+}
+
+.vp-doc .install-command [class*="language-"] {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
 ::selection {
   background: var(--vp-selection-bg);
   color: var(--vp-selection-text);

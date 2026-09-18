@@ -120,6 +120,11 @@ html {
   }
 }
 
+html,
+body {
+  overflow-x: clip;
+}
+
 body {
   background-color: var(--bg);
   background-image:
@@ -130,6 +135,17 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+img,
+svg,
+video,
+canvas,
+pre,
+code,
+iframe,
+table {
+  max-width: 100%;
 }
 
 ::selection {
