@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: ""
 branch: ""
+review_model_override: opencode-go/hy3
 created_at: "2026-09-18T12:51:51Z"
-updated_at: "2026-09-18T14:03:40Z"
+updated_at: "2026-09-18T14:17:27Z"
 ---
 ## Problem
 
@@ -33,3 +34,4 @@ A task's `area` decides which `[[preview.targets]]` it can preview, and it's oft
 
 - 2026-09-18T12:51:51Z · created · unknown
 - 2026-09-18T14:03:40Z · status inbox→ready
+- 2026-09-18T14:17:27Z · review_model_override
