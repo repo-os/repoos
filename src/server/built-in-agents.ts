@@ -15,7 +15,11 @@ import {
   saveLastRunAt,
   type SkillGuidedFinding,
 } from "./built-in-agent-runner.js";
-import { ARCHITECTURE_SKILL_DOC, PERFORMANCE_SKILL_DOC } from "./built-in-agent-skill-docs.js";
+import {
+  ARCHITECTURE_SKILL_DOC,
+  DESIGN_SKILL_DOC,
+  PERFORMANCE_SKILL_DOC,
+} from "./built-in-agent-skill-docs.js";
 import { isSafeToAutoCommit } from "./auto-fix-gate.js";
 
 export type TechDebtIssueType =
@@ -148,9 +152,30 @@ export interface DesignFinding {
 
 export interface DesignScanResult {
   findings: DesignFinding[];
+  /** Files included in the bounded repo walk the skill-guided agent reviewed. */
   scannedFiles: number;
   insights: string[];
+  /**
+   * True when the agent found no web UI in the repository at all. Kept
+   * separate from `findings.length === 0` so a no-UI result reads as a clear
+   * "nothing to review" rather than a clean bill of health.
+   */
+  noUiDetected?: boolean;
 }
+
+/**
+ * Finding `type` the Design skill doc asks the agent to use when the repository
+ * has no detectable web UI. It is a signal, not a design finding, so it is
+ * peeled off before conversion and surfaced as {@link DesignScanResult.noUiDetected}.
+ */
+export const DESIGN_NO_UI_TYPE = "no-ui-detected";
+
+/**
+ * Backstop cap on findings per category. The skill doc asks the model to
+ * "prefer a few high-confidence findings", but that's only a suggestion —
+ * this is the actual guardrail against a verbose run flooding the report.
+ */
+const MAX_DESIGN_FINDINGS_PER_CATEGORY = 25;
 
 export interface DesignRunResult {
   reportPath: string;
@@ -1038,225 +1063,120 @@ export async function runArchitectAgent(
 }
 
 /**
- * Scan the web UI (src/ui-app/) for UI bugs, UX friction, and design
- * improvements. Each finding is grounded in a best practice with a concrete,
- * actionable recommendation that references the file/component involved.
- * The scan is heuristic, flagging signal-not-noise patterns rather than trying
- * to be a fully automated accessibility audit — it never edits UI source.
+ * Normalize the Design skill doc's free-form `type` into the three canonical
+ * finding categories. The doc asks for one of the three, but an unexpected
+ * label must never drop a real finding or misfile it.
  */
-export async function scanForDesignIssues(config: RepoOSConfig): Promise<DesignScanResult> {
-  const findings: DesignFinding[] = [];
-  const insights: string[] = [];
-
-  const uiRoot = join(config.root, "src", "ui-app", "src");
-  let files: string[] = [];
-  try {
-    files = collectSourceFiles(uiRoot);
-  } catch {
-    files = [];
+export function normalizeDesignFindingCategory(type: string): DesignFindingCategory {
+  switch (type) {
+    case "ui-bug":
+    case "ux-friction":
+    case "design-recommendation":
+      return type;
+    default: {
+      const t = type.toLowerCase();
+      if (
+        /(access|a11y|label|keyboard|focus|contrast|nav|\bflow\b|interact|friction|disabl)/.test(t)
+      ) {
+        return "ux-friction";
+      }
+      if (/(bug|broken|overlap|overflow|clip|render|crash|theme|token|html|style)/.test(t)) {
+        return "ui-bug";
+      }
+      return "design-recommendation";
+    }
   }
-  const scanned = readScannedFiles(uiRoot, files);
+}
 
-  const components = scanned.filter(
-    (f) => f.rel.startsWith("components/") && f.rel.endsWith(".vue"),
+/** Convert the shared runner's findings into the Design agent's finding shape. */
+function toDesignFindings(findings: SkillGuidedFinding[]): DesignFinding[] {
+  return findings.map((finding) => ({
+    category: normalizeDesignFindingCategory(finding.type),
+    file: finding.file ?? "(repository)",
+    line: finding.line,
+    description: finding.description || "UI/UX issue reported by the Design Agent",
+    rationale: finding.evidence || finding.description || "Reported by the Design Agent.",
+    recommendation:
+      finding.recommendation ?? "Review this against the project's design system and fix it.",
+    severity: finding.severity,
+  }));
+}
+
+/**
+ * Review the repository's web UI for UI bugs, UX friction, and design
+ * improvements through the shared skill-guided runner. The agent works out
+ * whether the repo has a web UI and where it lives from the repo's own
+ * manifests and structure — there is no hardcoded framework or path. When the
+ * repo has no web UI, {@link DesignScanResult.noUiDetected} is set instead of
+ * reporting a misleading "0 files scanned".
+ *
+ * A model/connector failure throws {@link DesignError} with the agent named, so
+ * the run route surfaces it on this agent's own settings card.
+ */
+export async function scanForDesignIssues(
+  config: RepoOSConfig,
+  logger?: Logger,
+): Promise<DesignScanResult> {
+  const run = await runSkillGuidedAgent(
+    "design",
+    config,
+    DESIGN_SKILL_DOC,
+    "src/server/built-in-agent-skill-docs.ts",
+    logger,
   );
-  const views = scanned.filter((f) => f.rel.startsWith("views/") && f.rel.endsWith(".vue"));
 
-  insights.push(
-    `Analyzed ${scanned.length} files under \`src/ui-app/src/\` (${components.length} components, ${views.length} views).`,
-  );
-
-  if (scanned.length === 0) {
-    insights.push("No web UI source found — the scan only looks under `src/ui-app/src/`.");
-    return { findings, scannedFiles: 0, insights };
+  if (!run.ok) {
+    const message = run.error ?? "Design Agent run failed";
+    logger?.agent("design", "error", message);
+    throw new DesignError(message);
   }
 
-  // 1. Inline `style="..."` attributes in templates: they break the design
-  // system by bypassing CSS variables/classes and make dark-mode theming drift.
-  const INLINE_STYLE_RE = /\sstyle\s*=\s*["']([^"']+)["']/g;
-  for (const file of scanned) {
-    let m: RegExpExecArray | null;
-    while ((m = INLINE_STYLE_RE.exec(file.content)) !== null) {
-      const value = m[1];
-      // Skip Tailwind-style dynamic bindings (:style) — the static style attr
-      // is the theme-unsafe one.
-      if (value.includes("{") || value.length === 0) continue;
-      findings.push({
-        category:
-          value.includes("color") || value.includes("background") || value.includes("border")
-            ? "ui-bug"
-            : "design-recommendation",
-        file: file.rel,
-        line: findLineAt(file.content, m.index),
-        description: `Hardcoded inline style "${value}" bypasses the shared design system.`,
-        rationale:
-          "Inline styles ignore the centralized CSS variables and can drift from the theme, especially across dark mode.",
-        recommendation: `Move this styling into a scoped class or a shared utility so it inherits the app's theme tokens (see how neighboring \`src/ui-app/src/components/*.vue\` components style via CSS variables).`,
-        severity: "medium",
-      });
-    }
-  }
+  const noUiDetected = run.findings.some((finding) => finding.type === DESIGN_NO_UI_TYPE);
+  // The "no UI" signal is not a design finding; never file it as one.
+  const designFindings = run.findings.filter((finding) => finding.type !== DESIGN_NO_UI_TYPE);
 
-  // 2. Hardcoded hex colors in templates/styles: they can't respond to theme.
-  const HEX_COLOR_RE = /#[0-9a-fA-F]{3,8}\b/g;
-  for (const file of scanned) {
-    const cleaned = file.content.replace(/style\s*=\s*["'][^"']*["']/g, "");
-    let m: RegExpExecArray | null;
-    while ((m = HEX_COLOR_RE.exec(cleaned)) !== null) {
-      findings.push({
-        category: "design-recommendation",
-        file: file.rel,
-        line: findLineAt(cleaned, m.index),
-        description: `Hardcoded hex color ${m[0]} used instead of a theme variable.`,
-        rationale:
-          "Hardcoded colors do not adapt to the app's light/dark theme and make palette changes require editing many files.",
-        recommendation:
-          "Replace with a CSS variable (e.g. `var(--text-primary)`, `var(--border)`) so it follows the active theme.",
-        severity: "low",
-      });
-    }
-  }
-
-  // 3. Interactive elements without an accessible name: buttons with only an
-  // icon or empty labels are invisible to screen readers.
-  for (const file of scanned) {
-    if (!/\.vue$/.test(file.rel)) continue;
-    const BUTTON_RE = /<button\b([^>]*)>/g;
-    let m: RegExpExecArray | null;
-    while ((m = BUTTON_RE.exec(file.content)) !== null) {
-      const attrs = m[1];
-      // A button already has an accessible name via aria-label/title, or a
-      // closing tag on the same line means it stays open for visible content.
-      if (/aria-label\s*=|aria-labelledby\s*=|title\s*=/.test(attrs)) continue;
-      const after = file.content.slice(m.index + m[0].length);
-      const lineEnd = after.search(/\n/);
-      const restOfLine = (lineEnd === -1 ? after : after.slice(0, lineEnd)).trim();
-      // Only flag unmistakable cases: an icon/expression or an immediately-
-      // closed button with no accessible name.
-      const iconOnly = /^\{[^}]*\}/.test(restOfLine) || /^<\/button>/.test(restOfLine);
-      if (!iconOnly) continue;
-      findings.push({
-        category: "ux-friction",
-        file: file.rel,
-        line: findLineAt(file.content, m.index),
-        description: "A button appears to have no visible label or `aria-label`.",
-        rationale:
-          "Icon-only or label-less buttons are inaccessible to screen readers and confusing to users.",
-        recommendation: "Add a visible label or an `aria-label` describing the action.",
-        severity: "medium",
-      });
-    }
-  }
-
-  // 4. click handlers on non-interactive elements (div/span/li without
-  // role="button" or a tabindex) — a common keyboard-inaccessibility bug.
-  for (const file of scanned) {
-    if (!/\.vue$/.test(file.rel)) continue;
-    const NONINT_RE = /<(div|span|li)\b([^>]*)\s@click\s*=/g;
-    let m: RegExpExecArray | null;
-    while ((m = NONINT_RE.exec(file.content)) !== null) {
-      const attrs = m[2] ?? "";
-      const isButtonRole = /role\s*=\s*["']button["']/.test(attrs) || /tabindex\s*=/.test(attrs);
-      if (isButtonRole) continue;
-      findings.push({
-        category: "ux-friction",
-        file: file.rel,
-        line: findLineAt(file.content, m.index),
-        description: `A <${m[1]}> element carries a @click handler but no role="button" or tabindex.`,
-        rationale:
-          "Click-only handlers on non-interactive elements are unreachable by keyboard and screen readers don't announce them as actionable.",
-        recommendation: `Add role="button" and tabindex="0" (plus Enter/Space handling) or use a real <button> in \`${file.rel}\`.`,
-        severity: "medium",
-      });
-    }
-  }
-
-  // 5. v-html usage: unsanitized HTML injection risk and hard to theme/style consistently.
-  const V_HTML_RE = /\bv-html\s*=/g;
-  for (const file of scanned) {
-    let m: RegExpExecArray | null;
-    while ((m = V_HTML_RE.exec(file.content)) !== null) {
-      findings.push({
-        category: "ui-bug",
-        file: file.rel,
-        line: findLineAt(file.content, m.index),
-        description: "Uses `v-html`, which injects raw HTML.",
-        rationale:
-          "v-html can render unsanitized HTML (XSS risk) and makes styling/consistency harder to control.",
-        recommendation:
-          "Prefer Vue interpolation or a dedicated render approach; if v-html is required, ensure the source is trusted and sanitized.",
-        severity: "high",
-      });
-    }
-  }
-
-  // 6. Form inputs without an associated label (no <label> nearby or aria-label).
-  for (const file of scanned) {
-    if (!/\.vue$/.test(file.rel)) continue;
-    const INPUT_RE = /<input\b([^>]*)\/?>/gi;
-    let m: RegExpExecArray | null;
-    while ((m = INPUT_RE.exec(file.content)) !== null) {
-      const attrs = m[1];
-      if (/type\s*=\s*["'](?:hidden|checkbox|radio)["']/i.test(attrs)) continue;
-      const hasName = /aria-label\s*=|aria-labelledby\s*=|id\s*=|placeholder\s*=|v-model\s*/.test(
-        attrs,
-      );
-      if (hasName) continue;
-      const before = file.content.slice(Math.max(0, m.index - 80), m.index);
-      if (/<label\b/.test(before)) continue;
-      findings.push({
-        category: "ux-friction",
-        file: file.rel,
-        line: findLineAt(file.content, m.index),
-        description: "An <input> has no explicit label, aria-label, or labelled-by association.",
-        rationale:
-          "Inputs without accessible labels are hard to fill out for screen-reader users and can be ambiguous for everyone.",
-        recommendation:
-          "Wrap or associate the input with a <label>, or add aria-label/aria-labelledby.",
-        severity: "medium",
-      });
-    }
-  }
-
-  // 7. Very large component files — a maintainability and consistency concern.
-  for (const file of scanned) {
-    if (!/\.vue$/.test(file.rel)) continue;
-    if (file.lineCount > 600) {
-      findings.push({
-        category: "design-recommendation",
-        file: file.rel,
-        line: 1,
-        description: `Component file is ${file.lineCount} lines long.`,
-        rationale:
-          "Very large single-file components are hard to maintain and tend to accumulate inconsistent, copy-pasted styling.",
-        recommendation:
-          "Break the component into smaller focused components and extract repeated markup/styling into shared primitives.",
-        severity: "low",
-      });
-    }
-  }
-
-  // Keep the report focused: cap the number of findings per category.
-  const MAX_FINDINGS_PER_CATEGORY = 8;
+  // Keep the report focused: cap findings per category. The skill doc's
+  // "prefer a few high-confidence findings" is only a suggestion to the
+  // model — this is the actual backstop against a verbose run flooding the
+  // report (the deterministic scan this replaced had the same guardrail,
+  // just at a stricter threshold appropriate to its narrower, rule-based
+  // output).
   const capped: DesignFinding[] = [];
   const counts: Record<DesignFindingCategory, number> = {
     "ui-bug": 0,
     "ux-friction": 0,
     "design-recommendation": 0,
   };
-  for (const finding of findings) {
-    if (counts[finding.category] >= MAX_FINDINGS_PER_CATEGORY) continue;
+  for (const finding of toDesignFindings(designFindings)) {
+    if (counts[finding.category] >= MAX_DESIGN_FINDINGS_PER_CATEGORY) continue;
     counts[finding.category]++;
     capped.push(finding);
   }
 
-  return { findings: capped, scannedFiles: scanned.length, insights };
+  const insights: string[] = [];
+  if (noUiDetected) {
+    insights.push(
+      "No web UI detected in this repository — looked for front-end frameworks and UI sources in the project's manifests and structure and found none.",
+    );
+  } else {
+    insights.push(
+      `Reviewed the repository for web UI sources; ${run.scannedFiles ?? 0} files were included in the bounded repo context.`,
+    );
+  }
+
+  return {
+    findings: capped,
+    scannedFiles: run.scannedFiles ?? 0,
+    insights,
+    noUiDetected,
+  };
 }
 
 /**
  * Generate a markdown UI/UX design report and save it with a timestamp.
- * Fallback content guarantees the report reads correctly even when the scan
- * found nothing to flag.
+ * Fallback content guarantees the report reads correctly when the review found
+ * nothing to flag, and a distinct "no web UI detected" assessment when the
+ * repository has no UI to review at all.
  */
 export async function generateDesignReport(
   config: RepoOSConfig,
@@ -1273,7 +1193,8 @@ export async function generateDesignReport(
   let report = `# UI/UX Design Review Report\n\n`;
   report += `**Generated**: ${now.toISOString()}\n\n`;
   report += `## Executive Summary\n\n`;
-  report += `- **Files Scanned**: ${scan.scannedFiles}\n`;
+  report += `- **Files Reviewed**: ${scan.scannedFiles}\n`;
+  report += `- **Web UI Detected**: ${scan.noUiDetected ? "No" : "Yes"}\n`;
   report += `- **Findings Identified**: ${scan.findings.length}\n`;
   const byCat = { "ui-bug": 0, "ux-friction": 0, "design-recommendation": 0 };
   for (const f of scan.findings) byCat[f.category]++;
@@ -1313,6 +1234,13 @@ export async function generateDesignReport(
         }
       }
     }
+  } else if (scan.noUiDetected) {
+    report += `## UI/UX Assessment\n\n`;
+    report += `No web UI detected in this repository. The Design Agent looked for a\n`;
+    report += `front-end framework or UI sources (React, Vue, Svelte, Angular, plain\n`;
+    report += `HTML/CSS/JS, and similar) in the project's manifests and directory\n`;
+    report += `structure and found none — so there was no UI to review. This is not a\n`;
+    report += `clean bill of health; it means the agent had nothing to inspect.\n\n`;
   } else {
     report += `## UI/UX Assessment\n\n`;
     report += `No significant UI/UX issues detected in the current web UI.\n\n`;
@@ -1328,18 +1256,23 @@ export async function generateDesignReport(
 }
 
 /**
- * Run the Design Agent end to end: scan the web UI, generate a markdown
- * report saved to docs/agents/Design/, and record lastRunAt. Like the
+ * Run the Design Agent end to end through the shared skill-guided runner: the
+ * configured CLI/model reviews the repository's web UI (whatever its framework
+ * or layout) for UI bugs, UX friction, and design improvements, a markdown
+ * report is saved to docs/agents/Design/, and lastRunAt is recorded. Like the
  * Architect agent it only reports — it never edits UI source or creates tasks.
+ *
+ * A model/connector failure throws {@link DesignError} so the run route
+ * surfaces it on this agent's own settings card.
  */
-export async function runDesignAgent(config: RepoOSConfig): Promise<DesignRunResult> {
-  const scan = await scanForDesignIssues(config);
+export async function runDesignAgent(
+  config: RepoOSConfig,
+  logger?: Logger,
+): Promise<DesignRunResult> {
+  const scan = await scanForDesignIssues(config, logger);
   const report = await generateDesignReport(config, scan);
 
-  const agents = { ...(config.builtInAgents ?? {}) };
-  agents["design"] = { ...(agents["design"] ?? {}), lastRunAt: new Date().toISOString() };
-  saveBuiltInAgentsConfig(config.root, agents, config.cacheDir);
-  config.builtInAgents = agents;
+  saveLastRunAt(config.root, "design", config);
 
   return {
     reportPath: report.reportPath,
@@ -1926,7 +1859,7 @@ export async function runBuiltInAgent(
     return runArchitectAgent(config, logger);
   }
   if (name === "design") {
-    return runDesignAgent(config);
+    return runDesignAgent(config, logger);
   }
   if (name === "docs-debt") {
     return runDocsDebtAgent(config, logger);
