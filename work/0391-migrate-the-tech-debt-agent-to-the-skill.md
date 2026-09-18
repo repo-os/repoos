@@ -1,12 +1,8 @@
 ---
-updated_at: "2026-09-18T04:41:13Z"
-review_passes: 2
 id: "0391"
 title: Migrate the Tech Debt Agent to the skill-guided runner
 type: feature
-status: review
-needs_input: true
-needs_input_reason: dev-error
+status: done
 priority: p1
 area: server
 assigned_to: ai
@@ -15,6 +11,8 @@ branch: feat/migrate-the-tech-debt-agent-to-the-skill
 cli_override: claude code
 model_override: haiku
 created_at: "2026-09-17T14:03:23Z"
+updated_at: "2026-09-18T04:46:46Z"
+review_passes: 2
 merge_conflict_retry_count: 2
 dev_error_count: 2
 ---
@@ -59,4 +57,4 @@ Replace the deterministic scan with a call through #0389's shared runner, driven
 - 2026-09-18T03:51:28Z · agent exited with an error (claude) · No conversation found with session ID: 84037a79-3608-4acd-9664-9bfe28922e36
 - 2026-09-18T03:51:35Z · handoff failed · merge conflict unresolved after 2 automatic retries · merge conflict in src/server/built-in-agent-skill-docs.ts, src/server/built-in-agents.ts, src/ui-app/tests/built-in-agents.test.ts — resolve it in the feature branch's own worktree (merge main into the branch), then retry
 - 2026-09-18T04:35:08Z · handoff failed · merge conflict unresolved after 2 automatic retries · merge conflict in src/server/built-in-agent-skill-docs.ts, src/server/built-in-agents.ts — resolve it in the feature branch's own worktree (merge main into the branch), then retry
-
+- 2026-09-18T04:46:46Z · status review→done, release:success
