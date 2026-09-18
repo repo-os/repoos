@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { Star } from "lucide-vue-next";
 import { useConfigStore } from "../stores/config";
 import { useDocsStore } from "../stores/docs";
 import { api, JSON_OPTS } from "../api";
@@ -850,7 +851,10 @@ onUnmounted(() => {
                 :title="isAgentFavorite(r.agent.id) ? 'Remove from favorites' : 'Add to favorites'"
                 @click="toggleAgentFavorite(r.agent.id)"
               >
-                {{ isAgentFavorite(r.agent.id) ? "★" : "☆" }}
+                <Star
+                  class="size-3.5"
+                  :fill="isAgentFavorite(r.agent.id) ? 'currentColor' : 'none'"
+                />
               </button>
             </div>
 

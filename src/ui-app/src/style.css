@@ -5881,21 +5881,6 @@
   min-width: 0;
   max-width: 340px;
 }
-.detect-bin {
-  color: var(--txt);
-  font-weight: 600;
-  font-size: 11.5px;
-  font-family: "JetBrains Mono", monospace;
-}
-.detect-path {
-  color: var(--txt-faint);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 340px;
-  font-size: 11.5px;
-  font-family: "JetBrains Mono", monospace;
-}
 .detect-ver {
   color: var(--txt-dim);
   font-size: 11.5px;
@@ -5923,23 +5908,6 @@
 }
 .detect-copy:hover {
   background: var(--cyan-dim);
-}
-/* Legacy hint block kept for old paths; new inline rows use .detect-hint-inline */
-.detect-hint {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--txt-faint);
-  flex-wrap: wrap;
-}
-.detect-hint code {
-  background: var(--panel-solid);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 2px 7px;
-  color: var(--txt);
-  font-size: 10.5px;
-  white-space: nowrap;
 }
 .detect-star-btn {
   flex: none;
