@@ -151,6 +151,12 @@ export interface Health {
   canaryCounter: number;
 }
 
+declare global {
+  interface Window {
+    __REPOOS_BUILD_HASH__?: string;
+  }
+}
+
 export interface Counts {
   draft: number;
   inbox: number;

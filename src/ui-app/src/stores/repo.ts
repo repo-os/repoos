@@ -1,6 +1,7 @@
 import { computed, reactive, ref } from "vue";
 import { defineStore } from "pinia";
 import { api, JSON_OPTS } from "../api";
+import { checkUiBuild, showStaleUi } from "../lib/uiRecovery";
 import { useUiStore, type PendingScreenshot } from "./ui";
 import { useNotificationsStore, type NotificationType } from "./notifications";
 import { describeCloseOutFailure } from "../lib/closeOutFailure";
@@ -1414,6 +1415,10 @@ export const useRepoStore = defineStore("repo", () => {
     try {
       const h = await api<Health>("/api/health");
       health.value = h;
+      const clientBuild = window.__REPOOS_BUILD_HASH__;
+      if (clientBuild && h.buildHash && clientBuild !== h.buildHash) {
+        showStaleUi(window.location.pathname + window.location.search, h.buildHash, h.buildAt);
+      }
       const v = newVersion.value;
       // Normalize against servers/tests that predate these fields.
       const parkedHash =

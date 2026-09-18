@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "./stores/auth";
+import { checkUiBuild, showStaleUi } from "./lib/uiRecovery";
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -46,4 +47,19 @@ router.beforeEach(async (to) => {
     return { path: "/login", query: { redirect: to.fullPath } };
   }
   return true;
+});
+
+router.onError((error, to) => {
+  const message = error instanceof Error ? error.message : String(error);
+  if (
+    /chunk|dynamically imported module|importing a module script failed|failed to fetch|mime/i.test(
+      message,
+    )
+  ) {
+    showStaleUi(to?.fullPath ?? window.location.pathname + window.location.search);
+  }
+});
+
+router.afterEach(() => {
+  void checkUiBuild();
 });
