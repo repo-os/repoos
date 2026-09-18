@@ -180,12 +180,41 @@ describe("preview target identity (#0379)", () => {
     expect(chip.text()).toBe("docs");
   });
 
-  it("offers a picker when several targets match and posts the chosen one", async () => {
+  it("allows one preview at a time: no picker or start while one runs (#0411)", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const calls: Array<{ target?: string }> = [];
     const task = makeTask({
-      status: "review",
+      status: "active",
+      previewTargets: [
+        { name: "Landing page", areas: ["landing"] },
+        { name: "Docs site", areas: ["docs"] },
+      ],
+      preview: {
+        port: 1234,
+        url: "http://127.0.0.1:1234",
+        startedAt: "2026-09-17T00:00:00Z",
+        label: "Landing page",
+      },
+    });
+    installFetch(task, calls);
+    const repo = useRepoStore();
+    await repo.init();
+
+    const wrapper = await mountDrawer(pinia, task);
+
+    // Switching targets means Stop preview first; nothing offers a second start.
+    expect(wrapper.find("select.preview-target-select").exists()).toBe(false);
+    expect(startButton(wrapper)).toBeFalsy();
+    expect(wrapper.text()).toContain("Stop preview");
+  });
+
+  it("offers a picker for active tasks when several targets exist and preselects the top-ranked one", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const calls: Array<{ target?: string }> = [];
+    const task = makeTask({
+      status: "active",
       previewTargets: [
         { name: "App", areas: ["web"] },
         { name: "Web v2", areas: ["web"] },
@@ -202,14 +231,11 @@ describe("preview target identity (#0379)", () => {
     const options = select.findAll("option").map((o) => o.text());
     expect(options).toContain("App");
     expect(options).toContain("Web v2");
-
-    // Never a silent first pick: Start stays disabled until one is chosen.
-    expect(startButton(wrapper)?.attributes("disabled")).toBeDefined();
+    expect((select.element as HTMLSelectElement).value).toBe("App");
+    expect(startButton(wrapper)?.attributes("disabled")).toBeUndefined();
 
     await select.setValue("Web v2");
     await flush();
-    expect(startButton(wrapper)?.attributes("disabled")).toBeUndefined();
-
     await startButton(wrapper)!.trigger("click");
     await flush();
     expect(calls).toEqual([{ target: "Web v2" }]);

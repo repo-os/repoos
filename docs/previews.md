@@ -86,20 +86,27 @@ The quickbar names the target being served, not just "a preview is running":
 and `GET /api/tasks/:id`, and the drawer renders it as a chip next to the live
 URL — and inside the "Starting preview — …" progress text.
 
-Because resolution is by **`area`**, "multiple matches" means more than one
-`[[preview.targets]]` declares the task's area (the config-order first match is
-no longer assumed to be the only one). When a task's area resolves to more than
-one target:
+A task's `area` is often wrong (#0409 was about the landing page and docs site
+but tagged `web`, so it could only preview the app). Since #0411 the drawer
+therefore offers **every** configured target, not only area matches:
 
-- `previewTargetOptions(config, task)` returns every match, and the board /
-  `GET /api/tasks/:id` responses carry it as `previewTargets` so the drawer can
-  list them.
-- The drawer shows a picker and **disables Start until the user chooses**. The
-  choice is sent as `{ "target": "<name>" }` on `POST /api/tasks/:id/preview`.
-  The server enforces this too — an ambiguous area started with no `target` is
-  rejected (`matches more than one preview target`), never resolved to the first
-  — and an unknown name is a clean error, never a silent fallback. Asking for a
-  *different* target while one is already running is likewise an explicit
+- `previewTargetOptions(config, task)` ranks them: targets matching the task's
+  area first, then the `[preview] command` default, then every other target.
+  The board / `GET /api/tasks/:id` responses carry this as `previewTargets`.
+- Whenever there is more than one option, the drawer shows a dropdown
+  pre-selected to the top-ranked one, and sends the choice as
+  `{ "target": "<name>" }` on `POST /api/tasks/:id/preview`. One preview runs
+  per task: while it's up the dropdown is hidden, so switching targets means
+  Stop preview, pick another, start again.
+- Without an explicit pick, the server only ever serves an area match or the
+  default, never an unrelated target just because it's configured. A task
+  whose area matches nothing, in a repo with no default, gets a clean
+  "No preview configured for area …" error.
+- It is ambiguous, and rejected without a `target`, only when **several
+  targets match the task's area** (`matches more than one preview target`).
+  Out-of-area targets are listed for recovery but never make a start
+  ambiguous. An unknown name is a clean error, never a silent fallback, and
+  asking for a *different* target while one is already running is an explicit
   mismatch error, not an idempotent `200` that hands back the wrong target.
 - Target names are the pick key, so `parsePreviewConfig` keeps them unique:
   auto-derived (`areas.join("/")`) and explicit duplicates get a numeric suffix

@@ -150,33 +150,93 @@ describe("resolvePreviewTarget", () => {
     // A target with no override falls back to HEALTH_TIMEOUT_MS (10s), NOT the
     // section's default `command` timeout — each target's budget is its own.
     expect(resolvePreviewTarget(cfg, task("docs"))).toMatchObject({ readyTimeoutMs: 10_000 });
-    // The default `command` (no area matches) uses the section-level override —
-    // this is what makes a cold-worktree build-then-serve command survivable.
-    expect(resolvePreviewTarget(cfg, task("server"))).toMatchObject({ readyTimeoutMs: 240_000 });
+    // When no named target ranks above it, the default command is the last
+    // configured fallback and keeps its section-level timeout.
+    expect(
+      resolvePreviewTarget(
+        baseConfig({
+          command: "bun run build && bun dist/cli/index.js serve --port {port}",
+          readyTimeoutMs: 240_000,
+        }),
+        task("server"),
+      ),
+    ).toMatchObject({ readyTimeoutMs: 240_000 });
   });
 
-  it("lists every target whose areas match the task, in config order (#0379)", () => {
+  it("ranks area matches, then the default, then every other target (#0411)", () => {
     const cfg = baseConfig({
       command: "bun run default --port {port}",
       targets: [
         { name: "App", areas: ["web"], command: "bun run app --port {port}" },
         { name: "Landing", areas: ["landing"], command: "bun run landing --port {port}" },
         { name: "Web v2", areas: ["web"], command: "bun run web2 --port {port}" },
+        { name: "Docs", areas: ["docs"], command: "bun run docs --port {port}" },
       ],
     });
-    // Several targets claim `web`: both are offered, in config order.
+    // Area matches first, then the default, then everything else — so the
+    // pre-selected choice is never an unrelated target.
     expect(previewTargetOptions(cfg, task("web"))).toEqual([
       { name: "App", areas: ["web"] },
       { name: "Web v2", areas: ["web"] },
+      { name: "default", areas: [] },
+      { name: "Landing", areas: ["landing"] },
+      { name: "Docs", areas: ["docs"] },
     ]);
-    // Exactly one match stays a single-entry list (today's common case).
     expect(previewTargetOptions(cfg, task("landing"))).toEqual([
       { name: "Landing", areas: ["landing"] },
+      { name: "default", areas: [] },
+      { name: "App", areas: ["web"] },
+      { name: "Web v2", areas: ["web"] },
+      { name: "Docs", areas: ["docs"] },
     ]);
-    // The default command is offered only when no named target matches.
-    expect(previewTargetOptions(cfg, task("server"))).toEqual([{ name: "default", areas: [] }]);
-    // Nothing configured for the area → no options at all.
+    // No area match: the default leads; every named target stays pickable.
+    expect(previewTargetOptions(cfg, task("server"))).toEqual([
+      { name: "default", areas: [] },
+      { name: "App", areas: ["web"] },
+      { name: "Landing", areas: ["landing"] },
+      { name: "Web v2", areas: ["web"] },
+      { name: "Docs", areas: ["docs"] },
+    ]);
     expect(previewTargetOptions(baseConfig(), task("web"))).toEqual([]);
+  });
+
+  it("accepts an out-of-area target by name, and rejects an unknown one (#0411)", () => {
+    const cfg = baseConfig({
+      command: "bun run default --port {port}",
+      targets: [
+        { name: "App", areas: ["web"], command: "bun run app --port {port}" },
+        { name: "Docs", areas: ["docs"], command: "bun run docs --port {port}" },
+      ],
+    });
+    expect(resolvePreviewTarget(cfg, task("web"), "Docs")).toMatchObject({
+      kind: "command",
+      label: "Docs",
+      command: "bun run docs --port {port}",
+    });
+    const missing = resolvePreviewTarget(cfg, task("web"), "Nope");
+    expect(missing.kind).toBe("none");
+    if (missing.kind === "none") {
+      expect(missing.reason).toContain('No preview target named "Nope"');
+      expect(missing.reason).toContain('"App"');
+      expect(missing.reason).toContain('"Docs"');
+    }
+  });
+
+  it("never implicitly serves an out-of-area target when no name is supplied (#0411)", () => {
+    // No area match and no default command: nothing is servable without an
+    // explicit pick, even though both targets are offered in the dropdown.
+    const cfg = baseConfig({
+      targets: [
+        { name: "Landing", areas: ["landing"], command: "bun run landing --port {port}" },
+        { name: "Docs", areas: ["docs"], command: "bun run docs --port {port}" },
+      ],
+    });
+    expect(resolvePreviewTarget(cfg, task("web")).kind).toBe("none");
+    expect(previewTargetOptions(cfg, task("web")).map((o) => o.name)).toEqual(["Landing", "Docs"]);
+    expect(resolvePreviewTarget(cfg, task("web"), "Docs")).toMatchObject({
+      kind: "command",
+      label: "Docs",
+    });
   });
 
   it("selects the requested target by name, and rejects an unknown one (#0379)", () => {
@@ -243,6 +303,32 @@ describe("this repo's own [preview] config", () => {
       expect(result.readyPath).toBe("/api/health");
       expect(result.readyTimeoutMs).toBeGreaterThanOrEqual(60_000);
     }
+  });
+
+  // #0411: every configured target is offered, but an unrelated one must never
+  // win implicitly. A "web" task matches no named target here, so it gets the
+  // default command (the app), not the first configured target (landing page).
+  it("ranks area matches, then the default, then other targets", () => {
+    const config = loadConfig(repoRoot);
+    const web = { id: "0411", area: "web" } as unknown as Task;
+    expect(previewTargetOptions(config, web).map((o) => o.name)).toEqual([
+      "default",
+      "Landing page",
+      "Docs site",
+    ]);
+    const landing = { id: "0411", area: "landing" } as unknown as Task;
+    expect(previewTargetOptions(config, landing).map((o) => o.name)[0]).toBe("Landing page");
+    const resolved = resolvePreviewTarget(config, landing);
+    expect(resolved.kind === "command" && resolved.label).toBe("Landing page");
+  });
+
+  it("serves an out-of-area target only when explicitly picked (#0409 recovery)", () => {
+    const config = loadConfig(repoRoot);
+    const web = { id: "0409", area: "web" } as unknown as Task;
+    const picked = resolvePreviewTarget(config, web, "Docs site");
+    expect(picked.kind === "command" && picked.label).toBe("Docs site");
+    const implicit = resolvePreviewTarget(config, web);
+    expect(implicit.kind === "command" && implicit.label).toBe("default");
   });
 
   it("scripts/build.mjs reuses checkBuildForRoot and runs the raw pipeline", () => {
