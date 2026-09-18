@@ -24,7 +24,7 @@ const auth = useAuthStore();
 // Routes marked `public` (currently just /login) render as a standalone
 // full-viewport screen with no app chrome — the visitor isn't authenticated
 // yet, and the sidebar/topbar assume a signed-in session.
-const isPublicRoute = computed(() => route.meta.public === true);
+const isPublicRoute = computed(() => route.meta.public === true || route.meta.fullscreen === true);
 
 onMounted(async () => {
   // The router guard already calls this before the first navigation

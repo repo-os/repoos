@@ -26,6 +26,7 @@ export const router = createRouter({
       path: "/tasks/:taskId/diff",
       name: "diff",
       component: () => import("./views/DiffView.vue"),
+      meta: { fullscreen: true },
     },
     { path: "/:pathMatch(.*)*", redirect: "/" },
   ],
