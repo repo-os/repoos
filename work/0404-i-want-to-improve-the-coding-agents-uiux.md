@@ -2,14 +2,14 @@
 id: "0404"
 title: "Improve coding agents UI/UX — single-line rows, sorted by status, and favorites"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-18T05:30:42Z"
-updated_at: "2026-09-18T05:31:10Z"
+updated_at: "2026-09-18T05:35:48Z"
 ---
 ## Problem
 
@@ -69,3 +69,4 @@ I want to improve the coding agents UIUX. firstly each line in the "detected cod
 - 2026-09-18T05:30:43Z · screenshots
 - 2026-09-18T05:30:43Z · screenshots
 - 2026-09-18T05:31:10Z · status draft→inbox, title, area, body
+- 2026-09-18T05:35:48Z · status inbox→ready
