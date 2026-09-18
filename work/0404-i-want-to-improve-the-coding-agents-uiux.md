@@ -20,8 +20,10 @@ I want to improve the coding agents UIUX. firstly each line in the "detected cod
 ## Screenshots
 
 ![Screenshot-2026-09-18-at-13.27.33](/api/tasks/0404/attachments/screenshot-1.png)
+![Screenshot-2026-09-18-at-12.52.57](/api/tasks/0404/attachments/screenshot-2.png)
 
 ## Activity
 
 - 2026-09-18T05:30:42Z · created · hello@repoos.org
+- 2026-09-18T05:30:43Z · screenshots
 - 2026-09-18T05:30:43Z · screenshots
