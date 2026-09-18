@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-17T19:01:49Z"
-review_passes: 1
 id: "0393"
 title: Migrate the Architect Agent to the skill-guided runner
 type: feature
@@ -10,10 +8,8 @@ area: server
 assigned_to: ai
 created_by: ""
 branch: feat/migrate-the-architect-agent-to-the-skill
-cli_override: opencode
-model_override: openrouter/xiaomi/mimo-v2.5
 created_at: "2026-09-17T14:03:42Z"
-dev_error_count: 1
+updated_at: "2026-09-17T18:57:33Z"
 ---
 ## Problem
 
@@ -47,10 +43,4 @@ Replace the deterministic scan with a call through #0389's shared runner, driven
 - 2026-09-17T14:03:42Z · created · unknown
 - 2026-09-17T15:15:54Z · status inbox→ready
 - 2026-09-17T18:48:30Z · status ready→active, branch
-- 2026-09-17T18:48:38Z · status active→ready
-- 2026-09-17T18:48:38Z · agent exited with an error (cursor) · Skill routing: frontend-design, code-review, frontend-testing
-- 2026-09-17T18:49:18Z · cli_override
-- 2026-09-17T18:49:22Z · model_override
-- 2026-09-17T18:49:23Z · status ready→active, needs_input
 - 2026-09-17T18:57:33Z · status active→review
-
