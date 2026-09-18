@@ -2206,17 +2206,48 @@ interface DiffSideRow {
 
 function diffSideRows(file: DiffFile | null): DiffSideRow[] {
   if (!file) return [];
-  return file.lines.map((line) => {
-    const isAdded = line.startsWith("+") && !line.startsWith("+++ ");
-    const isRemoved = line.startsWith("-") && !line.startsWith("--- ");
-    const content = isAdded || isRemoved ? line.slice(1) : line;
-    const lineClass = diffLineClass(line);
-    if (isAdded)
-      return { left: "", right: content, leftClass: "diff-side-empty", rightClass: lineClass };
-    if (isRemoved)
-      return { left: content, right: "", leftClass: lineClass, rightClass: "diff-side-empty" };
-    return { left: content, right: content, leftClass: lineClass, rightClass: lineClass };
-  });
+  const rows: DiffSideRow[] = [];
+  for (let i = 0; i < file.lines.length; i += 1) {
+    const line = file.lines[i] ?? "";
+    if (
+      line.startsWith("diff --git ") ||
+      line.startsWith("index ") ||
+      line.startsWith("--- ") ||
+      line.startsWith("+++ ")
+    )
+      continue;
+    if (line.startsWith("@@")) {
+      rows.push({ left: line, right: line, leftClass: "diff-hunk", rightClass: "diff-hunk" });
+      continue;
+    }
+
+    const removed: string[] = [];
+    const added: string[] = [];
+    while (i < file.lines.length && file.lines[i]?.startsWith("-")) {
+      removed.push(file.lines[i]?.slice(1) ?? "");
+      i += 1;
+    }
+    while (i < file.lines.length && file.lines[i]?.startsWith("+")) {
+      added.push(file.lines[i]?.slice(1) ?? "");
+      i += 1;
+    }
+    if (removed.length || added.length) {
+      const count = Math.max(removed.length, added.length);
+      for (let j = 0; j < count; j += 1) {
+        rows.push({
+          left: removed[j] ?? "",
+          right: added[j] ?? "",
+          leftClass: removed[j] === undefined ? "diff-side-empty" : "diff-rem",
+          rightClass: added[j] === undefined ? "diff-side-empty" : "diff-add",
+        });
+      }
+      i -= 1;
+      continue;
+    }
+
+    rows.push({ left: line, right: line, leftClass: "diff-ctx", rightClass: "diff-ctx" });
+  }
+  return rows;
 }
 
 watch(expandedDiffModalOpen, (open) => {
@@ -3938,12 +3969,14 @@ watch(
             </div>
             <template v-else>
               <div v-if="diffFiles.length > 0" class="diff-file-list">
-                <button
+                <div
                   v-for="file in diffFiles"
                   :key="file.filename"
-                  type="button"
                   class="diff-file-item"
+                  role="button"
+                  tabindex="0"
                   @click="scrollToDiffFile(file.filename)"
+                  @keydown.enter="scrollToDiffFile(file.filename)"
                 >
                   <span class="diff-file-badge" :class="`diff-file-badge-${file.type}`">{{
                     file.type === "added" ? "A" : file.type === "deleted" ? "D" : "M"
@@ -3962,7 +3995,7 @@ watch(
                   >
                     <Expand class="size-3.5" />
                   </button>
-                </button>
+                </div>
                 <button
                   v-if="diffFiles.length > 8"
                   type="button"
