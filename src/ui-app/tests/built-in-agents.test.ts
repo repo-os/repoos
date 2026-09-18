@@ -567,6 +567,28 @@ describe("scanForDesignIssues (skill-guided)", () => {
     await expect(scanForDesignIssues(configFor(root))).rejects.toThrow(DesignError);
     await expect(scanForDesignIssues(configFor(root))).rejects.toThrow(/quota/i);
   });
+
+  it("caps findings per category so a verbose model run can't flood the report", async () => {
+    // Regression: the old deterministic scan capped findings per category at
+    // 8; the skill-guided migration dropped that guardrail, so a rambling
+    // model could return an unbounded number of findings straight into the
+    // report and the created task.
+    const root = makeRepo({ "package.json": "{}" });
+    const manyUiBugs = Array.from({ length: 40 }, (_, i) => ({
+      type: "ui-bug",
+      file: `src/components/Card${i}.tsx`,
+      description: `Issue number ${i}`,
+      severity: "low" as const,
+    }));
+    vi.mocked(runSkillGuidedAgent).mockResolvedValue(
+      runnerResult({ scannedFiles: 40, findings: manyUiBugs }),
+    );
+
+    const result = await scanForDesignIssues(configFor(root));
+
+    expect(result.findings).toHaveLength(25);
+    expect(result.findings.every((f) => f.category === "ui-bug")).toBe(true);
+  });
 });
 
 describe("generateDesignReport", () => {

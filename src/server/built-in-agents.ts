@@ -166,6 +166,13 @@ export interface DesignScanResult {
  */
 export const DESIGN_NO_UI_TYPE = "no-ui-detected";
 
+/**
+ * Backstop cap on findings per category. The skill doc asks the model to
+ * "prefer a few high-confidence findings", but that's only a suggestion —
+ * this is the actual guardrail against a verbose run flooding the report.
+ */
+const MAX_DESIGN_FINDINGS_PER_CATEGORY = 25;
+
 export interface DesignRunResult {
   reportPath: string;
   fileName: string;
@@ -1176,6 +1183,24 @@ export async function scanForDesignIssues(
   // The "no UI" signal is not a design finding; never file it as one.
   const designFindings = run.findings.filter((finding) => finding.type !== DESIGN_NO_UI_TYPE);
 
+  // Keep the report focused: cap findings per category. The skill doc's
+  // "prefer a few high-confidence findings" is only a suggestion to the
+  // model — this is the actual backstop against a verbose run flooding the
+  // report (the deterministic scan this replaced had the same guardrail,
+  // just at a stricter threshold appropriate to its narrower, rule-based
+  // output).
+  const capped: DesignFinding[] = [];
+  const counts: Record<DesignFindingCategory, number> = {
+    "ui-bug": 0,
+    "ux-friction": 0,
+    "design-recommendation": 0,
+  };
+  for (const finding of toDesignFindings(designFindings)) {
+    if (counts[finding.category] >= MAX_DESIGN_FINDINGS_PER_CATEGORY) continue;
+    counts[finding.category]++;
+    capped.push(finding);
+  }
+
   const insights: string[] = [];
   if (noUiDetected) {
     insights.push(
@@ -1188,7 +1213,7 @@ export async function scanForDesignIssues(
   }
 
   return {
-    findings: toDesignFindings(designFindings),
+    findings: capped,
     scannedFiles: run.scannedFiles ?? 0,
     insights,
     noUiDetected,
