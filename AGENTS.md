@@ -298,6 +298,18 @@ cannot tell from the code alone:
   `work/*.md` task files (which must never be rewritten outside the RepoOS
   API), and `**/*.json` stops it reordering `package.json` keys and rewriting
   Xcode asset catalogs. `bun run fmt` is otherwise safe to run on a change.
+- **Direct commits to `main` must pass format and lint, and a hook enforces it.**
+  Close-out runs the full gate before anything merges, but a hand commit
+  straight to `main` skips it. On 2026-09-18 one such commit left a stray blank
+  line in `style.css`, and every close-out after it failed `oxfmt --check` and
+  was misreported as "machine load" (#0423, #0425). `.githooks/pre-commit`
+  (installed by `bun install` via the `prepare` script, which sets
+  `core.hooksPath`) now checks staged source files with oxfmt/oxlint on `main`.
+  It skips task branches, merge commits and `*.md` bookkeeping, so it never
+  blocks RepoOS's own commits. **Never bypass it with `--no-verify`**. If it
+  fires, run `bun run fmt`, re-stage and commit again. If `git config
+  core.hooksPath` is empty in your checkout, run `bun install`. For anything
+  beyond formatting, still run `repoos check` before committing to `main`.
 - **Hand-landing a stale branch?** Check for other tasks' files first —
   `git diff main...HEAD --name-only | grep '^work/'` — and
   `git checkout main -- <them>` before merging. Anything but the task's own

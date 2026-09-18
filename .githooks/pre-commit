@@ -1,0 +1,56 @@
+#!/bin/sh
+# Pre-commit guard for direct commits to main (installed via core.hooksPath by
+# package.json's `prepare` script, so `bun install` sets it up for every
+# checkout and worktree).
+#
+# Why: close-out runs the full `repoos check` gate before anything lands on
+# main, but a hand commit straight to main skips it. On 2026-09-18 one such
+# commit left a stray blank line in style.css; every close-out after it merged
+# that in, failed `oxfmt --check`, and blamed "machine load" (#0423, #0425).
+#
+# Scope is deliberately narrow so RepoOS's own commits are never blocked:
+# - only commits on `main` (task branches are gated at close-out);
+# - never merge commits (close-out's merges are gated by the check itself);
+# - only staged source files that oxfmt/oxlint handle; task files (*.md) and
+#   other ignored paths are never checked.
+# Bypass (don't): git commit --no-verify.
+
+branch=$(git symbolic-ref --short -q HEAD)
+[ "$branch" = "main" ] || exit 0
+git_dir=$(git rev-parse --git-dir)
+[ -f "$git_dir/MERGE_HEAD" ] && exit 0
+
+files=$(git diff --cached --name-only --diff-filter=ACMR |
+  grep -E '\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|vue|css)$')
+[ -n "$files" ] || exit 0
+
+top=$(git rev-parse --show-toplevel)
+common=$(cd "$(git rev-parse --git-common-dir)" && pwd)
+find_bin() {
+  for dir in "$top/node_modules/.bin" "$(dirname "$common")/node_modules/.bin"; do
+    [ -x "$dir/$1" ] && { echo "$dir/$1"; return; }
+  done
+  command -v "$1"
+}
+oxfmt=$(find_bin oxfmt)
+oxlint=$(find_bin oxlint)
+if [ -z "$oxfmt" ] || [ -z "$oxlint" ]; then
+  echo "pre-commit: oxfmt/oxlint not found (run \`bun install\`); skipping the main-branch format/lint guard." >&2
+  exit 0
+fi
+
+# shellcheck disable=SC2086 # file list is newline-separated repo paths
+if ! echo "$files" | xargs "$oxfmt" --check --no-error-on-unmatched-pattern >/dev/null 2>&1; then
+  echo "pre-commit: formatting issues in staged files on main:" >&2
+  echo "$files" | xargs "$oxfmt" --check --no-error-on-unmatched-pattern >&2
+  echo "Run \`bun run fmt\`, re-stage, and commit again." >&2
+  exit 1
+fi
+lint_files=$(echo "$files" | grep -E '\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|vue)$')
+# Guard the empty case: `oxlint` with no paths would lint the whole repo.
+if [ -n "$lint_files" ] && ! echo "$lint_files" | xargs "$oxlint" >/dev/null 2>&1; then
+  echo "pre-commit: lint errors in staged files on main:" >&2
+  echo "$lint_files" | xargs "$oxlint" >&2
+  exit 1
+fi
+exit 0
