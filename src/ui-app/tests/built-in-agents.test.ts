@@ -28,6 +28,7 @@ import {
   TechDebtError,
   PerformanceError,
   DocsDebtError,
+  normalizeTechDebtIssueType,
   type TechDebtIssue,
   type PerformanceIssue,
 } from "../../server/built-in-agents.js";
@@ -445,6 +446,29 @@ describe("runTechDebtAgent", () => {
 
     const files = readdirSync(join(root, "work"));
     expect(files.length).toBeGreaterThan(0);
+  });
+});
+
+describe("normalizeTechDebtIssueType", () => {
+  it("passes through canonical types unchanged", () => {
+    const types = [
+      "outdated-dependency",
+      "code-duplication",
+      "high-complexity",
+      "unused-code",
+      "deprecated-api",
+    ] as const;
+    for (const type of types) {
+      expect(normalizeTechDebtIssueType(type)).toBe(type);
+    }
+  });
+
+  it("buckets a non-canonical label by keyword instead of always defaulting to unused-code", () => {
+    expect(normalizeTechDebtIssueType("stale-dependency")).toBe("outdated-dependency");
+    expect(normalizeTechDebtIssueType("copy-paste")).toBe("code-duplication");
+    expect(normalizeTechDebtIssueType("cyclomatic-complexity")).toBe("high-complexity");
+    expect(normalizeTechDebtIssueType("legacy-api-usage")).toBe("deprecated-api");
+    expect(normalizeTechDebtIssueType("something-weird")).toBe("unused-code");
   });
 });
 

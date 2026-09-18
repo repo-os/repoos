@@ -736,7 +736,7 @@ function toTechDebtIssues(findings: SkillGuidedFinding[]): TechDebtIssue[] {
   }));
 }
 
-function normalizeTechDebtIssueType(type: string): TechDebtIssueType {
+export function normalizeTechDebtIssueType(type: string): TechDebtIssueType {
   const validTypes: TechDebtIssueType[] = [
     "outdated-dependency",
     "code-duplication",
@@ -744,9 +744,17 @@ function normalizeTechDebtIssueType(type: string): TechDebtIssueType {
     "unused-code",
     "deprecated-api",
   ];
-  return validTypes.includes(type as TechDebtIssueType)
-    ? (type as TechDebtIssueType)
-    : "unused-code";
+  if (validTypes.includes(type as TechDebtIssueType)) return type as TechDebtIssueType;
+  // Keyword fallback for a non-canonical label (mirrors
+  // normalizePerformanceIssueType) — bucket by what the label actually
+  // describes instead of always defaulting to "unused-code", which used to
+  // misfile e.g. a "stale-dependency" finding under "Remove unused code".
+  const t = type.toLowerCase();
+  if (/(depend|package|version|outdated|upgrade)/.test(t)) return "outdated-dependency";
+  if (/(duplicat|copy-paste|repeat)/.test(t)) return "code-duplication";
+  if (/(complex|nested|cyclomatic|long-function|god-)/.test(t)) return "high-complexity";
+  if (/(deprecat|legacy-api|obsolete)/.test(t)) return "deprecated-api";
+  return "unused-code";
 }
 
 /**
