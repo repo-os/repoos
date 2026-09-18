@@ -8,8 +8,9 @@ area: general
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+pm_model_override: auto
 created_at: "2026-09-18T04:37:15Z"
-updated_at: "2026-09-18T05:26:21Z"
+updated_at: "2026-09-18T05:26:26Z"
 ---
 The settings page is getting very long, let's add tabs. First move the repoos.toml to it's own tab (the last tab). Then break out "advanced" to it's own tab. And if you think of any other useful tabs to have let me know. also make sure the tabs work via deeplink url like /settings?tab=advanced.
 
@@ -25,3 +26,4 @@ The settings page is getting very long, let's add tabs. First move the repoos.to
 - 2026-09-18T04:59:37Z · pm_cli_override, pm_model_override
 - 2026-09-18T04:59:51Z · pm_model_override
 - 2026-09-18T05:26:21Z · pm_cli_override, pm_model_override
+- 2026-09-18T05:26:26Z · pm_model_override
