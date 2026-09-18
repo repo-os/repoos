@@ -1,16 +1,16 @@
 ---
-updated_at: "2026-09-18T17:38:15Z"
-review_passes: 3
 id: "0420"
 title: Recover gracefully when the UI is stale after a rebuild
 type: bug
-status: review
+status: active
 priority: p1
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/recover-gracefully-when-the-ui-is-stale-
 created_at: "2026-09-18T15:33:49Z"
+updated_at: "2026-09-18T19:12:22Z"
+review_passes: 3
 review_rounds: 2
 handoff_signal_retry_count: 1
 ---
@@ -63,4 +63,5 @@ RepoOS should detect stale UI/build state and recover with clear user feedback i
 - 2026-09-18T17:31:38Z · status active→review
 - 2026-09-18T17:32:36Z · status review→active
 - 2026-09-18T17:36:46Z · status active→review
-
+- 2026-09-18T19:12:22Z · status review→active
+- 2026-09-18T19:12:22Z · note: Address the latest reviewer findings before returning #0420 to review: 1. Ensure stale-UI state and the existing new-version state are mutually exclusive. No focus/reconnect/route-change path may show both update banners. 2. Scope API timeouts: do not apply the 15-second abort to legitimate slow write/upload operations. Preserve visible recovery guidance for truly stalled reads/navigation. 3. Extend the dirty-state check to cover unsent task-chat drafts and task-editor body/title drafts, so automatic reload cannot lose user text. 4. Implement the specified server-status distinction between a healthy listener outside the serve-lock lifecycle and a genuinely stopped server, or explicitly narrow the requirement with evidence and tests—but do not leave it silently unaddressed. 5. Add regression coverage for all four points, rerun the focused tests and repoos check, then return the task to review.
