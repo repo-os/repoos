@@ -62,10 +62,13 @@ function done(): void {
     ><DialogOverlay /><DialogContent :style="{ width: ui.drawerWidth + 'px', 'max-width': '100vw' }"
       ><div class="drawer-resize" @mousedown.prevent="ui.startResize"></div>
       <div class="drawer-head">
-        <DialogTitle>New input</DialogTitle
-        ><DialogDescription class="sr-only"
-          >Submit an idea, question, bug, or other input</DialogDescription
-        ><DialogClose class="close-x"><X class="size-[15px]" /></DialogClose>
+        <div class="drawer-head-title">
+          <DialogTitle>New input</DialogTitle>
+          <DialogDescription class="sr-only"
+            >Submit an idea, question, bug, or other input</DialogDescription
+          >
+        </div>
+        <DialogClose class="close-x"><X class="size-[15px]" /></DialogClose>
       </div>
       <div class="drawer-body">
         <div v-if="submitted" class="ff-done">
