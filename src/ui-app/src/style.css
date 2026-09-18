@@ -2762,6 +2762,11 @@
   align-items: flex-start;
   gap: 12px;
 }
+/* Pushes the × close control to the upper-right (New task/doc/skill, Tunnel). */
+.drawer-head-title {
+  flex: 1;
+  min-width: 0;
+}
 .drawer-body {
   flex: 1;
   overflow-y: auto;
