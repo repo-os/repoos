@@ -12,10 +12,10 @@ created_by: hello@repoos.org
 branch: feat/add-board-view-toggle-to-inputs-page
 cli_override: github copilot
 model_override: default
-review_cli_override: codex
+review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-09-18T04:26:52Z"
-updated_at: "2026-09-18T04:58:34Z"
+updated_at: "2026-09-18T04:58:35Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 1
@@ -79,3 +79,4 @@ Add a board view toggle to inputs page (currently there's only a list view). Do 
 - 2026-09-18T04:53:56Z · review_cli_override, review_model_override
 - 2026-09-18T04:54:04Z · status active→review
 - 2026-09-18T04:58:34Z · review_cli_override
+- 2026-09-18T04:58:35Z · review_cli_override
