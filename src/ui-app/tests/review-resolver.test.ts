@@ -130,6 +130,29 @@ describe("resolveReviewerForTask", () => {
     expect(resolved.name).toBe("codex");
     expect(resolved.model).toBe(codex.model);
   });
+
+  it(
+    "confirmed live incident: switching reviewCliOverride without a model pin must not carry " +
+      "over the base agent's foreign, CLI-specific model — reviewer is configured " +
+      "cli: opencode, model: opencode-go/mimo-v2.5; switching the review CLI override to kiro " +
+      "or github copilot with no model pin used to merge { cli: kiro, model: opencode-go/mimo-v2.5 }, " +
+      "an invalid pair the new CLI rejected outright",
+    () => {
+      const cfg = config([baseReviewer, codex]);
+      const resolved = resolveReviewerForTask(cfg, task({ reviewCliOverride: "codex" }))!;
+      expect(resolved.name).toBe("reviewer");
+      expect(resolved.cli).toBe("codex");
+      // Not baseReviewer.model ("sonnet") — that belongs to "claude code", not "codex".
+      expect(resolved.model).toBe("default");
+    },
+  );
+
+  it("switching reviewCliOverride back to the base agent's own CLI keeps its configured model", () => {
+    const cfg = config([baseReviewer]);
+    const resolved = resolveReviewerForTask(cfg, task({ reviewCliOverride: "claude code" }))!;
+    expect(resolved.cli).toBe("claude code");
+    expect(resolved.model).toBe(baseReviewer.model);
+  });
 });
 
 describe("resolveAgentForTask (#0271 follow-up)", () => {
@@ -146,5 +169,12 @@ describe("resolveAgentForTask (#0271 follow-up)", () => {
     const cfg = config([engineer]);
     const resolved = resolveAgentForTask(cfg, task({ modelOverride: "gpt-5" }), "engineer")!;
     expect(resolved.model).toBe("gpt-5");
+  });
+
+  it("switching cliOverride without a model pin resets model to default, not the base agent's own", () => {
+    const cfg = config([engineer]);
+    const resolved = resolveAgentForTask(cfg, task({ cliOverride: "kiro" }), "engineer")!;
+    expect(resolved.cli).toBe("kiro");
+    expect(resolved.model).toBe("default");
   });
 });

@@ -74,6 +74,8 @@ export interface TaskPatch {
   needsInput?: boolean;
   /** Machine-readable reason `needsInput` was set, or null to clear it. Only meaningful alongside `needsInput: true`. */
   needsInputReason?: string | null;
+  /** Free-text detail for why `needsInput` was set, or null to clear it. See {@link Task.needsInputDetail}. */
+  needsInputDetail?: string | null;
   /** Clear (false) or set (true) the branch-drifted flag. */
   needsMerge?: boolean;
   /** Per-task agent name override, or null to clear. */
@@ -179,10 +181,16 @@ export function patchTaskFile(
     // A cleared flag has no reason to carry forward — serializeTask would drop
     // it anyway (only written while needsInput is true), but clearing it here
     // too keeps the in-memory Task consistent with what gets written.
-    if (!patch.needsInput) current.needsInputReason = undefined;
+    if (!patch.needsInput) {
+      current.needsInputReason = undefined;
+      current.needsInputDetail = undefined;
+    }
   }
   if (patch.needsInputReason !== undefined) {
     current.needsInputReason = patch.needsInputReason ?? undefined;
+  }
+  if (patch.needsInputDetail !== undefined) {
+    current.needsInputDetail = patch.needsInputDetail ?? undefined;
   }
   if (patch.needsMerge !== undefined) {
     if (patch.needsMerge !== current.needsMerge) changes.push("needs_merge");

@@ -10,6 +10,7 @@ import {
   resolveBinary,
   type KnownAgent,
 } from "../../core/detect";
+import { AGENT_CLIS } from "../../core/config";
 import { startServer } from "../../server/server";
 
 const FIXTURE_AGENTS: KnownAgent[] = [
@@ -202,5 +203,35 @@ describe("GET /api/agents/detect", () => {
       process.env.PATH = oldPath;
       await server.close();
     }
+  });
+});
+
+describe("KNOWN_AGENTS cli field", () => {
+  // #0404 follow-up: the Agents page favorites a detected agent by a key that
+  // must match `AGENT_CLIS` (what the agent+model selector's favorites filter
+  // matches against). `id` alone doesn't work for multi-word/hyphenated
+  // agents ("claude-code" vs "claude code") -- `cli` exists precisely so
+  // callers have a value guaranteed to line up with `AGENT_CLIS`.
+  it("sets `cli` to a valid AGENT_CLIS value for every drivable agent", () => {
+    for (const agent of KNOWN_AGENTS) {
+      if (!agent.drivable) {
+        expect(agent.cli).toBeUndefined();
+        continue;
+      }
+      expect(agent.cli).toBeDefined();
+      expect(AGENT_CLIS).toContain(agent.cli);
+    }
+  });
+
+  it("cli differs from id for agents whose id isn't already an AGENT_CLIS string", () => {
+    const claudeCode = KNOWN_AGENTS.find((a) => a.id === "claude-code");
+    expect(claudeCode?.cli).toBe("claude code");
+    const qwenCode = KNOWN_AGENTS.find((a) => a.id === "qwen-code");
+    expect(qwenCode?.cli).toBe("qwen code");
+    const copilot = KNOWN_AGENTS.find((a) => a.id === "copilot");
+    expect(copilot?.cli).toBe("github copilot");
+    const cursor = KNOWN_AGENTS.find((a) => a.id === "cursor");
+    expect(cursor?.cli).toBe("cursor");
+    expect(cursor?.name).toBe("cursor agent");
   });
 });

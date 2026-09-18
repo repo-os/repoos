@@ -15,6 +15,7 @@ import {
   taskPmPrompt,
   deriveBranch,
   isModelOverridePinned,
+  mergeAgentOverride,
   recordOneShotSession,
   pmCommand,
   extractOneShotReportText,
@@ -400,13 +401,7 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
     const list = agentsForConfig(config);
     const baseName = freeformAgentName || "pm";
     const base = list.find((a) => a.enabled && a.name === baseName) ?? null;
-    pm = base
-      ? {
-          ...base,
-          ...(freeformCli ? { cli: freeformCli } : {}),
-          ...(freeformModelPinned ? { model: freeformModel as string } : {}),
-        }
-      : null;
+    pm = base ? mergeAgentOverride(base, freeformCli, freeformModel) : null;
   } else {
     pm = resolvePmAgent(config);
   }
@@ -1400,13 +1395,7 @@ export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
     const list = agentsForConfig(config);
     const baseName = pmAgentName || "pm";
     const base = list.find((a) => a.enabled && a.name === baseName) ?? null;
-    pm = base
-      ? {
-          ...base,
-          ...(pmCli ? { cli: pmCli } : {}),
-          ...(pmModelPinned ? { model: pmModel as string } : {}),
-        }
-      : null;
+    pm = base ? mergeAgentOverride(base, pmCli, pmModel) : null;
   } else {
     pm = resolvePmAgent(config);
   }

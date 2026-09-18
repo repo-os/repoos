@@ -1711,11 +1711,7 @@ export function resolveReviewerForTask(config: RepoOSConfig, task: Task): Agent 
   const baseName = task.reviewAgentOverride || "reviewer";
   const base = list.find((a) => a.enabled && matchesRole(a, baseName)) ?? null;
   if (!base) return null;
-  return {
-    ...base,
-    ...(task.reviewCliOverride ? { cli: task.reviewCliOverride } : {}),
-    ...(modelPinned ? { model: task.reviewModelOverride as string } : {}),
-  };
+  return mergeAgentOverride(base, task.reviewCliOverride, task.reviewModelOverride);
 }
 
 export function resolveCto(config: RepoOSConfig): Agent | null {
@@ -1756,6 +1752,42 @@ export function isModelOverridePinned(model: string | null | undefined): boolean
   return !!model && model !== "default";
 }
 
+/**
+ * Merge a CLI/model override onto a base agent, the one true implementation
+ * shared by `resolveAgentForTask`, `resolveReviewerForTask`, and
+ * routes/tasks.ts's inline PM-override logic (all three used to hand-roll
+ * this and had drifted into the same bug).
+ *
+ * The bug: overriding only the CLI (leaving model on "Default") used to keep
+ * `base.model` untouched — but that model string belongs to `base.cli`, not
+ * the overridden one. Confirmed live: `reviewer` is configured
+ * `cli: opencode, model: opencode-go/mimo-v2.5`; switching a task's review
+ * CLI override to `kiro` or `github copilot` without also pinning a model
+ * merged `{ cli: "kiro", model: "opencode-go/mimo-v2.5" }` — an invalid pair
+ * — and the CLI invocation failed with `Model "opencode-go/mimo-v2.5" ...
+ * is not available` (copilot) or a `Method not found` retry loop (kiro). The
+ * failure mode differs by CLI (copilot's review died with no report; kiro's
+ * degraded but kept limping through retries), which is why it read as "kiro
+ * parsing issues" and "copilot doesn't work" rather than one shared cause.
+ *
+ * Fix: a CLI override that changes the effective CLI resets the model to
+ * "default" (omits `--model`, letting the new CLI use its own default)
+ * unless a real model pin is also given for it.
+ */
+export function mergeAgentOverride(
+  base: Agent,
+  cliOverride: string | null | undefined,
+  modelOverride: string | null | undefined,
+): Agent {
+  const modelPinned = isModelOverridePinned(modelOverride);
+  const cliChanged = !!cliOverride && cliOverride !== base.cli;
+  return {
+    ...base,
+    ...(cliOverride ? { cli: cliOverride } : {}),
+    ...(modelPinned ? { model: modelOverride as string } : cliChanged ? { model: "default" } : {}),
+  };
+}
+
 export function resolveAgentForTask(
   config: RepoOSConfig,
   task: Task,
@@ -1773,12 +1805,7 @@ export function resolveAgentForTask(
   const base = list.find((a) => a.enabled && a.name === baseName) ?? null;
   if (!base) return null;
 
-  // Merge overrides onto the base agent.
-  return {
-    ...base,
-    ...(task.cliOverride ? { cli: task.cliOverride } : {}),
-    ...(modelPinned ? { model: task.modelOverride as string } : {}),
-  };
+  return mergeAgentOverride(base, task.cliOverride, task.modelOverride);
 }
 
 /** Resolve the enabled built-in repository assistant (by current "Ross" name or legacy "RepoOS Guide"). */
@@ -1830,8 +1857,21 @@ export function resolveRepoGuide(config: RepoOSConfig): Agent | null {
  *   killed. Same blast radius as the other engines: the task's own worktree.
  */
 function modelArgs(cli: string, model: string): string[] {
+  if (cli === "github copilot") {
+    // Copilot Auto chooses an account-available model. Keep `default` as the
+    // persisted sentinel used across RepoOS, but make its Copilot meaning the
+    // least-expensive Auto tier rather than the CLI's opaque current default.
+    const tier =
+      model === "copilot-auto-balance"
+        ? "balance"
+        : model === "copilot-auto-intelligence"
+          ? "intelligence"
+          : model === "default" || !model
+            ? "efficiency"
+            : null;
+    if (tier) return ["--model", "auto", "--auto-tier", tier];
+  }
   if (!model || model === "default") return [];
-  if (cli === "codex") return ["--model", model];
   return ["--model", model];
 }
 
@@ -5126,17 +5166,20 @@ export class AgentRunner {
         dev_error_count:
           (typeof errCount === "number" && Number.isFinite(errCount) ? errCount : 0) + 1,
       };
+      const engine = session?.engine && session.engine !== "plain" ? ` (${session.engine})` : "";
+      const detail = this.lastFailureLine(session);
       if (current.needsInput) {
+        // A repeat error before the human cleared the flag — still refresh
+        // the detail so the banner shows the LATEST failure, not whichever
+        // one happened to trip needsInput first.
+        if (current.needsInputReason === "dev-error") current.needsInputDetail = detail;
         writeFileSync(task.absPath, serializeTask(current));
         return;
       }
       current.needsInput = true;
       current.needsInputReason = "dev-error";
-      const engine = session?.engine && session.engine !== "plain" ? ` (${session.engine})` : "";
-      recordChange(
-        current,
-        `agent exited with an error${engine} · ${this.lastFailureLine(session)}`,
-      );
+      current.needsInputDetail = detail;
+      recordChange(current, `agent exited with an error${engine} · ${detail}`);
       writeFileSync(task.absPath, serializeTask(current));
     } catch (err) {
       console.error(

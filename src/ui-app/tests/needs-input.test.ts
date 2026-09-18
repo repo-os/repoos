@@ -114,3 +114,59 @@ describe("needs_input frontmatter field", () => {
     }
   });
 });
+
+// #0405 follow-up: needsInputDetail carries the actual failure text (e.g. the
+// CLI's own error line) alongside the generic needsInputReason label, so the
+// drawer's "waiting for you" banner can show more than "The agent exited with
+// an error." with no way to see what actually happened.
+describe("needs_input_detail frontmatter field", () => {
+  it("round-trips through parse/serialize alongside needs_input_reason", () => {
+    const { root, absPath, clean } = setupFile(PLAIN);
+    try {
+      const flagged = patchTaskFile(config(root), absPath, {
+        needsInput: true,
+        needsInputReason: "dev-error",
+        needsInputDetail: 'Model "opencode-go/mimo-v2.5" from --model flag is not available.',
+      });
+      expect(flagged.needsInputDetail).toBe(
+        'Model "opencode-go/mimo-v2.5" from --model flag is not available.',
+      );
+      const written = readFileSync(absPath, "utf8");
+      expect(written).toContain("needs_input_detail:");
+      const reparsed = parse(written, absPath, root);
+      expect(reparsed.needsInputDetail).toBe(flagged.needsInputDetail);
+    } finally {
+      clean();
+    }
+  });
+
+  it("is cleared along with needsInput, not left stale for the next escalation", () => {
+    const { root, absPath, clean } = setupFile(FLAGGED);
+    try {
+      patchTaskFile(config(root), absPath, {
+        needsInput: true,
+        needsInputReason: "dev-error",
+        needsInputDetail: "some earlier failure",
+      });
+      const cleared = patchTaskFile(config(root), absPath, { needsInput: false });
+      expect(cleared.needsInputDetail).toBeUndefined();
+      expect(readFileSync(absPath, "utf8")).not.toContain("needs_input_detail");
+    } finally {
+      clean();
+    }
+  });
+
+  it("is never written when unset, same as needs_input_reason", () => {
+    const { root, absPath, clean } = setupFile(PLAIN);
+    try {
+      const flagged = patchTaskFile(config(root), absPath, {
+        needsInput: true,
+        needsInputReason: "watchdog-stuck",
+      });
+      expect(flagged.needsInputDetail).toBeUndefined();
+      expect(readFileSync(absPath, "utf8")).not.toContain("needs_input_detail");
+    } finally {
+      clean();
+    }
+  });
+});

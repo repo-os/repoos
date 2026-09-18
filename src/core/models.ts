@@ -220,16 +220,21 @@ const codexAdapter: ModelSourceAdapter = {
 };
 
 /**
- * Copilot accepts a model with every prompt, but its CLI does not expose a
- * stable machine-readable model catalog. Offer the CLI default and let the
- * existing per-model compatibility probe validate any manually configured id.
+ * Copilot's interactive picker has no stable machine-readable catalog, but
+ * Auto tiers are stable CLI flags. The underlying model remains account- and
+ * policy-dependent, so expose tiers rather than guessing which named models a
+ * user can access.
  */
 const copilotAdapter: ModelSourceAdapter = {
   id: "copilot",
   cli: "github copilot",
   supported: true,
   async list(): Promise<ModelSourceResult> {
-    return { supported: true, models: ["default"], refreshable: false };
+    return {
+      supported: true,
+      models: ["default", "copilot-auto-balance", "copilot-auto-intelligence"],
+      refreshable: false,
+    };
   },
 };
 

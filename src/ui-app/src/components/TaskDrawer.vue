@@ -1952,6 +1952,26 @@ function needsInputReasonText(reason: string | undefined): string {
   );
 }
 
+/**
+ * A concrete next step for each `needsInput` reason (#0405 follow-up: the
+ * banner used to say only "The agent exited with an error." with no hint of
+ * what to actually do about it). Phrased around the actions this drawer
+ * already exposes — Restart work, the review tab's Review again, or just
+ * replying below — not new mechanisms.
+ */
+const NEEDS_INPUT_SUGGESTION_LABELS: Record<string, string> = {
+  "review-failed":
+    "Try Review again from the Review tab. If it keeps failing, check the CLI/model picker there — an invalid pairing (e.g. after switching CLI) causes exactly this.",
+  "dev-error":
+    "Restart work to resume the agent, or reply below with more context first. If it keeps failing on the same error, check the coding agent/model picker above — a CLI switch without a matching model pin causes exactly this.",
+  "watchdog-stuck": "Restart work to resume — no agent process is currently running this task.",
+  "cto-escalation": "Reply below to answer the CTO agent's question so it can continue.",
+};
+
+function needsInputSuggestionText(reason: string | undefined): string | null {
+  return (reason && NEEDS_INPUT_SUGGESTION_LABELS[reason]) || null;
+}
+
 watch(displayEntries, () => {
   if (stick.value) {
     nextTick(() => {
@@ -3306,6 +3326,32 @@ watch(
               <div class="agent-waiting-sub">
                 {{ needsInputReasonText(ui.active.needsInputReason) }}
               </div>
+              <div v-if="ui.active.needsInputDetail" class="agent-waiting-detail">
+                {{ ui.active.needsInputDetail }}
+              </div>
+              <div
+                v-if="needsInputSuggestionText(ui.active.needsInputReason)"
+                class="agent-waiting-suggestion"
+              >
+                {{ needsInputSuggestionText(ui.active.needsInputReason) }}
+              </div>
+              <Button
+                v-if="
+                  (ui.active.needsInputReason === 'dev-error' ||
+                    ui.active.needsInputReason === 'watchdog-stuck') &&
+                  ui.active.status === 'active' &&
+                  !repo.isRunning(ui.active.id)
+                "
+                variant="outline"
+                size="sm"
+                class="agent-waiting-action"
+                :disabled="ui.saving"
+                @click="startWork"
+              >
+                <Play v-if="!startingWork" class="size-3.5" />
+                <ActivityIndicator v-else />
+                {{ startingWork ? "Starting work…" : "Restart work" }}
+              </Button>
             </div>
           </div>
           <div class="agent-log-wrap">

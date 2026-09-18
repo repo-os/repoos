@@ -1,16 +1,15 @@
 ---
-updated_at: "2026-09-18T05:44:21Z"
-review_passes: 1
 id: "0404"
 title: "Improve coding agents UI/UX — single-line rows, sorted by status, and favorites"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/improve-coding-agents-ui-ux-single-line-
 created_at: "2026-09-18T05:30:42Z"
+updated_at: "2026-09-18T06:58:52Z"
 ---
 ## Problem
 
@@ -73,4 +72,4 @@ I want to improve the coding agents UIUX. firstly each line in the "detected cod
 - 2026-09-18T05:35:48Z · status inbox→ready
 - 2026-09-18T05:35:52Z · status ready→active, branch
 - 2026-09-18T05:41:54Z · status active→review
-
+- 2026-09-18T06:58:52Z · status review→done, release:success

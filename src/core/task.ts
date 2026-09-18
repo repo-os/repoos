@@ -17,6 +17,7 @@ const KEY_ORDER = [
   "status",
   "needs_input",
   "needs_input_reason",
+  "needs_input_detail",
   "needs_merge",
   "no_source_change",
   "priority",
@@ -252,6 +253,8 @@ export function parseTask(args: ParseTaskArgs): Task {
     needsInput: data.needs_input === true,
     needsInputReason:
       typeof data.needs_input_reason === "string" ? data.needs_input_reason : undefined,
+    needsInputDetail:
+      typeof data.needs_input_detail === "string" ? data.needs_input_detail : undefined,
     needsMerge: data.needs_merge === true,
     noSourceChange: data.no_source_change === true,
     priority: String(data.priority ?? "p2"),
@@ -306,6 +309,7 @@ export function serializeTask(task: Task): string {
   if (task.needsInput) {
     data.needs_input = true;
     if (task.needsInputReason) data.needs_input_reason = task.needsInputReason;
+    if (task.needsInputDetail) data.needs_input_detail = task.needsInputDetail;
   }
   if (task.needsMerge) data.needs_merge = true;
   if (task.noSourceChange) data.no_source_change = true;

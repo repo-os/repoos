@@ -11,6 +11,7 @@ import DialogTitle from "./ui/dialog/title.vue";
 import { useFavorites } from "../composables/useFavorites";
 import { useModelMemory } from "../composables/useModelMemory";
 import { useConfigStore } from "../stores/config";
+import { useAgentFavorites } from "../composables/useAgentFavorites";
 
 const props = defineProps<{
   open: boolean;
@@ -48,6 +49,17 @@ const {
 
 const { remember, recall } = useModelMemory();
 const config = useConfigStore();
+
+const { isAgentFavorite, hasAgentFavorites } = useAgentFavorites();
+
+/**
+ * The CLI list shown in the agent picker. When the user has starred at least
+ * one coding agent CLI, show only the starred ones; otherwise show all.
+ */
+const filteredCliOptions = computed<string[]>(() => {
+  if (!hasAgentFavorites.value) return props.cliOptions;
+  return props.cliOptions.filter((c) => isAgentFavorite(c));
+});
 
 const memoryContext = computed(() => props.memoryKey);
 
@@ -171,7 +183,7 @@ watch(
 
         <div class="am-cli-picker">
           <button
-            v-for="c in cliOptions"
+            v-for="c in filteredCliOptions"
             :key="c"
             type="button"
             class="am-cli-btn"

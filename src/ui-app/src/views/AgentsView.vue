@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { Star } from "lucide-vue-next";
 import { useConfigStore } from "../stores/config";
 import { useDocsStore } from "../stores/docs";
 import { api, JSON_OPTS } from "../api";
@@ -27,6 +28,7 @@ import DialogContent from "../components/ui/dialog/content.vue";
 import DialogDescription from "../components/ui/dialog/description.vue";
 import DialogOverlay from "../components/ui/dialog/overlay.vue";
 import DialogTitle from "../components/ui/dialog/title.vue";
+import { useAgentFavorites } from "../composables/useAgentFavorites";
 
 const config = useConfigStore();
 const router = useRouter();
@@ -324,6 +326,20 @@ const detectLoading = ref(false);
 const detectError = ref(false);
 const detectHintCopied = ref<string>("");
 
+const { isAgentFavorite, toggleAgentFavorite } = useAgentFavorites();
+
+/**
+ * The key favorites are stored/matched under: `agent.cli` (the `AGENT_CLIS`
+ * string, e.g. "claude code") when drivable, else `agent.id`. Favoriting by
+ * `agent.id` alone used to silently break the agent+model selector's
+ * favorites filter for multi-word/hyphenated agents (`claude-code`,
+ * `qwen-code`, `copilot`) whose `id` doesn't match the `AGENT_CLIS` string
+ * that filter matches against — see `core/detect.ts`'s `cli` field doc.
+ */
+function favoriteKey(agent: DetectedAgent): string {
+  return agent.cli ?? agent.id;
+}
+
 type DetectStatus = "ok" | "desktop" | "auth" | "missing";
 
 interface DetectRow {
@@ -331,37 +347,50 @@ interface DetectRow {
   status: DetectStatus;
   statusLabel: string;
   color: string;
+  /** Sort priority: lower = higher in list. Green=0, amber=1, red=2. */
+  sortOrder: number;
 }
 
-const detectRows = computed<DetectRow[]>(() =>
-  detected.value.map((agent) => {
+const detectRows = computed<DetectRow[]>(() => {
+  const rows = detected.value.map((agent) => {
     if (!agent.installed) {
       return {
         agent,
-        status: "missing",
+        status: "missing" as DetectStatus,
         statusLabel: "not installed",
         color: "var(--red)",
+        sortOrder: 2,
       };
     }
     if (agent.headless === false) {
       return {
         agent,
-        status: "desktop",
+        status: "desktop" as DetectStatus,
         statusLabel: "desktop only",
         color: "var(--amber)",
+        sortOrder: 1,
       };
     }
     if (agent.auth === false) {
       return {
         agent,
-        status: "auth",
+        status: "auth" as DetectStatus,
         statusLabel: "sign-in required",
         color: "var(--amber)",
+        sortOrder: 1,
       };
     }
-    return { agent, status: "ok", statusLabel: "ready", color: "var(--green)" };
-  }),
-);
+    return {
+      agent,
+      status: "ok" as DetectStatus,
+      statusLabel: "ready",
+      color: "var(--green)",
+      sortOrder: 0,
+    };
+  });
+  // Sort: green (ready) first, then amber, then red — stable within each group.
+  return rows.sort((a, b) => a.sortOrder - b.sortOrder);
+});
 
 async function checkAgents(): Promise<void> {
   detectLoading.value = true;
@@ -776,57 +805,73 @@ onUnmounted(() => {
 
           <template v-else>
             <div v-for="r in detectRows" :key="r.agent.id" class="detect-row">
-              <div class="detect-row-left">
-                <span
-                  class="detect-badge"
-                  :style="{ background: r.color, boxShadow: '0 0 8px ' + r.color }"
-                ></span>
-                <span class="agent-name">{{ r.agent.name }}</span>
-                <span class="detect-pill" :style="{ color: r.color }">{{ r.statusLabel }}</span>
-                <span
-                  class="agent-badge"
-                  :class="r.agent.drivable ? 'detect-driver-yes' : 'detect-driver-no'"
+              <span
+                class="detect-badge"
+                :style="{ background: r.color, boxShadow: '0 0 8px ' + r.color }"
+              ></span>
+              <span class="agent-name detect-agent-name">{{ r.agent.name }}</span>
+              <span class="detect-pill" :style="{ color: r.color }">{{ r.statusLabel }}</span>
+              <span
+                class="agent-badge"
+                :class="r.agent.drivable ? 'detect-driver-yes' : 'detect-driver-no'"
+              >
+                {{ r.agent.drivable ? "RepoOS driver" : "detected only" }}
+              </span>
+              <span v-if="r.agent.version" class="detect-ver detect-ver-inline">{{
+                r.agent.version
+              }}</span>
+              <span v-if="r.status === 'auth'" class="detect-hint-inline">
+                <code
+                  class="detect-hint-code"
+                  :title="r.agent.authHint || 'sign in with the CLI'"
+                  >{{ r.agent.authHint || "sign in with the CLI" }}</code
                 >
-                  {{ r.agent.drivable ? "RepoOS driver" : "detected only" }}
-                </span>
-              </div>
-              <div class="detect-row-right">
-                <template v-if="r.agent.installed">
-                  <span class="detect-bin">{{ r.agent.binary }}</span>
-                  <span v-if="r.agent.path" class="detect-path" :title="r.agent.path">{{
-                    r.agent.path
-                  }}</span>
-                  <span v-if="r.agent.version" class="detect-ver">{{ r.agent.version }}</span>
-                  <span v-if="r.status === 'auth'" class="detect-hint">
-                    Installed but not signed in:
-                    <code>{{ r.agent.authHint || "sign in with the CLI" }}</code>
-                    <button
-                      v-if="r.agent.authHint"
-                      class="detect-copy"
-                      @click="copyHint(r.agent.authHint!)"
-                    >
-                      {{ detectHintCopied === r.agent.authHint ? "copied" : "copy" }}
-                    </button>
-                  </span>
-                  <span v-else-if="!r.agent.headless" class="detect-hint">
-                    Desktop app shadows PATH — install headless CLI:
-                    <code>{{ r.agent.installHint }}</code>
-                    <button class="detect-copy" @click="copyHint(r.agent.installHint)">
-                      {{ detectHintCopied === r.agent.installHint ? "copied" : "copy" }}
-                    </button>
-                  </span>
-                </template>
-                <template v-else>
-                  <span class="detect-bin">{{ r.agent.binary }}</span>
-                  <span class="detect-hint">
-                    <code>{{ r.agent.installHint }}</code>
-                    <button class="detect-copy" @click="copyHint(r.agent.installHint)">
-                      {{ detectHintCopied === r.agent.installHint ? "copied" : "copy" }}
-                    </button>
-                  </span>
-                </template>
-                <span v-if="r.agent.capability" class="detect-cap">{{ r.agent.capability }}</span>
-              </div>
+                <button
+                  v-if="r.agent.authHint"
+                  class="detect-copy"
+                  @click="copyHint(r.agent.authHint!)"
+                >
+                  {{ detectHintCopied === r.agent.authHint ? "copied" : "copy" }}
+                </button>
+              </span>
+              <span v-else-if="r.status === 'desktop'" class="detect-hint-inline">
+                <code class="detect-hint-code" :title="r.agent.installHint">{{
+                  r.agent.installHint
+                }}</code>
+                <button class="detect-copy" @click="copyHint(r.agent.installHint)">
+                  {{ detectHintCopied === r.agent.installHint ? "copied" : "copy" }}
+                </button>
+              </span>
+              <span v-else-if="r.status === 'missing'" class="detect-hint-inline">
+                <code class="detect-hint-code" :title="r.agent.installHint">{{
+                  r.agent.installHint
+                }}</code>
+                <button class="detect-copy" @click="copyHint(r.agent.installHint)">
+                  {{ detectHintCopied === r.agent.installHint ? "copied" : "copy" }}
+                </button>
+              </span>
+              <button
+                type="button"
+                class="detect-star-btn"
+                :class="{ on: isAgentFavorite(favoriteKey(r.agent)) }"
+                :aria-pressed="isAgentFavorite(favoriteKey(r.agent))"
+                :aria-label="
+                  isAgentFavorite(favoriteKey(r.agent))
+                    ? `Remove ${r.agent.name} from favorites`
+                    : `Add ${r.agent.name} to favorites`
+                "
+                :title="
+                  isAgentFavorite(favoriteKey(r.agent))
+                    ? 'Remove from favorites'
+                    : 'Add to favorites'
+                "
+                @click="toggleAgentFavorite(favoriteKey(r.agent))"
+              >
+                <Star
+                  class="size-3.5"
+                  :fill="isAgentFavorite(favoriteKey(r.agent)) ? 'currentColor' : 'none'"
+                />
+              </button>
             </div>
 
             <div class="detect-foot">

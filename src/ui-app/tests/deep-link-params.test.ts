@@ -305,7 +305,9 @@ describe("settings ?setting= deep-link (#0345)", () => {
     const scroll = Element.prototype.scrollIntoView as unknown as ReturnType<typeof vi.fn>;
     expect(scroll).toHaveBeenCalledTimes(1);
     expect((scroll.mock.contexts[0] as HTMLElement).id).toBe("setting-maxActiveTasks");
-    expect(replaceSpy).toHaveBeenCalledWith({ name: "settings" });
+    // After focusing, the ?setting= param is cleared but the ?tab= query is kept
+    // so the active tab survives the replace (#0402).
+    expect(replaceSpy).toHaveBeenCalledWith({ name: "settings", query: { tab: "general" } });
     wrapper.unmount();
   });
 
@@ -319,7 +321,9 @@ describe("settings ?setting= deep-link (#0345)", () => {
     const scroll = Element.prototype.scrollIntoView as unknown as ReturnType<typeof vi.fn>;
     expect(scroll).toHaveBeenCalledTimes(1);
     expect((scroll.mock.contexts[0] as HTMLElement).id).toBe("setting-maxActiveTasks");
-    expect(replaceSpy).toHaveBeenCalledWith({ name: "settings" });
+    // After focusing, the ?focus= param is cleared but the ?tab= query is kept
+    // so the active tab survives the replace (#0402).
+    expect(replaceSpy).toHaveBeenCalledWith({ name: "settings", query: { tab: "general" } });
     wrapper.unmount();
   });
 

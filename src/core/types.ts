@@ -99,6 +99,16 @@ export interface Task {
   needsInput: boolean;
   /** Machine-readable reason `needsInput` was set — see {@link NeedsInputReason}. Only meaningful while needsInput is true. */
   needsInputReason?: string;
+  /**
+   * Free-text detail for why `needsInput` was set — e.g. the actual CLI
+   * failure line for `dev-error`. Set alongside `needsInputReason` at the
+   * call sites that have a concrete string on hand; absent otherwise. The
+   * drawer's "waiting for you" banner shows this instead of only the generic
+   * per-reason label when present (#0405 follow-up: a human staring at
+   * "The agent exited with an error." with no detail and no next step had
+   * to go dig through the log to even see the error text).
+   */
+  needsInputDetail?: string;
   /** True when the task branch has drifted from main. Layered on `review`, never a status. */
   needsMerge: boolean;
   /** True when a no-op task opts out of the vacuous-handoff rejection. */
