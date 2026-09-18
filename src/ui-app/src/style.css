@@ -4855,6 +4855,23 @@
   margin-top: 2px;
   line-height: 1.5;
 }
+.agent-waiting-detail {
+  font-size: 11px;
+  color: var(--txt-faint);
+  font-family: "JetBrains Mono", monospace;
+  margin-top: 6px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+.agent-waiting-suggestion {
+  font-size: 11.5px;
+  color: var(--txt-dim);
+  margin-top: 8px;
+  line-height: 1.5;
+}
+.agent-waiting-action {
+  margin-top: 10px;
+}
 
 /* live run stats: time / tokens / cost (0080) */
 .agent-stats {

@@ -589,6 +589,7 @@ function diff(a: Task, b: Task): Partial<Task> {
     "type",
     "needsInput",
     "needsInputReason",
+    "needsInputDetail",
     "needsMerge",
     "agentOverride",
     "cliOverride",

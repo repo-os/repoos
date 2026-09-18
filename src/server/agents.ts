@@ -5153,17 +5153,20 @@ export class AgentRunner {
         dev_error_count:
           (typeof errCount === "number" && Number.isFinite(errCount) ? errCount : 0) + 1,
       };
+      const engine = session?.engine && session.engine !== "plain" ? ` (${session.engine})` : "";
+      const detail = this.lastFailureLine(session);
       if (current.needsInput) {
+        // A repeat error before the human cleared the flag — still refresh
+        // the detail so the banner shows the LATEST failure, not whichever
+        // one happened to trip needsInput first.
+        if (current.needsInputReason === "dev-error") current.needsInputDetail = detail;
         writeFileSync(task.absPath, serializeTask(current));
         return;
       }
       current.needsInput = true;
       current.needsInputReason = "dev-error";
-      const engine = session?.engine && session.engine !== "plain" ? ` (${session.engine})` : "";
-      recordChange(
-        current,
-        `agent exited with an error${engine} · ${this.lastFailureLine(session)}`,
-      );
+      current.needsInputDetail = detail;
+      recordChange(current, `agent exited with an error${engine} · ${detail}`);
       writeFileSync(task.absPath, serializeTask(current));
     } catch (err) {
       console.error(

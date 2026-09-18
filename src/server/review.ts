@@ -884,6 +884,7 @@ export class ReviewManager {
         patchTaskFile(this.config, task.absPath, {
           needsInput: true,
           needsInputReason: "review-failed",
+          needsInputDetail: error || undefined,
         });
         this.emit({
           type: "task.corrected",
