@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-18T18:47:56Z"
+review_passes: 4
 id: "0410"
 title: Fix mobile horizontal overflow on the landing page and VitePress docs site
 type: bug
@@ -9,8 +11,6 @@ assigned_to: ai
 created_by: ""
 branch: feat/fix-mobile-horizontal-overflow-on-the-la
 created_at: "2026-09-18T12:51:45Z"
-updated_at: "2026-09-18T18:46:38Z"
-review_passes: 3
 review_rounds: 1
 handoff_signal_retry_count: 2
 skill_suggestion: "0424"
@@ -57,3 +57,4 @@ Docs:
 - 2026-09-18T18:41:02Z · status active→review
 - 2026-09-18T18:41:03Z · status review→active
 - 2026-09-18T18:46:38Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+
