@@ -6035,11 +6035,16 @@
   border-radius: 50%;
   flex: none;
 }
+/* Fixed-width name, status and driver columns so every row's version starts
+   at the same x, table-style. */
 .detect-agent-name {
   font-weight: 600;
   font-size: 13.5px;
   white-space: nowrap;
   flex: none;
+  width: 8.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .detect-pill {
   font-size: 9.5px;
@@ -6049,6 +6054,24 @@
   font-family: "JetBrains Mono", monospace;
   white-space: nowrap;
   flex: none;
+  width: 6.5rem;
+}
+.detect-row > .detect-driver-yes,
+.detect-row > .detect-driver-no {
+  flex: none;
+  width: 8.25rem;
+  box-sizing: border-box;
+  text-align: center;
+}
+@media (max-width: 760px) {
+  /* Too narrow for four fixed columns: let version/update wrap below. */
+  .detect-row {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+  .detect-agent-name {
+    width: 7rem;
+  }
 }
 .detect-ver-inline {
   color: var(--txt-dim);
@@ -6056,6 +6079,38 @@
   font-family: "JetBrains Mono", monospace;
   white-space: nowrap;
   flex: none;
+}
+.detect-updates-btn {
+  margin-left: auto;
+}
+.detect-update-error {
+  color: var(--txt-faint);
+  font-size: 11px;
+  padding-top: 6px;
+}
+.detect-update-error {
+  color: var(--red);
+}
+.detect-update-detail {
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+.detect-update-detail summary {
+  cursor: pointer;
+  list-style: none;
+}
+.detect-update-detail summary::-webkit-details-marker {
+  display: none;
+}
+.detect-update-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--txt-faint);
+  margin-top: 4px;
+}
+.detect-update-reason {
+  color: var(--red);
 }
 .detect-hint-inline {
   display: flex;
@@ -6135,11 +6190,6 @@
   color: var(--txt-faint);
   font-size: 12px;
   padding: 14px 2px 16px;
-}
-.detect-foot {
-  display: flex;
-  justify-content: flex-end;
-  padding: 10px 0 12px;
 }
 
 /* ---------- clear design theme ---------- */

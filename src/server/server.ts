@@ -47,6 +47,7 @@
  *   GET  /api/agents/running   -> [{ id, pid, startedAt }] running agents
  *   GET  /api/agents/queued    -> [{ id, queuedAt }] agents waiting for a free maxConcurrentAgents slot
  *   GET  /api/agents/detect    -> { agents: [{ id, name, binary, installed, path, version, headless, drivable, installHint, auth, authHint?, capability? }] }
+ *   POST /api/agents/updates   -> { updates: { [id]: { status, source, checkedAt, ... } } }
  *   GET  /api/supervisor/status -> { ok, enabled, mode, latestHeartbeat } supervisor status
  *   GET  /api/supervisor/heartbeats -> { ok, heartbeats } recent supervisor heartbeats
  *   POST /api/supervisor/check-now -> { ok } run a supervisor check immediately
@@ -252,6 +253,7 @@ import {
   runningAgents,
   queuedAgents,
   detectInstalledAgents,
+  checkInstalledAgentUpdates,
   getAgentLogs,
   // Notifications
   testNotification,
@@ -1988,6 +1990,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/agents/running", runningAgents);
   router.register("GET", "/api/agents/queued", queuedAgents);
   router.register("GET", "/api/agents/detect", detectInstalledAgents);
+  router.register("POST", "/api/agents/updates", checkInstalledAgentUpdates);
   router.register("GET", /^\/api\/agents\/([^/]+)\/logs$/, getAgentLogs);
   router.register(
     "POST",

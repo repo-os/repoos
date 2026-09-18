@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
@@ -48,6 +48,7 @@ const tmpRoots: string[] = [];
 afterEach(() => {
   for (const r of tmpRoots) rmSync(r, { recursive: true, force: true });
   tmpRoots.length = 0;
+  vi.unstubAllGlobals();
 });
 
 function tmpDir(): string {
@@ -203,6 +204,45 @@ describe("GET /api/agents/detect", () => {
       process.env.PATH = oldPath;
       await server.close();
     }
+  });
+
+  describe("POST /api/agents/updates", () => {
+    it("does not fetch during detection, then checks only after explicit request", async () => {
+      const root = tmpDir();
+      const binDir = join(root, "node_modules", ".bin");
+      makeBin(binDir, "codex", "#!/bin/sh\necho 'codex v0.155.0'\n");
+      const server = await startServer({ root, host: "127.0.0.1", port: 0 });
+      const oldPath = process.env.PATH;
+      const nativeFetch = globalThis.fetch;
+      const fetchMock = vi.fn(async (url: string | URL, init?: RequestInit) => {
+        if (String(url).includes("registry.npmjs.org")) {
+          return new Response(JSON.stringify({ version: "0.156.0" }), { status: 200 });
+        }
+        return nativeFetch(url, init);
+      });
+      vi.stubGlobal("fetch", fetchMock);
+      try {
+        process.env.PATH = binDir;
+        await fetch(`${server.url}/api/agents/detect`);
+        expect(
+          fetchMock.mock.calls.filter(([url]) => String(url).includes("registry.npmjs.org")),
+        ).toHaveLength(0);
+        const res = await fetch(`${server.url}/api/agents/updates`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh: true }),
+        });
+        expect(res.status).toBe(200);
+        const body = (await res.json()) as { updates: Record<string, { status: string }> };
+        expect(body.updates.codex.status).toBe("update_available");
+        expect(
+          fetchMock.mock.calls.filter(([url]) => String(url).includes("registry.npmjs.org")),
+        ).toHaveLength(1);
+      } finally {
+        process.env.PATH = oldPath;
+        await server.close();
+      }
+    });
   });
 });
 
