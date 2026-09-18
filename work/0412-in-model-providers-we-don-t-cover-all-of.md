@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-18T13:14:51Z"
-review_passes: 1
 id: "0412"
 title: Add integrated coding agents to Model Providers
 type: feature
@@ -12,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/add-integrated-coding-agents-to-model-pr
 review_model_override: opencode-go/hy3
 created_at: "2026-09-18T12:54:04Z"
-dev_error_count: 1
+updated_at: "2026-09-18T13:13:46Z"
 ---
 ## Problem
 
@@ -58,7 +56,4 @@ In "Model Providers" we don't cover all of the coding agents yet, please add all
 - 2026-09-18T12:57:29Z · review_model_override
 - 2026-09-18T12:57:30Z · status inbox→ready
 - 2026-09-18T12:57:32Z · status ready→active, branch
-- 2026-09-18T12:58:57Z · agent exited with an error (copilot) · the agent process exited with an error — open the task to see the full output
-- 2026-09-18T13:10:42Z · needs_input
 - 2026-09-18T13:13:46Z · status active→review
-

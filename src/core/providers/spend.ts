@@ -25,7 +25,13 @@ export type ModelProviderId =
   | "opencode-go"
   | "cursor"
   | "opencode-zen"
-  | "deepinfra";
+  | "deepinfra"
+  | "claude-code"
+  | "qwen-code"
+  | "codex"
+  | "github-copilot"
+  | "antigravity"
+  | "kiro";
 
 /**
  * One row of the Model providers tab. `kind: "live"` rows have a real spend
@@ -87,6 +93,60 @@ export const MODEL_PROVIDERS: ModelProviderRow[] = [
     kind: "link",
     dashboardUrl: "https://deepinfra.com/dash/billing",
     note: "No public billing/usage API — credit balance lives in the DeepInfra dashboard.",
+    envVar: null,
+    configKey: null,
+  },
+  {
+    id: "claude-code",
+    label: "Claude Code",
+    kind: "link",
+    dashboardUrl: "https://claude.ai/settings/usage",
+    note: "Subscription usage and limits live in the Claude usage settings.",
+    envVar: null,
+    configKey: null,
+  },
+  {
+    id: "qwen-code",
+    label: "Qwen Code",
+    kind: "link",
+    dashboardUrl: "https://chat.qwen.ai/",
+    note: "No provider usage API — account and plan details live in the Qwen console.",
+    envVar: null,
+    configKey: null,
+  },
+  {
+    id: "codex",
+    label: "Codex",
+    kind: "link",
+    dashboardUrl: "https://chatgpt.com/codex/settings",
+    note: "Codex subscription and usage details live in the ChatGPT Codex settings.",
+    envVar: null,
+    configKey: null,
+  },
+  {
+    id: "github-copilot",
+    label: "GitHub Copilot",
+    kind: "link",
+    dashboardUrl: "https://github.com/settings/copilot",
+    note: "Copilot plan, usage, and billing details live in GitHub settings.",
+    envVar: null,
+    configKey: null,
+  },
+  {
+    id: "antigravity",
+    label: "Antigravity",
+    kind: "link",
+    dashboardUrl: "https://antigravity.google/",
+    note: "No individual usage API — Antigravity account details live in its official console.",
+    envVar: null,
+    configKey: null,
+  },
+  {
+    id: "kiro",
+    label: "Kiro",
+    kind: "link",
+    dashboardUrl: "https://app.kiro.dev/account",
+    note: "Kiro credits and subscription details live in the Kiro account console.",
     envVar: null,
     configKey: null,
   },

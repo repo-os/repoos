@@ -113,7 +113,7 @@ describe("readProviderKey", () => {
 });
 
 describe("GET /api/model-providers", () => {
-  it("lists all five rows with hasKey booleans and never any key material", async () => {
+  it("lists all provider rows with hasKey booleans and never any key material", async () => {
     const root = tmpRoot();
     process.env.REPOOS_OPENROUTER_API_KEY = "sk-or-v1-secret-value";
     const ctx = makeCtx(root);
@@ -126,6 +126,12 @@ describe("GET /api/model-providers", () => {
       "cursor",
       "opencode-zen",
       "deepinfra",
+      "claude-code",
+      "qwen-code",
+      "codex",
+      "github-copilot",
+      "antigravity",
+      "kiro",
     ]);
     const openrouter = capture.body.providers.find((p: { id: string }) => p.id === "openrouter");
     expect(openrouter.hasKey).toBe(true);
