@@ -124,12 +124,13 @@ function installFetch(holdPreview: boolean) {
 
 async function mountDrawer(
   pinia: ReturnType<typeof createPinia>,
+  task: Task = makeTask(),
 ): Promise<ReturnType<typeof mount>> {
   const router = createRouter({ history: createMemoryHistory(), routes: [] });
   await router.push("/");
   await router.isReady();
   const ui = useUiStore();
-  ui.open(makeTask());
+  ui.open(task);
   const wrapper = mount(TaskDrawer, {
     global: {
       plugins: [pinia, router],
@@ -190,6 +191,37 @@ describe("preview start feedback (#0374)", () => {
     await flush();
     expect(wrapper.find(".preview-progress").exists()).toBe(false);
     expect(startButton(wrapper)?.text()).toContain("Start preview");
+  });
+
+  it("omits the target name from the in-flight start label", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    clearFetchState = installFetch(true);
+    const repo = useRepoStore();
+    await repo.init();
+    const wrapper = await mountDrawer(
+      pinia,
+      makeTask({
+        previewTargets: [
+          { name: "Docs", areas: ["web"] },
+          { name: "App", areas: ["web"] },
+        ],
+      }),
+    );
+
+    const btn = startButton(wrapper);
+    expect(btn, "Start preview button should render for a multi-target task").toBeTruthy();
+    await btn!.trigger("click");
+    await flush();
+
+    const progress = wrapper.find(".preview-progress");
+    expect(progress.exists()).toBe(true);
+    expect(progress.text()).toContain("Starting preview…");
+    expect(progress.text()).not.toContain("Docs");
+    expect(progress.text()).not.toContain("App");
+
+    clearFetchState!();
+    await flush();
   });
 
   it("clears immediately for a fast start (no artificial minimum)", async () => {
