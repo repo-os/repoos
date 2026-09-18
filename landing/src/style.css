@@ -222,6 +222,11 @@ body {
   align-items: center;
   gap: 12px;
   min-width: 0;
+  /* `max-width` alone leaves an auto-sized flex box vulnerable to an
+     over-wide child establishing its used width. Bound the shell itself so
+     the command's own scroll region—not the page—owns long install strings. */
+  inline-size: min(100%, 640px);
+  max-inline-size: 100%;
   background: var(--code-bg);
   border: 1px solid var(--border-bright);
   border-radius: 12px;
@@ -231,7 +236,8 @@ body {
   max-width: 640px;
 }
 .install-command-scroll {
-  min-width: 0;
+  min-inline-size: 0;
+  max-inline-size: 100%;
   flex: 1 1 auto;
   overflow-x: auto;
   overscroll-behavior-x: contain;
