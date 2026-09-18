@@ -180,12 +180,12 @@ describe("preview target identity (#0379)", () => {
     expect(chip.text()).toBe("docs");
   });
 
-  it("offers a picker when several targets match and preselects the top-ranked one", async () => {
+  it("offers a picker for active tasks when several targets exist and preselects the top-ranked one", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const calls: Array<{ target?: string }> = [];
     const task = makeTask({
-      status: "review",
+      status: "active",
       previewTargets: [
         { name: "App", areas: ["web"] },
         { name: "Web v2", areas: ["web"] },
@@ -207,8 +207,6 @@ describe("preview target identity (#0379)", () => {
 
     await select.setValue("Web v2");
     await flush();
-    expect(startButton(wrapper)?.attributes("disabled")).toBeUndefined();
-
     await startButton(wrapper)!.trigger("click");
     await flush();
     expect(calls).toEqual([{ target: "Web v2" }]);

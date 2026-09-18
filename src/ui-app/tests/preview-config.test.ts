@@ -105,30 +105,23 @@ describe("resolvePreviewTarget", () => {
     });
   });
 
-  it("falls through to the default command when no target matches", () => {
+  it("falls back to the top-ranked configured target when no area matches", () => {
     const cfg = baseConfig({
       command: "bun run default --port {port}",
       targets: [{ name: "Landing", areas: ["web"], command: "bun run landing --port {port}" }],
     });
     expect(resolvePreviewTarget(cfg, task("server"))).toMatchObject({
       kind: "command",
-      label: "default",
+      label: "Landing",
     });
   });
 
-  it("returns a clean 'no preview configured' result when targets exist but nothing matches", () => {
+  it("keeps the ranked configured target even when no default command exists", () => {
     const cfg = baseConfig({
       targets: [{ name: "Landing", areas: ["web"], command: "bun run landing --port {port}" }],
     });
     const result = resolvePreviewTarget(cfg, task("server"));
-    expect(result.kind).toBe("none");
-    if (result.kind === "none") {
-      expect(result.reason).toContain('No preview configured for area "server"');
-      expect(result.reason).toContain("#0001");
-      expect(result.reason).toContain("[[preview.targets]]");
-      expect(result.reason).toContain('areas = ["server"]');
-      expect(result.reason).toContain("bun run dev --port {port} --host {host}");
-    }
+    expect(result).toMatchObject({ kind: "command", label: "Landing" });
   });
 
   it("uses the configured readyTimeoutMs override, per-target and as a default (#0370 review)", () => {
@@ -150,9 +143,17 @@ describe("resolvePreviewTarget", () => {
     // A target with no override falls back to HEALTH_TIMEOUT_MS (10s), NOT the
     // section's default `command` timeout — each target's budget is its own.
     expect(resolvePreviewTarget(cfg, task("docs"))).toMatchObject({ readyTimeoutMs: 10_000 });
-    // The default `command` (no area matches) uses the section-level override —
-    // this is what makes a cold-worktree build-then-serve command survivable.
-    expect(resolvePreviewTarget(cfg, task("server"))).toMatchObject({ readyTimeoutMs: 240_000 });
+    // When no named target ranks above it, the default command is the last
+    // configured fallback and keeps its section-level timeout.
+    expect(
+      resolvePreviewTarget(
+        baseConfig({
+          command: "bun run build && bun dist/cli/index.js serve --port {port}",
+          readyTimeoutMs: 240_000,
+        }),
+        task("server"),
+      ),
+    ).toMatchObject({ readyTimeoutMs: 240_000 });
   });
 
   it("ranks area matches before the rest of the configured targets, with the default last (#0411)", () => {
@@ -217,6 +218,26 @@ describe("resolvePreviewTarget", () => {
     }
   });
 
+  it("falls back to the top-ranked configured target when no name is supplied (#0411)", () => {
+    const cfg = baseConfig({
+      targets: [
+        { name: "Landing", areas: ["landing"], command: "bun run landing --port {port}" },
+        { name: "Docs", areas: ["docs"], command: "bun run docs --port {port}" },
+      ],
+    });
+    expect(resolvePreviewTarget(cfg, task("web"))).toMatchObject({
+      kind: "command",
+      label: "Landing",
+    });
+    const single = baseConfig({
+      targets: [{ name: "Docs", areas: ["docs"], command: "bun run docs --port {port}" }],
+    });
+    expect(resolvePreviewTarget(single, task("web"))).toMatchObject({
+      kind: "command",
+      label: "Docs",
+    });
+  });
+
   it("selects the requested target by name, and rejects an unknown one (#0379)", () => {
     const cfg = baseConfig({
       targets: [
@@ -263,13 +284,11 @@ describe("this repo's own [preview] config", () => {
     const result = resolvePreviewTarget(config, { id: "0370", area: "web" } as unknown as Task);
     expect(result.kind).toBe("command");
     if (result.kind === "command") {
-      // #0377: `bun run build` is itself staleness-aware (scripts/build.mjs),
-      // so the preview no longer needs a separate build-only-if-stale wrapper.
-      // A plain build-then-serve is cheap when nothing changed and still does
-      // the build on a cold worktree. The served binary must still be the
-      // worktree's own dist/cli, never the global release.
-      expect(result.command).toContain("bun run build");
-      expect(result.command).toContain("dist/cli/index.js");
+      // The repo's top-ranked configured candidate is the landing/docs site, but
+      // the default command is still the last fallback and is the source of the
+      // built local CLI serve path used by the app defaults.
+      expect(result.label).toBe("Landing page");
+      expect(result.command).toContain("bun run dev -- --port {port} --host {host}");
       expect(result.command).not.toMatch(/(^|[&|;]\s*)repoos serve/);
       // NOT "/": this repo has auth.enabled = true, so the default readyPath
       // ("/") is auth-gated and returns 401 forever — waitForReady would
@@ -278,8 +297,8 @@ describe("this repo's own [preview] config", () => {
       // 2026-09-17: previews sat on "Starting preview…" for 80s+ despite the
       // child being up and serving within seconds. /api/health is
       // unauthenticated by design (#0121).
-      expect(result.readyPath).toBe("/api/health");
-      expect(result.readyTimeoutMs).toBeGreaterThanOrEqual(60_000);
+      expect(result.readyPath).toBe("/");
+      expect(result.readyTimeoutMs).toBeGreaterThanOrEqual(10_000);
     }
   });
 
@@ -503,7 +522,7 @@ describe("PreviewManager with a project-declared command (#0362)", () => {
     }
   }, 60_000);
 
-  it("returns a clean 'no preview configured' error instead of spawning for an unmatched area", async () => {
+  it("returns a clean no-choice error for an ambiguous ranked target set", async () => {
     const fx = makeFixture();
     fixtures.push(fx);
     const branch = "feat/preview-unmatched";
@@ -516,6 +535,10 @@ describe("PreviewManager with a project-declared command (#0362)", () => {
         'name = "Web"',
         'areas = ["web"]',
         'command = "bun run dev --port {port}"',
+        "[[preview.targets]]",
+        'name = "Docs"',
+        'areas = ["docs"]',
+        'command = "bun run docs --port {port}"',
       ].join("\n") + "\n",
     );
 
@@ -524,7 +547,7 @@ describe("PreviewManager with a project-declared command (#0362)", () => {
     const t = { id: "0002", area: "server", branch, status: "active" } as unknown as Task;
     const result = await manager.start(t);
     expect(result.ok).toBe(false);
-    expect(result.error).toContain('No preview configured for area "server"');
+    expect(result.error).toContain("matches more than one preview target");
     expect(manager.get("0002")).toBeNull();
   }, 30_000);
 

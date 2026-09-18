@@ -301,16 +301,12 @@ export function resolvePreviewTarget(
     return {
       kind: "none",
       reason:
-        `No preview target named "${targetName}" matches area "${area}" (#${task.id}).` +
+        `No preview target named "${targetName}" is configured for area "${area}" (#${task.id}).` +
         (names ? ` Available targets: ${names}.` : ""),
     };
   }
 
-  const areaMatch = allTargets.find((c) =>
-    c.areas.some((a) => a.trim().toLowerCase() === (task.area ?? "").trim().toLowerCase()),
-  );
-  if (areaMatch) return areaMatch.target;
-  if (defaultTarget) return defaultTarget.target;
+  if (candidates.length) return candidates[0]!.target;
   return { kind: "none", reason: noPreviewReason(task, "") };
 }
 

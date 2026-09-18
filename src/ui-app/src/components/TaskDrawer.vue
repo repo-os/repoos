@@ -3020,15 +3020,20 @@ watch(
             <span class="mono">{{ ui.active.branch }}</span
             >.
           </p>
-          <div v-else-if="ui.active.status === 'review' && !ui.active.preview" class="quickbar-row">
+          <div
+            v-else-if="
+              (ui.active.status === 'active' || ui.active.status === 'review') && !ui.active.preview
+            "
+            class="quickbar-row"
+          >
             <p class="preview-hint">
               <template v-if="previewTargetChoiceRequired">
-                This task's area matches more than one preview target — choose which to serve.
+                Choose which preview target to serve.
               </template>
               <template v-else> No preview running. </template>
             </p>
-            <!-- #0379: when several targets match the task's area, make the
-                 choice explicit rather than silently serving the first one. -->
+            <!-- #0379: when several configured targets exist, make the choice
+                 explicit rather than silently serving the first one. -->
             <select
               v-if="previewTargetChoiceRequired"
               v-model="previewTarget"
@@ -3036,7 +3041,6 @@ watch(
               :disabled="ui.saving || isPreviewBusyForActive"
               aria-label="Preview target"
             >
-              <option :value="null" disabled>Choose target…</option>
               <option v-for="t in previewTargets" :key="t.name" :value="t.name">
                 {{ t.name }}
               </option>
