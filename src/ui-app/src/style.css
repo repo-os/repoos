@@ -5960,11 +5960,16 @@
   border-radius: 50%;
   flex: none;
 }
+/* Fixed-width name, status and driver columns so every row's version starts
+   at the same x, table-style. */
 .detect-agent-name {
   font-weight: 600;
   font-size: 13.5px;
   white-space: nowrap;
   flex: none;
+  width: 8.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .detect-pill {
   font-size: 9.5px;
@@ -5974,6 +5979,23 @@
   font-family: "JetBrains Mono", monospace;
   white-space: nowrap;
   flex: none;
+  width: 6.5rem;
+}
+.detect-row > .agent-badge {
+  flex: none;
+  width: 8.25rem;
+  box-sizing: border-box;
+  text-align: center;
+}
+@media (max-width: 760px) {
+  /* Too narrow for four fixed columns: let version/update wrap below. */
+  .detect-row {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+  .detect-agent-name {
+    width: 7rem;
+  }
 }
 .detect-ver-inline {
   color: var(--txt-dim);
@@ -5985,8 +6007,7 @@
 .detect-updates-btn {
   margin-left: auto;
 }
-.detect-update-error,
-.detect-checked-note {
+.detect-update-error {
   color: var(--txt-faint);
   font-size: 11px;
   padding-top: 6px;
@@ -6093,11 +6114,6 @@
   color: var(--txt-faint);
   font-size: 12px;
   padding: 14px 2px 16px;
-}
-.detect-foot {
-  display: flex;
-  justify-content: flex-end;
-  padding: 10px 0 12px;
 }
 
 /* ---------- clear design theme ---------- */

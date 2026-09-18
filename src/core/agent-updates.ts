@@ -11,6 +11,7 @@ export interface UpdateSource {
   url: string;
   packageName?: string;
   formula?: string;
+  cask?: string;
   owner?: string;
   repo?: string;
   updateCommand?: string | null;
@@ -56,9 +57,10 @@ const GITHUB_RELEASES: Record<string, { owner: string; repo: string }> = {
 /** Parse only ordinary numeric semantic versions. Opaque vendor versions stay incomparable. */
 export function parseSemver(value: string | null): [number, number, number] | null {
   if (!value) return null;
+  // A trailing sentence period is tolerated: `GitHub Copilot CLI 1.0.86.`
   const match = value
     .trim()
-    .match(/(?:^|[^\d])v?(\d+)\.(\d+)\.(\d+)(?:\.\d+)*(?:[-+][0-9A-Za-z.-]+)?(?:\s|$)/);
+    .match(/(?:^|[^\d])v?(\d+)\.(\d+)\.(\d+)(?:\.\d+)*(?:[-+][0-9A-Za-z.-]+)?\.?(?:\s|$)/);
   if (!match) return null;
   const major = Number(match[1]);
   // Date-style vendor releases (for example 2026.09.18) are not ordered as semver.
@@ -89,8 +91,20 @@ function npmSource(agent: DetectedAgent, path: string): UpdateSource | null {
 }
 
 function homebrewSource(agent: DetectedAgent, path: string): UpdateSource | null {
-  const formula = HOMEBREW_FORMULAS[agent.id];
-  if (!formula || !/(^|\/)(Cellar|Caskroom|homebrew|linuxbrew)(\/|$)/i.test(path)) return null;
+  // The resolved install path names the package itself: Homebrew keeps casks
+  // at .../Caskroom/<cask>/<version>/ and formulae at .../Cellar/<formula>/<version>/.
+  const cask = /\/Caskroom\/([^/]+)\//.exec(path)?.[1];
+  if (cask) {
+    return {
+      kind: "homebrew",
+      label: `Homebrew cask (${cask})`,
+      url: `https://formulae.brew.sh/api/cask/${encodeURIComponent(cask)}.json`,
+      cask,
+      updateCommand: `brew upgrade --cask ${cask}`,
+    };
+  }
+  const formula = /\/Cellar\/([^/]+)\//.exec(path)?.[1] ?? HOMEBREW_FORMULAS[agent.id];
+  if (!formula || !/(^|\/)(Cellar|homebrew|linuxbrew)(\/|$)/i.test(path)) return null;
   return {
     kind: "homebrew",
     label: `Homebrew (${formula})`,
@@ -102,7 +116,9 @@ function homebrewSource(agent: DetectedAgent, path: string): UpdateSource | null
 
 function githubSource(agent: DetectedAgent, path: string): UpdateSource | null {
   const release = GITHUB_RELEASES[agent.id];
-  if (!release || !/(^|\/)(goose|\.local)(\/|$)/i.test(path)) return null;
+  if (!release || !/(^|\/)(\.local|goose\/(?:bin|current|target))(\/|$)/i.test(path)) {
+    return null;
+  }
   return {
     kind: "github",
     label: `GitHub (${release.owner}/${release.repo})`,
@@ -129,6 +145,10 @@ function versionFromPayload(source: UpdateSource, payload: unknown): string | nu
   if (!payload || typeof payload !== "object") return null;
   const data = payload as Record<string, unknown>;
   if (source.kind === "npm" && typeof data.version === "string") return data.version;
+  if (source.kind === "homebrew" && source.cask) {
+    // Cask versions can carry a build suffix after a comma ("1.2.3,abc123").
+    return typeof data.version === "string" ? (data.version.split(",")[0] ?? null) : null;
+  }
   if (source.kind === "homebrew") {
     return typeof data.versions === "object" &&
       data.versions !== null &&

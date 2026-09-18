@@ -28,10 +28,11 @@ CLI is signed in and the exact command to authenticate.
 Use **Check for updates** in the Detected Coding Agents tab when you want to
 compare installed versions. RepoOS does not check the network during startup or
 ordinary detection, and it never installs or upgrades a CLI. On demand it uses
-only a source it can establish from the binary path (currently npm, Homebrew,
-or an official GitHub release endpoint); otherwise the row says **check
-manually**. Results are cached for six hours and show the source and checked
-time. A copyable upgrade command appears only when the source provides a
+only a source it can establish from the binary path (currently npm, a Homebrew
+formula or cask, or an official GitHub release endpoint); otherwise the row says
+**check manually**. Results are cached for six hours and show the source and
+checked time. After the first check the button becomes **Refresh update
+checks**, which re-scans PATH and bypasses the cache. A copyable upgrade command appears only when the source provides a
 matching safe command; you must run it yourself. Registry failures, timeouts,
 and opaque vendor versions remain per-agent **could not check** or **check
 manually** states rather than hiding the detected-agent list.

@@ -411,6 +411,17 @@ async function checkAgents(): Promise<void> {
   }
 }
 
+/**
+ * The panel's single action. The first click checks for updates; after that
+ * it re-probes PATH too (so a just-installed or upgraded CLI shows up) and
+ * bypasses the 6h update cache.
+ */
+async function refreshDetected(): Promise<void> {
+  const refresh = Object.keys(updates.value).length > 0;
+  if (refresh) await checkAgents();
+  await checkForUpdates(refresh);
+}
+
 async function checkForUpdates(refresh = false): Promise<void> {
   updateLoading.value = true;
   updateError.value = false;
@@ -432,20 +443,20 @@ async function checkForUpdates(refresh = false): Promise<void> {
 }
 
 function updateLabel(update: AgentUpdate | undefined): string {
-  if (!update) return "not checked";
-  if (update.status === "up_to_date") return "up to date";
+  if (!update) return "Not checked";
+  if (update.status === "up_to_date") return "Up to date";
   if (update.status === "update_available") {
     return `Update available: ${update.installedVersion} → ${update.latestVersion}`;
   }
-  if (update.status === "unavailable") return "could not check";
-  return "check manually";
+  if (update.status === "unavailable") return "Could not check";
+  return "Check manually";
 }
 
 function updateColor(update: AgentUpdate | undefined): string {
   if (update?.status === "update_available") return "var(--amber)";
   if (update?.status === "up_to_date") return "var(--green)";
   if (update?.status === "unavailable") return "var(--red)";
-  return "var(--muted)";
+  return "var(--txt-dim)";
 }
 
 function checkedLabel(update: AgentUpdate | undefined): string {
@@ -842,11 +853,11 @@ onUnmounted(() => {
               size="sm"
               class="detect-updates-btn"
               :disabled="updateLoading || detectLoading"
-              @click="checkForUpdates(Object.keys(updates).length > 0)"
+              @click="refreshDetected"
             >
               {{
-                updateLoading
-                  ? "Checking for updates…"
+                updateLoading || detectLoading
+                  ? "Checking…"
                   : Object.keys(updates).length > 0
                     ? "Refresh update checks"
                     : "Check for updates"
@@ -961,15 +972,6 @@ onUnmounted(() => {
                   :fill="isAgentFavorite(favoriteKey(r.agent)) ? 'currentColor' : 'none'"
                 />
               </button>
-            </div>
-
-            <div class="detect-foot">
-              <Button variant="outline" size="sm" :disabled="detectLoading" @click="checkAgents">
-                {{ detectLoading ? "Checking…" : "Check again" }}
-              </Button>
-              <span v-if="Object.keys(updates).length" class="detect-checked-note">
-                Update results are cached for 6 hours; check again to refresh.
-              </span>
             </div>
           </template>
         </div>

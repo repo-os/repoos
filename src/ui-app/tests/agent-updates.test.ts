@@ -34,6 +34,7 @@ describe("safe version comparison", () => {
   it("compares ordinary semver and ignores opaque or date-style versions", () => {
     expect(parseSemver("codex v0.155.0")).toEqual([0, 155, 0]);
     expect(parseSemver("1.2.3.4")).toEqual([1, 2, 3]);
+    expect(parseSemver("GitHub Copilot CLI 1.0.86.")).toEqual([1, 0, 86]);
     expect(compareSemver("v1.2.0", "1.10.0")).toBe(-1);
     expect(compareSemver("2026.09.18", "2026.10.01")).toBeNull();
     expect(compareSemver("build-2026-09-18", "1.0.0")).toBeNull();
@@ -56,6 +57,26 @@ describe("update source adapters", () => {
     expect(
       resolveUpdateSource(agent({ id: "goose", path: "/Users/me/.local/bin/goose" })),
     ).toMatchObject({ kind: "github", repo: "goose" });
+    expect(
+      resolveUpdateSource(agent({ id: "goose", path: "/Users/me/goose-tools/bin/goose" })),
+    ).toBeNull();
+
+    // Casks and formulae are named by their install path, not a fixed table.
+    expect(
+      resolveUpdateSource(
+        agent({ id: "claude-code", path: "/opt/homebrew/Caskroom/claude-code/2.1.267/claude" }),
+      ),
+    ).toMatchObject({
+      kind: "homebrew",
+      cask: "claude-code",
+      url: "https://formulae.brew.sh/api/cask/claude-code.json",
+      updateCommand: "brew upgrade --cask claude-code",
+    });
+    expect(
+      resolveUpdateSource(
+        agent({ id: "opencode", path: "/opt/homebrew/Cellar/opencode/1.0/bin/x" }),
+      ),
+    ).toMatchObject({ kind: "homebrew", formula: "opencode" });
   });
 
   it("parses adapter-specific stable version fields", () => {
@@ -64,6 +85,9 @@ describe("update source adapters", () => {
     const github: UpdateSource = { kind: "github", label: "github", url: "" };
     expect(parseLatestVersion(npm, { version: "1.2.3" })).toBe("1.2.3");
     expect(parseLatestVersion(brew, { versions: { stable: "2.0.0" } })).toBe("2.0.0");
+    const cask: UpdateSource = { kind: "homebrew", label: "cask", url: "", cask: "codex" };
+    expect(parseLatestVersion(cask, { version: "0.156.0" })).toBe("0.156.0");
+    expect(parseLatestVersion(cask, { version: "1.2.3,abc123" })).toBe("1.2.3");
     expect(parseLatestVersion(github, { tag_name: "v3.0.0" })).toBe("v3.0.0");
   });
 });
@@ -109,5 +133,15 @@ describe("fail-soft update checks", () => {
     expect(first.codex.status).toBe("update_available");
     expect(second.codex.status).toBe("update_available");
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("refreshes an expired cached result", async () => {
+    const fetchMock = vi.fn(
+      async () => new Response(JSON.stringify({ version: "0.156.0" }), { status: 200 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    await checkAgentUpdates([agent()], false, 1000);
+    await checkAgentUpdates([agent()], false, 1000 + 6 * 60 * 60 * 1000 + 1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
