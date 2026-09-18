@@ -3,16 +3,22 @@ id: "0401"
 title: Add board view toggle to Inputs page
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-board-view-toggle-to-inputs-page
-model_override: auto
-review_cli_override: cursor
-review_model_override: auto
+cli_override: github copilot
+model_override: default
+review_cli_override: github copilot
+review_model_override: default
 created_at: "2026-09-18T04:26:52Z"
-updated_at: "2026-09-18T04:44:17Z"
+updated_at: "2026-09-18T04:54:04Z"
+review_rounds: 1
+review_passes: 1
+handoff_signal_retry_count: 1
 ---
 ## Problem
 
@@ -62,4 +68,13 @@ Add a board view toggle to inputs page (currently there's only a list view). Do 
 - 2026-09-18T04:31:58Z · review_model_override
 - 2026-09-18T04:32:14Z · status inbox→ready
 - 2026-09-18T04:33:09Z · status ready→active, branch
-- 2026-09-18T04:44:17Z · status active→review
+- 2026-09-18T04:44:18Z · status active→review
+- 2026-09-18T04:45:34Z · status review→active
+- 2026-09-18T04:49:05Z · status active→review
+- 2026-09-18T04:49:06Z · status review→active
+- 2026-09-18T04:49:12Z · needs_input
+- 2026-09-18T04:53:20Z · cli_override, model_override
+- 2026-09-18T04:53:24Z · cli_override
+- 2026-09-18T04:53:43Z · cli_override
+- 2026-09-18T04:53:56Z · review_cli_override, review_model_override
+- 2026-09-18T04:54:04Z · status active→review

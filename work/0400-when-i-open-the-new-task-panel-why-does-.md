@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-18T03:59:03Z"
-review_passes: 1
 id: "0400"
 title: "New task panel: show PM's real model (not Default) and pin close button upper-right"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
@@ -16,6 +14,7 @@ pm_model_override: auto
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-09-18T03:42:22Z"
+updated_at: "2026-09-18T04:37:37Z"
 ---
 ## Problem
 
@@ -146,4 +145,4 @@ when I open the "New task" panel why does it show the agent as "opencode + Defau
 - 2026-09-18T03:50:46Z · review_model_override
 - 2026-09-18T03:50:48Z · status ready→active, branch
 - 2026-09-18T03:56:48Z · status active→review
-
+- 2026-09-18T04:37:37Z · status review→done, release:success

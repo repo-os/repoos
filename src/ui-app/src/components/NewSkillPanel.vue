@@ -184,8 +184,10 @@ watch(freeformLines, () => {
       <div class="drawer-resize" @mousedown.prevent="ui.startResize"></div>
 
       <div class="drawer-head">
-        <DialogTitle>New skill</DialogTitle>
-        <DialogDescription class="sr-only">Create a new skill</DialogDescription>
+        <div class="drawer-head-title">
+          <DialogTitle>New skill</DialogTitle>
+          <DialogDescription class="sr-only">Create a new skill</DialogDescription>
+        </div>
         <DialogClose class="close-x">
           <X class="size-[15px]" />
         </DialogClose>
