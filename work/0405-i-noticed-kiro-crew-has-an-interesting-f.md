@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-18T10:02:22Z"
-review_passes: 1
 id: "0405"
 title: Auto-suggest reusable skills from completed task sessions
 type: feature
@@ -15,6 +13,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-09-18T06:54:58Z"
+updated_at: "2026-09-18T09:59:20Z"
 handoff_signal_retry_count: 1
 dev_error_count: 3
 ---
@@ -96,4 +95,3 @@ Analyze each completed session and draft a reusable SKILL.md when a non-trivial 
 - 2026-09-18T09:08:36Z · needs_input
 - 2026-09-18T09:59:10Z · review_cli_override, review_model_override
 - 2026-09-18T09:59:18Z · status active→review
-

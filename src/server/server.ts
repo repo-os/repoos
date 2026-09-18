@@ -124,6 +124,7 @@ import { handoffTask, scheduleCheckFailureRetry, scheduleMergeConflictRetry } fr
 import { guardReviewTransition } from "./review-guard.js";
 import { PreviewManager, probePreview } from "./preview.js";
 import { ReviewManager } from "./review.js";
+import { SkillSuggestionManager, markOriginTask } from "./skill-suggestions.js";
 import { TestRunManager } from "./test-run.js";
 import { TaskCheckManager, type TaskCheckListener } from "./task-check.js";
 import { CTOManager } from "./cto.js";
@@ -1371,6 +1372,26 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const runReviewRecovery = (): void => reviews.recoverInterruptedReviews(index.getTasks());
   void indexReady.then(runReviewRecovery, runReviewRecovery).catch(() => {});
 
+  // Skill suggestions (#0405): when a task lands in `review` (or `done` when
+  // review was skipped), analyse its completed session and, if a non-trivial
+  // reusable procedure was performed, create ONE `New Skill Suggestion: …` task
+  // for human review. On by default; `skillSuggestions: false` disables it.
+  const skillSuggestions = new SkillSuggestionManager({
+    config,
+    getTranscript: (taskId) => runner.output(taskId)?.lines ?? [],
+    createTask: (input) => {
+      const created = repoos.createTask(input);
+      index.applyFileChange(created.absPath);
+      commitTaskFile(config.root, created.absPath, `docs(${created.id}): add task`);
+      return created;
+    },
+    markOrigin: (origin, suggestionId) => {
+      markOriginTask(config, origin, suggestionId);
+      index.applyFileChange(origin.absPath);
+    },
+    logger,
+  });
+
   // The CTO agent (0174): always-on board monitor that detects stuck tasks,
   // stale reviews, and broken builds, then nudges agents or escalates to the human.
   const cto = new CTOManager(config, emitEvent, runner);
@@ -1649,9 +1670,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     notifyStatusChange(config, e.task, prev, e.task.status);
     // Every route into `review` — a board drag, the drawer, an agent editing
     // its own task file — surfaces here, so this is the one place the agent
-    // review needs to hang off.
+    // review needs to hang off. `done` is included so a task that skipped
+    // review still gets the skill-suggestion pass (#0405); the pass is
+    // idempotent per originating task, so review→done fires it only once.
     if (e.task.status === "review") {
       startReview(e.task);
+      skillSuggestions.maybeSuggest(e.task);
+    } else if (e.task.status === "done") {
+      skillSuggestions.maybeSuggest(e.task);
     }
   });
 

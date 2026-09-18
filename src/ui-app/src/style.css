@@ -3601,6 +3601,28 @@
   margin-top: 8px;
   line-height: 1.5;
 }
+.skill-suggestion-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-solid);
+  color: var(--cyan);
+  font-size: 11px;
+  font-family: "JetBrains Mono", monospace;
+  cursor: pointer;
+  text-align: left;
+}
+.skill-suggestion-note::before {
+  content: "✦";
+  color: var(--violet);
+}
+.skill-suggestion-note:hover {
+  border-color: var(--cyan);
+}
 .review-toolbar {
   display: flex;
   align-items: center;
