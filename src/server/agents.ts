@@ -3042,7 +3042,7 @@ export function runPrompt(
       });
     }, timeoutMs);
 
-    const done = (): void => {
+    const done = (exitCode: number | null, signal: NodeJS.Signals | null): void => {
       clearTimeout(timer);
       const elapsedMs = Date.now() - startedAt;
       // Flush a trailing line with no final newline so nothing is held back.
@@ -3066,6 +3066,17 @@ export function runPrompt(
         cacheCreationTokens: usage.cacheCreationTokens,
         turns: usage.turns,
       };
+      if (exitCode !== 0 || signal) {
+        const detail = stderr ? stderr.split("\n").slice(-3).join(" ").trim() : "no stderr output";
+        const termination = signal ? `signal ${signal}` : `code ${exitCode ?? "unknown"}`;
+        const hint = agent.cli === "antigravity" ? antigravityErrorHint(stderr) : null;
+        resolve({
+          ok: false,
+          error: `${cmd} exited with ${termination}: ${detail}${hint ? ` ${hint}` : ""}`,
+          ...usageFields,
+        });
+        return;
+      }
       if (agent.cli === "antigravity" && output) {
         try {
           const parsed: unknown = JSON.parse(output);
@@ -3115,7 +3126,7 @@ export function runPrompt(
     };
     // `close` (not `exit`) fires only after stdio has drained, so a trailing
     // line with no final newline is still readable when we flush it.
-    proc.on("close", () => done());
+    proc.on("close", (code, signal) => done(code, signal));
     proc.on("error", (err) => {
       clearTimeout(timer);
       resolve({ ok: false, error: `could not launch ${cmd}: ${err.message}` });
@@ -3135,6 +3146,8 @@ export function oneShotResultFromLog(
   outLog: string,
   errLog: string,
   elapsedMs: number,
+  exitCode?: number | null,
+  commandName = "agent",
 ): PromptResult {
   const rawOut = existsSync(outLog) ? readFileSync(outLog, "utf8") : "";
   const rawErr = existsSync(errLog) ? readFileSync(errLog, "utf8") : "";
@@ -3155,6 +3168,14 @@ export function oneShotResultFromLog(
     cacheCreationTokens: usage.cacheCreationTokens,
     turns: usage.turns,
   };
+  if (exitCode !== undefined && exitCode !== 0) {
+    const detail = stderr ? stderr.split("\n").slice(-3).join(" ").trim() : "no stderr output";
+    return {
+      ok: false,
+      error: `${commandName} exited with code ${exitCode ?? "unknown"}: ${detail}`,
+      ...usageFields,
+    };
+  }
   if (output) return { ok: true, output, ...usageFields };
   const reason = stderr ? stderr.split("\n").slice(-3).join(" ").trim() : "no output produced";
   return { ok: false, error: `agent exited without output: ${reason}`, ...usageFields };

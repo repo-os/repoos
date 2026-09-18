@@ -9,6 +9,7 @@ import {
   foldUsage,
   parseAntigravityEvent,
   promptCommand,
+  runPrompt,
 } from "../../server/agents";
 import { detectAgents, KNOWN_AGENTS, type KnownAgent } from "../../core/detect";
 import { MODEL_SOURCES, parseAntigravityModels } from "../../core/models";
@@ -194,6 +195,8 @@ describe("Antigravity discovery and commands", () => {
   });
 });
 
+// Test-only fake binary: it uses Node so the fixture can exercise the CLI
+// contract without requiring the real Antigravity installation.
 const FAKE_AGY = `#!/usr/bin/env node
 const fs = require("fs");
 const args = process.argv.slice(2);
@@ -201,6 +204,11 @@ fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args, cwd: pr
 if (args[0] === "--version") { process.stdout.write("agy 1.2.6\\n"); process.exit(0); }
 if (args[0] === "models") { process.stdout.write("gemini-3.8-flash-medium Gemini 3.8 Flash\\nclaude-sonnet-4-6 Claude Sonnet\\n"); process.exit(0); }
 if (args.includes("/model")) { process.stdout.write(JSON.stringify({ status: "SUCCESS", response: "models" }) + "\\n"); process.exit(0); }
+if (process.env.REPOOS_FAKE_AGY_EXIT) {
+  process.stdout.write(JSON.stringify({ status: "SUCCESS", response: "done" }) + "\\n");
+  process.stderr.write("simulated non-zero exit\\n");
+  process.exit(Number(process.env.REPOOS_FAKE_AGY_EXIT));
+}
 const id = "conversation-1";
 const emit = (value) => process.stdout.write(JSON.stringify(value) + "\\n");
 emit({ event: "init", init: { conversation_id: id, cwd: process.cwd(), model: "fake-model" } });
@@ -277,6 +285,23 @@ const TASK: Task = {
 const agent: Agent = { name: "engineer", cli: "antigravity", model: "default", enabled: true };
 
 afterEach(() => delete process.env.REPOOS_FAKEBIN_LOG);
+
+it("treats a non-zero one-shot exit as failure even with a SUCCESS envelope", async () => {
+  const fx = fixture();
+  const oldPath = process.env.PATH;
+  process.env.PATH = `${fx.bin}:${oldPath ?? ""}`;
+  process.env.REPOOS_FAKEBIN_LOG = fx.log;
+  process.env.REPOOS_FAKE_AGY_EXIT = "7";
+  try {
+    const result = await runPrompt(agent, "write a task", { cwd: fx.bin, timeoutMs: 2_000 });
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("agy exited with code 7");
+  } finally {
+    process.env.PATH = oldPath;
+    delete process.env.REPOOS_FAKE_AGY_EXIT;
+    fx.clean();
+  }
+});
 
 it("detects auth, lists models, and runs/resumes in the exact task worktree", async () => {
   const fx = fixture();

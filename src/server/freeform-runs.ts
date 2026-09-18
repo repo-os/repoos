@@ -52,6 +52,7 @@ import {
   type PromptResult,
 } from "./agents.js";
 import { markPmWorking } from "./pm-runs.js";
+import { deleteBranch, removeWorktree } from "../core/git.js";
 
 /** A freeform run in flight, durable across a server reload. */
 export interface FreeformRunRecord {
@@ -62,6 +63,10 @@ export interface FreeformRunRecord {
   /** PID of the detached PM CLI process. */
   pid: number;
   cwd: string;
+  /** Temporary RepoOS worktree used by a worktree-bound PM driver. */
+  pmWorktreeBranch?: string;
+  /** Exit status captured before finalization; absent on old adopted records. */
+  exitCode?: number | null;
   /** The raw user explanation, needed to preserve `## Original prompt`. */
   explanation: string;
   /** The resolved PM agent (with any per-run override already applied). */
@@ -107,6 +112,14 @@ export function freeformLogPaths(
     out: join(dir, `freeform-${runId}.out.log`),
     err: join(dir, `freeform-${runId}.err.log`),
   };
+}
+
+/** Remove the temporary worktree reserved for a worktree-bound PM run. */
+export function cleanupFreeformWorktree(config: RepoOSConfig, branch: string | undefined): void {
+  if (!branch) return;
+  if (removeWorktree(config.root, branch)) {
+    deleteBranch(config.root, branch, { force: true });
+  }
 }
 
 /** Read the durable freeform-run store; empty (never throws) when missing/corrupt. */
@@ -224,6 +237,7 @@ export interface StartFreeformRunInput {
   runId: string;
   taskId: string;
   cwd: string;
+  pmWorktreeBranch?: string;
   explanation: string;
   agent: Agent;
   command: { cmd: string; args: string[] };
@@ -288,6 +302,7 @@ export class FreeformRunManager {
       taskId: input.taskId,
       pid: proc.pid ?? 0,
       cwd: input.cwd,
+      pmWorktreeBranch: input.pmWorktreeBranch,
       explanation: input.explanation,
       agent: input.agent,
       startedAt: new Date().toISOString(),
@@ -298,11 +313,17 @@ export class FreeformRunManager {
     writeFreeformStore(this.config, store);
 
     const active = this.track(record, proc, input.timeoutMs);
-    proc.on("close", () => this.finish(active));
+    proc.on("close", (code) => {
+      record.exitCode = code;
+      this.finish(active);
+    });
     proc.on("error", () => this.finish(active));
     // A very short-lived child can exit between spawn() and listener setup;
     // ChildProcess does not replay a missed `close`, so finalize it here.
-    if (proc.exitCode !== null) this.finish(active);
+    if (proc.exitCode !== null) {
+      record.exitCode = proc.exitCode;
+      this.finish(active);
+    }
     return { ok: true, pid: proc.pid };
   }
 
@@ -470,6 +491,8 @@ export class FreeformRunManager {
       freeformLogPaths(this.config, record.runId).out,
       freeformLogPaths(this.config, record.runId).err,
       elapsedMs,
+      record.exitCode,
+      record.agent.cli,
     );
     if (timedOut) {
       const secs = Math.round((this.timeoutMs ?? FREEFORM_TIMEOUT_MS) / 1000);
@@ -488,6 +511,8 @@ export class FreeformRunManager {
       this.finalize(record, result);
     } catch {
       /* the finalizer owns its own error handling; never crash the manager */
+    } finally {
+      cleanupFreeformWorktree(this.config, record.pmWorktreeBranch);
     }
   }
 }
