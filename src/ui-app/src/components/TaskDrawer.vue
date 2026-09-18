@@ -2946,11 +2946,6 @@ watch(
                  fallback (below) covers review tasks where that didn't happen. -->
             <div class="preview-live">
               <span class="preview-dot"></span>
-              <!-- Which target/frontend is being served (#0379), so "a preview
-                   is running" is never the whole story. -->
-              <span v-if="ui.active.preview.label" class="preview-target-name">
-                {{ ui.active.preview.label }}
-              </span>
               <a :href="ui.active.preview.url" target="_blank" rel="noopener" class="preview-url">
                 <ExternalLink class="size-3.5" />
                 {{ ui.active.preview.url }}
