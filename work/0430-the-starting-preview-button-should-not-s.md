@@ -2,14 +2,14 @@
 id: "0430"
 title: Remove target name from starting preview button
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/remove-target-name-from-starting-preview
 created_at: "2026-09-18T19:06:04Z"
-updated_at: "2026-09-18T19:06:35Z"
+updated_at: "2026-09-18T19:10:06Z"
 ---
 ## Problem
 
@@ -47,3 +47,4 @@ the "starting preview" button should not show the name of the target, because it
 - 2026-09-18T19:06:18Z · status draft→inbox, title, area, body
 - 2026-09-18T19:06:26Z · status inbox→ready
 - 2026-09-18T19:06:35Z · status ready→active, branch
+- 2026-09-18T19:10:06Z · status active→review
