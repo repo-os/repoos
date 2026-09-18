@@ -926,16 +926,13 @@ const previewTargetChoiceRequired = computed(() => previewTargets.value.length >
 const previewTarget = ref<string | null>(null);
 /**
  * The target a start would serve: the explicit pick, else the sole matching
- * target. Null while the user must choose one and hasn't. Captured at request
- * time into `previewStartingTarget` so the progress text names it.
+ * target. Null while the user must choose one and hasn't.
  */
 const effectivePreviewTarget = computed<string | null>(
   () =>
     previewTarget.value ??
     (previewTargets.value.length === 1 ? (previewTargets.value[0]?.name ?? null) : null),
 );
-/** Target name for the in-flight start, shown in the progress state (#0379). */
-const previewStartingTarget = ref<string | null>(null);
 // A target picked for one task must never carry over to another — reset the
 // choice (not the targets, which come from the task) whenever the drawer swaps.
 // When several targets are listed, the top-ranked one is already the default
@@ -1011,7 +1008,6 @@ async function runPreviewAction(action: "start" | "stop"): Promise<void> {
   previewBusy.value = true;
   previewTaskId.value = task.id;
   previewAction.value = action;
-  previewStartingTarget.value = action === "start" ? effectivePreviewTarget.value : null;
   previewStartedAt.value = Date.now();
   startPreviewTimer();
   try {
@@ -1024,7 +1020,6 @@ async function runPreviewAction(action: "start" | "stop"): Promise<void> {
     previewBusy.value = false;
     previewTaskId.value = null;
     previewAction.value = null;
-    previewStartingTarget.value = null;
     previewStartedAt.value = null;
     stopPreviewTimer();
   }
@@ -3068,9 +3063,7 @@ watch(
               role="status"
             >
               <ActivityIndicator label="Starting preview" />
-              Starting preview<span v-if="previewStartingTarget">
-                — {{ previewStartingTarget }}</span
-              >…
+              Starting preview…
               <span v-if="previewElapsedMs >= 1000" class="preview-progress-elapsed">
                 {{ formatDuration(previewElapsedMs) }}
               </span>
