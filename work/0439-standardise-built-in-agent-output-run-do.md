@@ -2,7 +2,7 @@
 id: "0439"
 title: "Standardise built-in agent output: run doc + single aggregated task"
 type: feature
-status: review
+status: done
 priority: p2
 area: ai
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: openrouter/tencent/hy4-preview
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-09-19T06:31:50Z"
-updated_at: "2026-09-19T12:17:22Z"
+updated_at: "2026-09-19T14:11:22Z"
 ---
 ## Problem
 
@@ -75,3 +75,4 @@ Task creation is already a board notification. The run doc appearing in `docs/ag
 - 2026-09-19T11:07:06Z · review_cli_override, review_model_override
 - 2026-09-19T11:07:11Z · status ready→active, branch
 - 2026-09-19T12:17:22Z · status active→review
+- 2026-09-19T14:11:22Z · status review→done, release:success
