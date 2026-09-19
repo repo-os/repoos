@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 cli_override: opencode
+model_override: openrouter/tencent/hy4-preview
 created_at: "2026-09-19T08:15:21Z"
-updated_at: "2026-09-19T08:18:16Z"
+updated_at: "2026-09-19T08:18:17Z"
 ---
 ## Problem
 
@@ -45,3 +46,4 @@ Relevant code: \`src/server/agents.ts\` (stream parsing / \`extractOneShotReport
 - 2026-09-19T08:18:14Z · cli_override
 - 2026-09-19T08:18:15Z · cli_override
 - 2026-09-19T08:18:16Z · cli_override
+- 2026-09-19T08:18:17Z · model_override
