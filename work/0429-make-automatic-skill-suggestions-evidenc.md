@@ -8,10 +8,9 @@ area: agent
 assigned_to: ai
 created_by: ""
 branch: ""
-cli_override: claude code
-model_override: haiku
+cli_override: opencode
 created_at: "2026-09-18T18:46:29Z"
-updated_at: "2026-09-18T19:13:45Z"
+updated_at: "2026-09-19T00:38:32Z"
 ---
 ## Problem
 
@@ -47,3 +46,4 @@ Treat a reusable skill as a high-bar artifact: a stable procedure useful on futu
 - 2026-09-18T19:13:32Z · cli_override
 - 2026-09-18T19:13:42Z · model_override
 - 2026-09-18T19:13:45Z · status inbox→ready
+- 2026-09-19T00:38:32Z · cli_override, model_override
