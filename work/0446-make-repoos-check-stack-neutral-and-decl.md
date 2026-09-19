@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 cli_override: opencode
+model_override: openrouter/tencent/hy4-preview
 created_at: "2026-09-19T15:09:57Z"
-updated_at: "2026-09-19T15:32:14Z"
+updated_at: "2026-09-19T15:32:42Z"
 ---
 ## Outcome
 
@@ -38,3 +39,4 @@ Make repoos check a project-defined gate that works for JavaScript, Android/Grad
 - 2026-09-19T15:09:57Z · created · unknown
 - 2026-09-19T15:32:13Z · cli_override
 - 2026-09-19T15:32:14Z · cli_override
+- 2026-09-19T15:32:42Z · model_override
