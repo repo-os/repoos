@@ -515,8 +515,8 @@ describe("completeTask — resume and recovery", () => {
         check: async () => ({ ok: true }),
       });
 
-      // Screenshot regeneration is not part of the close-out at all: it is an
-      // on-demand `repoos screenshots` run, never a merge-time step.
+      // Screenshot regeneration is not part of the close-out at all; the
+      // deprecated fixture pipeline was removed.
       expect(progress).toEqual(["merge", "build", "check", "done"]);
       expect(result.ok).toBe(true);
       expect(result.merged).toBe(true);
