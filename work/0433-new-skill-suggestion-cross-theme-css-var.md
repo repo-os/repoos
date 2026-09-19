@@ -2,7 +2,7 @@
 id: "0433"
 title: "New Skill Suggestion: Cross-theme CSS variable audit"
 type: spec
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: human
@@ -12,7 +12,7 @@ cli_override: claude code
 model_override: haiku
 review_model_override: opencode-go/mimo-v2.5
 created_at: "2026-09-19T01:04:15Z"
-updated_at: "2026-09-19T01:29:24Z"
+updated_at: "2026-09-19T01:29:27Z"
 ---
 ## Problem
 
@@ -69,3 +69,4 @@ Use this when a UI component has color, contrast, or visibility issues across **
 - 2026-09-19T01:29:16Z · cli_override
 - 2026-09-19T01:29:18Z · model_override
 - 2026-09-19T01:29:24Z · review_model_override
+- 2026-09-19T01:29:27Z · status inbox→ready
