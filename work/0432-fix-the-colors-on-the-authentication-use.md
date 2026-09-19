@@ -1,12 +1,8 @@
 ---
-merge_conflict_retry_count: 1
-updated_at: "2026-09-19T01:09:39Z"
-review_passes: 1
-skill_suggestion: "0433"
 id: "0432"
 title: Fix colors in authentication & users settings section
 type: bug
-status: review
+status: done
 priority: p1
 area: web
 assigned_to: ai
@@ -16,6 +12,10 @@ cli_override: opencode
 model_override: opencode-go/hy3
 review_model_override: opencode-go/mimo-v2.5
 created_at: "2026-09-19T00:54:12Z"
+updated_at: "2026-09-19T01:39:35Z"
+merge_conflict_retry_count: 1
+review_passes: 1
+skill_suggestion: "0433"
 ---
 ## Problem
 
@@ -75,6 +75,4 @@ Fix the colors on the authentication & users section of settings. It doesn't loo
 - 2026-09-19T00:57:05Z · status inbox→ready
 - 2026-09-19T00:57:08Z · status ready→active, branch
 - 2026-09-19T01:03:15Z · status active→review
-
-
-
+- 2026-09-19T01:39:35Z · status review→done, release:success
