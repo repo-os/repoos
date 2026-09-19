@@ -2,18 +2,18 @@
 id: "0439"
 title: "Standardise built-in agent output: run doc + single aggregated task"
 type: feature
-status: ready
+status: active
 priority: p2
 area: ai
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/standardise-built-in-agent-output-run-do
 cli_override: opencode
 model_override: openrouter/tencent/hy4-preview
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-09-19T06:31:50Z"
-updated_at: "2026-09-19T11:07:06Z"
+updated_at: "2026-09-19T11:07:11Z"
 ---
 ## Problem
 
@@ -73,3 +73,4 @@ Task creation is already a board notification. The run doc appearing in `docs/ag
 - 2026-09-19T11:06:59Z · cli_override
 - 2026-09-19T11:07:01Z · model_override
 - 2026-09-19T11:07:06Z · review_cli_override, review_model_override
+- 2026-09-19T11:07:11Z · status ready→active, branch
