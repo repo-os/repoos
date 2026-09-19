@@ -81,7 +81,8 @@ const message = ref("");
 // the docs it corrected on its own — as structured data, not just a count.
 const bannerTaskId = ref<string | null>(null);
 const bannerAutoFixed = ref<{ doc: string; from: string; to: string }[]>([]);
-// Every run now also leaves a run doc under docs/agent-runs/<agent>/ (0439) —
+// Every run now also leaves a run doc under the configured docs directory's
+// agent-runs/<agent>/ path (0439) —
 // the receipt you can read without watching the agent work.
 const bannerRunDoc = ref<string | null>(null);
 
@@ -98,7 +99,7 @@ const agentMeta = computed(() => {
     return {
       name: "Tech Debt Agent",
       description:
-        "Scans your repository for technical debt patterns including outdated dependencies, code duplication, high-complexity files, unused code, and deprecated APIs. Every finding is bundled into one inbox task, and the run is recorded in docs/agent-runs/tech-debt/.",
+        "Scans your repository for technical debt patterns including outdated dependencies, code duplication, high-complexity files, unused code, and deprecated APIs. Every finding is bundled into one inbox task, and the run is recorded in your configured docs directory.",
       icon: "🔧",
     };
   }
@@ -106,7 +107,7 @@ const agentMeta = computed(() => {
     return {
       name: "Performance Agent",
       description:
-        "Keeps your app fast by scanning for performance issues like slow functions, blocking operations, deeply nested loops, unbounded memory growth, and duplicate computations. Every finding is bundled into one inbox task, and the run is recorded in docs/agent-runs/performance/.",
+        "Keeps your app fast by scanning for performance issues like slow functions, blocking operations, deeply nested loops, unbounded memory growth, and duplicate computations. Every finding is bundled into one inbox task, and the run is recorded in your configured docs directory.",
       icon: "⚡",
     };
   }
@@ -114,7 +115,7 @@ const agentMeta = computed(() => {
     return {
       name: "Architect Agent",
       description:
-        "Analyzes your codebase architecture — detects tight coupling, missing abstractions, scalability risks, and over-engineering. Findings are bundled into one inbox task and the run is recorded in docs/agent-runs/architect/.",
+        "Analyzes your codebase architecture — detects tight coupling, missing abstractions, scalability risks, and over-engineering. Findings are bundled into one inbox task and the run is recorded in your configured docs directory.",
       icon: "🏛",
     };
   }
@@ -122,7 +123,7 @@ const agentMeta = computed(() => {
     return {
       name: "Design Agent",
       description:
-        "Reviews your web UI's quality — layout, styling consistency, accessibility, and interaction flows. Flags UI bugs and UX friction and proposes concrete fixes and design improvements, bundled into one inbox task and recorded in docs/agent-runs/design/.",
+        "Reviews your web UI's quality — layout, styling consistency, accessibility, and interaction flows. Flags UI bugs and UX friction and proposes concrete fixes and design improvements, bundled into one inbox task and recorded in your configured docs directory.",
       icon: "🎨",
     };
   }
@@ -130,7 +131,7 @@ const agentMeta = computed(() => {
     return {
       name: "Docs Debt Agent",
       description:
-        "Checks that AGENTS.md, docs/, and user-docs/ still tell the truth about the code — a skill-guided agent verifies file paths, symbols, scripts, and stated constraints against the real repo, whatever its layout. A fix auto-commits only after an independent verification passes; everything else is bundled into one task, and the run is recorded in docs/agent-runs/docs-debt/.",
+        "Checks that AGENTS.md and your configured project docs still tell the truth about the code — a skill-guided agent verifies file paths, symbols, scripts, and stated constraints against the real repo, whatever its layout. A fix auto-commits only after an independent verification passes; everything else is bundled into one task, and the run is recorded in your configured docs directory.",
       icon: "📖",
     };
   }

@@ -70,7 +70,8 @@ export interface TechDebtScanResult {
 
 /**
  * What every built-in agent run produces (0439): a run doc under
- * `docs/agent-runs/<agent>/` and at most one inbox task bundling the findings.
+ * the configured docs directory's `agent-runs/<agent>/` path and at most one
+ * inbox task bundling the findings.
  * Shared so the server's run route and the UI's toast read the same shape no
  * matter which agent ran.
  */
@@ -681,6 +682,7 @@ function recordRunDoc(
   try {
     const doc = writeAgentRunDoc({
       root: config.root,
+      docsDir: config.docsDir,
       agent,
       label,
       startedAt: input.startedAt.toISOString(),
@@ -1682,28 +1684,33 @@ export class DocsDebtError extends Error {}
  * its role guidance; it is what lets the concern generalize past RepoOS's own
  * language and layout instead of a hardcoded extension/path list.
  */
-export const DOCS_DEBT_SKILL_PATH = "docs/agents/skills/docs-debt.md";
+export function docsDebtSkillPath(docsDir: string): string {
+  return join(docsDir, "agents", "skills", "docs-debt.md");
+}
 
 /**
  * Used only when the skill doc is missing (e.g. a fresh repo where the file
  * hasn't been created). Keeps the agent runnable rather than silently useful.
  */
-const DOCS_DEBT_SKILL_FALLBACK = [
-  "You keep this project's documentation honest.",
-  "Verify concrete, checkable claims in the project's own docs (AGENTS.md,",
-  "docs/, user-docs/) against the actual repository. Search the whole repo for",
-  "the real source layout instead of assuming src/. Do not flag identifiers that",
-  "belong to third-party tools rather than this project. Report only claims you",
-  "have independently confirmed are stale, with precise evidence.",
-].join("\n");
+function docsDebtSkillFallback(docsDir: string): string {
+  return [
+    "You keep this project's documentation honest.",
+    `Verify concrete, checkable claims in AGENTS.md and the project's ${docsDir}/`,
+    "context docs against the actual repository. Search the whole repo for",
+    "the real source layout instead of assuming src/. Do not flag identifiers that",
+    "belong to third-party tools rather than this project. Report only claims you",
+    "have independently confirmed are stale, with precise evidence.",
+  ].join("\n");
+}
 
 /** Read the docs-debt skill doc, falling back to embedded guidance. */
-function loadDocsDebtSkill(root: string): string {
+function loadDocsDebtSkill(root: string, docsDir: string): string {
+  const skillPath = docsDebtSkillPath(docsDir);
   try {
-    const content = readFileSync(join(root, DOCS_DEBT_SKILL_PATH), "utf8").trim();
-    return content || DOCS_DEBT_SKILL_FALLBACK;
+    const content = readFileSync(join(root, skillPath), "utf8").trim();
+    return content || docsDebtSkillFallback(docsDir);
   } catch {
-    return DOCS_DEBT_SKILL_FALLBACK;
+    return docsDebtSkillFallback(docsDir);
   }
 }
 
@@ -1765,14 +1772,14 @@ function countOccurrences(haystack: string, needle: string): number {
 /**
  * The agent may only ever write to the project's own docs. `fix.doc` comes
  * straight from model output, so this allowlist (root `AGENTS.md`, any nested
- * `AGENTS.md`, and anything under `docs/`/`user-docs/`) is enforced here rather
+ * `AGENTS.md`, and anything under the configured docs directory) is enforced here rather
  * than assumed — a "fix" naming `package.json` or a source file must never
  * auto-commit.
  */
-function isDocsDebtDocPath(doc: string): boolean {
+function isDocsDebtDocPath(doc: string, docsDir: string): boolean {
   if (!doc) return false;
   if (doc === "AGENTS.md" || doc.endsWith("/AGENTS.md")) return true;
-  return doc.startsWith("docs/") || doc.startsWith("user-docs/");
+  return doc.startsWith(`${docsDir.replace(/\/+$/, "")}/`);
 }
 
 /**
@@ -1787,7 +1794,7 @@ function isSafeDocsDebtFix(
   oldText: string,
   newText: string,
 ): boolean {
-  if (!isDocsDebtDocPath(doc)) return false;
+  if (!isDocsDebtDocPath(doc, config.docsDir)) return false;
   if (!isSafeToAutoCommit({ doc, oldText, newText }, config.root)) return false;
   let content: string;
   try {
@@ -1799,7 +1806,7 @@ function isSafeDocsDebtFix(
 }
 
 /** Collect the docs this agent may read (and, for trivial fixes, edit). */
-function collectDocFiles(root: string): string[] {
+function collectDocFiles(root: string, docsDir: string): string[] {
   const out: string[] = [];
   const addFile = (abs: string): void => {
     if (out.length >= MAX_DOCS) return;
@@ -1837,7 +1844,7 @@ function collectDocFiles(root: string): string[] {
       }
     }
   };
-  for (const dir of ["docs", "user-docs"]) walk(join(root, dir));
+  walk(join(root, docsDir));
   return out;
 }
 
@@ -1853,16 +1860,17 @@ export async function scanForDocsDebt(
   config: RepoOSConfig,
   logger?: Logger,
 ): Promise<DocsDebtScanResult> {
-  const skillDoc = loadDocsDebtSkill(config.root);
+  const skillPath = docsDebtSkillPath(config.docsDir);
+  const skillDoc = loadDocsDebtSkill(config.root, config.docsDir);
   const run = await runSkillGuidedAgent(
     "docs-debt",
     configWithDocsDebtAgent(config),
     skillDoc,
-    DOCS_DEBT_SKILL_PATH,
+    skillPath,
     logger,
   );
 
-  const scannedDocs = collectDocFiles(config.root).length;
+  const scannedDocs = collectDocFiles(config.root, config.docsDir).length;
 
   if (!run.ok) {
     const error = run.error ?? "Docs Debt Agent run failed";
@@ -2003,10 +2011,10 @@ export async function createDocsDebtTask(
 ): Promise<CreateBuiltInTaskResult> {
   if (findings.length === 0) return { created: 0, failed: 0, errors: [], taskId: null };
 
-  const title = "Docs debt: stale claims in AGENTS.md, docs/, and user-docs/";
+  const title = "Docs debt: stale claims in agent instructions and project docs";
 
   let body = `## Docs Debt Findings\n\n`;
-  body += `The Docs Debt Agent verified concrete claims in \`AGENTS.md\`/\`docs/\`/\`user-docs/\` against the actual repo and found ${findings.length} that need a human decision.\n\n`;
+  body += `The Docs Debt Agent verified concrete claims in \`AGENTS.md\` and \`${config.docsDir}/\` against the actual repo and found ${findings.length} that need a human decision.\n\n`;
   findings.forEach((finding, index) => {
     body += `### ${index + 1}. ${finding.claim}\n`;
     body += finding.doc

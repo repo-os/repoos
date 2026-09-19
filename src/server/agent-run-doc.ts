@@ -17,7 +17,7 @@
 import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join, sep } from "node:path";
 
-/** Run docs live here, one directory per agent. */
+/** Default run-doc root for projects that use the legacy root `docs/` layout. */
 export const AGENT_RUN_DOC_ROOT = join("docs", "agent-runs");
 
 /** How many run docs per agent are kept; older ones are pruned on each run. */
@@ -43,6 +43,8 @@ export interface AgentRunFinding {
 export interface AgentRunDocInput {
   /** Repository root. */
   root: string;
+  /** Project context-doc directory, relative to the repository root. */
+  docsDir?: string;
   /** Agent slug, e.g. "tech-debt". Also the run doc's directory name. */
   agent: string;
   /** Human-facing agent name for the heading, e.g. "Tech Debt Agent". */
@@ -96,8 +98,8 @@ export function runDocTimestamp(now: Date = new Date()): string {
 }
 
 /** Directory (repo-relative) holding one agent's run docs. */
-export function agentRunDocDir(agent: string): string {
-  return join(AGENT_RUN_DOC_ROOT, agent);
+export function agentRunDocDir(agent: string, docsDir = "docs"): string {
+  return join(docsDir, "agent-runs", agent);
 }
 
 /** `4200` → `4.2s`, `125000` → `2m 5s`. */
@@ -202,8 +204,9 @@ export function pruneAgentRunDocs(
   root: string,
   agent: string,
   keep: number = AGENT_RUN_DOC_HISTORY,
+  docsDir = "docs",
 ): number {
-  const dir = join(root, agentRunDocDir(agent));
+  const dir = join(root, agentRunDocDir(agent, docsDir));
   let files: string[];
   try {
     files = readdirSync(dir);
@@ -231,14 +234,14 @@ export function pruneAgentRunDocs(
  *         case there is no receipt to write and the caller must decide.
  */
 export function writeAgentRunDoc(input: AgentRunDocInput): AgentRunDocResult {
-  const relDir = agentRunDocDir(input.agent);
+  const relDir = agentRunDocDir(input.agent, input.docsDir);
   const dir = join(input.root, relDir);
   mkdirSync(dir, { recursive: true });
 
   const fileName = uniqueFileName(dir, runDocTimestamp(input.now ?? new Date()));
   const absPath = join(dir, fileName);
   writeFileSync(absPath, renderAgentRunDoc(input), "utf8");
-  const pruned = pruneAgentRunDocs(input.root, input.agent);
+  const pruned = pruneAgentRunDocs(input.root, input.agent, AGENT_RUN_DOC_HISTORY, input.docsDir);
 
   return {
     // Repo-relative, always forward-slashed — this is what the UI and the SSE

@@ -181,8 +181,8 @@ through:
 - Each has its **own** coding-agent and model selection, separate from the
   lifecycle roles.
 - They **produce findings**, not implementation: Tech Debt and Performance
-  create tasks in your inbox for each issue; Architect and Design write markdown
-  reports under `docs/agents/<Agent>/`; Docs Debt fixes what it safely can and
+  create tasks in your inbox for each issue; all built-in agents write durable
+  run records under your configured docs directory; Docs Debt fixes what it safely can and
   bundles the rest into a single task.
 
 Each of them — what it scans for, how to schedule it, and what good output looks

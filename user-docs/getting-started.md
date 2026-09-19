@@ -104,12 +104,14 @@ From the root of any git repo:
 repoos init
 ```
 
-That scaffolds four things and touches nothing else:
+That scaffolds four things and touches nothing else. Fresh installs keep RepoOS
+metadata under `repoos/` by default; the interactive prompt can instead use the
+repo root or another location.
 
 | Path | What it is |
 | --- | --- |
-| `work/` | One markdown file per task. This is the board. |
-| `docs/` | Context an agent needs to work on *this* project — architecture notes, decisions, history. |
+| `repoos/work/` | One markdown file per task. This is the board. |
+| `repoos/docs/` | Context an agent needs to work on *this* project — architecture notes, decisions, history. |
 | `AGENTS.md` | Instructions agents read first. The cross-tool standard; Claude Code, Codex, Cursor, Aider and Zed all read it. |
 | `repoos.toml` | Configuration. Every field is optional. |
 
@@ -117,12 +119,12 @@ Run `repoos init` outside a git repo and it starts a guided flow for a brand
 new project instead.
 
 Either way the board is never empty: init seeds a `ready` task you can start on
-immediately. In an existing repo it's "Read this codebase and propose docs/ + an
+immediately. In an existing repo it's "Read this codebase and propose project docs + an
 initial task backlog"; in the guided new-project flow it's "Flesh out the
 product vision and initial architecture", and it carries the one-line project
 description you gave at init. Both are self-contained enough to work without an
-agent — read the task, do what it says, and it turns into `docs/` content and
-concrete follow-up tasks. (`work/0001-set-up-repoos.md` is still scaffolded,
+agent — read the task, do what it says, and it turns into project-context docs and
+concrete follow-up tasks. (`repoos/work/0001-set-up-repoos.md` is still scaffolded,
 but it's marked `done`: it's a worked example of a task file, not work to do.)
 
 ## Start the server
@@ -155,7 +157,7 @@ repoos mv 0001 ready
 ```
 
 ::: warning Let RepoOS write task files
-Never hand-edit `work/*.md`. Status, activity history and metadata are written
+Never hand-edit task files. Status, activity history and metadata are written
 through the CLI and API so the board stays consistent — use `repoos mv`,
 `repoos update`, and `repoos note` rather than editing frontmatter directly.
 :::
@@ -164,7 +166,7 @@ through the CLI and API so the board stays consistent — use `repoos mv`,
 
 Assign the task to an agent from the UI. RepoOS creates a dedicated git
 worktree and branch for it, runs the coding agent there, and streams its output
-live. Your main checkout is never touched.
+live. Your primary checkout is never touched.
 
 When the agent is finished it moves the task to `review` and stops. It does
 **not** merge its own work. Review the diff, then move the

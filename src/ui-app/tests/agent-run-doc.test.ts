@@ -126,6 +126,22 @@ describe("writeAgentRunDoc", () => {
     expect(readFileSync(result.absPath, "utf8")).toContain("1 finding — no task created");
   });
 
+  it("uses the configured docs directory instead of creating a root docs folder", () => {
+    const root = mkRoot();
+    const result = writeAgentRunDoc({
+      root,
+      docsDir: "repoos/docs",
+      agent: "performance",
+      startedAt: "2026-09-19T11:07:11Z",
+      findings: [],
+      now: new Date("2026-09-19T11:07:11Z"),
+    });
+
+    expect(result.path).toBe("repoos/docs/agent-runs/performance/2026-09-19T11-07-11Z.md");
+    expect(existsSync(join(root, "docs"))).toBe(false);
+    expect(existsSync(result.absPath)).toBe(true);
+  });
+
   it("never overwrites an earlier run doc from the same second", () => {
     const root = mkRoot();
     const now = new Date("2026-09-19T11:07:11Z");

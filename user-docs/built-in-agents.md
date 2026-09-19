@@ -12,7 +12,8 @@ never implement anything — they scan, and they hand you findings.
 
 Every run produces exactly **two** things, whatever it found:
 
-1. **A run doc** — `docs/agent-runs/<agent>/<timestamp>.md`, recording the agent,
+1. **A run doc** — the configured docs directory's `agent-runs/<agent>/<timestamp>.md`
+   (`repoos/docs/agent-runs/…` on a fresh install), recording the agent,
    when it ran, how long it took, what it cost, and **every finding with its
    evidence** — including a run that found nothing, which is recorded as
    `ran clean`. The last 10 run docs per agent are kept; older ones are deleted
@@ -44,7 +45,8 @@ Each card on **Build Your Team** is configured independently:
 
 The server checks schedules once a minute and starts at most one due agent per
 tick. This state — enabled, schedule, last run — is kept in
-`.repoos/built-in-agents.json`, not `repoos.toml`; it's runtime state, like the
+the configured cache directory (`repoos/.repoos/built-in-agents.json` on a fresh
+install), not `repoos.toml`; it's runtime state, like the
 rest of the cache directory.
 
 Each agent works from a deliberately bounded view of the repository and looks
@@ -65,7 +67,7 @@ Scans your source for common debt patterns:
 
 **Good output:** at most one inbox task, `type: chore`, `area: tech-debt`, with
 every finding's file, line, and severity listed in its body, plus the run doc
-under `docs/agent-runs/tech-debt/`. The task arrives with `needs_input: true`
+under the configured docs directory's `agent-runs/tech-debt/`. The task arrives with `needs_input: true`
 because a scan's findings are a proposal, not a work order — answer its
 questions, spec the ones worth doing, move it to `ready`, and let the normal
 lifecycle take over. A run that finds nothing creates no tasks, but still writes
@@ -89,7 +91,7 @@ Rust or Java project is reviewed on its own terms:
 
 **Good output:** at most one inbox task, `area: performance`, with every finding's
 location and a plain-language description in its body, plus the run doc under
-`docs/agent-runs/performance/`. It lands with `needs_input: true` and its
+the configured docs directory's `agent-runs/performance/`. It lands with `needs_input: true` and its
 questions, because which of these are worth optimizing — and to what threshold —
 is your call. As with Tech Debt, an empty review files nothing but still writes
 a `ran clean` run doc. If the configured model or CLI is unreachable, the run
@@ -107,7 +109,7 @@ any architecture-flavoured tasks already on the board.
 **Good output:** a timestamped run doc under
 
 ```
-docs/agent-runs/architect/<ISO-timestamp>.md
+<configured-docs-dir>/agent-runs/architect/<ISO-timestamp>.md
 ```
 
 plus at most one inbox task (`area: architecture`) carrying every finding with
@@ -130,7 +132,7 @@ interaction-flow friction, and proposes concrete design improvements.
 **Good output:** a timestamped run doc under
 
 ```
-docs/agent-runs/design/<ISO-timestamp>.md
+<configured-docs-dir>/agent-runs/design/<ISO-timestamp>.md
 ```
 
 plus at most one inbox task (`area: design`) bundling every finding with its
@@ -143,9 +145,10 @@ own card, as with the other built-ins.
 
 Checks that your documentation still tells the truth about the code. Like the
 Performance and Design agents, it is **skill-guided**: the model reads a guidance doc
-(`docs/agents/skills/docs-debt.md`) describing what documentation debt means,
-then verifies concrete, checkable claims in `AGENTS.md`, `docs/`, and
-`user-docs/` against the actual repository. It finds where your code really
+(`agents/skills/docs-debt.md` within the configured docs directory, when you
+provide one) describing what documentation debt means, then verifies concrete,
+checkable claims in `AGENTS.md` and your configured docs directory against the
+actual repository. It finds where your code really
 lives rather than assuming a language or layout, and it distinguishes claims
 about *your* code from a doc's prose naming some third-party tool's own
 convention — so it won't flag a formatter's config key or another agent's
@@ -160,7 +163,7 @@ alone for a human. Auto-applied fixes are capped at five per run.
 
 **Good output:** usually the best kind — the docs already match the code, so
 there's nothing to report (and the run still writes a `ran clean` run doc under
-`docs/agent-runs/docs-debt/`). When there are real findings, they're bundled into
+the configured docs directory's `agent-runs/docs-debt/`). When there are real findings, they're bundled into
 a **single** inbox task (`area: docs-debt`), not one task per finding, each entry
 naming the doc, line, evidence, and a suggested fix. That task lands with
 `needs_input: true` — for each claim, should the doc change or the code? The run

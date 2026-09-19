@@ -68,7 +68,7 @@ const steps = [
   },
   {
     title: "You approve",
-    body: "The agent can implement, test and review the work. It cannot approve its own merge. You decide what reaches main.",
+    body: "The agent can implement, test and review the work. It cannot approve its own merge. You decide what reaches your primary branch.",
   },
 ];
 
@@ -287,15 +287,17 @@ const year = new Date().getFullYear();
           <dl class="grid grid-cols-3 gap-4 text-center">
             <div>
               <dt class="text-[12px] text-[var(--txt-faint)]">tasks</dt>
-              <dd class="mt-1 text-[26px] font-bold tracking-tight">306</dd>
+              <dd class="mt-1 text-[26px] font-bold tracking-tight">300+</dd>
             </div>
             <div>
               <dt class="text-[12px] text-[var(--txt-faint)]">done</dt>
-              <dd class="mt-1 text-[26px] font-bold tracking-tight text-[var(--green)]">273</dd>
+              <dd class="mt-1 text-[26px] font-bold tracking-tight text-[var(--green)]">
+                dogfooded
+              </dd>
             </div>
             <div>
               <dt class="text-[12px] text-[var(--txt-faint)]">version</dt>
-              <dd class="mt-1 text-[26px] font-bold tracking-tight">0.5.41</dd>
+              <dd class="mt-1 text-[26px] font-bold tracking-tight">0.5.x</dd>
             </div>
           </dl>
         </div>
@@ -357,7 +359,7 @@ const year = new Date().getFullYear();
     <section id="how" class="wrap pb-20 sm:pb-24">
       <p class="eyebrow mb-3">The workflow</p>
       <h2 class="max-w-[26ch] text-[30px] font-bold leading-tight tracking-tight sm:text-[38px]">
-        How a task gets from an idea to main
+        How a task gets from an idea to merge
       </h2>
       <p class="mt-4 max-w-[60ch] text-[15.5px] leading-relaxed text-[var(--txt-dim)]">
         No separate ticket database is required. The task, its branch and its history travel with
@@ -393,9 +395,9 @@ const year = new Date().getFullYear();
             particular task. RepoOS coordinates the work; it doesn't replace the coding tools.
           </p>
           <p class="mt-4 max-w-[52ch] text-[15.5px] leading-relaxed text-[var(--txt-dim)]">
-            Every agent run has a live transcript and token and cost tracking, and model lists come
-            from the agent tools themselves, so new models show up without waiting on a RepoOS
-            release.
+            Every agent run has a live transcript. When its CLI reports usage, RepoOS also records
+            tokens and cost; model lists come from the agent tools themselves, so new models show up
+            without waiting on a RepoOS release.
           </p>
         </div>
 
@@ -442,8 +444,8 @@ const year = new Date().getFullYear();
         </p>
         <p class="mx-auto mt-4 max-w-[62ch] text-[15.5px] leading-relaxed text-[var(--txt-dim)]">
           You decide what's worth building, whether the implementation is good enough and what
-          reaches main. Agents can plan, code, run checks, review each other's work and fix
-          failures. The final move stays with you.
+          reaches the primary branch. Agents can plan, code, run checks, review each other's work
+          and fix failures. The final move stays with you.
         </p>
       </div>
     </section>
@@ -500,11 +502,12 @@ const year = new Date().getFullYear();
             class="cursor-pointer list-none text-[15.5px] font-semibold marker:hidden [&::-webkit-details-marker]:hidden"
           >
             <span class="text-[var(--cyan)] font-mono text-[13px] mr-2">Q</span>What stops an agent
-            from breaking main?
+            from breaking the primary branch?
           </summary>
           <p class="mt-3 text-[14px] leading-relaxed text-[var(--txt-dim)]">
-            Agents work in their own branch and worktree, never on main. Nothing merges until the
-            project's checks pass and you approve it. Agents can't approve their own work.
+            Agents work in their own branch and worktree, never in your primary checkout. Nothing
+            merges until the project's checks pass and you approve it. Agents can't approve their
+            own work.
           </p>
         </details>
         <details class="panel group p-6">

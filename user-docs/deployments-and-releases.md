@@ -20,8 +20,8 @@ release itself, which is what lets it stay dependency-free.
 [release]
 enabled     = true
 provider    = "git-tag"
-branch      = "main"          # the trunk a release ships from
-versionFile = "package.json"  # file holding the semantic version
+branch      = "main"          # example: replace with your release branch
+versionFile = "package.json"  # example: the file holding your semantic version
 tagPrefix   = "v"
 remote      = "origin"
 ```
@@ -94,8 +94,8 @@ marketing box.
 ## Deployments
 
 Deployments model a grid of services: one `[[deployments]]` row per
-service-and-branch, where each branch is an environment (a `main` row is
-dev/staging, a `prod` row is production, and so on).
+service-and-branch, where each branch is an environment. The names below are
+examples: map your own development, staging, and production branches.
 
 ```toml
 [[deployments]]
@@ -134,6 +134,6 @@ branches have diverged, the deploy fails loudly with git's own refusal rather
 than overwriting anything. A checkout with uncommitted changes can't deploy at
 all.
 
-Both surfaces read from the **main checkout**, even when the server is serving a
+Both surfaces read from the **primary checkout**, even when the server is serving a
 preview from a task worktree, because branch health and dirty state belong to the
 checkout you actually manage.

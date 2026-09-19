@@ -18,19 +18,19 @@ hero:
 
 features:
   - title: Install into any repo
-    details: RepoOS isn't a hosted service or a place you move your work to. Run repoos init inside a repo you already have, and it adds work/, docs/, and an AGENTS.md.
+    details: RepoOS isn't a hosted service or a place you move your work to. Run repoos init inside a repo you already have, and it adds repoos/work/, repoos/docs/, and an AGENTS.md. You can choose another layout during setup.
     link: /getting-started
     linkText: Install and initialize
   - title: Tasks are files, status is a field
-    details: Every task is a markdown file under work/ with its status in YAML frontmatter — inbox, ready, active, review, done. Edited in place, versioned by git, no board database to lose.
+    details: Every task is a markdown file in your configured task directory (repoos/work/ on a fresh install), with its status in YAML frontmatter — inbox, ready, active, review, done. Edited in place, versioned by git, no board database to lose.
     link: /concepts
     linkText: How tasks work
   - title: Agents work in isolation
-    details: Each task gets its own git worktree and branch. Agents run there, never on your main checkout, and nothing merges until checks pass and you approve it.
+    details: Each task gets its own git worktree and branch. Agents run there, never in your primary checkout, and nothing merges until checks pass and you approve it.
     link: /concepts
     linkText: The task lifecycle
   - title: Local-first, zero lock-in
-    details: Runs on your machine. Source-available, zero runtime dependencies. Your tasks are markdown in your repo — leaving means deleting one directory.
+    details: Runs on your machine. Source-available, zero runtime dependencies. Your tasks are markdown in your repo, with no hosted board database to export or migrate.
     link: /configuration
     linkText: Configure it
 ---
@@ -68,7 +68,7 @@ pnpm add -g @repo-os/repoos
 </div>
 
 ```bash
-repoos init    # scaffolds work/, docs/, AGENTS.md — touches nothing else
+repoos init    # by default scaffolds repoos/work/, repoos/docs/, and AGENTS.md
 repoos serve   # starts the board — prints the local URL to open
 ```
 

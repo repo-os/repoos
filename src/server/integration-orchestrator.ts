@@ -258,9 +258,9 @@ export async function resetForeignWorkFiles(opts: {
  * build + check gate in `validateCandidate` can be skipped (#0355).
  *
  * Deliberately literal and mechanical: a path qualifies only if it lives under
- * `docs/` or `user-docs/`, or ends in `.md`. The closing task's own
- * `work/<id>-*.md` file is the common `.md` case — it always changes, and
- * `resetForeignWorkFiles` has already restored every OTHER task's work file to
+ * the configured docs directory, or ends in `.md`. The closing task's own
+ * task file is the common `.md` case — it always changes, and
+ * `resetForeignWorkFiles` has already restored every OTHER task's task file to
  * main's copy before this runs, so no foreign task file reaches this check.
  * Anything else — `repoos.toml`, `package.json`, `src/`, `scripts/`,
  * `.github/`, … — disqualifies the fast path. No scoring, no "mostly docs".
@@ -270,10 +270,9 @@ export async function resetForeignWorkFiles(opts: {
  * examine, and the dropped-merge guard in `validateCandidate` runs earlier and
  * already rejects an empty merge that actually swallowed real branch work.
  */
-export function isDocsOnlyChange(paths: string[]): boolean {
-  return paths.every(
-    (p) => p.startsWith("docs/") || p.startsWith("user-docs/") || p.endsWith(".md"),
-  );
+export function isDocsOnlyChange(paths: string[], docsDir = "docs"): boolean {
+  const docsPrefix = `${docsDir.replace(/\/+$/, "")}/`;
+  return paths.every((p) => p.startsWith(docsPrefix) || p.endsWith(".md"));
 }
 
 /**
@@ -799,11 +798,11 @@ export class CloseOutOrchestrator {
     if (!featureWtPath) return null;
 
     const task = this.getTask?.(job.taskId);
-    const autoResolve = ["dist/", ...(task ? [relative(root, task.absPath)] : [])];
+    const autoResolve = task ? [relative(root, task.absPath)] : [];
     // Same semantics as `validateCandidate`: unrelated task files keep main's
     // side, everything else in `autoResolve` takes the branch's side. Only the
     // real-conflict classification is needed here, so the direction is moot.
-    const autoResolveOurs = ["work/"];
+    const autoResolveOurs = [`${this.config.workDir}/`];
 
     let preflight: MergeBranchResult;
     try {
@@ -1053,28 +1052,18 @@ export class CloseOutOrchestrator {
     }
 
     // In the candidate worktree, merge the feature branch from its location.
-    // dist/ is generated output — the build step right after this merge
-    // (below) regenerates it from source regardless of what the merge
-    // produced, so a conflict there must never block the merge. The task's
-    // own doc file routinely differs between main and the branch
+    // The closing task's own doc file routinely differs between main and the branch
     // (status/review_rounds bookkeeping on either side), so its branch
     // version is taken as authoritative, same as the legacy done.ts close-out
     // path. Reuses the existing, tested autoResolve semantics in core/git.ts
-    // rather than reimplementing conflict resolution here.
-    //
-    // dist/ is gitignored on main as of 2026-08-15 (see docs/dogfooding-vs-
-    // general.md), so most new merges won't touch this entry at all — a
-    // branch that never modified dist/ resolves as a clean deletion. It stays
-    // in the list because a branch cut BEFORE that change can still have
-    // dist/ tracked and modified; mergeBranch's `-X theirs` fallback already
-    // handles that as a modify/delete conflict. Safe to drop once no such
-    // branch remains, but harmless to leave indefinitely.
+    // rather than reimplementing conflict resolution here. Project source and
+    // generated-output conflicts are deliberately left for an explicit repair.
     const task = this.getTask?.(job.taskId);
-    const autoResolve = ["dist/", ...(task ? [relative(root, task.absPath)] : [])];
+    const autoResolve = task ? [relative(root, task.absPath)] : [];
     // The task currently closing is authoritative on its branch. Other task
     // files can change independently on main (for example, a CTO nudge), so
     // preserve main's version for those rather than blocking close-out.
-    const autoResolveOurs = ["work/"];
+    const autoResolveOurs = [`${this.config.workDir}/`];
     this.onProgress?.("merge");
     const merge = await mergeBranch(wtPath, featureBranch, {
       autoResolve,
@@ -1112,7 +1101,7 @@ export class CloseOutOrchestrator {
     }
 
     // A clean merge still carries any edits the feature branch made to OTHER
-    // tasks' work/*.md files (branch changed them, main did not touch them since
+    // tasks' task files (branch changed them, main did not touch them since
     // the merge-base → git merged them with no conflict, so `autoResolveOurs`,
     // which only runs on conflicts, never fired). Restore main's copy of each.
     // Observed live: #0319's close-out published #0202/#0275 frontmatter drift.
@@ -1171,7 +1160,7 @@ export class CloseOutOrchestrator {
     // gate unchanged — and a git error (`null`) always fails safe to the full
     // gate too.
     const changedPaths = await getChangedFilePaths(wtPath, mainBranch);
-    const docsOnly = changedPaths !== null && isDocsOnlyChange(changedPaths);
+    const docsOnly = changedPaths !== null && isDocsOnlyChange(changedPaths, this.config.docsDir);
     if (docsOnly) {
       this.logger?.integration(
         job.taskId,
@@ -1603,19 +1592,19 @@ export class CloseOutOrchestrator {
       // markers on disk) rather than aborting it, so every later retry's
       // dirty-main check just re-discovered the same stuck merge and
       // reported it as generic "uncommitted changes" (task #0338's
-      // close-out hit exactly this on work/0338-*.md — main had picked up
+      // close-out hit exactly this on a task file — main had picked up
       // its own bookkeeping commits for that same task file while the
       // candidate was in flight, a routine, expected divergence that should
       // never have blocked a merge in the first place).
-      // dist/ is generated output (never worth keeping main's stale copy over
-      // the candidate's); every work/*.md file keeps MAIN's copy — main is
+      // Every configured task-directory file keeps MAIN's copy — main is
       // authoritative for task bookkeeping by publish time (routine writes land
       // there throughout the task's lifetime), the reverse of the validate-phase
       // merge above where the candidate's own file is what's being tested in
-      // isolation.
+      // isolation. Project source and generated-output conflicts are not
+      // auto-resolved at publish time.
       const publishMerge = await mergeBranch(root, branch, {
-        autoResolve: ["dist/"],
-        autoResolveOurs: ["work/"],
+        autoResolve: [],
+        autoResolveOurs: [`${this.config.workDir}/`],
       });
       if (!publishMerge.merged) {
         if (publishMerge.conflicts.length > 0) {

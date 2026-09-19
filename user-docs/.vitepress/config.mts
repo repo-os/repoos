@@ -14,7 +14,7 @@ export default defineConfig({
   lang: "en",
   title: "RepoOS",
   description:
-    "The repo is the operating system. Repo-native tasks and specs as markdown files, agents as a first-class workforce, humans at the sign-off gate.",
+    "The repo is the operating system. Repo-native tasks and specs as markdown files, with agents working in isolated worktrees and humans reviewing merges.",
   cleanUrls: true,
   // "dark" = default dark but togglable (VitePress's built-in appearance
   // switcher renders in the navbar). Identity stays dark-first to match
@@ -77,7 +77,7 @@ export default defineConfig({
           { text: "Agents", link: "/agents" },
           { text: "Built-in agents", link: "/built-in-agents" },
           { text: "Review and close-out", link: "/review-and-close-out" },
-          { text: "The check gate", link: "/check" },
+          { text: "Checks before merge", link: "/check" },
           { text: "Tunnels", link: "/tunnels" },
         ],
       },

@@ -735,6 +735,22 @@ describe("runDesignAgent", () => {
 });
 
 describe("scanForDocsDebt", () => {
+  it("uses the configured docs directory for both its context and its scan", async () => {
+    const root = makeRepo({ "repoos/docs/guide.md": "# Guide\n" });
+    vi.mocked(runSkillGuidedAgent).mockResolvedValue(runnerResult({}));
+
+    const result = await scanForDocsDebt(configFor(root, { docsDir: "repoos/docs" }));
+
+    expect(result.scannedDocs).toBe(1);
+    expect(runSkillGuidedAgent).toHaveBeenCalledWith(
+      "docs-debt",
+      expect.any(Object),
+      expect.any(String),
+      "repoos/docs/agents/skills/docs-debt.md",
+      undefined,
+    );
+  });
+
   it("maps an agent finding into a needs-human finding with its claim and evidence", async () => {
     const root = makeRepo({ "docs/guide.md": "# Guide\n" });
     vi.mocked(runSkillGuidedAgent).mockResolvedValue(

@@ -80,6 +80,11 @@ describe("isDocsOnlyChange (#0355)", () => {
     expect(isDocsOnlyChange(["docs/a.md", "user-docs/b.md", "work/0200-x.md"])).toBe(true);
   });
 
+  it("uses the configured docs directory for non-Markdown documentation", () => {
+    expect(isDocsOnlyChange(["repoos/docs/architecture.adoc"], "repoos/docs")).toBe(true);
+    expect(isDocsOnlyChange(["docs/architecture.adoc"], "repoos/docs")).toBe(false);
+  });
+
   it("rejects a single non-docs path — no 'mostly docs' scoring", () => {
     expect(isDocsOnlyChange(["docs/a.md", "src/server/x.ts"])).toBe(false);
     expect(isDocsOnlyChange(["repoos.toml"])).toBe(false);

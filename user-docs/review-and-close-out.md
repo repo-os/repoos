@@ -85,43 +85,46 @@ then the worktree stays open and nothing has merged.
 ## The Move-to-done pipeline
 
 Close-out runs as a job with five phases. It works in a **separate candidate
-worktree** (`repoos-worktrees/<repo>/integrate/<id>` on branch
-`repoos/integrate/<id>`), never on your main checkout, so a failed close-out
+worktree** (a sibling of your checkout, such as
+`<parent>/<repo>-worktrees/repoos/integrate/<id>`, on branch
+`repoos/integrate/<id>`), never in your primary checkout, so a failed close-out
 can't leave your working tree dirty.
 
 1. **queued → syncing** — first runs a cheap, non-destructive pre-check of
-   whether the branch really conflicts with `main`; a real source conflict skips
+   whether the branch really conflicts with your primary branch; a real source conflict skips
    straight to the automatic repair below, without building a candidate. Otherwise
-   it creates (or resets) the candidate worktree from current `main` and symlinks
-   `node_modules` from your main checkout.
+   it creates (or resets) the candidate worktree from the current primary branch.
+   When the primary checkout already has `node_modules`, it reuses that directory by
+   symlink rather than performing a cold install.
 2. **syncing → validating** — merges the task's feature branch into the
-   candidate. Generated files that routinely differ — `dist/`, `screenshots/`,
-   and the task's own `work/<id>-*.md` bookkeeping file — are auto-resolved.
-3. **validating** — re-checks `main` first: if it advanced since the candidate
+   candidate. RepoOS preserves the closing task's own bookkeeping file from the
+   task branch; a source conflict is left for the repair flow below.
+3. **validating** — re-checks the primary branch first: if it advanced since the candidate
    synced, the job discards the candidate and resyncs before validating. Then
    it builds and runs `repoos check`. A real check failure stays in the branch:
    fix it there and retry.
-4. **publishing** — takes the repo lock, confirms `main` hasn't moved again,
-   and fast-forward-or-merges the candidate into `main`. If `main` did move, it
+4. **publishing** — takes the repo lock, confirms the primary branch hasn't moved again,
+   and fast-forward-or-merges the candidate into it. If it did move, it
    goes back to step 2 and self-heals.
 5. **cleanup → done** — removes the candidate and the task's own worktree and
    branch, and marks the task `done`.
 
 A **docs-only fast path** skips the build and check when the merged diff touches
-nothing but docs — every changed path under `docs/` or `user-docs/`, or ending
-in `.md`. There is no "mostly docs" scoring; any other path runs the full set of checks.
+nothing but documentation: every changed path under your configured docs directory,
+or ending in `.md`. There is no "mostly docs" scoring; any other path runs the
+full set of checks.
 
 ### Merge conflicts repair themselves
 
 The first time two tasks are in flight at once, one of them may conflict with
-`main` on a real source file. This is **expected behaviour, not a failure
+the primary branch on a real source file. This is **expected behaviour, not a failure
 state**:
 
-- A conflict on a generated/bookkeeping path (`dist/`, `screenshots/`, the
-  task's own file) is auto-resolved silently.
+- A conflict on the closing task's own bookkeeping file is resolved from that
+  task branch.
 - A conflict on **anything else** is non-retryable — retrying would derive the
   same conflict. RepoOS automatically hands off to an engineer session **in the
-  feature branch's own worktree** to merge `main` into the branch and resolve it
+  feature branch's own worktree** to merge the primary branch into the branch and resolve it
   there. When that session finishes, close-out is re-enqueued and retries on its
   own.
 

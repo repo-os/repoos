@@ -54,10 +54,9 @@ triage order matters more than the guesswork:
    they present as a *timeout*, not an assertion error, which makes them easy to
    misread as flakiness.
 
-The full triage order and the incidents behind it are in
-[debugging check failures](../docs/debugging-check-failures.md) — a
-repo-relative link to RepoOS's own build context, so your mileage on the
-specific incidents will vary, but the triage order generalizes.
+The useful general rule is to reproduce on an idle machine, run the full suite,
+and then work from the first causal failure rather than treating every timeout
+as independent flakiness.
 
 ## Logging into a local preview
 
@@ -106,5 +105,6 @@ Each repo's server is recorded in a per-port lockfile so a new `repoos serve`
 refuses to silently coexist with a live one. If you manually killed the server
 from outside RepoOS, that lockfile can briefly still point at the dead process.
 Give the automatic reaper a moment to clear it; if the server has been down for
-more than a couple of minutes, check the lockfile in `.repoos/` before
+more than a couple of minutes, check the lockfile in your configured cache
+directory (`repoos/.repoos/` on a fresh install) before
 intervening, and never `kill -9` a RepoOS server without checking it first.

@@ -2,7 +2,8 @@
 
 ## The repo is the source of truth
 
-A task is a markdown file under `work/`. Its status is a field in that file's
+A task is a markdown file in your configured task directory (`repoos/work/` on
+a fresh install). Its status is a field in that file's
 YAML frontmatter. There's no board database behind the UI — the UI is a view
 over the files, and anything derived (the index, caches) can be deleted and
 rebuilt.
@@ -49,7 +50,7 @@ consistent. Use `repoos mv`, `repoos update`, `repoos note`, or the UI.
 ## One task, one worktree
 
 When a task goes active, RepoOS creates a dedicated git worktree and branch for
-it. The agent works there — never in your main checkout — so you can keep
+it. The agent works there — never in your primary checkout — so you can keep
 working while an agent does, and several tasks can be in flight without
 stepping on each other.
 
@@ -77,19 +78,19 @@ If a reviewer agent is enabled, it reads the branch diff and writes an advisory
 report for that review — findings, edge cases, suggestions. It changes nothing
 and it doesn't replace your approval; it's there to make your review faster.
 
-## `docs/` is the project's memory
+## Your docs directory is the project's memory
 
-`repoos init` creates a `docs/` directory alongside `work/`. It holds the
+`repoos init` creates `repoos/docs/` alongside `repoos/work/` by default. It holds the
 context an agent needs to work on *your* project: architecture notes, decisions
 and their rationale, incident write-ups, conventions that aren't obvious from
 the code.
 
 This matters more than it sounds. An agent starting a task reads `AGENTS.md` and
-`docs/` to get oriented — so knowledge you write down once stops being
+your configured docs directory to get oriented — so knowledge you write down once stops being
 re-derived, re-litigated, or re-broken on every future task.
 
 ::: tip
-`docs/` is for building *your* project. The documentation you're reading now —
+Your docs directory is for building *your* project. The documentation you're reading now —
 how to use RepoOS itself — is a separate thing, kept in its own directory in the
 RepoOS repo.
 :::

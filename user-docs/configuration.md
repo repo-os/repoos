@@ -16,11 +16,18 @@ Secrets still belong in `.env`, not here.
 
 ## Layout
 
+Fresh `repoos init` writes these namespaced paths:
+
 ```toml
-workDir  = "work"     # where task markdown files live
-docsDir  = "docs"     # project context an agent reads before working
-cacheDir = ".repoos"  # derived index, logs, database — disposable
+workDir  = "repoos/work"     # where task markdown files live
+docsDir  = "repoos/docs"     # project context an agent reads before working
+cacheDir = "repoos/.repoos"  # derived index, logs, database — disposable
 ```
+
+If you write `repoos.toml` yourself and omit these fields, RepoOS falls back to
+the legacy root paths `work`, `docs`, and `.repoos`. You can set any
+repo-relative paths; the rest of this guide refers to `workDir`, `docsDir`, and
+`cacheDir` rather than assuming a particular layout.
 
 `cacheDir` holds only derived state. Delete it and RepoOS rebuilds everything
 from the markdown files; nothing of record is lost.
@@ -159,14 +166,14 @@ no provider key), opt in:
 
 ```toml
 [worktrees]
-inheritEnv = true   # symlink the main checkout's .env into task worktrees
+inheritEnv = true   # symlink the primary checkout's .env into task worktrees
 ```
 
 It is off by default, so most projects never place secrets in a worktree.
-When on, RepoOS symlinks the main `.env` in at worktree creation; the secret
+When on, RepoOS symlinks the primary checkout's `.env` in at worktree creation; the secret
 file stays gitignored there and is never committed. Your `.gitignore` must
 ignore `.env` for this to kick in — if it doesn't, RepoOS skips the link rather
-than risk committing the secret. A repo that ignores `.env` on `main` is
+than risk committing the secret. A repo that ignores `.env` in its primary checkout is
 covered automatically, since the committed `.gitignore` comes along to every
 worktree.
 
@@ -249,7 +256,7 @@ trunk after `repoos check` passes; your CI does the actual build and publish.
 enabled     = true
 provider    = "git-tag"
 branch      = "main"
-versionFile = "package.json"
+versionFile = "package.json"  # examples: replace both fields for your project
 tagPrefix   = "v"
 remote      = "origin"
 ```
