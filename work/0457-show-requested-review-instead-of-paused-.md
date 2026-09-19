@@ -2,14 +2,14 @@
 id: "0457"
 title: Show 'Requested review' instead of 'Paused' on task card when agent emitted a handoff signal
 type: feature
-status: active
+status: done
 priority: p3
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-19T23:28:27Z"
-updated_at: "2026-09-19T23:47:10Z"
+updated_at: "2026-09-19T23:47:14Z"
 ---
 ## Problem
 
@@ -37,3 +37,4 @@ An alternative is a dedicated `/api/tasks/:id/handoff-pending` endpoint, but pol
 
 - 2026-09-19T23:28:27Z · created · unknown
 - 2026-09-19T23:47:10Z · status inbox→active
+- 2026-09-19T23:47:14Z · status active→done
