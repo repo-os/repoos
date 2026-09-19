@@ -254,7 +254,7 @@ function formatDate(iso: string): string {
 }
 .auth-desc {
   font-size: 13px;
-  color: var(--text-secondary, #666);
+  color: var(--txt-dim);
   margin: 0;
 }
 .auth-add-row {
@@ -265,19 +265,19 @@ function formatDate(iso: string): string {
 }
 .auth-role-select {
   padding: 6px 10px;
-  border: 1px solid var(--border, #ddd);
+  border: 1px solid var(--border);
   border-radius: 6px;
   font-size: 13px;
-  background: var(--surface, #fff);
-  color: var(--text, #1a1a1a);
+  background: var(--panel-solid);
+  color: var(--txt);
 }
 .auth-error {
-  color: #dc2626;
+  color: var(--red);
   font-size: 12px;
   margin: 4px 0;
 }
 .auth-success {
-  color: #16a34a;
+  color: var(--green);
   font-size: 12px;
   margin: 4px 0;
 }
@@ -285,7 +285,7 @@ function formatDate(iso: string): string {
 .auth-empty {
   padding: 12px 0;
   font-size: 13px;
-  color: var(--text-secondary, #999);
+  color: var(--txt-dim);
 }
 .auth-user-list {
   padding: 8px 0;
@@ -295,7 +295,7 @@ function formatDate(iso: string): string {
   align-items: center;
   justify-content: space-between;
   padding: 8px 0;
-  border-bottom: 1px solid var(--border-light, #f0f0f0);
+  border-bottom: 1px solid var(--border);
 }
 .auth-user-row:last-child {
   border-bottom: none;
@@ -308,6 +308,7 @@ function formatDate(iso: string): string {
 .auth-user-email {
   font-size: 14px;
   font-weight: 500;
+  color: var(--txt);
 }
 .auth-user-role {
   font-size: 11px;
@@ -316,12 +317,12 @@ function formatDate(iso: string): string {
   font-weight: 500;
 }
 .auth-user-role.admin {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--violet-tint);
+  color: var(--violet);
 }
 .auth-user-role.member {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--border);
+  color: var(--txt-dim);
 }
 .auth-user-actions {
   display: flex;
@@ -330,13 +331,13 @@ function formatDate(iso: string): string {
 .auth-action {
   background: none;
   border: none;
-  color: var(--accent, #3b82f6);
+  color: var(--accent-foreground);
   cursor: pointer;
   font-size: 12px;
   padding: 2px 4px;
 }
 .auth-action.danger {
-  color: #dc2626;
+  color: var(--red);
 }
 .auth-audit-toggle {
   padding: 8px 0 0 0;
@@ -344,7 +345,7 @@ function formatDate(iso: string): string {
 .auth-link {
   background: none;
   border: none;
-  color: var(--accent, #3b82f6);
+  color: var(--accent-foreground);
   cursor: pointer;
   font-size: 13px;
   padding: 0;
@@ -362,21 +363,23 @@ function formatDate(iso: string): string {
   align-items: center;
   padding: 4px 0;
   font-size: 12px;
-  border-bottom: 1px solid var(--border-light, #f0f0f0);
+  border-bottom: 1px solid var(--border);
 }
 .auth-audit-action {
   font-weight: 500;
   min-width: 100px;
+  color: var(--txt);
 }
 .auth-audit-target {
   min-width: 140px;
+  color: var(--txt);
 }
 .auth-audit-actor {
-  color: var(--text-secondary, #999);
+  color: var(--txt-dim);
   flex: 1;
 }
 .auth-audit-time {
-  color: var(--text-secondary, #999);
+  color: var(--txt-dim);
   font-size: 11px;
 }
 </style>

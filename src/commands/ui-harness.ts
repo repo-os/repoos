@@ -32,6 +32,11 @@ export interface SmokeConsoleMessage {
   type(): string;
   text(): string;
 }
+export interface SmokeRoute {
+  fetch(): Promise<{ json(): Promise<unknown> }>;
+  fulfill(opts: { status: number; contentType: string; body: string }): Promise<void>;
+  continue(): Promise<void>;
+}
 export interface SmokePage {
   on(event: "console", handler: (msg: SmokeConsoleMessage) => void): void;
   on(event: "pageerror", handler: (err: Error) => void): void;
@@ -42,6 +47,8 @@ export interface SmokePage {
   setViewportSize(viewport: { width: number; height: number }): Promise<void>;
   waitForFunction(fn: () => unknown, options?: { timeout?: number }): Promise<unknown>;
   waitForTimeout(ms: number): Promise<void>;
+  route(url: string, handler: (route: SmokeRoute) => Promise<void>): Promise<void>;
+  close(): Promise<void>;
 }
 export interface SmokeBrowser {
   newPage(): Promise<SmokePage>;
