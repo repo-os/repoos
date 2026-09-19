@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 cli_override: opencode
+model_override: openrouter/tencent/hy4-preview
 created_at: "2026-09-19T09:02:16Z"
-updated_at: "2026-09-19T10:44:39Z"
+updated_at: "2026-09-19T10:44:42Z"
 ---
 ## Problem
 
@@ -39,3 +40,4 @@ Any time content is forwarded to the Debugger programmatically (via "Send to Deb
 
 - 2026-09-19T09:02:16Z · created · unknown
 - 2026-09-19T10:44:39Z · cli_override
+- 2026-09-19T10:44:42Z · model_override
