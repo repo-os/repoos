@@ -766,7 +766,13 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       mode?: unknown;
       instruction?: unknown;
     };
-    const clean = body?.mode === "clean" && !existing.hotfix;
+    const mode = body?.mode;
+    const clean = mode === "clean" && !existing.hotfix;
+    const freshSession = mode === "fresh";
+    if (mode === "resume") {
+      const invalidResume = runner.invalidResumeReason(id, agent);
+      if (invalidResume) return json(res, 409, { ok: false, reason: invalidResume });
+    }
     // A task returned from review needs its repair brief in the initial
     // resumed turn. Sending it as a follow-up would race the agent's start
     // and commonly be rejected while the new turn is already running.
@@ -831,6 +837,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       cwd,
       contextPack: pack.content,
       resumePreamble: preamble,
+      freshSession,
     });
     return json(res, 200, {
       ok: true,

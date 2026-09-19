@@ -831,6 +831,14 @@ const SESSION_ID_PATTERNS: RegExp[] = [
   /session[ \t]+id[:\s]*["']?([A-Za-z0-9][A-Za-z0-9_.-]{5,})/i,
 ];
 
+/** Copilot's `--resume` only accepts the UUID emitted by its structured events. */
+export function isValidCopilotSessionId(value: string | undefined): boolean {
+  return Boolean(
+    value &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value),
+  );
+}
+
 /**
  * Which structured-event engine (if any) a session should use for a CLI. Both
  * structured engines parse newline-delimited JSON events; they differ only in
@@ -1227,7 +1235,9 @@ export function parseCopilotEvent(
   if (!type) return null;
   const data = event.data ?? {};
   const sessionID =
-    typeof event.sessionId === "string" && event.sessionId ? event.sessionId : undefined;
+    typeof event.sessionId === "string" && isValidCopilotSessionId(event.sessionId)
+      ? event.sessionId
+      : undefined;
 
   if (type === "assistant.message_delta") return { sessionID };
   if (type === "assistant.message") {
@@ -2471,7 +2481,7 @@ function resumeCommand(
       args: [
         "-p",
         text,
-        ...(sessionId ? [`--resume=${sessionId}`] : []),
+        ...(isValidCopilotSessionId(sessionId) ? [`--resume=${sessionId}`] : []),
         ...modelArgs(cli, model),
         ...copilotArgs({ write: true }),
       ],
@@ -4019,7 +4029,12 @@ export class AgentRunner {
     task: Task,
     branch: string,
     agent: Agent,
-    opts: { cwd?: string; contextPack?: string; resumePreamble?: string } = {},
+    opts: {
+      cwd?: string;
+      contextPack?: string;
+      resumePreamble?: string;
+      freshSession?: boolean;
+    } = {},
   ): StartResult {
     if (!DRIVABLE_CLIS.has(agent.cli)) {
       return { ok: false, reason: unsupportedCliMessage(agent.cli) };
@@ -4041,6 +4056,13 @@ export class AgentRunner {
     // foreign id to the new CLI's resume flag.
     const engine = engineForCli(agent.cli);
     if (session.engine !== engine) session.sessionId = undefined;
+    if (opts.freshSession && session.sessionId) {
+      session.sessionId = undefined;
+      this.recordEntry(task.id, session, "sys", {
+        type: "sys",
+        d: "Starting a fresh agent conversation in the existing worktree.",
+      });
+    }
     session.engine = engine;
     session.task = task;
     session.branch = branch;
@@ -4266,6 +4288,20 @@ export class AgentRunner {
   /** Whether a session exists for a key (in memory or persisted on disk). */
   hasSession(sessionKey: string): boolean {
     return this.sessions.has(sessionKey) || this.readPersisted(sessionKey) !== null;
+  }
+
+  /** A persisted Copilot id can be malformed by legacy text extraction. */
+  invalidResumeReason(taskId: string, agent: Agent): string | undefined {
+    if (agent.cli !== "github copilot") return undefined;
+    const session = this.sessions.get(taskId) ?? this.loadSession(taskId);
+    if (
+      session?.engine === "copilot" &&
+      session.sessionId &&
+      !isValidCopilotSessionId(session.sessionId)
+    ) {
+      return "The saved GitHub Copilot conversation ID is invalid. Start a fresh conversation in this worktree to keep its files and branch.";
+    }
+    return undefined;
   }
 
   /** Drop a session both in memory and from disk (a fresh review run). */
@@ -4700,12 +4736,15 @@ export class AgentRunner {
     const parsed = parseCopilotEvent(raw);
     if (!parsed) {
       const entry: AgentOutputEntry = { s: "out", d: raw };
-      this.tryExtractSessionId(raw, session);
+      // Copilot's resume id must come from its explicit JSON field, never
+      // arbitrary prose such as "session id: 1220ms".
       this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, entry, session));
       this.lineTouched(taskId, session, raw);
       return;
     }
-    if (parsed.sessionID && !session.sessionId) session.sessionId = parsed.sessionID;
+    if (parsed.sessionID && (!session.sessionId || !isValidCopilotSessionId(session.sessionId))) {
+      session.sessionId = parsed.sessionID;
+    }
     if (parsed.entry) {
       this.recordEntry(
         taskId,

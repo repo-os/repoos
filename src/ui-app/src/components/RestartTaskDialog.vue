@@ -12,11 +12,13 @@ const emit = defineEmits<{
 
 const repo = useRepoStore();
 const busy = ref(false);
+const startError = ref("");
 
 const task = computed(() => props.task);
 
-async function choose(mode: "resume" | "clean"): Promise<void> {
+async function choose(mode: "resume" | "fresh" | "clean"): Promise<void> {
   if (!props.task) return;
+  startError.value = "";
   busy.value = true;
   try {
     await repo.startWork(props.task, mode);
@@ -24,7 +26,7 @@ async function choose(mode: "resume" | "clean"): Promise<void> {
     emit("close");
   } catch (err) {
     repo.onError(err);
-    emit("close");
+    startError.value = err instanceof Error ? err.message : "Could not start work";
   } finally {
     busy.value = false;
   }
@@ -51,10 +53,20 @@ function cancel(): void {
         <b>Start clean</b> discards the worktree — and any commits on this branch that aren't merged
         into main — and begins from a fresh checkout.
       </p>
+      <p v-if="startError" class="restart-error" role="alert">{{ startError }}</p>
       <div class="restart-actions">
         <Button variant="outline" size="sm" :disabled="busy" @click="cancel">Cancel</Button>
         <Button variant="destructive" size="sm" :disabled="busy" @click="choose('clean')">
           {{ busy ? "Working…" : "Start clean" }}
+        </Button>
+        <Button
+          v-if="startError"
+          variant="outline"
+          size="sm"
+          :disabled="busy"
+          @click="choose('fresh')"
+        >
+          Start fresh in this worktree
         </Button>
         <Button variant="accent" size="sm" :disabled="busy" @click="choose('resume')">
           <span class="restart-play">▶</span>

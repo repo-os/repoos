@@ -1547,7 +1547,7 @@ export const useRepoStore = defineStore("repo", () => {
   /** Start an agent turn; `clean` discards the dirty worktree and restarts fresh. */
   async function startWork(
     t: Task,
-    mode: "resume" | "clean" = "resume",
+    mode: "resume" | "fresh" | "clean" = "resume",
     instruction?: string,
   ): Promise<void> {
     const r = await api<{ ok: boolean; reason?: string }>(
