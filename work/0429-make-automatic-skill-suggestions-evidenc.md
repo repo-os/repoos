@@ -1,11 +1,8 @@
 ---
-handoff_signal_retry_count: 2
-updated_at: "2026-09-19T01:21:10Z"
-review_passes: 2
 id: "0429"
 title: Make automatic skill suggestions evidence-gated and conservative
 type: feature
-status: active
+status: review
 priority: p2
 area: agent
 assigned_to: ai
@@ -14,6 +11,9 @@ branch: feat/make-automatic-skill-suggestions-evidenc
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-18T18:46:29Z"
+updated_at: "2026-09-19T01:31:44Z"
+handoff_signal_retry_count: 2
+review_passes: 2
 review_rounds: 1
 ---
 ## Problem
@@ -57,5 +57,4 @@ Treat a reusable skill as a high-bar artifact: a stable procedure useful on futu
 - 2026-09-19T01:02:54Z · status review→active
 - 2026-09-19T01:19:05Z · status active→review
 - 2026-09-19T01:19:06Z · status review→active
-
-
+- 2026-09-19T01:31:44Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
