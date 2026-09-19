@@ -180,7 +180,7 @@ describe("root lock mutual exclusion", () => {
 });
 
 describe("agentTouchedFiles scoping", () => {
-  it("returns only agent-touched files, excluding dist/screenshots", () => {
+  it("returns only agent-touched files, excluding dist", () => {
     const tmp = mkdtempSync(join(tmpdir(), "repoos-hotfix-a-"));
     const root = join(tmp, "repo");
     execSync("mkdir -p repo", { cwd: tmp });

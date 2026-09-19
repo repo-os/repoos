@@ -84,7 +84,7 @@ export interface ServeScan {
 
 /**
  * Cheap "size of the codebase" facts for the Control page. Derived from git, so
- * gitignored files (dist/, node_modules/, screenshots/) are excluded for free.
+ * gitignored files (dist/, node_modules/) are excluded for free.
  * Sampled behind a TTL cache — the numbers barely move between 5s polls.
  */
 export interface RepoStats {

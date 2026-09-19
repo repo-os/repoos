@@ -35,7 +35,6 @@
     "fmt:check": "oxfmt --check",
     "test": "node scripts/run-tests.mjs",
     "test:vitest": "vitest run --config src/ui-app/vite.config.ts",
-    "screenshots": "bun run build && bun scripts/capture-screenshots.mjs",
     "smoke": "bun scripts/ui-smoke.mjs",
     "dev:preview": "bun run build && bun scripts/dev-preview.mjs",
     "prepublishOnly": "bun run build"

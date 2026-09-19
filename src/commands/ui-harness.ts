@@ -1,23 +1,8 @@
 /**
- * Shared headless-UI setup for the two places that start the built app's
- * ephemeral HTTP server and a WebKit browser against it:
- *   - `runUISmokeTest` in src/commands/check.ts (`repoos check`'s UI gate)
- *   - `scripts/capture-screenshots.mjs` (`bun run screenshots`)
- *
- * Both previously hand-rolled the same "start server on an ephemeral port via
- * createRequire + launch headless WebKit" boilerplate, each with its own copy
- * of the `@playwright/test` / server wiring — so close-out ended up with two
- * independent browser+server launch cycles to verify the same built UI.
- *
- * They run in separate OS processes that are never alive at the same time —
- * `repoos check` is a subprocess of the close-out gate, while screenshots are
- * an on-demand `bun run screenshots` run that, per #0140, is never part of a
- * close-out — so each still performs its own launch at runtime. A literal
- * single shared server + single browser *instance* across that boundary is
- * therefore impossible without folding screenshots into `repoos check` (which
- * would contradict #0140), so the shared logic itself is the intended AC3
- * scope-down (task #0213): one launch implementation, zero drift between the
- * two call sites.
+ * Shared headless-UI setup for the built app's ephemeral HTTP server and a
+ * WebKit browser against it. This is used by `repoos check`'s UI gate so the
+ * smoke test reuses one launch implementation instead of hand-rolling another
+ * copy in a different flow.
  */
 import { createRequire } from "node:module";
 import type { ServeOptions } from "../server/server.js";
