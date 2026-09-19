@@ -5,7 +5,7 @@ type: feature
 status: active
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: "error: Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 167h25m46s. (response may be truncated)"
+needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
 priority: p3
 area: web
 assigned_to: ai
@@ -15,8 +15,8 @@ cli_override: cursor
 model_override: auto
 review_model_override: opencode-go/hy3
 created_at: "2026-09-19T16:38:12Z"
-updated_at: "2026-09-19T18:06:44Z"
-dev_error_count: 1
+updated_at: "2026-09-19T19:36:16Z"
+dev_error_count: 2
 ---
 ## Problem
 
@@ -60,3 +60,4 @@ Use the descriptions already in BuiltInAgentCard.vue as the source of truth:
 - 2026-09-19T17:45:09Z · cli_override, model_override
 - 2026-09-19T17:45:11Z · model_override
 - 2026-09-19T18:06:44Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-09-19T19:36:16Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
