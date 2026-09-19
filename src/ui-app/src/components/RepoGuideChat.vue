@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { X } from "lucide-vue-next";
 import { api, JSON_OPTS } from "../api";
 import { renderMarkdown } from "../lib/markdown";
 import { fmtTime } from "../lib/time";
 import { useConfigStore } from "../stores/config";
 import { useRepoStore } from "../stores/repo";
 import type { Agent, AgentOutputEntry, AgentSessionStats } from "../types";
+import FloatingHeadPanel from "./FloatingHeadPanel.vue";
 import VoiceDictate from "./VoiceDictate.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
@@ -164,7 +166,12 @@ watch(
 </script>
 
 <template>
-  <aside v-if="props.open" class="guide-panel" aria-label="RepoOS Guide chat">
+  <FloatingHeadPanel
+    :open="props.open"
+    title="Ross"
+    description="Ask Ross about this repository."
+    @close="emit('close')"
+  >
     <header class="guide-header">
       <div class="guide-avatar" aria-hidden="true">
         <img src="/assets/repoos-ross-from-friends-square.webp" alt="Ross" />
@@ -177,15 +184,13 @@ watch(
         >
       </div>
       <button
-        class="guide-minimize"
+        class="close-x guide-close"
         type="button"
         aria-label="Close Ross"
         title="Close"
         @click="emit('close')"
       >
-        <svg viewBox="0 0 20 20" fill="none">
-          <path d="M4 10h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-        </svg>
+        <X class="size-[15px]" />
       </button>
     </header>
 
@@ -279,30 +284,11 @@ watch(
         </svg>
       </button>
     </form>
-    <div class="guide-footnote">
-      Repo-aware assistant · Conversation stays open while you navigate
-    </div>
-  </aside>
+    <div class="guide-footnote">Repo-aware assistant</div>
+  </FloatingHeadPanel>
 </template>
 
 <style scoped>
-.guide-panel {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 680px;
-  max-width: 100vw;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border-left: 1px solid var(--border-bright);
-  background: var(--panel-gradient);
-  box-shadow: var(--drawer-shadow);
-  animation: guide-open 0.18s ease-out;
-  pointer-events: auto;
-  z-index: 92;
-}
 .guide-header {
   display: flex;
   align-items: center;
@@ -354,25 +340,6 @@ watch(
 .guide-identity i.off {
   background: var(--txt-faint);
   box-shadow: none;
-}
-.guide-minimize {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border: 0;
-  border-radius: 9px;
-  background: transparent;
-  color: var(--txt-dim);
-  cursor: pointer;
-}
-.guide-minimize:hover {
-  background: var(--nav-hover-bg);
-  color: var(--txt);
-}
-.guide-minimize svg {
-  width: 19px;
-  height: 19px;
 }
 .guide-log {
   flex: 1;
@@ -614,16 +581,6 @@ watch(
     500 8.5px "JetBrains Mono",
     monospace;
 }
-@keyframes guide-open {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
 @keyframes guide-bounce {
   0%,
   70%,
@@ -641,15 +598,7 @@ watch(
     opacity: 0.35;
   }
 }
-@media (max-width: 600px) {
-  .guide-panel {
-    left: 0;
-    right: 0;
-    width: 100vw !important;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
-  .guide-panel,
   .guide-thinking span,
   .guide-running-dot {
     animation: none;

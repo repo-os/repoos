@@ -36,10 +36,9 @@ function toggle(head: string) {
 }
 
 const openDebugger = () => {
-  // The task drawer sits in a higher stacking context than this floating panel
-  // (drawer z-index 100 vs this container's 70), so an open drawer renders on
-  // top of the Debugger and hides it. Close it so the Debugger is visible
-  // (0274).
+  // Keep the task drawer from remaining open when the Debugger is activated;
+  // agent panels share the same drawer shell and should not stack with the
+  // task drawer at the same time.
   ui.close();
   activeHead.value = "debugger";
 };
