@@ -2187,7 +2187,6 @@ function openFullDiff(file: DiffFile): void {
   router.push({ name: "diff", params: { taskId }, query: { file: file.filename } });
 }
 
-
 /** File IDs that are currently collapsed (all expanded by default). */
 const collapsedFiles = reactive(new Set<string>());
 

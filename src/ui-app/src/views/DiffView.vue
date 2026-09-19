@@ -49,7 +49,13 @@ const diffFiles = computed<DiffFile[]>(() => {
       if (l.startsWith("+") && !l.startsWith("+++ ")) added++;
       else if (l.startsWith("-") && !l.startsWith("--- ")) removed++;
     }
-    files.push({ filename, lines: diffLines, added, removed, type: isAdd ? "added" : isDel ? "deleted" : "modified" });
+    files.push({
+      filename,
+      lines: diffLines,
+      added,
+      removed,
+      type: isAdd ? "added" : isDel ? "deleted" : "modified",
+    });
   }
   return files;
 });
@@ -81,28 +87,52 @@ function buildRows(file: DiffFile | null): DiffRow[] {
   while (i < lines.length) {
     const line = lines[i]!;
     const m = line.match(hunkRe);
-    if (!m) { i++; continue; }
+    if (!m) {
+      i++;
+      continue;
+    }
     const leftStart = parseInt(m[1]!, 10);
     const rightStart = parseInt(m[2]!, 10);
     if (!first) {
       const skipped = leftStart - prevLeftEnd - 1;
-      rows.push({ leftNum: null, rightNum: null, leftText: null, rightText: null, leftCls: "empty", rightCls: "empty", isSep: true, skipped: skipped > 0 ? skipped : undefined });
+      rows.push({
+        leftNum: null,
+        rightNum: null,
+        leftText: null,
+        rightText: null,
+        leftCls: "empty",
+        rightCls: "empty",
+        isSep: true,
+        skipped: skipped > 0 ? skipped : undefined,
+      });
     }
     first = false;
     i++;
     let leftNum = leftStart;
     let rightNum = rightStart;
     const hunk: string[] = [];
-    while (i < lines.length && !lines[i]!.startsWith("@@")) { hunk.push(lines[i]!); i++; }
+    while (i < lines.length && !lines[i]!.startsWith("@@")) {
+      hunk.push(lines[i]!);
+      i++;
+    }
     let j = 0;
     while (j < hunk.length) {
       const hl = hunk[j]!;
-      if (hl === "\\ No newline at end of file") { j++; continue; }
+      if (hl === "\\ No newline at end of file") {
+        j++;
+        continue;
+      }
       if (hl.startsWith("-")) {
         const removed: string[] = [];
         const added: string[] = [];
-        while (j < hunk.length && hunk[j]!.startsWith("-")) { removed.push(hunk[j]!.slice(1)); j++; }
-        while (j < hunk.length && hunk[j]!.startsWith("+")) { added.push(hunk[j]!.slice(1)); j++; }
+        while (j < hunk.length && hunk[j]!.startsWith("-")) {
+          removed.push(hunk[j]!.slice(1));
+          j++;
+        }
+        while (j < hunk.length && hunk[j]!.startsWith("+")) {
+          added.push(hunk[j]!.slice(1));
+          j++;
+        }
         const count = Math.max(removed.length, added.length);
         for (let k = 0; k < count; k++) {
           const l = removed[k];
@@ -110,18 +140,35 @@ function buildRows(file: DiffFile | null): DiffRow[] {
           rows.push({
             leftNum: l !== undefined ? leftNum++ : null,
             rightNum: r !== undefined ? rightNum++ : null,
-            leftText: l ?? null, rightText: r ?? null,
+            leftText: l ?? null,
+            rightText: r ?? null,
             leftCls: l !== undefined ? "rem" : "empty",
             rightCls: r !== undefined ? "add" : "empty",
             isSep: false,
           });
         }
       } else if (hl.startsWith("+")) {
-        rows.push({ leftNum: null, rightNum: rightNum++, leftText: null, rightText: hl.slice(1), leftCls: "empty", rightCls: "add", isSep: false });
+        rows.push({
+          leftNum: null,
+          rightNum: rightNum++,
+          leftText: null,
+          rightText: hl.slice(1),
+          leftCls: "empty",
+          rightCls: "add",
+          isSep: false,
+        });
         j++;
       } else {
         const text = hl.startsWith(" ") ? hl.slice(1) : hl;
-        rows.push({ leftNum: leftNum++, rightNum: rightNum++, leftText: text, rightText: text, leftCls: "ctx", rightCls: "ctx", isSep: false });
+        rows.push({
+          leftNum: leftNum++,
+          rightNum: rightNum++,
+          leftText: text,
+          rightText: text,
+          leftCls: "ctx",
+          rightCls: "ctx",
+          isSep: false,
+        });
         j++;
       }
     }
@@ -212,7 +259,9 @@ watchEffect(() => {
   nextTick(() => drawMinimap());
 });
 
-function goBack(): void { router.back(); }
+function goBack(): void {
+  router.back();
+}
 
 function switchFile(filename: string): void {
   router.replace({ name: "diff", params: { taskId: taskId.value }, query: { file: filename } });
@@ -222,7 +271,9 @@ function basename(path: string): string {
   return path.split("/").pop() ?? path;
 }
 
-const currentIndex = computed(() => diffFiles.value.findIndex((f) => f.filename === currentFile.value?.filename));
+const currentIndex = computed(() =>
+  diffFiles.value.findIndex((f) => f.filename === currentFile.value?.filename),
+);
 
 function prevFile(): void {
   const i = currentIndex.value;
@@ -242,7 +293,7 @@ function nextFile(): void {
         <ArrowLeft class="size-4" />
         <span>Back</span>
       </button>
-      <div class="diff-page-file">{{ currentFile?.filename ?? '' }}</div>
+      <div class="diff-page-file">{{ currentFile?.filename ?? "" }}</div>
       <div v-if="currentFile" class="diff-file-delta">
         <span v-if="currentFile.added > 0" class="diff-file-add">+{{ currentFile.added }}</span>
         <span v-if="currentFile.removed > 0" class="diff-file-rem">−{{ currentFile.removed }}</span>
@@ -256,14 +307,18 @@ function nextFile(): void {
         :disabled="currentIndex <= 0"
         title="Previous file"
         @click="prevFile"
-      ><ChevronLeft class="size-4" /></button>
+      >
+        <ChevronLeft class="size-4" />
+      </button>
       <button
         class="diff-tab-arrow"
         type="button"
         :disabled="currentIndex >= diffFiles.length - 1"
         title="Next file"
         @click="nextFile"
-      ><ChevronRight class="size-4" /></button>
+      >
+        <ChevronRight class="size-4" />
+      </button>
       <div class="diff-tab-divider"></div>
       <button
         v-for="f in diffFiles"
@@ -274,7 +329,9 @@ function nextFile(): void {
         :title="f.filename"
         @click="switchFile(f.filename)"
       >
-        <span class="diff-file-type-badge" :class="f.type">{{ f.type === 'added' ? '+' : f.type === 'deleted' ? '−' : '~' }}</span>
+        <span class="diff-file-type-badge" :class="f.type">{{
+          f.type === "added" ? "+" : f.type === "deleted" ? "−" : "~"
+        }}</span>
         {{ basename(f.filename) }}
       </button>
     </div>
@@ -289,11 +346,15 @@ function nextFile(): void {
           <template v-for="(row, i) in rows" :key="'l' + i">
             <div v-if="row.isSep" class="diff-sep-row">
               <span class="diff-ln"></span>
-              <span class="diff-sep-cell">{{ row.skipped != null ? `… ${row.skipped} lines` : '…' }}</span>
+              <span class="diff-sep-cell">{{
+                row.skipped != null ? `… ${row.skipped} lines` : "…"
+              }}</span>
             </div>
             <div v-else class="diff-row" :class="'diff-row-' + row.leftCls">
-              <span class="diff-ln" :class="'diff-ln-' + row.leftCls">{{ row.leftNum ?? '' }}</span>
-              <span class="diff-cell" :class="'diff-cell-' + row.leftCls">{{ row.leftText ?? '' }}</span>
+              <span class="diff-ln" :class="'diff-ln-' + row.leftCls">{{ row.leftNum ?? "" }}</span>
+              <span class="diff-cell" :class="'diff-cell-' + row.leftCls">{{
+                row.leftText ?? ""
+              }}</span>
             </div>
           </template>
         </div>
@@ -306,11 +367,17 @@ function nextFile(): void {
           <template v-for="(row, i) in rows" :key="'r' + i">
             <div v-if="row.isSep" class="diff-sep-row">
               <span class="diff-ln"></span>
-              <span class="diff-sep-cell">{{ row.skipped != null ? `… ${row.skipped} lines` : '…' }}</span>
+              <span class="diff-sep-cell">{{
+                row.skipped != null ? `… ${row.skipped} lines` : "…"
+              }}</span>
             </div>
             <div v-else class="diff-row" :class="'diff-row-' + row.rightCls">
-              <span class="diff-ln" :class="'diff-ln-' + row.rightCls">{{ row.rightNum ?? '' }}</span>
-              <span class="diff-cell" :class="'diff-cell-' + row.rightCls">{{ row.rightText ?? '' }}</span>
+              <span class="diff-ln" :class="'diff-ln-' + row.rightCls">{{
+                row.rightNum ?? ""
+              }}</span>
+              <span class="diff-cell" :class="'diff-cell-' + row.rightCls">{{
+                row.rightText ?? ""
+              }}</span>
             </div>
           </template>
         </div>
@@ -356,7 +423,10 @@ function nextFile(): void {
   transition: 0.15s;
   flex: none;
 }
-.diff-back-btn:hover { background: var(--nav-hover-bg); color: var(--txt); }
+.diff-back-btn:hover {
+  background: var(--nav-hover-bg);
+  color: var(--txt);
+}
 
 .diff-page-file {
   flex: 1;
@@ -392,8 +462,14 @@ function nextFile(): void {
   cursor: pointer;
   transition: 0.12s;
 }
-.diff-tab-arrow:hover:not(:disabled) { background: var(--nav-hover-bg); color: var(--txt); }
-.diff-tab-arrow:disabled { opacity: 0.3; cursor: default; }
+.diff-tab-arrow:hover:not(:disabled) {
+  background: var(--nav-hover-bg);
+  color: var(--txt);
+}
+.diff-tab-arrow:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
 
 .diff-tab-divider {
   flex: none;
@@ -417,10 +493,20 @@ function nextFile(): void {
   white-space: nowrap;
   transition: 0.12s;
 }
-.diff-page-filetab:hover { background: var(--nav-hover-bg); color: var(--txt); }
-.diff-page-filetab.active { background: var(--nav-hover-bg); border-color: var(--border); color: var(--txt); }
+.diff-page-filetab:hover {
+  background: var(--nav-hover-bg);
+  color: var(--txt);
+}
+.diff-page-filetab.active {
+  background: var(--nav-hover-bg);
+  border-color: var(--border);
+  color: var(--txt);
+}
 
-.diff-file-type-badge { font: 11px/1 monospace; opacity: 0.7; }
+.diff-file-type-badge {
+  font: 11px/1 monospace;
+  opacity: 0.7;
+}
 
 .diff-page-body {
   flex: 1;
@@ -492,9 +578,9 @@ function nextFile(): void {
 .diff-sep-row {
   display: flex;
   min-width: max-content;
-  border-top: 1px solid rgba(255,255,255,0.05);
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  background: rgba(255,255,255,0.015);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.015);
 }
 
 .diff-ln {
@@ -519,27 +605,58 @@ function nextFile(): void {
 .diff-sep-cell {
   flex: 1;
   padding: 1px 12px;
-  color: rgba(140,160,180,0.35);
+  color: rgba(140, 160, 180, 0.35);
   font-size: 11px;
 }
 
 /* Row backgrounds */
-.diff-row-rem { background: rgba(255,80,80,0.06); }
-.diff-row-add { background: rgba(70,210,100,0.06); }
-.diff-row-empty { background: rgba(120,140,200,0.03); }
+.diff-row-rem {
+  background: rgba(255, 80, 80, 0.06);
+}
+.diff-row-add {
+  background: rgba(70, 210, 100, 0.06);
+}
+.diff-row-empty {
+  background: rgba(120, 140, 200, 0.03);
+}
 
 /* Line number column colours */
-.diff-ln-rem { background: rgba(255,80,80,0.12); color: rgba(255,120,120,0.65); }
-.diff-ln-add { background: rgba(70,210,100,0.10); color: rgba(100,210,100,0.65); }
-.diff-ln-empty { background: rgba(120,140,200,0.03); }
+.diff-ln-rem {
+  background: rgba(255, 80, 80, 0.12);
+  color: rgba(255, 120, 120, 0.65);
+}
+.diff-ln-add {
+  background: rgba(70, 210, 100, 0.1);
+  color: rgba(100, 210, 100, 0.65);
+}
+.diff-ln-empty {
+  background: rgba(120, 140, 200, 0.03);
+}
 
 /* Cell text colours */
-.diff-cell-ctx { color: #c9d1d9; }
-.diff-cell-rem { color: #ff9090; }
-.diff-cell-add { color: #7ee8a2; }
-.diff-cell-empty { }
+.diff-cell-ctx {
+  color: #c9d1d9;
+}
+.diff-cell-rem {
+  color: #ff9090;
+}
+.diff-cell-add {
+  color: #7ee8a2;
+}
+.diff-cell-empty {
+}
 
-.diff-file-delta { display: flex; gap: 6px; flex: none; }
-.diff-file-add { color: #3fb950; font: 600 12px/1 var(--font-sans); }
-.diff-file-rem { color: #f85149; font: 600 12px/1 var(--font-sans); }
+.diff-file-delta {
+  display: flex;
+  gap: 6px;
+  flex: none;
+}
+.diff-file-add {
+  color: #3fb950;
+  font: 600 12px/1 var(--font-sans);
+}
+.diff-file-rem {
+  color: #f85149;
+  font: 600 12px/1 var(--font-sans);
+}
 </style>
