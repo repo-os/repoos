@@ -3,9 +3,6 @@ id: "0444"
 title: Chat scrolls to newest messages with jump-to-latest button
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: the opencode agent timed out after 900s
 priority: p2
 area: web
 assigned_to: ai
@@ -15,7 +12,7 @@ cli_override: opencode
 model_override: openrouter/tencent/hy4-preview
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-19T10:26:30Z"
-updated_at: "2026-09-19T11:35:18Z"
+updated_at: "2026-09-19T11:43:11Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -118,3 +115,4 @@ Also could you make sure there's some spacing between the messages (vertical spa
 - 2026-09-19T10:56:36Z · note: CTO monitor nudge: idle 16m with no worktree output. Please continue work or pause if blocked.
 - 2026-09-19T11:18:35Z · status active→review
 - 2026-09-19T11:35:18Z · needs_input
+- 2026-09-19T11:43:11Z · needs_input
