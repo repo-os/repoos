@@ -65,6 +65,14 @@ describe("stale UI recovery", () => {
     expect(isStaleImportError("The uploaded file is not valid JSON")).toBe(false);
   });
 
+  it("keeps the intended route across stale-recovery rechecks", () => {
+    showStaleUi("/inputs?filter=new");
+    showStaleUi("/work");
+    expect(uiRecoveryState().attemptedRoute).toBe("/inputs?filter=new");
+    expect(sessionStorage.getItem("repoos.route-intent")).toBe("/inputs?filter=new");
+    expect(consumeRouteIntent()).toBe("/inputs?filter=new");
+  });
+
   it("dismisses a recovery state and clears its saved route intent", () => {
     showStaleUi("/agents");
     expect(uiRecoveryState().kind).toBe("stale");
@@ -85,5 +93,14 @@ describe("stale UI recovery", () => {
     configureUiRecovery({ isDirty: () => true, isBusy: () => false, clearNewVersion });
     showStaleUi("/agents");
     expect(clearNewVersion).toHaveBeenCalledOnce();
+  });
+
+  it("does not leave the parked-build banner on when offline recovery appears", () => {
+    dismissRecovery();
+    const clearNewVersion = vi.fn();
+    configureUiRecovery({ isDirty: () => false, isBusy: () => false, clearNewVersion });
+    showOffline("The server timed out");
+    expect(clearNewVersion).toHaveBeenCalledOnce();
+    expect(uiRecoveryState().kind).toBe("offline");
   });
 });

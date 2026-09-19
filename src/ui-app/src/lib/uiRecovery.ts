@@ -92,11 +92,16 @@ export function showStaleUi(
   newBuild: string | null = null,
   buildAt: string | null = null,
 ): void {
+  const preserveExistingIntent = state.kind === "stale" && !!state.attemptedRoute;
+  const nextRoute = preserveExistingIntent ? state.attemptedRoute! : route;
+
   clearNewVersion();
-  rememberIntent(route);
+  rememberIntent(nextRoute);
+
   state.kind = "stale";
   state.message = "RepoOS was updated while this page was open. Reload to continue.";
   state.currentBuild = clientBuild();
+  state.attemptedRoute = nextRoute;
   state.newBuild = newBuild;
   state.newBuildAt = buildAt;
   if (shouldAutoReload(isDirty(), isBusy())) {
@@ -131,6 +136,7 @@ export function showOffline(
   message = "The RepoOS server is offline or stalled. Retry or reload when it is ready.",
 ): void {
   if (state.kind === "stale") return;
+  clearNewVersion();
   state.kind = "offline";
   state.message = message;
 }
