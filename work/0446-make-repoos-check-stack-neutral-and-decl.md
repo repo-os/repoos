@@ -1,4 +1,5 @@
 ---
+merge_conflict_retry_count: 1
 updated_at: "2026-09-19T22:32:16Z"
 review_passes: 2
 id: "0446"
@@ -53,4 +54,5 @@ Make repoos check a project-defined gate that works for JavaScript, Android/Grad
 - 2026-09-19T22:18:53Z · review_model_override
 - 2026-09-19T22:26:46Z · model_override
 - 2026-09-19T22:32:16Z · needs_input
+
 
