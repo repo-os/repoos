@@ -2,14 +2,14 @@
 id: "0435"
 title: Unify floating head agent panels with tasks/inputs style
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-19T04:24:00Z"
-updated_at: "2026-09-19T04:24:15Z"
+updated_at: "2026-09-19T04:24:48Z"
 ---
 ## Problem
 
@@ -49,3 +49,4 @@ Change all the floating head agents (existing, like Ross, CTO, debugger and any 
 
 - 2026-09-19T04:24:00Z · created · hello@repoos.org
 - 2026-09-19T04:24:15Z · status draft→inbox, title, area, body
+- 2026-09-19T04:24:48Z · status inbox→ready
