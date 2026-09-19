@@ -16,6 +16,7 @@ const KEY_ORDER = [
   "type",
   "status",
   "needs_input",
+  "questions",
   "needs_input_reason",
   "needs_input_detail",
   "needs_merge",
@@ -251,6 +252,9 @@ export function parseTask(args: ParseTaskArgs): Task {
     type: String(data.type ?? "feature"),
     status: normalizeStatus(data.status, "inbox" as Status),
     needsInput: data.needs_input === true,
+    questions: Array.isArray(data.questions)
+      ? data.questions.filter((q): q is string => typeof q === "string" && q.trim().length > 0)
+      : undefined,
     needsInputReason:
       typeof data.needs_input_reason === "string" ? data.needs_input_reason : undefined,
     needsInputDetail:
@@ -311,6 +315,7 @@ export function serializeTask(task: Task): string {
     if (task.needsInputReason) data.needs_input_reason = task.needsInputReason;
     if (task.needsInputDetail) data.needs_input_detail = task.needsInputDetail;
   }
+  if (task.questions && task.questions.length > 0) data.questions = task.questions;
   if (task.needsMerge) data.needs_merge = true;
   if (task.noSourceChange) data.no_source_change = true;
   if (task.agentOverride) data.agent_override = task.agentOverride;

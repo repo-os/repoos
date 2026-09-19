@@ -3901,6 +3901,27 @@
 .md-card:hover .md-rendered {
   border-color: var(--border-bright);
 }
+.needs-input-block {
+  margin: 18px 0 4px;
+}
+.needs-input-card {
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--accent) 7%, var(--md-body-bg));
+}
+.needs-input-list {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding-left: 20px;
+  color: var(--txt);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.needs-input-answer {
+  margin-top: 2px;
+}
 .md-rendered h1,
 .md-rendered h2,
 .md-rendered h3,

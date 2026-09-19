@@ -1436,6 +1436,27 @@ function pmSendCanned(text: string): void {
   void pmSend();
 }
 
+function buildNeedsInputPmPrompt(questions: string[]): string {
+  return [
+    "I need a quick human decision before I can continue with this task.",
+    "Please help me answer the questions below and then we can update the task together.",
+    "",
+    ...questions.map((q, i) => `${i + 1}. ${q}`),
+    "",
+    "Once we agree on the answers, I’ll update the task body and clear the blocking flag.",
+  ].join("\n");
+}
+
+function openPmWithNeedsInputQuestions(): void {
+  if (!ui.active?.questions?.length) return;
+  ui.activeTab = "pm";
+  pmDraft.value = buildNeedsInputPmPrompt(ui.active.questions);
+  nextTick(() => {
+    pmDraftTextarea.value?.focus();
+    autoGrowTextarea(pmDraftTextarea.value);
+  });
+}
+
 function pmLineKind(entry: AgentOutputEntry): "human" | "assistant" | "status" | "hidden" {
   if ("type" in entry) {
     if (entry.type === "human") return "human";
@@ -3271,6 +3292,27 @@ watch(
                 <option value="ai"></option>
                 <option value="human"></option>
               </datalist>
+            </div>
+          </div>
+          <div
+            v-if="ui.active?.needsInput && ui.active.questions?.length"
+            class="needs-input-block"
+          >
+            <div class="md-h">Questions for you</div>
+            <div class="needs-input-card">
+              <ul class="needs-input-list">
+                <li v-for="(question, index) in ui.active.questions" :key="index">
+                  {{ question }}
+                </li>
+              </ul>
+              <Button
+                variant="default"
+                size="sm"
+                class="needs-input-answer"
+                @click="openPmWithNeedsInputQuestions"
+              >
+                Answer these
+              </Button>
             </div>
           </div>
           <div class="md-h spec-head" style="margin-top: 18px">

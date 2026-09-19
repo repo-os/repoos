@@ -72,6 +72,8 @@ export interface TaskPatch {
   body?: string;
   /** Clear (false) or set (true) the waiting-on-human flag. */
   needsInput?: boolean;
+  /** Specific blocking questions for the human to answer while `needsInput` is true. Empty array or null clears them. */
+  questions?: string[] | null;
   /** Machine-readable reason `needsInput` was set, or null to clear it. Only meaningful alongside `needsInput: true`. */
   needsInputReason?: string | null;
   /** Free-text detail for why `needsInput` was set, or null to clear it. See {@link Task.needsInputDetail}. */
@@ -184,7 +186,20 @@ export function patchTaskFile(
     if (!patch.needsInput) {
       current.needsInputReason = undefined;
       current.needsInputDetail = undefined;
+      current.questions = undefined;
     }
+  }
+  if (patch.questions !== undefined) {
+    const currentQuestions = current.questions ?? [];
+    const nextQuestions = patch.questions ?? [];
+    if (
+      currentQuestions.length !== nextQuestions.length ||
+      currentQuestions.some((question, index) => question !== nextQuestions[index])
+    ) {
+      changes.push("questions");
+    }
+    current.questions =
+      patch.questions && patch.questions.length > 0 ? patch.questions.map(String) : undefined;
   }
   if (patch.needsInputReason !== undefined) {
     current.needsInputReason = patch.needsInputReason ?? undefined;

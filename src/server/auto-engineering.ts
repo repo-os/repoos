@@ -192,7 +192,7 @@ export class AutoEngineeringOrchestrator {
       };
     }
 
-    const readyTasks = allTasks.filter((t) => t.status === "ready");
+    const readyTasks = allTasks.filter((t) => t.status === "ready" && !t.needsInput);
 
     // No ready tasks.
     if (readyTasks.length === 0) {

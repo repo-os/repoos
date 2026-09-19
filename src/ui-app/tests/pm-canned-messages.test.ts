@@ -183,4 +183,24 @@ describe("canned PM messages above the compose box", () => {
     expect(sent).toHaveLength(1);
     expect(sent[0]).toBe("Can you flesh this out?");
   });
+
+  it("prefills the PM chat with the task's questions when the human clicks Answer these", async () => {
+    const { wrapper } = await mountPmTab(
+      makeTask({
+        needsInput: true,
+        questions: ["Should we fix it?", "Or update the docs?"],
+      }),
+    );
+    const ui = useUiStore();
+    ui.activeTab = "details";
+    await flush();
+
+    await wrapper.find(".needs-input-answer").trigger("click");
+    await flush();
+
+    const textarea = wrapper.find('textarea[aria-label="Message PM"]');
+    expect(textarea.exists()).toBe(true);
+    expect((textarea.element as HTMLTextAreaElement).value).toContain("Should we fix it?");
+    expect((textarea.element as HTMLTextAreaElement).value).toContain("Or update the docs?");
+  });
 });

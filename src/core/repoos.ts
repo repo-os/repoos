@@ -34,6 +34,8 @@ export interface CreateTaskInput {
   createdBy?: string;
   branch?: string;
   body?: string;
+  needsInput?: boolean;
+  questions?: string[];
   /**
    * The user's raw freeform prompt. When provided, it is preserved verbatim
    * under a `## Original prompt` section in the initial body so the user's
@@ -232,7 +234,8 @@ export function createRepoOS(root?: string): RepoOS {
         title: input.title,
         type: input.type ?? "feature",
         status: input.status ?? config.defaultStatus,
-        needsInput: false,
+        needsInput: input.needsInput ?? false,
+        questions: input.questions?.length ? input.questions : undefined,
         needsMerge: false,
         noSourceChange: false,
         priority: input.priority ?? "p2",

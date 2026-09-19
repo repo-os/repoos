@@ -80,6 +80,21 @@ describe("needs_input frontmatter field", () => {
     }
   });
 
+  it("parses and serializes questions alongside needs_input", () => {
+    const { root, absPath, clean } = setupFile(PLAIN);
+    try {
+      const flagged = parse(
+        `---\nid: "0067"\ntitle: Waiting on the human\ntype: feature\nstatus: active\nneeds_input: true\nquestions:\n  - \"Should we fix it?\"\n  - \"Or update docs?\"\n---\n## Problem\n\nBody.\n`,
+        absPath,
+        root,
+      );
+      expect(flagged.questions).toEqual(["Should we fix it?", "Or update docs?"]);
+      expect(serializeTask(flagged)).toContain("questions:");
+    } finally {
+      clean();
+    }
+  });
+
   it("never writes needs_input when unset or false", () => {
     const { root, absPath, clean } = setupFile(PLAIN);
     try {
@@ -106,9 +121,30 @@ describe("needs_input frontmatter field", () => {
   it("sets the flag through patchTaskFile and it round-trips", () => {
     const { root, absPath, clean } = setupFile(PLAIN);
     try {
-      const flagged = patchTaskFile(config(root), absPath, { needsInput: true });
+      const flagged = patchTaskFile(config(root), absPath, {
+        needsInput: true,
+        questions: ["Should we fix it?", "Or update docs?"],
+      });
       expect(flagged.needsInput).toBe(true);
+      expect(flagged.questions).toEqual(["Should we fix it?", "Or update docs?"]);
       expect(readFileSync(absPath, "utf8")).toContain("needs_input: true");
+      expect(readFileSync(absPath, "utf8")).toContain("questions:");
+    } finally {
+      clean();
+    }
+  });
+
+  it("clears questions when the human input flag is cleared", () => {
+    const { root, absPath, clean } = setupFile(FLAGGED);
+    try {
+      patchTaskFile(config(root), absPath, {
+        needsInput: true,
+        questions: ["Should we fix it?"],
+      });
+      const cleared = patchTaskFile(config(root), absPath, { needsInput: false });
+      expect(cleared.needsInput).toBe(false);
+      expect(cleared.questions).toBeUndefined();
+      expect(readFileSync(absPath, "utf8")).not.toContain("questions:");
     } finally {
       clean();
     }

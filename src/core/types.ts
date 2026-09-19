@@ -58,6 +58,8 @@ export interface TaskFrontmatter {
   priority?: Priority | string;
   /** True when the agent is waiting on the human and the task stays `active`. */
   needs_input?: boolean;
+  /** Specific questions blocking implementation until the human answers them. */
+  questions?: string[];
   /** Machine-readable reason `needs_input` was set (e.g. "review-failed"), for auto-clearing and UI display. Only meaningful while needs_input is true. */
   needs_input_reason?: string;
   /** True when the task branch has drifted from main and needs a manual merge. */
@@ -97,6 +99,8 @@ export interface Task {
   status: Status;
   /** True when the agent is waiting on the human. Layered on `active`, never a status. */
   needsInput: boolean;
+  /** Specific human-decisions blocking implementation until answered. */
+  questions?: string[];
   /** Machine-readable reason `needsInput` was set — see {@link NeedsInputReason}. Only meaningful while needsInput is true. */
   needsInputReason?: string;
   /**
@@ -852,6 +856,8 @@ export interface BoardTask {
   type: string;
   status: Status;
   needsInput: boolean;
+  /** Specific human-decisions blocking implementation until answered. */
+  questions?: string[];
   needsInputReason?: string;
   needsMerge: boolean;
   priority: Priority | string;

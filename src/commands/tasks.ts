@@ -280,11 +280,14 @@ const UPDATE_FLAGS: Record<string, keyof TaskPatch> = {
   body: "body",
   branch: "branch",
   "assigned-to": "assignedTo",
+  "needs-input": "needsInput",
+  questions: "questions",
 };
 
 /**
  * `repoos update <id> [--title ...] [--area ...] [--priority ...] [--type ...]
- *   [--body ... | --body -] [--branch ...] [--assigned-to ai|human]`
+ *   [--body ... | --body -] [--branch ...] [--assigned-to ai|human]
+ *   [--needs-input true|false] [--questions "Question one\nQuestion two"]`
  *
  * Writes directly via patchTaskFile (same path the server's PATCH route uses),
  * so it works with no HTTP round-trip and no session auth — this is the path
@@ -294,7 +297,7 @@ const UPDATE_FLAGS: Record<string, keyof TaskPatch> = {
 export function cmdUpdate(args: string[]): void {
   const [id, ...rest] = args;
   const usage =
-    '  Usage: repoos update <id> [--title "..."] [--area a] [--priority p] [--type t] [--body "..."|-] [--branch b] [--assigned-to ai|human]';
+    '  Usage: repoos update <id> [--title "..."] [--area a] [--priority p] [--type t] [--body "..."|-] [--branch b] [--assigned-to ai|human] [--needs-input true|false] [--questions "Question one\\nQuestion two"] [--clear-questions]';
   if (!id) {
     console.error(c.red(usage));
     process.exitCode = 1;
@@ -310,6 +313,10 @@ export function cmdUpdate(args: string[]): void {
       return;
     }
     const key = a.slice(2);
+    if (key === "clear-questions") {
+      patch.questions = null;
+      continue;
+    }
     const field = UPDATE_FLAGS[key];
     if (!field) {
       console.error(c.red(`  Unknown flag --${key}\n${usage}`));
@@ -322,8 +329,19 @@ export function cmdUpdate(args: string[]): void {
       process.exitCode = 1;
       return;
     }
-    const value = field === "body" && raw === "-" ? readFileSync(0, "utf8") : raw;
-    (patch[field] as string) = value;
+    if (field === "needsInput") {
+      if (raw !== "true" && raw !== "false") {
+        console.error(c.red(`  --needs-input must be true or false`));
+        process.exitCode = 1;
+        return;
+      }
+      patch.needsInput = raw === "true";
+    } else if (field === "questions") {
+      patch.questions = parseQuestions(raw);
+    } else {
+      const value = field === "body" && raw === "-" ? readFileSync(0, "utf8") : raw;
+      (patch[field] as string) = value;
+    }
   }
 
   if (Object.keys(patch).length === 0) {
@@ -349,12 +367,27 @@ export function cmdUpdate(args: string[]): void {
   }
 }
 
-const NEW_FLAGS = new Set(["ai", "type", "area", "priority", "body"]);
+const NEW_FLAGS = new Set(["ai", "type", "area", "priority", "body", "needs-input", "questions"]);
 
-/** `repoos new <title> [--ai] [--type t] [--area a] [--priority p] [--body "..."|-]` */
+function parseQuestions(raw: string): string[] {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.every((q): q is string => typeof q === "string")) {
+      return parsed.map((q) => q.trim()).filter(Boolean);
+    }
+  } catch {
+    // Newline-delimited questions are the convenient CLI form.
+  }
+  return raw
+    .split(/\r?\n/)
+    .map((q) => q.trim())
+    .filter(Boolean);
+}
+
+/** `repoos new <title> [--ai] [--needs-input true] [--questions "..."]` */
 export function cmdNew(args: string[]): void {
   const usage =
-    '  Usage: repoos new "Task title" [--ai] [--type bug] [--area web] [--priority p1] [--body "..."|-]';
+    '  Usage: repoos new "Task title" [--ai] [--type bug] [--area web] [--priority p1] [--body "..."|-] [--needs-input true|false] [--questions "Question one\\nQuestion two"]';
   const flags: Record<string, string | boolean> = {};
   const positional: string[] = [];
   for (let i = 0; i < args.length; i++) {
@@ -398,6 +431,8 @@ export function cmdNew(args: string[]): void {
     priority: (flags.priority as string) || undefined,
     assignedTo: flags.ai ? "ai" : undefined,
     body: (flags.body as string) || undefined,
+    needsInput: flags["needs-input"] === "true",
+    questions: flags.questions ? parseQuestions(flags.questions as string) : undefined,
   });
   console.log(
     "  " + c.green("created ") + c.dim("#" + t.id) + "  " + t.title + c.dim("  → " + t.path),
