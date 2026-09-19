@@ -658,7 +658,6 @@ export const useRepoStore = defineStore("repo", () => {
 
   /** Treat a successful human task action as an implicit acknowledgement. */
   function acknowledgeHumanTaskAction(id: string): void {
-    acknowledge(id);
     acknowledgeCreate(id);
   }
 

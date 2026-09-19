@@ -1269,6 +1269,29 @@ describe("fresh-done acknowledgement (0278)", () => {
     expect(repo2.needsAck(repo2.tasks[0])).toBe(false);
     expect(localStorage.getItem("repoos.done.acked")).toContain("0001");
   });
+
+  it("implicit create-ack does not pollute the done-ack highlight (#0437)", async () => {
+    // A PM-created task is creation-acked implicitly when a human changes its state.
+    // That must NOT pre-fill doneAcked, which would suppress the "just done" highlight
+    // when the same task later reaches `done`.
+    localStorage.removeItem("repoos.done.acked");
+    localStorage.removeItem("repoos.aiCreate.unacked");
+    const repo = useRepoStore();
+    await repo.init();
+    const es = FakeEventSource.instances[0];
+    // Task arrives as PM-created (needs creation ack).
+    es.emit("task.created", { type: "task.created", task: makeTask({ status: "inbox" }) });
+    // Human moves it to ready — implicit creation ack.
+    repo.acknowledgeCreate("0001");
+    expect(repo.needsAck(repo.tasks[0])).toBe(false);
+    // Now it reaches done: the highlight must still fire.
+    es.emit("task.updated", {
+      type: "task.updated",
+      task: makeTask({ status: "done", updated_at: now() }),
+      prev: { status: "review" },
+    });
+    expect(repo.needsAck(repo.tasks[0])).toBe(true);
+  });
 });
 
 describe("AI-created card acknowledgement (0320)", () => {
