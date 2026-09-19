@@ -311,6 +311,14 @@ cannot tell from the code alone:
   fires, run `bun run fmt`, re-stage and commit again. If `git config
   core.hooksPath` is empty in your checkout, run `bun install`. For anything
   beyond formatting, still run `repoos check` before committing to `main`.
+  **The hook skipping task branches means formatting is not enforced at commit
+  time there — the close-out gate is the first check.** Always run `bun run fmt`
+  before committing on a task branch, just as you would on `main`, so the gate
+  doesn't fail on a cosmetic formatting delta after the feature work is done.
+  Incident: 2026-09-19, task #0435 — a hand-edit shortened two footnote strings;
+  the formatter collapsed the now-short elements to one line, the hook didn't
+  fire, and MTD failed twice on `oxfmt --check` before the formatting commit was
+  added.
 - **Hand-landing a stale branch?** Check for other tasks' files first —
   `git diff main...HEAD --name-only | grep '^work/'` — and
   `git checkout main -- <them>` before merging. Anything but the task's own
