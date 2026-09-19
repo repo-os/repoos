@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p3
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+review_model_override: opencode-go/hy3
 created_at: "2026-09-19T16:38:12Z"
-updated_at: "2026-09-19T16:38:12Z"
+updated_at: "2026-09-19T17:36:07Z"
 ---
 ## Problem
 
@@ -46,3 +47,4 @@ Use the descriptions already in BuiltInAgentCard.vue as the source of truth:
 ## Activity
 
 - 2026-09-19T16:38:12Z · created · unknown
+- 2026-09-19T17:36:07Z · review_model_override
