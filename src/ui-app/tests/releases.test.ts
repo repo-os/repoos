@@ -1,7 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { flushPromises, mount } from "@vue/test-utils";
 import { parseTask, releasedAtFromActivity } from "../../core/task";
 import { markTaskReleased, patchTaskFile } from "../../server/write";
 import { nextReleaseVersion, releaseTimelineTasks } from "../src/releases";
+import { isNewerVersion, isStableRelease } from "../../server/routes/release";
+import ReleaseUpdateNotification from "../src/components/ReleaseUpdateNotification.vue";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -35,6 +38,91 @@ function task(root: string, id: string, body = "## Activity\n"): Task {
 }
 
 describe("feature releases", () => {
+  it("accepts only stable semantic-version release tags", () => {
+    expect(isStableRelease({ tag_name: "v0.5.48", prerelease: false })).toBe(true);
+    expect(isStableRelease({ tag_name: "v0.6.0-rc.1", prerelease: true })).toBe(false);
+    expect(isStableRelease({ tag_name: "v0.6.0-beta.1", prerelease: false })).toBe(false);
+    expect(isStableRelease({ tag_name: "latest", prerelease: false })).toBe(false);
+  });
+
+  it("detects newer releases and rejects unknown source versions", () => {
+    expect(isNewerVersion("0.5.48", "0.5.46")).toBe(true);
+    expect(isNewerVersion("0.5.46", "0.5.48")).toBe(false);
+    expect(isNewerVersion("0.5.48", null)).toBe(false);
+  });
+
+  it("keeps the banner visible while the modal opens for details", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          currentVersion: "0.5.46",
+          latestVersion: "0.6.0",
+          available: true,
+          releaseNotes: "## Highlights\n- New release",
+          releaseUrl: "https://github.com/repo-os/repoos/releases/tag/v0.6.0",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const wrapper = mount(ReleaseUpdateNotification, { attachTo: document.body });
+    try {
+      await flushPromises();
+      const banner = document.body.querySelector(".release-update-banner");
+      expect(banner).not.toBeNull();
+      expect(banner?.textContent ?? "").toContain("RepoOS 0.6.0 is ready");
+
+      await banner!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await flushPromises();
+      expect(document.body.querySelector(".release-update-banner")).not.toBeNull();
+      expect(document.body.textContent).toContain("Upgrade to RepoOS 0.6.0");
+    } finally {
+      wrapper.unmount();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("Not now dismisses the banner", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          currentVersion: "0.5.46",
+          latestVersion: "0.6.0",
+          available: true,
+          releaseNotes: null,
+          releaseUrl: "https://github.com/repo-os/repoos/releases/tag/v0.6.0",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const wrapper = mount(ReleaseUpdateNotification, { attachTo: document.body });
+    try {
+      await flushPromises();
+      expect(document.body.querySelector(".release-update-banner")).not.toBeNull();
+
+      // Open modal
+      await document.body
+        .querySelector(".release-update-banner")!
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await flushPromises();
+
+      // Click "Not now" — banner must disappear
+      const notNow = Array.from(document.body.querySelectorAll("button")).find(
+        (b) => b.textContent?.trim() === "Not now",
+      );
+      expect(notNow).not.toBeUndefined();
+      await notNow!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await flushPromises();
+      expect(document.body.querySelector(".release-update-banner")).toBeNull();
+    } finally {
+      wrapper.unmount();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("suggests the next patch version (or stabilizes a prerelease)", () => {
     expect(nextReleaseVersion("0.5.30")).toBe("0.5.31");
     expect(nextReleaseVersion("1.2.3-rc.1")).toBe("1.2.3");

@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-19T08:17:01Z"
-review_passes: 4
 id: "0441"
 title: Add new release available notification
 type: feature
@@ -12,9 +10,7 @@ created_by: hello@repoos.org
 branch: feat/add-new-release-available-notification
 review_model_override: openrouter/tencent/hy4-preview
 created_at: "2026-09-19T07:27:58Z"
-last_check_failure: "[object Object]"
-review_rounds: 2
-handoff_signal_retry_count: 1
+updated_at: "2026-09-19T07:38:54Z"
 ---
 ## Problem
 Users have no in-app notification when a new stable release of RepoOS is available, requiring manual checking or external discovery to find upgrades.
@@ -63,9 +59,3 @@ I'd like to make a small unobtrusive dismissable message show to the user when t
 - 2026-09-19T07:29:51Z · status inbox→ready
 - 2026-09-19T07:29:53Z · status ready→active, branch
 - 2026-09-19T07:38:54Z · status active→review
-- 2026-09-19T07:41:28Z · status review→active
-- 2026-09-19T07:44:45Z · status active→review
-- 2026-09-19T07:47:51Z · status review→active
-- 2026-09-19T07:56:51Z · status active→review
-
-
