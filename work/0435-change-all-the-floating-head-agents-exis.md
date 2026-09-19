@@ -3,6 +3,9 @@ id: "0435"
 title: Unify floating head agent panels with tasks/inputs style
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the opencode agent exited without output: error: Cannot connect to API: Was there a typo in the url or port?"
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +13,7 @@ created_by: hello@repoos.org
 branch: feat/unify-floating-head-agent-panels-with-ta
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-19T04:24:00Z"
-updated_at: "2026-09-19T04:36:24Z"
+updated_at: "2026-09-19T04:46:22Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -58,3 +61,4 @@ Change all the floating head agents (existing, like Ross, CTO, debugger and any 
 - 2026-09-19T04:29:29Z · status active→review
 - 2026-09-19T04:31:48Z · status review→active
 - 2026-09-19T04:36:24Z · status active→review
+- 2026-09-19T04:46:22Z · needs_input
