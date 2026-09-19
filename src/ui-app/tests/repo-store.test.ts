@@ -1324,6 +1324,44 @@ describe("AI-created card acknowledgement (0320)", () => {
     expect(repo.needsCreateAck("0043")).toBe(false);
   });
 
+  it("implicitly acknowledges human status and assignment changes, not PM updates", async () => {
+    localStorage.removeItem(PENDING_KEY);
+    localStorage.removeItem(UNACKED_KEY);
+    stubFetchWith({ ok: true, fallback: false, task: makeTask({ id: "0043", status: "draft" }) });
+    const repo = useRepoStore();
+    await repo.init();
+    await repo.createFreeformTask("a fresh idea", "run-1");
+
+    const es = FakeEventSource.instances[0];
+    es.emit("task.updated", {
+      type: "task.updated",
+      task: makeTask({ id: "0043", status: "inbox" }),
+      prev: { status: "draft" },
+    });
+    expect(repo.needsCreateAck("0043")).toBe(true);
+
+    // A PM-originated update is only an SSE event and must not dismiss it.
+    es.emit("task.updated", {
+      type: "task.updated",
+      task: makeTask({ id: "0043", status: "ready" }),
+      prev: { status: "inbox" },
+    });
+    expect(repo.needsCreateAck("0043")).toBe(true);
+
+    // Mutations initiated by this tab are implicit acknowledgement.
+    await repo.setStatus(makeTask({ id: "0043", status: "ready" }), "active");
+    expect(repo.needsCreateAck("0043")).toBe(false);
+
+    // Assignment uses the same human-action path.
+    localStorage.setItem(UNACKED_KEY, JSON.stringify(["0043"]));
+    setActivePinia(createPinia());
+    const repo2 = useRepoStore();
+    await repo2.init();
+    expect(repo2.needsCreateAck("0043")).toBe(true);
+    await repo2.patchTask("0043", { assignee: "human" });
+    expect(repo2.needsCreateAck("0043")).toBe(false);
+  });
+
   it("never flags fallback creations or tasks not created through the AI flow", async () => {
     localStorage.removeItem(PENDING_KEY);
     localStorage.removeItem(UNACKED_KEY);

@@ -656,6 +656,12 @@ export const useRepoStore = defineStore("repo", () => {
     writeIdSet(AI_CREATE_UNACKED_KEY, next);
   }
 
+  /** Treat a successful human task action as an implicit acknowledgement. */
+  function acknowledgeHumanTaskAction(id: string): void {
+    acknowledge(id);
+    acknowledgeCreate(id);
+  }
+
   /**
    * Reconcile the persisted pending set against a fresh board snapshot
    * (0320). A tab closed or disconnected while the PM agent ran missed the
@@ -1398,7 +1404,12 @@ export const useRepoStore = defineStore("repo", () => {
   }
 
   async function patchTask(id: string, fields: Record<string, unknown>): Promise<Task> {
-    return api<Task>(`/api/tasks/${id}`, JSON_OPTS("PATCH", fields));
+    const task = await api<Task>(`/api/tasks/${id}`, JSON_OPTS("PATCH", fields));
+    // A successful status or assignment edit is an acknowledgement by the
+    // human using this UI. Do not infer this from task.updated SSE events:
+    // those also carry PM-agent changes.
+    if ("status" in fields || "assignee" in fields) acknowledgeHumanTaskAction(id);
+    return task;
   }
 
   /**
@@ -1575,6 +1586,7 @@ export const useRepoStore = defineStore("repo", () => {
       pushToast(message, "error");
       throw new Error(message);
     }
+    acknowledgeHumanTaskAction(t.id);
   }
 
   async function pauseWork(t: Task): Promise<void> {
@@ -1586,6 +1598,7 @@ export const useRepoStore = defineStore("repo", () => {
       pushToast(message, "error");
       throw new Error(message);
     }
+    acknowledgeHumanTaskAction(t.id);
   }
 
   /** Active/review -> ready: stop any live agent/review, keep the worktree. */
@@ -1598,6 +1611,7 @@ export const useRepoStore = defineStore("repo", () => {
       pushToast(message, "error");
       throw new Error(message);
     }
+    acknowledgeHumanTaskAction(t.id);
   }
 
   /** Done -> ready: clears the stale branch reference so the next Start work
@@ -1611,6 +1625,7 @@ export const useRepoStore = defineStore("repo", () => {
       pushToast(message, "error");
       throw new Error(message);
     }
+    acknowledgeHumanTaskAction(t.id);
   }
 
   async function activateHotfix(
@@ -1626,6 +1641,7 @@ export const useRepoStore = defineStore("repo", () => {
       pushToast(message, "error");
       throw new Error(message);
     }
+    acknowledgeHumanTaskAction(t.id);
   }
 
   /**
@@ -1690,6 +1706,7 @@ export const useRepoStore = defineStore("repo", () => {
       });
       throw new MoveToDoneError(t.id, message);
     }
+    acknowledgeHumanTaskAction(t.id);
     setDoneError(t.id, null);
     dirtyMain.value = { ...dirtyMain.value, [t.id]: [] };
     return r;
