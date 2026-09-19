@@ -10,6 +10,12 @@ import SelectItem from "./ui/select/item.vue";
 import SelectTrigger from "./ui/select/trigger.vue";
 import SelectValue from "./ui/select/value.vue";
 import SelectViewport from "./ui/select/viewport.vue";
+import Dialog from "./ui/dialog/root.vue";
+import DialogClose from "./ui/dialog/close.vue";
+import DialogContent from "./ui/dialog/content.vue";
+import DialogDescription from "./ui/dialog/description.vue";
+import DialogOverlay from "./ui/dialog/overlay.vue";
+import DialogTitle from "./ui/dialog/title.vue";
 import AgentModelControl from "./AgentModelControl.vue";
 
 interface Props {
@@ -75,6 +81,7 @@ const cliOptions = computed(() => config.agentsMeta.clis ?? []);
 const modelsFor = config.modelsFor;
 
 const isRunning = ref(false);
+const showStartedModal = ref(false);
 const error = ref("");
 const message = ref("");
 // Docs Debt surfaces its two concrete outcomes — the bundled findings task and
@@ -85,6 +92,27 @@ const bannerAutoFixed = ref<{ doc: string; from: string; to: string }[]>([]);
 // agent-runs/<agent>/ path (0439) —
 // the receipt you can read without watching the agent work.
 const bannerRunDoc = ref<string | null>(null);
+
+const agentStartedSummary = computed(() => {
+  switch (props.agent) {
+    case "performance":
+      return "Scans for performance issues like slow functions, blocking operations, deeply nested loops, unbounded memory growth, and duplicate computations. Findings are bundled into one inbox task.";
+    case "tech-debt":
+      return "Scans for technical debt patterns including outdated dependencies, code duplication, high-complexity files, unused code, and deprecated APIs. Findings are bundled into one inbox task.";
+    case "design":
+      return "Reviews your web UI for layout issues, styling inconsistencies, accessibility gaps, and UX friction. Findings and proposed fixes are bundled into one inbox task.";
+    case "architect":
+      return "Analyses your codebase for tight coupling, missing abstractions, scalability risks, and over-engineering. Findings are bundled into one inbox task.";
+    case "docs-debt":
+      return "Verifies that AGENTS.md and your project docs still match the code — checks file paths, symbols, and stated constraints. Stale references it can fix automatically are committed; anything that needs a human decision is bundled into one inbox task.";
+    default:
+      return agentMeta.value?.description ?? "";
+  }
+});
+
+function dismissStartedModal(): void {
+  showStartedModal.value = false;
+}
 
 const agentMeta = computed(() => {
   if (props.agent === "debugger") {
@@ -209,6 +237,7 @@ async function updateSchedule(value: string | undefined): Promise<void> {
 async function runNow(): Promise<void> {
   if (isRunning.value) return;
   isRunning.value = true;
+  showStartedModal.value = true;
   error.value = "";
   message.value = "";
   bannerTaskId.value = null;
@@ -271,6 +300,7 @@ async function runNow(): Promise<void> {
     error.value = err instanceof Error ? err.message : "Failed to run agent";
   } finally {
     isRunning.value = false;
+    showStartedModal.value = false;
   }
 }
 </script>
@@ -358,6 +388,41 @@ async function runNow(): Promise<void> {
         <div v-if="error" class="built-in-status error">{{ error }}</div>
       </div>
     </div>
+
+    <Teleport to="body">
+      <Dialog :open="showStartedModal" @update:open="(v: boolean) => (showStartedModal = v)">
+        <DialogOverlay />
+        <DialogContent class="built-in-started-modal">
+          <div data-testid="built-in-started-modal">
+            <div class="built-in-started-head">
+              <DialogTitle class="built-in-started-title">
+                {{ agentMeta.icon }} {{ agentMeta.name }} started
+              </DialogTitle>
+              <DialogClose class="close-x" aria-label="Close" @click="dismissStartedModal">
+                ×
+              </DialogClose>
+            </div>
+            <div class="built-in-started-body">
+              <DialogDescription class="built-in-started-summary">
+                {{ agentStartedSummary }}
+              </DialogDescription>
+              <div class="built-in-started-details">
+                <p class="built-in-started-timing">
+                  <span class="built-in-started-dot"></span>
+                  Usually takes 1–3 minutes
+                </p>
+                <p class="built-in-started-location">
+                  Findings will appear as a new task in your inbox when the run is complete.
+                </p>
+              </div>
+            </div>
+            <div class="built-in-started-actions">
+              <Button variant="outline" size="sm" @click="dismissStartedModal">Got it</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </Teleport>
   </div>
 </template>
 

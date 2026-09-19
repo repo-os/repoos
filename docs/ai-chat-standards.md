@@ -16,7 +16,7 @@ A chat surface is three shared pieces plus its own bubbles:
 | Piece | Where | Owns |
 | --- | --- | --- |
 | `useChatScroll()` | `src/ui-app/src/composables/useChatScroll.ts` | scroll-to-newest, position memory, "am I away from the bottom" |
-| `<ChatJumpToLatest>` | `src/ui-app/src/components/ChatJumpToLatest.vue` | the floating "Jump to latest" button |
+| Jump control | `<ChatJumpToLatest>` or inline `.agent-jump` | the "Jump to latest" / "Latest" button |
 | `<AiChatThinking>` | `src/ui-app/src/components/AiChatThinking.vue` | the pulsing working indicator |
 
 Visual rhythm is not per-component either: `.ai-chat-log` (message spacing),
@@ -55,13 +55,14 @@ who scrolled up on purpose.
 ### 4. Offer a jump back down
 
 `showJumpToLatest` is true whenever the reader is more than
-`CHAT_BOTTOM_THRESHOLD` (64px) from the bottom. It drives `<ChatJumpToLatest>`,
-which is teleported to `<body>` — a `position: fixed` child of a drawer or
-floating panel is trapped in that panel's stacking context and ends up
-unclickable. Because the button leaves the chat's DOM, its position is derived
-from the log element's `getBoundingClientRect()`, which keeps it pinned just
-above the compose row wherever that ends up on screen. Clicking it scrolls
-smoothly to the newest message and the button hides itself on arrival.
+`CHAT_BOTTOM_THRESHOLD` (64px) from the bottom. It drives either
+`<ChatJumpToLatest>` (teleported to `<body>` — a `position: fixed` child of a
+drawer is trapped in that drawer's stacking context and ends up unclickable) or
+an inline `.agent-jump` sibling inside a `position: relative` log wrap. Floating
+head panels (Ross, CTO, Debugger, Playground) use the inline control because
+the teleported button's clicks were intercepted by the Radix Dialog stacking
+context despite living on `<body>`. Clicking either control scrolls smoothly to
+the newest message and the button hides itself on arrival.
 
 ### 5. Signal "working" visually, never in text
 
@@ -77,8 +78,12 @@ transcript was removed under this rule.
    `showJumpToLatest`, `onScroll`, `scrollToLatest` (destructured, not held as
    an object — the template needs the refs unwrapped).
 2. Put `ai-chat-log` on the scrolling element and `@scroll="onScroll"` on it.
-3. Render `<ChatJumpToLatest :visible="showJumpToLatest" :anchor="logRef"
-   @click="scrollToLatest()" />` next to that element.
+3. Render a jump control driven by `showJumpToLatest` — either
+   `<ChatJumpToLatest :visible="showJumpToLatest" :anchor="logRef"
+   @click="scrollToLatest()" />`, or an inline
+   `<button v-if="showJumpToLatest" class="agent-jump" @click="scrollToLatest()">`
+   sibling inside a `position: relative` log wrap (required for floating-head
+   panels inside a Radix Dialog).
 4. Render `<AiChatThinking :active="busy" :label="..." />` at the end of the
    message list.
 5. Put `ai-chat-send` on the submit button.
