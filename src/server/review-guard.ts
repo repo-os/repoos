@@ -9,8 +9,8 @@
  *
  * It enforces two guarantees before a task may land in `review`:
  *   1. No uncommitted implementation changes are left behind — either they
- *      are committed (excluding `dist`/`screenshots`/the task file itself) or
- *      the transition is rejected.
+ *      are committed (excluding `dist`/the task file itself) or the transition
+ *      is rejected.
  *   2. A transition with zero source changes since the branch diverged from
  *      main is rejected unless the task is marked `no_source_change: true`.
  *
@@ -47,13 +47,7 @@ function samePath(a: string, b: string): boolean {
 
 /** True for generated/task-file paths that never count as "source changes". */
 function isGeneratedOrTask(path: string, taskPath: string): boolean {
-  return (
-    path === taskPath ||
-    path.startsWith("dist/") ||
-    path === "dist" ||
-    path.startsWith("screenshots/") ||
-    path === "screenshots"
-  );
+  return path === taskPath || path.startsWith("dist/") || path === "dist";
 }
 
 /**
@@ -131,7 +125,7 @@ export async function guardReviewTransition(
   // or absent, and it preserves their working-tree contents.
   const unstageGenerated = await runGit(
     registered,
-    ["reset", "--quiet", "HEAD", "--", "dist", "screenshots", task.path],
+    ["reset", "--quiet", "HEAD", "--", "dist", task.path],
     10_000,
   );
   if (unstageGenerated.status !== 0) {

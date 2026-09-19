@@ -350,8 +350,8 @@ const BUILD_STEPS: string[][] = [
 
 /**
  * Commit regenerated `dist/` — the post-merge build just rewrote it — so main
- * stays clean and mergeable. Nothing else generated is tracked: screenshots
- * are regenerated on demand via `repoos screenshots`, never by the close-out.
+ * stays clean and mergeable. Nothing else generated is tracked; the build
+ * regenerates dist/ as needed and the close-out does not stage other output.
  */
 async function commitGenerated(root: string): Promise<void> {
   await runProcess("git", ["add", "-A", "--", "dist"], { cwd: root, timeout: 4000 });
@@ -500,18 +500,18 @@ async function completeTaskLocked(
   // path the merge resolves it automatically.
   commitTaskFile(root, task.absPath, `docs(${task.id}): update task`);
   const rel = relative(root, task.absPath);
-  // Drop `dist/` and `screenshots/` from the branch before merging so hashed
-  // Vite asset filenames and binary PNGs don't cause artificial conflicts.
-  // Both are regenerated from source on main right after the merge anyway.
+  // Drop `dist/` from the branch before merging so hashed Vite asset filenames
+  // don't cause artificial conflicts. It is regenerated from source on main
+  // right after the merge anyway.
   const wt = worktreePathForBranch(root, task.branch);
   if (wt !== null && !task.hotfix) {
-    const r1 = await runGit(wt, ["ls-files", "dist/", "screenshots/"], 5000);
+    const r1 = await runGit(wt, ["ls-files", "dist/"], 5000);
     if (r1.status === 0 && r1.stdout.trim().length > 0) {
-      await runGit(wt, ["rm", "-r", "--cached", "--", "dist/", "screenshots/"], 15_000);
-      await runGit(wt, ["commit", "-m", "chore: drop dist and screenshots before merge"], 15_000);
+      await runGit(wt, ["rm", "-r", "--cached", "--", "dist/"], 15_000);
+      await runGit(wt, ["commit", "-m", "chore: drop dist before merge"], 15_000);
     }
   }
-  const autoResolve = [rel, "dist/", "screenshots/"];
+  const autoResolve = [rel, "dist/"];
 
   // Direct-to-main hotfix: the work was done on main itself; skip the merge.
   const isMainHotfix = task.hotfix && task.hotfixTarget === "main";

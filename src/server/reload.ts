@@ -320,7 +320,7 @@ export class ReloadManager {
       };
     }
     // Close-out deferral (0143): the close-out pipeline merges the branch and
-    // runs build/screenshots/check, all of which would be killed if the server
+    // runs build/check, all of which would be killed if the server
     // reloaded itself mid-flight. Park the new build and surface it to the UI —
     // the user reloads when they choose (POST /api/server/restart).
     if (this.options.closingOut() || this.closeOutRequested) {

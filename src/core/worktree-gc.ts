@@ -78,18 +78,18 @@ export interface SweepOptions {
 }
 
 /**
- * True when the worktree has no meaningful uncommitted work. `dist/` and
- * `screenshots/` are generated build output (routinely committed on a branch
- * and re-dirtied) — excluded here the same way `DIFF_SOURCE_PATHS` does for the
- * review diff. A missing directory counts as clean (nothing left to lose).
+ * True when the worktree has no meaningful uncommitted work. `dist/` is
+ * generated build output (routinely committed on a branch and re-dirtied) —
+ * excluded here the same way `DIFF_SOURCE_PATHS` does for the review diff. A
+ * missing directory counts as clean (nothing left to lose).
  */
 function worktreeClean(path: string): boolean {
   if (!existsSync(path)) return true;
-  const run = spawnSync(
-    "git",
-    ["status", "--porcelain", "--", ".", ":(exclude)dist", ":(exclude)screenshots"],
-    { cwd: path, encoding: "utf8", timeout: 4000 },
-  );
+  const run = spawnSync("git", ["status", "--porcelain", "--", ".", ":(exclude)dist"], {
+    cwd: path,
+    encoding: "utf8",
+    timeout: 4000,
+  });
   if (run.status !== 0) return false; // can't tell -> be conservative
   return (run.stdout ?? "").trim() === "";
 }
