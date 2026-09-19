@@ -130,6 +130,29 @@ step is **not** changed by #0348; it predates it and is out of scope here.
 
 ---
 
+## Resolved since the audit
+
+**#0446 (2026-09): the gate is now declarative and stack-neutral.** The
+per-step opt-ins this audit asked for are one mechanism: a versioned
+`[[check.steps]]` plan in `repoos.toml` (`name` + `command`, or a built-in
+`kind`, plus `cwd`, `timeoutMs`, `required`, `profiles`, `whenChanged`,
+`requires`, `dependsOn`). `repoos check` runs exactly the declared steps, so a
+Go/Gradle/Rust/mixed repo runs its own commands and never a Bun/`package.json`
+pipeline it didn't ask for. Two audit items fall out directly:
+
+- The **staleness/build-info** step (#0349) is no longer unconditional — it is
+  a `kind` a repo declares, and it degrades to an explicit skip when the
+  project has no `.build-info.json` marker.
+- A repo with **no plan at all** now fails with a diagnostic instead of
+  reporting green: inference covers the recognisable stacks, and anything else
+  yields an empty plan that the gate refuses to pass.
+
+Legacy `[check]` keys still work and print a migration warning pointing at
+`repoos check --print-plan`. See `user-docs/check.md` and
+`src/core/check-plan.ts`.
+
+---
+
 ## Follow-ups filed
 
 1. #0351: `[check]`-driven stylesheet path + token vocabulary for

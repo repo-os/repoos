@@ -42,8 +42,14 @@ export interface CheckFailureSummary {
   failedChecks: string[];
 }
 
-/** The printed icon + name + optional `— detail` header of one result line. */
-const RESULT_HEADER = /^\s*([✔✗])\s+([a-z][a-z0-9-]*(?::[a-z0-9-]+)*)\s*(?:\u2014\s*([\s\S]*))?$/i;
+/**
+ * The printed icon + name + optional `— detail` header of one result line.
+ * Icons (#0446): `✔` passed, `✗` failed (including timeout / missing
+ * prerequisite — both name themselves in the detail), `⏭` skipped, `⚠` failed
+ * but optional (reported, never gating).
+ */
+const RESULT_HEADER =
+  /^\s*([✔✗⏭⚠])\s+([a-z][a-z0-9_.-]*(?::[a-z0-9_.-]+)*)\s*(?:\u2014\s*([\s\S]*))?$/i;
 
 /** Locate the `── Results ──` marker and return the lines that follow it. */
 function resultsLines(output: string): string[] | null {
@@ -71,7 +77,8 @@ export function parseCheckResults(output: string): ParsedCheckResult[] | null {
     const detail = detailParts.join("\n").trim();
     if (detail) current.detail = detail;
     current.blocked =
-      current.status === "skipped" && /formatting\/lint failed|build was skipped/i.test(detail);
+      current.status === "skipped" &&
+      /blocked by failed step|formatting\/lint failed|build was skipped/i.test(detail);
     results.push(current);
     current = null;
     detailParts.length = 0;
@@ -85,11 +92,13 @@ export function parseCheckResults(output: string): ParsedCheckResult[] | null {
       flush();
       const [, icon, name, detail] = header;
       const status: CheckStatus =
-        icon === "✗"
-          ? "failed"
-          : (detail ?? "").trim().startsWith("skipped")
-            ? "skipped"
-            : "passed";
+        icon === "⏭"
+          ? "skipped"
+          : icon === "✔"
+            ? (detail ?? "").trim().startsWith("skipped")
+              ? "skipped"
+              : "passed"
+            : "failed";
       current = { name, status, blocked: false };
       if (detail) detailParts.push(detail);
       continue;

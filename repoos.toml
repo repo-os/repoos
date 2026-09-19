@@ -68,6 +68,10 @@ inheritEnv = true
 # token vocabulary here — there is no RepoOS-shaped default path, so a managed
 # project's own file/tokens are checked, never this repo's by accident.
 [check]
+# Check-plan schema version (#0446). `repoos check` runs the [[check.steps]]
+# below rather than assuming a stack, so the gate is legible from this file.
+version = 1
+defaultProfile = "default"
 uiStylesheet = "src/ui-app/src/style.css"
 backdropToken = "--bg"
 gradientTokens = ["--btn-primary-bg", "--btn-new-bg"]
@@ -79,6 +83,77 @@ gradientTokens = ["--btn-primary-bg", "--btn-new-bg"]
 # a usable tsconfig include skips the guard with a clear message. RepoOS's
 # tsconfig also compiles src/ui-app, which is intentionally out of scope.
 bareRequireDirs = ["src/core", "src/server", "src/commands", "src/cli"]
+
+# ── The check plan (#0446) ────────────────────────────────────────────────
+# `repoos check` runs exactly these steps, in this order — no implicit
+# Bun/package.json pipeline. `kind` selects a built-in, stack-neutral guard
+# (it inspects the repo and skips with a stated reason when it doesn't apply);
+# `command` runs a raw shell command instead. `dependsOn` makes build/tests/
+# smoke skip when formatting or lint already failed, so a `bun run fmt` fix
+# never pays for a build against source that is about to be rewritten.
+# `whenChanged` scopes a step to changed-path mode (`repoos check --changed
+# <ref>`) — a fast pre-review pass only; close-out runs the full plan.
+[[check.steps]]
+name = "staleness"
+kind = "staleness"
+
+[[check.steps]]
+name = "lockfile-sync"
+kind = "lockfile-sync"
+requires = ["bun"]
+whenChanged = ["package.json", "bun.lock"]
+
+[[check.steps]]
+name = "zero-runtime-deps"
+kind = "zero-runtime-deps"
+whenChanged = ["package.json"]
+
+[[check.steps]]
+name = "check-fmt:check"
+kind = "format"
+requires = ["bun"]
+
+[[check.steps]]
+name = "check-lint"
+kind = "lint"
+requires = ["bun"]
+
+[[check.steps]]
+name = "build"
+kind = "build"
+requires = ["bun"]
+dependsOn = ["check-fmt:check", "check-lint"]
+
+[[check.steps]]
+name = "css-layers"
+kind = "css-layers"
+whenChanged = ["src/ui-app/**"]
+
+[[check.steps]]
+name = "theme-contrast"
+kind = "theme-contrast"
+whenChanged = ["src/ui-app/**"]
+
+[[check.steps]]
+name = "bare-require"
+kind = "bare-require"
+whenChanged = ["src/**", "tsconfig.json"]
+
+[[check.steps]]
+name = "task-assets"
+kind = "task-assets"
+whenChanged = ["work/**", "inputs/**"]
+
+[[check.steps]]
+name = "tests"
+kind = "tests"
+requires = ["bun"]
+dependsOn = ["check-fmt:check", "check-lint"]
+
+[[check.steps]]
+name = "ui-smoke"
+kind = "ui-smoke"
+dependsOn = ["check-fmt:check", "check-lint", "build"]
 
 # Each theme block in the stylesheet: the selectors it owns, a variant name for
 # failure messages, and the earlier scopes whose declarations it inherits

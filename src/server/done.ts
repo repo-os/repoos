@@ -40,6 +40,7 @@ import {
   GitDirtyCheckError,
   worktreePathForBranch,
 } from "../core/git.js";
+import { CLOSEOUT_CHECK_ARGS } from "../core/check-plan.js";
 import { markTaskReleased } from "./write.js";
 
 export interface CheckSummary {
@@ -377,9 +378,12 @@ function checkCandidates(root: string): string[][] {
   const localCli = join(root, "dist", "cli", "index.js");
   const list: string[][] = [];
   if (existsSync(localCli)) {
-    list.push([process.execPath, localCli, "check"]);
+    list.push([process.execPath, localCli, "check", ...CLOSEOUT_CHECK_ARGS]);
   }
-  list.push(["repoos", "check"], ["bun", "run", "repoos", "check"]);
+  list.push(
+    ["repoos", "check", ...CLOSEOUT_CHECK_ARGS],
+    ["bun", "run", "repoos", "check", ...CLOSEOUT_CHECK_ARGS],
+  );
   return list;
 }
 

@@ -48,6 +48,7 @@ import type { RemoteValidator } from "./remote-validation.js";
 import { markTaskReleased } from "./write.js";
 import { saveDiffSnapshot } from "./diff-snapshot.js";
 import { parseTask } from "../core/task.js";
+import { CLOSEOUT_CHECK_ARGS } from "../core/check-plan.js";
 import { summarizeCheckFailure } from "../core/check-failure-summary.js";
 import { checkFailureSignature, summarizeCheckOutput } from "../core/check-results.js";
 import type { TaskCheckManager, TaskCheckListener } from "./task-check.js";
@@ -1302,7 +1303,7 @@ export class CloseOutOrchestrator {
         // every such MTD (#0345) buried the real failure reason behind a false
         // lead.
         const cliExpected = expectsOwnCli(wtPath);
-        checkRes = await rawCheck("repoos", ["check"]);
+        checkRes = await rawCheck("repoos", ["check", ...CLOSEOUT_CHECK_ARGS]);
         outcome = cliExpected ? "local-missing" : "no-cli-expected";
         if (cliExpected) {
           this.logger?.integration(
@@ -1312,7 +1313,7 @@ export class CloseOutOrchestrator {
           );
         }
       } else {
-        checkRes = await rawCheck(process.execPath, [localCli, "check"]);
+        checkRes = await rawCheck(process.execPath, [localCli, "check", ...CLOSEOUT_CHECK_ARGS]);
         if (checkRes.status === 0) {
           outcome = "local-ok";
         } else if (isStalenessFailure(checkRes)) {
@@ -1333,7 +1334,7 @@ export class CloseOutOrchestrator {
             cwd: wtPath,
             timeout: 300_000,
           });
-          checkRes = await rawCheck(process.execPath, [localCli, "check"]);
+          checkRes = await rawCheck(process.execPath, [localCli, "check", ...CLOSEOUT_CHECK_ARGS]);
           if (checkRes.status !== 0) {
             checkHandle?.done(checkRes.status);
             return this.recordCheckFailure(
@@ -1347,9 +1348,9 @@ export class CloseOutOrchestrator {
           // Genuine non-staleness failure from the local CLI: preserve the prior
           // fallback behaviour (retry via the global repoos, then bun run repoos).
           outcome = "fallback";
-          checkRes = await rawCheck("repoos", ["check"]);
+          checkRes = await rawCheck("repoos", ["check", ...CLOSEOUT_CHECK_ARGS]);
           if (checkRes.status !== 0) {
-            checkRes = await rawCheck("bun", ["run", "repoos", "check"]);
+            checkRes = await rawCheck("bun", ["run", "repoos", "check", ...CLOSEOUT_CHECK_ARGS]);
           }
         }
       }

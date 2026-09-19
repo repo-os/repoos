@@ -648,6 +648,26 @@ export interface RemoteValidationConfig {
  */
 export interface CheckConfig {
   /**
+   * Check-plan schema version (#0446). `1` is the current and only version.
+   * A repo that declares `[[check.steps]]` should pin it: a future schema
+   * change can then migrate or warn instead of silently reinterpreting an
+   * old plan. Absent means "whatever the repo declares still parses", which
+   * is the pre-#0446 behaviour.
+   */
+  version?: number;
+  /**
+   * Profile `repoos check` selects when `--profile` is not passed (#0446).
+   * Defaults to `default`.
+   */
+  defaultProfile?: string;
+  /**
+   * The project's declarative check plan (#0446) — one row per gate step, run
+   * in declaration order. Presence of at least one usable row replaces every
+   * implicit/legacy step: `repoos check` then runs exactly what is declared,
+   * for any stack (Go, Gradle/Android, Rust, JS, mixed).
+   */
+  steps?: CheckStepConfig[];
+  /**
    * Shell command `repoos check` runs for its UI smoke step. When set it
    * overrides a `smoke` script in the project's `package.json` (config wins).
    * Absent and no `smoke` script means the step skips.
@@ -697,6 +717,83 @@ export interface CheckConfig {
    * tsconfig instead, the tsconfig's own `exclude` list is used.
    */
   bareRequireExcludes?: string[];
+}
+
+/**
+ * Built-in step kinds a `[[check.steps]]` row can invoke instead of naming a
+ * raw `command` (#0446). Each is stack-neutral: it inspects the repo and skips
+ * with a stated reason when it does not apply, rather than assuming a
+ * package.json/Bun pipeline.
+ */
+export type CheckStepKind =
+  | "staleness"
+  | "lockfile-sync"
+  | "zero-runtime-deps"
+  | "format"
+  | "lint"
+  | "build"
+  | "tests"
+  | "ui-smoke"
+  | "css-layers"
+  | "theme-contrast"
+  | "bare-require"
+  | "task-assets";
+
+/**
+ * One declared step of a project's check plan (#0446) — a `[[check.steps]]`
+ * row in `repoos.toml`. Either `kind` (a built-in, stack-aware guard) or
+ * `command` (a raw shell command run in `cwd`) must be set; a row with
+ * neither is dropped with a config warning rather than failing the whole gate
+ * on a typo.
+ */
+export interface CheckStepConfig {
+  /**
+   * Stable step name, shown in `repoos check`'s results and used by
+   * `dependsOn`. Must be unique within the plan and match
+   * `[a-z][a-z0-9_.:-]*` (the close-out pipeline parses the printed results
+   * block by name, so keep it lowercase and free of spaces).
+   */
+  name?: string;
+  /** Built-in guard to run. Mutually exclusive with `command` (which wins). */
+  kind?: string;
+  /** Shell command to run. Takes precedence over `kind` when both are set. */
+  command?: string;
+  /** Repo-relative directory to run in. Defaults to the repo root. */
+  cwd?: string;
+  /** Per-step timeout in milliseconds. Defaults to 600000 (10 min). */
+  timeoutMs?: number;
+  /**
+   * When false the step is advisory: a failure is reported but does not fail
+   * the gate. Defaults to true. Being optional is not the same as being
+   * allowed to skip — a required step that cannot run must fail, not pass.
+   */
+  required?: boolean;
+  /**
+   * Profiles this step belongs to. Omitted or empty means every profile.
+   * A step listed only in, say, `["full"]` is excluded from a bare
+   * `repoos check` and runs under `--profile full`.
+   */
+  profiles?: string[];
+  /**
+   * Repo-relative path globs; in changed-path mode (`--changed <ref>`) the
+   * step runs only when at least one changed path matches. Omitted means the
+   * step always runs, changed mode or not.
+   */
+  whenChanged?: string[];
+  /**
+   * Binaries that must be on PATH for this step. A missing one fails an
+   * optional step as a warning and a required step as an install-oriented
+   * failure — never as a silent pass.
+   */
+  requires?: string[];
+  /**
+   * Names of earlier steps this one depends on. If any of them failed, this
+   * step is skipped as "blocked" (the gate is already failing on the real
+   * cause). RepoOS declares `build`/`tests`/`ui-smoke` this way against
+   * `check-fmt:check` and `check-lint`, so a formatting fix never has to pay
+   * for a build against source that is about to be rewritten.
+   */
+  dependsOn?: string[];
 }
 
 /**

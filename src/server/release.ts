@@ -8,6 +8,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { join, relative, resolve } from "node:path";
 import type { ReleaseConfig, RepoOSConfig } from "../core/types.js";
+import { CLOSEOUT_CHECK_ARGS } from "../core/check-plan.js";
 import { captureOutput } from "./done.js";
 import type { RemoteValidator } from "./remote-validation.js";
 
@@ -500,7 +501,7 @@ export async function cutNewRelease(
   };
   const check = await exec(
     process.execPath,
-    [join(config.root, "dist", "cli", "index.js"), "check"],
+    [join(config.root, "dist", "cli", "index.js"), "check", ...CLOSEOUT_CHECK_ARGS],
     config.root,
     600_000,
     checkEnv,

@@ -19,29 +19,36 @@
  *
  * Exits non-zero on any failure. Designed for CI gates and agent pre-review.
  */
-import { execFileSync, execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { cpus, totalmem } from "node:os";
 import { isAbsolute, join, relative, sep } from "node:path";
 import { c } from "../cli/colors.js";
-import { checkBuildForRoot, type BuildCheckResult } from "../core/build.js";
+import { checkBuildForRoot } from "../core/build.js";
 import { findRepoRoot, loadConfig } from "../core/config.js";
-import type { CheckContrastPair, CheckThemeScope } from "../core/types.js";
+import type { CheckContrastPair, CheckThemeScope, RepoOSConfig } from "../core/types.js";
 import { availableMemBytes } from "../core/sysmem.js";
 import { preferBunForDevTasks } from "../core/runtime.js";
-
-interface CheckResult {
-  name: string;
-  ok: boolean;
-  detail?: string;
-}
-
-function pass(name: string, detail?: string): CheckResult {
-  return { name, ok: true, detail };
-}
-function fail(name: string, detail: string): CheckResult {
-  return { name, ok: false, detail };
-}
+import {
+  blockingFailures,
+  DEFAULT_PROFILE,
+  describeStep,
+  formatPlanToml,
+  resolveCheckPlan,
+  selectSteps,
+  type BuiltinCheckKind,
+  type CheckPlan,
+  type CheckStep,
+} from "../core/check-plan.js";
+import {
+  detectRepoMarkers,
+  missingBinaries,
+  prereqDetail,
+  runCommand,
+  stepCwd,
+  type StepRunResult,
+  type StepStatus,
+} from "../core/check-runner.js";
 
 /**
  * Split a CSS selector list on top-level commas (respecting parentheses,
@@ -799,513 +806,763 @@ export function testPoolSize(env: NodeJS.ProcessEnv): number | undefined {
   return n >= 3 ? n : undefined;
 }
 
-export async function cmdCheck(): Promise<void> {
-  let exitCode = 0;
-  const results: CheckResult[] = [];
+// ── Plan-driven gate (#0446) ────────────────────────────────────────────
+// Everything above is a pure guard or resolver. What follows is the gate
+// itself: it resolves a declarative plan (declared `[[check.steps]]`, else the
+// legacy per-step keys, else stack inference) and runs exactly that, for any
+// stack. Nothing here assumes a package.json, a Bun pipeline, or a JS build.
 
-  // ── 1. Build staleness ──────────────────────────────────────────────
-  heading("Build staleness check");
-  // `repoos check` validates the checkout it was invoked in. In particular,
-  // a global/dev-linked CLI may be running from the main checkout while cwd
-  // is a task worktree with its own source and build marker.
-  const stale: BuildCheckResult = checkBuildForRoot(findRepoRoot());
+/** `repoos check` CLI flags (#0446). */
+export interface CheckOptions {
+  /** Profile to select. Defaults to `[check] defaultProfile`, else `default`. */
+  profile?: string;
+  /** Git ref for changed-path mode. Also read from `REPOOS_CHECK_CHANGED`. */
+  changed?: string;
+  /** Print the resolved plan as `[[check.steps]]` TOML and exit 0. */
+  printPlan?: boolean;
+}
+
+/** Parse `repoos check` flags. Unknown flags are ignored, never fatal. */
+export function parseCheckArgs(argv: string[] = []): CheckOptions {
+  const opts: CheckOptions = {};
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === "--profile" || a === "-p") opts.profile = argv[++i];
+    else if (a === "--changed") opts.changed = argv[++i];
+    else if (a === "--print-plan") opts.printPlan = true;
+  }
+  return opts;
+}
+
+interface PkgJson {
+  name?: string;
+  type?: string;
+  scripts?: Record<string, string>;
+  dependencies?: Record<string, unknown>;
+}
+
+/** Everything one step needs to run: repo root, its own cwd, config, manifest. */
+interface StepContext {
+  repoRoot: string;
+  /** Absolute working directory for this step. */
+  cwd: string;
+  cfg: RepoOSConfig;
+  /** The repo-root package.json — RepoOS's own invariants are read from here. */
+  pkg: PkgJson;
+  /**
+   * The package.json in the step's own `cwd`. A monorepo step declared with
+   * `cwd = "web"` must read web's scripts, not the root's.
+   */
+  scriptPkg: PkgJson;
+  /** Git ref for changed-path mode, when active. */
+  changedRef?: string;
+}
+
+/** What a built-in `kind` handler returns. */
+interface BuiltinOutcome {
+  status: StepStatus;
+  /** The command it resolved to (so the results block can name it). */
+  command?: string;
+  detail?: string;
+  output?: string;
+}
+
+function skipped(detail: string): BuiltinOutcome {
+  return { status: "skipped", detail };
+}
+
+/** Read a repo's package.json, tolerating an absent or broken file. */
+function readPkg(dir: string): PkgJson {
+  try {
+    const raw = readFileSync(join(dir, "package.json"), "utf8");
+    const parsed: unknown = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? (parsed as PkgJson) : {};
+  } catch {
+    return {};
+  }
+}
+
+/** The `bun run` / `npm run` prefix this project's scripts should use. */
+function scriptRunner(cwd: string): "bun" | "npm" {
+  return preferBunForDevTasks(cwd) ? "bun" : "npm";
+}
+
+/**
+ * Run a package.json script through the project's own runner. A missing script
+ * is an explicit skip — never an unconditional `bun run build` for a repo that
+ * has no build script (#0446) — and a missing runner is a `missing-prereq`
+ * failure with install advice, because a required step that cannot run must
+ * not read as green.
+ */
+async function runScript(
+  ctx: StepContext,
+  script: string,
+  opts: { label: string; hint: string; timeoutMs: number; echo: boolean },
+): Promise<BuiltinOutcome> {
+  if (!ctx.scriptPkg.scripts?.[script]) {
+    return skipped(`skipped — no \`${script}\` script in package.json`);
+  }
+  const runner = scriptRunner(ctx.cwd);
+  const command = `${runner} run ${script}`;
+  const missing = missingBinaries([runner]);
+  if (missing.length) return { status: "missing-prereq", command, detail: prereqDetail(missing) };
+
+  const res = await runCommand({
+    command,
+    cwd: ctx.cwd,
+    timeoutMs: opts.timeoutMs,
+    echo: opts.echo,
+  });
+  if (res.status === "passed") return { status: "passed", command, output: res.output };
+  if (res.status === "timeout") {
+    return {
+      status: "timeout",
+      command,
+      detail: `timed out after ${timeoutLabel(opts.timeoutMs)}`,
+      output: res.output,
+    };
+  }
+  const out = res.output.trim();
+  return {
+    status: "failed",
+    command,
+    detail: `${opts.label} failed — ${opts.hint}${out ? `:\n${out}` : ` (${res.error ?? `exit ${res.exitCode}`})`}`,
+    output: res.output,
+  };
+}
+
+// ── Built-in step kinds ─────────────────────────────────────────────────
+
+async function stepStaleness(ctx: StepContext): Promise<BuiltinOutcome> {
+  const stale = checkBuildForRoot(ctx.repoRoot);
   if (stale.stale && stale.applicable) {
-    console.log(c.yellow(`  ⚠ ${stale.message}`));
-    results.push(fail("staleness", stale.message ?? "build is stale"));
-    exitCode = 1;
-  } else if (stale.code === "fresh") {
-    console.log(c.green("  ✔ Build is fresh"));
-    results.push(pass("staleness"));
-  } else {
-    // Not a RepoOS-style build (no dist/ or no marker) — degrade to a skip
-    // rather than failing a project whose pipeline simply isn't ours. See
-    // checkBuildForRoot: `applicable` is false exactly when no marker exists.
-    console.log(c.dim(`  · ${stale.message ?? stale.code}`));
-    results.push(pass("staleness", stale.message ?? stale.code));
+    return { status: "failed", detail: stale.message ?? "build is stale" };
   }
+  if (stale.code === "fresh") return { status: "passed" };
+  // Not a RepoOS-style build — an explicit skip, not a pass, and not a
+  // failure of a project whose pipeline simply isn't ours.
+  return skipped(`skipped — ${stale.message ?? stale.code}`);
+}
 
-  // ── 1b. Lockfile sync check ─────────────────────────────────────────
-  // A dependency bump in package.json without a regenerated bun.lock passes
-  // every other check here (node_modules is already installed) but breaks
-  // `bun install --frozen-lockfile` for every fresh worktree bootstrap
-  // (bootstrap.ts installDeps) — silently, since bootstrap runs on a
-  // different checkout than the one that merged the drift. Dry-run makes
-  // the frozen install fail loudly instead, before the merge lands.
-  heading("Lockfile sync check");
-  if (!existsSync("bun.lock")) {
-    console.log(c.dim("  · No bun.lock — skipping"));
-    results.push(pass("lockfile-sync", "skipped — no bun.lock"));
-  } else {
+async function stepLockfileSync(ctx: StepContext): Promise<BuiltinOutcome> {
+  if (!existsSync(join(ctx.cwd, "bun.lock"))) return skipped("skipped — no bun.lock");
+  const command = "bun install --frozen-lockfile --dry-run";
+  const res = await runCommand({ command, cwd: ctx.cwd, timeoutMs: 60_000, echo: false });
+  if (res.status === "passed") return { status: "passed", command };
+  if (res.status === "timeout") {
+    return { status: "timeout", command, detail: "timed out after 60s", output: res.output };
+  }
+  return {
+    status: "failed",
+    command,
+    detail:
+      "bun.lock is out of sync with package.json — run `bun install` and commit the updated lockfile",
+    output: res.output,
+  };
+}
+
+async function stepZeroRuntimeDeps(ctx: StepContext): Promise<BuiltinOutcome> {
+  // Scoped to RepoOS's own package.json: zero runtime dependencies is this
+  // repo's constraint, not a rule to impose on managed projects.
+  const base = typeof ctx.pkg.name === "string" ? ctx.pkg.name.split("/").pop() : undefined;
+  if (base !== "repoos") return skipped("skipped — not RepoOS's own package.json");
+  const deps = Object.keys(ctx.pkg.dependencies ?? {});
+  if (deps.length === 0) return { status: "passed" };
+  return {
+    status: "failed",
+    detail:
+      `package.json "dependencies" must be empty (zero runtime dependencies is a hard ` +
+      `design constraint — AGENTS.md). Found: ${deps.join(", ")}. Move build-time-only ` +
+      `packages to devDependencies, or if the constraint no longer holds, update AGENTS.md ` +
+      `and landing/src/App.vue's "Zero runtime dependencies" claim instead (see #0343).`,
+  };
+}
+
+async function stepCssLayers(ctx: StepContext): Promise<BuiltinOutcome> {
+  const css = readStylesheet(ctx);
+  if (!css) return skipped(cssSkipReason(ctx));
+  const { path, src } = css;
+  if (!src.includes('@import "tailwindcss"')) {
+    return skipped(`skipped — ${path} is not a Tailwind v4 stylesheet`);
+  }
+  const offenders = cssLayeringOffenders(src);
+  if (offenders.length === 0) return { status: "passed" };
+  return {
+    status: "failed",
+    detail:
+      "Unlayered universal/bare-element selectors (they silently beat all Tailwind utilities):\n    " +
+      offenders.slice(0, 8).join("\n    ") +
+      "\n    Wrap them in @layer base or scope them to a class/id.",
+  };
+}
+
+async function stepThemeContrast(ctx: StepContext): Promise<BuiltinOutcome> {
+  const scopes = ctx.cfg.check?.themeScopes ?? [];
+  const css = readStylesheet(ctx);
+  if (!css) return skipped(cssSkipReason(ctx));
+  if (!scopes.length) return skipped("skipped — no [check] themeScopes configured");
+  if (!hasThemeBlocks(css.src, scopes)) {
+    return skipped(`skipped — no configured theme scope matched a block in ${css.path}`);
+  }
+  const offenders = themeContrastOffenders(css.src, {
+    scopes,
+    pairs: ctx.cfg.check?.contrastPairs ?? [],
+    gradientTokens: ctx.cfg.check?.gradientTokens ?? [],
+    backdropToken: ctx.cfg.check?.backdropToken,
+  });
+  if (offenders.length === 0) return { status: "passed" };
+  return {
+    status: "failed",
+    detail:
+      "Low-contrast or invalid theme tokens (invisible text risk):\n    " +
+      offenders.slice(0, 10).join("\n    "),
+  };
+}
+
+/** The configured stylesheet, read once. Null when it can't be checked. */
+function readStylesheet(ctx: StepContext): { path: string; src: string } | null {
+  const rel = ctx.cfg.check?.uiStylesheet;
+  if (!rel) return null;
+  const abs = isAbsolute(rel) ? rel : join(ctx.repoRoot, rel);
+  if (!existsSync(abs)) return null;
+  try {
+    return { path: rel, src: readFileSync(abs, "utf8") };
+  } catch {
+    return null;
+  }
+}
+
+function cssSkipReason(ctx: StepContext): string {
+  const rel = ctx.cfg.check?.uiStylesheet;
+  if (!rel) return "skipped — no [check] uiStylesheet configured";
+  return `skipped — ${rel} does not exist`;
+}
+
+async function stepBareRequire(ctx: StepContext): Promise<BuiltinOutcome> {
+  if (ctx.pkg.type !== "module") {
+    return skipped('skipped — package.json is not "type": "module"');
+  }
+  const resolved = resolveBareRequireRoots(
+    ctx.cfg.check?.bareRequireDirs,
+    readTsconfig(ctx.repoRoot),
+    ctx.cfg.check?.bareRequireExcludes,
+  );
+  if (resolved.roots.length === 0) {
+    return skipped("skipped — no source roots configured");
+  }
+  const offenders = bareRequireOffenders(resolved.roots, {
+    repoRoot: ctx.repoRoot,
+    excludes: resolved.excludes,
+  });
+  if (offenders.length === 0) {
+    const from = resolved.source === "config" ? "[check] bareRequireDirs" : "tsconfig include";
+    return { status: "passed", detail: `scanned ${from}` };
+  }
+  return {
+    status: "failed",
+    detail:
+      'Bare require() in ESM source (this package is "type": "module" — a bare require throws ' +
+      "ReferenceError at runtime in dist/, silently if caught):\n    " +
+      offenders.slice(0, 10).join("\n    ") +
+      '\n    Import from "node:..." normally, or use createRequire(import.meta.url) if you ' +
+      "genuinely need CJS interop (see ui-harness.ts).",
+  };
+}
+
+async function stepTaskAssets(ctx: StepContext): Promise<BuiltinOutcome> {
+  // Folder names are configurable (`workDir`/`inputsDir`), so a repo that
+  // renames them is still guarded.
+  const config = ctx.cfg;
+  const dirs = [
+    { label: "workDir", raw: config.workDir ?? "work" },
+    { label: "inputsDir", raw: config.inputsDir ?? "inputs" },
+  ];
+  const usable: string[] = [];
+  const broken: string[] = [];
+  for (const d of dirs) {
+    const norm = normalizeGuardDir(d.raw);
+    if (norm) usable.push(norm);
+    else broken.push(`${d.label} ("${d.raw}")`);
+  }
+  if (usable.length === 0) {
+    // Configured but unusable — the guard cannot run at all, so say so
+    // loudly rather than passing with nothing checked.
+    return {
+      status: "failed",
+      detail:
+        `task-asset guard is disabled — ${broken.join(" and ")} in repoos.toml ` +
+        "don't resolve to repo-relative directories, so no task/input folder can be checked. " +
+        "Fix the config.",
+    };
+  }
+  let tracked: string[] = [];
+  try {
+    tracked = execFileSync("git", ["ls-files", "--", ...usable], {
+      cwd: ctx.repoRoot,
+      encoding: "utf8",
+      maxBuffer: 16 * 1024 * 1024,
+    })
+      .split("\n")
+      .filter(Boolean);
+  } catch {
+    /* not a git repo / git unavailable — nothing to guard */
+  }
+  const offenders = taskAssetOffenders(tracked, {
+    workDir: config.workDir,
+    inputsDir: config.inputsDir,
+  });
+  const labels = usable.map((d) => `${d}/`).join(" or ");
+  if (offenders.length === 0)
+    return { status: "passed", detail: `no committed binaries under ${labels}` };
+  return {
+    status: "failed",
+    detail:
+      `Binary attachments committed under ${labels} — these are served by ` +
+      "the running server from disk and must never enter git history (it bloats the repo " +
+      "irreversibly). Run `git rm --cached` on them (they stay on disk) and let " +
+      "`.gitignore` keep them out:\n    " +
+      offenders.slice(0, 15).join("\n    ") +
+      (offenders.length > 15 ? `\n    …and ${offenders.length - 15} more` : ""),
+  };
+}
+
+async function stepTests(ctx: StepContext): Promise<BuiltinOutcome> {
+  // The close-out pipeline can hand the suite to the Remote Validation Runner
+  // and then run only the cheap local guards (REPOOS_SKIP_TESTS=1).
+  if (process.env.REPOOS_SKIP_TESTS === "1") {
+    return skipped(
+      "skipped — test suite ran on the remote validation runner (REPOOS_SKIP_TESTS=1)",
+    );
+  }
+  const hasTestScript = Boolean(ctx.scriptPkg.scripts?.test);
+  const hasTestFiles = ["test", "__tests__", "tests"].some((d) => existsSync(join(ctx.cwd, d)));
+  if (!hasTestScript && !hasTestFiles) return skipped("skipped — no test suite found");
+
+  // Only the vitest-backed script understands `--changed`; the bare runner
+  // fallback is left unscoped. `--bun` forces vitest onto Bun for a
+  // Bun-native repo (~5x faster, and it stops the swap-thrash flake).
+  const changedRef = hasTestScript ? ctx.changedRef : undefined;
+  const bun = scriptRunner(ctx.cwd) === "bun";
+  const base = hasTestScript ? (bun ? "bun run --bun test" : "bun run test") : "bun test";
+  const command = changedRef ? `${base} -- --changed ${changedRef}` : base;
+  // Both spellings go through bun, so bun is the prerequisite either way.
+  const missing = missingBinaries(["bun"]);
+  if (missing.length) return { status: "missing-prereq", command, detail: prereqDetail(missing) };
+
+  const workers = hasTestScript ? testPoolSize(process.env) : undefined;
+  const env = workers ? { ...process.env, REPOOS_TEST_WORKERS: String(workers) } : process.env;
+  if (workers && !changedRef) {
+    const availGiB = (availableMemBytes() / 1024 ** 3).toFixed(1);
+    console.log(c.dim(`  · Full suite · ${workers} workers (${availGiB} GiB reclaimable)`));
+  }
+  // A full unscoped run is ~10min healthy and can legitimately reach ~25min on
+  // a slow box; a too-tight cap SIGTERMs a green suite (exit 143). Vitest's own
+  // per-test timeout fails a genuine hang fast — this is the outer backstop.
+  const timeoutMs = changedRef ? 300_000 : 1_500_000;
+  const res = await runCommand({ command, cwd: ctx.cwd, timeoutMs, env });
+  if (res.status === "passed") {
+    return {
+      status: "passed",
+      command,
+      detail: changedRef ? `scoped to changed vs ${changedRef}` : undefined,
+    };
+  }
+  if (res.status === "timeout") {
+    return {
+      status: "timeout",
+      command,
+      detail: `timed out after ${timeoutLabel(timeoutMs)}`,
+      output: res.output,
+    };
+  }
+  return {
+    status: "failed",
+    command,
+    detail: outputTail(res.output) ?? `Tests failed (exit ${res.exitCode})`,
+    output: res.output,
+  };
+}
+
+async function stepUiSmoke(ctx: StepContext): Promise<BuiltinOutcome> {
+  const smoke = resolveSmokeCommand(ctx.cfg.check?.uiSmoke, ctx.scriptPkg.scripts);
+  if (!smoke) {
+    return skipped(
+      "skipped — no smoke command configured (declare a `smoke` package.json script or [check] uiSmoke)",
+    );
+  }
+  const runner = scriptRunner(ctx.cwd);
+  const command = smoke.source === "config" ? smoke.command : `${runner} run ${smoke.script}`;
+  const origin =
+    smoke.source === "config" ? "repoos.toml [check] uiSmoke" : "package.json smoke script";
+  const res = await runCommand({ command, cwd: ctx.cwd, timeoutMs: 300_000 });
+  if (res.status === "passed") return { status: "passed", command, detail: `ran ${origin}` };
+  if (res.status === "timeout") {
+    return { status: "timeout", command, detail: "timed out after 300s", output: res.output };
+  }
+  return {
+    status: "failed",
+    command,
+    detail: outputTail(res.output) ?? `Smoke command failed (exit ${res.exitCode})`,
+    output: res.output,
+  };
+}
+
+const BUILTIN_HANDLERS: Record<BuiltinCheckKind, (ctx: StepContext) => Promise<BuiltinOutcome>> = {
+  staleness: stepStaleness,
+  "lockfile-sync": stepLockfileSync,
+  "zero-runtime-deps": stepZeroRuntimeDeps,
+  format: (ctx) =>
+    runScript(ctx, "fmt:check", {
+      label: "Formatting",
+      hint: "run `bun run fmt` to fix",
+      timeoutMs: 120_000,
+      echo: false,
+    }),
+  lint: (ctx) =>
+    runScript(ctx, "lint", {
+      label: "Lint",
+      hint: "fix the reported errors",
+      timeoutMs: 120_000,
+      echo: false,
+    }),
+  build: (ctx) =>
+    runScript(ctx, "build", {
+      label: "Build",
+      hint: "fix the build errors",
+      timeoutMs: 120_000,
+      echo: true,
+    }),
+  tests: stepTests,
+  "ui-smoke": stepUiSmoke,
+  "css-layers": stepCssLayers,
+  "theme-contrast": stepThemeContrast,
+  "bare-require": stepBareRequire,
+  "task-assets": stepTaskAssets,
+};
+
+/** Human-readable duration for a timeout message (ms when sub-second). */
+function timeoutLabel(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+  const secs = ms / 1000;
+  return `${Number.isInteger(secs) ? secs : secs.toFixed(1)}s`;
+}
+
+/** Last lines of a failed command's output — the part that names the failure. */
+function outputTail(output: string | undefined, lines = 25): string | undefined {
+  if (!output || !output.trim()) return undefined;
+  const all = output.replace(/\s+$/, "").split("\n");
+  return all.slice(Math.max(0, all.length - lines)).join("\n");
+}
+
+/**
+ * Repo-relative paths that differ from `ref`, plus anything uncommitted or
+ * untracked — the working tree an agent actually hands over, not just what is
+ * committed on the branch.
+ */
+export function changedPathsSince(repoRoot: string, ref: string): string[] {
+  const run = (args: string[]): string[] => {
     try {
-      execSync("bun install --frozen-lockfile --dry-run", { stdio: "pipe", timeout: 60_000 });
-      console.log(c.green("  ✔ bun.lock matches package.json"));
-      results.push(pass("lockfile-sync"));
+      return execFileSync("git", args, {
+        cwd: repoRoot,
+        encoding: "utf8",
+        maxBuffer: 16 * 1024 * 1024,
+      })
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean);
     } catch {
-      const msg =
-        "bun.lock is out of sync with package.json — run `bun install` and commit the updated lockfile";
-      console.log(c.red("  ✗ " + msg));
-      results.push(fail("lockfile-sync", msg));
-      exitCode = 1;
+      return [];
     }
+  };
+  const paths = new Set([
+    ...run(["diff", "--name-only", `${ref}...`]),
+    ...run(["diff", "--name-only"]),
+    ...run(["ls-files", "--others", "--exclude-standard"]),
+  ]);
+  return [...paths];
+}
+
+function planSourceLabel(plan: CheckPlan): string {
+  switch (plan.source) {
+    case "declared":
+      return `declared in repoos.toml (v${plan.version})`;
+    case "legacy":
+      return "legacy [check] keys — migrate to [[check.steps]]";
+    case "inferred":
+      return "inferred from the repo layout — not committed";
+    default:
+      return "none";
   }
+}
 
-  const pkg = JSON.parse(existsSync("package.json") ? readFileSync("package.json", "utf8") : "{}");
+const STATUS_ICON: Record<StepStatus, string> = {
+  passed: "✔",
+  failed: "✗",
+  timeout: "✗",
+  "missing-prereq": "✗",
+  skipped: "⏭",
+};
 
-  // Per-project step config (#0348) — `[check] uiSmoke` from repoos.toml. Read
-  // once here so the UI smoke step below can resolve its command without a
-  // second config load; loadConfig is cheap and repoos.toml is git-tracked.
-  const cfg = loadConfig(findRepoRoot());
-
-  // ── 1c. Zero-runtime-dependencies guard ─────────────────────────────
-  // "Zero runtime dependencies" is a hard design constraint (AGENTS.md),
-  // publicly claimed on the landing page (landing/src/App.vue), and it has
-  // already silently drifted from `package.json` once (#0343: mermaid ended
-  // up in `dependencies` instead of `devDependencies`, discovered only by a
-  // manual audit). This makes the claim self-enforcing instead of
-  // convention-only.
-  //
-  // Scoped to RepoOS's own package.json rather than running for every
-  // managed project: this constraint is specific to this repo, not a
-  // general rule `repoos check` should impose on projects it manages (a
-  // typical managed project has legitimate runtime deps). #0348 tracks
-  // making check steps like this declarable per-project instead of
-  // hardcoded here; do not widen this scope without that mechanism.
-  //
-  // Matches the unscoped OR scoped package name (`repoos` / `@.../repoos`):
-  // the package was renamed to `@repo-os/repoos` after this guard was
-  // written with a literal `=== "repoos"` check, which silently disabled
-  // it — the exact "constraint silently stops being enforced" failure mode
-  // #0343 exists to catch, now recurring in the guard meant to catch it.
-  heading("Zero runtime dependencies guard");
-  const pkgBaseName = typeof pkg.name === "string" ? pkg.name.split("/").pop() : undefined;
-  if (pkgBaseName !== "repoos") {
-    results.push(pass("zero-runtime-deps", "skipped — not RepoOS's own package.json"));
-  } else {
-    const deps = Object.keys(pkg.dependencies ?? {});
-    if (deps.length > 0) {
-      const msg =
-        `package.json "dependencies" must be empty (zero runtime dependencies is a hard ` +
-        `design constraint — AGENTS.md). Found: ${deps.join(", ")}. Move build-time-only ` +
-        `packages to devDependencies, or if the constraint no longer holds, update AGENTS.md ` +
-        `and landing/src/App.vue's "Zero runtime dependencies" claim instead (see #0343).`;
-      console.log(c.red("  ✗ " + msg));
-      results.push(fail("zero-runtime-deps", msg));
-      exitCode = 1;
-    } else {
-      console.log(c.green("  ✔ package.json has no runtime dependencies"));
-      results.push(pass("zero-runtime-deps"));
-    }
+/** One result line's detail: the reason, and how to act on it. */
+function statusDetail(r: StepRunResult): string {
+  switch (r.status) {
+    case "timeout":
+      return `timed out — ${r.detail ?? "exceeded its timeout"}`;
+    case "missing-prereq":
+      return r.detail ?? "missing prerequisite";
+    case "skipped":
+      return r.detail ?? "skipped";
+    case "failed":
+      return r.detail ?? "failed";
+    default:
+      return r.detail ?? "";
   }
+}
 
-  // ── 1d. Formatting & lint guard ──────────────────────────────────────
-  // Nothing else runs the formatter/linter — no git hook, no CI job — so
-  // without this step `dist/` builds fine while the source silently drifts out
-  // of the house style (that's how it accumulated ~10 unformatted files). Both
-  // are sub-second with oxfmt/oxlint. Gated on the scripts existing so a plain
-  // `repoos init` repo without them just skips.
-  // Runs BEFORE the build (not after, as it originally did): fmt/lint are
-  // pure source-level checks, no build dependency either way, but a fix
-  // (`bun run fmt`) rewrites files — if that happened after a build already
-  // ran, the next `repoos check` would see source newer than the build
-  // marker and pay for a second full rebuild of nothing but whitespace
-  // changes. Checking first means the build only ever runs once source is
-  // already clean.
-  heading("Formatting & lint guard");
-  // Gates the (expensive) Full build and UI smoke test below: a fix here
-  // (`bun run fmt`) rewrites source, so a build against the still-unformatted
-  // tree is immediately invalidated the moment that fix lands — building it
-  // anyway just burns a full tsc pass for nothing. This doesn't weaken the
-  // gate: it already fails this run (exitCode is set below) either way, so
-  // there is no scenario where skipping the build here lets a broken one
-  // slip through unnoticed — it only defers verifying the build to the
-  // rerun once source is actually clean.
-  let fmtLintFailed = false;
-  for (const [label, script, hint] of [
-    ["Formatting", "fmt:check", "run `bun run fmt` to fix"],
-    ["Lint", "lint", "fix the reported errors"],
-  ] as const) {
-    if (!pkg.scripts?.[script]) {
-      console.log(c.dim(`  · No \`${script}\` script — skipping ${label.toLowerCase()}`));
-      results.push(pass(`check-${script}`, `skipped — no ${script} script`));
+export interface RunPlanOptions {
+  repoRoot: string;
+  /** Config for the repo; loaded here when not supplied. */
+  cfg?: RepoOSConfig;
+  profile?: string;
+  /** Changed paths for changed-path mode; absent means a full run. */
+  changedPaths?: string[];
+  /** Git ref the changed paths came from — the Tests step scopes itself to it. */
+  changedRef?: string;
+  onStart?: (step: CheckStep) => void;
+  onResult?: (result: StepRunResult) => void;
+}
+
+/**
+ * Run a resolved plan, in declaration order, and return one structured result
+ * per step. Pure with respect to the caller's output: printing happens through
+ * the callbacks, so this is unit-testable end to end (see
+ * ui-app/tests/check-plan.test.ts).
+ *
+ * Every step ends in exactly one of: passed, failed, timeout, missing
+ * prerequisite, or an explicit skip that says why. Nothing here can "pass" by
+ * not running.
+ */
+export async function runCheckPlan(
+  plan: CheckPlan,
+  opts: RunPlanOptions,
+): Promise<StepRunResult[]> {
+  const { repoRoot } = opts;
+  const cfg = opts.cfg ?? loadConfig(repoRoot);
+  const pkg = readPkg(repoRoot);
+  const selected = selectSteps(plan, { profile: opts.profile, changedPaths: opts.changedPaths });
+  const results: StepRunResult[] = [];
+  const push = (r: StepRunResult): StepRunResult => {
+    results.push(r);
+    opts.onResult?.(r);
+    return r;
+  };
+
+  for (const { step, skip } of selected) {
+    const cwd = stepCwd(repoRoot, step) ?? repoRoot;
+    opts.onStart?.(step);
+
+    if (skip) {
+      push({
+        name: step.name,
+        status: "skipped",
+        detail: skip.detail,
+        durationMs: 0,
+        required: step.required,
+      });
       continue;
     }
-    try {
-      execSync(`${preferBunForDevTasks() ? "bun run" : "npm run"} ${script}`, {
-        stdio: "pipe",
-        timeout: 120_000,
+
+    // A step whose declared dependency failed is blocked, not run: the gate is
+    // already failing on the real cause (e.g. formatting), and building or
+    // testing on top of it would only obscure that.
+    const blocked = blockingFailures(step, failedNames(results));
+    if (blocked.length > 0) {
+      push({
+        name: step.name,
+        status: "skipped",
+        detail: `skipped — blocked by failed step(s): ${blocked.join(", ")}`,
+        durationMs: 0,
+        required: step.required,
       });
-      console.log(c.green(`  ✔ ${label} clean`));
-      results.push(pass(`check-${script}`));
-    } catch (e) {
-      const out = [(e as { stdout?: Buffer }).stdout, (e as { stderr?: Buffer }).stderr]
-        .map((b) => b?.toString().trim())
-        .filter(Boolean)
-        .join("\n");
-      const msg = `${label} check failed — ${hint}:\n${out || (e as Error).message}`;
-      console.log(c.red(`  ✗ ${label} check failed — ${hint}`));
-      results.push(fail(`check-${script}`, msg));
-      exitCode = 1;
-      fmtLintFailed = true;
+      continue;
     }
-  }
 
-  // ── 2. Full build ───────────────────────────────────────────────────
-  // Always run `bun run build`; it is staleness-aware now (scripts/build.mjs,
-  // #0377) and skips in ~0.1s when src/ is unchanged since the marker was
-  // written. That replaces the old REPOOS_SKIP_BUILD opt-in: the close-out
-  // pipeline (src/server/done.ts, integration-orchestrator.ts, release.ts) runs
-  // `bun run build` just before invoking `repoos check`, and this step now
-  // detects the fresh marker on its own instead of via a private env flag.
-  //
-  // The staleness step above still runs and reports FIRST (#0276): a genuinely
-  // stale build is surfaced there, then this step repairs it within the same
-  // invocation. The build's skip is safe here precisely because step 1 already
-  // verified the marker matches src/ — a stale or missing marker never skips.
-  heading("Full build");
-  if (fmtLintFailed) {
-    console.log(
-      c.dim(
-        "  · Skipped — formatting/lint failed above; fix that first, dist would be stale " +
-          "the moment you do, and this run already fails regardless",
-      ),
-    );
-    results.push(pass("build", "skipped — formatting/lint failed, fix and rerun"));
-  } else {
-    try {
-      execSync("bun run build", { stdio: "inherit", timeout: 120_000 });
-      console.log(c.green("  ✔ Build succeeded"));
-      results.push(pass("build"));
-    } catch (e) {
-      const msg = (e as Error).message;
-      console.log(c.red("  ✗ Build failed"));
-      results.push(fail("build", msg));
-      exitCode = 1;
-    }
-  }
-
-  // ── 2b. CSS layering guard ──────────────────────────────────────────
-  // Both stylesheet guards below read `[check] uiStylesheet` (#0351): there is
-  // no RepoOS-shaped default path, so a project that declares neither a
-  // stylesheet nor a token vocabulary skips both cleanly. The path is resolved
-  // against the repo root (not cwd) and read once here; a configured path that
-  // doesn't exist is a misconfiguration worth a warning, not a silent skip.
-  heading("CSS layering guard");
-  const cssRelPath = cfg.check?.uiStylesheet;
-  const repoRoot = findRepoRoot();
-  const cssPath = cssRelPath && !isAbsolute(cssRelPath) ? join(repoRoot, cssRelPath) : cssRelPath;
-  const cssExists = Boolean(cssPath && existsSync(cssPath));
-  if (cssRelPath && !cssExists) {
-    console.log(
-      c.yellow(
-        `  ⚠ [check] uiStylesheet "${cssRelPath}" does not exist in this repo — stylesheet guards will skip`,
-      ),
-    );
-  }
-  const cssSrc = cssPath && cssExists ? readFileSync(cssPath, "utf8") : "";
-  if (!cssRelPath) {
-    console.log(c.dim("  · No [check] uiStylesheet configured — skipping"));
-    results.push(pass("css-layers", "skipped — no [check] uiStylesheet configured"));
-  } else if (!cssExists) {
-    console.log(c.dim(`  · ${cssRelPath} does not exist — skipping`));
-    results.push(pass("css-layers", `skipped — ${cssRelPath} not found`));
-  } else if (!cssSrc.includes('@import "tailwindcss"')) {
-    console.log(c.dim(`  · ${cssPath} is not a Tailwind v4 stylesheet — skipping`));
-    results.push(pass("css-layers", `skipped — ${cssPath} has no Tailwind v4 import`));
-  } else {
-    const offenders = cssLayeringOffenders(cssSrc);
-    if (offenders.length > 0) {
-      const msg =
-        "Unlayered universal/bare-element selectors (they silently beat all Tailwind utilities):\n    " +
-        offenders.slice(0, 8).join("\n    ") +
-        "\n    Wrap them in @layer base or scope them to a class/id.";
-      console.log(c.red("  ✗ " + msg.split("\n")[0]));
-      results.push(fail("css-layers", msg));
-      exitCode = 1;
-    } else {
-      console.log(c.green("  ✔ No unlayered universal/bare-element selectors"));
-      results.push(pass("css-layers"));
-    }
-  }
-
-  // ── 2c. Theme contrast guard ────────────────────────────────────────
-  heading("Theme contrast guard");
-  const themeScopes = cfg.check?.themeScopes ?? [];
-  for (const w of themeScopeConfigWarnings(themeScopes)) console.log(c.yellow(`  ⚠ ${w}`));
-  if (!cssRelPath) {
-    console.log(c.dim("  · No [check] uiStylesheet configured — skipping"));
-    results.push(pass("theme-contrast", "skipped — no [check] uiStylesheet configured"));
-  } else if (!cssExists) {
-    console.log(c.dim(`  · ${cssRelPath} does not exist — skipping`));
-    results.push(pass("theme-contrast", `skipped — ${cssRelPath} not found`));
-  } else if (!themeScopes.length) {
-    console.log(c.dim("  · No [check] themeScopes configured — skipping"));
-    results.push(pass("theme-contrast", "skipped — no [check] themeScopes configured"));
-  } else if (!hasThemeBlocks(cssSrc, themeScopes)) {
-    console.log(c.dim(`  · No configured theme scope matched a block in ${cssRelPath} — skipping`));
-    results.push(pass("theme-contrast", "skipped — no configured theme block found"));
-  } else {
-    const offenders = themeContrastOffenders(cssSrc, {
-      scopes: themeScopes,
-      pairs: cfg.check?.contrastPairs ?? [],
-      gradientTokens: cfg.check?.gradientTokens ?? [],
-      backdropToken: cfg.check?.backdropToken,
-    });
-    if (offenders.length > 0) {
-      const msg =
-        "Low-contrast or invalid theme tokens (invisible text risk):\n    " +
-        offenders.slice(0, 10).join("\n    ");
-      console.log(c.red("  ✗ " + msg.split("\n")[0]));
-      results.push(fail("theme-contrast", msg));
-      exitCode = 1;
-    } else {
-      console.log(c.green("  ✔ Theme tokens have valid button gradients and ≥3:1 contrast"));
-      results.push(pass("theme-contrast"));
-    }
-  }
-
-  // ── 2d. Bare require() guard ─────────────────────────────────────────
-  // The bug this guards is specific to `"type": "module"` packages (a bare
-  // `require` is valid in CJS), and the directories to scan are per-project
-  // (#0352): `[check] bareRequireDirs`, else the tsconfig include list.
-  heading("Bare require() guard");
-  {
-    const resolved = resolveBareRequireRoots(
-      cfg.check?.bareRequireDirs,
-      readTsconfig(repoRoot),
-      cfg.check?.bareRequireExcludes,
-    );
-    if (pkg.type !== "module") {
-      console.log(
-        c.dim(
-          '  · package.json is not "type": "module" — skipping (bare require() is valid in CJS)',
-        ),
-      );
-      results.push(pass("bare-require", 'skipped — package.json is not "type": "module"'));
-    } else if (resolved.roots.length === 0) {
-      console.log(
-        c.dim(
-          "  · No source roots to scan — set [check] bareRequireDirs or a tsconfig include — skipping",
-        ),
-      );
-      results.push(pass("bare-require", "skipped — no source roots configured"));
-    } else {
-      const offenders = bareRequireOffenders(resolved.roots, {
+    const missing = missingBinaries(step.requires);
+    const started = Date.now();
+    let outcome: BuiltinOutcome;
+    if (missing.length > 0) {
+      outcome = { status: "missing-prereq", detail: prereqDetail(missing) };
+    } else if (step.kind) {
+      outcome = await BUILTIN_HANDLERS[step.kind]({
         repoRoot,
-        excludes: resolved.excludes,
+        cwd,
+        cfg,
+        pkg,
+        scriptPkg: readPkg(cwd),
+        changedRef: opts.changedRef,
       });
-      if (offenders.length > 0) {
-        const msg =
-          'Bare require() in ESM source (this package is "type": "module" — a bare require throws ' +
-          "ReferenceError at runtime in dist/, silently if caught):\n    " +
-          offenders.slice(0, 10).join("\n    ") +
-          '\n    Import from "node:..." normally, or use createRequire(import.meta.url) if you ' +
-          "genuinely need CJS interop (see ui-harness.ts).";
-        console.log(c.red("  ✗ " + msg.split("\n")[0]));
-        results.push(fail("bare-require", msg));
-        exitCode = 1;
-      } else {
-        const from = resolved.source === "config" ? "[check] bareRequireDirs" : "tsconfig include";
-        console.log(c.green(`  ✔ No bare require() calls in ESM source (${from})`));
-        results.push(pass("bare-require"));
-      }
-    }
-  }
-
-  // ── 2d′. Task / input asset guard ───────────────────────────────────
-  heading("Task asset guard");
-  {
-    // Folder names are configurable (`workDir`/`inputsDir` in repoos.toml); a
-    // managed repo that renames them must still be guarded, so read them rather
-    // than assuming the default `work`/`inputs`.
-    const config = loadConfig();
-    const inputsDirRaw = config.inputsDir ?? "inputs";
-    const guardDirs = [
-      { label: "workDir", raw: config.workDir, norm: normalizeGuardDir(config.workDir) },
-      { label: "inputsDir", raw: inputsDirRaw, norm: normalizeGuardDir(inputsDirRaw) },
-    ];
-    for (const { label, raw, norm } of guardDirs) {
-      if (!norm) {
-        console.log(
-          c.yellow(
-            `  ⚠ repoos.toml's ${label} ("${raw}") doesn't resolve to a repo-relative ` +
-              "directory — the task-asset guard can't be scoped to it. Fix the config.",
-          ),
-        );
-      }
-    }
-    // Only usable, repo-relative dirs go into the pathspec. An empty one is
-    // dropped, not passed to git (`git ls-files -- ""` exits fatally, and the
-    // catch below would turn that into a silent green). If BOTH are unusable
-    // the guard can't run at all — fail loudly rather than pass with nothing
-    // to check.
-    const usableDirs = guardDirs.map((d) => d.norm).filter(Boolean);
-    if (usableDirs.length === 0) {
-      const msg =
-        "task-asset guard is disabled — neither workDir nor inputsDir in repoos.toml resolves " +
-        "to a repo-relative directory, so no task/input folder can be checked. Fix the config.";
-      console.log(c.red("  ✗ " + msg));
-      results.push(fail("task-assets", msg));
-      exitCode = 1;
     } else {
-      let tracked: string[] = [];
-      try {
-        // Pathspecs are pre-validated (non-empty, repo-relative) above, so a
-        // failure here means no git repo / git unavailable — not bad config.
-        tracked = execFileSync("git", ["ls-files", "--", ...usableDirs], {
-          encoding: "utf8",
-          maxBuffer: 16 * 1024 * 1024,
-        })
-          .split("\n")
-          .filter(Boolean);
-      } catch {
-        /* not a git repo / git unavailable — nothing to guard */
-      }
-      const offenders = taskAssetOffenders(tracked, {
-        workDir: config.workDir,
-        inputsDir: inputsDirRaw,
-      });
-      const labels = usableDirs.map((d) => `${d}/`).join(" or ");
-      if (offenders.length > 0) {
-        const msg =
-          `Binary attachments committed under ${labels} — these are served by ` +
-          "the running server from disk and must never enter git history (it bloats the repo " +
-          "irreversibly). Run `git rm --cached` on them (they stay on disk) and let " +
-          "`.gitignore` keep them out:\n    " +
-          offenders.slice(0, 15).join("\n    ") +
-          (offenders.length > 15 ? `\n    …and ${offenders.length - 15} more` : "");
-        console.log(c.red("  ✗ " + msg.split("\n")[0]));
-        results.push(fail("task-assets", msg));
-        exitCode = 1;
-      } else {
-        console.log(c.green(`  ✔ No committed binaries under ${labels}`));
-        results.push(pass("task-assets"));
-      }
+      const res = await runCommand({ command: step.command ?? "", cwd, timeoutMs: step.timeoutMs });
+      outcome = {
+        status:
+          res.status === "passed" ? "passed" : res.status === "timeout" ? "timeout" : "failed",
+        command: step.command,
+        output: res.output,
+        detail:
+          res.status === "timeout"
+            ? `timed out after ${timeoutLabel(step.timeoutMs)}`
+            : res.status === "error"
+              ? `could not run: ${res.error ?? "spawn failed"}`
+              : (outputTail(res.output) ?? `command failed (exit ${res.exitCode})`),
+      };
     }
+    push({
+      name: step.name,
+      status: outcome.status,
+      command: outcome.command,
+      cwd: step.cwd,
+      durationMs: Date.now() - started,
+      output: outcome.output,
+      detail: outcome.detail,
+      required: step.required,
+    });
+  }
+  return results;
+}
+
+export async function cmdCheck(argv: string[] = []): Promise<void> {
+  const opts = parseCheckArgs(argv);
+  const repoRoot = findRepoRoot();
+  const cfg = loadConfig(repoRoot);
+  const markers = detectRepoMarkers(repoRoot);
+  const plan = resolveCheckPlan({
+    check: cfg.check,
+    markers,
+    bunRunner: preferBunForDevTasks(repoRoot),
+  });
+
+  // `--print-plan` is the migration aid: it emits the plan the gate resolved
+  // (legacy or inferred) as the [[check.steps]] TOML to commit.
+  if (opts.printPlan) {
+    console.log(formatPlanToml(plan));
+    return;
   }
 
-  // ── 3. Tests (if any) ───────────────────────────────────────────────
-  heading("Tests");
-  const hasTestScript = Boolean(pkg.scripts && pkg.scripts.test);
-  const hasTestFiles = existsSync("test") || existsSync("__tests__") || existsSync("tests");
-  // The close-out pipeline can hand the test suite to the Remote Validation
-  // Runner (docs/remote-validation.md) — a Hetzner VM runs `bun run build` +
-  // `bun run test` off this machine — and then invoke the LOCAL `repoos check`
-  // with REPOOS_SKIP_TESTS=1 for only the cheap static guards + UI smoke.
-  // Standalone `repoos check` never sets it, so the CLI gate is unchanged.
-  if (fmtLintFailed) {
-    console.log(c.dim("  · Skipped — formatting/lint failed above, so build was skipped too"));
-    results.push(pass("tests", "skipped — formatting/lint failed, fix and rerun"));
-  } else if (process.env.REPOOS_SKIP_TESTS === "1") {
-    console.log(
-      c.dim("  · Skipped — test suite ran on the remote validation runner (REPOOS_SKIP_TESTS=1)"),
-    );
-    results.push(pass("tests", "skipped — ran on the remote validation runner"));
-  } else if (hasTestScript || hasTestFiles) {
-    // Only the vitest-backed `bun run test` script understands `--changed`;
-    // the bare `bun test` fallback (no package.json test script) is left
-    // unscoped. `--bun` forces vitest's `#!/usr/bin/env node` shebang onto
-    // Bun for a Bun-native repo (has bun.lock) unless pinned to Node — ~5x
-    // faster and it stops the swap-thrash flake on a loaded machine.
-    // preferBunForDevTasks() checks the lockfile so a managed repo whose
-    // tests want Node is never switched.
-    const changedRef = hasTestScript ? changedTestRef(process.env) : undefined;
-    const runScript = preferBunForDevTasks() ? "bun run --bun test" : "bun run test";
-    const cmd = hasTestScript
-      ? changedRef
-        ? `${runScript} -- --changed ${changedRef}`
-        : runScript
-      : "bun test";
-    if (changedRef) {
-      console.log(c.dim(`  · Scoped to files changed vs ${changedRef} (--changed)`));
-    }
-    // Worker pool: `undefined` keeps the config floor (2). A solo run with
-    // headroom scales up — passed through env, read back in vite.config.ts.
-    const workers = hasTestScript ? testPoolSize(process.env) : undefined;
-    const testEnv = workers
-      ? { ...process.env, REPOOS_TEST_WORKERS: String(workers) }
-      : process.env;
-    if (workers && !changedRef) {
-      const availGiB = (availableMemBytes() / 1024 ** 3).toFixed(1);
-      console.log(c.dim(`  · Full suite · ${workers} workers (${availGiB} GiB reclaimable)`));
-    }
-    // A full unscoped run is ~10min even healthy and can legitimately reach
-    // ~25min on a slow box; a too-tight cap SIGTERMs `bun run test` mid-run
-    // (exit 143) even when every test is green. Vitest's own per-test
-    // `testTimeout` fails a genuine hang fast; this is only the outer backstop.
-    const timeoutMs = changedRef ? 300_000 : 1_500_000;
-    try {
-      execSync(cmd, { stdio: "inherit", timeout: timeoutMs, env: testEnv });
-      console.log(c.green("  ✔ Tests passed"));
-      results.push(pass("tests", changedRef ? `scoped to changed vs ${changedRef}` : undefined));
-    } catch (e) {
-      console.log(c.red("  ✗ Tests failed"));
-      results.push(fail("tests", (e as Error).message));
-      exitCode = 1;
-    }
-  } else {
-    console.log(c.dim("  · No test suite found — skipping"));
-    results.push(pass("tests", "skipped — no test suite"));
-  }
+  const profile = opts.profile?.trim() || plan.defaultProfile || DEFAULT_PROFILE;
+  const changedRef = opts.changed?.trim() || changedTestRef(process.env);
 
-  // ── 4. UI smoke test ────────────────────────────────────────────────
-  // Per-project and opt-in (#0348). `repoos check` is the generic gate every
-  // managed project runs, so it must not boot RepoOS's own dashboard for a
-  // project that never declared a smoke command — that either silently tested
-  // RepoOS's UI or failed on RepoOS-only infrastructure. A project opts in
-  // with a `smoke` package.json script (zero-config default) or `[check]
-  // uiSmoke` in repoos.toml (overrides the script). With neither, the step
-  // skips cleanly. RepoOS dogfoods this: its own dashboard assertions live in
-  // src/commands/ui-smoke.ts behind a `smoke` script (scripts/ui-smoke.mjs),
-  // so the declaration path is exercised on every RepoOS check.
-  heading("UI smoke test");
-  const smokeCommand = resolveSmokeCommand(cfg.check?.uiSmoke, pkg.scripts);
-  if (fmtLintFailed) {
-    // Build was skipped above, so dist reflects whatever the last successful
-    // build was (possibly stale, possibly absent) — never a build of the
-    // current, still-unformatted source. Probing it here would be testing the
-    // wrong thing — the same reason the build step above is gated on it.
-    console.log(c.dim("  · Skipped — formatting/lint failed above, so build was skipped too"));
-    results.push(pass("ui-smoke", "skipped — formatting/lint failed, fix and rerun"));
-  } else if (smokeCommand) {
-    const runner = preferBunForDevTasks() ? "bun run" : "npm run";
-    const cmd =
-      smokeCommand.source === "config" ? smokeCommand.command : `${runner} ${smokeCommand.script}`;
-    const origin =
-      smokeCommand.source === "config"
-        ? "repoos.toml [check] uiSmoke"
-        : "package.json smoke script";
-    console.log(c.dim(`  · Running ${origin}: ${cmd}`));
-    try {
-      execSync(cmd, { stdio: "inherit", timeout: 300_000 });
-      console.log(c.green("  ✔ Smoke command passed"));
-      results.push(pass("ui-smoke", `ran ${origin}`));
-    } catch (e) {
-      console.log(c.red("  ✗ Smoke command failed"));
-      results.push(fail("ui-smoke", (e as Error).message));
-      exitCode = 1;
-    }
-  } else {
-    console.log(c.dim("  · No smoke command configured — skipping"));
+  heading("Check plan");
+  const scope = changedRef ? ` · changed-path mode vs ${changedRef}` : "";
+  console.log(
+    c.dim(
+      `  · ${plan.steps.length} step(s) · ${planSourceLabel(plan)} · profile "${profile}"${scope}`,
+    ),
+  );
+  for (const s of plan.steps) {
     console.log(
       c.dim(
-        '    Declare one with a `smoke` package.json script or [check] uiSmoke = "bun run smoke" in repoos.toml',
+        `      ${s.name}: ${describeStep(s)}${s.required ? "" : " (optional)"}${
+          s.whenChanged.length ? ` · when ${s.whenChanged.join(", ")} changes` : ""
+        }`,
       ),
     );
-    results.push(pass("ui-smoke", "skipped — no smoke command configured"));
   }
+  for (const w of plan.warnings) console.log(c.yellow(`  ⚠ ${w}`));
+  for (const e of plan.errors) console.log(c.red(`  ✗ ${e}`));
+
+  // Default safe: a repo with no meaningful plan must never get an all-green
+  // definition of done. A gate that ran nothing is not a gate.
+  if (plan.steps.length === 0 || plan.errors.length > 0) {
+    const msg =
+      plan.errors[0] ??
+      "No check plan: this repo declares no [[check.steps]] and nothing could be inferred " +
+        "from it (no go.mod, Cargo.toml, gradlew/build.gradle, or package.json scripts). " +
+        "Declare what 'done' means for this repo under [[check.steps]] in repoos.toml — " +
+        "see user-docs/check.md — or run `repoos check --print-plan` for a starting point.";
+    console.log(c.red(`\n  ✗ ${msg}\n`));
+    process.exit(1);
+  }
+
+  const changedPaths = changedRef ? changedPathsSince(repoRoot, changedRef) : undefined;
+  if (changedRef) {
+    console.log(
+      c.dim(
+        `  · Changed-path mode: ${changedPaths?.length ?? 0} path(s) differ from ${changedRef} ` +
+          "(fast pre-review pass — close-out still runs the full plan)",
+      ),
+    );
+  }
+
+  const results = await runCheckPlan(plan, {
+    repoRoot,
+    cfg,
+    profile,
+    changedPaths,
+    changedRef,
+    onStart: (step) => {
+      heading(step.name);
+      console.log(c.dim(`  · ${describeStep(step)}`));
+    },
+    onResult: (r) => {
+      const secs = r.durationMs >= 1000 ? ` (${(r.durationMs / 1000).toFixed(1)}s)` : "";
+      if (r.status === "passed") {
+        console.log(c.green(`  ✔ ${r.name}${secs}${r.detail ? ` — ${r.detail}` : ""}`));
+      } else if (r.status === "skipped") {
+        console.log(c.dim(`  ⏭ ${r.name} — ${statusDetail(r)}`));
+      } else if (!r.required) {
+        console.log(c.yellow(`  ⚠ ${r.name} failed (optional) — ${statusDetail(r)}`));
+      } else {
+        console.log(c.red(`  ✗ ${r.name}${secs}`));
+      }
+    },
+  });
 
   // ── Summary ─────────────────────────────────────────────────────────
-  const failed = results.filter((r) => !r.ok);
+  const gatingFailures = results.filter(
+    (r) => r.required && r.status !== "passed" && r.status !== "skipped",
+  );
+  const optionalFailures = results.filter(
+    (r) => !r.required && r.status !== "passed" && r.status !== "skipped",
+  );
   console.log(c.bold(c.cyan("\n  ── Results ──")));
   for (const r of results) {
-    const icon = r.ok ? c.green("✔") : c.red("✗");
-    const detail = r.detail ? c.dim(`  — ${r.detail}`) : "";
-    console.log(`  ${icon} ${r.name}${detail}`);
+    const icon = !r.required && STATUS_ICON[r.status] === "✗" ? "⚠" : STATUS_ICON[r.status];
+    const detail = statusDetail(r);
+    console.log(`  ${icon} ${r.name}${detail ? c.dim(`  — ${detail}`) : ""}`);
   }
-  if (failed.length === 0) {
+  if (results.length > 0 && results.every((r) => r.status === "skipped")) {
+    // Every step was excluded (profile, or changed paths that matched nothing).
+    // That is not a green build — it is a run that verified nothing. Say so
+    // plainly rather than letting "All checks passed" imply otherwise.
+    console.log(
+      c.yellow(
+        "\n  ⚠ No steps ran — every one was skipped. Nothing in this run verified the code; " +
+          "check the profile and the `whenChanged` globs.\n",
+      ),
+    );
+  }
+  if (gatingFailures.length === 0) {
     console.log(c.bold(c.green("\n  All checks passed.\n")));
   } else {
-    console.log(c.bold(c.red(`\n  ${failed.length} check(s) failed.\n`)));
+    console.log(c.bold(c.red(`\n  ${gatingFailures.length} check(s) failed.\n`)));
   }
-  process.exit(exitCode);
+  if (optionalFailures.length > 0) {
+    console.log(
+      c.yellow(
+        `  ${optionalFailures.length} optional check(s) failed — reported, not gating: ` +
+          optionalFailures.map((r) => r.name).join(", ") +
+          "\n",
+      ),
+    );
+  }
+  process.exit(gatingFailures.length > 0 ? 1 : 0);
+}
+
+/** Names of steps that already failed (a timeout or missing tool counts). */
+function failedNames(results: StepRunResult[]): Set<string> {
+  const out = new Set<string>();
+  for (const r of results) {
+    if (r.status !== "passed" && r.status !== "skipped") out.add(r.name);
+  }
+  return out;
 }

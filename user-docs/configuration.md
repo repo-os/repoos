@@ -246,6 +246,26 @@ remoteValidation.fallbackToLocal = false
 Needs `HETZNER_API_TOKEN` and `REPOOS_REMOTE_SSH_KEY` in `.env`, plus a prebuilt
 snapshot.
 
+## Checks
+
+The pre-merge gate is a plan you declare, so it works for any stack:
+
+```toml
+[check]
+version = 1
+
+[[check.steps]]
+name = "build"
+command = "go build ./..."
+requires = ["go"]
+timeoutMs = 300000
+```
+
+A step takes `command` (or a built-in `kind`), plus optional `cwd`,
+`timeoutMs`, `required`, `profiles`, `whenChanged`, `requires` and `dependsOn`.
+Close-out runs `--profile full`. Full reference, including the built-in kinds
+and what happens when a repo declares nothing: [Checks before merge](/check).
+
 ## Releases
 
 Opt-in. When configured, RepoOS pushes an annotated version tag from a clean
