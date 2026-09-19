@@ -16,6 +16,7 @@ const KEY_ORDER = [
   "type",
   "status",
   "needs_input",
+  "questions",
   "needs_input_reason",
   "needs_input_detail",
   "needs_merge",
@@ -251,6 +252,10 @@ export function parseTask(args: ParseTaskArgs): Task {
     type: String(data.type ?? "feature"),
     status: normalizeStatus(data.status, "inbox" as Status),
     needsInput: data.needs_input === true,
+    questions:
+      Array.isArray(data.questions) && data.questions.length > 0
+        ? data.questions.map((q) => String(q))
+        : undefined,
     needsInputReason:
       typeof data.needs_input_reason === "string" ? data.needs_input_reason : undefined,
     needsInputDetail:
@@ -308,6 +313,7 @@ export function serializeTask(task: Task): string {
   // behind to be misread on a later re-escalation.
   if (task.needsInput) {
     data.needs_input = true;
+    if (task.questions && task.questions.length > 0) data.questions = task.questions;
     if (task.needsInputReason) data.needs_input_reason = task.needsInputReason;
     if (task.needsInputDetail) data.needs_input_detail = task.needsInputDetail;
   }
