@@ -12,6 +12,8 @@ const props = withDefaults(
     conflicts?: string[];
     /** Newline-preserving check/build output shown in full in panel mode. */
     detail?: string;
+    /** Repo-relative durable log of the failed check's full output (#0428). */
+    logPath?: string;
     /** Guidance paragraph; defaults to the merge-conflict guidance. */
     hint?: string;
     /**
@@ -134,6 +136,10 @@ const outputOpen = ref(true);
           <ChevronDown class="done-error-chev" :class="{ open: outputOpen }" aria-hidden="true" />
         </button>
         <pre v-if="outputOpen" class="done-error-pre mono">{{ detail }}</pre>
+      </div>
+      <div v-if="logPath" class="done-error-log">
+        <span class="done-error-sub">Full check output saved to</span>
+        <code class="mono">{{ logPath }}</code>
       </div>
       <div v-if="conflicts?.length" class="done-error-files">
         <div class="done-error-sub">Conflicting files</div>

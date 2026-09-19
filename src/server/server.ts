@@ -1086,12 +1086,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           result.reason &&
           jobCoordinator.getJob(jobBefore.taskId)?.phase === "failed"
         ) {
+          const failedJob = jobCoordinator.getJob(jobBefore.taskId);
           emitEvent({
             type: "task.progress",
             id: jobBefore.taskId,
             step: "failed",
             detail: result.reason,
-            phase: jobCoordinator.getJob(jobBefore.taskId)?.failedPhase,
+            phase: failedJob?.failedPhase,
+            logPath: failedJob?.logPath,
             at: new Date().toISOString(),
           });
         }

@@ -97,6 +97,11 @@ export interface DoneError {
   hint?: string;
   /** Newline-preserving check/build output excerpt for the expanded panel. */
   detail?: string;
+  /**
+   * Repo-relative path to the durable log of the failed check's full output
+   * (#0428), shown so the untruncated transcript is reachable from the task.
+   */
+  logPath?: string;
 }
 
 /**
@@ -1045,7 +1050,7 @@ export const useRepoStore = defineStore("repo", () => {
         // or stale job. Surfacing it would leave a permanent, misleading
         // error badge on an already-finished task, so skip it.
         if (tasks.value.find((t) => t.id === e.id)?.status !== "done") {
-          setDoneError(e.id, describeCloseOutFailure(e.phase, e.detail));
+          setDoneError(e.id, { ...describeCloseOutFailure(e.phase, e.detail), logPath: e.logPath });
         }
       }
     } else if (e.type === "task.corrected") {
