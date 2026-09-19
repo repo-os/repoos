@@ -138,7 +138,7 @@ export function useChatScroll(
     return Boolean(el && el.clientHeight > 0);
   }
 
-  function flushSave(): void {
+  function flushSave(chatIdOverride?: string): void {
     if (saveTimer !== null) {
       clearTimeout(saveTimer);
       saveTimer = null;
@@ -146,7 +146,7 @@ export function useChatScroll(
     if (pendingSave === null) return;
     const distance = pendingSave;
     pendingSave = null;
-    if (persist) writeSaved(toValue(options.chatId), distance);
+    if (persist) writeSaved(chatIdOverride ?? toValue(options.chatId), distance);
   }
 
   function queueSave(distance: number): void {
@@ -263,7 +263,10 @@ export function useChatScroll(
 
   watch(
     () => toValue(options.chatId),
-    () => {
+    (_, oldId) => {
+      // Flush any pending save under the OLD id before switching — flushSave()
+      // without an override would write under the new id, corrupting its position.
+      flushSave(oldId);
       if (isActive()) void nextTick(restore);
     },
     { flush: "post" },
@@ -290,20 +293,32 @@ export function useChatScroll(
     },
   );
 
-  onMounted(() => {
-    if (isActive()) void nextTick(restore);
-    const el = log.value;
-    if (el && typeof ResizeObserver !== "undefined") {
-      // A resize (panel drag, growing composer) can pull the newest message out
-      // from under a reader who was already at it.
+  // A resize (panel drag, growing composer) can pull the newest message out
+  // from under a reader who was already at it. Called from onMounted AND from
+  // watch(log, …) so floating-head chats (Dialog/v-if, log is null at mount)
+  // still get the observer once their container renders.
+  function attachObserver(el: HTMLElement): void {
+    if (typeof ResizeObserver === "undefined") return;
+    if (!observer) {
       observer = new ResizeObserver(() => {
         const current = log.value;
         if (current && distanceFromBottom() <= threshold) {
           current.scrollTop = current.scrollHeight;
         }
       });
-      observer.observe(el);
     }
+    observer.observe(el);
+  }
+
+  // Re-attach when the log ref becomes non-null (e.g. a Dialog that just opened).
+  watch(log, (el) => {
+    if (el) attachObserver(el);
+  });
+
+  onMounted(() => {
+    if (isActive()) void nextTick(restore);
+    const el = log.value;
+    if (el) attachObserver(el);
   });
 
   onBeforeUnmount(() => {

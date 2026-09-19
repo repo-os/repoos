@@ -239,6 +239,25 @@ describe("AI chat scroll behaviour", () => {
     expect(logEl(other).scrollTop).toBe(scrollHeight);
   });
 
+  it("chatId switch with a pending save does not corrupt the new conversation's position", async () => {
+    const idA = nextChatId();
+    const idB = nextChatId();
+    const wrapper = await mountHarness({ chatId: idA, size: 4 });
+    // Scroll up in conversation A — queues a debounced save under idA.
+    scrollTo(wrapper, 300);
+    await nextTick();
+    // Switch to conversation B before the debounce fires.
+    await wrapper.setProps({ chatId: idB });
+    await nextTick();
+    // Conversation B has no saved position, so it should open at the bottom.
+    expect(logEl(wrapper).scrollTop).toBe(scrollHeight);
+    // Conversation A's position must be saved under idA, not idB.
+    const savedA = window.localStorage.getItem(`repoos.chat-scroll.${idA}`);
+    const savedB = window.localStorage.getItem(`repoos.chat-scroll.${idB}`);
+    expect(Number(savedA)).toBeGreaterThan(0); // A's scroll-up was saved
+    expect(savedB).toBeNull(); // B was never scrolled
+  });
+
   it("follows new output for a reader who is already at the bottom", async () => {
     const wrapper = await mountHarness({ chatId: nextChatId(), size: 4 });
     scrollHeight = 1600;
