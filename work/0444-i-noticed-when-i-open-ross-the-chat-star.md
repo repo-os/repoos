@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-19T11:43:11Z"
-review_passes: 1
 id: "0444"
 title: Chat scrolls to newest messages with jump-to-latest button
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -14,6 +12,9 @@ cli_override: opencode
 model_override: openrouter/tencent/hy4-preview
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-19T10:26:30Z"
+updated_at: "2026-09-19T11:43:11Z"
+review_rounds: 1
+review_passes: 1
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -117,4 +118,4 @@ Also could you make sure there's some spacing between the messages (vertical spa
 - 2026-09-19T11:18:35Z · status active→review
 - 2026-09-19T11:35:18Z · needs_input
 - 2026-09-19T11:43:11Z · needs_input
-
+- 2026-09-19T11:43:11Z · status review→active
