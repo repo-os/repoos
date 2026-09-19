@@ -161,7 +161,9 @@ async function send(): Promise<void> {
   draft.value = "";
   scrollToLatest();
   try {
-    await api("/api/debugger/message", JSON_OPTS("POST", { text }));
+    // `optimistic: true` tells the server we already drew this turn, so it
+    // doesn't broadcast it back and double-render it (#0443).
+    await api("/api/debugger/message", JSON_OPTS("POST", { text, optimistic: true }));
   } catch (error) {
     repo.outputs[CHAT_ID] = (repo.outputs[CHAT_ID] ?? []).filter(
       (_entry, index) => index !== optimisticIndex,
