@@ -2,7 +2,7 @@
 id: "0450"
 title: Add a 'Run now' started modal for built-in team agents
 type: feature
-status: inbox
+status: ready
 priority: p3
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: ""
 review_model_override: opencode-go/hy3
 created_at: "2026-09-19T16:38:12Z"
-updated_at: "2026-09-19T17:36:07Z"
+updated_at: "2026-09-19T17:36:10Z"
 ---
 ## Problem
 
@@ -48,3 +48,4 @@ Use the descriptions already in BuiltInAgentCard.vue as the source of truth:
 
 - 2026-09-19T16:38:12Z · created · unknown
 - 2026-09-19T17:36:07Z · review_model_override
+- 2026-09-19T17:36:10Z · status inbox→ready
