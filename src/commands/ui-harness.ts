@@ -35,6 +35,16 @@ export interface SmokeConsoleMessage {
 export interface SmokePage {
   on(event: "console", handler: (msg: SmokeConsoleMessage) => void): void;
   on(event: "pageerror", handler: (err: Error) => void): void;
+  route(
+    url: string,
+    handler: (route: {
+      fetch(): Promise<{
+        json(): Promise<unknown>;
+      }>;
+      fulfill(options: { status: number; contentType: string; body: string }): Promise<void>;
+    }) => Promise<void>,
+  ): Promise<void>;
+  close(): Promise<void>;
   goto(url: string, options: { waitUntil: string; timeout: number }): Promise<unknown>;
   title(): Promise<string>;
   evaluate<R>(fn: () => R): Promise<R>;
