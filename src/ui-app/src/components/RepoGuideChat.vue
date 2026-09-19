@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from "vue";
-import { X } from "lucide-vue-next";
+import { X, ArrowDown } from "lucide-vue-next";
 import { api, JSON_OPTS } from "../api";
 import { renderMarkdown } from "../lib/markdown";
 import { fmtTime } from "../lib/time";
@@ -10,7 +10,6 @@ import type { Agent, AgentOutputEntry, AgentSessionStats } from "../types";
 import FloatingHeadPanel from "./FloatingHeadPanel.vue";
 import VoiceDictate from "./VoiceDictate.vue";
 import AiChatThinking from "./AiChatThinking.vue";
-import ChatJumpToLatest from "./ChatJumpToLatest.vue";
 import { useChatScroll } from "../composables/useChatScroll";
 import { insertTextAtCursor } from "../utils/text-insertion";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
@@ -195,55 +194,59 @@ watch(
       </button>
     </header>
 
-    <div
-      ref="log"
-      class="guide-log ai-chat-log"
-      role="log"
-      aria-live="polite"
-      aria-label="Conversation with Ross"
-      @scroll="onScroll"
-    >
-      <div v-if="!hasConversation" class="guide-welcome">
-        <div class="guide-welcome-avatar">
-          <img src="/assets/repoos-ross-from-friends-square.webp" alt="Ross" />
+    <div class="guide-log-wrap">
+      <div
+        ref="log"
+        class="guide-log ai-chat-log"
+        role="log"
+        aria-live="polite"
+        aria-label="Conversation with Ross"
+        @scroll="onScroll"
+      >
+        <div v-if="!hasConversation" class="guide-welcome">
+          <div class="guide-welcome-avatar">
+            <img src="/assets/repoos-ross-from-friends-square.webp" alt="Ross" />
+          </div>
+          <strong>Ask Ross about this repository</strong>
+          <p>I can help with RepoOS, tasks, statuses, issues, code, and repository context.</p>
+          <div class="guide-prompts">
+            <button type="button" @click="draft = 'What is currently in progress?'">
+              What's in progress?
+            </button>
+            <button type="button" @click="draft = 'Which issues need attention?'">
+              Issues needing attention
+            </button>
+          </div>
         </div>
-        <strong>Ask Ross about this repository</strong>
-        <p>I can help with RepoOS, tasks, statuses, issues, code, and repository context.</p>
-        <div class="guide-prompts">
-          <button type="button" @click="draft = 'What is currently in progress?'">
-            What's in progress?
-          </button>
-          <button type="button" @click="draft = 'Which issues need attention?'">
-            Issues needing attention
-          </button>
-        </div>
+        <template v-for="(entry, index) in lines" :key="index">
+          <div
+            v-if="lineKind(entry) !== 'hidden'"
+            class="guide-row"
+            :class="`guide-row-${lineKind(entry)}`"
+          >
+            <div v-if="lineKind(entry) === 'assistant'" class="guide-mini-avatar">
+              <img src="/assets/repoos-ross-from-friends-square.webp" alt="R" />
+            </div>
+            <div class="guide-bubble" :class="`guide-bubble-${lineKind(entry)}`">
+              <div
+                v-if="lineKind(entry) === 'assistant'"
+                class="guide-markdown"
+                v-html="renderMarkdown(lineText(entry))"
+              ></div>
+              <span v-else>{{ lineText(entry) }}</span>
+              <span v-if="lineKind(entry) !== 'status' && entry.at" class="msg-time">{{
+                fmtTime(entry.at)
+              }}</span>
+            </div>
+          </div>
+        </template>
+        <AiChatThinking class="ai-chat-avatar-offset" :active="busy" label="Ross is thinking" />
       </div>
-      <template v-for="(entry, index) in lines" :key="index">
-        <div
-          v-if="lineKind(entry) !== 'hidden'"
-          class="guide-row"
-          :class="`guide-row-${lineKind(entry)}`"
-        >
-          <div v-if="lineKind(entry) === 'assistant'" class="guide-mini-avatar">
-            <img src="/assets/repoos-ross-from-friends-square.webp" alt="R" />
-          </div>
-          <div class="guide-bubble" :class="`guide-bubble-${lineKind(entry)}`">
-            <div
-              v-if="lineKind(entry) === 'assistant'"
-              class="guide-markdown"
-              v-html="renderMarkdown(lineText(entry))"
-            ></div>
-            <span v-else>{{ lineText(entry) }}</span>
-            <span v-if="lineKind(entry) !== 'status' && entry.at" class="msg-time">{{
-              fmtTime(entry.at)
-            }}</span>
-          </div>
-        </div>
-      </template>
-      <AiChatThinking class="ai-chat-avatar-offset" :active="busy" label="Ross is thinking" />
+      <button v-if="showJumpToLatest" type="button" class="agent-jump" @click="scrollToLatest()">
+        <ArrowDown class="size-3.5" />
+        Latest
+      </button>
     </div>
-
-    <ChatJumpToLatest :visible="showJumpToLatest" :anchor="log" @click="scrollToLatest()" />
 
     <form class="guide-compose" @submit.prevent="send">
       <textarea
@@ -344,6 +347,13 @@ watch(
   box-shadow: none;
 }
 /* Vertical rhythm between messages comes from .ai-chat-log (style.css). */
+.guide-log-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
 .guide-log {
   flex: 1;
   overflow-y: auto;

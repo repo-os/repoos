@@ -12,7 +12,7 @@ import type {
 } from "../types";
 import Button from "./ui/button.vue";
 import AiChatThinking from "./AiChatThinking.vue";
-import ChatJumpToLatest from "./ChatJumpToLatest.vue";
+import { ArrowDown } from "lucide-vue-next";
 import { useChatScroll } from "../composables/useChatScroll";
 
 const props = withDefaults(defineProps<{ active?: boolean }>(), { active: true });
@@ -286,43 +286,52 @@ onMounted(() => {
           </button>
         </header>
 
-        <div
-          ref="log"
-          class="playground-log ai-chat-log"
-          role="log"
-          aria-live="polite"
-          :aria-label="`Conversation with ${selected.name}`"
-          @scroll="onScroll"
-        >
-          <div v-if="!messages.length" class="playground-welcome">
-            <strong>Try {{ selected.name }}</strong>
-            <p>{{ selected.reason }}</p>
-            <div class="playground-starters">
-              <button v-for="p in STARTER_PROMPTS" :key="p" type="button" @click="send(p)">
-                {{ p }}
-              </button>
-            </div>
-          </div>
+        <div class="playground-log-wrap">
           <div
-            v-for="(m, i) in messages"
-            :key="i"
-            class="playground-row"
-            :class="`playground-row-${m.role}`"
+            ref="log"
+            class="playground-log ai-chat-log"
+            role="log"
+            aria-live="polite"
+            :aria-label="`Conversation with ${selected.name}`"
+            @scroll="onScroll"
           >
-            <div class="playground-bubble" :class="`playground-bubble-${m.role}`">
-              <div
-                v-if="m.role === 'assistant'"
-                class="playground-markdown"
-                v-html="renderMarkdown(m.text)"
-              ></div>
-              <span v-else>{{ m.text }}</span>
+            <div v-if="!messages.length" class="playground-welcome">
+              <strong>Try {{ selected.name }}</strong>
+              <p>{{ selected.reason }}</p>
+              <div class="playground-starters">
+                <button v-for="p in STARTER_PROMPTS" :key="p" type="button" @click="send(p)">
+                  {{ p }}
+                </button>
+              </div>
             </div>
+            <div
+              v-for="(m, i) in messages"
+              :key="i"
+              class="playground-row"
+              :class="`playground-row-${m.role}`"
+            >
+              <div class="playground-bubble" :class="`playground-bubble-${m.role}`">
+                <div
+                  v-if="m.role === 'assistant'"
+                  class="playground-markdown"
+                  v-html="renderMarkdown(m.text)"
+                ></div>
+                <span v-else>{{ m.text }}</span>
+              </div>
+            </div>
+            <AiChatThinking :active="sending" label="Model is responding" />
+            <div v-if="sendError" class="playground-send-error">{{ sendError }}</div>
           </div>
-          <AiChatThinking :active="sending" label="Model is responding" />
-          <div v-if="sendError" class="playground-send-error">{{ sendError }}</div>
+          <button
+            v-if="showJumpToLatest"
+            type="button"
+            class="agent-jump"
+            @click="scrollToLatest()"
+          >
+            <ArrowDown class="size-3.5" />
+            Latest
+          </button>
         </div>
-
-        <ChatJumpToLatest :visible="showJumpToLatest" :anchor="log" @click="scrollToLatest()" />
 
         <form class="playground-compose" @submit.prevent="send()">
           <textarea
@@ -600,6 +609,13 @@ onMounted(() => {
   cursor: default;
 }
 /* Vertical rhythm between messages comes from .ai-chat-log (style.css). */
+.playground-log-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
 .playground-log {
   flex: 1;
   min-height: 0;
