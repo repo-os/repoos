@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-19T23:31:09Z"
+review_passes: 1
 id: "0452"
 title: Build a polyglot real-repo adoption test matrix
 type: feature
@@ -12,7 +14,6 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 review_model_override: openrouter/xiaomi/mimo-v2.5
 created_at: "2026-09-19T16:43:21Z"
-updated_at: "2026-09-19T23:28:58Z"
 handoff_signal_retry_count: 1
 ---
 ## Outcome
@@ -80,3 +81,4 @@ P1 — Build a polyglot real-repo adoption test matrix.
 - 2026-09-19T22:35:58Z · review_model_override
 - 2026-09-19T23:08:42Z · status ready→active, branch
 - 2026-09-19T23:28:58Z · status active→review
+
