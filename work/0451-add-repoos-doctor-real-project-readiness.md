@@ -2,14 +2,14 @@
 id: "0451"
 title: Add repoos doctor real-project readiness preflight
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: core
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-19T16:42:56Z"
-updated_at: "2026-09-19T16:42:56Z"
+updated_at: "2026-09-19T17:16:25Z"
 ---
 ## Outcome
 
@@ -57,3 +57,4 @@ P1 — Add `repoos doctor`: a real-project readiness preflight.
 ## Activity
 
 - 2026-09-19T16:42:56Z · created · unknown
+- 2026-09-19T17:16:25Z · status inbox→ready
