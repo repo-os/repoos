@@ -10,8 +10,9 @@ created_by: ""
 branch: ""
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
+review_model_override: opencode-go/mimo-v2.5
 created_at: "2026-09-18T18:29:57Z"
-updated_at: "2026-09-19T00:46:42Z"
+updated_at: "2026-09-19T00:46:49Z"
 ---
 ## Problem
 
@@ -30,3 +31,4 @@ When close-out's gate fails, the recorded failure reason is only the last few hu
 - 2026-09-18T18:29:57Z · created · unknown
 - 2026-09-19T00:46:38Z · cli_override
 - 2026-09-19T00:46:42Z · model_override
+- 2026-09-19T00:46:49Z · review_model_override
