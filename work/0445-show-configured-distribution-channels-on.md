@@ -2,7 +2,7 @@
 id: "0445"
 title: Show configured distribution channels on Releases
 type: feature
-status: review
+status: done
 priority: p1
 area: release
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/show-configured-distribution-channels-on
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-19T10:56:32Z"
-updated_at: "2026-09-19T11:50:18Z"
+updated_at: "2026-09-19T12:40:27Z"
 ---
 ## Activity
 
@@ -107,3 +107,4 @@ claiming a channel is current when its version cannot be verified.
 - 2026-09-19T11:18:53Z · status inbox→ready
 - 2026-09-19T11:18:54Z · status ready→active, branch
 - 2026-09-19T11:50:18Z · status active→review
+- 2026-09-19T12:40:27Z · status review→done, release:success
