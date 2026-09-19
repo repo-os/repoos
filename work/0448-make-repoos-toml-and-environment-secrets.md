@@ -12,9 +12,10 @@ assigned_to: ai
 created_by: ""
 branch: feat/make-repoos-toml-and-environment-secrets
 cli_override: opencode
+model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_model_override: default
 created_at: "2026-09-19T15:10:29Z"
-updated_at: "2026-09-19T16:02:19Z"
+updated_at: "2026-09-19T16:02:33Z"
 dev_error_count: 1
 ---
 ## Outcome
@@ -51,3 +52,4 @@ Give users one trustworthy explanation of every supported RepoOS project setting
 - 2026-09-19T16:01:52Z · cli_override
 - 2026-09-19T16:01:54Z · model_override
 - 2026-09-19T16:02:19Z · cli_override, model_override
+- 2026-09-19T16:02:33Z · model_override
