@@ -10,10 +10,10 @@ created_by: ""
 branch: ""
 cli_override: opencode
 model_override: openrouter/tencent/hy4-preview
-review_cli_override: codex
+review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-09-19T09:02:16Z"
-updated_at: "2026-09-19T10:44:47Z"
+updated_at: "2026-09-19T10:44:49Z"
 ---
 ## Problem
 
@@ -44,3 +44,4 @@ Any time content is forwarded to the Debugger programmatically (via "Send to Deb
 - 2026-09-19T10:44:39Z · cli_override
 - 2026-09-19T10:44:42Z · model_override
 - 2026-09-19T10:44:47Z · review_cli_override, review_model_override
+- 2026-09-19T10:44:49Z · review_cli_override
