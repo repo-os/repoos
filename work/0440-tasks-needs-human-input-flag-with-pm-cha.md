@@ -2,7 +2,7 @@
 id: "0440"
 title: "Tasks: needs-human-input flag with PM chat Q&A flow"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: ""
 review_model_override: openrouter/tencent/hy4-preview
 created_at: "2026-09-19T06:32:07Z"
-updated_at: "2026-09-19T06:40:08Z"
+updated_at: "2026-09-19T06:40:11Z"
 ---
 ## Problem
 
@@ -46,3 +46,4 @@ When a built-in agent run produces a task that requires a human decision (e.g. "
 
 - 2026-09-19T06:32:07Z · created · unknown
 - 2026-09-19T06:40:08Z · review_model_override
+- 2026-09-19T06:40:11Z · status inbox→ready
