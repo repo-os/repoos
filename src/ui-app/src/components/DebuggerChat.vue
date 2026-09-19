@@ -388,9 +388,7 @@ watch(
         Diagnose
       </button>
     </form>
-    <div class="debugger-footnote">
-      Paste a bug → root cause + suggested fix
-    </div>
+    <div class="debugger-footnote">Paste a bug → root cause + suggested fix</div>
   </FloatingHeadPanel>
 </template>
 

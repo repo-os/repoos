@@ -284,9 +284,7 @@ watch(
         </svg>
       </button>
     </form>
-    <div class="guide-footnote">
-      Repo-aware assistant
-    </div>
+    <div class="guide-footnote">Repo-aware assistant</div>
   </FloatingHeadPanel>
 </template>
 
