@@ -34,8 +34,9 @@ function handleOpenChange(nextOpen: boolean): void {
     <DialogOverlay />
     <DialogContent
       :style="{ width: ui.drawerWidth + 'px', 'max-width': '100vw' }"
-      :class="props.class"
+      :class="['floating-head-panel', props.class]"
     >
+      <div class="drawer-resize" @mousedown.prevent="ui.startResize"></div>
       <DialogTitle v-if="props.title" class="sr-only">{{ props.title }}</DialogTitle>
       <DialogDescription v-if="props.description ?? props.title" class="sr-only">
         {{ props.description ?? props.title }}
@@ -44,3 +45,9 @@ function handleOpenChange(nextOpen: boolean): void {
     </DialogContent>
   </Dialog>
 </template>
+
+<style scoped>
+.floating-head-panel {
+  z-index: 110;
+}
+</style>

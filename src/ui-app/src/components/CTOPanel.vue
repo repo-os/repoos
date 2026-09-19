@@ -191,23 +191,6 @@ watch(
 </template>
 
 <style scoped>
-.cto-panel {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 680px;
-  max-width: 100vw;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border-left: 1px solid var(--border-bright);
-  background: var(--panel-gradient);
-  box-shadow: var(--drawer-shadow);
-  animation: cto-open 0.18s ease-out;
-  pointer-events: auto;
-  z-index: 92;
-}
 .cto-header {
   display: flex;
   align-items: center;
@@ -259,25 +242,6 @@ watch(
 .cto-identity i.off {
   background: var(--txt-faint);
   box-shadow: none;
-}
-.cto-minimize {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border: 0;
-  border-radius: 9px;
-  background: transparent;
-  color: var(--txt-dim);
-  cursor: pointer;
-}
-.cto-minimize:hover {
-  background: var(--nav-hover-bg);
-  color: var(--txt);
-}
-.cto-minimize svg {
-  width: 19px;
-  height: 19px;
 }
 .cto-log {
   flex: 1;
@@ -446,16 +410,6 @@ watch(
   width: 16px;
   height: 16px;
 }
-@keyframes cto-open {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
 @keyframes cto-bounce {
   0%,
   70%,
@@ -468,15 +422,7 @@ watch(
     opacity: 1;
   }
 }
-@media (max-width: 600px) {
-  .cto-panel {
-    left: 0;
-    right: 0;
-    width: 100vw !important;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
-  .cto-panel,
   .cto-thinking span {
     animation: none;
     transition: none;

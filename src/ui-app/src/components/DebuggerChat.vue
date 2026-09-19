@@ -395,24 +395,6 @@ watch(
 </template>
 
 <style scoped>
-.debugger-panel {
-  position: fixed;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: min(420px, 100vw);
-  height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border-left: 1px solid var(--border-bright);
-  background: var(--panel-gradient);
-  box-shadow: -24px 0 70px rgba(0, 0, 0, 0.28);
-  backdrop-filter: blur(18px);
-  animation: debugger-open 0.18s ease-out;
-  pointer-events: auto;
-  z-index: 110;
-}
 .debugger-repair {
   padding: 0 14px 10px;
 }
@@ -480,25 +462,6 @@ watch(
 .debugger-identity i.off {
   background: var(--txt-faint);
   box-shadow: none;
-}
-.debugger-minimize {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border: 0;
-  border-radius: 9px;
-  background: transparent;
-  color: var(--txt-dim);
-  cursor: pointer;
-}
-.debugger-minimize:hover {
-  background: var(--nav-hover-bg);
-  color: var(--txt);
-}
-.debugger-minimize svg {
-  width: 19px;
-  height: 19px;
 }
 .debugger-log-wrap {
   position: relative;
@@ -806,16 +769,6 @@ watch(
     500 8.5px "JetBrains Mono",
     monospace;
 }
-@keyframes debugger-open {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
 @keyframes debugger-bounce {
   0%,
   70%,
@@ -828,16 +781,7 @@ watch(
     opacity: 1;
   }
 }
-@media (max-width: 760px) {
-  .debugger-panel {
-    right: 12px;
-    left: 12px;
-    width: auto;
-    height: min(560px, calc(100dvh - 150px));
-  }
-}
 @media (prefers-reduced-motion: reduce) {
-  .debugger-panel,
   .debugger-thinking span {
     animation: none;
     transition: none;
