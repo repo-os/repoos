@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 cli_override: opencode
+model_override: openrouter/tencent/hy4-preview
 created_at: "2026-09-19T06:31:50Z"
-updated_at: "2026-09-19T11:06:59Z"
+updated_at: "2026-09-19T11:07:01Z"
 ---
 ## Problem
 
@@ -68,3 +69,4 @@ Task creation is already a board notification. The run doc appearing in `docs/ag
 - 2026-09-19T10:46:28Z · status inbox→ready
 - 2026-09-19T11:05:06Z · body
 - 2026-09-19T11:06:59Z · cli_override
+- 2026-09-19T11:07:01Z · model_override
