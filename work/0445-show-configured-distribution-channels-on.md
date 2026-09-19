@@ -8,8 +8,9 @@ area: release
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: opencode
 created_at: "2026-09-19T10:56:32Z"
-updated_at: "2026-09-19T10:56:32Z"
+updated_at: "2026-09-19T11:14:45Z"
 ---
 ## Activity
 
@@ -96,3 +97,7 @@ claiming a channel is current when its version cannot be verified.
 - Reuse the existing release/version data and release automation where
   possible. Do not make a GitHub release or registry lookup a prerequisite for
   viewing historical releases offline.
+
+## Activity
+
+- 2026-09-19T11:14:45Z · cli_override
