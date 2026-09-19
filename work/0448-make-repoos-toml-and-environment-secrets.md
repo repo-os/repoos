@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-19T17:33:38Z"
-review_passes: 3
 id: "0448"
 title: Make repoos.toml and environment secrets documentation complete
 type: docs
@@ -15,6 +13,8 @@ model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_cli_override: cursor
 review_model_override: auto
 created_at: "2026-09-19T15:10:29Z"
+updated_at: "2026-09-19T17:39:21Z"
+review_passes: 3
 review_rounds: 2
 handoff_signal_retry_count: 1
 dev_error_count: 1
