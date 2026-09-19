@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-09-19T12:17:11Z"
-review_passes: 3
+updated_at: "2026-09-19T13:03:43Z"
+review_passes: 4
 id: "0444"
 title: Chat scrolls to newest messages with jump-to-latest button
 type: feature
@@ -122,4 +122,5 @@ Also could you make sure there's some spacing between the messages (vertical spa
 - 2026-09-19T11:52:23Z · status active→review
 - 2026-09-19T11:54:03Z · status review→active
 - 2026-09-19T12:15:07Z · status active→review
+
 
