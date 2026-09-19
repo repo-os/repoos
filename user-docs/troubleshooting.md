@@ -1,5 +1,16 @@
 # Troubleshooting
 
+## Start here: `repoos doctor`
+
+When a setup behaves unexpectedly — the server won't start, an agent never
+launches, `repoos check` has nothing to run — run `repoos doctor` first. It is a
+read-only preflight over the repository identity, `repoos.toml`, the configured
+layout and task frontmatter, required tools and agent CLIs, the check plan, the
+local server, and auth/credential readiness. Each line carries a stable finding
+id (`identity.project-root`, `config.toml-syntax`, `runtime.check-tools`, …) and,
+for anything amber or red, the exact next command. `repoos doctor --json` emits
+the same findings for scripts and the UI.
+
 ## Running RepoOS in more than one repo at once
 
 Each repo gets its own server, and they don't fight over a port. Without a

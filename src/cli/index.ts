@@ -22,6 +22,7 @@ import { cmdTunnel } from "../commands/tunnel.js";
 import { cmdUpgrade } from "../commands/upgrade.js";
 import { cmdUninstall } from "../commands/uninstall.js";
 import { cmdStatus } from "../commands/status.js";
+import { cmdDoctor } from "../commands/doctor.js";
 import { cmdService } from "../commands/service.js";
 import { checkBuild } from "../core/build.js";
 import { loadConfig } from "../core/config.js";
@@ -113,6 +114,10 @@ function help(): void {
     cmdRow(
       "status [--json]",
       "One-screen health snapshot: server, build freshness, board, worktrees, tunnel, git",
+    ),
+    cmdRow(
+      "doctor [--json]",
+      "Read-only readiness preflight: identity, config, layout, tools, check plan, server, secrets",
     ),
     cmdRow("show <id>", "Show a task's full spec"),
     cmdRow(
@@ -209,6 +214,7 @@ function main(): void {
     undefined,
     "check",
     "status",
+    "doctor",
     "help",
     "--help",
     "-h",
@@ -244,6 +250,9 @@ function main(): void {
       break;
     case "status":
       void cmdStatus(rest);
+      break;
+    case "doctor":
+      void cmdDoctor(rest);
       break;
     case "show":
     case "cat":
