@@ -15,6 +15,7 @@ import ToastPanel from "./components/ToastPanel.vue";
 import FloatingHeads from "./components/FloatingHeads.vue";
 import NewInputPanel from "./components/NewInputPanel.vue";
 import UiRecoveryBanner from "./components/UiRecoveryBanner.vue";
+import ReleaseUpdateNotification from "./components/ReleaseUpdateNotification.vue";
 import { configureUiRecovery, checkUiBuild, showOffline } from "./lib/uiRecovery";
 import { useUiStore } from "./stores/ui";
 
@@ -93,6 +94,7 @@ onUnmounted(() => {
       <TunnelDrawer />
       <RemoteValidationDrawer />
       <ToastPanel />
+      <ReleaseUpdateNotification />
       <FloatingHeads />
       <NewInputPanel />
     </template>

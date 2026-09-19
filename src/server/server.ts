@@ -133,7 +133,13 @@ import { CTOMonitor } from "./cto-monitor.js";
 import { ReloadManager, readBuildHash, isDevBuild } from "./reload.js";
 import { ServeReaper } from "./serve-reaper.js";
 import { testModelCombination } from "./model-test.js";
-import { generateReleaseNotes, getRelease, getReleaseRun, runRelease } from "./routes/release.js";
+import {
+  generateReleaseNotes,
+  getAvailableRelease,
+  getRelease,
+  getReleaseRun,
+  runRelease,
+} from "./routes/release.js";
 import { getDeployments, postDeploy } from "./routes/deployments.js";
 import { bootstrap } from "../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../core/context-pack.js";
@@ -1828,6 +1834,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/system/logs", getSystemLogs);
   router.register("GET", "/api/tunnel/readiness", getTunnelStatus);
   router.register("GET", "/api/release", getRelease);
+  router.register("GET", "/api/release/available", getAvailableRelease);
   router.register("GET", "/api/release/run", getReleaseRun);
   router.register("POST", "/api/release", runRelease);
   router.register("POST", "/api/release/notes", generateReleaseNotes);

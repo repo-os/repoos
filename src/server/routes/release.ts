@@ -16,6 +16,67 @@ import {
   runPrompt,
 } from "../agents.js";
 import type { Agent, RepoOSConfig } from "../../core/types.js";
+import { readBuildMeta } from "../../core/build.js";
+
+const REPO = "repo-os/repoos";
+const STABLE_VERSION = /^v?(\d+)\.(\d+)\.(\d+)$/;
+
+export interface AvailableRelease {
+  currentVersion: string | null;
+  latestVersion: string | null;
+  available: boolean;
+  releaseNotes: string | null;
+  releaseUrl: string | null;
+}
+
+function versionParts(version: string): [number, number, number] | null {
+  const match = version.trim().match(STABLE_VERSION);
+  return match ? [Number(match[1]), Number(match[2]), Number(match[3])] : null;
+}
+
+export function isStableRelease(release: { tag_name?: unknown; prerelease?: unknown }): boolean {
+  return (
+    release.prerelease !== true &&
+    typeof release.tag_name === "string" &&
+    versionParts(release.tag_name) !== null
+  );
+}
+
+function isNewerVersion(latest: string, current: string | null): boolean {
+  const next = versionParts(latest);
+  const installed = current ? versionParts(current) : null;
+  if (!next || !installed) return false;
+  return (
+    next.some((part, index) => part !== installed[index] && part > installed[index]) &&
+    next.every((part, index) => part >= installed[index])
+  );
+}
+
+export const getAvailableRelease: RouteHandler = async (_ctx, _req, res) => {
+  const currentVersion = readBuildMeta().version;
+  const response = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=30`, {
+    headers: { Accept: "application/vnd.github+json" },
+  });
+  if (!response.ok) {
+    return json(res, 502, { error: `GitHub API returned ${response.status}` });
+  }
+  const releases = (await response.json()) as Array<{
+    tag_name?: unknown;
+    prerelease?: unknown;
+    body?: unknown;
+    html_url?: unknown;
+  }>;
+  const latest = releases.find(isStableRelease);
+  const latestVersion =
+    typeof latest?.tag_name === "string" ? latest.tag_name.replace(/^v/, "") : null;
+  return json(res, 200, {
+    currentVersion,
+    latestVersion,
+    available: latestVersion ? isNewerVersion(latestVersion, currentVersion) : false,
+    releaseNotes: typeof latest?.body === "string" && latest.body.trim() ? latest.body : null,
+    releaseUrl: typeof latest?.html_url === "string" ? latest.html_url : null,
+  } satisfies AvailableRelease);
+};
 
 export interface ReleaseRun {
   state: "idle" | "running" | "succeeded" | "failed";
