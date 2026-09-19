@@ -1,4 +1,5 @@
 ---
+merge_conflict_retry_count: 1
 updated_at: "2026-09-19T01:42:06Z"
 review_passes: 1
 id: "0418"
@@ -84,4 +85,5 @@ The CLI guard blocks `done` if the branch still exists locally and is not an anc
 - 2026-09-19T01:40:44Z · status inbox→ready
 - 2026-09-19T01:40:48Z · status ready→active, branch
 - 2026-09-19T01:41:42Z · status active→review
+
 
