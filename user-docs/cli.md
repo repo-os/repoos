@@ -89,6 +89,26 @@ server belonging to a different repo.
 One-screen health snapshot: server, build freshness, board counts, worktrees,
 tunnel, and git state.
 
+### `repoos doctor [--json]`
+
+A read-only readiness preflight for a real project. It checks the repository
+identity (root, git, linked worktree), parses and validates `repoos.toml`,
+verifies the configured layout and existing task frontmatter, detects the
+required runtimes and enabled agent CLIs, explains whether a meaningful
+`repoos check` plan is configured, and reports server, auth and credential
+readiness — each with a stable finding id, a severity (`pass` / `warn` / `fail`)
+and a concrete next step.
+
+```bash
+repoos doctor            # compact pass/warn/fail report with remediation
+repoos doctor --json     # the same findings, machine-readable
+```
+
+It never initializes, rewrites config, installs, logs in, contacts a model
+provider, kills a process or mutates git, and it works offline. It exits
+non-zero when any finding is a failure, so it is usable in a script. Paste
+`repoos doctor` output into an issue to report a setup problem.
+
 ## Quality and maintenance
 
 ### `repoos check`

@@ -438,8 +438,13 @@ export function boardRoot(start?: string): { root: string; fromWorktree: boolean
   return main ? { root: main, fromWorktree: true } : { root: resolved, fromWorktree: false };
 }
 
-/** Extremely small flat-TOML reader: `key = value`, `[section]` headers, and `[[array-of-tables]]`. */
-function parseFlatToml(text: string): Record<string, unknown> {
+/**
+ * Extremely small flat-TOML reader: `key = value`, `[section]` headers, and
+ * `[[array-of-tables]]`. Exported so callers that need the raw key set (e.g.
+ * `repoos doctor`'s unknown-key check) read the same parse `loadConfig` does,
+ * rather than re-implementing the tokenizer.
+ */
+export function parseFlatToml(text: string): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   let section = "";
   let arrayTable: Record<string, unknown> | null = null;
