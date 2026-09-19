@@ -28,6 +28,7 @@ import {
   AI_CHAT_REQUIREMENTS,
   AI_CHAT_SURFACES,
   FORBIDDEN_CHAT_STATUS_TEXT,
+  hasJumpToLatestControl,
 } from "../src/lib/ai-chat";
 
 const COMPONENTS_DIR = resolve(__dirname, "../src/components");
@@ -436,7 +437,10 @@ describe("every AI chat surface follows the standard", () => {
       });
 
       it("renders the shared jump-to-latest button", () => {
-        expect(source).toContain(AI_CHAT_REQUIREMENTS.jumpButton);
+        expect(
+          hasJumpToLatestControl(source),
+          `${surface.file} must render ${AI_CHAT_REQUIREMENTS.jumpButton} or .${AI_CHAT_REQUIREMENTS.jumpButtonInline}`,
+        ).toBe(true);
       });
 
       it("renders the shared working indicator", () => {
@@ -530,9 +534,10 @@ describe("no AI chat reinvents the wheel", () => {
       expect(text, `${label} must use ${AI_CHAT_REQUIREMENTS.scroll}`).toContain(
         AI_CHAT_REQUIREMENTS.scroll,
       );
-      expect(text, `${label} must render ${AI_CHAT_REQUIREMENTS.jumpButton}`).toContain(
-        AI_CHAT_REQUIREMENTS.jumpButton,
-      );
+      expect(
+        hasJumpToLatestControl(text),
+        `${label} must render ${AI_CHAT_REQUIREMENTS.jumpButton} or .${AI_CHAT_REQUIREMENTS.jumpButtonInline}`,
+      ).toBe(true);
       expect(text, `${label} must render ${AI_CHAT_REQUIREMENTS.thinking}`).toContain(
         AI_CHAT_REQUIREMENTS.thinking,
       );
