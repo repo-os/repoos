@@ -2,15 +2,15 @@
 id: "0448"
 title: Make repoos.toml and environment secrets documentation complete
 type: docs
-status: ready
+status: active
 priority: p1
 area: docs
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/make-repoos-toml-and-environment-secrets
 review_model_override: default
 created_at: "2026-09-19T15:10:29Z"
-updated_at: "2026-09-19T15:27:46Z"
+updated_at: "2026-09-19T15:27:48Z"
 ---
 ## Outcome
 
@@ -40,3 +40,4 @@ Give users one trustworthy explanation of every supported RepoOS project setting
 - 2026-09-19T15:20:41Z · review_cli_override, review_model_override
 - 2026-09-19T15:20:42Z · review_cli_override
 - 2026-09-19T15:27:46Z · status inbox→ready
+- 2026-09-19T15:27:48Z · status ready→active, branch
