@@ -8,8 +8,11 @@ area: core
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
+review_model_override: opencode-go/hy3
 created_at: "2026-09-19T16:43:47Z"
-updated_at: "2026-09-19T22:15:06Z"
+updated_at: "2026-09-19T22:36:15Z"
 ---
 ## Outcome
 
@@ -65,3 +68,6 @@ P2 — Add a redacted support bundle for failed real-world setups.
 
 - 2026-09-19T16:43:47Z · created · unknown
 - 2026-09-19T22:15:06Z · status inbox→ready
+- 2026-09-19T22:36:05Z · cli_override, model_override
+- 2026-09-19T22:36:10Z · model_override
+- 2026-09-19T22:36:15Z · review_model_override

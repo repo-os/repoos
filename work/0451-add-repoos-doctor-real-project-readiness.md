@@ -8,10 +8,11 @@ area: core
 assigned_to: ai
 created_by: ""
 branch: ""
-cli_override: cursor
-model_override: auto
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
+review_model_override: openrouter/xiaomi/mimo-v2.5
 created_at: "2026-09-19T16:42:56Z"
-updated_at: "2026-09-19T17:16:36Z"
+updated_at: "2026-09-19T22:35:34Z"
 ---
 ## Outcome
 
@@ -62,3 +63,6 @@ P1 — Add `repoos doctor`: a real-project readiness preflight.
 - 2026-09-19T17:16:25Z · status inbox→ready
 - 2026-09-19T17:16:35Z · cli_override, model_override
 - 2026-09-19T17:16:36Z · model_override
+- 2026-09-19T22:35:24Z · cli_override, model_override
+- 2026-09-19T22:35:28Z · model_override
+- 2026-09-19T22:35:34Z · review_model_override
