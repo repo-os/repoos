@@ -100,6 +100,9 @@ export interface Task {
   /** True while the freeform-create PM agent is fleshing this draft out
    *  (0335) — live server state, refreshed with the index and via SSE. */
   pmWorking?: boolean;
+  /** True when the agent emitted a handoff signal that is pending or actively
+   *  finalizing — shows "Requested review" instead of "Paused" on the card. */
+  pendingHandoff?: boolean;
   /** Automatic check-failure retries used on this task's most recent handoff
    *  (capped at 2) — distinguishes a post-handoff check-fix loop from
    *  ordinary coding once a review-status task shows a running agent. */

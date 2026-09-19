@@ -362,6 +362,13 @@ const hint = computed<CardHint | null>(() => {
     // 0381: the engineer is idle (paused) but the PM is chatting about this
     // task right now — that is the live thing happening.
     if (pmWorking) return PM_WORKING_HINT;
+    if (t.pendingHandoff) {
+      return {
+        label: "requested review",
+        title: "agent requested review — click Move to review to proceed",
+        cls: "tc-human",
+      };
+    }
     return {
       label: "paused",
       title: "agent stopped — click Restart work to resume",

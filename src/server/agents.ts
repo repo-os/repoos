@@ -4092,6 +4092,17 @@ export class AgentRunner {
     return this.handoffsInFlight.has(taskId);
   }
 
+  /**
+   * True when the task has a pending or in-flight handoff — either actively
+   * finalizing or retained on disk waiting for the next server start. Used to
+   * show "Requested review" instead of "Paused" on the task card.
+   */
+  hasPendingHandoff(taskId: string): boolean {
+    if (this.handoffsInFlight.has(taskId)) return true;
+    const store = readPendingHandoffs(this.cacheDir);
+    return store.requests.some((r) => r.taskId === taskId);
+  }
+
   /** Live run telemetry for a task's session — zeros/nulls when none exists yet. */
   stats(taskId: string): AgentSessionStats {
     return this.snapshotStats(taskId);

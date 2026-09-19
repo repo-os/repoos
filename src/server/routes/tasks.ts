@@ -98,8 +98,15 @@ function withPreviewTargets<T extends Task>(
   return { ...task, previewTargets: previewTargetOptions(config, task) };
 }
 
+function withPendingHandoff<T extends { id: string }>(
+  task: T,
+  runner: { hasPendingHandoff: (id: string) => boolean },
+): T & { pendingHandoff: boolean } {
+  return { ...task, pendingHandoff: runner.hasPendingHandoff(task.id) };
+}
+
 export const getTasks: RouteHandler = (ctx, req, res) => {
-  const { config, index, reviews } = ctx;
+  const { config, index, reviews, runner } = ctx;
   const url = new URL(req.url ?? "/", "http://localhost");
   const status = url.searchParams.get("status") as Status | null;
   if (status && !(STATUSES as readonly string[]).includes(status)) {
@@ -107,7 +114,11 @@ export const getTasks: RouteHandler = (ctx, req, res) => {
   }
   const tasks = index
     .getTasks(status ?? undefined)
-    .map((t) => withPmWorking(withReviewStatus(withPreviewTargets(t, config), reviews)));
+    .map((t) =>
+      withPmWorking(
+        withPendingHandoff(withReviewStatus(withPreviewTargets(t, config), reviews), runner),
+      ),
+    );
   return json(res, 200, tasks);
 };
 
@@ -552,12 +563,14 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
 };
 
 export const getTask: RouteHandler = (ctx, _req, res, params) => {
-  const { config, index, previews, reviews } = ctx;
+  const { config, index, previews, reviews, runner } = ctx;
   const id = params.param1;
   const t = index.getTask(id);
   return t
     ? json(res, 200, {
-        ...withPmWorking(withReviewStatus(withPreviewTargets(t, config), reviews)),
+        ...withPmWorking(
+          withPendingHandoff(withReviewStatus(withPreviewTargets(t, config), reviews), runner),
+        ),
         preview: previews.get(t.id) ?? null,
       })
     : json(res, 404, { error: `Task #${id} not found` });
