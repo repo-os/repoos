@@ -2,14 +2,14 @@
 id: "0326"
 title: Remove the decommissioned screenshots/ fixture subsystem
 type: chore
-status: review
+status: done
 priority: p2
 area: server
 assigned_to: ai
 created_by: ""
 branch: feat/remove-the-decommissioned-screenshots-fi
 created_at: "2026-09-04T03:30:08Z"
-updated_at: "2026-09-19T07:33:01Z"
+updated_at: "2026-09-19T07:33:40Z"
 review_passes: 2
 review_rounds: 1
 ---
@@ -107,3 +107,4 @@ and its special-casing stays.
 - 2026-09-19T06:32:27Z · status review→active
 - 2026-09-19T06:41:34Z · status active→review
 - 2026-09-19T07:33:01Z · note: CTO monitor: review complete ('good to go'), stale 46m. Needs human sign-off to move to done.
+- 2026-09-19T07:33:40Z · status review→done, release:success
