@@ -2,14 +2,14 @@
 id: "0418"
 title: "New Skill Suggestion: Diagnose RepoOS close-out validation failures"
 type: spec
-status: active
+status: review
 priority: p2
 area: server
 assigned_to: human
 created_by: ""
 branch: feat/new-skill-suggestion-diagnose-repoos-clo
 created_at: "2026-09-18T15:13:54Z"
-updated_at: "2026-09-19T01:40:48Z"
+updated_at: "2026-09-19T01:41:42Z"
 ---
 ## Problem
 
@@ -82,3 +82,4 @@ The CLI guard blocks `done` if the branch still exists locally and is not an anc
 - 2026-09-19T01:40:09Z · body
 - 2026-09-19T01:40:44Z · status inbox→ready
 - 2026-09-19T01:40:48Z · status ready→active, branch
+- 2026-09-19T01:41:42Z · status active→review
