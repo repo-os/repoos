@@ -9,10 +9,8 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-19T04:25:46Z"
-updated_at: "2026-09-19T04:26:03Z"
+updated_at: "2026-09-19T04:27:16Z"
 ---
-```
-
 ## Problem
 
 The delete task confirmation experience is not clear or visually prominent enough. Users need a more explicit, modal-based confirmation that prevents accidental deletion of tasks.
@@ -57,3 +55,4 @@ Change the delete task confirmation to a modal with buttons.
 - 2026-09-19T04:25:46Z · created · hello@repoos.org
 - 2026-09-19T04:25:47Z · screenshots
 - 2026-09-19T04:26:03Z · status draft→inbox, title, area, body
+- 2026-09-19T04:27:16Z · body
