@@ -57,6 +57,7 @@ describe("close-out gate retry (0216)", () => {
       candidateSha?: string;
       retryable?: boolean;
       resynced?: boolean;
+      failedChecks?: string[];
     }[],
   ) {
     const coordinator = createJobCoordinator(repo);
@@ -113,6 +114,52 @@ describe("close-out gate retry (0216)", () => {
     expect(res.ok).toBe(false);
     const reason = coordinator.getJob("0001")?.reason ?? "";
     expect(reason).toContain("first attempt failed differently");
+    expect(reason).toContain("machine load");
+    expect(reason).not.toContain("reproduced identically");
+  });
+
+  it("calls a deterministic failing check a real failure despite per-attempt log paths (#0428)", async () => {
+    // The durable log path differs every attempt, so comparing the raw reason
+    // strings would wrongly call this "two unrelated failures". The failed
+    // CHECK LIST is the signal: identical both times = a real defect.
+    const { orch, coordinator } = orchestrator([
+      {
+        ok: false,
+        failedChecks: ["check-fmt:check"],
+        reason:
+          "check failed: Results:\n  ✗ check-fmt:check\nFull check output: .repoos/logs/integration/0428-1.log",
+      },
+      {
+        ok: false,
+        failedChecks: ["check-fmt:check"],
+        reason:
+          "check failed: Results:\n  ✗ check-fmt:check\nFull check output: .repoos/logs/integration/0428-2.log",
+      },
+    ]);
+    const res = await orch.processNext();
+    expect(res.ok).toBe(false);
+    const reason = coordinator.getJob("0001")?.reason ?? "";
+    expect(reason).toContain("reproduced identically");
+    expect(reason).toContain("real failure");
+    expect(reason).not.toContain("first attempt failed differently");
+  });
+
+  it("flags a genuine change of failing checks as machine load (#0428)", async () => {
+    const { orch, coordinator } = orchestrator([
+      {
+        ok: false,
+        failedChecks: ["tests"],
+        reason: "check failed: watcher.test.ts timed out",
+      },
+      {
+        ok: false,
+        failedChecks: ["check-fmt:check"],
+        reason: "check failed: repo-store.test.ts localStorage",
+      },
+    ]);
+    const res = await orch.processNext();
+    expect(res.ok).toBe(false);
+    const reason = coordinator.getJob("0001")?.reason ?? "";
     expect(reason).toContain("machine load");
     expect(reason).not.toContain("reproduced identically");
   });

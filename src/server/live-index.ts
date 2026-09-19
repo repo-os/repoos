@@ -74,7 +74,16 @@ export type RepoEvent =
    *  Emitted on every exit path so the indicator can never get stuck. */
   | { type: "task.pmFinished"; id: string; at: string }
   | { type: "index.rebuilt"; taskCount: number; at: string }
-  | { type: "task.progress"; id: string; step: string; at: string; detail?: string; phase?: string }
+  | {
+      type: "task.progress";
+      id: string;
+      step: string;
+      at: string;
+      detail?: string;
+      phase?: string;
+      /** Repo-relative durable log of the failed check's full output (#0428). */
+      logPath?: string;
+    }
   | {
       type: "task.corrected";
       id: string;
