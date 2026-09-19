@@ -81,6 +81,9 @@ const message = ref("");
 // the docs it corrected on its own — as structured data, not just a count.
 const bannerTaskId = ref<string | null>(null);
 const bannerAutoFixed = ref<{ doc: string; from: string; to: string }[]>([]);
+// Every run now also leaves a run doc under docs/agent-runs/<agent>/ (0439) —
+// the receipt you can read without watching the agent work.
+const bannerRunDoc = ref<string | null>(null);
 
 const agentMeta = computed(() => {
   if (props.agent === "debugger") {
@@ -95,7 +98,7 @@ const agentMeta = computed(() => {
     return {
       name: "Tech Debt Agent",
       description:
-        "Scans your repository for technical debt patterns including outdated dependencies, code duplication, high-complexity files, unused code, and deprecated APIs. Creates tasks in your inbox for each issue found.",
+        "Scans your repository for technical debt patterns including outdated dependencies, code duplication, high-complexity files, unused code, and deprecated APIs. Every finding is bundled into one inbox task, and the run is recorded in docs/agent-runs/tech-debt/.",
       icon: "🔧",
     };
   }
@@ -103,7 +106,7 @@ const agentMeta = computed(() => {
     return {
       name: "Performance Agent",
       description:
-        "Keeps your app fast by scanning for performance issues like slow functions, blocking operations, deeply nested loops, unbounded memory growth, and duplicate computations. Creates tasks in your inbox for each issue found.",
+        "Keeps your app fast by scanning for performance issues like slow functions, blocking operations, deeply nested loops, unbounded memory growth, and duplicate computations. Every finding is bundled into one inbox task, and the run is recorded in docs/agent-runs/performance/.",
       icon: "⚡",
     };
   }
@@ -111,7 +114,7 @@ const agentMeta = computed(() => {
     return {
       name: "Architect Agent",
       description:
-        "Analyzes your codebase architecture — detects tight coupling, missing abstractions, scalability risks, and over-engineering. Generates a detailed markdown report saved to docs/agents/Architect/ with recommendations.",
+        "Analyzes your codebase architecture — detects tight coupling, missing abstractions, scalability risks, and over-engineering. Findings are bundled into one inbox task and the run is recorded in docs/agent-runs/architect/.",
       icon: "🏛",
     };
   }
@@ -119,7 +122,7 @@ const agentMeta = computed(() => {
     return {
       name: "Design Agent",
       description:
-        "Reviews your web UI's quality — layout, styling consistency, accessibility, and interaction flows. Flags UI bugs and UX friction and proposes concrete fixes and design improvements, saved as a markdown report to docs/agents/Design/.",
+        "Reviews your web UI's quality — layout, styling consistency, accessibility, and interaction flows. Flags UI bugs and UX friction and proposes concrete fixes and design improvements, bundled into one inbox task and recorded in docs/agent-runs/design/.",
       icon: "🎨",
     };
   }
@@ -127,7 +130,7 @@ const agentMeta = computed(() => {
     return {
       name: "Docs Debt Agent",
       description:
-        "Checks that AGENTS.md, docs/, and user-docs/ still tell the truth about the code — a skill-guided agent verifies file paths, symbols, scripts, and stated constraints against the real repo, whatever its layout. A fix auto-commits only after an independent verification passes; everything else is bundled into one task.",
+        "Checks that AGENTS.md, docs/, and user-docs/ still tell the truth about the code — a skill-guided agent verifies file paths, symbols, scripts, and stated constraints against the real repo, whatever its layout. A fix auto-commits only after an independent verification passes; everything else is bundled into one task, and the run is recorded in docs/agent-runs/docs-debt/.",
       icon: "📖",
     };
   }
@@ -209,6 +212,7 @@ async function runNow(): Promise<void> {
   message.value = "";
   bannerTaskId.value = null;
   bannerAutoFixed.value = [];
+  bannerRunDoc.value = null;
   try {
     const response = (await api(
       `/api/agents/built-in/${props.agent}/run`,
@@ -224,24 +228,26 @@ async function runNow(): Promise<void> {
       scannedFiles?: number;
       taskId?: string | null;
       autoFixed?: { doc: string; from: string; to: string }[];
+      runDoc?: string | null;
       error?: string | null;
     };
     if (response.ok) {
       state.value.lastRunAt = new Date().toISOString();
+      bannerRunDoc.value = response.runDoc ?? null;
+      bannerTaskId.value = response.taskId ?? null;
       if (response.failed && response.failed > 0) {
         error.value = `${response.taskCount} task(s) created, ${response.failed} failed — ${
           (response.errors ?? []).join("; ") || "unknown write error"
         }`;
       } else if (props.agent === "design") {
-        message.value = `Review complete — ${response.findingsFound ?? 0} design finding(s) found (${response.scannedFiles ?? 0} files scanned). Report saved to docs/agents/Design/.`;
+        message.value = `Review complete — ${response.findingsFound ?? 0} design finding(s) found (${response.scannedFiles ?? 0} files scanned).`;
       } else if (props.agent === "architect") {
-        message.value = `Review complete — ${response.issuesFound ?? 0} architecture issue(s) found (${response.scannedFiles ?? 0} files scanned). Report saved to docs/agents/Architect/.`;
+        message.value = `Review complete — ${response.issuesFound ?? 0} architecture issue(s) found (${response.scannedFiles ?? 0} files scanned).`;
       } else if (props.agent === "docs-debt") {
         if (response.error) {
           error.value = response.error;
         } else {
           const fixes = response.trivialFixesApplied ?? 0;
-          bannerTaskId.value = response.taskId ?? null;
           bannerAutoFixed.value = response.autoFixed ?? [];
           const fixesText = fixes > 0 ? `corrected ${fixes} stale reference(s); ` : "";
           message.value =
@@ -342,6 +348,11 @@ async function runNow(): Promise<void> {
               #{{ bannerTaskId }} — review the findings task
             </router-link>
           </div>
+          <div v-if="bannerRunDoc" class="built-in-run-doc">
+            <a :href="`/${bannerRunDoc}`" target="_blank" rel="noopener">
+              Run doc: {{ bannerRunDoc }}
+            </a>
+          </div>
         </div>
         <div v-if="error" class="built-in-status error">{{ error }}</div>
       </div>
@@ -423,6 +434,21 @@ async function runNow(): Promise<void> {
 }
 
 .built-in-task-link a:hover {
+  text-decoration: underline;
+}
+
+.built-in-run-doc {
+  margin-top: 6px;
+}
+
+.built-in-run-doc a {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11.5px;
+  color: var(--txt-secondary);
+  text-decoration: none;
+}
+
+.built-in-run-doc a:hover {
   text-decoration: underline;
 }
 </style>

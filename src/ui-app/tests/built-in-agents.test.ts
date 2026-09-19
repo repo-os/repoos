@@ -11,13 +11,12 @@ import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import {
   scanForTechDebt,
-  createTechDebtTasks,
+  createTechDebtTask,
   isDueForScheduledRun,
   runTechDebtAgent,
-  createPerformanceTasks,
+  createPerformanceTask,
   stripCommentsAndStrings,
   scanForDesignIssues,
-  generateDesignReport,
   runDesignAgent,
   normalizeDesignFindingCategory,
   scanForDocsDebt,
@@ -34,7 +33,6 @@ import {
   normalizeArchitectureIssueType,
   type TechDebtIssue,
   type PerformanceIssue,
-  type DesignScanResult,
 } from "../../server/built-in-agents.js";
 import {
   loadConfig,
@@ -251,8 +249,8 @@ describe("scanForTechDebt", () => {
   });
 });
 
-describe("createTechDebtTasks", () => {
-  it("creates one task per issue type with a JSON-quoted title", async () => {
+describe("createTechDebtTask", () => {
+  it("bundles every issue into exactly one task, marked as needing human input", async () => {
     const root = makeRepo({});
     mkdirSync(join(root, "work"));
     const issues: TechDebtIssue[] = [
@@ -270,16 +268,17 @@ describe("createTechDebtTasks", () => {
         severity: "low",
       },
     ];
-    const result = await createTechDebtTasks(configFor(root), issues);
-    expect(result).toEqual({ created: 2, failed: 0, errors: [] });
+    const result = await createTechDebtTask(configFor(root), issues);
+    expect(result).toEqual({ created: 1, failed: 0, errors: [], taskId: "0001" });
 
     const files = readdirSync(join(root, "work"));
-    expect(files).toHaveLength(2);
-    const depTask = files.find((f) => f.includes("outdated"))!;
-    const content = readFileSync(join(root, "work", depTask), "utf8");
-    expect(content).toContain('title: "Update outdated dependencies"');
-    expect(content).toContain('id: "0001"');
+    expect(files).toHaveLength(1);
+    const content = readFileSync(join(root, "work", files[0]), "utf8");
+    expect(content).toContain("needs_input: true");
+    expect(content).toContain("questions:");
+    expect(content).toContain("created_by: tech-debt-agent");
     expect(content).toContain("left-pad");
+    expect(content).toContain("Identical 6-line block");
   });
 
   it("assigns sequential ids past existing tasks", async () => {
@@ -294,7 +293,7 @@ describe("createTechDebtTasks", () => {
         severity: "medium",
       },
     ];
-    const result = await createTechDebtTasks(configFor(root), issues);
+    const result = await createTechDebtTask(configFor(root), issues);
     expect(result.created).toBe(1);
     const files = readdirSync(join(root, "work"));
     expect(files.some((f) => f.startsWith("0008-"))).toBe(true);
@@ -305,15 +304,15 @@ describe("createTechDebtTasks", () => {
     const issues: TechDebtIssue[] = [
       { type: "deprecated-api", file: "src/a.ts", description: "uses var", severity: "low" },
     ];
-    await expect(createTechDebtTasks(configFor(root), issues)).rejects.toThrow(TechDebtError);
-    await expect(createTechDebtTasks(configFor(root), issues)).rejects.toThrow(/does not exist/);
+    await expect(createTechDebtTask(configFor(root), issues)).rejects.toThrow(TechDebtError);
+    await expect(createTechDebtTask(configFor(root), issues)).rejects.toThrow(/does not exist/);
   });
 
   it("does nothing and reports zero for an empty issue list", async () => {
     const root = makeRepo({});
     mkdirSync(join(root, "work"));
-    const result = await createTechDebtTasks(configFor(root), []);
-    expect(result).toEqual({ created: 0, failed: 0, errors: [] });
+    const result = await createTechDebtTask(configFor(root), []);
+    expect(result).toEqual({ created: 0, failed: 0, errors: [], taskId: null });
     expect(readdirSync(join(root, "work"))).toHaveLength(0);
   });
 });
@@ -441,8 +440,13 @@ describe("runTechDebtAgent", () => {
     const result = await runTechDebtAgent(config, { fetchImpl: offlineFetch });
 
     expect(result.issuesFound).toBeGreaterThan(0);
-    expect(result.created).toBeGreaterThan(0);
+    // One run, one task — however many issues it found (0439).
+    expect(result.created).toBe(1);
     expect(result.failed).toBe(0);
+    expect(result.runDoc).toMatch(
+      new RegExp(`^docs/agent-runs/tech-debt/\\d{4}-\\d{2}-\\d{2}T.*\\.md$`),
+    );
+    expect(readFileSync(join(root, result.runDoc!), "utf8")).toContain("1 task created");
 
     const persisted = loadBuiltInAgentsConfig(root);
     expect(persisted?.["tech-debt"]?.lastRunAt).toBeTruthy();
@@ -476,8 +480,8 @@ describe("normalizeTechDebtIssueType", () => {
   });
 });
 
-describe("createPerformanceTasks", () => {
-  it("creates one task per issue type with a JSON-quoted title", async () => {
+describe("createPerformanceTask", () => {
+  it("bundles every issue into exactly one task, marked as needing human input", async () => {
     const root = makeRepo({});
     mkdirSync(join(root, "work"));
     const issues: PerformanceIssue[] = [
@@ -496,15 +500,17 @@ describe("createPerformanceTasks", () => {
         severity: "medium",
       },
     ];
-    const result = await createPerformanceTasks(configFor(root), issues);
-    expect(result).toEqual({ created: 2, failed: 0, errors: [] });
+    const result = await createPerformanceTask(configFor(root), issues);
+    expect(result).toEqual({ created: 1, failed: 0, errors: [], taskId: "0001" });
 
     const files = readdirSync(join(root, "work"));
-    expect(files).toHaveLength(2);
-    const blockingTask = files.find((f) => f.includes("blocking"))!;
-    const content = readFileSync(join(root, "work", blockingTask), "utf8");
-    expect(content).toContain('title: "Fix blocking operations"');
+    expect(files).toHaveLength(1);
+    const content = readFileSync(join(root, "work", files[0]), "utf8");
+    expect(content).toContain("needs_input: true");
+    expect(content).toContain("questions:");
     expect(content).toContain("created_by: performance-agent");
+    expect(content).toContain("Synchronous file read blocks the event loop");
+    expect(content).toContain("Expensive operation inside loop");
   });
 
   it("throws a clear error when the work dir does not exist", async () => {
@@ -517,15 +523,15 @@ describe("createPerformanceTasks", () => {
         severity: "medium",
       },
     ];
-    await expect(createPerformanceTasks(configFor(root), issues)).rejects.toThrow(PerformanceError);
-    await expect(createPerformanceTasks(configFor(root), issues)).rejects.toThrow(/does not exist/);
+    await expect(createPerformanceTask(configFor(root), issues)).rejects.toThrow(PerformanceError);
+    await expect(createPerformanceTask(configFor(root), issues)).rejects.toThrow(/does not exist/);
   });
 
   it("does nothing and reports zero for an empty issue list", async () => {
     const root = makeRepo({});
     mkdirSync(join(root, "work"));
-    const result = await createPerformanceTasks(configFor(root), []);
-    expect(result).toEqual({ created: 0, failed: 0, errors: [] });
+    const result = await createPerformanceTask(configFor(root), []);
+    expect(result).toEqual({ created: 0, failed: 0, errors: [], taskId: null });
     expect(readdirSync(join(root, "work"))).toHaveLength(0);
   });
 });
@@ -638,64 +644,16 @@ describe("scanForDesignIssues (skill-guided)", () => {
   });
 });
 
-describe("generateDesignReport", () => {
-  it("writes a timestamped markdown report with the Design_report_YYYY-MM-DD-HHMM name", async () => {
-    const root = makeRepo({});
-    const scan: DesignScanResult = {
-      scannedFiles: 5,
-      insights: ["Reviewed the repository for web UI sources; 5 files were included."],
-      findings: [
-        {
-          category: "ui-bug",
-          file: "src/components/Card.tsx",
-          line: 12,
-          description: "Card overflows its container",
-          rationale: "Fixed widths break narrow layouts",
-          recommendation: "Use a responsive grid",
-          severity: "medium",
-        },
-      ],
-    };
-    const { reportPath, fileName } = await generateDesignReport(configFor(root), scan);
-    expect(fileName).toMatch(/^Design_report_\d{4}-\d{2}-\d{2}-\d{4}\.md$/);
-    expect(reportPath).toContain(join("docs", "agents", "Design"));
-    const content = readFileSync(reportPath, "utf8");
-    expect(content).toContain("# UI/UX Design Review Report");
-    expect(content).toContain("UI Bugs");
-    expect(content).toContain("Card overflows its container");
-  });
-
-  it("produces a readable report with no findings when the UI is clean", async () => {
-    const root = makeRepo({});
-    const scan: DesignScanResult = { scannedFiles: 9, insights: [], findings: [] };
-    const { reportPath } = await generateDesignReport(configFor(root), scan);
-    const content = readFileSync(reportPath, "utf8");
-    expect(content).toContain("No significant UI/UX issues detected");
-    expect(content).toContain("Web UI Detected**: Yes");
-  });
-
-  it("says plainly when no web UI was detected", async () => {
-    const root = makeRepo({});
-    const scan: DesignScanResult = {
-      scannedFiles: 3,
-      insights: ["No web UI detected in this repository"],
-      findings: [],
-      noUiDetected: true,
-    };
-    const { reportPath } = await generateDesignReport(configFor(root), scan);
-    const content = readFileSync(reportPath, "utf8");
-    expect(content).toContain("No web UI detected in this repository");
-    expect(content).toContain("Web UI Detected**: No");
-    expect(content).not.toContain("No significant UI/UX issues detected");
-  });
-});
-
 describe("runDesignAgent", () => {
-  it("runs the pipeline, writes the report, and records lastRunAt", async () => {
+  it("writes a run doc and bundles the findings into one task", async () => {
     const root = makeRepo({ "package.json": "{}" });
+    mkdirSync(join(root, "work"));
     vi.mocked(runSkillGuidedAgent).mockResolvedValue(
       runnerResult({
         scannedFiles: 4,
+        elapsedMs: 1500,
+        totalTokens: 900,
+        costUsd: 0.002,
         findings: [
           {
             type: "ux-friction",
@@ -715,15 +673,64 @@ describe("runDesignAgent", () => {
 
     expect(result.findingsFound).toBe(1);
     expect(result.scannedFiles).toBe(4);
-    expect(result.created).toBe(0);
+    expect(result.created).toBe(1);
+    expect(result.taskId).toBe("0001");
     expect(result.failed).toBe(0);
+    expect(result.runDoc).toMatch(
+      new RegExp(`^docs/agent-runs/design/\\d{4}-\\d{2}-\\d{2}T.*\\.md$`),
+    );
 
-    expect(result.fileName).toMatch(/^Design_report_\d{4}-\d{2}-\d{2}-\d{4}\.md$/);
-    expect(readFileSync(result.reportPath, "utf8")).toContain("UX Friction");
+    const doc = readFileSync(join(root, result.runDoc!), "utf8");
+    expect(doc).toContain("# Design Agent run");
+    expect(doc).toContain("Icon-only button has no accessible name");
+    expect(doc).toContain("1 finding — 1 task created");
+    expect(doc).toContain("**Duration**: 1.5s");
+
+    const task = readFileSync(
+      join(root, "work", "0001-design-agent-1-finding-to-triage.md"),
+      "utf8",
+    );
+    expect(task).toContain("needs_input: true");
+    expect(task).toContain("questions:");
 
     const persisted = loadBuiltInAgentsConfig(root);
     expect(persisted?.["design"]?.lastRunAt).toBeTruthy();
     expect(config.builtInAgents?.["design"]?.lastRunAt).toBeTruthy();
+  });
+
+  it("records 'ran clean' and files no task when the UI is clean", async () => {
+    const root = makeRepo({ "package.json": "{}" });
+    mkdirSync(join(root, "work"));
+    vi.mocked(runSkillGuidedAgent).mockResolvedValue(runnerResult({ scannedFiles: 9 }));
+
+    const result = await runDesignAgent(
+      configFor(root, { builtInAgents: { design: { enabled: true } } }),
+    );
+
+    expect(result.findingsFound).toBe(0);
+    expect(result.created).toBe(0);
+    expect(result.taskId).toBeNull();
+    const doc = readFileSync(join(root, result.runDoc!), "utf8");
+    expect(doc).toContain("ran clean");
+    expect(readdirSync(join(root, "work"))).toHaveLength(0);
+  });
+
+  it("notes plainly when no web UI was detected", async () => {
+    const root = makeRepo({ "package.json": "{}" });
+    vi.mocked(runSkillGuidedAgent).mockResolvedValue(
+      runnerResult({
+        scannedFiles: 3,
+        findings: [{ type: "no-ui-detected", description: "", severity: "low" }],
+      }),
+    );
+
+    const result = await runDesignAgent(
+      configFor(root, { builtInAgents: { design: { enabled: true } } }),
+    );
+
+    expect(result.noUiDetected).toBe(true);
+    const doc = readFileSync(join(root, result.runDoc!), "utf8");
+    expect(doc).toContain("No web UI detected in this repository");
   });
 });
 
@@ -1133,14 +1140,18 @@ describe("runDocsDebtAgent", () => {
 
     expect(result.trivialFixesApplied).toBe(1);
     expect(result.findingsFound).toBe(1);
-    expect(result.taskCreated).toBe(1);
+    expect(result.created).toBe(1);
     expect(result.taskId).toBe("0001");
     expect(result.autoFixed).toEqual([
       { doc: "docs/guide.md", from: "src/old/util.ts", to: "src/new/util.ts" },
     ]);
     expect(result.failed).toBe(0);
+    expect(result.runDoc).toMatch(
+      new RegExp(`^docs/agent-runs/docs-debt/\\d{4}-\\d{2}-\\d{2}T.*\\.md$`),
+    );
 
     const files = readdirSync(join(root, "work"));
+    expect(files).toHaveLength(1);
     expect(files).toHaveLength(1);
     expect(readFileSync(join(root, "work", files[0]), "utf8")).toContain("ghost()");
 
@@ -1174,7 +1185,7 @@ describe("runDocsDebtAgent", () => {
     expect(result.trivialFixesApplied).toBe(MAX_TRIVIAL_FIXES_PER_RUN);
     expect(result.findingsFound).toBe(total - MAX_TRIVIAL_FIXES_PER_RUN);
     expect(result.autoFixed).toHaveLength(MAX_TRIVIAL_FIXES_PER_RUN);
-    expect(result.taskCreated).toBe(1);
+    expect(result.created).toBe(1);
   });
 
   it("creates no task when the run finds nothing needing a human", async () => {
@@ -1188,10 +1199,12 @@ describe("runDocsDebtAgent", () => {
     const result = await runDocsDebtAgent(configFor(root));
 
     expect(result.findingsFound).toBe(0);
-    expect(result.taskCreated).toBe(0);
+    expect(result.created).toBe(0);
     expect(result.taskId).toBeNull();
     expect(result.autoFixed).toEqual([]);
     expect(readdirSync(join(root, "work"))).toHaveLength(0);
+    // A clean run still leaves a receipt (0439).
+    expect(readFileSync(join(root, result.runDoc!), "utf8")).toContain("ran clean");
   });
 
   it("is reachable through the runBuiltInAgent dispatcher", async () => {
@@ -1215,7 +1228,7 @@ describe("runDocsDebtAgent", () => {
     const result = await runDocsDebtAgent(configFor(root));
 
     expect(result.error).toContain("quota exceeded");
-    expect(result.taskCreated).toBe(0);
+    expect(result.created).toBe(0);
     expect(result.findingsFound).toBe(0);
   });
 });

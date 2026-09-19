@@ -3,7 +3,7 @@
  * These agents are triggered on-demand or on a schedule.
  */
 
-import { readdirSync, readFileSync, writeFileSync, statSync, accessSync, mkdirSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync, statSync, accessSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import { join, extname } from "node:path";
 import type { BuiltInAgentConfig, RepoOSConfig } from "../core/types.js";
@@ -23,6 +23,7 @@ import {
   TECH_DEBT_SKILL_DOC,
 } from "./built-in-agent-skill-docs.js";
 import { isSafeToAutoCommit } from "./auto-fix-gate.js";
+import { writeAgentRunDoc, type AgentRunDocResult, type AgentRunFinding } from "./agent-run-doc.js";
 
 export type TechDebtIssueType =
   | "outdated-dependency"
@@ -67,35 +68,38 @@ export interface TechDebtScanResult {
   checkedDependencies: number;
 }
 
-export interface CreateTechDebtResult {
-  /** Tasks successfully written to the inbox. */
+/**
+ * What every built-in agent run produces (0439): a run doc under
+ * `docs/agent-runs/<agent>/` and at most one inbox task bundling the findings.
+ * Shared so the server's run route and the UI's toast read the same shape no
+ * matter which agent ran.
+ */
+export interface BuiltInAgentRunReceipt {
+  /** Repo-relative path of this run's doc. */
+  runDoc: string | null;
+  /** Findings the run recorded, zero or more. */
+  findingsFound: number;
+  /** 0 or 1 — a run never files more than one task. */
   created: number;
-  /** Individual writes that failed (after the work dir was confirmed usable). */
-  failed: number;
-  /** Human-readable messages for every failed write. */
-  errors: string[];
+  /** The bundled task's id, or null when the run filed nothing. */
+  taskId: string | null;
 }
 
-export interface TechDebtRunResult extends CreateTechDebtResult {
+export interface TechDebtRunResult extends BuiltInAgentRunReceipt {
   issuesFound: number;
   scannedFiles: number;
+  failed: number;
+  errors: string[];
 }
 
 /** Raised when the Tech Debt Agent cannot do its job at all (e.g. missing work dir). */
 export class TechDebtError extends Error {}
 
-export interface CreatePerformanceResult {
-  /** Tasks successfully written to the inbox. */
-  created: number;
-  /** Individual writes that failed (after the work dir was confirmed usable). */
-  failed: number;
-  /** Human-readable messages for every failed write. */
-  errors: string[];
-}
-
-export interface PerformanceRunResult extends CreatePerformanceResult {
+export interface PerformanceRunResult extends BuiltInAgentRunReceipt {
   issuesFound: number;
   scannedFiles: number;
+  failed: number;
+  errors: string[];
 }
 
 /** Raised when the Performance Agent cannot do its job at all (e.g. missing work dir). */
@@ -117,20 +121,10 @@ export interface ArchitectureIssue {
   recommendation?: string;
 }
 
-export interface ArchitectureScanResult {
-  issues: ArchitectureIssue[];
-  scannedFiles: number;
-  taskCount: number;
-  insights: string[];
-}
-
-export interface ArchitectRunResult {
-  reportPath: string;
-  fileName: string;
+export interface ArchitectRunResult extends BuiltInAgentRunReceipt {
   issuesFound: number;
   scannedFiles: number;
   taskCount: number;
-  created: number;
   failed: number;
   errors: string[];
 }
@@ -163,6 +157,10 @@ export interface DesignScanResult {
    * "nothing to review" rather than a clean bill of health.
    */
   noUiDetected?: boolean;
+  /** Duration/token cost of the underlying model call, for the run doc (0439). */
+  elapsedMs?: number;
+  totalTokens?: number;
+  costUsd?: number;
 }
 
 /**
@@ -179,12 +177,10 @@ export const DESIGN_NO_UI_TYPE = "no-ui-detected";
  */
 const MAX_DESIGN_FINDINGS_PER_CATEGORY = 25;
 
-export interface DesignRunResult {
-  reportPath: string;
-  fileName: string;
-  findingsFound: number;
+export interface DesignRunResult extends BuiltInAgentRunReceipt {
   scannedFiles: number;
-  created: number;
+  /** True when the agent found no web UI at all — nothing to review. */
+  noUiDetected: boolean;
   failed: number;
   errors: string[];
 }
@@ -193,6 +189,13 @@ export class DesignError extends Error {}
 
 const SOURCE_EXTS = new Set([".ts", ".tsx", ".js", ".jsx", ".vue"]);
 const IGNORED_DIRS = new Set(["node_modules", ".git", "dist", ".next", ".nuxt", ".repoos"]);
+/**
+ * Agent run docs (0439). Excluded from the Docs Debt Agent's walk: they are
+ * machine-generated receipts full of timestamps and token counts, so verifying
+ * them is noise, and 5 agents x 10 kept runs would eat a third of the bounded
+ * doc budget this agent has to spend on prose a human actually maintains.
+ */
+const AGENT_RUN_DOCS_DIR = "agent-runs";
 /** Scan is bounded so a huge repo can never stall the server. */
 const MAX_SCAN_FILES = 400;
 const MAX_FILE_BYTES = 400_000;
@@ -573,80 +576,300 @@ export async function scanForTechDebt(
 }
 
 /**
- * Create tasks in the inbox for tech debt issues.
- * Returns counts for created and failed writes, so callers never see a
- * silently-truncated task list. Throws TechDebtError when the work dir itself
- * is unusable (missing or read-only) — the caller surfaces that to the user.
+ * One finding as it is rendered into a bundled inbox task. Agents map their
+ * own issue shape into this — the body layout is then shared, so a bundled
+ * task reads the same whether it came from the Tech Debt, Performance,
+ * Architect or Design agent.
  */
-export async function createTechDebtTasks(
+interface AggregatedFinding {
+  /** Agent-specific kind label, e.g. "outdated-dependency". */
+  kind?: string;
+  file?: string;
+  line?: number;
+  description: string;
+  severity?: "high" | "medium" | "low";
+  /** Why the agent believes this — the evidence a human triages with. */
+  evidence?: string;
+  /** What the agent suggests doing about it. */
+  recommendation?: string;
+}
+
+/**
+ * Above this many findings a bundled task is too much work to land in one pass,
+ * so the body says so and asks for subtasks once the human has approved the
+ * direction (0439) — the human decides first, the splitting happens after.
+ */
+const SUBTASK_HINT_THRESHOLD = 4;
+
+/**
+ * The "this is one run's worth of findings, not one unit of work" line, added
+ * to a bundled task above {@link SUBTASK_HINT_THRESHOLD} findings. The human
+ * approves the direction first; only then does anything get split up (0439).
+ */
+function subtaskHint(count: number): string | null {
+  if (count < SUBTASK_HINT_THRESHOLD) return null;
+  return "Create subtasks for each of these once the human approves the direction — this task is a triage bundle, not one unit of work.";
+}
+
+/**
+ * Render the shared body for a bundled inbox task: an intro, every finding
+ * with its evidence, and next steps. The "this is a lot — split it up" line
+ * only appears above {@link SUBTASK_HINT_THRESHOLD}, so a two-finding run
+ * doesn't get instructions it doesn't need.
+ */
+function formatAggregatedTaskBody(
+  intro: string,
+  findings: AggregatedFinding[],
+  nextSteps: string[],
+): string {
+  let body = `## Findings\n\n`;
+  body += `${intro}\n\n`;
+
+  findings.forEach((finding, index) => {
+    const parts = [finding.kind ?? "finding", finding.severity ?? "unrated"];
+    body += `### ${index + 1}. ${parts.join(" · ")}\n\n`;
+    body += `${finding.description}\n\n`;
+    if (finding.file) {
+      body += `- **File**: \`${finding.file}\`${finding.line ? `:${finding.line}` : ""}\n`;
+    }
+    if (finding.evidence) body += `- **Evidence**: ${finding.evidence}\n`;
+    if (finding.recommendation) body += `- **Recommendation**: ${finding.recommendation}\n`;
+    body += `\n`;
+  });
+
+  body += `## Next Steps\n\n`;
+  body += `1. Answer the open questions in this task's frontmatter (or in the PM chat) and update the body with the decisions.\n`;
+  if (findings.length >= SUBTASK_HINT_THRESHOLD) {
+    body += `2. ${subtaskHint(findings.length)}\n`;
+    body += `3. Move this task to done once its findings are either split out or dismissed.\n`;
+  } else {
+    body += `2. Implement the findings the human approved.\n`;
+    body += `3. Move this task to done when complete.\n`;
+  }
+  for (const step of nextSteps) body += `- ${step}\n`;
+
+  return body;
+}
+
+/** Everything a run needs to record in its run doc, minus the agent identity. */
+interface RunDocInput {
+  startedAt: Date;
+  durationMs?: number;
+  totalTokens?: number;
+  costUsd?: number;
+  scannedFiles?: number;
+  findings: AgentRunFinding[];
+  taskId?: string | null;
+  notes?: string[];
+}
+
+/**
+ * Write this run's doc — the receipt every run leaves behind, whatever it
+ * found, including a run that found nothing (0439).
+ *
+ * Fail-soft by design: a run doc is a record, not a transaction. If it cannot
+ * be written the run still reports its findings to the caller and logs the
+ * failure, rather than throwing away a successful scan over a filesystem error.
+ */
+function recordRunDoc(
   config: RepoOSConfig,
-  issues: TechDebtIssue[],
-): Promise<CreateTechDebtResult> {
-  const workDir = join(config.root, config.workDir);
+  agent: string,
+  label: string,
+  input: RunDocInput,
+  logger?: Logger,
+): AgentRunDocResult | null {
+  try {
+    const doc = writeAgentRunDoc({
+      root: config.root,
+      agent,
+      label,
+      startedAt: input.startedAt.toISOString(),
+      durationMs: input.durationMs,
+      totalTokens: input.totalTokens,
+      costUsd: input.costUsd,
+      scannedFiles: input.scannedFiles,
+      findings: input.findings,
+      taskId: input.taskId,
+      notes: input.notes,
+    });
+    logger?.agent(agent, "info", `Run doc written — ${doc.findingsCount} finding(s) recorded`, {
+      runDoc: doc.path,
+      pruned: doc.pruned,
+    });
+    return doc;
+  } catch (err) {
+    logger?.agent(agent, "error", "Failed to write run doc", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return null;
+  }
+}
+
+/**
+ * Create this run's bundled task, fail-soft (0439).
+ *
+ * A missing or read-only work dir is an operator problem worth reporting, but
+ * it must not cost the run its receipt: the run doc is written either way and
+ * the failure comes back in `errors` for the run route to surface.
+ */
+async function createBundledTask(
+  agent: string,
+  logger: Logger | undefined,
+  create: () => Promise<CreateBuiltInTaskResult>,
+): Promise<CreateBuiltInTaskResult> {
+  try {
+    return await create();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    logger?.agent(agent, "error", `Failed to create the bundled task — ${message}`);
+    return { created: 0, failed: 0, errors: [message], taskId: null };
+  }
+}
+
+/**
+ * Outcome of a built-in agent's inbox write. `created` is always 0 or 1 —
+ * a run never files more than one task, however many findings it has (0439).
+ */
+export interface CreateBuiltInTaskResult {
+  created: number;
+  failed: number;
+  errors: string[];
+  /** The bundled task's id, or null when nothing was filed. */
+  taskId: string | null;
+}
+
+interface BuiltInTaskSpec {
+  config: RepoOSConfig;
+  /** Inbox title for the bundled task. */
+  title: string;
+  /** Frontmatter `area`, e.g. "tech-debt". */
+  area: string;
+  /** Frontmatter `created_by`, e.g. "tech-debt-agent". */
+  createdBy: string;
+  /** Markdown body: findings + next steps. */
+  body: string;
+  /**
+   * What the human has to decide before this can be implemented. Written as
+   * `questions:` alongside `needs_input: true` so the board and the PM chat
+   * show the task is blocked on an answer, not on work.
+   */
+  questions: string[];
+  /** Human-facing agent name, used in the work-dir error message. */
+  label: string;
+  /** Error raised when the work dir is unusable — one class per agent. */
+  errorClass: new (message: string) => Error;
+}
+
+/**
+ * Write the ONE inbox task a built-in agent run may create.
+ *
+ * Every finding from the run is already aggregated into `body`, and the task
+ * always lands with `needs_input: true` plus its `questions`: a scan's output
+ * is a proposal, and the human decides what to do with it before anything is
+ * implemented. Throws when the work dir itself is unusable — that is an
+ * operator error, not something to swallow into a "ran clean" run.
+ */
+export async function createBuiltInAgentTask(
+  spec: BuiltInTaskSpec,
+): Promise<CreateBuiltInTaskResult> {
+  const result: CreateBuiltInTaskResult = { created: 0, failed: 0, errors: [], taskId: null };
+  const workDir = join(spec.config.root, spec.config.workDir);
+
   let workDirStats;
   try {
     workDirStats = statSync(workDir);
   } catch {
-    throw new TechDebtError(
-      `Task directory "${config.workDir}" does not exist — create it (or fix workDir) before running the Tech Debt Agent`,
+    throw new spec.errorClass(
+      `Task directory "${spec.config.workDir}" does not exist — create it (or fix workDir) before running the ${spec.label}`,
     );
   }
   if (!workDirStats.isDirectory()) {
-    throw new TechDebtError(`Task directory "${config.workDir}" is not a directory`);
+    throw new spec.errorClass(`Task directory "${spec.config.workDir}" is not a directory`);
   }
   try {
     accessSync(workDir, 0o2 /* W_OK */);
   } catch {
-    throw new TechDebtError(`Task directory "${config.workDir}" is not writable`);
+    throw new spec.errorClass(`Task directory "${spec.config.workDir}" is not writable`);
   }
 
-  const result: CreateTechDebtResult = { created: 0, failed: 0, errors: [] };
+  const taskId = findNextTaskId(workDir);
+  const taskPath = join(workDir, `${taskId}-${slugify(spec.title)}.md`);
+  const questions = spec.questions.filter((q) => q.trim().length > 0);
 
-  if (issues.length === 0) return result;
-
-  // Group issues by type for cleaner task creation.
-  const grouped = new Map<TechDebtIssueType, TechDebtIssue[]>();
-  for (const issue of issues) {
-    if (!grouped.has(issue.type)) grouped.set(issue.type, []);
-    grouped.get(issue.type)!.push(issue);
+  // The title and every question are JSON-stringified: they always survive
+  // YAML parsing, even with colons, quotes, or other metacharacters.
+  const lines = [
+    "---",
+    `id: "${taskId}"`,
+    `title: ${JSON.stringify(spec.title)}`,
+    "type: chore",
+    "status: inbox",
+    "priority: p2",
+    `area: ${spec.area}`,
+    "assigned_to: unassigned",
+    `created_by: ${spec.createdBy}`,
+    "needs_input: true",
+  ];
+  if (questions.length > 0) {
+    lines.push("questions:");
+    for (const question of questions) lines.push(`  - ${JSON.stringify(question)}`);
   }
+  const nowIso = new Date().toISOString();
+  lines.push(`created_at: "${nowIso}"`, `updated_at: "${nowIso}"`, "---");
 
-  const now = new Date().toISOString();
-
-  for (const [type, typeIssues] of grouped) {
-    const title = getTitleForIssueType(type);
-    const body = formatIssuesForTask(typeIssues);
-
-    const taskId = findNextTaskId(workDir);
-    const taskPath = join(workDir, `${taskId}-${slugify(title)}.md`);
-
-    // The title is JSON-stringified: it always survives YAML parsing, even with
-    // colons, quotes, or other metacharacters.
-    const frontmatter = `---
-id: "${taskId}"
-title: ${JSON.stringify(title)}
-type: chore
-status: inbox
-priority: p2
-area: tech-debt
-assigned_to: unassigned
-created_by: tech-debt-agent
-created_at: "${now}"
-updated_at: "${now}"
----`;
-
-    const taskContent = `${frontmatter}\n${body}`;
-
-    try {
-      await writeFile(taskPath, taskContent, "utf8");
-      result.created++;
-    } catch (err) {
-      result.failed++;
-      result.errors.push(`${taskPath}: ${err instanceof Error ? err.message : String(err)}`);
-    }
+  try {
+    await writeFile(taskPath, `${lines.join("\n")}\n${spec.body}`, "utf8");
+    result.created++;
+    result.taskId = taskId;
+  } catch (err) {
+    result.failed++;
+    result.errors.push(`${taskPath}: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   return result;
+}
+
+/**
+ * Create the single inbox task for a Tech Debt run: every issue the scan found,
+ * aggregated into one body (0439). Returns counts for created and failed
+ * writes, so callers never see a silently-truncated task list. Throws
+ * TechDebtError when the work dir itself is unusable (missing or read-only) —
+ * the caller surfaces that to the user.
+ */
+export async function createTechDebtTask(
+  config: RepoOSConfig,
+  issues: TechDebtIssue[],
+): Promise<CreateBuiltInTaskResult> {
+  if (issues.length === 0) {
+    return { created: 0, failed: 0, errors: [], taskId: null };
+  }
+
+  const title = `Tech Debt Agent: ${issues.length} finding${issues.length === 1 ? "" : "s"} to triage`;
+  const body = formatAggregatedTaskBody(
+    `The Tech Debt Agent reviewed the repository and found ${issues.length} issue${issues.length === 1 ? "" : "s"} that need a human decision. They are bundled here so one run produces one task, not one per finding.`,
+    issues.map((issue) => ({
+      kind: issue.type,
+      file: issue.file,
+      line: issue.line,
+      description: issue.description,
+      severity: issue.severity,
+    })),
+    ["Confirm each finding against the file it points at before changing anything."],
+  );
+
+  return createBuiltInAgentTask({
+    config,
+    title,
+    area: "tech-debt",
+    createdBy: "tech-debt-agent",
+    body,
+    questions: [
+      "Which of these findings should be fixed now, and which should be deferred or dismissed?",
+      "Should the accepted fixes land as one refactor pass or as one subtask per finding?",
+    ],
+    label: "Tech Debt Agent",
+    errorClass: TechDebtError,
+  });
 }
 
 /**
@@ -674,78 +897,47 @@ export function isDueForScheduledRun(
 }
 
 /**
- * Create tasks in the inbox for performance issues.
- * Returns counts for created and failed writes, so callers never see a
- * silently-truncated task list. Throws PerformanceError when the work dir itself
- * is unusable (missing or read-only).
+ * Create the single inbox task for a Performance run: every issue the review
+ * found, aggregated into one body (0439). Returns counts for created and failed
+ * writes, so callers never see a silently-truncated task list. Throws
+ * PerformanceError when the work dir itself is unusable.
  */
-export async function createPerformanceTasks(
+export async function createPerformanceTask(
   config: RepoOSConfig,
   issues: PerformanceIssue[],
-): Promise<CreatePerformanceResult> {
-  const workDir = join(config.root, config.workDir);
-  let workDirStats;
-  try {
-    workDirStats = statSync(workDir);
-  } catch {
-    throw new PerformanceError(
-      `Task directory "${config.workDir}" does not exist — create it (or fix workDir) before running the Performance Agent`,
-    );
-  }
-  if (!workDirStats.isDirectory()) {
-    throw new PerformanceError(`Task directory "${config.workDir}" is not a directory`);
-  }
-  try {
-    accessSync(workDir, 0o2 /* W_OK */);
-  } catch {
-    throw new PerformanceError(`Task directory "${config.workDir}" is not writable`);
+): Promise<CreateBuiltInTaskResult> {
+  if (issues.length === 0) {
+    return { created: 0, failed: 0, errors: [], taskId: null };
   }
 
-  const result: CreatePerformanceResult = { created: 0, failed: 0, errors: [] };
+  const title = `Performance Agent: ${issues.length} finding${issues.length === 1 ? "" : "s"} to triage`;
+  const body = formatAggregatedTaskBody(
+    `The Performance Agent reviewed the repository and found ${issues.length} issue${issues.length === 1 ? "" : "s"} that need a human decision. They are bundled here so one run produces one task, not one per finding.`,
+    issues.map((issue) => ({
+      kind: issue.type,
+      file: issue.file,
+      line: issue.line,
+      description: issue.description,
+      severity: issue.severity,
+    })),
+    [
+      "Profile the accepted findings with real-world data before optimizing — a heuristic finding is a starting point, not a measurement.",
+    ],
+  );
 
-  if (issues.length === 0) return result;
-
-  // Group issues by type for cleaner task creation.
-  const grouped = new Map<PerformanceIssueType, PerformanceIssue[]>();
-  for (const issue of issues) {
-    if (!grouped.has(issue.type)) grouped.set(issue.type, []);
-    grouped.get(issue.type)!.push(issue);
-  }
-
-  const now = new Date().toISOString();
-
-  for (const [type, typeIssues] of grouped) {
-    const title = getTitleForPerformanceIssueType(type);
-    const body = formatPerformanceIssuesForTask(typeIssues);
-
-    const taskId = findNextTaskId(workDir);
-    const taskPath = join(workDir, `${taskId}-${slugify(title)}.md`);
-
-    const frontmatter = `---
-id: "${taskId}"
-title: ${JSON.stringify(title)}
-type: chore
-status: inbox
-priority: p2
-area: performance
-assigned_to: unassigned
-created_by: performance-agent
-created_at: "${now}"
-updated_at: "${now}"
----`;
-
-    const taskContent = `${frontmatter}\n${body}`;
-
-    try {
-      await writeFile(taskPath, taskContent, "utf8");
-      result.created++;
-    } catch (err) {
-      result.failed++;
-      result.errors.push(`${taskPath}: ${err instanceof Error ? err.message : String(err)}`);
-    }
-  }
-
-  return result;
+  return createBuiltInAgentTask({
+    config,
+    title,
+    area: "performance",
+    createdBy: "performance-agent",
+    body,
+    questions: [
+      "Which of these findings is worth optimizing now, and which are acceptable as-is?",
+      "What is the acceptable performance threshold for the ones we do fix?",
+    ],
+    label: "Performance Agent",
+    errorClass: PerformanceError,
+  });
 }
 
 /**
@@ -802,6 +994,7 @@ export async function runTechDebtAgent(
   options: TechDebtScanOptions = {},
   logger?: Logger,
 ): Promise<TechDebtRunResult> {
+  const startedAt = new Date();
   const run = await runSkillGuidedAgent(
     "tech-debt",
     config,
@@ -822,7 +1015,7 @@ export async function runTechDebtAgent(
     scannedFiles: run.scannedFiles ?? 0,
   });
 
-  const created = await createTechDebtTasks(config, issues);
+  const created = await createTechDebtTask(config, issues);
   if (created.failed > 0) {
     logger?.agent("tech-debt", "error", `Failed to create ${created.failed} tech debt task(s)`, {
       errors: created.errors,
@@ -832,12 +1025,39 @@ export async function runTechDebtAgent(
     logger?.agent("tech-debt", "info", `Created ${created.created} tech debt task(s)`);
   }
 
+  const doc = recordRunDoc(
+    config,
+    "tech-debt",
+    "Tech Debt Agent",
+    {
+      startedAt,
+      durationMs: run.elapsedMs,
+      totalTokens: run.totalTokens,
+      costUsd: run.costUsd,
+      scannedFiles: run.scannedFiles ?? 0,
+      findings: issues.map((issue) => ({
+        type: issue.type,
+        file: issue.file,
+        line: issue.line,
+        description: issue.description,
+        severity: issue.severity,
+      })),
+      taskId: created.taskId,
+    },
+    logger,
+  );
+
   saveLastRunAt(config.root, "tech-debt", config);
 
   return {
+    runDoc: doc?.path ?? null,
+    findingsFound: issues.length,
+    taskId: created.taskId,
     issuesFound: issues.length,
     scannedFiles: run.scannedFiles ?? 0,
-    ...created,
+    created: created.created,
+    failed: created.failed,
+    errors: created.errors,
   };
 }
 
@@ -936,6 +1156,7 @@ export async function runPerformanceAgent(
   config: RepoOSConfig,
   logger?: Logger,
 ): Promise<PerformanceRunResult> {
+  const startedAt = new Date();
   const run = await runSkillGuidedAgent(
     "performance",
     config,
@@ -956,7 +1177,7 @@ export async function runPerformanceAgent(
     scannedFiles: run.scannedFiles ?? 0,
   });
 
-  const created = await createPerformanceTasks(config, issues);
+  const created = await createPerformanceTask(config, issues);
   if (created.failed > 0) {
     logger?.agent(
       "performance",
@@ -971,88 +1192,95 @@ export async function runPerformanceAgent(
     logger?.agent("performance", "info", `Created ${created.created} performance task(s)`);
   }
 
+  const doc = recordRunDoc(
+    config,
+    "performance",
+    "Performance Agent",
+    {
+      startedAt,
+      durationMs: run.elapsedMs,
+      totalTokens: run.totalTokens,
+      costUsd: run.costUsd,
+      scannedFiles: run.scannedFiles ?? 0,
+      findings: issues.map((issue) => ({
+        type: issue.type,
+        file: issue.file,
+        line: issue.line,
+        description: issue.description,
+        severity: issue.severity,
+      })),
+      taskId: created.taskId,
+    },
+    logger,
+  );
+
   saveLastRunAt(config.root, "performance", config);
 
   return {
+    runDoc: doc?.path ?? null,
+    findingsFound: issues.length,
+    taskId: created.taskId,
     issuesFound: issues.length,
     scannedFiles: run.scannedFiles ?? 0,
-    ...created,
+    created: created.created,
+    failed: created.failed,
+    errors: created.errors,
   };
 }
 
 /**
- * Generate a markdown architecture report and save it with a timestamp.
+ * Create the single inbox task for an Architect run: every issue the review
+ * found, aggregated into one body (0439). The Architect used to report only —
+ * its findings now reach the board the same way as any other built-in agent's,
+ * bundled so one run never produces more than one task.
  */
-export async function generateArchitectureReport(
+export async function createArchitectureTask(
   config: RepoOSConfig,
-  scan: ArchitectureScanResult,
-): Promise<{ reportPath: string; fileName: string }> {
-  const reportDir = join(config.root, "docs", "agents", "Architect");
-  mkdirSync(reportDir, { recursive: true });
-
-  const now = new Date();
-  const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}-${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}`;
-  const fileName = `Architect_report_${ts}.md`;
-  const reportPath = join(reportDir, fileName);
-
-  let report = `# Architecture Review Report\n\n`;
-  report += `**Generated**: ${now.toISOString()}\n\n`;
-  report += `## Executive Summary\n\n`;
-  report += `- **Files Scanned**: ${scan.scannedFiles}\n`;
-  report += `- **Tasks in Backlog**: ${scan.taskCount}\n`;
-  report += `- **Issues Identified**: ${scan.issues.length}\n\n`;
-
-  if (scan.insights.length > 0) {
-    report += `## Key Insights\n\n`;
-    for (const insight of scan.insights) report += `- ${insight}\n`;
-    report += `\n`;
+  issues: ArchitectureIssue[],
+): Promise<CreateBuiltInTaskResult> {
+  if (issues.length === 0) {
+    return { created: 0, failed: 0, errors: [], taskId: null };
   }
 
-  if (scan.issues.length > 0) {
-    report += `## Architecture Issues & Risks\n\n`;
-    for (const sev of ["high", "medium", "low"] as const) {
-      const filtered = scan.issues.filter((i) => i.severity === sev);
-      if (filtered.length === 0) continue;
-      report += `### ${sev.charAt(0).toUpperCase() + sev.slice(1)} Severity\n\n`;
-      for (const issue of filtered) {
-        report += `**${issue.type}**: ${issue.description}\n`;
-        if (issue.file) report += `- File: \`${issue.file}\`\n`;
-        if (issue.line) report += `- Line: ${issue.line}\n`;
-        if (issue.recommendation) report += `- **Recommendation**: ${issue.recommendation}\n`;
-        report += `\n`;
-      }
-    }
-  } else {
-    report += `## Architecture Assessment\n\n`;
-    report += `No significant architectural issues detected.\n\n`;
-  }
+  const title = `Architect Agent: ${issues.length} finding${issues.length === 1 ? "" : "s"} to triage`;
+  const body = formatAggregatedTaskBody(
+    `The Architect Agent reviewed the repository's structure and found ${issues.length} issue${issues.length === 1 ? "" : "s"} that need a human decision. They are bundled here so one run produces one task, not one per finding.`,
+    issues.map((issue) => ({
+      kind: issue.type,
+      file: issue.file,
+      line: issue.line,
+      description: issue.description,
+      severity: issue.severity,
+      recommendation: issue.recommendation,
+    })),
+    ["Confirm each finding against the code it points at before starting a refactor."],
+  );
 
-  report += `## Recommendations\n\n`;
-  report += `1. Schedule periodic architecture reviews (quarterly) to track progress.\n`;
-  report += `2. Maintain an up-to-date architecture document reflecting actual system design.\n`;
-  if (scan.issues.some((i) => i.severity === "high"))
-    report += `3. Address high-severity issues first.\n`;
-  if (scan.issues.some((i) => i.type === "tight-coupling"))
-    report += `4. Implement dependency injection and clear module boundaries to reduce tight coupling.\n`;
-  if (scan.issues.some((i) => i.type === "scalability-risk"))
-    report += `5. Plan refactoring for large modules that may become bottlenecks.\n`;
-  report += `\n## Next Steps\n\n`;
-  report += `- Review this report with the team\n`;
-  report += `- Create tasks for addressing identified issues\n`;
-  report += `- Track progress through subsequent reports\n`;
-
-  await writeFile(reportPath, report, "utf8");
-  return { reportPath, fileName };
+  return createBuiltInAgentTask({
+    config,
+    title,
+    area: "architecture",
+    createdBy: "architect-agent",
+    body,
+    questions: [
+      "Do you agree with the architectural direction these findings imply, before any refactor starts?",
+      "Which of these findings should be acted on now, and which are acceptable as-is?",
+    ],
+    label: "Architect Agent",
+    errorClass: ArchitectureError,
+  });
 }
 
 /**
  * Run the Architect Agent end to end through the shared skill-guided runner:
  * the configured CLI/model reviews the repo (in whatever language it uses) for
- * architecture issues, findings become a markdown report saved to
- * `docs/agents/Architect/`, and lastRunAt is recorded.
+ * architecture issues, a run doc records them under `docs/agent-runs/architect/`,
+ * one bundled inbox task carries whatever needs a human, and lastRunAt is
+ * recorded.
  *
  * Replaces the old `SOURCE_EXTS`-filtered deterministic scan, which silently
- * matched zero files in any non-JS/TS project. The caller owns overlap
+ * matched zero files in any non-JS/TS project, and the old ad-hoc
+ * `docs/agents/Architect/` report path (0439). The caller owns overlap
  * protection (a single in-flight guard in server.ts).
  *
  * A model/connector failure throws {@link ArchitectureError} with the agent
@@ -1063,6 +1291,7 @@ export async function runArchitectAgent(
   config: RepoOSConfig,
   logger?: Logger,
 ): Promise<ArchitectRunResult> {
+  const startedAt = new Date();
   const run = await runSkillGuidedAgent(
     "architect",
     config,
@@ -1091,26 +1320,48 @@ export async function runArchitectAgent(
   if (run.scannedFiles && run.scannedFiles > 0) {
     insights.push(`Analyzed ${run.scannedFiles} source files.`);
   }
+  if (taskCount > 0) insights.push(`${taskCount} task(s) in the backlog at the time of this run.`);
 
-  const scan: ArchitectureScanResult = {
-    issues,
-    scannedFiles: run.scannedFiles ?? 0,
-    taskCount,
-    insights,
-  };
-  const report = await generateArchitectureReport(config, scan);
+  const created = await createBundledTask("architect", logger, () =>
+    createArchitectureTask(config, issues),
+  );
+
+  const doc = recordRunDoc(
+    config,
+    "architect",
+    "Architect Agent",
+    {
+      startedAt,
+      durationMs: run.elapsedMs,
+      totalTokens: run.totalTokens,
+      costUsd: run.costUsd,
+      scannedFiles: run.scannedFiles ?? 0,
+      findings: issues.map((issue) => ({
+        type: issue.type,
+        file: issue.file,
+        line: issue.line,
+        description: issue.description,
+        severity: issue.severity,
+        recommendation: issue.recommendation,
+      })),
+      taskId: created.taskId,
+      notes: insights,
+    },
+    logger,
+  );
 
   saveLastRunAt(config.root, "architect", config);
 
   return {
-    reportPath: report.reportPath,
-    fileName: report.fileName,
+    runDoc: doc?.path ?? null,
+    findingsFound: issues.length,
+    taskId: created.taskId,
     issuesFound: issues.length,
     scannedFiles: run.scannedFiles ?? 0,
     taskCount,
-    created: 0,
-    failed: 0,
-    errors: [],
+    created: created.created,
+    failed: created.failed,
+    errors: created.errors,
   };
 }
 
@@ -1221,98 +1472,64 @@ export async function scanForDesignIssues(
     scannedFiles: run.scannedFiles ?? 0,
     insights,
     noUiDetected,
+    elapsedMs: run.elapsedMs,
+    totalTokens: run.totalTokens,
+    costUsd: run.costUsd,
   };
 }
 
 /**
- * Generate a markdown UI/UX design report and save it with a timestamp.
- * Fallback content guarantees the report reads correctly when the review found
- * nothing to flag, and a distinct "no web UI detected" assessment when the
- * repository has no UI to review at all.
+ * Create the single inbox task for a Design run: every UI/UX finding the review
+ * produced, aggregated into one body (0439). The Design Agent used to report
+ * only — its findings now reach the board bundled, so one run never produces
+ * more than one task. It still never edits UI source itself.
  */
-export async function generateDesignReport(
+export async function createDesignTask(
   config: RepoOSConfig,
   scan: DesignScanResult,
-): Promise<{ reportPath: string; fileName: string }> {
-  const reportDir = join(config.root, "docs", "agents", "Design");
-  mkdirSync(reportDir, { recursive: true });
-
-  const now = new Date();
-  const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}-${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}`;
-  const fileName = `Design_report_${ts}.md`;
-  const reportPath = join(reportDir, fileName);
-
-  let report = `# UI/UX Design Review Report\n\n`;
-  report += `**Generated**: ${now.toISOString()}\n\n`;
-  report += `## Executive Summary\n\n`;
-  report += `- **Files Reviewed**: ${scan.scannedFiles}\n`;
-  report += `- **Web UI Detected**: ${scan.noUiDetected ? "No" : "Yes"}\n`;
-  report += `- **Findings Identified**: ${scan.findings.length}\n`;
-  const byCat = { "ui-bug": 0, "ux-friction": 0, "design-recommendation": 0 };
-  for (const f of scan.findings) byCat[f.category]++;
-  report += `- **UI bugs**: ${byCat["ui-bug"]}\n`;
-  report += `- **UX frictions**: ${byCat["ux-friction"]}\n`;
-  report += `- **Design recommendations**: ${byCat["design-recommendation"]}\n\n`;
-
-  if (scan.insights.length > 0) {
-    report += `## Scan Overview\n\n`;
-    for (const insight of scan.insights) report += `- ${insight}\n`;
-    report += `\n`;
+): Promise<CreateBuiltInTaskResult> {
+  if (scan.findings.length === 0) {
+    return { created: 0, failed: 0, errors: [], taskId: null };
   }
 
-  if (scan.findings.length > 0) {
-    const labels: Record<DesignFindingCategory, { title: string; heading: string }> = {
-      "ui-bug": { title: "UI Bugs", heading: "UI Bugs" },
-      "ux-friction": { title: "UX Friction", heading: "UX Friction" },
-      "design-recommendation": {
-        title: "Design Recommendations",
-        heading: "Proposed Updates, Fixes, and New Designs",
-      },
-    };
-    const order: DesignFindingCategory[] = ["ui-bug", "ux-friction", "design-recommendation"];
-    for (const cat of order) {
-      const items = scan.findings.filter((f) => f.category === cat);
-      if (items.length === 0) continue;
-      report += `## ${labels[cat].heading}\n\n`;
-      for (const sev of ["high", "medium", "low"] as const) {
-        const filtered = items.filter((i) => i.severity === sev);
-        if (filtered.length === 0) continue;
-        report += `### ${sev.charAt(0).toUpperCase() + sev.slice(1)} Severity\n\n`;
-        for (const f of filtered) {
-          report += `**${f.description}**\n`;
-          report += `- File: \`${f.file}\`${f.line ? `:${f.line}` : ""}\n`;
-          report += `- **Rationale**: ${f.rationale}\n`;
-          report += `- **Suggested fix**: ${f.recommendation}\n\n`;
-        }
-      }
-    }
-  } else if (scan.noUiDetected) {
-    report += `## UI/UX Assessment\n\n`;
-    report += `No web UI detected in this repository. The Design Agent looked for a\n`;
-    report += `front-end framework or UI sources (React, Vue, Svelte, Angular, plain\n`;
-    report += `HTML/CSS/JS, and similar) in the project's manifests and directory\n`;
-    report += `structure and found none — so there was no UI to review. This is not a\n`;
-    report += `clean bill of health; it means the agent had nothing to inspect.\n\n`;
-  } else {
-    report += `## UI/UX Assessment\n\n`;
-    report += `No significant UI/UX issues detected in the current web UI.\n\n`;
-  }
+  const count = scan.findings.length;
+  const title = `Design Agent: ${count} finding${count === 1 ? "" : "s"} to triage`;
+  const body = formatAggregatedTaskBody(
+    `The Design Agent reviewed the repository's web UI and found ${count} finding${count === 1 ? "" : "s"} that need a human decision. They are bundled here so one run produces one task, not one per finding.`,
+    scan.findings.map((finding) => ({
+      kind: finding.category,
+      file: finding.file,
+      line: finding.line,
+      description: finding.description,
+      severity: finding.severity,
+      evidence: finding.rationale,
+      recommendation: finding.recommendation,
+    })),
+    ["Confirm each finding in the running UI before changing any styling or markup."],
+  );
 
-  report += `## Next Steps\n\n`;
-  report += `- Review the findings and confirm each is worth addressing.\n`;
-  report += `- Create follow-up tasks for the agreed-upon fixes/redesigns (this agent reports only; it does not edit UI source).\n`;
-  report += `- Track progress through subsequent reports under \`docs/agents/Design/\`.\n`;
-
-  await writeFile(reportPath, report, "utf8");
-  return { reportPath, fileName };
+  return createBuiltInAgentTask({
+    config,
+    title,
+    area: "design",
+    createdBy: "design-agent",
+    body,
+    questions: [
+      "Which of these UI/UX findings should be fixed, and which are acceptable as-is?",
+      "Do the proposed changes match the design system this project already uses, or should the system change too?",
+    ],
+    label: "Design Agent",
+    errorClass: DesignError,
+  });
 }
 
 /**
  * Run the Design Agent end to end through the shared skill-guided runner: the
  * configured CLI/model reviews the repository's web UI (whatever its framework
- * or layout) for UI bugs, UX friction, and design improvements, a markdown
- * report is saved to docs/agents/Design/, and lastRunAt is recorded. Like the
- * Architect agent it only reports — it never edits UI source or creates tasks.
+ * or layout) for UI bugs, UX friction, and design improvements, a run doc
+ * records what it found under `docs/agent-runs/design/`, one bundled inbox task
+ * carries whatever needs a human, and lastRunAt is recorded. It still never
+ * edits UI source itself.
  *
  * A model/connector failure throws {@link DesignError} so the run route
  * surfaces it on this agent's own settings card.
@@ -1321,19 +1538,47 @@ export async function runDesignAgent(
   config: RepoOSConfig,
   logger?: Logger,
 ): Promise<DesignRunResult> {
+  const startedAt = new Date();
   const scan = await scanForDesignIssues(config, logger);
-  const report = await generateDesignReport(config, scan);
+
+  const created = await createBundledTask("design", logger, () => createDesignTask(config, scan));
+
+  const doc = recordRunDoc(
+    config,
+    "design",
+    "Design Agent",
+    {
+      startedAt,
+      durationMs: scan.elapsedMs,
+      totalTokens: scan.totalTokens,
+      costUsd: scan.costUsd,
+      scannedFiles: scan.scannedFiles,
+      findings: scan.findings.map((finding) => ({
+        type: finding.category,
+        file: finding.file,
+        line: finding.line,
+        description: finding.description,
+        severity: finding.severity,
+        evidence: finding.rationale,
+        recommendation: finding.recommendation,
+      })),
+      taskId: created.taskId,
+      notes: scan.insights,
+    },
+    logger,
+  );
 
   saveLastRunAt(config.root, "design", config);
 
   return {
-    reportPath: report.reportPath,
-    fileName: report.fileName,
+    runDoc: doc?.path ?? null,
     findingsFound: scan.findings.length,
+    taskId: created.taskId,
     scannedFiles: scan.scannedFiles,
-    created: 0,
-    failed: 0,
-    errors: [],
+    noUiDetected: scan.noUiDetected ?? false,
+    created: created.created,
+    failed: created.failed,
+    errors: created.errors,
   };
 }
 
@@ -1387,6 +1632,10 @@ export interface DocsDebtScanResult {
   scannedDocs: number;
   /** Number of findings + proposed fixes the agent returned. */
   claimsChecked: number;
+  /** Duration/token cost of the underlying model call, for the run doc (0439). */
+  elapsedMs?: number;
+  totalTokens?: number;
+  costUsd?: number;
   /** Set when the LLM run itself failed; findings are then empty. */
   error?: string;
 }
@@ -1411,22 +1660,14 @@ export interface CreateDocsDebtTaskResult {
   taskId: string | null;
 }
 
-export interface DocsDebtRunResult {
+export interface DocsDebtRunResult extends BuiltInAgentRunReceipt {
   scannedDocs: number;
   /** Alias for scannedDocs, matching the generic built-in agent response shape. */
   scannedFiles: number;
   claimsChecked: number;
   trivialFixesApplied: number;
-  /** All needs-human findings, including cap-downgraded fixes. */
-  findingsFound: number;
-  /** 0 or 1 — a run never files more than one task. */
-  taskCreated: number;
-  /** The bundled finding task's id, or null when no task was filed. */
-  taskId: string | null;
   /** Docs the agent corrected automatically this run. */
   autoFixed: DocsDebtAutoFixed[];
-  /** Alias kept so the server's generic `taskCount` field stays accurate. */
-  created: number;
   failed: number;
   errors: string[];
   /** Set when the agent run itself failed (e.g. the model was unreachable). */
@@ -1589,7 +1830,7 @@ function collectDocFiles(root: string): string[] {
         continue;
       }
       if (st.isDirectory()) {
-        if (IGNORED_DIRS.has(name) || name.startsWith(".")) continue;
+        if (IGNORED_DIRS.has(name) || name.startsWith(".") || name === AGENT_RUN_DOCS_DIR) continue;
         walk(abs);
       } else if (st.isFile() && name.endsWith(".md") && st.size <= MAX_DOC_BYTES) {
         out.push(abs);
@@ -1676,6 +1917,9 @@ export async function scanForDocsDebt(
     needsHuman,
     scannedDocs,
     claimsChecked: run.findings.length + run.fixes.length,
+    elapsedMs: run.elapsedMs,
+    totalTokens: run.totalTokens,
+    costUsd: run.costUsd,
   };
 }
 
@@ -1756,32 +2000,10 @@ function fixesToFindings(fixes: DocsDebtTrivialFix[]): DocsDebtFinding[] {
 export async function createDocsDebtTask(
   config: RepoOSConfig,
   findings: DocsDebtFinding[],
-): Promise<CreateDocsDebtTaskResult> {
-  const workDir = join(config.root, config.workDir);
-  let workDirStats;
-  try {
-    workDirStats = statSync(workDir);
-  } catch {
-    throw new DocsDebtError(
-      `Task directory "${config.workDir}" does not exist — create it (or fix workDir) before running the Docs Debt Agent`,
-    );
-  }
-  if (!workDirStats.isDirectory()) {
-    throw new DocsDebtError(`Task directory "${config.workDir}" is not a directory`);
-  }
-  try {
-    accessSync(workDir, 0o2 /* W_OK */);
-  } catch {
-    throw new DocsDebtError(`Task directory "${config.workDir}" is not writable`);
-  }
-
-  const result: CreateDocsDebtTaskResult = { created: 0, failed: 0, errors: [], taskId: null };
-  if (findings.length === 0) return result;
+): Promise<CreateBuiltInTaskResult> {
+  if (findings.length === 0) return { created: 0, failed: 0, errors: [], taskId: null };
 
   const title = "Docs debt: stale claims in AGENTS.md, docs/, and user-docs/";
-  const now = new Date().toISOString();
-  const taskId = findNextTaskId(workDir);
-  const taskPath = join(workDir, `${taskId}-${slugify(title)}.md`);
 
   let body = `## Docs Debt Findings\n\n`;
   body += `The Docs Debt Agent verified concrete claims in \`AGENTS.md\`/\`docs/\`/\`user-docs/\` against the actual repo and found ${findings.length} that need a human decision.\n\n`;
@@ -1797,33 +2019,26 @@ export async function createDocsDebtTask(
     body += `\n`;
   });
   body += `## Next Steps\n\n`;
-  body += `1. Confirm each finding is real drift and not a deliberate, documented difference.\n`;
-  body += `2. Update the doc(s) or the code so the two agree.\n`;
-  body += `3. Move this task to done when complete.\n`;
+  body += `1. Answer the open questions in this task's frontmatter (or in the PM chat) and update the body with the decisions.\n`;
+  body += `2. Confirm each finding is real drift and not a deliberate, documented difference.\n`;
+  body += `3. Update the doc(s) or the code so the two agree.\n`;
+  const hint = subtaskHint(findings.length);
+  if (hint) body += `- ${hint}\n`;
+  body += `- Move this task to done when complete.\n`;
 
-  const frontmatter = `---
-id: "${taskId}"
-title: ${JSON.stringify(title)}
-type: chore
-status: inbox
-priority: p2
-area: docs-debt
-assigned_to: unassigned
-created_by: docs-debt-agent
-created_at: "${now}"
-updated_at: "${now}"
----`;
-
-  try {
-    await writeFile(taskPath, `${frontmatter}\n${body}`, "utf8");
-    result.created++;
-    result.taskId = taskId;
-  } catch (err) {
-    result.failed++;
-    result.errors.push(`${taskPath}: ${err instanceof Error ? err.message : String(err)}`);
-  }
-
-  return result;
+  return createBuiltInAgentTask({
+    config,
+    title,
+    area: "docs-debt",
+    createdBy: "docs-debt-agent",
+    body,
+    questions: [
+      "Should we fix the code issue or update the documentation?",
+      "Which of these claims are deliberate, documented differences rather than drift?",
+    ],
+    label: "Docs Debt Agent",
+    errorClass: DocsDebtError,
+  });
 }
 
 /**
@@ -1835,6 +2050,7 @@ export async function runDocsDebtAgent(
   config: RepoOSConfig,
   logger?: Logger,
 ): Promise<DocsDebtRunResult> {
+  const startedAt = new Date();
   logger?.agent("docs-debt", "info", "Docs Debt Agent scan started");
   const scan = await scanForDocsDebt(config, logger);
   logger?.agent("docs-debt", "info", "Docs Debt scan completed", {
@@ -1854,15 +2070,40 @@ export async function runDocsDebtAgent(
   const cappedFixes = fixesToFindings(scan.trivialFixes.slice(MAX_TRIVIAL_FIXES_PER_RUN));
   const findings = [...scan.needsHuman, ...cappedFixes];
 
-  const task = await createDocsDebtTask(config, findings);
-  if (task.failed > 0) {
-    logger?.agent("docs-debt", "error", `Failed to create docs debt task`, {
-      errors: task.errors,
-    });
-  }
-  if (task.created > 0) {
-    logger?.agent("docs-debt", "info", `Created ${task.created} docs debt task`);
-  }
+  const task = await createBundledTask("docs-debt", logger, () =>
+    createDocsDebtTask(config, findings),
+  );
+
+  const doc = recordRunDoc(
+    config,
+    "docs-debt",
+    "Docs Debt Agent",
+    {
+      startedAt,
+      durationMs: scan.elapsedMs,
+      totalTokens: scan.totalTokens,
+      costUsd: scan.costUsd,
+      scannedFiles: scan.scannedDocs,
+      findings: findings.map((finding) => ({
+        type: finding.kind,
+        file: finding.doc || undefined,
+        line: finding.line,
+        description: finding.claim,
+        severity: finding.severity,
+        evidence: finding.evidence,
+        recommendation: finding.recommendation,
+      })),
+      taskId: task.taskId,
+      notes: [
+        ...(scan.error ? [`The agent run reported an error: ${scan.error}`] : []),
+        ...(apply.applied > 0
+          ? [`Corrected ${apply.applied} stale reference(s) automatically this run.`]
+          : []),
+        ...apply.fixed.map((fix) => `\`${fix.doc}\`: \`${fix.from}\` → \`${fix.to}\``),
+      ],
+    },
+    logger,
+  );
 
   saveLastRunAt(config.root, "docs-debt", config);
 
@@ -1870,22 +2111,38 @@ export async function runDocsDebtAgent(
     trivialFixesApplied: apply.applied,
     findingsFound: findings.length,
     taskCreated: task.created,
+    runDoc: doc?.path ?? null,
   });
 
   return {
+    runDoc: doc?.path ?? null,
+    findingsFound: findings.length,
+    taskId: task.taskId,
     scannedDocs: scan.scannedDocs,
     scannedFiles: scan.scannedDocs,
     claimsChecked: scan.claimsChecked,
     trivialFixesApplied: apply.applied,
-    findingsFound: findings.length,
-    taskCreated: task.created,
-    taskId: task.taskId,
     autoFixed: apply.fixed,
     created: task.created,
     failed: task.failed,
     errors: [...(scan.error ? [scan.error] : []), ...apply.errors, ...task.errors],
     error: scan.error,
   };
+}
+
+/** Human-facing names for the built-in agents, for run docs and notifications. */
+export const BUILT_IN_AGENT_LABELS: Record<string, string> = {
+  "tech-debt": "Tech Debt Agent",
+  performance: "Performance Agent",
+  architect: "Architect Agent",
+  design: "Design Agent",
+  "docs-debt": "Docs Debt Agent",
+  debugger: "Debugger Agent",
+};
+
+/** Display name for a built-in agent slug; falls back to the slug itself. */
+export function builtInAgentLabel(agent: string): string {
+  return BUILT_IN_AGENT_LABELS[agent] ?? agent;
 }
 
 /** Dispatch to the appropriate built-in agent by name. */
@@ -1917,78 +2174,6 @@ export async function runBuiltInAgent(
     return runDocsDebtAgent(config, logger);
   }
   return null;
-}
-
-function getTitleForIssueType(type: TechDebtIssueType): string {
-  switch (type) {
-    case "outdated-dependency":
-      return "Update outdated dependencies";
-    case "code-duplication":
-      return "Refactor duplicated code";
-    case "high-complexity":
-      return "Reduce file complexity";
-    case "unused-code":
-      return "Remove unused code";
-    case "deprecated-api":
-      return "Modernize deprecated patterns";
-    default:
-      return "Address tech debt";
-  }
-}
-
-function getTitleForPerformanceIssueType(type: PerformanceIssueType): string {
-  switch (type) {
-    case "slow-function":
-      return "Optimize function performance";
-    case "blocking-operation":
-      return "Fix blocking operations";
-    case "unbounded-growth":
-      return "Prevent unbounded memory growth";
-    case "duplicated-computation":
-      return "Eliminate duplicate computations";
-    default:
-      return "Improve performance";
-  }
-}
-
-function formatIssuesForTask(issues: TechDebtIssue[]): string {
-  let body = "## Issues Identified\n\n";
-
-  for (const issue of issues) {
-    body += `### ${issue.description}\n`;
-    body += `- **File**: \`${issue.file}\`\n`;
-    if (issue.line) body += `- **Line**: ${issue.line}\n`;
-    body += `- **Severity**: ${issue.severity}\n\n`;
-  }
-
-  body += "## Next Steps\n\n";
-  body += "1. Review each issue in the files listed above\n";
-  body += "2. Make the suggested improvements\n";
-  body += "3. Test the changes thoroughly\n";
-  body += "4. Move this task to done when complete\n";
-
-  return body;
-}
-
-function formatPerformanceIssuesForTask(issues: PerformanceIssue[]): string {
-  let body = "## Performance Issues Identified\n\n";
-
-  for (const issue of issues) {
-    body += `### ${issue.description}\n`;
-    body += `- **File**: \`${issue.file}\`\n`;
-    if (issue.line) body += `- **Line**: ${issue.line}\n`;
-    body += `- **Severity**: ${issue.severity}\n`;
-    body += `- **Type**: ${issue.type}\n\n`;
-  }
-
-  body += "## Next Steps\n\n";
-  body += "1. Profile the identified performance issues with real-world data\n";
-  body += "2. Optimize the code using appropriate techniques (async, streaming, caching, etc.)\n";
-  body += "3. Measure the improvement with benchmarks\n";
-  body += "4. Test thoroughly to ensure no regressions\n";
-  body += "5. Move this task to done when optimized\n";
-
-  return body;
 }
 
 function slugify(title: string): string {

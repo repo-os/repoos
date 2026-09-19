@@ -171,6 +171,21 @@ export type RepoEvent =
       passed: boolean;
       durationMs: number;
       at: string;
+    }
+  /**
+   * A built-in agent finished a run (0439): the run doc it wrote, how many
+   * findings it recorded, and the single task it filed (if any). Scheduled
+   * runs emit this too, so "Tech Debt Agent finished — 3 findings" reaches
+   * the UI whether or not anyone clicked Run now.
+   */
+  | {
+      type: "built-in.run";
+      agent: string;
+      label: string;
+      findings: number;
+      taskId: string | null;
+      runDoc: string | null;
+      at: string;
     };
 
 type Listener = (e: RepoEvent) => void;

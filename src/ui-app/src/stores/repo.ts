@@ -5,6 +5,7 @@ import { checkUiBuild, isstaleDismissed, showStaleUi, uiRecoveryState } from "..
 import { useUiStore, type PendingScreenshot } from "./ui";
 import { useNotificationsStore, type NotificationType } from "./notifications";
 import { describeCloseOutFailure } from "../lib/closeOutFailure";
+import { builtInRunNotice } from "../lib/builtInRunNotice";
 import { retryCountFrom } from "../lib/retryHints";
 import type {
   AgentOutputEntry,
@@ -813,6 +814,17 @@ export const useRepoStore = defineStore("repo", () => {
       pushToast("Restart failed — the server kept running the current build", "error");
       return;
     }
+    if (e.type === "built-in.run") {
+      // A built-in agent finished (0439). Scheduled runs are otherwise
+      // invisible, so this toast is the only signal the human gets — and it
+      // carries the finding count whether or not a task was filed.
+      const noun = e.findings === 1 ? "1 finding" : `${e.findings} findings`;
+      pushToast(builtInRunNotice(e), "info");
+      if (e.runDoc) {
+        pushFeed(`<b>${e.label || e.agent}</b> ${noun} — ${e.runDoc}`, "#39e0ff", "built-in.run");
+      }
+      return;
+    }
     if (e.type === "task.created") {
       if (!tasks.value.find((t) => t.id === e.task.id)) tasks.value.push(e.task);
       recount();
@@ -1316,6 +1328,10 @@ export const useRepoStore = defineStore("repo", () => {
       "test-run.started",
       "test-run.output",
       "test-run.done",
+      "task-check.started",
+      "task-check.output",
+      "task-check.done",
+      "built-in.run",
     ]) {
       es.addEventListener(t, (ev: MessageEvent) => {
         connected.value = true;

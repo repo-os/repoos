@@ -91,7 +91,7 @@ import {
   tuneRepoForScale,
 } from "../core/git.js";
 import { sweepAndWarn } from "../core/worktree-gc.js";
-import { runBuiltInAgent, isDueForScheduledRun } from "./built-in-agents.js";
+import { runBuiltInAgent, isDueForScheduledRun, builtInAgentLabel } from "./built-in-agents.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
 import {
@@ -1515,6 +1515,27 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // schedule is due runs exactly one scan per tick; scheduled and manual runs
   // can never overlap. Errors only log — the scheduler is best-effort and must
   // never crash the poll loop.
+  /**
+   * Announce a finished built-in agent run on the SSE stream (0439) so the UI
+   * can toast "Tech Debt Agent finished — 3 findings" and link the run doc.
+   * Every agent's result carries the same receipt shape; a null/undefined
+   * result (unknown agent) is never announced.
+   */
+  const emitBuiltInRunEvent = (
+    agentName: string,
+    result: { runDoc?: string | null; findingsFound?: number; taskId?: string | null } | null,
+  ): void => {
+    if (!result) return;
+    emitEvent({
+      type: "built-in.run",
+      agent: agentName,
+      label: builtInAgentLabel(agentName),
+      findings: result.findingsFound ?? 0,
+      taskId: result.taskId ?? null,
+      runDoc: result.runDoc ?? null,
+      at: new Date().toISOString(),
+    });
+  };
   const BUILT_IN_CHECK_INTERVAL_MS = 60_000;
   const builtInRun = { inFlight: false };
   const builtInTimer = setInterval(() => {
@@ -1533,6 +1554,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
               `[built-in-agents] scheduled run of "${name}" wrote ${result.failed} failed task(s): ${result.errors.join("; ")}`,
             );
           }
+          // Scheduled runs are invisible unless they announce themselves: the
+          // human never clicked Run now, so this is the only way the run doc
+          // they just got written surfaces in the UI (0439).
+          emitBuiltInRunEvent(name, result);
         })
         .catch((err: any) => {
           console.error(`[built-in-agents] scheduled run of "${name}" failed:`, err);
@@ -2080,6 +2105,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           });
         }
         ctx.index.refreshAll();
+        emitBuiltInRunEvent(agentName, result);
         return json(res, 200, {
           ok: true,
           taskCount: result.created,
@@ -2092,6 +2118,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           scannedFiles: "scannedFiles" in result ? result.scannedFiles : 0,
           taskId: "taskId" in result ? result.taskId : null,
           autoFixed: "autoFixed" in result ? result.autoFixed : [],
+          runDoc: "runDoc" in result ? (result.runDoc ?? null) : null,
           error: "error" in result ? result.error : undefined,
         });
       } catch (err) {
