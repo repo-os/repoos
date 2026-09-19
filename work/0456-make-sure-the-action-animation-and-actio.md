@@ -21,9 +21,11 @@ Make sure the action animation and action text in the tasks are the same color (
 
 ![Screenshot-2026-09-20-at-07.15.08](/api/tasks/0456/attachments/screenshot-1.png)
 ![Screenshot-2026-09-20-at-06.30.27](/api/tasks/0456/attachments/screenshot-2.png)
+![Screenshot-2026-09-20-at-01.11.11](/api/tasks/0456/attachments/screenshot-3.png)
 
 ## Activity
 
 - 2026-09-19T23:18:59Z · created · hello@repoos.org
 - 2026-09-19T23:18:59Z · screenshots
+- 2026-09-19T23:19:00Z · screenshots
 - 2026-09-19T23:19:00Z · screenshots
