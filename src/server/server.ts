@@ -217,6 +217,7 @@ import {
   getDailyTotals,
   getDiffStatsForTask,
   getDiffForTask,
+  getTaskFile,
   taskAction,
   getIntegrationJob,
   getIntegrationJobs,
@@ -1936,6 +1937,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", /^\/api\/tasks\/([^/]+)\/stats$/, getTaskStats);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/diff-stats$/, getDiffStatsForTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/diff$/, getDiffForTask);
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/file$/, getTaskFile);
   router.register("GET", "/api/remote-validation/status", (_ctx, _req, res) => {
     const rv = config.remoteValidation ?? {};
     let activeServer: { id: number; ip: string; ageMinutes: number } | null = null;

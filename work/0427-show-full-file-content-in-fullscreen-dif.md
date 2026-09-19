@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-19T01:14:25Z"
-review_passes: 1
 id: "0427"
 title: Show full file content in fullscreen diff viewer
 type: feature
@@ -12,6 +10,7 @@ created_by: ""
 branch: feat/show-full-file-content-in-fullscreen-dif
 review_model_override: opencode-go/mimo-v2.5
 created_at: "2026-09-18T18:04:16Z"
+updated_at: "2026-09-19T01:10:26Z"
 ---
 ## Problem
 
@@ -44,5 +43,4 @@ The frontend fetches both versions when the fullscreen modal opens and merges th
 - 2026-09-19T01:03:46Z · review_model_override
 - 2026-09-19T01:03:50Z · status inbox→ready
 - 2026-09-19T01:03:52Z · status ready→active, branch
-- 2026-09-19T01:10:27Z · status active→review
-
+- 2026-09-19T01:10:26Z · status active→review

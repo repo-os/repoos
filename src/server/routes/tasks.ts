@@ -52,6 +52,7 @@ import {
   resetWorktree,
   getDiffStatsAsync,
   getDiff,
+  runGit,
   GitDirtyCheckError,
   ensureHotfix,
   agentTouchedFiles,
@@ -1824,4 +1825,35 @@ export const getDiffForTask: RouteHandler = async (ctx, _req, res, params) => {
   }
   const diff = await getDiff(worktreePath, "main");
   return json(res, 200, { ok: true, diff });
+};
+
+/** Return one file's committed contents from the task's before/after revisions. */
+export const getTaskFile: RouteHandler = async (ctx, req, res, params) => {
+  const { index, config } = ctx;
+  const task = index.getTask(params.param1);
+  if (!task) return json(res, 404, { error: `Task #${params.param1} not found` });
+  if (!task.branch) return json(res, 200, { ok: true, content: "", exists: false, noBranch: true });
+
+  const url = new URL(req.url ?? "/", "http://localhost");
+  const rawPath = url.searchParams.get("path");
+  const version = url.searchParams.get("version");
+  if (!rawPath || (version !== "before" && version !== "after")) {
+    return json(res, 400, { error: "path and version=before|after are required" });
+  }
+
+  const path = rawPath.replace(/^(?:a|b)\//, "");
+  if (!path || path.startsWith("/") || path.split("/").some((part) => part === "..")) {
+    return json(res, 400, { error: "Invalid file path" });
+  }
+
+  const worktreePath = worktreePathForBranch(config.root, task.branch);
+  if (!worktreePath) {
+    return json(res, 200, { ok: true, content: "", exists: false, noWorktree: true });
+  }
+  const ref = version === "before" ? "main" : "HEAD";
+  const result = await runGit(worktreePath, ["show", `${ref}:${path}`], 10_000);
+  if (result.status !== 0) {
+    return json(res, 200, { ok: true, content: "", exists: false });
+  }
+  return json(res, 200, { ok: true, content: result.stdout, exists: true });
 };
