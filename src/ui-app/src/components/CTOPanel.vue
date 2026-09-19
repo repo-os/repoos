@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { X } from "lucide-vue-next";
 import { api } from "../api";
 import { renderMarkdown } from "../lib/markdown";
 import { fmtTime } from "../lib/time";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
 import { useRepoStore } from "../stores/repo";
 import type { AgentOutputEntry } from "../types";
+import FloatingHeadPanel from "./FloatingHeadPanel.vue";
 
 defineProps<{ open: boolean }>();
 const emit = defineEmits<{ close: [] }>();
@@ -109,7 +111,12 @@ watch(
 </script>
 
 <template>
-  <aside v-if="open" class="cto-panel" aria-label="CTO Board Monitor">
+  <FloatingHeadPanel
+    :open="open"
+    title="CTO Board Monitor"
+    description="Ask the CTO about board health."
+    @close="emit('close')"
+  >
     <header class="cto-header">
       <div class="cto-avatar" aria-hidden="true">
         <img src="/assets/repoos-cto-square.webp" alt="CTO" />
@@ -122,15 +129,13 @@ watch(
         >
       </div>
       <button
-        class="cto-minimize"
+        class="close-x cto-close"
         type="button"
         aria-label="Close CTO"
         title="Close"
         @click="emit('close')"
       >
-        <svg viewBox="0 0 20 20" fill="none">
-          <path d="M4 10h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-        </svg>
+        <X class="size-[15px]" />
       </button>
     </header>
 
@@ -182,7 +187,7 @@ watch(
       </button>
       <button v-else type="submit" :disabled="busy || !enabled || !draft.trim()">Send</button>
     </form>
-  </aside>
+  </FloatingHeadPanel>
 </template>
 
 <style scoped>

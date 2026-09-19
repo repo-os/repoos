@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { X } from "lucide-vue-next";
 import { api, JSON_OPTS } from "../api";
 import { renderMarkdown } from "../lib/markdown";
 import { fmtTime } from "../lib/time";
 import { useConfigStore } from "../stores/config";
 import { useRepoStore } from "../stores/repo";
 import type { Agent, AgentOutputEntry, AgentSessionStats } from "../types";
+import FloatingHeadPanel from "./FloatingHeadPanel.vue";
 import VoiceDictate from "./VoiceDictate.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
@@ -164,7 +166,12 @@ watch(
 </script>
 
 <template>
-  <aside v-if="props.open" class="guide-panel" aria-label="RepoOS Guide chat">
+  <FloatingHeadPanel
+    :open="props.open"
+    title="Ross"
+    description="Ask Ross about this repository."
+    @close="emit('close')"
+  >
     <header class="guide-header">
       <div class="guide-avatar" aria-hidden="true">
         <img src="/assets/repoos-ross-from-friends-square.webp" alt="Ross" />
@@ -177,15 +184,13 @@ watch(
         >
       </div>
       <button
-        class="guide-minimize"
+        class="close-x guide-close"
         type="button"
         aria-label="Close Ross"
         title="Close"
         @click="emit('close')"
       >
-        <svg viewBox="0 0 20 20" fill="none">
-          <path d="M4 10h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-        </svg>
+        <X class="size-[15px]" />
       </button>
     </header>
 
@@ -282,7 +287,7 @@ watch(
     <div class="guide-footnote">
       Repo-aware assistant · Conversation stays open while you navigate
     </div>
-  </aside>
+  </FloatingHeadPanel>
 </template>
 
 <style scoped>
