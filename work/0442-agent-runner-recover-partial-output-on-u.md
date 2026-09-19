@@ -8,9 +8,9 @@ area: ai
 assigned_to: ai
 created_by: ""
 branch: ""
-cli_override: codex
+cli_override: claude code
 created_at: "2026-09-19T08:15:21Z"
-updated_at: "2026-09-19T08:18:14Z"
+updated_at: "2026-09-19T08:18:15Z"
 ---
 ## Problem
 
@@ -43,3 +43,4 @@ Relevant code: \`src/server/agents.ts\` (stream parsing / \`extractOneShotReport
 
 - 2026-09-19T08:15:21Z · created · unknown
 - 2026-09-19T08:18:14Z · cli_override
+- 2026-09-19T08:18:15Z · cli_override
