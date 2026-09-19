@@ -2,17 +2,17 @@
 id: "0444"
 title: Chat scrolls to newest messages with jump-to-latest button
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/chat-scrolls-to-newest-messages-with-jum
 cli_override: opencode
 model_override: openrouter/tencent/hy4-preview
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-19T10:26:30Z"
-updated_at: "2026-09-19T10:39:04Z"
+updated_at: "2026-09-19T10:39:52Z"
 ---
 ## Problem
 
@@ -110,3 +110,4 @@ Also could you make sure there's some spacing between the messages (vertical spa
 - 2026-09-19T10:32:05Z · body
 - 2026-09-19T10:36:28Z · body
 - 2026-09-19T10:39:04Z · status inbox→ready
+- 2026-09-19T10:39:52Z · status ready→active, branch
