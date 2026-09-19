@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-18T18:46:29Z"
-updated_at: "2026-09-19T00:38:32Z"
+updated_at: "2026-09-19T00:39:01Z"
 ---
 ## Problem
 
@@ -47,3 +48,4 @@ Treat a reusable skill as a high-bar artifact: a stable procedure useful on futu
 - 2026-09-18T19:13:42Z · model_override
 - 2026-09-18T19:13:45Z · status inbox→ready
 - 2026-09-19T00:38:32Z · cli_override, model_override
+- 2026-09-19T00:39:01Z · model_override
