@@ -1192,7 +1192,10 @@ export async function cmdCheck(): Promise<void> {
   // `bun run test` off this machine — and then invoke the LOCAL `repoos check`
   // with REPOOS_SKIP_TESTS=1 for only the cheap static guards + UI smoke.
   // Standalone `repoos check` never sets it, so the CLI gate is unchanged.
-  if (process.env.REPOOS_SKIP_TESTS === "1") {
+  if (fmtLintFailed) {
+    console.log(c.dim("  · Skipped — formatting/lint failed above, so build was skipped too"));
+    results.push(pass("tests", "skipped — formatting/lint failed, fix and rerun"));
+  } else if (process.env.REPOOS_SKIP_TESTS === "1") {
     console.log(
       c.dim("  · Skipped — test suite ran on the remote validation runner (REPOOS_SKIP_TESTS=1)"),
     );
