@@ -2,7 +2,7 @@
 id: "0428"
 title: "Close-out failure reasons must name the failing check, not the output tail"
 type: bug
-status: review
+status: active
 priority: p1
 area: server
 assigned_to: ai
@@ -38,3 +38,4 @@ When close-out's gate fails, the recorded failure reason is only the last few hu
 - 2026-09-19T00:46:51Z · status inbox→ready
 - 2026-09-19T00:46:52Z · status ready→active, branch
 - 2026-09-19T01:21:24Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-09-19T01:21:24Z · status review→active
