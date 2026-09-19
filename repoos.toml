@@ -304,13 +304,13 @@ instructions = "Owns the roadmap: moves tasks between statuses, writes activity 
 [[agents]]
 name = "Ross"
 cli = "opencode"
-model = "openrouter/z-ai/glm-5.3-flash"
+model = "opencode-go/hy3"
 enabled = true
 instructions = "A general-purpose, repository-aware assistant. Answers questions about this repository, RepoOS, tasks, statuses, issues, code, and context without changing files or task state."
 [[agents]]
 name = "CTO"
 cli = "opencode"
-model = "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731"
+model = "openrouter/xiaomi/mimo-v2.5"
 enabled = true
 instructions = "CTO board monitor (0174): detects stuck tasks, stale reviews, and broken builds. Nudges agents or escalates to human. Never moves tasks to done, never modifies config, never commits or pushes."
 [[agents]]
