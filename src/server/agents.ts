@@ -172,6 +172,12 @@ interface DurableRegistryEntry {
   workdir: string;
   branch: string;
   runId: string;
+  /**
+   * Basename for the durable stdout/stderr pair. Review retries use a unique
+   * stem so starting a new review cannot overwrite a prior attempt's raw
+   * diagnostics. Absent means the legacy taskId-based filenames.
+   */
+  logStem?: string;
   /** "review" marks a durable review turn so a restart re-attaches as one (0288). */
   kind?: "engineer" | "review";
   /** Which review variant the turn is (run vs chat), for completion handling. */
@@ -1347,7 +1353,15 @@ export function parseCopilotEvent(
     type === "result" ||
     type.startsWith("session.") ||
     type.startsWith("model.") ||
-    type.startsWith("mcp.")
+    type.startsWith("mcp.") ||
+    // Reasoning / thinking stream events added in newer Copilot builds — all
+    // internal protocol chatter that carries no transcript-surfaceable content.
+    type === "assistant.reasoning_delta" ||
+    type === "assistant.reasoning" ||
+    type === "assistant.tool_call_delta" ||
+    type === "assistant.turn_start" ||
+    type === "assistant.turn_end" ||
+    type === "prompt_cache_break"
   )
     return { sessionID };
   return {
@@ -2250,6 +2264,8 @@ const COPILOT_TOOL_PERMISSIONS = [
   "shell(ls)",
   "--allow-tool",
   "shell(cat)",
+  "--allow-tool",
+  "shell(cd:*)",
 ] as const;
 
 function copilotArgs(options: { write: boolean }): string[] {
@@ -3691,8 +3707,9 @@ export class AgentRunner {
       // it and hand completion to the new ReviewManager (0288). By the time the
       // deferred hook fires, the server has built `reviews`.
       if (!alive && !isReview) continue;
-      const outLog = join(this.logDir, `${rec.taskId}.out.log`);
-      const errLog = join(this.logDir, `${rec.taskId}.err.log`);
+      const logStem = rec.logStem ?? rec.taskId;
+      const outLog = join(this.logDir, `${logStem}.out.log`);
+      const errLog = join(this.logDir, `${logStem}.err.log`);
       // Restore the session so the transcript is pre-loaded for the task.
       let session = this.sessions.get(rec.taskId) ?? this.loadSession(rec.taskId);
       if (!session) {
@@ -3852,12 +3869,22 @@ export class AgentRunner {
     workdir: string,
     branch: string,
     runId: string,
+    logStem: string,
     kind?: "engineer" | "review",
     reviewKind?: "run" | "chat",
   ): void {
     const registry = readRegistry(this.cacheDir);
     const existing = registry.entries.findIndex((e) => e.taskId === taskId);
-    const entry: DurableRegistryEntry = { taskId, pid, workdir, branch, runId, kind, reviewKind };
+    const entry: DurableRegistryEntry = {
+      taskId,
+      pid,
+      workdir,
+      branch,
+      runId,
+      logStem,
+      kind,
+      reviewKind,
+    };
     if (existing >= 0) {
       registry.entries[existing] = entry;
     } else {
@@ -4536,8 +4563,13 @@ export class AgentRunner {
     for (const [prevRunId, req] of this.authorizedPreviews) {
       if (req.taskId === taskId) this.authorizedPreviews.delete(prevRunId);
     }
-    const outLog = join(this.logDir, `${taskId}.out.log`);
-    const errLog = join(this.logDir, `${taskId}.err.log`);
+    // Engineer sessions intentionally retain their stable filenames for
+    // backwards-compatible reload recovery. A fresh review is a distinct
+    // diagnostic attempt, so it receives a run-specific pair and a retry
+    // cannot destroy the previous attempt's raw output.
+    const logStem = opts.review ? `${taskId}.${runId}` : taskId;
+    const outLog = join(this.logDir, `${logStem}.out.log`);
+    const errLog = join(this.logDir, `${logStem}.err.log`);
     let outFd: number | undefined;
     let errFd: number | undefined;
     let proc: ChildProcess;
@@ -4627,6 +4659,7 @@ export class AgentRunner {
         cwd,
         branch ?? task?.branch ?? "",
         runId,
+        logStem,
         opts.review ? "review" : "engineer",
         opts.review ? opts.reviewKind : undefined,
       );

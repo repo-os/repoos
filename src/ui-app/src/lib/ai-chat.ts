@@ -5,8 +5,9 @@
  * the build the moment a new chat is added without the shared behaviour, or an
  * existing one drifts away from it.
  *
- * Adding a chat? Add it here, use `useChatScroll` + `ChatJumpToLatest` +
- * `AiChatThinking`, and the test tells you if you missed one.
+ * Adding a chat? Add it here, use `useChatScroll` + a jump control
+ * (`ChatJumpToLatest` or inline `agent-jump`) + `AiChatThinking`, and the
+ * test tells you if you missed one.
  */
 
 export interface AiChatSurface {
@@ -53,8 +54,14 @@ export const AI_CHAT_SURFACES: readonly AiChatSurface[] = [
 export const AI_CHAT_REQUIREMENTS = {
   /** Composable owning scroll-to-newest + position memory + jump state. */
   scroll: "useChatScroll",
-  /** Teleported floating "Jump to latest" button. */
+  /**
+   * Teleported floating "Jump to latest" button. Floating-head panels use the
+   * inline `.agent-jump` sibling instead (Radix dialog stacking breaks the
+   * teleported control) — see `hasJumpToLatestControl`.
+   */
   jumpButton: "ChatJumpToLatest",
+  /** Inline jump control used inside floating panels / relative log wraps. */
+  jumpButtonInline: "agent-jump",
   /** Pulsing indicator shown only while the model is working. */
   thinking: "AiChatThinking",
   /** Class carrying the shared vertical rhythm between messages. */
@@ -62,6 +69,14 @@ export const AI_CHAT_REQUIREMENTS = {
   /** Class giving the send button its distinct accent fill. */
   sendClass: "ai-chat-send",
 } as const;
+
+/** True when the surface renders either allowed jump-to-latest control. */
+export function hasJumpToLatestControl(source: string): boolean {
+  return (
+    source.includes(AI_CHAT_REQUIREMENTS.jumpButton) ||
+    source.includes(AI_CHAT_REQUIREMENTS.jumpButtonInline)
+  );
+}
 
 /**
  * Text an AI chat must never print: idle/stopped state is conveyed by the

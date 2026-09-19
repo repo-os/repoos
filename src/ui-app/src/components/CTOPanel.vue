@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from "vue";
-import { X } from "lucide-vue-next";
+import { X, ArrowDown } from "lucide-vue-next";
 import { api } from "../api";
 import { renderMarkdown } from "../lib/markdown";
 import { fmtTime } from "../lib/time";
@@ -9,7 +9,6 @@ import { useRepoStore } from "../stores/repo";
 import type { AgentOutputEntry } from "../types";
 import FloatingHeadPanel from "./FloatingHeadPanel.vue";
 import AiChatThinking from "./AiChatThinking.vue";
-import ChatJumpToLatest from "./ChatJumpToLatest.vue";
 import { useChatScroll } from "../composables/useChatScroll";
 
 const props = defineProps<{ open: boolean }>();
@@ -144,29 +143,33 @@ watch(
       </button>
     </header>
 
-    <div ref="log" class="cto-log ai-chat-log" @scroll="onScroll">
-      <div v-if="!enabled" class="cto-disabled">
-        <p>CTO agent is disabled. Enable it from the Agents page.</p>
-      </div>
-
-      <div v-else-if="report" class="cto-report">
-        <div class="cto-report-meta">
-          Latest report at {{ new Date(report.at).toLocaleTimeString() }}
+    <div class="cto-log-wrap">
+      <div ref="log" class="cto-log ai-chat-log" @scroll="onScroll">
+        <div v-if="!enabled" class="cto-disabled">
+          <p>CTO agent is disabled. Enable it from the Agents page.</p>
         </div>
-        <div class="cto-report-content" v-html="renderMarkdown(report.markdown)"></div>
-      </div>
 
-      <div v-for="(entry, i) of lines" :key="i" :class="`cto-line ${lineKind(entry)}`">
-        {{ lineText(entry) }}
-        <span v-if="lineKind(entry) !== 'status' && entry.at" class="msg-time">{{
-          fmtTime(entry.at)
-        }}</span>
-      </div>
+        <div v-else-if="report" class="cto-report">
+          <div class="cto-report-meta">
+            Latest report at {{ new Date(report.at).toLocaleTimeString() }}
+          </div>
+          <div class="cto-report-content" v-html="renderMarkdown(report.markdown)"></div>
+        </div>
 
-      <AiChatThinking :active="busy" label="CTO is thinking" />
+        <div v-for="(entry, i) of lines" :key="i" :class="`cto-line ${lineKind(entry)}`">
+          {{ lineText(entry) }}
+          <span v-if="lineKind(entry) !== 'status' && entry.at" class="msg-time">{{
+            fmtTime(entry.at)
+          }}</span>
+        </div>
+
+        <AiChatThinking :active="busy" label="CTO is thinking" />
+      </div>
+      <button v-if="showJumpToLatest" type="button" class="agent-jump" @click="scrollToLatest()">
+        <ArrowDown class="size-3.5" />
+        Latest
+      </button>
     </div>
-
-    <ChatJumpToLatest :visible="showJumpToLatest" :anchor="log" @click="scrollToLatest()" />
 
     <form class="cto-compose" @submit.prevent="send">
       <textarea
@@ -256,6 +259,13 @@ watch(
   box-shadow: none;
 }
 /* Vertical rhythm between messages comes from .ai-chat-log (style.css). */
+.cto-log-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
 .cto-log {
   flex: 1;
   overflow-y: auto;

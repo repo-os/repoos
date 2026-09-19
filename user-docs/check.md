@@ -83,6 +83,9 @@ or a JS build:
 
 ## Opting the stylesheet guards in
 
+The full `[check]` field list, types, and defaults are in the
+[repoos.toml reference](/configuration#previews-and-checks).
+
 The CSS-layering and theme-contrast guards carry no RepoOS-shaped default path,
 and token names are project-specific, so they read your vocabulary from
 `[check]`:

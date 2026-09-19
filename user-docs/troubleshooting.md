@@ -38,7 +38,7 @@ Control it with environment variables, not `repoos.toml`:
 
 Bun is substantially faster for the subprocess-heavy work RepoOS does, so the
 default is worth keeping unless you have a reason to pin Node. See
-[Configuration → Runtime](/configuration#runtime).
+[Configuration → Worktrees and runtime](/configuration#worktrees-and-runtime).
 
 ## A "check failed" job you can't explain
 

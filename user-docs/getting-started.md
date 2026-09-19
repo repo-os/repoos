@@ -94,7 +94,9 @@ available only for the standalone curl install. Package-manager installs follow
 their package manager's stable release channel.
 
 RepoOS runs on **Bun** when it's available and falls back to **Node ≥ 20**
-otherwise — see [Configuration](/configuration#runtime) if you want to pin one.
+otherwise — see
+[Configuration → Worktrees and runtime](/configuration#worktrees-and-runtime)
+if you want to pin one.
 
 ## Initialize a repo
 

@@ -12,7 +12,7 @@ import { insertTextAtCursor } from "../utils/text-insertion";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
 import SendToEngineerDialog from "./SendToEngineerDialog.vue";
 import AiChatThinking from "./AiChatThinking.vue";
-import ChatJumpToLatest from "./ChatJumpToLatest.vue";
+import { ArrowDown } from "lucide-vue-next";
 import { useChatScroll } from "../composables/useChatScroll";
 
 const props = withDefaults(defineProps<{ task: Task; active?: boolean }>(), { active: true });
@@ -218,60 +218,68 @@ watch(
     </div>
 
     <template v-else>
-      <div
-        ref="log"
-        class="td-log ai-chat-log"
-        role="log"
-        aria-live="polite"
-        aria-label="Conversation with the Debugger"
-        @scroll="onScroll"
-      >
-        <div v-if="!hasConversation" class="td-welcome">
-          <div class="td-welcome-avatar"><img :src="DEBUGGER_AVATAR" alt="Debugger" /></div>
-          <strong>Debug this task</strong>
-          <p>
-            I have this task's spec, logs, and every agent conversation (PM, engineer, reviewer).
-            Tell me what broke and I'll explain the cause and the fix.
-          </p>
-          <div class="td-prompts">
-            <button type="button" @click="draft = 'Why is this task failing?'">
-              Why is this failing?
-            </button>
-            <button
-              type="button"
-              @click="draft = 'Explain the engineer auth error and how to fix it'"
+      <div class="td-log-wrap">
+        <div
+          ref="log"
+          class="td-log ai-chat-log"
+          role="log"
+          aria-live="polite"
+          aria-label="Conversation with the Debugger"
+          @scroll="onScroll"
+        >
+          <div v-if="!hasConversation" class="td-welcome">
+            <div class="td-welcome-avatar"><img :src="DEBUGGER_AVATAR" alt="Debugger" /></div>
+            <strong>Debug this task</strong>
+            <p>
+              I have this task's spec, logs, and every agent conversation (PM, engineer, reviewer).
+              Tell me what broke and I'll explain the cause and the fix.
+            </p>
+            <div class="td-prompts">
+              <button type="button" @click="draft = 'Why is this task failing?'">
+                Why is this failing?
+              </button>
+              <button
+                type="button"
+                @click="draft = 'Explain the engineer auth error and how to fix it'"
+              >
+                Explain the auth error
+              </button>
+            </div>
+          </div>
+          <template v-for="(entry, index) in lines" :key="index">
+            <div
+              v-if="lineKind(entry) !== 'hidden'"
+              class="td-row"
+              :class="`td-row-${lineKind(entry)}`"
             >
-              Explain the auth error
-            </button>
-          </div>
+              <div v-if="lineKind(entry) === 'assistant'" class="td-mini-avatar">
+                <img :src="DEBUGGER_AVATAR" alt="D" />
+              </div>
+              <div class="td-bubble" :class="`td-bubble-${lineKind(entry)}`">
+                <div
+                  v-if="lineKind(entry) === 'assistant'"
+                  class="td-markdown"
+                  v-html="renderMarkdown(lineText(entry))"
+                ></div>
+                <span v-else>{{ lineText(entry) }}</span>
+                <span v-if="lineKind(entry) !== 'status' && entry.at" class="msg-time">{{
+                  fmtTime(entry.at)
+                }}</span>
+              </div>
+            </div>
+          </template>
+          <AiChatThinking
+            class="ai-chat-avatar-offset"
+            :active="busy"
+            label="Debugger is working"
+          />
+          <div v-if="dispatchErr" class="td-dispatch-err" role="alert">{{ dispatchErr }}</div>
         </div>
-        <template v-for="(entry, index) in lines" :key="index">
-          <div
-            v-if="lineKind(entry) !== 'hidden'"
-            class="td-row"
-            :class="`td-row-${lineKind(entry)}`"
-          >
-            <div v-if="lineKind(entry) === 'assistant'" class="td-mini-avatar">
-              <img :src="DEBUGGER_AVATAR" alt="D" />
-            </div>
-            <div class="td-bubble" :class="`td-bubble-${lineKind(entry)}`">
-              <div
-                v-if="lineKind(entry) === 'assistant'"
-                class="td-markdown"
-                v-html="renderMarkdown(lineText(entry))"
-              ></div>
-              <span v-else>{{ lineText(entry) }}</span>
-              <span v-if="lineKind(entry) !== 'status' && entry.at" class="msg-time">{{
-                fmtTime(entry.at)
-              }}</span>
-            </div>
-          </div>
-        </template>
-        <AiChatThinking class="ai-chat-avatar-offset" :active="busy" label="Debugger is working" />
-        <div v-if="dispatchErr" class="td-dispatch-err" role="alert">{{ dispatchErr }}</div>
+        <button v-if="showJumpToLatest" type="button" class="agent-jump" @click="scrollToLatest()">
+          <ArrowDown class="size-3.5" />
+          Latest
+        </button>
       </div>
-
-      <ChatJumpToLatest :visible="showJumpToLatest" :anchor="log" @click="scrollToLatest()" />
 
       <div class="td-dispatch">
         <button type="button" :disabled="busy" @click="openDispatch('engineer')">
@@ -357,6 +365,13 @@ watch(
   color: var(--cyan);
 }
 /* Vertical rhythm between messages comes from .ai-chat-log (style.css). */
+.td-log-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
 .td-log {
   flex: 1;
   min-height: 0;

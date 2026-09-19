@@ -4,12 +4,13 @@
  * through `patchTaskFile` — the path the server uses to persist the Review
  * tab's selector.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { RepoOSConfig } from "../../core/types";
+import type { Agent, RepoOSConfig, Task } from "../../core/types";
 import { parseTask, serializeTask } from "../../core/task";
+import { ReviewManager } from "../../server/review";
 import { patchTaskFile } from "../../server/write";
 
 function config(root: string): RepoOSConfig {
@@ -140,6 +141,54 @@ describe("per-task reviewer override frontmatter fields", () => {
       expect(onDisk).not.toContain("review_model_override:");
     } finally {
       clean();
+    }
+  });
+});
+
+describe("review completion", () => {
+  it("reports the reviewer selected for the turn, not the global default", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-review-selected-agent-"));
+    try {
+      const cfg: RepoOSConfig = {
+        ...config(root),
+        agents: [{ name: "reviewer", cli: "opencode", model: "default", enabled: true }],
+      } as RepoOSConfig;
+      const selected: Agent = {
+        name: "reviewer",
+        cli: "antigravity",
+        model: "gemini-3.8-flash-medium",
+        enabled: true,
+      };
+      const task = {
+        id: "0287",
+        title: "Reviewer tab selector",
+        status: "review",
+        branch: "feat/review-agent",
+        absPath: join(root, "work", "0287-review-tab.md"),
+        path: "work/0287-review-tab.md",
+      } as Task;
+      const runner = {
+        output: () => ({ lines: [], accumulatedMs: 0 }),
+      };
+      const reviews = new ReviewManager(
+        cfg,
+        () => {},
+        runner as never,
+        {
+          getTask: () => task,
+        } as never,
+      );
+      const finalize = vi.spyOn(reviews as any, "finalizeRun").mockImplementation(() => undefined);
+
+      // A review turn was started with a task-level Antigravity override.
+      // Completion must not silently label its result as the global OpenCode
+      // reviewer.
+      (reviews as any).runs.set(task.id, { cancelled: false, mode: "run", agent: selected });
+      reviews.handleReviewDone(`review:${task.id}`, true, "run");
+
+      expect(finalize).toHaveBeenCalledWith(task, selected, [], expect.anything(), false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
     }
   });
 });

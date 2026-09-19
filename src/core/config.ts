@@ -1338,8 +1338,9 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       type: "string",
       tier: "restart",
       restartRequired: true,
-      default: "604800",
-      description: "How long a login session lasts in seconds (default 604800 = 7 days)",
+      default: String(DEFAULT_CONFIG.auth?.sessionMaxAge ?? 2592000),
+      description:
+        "How long a login session lasts in seconds (default 2592000 = 30 days). Values under 300 are read as days.",
     },
     {
       key: "remoteValidation.enabled",
@@ -1384,6 +1385,135 @@ export function getConfigSchema(): ConfigFieldMeta[] {
     })),
   ];
 }
+
+/**
+ * Every `repoos.toml` key the parser supports, as dotted paths — the contract
+ * the user-facing reference is verified against in
+ * `src/ui-app/tests/config-docs.test.ts`.
+ *
+ * Deliberately separate from `getConfigSchema()`, which covers only the
+ * Settings UI surface. Parser-only sections (previews, checks, releases,
+ * deployments, distribution, worktrees, tunnels, remote validation) are listed
+ * here too. **When you add a key to `loadConfig`, `parsePreviewConfig`,
+ * `parseBoardColumns`, `parseDistributionConfig`, or the `[tunnel]` parser, add
+ * it here and document it** — otherwise the docs-drift test cannot see it.
+ */
+export const SUPPORTED_TOML_KEYS: readonly string[] = [
+  // Layout and repository paths
+  "workDir",
+  "docsDir",
+  "skillsDir",
+  "inputsDir",
+  "cacheDir",
+  "taskExtensions",
+  // Board behavior
+  "defaultStatus",
+  "defaultAssignee",
+  "defaultTaskMode",
+  "maxActiveTasks",
+  "autoEngineeringMode",
+  "skillSuggestions",
+  "worktreeWarnThreshold",
+  "board.columns.draft",
+  "board.columns.inbox",
+  "board.columns.ready",
+  "board.columns.active",
+  "board.columns.review",
+  "board.columns.done",
+  // Server and UI
+  "servePort",
+  "strictBuild",
+  // Worktrees
+  "worktrees.inheritEnv",
+  // Agents
+  "maxConcurrentAgents",
+  "watchdog.enabled",
+  "watchdog.stalenessMs",
+  "watchdog.autoTransition",
+  "whisper.provider",
+  "whisper.apiKey",
+  // Task previews
+  "preview.command",
+  "preview.cwd",
+  "preview.readyPath",
+  "preview.readyTimeoutMs",
+  "preview.targets.name",
+  "preview.targets.areas",
+  "preview.targets.command",
+  "preview.targets.cwd",
+  "preview.targets.readyPath",
+  "preview.targets.readyTimeoutMs",
+  // Checks
+  "check.uiSmoke",
+  "check.uiStylesheet",
+  "check.themeScopes",
+  "check.contrastPairs",
+  "check.gradientTokens",
+  "check.backdropToken",
+  "check.bareRequireDirs",
+  "check.bareRequireExcludes",
+  "check.themeScopes.selector",
+  "check.themeScopes.name",
+  "check.themeScopes.inherits",
+  "check.contrastPairs.fg",
+  "check.contrastPairs.bg",
+  // Authentication
+  "auth.enabled",
+  "auth.sessionMaxAge",
+  "auth.bootstrapAdmin",
+  "auth.emailProvider.type",
+  "auth.emailProvider.fromAddress",
+  "auth.emailProvider.fromName",
+  "auth.google.clientId",
+  // Releases
+  "release.enabled",
+  "release.provider",
+  "release.name",
+  "release.branch",
+  "release.versionFile",
+  "release.tagPrefix",
+  "release.remote",
+  "release.repository",
+  "release.workflow",
+  // Deployments
+  "deployments.name",
+  "deployments.service",
+  "deployments.branch",
+  "deployments.provider",
+  "deployments.url",
+  "deployments.dashboard_url",
+  "deployments.subdir",
+  // Distribution
+  "distribution.name",
+  "distribution.kind",
+  "distribution.url",
+  "distribution.package",
+  "distribution.repository",
+  "distribution.versionUrl",
+  "distribution.versionRegex",
+  "distribution.install",
+  // Notifications
+  "ntfyEnabled",
+  "ntfyTopic",
+  "ntfyBaseUrl",
+  // Tunnels
+  "tunnel.enabled",
+  "tunnel.provider",
+  "tunnel.name",
+  "tunnel.domain",
+  "tunnel.tunnel_id",
+  "tunnel.apps",
+  // Remote validation
+  "remoteValidation.enabled",
+  "remoteValidation.serverType",
+  "remoteValidation.location",
+  "remoteValidation.snapshotId",
+  "remoteValidation.sshKeyName",
+  "remoteValidation.idleShutdownMinutes",
+  "remoteValidation.maxServerLifetimeMinutes",
+  "remoteValidation.fallbackToLocal",
+  "remoteValidation.useForReleases",
+];
 
 function serializeTomlVal(val: unknown): string {
   if (typeof val === "string") return JSON.stringify(val);

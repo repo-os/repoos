@@ -93,7 +93,7 @@ require being logged in already).
 
 Sessions are server-side (a hashed token in an `HttpOnly`, `SameSite=Lax`
 cookie — `Secure` too when served over HTTPS), rotated on login, and expire
-after `sessionMaxAge` seconds (default 7 days, configurable, minimum 300).
+after `sessionMaxAge` seconds (default 30 days, configurable, minimum 300).
 
 ## Cloudflare Tunnel vs. Cloudflare Access
 

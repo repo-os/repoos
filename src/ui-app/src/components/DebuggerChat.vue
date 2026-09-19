@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from "vue";
-import { X } from "lucide-vue-next";
+import { X, ArrowDown } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 import { api, JSON_OPTS } from "../api";
 import { renderMarkdown } from "../lib/markdown";
@@ -12,7 +12,6 @@ import type { AgentOutputEntry } from "../types";
 import FloatingHeadPanel from "./FloatingHeadPanel.vue";
 import VoiceDictate from "./VoiceDictate.vue";
 import AiChatThinking from "./AiChatThinking.vue";
-import ChatJumpToLatest from "./ChatJumpToLatest.vue";
 import { useChatScroll } from "../composables/useChatScroll";
 import { insertTextAtCursor } from "../utils/text-insertion";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
@@ -315,9 +314,11 @@ watch(
           </button>
         </div>
       </div>
+      <button v-if="showJumpToLatest" type="button" class="agent-jump" @click="scrollToLatest()">
+        <ArrowDown class="size-3.5" />
+        Latest
+      </button>
     </div>
-
-    <ChatJumpToLatest :visible="showJumpToLatest" :anchor="log" @click="scrollToLatest()" />
 
     <form class="debugger-compose" @submit.prevent="send">
       <textarea
@@ -433,6 +434,7 @@ watch(
   position: relative;
   flex: 1;
   display: flex;
+  flex-direction: column;
   min-height: 0;
 }
 /* Vertical rhythm between messages comes from .ai-chat-log (style.css). */

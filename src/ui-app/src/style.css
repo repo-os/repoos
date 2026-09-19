@@ -7840,6 +7840,89 @@
   margin-top: 8px;
 }
 
+/* Built-in agent run started notice modal (#0450). Teleported to <body> so styling lives here. */
+.built-in-started-modal.drawer-wrap.drawer {
+  top: 50%;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  width: min(480px, 92vw);
+  height: auto;
+  transform: translate(-50%, -50%);
+  border-radius: 16px;
+  border: 1px solid var(--border-bright);
+  background: var(--panel-gradient);
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.45),
+    0 0 0 1px var(--border);
+  overflow: hidden;
+  animation: cc-modal-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.built-in-started-head {
+  padding: 20px 24px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.built-in-started-head .close-x {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.built-in-started-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--txt);
+  margin: 0;
+}
+.built-in-started-body {
+  padding: 14px 24px 0;
+}
+.built-in-started-summary {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--txt-dim);
+  margin: 0;
+}
+.built-in-started-details {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: var(--chip-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.built-in-started-timing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--txt);
+  margin: 0;
+}
+.built-in-started-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan);
+  flex-shrink: 0;
+}
+.built-in-started-location {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--txt-dim);
+  margin: 0;
+}
+.built-in-started-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 18px 24px 22px;
+}
+
 /* Product release modal. Dialog content is body-teleported, so its styling
    intentionally lives here rather than in the Releases view's scoped CSS. */
 .release-modal.drawer-wrap.drawer {
