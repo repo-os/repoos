@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { RotateCcw, WifiOff } from "lucide-vue-next";
 import { dismissRecovery, reloadNow, uiRecoveryState } from "../lib/uiRecovery";
+import Button from "./ui/button.vue";
 
 const recovery = uiRecoveryState();
 const title = computed(() =>
@@ -10,39 +11,51 @@ const title = computed(() =>
 </script>
 
 <template>
-  <div v-if="recovery.kind" class="ui-recovery-banner" role="alert">
-    <WifiOff v-if="recovery.kind === 'offline'" class="size-[18px]" />
-    <RotateCcw v-else class="size-[18px]" />
-    <div class="ui-recovery-copy">
-      <strong>{{ title }}</strong>
-      <span>{{ recovery.message }}</span>
-      <small v-if="recovery.newBuild"
-        >Build {{ recovery.newBuild.slice(0, 12) }} is ready<template v-if="recovery.newBuildAt">
-          ({{ new Date(recovery.newBuildAt).toLocaleTimeString() }})</template
-        >.</small
-      >
+  <Teleport to="body">
+    <div v-if="recovery.kind" class="ui-recovery-banner" role="alert">
+      <WifiOff v-if="recovery.kind === 'offline'" class="ui-recovery-icon" />
+      <RotateCcw v-else class="ui-recovery-icon" />
+      <div class="ui-recovery-copy">
+        <strong>{{ title }}</strong>
+        <span>{{ recovery.message }}</span>
+        <small v-if="recovery.newBuild"
+          >Build {{ recovery.newBuild.slice(0, 12) }} is ready<template v-if="recovery.newBuildAt">
+            ({{ new Date(recovery.newBuildAt).toLocaleTimeString() }})</template
+          >.</small
+        >
+      </div>
+      <div class="ui-recovery-actions">
+        <Button variant="accent" size="sm" @click="reloadNow">
+          {{ recovery.kind === "stale" ? "Reload now" : "Retry / reload" }}
+        </Button>
+        <Button variant="ghost" size="sm" @click="dismissRecovery">Dismiss</Button>
+      </div>
     </div>
-    <button type="button" class="ui-recovery-action" @click="reloadNow">
-      {{ recovery.kind === "stale" ? "Reload now" : "Retry / reload" }}
-    </button>
-    <button type="button" class="ui-recovery-dismiss" @click="dismissRecovery">Dismiss</button>
-  </div>
+  </Teleport>
 </template>
 
 <style scoped>
 .ui-recovery-banner {
   position: fixed;
   z-index: 1000;
-  inset: 12px 16px auto;
+  top: 16px;
+  left: 50%;
+  width: min(540px, calc(100vw - 32px));
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 13px 16px;
   border: 1px solid var(--orange, #f0a35b);
-  border-radius: 10px;
-  background: var(--panel, #171b2b);
+  border-radius: 12px;
+  background: var(--panel-solid, #171b2b);
   color: var(--txt, #f5f7ff);
-  box-shadow: 0 8px 30px #0008;
+  box-shadow: 0 12px 32px #0009;
+}
+.ui-recovery-icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
 }
 .ui-recovery-copy {
   display: grid;
@@ -55,11 +68,24 @@ const title = computed(() =>
 .ui-recovery-copy small {
   color: var(--txt-faint, #8e96af);
 }
-.ui-recovery-action {
-  white-space: nowrap;
+.ui-recovery-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
 }
-.ui-recovery-dismiss {
-  white-space: nowrap;
-  color: var(--txt-muted, #b7bdd1);
+@media (max-width: 560px) {
+  .ui-recovery-banner {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .ui-recovery-copy {
+    min-width: 0;
+    flex: 1;
+  }
+  .ui-recovery-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
 }
 </style>
