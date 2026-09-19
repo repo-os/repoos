@@ -18,8 +18,10 @@ import {
 import type { Agent, RepoOSConfig } from "../../core/types.js";
 import { readBuildMeta } from "../../core/build.js";
 
-const REPO = "repo-os/repoos";
 const STABLE_VERSION = /^v?(\d+)\.(\d+)\.(\d+)$/;
+const RELEASE_CACHE_MS = 10 * 60 * 1000;
+let releaseCache: { value: AvailableRelease; expiresAt: number } | null = null;
+let releaseRequest: Promise<AvailableRelease> | null = null;
 
 export interface AvailableRelease {
   currentVersion: string | null;
@@ -42,40 +44,70 @@ export function isStableRelease(release: { tag_name?: unknown; prerelease?: unkn
   );
 }
 
-function isNewerVersion(latest: string, current: string | null): boolean {
+export function isNewerVersion(latest: string, current: string | null): boolean {
   const next = versionParts(latest);
   const installed = current ? versionParts(current) : null;
-  if (!next || !installed) return false;
+  if (!next) return false;
+  // A source checkout without a build marker should still learn about updates.
+  if (!installed) return true;
   return (
     next.some((part, index) => part !== installed[index] && part > installed[index]) &&
     next.every((part, index) => part >= installed[index])
   );
 }
 
-export const getAvailableRelease: RouteHandler = async (_ctx, _req, res) => {
+async function fetchAvailableRelease(): Promise<AvailableRelease> {
   const currentVersion = readBuildMeta().version;
-  const response = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=30`, {
-    headers: { Accept: "application/vnd.github+json" },
-  });
-  if (!response.ok) {
-    return json(res, 502, { error: `GitHub API returned ${response.status}` });
+  try {
+    const response = await fetch("https://api.github.com/repos/repo-os/repoos/releases/latest", {
+      headers: {
+        Accept: "application/vnd.github+json",
+        "User-Agent": "RepoOS update checker",
+      },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) throw new Error(`GitHub API returned ${response.status}`);
+    const candidate = (await response.json()) as {
+      tag_name?: unknown;
+      prerelease?: unknown;
+      body?: unknown;
+      html_url?: unknown;
+    };
+    const latestVersion =
+      isStableRelease(candidate) && typeof candidate.tag_name === "string"
+        ? candidate.tag_name.replace(/^v/, "")
+        : null;
+    return {
+      currentVersion,
+      latestVersion,
+      available: latestVersion ? isNewerVersion(latestVersion, currentVersion) : false,
+      releaseNotes:
+        typeof candidate.body === "string" && candidate.body.trim() ? candidate.body : null,
+      releaseUrl:
+        typeof candidate.html_url === "string"
+          ? candidate.html_url
+          : "https://github.com/repo-os/repoos/releases",
+    };
+  } catch {
+    return {
+      currentVersion,
+      latestVersion: null,
+      available: false,
+      releaseNotes: null,
+      releaseUrl: "https://github.com/repo-os/repoos/releases",
+    };
   }
-  const releases = (await response.json()) as Array<{
-    tag_name?: unknown;
-    prerelease?: unknown;
-    body?: unknown;
-    html_url?: unknown;
-  }>;
-  const latest = releases.find(isStableRelease);
-  const latestVersion =
-    typeof latest?.tag_name === "string" ? latest.tag_name.replace(/^v/, "") : null;
-  return json(res, 200, {
-    currentVersion,
-    latestVersion,
-    available: latestVersion ? isNewerVersion(latestVersion, currentVersion) : false,
-    releaseNotes: typeof latest?.body === "string" && latest.body.trim() ? latest.body : null,
-    releaseUrl: typeof latest?.html_url === "string" ? latest.html_url : null,
-  } satisfies AvailableRelease);
+}
+
+export const getAvailableRelease: RouteHandler = async (_ctx, _req, res) => {
+  const now = Date.now();
+  if (releaseCache && releaseCache.expiresAt > now) return json(res, 200, releaseCache.value);
+  releaseRequest ??= fetchAvailableRelease().finally(() => {
+    releaseRequest = null;
+  });
+  const value = await releaseRequest;
+  releaseCache = { value, expiresAt: Date.now() + RELEASE_CACHE_MS };
+  return json(res, 200, value);
 };
 
 export interface ReleaseRun {

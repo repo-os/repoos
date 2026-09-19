@@ -2,6 +2,12 @@
 import { computed, onMounted, ref } from "vue";
 import { ArrowUpRight, Sparkles, X } from "lucide-vue-next";
 import Button from "./ui/button.vue";
+import Dialog from "./ui/dialog/root.vue";
+import DialogClose from "./ui/dialog/close.vue";
+import DialogContent from "./ui/dialog/content.vue";
+import DialogDescription from "./ui/dialog/description.vue";
+import DialogOverlay from "./ui/dialog/overlay.vue";
+import DialogTitle from "./ui/dialog/title.vue";
 import { api } from "../api";
 import { renderMarkdown } from "../lib/markdown";
 
@@ -68,28 +74,20 @@ function showDetails(): void {
       </span>
     </div>
 
-    <div
-      v-if="open && release?.available"
-      class="release-update-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="release-update-title"
-      @click.self="open = false"
-    >
-      <div class="release-update-modal">
+    <Dialog v-model:open="open">
+      <DialogOverlay />
+      <DialogContent v-if="release?.available" class="release-update-modal">
         <div class="release-update-modal-head">
           <span class="release-update-mark"><Sparkles class="size-[17px]" /></span>
-          <button
-            type="button"
-            class="release-update-close"
-            aria-label="Close"
-            @click="open = false"
-          >
+          <DialogClose class="release-update-close" aria-label="Close">
             <X class="size-[17px]" />
-          </button>
+          </DialogClose>
         </div>
         <p class="release-update-eyebrow">A fresh build has landed</p>
-        <h2 id="release-update-title">Upgrade to RepoOS {{ release.latestVersion }}</h2>
+        <DialogTitle>Upgrade to RepoOS {{ release.latestVersion }}</DialogTitle>
+        <DialogDescription class="release-update-description">
+          Review the changes, then open the release instructions when you’re ready.
+        </DialogDescription>
         <div class="release-update-versions">
           <div>
             <span>Installed</span><strong>{{ release.currentVersion ?? "unknown" }}</strong>
@@ -105,11 +103,12 @@ function showDetails(): void {
         </div>
         <p v-else class="release-update-muted">Release notes are not available for this release.</p>
         <div class="release-update-actions">
-          <Button variant="ghost" size="sm" @click="open = false">Not now</Button>
+          <DialogClose as-child>
+            <Button variant="ghost" size="sm">Not now</Button>
+          </DialogClose>
           <Button
-            v-if="release.releaseUrl"
             as="a"
-            :href="release.releaseUrl"
+            :href="release.releaseUrl ?? 'https://github.com/repo-os/repoos/releases'"
             target="_blank"
             rel="noreferrer"
             variant="accent"
@@ -118,8 +117,8 @@ function showDetails(): void {
             Upgrade <ArrowUpRight class="size-[14px]" />
           </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   </Teleport>
 </template>
 
@@ -184,17 +183,8 @@ function showDetails(): void {
   color: var(--txt);
   background: var(--nav-hover-bg);
 }
-.release-update-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1100;
-  display: grid;
-  place-items: center;
-  padding: 20px;
-  background: var(--overlay-bg);
-}
 .release-update-modal {
-  width: min(520px, 100%);
+  width: min(520px, calc(100vw - 40px));
   max-height: min(680px, calc(100vh - 40px));
   overflow: auto;
   padding: 24px;
@@ -215,10 +205,9 @@ function showDetails(): void {
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
-.release-update-modal h2 {
-  margin: 0;
-  color: var(--txt);
-  font-size: 22px;
+.release-update-description {
+  margin-top: 6px;
+  font-size: 12px;
 }
 .release-update-versions {
   display: flex;

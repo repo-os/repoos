@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parseTask, releasedAtFromActivity } from "../../core/task";
 import { markTaskReleased, patchTaskFile } from "../../server/write";
 import { nextReleaseVersion, releaseTimelineTasks } from "../src/releases";
+import { isNewerVersion, isStableRelease } from "../../server/routes/release";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -35,6 +36,19 @@ function task(root: string, id: string, body = "## Activity\n"): Task {
 }
 
 describe("feature releases", () => {
+  it("accepts only stable semantic-version release tags", () => {
+    expect(isStableRelease({ tag_name: "v0.5.48", prerelease: false })).toBe(true);
+    expect(isStableRelease({ tag_name: "v0.6.0-rc.1", prerelease: true })).toBe(false);
+    expect(isStableRelease({ tag_name: "v0.6.0-beta.1", prerelease: false })).toBe(false);
+    expect(isStableRelease({ tag_name: "latest", prerelease: false })).toBe(false);
+  });
+
+  it("detects newer releases and treats source builds as updateable", () => {
+    expect(isNewerVersion("0.5.48", "0.5.46")).toBe(true);
+    expect(isNewerVersion("0.5.46", "0.5.48")).toBe(false);
+    expect(isNewerVersion("0.5.48", null)).toBe(true);
+  });
+
   it("suggests the next patch version (or stabilizes a prerelease)", () => {
     expect(nextReleaseVersion("0.5.30")).toBe("0.5.31");
     expect(nextReleaseVersion("1.2.3-rc.1")).toBe("1.2.3");
