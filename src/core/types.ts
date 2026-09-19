@@ -277,7 +277,7 @@ export interface AuthConfig {
   enabled?: boolean;
   /** Server-side session secret. Never exposed to browser. */
   sessionSecret?: string;
-  /** Session lifetime in seconds. Default 604800 (7 days). */
+  /** Session lifetime in seconds. Default 2592000 (30 days). */
   sessionMaxAge?: number;
   /** Email OTP provider config. */
   emailProvider?: {

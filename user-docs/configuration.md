@@ -1,280 +1,630 @@
-# Configuration
+# repoos.toml reference
 
-RepoOS is configured by `repoos.toml` at the repo root, with secrets kept in a
-gitignored `.env`. Every field is optional — a repo with no `repoos.toml` at all
-still works on defaults.
+This page is the definitive reference for RepoOS project configuration. Every
+field is optional; a repo with no `repoos.toml` still runs on defaults.
 
-The **Settings** page edits the common fields directly, and its last tab,
-**repoos.toml**, is a full-height editor for the whole file — `[preview]`,
-`[check]`, `[release]`, `[[deployments]]`, and any section the other tabs don't
-cover.
-The raw editor validates TOML before saving and refuses a save if the file
-changed underneath it (another tab, or a field auto-save), so neither editor
-silently overwrites the other. Values stay on a single line — RepoOS's config
-reader doesn't support multi-line arrays, multi-line strings, or inline tables.
-Secrets still belong in `.env`, not here.
+RepoOS separates project settings from secrets:
 
-## Layout
+| Where | Good for | Committed? |
+| --- | --- | --- |
+| `repoos.toml` (repo root) | project behavior, board settings, previews, checks, auth UX, releases, deployments | Yes — git-tracked |
+| `.env` (repo root, gitignored) | repo-specific secrets and local overrides | No |
+| machine / service environment | machine-wide provider keys and infrastructure credentials | No |
 
-Fresh `repoos init` writes these namespaced paths:
+**No secret belongs in `repoos.toml`.** Set provider and session secrets in
+`.env` or the machine environment instead. The one secret field the Settings UI
+will write to the file is `whisper.apiKey` — and you should still prefer
+`REPOOS_WHISPER_KEY` in `.env`. The full secret contract — precedence, rotation,
+and the safe `.env.example` — is in
+[Environment and secrets](/environment-and-secrets).
+
+## How values are resolved
+
+1. The repo-root `.env` is loaded at startup, filling in values the real
+   environment hasn't already set.
+2. Real shell or service environment variables always win over `.env`.
+3. `repoos.toml` is the committed source of non-secret config.
+4. A supported environment variable overrides the corresponding `repoos.toml`
+   field (for example `NTFY_BASE_URL` overrides `ntfyBaseUrl`, and
+   `REPOOS_RESEND_API_KEY` fills `[auth.emailProvider]`).
+
+`repoos.toml` is deliberately small and flat. Values stay on one line: RepoOS
+does not accept multi-line arrays, multi-line strings, or inline tables. Nested
+sections use `[section]` headers and arrays of tables use `[[section]]` rows.
+The only place the parser accepts both `[check]` and `[checks]` spellings is the
+`[check]` section, kept for backwards compatibility.
+
+The Settings UI edits the most common fields directly, and its raw
+`repoos.toml` editor can edit the whole file — including `[preview]`, `[check]`,
+`[release]`, `[[deployments]]`, `[[distribution]]`, `[worktrees]`, `[tunnel]`,
+and anything the tabs don't surface.
+
+## Annotated starter `repoos.toml`
+
+Copy this and delete anything you don't need. It shows the documented defaults
+plus a realistic value for each optional section. **The example is
+illustrative, not a recommended starting point:** it renames board columns and
+includes sections most repos never use, so delete what doesn't apply to you
+before committing.
+
+The example keeps optional features off by default (`release.enabled = false`,
+`autoEngineeringMode = false`, `worktrees.inheritEnv = false`, and so on) so
+copying it wholesale is safe.
 
 ```toml
-workDir  = "repoos/work"     # where task markdown files live
-docsDir  = "repoos/docs"     # project context an agent reads before working
-cacheDir = "repoos/.repoos"  # derived index, logs, database — disposable
+# repoos.toml — all fields optional; delete a line to take its default.
+# This file is committed to git. Never put a secret here; the one secret field
+# the Settings UI will write is whisper.apiKey, which belongs in .env as
+# REPOOS_WHISPER_KEY instead.
+#
+# Top-level keys must come before the first [table] header — in TOML a bare
+# key after a header belongs to that table.
+
+# ── Layout and repository paths ──────────────────────────────────────────
+workDir = "work"          # task markdown files
+docsDir = "docs"          # context docs an agent reads first
+skillsDir = "skills"      # reusable skills
+inputsDir = "inputs"      # user-submitted inputs and attachments
+cacheDir = ".repoos"      # derived state; safe to delete
+taskExtensions = [".md"]  # file extensions treated as tasks
+
+# ── Board behavior ───────────────────────────────────────────────────────
+defaultStatus = "inbox"        # draft | inbox | ready | active | review | done
+defaultAssignee = "unassigned" # unassigned | ai | human
+defaultTaskMode = "freeform"   # freeform | manual
+maxActiveTasks = 3             # 1-20; used when auto-engineering is on
+autoEngineeringMode = false
+skillSuggestions = false
+worktreeWarnThreshold = 20     # 0 disables the warning
+
+# ── Server and UI ────────────────────────────────────────────────────────
+servePort = 7171   # omit to derive a stable per-repo port (7200-7999)
+strictBuild = false
+
+# ── Agents ───────────────────────────────────────────────────────────────
+maxConcurrentAgents = 5  # omit to size from this machine's CPU count
+
+# ── Notifications ────────────────────────────────────────────────────────
+ntfyEnabled = false
+ntfyTopic = ""
+ntfyBaseUrl = "https://ntfy.sh"
+
+# ── Board column labels (display only; status IDs never change) ──────────
+[board.columns]
+draft = "Ideas"
+inbox = "Backlog"
+ready = "Selected for development"
+active = "In progress"
+review = "Code review"
+done = "Shipped"
+
+# ── Worktrees and runtime ────────────────────────────────────────────────
+[worktrees]
+inheritEnv = false  # off by default; opt in to link .env into worktrees
+
+[watchdog]
+enabled = true
+stalenessMs = 300000
+autoTransition = true
+
+[whisper]
+provider = "none"  # none | groq | openai
+# apiKey = "..."   # a secret — prefer REPOOS_WHISPER_KEY in .env
+
+# ── Task previews ────────────────────────────────────────────────────────
+[preview]
+command = "bun run dev --port {port}"
+readyPath = "/"
+readyTimeoutMs = 10000
+
+[[preview.targets]]
+name = "Landing page"
+areas = ["landing", "web"]
+command = "bun run dev --port {port}"
+cwd = "landing"
+
+# ── Checks ───────────────────────────────────────────────────────────────
+[check]
+uiSmoke = "bun run smoke"
+uiStylesheet = "src/styles.css"
+backdropToken = "--bg"
+gradientTokens = ["--btn-primary-bg"]
+
+[[check.themeScopes]]
+selector = ":root"
+name = "dark"
+inherits = ["dark"]
+
+[[check.contrastPairs]]
+fg = "--txt"
+bg = "--bg"
+
+# ── Authentication ───────────────────────────────────────────────────────
+[auth]
+enabled = false
+sessionMaxAge = 2592000       # seconds; values under 300 are read as days
+bootstrapAdmin = "you@example.com"
+
+[auth.emailProvider]
+type = "resend"
+fromAddress = "otp@send.example.com"
+
+[auth.google]
+clientId = "your-client-id.apps.googleusercontent.com"
+
+# ── Releases, deployments, distribution ──────────────────────────────────
+[release]
+enabled = false           # true shows the Releases UI and API
+provider = "git-tag"
+branch = "main"
+versionFile = "package.json"
+tagPrefix = "v"
+remote = "origin"
+repository = "owner/repo"
+workflow = ".github/workflows/release.yml"
+
+[[deployments]]
+name = "Dashboard (prod)"
+service = "Dashboard"
+branch = "prod"
+provider = "cloudflare-workers"
+url = "https://app.example.com"
+dashboard_url = "https://dash.cloudflare.com/…"
+subdir = "app"
+
+[[distribution]]
+name = "npm"
+kind = "npm"
+package = "@scope/package"
+url = "https://www.npmjs.com/package/@scope/package"
+install = ["npm install -g @scope/package"]
+
+# ── Tunnels (managed by `repoos tunnel`) ─────────────────────────────────
+[tunnel]
+enabled = false
+provider = "cloudflare"
+name = "repoos-local"
+domain = ""
+tunnel_id = ""
+
+# ── Remote validation ────────────────────────────────────────────────────
+[remoteValidation]
+enabled = false
+serverType = "cax31"
+location = "hil"
+snapshotId = ""
+sshKeyName = ""
+idleShutdownMinutes = 8
+maxServerLifetimeMinutes = 120
+fallbackToLocal = false
+useForReleases = false
 ```
 
-If you write `repoos.toml` yourself and omit these fields, RepoOS falls back to
-the legacy root paths `work`, `docs`, and `.repoos`. You can set any
-repo-relative paths; the rest of this guide refers to `workDir`, `docsDir`, and
-`cacheDir` rather than assuming a particular layout.
+The sections below document each field: its type, default, whether it is
+committed (everything in this file is, with the noted `whisper.apiKey`
+exception), and its effect and constraints.
 
-`cacheDir` holds only derived state. Delete it and RepoOS rebuilds everything
-from the markdown files; nothing of record is lost.
+## Layout and repository paths
+
+```toml
+workDir = "work"
+docsDir = "docs"
+skillsDir = "skills"
+inputsDir = "inputs"
+cacheDir = ".repoos"
+taskExtensions = [".md"]
+```
+
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `workDir` | string | `work` | yes | Directory holding task markdown files, relative to the repo root. This is the board. |
+| `docsDir` | string | `docs` | yes | Directory holding context docs an agent reads before working. |
+| `skillsDir` | string | `skills` | yes | Directory holding reusable skills (`skills/<name>/SKILL.md`). |
+| `inputsDir` | string | `inputs` | yes | Directory holding user-submitted inputs and their attachments. |
+| `cacheDir` | string | `.repoos` | yes | Derived state only — logs, indexes, cached databases. Delete it and RepoOS rebuilds from the task files; nothing of record is lost. |
+| `taskExtensions` | array of strings | `[".md"]` | yes | File extensions treated as tasks. |
+
+All paths are relative to the repo root. `repoos.toml` and `AGENTS.md` always
+stay at the root regardless of how these are set. Changing `workDir`,
+`cacheDir`, or `taskExtensions` triggers an index refresh.
 
 ## Board behavior
 
 ```toml
-defaultStatus   = "inbox"     # status new tasks start in
-defaultAssignee = "ai"        # "ai" or "human"
+defaultStatus = "inbox"
+defaultAssignee = "unassigned"
 defaultTaskMode = "freeform"
-maxActiveTasks  = 3           # how many tasks may be active at once
-autoEngineeringMode = false   # automatically dispatch ready tasks to agents
-skillSuggestions    = false   # suggest a reusable skill after a completed task
-worktreeWarnThreshold = 20    # warn once this many task worktrees exist
+maxActiveTasks = 3
+autoEngineeringMode = false
+skillSuggestions = false
+worktreeWarnThreshold = 20
 ```
 
-`skillSuggestions` controls the auto-suggest pass described in
-[Review and close-out](/review-and-close-out#skill-suggestions). It is **off by
-default**: when on, a task is analysed only once it reaches `done`, and a single
-`New Skill Suggestion: …` task is created only for a high-bar reusable procedure
-corroborated by a second independent session. A named stable external tool/API
-workflow is recorded as extra evidence, but a single session never creates a
-suggestion. Off means no analysis, no suggestion tasks and no review-drawer note.
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `defaultStatus` | select | `inbox` | yes | Status new tasks start in. One of `draft`, `inbox`, `ready`, `active`, `review`, `done`. |
+| `defaultAssignee` | select | `unassigned` | yes | Default assignee for new tasks: `unassigned`, `ai`, or `human`. |
+| `defaultTaskMode` | select | `freeform` | yes | New-task flow: `freeform` (the AI writes the task) or `manual` (a form). Any other value falls back to `freeform`. |
+| `maxActiveTasks` | number | `3` | yes | Cap on simultaneously active tasks when `autoEngineeringMode` is on. Must be 1–20. |
+| `autoEngineeringMode` | boolean | `false` | yes | When true, RepoOS selects and starts ready tasks automatically, up to `maxActiveTasks`. |
+| `skillSuggestions` | boolean | `false` | yes | When true, a finished task may generate a high-bar, evidence-gated skill suggestion task. Off by default; a single session never creates one. |
+| `worktreeWarnThreshold` | number | `20` | yes | Advisory ceiling on registered git worktrees. Above it the Control page's Codebase card turns amber and the server logs a `repoos gc` reminder. Never blocks a task. Set `0` to disable. |
 
 ### Board column labels
 
-Rename the six board column display labels without changing the underlying
-status IDs. Status IDs (`draft`, `inbox`, `ready`, `active`, `review`, `done`)
-are fixed — they appear in task frontmatter, the CLI, the API, and transition
-rules. `[board.columns]` only changes what you *see* in the UI and CLI.
-
 ```toml
 [board.columns]
-draft  = "Ideas"
-inbox  = "Backlog"
-ready  = "Selected for development"
+draft = "Ideas"
+inbox = "Backlog"
+ready = "Selected for development"
 active = "In progress"
 review = "Code review"
-done   = "Shipped"
+done = "Shipped"
 ```
 
-Labels are partial — any column you don't override keeps its default. Blank,
-non-string, duplicate, or labels over 40 characters fall back to the default
-for that column. Changes apply live (no restart needed).
+`board.columns.draft`, `board.columns.inbox`, `board.columns.ready`,
+`board.columns.active`, `board.columns.review`, and `board.columns.done` rename
+the six column labels shown in the UI and CLI. These are display labels only:
+the canonical status IDs never change, and transitions, frontmatter, and
+API/CLI status inputs are unaffected.
 
-**Defaults:**
+Constraints: a label is a string of at most 40 characters; blank labels,
+duplicates of another column's label, or over-length values fall back to that
+column's default. Any column you don't override keeps its default. The default
+labels are `Proposed / Drafts`, `Inbox`, `Ready`, `Active`, `Review`, `Done`.
 
-| Column  | Default label       |
-| ------- | ------------------- |
-| `draft` | Proposed / Drafts   |
-| `inbox` | Inbox               |
-| `ready` | Ready               |
-| `active`| Active              |
-| `review`| Review              |
-| `done`  | Done                |
-
-**Presets:**
-
-Plain RepoOS (defaults):
-```toml
-[board.columns]  # no overrides needed — these are the defaults
-```
-
-Jira-style:
-```toml
-[board.columns]
-draft  = "To Do"
-inbox  = "Backlog"
-ready  = "Selected for Development"
-active = "In Progress"
-review = "Code Review"
-done   = "Done"
-```
-
-Lightweight Kanban:
-```toml
-[board.columns]
-draft  = "Ideas"
-inbox  = "Backlog"
-ready  = "Next Up"
-active = "Working"
-review = "Checking"
-done   = "Done"
-```
-
-## Server
+## Server and UI
 
 ```toml
 servePort = 7171
+strictBuild = false
 ```
 
-Without `servePort`, `repoos serve` derives a **stable port from the repo's own
-path**, so two repos running RepoOS at the same time never fight over one port.
-Pin it only when something external depends on a fixed port (a tunnel, a
-launchd/systemd unit, a bookmarked URL).
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `servePort` | number | derived per repo | yes | Port `repoos serve` binds by default. If omitted, RepoOS derives a stable port from the repo's path in the 7200–7999 range, so two checkouts never collide. Must be 1–65535. `--port` on the command line overrides it. |
+| `strictBuild` | boolean | `false` | yes | When true, a stale build makes `repoos` exit with an error instead of printing a warning. `REPOOS_STRICT_BUILD=1` (environment) and the `--strict-build` flag do the same without changing the file. |
 
-`repoos stop` finds the right process through a per-port lockfile, so stopping
-one repo's server never kills another's.
+Appearance is **not** a `repoos.toml` setting. The dark/light/system theme and
+the UI design language are per-browser preferences stored in the browser, so
+they never travel with the repo.
 
-## Task previews
-
-A preview is a read-only server RepoOS starts from a task's worktree so you can
-look at the change in a browser while the task is `active` or `review`. Declare
-what to boot in `[preview]` so RepoOS can preview *your* project:
-
-```toml
-[preview]
-command   = "bun run dev --port {port}"   # optional default for every area
-readyPath = "/"                           # optional, default "/"
-
-[[preview.targets]]
-name    = "Landing page"
-areas   = ["landing", "web"]              # matched against a task's `area:`
-command = "bun run dev --port {port}"
-cwd     = "landing"                       # relative to the task's worktree
-```
-
-- `{port}` and `{host}` are replaced with the values RepoOS chose; `PORT` and
-  `HOST` are also set in the command's environment. RepoOS owns the port and
-  the process lifecycle — never hardcode one.
-- A task is matched to the target whose `areas` includes its `area:`. If none
-  matches, the default `[preview] command` runs; if there is none, the preview
-  request tells you how to configure one for that area (instead of failing).
-- `readyPath` is the path RepoOS polls until the app is up; it defaults to `/`.
-- There is no built-in default target. A repo (or a task's area) with no
-  matching `[preview]` config gets an actionable "no preview configured" message
-  naming the area and the snippet to add — not RepoOS's own board.
-
-Previews are on demand and one runs at a time — starting another evicts the
-previous one.
-
-A preview runs from the task's fresh worktree, which does **not** have the
-repo's gitignored `.env` by default. If your preview command needs secrets that
-live there (for example, a server that refuses to start with auth enabled and
-no provider key), opt in:
+## Worktrees and runtime
 
 ```toml
 [worktrees]
-inheritEnv = true   # symlink the primary checkout's .env into task worktrees
+inheritEnv = false
 ```
 
-It is off by default, so most projects never place secrets in a worktree.
-When on, RepoOS symlinks the primary checkout's `.env` in at worktree creation; the secret
-file stays gitignored there and is never committed. Your `.gitignore` must
-ignore `.env` for this to kick in — if it doesn't, RepoOS skips the link rather
-than risk committing the secret. A repo that ignores `.env` in its primary checkout is
-covered automatically, since the committed `.gitignore` comes along to every
-worktree.
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `worktrees.inheritEnv` | boolean | `false` | yes | When true, RepoOS symlinks the main checkout's `.env` into each task worktree so worktree-local build or preview commands can read project secrets. |
+
+**`inheritEnv` is off by default and must be opted into deliberately.** Every
+worktree is another place secrets live on disk. When enabled, RepoOS creates a
+symlink (not a copy) at `<worktree>/.env` pointing to the main checkout's
+`.env`. The link is created only when all of these hold:
+
+- The main checkout has a `.env` file.
+- The worktree does not already have its own real `.env`.
+- The worktree's own `.gitignore` (or any active ignore rule) covers `.env` — RepoOS checks this with `git check-ignore` inside the worktree, not in main. If the path is not ignored, no link is made to prevent an accidental secret commit.
+
+Runtime selection is controlled by environment variables, not `repoos.toml`:
+`REPOOS_RUNTIME` (`auto`, `bun`, or `node`) and `REPOOS_BUN_PATH` (an explicit
+Bun binary). These are the supported public runtime overrides — see
+[Environment and secrets](/environment-and-secrets) for the full list.
 
 ## Agents
 
 ```toml
-maxConcurrentAgents  = 5        # agent CLI processes running at once; extras queue
-ctoMonitorIntervalMs = 300000   # CTO agent poll interval
+maxConcurrentAgents = 5
+
+[watchdog]
+enabled = true
+stalenessMs = 300000
+autoTransition = true
+
+[whisper]
+provider = "none"
+# apiKey = "..."
 ```
 
-`maxConcurrentAgents` defaults to a value computed from your machine's core
-count. Raise it if the machine still looks idle under load, lower it if it's
-straining — agents are subprocess- and network-heavy, so the right number is
-usually well below your core count.
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `maxConcurrentAgents` | number | derived from CPU count | yes | How many agent CLI processes (start/send/chat) may run at once; extras queue. Must be 1–16. The default is computed from this machine's CPU count and capped sensibly. |
+| `watchdog.enabled` | boolean | `true` | yes | Whether active-task staleness monitoring runs. |
+| `watchdog.stalenessMs` | number | `300000` (5 min) | yes | Milliseconds of silence before an `active` task is a candidate-stuck. Minimum `60000`; smaller values are ignored. |
+| `watchdog.autoTransition` | boolean | `true` | yes | Whether a stuck task auto-transitions out of `active` — to `review` when its worktree holds work, else back to `ready`. When false, it is only flagged `needsInput`. |
+| `whisper.provider` | select | `none` | yes | Voice-to-text provider for text areas: `none`, `groq`, or `openai`. |
+| `whisper.apiKey` | string | `""` | **exception** | API key for the selected whisper provider. Accepted here, but a secret — prefer `REPOOS_WHISPER_KEY` in `.env`. |
 
-## Runtime {#runtime}
+The lifecycle roles and custom agents are stored as `[[agents]]` rows
+(`name`, `cli`, `model`, `enabled`, `instructions`, `skills`) and are managed
+from the **Agents** page. Prefer the UI over hand-editing them. See
+[Agents](/agents) for the supported CLIs and roles.
 
-RepoOS runs under Bun when available and Node otherwise. Control it with
-environment variables, not `repoos.toml`:
+The built-in supervisor is not exposed as a `repoos.toml` key.
 
-| Variable | Effect |
-| --- | --- |
-| *(unset)* or `REPOOS_RUNTIME=auto` | Use Bun if it's on `PATH`, else Node. The default. |
-| `REPOOS_RUNTIME=bun` | Require Bun; warn and stay on Node if it's missing. |
-| `REPOOS_RUNTIME=node` | Always Node. The opt-out. |
-| `REPOOS_BUN_PATH=/path/to/bun` | Use this binary explicitly, skipping the `PATH` lookup. |
+## Previews and checks
 
-This applies to every `repoos` command, not just `repoos serve`. The `repoos`
-launcher the install script creates starts Bun directly when it's installed, so
-there's no Node step at all.
+```toml
+[preview]
+command = "bun run dev --port {port}"
+readyPath = "/"
+readyTimeoutMs = 10000
 
-`repoos serve` prints which runtime it picked at startup. Bun is substantially
-faster for the subprocess-heavy work RepoOS does — on this project's own test
-suite it's roughly a 5x difference — so the default is worth keeping unless you
-have a reason to pin Node.
+[[preview.targets]]
+name = "Landing page"
+areas = ["landing", "web"]
+command = "bun run dev --port {port}"
+cwd = "landing"
+```
+
+`[preview]` configures the read-only preview RepoOS starts from a task worktree
+when a task is in `active` or `review`.
+
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `preview.command` | string | unset | yes | Default preview command, used when no target matches the task's `area`. |
+| `preview.cwd` | string | worktree root | yes | Subdirectory of the worktree to run the default command in. |
+| `preview.readyPath` | string | `/` | yes | Path polled for readiness, relative to the preview URL. A missing leading slash is added. |
+| `preview.readyTimeoutMs` | number | `10000` | yes | How long to wait for the default command to answer before giving up. Raise it for a command that also builds first. |
+| `preview.targets[].name` | string | derived from `areas` | yes | Human label for diagnostics and the preview picker. |
+| `preview.targets[].areas` | array of strings | `[]` | yes | Task `area:` values this target serves, matched case-insensitively. |
+| `preview.targets[].command` | string | required | yes | Command that boots the target. Rows without one are dropped. |
+| `preview.targets[].cwd` | string | worktree root | yes | Subdirectory of the worktree to run the command in. |
+| `preview.targets[].readyPath` | string | `/` | yes | Per-target readiness path (`ready_path` is also accepted). |
+| `preview.targets[].readyTimeoutMs` | number | `10000` | yes | Per-target readiness timeout (`ready_timeout_ms` is also accepted). |
+
+`{port}` and `{host}` are replaced at runtime, and the command's environment
+also receives `PORT` and `HOST`. RepoOS owns the port and lifecycle; never
+hardcode a port in a preview command. A task with no usable preview
+configuration gets an actionable "no preview configured" message rather than
+booting a random app. Previews are one-at-a-time and a new request evicts the
+previous preview.
+
+### `[check]`
+
+```toml
+[check]
+uiSmoke = "bun run smoke"
+uiStylesheet = "src/styles.css"
+backdropToken = "--bg"
+gradientTokens = ["--btn-primary-bg"]
+
+[[check.themeScopes]]
+selector = ":root"
+name = "dark"
+inherits = ["dark"]
+
+[[check.contrastPairs]]
+fg = "--txt"
+bg = "--bg"
+```
+
+These are optional repo-specific guardrails for `repoos check`. When omitted,
+the corresponding step skips cleanly. (`[checks]` is accepted as an alias for
+`[check]`.)
+
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `check.uiSmoke` | string | unset | yes | Command for the UI smoke step. Overrides a `smoke` script in `package.json`; with neither, the step skips. |
+| `check.uiStylesheet` | string | unset | yes | Repo-relative stylesheet the CSS-layering and theme-contrast guards read. With it absent, both skip. |
+| `check.themeScopes` | array of tables | unset | yes | Theme blocks for the contrast guard. Each row is documented just below. |
+| `check.themeScopes.selector` | string | required | yes | CSS selector that opens the block, e.g. `:root[data-ui-theme="clear"]`. |
+| `check.themeScopes.name` | string | required | yes | Variant name used in failure messages, e.g. `clear-dark`. |
+| `check.themeScopes.inherits` | array of strings | `[name]` | yes | Names of earlier scopes whose declarations this scope inherits, in order (later wins). |
+| `check.contrastPairs` | array of tables | unset | yes | Foreground/background token pairs checked for contrast. |
+| `check.contrastPairs.fg` | string | required | yes | Foreground token, e.g. `--txt`. |
+| `check.contrastPairs.bg` | string | required | yes | Background token, e.g. `--bg`. |
+| `check.gradientTokens` | array of strings | unset | yes | Tokens consumed as `background-image`, which must resolve to a gradient. |
+| `check.backdropToken` | string | unset | yes | Token to composite semi-transparent colors over before measuring luminance. |
+| `check.bareRequireDirs` | array of strings | tsconfig `include` | yes | Source roots the bare-`require()` guard scans. Absent, it uses the repo's tsconfig `include`/`files` minus `exclude`. |
+| `check.bareRequireExcludes` | array of strings | tsconfig `exclude` | yes | Paths or globs the bare-`require()` guard skips. Consulted only with `bareRequireDirs`. |
+
+See [Checks before merge](/check) for what each step does and when it runs.
 
 ## Authentication
 
-Auth is off by default. When enabled, the server refuses to start unless both a
-login provider and a `bootstrapAdmin` are configured.
-
 ```toml
-auth.enabled        = true
-auth.sessionMaxAge  = "2592000"           # seconds
-auth.bootstrapAdmin = "you@example.com"   # only this address can claim the founding admin account
-auth.emailProvider.type        = "resend"
-auth.emailProvider.fromAddress = "otp@send.example.com"
-# auth.google.clientId = "..."            # optional "Sign in with Google" button
+[auth]
+enabled = false
+sessionMaxAge = 2592000
+bootstrapAdmin = "you@example.com"
+
+[auth.emailProvider]
+type = "resend"
+fromAddress = "otp@send.example.com"
+
+[auth.google]
+clientId = "your-client-id.apps.googleusercontent.com"
 ```
 
-Secrets never go in `repoos.toml` — it's git-tracked. Put them in `.env`:
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `auth.enabled` | boolean | `false` | yes | Whether login is required. Takes effect on the next `repoos serve`. |
+| `auth.sessionMaxAge` | number | `2592000` (30 days) | yes | Session lifetime. Values under 300 are read as days; values of 300 or more as seconds. |
+| `auth.bootstrapAdmin` | string | unset | yes | Admin email used to claim the first account on a fresh install. Cleared after bootstrap. |
+| `auth.emailProvider.type` | select | unset | yes | Email OTP provider. The only supported value today is `resend`. |
+| `auth.emailProvider.fromAddress` | string | unset | yes | Sender address for email OTPs. Not sensitive. |
+| `auth.emailProvider.fromName` | string | unset | yes | Optional sender display name; defaults to `RepoOS at <repo>`. |
+| `auth.google.clientId` | string | unset | yes | Optional Google OAuth client ID. Not sensitive. |
 
-```bash
-REPOOS_RESEND_API_KEY=...
-REPOOS_GOOGLE_CLIENT_SECRET=...
-```
+Auth secrets belong in `.env`, never in committed config — the Settings API
+refuses to write them to `repoos.toml`:
+`REPOOS_RESEND_API_KEY`, `REPOOS_GOOGLE_CLIENT_SECRET`,
+`REPOOS_AUTH_SESSION_SECRET`, and the local-only
+`REPOOS_AUTH_DEV_BACKDOOR_CODE`. See [Authentication](/authentication) for setup
+and [Environment and secrets](/environment-and-secrets) for the secret contract.
 
-Auth changes take effect on the next `repoos serve`, not live.
+## Releases, deployments, and distribution
 
-## Remote validation
-
-Offloads the test suite to a disposable cloud VM, so a long check doesn't tie up
-(or get starved by) your laptop.
-
-```toml
-remoteValidation.enabled         = false
-remoteValidation.fallbackToLocal = false
-```
-
-Needs `HETZNER_API_TOKEN` and `REPOOS_REMOTE_SSH_KEY` in `.env`, plus a prebuilt
-snapshot.
-
-## Releases
-
-Opt-in. When configured, RepoOS pushes an annotated version tag from a clean
-trunk after `repoos check` passes; your CI does the actual build and publish.
+### Release configuration
 
 ```toml
 [release]
-enabled     = true
-provider    = "git-tag"
-branch      = "main"
-versionFile = "package.json"  # examples: replace both fields for your project
-tagPrefix   = "v"
-remote      = "origin"
+enabled = true
+provider = "git-tag"
+branch = "main"
+versionFile = "package.json"
+tagPrefix = "v"
+remote = "origin"
+repository = "owner/repo"
+workflow = ".github/workflows/release.yml"
 ```
 
-The "Releases" page only appears in the UI when this block is present.
+The `[release]` block is dormant — and the Releases UI hidden — unless
+`release.enabled = true`. RepoOS only reads the other `release.*` keys once it
+sees a boolean `enabled`.
 
-A project can also declare where users install its releases, with one
-`[[distribution]]` row per destination. These render as the **Published to**
-summary on the Releases page — distribution destinations, not deploy
-environments. Fields are documented in
-[Deployments and releases → Distribution destinations](/deployments-and-releases#distribution-destinations-published-to);
-omitting the section leaves the Releases page as it is.
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `release.enabled` | boolean | `false` | yes | Turns the Releases UI and API on. |
+| `release.provider` | select | `git-tag` | yes | Release provider. The only supported value today is `git-tag`. |
+| `release.name` | string | unset | yes | Optional display name for the release surface. |
+| `release.branch` | string | `main` | yes | Branch a release must be cut from. |
+| `release.versionFile` | string | unset | yes | Project manifest holding the committed semantic version. |
+| `release.tagPrefix` | string | `v` | yes | Prefix prepended to the version for the git tag. |
+| `release.remote` | string | `origin` | yes | Git remote that receives the annotated tag. |
+| `release.repository` | string | unset | yes | Optional `owner/repo`, used only to link to the resulting release. |
+| `release.workflow` | string | unset | yes | Optional workflow path shown as release context. RepoOS does not execute it. |
 
-## Appearance and notifications
+### Deployment rows
 
 ```toml
-theme       = "dark"
-uiTheme     = "classic"   # classic | clear | gen z | jelly
-ntfyEnabled = true
-ntfyTopic   = "your_topic"
+[[deployments]]
+name = "Dashboard (prod)"
+service = "Dashboard"
+branch = "prod"
+provider = "cloudflare-workers"
+url = "https://app.example.com"
+dashboard_url = "https://dash.cloudflare.com/…"
+subdir = "app"
 ```
+
+Each `[[deployments]]` row models one service-and-branch pair and turns the
+Deployments nav item and API on. A row missing `name` or `branch` is dropped.
+
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `deployments.name` | string | required | yes | Human label, e.g. `Dashboard (prod)`. |
+| `deployments.service` | string | `name` | yes | Groups rows of the same service across branches into one row with a column per branch. |
+| `deployments.branch` | string | required | yes | Branch whose pushes deploy this target. |
+| `deployments.provider` | string | unset | yes | Provider label, e.g. `cloudflare-workers`. Informational only. |
+| `deployments.url` | string | unset | yes | The live target, rendered as the row's primary link. |
+| `deployments.dashboard_url` | string | unset | yes | Optional provider-dashboard URL. Note the snake_case spelling. |
+| `deployments.subdir` | string | unset | yes | Repo subdirectory this service lives in, scoping the freshness lookup so an unrelated push doesn't read as a deploy. |
+
+### Distribution destinations
+
+```toml
+[[distribution]]
+name = "npm"
+kind = "npm"
+package = "@scope/package"
+url = "https://www.npmjs.com/package/@scope/package"
+install = ["npm install -g @scope/package"]
+```
+
+A release can list one or more install destinations, shown in the Releases
+page's **Published to** section. `name` is required; other rows are validated
+and dropped rather than poisoning the section.
+
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `distribution.name` | string | required | yes | Human channel name, e.g. `npm` or `GitHub Releases`. |
+| `distribution.kind` | select | unset | yes | Public version lookup: `npm`, `homebrew`, `github-release`, or `custom`. An unrecognized value means no automatic check. |
+| `distribution.url` | string | unset | yes | Source link for the channel. Must start with `http(s)://`; may contain `{tag}` or `{version}`. |
+| `distribution.package` | string | unset | yes | Package/formula identifier, used as the lookup key for `kind = "npm"`. |
+| `distribution.repository` | string | unset | yes | `owner/repo` for `kind = "github-release"`. |
+| `distribution.versionUrl` | string | unset | yes | Explicit URL to fetch the published version from. Required for `homebrew` and `custom`. |
+| `distribution.versionRegex` | string | unset | yes | Regex with one capture group used to read the version. Must compile; invalid patterns are dropped. |
+| `distribution.install` | array of strings | unset | yes | Install commands, each independently copyable. |
+
+See [Deployments and releases](/deployments-and-releases) for how these render.
+
+## Notifications
+
+```toml
+ntfyEnabled = false
+ntfyTopic = ""
+ntfyBaseUrl = "https://ntfy.sh"
+```
+
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `ntfyEnabled` | boolean | `false` | yes | Whether RepoOS publishes task lifecycle events to an [ntfy](https://ntfy.sh) topic. |
+| `ntfyTopic` | string | `""` | yes | Topic name. Empty means nothing is published. |
+| `ntfyBaseUrl` | string | `https://ntfy.sh` | yes | Base URL for a self-hosted ntfy server. The `NTFY_BASE_URL` environment variable overrides it. |
+
+## Tunnels
+
+```toml
+[tunnel]
+enabled = false
+provider = "cloudflare"
+name = "repoos-local"
+domain = ""
+tunnel_id = "<your-tunnel-uuid>"
+```
+
+The `[tunnel]` block is the committed record of what this repo publishes through
+Cloudflare Tunnel. It is **managed by `repoos tunnel`** — use the CLI rather
+than editing it by hand. See [Tunnels](/tunnels).
+
+The Settings page surfaces the master switch as the flat `tunnelEnabled` field;
+in `repoos.toml` it is `[tunnel] enabled`.
+
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `tunnel.enabled` | boolean | `false` | yes | UI opt-in only. Disabling never deletes configuration or stops `cloudflared`. |
+| `tunnel.provider` | string | `cloudflare` | yes | Tunnel provider. Only Cloudflare is supported. |
+| `tunnel.name` | string | `repoos-local` | yes | Machine-local tunnel name (one tunnel per machine). |
+| `tunnel.domain` | string | `""` | yes | Base domain used to infer hostnames. |
+| `tunnel.tunnel_id` | string | `""` | yes | The `cloudflared` tunnel UUID. Note the snake_case spelling (`tunnel_id`), which is what `repoos tunnel` reads and writes. |
+| `tunnel.apps.<name>` | table | `{}` | yes | One published app per key: `hostname`, `service`, an `access` email allowlist, and an optional `noAccess` flag. Written by `repoos tunnel create`. |
+
+The `CLOUDFLARE_API_TOKEN` credential is environment-only and never belongs in
+`repoos.toml`.
+
+## Remote validation
+
+```toml
+[remoteValidation]
+enabled = false
+serverType = "cax31"
+location = "hil"
+snapshotId = ""
+sshKeyName = ""
+idleShutdownMinutes = 8
+maxServerLifetimeMinutes = 120
+fallbackToLocal = false
+useForReleases = false
+```
+
+Remote validation is opt-in and off by default. It runs the expensive half of
+the close-out gate (build + tests) on a disposable Hetzner VM instead of your
+machine. Enabling it sends repo contents to a third-party host.
+
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `remoteValidation.enabled` | boolean | `false` | yes | Master switch for the remote runner. |
+| `remoteValidation.serverType` | string | `cax31` | yes | Hetzner server type. Must match the architecture the snapshot was built on. |
+| `remoteValidation.location` | string | `hil` | yes | Hetzner location slug. |
+| `remoteValidation.snapshotId` | string | unset | yes | ID or name of the prebuilt Hetzner snapshot the runner boots from. |
+| `remoteValidation.sshKeyName` | string | unset | yes | Name of the SSH key registered in the Hetzner project. |
+| `remoteValidation.idleShutdownMinutes` | number | `8` | yes | How long a warm server stays alive after a job so queued jobs reuse it. |
+| `remoteValidation.maxServerLifetimeMinutes` | number | `120` | yes | Hard cost stop-loss: any runner older than this is force-deleted. Minimum `10`. |
+| `remoteValidation.fallbackToLocal` | boolean | `false` | yes | When the runner is unreachable, run the full gate locally instead of keeping the task in review for retry. |
+| `remoteValidation.useForReleases` | boolean | `false` | yes | Also validate release cuts on the runner. Off by default because a release is watched live. |
+
+`remoteValidation.provider` is always `hetzner` and is not read from the file.
+The `HETZNER_API_TOKEN` and `REPOOS_REMOTE_SSH_KEY` credentials are
+environment-only.
+
+## Summary
+
+Commit project behavior in `repoos.toml`, keep secrets in a gitignored `.env` or
+the machine environment, and treat a `REPOOS_`-prefixed variable as an override
+only when it is documented as a supported one. For the complete secret contract,
+read [Environment and secrets](/environment-and-secrets).

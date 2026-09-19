@@ -34,7 +34,7 @@ export interface AuthConfig {
   enabled: boolean;
   /** Server-side session secret (auto-generated if not provided). Never exposed to browser. */
   sessionSecret?: string;
-  /** Session lifetime in seconds. Default 7 days. */
+  /** Session lifetime in seconds. Default 30 days. */
   sessionMaxAge?: number;
   /** Email provider config (required when auth enabled). */
   emailProvider?: AuthEmailProvider;
@@ -106,7 +106,7 @@ export function pkceChallenge(verifier: string): string {
 // ---------------------------------------------------------------------------
 
 export const SESSION_COOKIE_NAME = "repoos_session";
-export const DEFAULT_SESSION_MAX_AGE = 7 * 24 * 60 * 60; // 7 days
+export const DEFAULT_SESSION_MAX_AGE = 30 * 24 * 60 * 60; // 30 days
 
 export function buildSessionCookie(token: string, maxAge: number, secure: boolean): string {
   const parts = [
