@@ -1,4 +1,7 @@
 ---
+handoff_signal_retry_count: 2
+check_retry_count: 1
+last_check_failure: "[object Object]"
 id: "0428"
 title: "Close-out failure reasons must name the failing check, not the output tail"
 type: bug
@@ -34,3 +37,6 @@ When close-out's gate fails, the recorded failure reason is only the last few hu
 - 2026-09-19T00:46:49Z · review_model_override
 - 2026-09-19T00:46:51Z · status inbox→ready
 - 2026-09-19T00:46:52Z · status ready→active, branch
+
+
+
