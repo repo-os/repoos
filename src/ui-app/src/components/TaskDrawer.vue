@@ -42,6 +42,9 @@ import Button from "./ui/button.vue";
 import Input from "./ui/input.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
 import VoiceDictate from "./VoiceDictate.vue";
+import AiChatThinking from "./AiChatThinking.vue";
+import ChatJumpToLatest from "./ChatJumpToLatest.vue";
+import { useChatScroll } from "../composables/useChatScroll";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyMainDialog from "./DirtyMainDialog.vue";
 import HotfixConfirmDialog from "./HotfixConfirmDialog.vue";
@@ -1418,6 +1421,18 @@ const pmBusy = computed(
 
 const pmHasConversation = computed(() => pmLines.value.length > 0);
 
+// Chat scroll standard (#0444): open on the newest message, remember the
+// reader's position per task, and offer a jump back down once they scroll away.
+const {
+  showJumpToLatest: pmShowJumpToLatest,
+  onScroll: pmOnScroll,
+  scrollToLatest: pmScrollToLatest,
+} = useChatScroll(pmLog, {
+  chatId: () => (ui.active ? pmSessionId(ui.active.id) : "pm:none"),
+  contentSize: () => pmLines.value.length,
+  active: () => ui.activeTab === "pm",
+});
+
 /**
  * Canned messages shown above the PM compose box, keyed by task status.
  * Empty (no chips) for statuses without a defined set.
@@ -1480,18 +1495,8 @@ function pmLineText(entry: AgentOutputEntry): string {
   return entry.d;
 }
 
-function pmScrollToLatest(): void {
-  nextTick(() => {
-    if (pmLog.value) pmLog.value.scrollTop = pmLog.value.scrollHeight;
-  });
-}
-
-watch(
-  () => pmLines.value.length,
-  () => {
-    pmScrollToLatest();
-  },
-);
+// Following new output (and restoring a remembered position when the PM tab
+// opens) is useChatScroll's job — see docs/ai-chat-standards.md (#0444).
 
 async function pmSend(): Promise<void> {
   const text = pmDraft.value.trim();
@@ -2092,7 +2097,7 @@ watch(
   () => [ui.active?.id, ui.activeTab],
   () => {
     if (!ui.active || ui.activeTab !== "pm") return;
-    void repo.loadOutput(pmSessionId(ui.active.id)).then(() => nextTick(() => pmScrollToLatest()));
+    void repo.loadOutput(pmSessionId(ui.active.id));
   },
 );
 
@@ -4266,7 +4271,13 @@ watch(
               </div>
             </div>
           </div>
-          <div ref="pmLog" class="agent-log-wrap pm-log-wrap" role="log" aria-live="polite">
+          <div
+            ref="pmLog"
+            class="agent-log-wrap pm-log-wrap ai-chat-log"
+            role="log"
+            aria-live="polite"
+            @scroll="pmOnScroll"
+          >
             <div v-if="!pmHasConversation" class="agent-empty pm-empty">
               <div class="pm-welcome-icon">PM</div>
               <strong>Chat about this task</strong>
@@ -4293,11 +4304,15 @@ watch(
                   </div>
                 </div>
               </template>
-              <div v-if="pmBusy" class="pm-thinking" aria-label="PM is thinking">
-                <span></span><span></span><span></span>
-              </div>
+              <AiChatThinking :active="pmBusy" label="PM is thinking" />
             </template>
           </div>
+
+          <ChatJumpToLatest
+            :visible="pmShowJumpToLatest"
+            :anchor="pmLog"
+            @click="pmScrollToLatest()"
+          />
 
           <div v-if="showPmCanned" class="pm-canned" role="list" aria-label="Suggested prompts">
             <div
@@ -4392,6 +4407,7 @@ watch(
             <button
               v-else
               type="submit"
+              class="ai-chat-send"
               :disabled="!pmDraft.trim() || pmBusy || !pmAgentEnabled"
               aria-label="Send message"
             >
@@ -4488,13 +4504,13 @@ watch(
 </template>
 
 <style scoped>
+/* Vertical rhythm between messages comes from .ai-chat-log (style.css). */
 .pm-log-wrap {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  overscroll-behavior: contain;
 }
 
 .pm-empty {
@@ -4644,38 +4660,11 @@ watch(
   color: var(--cyan);
 }
 
-.pm-thinking {
-  display: flex;
-  gap: 4px;
-  align-self: flex-start;
-  margin-left: 31px;
-  padding: 9px 12px;
-  border: 1px solid var(--border);
-  border-radius: 13px;
-  background: var(--panel);
-}
-
-.pm-thinking span {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--txt-faint);
-  animation: pm-bounce 1.2s infinite;
-}
-
-.pm-thinking span:nth-child(2) {
-  animation-delay: 0.15s;
-}
-
-.pm-thinking span:nth-child(3) {
-  animation-delay: 0.3s;
-}
-
 .pm-compose {
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  margin: 0 12px;
+  margin: 0 12px 12px;
   padding: 8px 9px 8px 12px;
   border: 1px solid var(--border);
   border-radius: 13px;
@@ -4712,8 +4701,9 @@ watch(
   flex: none;
   border: 0;
   border-radius: 9px;
-  background: var(--btn-primary-bg);
-  color: var(--violet);
+  /* Fill comes from .ai-chat-send / .pm-stop / .pm-attach below. */
+  background: transparent;
+  color: var(--txt-dim);
   cursor: pointer;
 }
 
@@ -4837,19 +4827,6 @@ watch(
   border-color: var(--violet);
   background: var(--violet-dim);
   outline: none;
-}
-
-@keyframes pm-bounce {
-  0%,
-  70%,
-  100% {
-    transform: translateY(0);
-    opacity: 0.4;
-  }
-  35% {
-    transform: translateY(-3px);
-    opacity: 1;
-  }
 }
 
 .diff-stats {

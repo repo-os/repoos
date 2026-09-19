@@ -11,6 +11,9 @@ import { useUiStore } from "../stores/ui";
 import type { AgentOutputEntry } from "../types";
 import FloatingHeadPanel from "./FloatingHeadPanel.vue";
 import VoiceDictate from "./VoiceDictate.vue";
+import AiChatThinking from "./AiChatThinking.vue";
+import ChatJumpToLatest from "./ChatJumpToLatest.vue";
+import { useChatScroll } from "../composables/useChatScroll";
 import { insertTextAtCursor } from "../utils/text-insertion";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
 
@@ -34,8 +37,6 @@ const log = ref<HTMLElement | null>(null);
 const draftTextarea = ref<HTMLTextAreaElement | null>(null);
 const repairing = ref(false);
 const repaired = ref(false);
-const showScrollToBottom = ref(false);
-const SCROLL_BOTTOM_THRESHOLD = 80;
 
 interface DebuggerResponse {
   ok: boolean;
@@ -54,6 +55,14 @@ const repairTaskId = computed(() => {
   return matches.length ? matches[matches.length - 1][1] : null;
 });
 const diagnosis = computed(() => lines.value.map(lineText).filter(Boolean).slice(-8).join("\n"));
+// Chat scroll standard (#0444): open on the newest message, remember where the
+// reader was, and offer a jump back down once they scroll away.
+const { showJumpToLatest, onScroll, scrollToLatest } = useChatScroll(log, {
+  chatId: CHAT_ID,
+  contentSize: () => lines.value.length,
+  active: () => props.open,
+});
+
 const providerError = computed(
   () =>
     lines.value
@@ -124,20 +133,6 @@ function lineText(entry: AgentOutputEntry): string {
   return entry.d;
 }
 
-function scrollToLatest(): void {
-  nextTick(() => {
-    if (log.value) log.value.scrollTop = log.value.scrollHeight;
-    showScrollToBottom.value = false;
-  });
-}
-
-function onLogScroll(): void {
-  const el = log.value;
-  if (!el) return;
-  showScrollToBottom.value =
-    el.scrollHeight - el.scrollTop - el.clientHeight > SCROLL_BOTTOM_THRESHOLD;
-}
-
 async function hydrate(): Promise<void> {
   try {
     const response = await api<DebuggerResponse>("/api/debugger");
@@ -159,7 +154,7 @@ async function send(): Promise<void> {
   const optimisticIndex = lines.value.length;
   repo.outputs[CHAT_ID] = [...lines.value, optimistic];
   draft.value = "";
-  scrollToLatest();
+  scrollToLatest("auto");
   try {
     await api("/api/debugger/message", JSON_OPTS("POST", { text }));
   } catch (error) {
@@ -206,19 +201,8 @@ async function interrupt(): Promise<void> {
   }
 }
 
-watch(
-  () => lines.value.length,
-  () => {
-    if (props.open) scrollToLatest();
-  },
-);
-
-watch(
-  () => props.open,
-  (isOpen) => {
-    if (isOpen) scrollToLatest();
-  },
-);
+// Following new output (and restoring a remembered position on open) is
+// useChatScroll's job — see docs/ai-chat-standards.md (#0444).
 
 onMounted(() => {
   void config.load();
@@ -266,11 +250,11 @@ watch(
     <div class="debugger-log-wrap">
       <div
         ref="log"
-        class="debugger-log"
+        class="debugger-log ai-chat-log"
         role="log"
         aria-live="polite"
         aria-label="Conversation with the Debugger"
-        @scroll="onLogScroll"
+        @scroll="onScroll"
       >
         <div v-if="!hasConversation" class="debugger-welcome">
           <div class="debugger-welcome-avatar"><img :src="DEBUGGER_AVATAR" alt="Debugger" /></div>
@@ -308,9 +292,7 @@ watch(
             </div>
           </div>
         </template>
-        <div v-if="busy" class="debugger-thinking" aria-label="Debugger is working">
-          <span></span><span></span><span></span>
-        </div>
+        <AiChatThinking :active="busy" label="Debugger is working" />
         <div v-if="providerError && !busy" class="debugger-provider-error" role="alert">
           <strong>The Debugger's agent or model could not respond.</strong>
           <span
@@ -331,25 +313,9 @@ watch(
           </button>
         </div>
       </div>
-      <button
-        v-if="showScrollToBottom"
-        type="button"
-        class="debugger-scroll-bottom"
-        aria-label="Scroll to latest messages"
-        @click="scrollToLatest"
-      >
-        <svg viewBox="0 0 20 20" fill="none">
-          <path
-            d="M5 8l5 5 5-5"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-        Scroll to bottom
-      </button>
     </div>
+
+    <ChatJumpToLatest :visible="showJumpToLatest" :anchor="log" @click="scrollToLatest()" />
 
     <form class="debugger-compose" @submit.prevent="send">
       <textarea
@@ -382,13 +348,13 @@ watch(
       <button
         v-else
         type="submit"
+        class="ai-chat-send"
         :disabled="!draft.trim() || busy || !enabled"
         aria-label="Diagnose"
       >
         Diagnose
       </button>
     </form>
-    <div class="debugger-footnote">Paste a bug → root cause + suggested fix</div>
   </FloatingHeadPanel>
 </template>
 
@@ -467,40 +433,11 @@ watch(
   display: flex;
   min-height: 0;
 }
+/* Vertical rhythm between messages comes from .ai-chat-log (style.css). */
 .debugger-log {
   flex: 1;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 11px;
   padding: 16px 14px;
-  overscroll-behavior: contain;
-}
-.debugger-scroll-bottom {
-  position: absolute;
-  left: 50%;
-  bottom: 14px;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 7px 12px;
-  border: 1px solid var(--border-bright);
-  border-radius: 999px;
-  background: var(--panel-solid);
-  color: var(--txt);
-  font: 600 10.5px var(--font-sans);
-  cursor: pointer;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
-  z-index: 2;
-}
-.debugger-scroll-bottom:hover {
-  border-color: var(--cyan);
-  color: var(--cyan);
-}
-.debugger-scroll-bottom svg {
-  width: 13px;
-  height: 13px;
 }
 .debugger-welcome {
   margin: auto 0;
@@ -649,29 +586,6 @@ watch(
 .debugger-markdown :deep(a) {
   color: var(--cyan);
 }
-.debugger-thinking {
-  display: flex;
-  gap: 4px;
-  align-self: flex-start;
-  margin-left: 31px;
-  padding: 9px 12px;
-  border: 1px solid var(--border);
-  border-radius: 13px;
-  background: var(--panel);
-}
-.debugger-thinking span {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--txt-faint);
-  animation: debugger-bounce 1.2s infinite;
-}
-.debugger-thinking span:nth-child(2) {
-  animation-delay: 0.15s;
-}
-.debugger-thinking span:nth-child(3) {
-  animation-delay: 0.3s;
-}
 .debugger-provider-error {
   display: flex;
   flex-direction: column;
@@ -706,7 +620,9 @@ watch(
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  margin: 0 12px;
+  /* #0444: the helper line under the compose row is gone, so the row now owns
+     the panel's bottom spacing. */
+  margin: 0 12px 12px;
   padding: 8px 9px 8px 12px;
   border: 1px solid var(--border);
   border-radius: 13px;
@@ -738,8 +654,9 @@ watch(
   flex: none;
   border: 0;
   border-radius: 9px;
-  background: var(--btn-primary-bg);
-  color: var(--cyan);
+  /* Fill comes from .ai-chat-send / .debugger-stop below. */
+  background: transparent;
+  color: var(--txt-dim);
   cursor: pointer;
   font: 500 11px var(--font-sans);
 }
@@ -758,31 +675,5 @@ watch(
 .debugger-compose button.debugger-stop svg {
   width: 16px;
   height: 16px;
-}
-.debugger-footnote {
-  padding: 7px 14px 10px;
-  text-align: center;
-  color: var(--txt-faint);
-  font:
-    500 8.5px "JetBrains Mono",
-    monospace;
-}
-@keyframes debugger-bounce {
-  0%,
-  70%,
-  100% {
-    transform: translateY(0);
-    opacity: 0.4;
-  }
-  35% {
-    transform: translateY(-3px);
-    opacity: 1;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .debugger-thinking span {
-    animation: none;
-    transition: none;
-  }
 }
 </style>

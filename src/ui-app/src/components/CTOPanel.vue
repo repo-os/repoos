@@ -8,8 +8,11 @@ import { autoGrowTextarea } from "../utils/textarea-autogrow";
 import { useRepoStore } from "../stores/repo";
 import type { AgentOutputEntry } from "../types";
 import FloatingHeadPanel from "./FloatingHeadPanel.vue";
+import AiChatThinking from "./AiChatThinking.vue";
+import ChatJumpToLatest from "./ChatJumpToLatest.vue";
+import { useChatScroll } from "../composables/useChatScroll";
 
-defineProps<{ open: boolean }>();
+const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{ close: [] }>();
 
 const repo = useRepoStore();
@@ -23,6 +26,14 @@ const enabled = computed(() => repo.cto.enabled);
 const running = computed(() => repo.cto.running);
 const report = computed(() => repo.cto.report);
 const lines = computed(() => repo.cto.lines);
+
+// Chat scroll standard (#0444): open on the newest message, remember where the
+// reader was, and offer a jump back down once they scroll away.
+const { showJumpToLatest, onScroll, scrollToLatest } = useChatScroll(log, {
+  chatId: "cto",
+  contentSize: () => lines.value.length,
+  active: () => props.open,
+});
 
 function lineKind(entry: AgentOutputEntry): "human" | "assistant" | "status" | "hidden" {
   if ("type" in entry) {
@@ -45,12 +56,6 @@ function lineText(entry: AgentOutputEntry): string {
     return "";
   }
   return entry.d;
-}
-
-function scrollToLatest(): void {
-  nextTick(() => {
-    if (log.value) log.value.scrollTop = log.value.scrollHeight;
-  });
 }
 
 function onKeydown(event: KeyboardEvent): void {
@@ -139,7 +144,7 @@ watch(
       </button>
     </header>
 
-    <div class="cto-log" ref="log">
+    <div ref="log" class="cto-log ai-chat-log" @scroll="onScroll">
       <div v-if="!enabled" class="cto-disabled">
         <p>CTO agent is disabled. Enable it from the Agents page.</p>
       </div>
@@ -158,10 +163,10 @@ watch(
         }}</span>
       </div>
 
-      <div v-if="busy" class="cto-thinking" aria-label="CTO is thinking">
-        <span></span><span></span><span></span>
-      </div>
+      <AiChatThinking :active="busy" label="CTO is thinking" />
     </div>
+
+    <ChatJumpToLatest :visible="showJumpToLatest" :anchor="log" @click="scrollToLatest()" />
 
     <form class="cto-compose" @submit.prevent="send">
       <textarea
@@ -185,7 +190,14 @@ watch(
           <rect x="5" y="5" width="10" height="10" rx="1.5" fill="currentColor" />
         </svg>
       </button>
-      <button v-else type="submit" :disabled="busy || !enabled || !draft.trim()">Send</button>
+      <button
+        v-else
+        type="submit"
+        class="ai-chat-send"
+        :disabled="busy || !enabled || !draft.trim()"
+      >
+        Send
+      </button>
     </form>
   </FloatingHeadPanel>
 </template>
@@ -243,14 +255,11 @@ watch(
   background: var(--txt-faint);
   box-shadow: none;
 }
+/* Vertical rhythm between messages comes from .ai-chat-log (style.css). */
 .cto-log {
   flex: 1;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 11px;
   padding: 16px 14px;
-  overscroll-behavior: contain;
 }
 .cto-disabled {
   padding: 16px;
@@ -333,33 +342,12 @@ watch(
     monospace;
   opacity: 0.8;
 }
-.cto-thinking {
-  display: flex;
-  gap: 4px;
-  align-self: flex-start;
-  padding: 9px 12px;
-  border: 1px solid var(--border);
-  border-radius: 13px;
-  background: var(--panel);
-}
-.cto-thinking span {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--txt-faint);
-  animation: cto-bounce 1.2s infinite;
-}
-.cto-thinking span:nth-child(2) {
-  animation-delay: 0.15s;
-}
-.cto-thinking span:nth-child(3) {
-  animation-delay: 0.3s;
-}
 .cto-compose {
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  margin: 0 12px;
+  /* #0444: the compose row was flush against the panel's bottom edge. */
+  margin: 0 12px 12px;
   padding: 8px 9px 8px 12px;
   border: 1px solid var(--border);
   border-radius: 13px;
@@ -389,8 +377,9 @@ watch(
   flex: none;
   border: 0;
   border-radius: 9px;
-  background: var(--btn-primary-bg);
-  color: var(--cyan);
+  /* Fill comes from .ai-chat-send / .cto-stop below. */
+  background: transparent;
+  color: var(--txt-dim);
   cursor: pointer;
   font: 500 11px var(--font-sans);
 }
@@ -409,23 +398,5 @@ watch(
 .cto-compose button.cto-stop svg {
   width: 16px;
   height: 16px;
-}
-@keyframes cto-bounce {
-  0%,
-  70%,
-  100% {
-    transform: translateY(0);
-    opacity: 0.4;
-  }
-  35% {
-    transform: translateY(-3px);
-    opacity: 1;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .cto-thinking span {
-    animation: none;
-    transition: none;
-  }
 }
 </style>
