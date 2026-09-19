@@ -70,6 +70,7 @@ import { useModelMemory } from "../composables/useModelMemory";
 import { GENERIC_PATCH_TARGETS } from "../lib/taskTransitions";
 import { parseReviewVerdict } from "../lib/reviewVerdict";
 import { autoRepairHint, retryCountFrom } from "../lib/retryHints";
+import { uiRecoveryState } from "../lib/uiRecovery";
 import CopyableNumber from "./CopyableNumber.vue";
 
 const repo = useRepoStore();
@@ -77,6 +78,7 @@ const ui = useUiStore();
 const config = useConfigStore();
 const auth = useAuthStore();
 const router = useRouter();
+const recovery = uiRecoveryState();
 const { recall: recallModelForCli } = useModelMemory();
 
 const GEMINI_MIGRATION_URL = "https://antigravity.google/docs/cli/gcli-migration/";
@@ -2510,6 +2512,7 @@ watch(
     <DialogOverlay />
     <DialogContent
       :style="{ width: ui.drawerWidth + 'px', 'max-width': '100vw' }"
+      :disable-outside-pointer-events="!recovery.kind"
       @open-auto-focus="onOpenAutoFocus"
       @dragenter.prevent="onDragEnter"
       @dragover.prevent

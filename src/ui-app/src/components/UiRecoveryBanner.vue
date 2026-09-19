@@ -6,8 +6,17 @@ import Button from "./ui/button.vue";
 
 const recovery = uiRecoveryState();
 const title = computed(() =>
-  recovery.kind === "stale" ? "New RepoOS build detected" : "Server connection issue",
+  recovery.kind === "stale" ? "New RepoOS build available" : "Server connection issue",
 );
+const detail = computed(() => {
+  if (recovery.kind !== "stale") return recovery.message;
+
+  const build = recovery.newBuild ? `Build ${recovery.newBuild.slice(0, 12)}` : "New build";
+  const readyAt = recovery.newBuildAt
+    ? new Date(recovery.newBuildAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : null;
+  return readyAt ? `${build} ready at ${readyAt}` : `${build} ready`;
+});
 </script>
 
 <template>
@@ -17,12 +26,7 @@ const title = computed(() =>
       <RotateCcw v-else class="ui-recovery-icon" />
       <div class="ui-recovery-copy">
         <strong>{{ title }}</strong>
-        <span>{{ recovery.message }}</span>
-        <small v-if="recovery.newBuild"
-          >Build {{ recovery.newBuild.slice(0, 12) }} is ready<template v-if="recovery.newBuildAt">
-            ({{ new Date(recovery.newBuildAt).toLocaleTimeString() }})</template
-          >.</small
-        >
+        <small>{{ detail }}</small>
       </div>
       <div class="ui-recovery-actions">
         <Button variant="accent" size="sm" @click="reloadNow">
@@ -40,7 +44,7 @@ const title = computed(() =>
   z-index: 1000;
   top: 16px;
   left: 50%;
-  width: min(540px, calc(100vw - 32px));
+  width: min(460px, calc(100vw - 32px));
   transform: translateX(-50%);
   display: flex;
   align-items: center;
@@ -62,11 +66,9 @@ const title = computed(() =>
   gap: 2px;
   flex: 1;
 }
-.ui-recovery-copy span {
-  color: var(--txt-muted, #b7bdd1);
-}
 .ui-recovery-copy small {
-  color: var(--txt-faint, #8e96af);
+  color: var(--txt-muted, #b7bdd1);
+  font-size: 12px;
 }
 .ui-recovery-actions {
   display: flex;
