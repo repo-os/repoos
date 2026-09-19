@@ -298,12 +298,16 @@ inheritEnv = false
 
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
-| `worktrees.inheritEnv` | boolean | `false` | yes | When true, RepoOS symlinks the main checkout's gitignored `.env` into each task worktree so worktree-local build or preview commands can read project secrets. |
+| `worktrees.inheritEnv` | boolean | `false` | yes | When true, RepoOS symlinks the main checkout's `.env` into each task worktree so worktree-local build or preview commands can read project secrets. |
 
 **`inheritEnv` is off by default and must be opted into deliberately.** Every
-worktree is another place secrets live on disk, so RepoOS does not copy `.env`
-into worktrees unless you ask. Even when enabled, RepoOS creates the link only
-if the main checkout already gitignores `.env`; if it doesn't, no link is made.
+worktree is another place secrets live on disk. When enabled, RepoOS creates a
+symlink (not a copy) at `<worktree>/.env` pointing to the main checkout's
+`.env`. The link is created only when all of these hold:
+
+- The main checkout has a `.env` file.
+- The worktree does not already have its own real `.env`.
+- The worktree's own `.gitignore` (or any active ignore rule) covers `.env` — RepoOS checks this with `git check-ignore` inside the worktree, not in main. If the path is not ignored, no link is made to prevent an accidental secret commit.
 
 Runtime selection is controlled by environment variables, not `repoos.toml`:
 `REPOOS_RUNTIME` (`auto`, `bun`, or `node`) and `REPOOS_BUN_PATH` (an explicit
