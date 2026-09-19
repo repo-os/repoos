@@ -319,7 +319,7 @@ function toggleExpanded(key: string): void {
         </div>
       </div>
     </template>
-    <TaskDebuggerChat v-else :task="task" />
+    <TaskDebuggerChat v-else :task="task" :active="view === 'debugger'" />
   </div>
 </template>
 

@@ -292,7 +292,7 @@ watch(
             </div>
           </div>
         </template>
-        <AiChatThinking :active="busy" label="Debugger is working" />
+        <AiChatThinking class="ai-chat-avatar-offset" :active="busy" label="Debugger is working" />
         <div v-if="providerError && !busy" class="debugger-provider-error" role="alert">
           <strong>The Debugger's agent or model could not respond.</strong>
           <span

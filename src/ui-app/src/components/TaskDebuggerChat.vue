@@ -15,7 +15,7 @@ import AiChatThinking from "./AiChatThinking.vue";
 import ChatJumpToLatest from "./ChatJumpToLatest.vue";
 import { useChatScroll } from "../composables/useChatScroll";
 
-const props = defineProps<{ task: Task }>();
+const props = withDefaults(defineProps<{ task: Task; active?: boolean }>(), { active: true });
 const emit = defineEmits<{ close: [] }>();
 
 const DEBUGGER_AVATAR = "/assets/repoos-orchestrator-square.webp";
@@ -40,6 +40,7 @@ const hasConversation = computed(() => lines.value.length > 0);
 const { showJumpToLatest, onScroll, scrollToLatest } = useChatScroll(log, {
   chatId: () => CHAT_ID.value,
   contentSize: () => lines.value.length,
+  active: () => props.active,
 });
 
 const dispatchRole = ref<null | "engineer" | "pm">(null);
@@ -263,7 +264,7 @@ watch(
             </div>
           </div>
         </template>
-        <AiChatThinking :active="busy" label="Debugger is working" />
+        <AiChatThinking class="ai-chat-avatar-offset" :active="busy" label="Debugger is working" />
         <div v-if="dispatchErr" class="td-dispatch-err" role="alert">{{ dispatchErr }}</div>
       </div>
 

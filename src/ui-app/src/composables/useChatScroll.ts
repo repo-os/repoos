@@ -32,6 +32,9 @@ export const CHAT_BOTTOM_THRESHOLD = 64;
 /** How long a programmatic smooth scroll may take to settle, in ms. */
 const SMOOTH_SETTLE_MS = 800;
 
+/** Growth in distance-from-bottom that reads as the reader taking over. */
+const SETTLE_SLACK_PX = 8;
+
 const STORAGE_PREFIX = "repoos.chat-scroll.";
 
 export interface UseChatScrollOptions {
@@ -99,6 +102,7 @@ export function useChatScroll(
   // A smooth scroll emits a stream of scroll events on its way down; without
   // this the jump button would flash back into view for the whole animation.
   let settleAt = 0;
+  let settleDistance = 0;
   let observer: ResizeObserver | null = null;
 
   const isActive = (): boolean => toValue(options.active) ?? true;
@@ -109,18 +113,38 @@ export function useChatScroll(
     return Math.max(0, el.scrollHeight - el.scrollTop - el.clientHeight);
   }
 
+  /**
+   * A log with no layout box (a `v-show`-hidden panel, a not-yet-mounted
+   * dialog) reports `clientHeight === 0`. Measuring there would compute a
+   * distance of 0 and overwrite the remembered position with "at the bottom",
+   * so every geometry-dependent step bails out instead of guessing.
+   */
+  function hasGeometry(): boolean {
+    const el = log.value;
+    return Boolean(el && el.clientHeight > 0);
+  }
+
   function measure(): void {
     const el = log.value;
     if (!el) return;
     const distance = distanceFromBottom();
     atBottom.value = distance <= threshold;
-    if (persist) writeSaved(toValue(options.chatId), distance);
+    if (persist && hasGeometry()) writeSaved(toValue(options.chatId), distance);
   }
 
   function onScroll(): void {
     if (Date.now() < settleAt) {
-      // Our own smooth scroll is still running — don't fight it.
-      if (distanceFromBottom() <= threshold) settleAt = 0;
+      // Our own smooth scroll is still running — don't fight it. But the
+      // reader can still out-vote us: if they scroll up mid-animation the
+      // distance grows, so hand control straight back to them.
+      const distance = distanceFromBottom();
+      if (distance > settleDistance + SETTLE_SLACK_PX) {
+        settleAt = 0;
+        measure();
+        return;
+      }
+      if (distance <= threshold) settleAt = 0;
+      settleDistance = distance;
       atBottom.value = true;
       return;
     }
@@ -133,12 +157,13 @@ export function useChatScroll(
     const top = el.scrollHeight;
     if (behavior === "smooth" && typeof el.scrollTo === "function") {
       settleAt = Date.now() + SMOOTH_SETTLE_MS;
+      settleDistance = distanceFromBottom();
       el.scrollTo({ top, behavior });
     } else {
       el.scrollTop = top;
     }
     atBottom.value = true;
-    if (persist) writeSaved(toValue(options.chatId), 0);
+    if (persist && hasGeometry()) writeSaved(toValue(options.chatId), 0);
   }
 
   /**
@@ -147,7 +172,7 @@ export function useChatScroll(
    */
   function restore(): void {
     const el = log.value;
-    if (!el) return;
+    if (!el || !hasGeometry()) return;
     const saved = persist ? readSaved(toValue(options.chatId)) : null;
     el.scrollTop =
       saved === null ? el.scrollHeight : Math.max(0, el.scrollHeight - el.clientHeight - saved);

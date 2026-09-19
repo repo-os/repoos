@@ -8242,6 +8242,11 @@
 .ai-chat-thinking span:nth-child(3) {
   animation-delay: 0.3s;
 }
+/* Chats that put a 24px avatar + 7px gap beside assistant bubbles offset the
+   indicator so the pulse lines up with the bubble, not flush with the avatar. */
+.ai-chat-thinking.ai-chat-avatar-offset {
+  margin-left: 31px;
+}
 @keyframes ai-chat-pulse {
   0%,
   70%,

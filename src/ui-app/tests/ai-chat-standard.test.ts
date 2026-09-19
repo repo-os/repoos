@@ -62,6 +62,19 @@ function stripComments(text: string): string {
   return text.replace(/<!--[\s\S]*?-->/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
 }
 
+/** Every component source in the app, for the whole-file conformance scans. */
+const sources = readdirSync(SRC_DIR)
+  .flatMap((entry) => {
+    if (!entry.endsWith(".vue")) return [];
+    const text = readFileSync(resolve(SRC_DIR, entry), "utf8");
+    return [[entry, text] as const];
+  })
+  .concat(
+    readdirSync(COMPONENTS_DIR)
+      .filter((entry) => entry.endsWith(".vue"))
+      .map((entry) => [entry, readSurface(entry)] as const),
+  );
+
 // ── the harness ────────────────────────────────────────────────────────────
 
 const LOG_HEIGHT = 200;
@@ -256,6 +269,56 @@ describe("AI chat scroll behaviour", () => {
     expect(scrollToSpy).toHaveBeenCalledWith({ top: scrollHeight, behavior: "smooth" });
   });
 
+  it("lets a reader take back control mid-animation", async () => {
+    // The settle window suppresses the button so it can't flash during a smooth
+    // jump — but it must not out-vote a reader who scrolls up meanwhile.
+    const wrapper = await mountHarness({
+      chatId: nextChatId(),
+      size: 4,
+      behavior: "smooth",
+    });
+    const el = logEl(wrapper);
+    Object.defineProperty(el, "scrollTo", { value: () => {}, configurable: true });
+
+    scrollTo(wrapper, 200);
+    await nextTick();
+    jumpButton()?.click();
+    await nextTick();
+    expect(jumpButton(), "hidden while the smooth jump runs").toBeNull();
+
+    // Scroll further up: distance grows, so the reader wins immediately.
+    scrollTo(wrapper, 100);
+    await nextTick();
+
+    expect(jumpButton()).not.toBeNull();
+  });
+
+  it("never clobbers a remembered position from a log with no layout box", async () => {
+    const chatId = nextChatId();
+    const first = await mountHarness({ chatId, size: 4 });
+    scrollTo(first, 400);
+    await nextTick();
+    const saved = window.localStorage.getItem(`repoos.chat-scroll.${chatId}`);
+    expect(saved).toBe("400");
+    first.unmount();
+
+    // A `v-show`-hidden panel reports clientHeight 0. Restoring against that
+    // would compute distance 0 and overwrite the entry above with "at bottom".
+    const hidden = mount(Harness, {
+      props: { chatId, size: 4, active: false },
+      attachTo: document.body,
+    });
+    await hidden.setProps({ active: true });
+    await flushPromises();
+    await nextTick();
+    expect(window.localStorage.getItem(`repoos.chat-scroll.${chatId}`)).toBe("400");
+    hidden.unmount();
+
+    // With geometry again, the position that survived is the one we land on.
+    const back = await mountHarness({ chatId, size: 4 });
+    expect(logEl(back).scrollTop).toBe(scrollHeight - LOG_HEIGHT - 400);
+  });
+
   it("holds the remembered position while the surface is closed", async () => {
     const wrapper = await mountHarness({ chatId: nextChatId(), size: 4, active: false });
     // A closed panel has no geometry to restore into; nothing should throw.
@@ -286,6 +349,10 @@ describe("AI chat working indicator", () => {
 
 describe("every AI chat surface follows the standard", () => {
   const css = readFileSync(CSS_PATH, "utf8");
+
+  it("defines the avatar-offset modifier the indicator used to carry per-chat", () => {
+    expect(ruleBody(css, ".ai-chat-thinking.ai-chat-avatar-offset")).toMatch(/margin-left:/);
+  });
 
   it("ships the shared classes this whole standard hangs off", () => {
     for (const cls of [".ai-chat-log", ".ai-chat-thinking", ".ai-chat-send", ".chat-jump-latest"]) {
@@ -341,19 +408,31 @@ describe("every AI chat surface follows the standard", () => {
   }
 });
 
-describe("no AI chat reinvents the wheel", () => {
-  const sources = readdirSync(SRC_DIR)
-    .flatMap((entry) => {
-      if (!entry.endsWith(".vue")) return [];
-      const text = readFileSync(resolve(SRC_DIR, entry), "utf8");
-      return [[entry, text] as const];
-    })
-    .concat(
-      readdirSync(COMPONENTS_DIR)
-        .filter((entry) => entry.endsWith(".vue"))
-        .map((entry) => [entry, readSurface(entry)] as const),
-    );
+describe("no chat ships an animation it never defined", () => {
+  const sharedCss = readFileSync(CSS_PATH, "utf8");
 
+  it("every `animation:` name in a component resolves to a @keyframes block", () => {
+    // Regression: pruning the per-chat thinking keyframes during the #0444
+    // refactor took the Playground's unrelated `playground-shimmer` with them,
+    // silently freezing its loading skeleton.
+    for (const [file, text] of sources) {
+      const style = styleBlock(text);
+      const used = new Set(
+        [...style.matchAll(/animation(?:-name)?:\s*([a-zA-Z][\w-]*)/g)]
+          .map((m) => m[1])
+          .filter((name) => name !== "none" && name !== "inherit" && name !== "initial"),
+      );
+      for (const name of used) {
+        const defined =
+          new RegExp(`@keyframes\\s+${name}\\b`).test(text) ||
+          new RegExp(`@keyframes\\s+${name}\\b`).test(sharedCss);
+        expect(defined, `${file} animates with ${name} but never defines it`).toBe(true);
+      }
+    }
+  });
+});
+
+describe("no AI chat reinvents the wheel", () => {
   /** Anything that renders an AI conversation, however it's written. */
   function looksLikeAiChat(text: string): boolean {
     return (

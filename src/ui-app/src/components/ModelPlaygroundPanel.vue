@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { api, JSON_OPTS } from "../api";
 import { renderMarkdown } from "../lib/markdown";
 import { fmtContext } from "../lib/format";
@@ -14,6 +14,8 @@ import Button from "./ui/button.vue";
 import AiChatThinking from "./AiChatThinking.vue";
 import ChatJumpToLatest from "./ChatJumpToLatest.vue";
 import { useChatScroll } from "../composables/useChatScroll";
+
+const props = withDefaults(defineProps<{ active?: boolean }>(), { active: true });
 
 const STARTER_PROMPTS = [
   "What's this repo about?",
@@ -45,6 +47,7 @@ const draftTextarea = ref<HTMLTextAreaElement | null>(null);
 const { showJumpToLatest, onScroll, scrollToLatest } = useChatScroll(log, {
   chatId: () => `playground:${selected.value?.runId ?? "none"}`,
   contentSize: () => messages.value.length,
+  active: () => props.active,
 });
 
 const allModels = computed<CatalogModel[]>(() =>
@@ -751,6 +754,28 @@ onMounted(() => {
 .playground-compose button:disabled {
   opacity: 0.4;
   cursor: default;
+}
+@keyframes playground-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (max-width: 860px) {
+  .playground {
+    height: auto;
+    flex-direction: column;
+  }
+  .playground-sidebar {
+    max-height: 320px;
+  }
+  .playground-chat {
+    width: 100%;
+    min-height: 420px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .playground-skeleton-line {

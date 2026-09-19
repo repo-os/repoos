@@ -4304,7 +4304,11 @@ watch(
                   </div>
                 </div>
               </template>
-              <AiChatThinking :active="pmBusy" label="PM is thinking" />
+              <AiChatThinking
+                class="ai-chat-avatar-offset"
+                :active="pmBusy"
+                label="PM is thinking"
+              />
             </template>
           </div>
 

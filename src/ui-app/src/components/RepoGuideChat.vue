@@ -240,7 +240,7 @@ watch(
           </div>
         </div>
       </template>
-      <AiChatThinking :active="busy" label="Ross is thinking" />
+      <AiChatThinking class="ai-chat-avatar-offset" :active="busy" label="Ross is thinking" />
     </div>
 
     <ChatJumpToLatest :visible="showJumpToLatest" :anchor="log" @click="scrollToLatest()" />
