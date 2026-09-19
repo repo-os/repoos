@@ -40,6 +40,11 @@ import { stripAnsi } from "./done.js";
 import type { Logger } from "../core/logger.js";
 import { getRepoOSDb, type RepoOSDb, type UsageRange } from "../core/db.js";
 import { listSkills } from "./routes/helpers.js";
+import {
+  recoverTruncatedJson,
+  TRUNCATION_NOTICE_PREFIX,
+  type TruncatedPayload,
+} from "./json-truncation.js";
 
 /** The SSE events the runner emits. Subset of RepoEvent. */
 export type AgentEvent =
@@ -265,6 +270,14 @@ interface Session {
   >;
   /** The first permission denial seen this turn (detectPermissionDenial). */
   permissionDenial?: string;
+  /**
+   * The most recent payload this session saw cut mid-serialisation (#0442),
+   * or undefined when the stream has parsed cleanly throughout. `recovered`
+   * counts the events salvaged from it: zero means the payload yielded nothing
+   * usable, so the turn is marked failed at exit rather than read as a clean
+   * finish. Later turns overwrite it — it records the latest cut, not a tally.
+   */
+  truncation?: { bytes: number; recovered: number };
   /** The current Antigravity turn's terminal result, if one has arrived. */
   antigravityTerminal?: "success" | "failure";
   /**
@@ -3103,6 +3116,24 @@ export function parseOneShotLine(cli: string, raw: string): AgentOutputEntry | n
     isJson = raw.trim().startsWith("{");
     void JSON.parse(raw);
   } catch {
+    // A payload cut mid-serialisation (#0442): keep whatever completed before
+    // the cut — hundreds of kilobytes of half-written JSON in the transcript
+    // would evict everything else through the output cap while saying nothing.
+    const truncation = recoverTruncatedJson(raw);
+    if (truncation) {
+      let last: AgentOutputEntry | null = null;
+      let lastText: AgentOutputEntry | null = null;
+      for (const line of truncation.recovered) {
+        const entry = parseOneShotLine(cli, line);
+        if (!entry) continue;
+        last = entry;
+        if ("type" in entry && entry.type === "text") lastText = entry;
+      }
+      // Nothing survived the cut: say so, rather than falling back to the raw
+      // payload (a generic "output was not valid JSON" tells the human nothing
+      // they can act on).
+      return lastText ?? last ?? { s: "sys", d: truncation.message };
+    }
     return { s: "out", d: raw };
   }
   if (!isJson) return { s: "out", d: raw };
@@ -3145,18 +3176,24 @@ export function parseOneShotLine(cli: string, raw: string): AgentOutputEntry | n
  * answer is the LAST `text` event, so this discards the rest (0264 vs 0253).
  * Non-JSON one-shot CLIs (kiro) print only the final answer, so their raw
  * output IS the report. Falls back to the raw output if no text event parses,
- * so a format change never yields an empty report.
+ * so a format change never yields an empty report — except when the run was cut
+ * short mid-serialisation (#0442), where the raw output is unparseable JSON and
+ * the truncation notice is the only thing worth returning.
  */
 export function extractOneShotReportText(cli: string, rawOutput: string): string {
   const trimmed = rawOutput.trim();
   if (!trimmed) return trimmed;
   let last = "";
+  let truncated = "";
   for (const line of trimmed.split("\n")) {
     if (!line.trim()) continue;
     const entry = parseOneShotLine(cli, line);
-    if (entry && "type" in entry && entry.type === "text") last = entry.text;
+    if (!entry) continue;
+    if ("type" in entry && entry.type === "text") last = entry.text;
+    else if ("s" in entry && entry.s === "sys" && entry.d.startsWith(TRUNCATION_NOTICE_PREFIX))
+      truncated = entry.d;
   }
-  return (last || trimmed).trim();
+  return (last || truncated || trimmed).trim();
 }
 
 /**
@@ -4579,6 +4616,8 @@ export class AgentRunner {
       session.stalledEmitted = false;
       session.antigravityTerminal = undefined;
       session.permissionDenial = undefined;
+      // Per-turn: a cut payload from a PREVIOUS turn must not fail this one.
+      session.truncation = undefined;
     }
     // Persist the durable registry entry so a restart can re-attach (0214).
     if (proc.pid) {
@@ -4650,6 +4689,19 @@ export class AgentRunner {
       }
     }
 
+    // A payload cut mid-serialisation (#0442) — a large tool result hitting a
+    // context/buffer ceiling — fails every engine parser the same way, so it is
+    // handled once, here, before the per-engine dispatch below: salvage the
+    // events that completed before the cut and say plainly what happened.
+    // The cheap prefix test keeps the scan off plain-text and stderr lines.
+    if (stream === "out" && raw.trimStart().startsWith("{")) {
+      const truncation = recoverTruncatedJson(raw);
+      if (truncation) {
+        this.appendTruncatedLine(taskId, session, raw, truncation);
+        return;
+      }
+    }
+
     // claude's stream-json event shapes (nested under `message.content[]`)
     // differ from opencode's `part` shapes, so it gets its own parser branch
     // rather than a merged parser sniffing both (0109).
@@ -4703,6 +4755,41 @@ export class AgentRunner {
     }
     this.recordEntry(taskId, session, stream, entry);
     this.lineTouched(taskId, session, raw);
+  }
+
+  /**
+   * Handle an output payload that was cut mid-serialisation (#0442): keep the
+   * events that completed before the cut — each re-enters `appendLine`, so it
+   * goes through the session's own engine parser, session-id capture and usage
+   * folding like any other line — then say what happened.
+   *
+   * The truncated text itself is never dumped into the transcript: it is
+   * hundreds of kilobytes of unparseable JSON, and keeping it would evict the
+   * whole transcript through the output cap while telling the human nothing.
+   */
+  private appendTruncatedLine(
+    taskId: string,
+    session: Session,
+    raw: string,
+    truncation: TruncatedPayload,
+  ): void {
+    // `kept` counts entries that actually landed in the transcript, not events
+    // that merely parsed: a repair can yield a valid event the engine parser
+    // then discards (a text event whose text was cut to nothing), and that is
+    // still a turn the human got nothing from.
+    let kept = 0;
+    for (const line of truncation.recovered) {
+      const before = session.lines.length;
+      this.appendLine(taskId, "out", line);
+      if (session.lines.length > before) kept += 1;
+    }
+    session.truncation = { bytes: truncation.bytes, recovered: kept };
+    this.recordEntry(taskId, session, "sys", { type: "sys", d: truncation.message });
+    this.lineTouched(taskId, session, raw);
+    this.logger?.agent(taskId, kept ? "warn" : "error", "Agent output truncated", {
+      bytes: truncation.bytes,
+      recovered: kept,
+    });
   }
 
   /**
@@ -5482,6 +5569,18 @@ export class AgentRunner {
       });
       this.logger?.agent(taskId, "error", "Antigravity turn ended without a SUCCESS result", {
         runId: entry.runId,
+      });
+    }
+    // A payload cut mid-serialisation whose salvage yielded nothing (#0442) is
+    // not a clean finish either: the CLI exited zero but produced no usable
+    // output, and reading that as success would leave the task sitting silently
+    // in `active` with the human none the wiser. The message itself was already
+    // recorded when the payload was seen, so this only marks the turn failed.
+    if (exitedCleanly && session?.truncation && session.truncation.recovered === 0) {
+      exitedCleanly = false;
+      this.logger?.agent(taskId, "error", "Agent turn produced no usable output (truncated)", {
+        runId: entry.runId,
+        bytes: session.truncation.bytes,
       });
     }
     if (entry.killTimer) clearTimeout(entry.killTimer);
