@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-19T19:40:40Z"
+review_passes: 1
 id: "0450"
 title: Add a 'Run now' started modal for built-in team agents
 type: feature
@@ -15,7 +17,6 @@ cli_override: cursor
 model_override: auto
 review_model_override: opencode-go/hy3
 created_at: "2026-09-19T16:38:12Z"
-updated_at: "2026-09-19T19:39:52Z"
 dev_error_count: 3
 ---
 ## Problem
@@ -62,3 +63,4 @@ Use the descriptions already in BuiltInAgentCard.vue as the source of truth:
 - 2026-09-19T18:06:44Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-09-19T19:36:16Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-09-19T19:39:52Z · status active→review
+
