@@ -1354,7 +1354,8 @@ export function parseCopilotEvent(
     type === "assistant.reasoning" ||
     type === "assistant.tool_call_delta" ||
     type === "assistant.turn_start" ||
-    type === "assistant.turn_end"
+    type === "assistant.turn_end" ||
+    type === "prompt_cache_break"
   )
     return { sessionID };
   return {
@@ -2257,6 +2258,8 @@ const COPILOT_TOOL_PERMISSIONS = [
   "shell(ls)",
   "--allow-tool",
   "shell(cat)",
+  "--allow-tool",
+  "shell(cd:*)",
 ] as const;
 
 function copilotArgs(options: { write: boolean }): string[] {

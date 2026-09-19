@@ -265,6 +265,7 @@ describe("parseClaudeEvent (0109)", () => {
         "assistant.tool_call_delta",
         "assistant.turn_start",
         "assistant.turn_end",
+        "prompt_cache_break",
       ]) {
         expect(parseCopilotEvent(`{"type":"${t}","data":{}}`)).toEqual({});
       }
