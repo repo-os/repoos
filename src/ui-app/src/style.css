@@ -7768,6 +7768,51 @@
   margin-top: 8px;
 }
 
+/* Delete confirmation is body-teleported so it remains above the task drawer. */
+.delete-confirm-modal.drawer-wrap.drawer {
+  top: 50%;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  width: min(460px, 92vw);
+  height: auto;
+  transform: translate(-50%, -50%);
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--red) 45%, var(--border));
+  background: var(--panel-gradient);
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.45),
+    0 0 0 1px var(--border);
+  overflow: hidden;
+  animation: cc-modal-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.delete-confirm-head {
+  padding: 20px 24px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.delete-confirm-head .close-x {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.delete-confirm-desc {
+  padding: 12px 24px 0;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.delete-confirm-desc strong {
+  color: var(--txt);
+  font-weight: 650;
+}
+.delete-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 24px;
+  margin-top: 8px;
+}
+
 /* Product release modal. Dialog content is body-teleported, so its styling
    intentionally lives here rather than in the Releases view's scoped CSS. */
 .release-modal.drawer-wrap.drawer {

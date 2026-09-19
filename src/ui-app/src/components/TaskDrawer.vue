@@ -50,6 +50,7 @@ import SpecEditModal from "./SpecEditModal.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
 import DebugPanel from "./DebugPanel.vue";
 import StopWorkConfirmModal from "./StopWorkConfirmModal.vue";
+import DeleteTaskDialog from "./DeleteTaskDialog.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
 import Dialog from "./ui/dialog/root.vue";
@@ -574,7 +575,7 @@ async function reopenTask(): Promise<void> {
   }
 }
 
-const confirmDelete = ref(false);
+const deleteTaskTarget = ref<{ id: string; title: string } | null>(null);
 const confirmHotfix = ref(false);
 // Stop work confirmation modal state
 const confirmStopWork = ref(false);
@@ -592,17 +593,26 @@ function openHotfixConfirm(): void {
 }
 
 async function deleteTask(): Promise<void> {
-  if (!ui.active) return;
+  const task = deleteTaskTarget.value;
+  if (!task) return;
   ui.saving = true;
   try {
-    await repo.deleteTask(ui.active.id);
+    await repo.deleteTask(task.id);
+    deleteTaskTarget.value = null;
     ui.close();
   } catch (err) {
     repo.onError(err);
-    confirmDelete.value = false;
   } finally {
     ui.saving = false;
   }
+}
+
+function openDeleteConfirm(): void {
+  if (ui.active) deleteTaskTarget.value = { id: ui.active.id, title: ui.active.title };
+}
+
+function cancelDelete(): void {
+  deleteTaskTarget.value = null;
 }
 
 async function startHotfix(target: "branch" | "main"): Promise<void> {
@@ -3333,44 +3343,23 @@ watch(
             </div>
           </div>
           <div class="delete-zone">
-            <template v-if="!confirmDelete">
-              <Button
-                variant="destructive"
-                size="sm"
-                :disabled="ui.saving"
-                @click="confirmDelete = true"
-              >
-                Delete task
-              </Button>
-              <Button
-                v-if="!ui.active?.hotfix && ui.active?.status === 'ready'"
-                variant="outline"
-                size="sm"
-                :disabled="ui.saving"
-                @click="openHotfixConfirm"
-              >
-                Hotfix
-              </Button>
-            </template>
-            <template v-else>
-              <p class="delete-prompt">
-                Delete task #{{ ui.active.id }}? The file will be removed. Committed changes are
-                recoverable from git; uncommitted or never-committed work is lost.
-              </p>
-              <div class="delete-actions">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  :disabled="ui.saving"
-                  @click="confirmDelete = false"
-                >
-                  Cancel
-                </Button>
-                <Button variant="destructive" size="sm" :disabled="ui.saving" @click="deleteTask">
-                  Delete
-                </Button>
-              </div>
-            </template>
+            <Button
+              variant="destructive"
+              size="sm"
+              :disabled="ui.saving"
+              @click="openDeleteConfirm"
+            >
+              Delete task
+            </Button>
+            <Button
+              v-if="!ui.active?.hotfix && ui.active?.status === 'ready'"
+              variant="outline"
+              size="sm"
+              :disabled="ui.saving"
+              @click="openHotfixConfirm"
+            >
+              Hotfix
+            </Button>
           </div>
         </div>
         <div
@@ -4442,6 +4431,14 @@ watch(
     @update:open="(v) => (confirmStopWork = v)"
     @confirm="confirmAbandonWork"
     @cancel="cancelAbandonWork"
+  />
+
+  <DeleteTaskDialog
+    :open="deleteTaskTarget !== null"
+    :task="deleteTaskTarget"
+    :busy="ui.saving"
+    @update:open="(v) => !v && cancelDelete()"
+    @confirm="deleteTask"
   />
 </template>
 
