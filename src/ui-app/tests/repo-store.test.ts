@@ -1269,6 +1269,29 @@ describe("fresh-done acknowledgement (0278)", () => {
     expect(repo2.needsAck(repo2.tasks[0])).toBe(false);
     expect(localStorage.getItem("repoos.done.acked")).toContain("0001");
   });
+
+  it("implicit create-ack does not pollute the done-ack highlight (#0437)", async () => {
+    // A PM-created task is creation-acked implicitly when a human changes its state.
+    // That must NOT pre-fill doneAcked, which would suppress the "just done" highlight
+    // when the same task later reaches `done`.
+    localStorage.removeItem("repoos.done.acked");
+    localStorage.removeItem("repoos.aiCreate.unacked");
+    const repo = useRepoStore();
+    await repo.init();
+    const es = FakeEventSource.instances[0];
+    // Task arrives as PM-created (needs creation ack).
+    es.emit("task.created", { type: "task.created", task: makeTask({ status: "inbox" }) });
+    // Human moves it to ready — implicit creation ack.
+    repo.acknowledgeCreate("0001");
+    expect(repo.needsAck(repo.tasks[0])).toBe(false);
+    // Now it reaches done: the highlight must still fire.
+    es.emit("task.updated", {
+      type: "task.updated",
+      task: makeTask({ status: "done", updated_at: now() }),
+      prev: { status: "review" },
+    });
+    expect(repo.needsAck(repo.tasks[0])).toBe(true);
+  });
 });
 
 describe("AI-created card acknowledgement (0320)", () => {
@@ -1322,6 +1345,44 @@ describe("AI-created card acknowledgement (0320)", () => {
 
     repo.acknowledgeCreate("0043");
     expect(repo.needsCreateAck("0043")).toBe(false);
+  });
+
+  it("implicitly acknowledges human status and assignment changes, not PM updates", async () => {
+    localStorage.removeItem(PENDING_KEY);
+    localStorage.removeItem(UNACKED_KEY);
+    stubFetchWith({ ok: true, fallback: false, task: makeTask({ id: "0043", status: "draft" }) });
+    const repo = useRepoStore();
+    await repo.init();
+    await repo.createFreeformTask("a fresh idea", "run-1");
+
+    const es = FakeEventSource.instances[0];
+    es.emit("task.updated", {
+      type: "task.updated",
+      task: makeTask({ id: "0043", status: "inbox" }),
+      prev: { status: "draft" },
+    });
+    expect(repo.needsCreateAck("0043")).toBe(true);
+
+    // A PM-originated update is only an SSE event and must not dismiss it.
+    es.emit("task.updated", {
+      type: "task.updated",
+      task: makeTask({ id: "0043", status: "ready" }),
+      prev: { status: "inbox" },
+    });
+    expect(repo.needsCreateAck("0043")).toBe(true);
+
+    // Mutations initiated by this tab are implicit acknowledgement.
+    await repo.setStatus(makeTask({ id: "0043", status: "ready" }), "active");
+    expect(repo.needsCreateAck("0043")).toBe(false);
+
+    // Assignment uses the same human-action path.
+    localStorage.setItem(UNACKED_KEY, JSON.stringify(["0043"]));
+    setActivePinia(createPinia());
+    const repo2 = useRepoStore();
+    await repo2.init();
+    expect(repo2.needsCreateAck("0043")).toBe(true);
+    await repo2.patchTask("0043", { assignee: "human" });
+    expect(repo2.needsCreateAck("0043")).toBe(false);
   });
 
   it("never flags fallback creations or tasks not created through the AI flow", async () => {
