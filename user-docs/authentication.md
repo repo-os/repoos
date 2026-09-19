@@ -6,9 +6,10 @@ turn it on — the server serves straight to the app, with no login screen. Apar
 from the section below on the dev backdoor, everything on this page describes
 what happens *after* you enable it.
 
-For the full list of fields and their defaults, see
-[Configuration → Authentication](/configuration#authentication); this page is
-about getting it running.
+For the full field list, defaults, and examples, see the
+[repoos.toml reference](/configuration#authentication) and the
+[Environment and secrets](/environment-and-secrets) guide. This page is about
+getting it running.
 
 ## Turning it on
 

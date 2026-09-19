@@ -26,9 +26,10 @@ tagPrefix   = "v"
 remote      = "origin"
 ```
 
-The full field list and defaults are in
-[Configuration → Releases](/configuration#releases). The `Releases` nav item
-only appears when `release.enabled = true`.
+The full field list, defaults, and examples are in the
+[repoos.toml reference](/configuration#releases-deployments-and-distribution)
+and the [Environment and secrets](/environment-and-secrets) guide. The
+`Releases` nav item only appears when `release.enabled = true`.
 
 ### The Releases page
 

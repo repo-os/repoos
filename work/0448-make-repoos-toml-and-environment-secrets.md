@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-19T22:18:55Z"
-review_passes: 5
 id: "0448"
 title: Make repoos.toml and environment secrets documentation complete
 type: docs
@@ -10,13 +8,9 @@ area: docs
 assigned_to: ai
 created_by: ""
 branch: feat/make-repoos-toml-and-environment-secrets
-cli_override: opencode
-model_override: openrouter/deepseek/deepseek-v4.1-flash
-review_model_override: opencode-go/hy3
+review_model_override: default
 created_at: "2026-09-19T15:10:29Z"
-review_rounds: 2
-handoff_signal_retry_count: 1
-dev_error_count: 1
+updated_at: "2026-09-19T16:35:18Z"
 ---
 ## Outcome
 
@@ -47,24 +41,4 @@ Give users one trustworthy explanation of every supported RepoOS project setting
 - 2026-09-19T15:20:42Z · review_cli_override
 - 2026-09-19T15:27:46Z · status inbox→ready
 - 2026-09-19T15:27:48Z · status ready→active, branch
-- 2026-09-19T15:53:05Z · agent exited with an error (copilot) · permission problem, not a code failure: GitHub Copilot denied a shell command that isn't on RepoOS's --allow-tool list
-- 2026-09-19T15:58:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-09-19T16:01:52Z · cli_override
-- 2026-09-19T16:01:54Z · model_override
-- 2026-09-19T16:02:19Z · cli_override, model_override
-- 2026-09-19T16:02:33Z · model_override
-- 2026-09-19T16:02:42Z · needs_input
 - 2026-09-19T16:35:18Z · status active→review
-- 2026-09-19T16:38:04Z · status review→active
-- 2026-09-19T16:54:49Z · status active→review
-- 2026-09-19T17:09:49Z · needs_input
-- 2026-09-19T17:10:23Z · review_cli_override
-- 2026-09-19T17:10:25Z · review_model_override
-- 2026-09-19T17:11:23Z · review_cli_override, review_model_override
-- 2026-09-19T17:11:27Z · review_model_override
-- 2026-09-19T17:13:34Z · needs_input
-- 2026-09-19T17:13:34Z · status review→active
-- 2026-09-19T17:31:06Z · status active→review
-- 2026-09-19T22:17:03Z · review_cli_override, review_model_override
-- 2026-09-19T22:17:13Z · review_model_override
-
