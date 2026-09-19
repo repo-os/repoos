@@ -1,10 +1,11 @@
 /**
- * #0405 — the skill-suggestion pass is wired to the review transition.
+ * #0429 — the evidence-gated skill-suggestion pass is wired to the `done`
+ * transition only.
  *
- * Drives the real HTTP server against a fixture repo and a fake `opencode`
- * that answers the review prompt with a report and the skill-analysis prompt
- * with a JSON draft. The task's session transcript is seeded on disk so the
- * pass has something to analyse (the fixture never runs a real engineer).
+ * Drives the real HTTP server against a fixture repo and a fake `opencode` that
+ * answers the review prompt with a report and the skill-analysis prompt with a
+ * JSON verdict. The task's session transcript is seeded on disk so the pass has
+ * something to analyse (the fixture never runs a real engineer).
  */
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
@@ -30,15 +31,32 @@ const FAKE = `
 const fs = require("fs");
 fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args: process.argv.slice(2) }) + "\\n");
 const mission = process.argv.join(" ");
-if (mission.includes("worth capturing as a reusable skill")) {
-  process.stdout.write(JSON.stringify({
-    skill: {
-      name: "Audit a failing build",
-      description: "Use when the build is red and the cause is unclear.",
-      body: "# Audit a failing build\\n\\n## Procedure\\n1. Run the build."
-    },
-    additional: [{ name: "Rotate credentials", description: "Only if a key leaked." }]
-  }) + "\\n");
+if (mission.includes("reusable SKILL")) {
+  if (process.env.REPOOS_FAKEBIN_SKILL === "reject") {
+    process.stdout.write(JSON.stringify({
+      eligible: false,
+      category: "one-off-edit",
+      rejectReason: "a one-off edit, not a skill",
+      skill: null,
+      additional: []
+    }) + "\\n");
+  } else {
+    process.stdout.write(JSON.stringify({
+      eligible: true,
+      category: "reusable-workflow",
+      skill: {
+        key: "audit-a-failing-build",
+        name: "Audit a failing build",
+        description: "Use when the build is red and the cause is unclear.",
+        trigger: "The build is red and the cause is unclear.",
+        insufficientWhy: "A single test cannot cover every build failure mode.",
+        externalWorkflow: false,
+        externalWorkflowName: "",
+        body: "# Audit a failing build\\n\\n## Procedure\\n1. Run the build."
+      },
+      additional: [{ name: "Rotate credentials", description: "Only if a key leaked." }]
+    }) + "\\n");
+  }
 } else {
   process.stdout.write("## Verdict\\ngood to go — fine.\\n\\n## Bugs\\n- none found\\n");
 }
@@ -101,6 +119,41 @@ function seedTranscript(root: string, taskId: string): void {
   );
 }
 
+/** Pre-seed the internal candidate store with a corroborating first session. */
+function seedCandidate(root: string, taskId: string): void {
+  const dir = join(root, ".repoos");
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(
+    join(dir, "skill-candidates.json"),
+    JSON.stringify({
+      "audit-a-failing-build": {
+        key: "audit-a-failing-build",
+        name: "Audit a failing build",
+        description: "Use when the build is red.",
+        body: "# Audit a failing build\n\n1. Run the build.",
+        trigger: "The build is red.",
+        insufficientRationale: "A single test cannot cover every build failure mode.",
+        externalWorkflow: false,
+        externalWorkflowName: "",
+        sourceTaskIds: [taskId],
+        additional: [],
+        firstSeenAt: "2026-01-01T00:00:00Z",
+        updatedAt: "2026-01-01T00:00:00Z",
+      },
+    }),
+  );
+}
+
+function readCandidates(root: string): Record<string, { sourceTaskIds?: string[] }> {
+  try {
+    return JSON.parse(
+      readFileSync(join(root, ".repoos", "skill-candidates.json"), "utf8"),
+    ) as Record<string, { sourceTaskIds?: string[] }>;
+  } catch {
+    return {};
+  }
+}
+
 async function taskWithWorktree(
   server: ServerHandle,
   fx: Fixture,
@@ -118,22 +171,39 @@ async function taskWithWorktree(
   return { id, absPath: created.body.absPath as string, branch };
 }
 
-/** Poll the task list for the (fire-and-forget) suggestion task. */
-async function findSuggestion(server: ServerHandle): Promise<Record<string, unknown>> {
-  const deadline = Date.now() + 20_000;
+/** Flip the task file on disk to `done`, letting the server's watcher see it. */
+function driveToDone(absPath: string): void {
+  const content = readFileSync(absPath, "utf8").replace(/^status: .*$/m, "status: done");
+  writeFileSync(absPath, content);
+}
+
+async function waitFor(predicate: () => boolean, timeoutMs: number, label: string): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (!predicate()) {
+    if (Date.now() > deadline) throw new Error(`timed out waiting for ${label}`);
+    await new Promise((r) => setTimeout(r, 50));
+  }
+}
+
+async function findSuggestion(
+  server: ServerHandle,
+  timeoutMs = 20_000,
+): Promise<Record<string, unknown> | undefined> {
+  const deadline = Date.now() + timeoutMs;
   for (;;) {
     const list = await api(server, "GET", "/api/tasks");
     const suggestion = (list.body as unknown as Array<Record<string, unknown>>).find((t) =>
       String(t.title).startsWith("New Skill Suggestion:"),
     );
     if (suggestion) return suggestion;
-    if (Date.now() > deadline) throw new Error("timed out waiting for a skill suggestion task");
+    if (Date.now() > deadline) return undefined;
     await new Promise((r) => setTimeout(r, 50));
   }
 }
 
 async function withServer(fx: Fixture, fn: (server: ServerHandle) => Promise<void>): Promise<void> {
   const oldPath = process.env.PATH ?? "";
+  const oldMode = process.env.REPOOS_FAKEBIN_SKILL;
   process.env.PATH = `${fx.bin}:${oldPath}`;
   process.env.REPOOS_FAKEBIN_LOG = fx.log;
   const server = await startServer({ root: fx.root, host: "127.0.0.1", port: 0 });
@@ -142,32 +212,87 @@ async function withServer(fx: Fixture, fn: (server: ServerHandle) => Promise<voi
   } finally {
     process.env.PATH = oldPath;
     delete process.env.REPOOS_FAKEBIN_LOG;
+    if (oldMode === undefined) delete process.env.REPOOS_FAKEBIN_SKILL;
+    else process.env.REPOOS_FAKEBIN_SKILL = oldMode;
     await server.close();
     fx.clean();
   }
 }
 
-describe("skill-suggestion trigger (#0405)", () => {
-  it("creates one spec suggestion task when a task lands in review", async () => {
-    const fx = makeFixture();
+describe("skill-suggestion lifecycle (#0429)", () => {
+  it("does not run the suggestion pass on the review transition", async () => {
+    const fx = makeFixture("skillSuggestions = true\n");
     await withServer(fx, async (server) => {
       const task = await taskWithWorktree(server, fx, "Do a multi-step thing");
       seedTranscript(fx.root, task.id);
 
       await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "review" });
 
+      // The review itself must still run…
+      const reportFile = join(fx.root, ".repoos", "reviews", `${task.id}.md`);
+      await waitFor(() => existsSync(reportFile), 15_000, "the review report");
+      // …but the skill pass must not: no candidate, no suggestion task.
+      await new Promise((r) => setTimeout(r, 1000));
+      expect(Object.keys(readCandidates(fx.root))).toHaveLength(0);
+      expect(await findSuggestion(server, 500)).toBeUndefined();
+    });
+  }, 60_000);
+
+  it("persists a first candidate but creates no task on a single completed session", async () => {
+    const fx = makeFixture("skillSuggestions = true\n");
+    await withServer(fx, async (server) => {
+      const task = await taskWithWorktree(server, fx, "Do a multi-step thing");
+      seedTranscript(fx.root, task.id);
+      driveToDone(task.absPath);
+
+      await waitFor(
+        () => Boolean(readCandidates(fx.root)["audit-a-failing-build"]),
+        15_000,
+        "the persisted candidate",
+      );
+      expect(readCandidates(fx.root)["audit-a-failing-build"]?.sourceTaskIds).toEqual([task.id]);
+      expect(await findSuggestion(server, 1000)).toBeUndefined();
+      expect(readFileSync(task.absPath, "utf8")).not.toContain("skill_suggestion");
+    });
+  }, 60_000);
+
+  it("creates one task once a second independent session corroborates", async () => {
+    const fx = makeFixture("skillSuggestions = true\n");
+    await withServer(fx, async (server) => {
+      const task = await taskWithWorktree(server, fx, "Do a multi-step thing");
+      seedTranscript(fx.root, task.id);
+      seedCandidate(fx.root, "0410");
+      driveToDone(task.absPath);
+
       const suggestion = await findSuggestion(server);
-      expect(suggestion.title).toBe("New Skill Suggestion: Audit a failing build");
-      expect(suggestion.type).toBe("spec");
-      expect(suggestion.status).toBe("inbox");
-      expect(suggestion.assignedTo).toBe("human");
-      expect(String(suggestion.body)).toContain("Rotate credentials");
-      expect(String(suggestion.body)).toContain("skills/audit-a-failing-build/SKILL.md");
+      expect(suggestion).toBeDefined();
+      expect(suggestion?.title).toBe("New Skill Suggestion: Audit a failing build");
+      expect(suggestion?.type).toBe("spec");
+      expect(suggestion?.status).toBe("inbox");
+      expect(suggestion?.assignedTo).toBe("human");
+      const body = String(suggestion?.body);
+      expect(body).toContain("#0410");
+      expect(body).toContain(task.id);
+      expect(body).toContain("A single test cannot cover every build failure mode.");
 
       // The originating task carries the link the review drawer renders.
       expect(readFileSync(task.absPath, "utf8")).toMatch(
-        new RegExp(`^skill_suggestion: "?${suggestion.id}"?$`, "m"),
+        new RegExp(`^skill_suggestion: "?${suggestion?.id}"?$`, "m"),
       );
+    });
+  }, 60_000);
+
+  it("creates nothing for a rejected candidate", async () => {
+    const fx = makeFixture("skillSuggestions = true\n");
+    await withServer(fx, async (server) => {
+      process.env.REPOOS_FAKEBIN_SKILL = "reject";
+      const task = await taskWithWorktree(server, fx, "Do a multi-step thing");
+      seedTranscript(fx.root, task.id);
+      driveToDone(task.absPath);
+
+      await new Promise((r) => setTimeout(r, 1500));
+      expect(Object.keys(readCandidates(fx.root))).toHaveLength(0);
+      expect(await findSuggestion(server, 500)).toBeUndefined();
     });
   }, 60_000);
 
@@ -176,41 +301,12 @@ describe("skill-suggestion trigger (#0405)", () => {
     await withServer(fx, async (server) => {
       const task = await taskWithWorktree(server, fx, "Do not suggest for me");
       seedTranscript(fx.root, task.id);
+      seedCandidate(fx.root, "0410");
+      driveToDone(task.absPath);
 
-      await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "review" });
-
-      // Give the review trigger the same window as the enabled case.
-      await new Promise((r) => setTimeout(r, 2000));
-      const list = await api(server, "GET", "/api/tasks");
-      const suggestion = (list.body as unknown as Array<Record<string, unknown>>).find((t) =>
-        String(t.title).startsWith("New Skill Suggestion:"),
-      );
-      expect(suggestion).toBeUndefined();
+      await new Promise((r) => setTimeout(r, 1500));
+      expect(await findSuggestion(server, 500)).toBeUndefined();
       expect(readFileSync(task.absPath, "utf8")).not.toContain("skill_suggestion");
-    });
-  }, 60_000);
-
-  it("does not run the pass without a session transcript", async () => {
-    const fx = makeFixture();
-    await withServer(fx, async (server) => {
-      const task = await taskWithWorktree(server, fx, "No transcript here");
-      // No seedTranscript: the engineer session is empty.
-
-      await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "review" });
-      // The review still runs; only the suggestion pass is skipped.
-      const reportFile = join(fx.root, ".repoos", "reviews", `${task.id}.md`);
-      const deadline = Date.now() + 15_000;
-      while (!existsSync(reportFile)) {
-        if (Date.now() > deadline) throw new Error("timed out waiting for the review report");
-        await new Promise((r) => setTimeout(r, 50));
-      }
-      await new Promise((r) => setTimeout(r, 1000));
-
-      const list = await api(server, "GET", "/api/tasks");
-      const suggestion = (list.body as unknown as Array<Record<string, unknown>>).find((t) =>
-        String(t.title).startsWith("New Skill Suggestion:"),
-      );
-      expect(suggestion).toBeUndefined();
     });
   }, 60_000);
 });

@@ -351,9 +351,11 @@ export interface RepoOSConfig {
   /** When true, RepoOS automatically selects and starts ready tasks up to maxActiveTasks. */
   autoEngineeringMode?: boolean;
   /**
-   * When true (the default), a completed task's session is analysed and — if a
-   * non-trivial reusable multi-step procedure was performed — exactly one
-   * `New Skill Suggestion: …` task is created for human review. Nothing is
+   * When true (off by default), a task's session is analysed only after it
+   * reaches `done`, and a `New Skill Suggestion: …` task is created only for a
+   * high-bar reusable procedure corroborated by at least two independent
+   * completed sessions (or a named stable external tool/API workflow). The
+   * first candidate is persisted internally and creates no task. Nothing is
    * saved as an actual skill until a human works that suggestion task.
    */
   skillSuggestions?: boolean;

@@ -1,27 +1,36 @@
 /**
- * Auto-suggest reusable skills from completed sessions (#0405).
+ * Evidence-gated auto-suggestions for reusable skills (#0429, superseding
+ * #0405's "analyse at review" pass).
  *
- * When a task lands in `review` (or `done`, when review was skipped) its
- * session transcript is analysed once. If a non-trivial, reusable multi-step
- * procedure is detected, exactly ONE `New Skill Suggestion: <name>` task of
- * type `spec` is created through the normal task-creation path so a human can
- * review the draft. Nothing is ever written as a live skill file here — the
- * suggestion is a normal board task the human works the usual way.
+ * A reusable skill is a high-bar artifact: a stable procedure that will help on
+ * FUTURE, materially different tasks, with real decisions/branches and evidence
+ * that it saves repeated investigation. One-off bug fixes, task-specific
+ * checklists, test ideas, repository-local style rules, review feedback, and
+ * unverified or failed outcomes are NOT skills.
  *
- * Design notes:
- *   - On by default, toggled by the `skillSuggestions` config key; off means
- *     the pass is a complete no-op (no task, no marker, no drawer note).
- *   - At most one suggestion task per originating task. Extra candidates are
- *     listed inside the single suggestion body, never turned into more tasks.
- *   - The analysis runs through the same one-shot LLM path the other server
- *     roles use (`runPrompt`), and its spend is recorded in the sessions table
- *     with `sessionType: "skill-suggestion"` and the originating taskId.
- *   - Best-effort: a failure (no agent, bad JSON, timeout) creates nothing and
- *     never surfaces an error to the task's normal flow.
+ * #0424 (a narrow, unverified CSS workaround filed from #0410 and later shown
+ * wrong) is the incident this gate exists to prevent. The pass therefore:
+ *
+ *   - Runs only when a task genuinely reaches `done`/close-out — never on the
+ *     `review` transition, where the outcome is not yet verified.
+ *   - Defaults to no suggestion: the analysis must affirmatively say a candidate
+ *     is eligible AND attach the evidence (repeatable trigger + why a test /
+ *     instruction / task would be insufficient). Ambiguous evidence is rejected.
+ *   - Requires corroboration before anything user-visible exists. The first
+ *     eligible candidate is persisted internally (`.repoos/skill-candidates.json`)
+ *     and creates no task. A suggestion task is created only when a second,
+ *     independent completed task session evidences the same candidate — or the
+ *     candidate is an explicitly named, stable external tool/API workflow.
+ *   - Creates at most ONE suggestion task per candidate, and never writes a live
+ *     skill file. The human approval gate is unchanged.
+ *
+ * Best-effort: a failure (no agent, bad JSON, timeout) creates nothing and never
+ * surfaces an error to the task's normal flow.
  *
  * Zero runtime deps — node:fs / node:path only.
  */
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import type { Agent, AgentOutputEntry, RepoOSConfig, Status, Task } from "../core/types.js";
 import { parseDocument, serializeDocument } from "../core/frontmatter.js";
 import { commitTaskFile } from "../core/git.js";
@@ -40,6 +49,9 @@ import {
 /** The frontmatter key that links an origin task to its suggestion task. */
 export const SKILL_SUGGESTION_KEY = "skill_suggestion";
 
+/** Where the internal first-candidate evidence is persisted, relative to cacheDir. */
+const CANDIDATE_STORE_FILE = "skill-candidates.json";
+
 /** Cap on the task spec quoted into the analysis prompt (keeps it bounded). */
 const SPEC_CHARS = 4000;
 
@@ -49,12 +61,41 @@ const TRANSCRIPT_CHARS = 30_000;
 /** Cap on a generated draft body, so a runaway model cannot blow up a task file. */
 const SKILL_BODY_CHARS = 12_000;
 
+/**
+ * The analysis's verdict category. Only `reusable-workflow` and
+ * `external-workflow` can ever become a skill; the rest are the explicit
+ * rejections the task spec calls out.
+ */
+export type SkillCategory =
+  | "reusable-workflow"
+  | "external-workflow"
+  | "one-off-edit"
+  | "task-checklist"
+  | "test-idea"
+  | "local-convention"
+  | "review-feedback"
+  | "unverified"
+  | "ambiguous";
+
+/** Categories that may become a skill at all. */
+const ALLOWED_CATEGORIES = new Set<SkillCategory>(["reusable-workflow", "external-workflow"]);
+
 /** A parsed draft skill, ready to render as SKILL.md. */
 export interface SkillDraft {
+  /** Stable identity of the procedure, used to corroborate across sessions. */
+  key: string;
   /** Human-readable procedure name, e.g. "Snapshot a failing test run". */
   name: string;
   /** One sentence describing when to use the skill. */
   description: string;
+  /** The repeatable trigger that makes this reusable on a future, different task. */
+  trigger: string;
+  /** Why a test, instruction, or ordinary task would not be sufficient. */
+  insufficientRationale: string;
+  /** True when this is a named, stable external tool/API workflow. */
+  externalWorkflow: boolean;
+  /** The named external workflow, when `externalWorkflow` is true. */
+  externalWorkflowName: string;
   /** The SKILL.md body (markdown, without frontmatter). */
   body: string;
 }
@@ -66,10 +107,75 @@ export interface SkillCandidate {
 }
 
 export interface SkillSuggestionResult {
+  /** Whether the analysis affirmatively judged this eligible for consideration. */
+  eligible: boolean;
+  /** The verdict category (drives the explicit rejection cases). */
+  category: SkillCategory;
+  /** Why it was rejected, when not eligible. */
+  rejectReason: string;
   /** The primary draft, or null when no reusable procedure was detected. */
   skill: SkillDraft | null;
   /** Other candidates, mentioned only — never separate tasks. */
   additional: SkillCandidate[];
+}
+
+/** A persisted first-candidate that is awaiting corroboration. */
+export interface SkillCandidateRecord {
+  /** Stable identity of the procedure (the corroboration key). */
+  key: string;
+  name: string;
+  description: string;
+  body: string;
+  trigger: string;
+  insufficientRationale: string;
+  externalWorkflow: boolean;
+  externalWorkflowName: string;
+  /** Independent completed task ids that evidenced this candidate. */
+  sourceTaskIds: string[];
+  additional: SkillCandidate[];
+  firstSeenAt: string;
+  updatedAt: string;
+  /** Set once a suggestion task has been created, so it never doubles up. */
+  suggestedTaskId?: string;
+}
+
+/** Internal storage for first-candidate evidence. */
+export interface SkillCandidateStore {
+  get(key: string): SkillCandidateRecord | null;
+  put(record: SkillCandidateRecord): void;
+}
+
+/** JSON-file-backed candidate store under the repo's cache dir. */
+export class FileSkillCandidateStore implements SkillCandidateStore {
+  constructor(private readonly filePath: string) {}
+
+  private readAll(): Record<string, SkillCandidateRecord> {
+    try {
+      const raw = readFileSync(this.filePath, "utf8");
+      const parsed = JSON.parse(raw) as unknown;
+      if (parsed && typeof parsed === "object") {
+        return parsed as Record<string, SkillCandidateRecord>;
+      }
+    } catch {
+      /* missing or malformed store — treat as empty */
+    }
+    return {};
+  }
+
+  get(key: string): SkillCandidateRecord | null {
+    return this.readAll()[key] ?? null;
+  }
+
+  put(record: SkillCandidateRecord): void {
+    const all = this.readAll();
+    all[record.key] = record;
+    try {
+      mkdirSync(dirname(this.filePath), { recursive: true });
+      writeFileSync(this.filePath, `${JSON.stringify(all, null, 2)}\n`);
+    } catch {
+      /* best-effort: a failed persist must never break the task flow */
+    }
+  }
 }
 
 /** What the manager needs in order to run a pass. */
@@ -88,6 +194,8 @@ export interface SkillSuggestionDeps {
   }) => Task;
   /** Persist the origin→suggestion link on the originating task. */
   markOrigin: (origin: Task, suggestionId: string) => void;
+  /** Internal first-candidate evidence store. Defaults to the cache-dir JSON file. */
+  candidateStore?: SkillCandidateStore;
   logger?: Logger;
   /** Injectable analysis runner; defaults to the real one-shot `runPrompt`. */
   analyze?: (agent: Agent, prompt: string, cwd: string) => Promise<PromptResult>;
@@ -123,11 +231,18 @@ export function buildSkillSuggestionMission(task: Task, transcript: string): str
   const spec = task.body.trim().slice(0, SPEC_CHARS);
   const session = transcript.trim().slice(0, TRANSCRIPT_CHARS);
   return [
-    "You analyse a completed RepoOS task session and decide whether it contained a",
-    "non-trivial, reusable multi-step procedure worth capturing as a reusable skill.",
-    "A skill is a procedure that would help another agent on a FUTURE, DIFFERENT task:",
-    "a repeatable workflow, a sequence of commands, a diagnostic method. One-off edits,",
-    "this task's specific content, and trivial actions are NOT skills.",
+    "You decide whether a COMPLETED RepoOS task session contained a reusable SKILL.",
+    "A skill is a high-bar artifact: a stable, repeatable procedure that would help",
+    "another agent on a FUTURE, MATERIALLY DIFFERENT task, with meaningful decisions",
+    "or branches, and evidence it saves repeated investigation. Default to rejecting.",
+    "",
+    "NOT skills (never mark these eligible):",
+    "- one-off edits or a single bug fix specific to this task;",
+    "- task-specific checklists or acceptance criteria;",
+    "- test ideas, individual test cases, or 'write a test for X';",
+    "- repository-local style rules or coding conventions;",
+    "- review feedback or a reviewer's suggestion for this diff;",
+    "- anything whose outcome was failed, unverified, or reverted.",
     "",
     `Task #${task.id}: ${task.title}`,
     "",
@@ -144,13 +259,33 @@ export function buildSkillSuggestionMission(task: Task, transcript: string): str
     "Respond with ONLY a JSON object. No prose, no markdown, no code fences.",
     "Shape:",
     "",
-    '{ "skill": { "name": "Short procedure name",',
-    '              "description": "One sentence on when to use it.",',
-    '              "body": "The full SKILL.md markdown body, no frontmatter." } | null,',
-    '  "additional": [ { "name": "...", "description": "..." } ] }',
+    "{",
+    '  "eligible": true,',
+    '  "category": "reusable-workflow" | "external-workflow" | "one-off-edit" |',
+    '              "task-checklist" | "test-idea" | "local-convention" |',
+    '              "review-feedback" | "unverified" | "ambiguous",',
+    '  "rejectReason": "one short sentence, required when eligible is false",',
+    '  "skill": {',
+    '    "key": "stable-lowercase-slug-identifying-this-procedure",',
+    '    "name": "Short procedure name",',
+    '    "description": "One sentence on when to use it.",',
+    '    "trigger": "The repeatable situation that should trigger this skill.",',
+    '    "insufficientWhy": "Why a test, an instruction, or an ordinary task is not enough.",',
+    '    "externalWorkflow": false,',
+    '    "externalWorkflowName": "",',
+    '    "body": "The full SKILL.md markdown body, no frontmatter."',
+    "  } | null,",
+    '  "additional": [ { "name": "...", "description": "..." } ]',
+    "}",
     "",
-    'Set "skill" to null when no non-trivial reusable procedure was performed.',
-    '"additional" lists any other candidates (name + description only); it may be empty.',
+    'Use category "external-workflow" ONLY when the procedure is a named, stable',
+    "external tool or API workflow (e.g. a documented CLI/API sequence) — then set",
+    '"externalWorkflow": true and put the exact tool/API name in',
+    '"externalWorkflowName". Otherwise leave it false and empty.',
+    "",
+    'Set "eligible" to false and "skill" to null unless you are confident. Set',
+    '"skill" to null when no reusable procedure was performed. "additional" lists',
+    "any other candidates (name + description only); it may be empty.",
     "The body should read like a real skill: a title, a When to use section, and a",
     "numbered Procedure. Do not invent steps that are not evidenced by the transcript.",
   ].join("\n");
@@ -173,14 +308,41 @@ function extractJsonObject(text: string): unknown | null {
 }
 
 const asString = (v: unknown): string => (typeof v === "string" ? v.trim() : "");
+const asBool = (v: unknown): boolean => v === true;
+
+/** Coerce a raw category string to the known set, defaulting to `ambiguous`. */
+function asCategory(v: unknown): SkillCategory {
+  const s = asString(v);
+  return (
+    ALLOWED_CATEGORIES.has(s as SkillCategory) ||
+    [
+      "one-off-edit",
+      "task-checklist",
+      "test-idea",
+      "local-convention",
+      "review-feedback",
+      "unverified",
+      "ambiguous",
+    ].includes(s)
+      ? s
+      : "ambiguous"
+  ) as SkillCategory;
+}
 
 /**
  * Parse the analysis agent's answer into a validated result. Forgiving: a
- * malformed answer yields `{ skill: null }` (nothing created), never a throw.
+ * malformed answer yields an ineligible result (nothing created), never a throw.
  */
 export function parseSkillSuggestion(raw: string): SkillSuggestionResult {
+  const empty: SkillSuggestionResult = {
+    eligible: false,
+    category: "ambiguous",
+    rejectReason: "",
+    skill: null,
+    additional: [],
+  };
   const parsed = extractJsonObject(raw);
-  if (!parsed || typeof parsed !== "object") return { skill: null, additional: [] };
+  if (!parsed || typeof parsed !== "object") return empty;
   const obj = parsed as Record<string, unknown>;
 
   let skill: SkillDraft | null = null;
@@ -190,7 +352,16 @@ export function parseSkillSuggestion(raw: string): SkillSuggestionResult {
     const name = asString(s.name);
     const body = asString(s.body).slice(0, SKILL_BODY_CHARS);
     if (name && body) {
-      skill = { name, description: asString(s.description), body };
+      skill = {
+        key: asString(s.key),
+        name,
+        description: asString(s.description),
+        trigger: asString(s.trigger),
+        insufficientRationale: asString(s.insufficientWhy),
+        externalWorkflow: asBool(s.externalWorkflow),
+        externalWorkflowName: asString(s.externalWorkflowName),
+        body,
+      };
     }
   }
 
@@ -205,7 +376,34 @@ export function parseSkillSuggestion(raw: string): SkillSuggestionResult {
     }
   }
 
-  return { skill, additional };
+  return {
+    eligible: asBool(obj.eligible),
+    category: asCategory(obj.category),
+    rejectReason: asString(obj.rejectReason),
+    skill,
+    additional,
+  };
+}
+
+/**
+ * The deterministic evidence gate applied on top of the model's own verdict.
+ * Returns a reason when the draft is not eligible; the pass then creates nothing.
+ */
+export function validateSkillDraft(
+  draft: SkillDraft,
+): { ok: true } | { ok: false; reason: string } {
+  if (!draft.key) return { ok: false, reason: "candidate has no stable key" };
+  if (!draft.trigger) return { ok: false, reason: "candidate has no repeatable trigger" };
+  if (!draft.insufficientRationale) {
+    return {
+      ok: false,
+      reason: "candidate does not say why a test/instruction/task is insufficient",
+    };
+  }
+  if (draft.externalWorkflow && !draft.externalWorkflowName) {
+    return { ok: false, reason: "external workflow is not named" };
+  }
+  return { ok: true };
 }
 
 /** A filesystem-safe slug for a skill name (matches skills/<slug>/SKILL.md). */
@@ -218,23 +416,38 @@ export function skillSlug(name: string): string {
   return slug || "skill-suggestion";
 }
 
-/** The body of the suggestion task: the human-readable spec plus the draft. */
-export function buildSuggestionTaskBody(
-  origin: Task,
-  skill: SkillDraft,
-  additional: SkillCandidate[],
-): string {
-  const slug = skillSlug(skill.name);
-  const description = skill.description || `Reusable procedure detected in task #${origin.id}.`;
+/**
+ * The body of the suggestion task: the evidence, the human-readable spec, and
+ * the draft. Every generated draft must state its evidence — the independent
+ * source task ids (or the named stable external workflow), the repeatable
+ * trigger, and why a test/instruction/task would be insufficient.
+ */
+export function buildSuggestionTaskBody(origin: Task, candidate: SkillCandidateRecord): string {
+  const slug = skillSlug(candidate.name);
+  const description = candidate.description || `Reusable procedure detected in task #${origin.id}.`;
+  const sourceIds = candidate.sourceTaskIds.map((id) => `#${id}`).join(", ") || `#${origin.id}`;
+  const evidence: string[] = [
+    "## Evidence",
+    "",
+    `- **Independent source tasks:** ${sourceIds}`,
+    `- **Repeatable trigger:** ${candidate.trigger}`,
+    `- **Why a test, instruction, or task is not enough:** ${candidate.insufficientRationale}`,
+  ];
+  if (candidate.externalWorkflow) {
+    evidence.push(`- **Stable external workflow:** ${candidate.externalWorkflowName}`);
+  }
+  evidence.push("");
+
   const parts: string[] = [
     "## Problem",
     "",
-    `Task #${origin.id} (${origin.title}) completed a session that appears to contain a`,
-    `non-trivial, reusable procedure: **${skill.name}**.`,
+    `Completed task sessions (${sourceIds}) contain a reusable procedure that clears the`,
+    `high bar for a skill: **${candidate.name}**.`,
     "",
-    "This is an auto-generated suggestion from that session. Nothing is live as a",
-    "skill yet — approve it by turning the draft below into a skill file.",
+    "This is an auto-generated suggestion. Nothing is live as a skill yet — approve it",
+    "by turning the draft below into a skill file, or close this task to discard it.",
     "",
+    ...evidence,
     "## Desired UX",
     "",
     `If the draft is worth keeping, create \`skills/${slug}/SKILL.md\` from it (edit`,
@@ -249,18 +462,20 @@ export function buildSuggestionTaskBody(
     `description: ${description}`,
     "---",
     "",
-    skill.body.trim(),
+    candidate.body.trim(),
     "```",
     "",
   ];
-  if (additional.length > 0) {
+  if (candidate.additional.length > 0) {
     parts.push(
       "## Other candidate procedures",
       "",
       "Identified in the same session but not turned into their own tasks (to avoid",
       "spam). Mentioned here only:",
       "",
-      ...additional.map((c) => `- **${c.name}**${c.description ? ` — ${c.description}` : ""}`),
+      ...candidate.additional.map(
+        (c) => `- **${c.name}**${c.description ? ` — ${c.description}` : ""}`,
+      ),
       "",
     );
   }
@@ -293,29 +508,37 @@ export function markOriginTask(config: RepoOSConfig, origin: Task, suggestionId:
 export interface SkillSuggestionRunResult {
   ok: boolean;
   suggestionId?: string;
+  /** The candidate key, present whenever the analysis produced a candidate. */
+  candidateKey?: string;
+  /** Why no suggestion was created (or why one was). */
   reason?: string;
 }
 
 /**
- * Runs the skill-suggestion pass at most once per originating task. All side
- * effects are injected so the trigger site stays a one-liner and the logic is
- * unit-testable.
+ * Runs the evidence-gated skill-suggestion pass at most once per originating
+ * task. All side effects are injected so the trigger site stays a one-liner and
+ * the logic is unit-testable.
  */
 export class SkillSuggestionManager {
   private readonly deps: SkillSuggestionDeps;
-  /** Tasks with a pass in flight, so rapid review→done transitions don't double-run. */
+  private readonly store: SkillCandidateStore;
+  /** Tasks with a pass in flight, so a re-entrant event doesn't double-run. */
   private readonly inFlight = new Set<string>();
 
   constructor(deps: SkillSuggestionDeps) {
     this.deps = deps;
+    const cacheDir = deps.config.cacheDir || ".repoos";
+    this.store =
+      deps.candidateStore ??
+      new FileSkillCandidateStore(join(deps.config.root, cacheDir, CANDIDATE_STORE_FILE));
   }
 
-  /** Whether the feature is on for this repo (default true when unset). */
+  /** Whether the feature is on for this repo (off unless explicitly enabled). */
   enabled(): boolean {
-    return this.deps.config.skillSuggestions !== false;
+    return this.deps.config.skillSuggestions === true;
   }
 
-  /** Fire-and-forget entry point used by the status-transition hook. */
+  /** Fire-and-forget entry point used by the done transition hook. */
   maybeSuggest(task: Task): void {
     void this.run(task).catch((err) => {
       this.deps.logger?.task(task.id, "warn", "skill-suggestion pass threw", {
@@ -331,6 +554,9 @@ export class SkillSuggestionManager {
    */
   async run(task: Task): Promise<SkillSuggestionRunResult> {
     if (!this.enabled()) return { ok: false, reason: "disabled" };
+    // Only a genuinely completed task has the verification evidence a skill
+    // needs. The review transition is explicitly excluded (#0429).
+    if (task.status !== "done") return { ok: false, reason: "task has not reached done" };
     if (typeof task.extra?.[SKILL_SUGGESTION_KEY] === "string") {
       return { ok: false, reason: "already suggested" };
     }
@@ -357,24 +583,89 @@ export class SkillSuggestionManager {
       if (!result.ok) return { ok: false, reason: result.error ?? "analysis failed" };
 
       const parsed = parseSkillSuggestion(extractOneShotReportText(agent.cli, result.output ?? ""));
+      // Default to no suggestion: require an affirmative eligible verdict, an
+      // allowed category, and a structurally complete draft.
+      if (!parsed.eligible) {
+        return { ok: false, reason: `rejected: ${parsed.rejectReason || parsed.category}` };
+      }
+      if (!ALLOWED_CATEGORIES.has(parsed.category)) {
+        return { ok: false, reason: `rejected: ${parsed.category}` };
+      }
       if (!parsed.skill) return { ok: false, reason: "no reusable procedure detected" };
+      const valid = validateSkillDraft(parsed.skill);
+      if (!valid.ok) return { ok: false, reason: `rejected: ${valid.reason}` };
 
-      const created = this.deps.createTask({
-        title: `New Skill Suggestion: ${parsed.skill.name}`,
-        type: "spec",
-        status: "inbox",
-        assignedTo: "human",
-        area: task.area || "general",
-        body: buildSuggestionTaskBody(task, parsed.skill, parsed.additional),
-      });
-      this.deps.markOrigin(task, created.id);
-      this.deps.logger?.task(task.id, "info", "skill suggestion created", {
-        suggestionId: created.id,
-      });
-      return { ok: true, suggestionId: created.id };
+      return this.recordCandidate(task, parsed);
     } finally {
       this.inFlight.delete(task.id);
     }
+  }
+
+  /**
+   * Persist (or corroborate) one candidate. A first candidate is stored and
+   * creates nothing; a suggestion is created only once corroboration exists.
+   */
+  private recordCandidate(task: Task, parsed: SkillSuggestionResult): SkillSuggestionRunResult {
+    const draft = parsed.skill as SkillDraft;
+    const key = draft.key;
+    const existing = this.store.get(key);
+    if (existing?.suggestedTaskId) {
+      return { ok: false, reason: "already suggested", candidateKey: key };
+    }
+
+    const sourceTaskIds = Array.from(new Set([...(existing?.sourceTaskIds ?? []), task.id]));
+    const now = utcTimestamp();
+    const candidate: SkillCandidateRecord = {
+      key,
+      name: draft.name,
+      description: draft.description,
+      body: draft.body,
+      trigger: draft.trigger,
+      insufficientRationale: draft.insufficientRationale,
+      externalWorkflow: draft.externalWorkflow,
+      externalWorkflowName: draft.externalWorkflowName,
+      sourceTaskIds,
+      additional: parsed.additional,
+      firstSeenAt: existing?.firstSeenAt ?? now,
+      updatedAt: now,
+    };
+
+    // Corroboration: two independent completed task sessions, or an explicitly
+    // named, stable external tool/API workflow. Until then, the candidate stays
+    // internal — no user-visible task.
+    const independentSessions = sourceTaskIds.length >= 2;
+    const stableExternal = candidate.externalWorkflow && candidate.externalWorkflowName !== "";
+    if (!independentSessions && !stableExternal) {
+      this.store.put(candidate);
+      this.deps.logger?.task(
+        task.id,
+        "info",
+        "skill candidate persisted (awaiting corroboration)",
+        {
+          key,
+          sourceTaskIds,
+        },
+      );
+      return { ok: false, reason: "awaiting corroboration", candidateKey: key };
+    }
+
+    const created = this.deps.createTask({
+      title: `New Skill Suggestion: ${candidate.name}`,
+      type: "spec",
+      status: "inbox",
+      assignedTo: "human",
+      area: task.area || "general",
+      body: buildSuggestionTaskBody(task, candidate),
+    });
+    this.store.put({ ...candidate, suggestedTaskId: created.id });
+    this.deps.markOrigin(task, created.id);
+    this.deps.logger?.task(task.id, "info", "skill suggestion created", {
+      suggestionId: created.id,
+      key,
+      sourceTaskIds,
+      externalWorkflow: candidate.externalWorkflowName || undefined,
+    });
+    return { ok: true, suggestionId: created.id, candidateKey: key, reason: "corroborated" };
   }
 
   /** Reviewer → engineer → PM, whichever is enabled first. */
