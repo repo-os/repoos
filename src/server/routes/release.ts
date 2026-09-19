@@ -17,11 +17,12 @@ import {
 } from "../agents.js";
 import type { Agent, RepoOSConfig } from "../../core/types.js";
 import { readBuildMeta } from "../../core/build.js";
+import { compareSemver } from "../../core/agent-updates.js";
 
 const STABLE_VERSION = /^v?(\d+)\.(\d+)\.(\d+)$/;
 const RELEASE_CACHE_MS = 10 * 60 * 1000;
 let releaseCache: { value: AvailableRelease; expiresAt: number } | null = null;
-let releaseRequest: Promise<AvailableRelease> | null = null;
+let releaseRequest: Promise<AvailableRelease | null> | null = null;
 
 export interface AvailableRelease {
   currentVersion: string | null;
@@ -45,19 +46,15 @@ export function isStableRelease(release: { tag_name?: unknown; prerelease?: unkn
 }
 
 export function isNewerVersion(latest: string, current: string | null): boolean {
-  const next = versionParts(latest);
-  const installed = current ? versionParts(current) : null;
-  if (!next) return false;
-  // A source checkout without a build marker should still learn about updates.
-  if (!installed) return true;
-  return (
-    next.some((part, index) => part !== installed[index] && part > installed[index]) &&
-    next.every((part, index) => part >= installed[index])
-  );
+  if (!latest || !isStableRelease({ tag_name: latest, prerelease: false })) return false;
+  if (!current) return false;
+  const compared = compareSemver(latest, current);
+  return compared !== null && compared > 0;
 }
 
-async function fetchAvailableRelease(): Promise<AvailableRelease> {
+async function fetchAvailableRelease(): Promise<AvailableRelease | null> {
   const currentVersion = readBuildMeta().version;
+  if (process.env.REPOOS_DISABLE_UPDATE_CHECK === "1") return null;
   try {
     const response = await fetch("https://api.github.com/repos/repo-os/repoos/releases/latest", {
       headers: {
@@ -80,7 +77,10 @@ async function fetchAvailableRelease(): Promise<AvailableRelease> {
     return {
       currentVersion,
       latestVersion,
-      available: latestVersion ? isNewerVersion(latestVersion, currentVersion) : false,
+      available:
+        latestVersion !== null &&
+        currentVersion !== null &&
+        isNewerVersion(latestVersion, currentVersion),
       releaseNotes:
         typeof candidate.body === "string" && candidate.body.trim() ? candidate.body : null,
       releaseUrl:
@@ -89,13 +89,7 @@ async function fetchAvailableRelease(): Promise<AvailableRelease> {
           : "https://github.com/repo-os/repoos/releases",
     };
   } catch {
-    return {
-      currentVersion,
-      latestVersion: null,
-      available: false,
-      releaseNotes: null,
-      releaseUrl: "https://github.com/repo-os/repoos/releases",
-    };
+    return null;
   }
 }
 
@@ -106,8 +100,18 @@ export const getAvailableRelease: RouteHandler = async (_ctx, _req, res) => {
     releaseRequest = null;
   });
   const value = await releaseRequest;
-  releaseCache = { value, expiresAt: Date.now() + RELEASE_CACHE_MS };
-  return json(res, 200, value);
+  const fallback: AvailableRelease = {
+    currentVersion: readBuildMeta().version,
+    latestVersion: null,
+    available: false,
+    releaseNotes: null,
+    releaseUrl: "https://github.com/repo-os/repoos/releases",
+  };
+  if (value) {
+    releaseCache = { value, expiresAt: Date.now() + RELEASE_CACHE_MS };
+    return json(res, 200, value);
+  }
+  return json(res, 200, fallback);
 };
 
 export interface ReleaseRun {

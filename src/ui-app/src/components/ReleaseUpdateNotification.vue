@@ -42,7 +42,6 @@ function dismiss(): void {
 
 function showDetails(): void {
   open.value = true;
-  dismissed.value = true;
 }
 </script>
 
@@ -64,19 +63,19 @@ function showDetails(): void {
         <span>See what’s new and upgrade when it suits you.</span>
       </span>
       <ArrowUpRight class="release-update-arrow size-[16px]" />
-      <span
+      <button
+        type="button"
         class="release-update-dismiss"
-        role="button"
         aria-label="Dismiss update notification"
         @click.stop="dismiss"
       >
         <X class="size-[15px]" />
-      </span>
+      </button>
     </div>
 
     <Dialog v-model:open="open">
       <DialogOverlay />
-      <DialogContent v-if="release?.available" class="release-update-modal">
+      <DialogContent v-if="release?.available" class="am-modal release-update-modal">
         <div class="release-update-modal-head">
           <span class="release-update-mark"><Sparkles class="size-[17px]" /></span>
           <DialogClose class="release-update-close" aria-label="Close">
@@ -125,7 +124,7 @@ function showDetails(): void {
 <style scoped>
 .release-update-banner {
   position: fixed;
-  z-index: 1000;
+  z-index: 80;
   top: calc(14px + var(--safe-top));
   left: 50%;
   display: flex;
