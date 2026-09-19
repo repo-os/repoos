@@ -304,11 +304,20 @@ function parseAgentResponse(reportText: string): {
   const trimmed = reportText.trim();
   if (!trimmed) return { findings: [], fixes: [], parsed: true };
 
-  // Try to extract JSON from the report (may be wrapped in markdown fences)
+  // Try to extract JSON from the report (may be wrapped in markdown fences,
+  // or embedded in prose output from a model that ignored the JSON-only instruction)
   let jsonStr = trimmed;
   const fenceMatch = trimmed.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/);
   if (fenceMatch) {
     jsonStr = fenceMatch[1].trim();
+  } else {
+    // Scan for a bare JSON object or array anywhere in the text
+    const objIdx = trimmed.indexOf("{");
+    const arrIdx = trimmed.indexOf("[");
+    if (objIdx !== -1 || arrIdx !== -1) {
+      const startIdx = objIdx === -1 ? arrIdx : arrIdx === -1 ? objIdx : Math.min(objIdx, arrIdx);
+      jsonStr = trimmed.slice(startIdx);
+    }
   }
 
   try {
