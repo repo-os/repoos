@@ -2,17 +2,17 @@
 id: "0442"
 title: "Agent runner: recover partial output on unterminated JSON in stream"
 type: bug
-status: ready
+status: active
 priority: p2
 area: ai
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/agent-runner-recover-partial-output-on-u
 cli_override: opencode
 model_override: openrouter/tencent/hy4-preview
 review_model_override: openrouter/xiaomi/mimo-v2.5
 created_at: "2026-09-19T08:15:21Z"
-updated_at: "2026-09-19T08:18:23Z"
+updated_at: "2026-09-19T10:39:54Z"
 ---
 ## Problem
 
@@ -50,3 +50,4 @@ Relevant code: \`src/server/agents.ts\` (stream parsing / \`extractOneShotReport
 - 2026-09-19T08:18:17Z · model_override
 - 2026-09-19T08:18:22Z · review_model_override
 - 2026-09-19T08:18:23Z · status inbox→ready
+- 2026-09-19T10:39:54Z · status ready→active, branch
