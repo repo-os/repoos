@@ -2,7 +2,7 @@
 id: "0443"
 title: "Debugger: show the triggering message as a human turn when opened via Send to Debugger"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: openrouter/tencent/hy4-preview
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-09-19T09:02:16Z"
-updated_at: "2026-09-19T10:59:30Z"
+updated_at: "2026-09-19T11:04:37Z"
 ---
 ## Problem
 
@@ -48,3 +48,4 @@ Any time content is forwarded to the Debugger programmatically (via "Send to Deb
 - 2026-09-19T10:44:52Z · status inbox→ready
 - 2026-09-19T10:44:53Z · status ready→active, branch
 - 2026-09-19T10:59:30Z · status active→review
+- 2026-09-19T11:04:37Z · status review→done, release:success
