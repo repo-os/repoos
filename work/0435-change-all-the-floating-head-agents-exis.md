@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-19T04:24:00Z"
-updated_at: "2026-09-19T04:24:48Z"
+updated_at: "2026-09-19T04:24:55Z"
 ---
 ## Problem
 
@@ -50,3 +51,4 @@ Change all the floating head agents (existing, like Ross, CTO, debugger and any 
 - 2026-09-19T04:24:00Z · created · hello@repoos.org
 - 2026-09-19T04:24:15Z · status draft→inbox, title, area, body
 - 2026-09-19T04:24:48Z · status inbox→ready
+- 2026-09-19T04:24:55Z · review_model_override
