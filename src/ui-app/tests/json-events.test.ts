@@ -194,6 +194,71 @@ describe("parseClaudeEvent (0109)", () => {
         entry: { type: "sys", d: "error: permission denied" },
       });
     });
+
+    it("normalizes a tool call lifecycle by toolCallId", () => {
+      const start = parseCopilotEvent(
+        '{"type":"tool.execution_start","data":{"toolCallId":"call-1","toolName":"shell","arguments":{"command":"pwd"}}}',
+      );
+      expect(start).toEqual({
+        toolEvent: {
+          phase: "start",
+          id: "call-1",
+          tool: "shell",
+          input: "pwd",
+        },
+      });
+
+      const partial = parseCopilotEvent(
+        '{"type":"tool.execution_partial_result","data":{"toolCallId":"call-1","partialOutput":"first\\n"}}',
+      );
+      expect(partial).toEqual({
+        toolEvent: { phase: "partial", id: "call-1", output: "first\n" },
+      });
+      // Copilot can repeat the full partial snapshot; callers must replace,
+      // rather than concatenate, these values.
+      expect(
+        parseCopilotEvent(
+          '{"type":"tool.execution_partial_result","data":{"toolCallId":"call-1","partialOutput":"first\\nsecond\\n"}}',
+        ),
+      ).toEqual({
+        toolEvent: { phase: "partial", id: "call-1", output: "first\nsecond\n" },
+      });
+
+      expect(
+        parseCopilotEvent(
+          '{"type":"tool.execution_complete","data":{"toolCallId":"call-1","toolName":"shell","result":"first\\nsecond\\n"}}',
+        ),
+      ).toEqual({
+        toolEvent: {
+          phase: "complete",
+          id: "call-1",
+          tool: "shell",
+          output: "first\nsecond\n",
+        },
+      });
+    });
+
+    it("preserves completion errors and surfaces unknown JSON as diagnostics", () => {
+      expect(
+        parseCopilotEvent(
+          '{"type":"tool.execution_complete","data":{"toolCallId":"call-2","toolName":"shell","error":"permission denied"}}',
+        ),
+      ).toEqual({
+        toolEvent: {
+          phase: "complete",
+          id: "call-2",
+          tool: "shell",
+          output: "permission denied",
+          error: true,
+        },
+      });
+      expect(parseCopilotEvent('{"type":"future.copilot_event","data":{"value":1}}')).toEqual({
+        entry: {
+          type: "sys",
+          d: 'Copilot emitted an unknown protocol event "future.copilot_event".',
+        },
+      });
+    });
   });
 
   it("swallows rate_limit events", () => {
