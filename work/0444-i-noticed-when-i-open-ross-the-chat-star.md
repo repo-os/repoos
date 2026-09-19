@@ -12,11 +12,16 @@ cli_override: opencode
 model_override: openrouter/tencent/hy4-preview
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-19T10:26:30Z"
-updated_at: "2026-09-19T10:27:18Z"
+updated_at: "2026-09-19T10:32:05Z"
 ---
 ## Problem
 
 When opening a chat in RepoOS, the viewport starts at the top of the conversation (oldest messages), requiring users to manually scroll to the bottom to see the latest exchange. This is counterintuitive for a conversational interface where current context is typically at the end.
+
+Additionally, the chat UI has several polish issues:
+- Helper text line under chat boxes is unnecessary clutter
+- CTO chat has incorrect bottom padding/margin
+- Send message button color is indistinguishable (dark blue on dark background)
 
 ## Desired UX
 
@@ -24,6 +29,9 @@ When opening a chat in RepoOS, the viewport starts at the top of the conversatio
 - User scroll position is retained when navigating away and back
 - When the user scrolls up from the bottom, a persistent floating "Jump to latest" button appears
 - Clicking the button smoothly scrolls back to the newest message
+- Helper text below chat input boxes is removed
+- CTO chat bottom spacing is corrected
+- Send message button has clear, distinct coloration
 - This behavior is standardized across all chat instances in the app
 
 ## Acceptance criteria
@@ -35,6 +43,9 @@ When opening a chat in RepoOS, the viewport starts at the top of the conversatio
 - [ ] Clicking the button smoothly scrolls to the most recent message
 - [ ] Button auto-hides when the user reaches the bottom
 - [ ] Scroll behavior is consistent across all chat types/instances in the product
+- [ ] Helper text under chat input boxes is removed
+- [ ] CTO chat bottom padding/margin is fixed
+- [ ] Send message button has distinct, accessible coloration
 
 ## Notes for AI
 
@@ -44,11 +55,14 @@ When opening a chat in RepoOS, the viewport starts at the top of the conversatio
 - Consider using a `ResizeObserver` or scroll event listener to detect when the user is near the bottom vs. scrolled up
 - Auto-scroll-to-bottom on new messages should respect the user's manual scroll position (don't auto-scroll if they're reading history)
 - Smooth scrolling behavior (`behavior: 'smooth'`) is preferred for UX
+- Check `src/ui-app/src/views/*Chat*` components for helper text that needs removal
+- Review CTO chat view styling for bottom margin/padding issues
+- Update send button styling to use a more contrasting color (check existing button color palette in style.css)
 - Test across different chat contexts to ensure consistency
 
 ## Scope
 
-This task covers standardizing chat scroll behavior across all chat interfaces in the RepoOS UI. It does not cover:
+This task covers standardizing chat scroll behavior across all chat interfaces in the RepoOS UI and fixing related UI polish issues. It does not cover:
 - Scroll behavior in non-chat components (task lists, code views, etc.)
 - Changes to message ordering or filtering
 - Auto-refresh or polling of new messages (assumed to exist already)
@@ -57,6 +71,8 @@ This task covers standardizing chat scroll behavior across all chat interfaces i
 
 I noticed when I open Ross the chat starts at the top (the oldest message), I think by default we should start at the newest message (scrolled to the bottom) and if a user has scrolled somewhere we can retain that scroll position and if they're not at the bottom we should show a floating button to let them jump to the latest message. This chat scroll behavior should be standardised across all chats unless you have a better alternative or more standardised best practice for this kind of ai chat.
 
+Also while fixing the chats, please remove the line of text (helper) under the chat boxes, and on the cto one fix the bottom padding/margin, also fix the coloration of the send message button here, it's basically just an indistinguishable blue thing...
+
 ## Activity
 
 - 2026-09-19T10:26:30Z · created · hello@repoos.org
@@ -64,3 +80,4 @@ I noticed when I open Ross the chat starts at the top (the oldest message), I th
 - 2026-09-19T10:27:07Z · cli_override
 - 2026-09-19T10:27:10Z · model_override
 - 2026-09-19T10:27:18Z · review_model_override
+- 2026-09-19T10:32:05Z · body
