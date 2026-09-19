@@ -2,14 +2,14 @@
 id: "0437"
 title: Auto-dismiss acknowledge banner when task state changes
 type: bug
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/auto-dismiss-acknowledge-banner-when-tas
 created_at: "2026-09-19T04:31:51Z"
-updated_at: "2026-09-19T04:32:21Z"
+updated_at: "2026-09-19T04:32:26Z"
 ---
 ## Problem
 
@@ -49,3 +49,4 @@ Currently the "Acknowledge banner/button" on tasks created by the PM AI agent st
 - 2026-09-19T04:31:51Z · created · hello@repoos.org
 - 2026-09-19T04:32:05Z · status draft→inbox, title, area, type, body
 - 2026-09-19T04:32:21Z · status inbox→ready
+- 2026-09-19T04:32:26Z · status ready→active, branch
