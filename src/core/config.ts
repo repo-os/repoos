@@ -21,6 +21,8 @@ import type {
   CheckContrastPair,
   CheckThemeScope,
   DeploymentConfig,
+  DistributionConfig,
+  DistributionKind,
   ModelProviderKeysConfig,
   PreviewConfig,
   PreviewTargetConfig,
@@ -548,6 +550,73 @@ export function resolveColumnLabels(boardColumns?: Record<string, string>): Reco
   return out;
 }
 
+const DISTRIBUTION_KINDS: readonly DistributionKind[] = [
+  "npm",
+  "homebrew",
+  "github-release",
+  "custom",
+];
+
+/**
+ * Parse the `[[distribution]]` array of tables (#0445) — one row per place
+ * users install this project's releases. Invalid rows are dropped with a
+ * warning rather than poisoning the section: a missing name, a non-http(s)
+ * `url`, or an uncompilable `versionRegex`. An unrecognized `kind` is not an
+ * error — the channel still renders its install commands, just with no
+ * automatic version check. Returns undefined when nothing usable is declared,
+ * which keeps the Releases page's existing experience untouched.
+ */
+export function parseDistributionConfig(
+  parsed: Record<string, unknown>,
+): DistributionConfig[] | undefined {
+  const raw = parsed.distribution;
+  if (!Array.isArray(raw)) return undefined;
+  const channels: DistributionConfig[] = [];
+  for (const entry of raw) {
+    if (typeof entry !== "object" || entry === null || Array.isArray(entry)) continue;
+    const r = entry as Record<string, unknown>;
+    if (typeof r.name !== "string" || !r.name.trim()) {
+      console.warn("[distribution] ignoring a channel with no name");
+      continue;
+    }
+    const channel: DistributionConfig = { name: r.name.trim() };
+    if (typeof r.kind === "string" && r.kind.trim()) {
+      const kind = r.kind.trim() as DistributionKind;
+      if (DISTRIBUTION_KINDS.includes(kind)) channel.kind = kind;
+      else
+        console.warn(`[distribution] ${channel.name}: unknown kind "${r.kind}", no version check`);
+    }
+    if (typeof r.url === "string" && r.url.trim()) {
+      const url = r.url.trim();
+      if (/^https?:\/\//i.test(url)) channel.url = url;
+      else console.warn(`[distribution] ${channel.name}: url must start with http(s)://, dropping`);
+    }
+    if (typeof r.package === "string" && r.package.trim()) channel.package = r.package.trim();
+    if (typeof r.repository === "string" && r.repository.trim())
+      channel.repository = r.repository.trim();
+    if (typeof r.versionUrl === "string" && r.versionUrl.trim())
+      channel.versionUrl = r.versionUrl.trim();
+    if (typeof r.versionRegex === "string" && r.versionRegex.trim()) {
+      const pattern = r.versionRegex.trim();
+      try {
+        new RegExp(pattern);
+        channel.versionRegex = pattern;
+      } catch {
+        console.warn(
+          `[distribution] ${channel.name}: versionRegex is not a valid regex, dropping it`,
+        );
+      }
+    }
+    const installRaw = r.install;
+    const install = (Array.isArray(installRaw) ? installRaw : [installRaw])
+      .filter((v): v is string => typeof v === "string" && v.trim() !== "")
+      .map((v) => v.trim());
+    if (install.length) channel.install = install;
+    channels.push(channel);
+  }
+  return channels.length ? channels : undefined;
+}
+
 /**
  * Parse the `[preview]` section (plus `[[preview.targets]]` tables) from flat
  * TOML. Exported for tests; `loadConfig` merges the result into the config.
@@ -687,6 +756,11 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
       }
       if (rows.length) cfg.deployments = rows;
     }
+    // [[distribution]] (#0445) — where users install this project's releases,
+    // rendered as the Releases page's "Published to" summary. Opt-in and purely
+    // declarative; an unconfigured project keeps the existing Releases view.
+    const distribution = parseDistributionConfig(parsed);
+    if (distribution) cfg.distribution = distribution;
     if (typeof get("ntfyEnabled") === "boolean") cfg.ntfyEnabled = get("ntfyEnabled") as boolean;
     if (typeof get("ntfyTopic") === "string") cfg.ntfyTopic = get("ntfyTopic") as string;
     if (typeof get("ntfyBaseUrl") === "string") cfg.ntfyBaseUrl = get("ntfyBaseUrl") as string;

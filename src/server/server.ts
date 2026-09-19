@@ -137,6 +137,7 @@ import {
   generateReleaseNotes,
   getAvailableRelease,
   getRelease,
+  getReleaseDistribution,
   getReleaseRun,
   runRelease,
 } from "./routes/release.js";
@@ -1836,6 +1837,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/release", getRelease);
   router.register("GET", "/api/release/available", getAvailableRelease);
   router.register("GET", "/api/release/run", getReleaseRun);
+  router.register("GET", "/api/release/distribution", getReleaseDistribution);
   router.register("POST", "/api/release", runRelease);
   router.register("POST", "/api/release/notes", generateReleaseNotes);
   router.register("GET", "/api/deployments", getDeployments);

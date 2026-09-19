@@ -256,6 +256,13 @@ remote      = "origin"
 
 The "Releases" page only appears in the UI when this block is present.
 
+A project can also declare where users install its releases, with one
+`[[distribution]]` row per destination. These render as the **Published to**
+summary on the Releases page — distribution destinations, not deploy
+environments. Fields are documented in
+[Deployments and releases → Distribution destinations](/deployments-and-releases#distribution-destinations-published-to);
+omitting the section leaves the Releases page as it is.
+
 ## Appearance and notifications
 
 ```toml

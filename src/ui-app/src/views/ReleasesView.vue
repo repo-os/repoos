@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { ArrowRight, Bug, Sparkles } from "lucide-vue-next";
+import { ArrowRight, Bug, Check, Copy, Sparkles } from "lucide-vue-next";
+import { copyToClipboard } from "../lib/clipboard";
 import Button from "../components/ui/button.vue";
 import Dialog from "../components/ui/dialog/root.vue";
 import DialogClose from "../components/ui/dialog/close.vue";
@@ -51,6 +52,23 @@ interface ReleaseRun {
   updatedAt: string | null;
 }
 
+/** One configured `[[distribution]]` destination and its live version state. */
+interface DistributionChannel {
+  name: string;
+  kind: string | null;
+  url: string | null;
+  install: string[];
+  version: string | null;
+  state: "matching" | "out-of-sync" | "unverified" | "unavailable" | "failed";
+  detail: string | null;
+}
+
+interface DistributionSummary {
+  releaseVersion: string | null;
+  releaseTag: string | null;
+  channels: DistributionChannel[];
+}
+
 const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$/;
 
 const status = ref<ReleaseStatus | null>(null);
@@ -72,6 +90,12 @@ const debuggerErr = ref("");
 const run = ref<ReleaseRun | null>(null);
 const now = ref(Date.now());
 let pollTimer: ReturnType<typeof setInterval> | null = null;
+
+/** "Published to" destinations for the release being viewed (empty when none). */
+const distribution = ref<DistributionChannel[]>([]);
+const distributionReleaseVersion = ref<string | null>(null);
+const copiedCommand = ref("");
+let copyTimer: ReturnType<typeof setTimeout> | null = null;
 
 function stopPolling(): void {
   if (!pollTimer) return;
@@ -204,6 +228,66 @@ async function load(): Promise<void> {
   } finally {
     loading.value = false;
   }
+}
+
+/**
+ * Load the distribution summary separately from the release status. Its
+ * lookups can be slow or fail, and neither must affect the page, so a failure
+ * simply hides the section.
+ */
+async function loadDistribution(): Promise<void> {
+  try {
+    const data = await api<DistributionSummary>("/api/release/distribution");
+    distribution.value = data.channels ?? [];
+    distributionReleaseVersion.value = data.releaseVersion ?? null;
+  } catch {
+    distribution.value = [];
+    distributionReleaseVersion.value = null;
+  }
+}
+
+const CHANNEL_STATE_LABELS: Record<DistributionChannel["state"], string> = {
+  matching: "Up to date",
+  "out-of-sync": "Out of sync",
+  unverified: "Unverified",
+  unavailable: "Not published yet",
+  failed: "Check failed",
+};
+
+function channelStateLabel(channel: DistributionChannel): string {
+  return CHANNEL_STATE_LABELS[channel.state] ?? "Unverified";
+}
+
+/** A one-line, honest status for a channel — never claims a version it can't confirm. */
+function channelSummary(channel: DistributionChannel): string {
+  switch (channel.state) {
+    case "matching":
+      return channel.version ? `${channel.version} · matches this release` : "Matches this release";
+    case "out-of-sync":
+      return channel.version
+        ? `${channel.version} · release is ${distributionReleaseVersion.value ?? "different"}`
+        : "Out of sync with this release";
+    case "unavailable":
+      return "No version published on this channel yet";
+    case "failed":
+      return channel.detail ?? "The registry couldn't be reached";
+    default:
+      return channel.version
+        ? `${channel.version} · not compared to a release`
+        : "No automatic version check for this channel";
+  }
+}
+
+/** Derive a short tab label from the command itself (npm, bun, curl, …). */
+function installLabel(command: string): string {
+  return command.trim().split(/\s+/)[0] ?? "";
+}
+
+async function copyCommand(command: string): Promise<void> {
+  if (!(await copyToClipboard(command))) return;
+  copiedCommand.value = command;
+  if (copyTimer) clearTimeout(copyTimer);
+  copyTimer = setTimeout(() => (copiedCommand.value = ""), 1600);
 }
 
 function openConfirm(): void {
@@ -372,11 +456,13 @@ function elapsed(): string {
 
 onMounted(() => {
   void load();
+  void loadDistribution();
   void pollRun();
   startPolling();
 });
 onBeforeUnmount(() => {
   stopPolling();
+  if (copyTimer) clearTimeout(copyTimer);
 });
 </script>
 
@@ -467,6 +553,61 @@ onBeforeUnmount(() => {
               rel="noreferrer"
               >GitHub release ↗</a
             >
+          </div>
+        </section>
+
+        <!-- Where users install this release. Rendered only when the project
+             declares [[distribution]] destinations; nothing otherwise. -->
+        <section v-if="distribution.length" class="rel-card rel-dist">
+          <div class="rel-dist-head">
+            <h2 class="rel-dist-title">Published to</h2>
+            <p class="rel-dist-sub">
+              Where people can install this release.
+              <template v-if="distributionReleaseVersion">
+                Comparing each channel to <code>{{ distributionReleaseVersion }}</code
+                >.
+              </template>
+            </p>
+          </div>
+
+          <div class="rel-dist-channels">
+            <article v-for="channel in distribution" :key="channel.name" class="rel-channel">
+              <header class="rel-channel-head">
+                <a
+                  v-if="channel.url"
+                  class="rel-channel-name"
+                  :href="channel.url"
+                  target="_blank"
+                  rel="noreferrer"
+                  >{{ channel.name }} ↗</a
+                >
+                <span v-else class="rel-channel-name">{{ channel.name }}</span>
+                <span class="rel-channel-state" :data-state="channel.state">{{
+                  channelStateLabel(channel)
+                }}</span>
+              </header>
+              <p class="rel-channel-detail">{{ channelSummary(channel) }}</p>
+              <ul v-if="channel.install.length" class="rel-installs">
+                <li v-for="command in channel.install" :key="command" class="rel-install">
+                  <span class="rel-install-label">{{ installLabel(command) }}</span>
+                  <code class="rel-install-cmd">{{ command }}</code>
+                  <button
+                    type="button"
+                    class="rel-copy"
+                    :aria-label="`Copy ${channel.name} install command`"
+                    @click="copyCommand(command)"
+                  >
+                    <Check
+                      v-if="copiedCommand === command"
+                      class="rel-copy-ico"
+                      aria-hidden="true"
+                    />
+                    <Copy v-else class="rel-copy-ico" aria-hidden="true" />
+                    {{ copiedCommand === command ? "Copied" : "Copy" }}
+                  </button>
+                </li>
+              </ul>
+            </article>
           </div>
         </section>
 
@@ -873,6 +1014,144 @@ onBeforeUnmount(() => {
 
 .rel-empty {
   color: var(--txt-faint);
+}
+
+/* "Published to" — distribution destinations, quiet beside the release card. */
+.rel-dist {
+  margin-top: 16px;
+}
+.rel-dist-head {
+  margin-bottom: 16px;
+}
+.rel-dist-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+.rel-dist-sub {
+  color: var(--txt-faint);
+  font-size: 12px;
+  margin: 4px 0 0;
+}
+.rel-dist-sub code {
+  font-family: var(--mono);
+  color: var(--txt-dim);
+}
+.rel-dist-channels {
+  display: grid;
+  gap: 12px;
+}
+.rel-channel {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: var(--bg-2);
+}
+.rel-channel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.rel-channel-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--txt);
+  text-decoration: none;
+}
+a.rel-channel-name:hover {
+  color: var(--cyan);
+  text-decoration: underline;
+}
+.rel-channel-state {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+.rel-channel-state[data-state="matching"] {
+  color: var(--green);
+  background: var(--green-tint);
+  border-color: var(--green-border-tint);
+}
+.rel-channel-state[data-state="out-of-sync"] {
+  color: var(--amber);
+  background: var(--amber-tint);
+  border-color: var(--amber-border-tint);
+}
+.rel-channel-state[data-state="failed"] {
+  color: var(--red);
+  background: var(--red-tint);
+  border-color: var(--red-border-tint);
+}
+.rel-channel-state[data-state="unavailable"],
+.rel-channel-state[data-state="unverified"] {
+  color: var(--txt-dim);
+  background: var(--btn-new-bg);
+  border-color: var(--border);
+}
+.rel-channel-detail {
+  color: var(--txt-faint);
+  font-size: 12px;
+  margin: 5px 0 0;
+}
+.rel-installs {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.rel-install {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.rel-install-label {
+  flex-shrink: 0;
+  width: 46px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--txt-faint);
+}
+.rel-install-cmd {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--txt-dim);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 6px 9px;
+}
+.rel-copy {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--border);
+  background: var(--btn-new-bg);
+  color: var(--txt-dim);
+  border-radius: 7px;
+  padding: 5px 9px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.rel-copy:hover {
+  border-color: var(--border-bright);
+  color: var(--txt);
+}
+.rel-copy-ico {
+  width: 12px;
+  height: 12px;
 }
 
 @media (max-width: 560px) {
