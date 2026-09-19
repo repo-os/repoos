@@ -2,14 +2,14 @@
 id: "0431"
 title: Recover invalid Copilot resume IDs without discarding the worktree
 type: bug
-status: active
+status: done
 priority: p1
 area: agent
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-19T00:42:42Z"
-updated_at: "2026-09-19T00:43:15Z"
+updated_at: "2026-09-19T00:51:29Z"
 ---
 ## Problem
 
@@ -32,3 +32,5 @@ A task with malformed persisted Copilot resume state can be restarted without kn
 
 - 2026-09-19T00:42:42Z · created · unknown
 - 2026-09-19T00:43:15Z · body
+- 2026-09-19T00:51:29Z · status active→done
+- 2026-09-19T00:51:29Z · note: Hotfix landed on main in db8cf038; malformed Copilot resume IDs now offer a safe fresh-in-worktree recovery.
