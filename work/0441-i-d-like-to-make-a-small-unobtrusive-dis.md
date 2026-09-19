@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-19T07:47:51Z"
+review_passes: 2
 id: "0441"
 title: Add new release available notification
 type: feature
@@ -10,9 +12,7 @@ created_by: hello@repoos.org
 branch: feat/add-new-release-available-notification
 review_model_override: openrouter/tencent/hy4-preview
 created_at: "2026-09-19T07:27:58Z"
-updated_at: "2026-09-19T07:44:45Z"
 review_rounds: 1
-review_passes: 1
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -64,3 +64,4 @@ I'd like to make a small unobtrusive dismissable message show to the user when t
 - 2026-09-19T07:38:54Z · status active→review
 - 2026-09-19T07:41:28Z · status review→active
 - 2026-09-19T07:44:45Z · status active→review
+
