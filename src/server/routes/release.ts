@@ -6,7 +6,13 @@ import {
   getReleaseStatus,
   releaseNotesPrompt,
   type ReleasePhase,
+  type ReleaseStatus,
 } from "../release.js";
+import {
+  getDistributionStatus,
+  stripVersionPrefix,
+  type DistributionRelease,
+} from "../distribution.js";
 import {
   extractOneShotReportText,
   pmCommand,
@@ -155,6 +161,30 @@ export const getRelease: RouteHandler = async (ctx, _req, res) =>
   json(res, 200, await getReleaseStatus(ctx.config));
 
 export const getReleaseRun: RouteHandler = (_ctx, _req, res) => json(res, 200, run);
+
+/**
+ * The release the Releases page is currently showing: the tagged manifest
+ * version when it exists, else the newest tag. Null when there's nothing.
+ */
+function viewedRelease(status: ReleaseStatus): DistributionRelease {
+  if (status.released && status.version) {
+    return { version: status.version, tag: status.tag };
+  }
+  if (status.latestTag) {
+    return { version: stripVersionPrefix(status.latestTag), tag: status.latestTag };
+  }
+  return { version: null, tag: null };
+}
+
+/**
+ * The "Published to" summary for the viewed release. Kept off `/api/release`:
+ * it does bounded public network lookups, and a registry outage must never
+ * delay or fail the page's main status fetch (#0445).
+ */
+export const getReleaseDistribution: RouteHandler = async (ctx, _req, res) => {
+  const status = await getReleaseStatus(ctx.config);
+  return json(res, 200, await getDistributionStatus(ctx.config, viewedRelease(status)));
+};
 
 export const runRelease: RouteHandler = async (ctx, req, res) => {
   const body = (await readBody(req)) as {

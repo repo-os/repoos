@@ -233,11 +233,76 @@ current — so you can still see where the real stable line sits.
 "shipped 2h ago · \<sha\>" comes from the tag's own creation date, so it
 survives a server restart (the in-memory run state does not).
 
+## Distribution destinations ("Published to")
+
+RepoOS can cut a tag, but users install the release from somewhere else — npm,
+a Homebrew tap, a GitHub release. The **Published to** section on the Releases
+page is a per-channel summary of that: what each destination publishes, whether
+it matches the release being viewed, and the exact install commands. It is a
+section on the existing page, never a new nav item.
+
+It is entirely project-configured. A repo with no `[[distribution]]` rows
+renders nothing extra — the existing Releases experience is unchanged. RepoOS
+hard-codes no package names or URLs.
+
+```toml
+[[distribution]]
+name       = "npm"
+kind       = "npm"                     # npm | homebrew | github-release | custom
+package    = "@scope/name"             # lookup key for kind = "npm"
+url        = "https://www.npmjs.com/package/@scope/name"
+install    = ["npm install -g @scope/name", "bun add -g @scope/name"]
+
+[[distribution]]
+name       = "Homebrew"
+kind       = "homebrew"
+versionUrl = "https://raw.githubusercontent.com/owner/homebrew-tap/main/Formula/name.rb"
+url        = "https://github.com/owner/homebrew-tap/blob/main/Formula/name.rb"
+install    = ["brew install owner/tap/name"]
+
+[[distribution]]
+name       = "GitHub Releases"
+kind       = "github-release"
+repository = "owner/repo"              # builds the releases API lookup
+url        = "https://github.com/owner/repo/releases/tag/{tag}"
+install    = ["curl -fsSL https://example.com/install | bash"]
+```
+
+Keys: `name` (required); `kind`; a source `url` (may contain `{tag}` and
+`{version}`, substituted from the release being viewed — an unresolved
+placeholder drops the link rather than producing a dead one); `package`;
+`repository`; `versionUrl`; `versionRegex`; and `install`, a one-line array of
+independently copyable commands. A channel's tab label is derived from the
+first token of each command, so adding a variant is just another array entry.
+
+### How versions are checked
+
+Each `kind` names a **public, credential-free** lookup, bounded by a 5s timeout
+and resolved independently per channel, so an npm outage never hides the
+Homebrew row or blocks the page:
+
+| kind             | lookup |
+| ---------------- | ------ |
+| `npm`            | `registry.npmjs.org/<package>/latest` → `.version` |
+| `homebrew`       | the raw formula at `versionUrl`, read for `version "…"` |
+| `github-release` | GitHub's releases API for `repository` (or `versionUrl`) → latest tag |
+| `custom`         | `versionUrl` + `versionRegex` (one capture group) |
+
+A channel with no recognized `kind` (or missing its lookup data) still renders
+its install commands, just with an **Unverified** status — RepoOS never claims
+a version it couldn't read. A `404` is **Not published yet**; a fetch/timeout
+failure is **Check failed**. When the release being viewed has a version, a
+channel at the same version reads **Up to date**, and any other version reads
+**Out of sync** with both versions shown. All of this is computed for the UI
+only: it is never a prerequisite for viewing releases, and no token, registry
+secret or repository credential is ever sent to the browser.
+
 ## API
 
 | method + path            | purpose |
 | ------------------------ | ------- |
 | `GET /api/release`       | `ReleaseStatus` — version, tags, blockers, links |
+| `GET /api/release/distribution` | `DistributionSummary` — each configured channel's published version/state for the release being viewed. Separate from `/api/release` so a slow registry can't delay or fail the page. |
 | `GET /api/release/run`   | `ReleaseRun` — `state` / `phase` / `message` / timestamps for the current or most recent run (in-memory, resets on restart) |
 | `POST /api/release`      | `{ version, confirmTag, notes? }` → starts a run; `409` if one is already running |
 | `POST /api/release/notes` | `{ version? }` → drafts release notes from commits since the last tag and returns `{ notes, sinceTag, commitCount, truncated }`; never cuts a release |

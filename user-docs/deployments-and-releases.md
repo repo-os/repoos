@@ -50,6 +50,47 @@ Tags with a suffix — `v1.2.0-beta.1`, `v1.2.0-rc.1` — are treated as
 never hands a prerelease to a stable user, and they don't hide the last stable
 tag in the UI.
 
+### Distribution destinations: "Published to"
+
+A release is one versioned artifact; the places users install it from are its
+**distribution destinations**. When you declare any, the Releases page grows a
+**Published to** section listing each one, the commands to install from it, and
+whether the version it currently publishes matches the release you're looking
+at. This is deliberately separate from [Deployments](#deployments) — those are
+environments *you* ship to, these are registries *users* install from.
+
+```toml
+[[distribution]]
+name    = "npm"
+kind    = "npm"                        # npm | homebrew | github-release | custom
+package = "@scope/name"
+url     = "https://www.npmjs.com/package/@scope/name"
+install = ["npm install -g @scope/name", "bun add -g @scope/name"]
+
+[[distribution]]
+name       = "Homebrew"
+kind       = "homebrew"
+versionUrl = "https://raw.githubusercontent.com/owner/homebrew-tap/main/Formula/name.rb"
+url        = "https://github.com/owner/homebrew-tap/blob/main/Formula/name.rb"
+install    = ["brew install owner/tap/name"]
+```
+
+Each entry is independent: `name` is required, `url` is the source link you
+click through to (it may contain `{tag}` or `{version}`), and `install` is a
+one-line list of commands — every one gets its own copy button. Keep the array
+on a single line; RepoOS's config reader doesn't accept multi-line arrays.
+
+For the version summary, `kind` picks a public lookup (npm registry, a Homebrew
+formula file, a GitHub release, or a `custom` URL + regex). The check is
+time-bounded and per channel: a slow registry shows as **Check failed** on its
+own row rather than breaking the page, and a channel with no `kind` simply
+reads **Unverified** — RepoOS never claims a channel is current when it can't
+confirm the version. No registry token or credential is ever sent to the
+browser.
+
+Leaving the section out entirely keeps the plain Releases page — no empty
+marketing box.
+
 ## Deployments
 
 Deployments model a grid of services: one `[[deployments]]` row per

@@ -397,6 +397,12 @@ export interface RepoOSConfig {
   /** Optional product-release integration. Omitted means the Releases UI is hidden. */
   release?: ReleaseConfig;
   /**
+   * Distribution destinations shown as the Releases page's "Published to"
+   * summary (a `[[distribution]]` array of tables). Omitted/empty keeps the
+   * existing Releases experience with no extra section. See [DistributionConfig].
+   */
+  distribution?: DistributionConfig[];
+  /**
    * Per-project opt-in config for `repoos check` steps (tasks #0348, #0351).
    * Omitted means every pluggable step (`ui-smoke`, CSS layering, theme
    * contrast) skips unless the project declares it here or through a
@@ -504,6 +510,73 @@ export interface ReleaseConfig {
   repository?: string;
   /** Optional workflow path, shown as release context (not executed by RepoOS). */
   workflow?: string;
+}
+
+/**
+ * How a distribution channel's published version is looked up, so the Releases
+ * page's "Published to" summary can say whether a channel is current. Each kind
+ * knows a public, credential-free lookup:
+ *
+ * - `npm` — the public npm registry (`registry.npmjs.org`) for `package`.
+ * - `homebrew` — the raw formula source at `versionUrl` (a tap formula is not
+ *   in the core formulae API), parsed for its declared `version`.
+ * - `github-release` — GitHub's public releases API for `repository` (or an
+ *   explicit `versionUrl`), reported as the latest tag.
+ * - `custom` — any `versionUrl` + `versionRegex` the project supplies.
+ *
+ * Omitted means no automatic version check: the channel still renders with its
+ * install commands, but its status stays "unverified" rather than claiming a
+ * version it cannot confirm.
+ */
+export type DistributionKind = "npm" | "homebrew" | "github-release" | "custom";
+
+/**
+ * One place users can install a project's releases from, declared per project
+ * under `[[distribution]]` in `repoos.toml` and rendered as the **Published to**
+ * section on the Releases page. These are distribution destinations, not
+ * deployment environments ([DeploymentConfig]) — a release is one versioned
+ * artifact, and a distribution channel is a registry (or installer) that
+ * artifact is published to.
+ *
+ * Entirely declarative and project-owned: RepoOS hard-codes no package names,
+ * URLs, or commands, so a repo that publishes to none of npm/Homebrew/GitHub
+ * simply omits the section and keeps the existing Releases experience. The one
+ * network RepoOS does itself is the optional, timeout-bounded, credential-free
+ * version lookup described by `kind` — for the UI only, never a prerequisite
+ * for viewing releases.
+ */
+export interface DistributionConfig {
+  /** Human channel name, e.g. "npm" or "GitHub Releases". Required. */
+  name: string;
+  /**
+   * Selects the public version lookup for this channel. Omitted (or an
+   * unrecognized value) means no automatic check — the channel still renders
+   * its install commands, with an honest "unverified" status.
+   */
+  kind?: DistributionKind;
+  /**
+   * Source link for the channel (registry page, tap/formula, release page).
+   * May contain `{tag}` or `{version}`, resolved against the release being
+   * viewed; an unresolved placeholder drops the link rather than producing a
+   * dead URL.
+   */
+  url?: string;
+  /**
+   * The package/formula identifier shown to users and used as the lookup key
+   * for `kind = "npm"` (e.g. "@scope/name"). Informational for other kinds.
+   */
+  package?: string;
+  /** `owner/repo` for `kind = "github-release"`; builds the releases API URL. */
+  repository?: string;
+  /**
+   * Explicit URL to fetch the published version from, overriding the URL a
+   * `kind` would derive. Required for `homebrew` and `custom`.
+   */
+  versionUrl?: string;
+  /** Regex with one capture group used to read the version; `custom` needs it. */
+  versionRegex?: string;
+  /** Install commands, each independently copyable. */
+  install?: string[];
 }
 
 /**
