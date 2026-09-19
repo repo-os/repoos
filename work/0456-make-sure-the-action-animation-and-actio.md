@@ -3,13 +3,17 @@ id: "0456"
 title: Fix task panel animation and message consistency
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "error: Upstream request failed: [insufficient_user_quota] You're out of credits — this request needs $0.03. Add credits to keep going: https://www.orcarouter.ai/console/billing?ref=err_credit_gate#add-credits (request id: 202609192341146656946338268d9d6zYF9SpNt)"
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-task-panel-animation-and-message-con
 created_at: "2026-09-19T23:18:59Z"
-updated_at: "2026-09-19T23:21:57Z"
+updated_at: "2026-09-19T23:41:15Z"
+dev_error_count: 1
 ---
 ## Problem
 
@@ -60,3 +64,4 @@ Make sure the action animation and action text in the tasks are the same color (
 - 2026-09-19T23:19:16Z · status draft→inbox, title, area, type, body
 - 2026-09-19T23:19:49Z · status inbox→ready
 - 2026-09-19T23:21:57Z · status ready→active, branch
+- 2026-09-19T23:41:15Z · agent exited with an error (opencode) · error: Upstream request failed: [insufficient_user_quota] You're out of credits — this request needs $0.03. Add credits to keep going: https://www.orcarouter.ai/console/billing?ref=err_credit_gate#add-credits (request id: 202609192341146656946338268d9d6zYF9SpNt)
