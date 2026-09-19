@@ -60,10 +60,12 @@ stepping on each other.
 repoos check
 ```
 
-This is the single bar for "did this break anything?": build staleness, a full
-build, and the test suite always run; format/lint and a UI smoke test run too
-once your repo declares them (see [Checks before merge](/check)). An agent must get
-it green before handing work back, and it runs again before anything merges.
+This is the single bar for "did this break anything?". It runs the check plan
+your repo declares in `repoos.toml` — the same command for Go, Gradle/Android,
+Rust, JavaScript or a mix — and each step ends in a pass, a failure, a timeout,
+a missing-prerequisite error, or an explicitly-stated skip (see
+[Checks before merge](/check)). An agent must get it green before handing work
+back, and it runs again before anything merges.
 
 Because it's one command with a non-zero exit code on failure, the same checks
 works locally, in CI, and inside RepoOS's own close-out pipeline.

@@ -34,6 +34,7 @@ import type {
   WhisperConfig,
 } from "./types.js";
 import { STATUSES } from "./types.js";
+import { parseCheckPlanConfig } from "./check-plan.js";
 import { stripTomlComment, unquoteTomlString } from "./toml-line.js";
 
 /** Default display labels for board columns, keyed by canonical status ID. */
@@ -886,6 +887,12 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
         .map((v) => v.trim());
       if (excludes.length) cfg.check = { ...cfg.check, bareRequireExcludes: excludes };
     }
+    // [check] declarative plan (#0446) — `version`, `defaultProfile` and the
+    // [[check.steps]] rows. When a repo declares steps, `repoos check` runs
+    // exactly those, for any stack; without them it falls back to the legacy
+    // per-step keys and then to inference (see core/check-plan.ts).
+    const plan = parseCheckPlanConfig(parsed);
+    if (plan) cfg.check = { ...cfg.check, ...plan };
 
     // [board.columns] section (#0396) — display-only column label overrides.
     // Invalid entries (blank, non-string, >40 chars, duplicates) fall back to

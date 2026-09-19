@@ -69,7 +69,7 @@ RepoOS's own; in a managed repo it is that project's. See `docs/README.md`.
 2. Pick a task from `work/` whose `status: ready`.
 3. Set its `status: active` (edit the frontmatter; do not move the file).
 4. Create a worktree on the branch named in the task's `branch:` field, or set one.
-5. Run `repoos check` and confirm it passes (build, typecheck, tests, UI smoke test). Then implement → if the repo has a git remote, open an MR/PR against `main`.
+5. Run `repoos check` and confirm it passes (the check plan declared in `repoos.toml`: build, typecheck, tests, UI smoke test). Then implement → if the repo has a git remote, open an MR/PR against `main`.
 6. Set `status: review` when ready for human sign-off, and only after a green `repoos check`. **Leave the worktree open and do not merge its branch yourself** — see "Review and sign-off" below.
 
 ## Review and sign-off (review → done)
@@ -174,15 +174,24 @@ Rules that follow from this, in rough priority order:
 
 ## Definition of done
 
-Before a task moves to review, `repoos check` must pass. This runs:
+Before a task moves to review, `repoos check` must pass. It runs the check plan
+this repo declares in `repoos.toml` (`[[check.steps]]`, #0446) — for RepoOS
+that is:
 - Build staleness check (`src/` vs `dist/`)
-- Formatting & lint (`oxfmt --check` + `oxlint`) — **if this fails, run `bun run fmt`, re-stage, and re-run `repoos check`**; the build and tests are skipped until formatting is clean
-- Full build (`tsc` + asset copy)
-- Test suite (if any)
+- Lockfile sync (`bun.lock` vs `package.json`) and the zero-runtime-dependency guard
+- Formatting & lint (`oxfmt --check` + `oxlint`) — **if this fails, run `bun run fmt`, re-stage, and re-run `repoos check`**; build, tests and smoke are skipped until formatting is clean (they `dependsOn` it)
+- Full build (`tsc` + asset copy), CSS layering and theme-contrast guards, bare-`require()` guard, task-asset guard
+- Test suite
 - Headless browser UI smoke test (WebKit) — verifies the app mounts, no unrendered mustache in the DOM, and zero console errors
 - The smoke test **skips with a clear message** if Playwright or the browser binary isn't installed
 
-One command — `repoos check` — is the single bar for "did this break anything?"
+Change the gate by editing that plan in `repoos.toml`, not by editing
+`src/commands/check.ts`: a step is `name` + `command` (or a built-in `kind`),
+plus optional `cwd`, `timeoutMs`, `required`, `profiles`, `whenChanged`,
+`requires`, `dependsOn`. A required step whose tool is missing FAILS with
+install advice — only an explicitly optional or excluded step may skip.
+Close-out runs the full profile; `repoos check --changed main` is a fast
+pre-review pass, not the merge gate. See `user-docs/check.md`.
 
 `repoos check` only catches code breakage — it says nothing about whether this
 task's diff just made a doc wrong. Before moving to review, also check: does

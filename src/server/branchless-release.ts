@@ -16,6 +16,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
+import { CLOSEOUT_CHECK_ARGS } from "../core/check-plan.js";
 import { markTaskReleased } from "./write.js";
 
 export interface CheckResult {
@@ -29,12 +30,12 @@ export function runCheckOnRoot(root: string): CheckResult {
   const localCli = join(root, "dist", "cli", "index.js");
   const candidates: string[][] = existsSync(localCli)
     ? [
-        [process.execPath, localCli, "check"],
-        ["repoos", "check"],
+        [process.execPath, localCli, "check", ...CLOSEOUT_CHECK_ARGS],
+        ["repoos", "check", ...CLOSEOUT_CHECK_ARGS],
       ]
     : [
-        ["repoos", "check"],
-        ["bun", "run", "repoos", "check"],
+        ["repoos", "check", ...CLOSEOUT_CHECK_ARGS],
+        ["bun", "run", "repoos", "check", ...CLOSEOUT_CHECK_ARGS],
       ];
   let last: ReturnType<typeof spawnSync> | null = null;
   for (const [cmd, ...args] of candidates) {

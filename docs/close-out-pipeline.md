@@ -204,6 +204,16 @@ the candidate worktree and run it manually, that first-choice CLI selection has
 regressed — check `integration-orchestrator.ts`'s `validateCandidate()` still prefers
 `join(wtPath, "dist", "cli", "index.js")` before any fallback.**
 
+**The close-out gate runs the FULL plan (#0446):** every close-out invocation of
+`repoos check` passes `--profile full` (`CLOSEOUT_CHECK_ARGS` in
+`src/core/check-plan.ts`), so a step a repo deliberately holds back from a
+routine run (`profiles = ["full"]`) still runs before anything merges. Close-out
+never passes `--changed`: changed-path mode is the agent's fast pre-review pass
+and the handoff re-verification of the same isolated branch, not the gate on the
+merged candidate. A plan step that can't run — a missing tool, an unusable row —
+Fails the gate rather than passing; only an explicitly optional or excluded step
+may skip.
+
 **Diagnosing a `check failed: ...` reason (#0428):** the reason now leads with the
 gate's own `── Results ──` summary — which checks failed (`✗ check-fmt:check`,
 `✗ tests`) with the key detail for each (the files with format issues, the `FAIL`

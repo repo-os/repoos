@@ -93,10 +93,15 @@ tunnel, and git state.
 
 ### `repoos check`
 
-The pre-merge checks: build staleness, full build, and tests always
-run; formatting/lint and a UI smoke test run once your repo declares them
-(see [Checks before merge](/check)). Exits non-zero on any failure, so it works in
-CI as well as locally.
+The definition-of-done gate. It runs the check plan your repo declares in
+`repoos.toml` — for any stack (see [Checks before merge](/check)). Exits
+non-zero on any failure, so it works in CI as well as locally.
+
+```bash
+repoos check --profile full      # every declared step, including slow ones
+repoos check --changed main      # fast pre-review pass over changed paths
+repoos check --print-plan        # print the resolved plan as [[check.steps]]
+```
 
 ### `repoos index [--json]`
 

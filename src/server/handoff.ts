@@ -16,6 +16,7 @@ import {
   currentBranch,
   branchChangesSinceBase,
 } from "../core/git.js";
+import { CLOSEOUT_CHECK_ARGS } from "../core/check-plan.js";
 import { parseTask } from "../core/task.js";
 import { parseDocument, serializeDocument } from "../core/frontmatter.js";
 import type { AgentHandoffRequest, AgentRunner } from "./agents.js";
@@ -129,10 +130,10 @@ async function runCheck(
   // falsely pass or fail when finalizing a different linked worktree.
   const localCli = join(worktree, "dist", "cli", "index.js");
   const candidates: ReadonlyArray<readonly [string, ...string[]]> = existsSync(localCli)
-    ? [[process.execPath, localCli, "check"]]
+    ? [[process.execPath, localCli, "check", ...CLOSEOUT_CHECK_ARGS]]
     : [
-        ["repoos", "check"],
-        ["bun", "run", "repoos", "check"],
+        ["repoos", "check", ...CLOSEOUT_CHECK_ARGS],
+        ["bun", "run", "repoos", "check", ...CLOSEOUT_CHECK_ARGS],
       ];
   // Scope the test step to what this branch actually changed since its
   // merge-base with main (see changedTestRef in commands/check.ts): this is

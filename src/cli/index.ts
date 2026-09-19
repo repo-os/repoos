@@ -95,7 +95,13 @@ function exRow(cmd: string, comment?: string): string {
 
 function help(): void {
   const commandLines = [
-    cmdRow("check", "Full definition-of-done: build, typecheck, tests, UI smoke check"),
+    cmdRow("check", "Definition-of-done gate: runs the check plan declared in repoos.toml"),
+    cmdRow(
+      "check --profile full",
+      "Run every declared step, including ones held back from a routine run",
+    ),
+    cmdRow("check --changed main", "Fast pre-review pass over steps affected by changed paths"),
+    cmdRow("check --print-plan", "Print the resolved plan as [[check.steps]] TOML to commit"),
     cmdRow(
       "init [name]",
       "Scaffold work/, repoos.toml, AGENTS.md; outside a git repo runs a guided flow that can launch the web console",
@@ -286,7 +292,7 @@ function main(): void {
       void cmdService(rest);
       break;
     case "check":
-      void cmdCheck();
+      void cmdCheck(rest);
       break;
     case "tunnel":
       void cmdTunnel(rest);

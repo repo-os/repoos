@@ -118,6 +118,44 @@ describe("parseCheckResults (0428)", () => {
   });
 });
 
+/**
+ * #0446 — the results block gained two icons: `⏭` for a step that was
+ * explicitly excluded, and `⚠` for an optional step that failed (reported, not
+ * gating). The parser has to read both, or a close-out reason would either hide
+ * a real failure or blame a skip.
+ */
+const PLAN_OUTPUT = [
+  "  ── Results ──",
+  "  ✔ staleness",
+  "  ⏭ task-assets  — skipped — no changed path matches work/**, inputs/**",
+  "  ✗ build  — timed out after 120s",
+  "  ✗ go-test  — missing prerequisite: go — install Go (https://go.dev/dl)",
+  "  ⚠ coverage  — command failed (exit 1)",
+  "",
+  "  2 check(s) failed.",
+].join("\n");
+
+describe("parseCheckResults (0446) — the plan-driven results block", () => {
+  it("reads the skip, timeout, missing-prerequisite and optional-failure icons", () => {
+    const results = parseCheckResults(PLAN_OUTPUT);
+    const byName = Object.fromEntries(results!.map((r) => [r.name, r]));
+    expect(byName.staleness.status).toBe("passed");
+    expect(byName["task-assets"].status).toBe("skipped");
+    expect(byName.build.status).toBe("failed");
+    expect(byName.build.detail).toMatch(/timed out/);
+    expect(byName["go-test"].status).toBe("failed");
+    expect(byName["go-test"].detail).toMatch(/missing prerequisite: go/);
+    expect(byName.coverage.status).toBe("failed");
+  });
+
+  it("summarises a plan failure by check name, with the prerequisite advice", () => {
+    const summary = summarizeCheckOutput(PLAN_OUTPUT);
+    expect(summary?.failedChecks).toEqual(["build", "go-test", "coverage"]);
+    expect(summary?.summary).toMatch(/go-test/);
+    expect(summary?.summary).toMatch(/go\.dev/);
+  });
+});
+
 describe("checkFailureSignature (0428)", () => {
   it("treats the same failing checks as the same failure despite log paths", () => {
     const a = checkFailureSignature(

@@ -125,10 +125,15 @@ cwd = "landing"
 
 # ── Checks ───────────────────────────────────────────────────────────────
 [check]
+version = 1
 uiSmoke = "bun run smoke"
 uiStylesheet = "src/styles.css"
 backdropToken = "--bg"
 gradientTokens = ["--btn-primary-bg"]
+
+[[check.steps]]                   # the gate's plan; omit to infer from the repo
+name = "build"
+command = "bun run build"
 
 [[check.themeScopes]]
 selector = ":root"
@@ -385,12 +390,21 @@ previous preview.
 
 ### `[check]`
 
+`repoos check` runs a plan your repo declares, so the same gate works for any
+stack (Go, Gradle/Android, Rust, JavaScript, or a mix):
+
 ```toml
 [check]
-uiSmoke = "bun run smoke"
+version = 1
 uiStylesheet = "src/styles.css"
 backdropToken = "--bg"
 gradientTokens = ["--btn-primary-bg"]
+
+[[check.steps]]
+name = "build"
+command = "go build ./..."
+requires = ["go"]
+timeoutMs = 300000
 
 [[check.themeScopes]]
 selector = ":root"
@@ -402,12 +416,27 @@ fg = "--txt"
 bg = "--bg"
 ```
 
-These are optional repo-specific guardrails for `repoos check`. When omitted,
-the corresponding step skips cleanly. (`[checks]` is accepted as an alias for
-`[check]`.)
+A step runs `command`, or a built-in `kind` (see
+[Checks before merge](/check) for the kinds and their skip conditions). With no
+`[[check.steps]]` at all, the gate falls back to the legacy keys below, then to
+inference from repo markers — and a repo with no recognisable plan fails rather
+than reporting green. (`[checks]` is accepted as an alias for `[check]`.)
 
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
+| `check.version` | number | `1` | yes | Check-plan schema version. |
+| `check.defaultProfile` | string | `default` | yes | Profile used when `--profile` isn't passed. |
+| `check.steps` | array of tables | unset | yes | The plan: one row per gate step, run in order. Fields below. |
+| `check.steps.name` | string | derived from `kind` | yes | Identifies the step in output and in `dependsOn`. |
+| `check.steps.command` | string | unset | yes | Shell command to run. |
+| `check.steps.kind` | select | unset | yes | Built-in guard instead of a command. |
+| `check.steps.cwd` | string | repo root | yes | Repo-relative directory to run in. |
+| `check.steps.timeoutMs` | number | `600000` | yes | Kill the step after this long. |
+| `check.steps.required` | boolean | `true` | yes | `false` makes a failure advisory instead of gating. |
+| `check.steps.profiles` | array of strings | all profiles | yes | Profiles that include this step. `["full"]` keeps it out of a routine run; close-out runs `--profile full`. |
+| `check.steps.whenChanged` | array of strings | always runs | yes | Path globs; in changed-path mode the step runs only when one matches. |
+| `check.steps.requires` | array of strings | unset | yes | Binaries that must be on `PATH`; a missing one fails a required step with install advice. |
+| `check.steps.dependsOn` | array of strings | unset | yes | Skip this step when a named earlier required step failed. |
 | `check.uiSmoke` | string | unset | yes | Command for the UI smoke step. Overrides a `smoke` script in `package.json`; with neither, the step skips. |
 | `check.uiStylesheet` | string | unset | yes | Repo-relative stylesheet the CSS-layering and theme-contrast guards read. With it absent, both skip. |
 | `check.themeScopes` | array of tables | unset | yes | Theme blocks for the contrast guard. Each row is documented just below. |
