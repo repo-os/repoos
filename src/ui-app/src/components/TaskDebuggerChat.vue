@@ -113,7 +113,10 @@ async function send(): Promise<void> {
   draft.value = "";
   scrollToLatest();
   try {
-    await api(`/api/tasks/${props.task.id}/debugger/message`, JSON_OPTS("POST", { text }));
+    await api(
+      `/api/tasks/${props.task.id}/debugger/message`,
+      JSON_OPTS("POST", { text, optimistic: true }),
+    );
   } catch (error) {
     repo.outputs[CHAT_ID.value] = (repo.outputs[CHAT_ID.value] ?? []).filter(
       (_entry, index) => index !== optimisticIndex,
