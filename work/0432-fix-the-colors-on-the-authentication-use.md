@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+cli_override: opencode
 created_at: "2026-09-19T00:54:12Z"
-updated_at: "2026-09-19T00:54:33Z"
+updated_at: "2026-09-19T00:56:08Z"
 ---
 ## Problem
 
@@ -57,3 +58,4 @@ Fix the colors on the authentication & users section of settings. It doesn't loo
 - 2026-09-19T00:54:14Z · screenshots
 - 2026-09-19T00:54:14Z · screenshots
 - 2026-09-19T00:54:33Z · status draft→inbox, title, priority, area, type, body
+- 2026-09-19T00:56:08Z · cli_override
