@@ -8,11 +8,10 @@ area: web
 assigned_to: human
 created_by: ""
 branch: ""
-cli_override: claude code
-model_override: haiku
+cli_override: codex
 review_model_override: opencode-go/mimo-v2.5
 created_at: "2026-09-19T01:04:15Z"
-updated_at: "2026-09-19T01:29:27Z"
+updated_at: "2026-09-19T01:29:39Z"
 ---
 ## Problem
 
@@ -70,3 +69,4 @@ Use this when a UI component has color, contrast, or visibility issues across **
 - 2026-09-19T01:29:18Z · model_override
 - 2026-09-19T01:29:24Z · review_model_override
 - 2026-09-19T01:29:27Z · status inbox→ready
+- 2026-09-19T01:29:39Z · cli_override, model_override
