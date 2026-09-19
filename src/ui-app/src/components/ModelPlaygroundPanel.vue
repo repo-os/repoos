@@ -741,13 +741,14 @@ onMounted(() => {
   opacity: 0.6;
 }
 .playground-compose button {
+  /* Deliberately no `background`/`color`: this scoped rule out-specifies
+     the shared .ai-chat-send, so setting a fill here would silently win
+     and leave the send button looking transparent. The send button takes
+     .ai-chat-send — there is no second button in this form. */
   flex: none;
   padding: 7px 14px;
   border: 0;
   border-radius: 9px;
-  /* Fill comes from the shared .ai-chat-send (style.css). */
-  background: transparent;
-  color: var(--txt-dim);
   font: 600 11.5px var(--font-sans);
   cursor: pointer;
 }

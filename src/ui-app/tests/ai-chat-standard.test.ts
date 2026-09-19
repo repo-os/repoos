@@ -48,14 +48,26 @@ function styleBlock(source: string): string {
 }
 
 /** The declarations of the rule(s) whose selector mentions `selector`. */
-function ruleBody(css: string, selector: string): string {
-  const out: string[] = [];
+function rules(css: string): { selector: string; body: string }[] {
+  const out: { selector: string; body: string }[] = [];
   const re = /([^{}]+)\{([^{}]*)\}/g;
   let m: RegExpExecArray | null;
-  while ((m = re.exec(css))) {
-    if (m[1].includes(selector)) out.push(m[2]);
-  }
-  return out.join("\n");
+  while ((m = re.exec(css))) out.push({ selector: m[1].trim(), body: m[2] });
+  return out;
+}
+
+function ruleBody(css: string, selector: string): string {
+  return rules(css)
+    .filter((rule) => rule.selector.includes(selector))
+    .map((rule) => rule.body)
+    .join("\n");
+}
+
+/** The base `<x>-compose button` rule — no extra class, no pseudo. */
+function baseComposeButtonRules(css: string): { selector: string; body: string }[] {
+  return rules(css).filter((rule) =>
+    rule.selector.split(",").some((part) => /^\.[a-z-]*-compose\s+button$/.test(part.trim())),
+  );
 }
 
 function stripComments(text: string): string {
@@ -293,14 +305,43 @@ describe("AI chat scroll behaviour", () => {
     expect(jumpButton()).not.toBeNull();
   });
 
+  it("holds a remembered position through an async hydration", async () => {
+    // The task PM chat loads its transcript after the tab opens, so a restored
+    // distance is first computed against partial content. It has to be
+    // re-applied when the rest arrives, not left wherever the short log put it.
+    const chatId = nextChatId();
+    const reader = await mountHarness({ chatId, size: 4 });
+    scrollTo(reader, 400);
+    await nextTick();
+    reader.unmount();
+
+    // Reopen onto a log that has only partially hydrated (300px, not 1000px).
+    scrollHeight = 300;
+    const partial = await mountHarness({ chatId, size: 1 });
+    expect(logEl(partial).scrollTop, "clamped by the short log").toBe(0);
+
+    // The rest of the conversation lands.
+    scrollHeight = 1000;
+    await partial.setProps({ size: 4 });
+    await nextTick();
+    await nextTick();
+
+    expect(logEl(partial).scrollTop).toBe(scrollHeight - LOG_HEIGHT - 400);
+    // The interim distance must never have been written over the remembered one.
+    partial.unmount();
+    expect(window.localStorage.getItem(`repoos.chat-scroll.${chatId}`)).toBe("400");
+  });
+
   it("never clobbers a remembered position from a log with no layout box", async () => {
     const chatId = nextChatId();
     const first = await mountHarness({ chatId, size: 4 });
     scrollTo(first, 400);
     await nextTick();
-    const saved = window.localStorage.getItem(`repoos.chat-scroll.${chatId}`);
-    expect(saved).toBe("400");
+    // Writes are coalesced across a scroll, so nothing is stored yet…
+    expect(window.localStorage.getItem(`repoos.chat-scroll.${chatId}`)).toBeNull();
+    // …and unmounting flushes the last one.
     first.unmount();
+    expect(window.localStorage.getItem(`repoos.chat-scroll.${chatId}`)).toBe("400");
 
     // A `v-show`-hidden panel reports clientHeight 0. Restoring against that
     // would compute distance 0 and overwrite the entry above with "at bottom".
@@ -389,7 +430,19 @@ describe("every AI chat surface follows the standard", () => {
       });
 
       it("gives the send button the shared accent fill", () => {
-        expect(source).toContain(AI_CHAT_REQUIREMENTS.sendClass);
+        // On the class attribute, not merely in a comment.
+        expect(source).toMatch(new RegExp(`class="[^"]*\\b${AI_CHAT_REQUIREMENTS.sendClass}\\b`));
+      });
+
+      it("does not out-specify that fill from its own scoped styles", () => {
+        // Regression: a scoped `.x-compose button { background/color }` beats
+        // the global `.ai-chat-send` on specificity, so the send button
+        // rendered transparent — less visible than the fill it replaced.
+        for (const rule of baseComposeButtonRules(styleBlock(source))) {
+          expect(rule.body, `${surface.file}: ${rule.selector} must not set a fill`).not.toMatch(
+            /(^|;|\s)(background|color)\s*:/,
+          );
+        }
       });
 
       it("does not override the shared message spacing", () => {

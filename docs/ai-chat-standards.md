@@ -25,6 +25,14 @@ fill) live in `src/ui-app/src/style.css`. A chat's own `<style scoped>` block
 must **not** set a competing `gap` on its log, and must not set `background`
 or `color` on its compose buttons — the fill comes from the shared class.
 
+That second rule is a specificity trap, not a style preference. Vue rewrites a
+scoped `.x-compose button` into `.x-compose button[data-v-…]`, which is
+(0,2,1) and therefore beats the global `.ai-chat-send` at (0,1,0). Setting a
+fill in the scoped rule silently wins and leaves the send button transparent —
+which is how #0444 first shipped. Per-button variants (`.x-stop`, `.pm-attach`)
+are fine: their extra class keeps them out of the base rule's way. The
+conformance test asserts this directly.
+
 ### 1. Open on the newest message
 
 A chat opens scrolled to the bottom. `useChatScroll` does this in `restore()`

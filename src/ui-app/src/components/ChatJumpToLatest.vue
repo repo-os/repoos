@@ -28,6 +28,11 @@ const emit = defineEmits<{ click: [] }>();
 
 const style = ref<Record<string, string>>({});
 let observer: ResizeObserver | null = null;
+// The log's rect can move without anything resizing — a drawer sliding in, a
+// tab transition, a panel being dragged. Re-measuring each frame while the
+// button is on screen is one getBoundingClientRect per frame and keeps it
+// pinned; the loop stops the moment the button hides.
+let frame = 0;
 
 function measure(): void {
   const el = props.anchor;
@@ -38,10 +43,35 @@ function measure(): void {
   // button off screen.
   const clamp = (value: number, extent: number): number =>
     Math.min(Math.max(8, Math.round(value)), Math.max(8, extent - 8));
-  style.value = {
+  const next = {
     bottom: `${clamp(window.innerHeight - rect.bottom + 12, window.innerHeight)}px`,
     right: `${clamp(window.innerWidth - rect.right + 14, window.innerWidth)}px`,
   };
+  // Assigning every frame would re-render on every frame; only a real move
+  // changes anything.
+  if (next.bottom !== style.value.bottom || next.right !== style.value.right) style.value = next;
+}
+
+/** Re-measure every frame while visible; rect moves are not always resizes. */
+function follow(): void {
+  if (!props.visible) {
+    frame = 0;
+    return;
+  }
+  measure();
+  frame = requestAnimationFrame(follow);
+}
+
+function startFollowing(): void {
+  if (frame !== 0 || typeof requestAnimationFrame === "undefined") return;
+  frame = requestAnimationFrame(follow);
+}
+
+function stopFollowing(): void {
+  if (frame !== 0) {
+    cancelAnimationFrame(frame);
+    frame = 0;
+  }
 }
 
 function track(): void {
@@ -59,18 +89,25 @@ watch(() => props.anchor, track);
 watch(
   () => props.visible,
   (visible) => {
-    if (visible) measure();
+    if (visible) {
+      measure();
+      startFollowing();
+    } else {
+      stopFollowing();
+    }
   },
 );
 
 onMounted(() => {
   track();
+  if (props.visible) startFollowing();
   if (typeof window !== "undefined") window.addEventListener("resize", measure);
 });
 
 onBeforeUnmount(() => {
   observer?.disconnect();
   observer = null;
+  stopFollowing();
   if (typeof window !== "undefined") window.removeEventListener("resize", measure);
 });
 </script>

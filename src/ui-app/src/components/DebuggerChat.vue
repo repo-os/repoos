@@ -648,15 +648,17 @@ watch(
   color: var(--txt-faint);
 }
 .debugger-compose button {
+  /* Deliberately no `background`/`color`: this scoped rule out-specifies
+     the shared .ai-chat-send, so setting a fill here would silently win
+     and leave the send button looking transparent. The send button takes
+     .ai-chat-send; .debugger-stop sets its own. */
+
   width: auto;
   padding: 0 11px;
   height: 31px;
   flex: none;
   border: 0;
   border-radius: 9px;
-  /* Fill comes from .ai-chat-send / .debugger-stop below. */
-  background: transparent;
-  color: var(--txt-dim);
   cursor: pointer;
   font: 500 11px var(--font-sans);
 }

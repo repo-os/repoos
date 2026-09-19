@@ -35,6 +35,9 @@ const SMOOTH_SETTLE_MS = 800;
 /** Growth in distance-from-bottom that reads as the reader taking over. */
 const SETTLE_SLACK_PX = 8;
 
+/** How long to coalesce scroll-position writes before touching localStorage. */
+const SAVE_DEBOUNCE_MS = 150;
+
 const STORAGE_PREFIX = "repoos.chat-scroll.";
 
 export interface UseChatScrollOptions {
@@ -90,6 +93,12 @@ function writeSaved(chatId: string, distance: number): void {
   }
 }
 
+/**
+ * `measure()` runs on every scroll event, so the write is coalesced rather than
+ * hitting localStorage once per frame. The last value always lands: the timer
+ * is flushed on unmount and before a restore reads it back.
+ */
+
 export function useChatScroll(
   log: Ref<HTMLElement | null>,
   options: UseChatScrollOptions,
@@ -104,6 +113,11 @@ export function useChatScroll(
   let settleAt = 0;
   let settleDistance = 0;
   let observer: ResizeObserver | null = null;
+  // A remembered distance we have not been able to honour yet, because the
+  // conversation is still hydrating — see restore().
+  let pendingRestore: number | null = null;
+  let saveTimer: ReturnType<typeof setTimeout> | null = null;
+  let pendingSave: number | null = null;
 
   const isActive = (): boolean => toValue(options.active) ?? true;
 
@@ -124,12 +138,31 @@ export function useChatScroll(
     return Boolean(el && el.clientHeight > 0);
   }
 
+  function flushSave(): void {
+    if (saveTimer !== null) {
+      clearTimeout(saveTimer);
+      saveTimer = null;
+    }
+    if (pendingSave === null) return;
+    const distance = pendingSave;
+    pendingSave = null;
+    if (persist) writeSaved(toValue(options.chatId), distance);
+  }
+
+  function queueSave(distance: number): void {
+    pendingSave = distance;
+    if (saveTimer === null) saveTimer = setTimeout(flushSave, SAVE_DEBOUNCE_MS);
+  }
+
   function measure(): void {
     const el = log.value;
     if (!el) return;
     const distance = distanceFromBottom();
     atBottom.value = distance <= threshold;
-    if (persist && hasGeometry()) writeSaved(toValue(options.chatId), distance);
+    // While a remembered position is still being caught up on (the log is
+    // mid-hydration), the distance we can measure is not the reader's real
+    // position — saving it would overwrite what we are restoring.
+    if (hasGeometry() && pendingRestore === null) queueSave(distance);
   }
 
   function onScroll(): void {
@@ -148,6 +181,9 @@ export function useChatScroll(
       atBottom.value = true;
       return;
     }
+    // The reader moved the viewport themselves: drop any restore we were still
+    // catching up on, so following stays off until they return to the bottom.
+    pendingRestore = null;
     measure();
   }
 
@@ -163,7 +199,8 @@ export function useChatScroll(
       el.scrollTop = top;
     }
     atBottom.value = true;
-    if (persist && hasGeometry()) writeSaved(toValue(options.chatId), 0);
+    pendingRestore = null;
+    if (hasGeometry()) queueSave(0);
   }
 
   /**
@@ -173,14 +210,40 @@ export function useChatScroll(
   function restore(): void {
     const el = log.value;
     if (!el || !hasGeometry()) return;
+    // Read through the pending save: a position written moments ago (this
+    // surface closing, say) must not be shadowed by a stale timer.
+    flushSave();
     const saved = persist ? readSaved(toValue(options.chatId)) : null;
-    el.scrollTop =
-      saved === null ? el.scrollHeight : Math.max(0, el.scrollHeight - el.clientHeight - saved);
+    pendingRestore = saved;
+    apply(saved);
     settleAt = 0;
     measure();
   }
 
+  /**
+   * `saved === null` means "nothing remembered", which per the standard means
+   * "open on the newest message". Otherwise hold the remembered distance from
+   * the bottom — and keep it pending, because a conversation that hydrates
+   * asynchronously (the task PM chat's `loadOutput`, say) only reaches its full
+   * height after this call; without that the distance would be computed against
+   * partial content and never corrected.
+   */
+  function apply(saved: number | null): void {
+    const el = log.value;
+    if (!el) return;
+    el.scrollTop =
+      saved === null || saved === 0
+        ? el.scrollHeight
+        : Math.max(0, el.scrollHeight - el.clientHeight - saved);
+  }
+
   function forget(): void {
+    pendingSave = null;
+    if (saveTimer !== null) {
+      clearTimeout(saveTimer);
+      saveTimer = null;
+    }
+    pendingRestore = null;
     try {
       window.localStorage.removeItem(storageKey(toValue(options.chatId)));
     } catch {
@@ -212,7 +275,18 @@ export function useChatScroll(
     () => toValue(options.contentSize) ?? 0,
     () => {
       if (!isActive()) return;
-      void nextTick(atBottom.value ? () => scrollToLatest("auto") : measure);
+      void nextTick(() => {
+        if (pendingRestore !== null) {
+          // Still catching up to the remembered position: re-apply it against
+          // the taller log rather than settling for wherever the partial
+          // content left the reader.
+          apply(pendingRestore);
+          measure();
+          return;
+        }
+        if (atBottom.value) scrollToLatest("auto");
+        else measure();
+      });
     },
   );
 
@@ -235,6 +309,7 @@ export function useChatScroll(
   onBeforeUnmount(() => {
     observer?.disconnect();
     observer = null;
+    flushSave();
   });
 
   return {

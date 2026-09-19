@@ -4698,6 +4698,10 @@ watch(
 }
 
 .pm-compose button {
+  /* Deliberately no `background`/`color`: this scoped rule out-specifies
+     the shared .ai-chat-send, so setting a fill here would silently win
+     and leave the send button looking transparent. The send button takes
+     .ai-chat-send; .pm-stop sets its own. */
   width: 31px;
   height: 31px;
   display: grid;
@@ -4705,9 +4709,6 @@ watch(
   flex: none;
   border: 0;
   border-radius: 9px;
-  /* Fill comes from .ai-chat-send / .pm-stop / .pm-attach below. */
-  background: transparent;
-  color: var(--txt-dim);
   cursor: pointer;
 }
 
