@@ -57,6 +57,7 @@ export default defineConfig({
       { text: "Agents", link: "/agents" },
       { text: "CLI", link: "/cli" },
       { text: "Configuration", link: "/configuration" },
+      { text: "Environment & secrets", link: "/environment-and-secrets" },
       { text: "repoos.org", link: "https://repoos.org" },
     ],
     // Hand-curated (VitePress does not generate this from the file tree).
@@ -86,6 +87,7 @@ export default defineConfig({
         items: [
           { text: "CLI", link: "/cli" },
           { text: "Configuration", link: "/configuration" },
+          { text: "Environment and secrets", link: "/environment-and-secrets" },
           { text: "Authentication", link: "/authentication" },
           { text: "Deployments and releases", link: "/deployments-and-releases" },
           { text: "Changelog", link: "/changelog" },
