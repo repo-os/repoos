@@ -5,7 +5,7 @@
  * going to look at GitHub themselves (#0371).
  */
 import { describe, expect, it } from "vitest";
-import { releaseNotesToPrint } from "../../commands/upgrade";
+import { packageManagerUpgrade, releaseNotesToPrint } from "../../commands/upgrade";
 
 describe("releaseNotesToPrint", () => {
   it("returns the trimmed body when notes are present", () => {
@@ -31,5 +31,37 @@ describe("releaseNotesToPrint", () => {
   it("preserves multi-line markdown content as-is", () => {
     const body = "## Highlights\n\n- Thing one\n- Thing two";
     expect(releaseNotesToPrint(body)).toBe(body);
+  });
+});
+
+describe("packageManagerUpgrade", () => {
+  it.each([
+    [
+      "/opt/homebrew/Cellar/repoos/0.5.47/libexec/node_modules/@repo-os/repoos/dist",
+      { label: "Homebrew", command: "brew update && brew upgrade repo-os/tap/repoos" },
+    ],
+    [
+      "/Users/nick/.local/share/mise/installs/npm-@repo-os-repoos/lib/node_modules/@repo-os/repoos/dist",
+      { label: "mise", command: "mise upgrade npm:@repo-os/repoos" },
+    ],
+    [
+      "/Users/nick/.bun/install/global/node_modules/@repo-os/repoos/dist",
+      { label: "Bun", command: "bun update -g @repo-os/repoos" },
+    ],
+    [
+      "/Users/nick/.local/share/pnpm/global/5/node_modules/@repo-os/repoos/dist",
+      { label: "pnpm", command: "pnpm update -g @repo-os/repoos" },
+    ],
+    [
+      "/usr/local/lib/node_modules/@repo-os/repoos/dist",
+      { label: "npm", command: "npm update -g @repo-os/repoos" },
+    ],
+  ])("recognizes %s", (root, expected) => {
+    expect(packageManagerUpgrade(root)).toEqual(expected);
+  });
+
+  it("leaves standalone and source paths alone", () => {
+    expect(packageManagerUpgrade("/Users/nick/.repoos")).toBeNull();
+    expect(packageManagerUpgrade("/Users/nick/code/repoos/dist")).toBeNull();
   });
 });

@@ -72,11 +72,26 @@ This uses mise's npm backend and saves RepoOS to your global mise
 configuration. Enable mise shell activation so its `repoos` shim is on PATH.
 
 The curl installer puts a self-contained release build in `~/.repoos` and a
-`repoos` launcher in `~/.local/bin`. Update it with `repoos upgrade`.
-Remove it later with `repoos uninstall`.
-Package-manager installs update with `npm update -g @repo-os/repoos`,
-`bun update -g @repo-os/repoos`, `pnpm update -g @repo-os/repoos`, or
-`mise upgrade npm:@repo-os/repoos`, or `brew upgrade repo-os/tap/repoos`.
+`repoos` launcher in `~/.local/bin`. Remove it later with `repoos uninstall`.
+
+## Updating RepoOS
+
+Update with the same tool you used to install it. Do not run `repoos upgrade`
+for a package-manager install: it leaves that install alone and prints the
+matching command when it can identify the source.
+
+| Installed with | Update command |
+| --- | --- |
+| curl | `repoos upgrade` |
+| Homebrew | `brew update && brew upgrade repo-os/tap/repoos` |
+| npm | `npm update -g @repo-os/repoos` |
+| Bun | `bun update -g @repo-os/repoos` |
+| pnpm | `pnpm update -g @repo-os/repoos` |
+| mise | `mise upgrade npm:@repo-os/repoos` |
+
+`repoos upgrade --channel beta`, `--channel canary`, and `--channel rc` are
+available only for the standalone curl install. Package-manager installs follow
+their package manager's stable release channel.
 
 RepoOS runs on **Bun** when it's available and falls back to **Node ≥ 20**
 otherwise — see [Configuration](/configuration#runtime) if you want to pin one.

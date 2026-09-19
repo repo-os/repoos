@@ -16,9 +16,12 @@ console for you.
 ### `repoos upgrade [--channel beta|canary|rc]`
 
 Self-updates a standalone (curl-installed) RepoOS to the latest release.
-Tracks stable by default; `--channel` follows a prerelease line. No-ops with a
-message if you installed via a package manager (use `bun update` / `npm update`)
-or are running from a source checkout (`git pull && bun run build`).
+Tracks stable by default; `--channel` follows a prerelease line. Package-manager
+installs are not modified: RepoOS detects the usual npm, Bun, pnpm, mise, and
+Homebrew paths and prints the matching update command instead. `--channel`
+applies only to the standalone curl install.
+
+See [Updating RepoOS](/getting-started#updating-repoos) for every install method.
 
 ## The board
 

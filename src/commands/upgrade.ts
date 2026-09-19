@@ -2,8 +2,9 @@
  * `repoos upgrade` — self-update for standalone (curl-installed) builds.
  * Downloads the latest GitHub release's dist tarball and swaps it into place.
  *
- * Package-manager installs (npm/bun, living under node_modules/) are not
- * touched here — those update through the package manager itself.
+ * Package-manager installs are not touched here — those update through the
+ * same package manager. We detect the usual global-install locations so the
+ * command can give an actionable, source-specific instruction.
  */
 import { execFileSync } from "node:child_process";
 import {
@@ -36,6 +37,39 @@ function readVersion(root: string): string | null {
   } catch {
     return null;
   }
+}
+
+export interface PackageManagerUpgrade {
+  label: string;
+  command: string;
+}
+
+/**
+ * Infer the package manager from the installed package path. `root` is the
+ * compiled dist/ directory, so it keeps enough of the global-install path to
+ * distinguish Homebrew, mise, Bun, pnpm, and npm.
+ */
+export function packageManagerUpgrade(root: string): PackageManagerUpgrade | null {
+  const path = root.replaceAll("\\", "/");
+  if (/(^|\/)(?:opt\/homebrew|homebrew|linuxbrew)\/Cellar\/repoos\//.test(path)) {
+    return {
+      label: "Homebrew",
+      command: "brew update && brew upgrade repo-os/tap/repoos",
+    };
+  }
+  if (/(^|\/)(?:\.mise|mise)\/installs\//.test(path)) {
+    return { label: "mise", command: "mise upgrade npm:@repo-os/repoos" };
+  }
+  if (/(^|\/)\.bun(?:\/|$)|\/bun\/install\/global\//.test(path)) {
+    return { label: "Bun", command: "bun update -g @repo-os/repoos" };
+  }
+  if (/(^|\/)pnpm\/global\//.test(path)) {
+    return { label: "pnpm", command: "pnpm update -g @repo-os/repoos" };
+  }
+  if (/(^|\/)node_modules\//.test(path)) {
+    return { label: "npm", command: "npm update -g @repo-os/repoos" };
+  }
+  return null;
 }
 
 interface ReleaseAsset {
@@ -94,14 +128,14 @@ export async function cmdUpgrade(args: string[]): Promise<void> {
   const root = installRoot();
   const channel = parseChannel(args);
 
-  if (root.includes("node_modules")) {
-    console.log(c.yellow("  repoos was installed via a package manager."));
-    console.log(c.dim("  Update it the same way:"));
-    console.log(
-      c.dim("    bun update -g @repo-os/repoos") +
-        c.dim("   or   ") +
-        c.dim("npm update -g @repo-os/repoos"),
-    );
+  const packageManager = packageManagerUpgrade(root);
+  if (packageManager) {
+    console.log(c.yellow(`  repoos was installed with ${packageManager.label}.`));
+    console.log(c.dim("  Update it with:"));
+    console.log(c.dim(`    ${packageManager.command}`));
+    if (channel) {
+      console.log(c.dim(`  --channel ${channel} only applies to standalone curl installs.`));
+    }
     return;
   }
 

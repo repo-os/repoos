@@ -88,9 +88,10 @@ is enabled so its `repoos` shim is on your PATH.
 
 Use the same tool to update a package-manager install: `npm update -g
 @repo-os/repoos`, `bun update -g @repo-os/repoos`, `pnpm update -g
-@repo-os/repoos`, `mise upgrade npm:@repo-os/repoos`, or `brew upgrade
-repo-os/tap/repoos`. A standalone install updates with `repoos upgrade` and
-removes with `repoos uninstall`.
+@repo-os/repoos`, `mise upgrade npm:@repo-os/repoos`, or `brew update && brew
+upgrade repo-os/tap/repoos`. A standalone install updates with `repoos upgrade`
+and removes with `repoos uninstall`. When run from a recognised package-manager
+install, `repoos upgrade` prints the matching package-manager command instead.
 
 Then in any repo:
 
