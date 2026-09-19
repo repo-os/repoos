@@ -1,11 +1,8 @@
 ---
-merge_conflict_retry_count: 1
-updated_at: "2026-09-19T22:32:16Z"
-review_passes: 2
 id: "0446"
 title: Make repoos check stack-neutral and declarative
 type: feature
-status: review
+status: done
 priority: p1
 area: core
 assigned_to: ai
@@ -15,6 +12,9 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 review_model_override: openrouter/xiaomi/mimo-v2.5
 created_at: "2026-09-19T15:09:57Z"
+updated_at: "2026-09-19T22:46:29Z"
+merge_conflict_retry_count: 1
+review_passes: 2
 review_rounds: 1
 handoff_signal_retry_count: 1
 ---
@@ -54,5 +54,4 @@ Make repoos check a project-defined gate that works for JavaScript, Android/Grad
 - 2026-09-19T22:18:53Z · review_model_override
 - 2026-09-19T22:26:46Z · model_override
 - 2026-09-19T22:32:16Z · needs_input
-
-
+- 2026-09-19T22:46:29Z · status review→done, release:success
