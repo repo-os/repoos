@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 cli_override: opencode
-model_override: default
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-19T16:43:21Z"
-updated_at: "2026-09-19T22:35:46Z"
+updated_at: "2026-09-19T22:35:50Z"
 ---
 ## Outcome
 
@@ -74,3 +74,4 @@ P1 — Build a polyglot real-repo adoption test matrix.
 - 2026-09-19T16:43:21Z · created · unknown
 - 2026-09-19T22:15:02Z · status inbox→ready
 - 2026-09-19T22:35:46Z · cli_override, model_override
+- 2026-09-19T22:35:50Z · model_override
