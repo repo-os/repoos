@@ -5,11 +5,12 @@ type: bug
 status: inbox
 priority: p1
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: opencode
 created_at: "2026-09-18T18:29:57Z"
-updated_at: "2026-09-18T18:29:57Z"
+updated_at: "2026-09-19T00:46:38Z"
 ---
 ## Problem
 
@@ -26,3 +27,4 @@ When close-out's gate fails, the recorded failure reason is only the last few hu
 ## Activity
 
 - 2026-09-18T18:29:57Z · created · unknown
+- 2026-09-19T00:46:38Z · cli_override
