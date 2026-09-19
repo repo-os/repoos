@@ -163,6 +163,14 @@ function compare(
   };
 }
 
+/** A 404 is not always an unpublished release: GitHub returns it for private/missing raw files. */
+function unavailableDetail(channel: DistributionConfig): string {
+  if (channel.kind === "homebrew") {
+    return "No public Homebrew formula was found at the configured URL.";
+  }
+  return "Not published yet.";
+}
+
 async function resolveChannel(
   channel: DistributionConfig,
   release: DistributionRelease | null,
@@ -193,7 +201,7 @@ async function resolveChannel(
       signal: AbortSignal.timeout(timeoutMs),
     });
     if (response.status === 404) {
-      return { ...base, version: null, state: "unavailable", detail: "Not published yet." };
+      return { ...base, version: null, state: "unavailable", detail: unavailableDetail(channel) };
     }
     if (!response.ok) {
       return {

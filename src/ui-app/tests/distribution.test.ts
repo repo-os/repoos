@@ -87,7 +87,12 @@ describe("parseDistributionConfig", () => {
           { kind: "npm", package: "x" },
           { name: "Bad url", url: "ftp://example.com" },
           { name: "Bad kind", kind: "docker" },
-          { name: "Bad regex", kind: "custom", versionUrl: "https://x", versionRegex: "(" },
+          {
+            name: "Bad regex",
+            kind: "custom",
+            versionUrl: "https://x",
+            versionRegex: "(",
+          },
         ],
       });
       expect(parsed?.map((c) => c.name)).toEqual(["Bad url", "Bad kind", "Bad regex"]);
@@ -123,7 +128,9 @@ describe("distribution version lookups", () => {
       release,
       fakeFetch((url) => {
         seen.push(url);
-        return new Response(JSON.stringify({ version: "1.2.3" }), { status: 200 });
+        return new Response(JSON.stringify({ version: "1.2.3" }), {
+          status: 200,
+        });
       }),
     );
     expect(seen).toEqual(["https://registry.npmjs.org/%40scope%2Fname/latest"]);
@@ -140,13 +147,19 @@ describe("distribution version lookups", () => {
     const summary = await getDistributionStatus(
       config([
         { name: "npm", kind: "npm", package: "@scope/name" },
-        { name: "Homebrew", kind: "homebrew", versionUrl: "https://example.com/name.rb" },
+        {
+          name: "Homebrew",
+          kind: "homebrew",
+          versionUrl: "https://example.com/name.rb",
+        },
       ]),
       release,
       fakeFetch((url) =>
         url.includes("registry.npmjs.org")
           ? new Response(JSON.stringify({ version: "1.2.2" }), { status: 200 })
-          : new Response('class Name < Formula\n  version "1.2.3"\nend', { status: 200 }),
+          : new Response('class Name < Formula\n  version "1.2.3"\nend', {
+              status: 200,
+            }),
       ),
     );
     const [npm, brew] = summary.channels;
@@ -154,6 +167,32 @@ describe("distribution version lookups", () => {
     expect(npm.detail).toContain("1.2.2");
     expect(npm.detail).toContain("1.2.3");
     expect(brew).toMatchObject({ version: "1.2.3", state: "matching" });
+  });
+
+  it("reads a Homebrew version from its normal versioned package URL", async () => {
+    const summary = await getDistributionStatus(
+      config([
+        {
+          name: "Homebrew",
+          kind: "homebrew",
+          versionUrl: "https://example.com/Formula/repoos.rb",
+          // Homebrew infers a formula version from this URL; no redundant Ruby
+          // `version` declaration should be needed just for RepoOS.
+          versionRegex: 'repoos-([^/"]+)\\.tgz',
+        },
+      ]),
+      release,
+      fakeFetch(
+        () =>
+          new Response('url "https://registry.npmjs.org/@repo-os/repoos/-/repoos-1.2.3.tgz"', {
+            status: 200,
+          }),
+      ),
+    );
+    expect(summary.channels[0]).toMatchObject({
+      version: "1.2.3",
+      state: "matching",
+    });
   });
 
   it("strips a tag prefix from a GitHub release lookup", async () => {
@@ -169,7 +208,9 @@ describe("distribution version lookups", () => {
       release,
       fakeFetch((url) => {
         expect(url).toBe("https://api.github.com/repos/owner/repo/releases/latest");
-        return new Response(JSON.stringify({ tag_name: "v1.2.3" }), { status: 200 });
+        return new Response(JSON.stringify({ tag_name: "v1.2.3" }), {
+          status: 200,
+        });
       }),
     );
     expect(summary.channels[0]).toMatchObject({
@@ -179,7 +220,7 @@ describe("distribution version lookups", () => {
     });
   });
 
-  it("reports a 404 as 'not published yet' and a network failure as failed", async () => {
+  it("reports a 404 as unavailable and a network failure as failed", async () => {
     const summary = await getDistributionStatus(
       config([
         { name: "npm", kind: "npm", package: "@scope/name" },
@@ -191,15 +232,46 @@ describe("distribution version lookups", () => {
         throw new Error("offline");
       }),
     );
-    expect(summary.channels[0]).toMatchObject({ state: "unavailable", version: null });
-    expect(summary.channels[1]).toMatchObject({ state: "failed", version: null });
+    expect(summary.channels[0]).toMatchObject({
+      state: "unavailable",
+      version: null,
+    });
+    expect(summary.channels[1]).toMatchObject({
+      state: "failed",
+      version: null,
+    });
+  });
+
+  it("explains that a missing Homebrew formula must be publicly readable", async () => {
+    const summary = await getDistributionStatus(
+      config([
+        {
+          name: "Homebrew",
+          kind: "homebrew",
+          versionUrl: "https://example.com/repoos.rb",
+        },
+      ]),
+      release,
+      fakeFetch(() => new Response("", { status: 404 })),
+    );
+    expect(summary.channels[0]).toMatchObject({
+      state: "unavailable",
+      version: null,
+    });
+    expect(summary.channels[0].detail).toBe(
+      "No public Homebrew formula was found at the configured URL.",
+    );
   });
 
   it("keeps one channel's outage from hiding another", async () => {
     const summary = await getDistributionStatus(
       config([
         { name: "npm", kind: "npm", package: "@scope/name" },
-        { name: "Homebrew", kind: "homebrew", versionUrl: "https://example.com/name.rb" },
+        {
+          name: "Homebrew",
+          kind: "homebrew",
+          versionUrl: "https://example.com/name.rb",
+        },
       ]),
       release,
       fakeFetch((url) => {
@@ -221,13 +293,21 @@ describe("distribution version lookups", () => {
       null,
       fakeFetch((url) => {
         if (url.includes("registry.npmjs.org"))
-          return new Response(JSON.stringify({ version: "9.9.9" }), { status: 200 });
+          return new Response(JSON.stringify({ version: "9.9.9" }), {
+            status: 200,
+          });
         return new Response("", { status: 404 });
       }),
     );
     expect(summary.releaseVersion).toBeNull();
-    expect(summary.channels[0]).toMatchObject({ state: "unverified", version: null });
-    expect(summary.channels[1]).toMatchObject({ state: "unverified", version: "9.9.9" });
+    expect(summary.channels[0]).toMatchObject({
+      state: "unverified",
+      version: null,
+    });
+    expect(summary.channels[1]).toMatchObject({
+      state: "unverified",
+      version: "9.9.9",
+    });
   });
 
   it("returns no channels for an unconfigured repo", async () => {

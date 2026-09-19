@@ -205,6 +205,9 @@ kind = "homebrew"
 package = "repo-os/tap/repoos"
 url = "https://github.com/repo-os/homebrew-tap/blob/main/Formula/repoos.rb"
 versionUrl = "https://raw.githubusercontent.com/repo-os/homebrew-tap/main/Formula/repoos.rb"
+# Homebrew correctly infers this from the package URL; this tells RepoOS's
+# public, read-only status check how to read that same version from the formula.
+versionRegex = 'repoos-([^/"]+)\.tgz'
 install = ["brew install repo-os/tap/repoos"]
 
 # Deployments (#0340): services this repo ships to a git-connected provider,

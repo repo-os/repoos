@@ -268,7 +268,7 @@ function channelSummary(channel: DistributionChannel): string {
         ? `${channel.version} · release is ${distributionReleaseVersion.value ?? "different"}`
         : "Out of sync with this release";
     case "unavailable":
-      return "No version published on this channel yet";
+      return channel.detail ?? "No version published on this channel yet";
     case "failed":
       return channel.detail ?? "The registry couldn't be reached";
     default:
