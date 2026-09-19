@@ -83,6 +83,13 @@ export function skillField(text: string, field: string): string | null {
   return m[1].trim().replace(/^["']|["']$/g, "");
 }
 
+/**
+ * Agent run docs (0439) are machine-generated receipts — one per built-in agent
+ * run, 10 kept per agent. They are not context: listing them would bury the
+ * docs a human maintains, and `repoGuideContext` feeds this list to every agent.
+ */
+const AGENT_RUN_DOCS_DIR = "agent-runs";
+
 export function listDocs(config: RepoOSConfig): { path: string; title: string }[] {
   const out: { path: string; title: string }[] = [];
   const seen = new Set<string>();
@@ -108,8 +115,10 @@ export function listDocs(config: RepoOSConfig): { path: string; title: string }[
       if (e.startsWith(".")) continue;
       const full = join(dir, e);
       const st = statSync(full);
-      if (st.isDirectory()) walk(full);
-      else if (extname(e) === ".md") {
+      if (st.isDirectory()) {
+        if (e === AGENT_RUN_DOCS_DIR) continue;
+        walk(full);
+      } else if (extname(e) === ".md") {
         const rel = full
           .slice(config.root.length + 1)
           .split("\\")

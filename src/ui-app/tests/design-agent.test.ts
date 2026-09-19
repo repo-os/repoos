@@ -75,7 +75,7 @@ describe("runDesignAgent (skill-guided)", () => {
     expect(prompt).not.toContain("src/ui-app");
     expect(prompt).toContain("no-ui-detected");
     expect(result.findingsFound).toBe(1);
-    expect(readFileSync(result.reportPath, "utf8")).toContain("src/components/Card.jsx");
+    expect(readFileSync(join(root, result.runDoc!), "utf8")).toContain("src/components/Card.jsx");
   });
 
   it("finds this repo's own Vue UI from its structure rather than a hardcoded path", async () => {
@@ -102,7 +102,9 @@ describe("runDesignAgent (skill-guided)", () => {
     // locate the UI itself — the path is discovered, not assumed.
     expect(prompt).toContain("ui-app/");
     expect(result.findingsFound).toBe(1);
-    expect(readFileSync(result.reportPath, "utf8")).toContain("src/ui-app/src/views/Home.vue");
+    expect(readFileSync(join(root, result.runDoc!), "utf8")).toContain(
+      "src/ui-app/src/views/Home.vue",
+    );
   });
 
   it("reports 'no web UI detected' instead of a misleading zero for a non-UI project", async () => {
@@ -123,9 +125,9 @@ describe("runDesignAgent (skill-guided)", () => {
     expect(result.findingsFound).toBe(0);
     // The runner reports how many files it walked, never the old misleading 0.
     expect(result.scannedFiles).toBeGreaterThan(0);
-    const content = readFileSync(result.reportPath, "utf8");
+    const content = readFileSync(join(root, result.runDoc!), "utf8");
     expect(content).toContain("No web UI detected in this repository");
-    expect(content).toContain("Web UI Detected**: No");
+    expect(content).toContain("ran clean");
   });
 
   it("records lastRunAt on completion", async () => {

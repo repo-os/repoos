@@ -122,17 +122,24 @@ describe("runPerformanceAgent (skill-guided)", () => {
     const result = await runPerformanceAgent(configFor(root));
 
     expect(result.issuesFound).toBe(2);
-    expect(result.created).toBe(2);
+    // One run, one task: both findings land in the same body (0439).
+    expect(result.created).toBe(1);
     expect(result.failed).toBe(0);
     expect(result.scannedFiles).toBeGreaterThan(0);
+    expect(result.runDoc).toMatch(
+      new RegExp(`^docs/agent-runs/performance/\\d{4}-\\d{2}-\\d{2}T.*\\.md$`),
+    );
 
     const tasks = readdirSync(join(root, "work"));
-    expect(tasks).toHaveLength(2);
-    const pythonTask = tasks.find((f) => f.includes("blocking"))!;
-    expect(readFileSync(join(root, "work", pythonTask), "utf8")).toContain("src/report.py");
+    expect(tasks).toHaveLength(1);
+    const body = readFileSync(join(root, "work", tasks[0]), "utf8");
+    expect(body).toContain("src/report.py");
+    expect(body).toContain("Parses JSON inside a nested loop on the request path");
+    expect(body).toContain("CACHE is appended to but never evicted");
+    expect(body).toContain("needs_input: true");
   });
 
-  it("deduplicates findings into one inbox task per issue type", async () => {
+  it("bundles findings of every type into the one inbox task", async () => {
     const root = makeRepo({ "src/app.go": "package main\n" });
     mockModelFindings([
       { type: "blocking-operation", file: "a.go", description: "sync I/O", severity: "high" },
@@ -153,11 +160,13 @@ describe("runPerformanceAgent (skill-guided)", () => {
     const result = await runPerformanceAgent(configFor(root));
 
     expect(result.issuesFound).toBe(3);
-    expect(result.created).toBe(2);
-    const blockingTask = readdirSync(join(root, "work")).find((f) => f.includes("blocking"))!;
-    const body = readFileSync(join(root, "work", blockingTask), "utf8");
+    expect(result.created).toBe(1);
+    const tasks = readdirSync(join(root, "work"));
+    expect(tasks).toHaveLength(1);
+    const body = readFileSync(join(root, "work", tasks[0]), "utf8");
     expect(body).toContain("sync I/O");
     expect(body).toContain("mutex contention");
+    expect(body).toContain("recompute");
   });
 
   it("records lastRunAt on completion", async () => {

@@ -506,6 +506,16 @@ export type RepoEvent =
       passed: boolean;
       durationMs: number;
       at: string;
+    }
+  /** A built-in agent finished a run (0439) — surfaced as a toast. */
+  | {
+      type: "built-in.run";
+      agent: string;
+      label: string;
+      findings: number;
+      taskId: string | null;
+      runDoc: string | null;
+      at: string;
     };
 
 /** A server-run `repoos check` for a task (0310 Debug tab) — either the
