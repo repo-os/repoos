@@ -2,14 +2,14 @@
 id: "0455"
 title: "Show per-task agent assignments (PM, Engineer, Reviewer) on the task card"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-19T23:14:22Z"
-updated_at: "2026-09-19T23:14:22Z"
+updated_at: "2026-09-19T23:19:44Z"
 ---
 ## Problem
 
@@ -57,3 +57,4 @@ In scope: a display-only, togglable agent summary on the card (PM / Engineer / R
 ## Activity
 
 - 2026-09-19T23:14:22Z · created · unknown
+- 2026-09-19T23:19:44Z · status inbox→ready
