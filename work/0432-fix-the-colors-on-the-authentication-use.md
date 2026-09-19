@@ -8,9 +8,9 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
-cli_override: opencode
+cli_override: kiro
 created_at: "2026-09-19T00:54:12Z"
-updated_at: "2026-09-19T00:56:10Z"
+updated_at: "2026-09-19T00:56:11Z"
 ---
 ## Problem
 
@@ -61,3 +61,4 @@ Fix the colors on the authentication & users section of settings. It doesn't loo
 - 2026-09-19T00:56:08Z · cli_override
 - 2026-09-19T00:56:09Z · cli_override
 - 2026-09-19T00:56:10Z · cli_override
+- 2026-09-19T00:56:11Z · cli_override
