@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-09-19T05:01:17Z"
-review_passes: 2
+updated_at: "2026-09-19T05:09:30Z"
+review_passes: 3
 id: "0435"
 title: Unify floating head agent panels with tasks/inputs style
 type: feature
@@ -60,4 +60,5 @@ Change all the floating head agents (existing, like Ross, CTO, debugger and any 
 - 2026-09-19T04:36:24Z · status active→review
 - 2026-09-19T04:46:22Z · needs_input
 - 2026-09-19T05:01:17Z · needs_input
+
 
