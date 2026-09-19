@@ -2,14 +2,14 @@
 id: "0438"
 title: Fix recovery notice visibility and clicks over task drawers
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-19T05:23:55Z"
-updated_at: "2026-09-19T05:23:55Z"
+updated_at: "2026-09-19T05:37:26Z"
 ---
 ## Problem
 
@@ -31,3 +31,5 @@ With a task panel open, the recovery card is visually opaque, compact, easy to r
 ## Activity
 
 - 2026-09-19T05:23:55Z · created · unknown
+- 2026-09-19T05:37:26Z · status inbox→ready
+- 2026-09-19T05:37:26Z · note: Promoting to a main-checkout hotfix after post-release UI verification found the banner unusable over drawers.
