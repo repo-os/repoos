@@ -2,14 +2,14 @@
 id: "0456"
 title: Fix task panel animation and message consistency
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-19T23:18:59Z"
-updated_at: "2026-09-19T23:19:16Z"
+updated_at: "2026-09-19T23:19:49Z"
 ---
 ## Problem
 
@@ -58,3 +58,4 @@ Make sure the action animation and action text in the tasks are the same color (
 - 2026-09-19T23:19:00Z · screenshots
 - 2026-09-19T23:19:00Z · screenshots
 - 2026-09-19T23:19:16Z · status draft→inbox, title, area, type, body
+- 2026-09-19T23:19:49Z · status inbox→ready
