@@ -2,7 +2,7 @@
 id: "0429"
 title: Make automatic skill suggestions evidence-gated and conservative
 type: feature
-status: review
+status: done
 priority: p2
 area: agent
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/make-automatic-skill-suggestions-evidenc
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-18T18:46:29Z"
-updated_at: "2026-09-19T01:00:00Z"
+updated_at: "2026-09-19T01:54:35Z"
 ---
 ## Problem
 
@@ -51,3 +51,4 @@ Treat a reusable skill as a high-bar artifact: a stable procedure useful on futu
 - 2026-09-19T00:39:01Z · model_override
 - 2026-09-19T00:39:06Z · status ready→active, branch
 - 2026-09-19T01:00:00Z · status active→review
+- 2026-09-19T01:54:35Z · status review→done, release:success
