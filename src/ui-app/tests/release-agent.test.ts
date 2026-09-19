@@ -175,7 +175,8 @@ describe("release agent when a task leaves active (#0087)", () => {
       // review (rather than being rejected as a vacuous transition).
       const branch = started.body.branch as string;
       const worktreeDir = join(dirname(fx.root), `${basename(fx.root)}-worktrees`, branch);
-      mkdirSync(worktreeDir, { recursive: true });
+      // /start already registered the git worktree; just write a source file
+      // so guardReviewTransition sees a non-vacuous change to commit.
       writeFileSync(join(worktreeDir, "release-agent.txt"), "implemented\n");
 
       const patched = await api(server, "PATCH", `/api/tasks/${id}`, {
