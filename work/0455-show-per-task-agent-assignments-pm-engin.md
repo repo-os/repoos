@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-19T23:33:30Z"
+review_passes: 1
 id: "0455"
 title: "Show per-task agent assignments (PM, Engineer, Reviewer) on the task card"
 type: feature
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: ""
 branch: feat/show-per-task-agent-assignments-pm-engin
 created_at: "2026-09-19T23:14:22Z"
-updated_at: "2026-09-19T23:31:21Z"
 ---
 ## Problem
 
@@ -60,3 +61,4 @@ In scope: a display-only, togglable agent summary on the card (PM / Engineer / R
 - 2026-09-19T23:19:44Z · status inbox→ready
 - 2026-09-19T23:21:34Z · status ready→active, branch
 - 2026-09-19T23:31:21Z · status active→review
+
