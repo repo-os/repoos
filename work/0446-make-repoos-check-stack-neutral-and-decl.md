@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p1
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: claude code
 created_at: "2026-09-19T15:09:57Z"
-updated_at: "2026-09-19T15:09:57Z"
+updated_at: "2026-09-19T15:32:13Z"
 ---
 ## Outcome
 
@@ -35,3 +36,4 @@ Make repoos check a project-defined gate that works for JavaScript, Android/Grad
 ## Activity
 
 - 2026-09-19T15:09:57Z · created · unknown
+- 2026-09-19T15:32:13Z · cli_override
