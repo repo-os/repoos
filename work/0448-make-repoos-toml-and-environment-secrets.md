@@ -8,10 +8,9 @@ area: docs
 assigned_to: ai
 created_by: ""
 branch: ""
-review_cli_override: claude code
 review_model_override: default
 created_at: "2026-09-19T15:10:29Z"
-updated_at: "2026-09-19T15:20:41Z"
+updated_at: "2026-09-19T15:20:42Z"
 ---
 ## Outcome
 
@@ -39,3 +38,4 @@ Give users one trustworthy explanation of every supported RepoOS project setting
 
 - 2026-09-19T15:10:29Z · created · unknown
 - 2026-09-19T15:20:41Z · review_cli_override, review_model_override
+- 2026-09-19T15:20:42Z · review_cli_override
