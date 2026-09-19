@@ -11,6 +11,8 @@
  * gets re-attempted by whatever triggered it.
  */
 
+import { stripAnsi } from "./done.js";
+
 /** Cap on retained output per run so a very noisy check can't grow this
  *  without bound in memory — old text is dropped from the front. */
 const MAX_BUFFERED_CHARS = 500_000;
@@ -83,11 +85,12 @@ export class TaskCheckManager {
     return {
       id,
       chunk: (text: string) => {
-        run.output += text;
+        const clean = stripAnsi(text);
+        run.output += clean;
         if (run.output.length > MAX_BUFFERED_CHARS) {
           run.output = run.output.slice(run.output.length - MAX_BUFFERED_CHARS);
         }
-        onEvent(run, "output", text);
+        onEvent(run, "output", clean);
       },
       done: (code: number | null) => {
         run.running = false;

@@ -33,7 +33,7 @@ if (path.basename(process.argv[1]) === "copilot") {
   process.stdout.write(JSON.stringify({ type: "tool.execution_partial_result", data: { toolCallId: "call-1", partialOutput: "clean" } }) + "\\n");
   process.stdout.write(JSON.stringify({ type: "tool.execution_partial_result", data: { toolCallId: "call-1", partialOutput: "clean" } }) + "\\n");
   process.stdout.write(JSON.stringify({ type: "tool.execution_complete", data: { toolCallId: "call-1", toolName: "shell", result: "clean" } }) + "\\n");
-  process.stdout.write(JSON.stringify({ type: "result", sessionId: "copilot-session-123" }) + "\\n");
+  process.stdout.write(JSON.stringify({ type: "result", sessionId: "6c71dc3f-17d3-4c0f-a5cb-35bc0ee07de1" }) + "\\n");
   process.exit(0);
 }
 const resumeIndex = args.indexOf("resume");
@@ -443,7 +443,7 @@ describe("claude code driver", () => {
         runner.start(TASK, "feat/x", agent("github copilot"), { cwd });
         await waitFor(() => !runner.isRunning("0001"), "Copilot first-turn exit");
 
-        expect(runner.output("0001")!.sessionId).toBe("copilot-session-123");
+        expect(runner.output("0001")!.sessionId).toBe("6c71dc3f-17d3-4c0f-a5cb-35bc0ee07de1");
         expect(runner.output("0001")!.lines).toEqual(
           expect.arrayContaining([
             expect.objectContaining({ type: "text", text: "Copilot response" }),
@@ -489,11 +489,38 @@ describe("claude code driver", () => {
           expect.arrayContaining([
             "-p",
             "continue the work",
-            "--resume=copilot-session-123",
+            "--resume=6c71dc3f-17d3-4c0f-a5cb-35bc0ee07de1",
             "--output-format",
             "json",
           ]),
         );
+      } finally {
+        process.env.PATH = oldPath;
+        delete process.env.REPOOS_FAKEBIN_LOG;
+        fx.clean();
+      }
+    });
+
+    it("never resumes a malformed persisted id and reports the safe recovery", async () => {
+      const fx = makeFixture();
+      const oldPath = withFakePath(fx);
+      process.env.REPOOS_FAKEBIN_LOG = fx.log;
+      try {
+        const runner = new AgentRunner(config(fx.bin), () => {});
+        const cwd = join(fx.bin, "wt", "copilot-invalid-session");
+        mkdirSync(cwd, { recursive: true });
+        runner.start(TASK, "feat/x", agent("github copilot"), { cwd });
+        await waitFor(() => !runner.isRunning("0001"), "Copilot first-turn exit");
+        runner.output("0001")!.sessionId = "1220ms";
+
+        expect(runner.invalidResumeReason("0001", agent("github copilot"))).toMatch(
+          /Start a fresh conversation in this worktree/,
+        );
+        runner.send("0001", "continue safely", agent("github copilot"));
+        await waitFor(() => spawns(fx).length === 2, "Copilot fresh fallback spawn");
+        expect(spawns(fx)[1]!.args).not.toContain("--resume=1220ms");
+        await waitFor(() => !runner.isRunning("0001"), "Copilot fresh fallback exit");
+        expect(runner.output("0001")!.sessionId).toBe("6c71dc3f-17d3-4c0f-a5cb-35bc0ee07de1");
       } finally {
         process.env.PATH = oldPath;
         delete process.env.REPOOS_FAKEBIN_LOG;

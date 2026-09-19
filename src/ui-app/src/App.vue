@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { computed, onMounted, onUnmounted } from "vue";
 import { useRoute } from "vue-router";
 import { useRepoStore } from "./stores/repo";
 import { useDocsStore } from "./stores/docs";
@@ -14,19 +14,44 @@ import RemoteValidationDrawer from "./components/RemoteValidationDrawer.vue";
 import ToastPanel from "./components/ToastPanel.vue";
 import FloatingHeads from "./components/FloatingHeads.vue";
 import NewInputPanel from "./components/NewInputPanel.vue";
+import UiRecoveryBanner from "./components/UiRecoveryBanner.vue";
+import { configureUiRecovery, checkUiBuild, showOffline } from "./lib/uiRecovery";
+import { useUiStore } from "./stores/ui";
 
 const route = useRoute();
 const repo = useRepoStore();
 const docs = useDocsStore();
 const config = useConfigStore();
 const auth = useAuthStore();
+const ui = useUiStore();
 
 // Routes marked `public` (currently just /login) render as a standalone
 // full-viewport screen with no app chrome — the visitor isn't authenticated
 // yet, and the sidebar/topbar assume a signed-in session.
-const isPublicRoute = computed(() => route.meta.public === true);
+const isPublicRoute = computed(() => route.meta.public === true || route.meta.fullscreen === true);
+
+const onApiTimeout = (event: Event): void => {
+  const detail = (event as CustomEvent<string>).detail;
+  showOffline(detail);
+};
 
 onMounted(async () => {
+  configureUiRecovery({
+    isDirty: () =>
+      config.rawDirty ||
+      ui.pendingScreenshots.length > 0 ||
+      ui.pmScreenshots.length > 0 ||
+      ui.isNew ||
+      ui.isNewDoc ||
+      ui.isNewSkill ||
+      ui.isNewInput ||
+      ui.unsentTaskChatDraft ||
+      ui.taskEditorDraft,
+    isBusy: () => repo.runningIds.length > 0 || repo.testRun.running,
+    clearNewVersion: repo.clearNewVersion,
+  });
+  window.addEventListener("focus", checkUiBuild);
+  window.addEventListener("repoos:api-timeout", onApiTimeout);
   // The router guard already calls this before the first navigation
   // resolves, so it's normally already loaded by the time we mount.
   if (!auth.loaded) await auth.loadMe();
@@ -40,10 +65,16 @@ onMounted(async () => {
   // dropdowns degrade to the static list until it lands.
   void config.loadModels();
 });
+
+onUnmounted(() => {
+  window.removeEventListener("focus", checkUiBuild);
+  window.removeEventListener("repoos:api-timeout", onApiTimeout);
+});
 </script>
 
 <template>
   <div id="app">
+    <UiRecoveryBanner />
     <RouterView v-if="isPublicRoute" />
     <template v-else>
       <TopBar />

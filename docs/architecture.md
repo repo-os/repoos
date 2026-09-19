@@ -27,6 +27,18 @@ of truth, and everything else is derived.
 
 ## Layers
 
+### UI build generations
+
+The server serves the current Vite shell and content-hashed files from one
+`dist/ui` directory. Shell responses replace the build-hash placeholder with
+the hash loaded by the server; `/assets/*` never falls through to the SPA
+document and returns a real 404 when a hashed file is gone. This atomic
+directory model is the local/development deployment contract: rebuilds replace
+the directory in place, while an already-open shell detects the health
+endpoint's newer hash or a failed lazy import and offers a reload. The UI
+remembers the attempted route and only auto-reloads when no editor drafts,
+attachments, or active agent/test work are present.
+
 ### src/core — the engine
 
 Pure logic, no transport. Everything else calls into this.
@@ -101,7 +113,8 @@ shape, covered by test):
 
 ```
 { generatedAt, root,
-  server: { running, port, pid, host, startedAt, startedAtSource,
+  server: { lifecycle: "managed"|"unmanaged"|"stopped",
+            running, port, pid, host, startedAt, startedAtSource,
             uptimeSeconds, health: "ok"|"foreign"|"unreachable",
             healthRoot, locks },
   build:  { code, stale, message, version, buildAt },

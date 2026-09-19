@@ -211,6 +211,46 @@ async function runUISmokeTest(): Promise<void> {
     await page.waitForTimeout(500);
     await assertUtilitySpacing("settings");
 
+    // ── UI recovery banner regression (#0420) ───────────────────────────
+    // Intercept /api/health to return a build hash that differs from the
+    // client's, which triggers checkUiBuild → showStaleUi on the next
+    // route navigation (afterEach hook). Asserts the reload banner renders.
+    {
+      const recovPage = await context.newPage();
+      try {
+        await recovPage.goto(server.url, { waitUntil: "load", timeout: 20_000 });
+        // Override health to report a different build hash than the client has.
+        await recovPage.route("**/api/health", async (route) => {
+          const response = await route.fetch();
+          const body = (await response.json()) as Record<string, unknown>;
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({ ...body, buildHash: "stale-build-hash-for-smoke-test" }),
+          });
+        });
+        // Navigate to another route — afterEach fires checkUiBuild which
+        // compares buildHash and calls showStaleUi when they differ.
+        await recovPage.evaluate(() => {
+          const navItems = document.querySelectorAll(".nav-item");
+          for (const item of Array.from(navItems)) {
+            if (item.textContent?.includes("Work")) {
+              (item as HTMLElement).click();
+              return;
+            }
+          }
+        });
+        await recovPage.waitForFunction(
+          () =>
+            document.querySelector(".ui-recovery-banner") !== null ||
+            document.body.innerText.includes("RepoOS was updated"),
+          { timeout: 5_000 },
+        );
+      } finally {
+        await recovPage.close();
+      }
+    }
+
     // Check for zero console errors
     if (consoleErrs.length > 0) {
       let msg = "Console errors (" + consoleErrs.length + "): " + consoleErrs.join("; ");

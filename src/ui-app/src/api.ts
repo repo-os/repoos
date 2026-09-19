@@ -16,13 +16,43 @@ export class ApiError extends Error {
   }
 }
 
+export const API_TIMEOUT_MS = 15_000;
+
 export async function api<T = unknown>(path: string, opts?: RequestInit): Promise<T> {
   let r: Response;
+  const controller = new AbortController();
+  let timedOut = false;
+  const method = (opts?.method ?? "GET").toUpperCase();
+  const boundsRequest = method === "GET" || method === "HEAD";
+  const timeout = boundsRequest
+    ? setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+      }, API_TIMEOUT_MS)
+    : undefined;
+  const signal = opts?.signal;
+  if (signal) {
+    if (signal.aborted) controller.abort(signal.reason);
+    else signal.addEventListener("abort", () => controller.abort(signal.reason), { once: true });
+  }
   try {
-    r = await fetch(path, opts);
+    r = await fetch(path, { ...opts, signal: controller.signal });
   } catch (err) {
     // A deliberate abort (e.g. a superseded request) should surface as-is.
-    if (err instanceof DOMException && err.name === "AbortError") throw err;
+    if (err instanceof DOMException && err.name === "AbortError") {
+      if (!timedOut || signal?.aborted) throw err;
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("repoos:api-timeout", {
+            detail:
+              "The RepoOS server did not respond in time — retry the request or reload when the server is ready.",
+          }),
+        );
+      }
+      throw new Error(
+        "The RepoOS server did not respond in time — retry the request or reload when the server is ready.",
+      );
+    }
     // fetch() rejects only on a network-level failure — the server is down,
     // the connection was refused, or the browser is offline. It never rejects
     // on an HTTP error status. Say that instead of the browser's opaque
@@ -30,6 +60,8 @@ export async function api<T = unknown>(path: string, opts?: RequestInit): Promis
     throw new Error(
       "Can't reach the RepoOS server — it may be down. Restart it (`repoos serve`), then reload.",
     );
+  } finally {
+    if (timeout !== undefined) clearTimeout(timeout);
   }
   if (!r.ok) {
     let message = r.statusText;

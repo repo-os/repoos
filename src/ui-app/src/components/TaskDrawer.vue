@@ -21,6 +21,7 @@ import {
   ChevronsDownUp,
   Coins,
   Bug,
+  Expand,
 } from "lucide-vue-next";
 import type { ReviewState, Task, AgentOutputEntry, SessionUsage, DetectedAgent } from "../types";
 import {
@@ -798,6 +799,13 @@ function changedFields(): (keyof TaskDraft)[] {
 }
 
 const dirty = computed(() => changedFields().length > 0);
+watch(
+  dirty,
+  (value) => {
+    ui.taskEditorDraft = value;
+  },
+  { immediate: true },
+);
 
 const transitioned = computed(() => !!(ui.active && repo.transitionState?.id === ui.active.id));
 
@@ -926,16 +934,13 @@ const previewTargetChoiceRequired = computed(() => previewTargets.value.length >
 const previewTarget = ref<string | null>(null);
 /**
  * The target a start would serve: the explicit pick, else the sole matching
- * target. Null while the user must choose one and hasn't. Captured at request
- * time into `previewStartingTarget` so the progress text names it.
+ * target. Null while the user must choose one and hasn't.
  */
 const effectivePreviewTarget = computed<string | null>(
   () =>
     previewTarget.value ??
     (previewTargets.value.length === 1 ? (previewTargets.value[0]?.name ?? null) : null),
 );
-/** Target name for the in-flight start, shown in the progress state (#0379). */
-const previewStartingTarget = ref<string | null>(null);
 // A target picked for one task must never carry over to another — reset the
 // choice (not the targets, which come from the task) whenever the drawer swaps.
 // When several targets are listed, the top-ranked one is already the default
@@ -1011,7 +1016,6 @@ async function runPreviewAction(action: "start" | "stop"): Promise<void> {
   previewBusy.value = true;
   previewTaskId.value = task.id;
   previewAction.value = action;
-  previewStartingTarget.value = action === "start" ? effectivePreviewTarget.value : null;
   previewStartedAt.value = Date.now();
   startPreviewTimer();
   try {
@@ -1024,7 +1028,6 @@ async function runPreviewAction(action: "start" | "stop"): Promise<void> {
     previewBusy.value = false;
     previewTaskId.value = null;
     previewAction.value = null;
-    previewStartingTarget.value = null;
     previewStartedAt.value = null;
     stopPreviewTimer();
   }
@@ -1860,6 +1863,12 @@ const displayEntries = computed<DisplayEntry[]>(() => {
 });
 /** A follow-up message typed in the Agent tab. */
 const draftMsg = ref("");
+function updateChatDraftDirty(): void {
+  ui.unsentTaskChatDraft =
+    pmDraft.value.trim().length > 0 ||
+    reviewDraftMsg.value.trim().length > 0 ||
+    draftMsg.value.trim().length > 0;
+}
 /** Stick-to-bottom: only when the user hasn't scrolled up the log. */
 const stick = ref(true);
 const logEl = ref<HTMLElement | null>(null);
@@ -2180,6 +2189,13 @@ const diffFiles = computed<DiffFile[]>(() => {
   return files;
 });
 
+function openFullDiff(file: DiffFile): void {
+  if (!ui.active) return;
+  const taskId = ui.active.id;
+  ui.close();
+  router.push({ name: "diff", params: { taskId }, query: { file: file.filename } });
+}
+
 /** File IDs that are currently collapsed (all expanded by default). */
 const collapsedFiles = reactive(new Set<string>());
 
@@ -2455,17 +2471,26 @@ watch(
 // Live typing is handled by each field's `@input` binding.
 watch(
   () => pmDraft.value,
-  () => nextTick(adjustPmHeight),
+  () => {
+    updateChatDraftDirty();
+    nextTick(adjustPmHeight);
+  },
   { immediate: true },
 );
 watch(
   () => reviewDraftMsg.value,
-  () => nextTick(adjustReviewHeight),
+  () => {
+    updateChatDraftDirty();
+    nextTick(adjustReviewHeight);
+  },
   { immediate: true },
 );
 watch(
   () => draftMsg.value,
-  () => nextTick(adjustDraftMsgHeight),
+  () => {
+    updateChatDraftDirty();
+    nextTick(adjustDraftMsgHeight);
+  },
   { immediate: true },
 );
 </script>
@@ -3068,9 +3093,7 @@ watch(
               role="status"
             >
               <ActivityIndicator label="Starting preview" />
-              Starting preview<span v-if="previewStartingTarget">
-                — {{ previewStartingTarget }}</span
-              >…
+              Starting preview…
               <span v-if="previewElapsedMs >= 1000" class="preview-progress-elapsed">
                 {{ formatDuration(previewElapsedMs) }}
               </span>
@@ -3873,12 +3896,14 @@ watch(
             </div>
             <template v-else>
               <div v-if="diffFiles.length > 0" class="diff-file-list">
-                <button
+                <div
                   v-for="file in diffFiles"
                   :key="file.filename"
-                  type="button"
                   class="diff-file-item"
+                  role="button"
+                  tabindex="0"
                   @click="scrollToDiffFile(file.filename)"
+                  @keydown.enter="scrollToDiffFile(file.filename)"
                 >
                   <span class="diff-file-badge" :class="`diff-file-badge-${file.type}`">{{
                     file.type === "added" ? "A" : file.type === "deleted" ? "D" : "M"
@@ -3888,7 +3913,16 @@ watch(
                     <span v-if="file.added > 0" class="diff-file-add">+{{ file.added }}</span>
                     <span v-if="file.removed > 0" class="diff-file-rem">−{{ file.removed }}</span>
                   </span>
-                </button>
+                  <button
+                    type="button"
+                    class="diff-file-expand"
+                    :aria-label="`Expand diff for ${file.filename}`"
+                    title="Open full-screen diff"
+                    @click.stop="openFullDiff(file, $event)"
+                  >
+                    <Expand class="size-3.5" />
+                  </button>
+                </div>
                 <button
                   v-if="diffFiles.length > 8"
                   type="button"
@@ -3942,6 +3976,15 @@ watch(
                       <span v-if="file.added > 0" class="diff-file-add">+{{ file.added }}</span>
                       <span v-if="file.removed > 0" class="diff-file-rem">−{{ file.removed }}</span>
                     </span>
+                    <button
+                      type="button"
+                      class="diff-file-expand diff-file-expand-inline"
+                      :aria-label="`Expand diff for ${file.filename}`"
+                      title="Open full-screen diff"
+                      @click.stop="openFullDiff(file, $event)"
+                    >
+                      <Expand class="size-3.5" />
+                    </button>
                   </div>
                   <pre
                     v-if="!collapsedFiles.has(file.filename)"
@@ -4950,6 +4993,37 @@ watch(
   background: rgba(255, 255, 255, 0.04);
 }
 
+.diff-file-expand {
+  margin-left: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--txt-dim);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.diff-file-expand:hover,
+.diff-file-expand:focus-visible {
+  border-color: var(--border-bright);
+  color: var(--txt);
+  background: rgba(57, 224, 255, 0.08);
+  outline: none;
+}
+
+.diff-file-expand-inline {
+  margin-left: 0;
+}
+
 .diff-file-badge {
   display: inline-flex;
   align-items: center;
@@ -5018,7 +5092,6 @@ watch(
   color: var(--txt);
 }
 
-/* Diff sections */
 .diff-sections {
   display: flex;
   flex-direction: column;

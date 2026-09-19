@@ -54,7 +54,7 @@ function selectOption(option: InstallOption): void {
 </script>
 
 <template>
-  <div>
+  <div class="install-widget">
     <div class="install-tabs" role="tablist" aria-label="Install method">
       <button
         v-for="option in INSTALL_OPTIONS"

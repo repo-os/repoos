@@ -871,6 +871,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // mode (no compiled build to reload into), in preview children, and when an
   // ephemeral port is requested (nothing stable to hand off).
   const loadedHash = readBuildHash(config.root);
+  const readUiIndex = (indexPath: string): string =>
+    readFileSync(indexPath, "utf8").replaceAll("__REPOOS_BUILD_HASH__", loadedHash || "unknown");
   const reloadEnabled =
     !isDevBuild() && process.env.REPOOS_PREVIEW_CHILD !== "1" && opts.port !== 0;
   let reload: ReloadManager | null = null;
@@ -2181,7 +2183,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
                   "Content-Type": "text/html; charset=utf-8",
                   "Access-Control-Allow-Origin": "*",
                 });
-                res.end(readFileSync(indexPath, "utf8"));
+                res.end(readUiIndex(indexPath));
                 return;
               }
             }
@@ -2318,6 +2320,15 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         if (serveStaticUi(res, uiDir, path)) return;
       }
 
+      // Never answer a missing hashed asset with the SPA document. The old
+      // shell must receive a real 404 so its dynamic import can reach the
+      // router recovery handler instead of failing with a module MIME error.
+      if (method === "GET" && path.startsWith("/assets/")) {
+        res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+        res.end("Asset not found");
+        return;
+      }
+
       // SPA fallback: unknown GET paths render the app
       if (method === "GET" && uiDir) {
         const indexPath = join(uiDir, "index.html");
@@ -2326,7 +2337,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             "Content-Type": "text/html; charset=utf-8",
             "Access-Control-Allow-Origin": "*",
           });
-          res.end(readFileSync(indexPath, "utf8"));
+          res.end(readUiIndex(indexPath));
           return;
         }
         return json(res, 500, {

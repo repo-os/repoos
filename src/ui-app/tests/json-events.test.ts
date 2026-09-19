@@ -175,9 +175,12 @@ describe("parseClaudeEvent (0109)", () => {
           state: "completed",
         },
       });
-      expect(parseCopilotEvent('{"type":"result","sessionId":"copilot-session-123"}')).toEqual({
-        sessionID: "copilot-session-123",
+      expect(
+        parseCopilotEvent('{"type":"result","sessionId":"6c71dc3f-17d3-4c0f-a5cb-35bc0ee07de1"}'),
+      ).toEqual({
+        sessionID: "6c71dc3f-17d3-4c0f-a5cb-35bc0ee07de1",
       });
+      expect(parseCopilotEvent('{"type":"result","sessionId":"1220ms"}')).toEqual({});
     });
 
     it("swallows Copilot lifecycle noise and retains errors", () => {

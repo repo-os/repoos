@@ -176,6 +176,7 @@ Rules that follow from this, in rough priority order:
 
 Before a task moves to review, `repoos check` must pass. This runs:
 - Build staleness check (`src/` vs `dist/`)
+- Formatting & lint (`oxfmt --check` + `oxlint`) — **if this fails, run `bun run fmt`, re-stage, and re-run `repoos check`**; the build and tests are skipped until formatting is clean
 - Full build (`tsc` + asset copy)
 - Test suite (if any)
 - Headless browser UI smoke test (WebKit) — verifies the app mounts, no unrendered mustache in the DOM, and zero console errors

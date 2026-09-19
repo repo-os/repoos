@@ -1,5 +1,12 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "./stores/auth";
+import {
+  checkUiBuild,
+  consumeRouteIntent,
+  isStaleImportError,
+  showStaleUi,
+  uiRecoveryState,
+} from "./lib/uiRecovery";
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -22,6 +29,12 @@ export const router = createRouter({
     { path: "/repo", name: "repo", component: () => import("./views/ContextView.vue") },
     { path: "/settings", name: "settings", component: () => import("./views/SettingsView.vue") },
     { path: "/agents", name: "agents", component: () => import("./views/AgentsView.vue") },
+    {
+      path: "/tasks/:taskId/diff",
+      name: "diff",
+      component: () => import("./views/DiffView.vue"),
+      meta: { fullscreen: true },
+    },
     { path: "/:pathMatch(.*)*", redirect: "/" },
   ],
 });
@@ -32,7 +45,15 @@ export const router = createRouter({
 // again, so without this guard an unauthenticated visitor who lands on the
 // app (or a session that's since expired) just sees the dashboard chrome
 // with every API call failing 401 instead of being sent to /login.
+let initialNavigation = true;
 router.beforeEach(async (to) => {
+  if (initialNavigation) {
+    initialNavigation = false;
+    const pending = consumeRouteIntent();
+    if (pending && pending !== to.fullPath) {
+      return { path: pending, replace: true };
+    }
+  }
   if (to.meta.public) return true;
   const auth = useAuthStore();
   if (!auth.loaded) await auth.loadMe();
@@ -40,4 +61,16 @@ router.beforeEach(async (to) => {
     return { path: "/login", query: { redirect: to.fullPath } };
   }
   return true;
+});
+
+router.onError((error, to) => {
+  if (uiRecoveryState().kind === "stale") return;
+  const message = error instanceof Error ? error.message : String(error);
+  if (isStaleImportError(message)) {
+    showStaleUi(to?.fullPath ?? window.location.pathname + window.location.search);
+  }
+});
+
+router.afterEach(() => {
+  void checkUiBuild();
 });

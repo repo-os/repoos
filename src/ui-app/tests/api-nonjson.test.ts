@@ -6,7 +6,7 @@
  * verbatim. It must surface a friendly, actionable error instead.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { api } from "../src/api";
+import { API_TIMEOUT_MS, api } from "../src/api";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -71,5 +71,47 @@ describe("api()", () => {
     expect(err.message).toContain("Rebuild");
     expect(err.message).not.toContain("Unexpected token");
     expect(err.message).not.toContain("<!DOCTYPE");
+  });
+
+  it("bounds a stalled request and explains how to recover", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        (_path: string, opts?: RequestInit) =>
+          new Promise((_resolve, reject) => {
+            opts?.signal?.addEventListener("abort", () =>
+              reject(new DOMException("aborted", "AbortError")),
+            );
+          }),
+      ),
+    );
+    const request = api("/api/health").catch((error) => error);
+    await vi.advanceTimersByTimeAsync(API_TIMEOUT_MS);
+    await expect(request).resolves.toMatchObject({
+      message: expect.stringMatching(/did not respond in time/i),
+    });
+    vi.useRealTimers();
+  });
+
+  it("does not abort a deliberately slow write", async () => {
+    vi.useFakeTimers();
+    let resolveWrite: ((value: Response) => void) | undefined;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        (_path: string, opts?: RequestInit) =>
+          new Promise<Response>((resolve) => {
+            resolveWrite = resolve;
+            expect(opts?.signal?.aborted).toBe(false);
+          }),
+      ),
+    );
+    const request = api("/api/tasks/1", { method: "POST" });
+    await vi.advanceTimersByTimeAsync(API_TIMEOUT_MS);
+    expect(resolveWrite).toBeDefined();
+    resolveWrite!({ ok: true, json: async () => ({ saved: true }) } as Response);
+    await expect(request).resolves.toEqual({ saved: true });
+    vi.useRealTimers();
   });
 });

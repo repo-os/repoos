@@ -227,9 +227,11 @@ const year = new Date().getFullYear();
     <!-- ============ HERO ============ -->
     <section class="wrap pt-16 pb-14 sm:pt-24 sm:pb-20">
       <div class="grid items-center gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
-        <div>
+        <div class="min-w-0">
           <p class="eyebrow mb-5">For CTOs and builders</p>
-          <h1 class="text-[38px] font-extrabold leading-[1.05] tracking-[-0.02em] sm:text-[54px]">
+          <h1
+            class="hero-title text-[38px] font-extrabold leading-[1.05] tracking-[-0.02em] sm:text-[54px]"
+          >
             The repo is the<br />
             operating system.
           </h1>
