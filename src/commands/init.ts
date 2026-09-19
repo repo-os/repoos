@@ -308,7 +308,7 @@ defaultAssignee = "unassigned"
 # ntfyTopic = "repoos_myproject"
 # ntfyBaseUrl = "https://ntfy.sh"       # or your self-hosted ntfy server
 
-# [board.columns]                       # rename display labels (docs/user-docs/configuration.md)
+# [board.columns]                       # rename display labels (display only)
 # draft  = "Ideas"                      # status IDs are fixed; this only changes what you see
 # inbox  = "Backlog"
 # ready  = "Selected for development"
@@ -321,21 +321,32 @@ defaultAssignee = "unassigned"
 const ENV_EXAMPLE = `# Copy to .env and fill in what you need — .env is gitignored, this file is
 # tracked so the repo documents which secrets a full setup expects.
 # repoos serve auto-loads .env at startup; real shell/process-supervisor env
-# vars still take precedence over it.
+# vars still take precedence over it. No secret belongs in repoos.toml.
+# Full reference: https://docs.repoos.org/environment-and-secrets
 
-# --- Auth (docs/native-auth.md) — only used when [auth].enabled = true ---
+# --- Auth — only used when [auth].enabled = true ---
 # REPOOS_RESEND_API_KEY=re_...
 # REPOOS_GOOGLE_CLIENT_SECRET=...
 # REPOOS_AUTH_SESSION_SECRET=...          # auto-generated on first boot if omitted
+# REPOOS_AUTH_DEV_BACKDOOR_CODE=...       # local-only login helper; ignored in production
 
-# --- Voice-to-text transcription (only used when [whisper] is configured) ---
+# --- Model providers / voice-to-text transcription ---
+# REPOOS_OPENROUTER_API_KEY=...
+# REPOOS_OPENCODE_GO_API_KEY=...
 # REPOOS_WHISPER_KEY=...                  # or GROQ_API_KEY / OPENAI_API_KEY directly
 
-# --- repoos tunnel (Cloudflare Tunnel + Access) ---
-# CLOUDFLARE_API_TOKEN=...
+# --- Infrastructure ---
+# CLOUDFLARE_API_TOKEN=...                # Cloudflare Tunnel + Access
+# HETZNER_API_TOKEN=...                   # remote validation runner
+# REPOOS_REMOTE_SSH_KEY=/absolute/path/to/private_key
 
-# --- ntfy.sh push notifications ---
+# --- Self-hosted notifications ---
 # NTFY_BASE_URL=https://ntfy.sh          # or your self-hosted ntfy server
+
+# --- Runtime / build overrides (leave commented unless needed) ---
+# REPOOS_RUNTIME=auto                    # auto | bun | node
+# REPOOS_BUN_PATH=/path/to/bun           # only if Bun is not on PATH
+# REPOOS_STRICT_BUILD=1                  # same as strictBuild = true in repoos.toml
 `;
 
 const INITIAL_COMMIT_MSG = "chore: initialize RepoOS project";

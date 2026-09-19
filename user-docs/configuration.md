@@ -178,7 +178,7 @@ enabled = false
 provider = "cloudflare"
 name = "repoos-local"
 domain = ""
-tunnelId = ""
+tunnel_id = ""
 
 # ── Remote validation ────────────────────────────────────────────────────
 [remoteValidation]
@@ -276,7 +276,7 @@ strictBuild = false
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
 | `servePort` | number | derived per repo | yes | Port `repoos serve` binds by default. If omitted, RepoOS derives a stable port from the repo's path in the 7200–7999 range, so two checkouts never collide. Must be 1–65535. `--port` on the command line overrides it. |
-| `strictBuild` | boolean | `false` | yes | When true, a stale build makes `repoos` exit with an error instead of printing a warning. |
+| `strictBuild` | boolean | `false` | yes | When true, a stale build makes `repoos` exit with an error instead of printing a warning. `REPOOS_STRICT_BUILD=1` (environment) and the `--strict-build` flag do the same without changing the file. |
 
 Appearance is **not** a `repoos.toml` setting. The dark/light/system theme and
 the UI design language are per-browser preferences stored in the browser, so
@@ -549,7 +549,7 @@ enabled = false
 provider = "cloudflare"
 name = "repoos-local"
 domain = ""
-tunnelId = ""
+tunnel_id = "<your-tunnel-uuid>"
 ```
 
 The `[tunnel]` block is the committed record of what this repo publishes through
@@ -565,7 +565,7 @@ in `repoos.toml` it is `[tunnel] enabled`.
 | `tunnel.provider` | string | `cloudflare` | yes | Tunnel provider. Only Cloudflare is supported. |
 | `tunnel.name` | string | `repoos-local` | yes | Machine-local tunnel name (one tunnel per machine). |
 | `tunnel.domain` | string | `""` | yes | Base domain used to infer hostnames. |
-| `tunnel.tunnelId` | string | `""` | yes | The `cloudflared` tunnel UUID. |
+| `tunnel.tunnel_id` | string | `""` | yes | The `cloudflared` tunnel UUID. Note the snake_case spelling (`tunnel_id`), which is what `repoos tunnel` reads and writes. |
 | `tunnel.apps.<name>` | table | `{}` | yes | One published app per key: `hostname`, `service`, an `access` email allowlist, and an optional `noAccess` flag. Written by `repoos tunnel create`. |
 
 The `CLOUDFLARE_API_TOKEN` credential is environment-only and never belongs in

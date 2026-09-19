@@ -3,6 +3,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { getConfigSchema, loadConfig } from "../../core/config.js";
+import { parseTunnelSection } from "../../core/tunnel.js";
 
 const repoRoot = resolve(__dirname, "../../..");
 
@@ -26,15 +27,33 @@ describe("repoos.toml and environment docs", () => {
     expect(missing).toEqual([]);
   });
 
+  it("documents the [tunnel] keys the tunnel parser actually reads", () => {
+    const match = configurationDoc.match(/## Tunnels\n[\s\S]*?```toml\n([\s\S]*?)```/);
+    expect(match, "Tunnels example toml block not found").not.toBeNull();
+    const tunnel = parseTunnelSection(match![1]);
+    expect(tunnel.name).toBe("repoos-local");
+    // `tunnel_id` is snake_case; a camelCase `tunnelId` in the docs would be
+    // silently ignored and leave this at the default empty string.
+    expect(tunnel.tunnelId).toBe("<your-tunnel-uuid>");
+  });
+
   it("documents every variable the tracked .env.example lists", () => {
+    // Include commented example lines: the runtime overrides are shipped
+    // commented so copying the file doesn't set a bogus value.
     const names = envExample
       .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line && !line.startsWith("#") && line.includes("="))
+      .map((line) => line.trim().replace(/^#\s*/, ""))
+      .filter((line) => /^[A-Z][A-Z0-9_]*=/.test(line))
       .map((line) => line.slice(0, line.indexOf("=")).trim());
     expect(names.length).toBeGreaterThan(0);
     const undocumented = names.filter((name) => !environmentDoc.includes(name));
     expect(undocumented).toEqual([]);
+  });
+
+  it("keeps the embedded .env.example block in sync with the tracked file", () => {
+    const match = environmentDoc.match(/## `\.env\.example`\n[\s\S]*?```bash\n([\s\S]*?)```/);
+    expect(match, "embedded .env.example block not found").not.toBeNull();
+    expect(match![1].trim()).toBe(envExample.trim());
   });
 
   it("keeps .env.example to placeholders, never live-looking values", () => {

@@ -130,15 +130,18 @@ Groq, or the reverse.
 | --- | --- |
 | `NTFY_BASE_URL` | Overrides `ntfyBaseUrl` in `repoos.toml` for a self-hosted ntfy server. |
 
-### Runtime
+### Runtime and build
 
 | Variable | Purpose |
 | --- | --- |
 | `REPOOS_RUNTIME` | `auto` (default), `bun`, or `node`. |
-| `REPOOS_BUN_PATH` | Explicit path to a Bun binary. |
+| `REPOOS_BUN_PATH` | Explicit path to a Bun binary. Only set it if Bun is installed somewhere not on `PATH` — a set-but-missing path makes RepoOS fall back to Node rather than searching `PATH`. |
+| `REPOOS_STRICT_BUILD` | `1` makes a stale build exit with an error, the same as `strictBuild = true` in `repoos.toml` (or the `--strict-build` flag). |
 
-These are the supported public controls for how RepoOS starts itself. See
-[Configuration → Worktrees and runtime](/configuration#worktrees-and-runtime).
+These are the supported public controls for how RepoOS starts itself and treats
+a stale build. See
+[Configuration → Worktrees and runtime](/configuration#worktrees-and-runtime)
+and [Server and UI](/configuration#server-and-ui).
 
 ## Internal, test, and reload variables — do not set these
 
@@ -149,8 +152,8 @@ and should not be copied into `.env` as if they were configuration.
 Examples: `REPOOS_AGENT`, `REPOOS_RELOAD`, `REPOOS_PREVIEW_CHILD`,
 `REPOOS_PROCESS_TITLE`, `REPOOS_RUNTIME_REEXEC`, `REPOOS_CHECK_CHANGED`,
 `REPOOS_TEST_WORKERS`, `REPOOS_SKIP_TESTS`, `REPOOS_FORCE_BUILD`,
-`REPOOS_SKIP_BUILD`, `REPOOS_STRICT_BUILD`, `REPOOS_STRICT_TIMING`,
-`REPOOS_TASK_ID`, `REPOOS_RUN_ID`, and `REPOOS_NO_WORKTREE_GC`.
+`REPOOS_SKIP_BUILD`, `REPOOS_STRICT_TIMING`, `REPOOS_TASK_ID`, `REPOOS_RUN_ID`,
+and `REPOOS_NO_WORKTREE_GC`.
 
 If you need a project setting, use `repoos.toml` or a supported override
 documented above. If a variable is only used to drive RepoOS's own processes,
@@ -179,7 +182,8 @@ are expected without revealing real values.
 # exposing real values.
 #
 # RepoOS loads `.env` from the repo root at startup; real shell/service env vars
-# still take precedence over it. No key belongs in repoos.toml.
+# still take precedence over it. No key belongs in repoos.toml. Full contract:
+# user-docs/environment-and-secrets.md
 
 # Auth / login
 REPOOS_RESEND_API_KEY=re_...
@@ -202,13 +206,25 @@ REPOOS_REMOTE_SSH_KEY=/absolute/path/to/private_key
 # Self-hosted notifications
 # NTFY_BASE_URL=https://ntfy.example.com
 
-# Supported runtime overrides
-REPOOS_RUNTIME=auto
-REPOOS_BUN_PATH=/path/to/bun
+# Runtime and build overrides — leave these commented unless you need them.
+# REPOOS_RUNTIME=auto           # auto | bun | node
+# REPOOS_BUN_PATH=/path/to/bun  # only if Bun is not on PATH
+# REPOOS_STRICT_BUILD=1         # same as strictBuild = true in repoos.toml
+
+# Internal / process-only variables are not normal configuration and should be
+# left to the runtime. Do not add them here as if they were project settings:
+# REPOOS_AGENT=1
+# REPOOS_RELOAD=1
+# REPOOS_PREVIEW_CHILD=1
+# REPOOS_RUNTIME_REEXEC=1
+# REPOOS_CHECK_CHANGED=main
+# REPOOS_TEST_WORKERS=4
+# REPOOS_SKIP_TESTS=1
+# REPOOS_FORCE_BUILD=1
 ```
 
-The tracked `.env.example` at the RepoOS repo root is the source of truth for
-this template; keep the two in sync when a supported variable changes.
+This block mirrors the tracked `.env.example` at the RepoOS repo root; the drift
+test fails if the two diverge.
 
 See also:
 

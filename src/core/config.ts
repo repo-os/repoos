@@ -1331,8 +1331,9 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       type: "string",
       tier: "restart",
       restartRequired: true,
-      default: "604800",
-      description: "How long a login session lasts in seconds (default 604800 = 7 days)",
+      default: String(DEFAULT_CONFIG.auth?.sessionMaxAge ?? 2592000),
+      description:
+        "How long a login session lasts in seconds (default 2592000 = 30 days). Values under 300 are read as days.",
     },
     {
       key: "remoteValidation.enabled",
