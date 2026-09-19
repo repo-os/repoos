@@ -20,8 +20,10 @@ Fix the colors on the authentication & users section of settings. It doesn't loo
 ## Screenshots
 
 ![Screenshot-2026-09-19-at-00.50.57](/api/tasks/0432/attachments/screenshot-1.png)
+![Screenshot-2026-09-19-at-00.51.07](/api/tasks/0432/attachments/screenshot-2.png)
 
 ## Activity
 
 - 2026-09-19T00:54:12Z · created · hello@repoos.org
+- 2026-09-19T00:54:14Z · screenshots
 - 2026-09-19T00:54:14Z · screenshots
