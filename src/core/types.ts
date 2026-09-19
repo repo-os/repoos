@@ -856,6 +856,8 @@ export interface BoardTask {
   type: string;
   status: Status;
   needsInput: boolean;
+  /** Specific human-decisions blocking implementation until answered. */
+  questions?: string[];
   needsInputReason?: string;
   needsMerge: boolean;
   priority: Priority | string;

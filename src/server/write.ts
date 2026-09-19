@@ -190,7 +190,14 @@ export function patchTaskFile(
     }
   }
   if (patch.questions !== undefined) {
-    if (patch.questions !== current.questions) changes.push("questions");
+    const currentQuestions = current.questions ?? [];
+    const nextQuestions = patch.questions ?? [];
+    if (
+      currentQuestions.length !== nextQuestions.length ||
+      currentQuestions.some((question, index) => question !== nextQuestions[index])
+    ) {
+      changes.push("questions");
+    }
     current.questions =
       patch.questions && patch.questions.length > 0 ? patch.questions.map(String) : undefined;
   }

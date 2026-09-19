@@ -3291,6 +3291,27 @@ watch(
               </datalist>
             </div>
           </div>
+          <div
+            v-if="ui.active?.needsInput && ui.active.questions?.length"
+            class="needs-input-block"
+          >
+            <div class="md-h">Questions for you</div>
+            <div class="needs-input-card">
+              <ul class="needs-input-list">
+                <li v-for="(question, index) in ui.active.questions" :key="index">
+                  {{ question }}
+                </li>
+              </ul>
+              <Button
+                variant="default"
+                size="sm"
+                class="needs-input-answer"
+                @click="openPmWithNeedsInputQuestions"
+              >
+                Answer these
+              </Button>
+            </div>
+          </div>
           <div class="md-h spec-head" style="margin-top: 18px">
             <button
               type="button"
@@ -3326,28 +3347,6 @@ watch(
             >
               <div v-if="specHtml" class="md-rendered" v-html="specHtml"></div>
               <div v-else class="md-card-body">No spec yet — click to add.</div>
-            </div>
-          </div>
-          <div
-            v-if="ui.active?.needsInput && ui.active.questions?.length"
-            class="needs-input-block"
-            style="margin-top: 18px"
-          >
-            <div class="md-h">Questions for you</div>
-            <div class="md-card">
-              <ul class="needs-input-list">
-                <li v-for="(question, index) in ui.active.questions" :key="index">
-                  {{ question }}
-                </li>
-              </ul>
-              <Button
-                variant="default"
-                size="sm"
-                class="needs-input-answer"
-                @click="openPmWithNeedsInputQuestions"
-              >
-                Answer these
-              </Button>
             </div>
           </div>
           <div class="md-h" style="margin-top: 4px">meta</div>
