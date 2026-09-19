@@ -33,15 +33,17 @@ defaultAssignee = "ai"        # "ai" or "human"
 defaultTaskMode = "freeform"
 maxActiveTasks  = 3           # how many tasks may be active at once
 autoEngineeringMode = false   # automatically dispatch ready tasks to agents
-skillSuggestions    = true    # suggest a reusable skill after a reviewed task
+skillSuggestions    = false   # suggest a reusable skill after a completed task
 worktreeWarnThreshold = 20    # warn once this many task worktrees exist
 ```
 
 `skillSuggestions` controls the auto-suggest pass described in
-[Review and close-out](/review-and-close-out#skill-suggestions): when on, a
-reviewed task's session may produce a single `New Skill Suggestion: …` task for
-you to approve. Off means no suggestion tasks and no review-drawer note. Default
-`true`.
+[Review and close-out](/review-and-close-out#skill-suggestions). It is **off by
+default**: when on, a task is analysed only once it reaches `done`, and a single
+`New Skill Suggestion: …` task is created only for a high-bar reusable procedure
+corroborated by a second independent session. A named stable external tool/API
+workflow is recorded as extra evidence, but a single session never creates a
+suggestion. Off means no analysis, no suggestion tasks and no review-drawer note.
 
 ### Board column labels
 

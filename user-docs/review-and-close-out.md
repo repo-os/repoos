@@ -45,22 +45,33 @@ an obsolete task needs a scoping decision, not more engineering.
 
 ## Skill suggestions
 
-When a task lands in `review` (or `done`, if it skipped review), RepoOS also
-analyses the task's session transcript. If it finds a non-trivial, reusable
-multi-step procedure, it creates **one** task titled
-`New Skill Suggestion: <procedure name>` with a draft `SKILL.md` in its body. The
-draft is a normal task in your inbox — it is **not** a live skill. Nothing goes
-live until you read the draft, create `skills/<name>/SKILL.md` from it, and close
-the task.
+This pass is deliberately conservative, and **off by default**. When enabled,
+RepoOS analyses a task's session transcript only after the task has genuinely
+reached `done` — never at `review`, when the outcome is not yet verified. A
+reusable skill is a high bar: a stable procedure that helps on future, materially
+different tasks, with real decisions/branches and evidence it saves repeated
+investigation. One-off fixes, task-specific checklists, test ideas,
+repository-local conventions, review feedback, and failed or unverified work are
+rejected.
 
-- At most **one** suggestion task is created per originating task. Any other
-  candidate procedures are listed inside that one task's body, never as
-  separate tasks.
+When a candidate clears that bar, the first occurrence is persisted internally
+and creates nothing. A task titled `New Skill Suggestion: <procedure name>` with
+a draft `SKILL.md` is created only once the candidate is corroborated by a
+second independent completed session. A single session never creates a
+suggestion; a named, stable external tool/API workflow is recorded as extra
+evidence but does not substitute for corroboration. The draft states its
+evidence — the source task IDs (and the named external workflow, when there is
+one), the repeatable trigger, and why a test/instruction/task is insufficient.
+It is a normal task in your inbox — **not** a live skill. Nothing goes live until
+you read the draft, create `skills/<name>/SKILL.md` from it, and close the task.
+
+- At most **one** suggestion task is created per procedure. Any other candidate
+  procedures are listed inside that one task's body, never as separate tasks.
 - The originating task's **Review** tab shows a one-line `Skill suggestion: #<id>`
   note linking to the created task.
-- It is **on by default**. Turn it off under **Settings → Auto-suggest skills
-  from completed sessions** (`skillSuggestions = false` in `repoos.toml`); off
-  means no suggestion tasks and no note.
+- It is **off by default**. Turn it on under **Settings → Auto-suggest skills
+  from completed sessions** (`skillSuggestions = true` in `repoos.toml`); off
+  means no analysis, no suggestion tasks and no note.
 
 The analysis runs on the same LLM infrastructure as the reviewer, and its token
 spend appears in the task's Tokens tab like any other role.

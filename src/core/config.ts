@@ -175,7 +175,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     autoTransition: true,
   },
   autoEngineeringMode: false,
-  skillSuggestions: true,
+  skillSuggestions: false,
   maxActiveTasks: 3,
   worktreeWarnThreshold: 20,
   whisper: {
@@ -1165,9 +1165,13 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: DEFAULT_CONFIG.skillSuggestions,
       description:
-        "When a task is reviewed, analyse its session and create a 'New Skill Suggestion' task " +
-        "if a reusable multi-step procedure was detected. Nothing goes live as a skill until you " +
-        "approve the suggestion.",
+        "Off by default. When on, a task's session is analysed only after the task reaches " +
+        "'done' — never at review. A suggestion is created only for a high-bar reusable " +
+        "procedure (stable, repeatable on future tasks, with real decisions) corroborated by " +
+        "at least two independent completed sessions. One-off fixes, task checklists, test " +
+        "ideas, local conventions, review feedback, and failed/unverified work are rejected. " +
+        "The first candidate is kept internally until corroborated; a single session never " +
+        "creates a suggestion, and nothing goes live as a skill until you approve it.",
     },
     {
       key: "maxActiveTasks",

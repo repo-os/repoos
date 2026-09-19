@@ -1394,10 +1394,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const runReviewRecovery = (): void => reviews.recoverInterruptedReviews(index.getTasks());
   void indexReady.then(runReviewRecovery, runReviewRecovery).catch(() => {});
 
-  // Skill suggestions (#0405): when a task lands in `review` (or `done` when
-  // review was skipped), analyse its completed session and, if a non-trivial
-  // reusable procedure was performed, create ONE `New Skill Suggestion: …` task
-  // for human review. On by default; `skillSuggestions: false` disables it.
+  // Skill suggestions (#0429): only after a task genuinely reaches `done` does
+  // its session get analysed. A high-bar reusable procedure is persisted
+  // internally first and creates nothing; one `New Skill Suggestion: …` task is
+  // created only once corroborated by a second independent session (or a named
+  // stable external workflow). Off by default; `skillSuggestions: true` enables.
   const skillSuggestions = new SkillSuggestionManager({
     config,
     getTranscript: (taskId) => runner.output(taskId)?.lines ?? [],
@@ -1694,12 +1695,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     notifyStatusChange(config, e.task, prev, e.task.status);
     // Every route into `review` — a board drag, the drawer, an agent editing
     // its own task file — surfaces here, so this is the one place the agent
-    // review needs to hang off. `done` is included so a task that skipped
-    // review still gets the skill-suggestion pass (#0405); the pass is
-    // idempotent per originating task, so review→done fires it only once.
+    // review needs to hang off. The skill-suggestion pass deliberately does
+    // NOT run here (#0429): its evidence gate requires a genuinely completed,
+    // verified task, so it hangs off `done` only, below.
     if (e.task.status === "review") {
       startReview(e.task);
-      skillSuggestions.maybeSuggest(e.task);
     } else if (e.task.status === "done") {
       skillSuggestions.maybeSuggest(e.task);
     }
