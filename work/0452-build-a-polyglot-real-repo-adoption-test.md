@@ -10,8 +10,9 @@ created_by: ""
 branch: ""
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
+review_model_override: openrouter/xiaomi/mimo-v2.5
 created_at: "2026-09-19T16:43:21Z"
-updated_at: "2026-09-19T22:35:50Z"
+updated_at: "2026-09-19T22:35:58Z"
 ---
 ## Outcome
 
@@ -75,3 +76,4 @@ P1 — Build a polyglot real-repo adoption test matrix.
 - 2026-09-19T22:15:02Z · status inbox→ready
 - 2026-09-19T22:35:46Z · cli_override, model_override
 - 2026-09-19T22:35:50Z · model_override
+- 2026-09-19T22:35:58Z · review_model_override
