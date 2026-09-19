@@ -2,7 +2,7 @@
 id: "0440"
 title: "Tasks: needs-human-input flag with PM chat Q&A flow"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,8 @@ created_by: ""
 branch: feat/tasks-needs-human-input-flag-with-pm-cha
 review_model_override: openrouter/tencent/hy4-preview
 created_at: "2026-09-19T06:32:07Z"
-updated_at: "2026-09-19T07:31:12Z"
+updated_at: "2026-09-19T07:46:01Z"
+handoff_signal_retry_count: 1
 ---
 ## Problem
 
@@ -49,3 +50,4 @@ When a built-in agent run produces a task that requires a human decision (e.g. "
 - 2026-09-19T06:40:11Z · status inbox→ready
 - 2026-09-19T06:40:14Z · status ready→active, branch
 - 2026-09-19T07:31:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-09-19T07:46:01Z · status active→review
