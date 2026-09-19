@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-19T01:02:16Z"
-review_passes: 2
 id: "0426"
 title: Normalize GitHub Copilot tool events into readable transcript cards
 type: bug
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: ""
 branch: feat/normalize-github-copilot-tool-events-int
 created_at: "2026-09-18T17:46:35Z"
+updated_at: "2026-09-19T01:23:27Z"
+review_passes: 2
 review_rounds: 1
 dev_error_count: 1
 ---
@@ -27,4 +27,4 @@ GitHub Copilot CLI 1.0.86 emits JSONL tool.execution_partial_result records with
 - 2026-09-18T19:22:06Z · agent exited with an error (copilot) · To start a new session with ID:   copilot --session-id=<valid-uuid>
 - 2026-09-19T00:52:23Z · needs_input
 - 2026-09-19T00:59:02Z · status active→review
-
+- 2026-09-19T01:23:27Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
