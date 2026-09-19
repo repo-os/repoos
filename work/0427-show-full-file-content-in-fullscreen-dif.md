@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p2
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+review_model_override: opencode-go/mimo-v2.5
 created_at: "2026-09-18T18:04:16Z"
-updated_at: "2026-09-18T18:04:16Z"
+updated_at: "2026-09-19T01:03:46Z"
 ---
 ## Problem
 
@@ -39,3 +40,4 @@ The frontend fetches both versions when the fullscreen modal opens and merges th
 ## Activity
 
 - 2026-09-18T18:04:16Z · created · unknown
+- 2026-09-19T01:03:46Z · review_model_override
