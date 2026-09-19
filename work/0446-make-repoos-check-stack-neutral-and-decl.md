@@ -3,6 +3,9 @@ id: "0446"
 title: Make repoos check stack-neutral and declarative
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the opencode agent exited without output: no output produced"
 priority: p1
 area: core
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/make-repoos-check-stack-neutral-and-decl
 cli_override: opencode
 model_override: openrouter/tencent/hy4-preview
 created_at: "2026-09-19T15:09:57Z"
-updated_at: "2026-09-19T19:36:14Z"
+updated_at: "2026-09-19T19:36:59Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 1
@@ -48,3 +51,4 @@ Make repoos check a project-defined gate that works for JavaScript, Android/Grad
 - 2026-09-19T17:24:16Z · status active→review
 - 2026-09-19T17:26:37Z · status review→active
 - 2026-09-19T19:36:14Z · status active→review
+- 2026-09-19T19:36:59Z · needs_input
