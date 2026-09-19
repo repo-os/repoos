@@ -2,7 +2,7 @@
 id: "0435"
 title: Unify floating head agent panels with tasks/inputs style
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/unify-floating-head-agent-panels-with-ta
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-19T04:24:00Z"
-updated_at: "2026-09-19T04:24:56Z"
+updated_at: "2026-09-19T04:29:29Z"
 ---
 ## Problem
 
@@ -53,3 +53,4 @@ Change all the floating head agents (existing, like Ross, CTO, debugger and any 
 - 2026-09-19T04:24:48Z · status inbox→ready
 - 2026-09-19T04:24:55Z · review_model_override
 - 2026-09-19T04:24:56Z · status ready→active, branch
+- 2026-09-19T04:29:29Z · status active→review
