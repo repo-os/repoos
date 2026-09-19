@@ -24,6 +24,7 @@ import {
   extractOneShotReportText,
   type PromptResult,
 } from "./agents.js";
+import { recoverTruncatedJson, truncationMessage } from "./json-truncation.js";
 import type { Logger } from "../core/logger.js";
 
 // ── Finding types (compatible with existing built-in agent output shapes) ──
@@ -300,6 +301,12 @@ function parseAgentResponse(reportText: string): {
   findings: SkillGuidedFinding[];
   fixes: SkillGuidedFix[];
   parsed: boolean;
+  /**
+   * Set when the response was cut short mid-serialisation (#0442) rather than
+   * merely malformed, so the caller can name the real cause — "payload too
+   * large, retry or reduce context" — instead of "output was not valid JSON".
+   */
+  truncated?: { bytes: number; recovered: number };
 } {
   const trimmed = reportText.trim();
   if (!trimmed) return { findings: [], fixes: [], parsed: true };
@@ -339,7 +346,46 @@ function parseAgentResponse(reportText: string): {
       };
     }
   } catch {
-    // JSON parse failed — fall through to fallback
+    // The response may have been cut short mid-serialisation (#0442) — a large
+    // finding list hitting the CLI's buffer ceiling. Salvage the findings that
+    // completed before the cut so the run isn't a total loss, and report the
+    // truncation so the human knows to retry rather than to debug the schema.
+    const truncation = recoverTruncatedJson(jsonStr);
+    if (!truncation) return { findings: [], fixes: [], parsed: false };
+    for (const line of truncation.recovered) {
+      try {
+        const part = JSON.parse(line) as unknown;
+        if (Array.isArray(part)) {
+          return {
+            findings: part.map(normalizeFinding),
+            fixes: [],
+            parsed: true,
+            truncated: { bytes: truncation.bytes, recovered: truncation.recovered.length },
+          };
+        }
+        if (
+          part &&
+          typeof part === "object" &&
+          Array.isArray((part as { findings?: unknown }).findings)
+        ) {
+          const obj = part as { findings: unknown[]; fixes?: unknown[] };
+          return {
+            findings: obj.findings.map(normalizeFinding),
+            fixes: Array.isArray(obj.fixes) ? obj.fixes.map(normalizeFix) : [],
+            parsed: true,
+            truncated: { bytes: truncation.bytes, recovered: truncation.recovered.length },
+          };
+        }
+      } catch {
+        // A recovered fragment that still won't parse contributes nothing.
+      }
+    }
+    return {
+      findings: [],
+      fixes: [],
+      parsed: false,
+      truncated: { bytes: truncation.bytes, recovered: truncation.recovered.length },
+    };
   }
 
   // Unparseable output: do NOT create a synthetic finding that would file
@@ -483,10 +529,14 @@ export async function runSkillGuidedAgent(
   const reportText = extractOneShotReportText(agent.cli, result.output ?? "");
 
   // Parse into structured findings
-  const { findings, fixes, parsed } = parseAgentResponse(reportText);
+  const { findings, fixes, parsed, truncated } = parseAgentResponse(reportText);
 
   if (!parsed) {
-    const msg = `Built-in agent "${agentName}": agent output was not valid JSON — raw report preserved`;
+    // A truncated payload gets the actionable message (#0442): the response
+    // was too large, not wrong, so "retry or reduce context" is the fix.
+    const msg = truncated
+      ? `Built-in agent "${agentName}": ${truncationMessage(truncated.bytes)}`
+      : `Built-in agent "${agentName}": agent output was not valid JSON — raw report preserved`;
     logger?.agent(agentName, "warn", msg);
     return {
       ok: false,
