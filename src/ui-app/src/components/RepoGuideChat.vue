@@ -285,7 +285,7 @@ watch(
       </button>
     </form>
     <div class="guide-footnote">
-      Repo-aware assistant · Conversation stays open while you navigate
+      Repo-aware assistant
     </div>
   </FloatingHeadPanel>
 </template>
