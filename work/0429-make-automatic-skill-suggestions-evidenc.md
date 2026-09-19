@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 2
 updated_at: "2026-09-19T01:21:10Z"
 review_passes: 2
 id: "0429"
@@ -14,7 +15,6 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-18T18:46:29Z"
 review_rounds: 1
-handoff_signal_retry_count: 1
 ---
 ## Problem
 
@@ -57,4 +57,5 @@ Treat a reusable skill as a high-bar artifact: a stable procedure useful on futu
 - 2026-09-19T01:02:54Z · status review→active
 - 2026-09-19T01:19:05Z · status active→review
 - 2026-09-19T01:19:06Z · status review→active
+
 
