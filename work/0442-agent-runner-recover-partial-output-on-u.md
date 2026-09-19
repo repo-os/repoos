@@ -5,11 +5,12 @@ type: bug
 status: inbox
 priority: p2
 area: ai
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: codex
 created_at: "2026-09-19T08:15:21Z"
-updated_at: "2026-09-19T08:15:21Z"
+updated_at: "2026-09-19T08:18:14Z"
 ---
 ## Problem
 
@@ -41,3 +42,4 @@ Relevant code: \`src/server/agents.ts\` (stream parsing / \`extractOneShotReport
 ## Activity
 
 - 2026-09-19T08:15:21Z · created · unknown
+- 2026-09-19T08:18:14Z · cli_override
