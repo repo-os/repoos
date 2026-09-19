@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-19T06:32:27Z"
+review_passes: 1
 id: "0326"
 title: Remove the decommissioned screenshots/ fixture subsystem
 type: chore
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: ""
 branch: feat/remove-the-decommissioned-screenshots-fi
 created_at: "2026-09-04T03:30:08Z"
-updated_at: "2026-09-19T06:30:12Z"
 ---
 ## Context
 
@@ -102,3 +103,4 @@ and its special-casing stays.
 - 2026-09-19T06:13:41Z · status inbox→ready
 - 2026-09-19T06:13:43Z · status ready→active, branch
 - 2026-09-19T06:30:12Z · status active→review
+
