@@ -19,8 +19,9 @@
  *   - Requires corroboration before anything user-visible exists. The first
  *     eligible candidate is persisted internally (`.repoos/skill-candidates.json`)
  *     and creates no task. A suggestion task is created only when a second,
- *     independent completed task session evidences the same candidate — or the
- *     candidate is an explicitly named, stable external tool/API workflow.
+ *     independent completed task session evidences the same candidate. A named
+ *     stable external tool/API workflow is recorded as extra evidence but does
+ *     NOT lift the two-session rule: a single session must never create one.
  *   - Creates at most ONE suggestion task per candidate, and never writes a live
  *     skill file. The human approval gate is unchanged.
  *
@@ -29,7 +30,7 @@
  *
  * Zero runtime deps — node:fs / node:path only.
  */
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { Agent, AgentOutputEntry, RepoOSConfig, Status, Task } from "../core/types.js";
 import { parseDocument, serializeDocument } from "../core/frontmatter.js";
@@ -121,8 +122,12 @@ export interface SkillSuggestionResult {
 
 /** A persisted first-candidate that is awaiting corroboration. */
 export interface SkillCandidateRecord {
-  /** Stable identity of the procedure (the corroboration key). */
+  /** Canonical identity of the procedure (the corroboration key). */
   key: string;
+  /** The canonical key, retained explicitly so older records can be migrated. */
+  canonicalKey: string;
+  /** Normalized alternative keys the model emitted for this procedure. */
+  aliases: string[];
   name: string;
   description: string;
   body: string;
@@ -142,7 +147,10 @@ export interface SkillCandidateRecord {
 /** Internal storage for first-candidate evidence. */
 export interface SkillCandidateStore {
   get(key: string): SkillCandidateRecord | null;
-  put(record: SkillCandidateRecord): void;
+  /** Every stored candidate (used for alias/fuzzy cross-session matching). */
+  all(): SkillCandidateRecord[];
+  /** Persist a record. Returns false when the write did not land. */
+  put(record: SkillCandidateRecord): boolean;
 }
 
 /** JSON-file-backed candidate store under the repo's cache dir. */
@@ -166,14 +174,27 @@ export class FileSkillCandidateStore implements SkillCandidateStore {
     return this.readAll()[key] ?? null;
   }
 
-  put(record: SkillCandidateRecord): void {
+  all(): SkillCandidateRecord[] {
+    return Object.values(this.readAll());
+  }
+
+  /**
+   * Write the whole store atomically: serialize to a sibling temp file, then
+   * rename over the target so a crash mid-write can never truncate the store or
+   * expose a half-written JSON document to the next read. Returns false when
+   * the write could not land, so the caller can log it instead of hiding it.
+   */
+  put(record: SkillCandidateRecord): boolean {
     const all = this.readAll();
     all[record.key] = record;
+    const tmp = `${this.filePath}.tmp`;
     try {
       mkdirSync(dirname(this.filePath), { recursive: true });
-      writeFileSync(this.filePath, `${JSON.stringify(all, null, 2)}\n`);
+      writeFileSync(tmp, `${JSON.stringify(all, null, 2)}\n`);
+      renameSync(tmp, this.filePath);
+      return true;
     } catch {
-      /* best-effort: a failed persist must never break the task flow */
+      return false;
     }
   }
 }
@@ -417,6 +438,79 @@ export function skillSlug(name: string): string {
 }
 
 /**
+ * Normalize an arbitrary identity string into a canonical matching key. Unlike
+ * `skillSlug`, an empty result stays empty (no placeholder) so callers can tell
+ * "no usable key" from a real one.
+ */
+export function normalizeSkillKey(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 64);
+}
+
+/**
+ * Token-set similarity (Jaccard) between two procedure names, used as a last
+ * resort when the model slugs the same procedure differently across sessions
+ * ("audit-failing-build" vs "audit-a-failing-build"). Deliberately strict — a
+ * false merge would corroborate an unrelated procedure.
+ */
+export function nameSimilarity(a: string, b: string): number {
+  const tokenize = (v: string): Set<string> =>
+    new Set(
+      normalizeSkillKey(v)
+        .split("-")
+        .filter((t) => t.length > 2),
+    );
+  const A = tokenize(a);
+  const B = tokenize(b);
+  if (A.size === 0 || B.size === 0) return 0;
+  let intersection = 0;
+  for (const token of A) if (B.has(token)) intersection += 1;
+  const union = new Set([...A, ...B]).size;
+  return intersection / union;
+}
+
+/** The canonical identity of a draft: its name, falling back to the model key. */
+export function canonicalKeyOf(draft: Pick<SkillDraft, "key" | "name">): string {
+  return normalizeSkillKey(draft.name) || normalizeSkillKey(draft.key);
+}
+
+/** The similarity threshold above which two names are treated as the same procedure. */
+const NAME_MATCH_THRESHOLD = 0.8;
+
+/**
+ * Find the stored candidate that corresponds to `draft`, tolerating model drift
+ * in the emitted key or name: exact canonical key, then an explicit alias, then
+ * a strict name-similarity match.
+ */
+export function findCandidateRecord(
+  records: SkillCandidateRecord[],
+  draft: Pick<SkillDraft, "key" | "name">,
+): SkillCandidateRecord | null {
+  const canonical = canonicalKeyOf(draft);
+  const modelKey = normalizeSkillKey(draft.key);
+  const exact = records.find((r) => r.canonicalKey === canonical && canonical !== "");
+  if (exact) return exact;
+  const byAlias = records.find(
+    (r) => r.key === draft.key || r.aliases.includes(modelKey) || r.aliases.includes(canonical),
+  );
+  if (byAlias) return byAlias;
+
+  let best: SkillCandidateRecord | null = null;
+  let bestScore = 0;
+  for (const r of records) {
+    const score = nameSimilarity(r.name, draft.name);
+    if (score > bestScore) {
+      best = r;
+      bestScore = score;
+    }
+  }
+  return bestScore >= NAME_MATCH_THRESHOLD ? best : null;
+}
+
+/**
  * The body of the suggestion task: the evidence, the human-readable spec, and
  * the draft. Every generated draft must state its evidence — the independent
  * source task ids (or the named stable external workflow), the repeatable
@@ -524,6 +618,14 @@ export class SkillSuggestionManager {
   private readonly store: SkillCandidateStore;
   /** Tasks with a pass in flight, so a re-entrant event doesn't double-run. */
   private readonly inFlight = new Set<string>();
+  /**
+   * Serializes every candidate-store read-modify-write. The critical section is
+   * synchronous today (so the single-threaded JS runtime already makes it
+   * atomic), but chaining through a promise makes that guarantee explicit and
+   * keeps it true if an await is ever introduced — two tasks finishing at once
+   * must never both see an empty store and both create a suggestion.
+   */
+  private writeChain: Promise<unknown> = Promise.resolve();
 
   constructor(deps: SkillSuggestionDeps) {
     this.deps = deps;
@@ -595,10 +697,17 @@ export class SkillSuggestionManager {
       const valid = validateSkillDraft(parsed.skill);
       if (!valid.ok) return { ok: false, reason: `rejected: ${valid.reason}` };
 
-      return this.recordCandidate(task, parsed);
+      return this.serializeCandidateWrite(() => this.recordCandidate(task, parsed));
     } finally {
       this.inFlight.delete(task.id);
     }
+  }
+
+  /** Chain synchronous candidate-store work so writes never interleave. */
+  private serializeCandidateWrite<T>(fn: () => T): Promise<T> {
+    const next = this.writeChain.then(fn, fn);
+    this.writeChain = next.catch(() => undefined);
+    return next;
   }
 
   /**
@@ -607,16 +716,31 @@ export class SkillSuggestionManager {
    */
   private recordCandidate(task: Task, parsed: SkillSuggestionResult): SkillSuggestionRunResult {
     const draft = parsed.skill as SkillDraft;
-    const key = draft.key;
-    const existing = this.store.get(key);
+    // Match against prior evidence tolerating model drift in the emitted key or
+    // name ("audit-failing-build" vs "Audit a failing build"), so two sessions
+    // for the same procedure actually corroborate each other.
+    const existing = findCandidateRecord(this.store.all(), draft);
+    const canonicalKey = existing?.canonicalKey || canonicalKeyOf(draft);
+    const key = existing?.key || canonicalKey;
     if (existing?.suggestedTaskId) {
       return { ok: false, reason: "already suggested", candidateKey: key };
     }
 
     const sourceTaskIds = Array.from(new Set([...(existing?.sourceTaskIds ?? []), task.id]));
+    const aliases = Array.from(
+      new Set(
+        [
+          ...(existing?.aliases ?? []),
+          normalizeSkillKey(draft.key),
+          normalizeSkillKey(draft.name),
+        ].filter(Boolean),
+      ),
+    );
     const now = utcTimestamp();
     const candidate: SkillCandidateRecord = {
       key,
+      canonicalKey,
+      aliases,
       name: draft.name,
       description: draft.description,
       body: draft.body,
@@ -630,13 +754,14 @@ export class SkillSuggestionManager {
       updatedAt: now,
     };
 
-    // Corroboration: two independent completed task sessions, or an explicitly
-    // named, stable external tool/API workflow. Until then, the candidate stays
-    // internal — no user-visible task.
-    const independentSessions = sourceTaskIds.length >= 2;
-    const stableExternal = candidate.externalWorkflow && candidate.externalWorkflowName !== "";
-    if (!independentSessions && !stableExternal) {
-      this.store.put(candidate);
+    // Corroboration: at least two independent completed task sessions. A named
+    // stable external workflow is additionally recorded as evidence, but does
+    // NOT lift the two-session rule — per #0429, a single session must never
+    // create a human inbox suggestion task.
+    if (sourceTaskIds.length < 2) {
+      if (!this.store.put(candidate)) {
+        this.deps.logger?.task(task.id, "warn", "skill candidate could not be persisted", { key });
+      }
       this.deps.logger?.task(
         task.id,
         "info",
@@ -657,8 +782,16 @@ export class SkillSuggestionManager {
       area: task.area || "general",
       body: buildSuggestionTaskBody(task, candidate),
     });
-    this.store.put({ ...candidate, suggestedTaskId: created.id });
+    if (!this.store.put({ ...candidate, suggestedTaskId: created.id })) {
+      this.deps.logger?.task(task.id, "warn", "skill suggestion link could not be persisted", {
+        key,
+        suggestionId: created.id,
+      });
+    }
     this.deps.markOrigin(task, created.id);
+    // Guard this in-memory task object too, so a re-entrant event for the same
+    // task before its file is re-parsed doesn't run the analysis again.
+    if (task.extra) task.extra[SKILL_SUGGESTION_KEY] = created.id;
     this.deps.logger?.task(task.id, "info", "skill suggestion created", {
       suggestionId: created.id,
       key,

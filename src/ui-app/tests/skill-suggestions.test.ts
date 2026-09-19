@@ -8,12 +8,13 @@
  * stable external workflow).
  */
 import { afterAll, describe, expect, it, vi } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RepoOSConfig, Task } from "../../core/types";
 import { parseTask } from "../../core/task";
 import {
+  FileSkillCandidateStore,
   SKILL_SUGGESTION_KEY,
   SkillSuggestionManager,
   buildSkillSuggestionMission,
@@ -79,8 +80,10 @@ function memStore(): { store: SkillCandidateStore; map: Map<string, SkillCandida
     map,
     store: {
       get: (key) => map.get(key) ?? null,
+      all: () => Array.from(map.values()),
       put: (record) => {
         map.set(record.key, record);
+        return true;
       },
     },
   };
@@ -131,6 +134,42 @@ function makeManager(overrides: Partial<SkillSuggestionDeps> = {}): {
   });
   return { manager, created, markOrigin, map: mem.map };
 }
+
+describe("FileSkillCandidateStore", () => {
+  function record(key: string): SkillCandidateRecord {
+    return {
+      key,
+      canonicalKey: key,
+      aliases: [],
+      name: key,
+      description: "",
+      body: "body",
+      trigger: "trigger",
+      insufficientRationale: "why",
+      externalWorkflow: false,
+      externalWorkflowName: "",
+      sourceTaskIds: ["0405"],
+      additional: [],
+      firstSeenAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+    };
+  }
+
+  it("round-trips every record and leaves well-formed JSON on disk", () => {
+    const file = join(ROOT, "store-under-test", "skill-candidates.json");
+    const store = new FileSkillCandidateStore(file);
+    expect(store.put(record("a"))).toBe(true);
+    expect(store.put(record("b"))).toBe(true);
+    expect(
+      store
+        .all()
+        .map((r) => r.key)
+        .sort(),
+    ).toEqual(["a", "b"]);
+    expect(store.get("a")?.name).toBe("a");
+    expect(() => JSON.parse(readFileSync(file, "utf8"))).not.toThrow();
+  });
+});
 
 describe("parseSkillSuggestion", () => {
   it("parses an eligible draft plus additional candidates", () => {
@@ -214,6 +253,8 @@ describe("draft rendering", () => {
   it("states the evidence: source tasks, trigger, and why a test is insufficient", () => {
     const record: SkillCandidateRecord = {
       key: "audit-a-failing-build",
+      canonicalKey: "audit-a-failing-build",
+      aliases: [],
       name: "Audit a failing build",
       description: "Use when the build is red.",
       body: "# Audit a failing build\n\n## Procedure\n1. Run the build.",
@@ -238,6 +279,8 @@ describe("draft rendering", () => {
   it("names a stable external workflow in the evidence", () => {
     const record: SkillCandidateRecord = {
       key: "gh-api",
+      canonicalKey: "gh-api",
+      aliases: [],
       name: "Create a PR via gh",
       description: "Use gh to open a PR.",
       body: "body",
@@ -329,6 +372,19 @@ describe("SkillSuggestionManager corroboration", () => {
     expect(map.get("audit-a-failing-build")?.suggestedTaskId).toBe("0500");
   });
 
+  it("creates at most one suggestion when two sessions finish concurrently", async () => {
+    const { manager, created } = makeManager();
+    const results = await Promise.all([
+      manager.run(makeTask("0405", "done")),
+      manager.run(makeTask("0431", "done")),
+    ]);
+    expect(created).toHaveLength(1);
+    expect(results.filter((r) => r.ok)).toHaveLength(1);
+    // The first of the two serialized writes is the persisted candidate; only
+    // the second sees it and creates the (single) suggestion.
+    expect(results.filter((r) => r.reason === "awaiting corroboration")).toHaveLength(1);
+  });
+
   it("does not treat the same session run twice as corroboration", async () => {
     const { manager, created } = makeManager();
     await manager.run(makeTask("0405", "done"));
@@ -347,7 +403,31 @@ describe("SkillSuggestionManager corroboration", () => {
     expect(created).toHaveLength(1);
   });
 
-  it("creates a task from a single session when it is a named stable external workflow", async () => {
+  it("never creates a task from a single session, even for a named external workflow", async () => {
+    const external = payload({
+      category: "external-workflow",
+      skill: {
+        key: "open-pr-with-gh",
+        name: "Open a PR with the GitHub CLI",
+        description: "Use gh to open a pull request.",
+        trigger: "A feature branch is ready for review.",
+        insufficientWhy: "The exact gh flags are easy to get wrong and are not covered by a test.",
+        externalWorkflow: true,
+        externalWorkflowName: "GitHub CLI (gh)",
+        body: "# Open a PR with gh\n\n1. `gh pr create`.",
+      },
+    });
+    const { manager, created, map } = makeManager({
+      analyze: async () => ({ ok: true, output: JSON.stringify(external) }),
+    });
+    const result = await manager.run(makeTask("0405", "done"));
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe("awaiting corroboration");
+    expect(created).toHaveLength(0);
+    expect([...map.values()][0]?.externalWorkflowName).toBe("GitHub CLI (gh)");
+  });
+
+  it("still corroborates a named external workflow from two sessions", async () => {
     const external = payload({
       category: "external-workflow",
       skill: {
@@ -364,10 +444,36 @@ describe("SkillSuggestionManager corroboration", () => {
     const { manager, created } = makeManager({
       analyze: async () => ({ ok: true, output: JSON.stringify(external) }),
     });
-    const result = await manager.run(makeTask("0405", "done"));
-    expect(result.ok).toBe(true);
+    await manager.run(makeTask("0405", "done"));
+    const second = await manager.run(makeTask("0431", "done"));
+    expect(second.ok).toBe(true);
     expect(created).toHaveLength(1);
     expect(String(created[0].body)).toContain("GitHub CLI (gh)");
+  });
+
+  it("corroborates across sessions even when the model drifts the key/name", async () => {
+    let call = 0;
+    const { manager, created } = makeManager({
+      analyze: async () => {
+        call += 1;
+        const name = call === 1 ? "Audit failing build" : "Audit a failing build";
+        const key = call === 1 ? "audit-failing-build" : "audit-a-failing-build";
+        return {
+          ok: true,
+          output: JSON.stringify(
+            payload({
+              skill: { ...(payload().skill as Record<string, unknown>), key, name },
+            }),
+          ),
+        };
+      },
+    });
+    const first = await manager.run(makeTask("0405", "done"));
+    expect(first.ok).toBe(false);
+    const second = await manager.run(makeTask("0431", "done"));
+    expect(second.ok).toBe(true);
+    expect(created).toHaveLength(1);
+    expect(String(created[0].body)).toContain("#0405, #0431");
   });
 
   it("creates nothing when a suggestion already exists for the task", async () => {

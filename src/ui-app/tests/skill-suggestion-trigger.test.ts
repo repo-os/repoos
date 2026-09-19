@@ -128,6 +128,8 @@ function seedCandidate(root: string, taskId: string): void {
     JSON.stringify({
       "audit-a-failing-build": {
         key: "audit-a-failing-build",
+        canonicalKey: "audit-a-failing-build",
+        aliases: ["audit-a-failing-build"],
         name: "Audit a failing build",
         description: "Use when the build is red.",
         body: "# Audit a failing build\n\n1. Run the build.",

@@ -354,9 +354,11 @@ export interface RepoOSConfig {
    * When true (off by default), a task's session is analysed only after it
    * reaches `done`, and a `New Skill Suggestion: …` task is created only for a
    * high-bar reusable procedure corroborated by at least two independent
-   * completed sessions (or a named stable external tool/API workflow). The
-   * first candidate is persisted internally and creates no task. Nothing is
-   * saved as an actual skill until a human works that suggestion task.
+   * completed sessions. The first candidate is persisted internally and creates
+   * no task; a single session never creates one. A named stable external
+   * tool/API workflow is recorded as extra evidence but does not lift the
+   * two-session rule. Nothing is saved as an actual skill until a human works
+   * that suggestion task.
    */
   skillSuggestions?: boolean;
   /** Maximum number of simultaneously active tasks when auto-engineering mode is enabled. */

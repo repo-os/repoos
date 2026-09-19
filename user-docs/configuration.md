@@ -41,8 +41,9 @@ worktreeWarnThreshold = 20    # warn once this many task worktrees exist
 [Review and close-out](/review-and-close-out#skill-suggestions). It is **off by
 default**: when on, a task is analysed only once it reaches `done`, and a single
 `New Skill Suggestion: …` task is created only for a high-bar reusable procedure
-corroborated by a second independent session (or a named stable external
-workflow). Off means no analysis, no suggestion tasks and no review-drawer note.
+corroborated by a second independent session. A named stable external tool/API
+workflow is recorded as extra evidence, but a single session never creates a
+suggestion. Off means no analysis, no suggestion tasks and no review-drawer note.
 
 ### Board column labels
 

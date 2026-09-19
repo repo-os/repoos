@@ -57,12 +57,13 @@ rejected.
 When a candidate clears that bar, the first occurrence is persisted internally
 and creates nothing. A task titled `New Skill Suggestion: <procedure name>` with
 a draft `SKILL.md` is created only once the candidate is corroborated by a
-second independent completed session, or is a named, stable external tool/API
-workflow. The draft states its evidence — the source task IDs (or the named
-external workflow), the repeatable trigger, and why a test/instruction/task is
-insufficient. It is a normal task in your inbox — **not** a live skill. Nothing
-goes live until you read the draft, create `skills/<name>/SKILL.md` from it, and
-close the task.
+second independent completed session. A single session never creates a
+suggestion; a named, stable external tool/API workflow is recorded as extra
+evidence but does not substitute for corroboration. The draft states its
+evidence — the source task IDs (and the named external workflow, when there is
+one), the repeatable trigger, and why a test/instruction/task is insufficient.
+It is a normal task in your inbox — **not** a live skill. Nothing goes live until
+you read the draft, create `skills/<name>/SKILL.md` from it, and close the task.
 
 - At most **one** suggestion task is created per procedure. Any other candidate
   procedures are listed inside that one task's body, never as separate tasks.

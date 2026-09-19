@@ -1167,12 +1167,11 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       description:
         "Off by default. When on, a task's session is analysed only after the task reaches " +
         "'done' — never at review. A suggestion is created only for a high-bar reusable " +
-        "procedure (stable, repeatable on future tasks, with real decisions) evidenced by at " +
-        "least two independent completed sessions, or a named stable external tool/API " +
-        "workflow. One-off fixes, task checklists, test ideas, local conventions, review " +
-        "feedback, and failed/unverified work are rejected. The first candidate is kept " +
-        "internally until corroborated, and nothing goes live as a skill until you approve " +
-        "the suggestion.",
+        "procedure (stable, repeatable on future tasks, with real decisions) corroborated by " +
+        "at least two independent completed sessions. One-off fixes, task checklists, test " +
+        "ideas, local conventions, review feedback, and failed/unverified work are rejected. " +
+        "The first candidate is kept internally until corroborated; a single session never " +
+        "creates a suggestion, and nothing goes live as a skill until you approve it.",
     },
     {
       key: "maxActiveTasks",
