@@ -14,7 +14,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { resolveBinary, KNOWN_AGENTS } from "./detect.js";
 
 /** Default ceiling on the `opencode models` probe, ms. A hung CLI is SIGKILLed. */
-export const MODELS_TIMEOUT_MS = 5000;
+export const MODELS_TIMEOUT_MS = 12_000;
 /** Codex app-server has a heavier cold start than a one-shot CLI command. */
 export const CODEX_MODELS_TIMEOUT_MS = 15_000;
 /** Hard cap on collected stdout so a runaway provider list can't balloon memory. */
