@@ -520,7 +520,7 @@ const MERGE_CONFLICT_RETRY_DELAY_MS = 3_000;
  * On a close-out `validating`-phase failure caused by a REAL merge conflict
  * (the candidate's merge of the feature branch into itself failed with named
  * conflicting paths — not the task's own bookkeeping file or `dist/`/
- * `screenshots/`, which auto-resolve, and not an infra failure), automatically
+ * `dist/`, which auto-resolve, and not an infra failure), automatically
  * resume the task's engineer session and ask it to merge main into ITS OWN
  * branch and resolve the conflict there — the exact manual recovery
  * docs/close-out-pipeline.md prescribes (#0271 follow-up: this was

@@ -26,11 +26,6 @@ user-docs/.vitepress/cache/
 # assumed dist/ pre-existed in a fresh worktree.
 dist/
 
-# Regenerated on demand via `repoos screenshots` / `bun run screenshots`.
-# Previously tracked on main, but the binary PNGs churned on every rebuild
-# and made up ~80% of repo history size — stripped from history 2026-08-20.
-screenshots/
-
 # Task / input screenshot attachments. Uploaded through the UI, written here,
 # and served back by the running server from disk — they are NEVER part of the
 # committed record (the task/input .md is). Binaries in git history bloat the

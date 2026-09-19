@@ -137,12 +137,12 @@ agents from merging.
 "merge-recovery skill" is explicitly rejected: it would paper over the race
 that #0118 removes, and agents are already forbidden from merging.
 
-### F2 — Commit-policy confusion: `dist/`, `screenshots/`, `node_modules`
+### F2 — Commit-policy confusion: `dist/`, `node_modules`
 
 **Evidence:**
 - #0113: committing generated artifacts on feature branches "causes 90% of
   merge conflicts when landing tasks to main … Recent victims: #0080,
-  #0094, #0106, #0104 — every merge needed manual dist/screenshots conflict
+  #0094, #0106, #0104 — every merge needed manual generated-output conflict
   resolution." Git shows `9178fa4 fix(0113): exclude generated artifacts
   from handoff commits` — the handoff initially committed artifacts.
 - #0063: "a stuck claude run had committed `node_modules` (272 files) into
@@ -151,7 +151,7 @@ that #0118 removes, and agents are already forbidden from merging.
 
 **Existing coverage:** the mission text now states the policy
 (`src/server/agents.ts`: "RepoOS commits only source, work, docs, and
-config files … never `dist/` or `screenshots/`"), added by #0113. **But
+config files … never `dist/`"), added by #0113. **But
 AGENTS.md's Rules section does not carry it**, so agents resuming without a
 mission (or humans) miss it.
 
@@ -481,7 +481,7 @@ creating skills automatically**.
 | Artifact | Covers | Overlap / consolidation notes |
 |---|---|---|
 | `AGENTS.md` (this repo) | Operating loop, review/sign-off, definition of done, self-hosting rules, conventions, git-setup anti-patterns, server-owned previews | Missing: commit-policy rule (F2), flake-retry protocol (F7). Overlaps with `code-review` skill on review procedure — keep AGENTS.md as policy, skill as checklist |
-| Mission text (`missionFor`, `src/server/agents.ts`) | Fail-safe checklist, handoff signal, sandbox boundaries, commit policy | The only home of the dist/screenshots rule — promote to AGENTS.md too (R3) |
+| Mission text (`missionFor`, `src/server/agents.ts`) | Fail-safe checklist, handoff signal, sandbox boundaries, commit policy | The only home of the generated-output rule — promote to AGENTS.md too (R3) |
 | Context packs (`src/core/context-pack.ts`) | Task spec, worktree state, AGENTS.md constraints, likely files, verification commands, managed preview, bootstrap telemetry, resume state | Already addresses repeated codebase discovery (#0097). Should gain a skills section only once #0039 lands |
 | ADR-0005 | Agents express intent; RepoOS performs privileged ops | Covers F5 durably; no change needed |
 | `skills/code-review` | Review-gate procedure | Consolidation candidate with AGENTS.md review section: keep, but it should cite AGENTS.md as authority rather than restating policy |

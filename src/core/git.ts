@@ -914,7 +914,7 @@ export interface DiffResult {
 }
 
 const MAX_DIFF_BYTES = 256_000;
-const DIFF_SOURCE_PATHS = ["--", ".", ":(exclude)dist", ":(exclude)screenshots"];
+const DIFF_SOURCE_PATHS = ["--", ".", ":(exclude)dist"];
 
 /** Parse `git diff --numstat` output into file/line counts (shared by the sync and async variants below). */
 function parseNumstat(statOutput: string): DiffStats {
@@ -1771,7 +1771,7 @@ export function resetHotfix(root: string, branch: string): boolean {
 /**
  * Get agent-touched files in the working directory: the union of tracked
  * worktree-changed files and newly-added files since the last ref, excluding
- * dist/ and screenshots/. Returns an empty list on git failure.
+ * dist/. Returns an empty list on git failure.
  */
 export function agentTouchedFiles(root: string, sinceRef: string): string[] {
   // Staged + unstaged changes (tracked files)
@@ -1780,12 +1780,12 @@ export function agentTouchedFiles(root: string, sinceRef: string): string[] {
       ?.split("\n")
       .map((s) => s.trim())
       .filter(Boolean) ?? [];
-  // Untracked files that aren't in dist/ or screenshots/
+  // Untracked files that aren't in dist/
   const untracked =
     git(root, ["ls-files", "--others", "--exclude-standard"])
       ?.split("\n")
       .map((s) => s.trim())
       .filter(Boolean)
-      .filter((p) => !p.startsWith("dist/") && !p.startsWith("screenshots/")) ?? [];
+      .filter((p) => !p.startsWith("dist/")) ?? [];
   return [...new Set([...diff, ...untracked])];
 }

@@ -48,7 +48,6 @@ function makeFlowFixture(): FlowFixture {
   // Repo structure
   mkdirSync(join(root, "work"), { recursive: true });
   mkdirSync(join(root, "dist"), { recursive: true });
-  mkdirSync(join(root, "screenshots"), { recursive: true });
   mkdirSync(bin, { recursive: true });
 
   // Source: a minimal package.json at 0.3.0

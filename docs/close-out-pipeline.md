@@ -132,7 +132,7 @@ auto-resolution. `dist/.build-info.json` used to carry a unique hash+timestamp o
 *every* independent build, so it conflicted on essentially every single merge — this
 alone failed nearly every job. The task's own doc file also routinely conflicts (status/
 review_rounds bookkeeping differs between the branch's copy and main's copy). Both are
-now auto-resolved via `mergeBranch()`'s `autoResolve` list (`dist/`, `screenshots/`, the
+now auto-resolved via `mergeBranch()`'s `autoResolve` list (`dist/`, the
 task's own file — same mechanism the legacy `done.ts` path already used).
 
 **Root cause removed (2026-08-15):** the timestamp moved out of the tracked marker into
@@ -144,7 +144,7 @@ mechanism for generated-file conflicts, and every repo has some. If you see `dis
 conflicting on every job again, determinism has regressed: check that
 `scripts/copy-assets.mjs` has not put a timestamp back into the marker.
 
-**If you see `merge conflict in <path>` for anything OTHER than `dist/`, `screenshots/`,
+**If you see `merge conflict in <path>` for anything OTHER than `dist/`,
 or the task's own `work/<id>-*.md`: that is a REAL source conflict.** Do not force-resolve
 it blindly — it means the task's branch and main both changed the same file. Resolve it
 properly in the feature branch's own worktree (merge main into the feature branch, fix
@@ -189,14 +189,10 @@ inside the skip-build check subprocess vs 1 standalone) measured the same saved 
 the mechanism changed, the saving did not.
 
 **Browser/server dedup (#0213, scoped down):** the UI smoke test `repoos check` runs
-(RepoOS's own `smoke` script since #0348) and the standalone `bun run screenshots` script previously hand-rolled two independent
-copies of "start an ephemeral server + launch headless WebKit". They now share one
-implementation — `src/commands/ui-harness.ts` (`startPreviewServer` + `launchWebkit`) —
-used by both call sites, so the launch logic can't drift. They do NOT literally share a
-live server or browser instance: the two run in separate OS processes at different
-times (screenshots are an on-demand run that, per #0140, is never part of a close-out),
-so a literal single launch is impossible. The dedup achieved is code-level; each still
-launches its own server+browser when invoked.
+RepoOS's own `smoke` script since #0348. Its ephemeral server and headless WebKit
+launching are centralized in `src/commands/ui-harness.ts`
+(`startPreviewServer` + `launchWebkit`), so the smoke-test launch logic has one
+implementation.
 
 **Known-fixed bug (commit `3fbbd707`):** the check step called a globally-linked `repoos`
 CLI (or `bun run repoos check`, which runs from *source*, not the freshly-built `dist/`).
@@ -234,7 +230,7 @@ Acquires a repo lock and re-checks whether main has drifted since the candidate 
 synced. If it has, the default is to go back to `syncing` and rebuild against the new
 main — correct self-healing for a competing change. Two refinements bound and focus
 that loop (#0386): a drift touching only task bookkeeping (`work/*.md`) or generated
-output (`dist/`, `screenshots/`) cannot invalidate the candidate's validation, so it
+output (`dist/`) cannot invalidate the candidate's validation, so it
 publishes straight through without a resync; a drift that does touch real code resyncs,
 capped at `MAX_PUBLISH_DRIFT_RETRIES` (5) before the job gives up with an actionable
 reason instead of racing forever. It then fast-forward-or-merges the candidate into live
@@ -451,7 +447,7 @@ deliberately conservative default:
 - The **boot sweep is `integrate-only`** — candidates plus `git worktree prune`,
   never `feat/*`. `REPOOS_NO_WORKTREE_GC=1` opts out.
 - `repoos gc --yes` does a full sweep but still only removes worktrees that are
-  **merged into main AND clean** (`dist/` and `screenshots/` excluded from
+  **merged into main AND clean** (`dist/` excluded from
   "clean"); anything with real uncommitted or unmerged work is kept and
   reported.
 - Scope boundary is paths inside `worktreesDir(root)` only, so another coding
@@ -483,7 +479,7 @@ separate mechanisms did it. Fixed `5ca3f0fb` / `b6c365c5`:
 |---|---|---|
 | `could not create candidate worktree` | Candidate branch prefix regressed to a dot-prefix | Check `CANDIDATE_BRANCH_PREFIX` in `integration-orchestrator.ts` |
 | `could not get main SHA` | Stale job from before the prefix fix, or genuinely broken git state | Retry `POST .../done` — jobs re-enqueue cleanly now (commit `d66c7877`) |
-| `merge conflict in dist/...` or `merge conflict in work/<id>-*.md` | Should not happen post-`e34485c7` — if it does, `autoResolve` regressed | Check `validateCandidate()`'s `autoResolve` array still includes `dist/`, `screenshots/`, and the task's own path |
+| `merge conflict in dist/...` or `merge conflict in work/<id>-*.md` | Should not happen post-`e34485c7` — if it does, `autoResolve` regressed | Check `validateCandidate()`'s `autoResolve` array still includes `dist/` and the task's own path |
 | `dist/` dirty on `main` after a plain `bun run build` | Build determinism regressed — a timestamp/random value is back in `dist/.build-info.json` | Check `scripts/copy-assets.mjs`: the marker holds `{ hash, version }` only; `generatedAt` belongs in the gitignored `dist/.build-stamp.json` |
 | `merge conflict in <any other file>` | Real source conflict between the feature branch and main | Fix it in the feature branch's own worktree, not the candidate |
 | `check failed: <unhelpful shell preamble>` | Should not happen post-`3fbbd707` — if it does, the tail-line diagnostic or local-CLI-first ordering regressed | Reproduce manually: `cd` into the candidate worktree, run `node dist/cli/index.js check` directly |

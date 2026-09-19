@@ -89,11 +89,11 @@ function candidateBranchName(taskId: string): string {
 /**
  * A path whose change on main can never invalidate a build/test run that
  * already passed on the candidate: task bookkeeping under the work dir, or
- * generated `dist/`+`screenshots/` output. The publish merge auto-resolves
+ * generated `dist/` output. The publish merge auto-resolves
  * (or ignores) all three, so they are non-code drift by construction.
  */
 function isNonCodePublishDrift(path: string, workPrefix: string): boolean {
-  return path.startsWith(workPrefix) || path.startsWith("dist/") || path.startsWith("screenshots/");
+  return path.startsWith(workPrefix) || path.startsWith("dist/");
 }
 
 /**
@@ -799,7 +799,7 @@ export class CloseOutOrchestrator {
     if (!featureWtPath) return null;
 
     const task = this.getTask?.(job.taskId);
-    const autoResolve = ["dist/", "screenshots/", ...(task ? [relative(root, task.absPath)] : [])];
+    const autoResolve = ["dist/", ...(task ? [relative(root, task.absPath)] : [])];
     // Same semantics as `validateCandidate`: unrelated task files keep main's
     // side, everything else in `autoResolve` takes the branch's side. Only the
     // real-conflict classification is needed here, so the direction is moot.
@@ -1053,14 +1053,14 @@ export class CloseOutOrchestrator {
     }
 
     // In the candidate worktree, merge the feature branch from its location.
-    // dist/ and screenshots/ are generated output — the build step right
-    // after this merge (below) regenerates them from source regardless of
-    // what the merge produced, so a conflict there must never block the
-    // merge. The task's own doc file routinely differs between main and the
-    // branch (status/review_rounds bookkeeping on either side), so its
-    // branch version is taken as authoritative, same as the legacy done.ts
-    // close-out path. Reuses the existing, tested autoResolve semantics in
-    // core/git.ts rather than reimplementing conflict resolution here.
+    // dist/ is generated output — the build step right after this merge
+    // (below) regenerates it from source regardless of what the merge
+    // produced, so a conflict there must never block the merge. The task's
+    // own doc file routinely differs between main and the branch
+    // (status/review_rounds bookkeeping on either side), so its branch
+    // version is taken as authoritative, same as the legacy done.ts close-out
+    // path. Reuses the existing, tested autoResolve semantics in core/git.ts
+    // rather than reimplementing conflict resolution here.
     //
     // dist/ is gitignored on main as of 2026-08-15 (see docs/dogfooding-vs-
     // general.md), so most new merges won't touch this entry at all — a
@@ -1070,7 +1070,7 @@ export class CloseOutOrchestrator {
     // handles that as a modify/delete conflict. Safe to drop once no such
     // branch remains, but harmless to leave indefinitely.
     const task = this.getTask?.(job.taskId);
-    const autoResolve = ["dist/", "screenshots/", ...(task ? [relative(root, task.absPath)] : [])];
+    const autoResolve = ["dist/", ...(task ? [relative(root, task.absPath)] : [])];
     // The task currently closing is authoritative on its branch. Other task
     // files can change independently on main (for example, a CTO nudge), so
     // preserve main's version for those rather than blocking close-out.
@@ -1607,14 +1607,14 @@ export class CloseOutOrchestrator {
       // its own bookkeeping commits for that same task file while the
       // candidate was in flight, a routine, expected divergence that should
       // never have blocked a merge in the first place).
-      // dist/screenshots/ are generated output (never worth keeping main's
-      // stale copy over the candidate's); every work/*.md file keeps MAIN's
-      // copy — main is authoritative for task bookkeeping by publish time
-      // (routine writes land there throughout the task's lifetime), the
-      // reverse of the validate-phase merge above where the candidate's own
-      // file is what's being tested in isolation.
+      // dist/ is generated output (never worth keeping main's stale copy over
+      // the candidate's); every work/*.md file keeps MAIN's copy — main is
+      // authoritative for task bookkeeping by publish time (routine writes land
+      // there throughout the task's lifetime), the reverse of the validate-phase
+      // merge above where the candidate's own file is what's being tested in
+      // isolation.
       const publishMerge = await mergeBranch(root, branch, {
-        autoResolve: ["dist/", "screenshots/"],
+        autoResolve: ["dist/"],
         autoResolveOurs: ["work/"],
       });
       if (!publishMerge.merged) {

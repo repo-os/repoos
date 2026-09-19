@@ -698,7 +698,7 @@ describe("mergeBranch conflict reporting (#0271)", () => {
       git(candPath, ["reset", "--hard", "main"]);
 
       const result = await mergeBranch(candPath, "feat/task120", {
-        autoResolve: ["dist/", "screenshots/", "work/0120-some-task.md"],
+        autoResolve: ["dist/", "work/0120-some-task.md"],
         autoResolveOurs: ["work/"],
       });
 
@@ -742,7 +742,7 @@ describe("mergeBranch conflict reporting (#0271)", () => {
       git(candPath, ["reset", "--hard", "main"]);
 
       const result = await mergeBranch(candPath, "feat/task120", {
-        autoResolve: ["dist/", "screenshots/", "work/0120-some-task.md"],
+        autoResolve: ["dist/", "work/0120-some-task.md"],
         autoResolveOurs: ["work/"],
       });
 
