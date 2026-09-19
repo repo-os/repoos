@@ -3,16 +3,13 @@ id: "0426"
 title: Normalize GitHub Copilot tool events into readable transcript cards
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "To start a new session with ID:   copilot --session-id=<valid-uuid>"
 priority: p2
 area: agent
 assigned_to: ai
 created_by: ""
 branch: feat/normalize-github-copilot-tool-events-int
 created_at: "2026-09-18T17:46:35Z"
-updated_at: "2026-09-18T19:22:06Z"
+updated_at: "2026-09-19T00:52:23Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 1
@@ -28,3 +25,4 @@ GitHub Copilot CLI 1.0.86 emits JSONL tool.execution_partial_result records with
 - 2026-09-18T19:21:15Z · status active→review
 - 2026-09-18T19:22:03Z · status review→active
 - 2026-09-18T19:22:06Z · agent exited with an error (copilot) · To start a new session with ID:   copilot --session-id=<valid-uuid>
+- 2026-09-19T00:52:23Z · needs_input
