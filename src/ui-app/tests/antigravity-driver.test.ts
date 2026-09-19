@@ -1,6 +1,14 @@
 /** Fixture coverage for Google's documented Antigravity CLI (`agy`) driver. */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { mount } from "@vue/test-utils";
@@ -463,6 +471,30 @@ it("fails a zero-exit Antigravity turn whose result is not SUCCESS", () =>
     expect(runner.start(TASK, "feat/agy", agent, { cwd: worktree }).ok).toBe(true);
     await waitFor(() => !runner.isRunning(TASK.id), "agy error-result turn");
     expect(sysText(runner, TASK.id)).toContain("reported a failed result");
+  }));
+
+it("keeps raw logs from separate Antigravity review attempts", () =>
+  withFakeAgy(async (fx) => {
+    const worktree = join(fx.bin, "worktree");
+    makeWorktree(worktree);
+    const runner = new AgentRunner(config(fx.bin), () => {});
+    const key = `review:${TASK.id}`;
+
+    expect(runner.startReview(key, agent, "review once", worktree).ok).toBe(true);
+    await waitFor(() => !runner.isRunning(key), "first Antigravity review");
+    expect(runner.startReview(key, agent, "review again", worktree).ok).toBe(true);
+    await waitFor(() => !runner.isRunning(key), "second Antigravity review");
+
+    const logs = readdirSync(join(fx.bin, ".repoos", "agent-logs"));
+    const reviewOutputs = logs.filter(
+      (name) => name.startsWith(`${key}.`) && name.endsWith(".out.log"),
+    );
+    expect(reviewOutputs).toHaveLength(2);
+    for (const name of reviewOutputs) {
+      expect(readFileSync(join(fx.bin, ".repoos", "agent-logs", name), "utf8")).toContain(
+        '"event":"result"',
+      );
+    }
   }));
 
 it("treats a non-zero one-shot exit as failure even with a SUCCESS envelope", async () => {

@@ -285,6 +285,11 @@ export function reviewFollowupMission(
 /** In-flight bookkeeping for one review run. */
 interface Run {
   cancelled: boolean;
+  /**
+   * Reviewer selected when this turn started. This keeps a task-level
+   * override attached to the result even if global settings change mid-run.
+   */
+  agent?: Agent;
   /** Which turn is in flight: a fresh report ("run") or a follow-up chat ("chat"). */
   mode: "run" | "chat";
   /** True when the hard timeout fired (the child was killed). */
@@ -616,7 +621,7 @@ export class ReviewManager {
     // new report reads as a new assessment, not a continuation of the old one.
     this.resetReviewSession(task.id);
 
-    const run: Run = { cancelled: false, mode: "run" };
+    const run: Run = { cancelled: false, mode: "run", agent };
     this.runs.set(task.id, run);
     this.emit({ type: "review", id: task.id, state: "running", at: now() });
     this.logger.task(task.id, "info", "review started", {
@@ -784,8 +789,11 @@ export class ReviewManager {
       return;
     }
 
-    const agent = resolveReviewer(this.config);
     const task = this.index?.getTask(taskId) ?? null;
+    // New runs retain an exact agent snapshot. On a post-reload completion,
+    // the task file retains the per-task override, so never fall back to the
+    // unrelated global reviewer.
+    const agent = run?.agent ?? (task ? resolveReviewerForTask(this.config, task) : null);
     if (!task || !agent) {
       // Cannot finalize — no task/agent to build the report from (e.g. the task
       // was deleted). Surface it and leave the durable session intact.
@@ -1032,7 +1040,7 @@ export class ReviewManager {
     // conversation under `review:<taskId>`.
     this.emitHumanEntry(task.id, { type: "human", text });
 
-    const run: Run = { cancelled: false, mode: "chat" };
+    const run: Run = { cancelled: false, mode: "chat", agent };
     this.runs.set(task.id, run);
     this.emit({ type: "review", id: task.id, state: "running", at: now() });
 
