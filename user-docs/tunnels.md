@@ -47,7 +47,9 @@ normal create flow unless you explicitly pass `--no-access`.
 `create` records the app in two places: your repo's `repoos.toml` (the
 git-tracked record of what *this* repo publishes) and the machine registry.
 App names are shared machine-wide, so `create` fails if another repo already
-owns that name.
+owns that name. The `[tunnel]` block is managed by the CLI rather than
+hand-edited — its fields are documented in the
+[repoos.toml reference](/configuration#tunnels).
 
 ## Managing apps
 

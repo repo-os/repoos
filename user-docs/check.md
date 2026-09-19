@@ -48,6 +48,9 @@ The config value wins if both are set. With neither, the step skips with a clear
 message rather than pretending your UI was tested. RepoOS's own repo dogfoods
 this same mechanism — it declares a `smoke` script instead of being special-cased.
 
+The full `[check]` field list, types, and defaults are in the
+[repoos.toml reference](/configuration#previews-and-checks).
+
 **The CSS-layering and theme-contrast guards are opt-in too, and carry no
 RepoOS-shaped default.** Point them at your own stylesheet with `[check]
 uiStylesheet` in `repoos.toml`. CSS layering then runs automatically whenever
