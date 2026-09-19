@@ -83,6 +83,46 @@ describe("feature releases", () => {
     }
   });
 
+  it("Not now dismisses the banner", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          currentVersion: "0.5.46",
+          latestVersion: "0.6.0",
+          available: true,
+          releaseNotes: null,
+          releaseUrl: "https://github.com/repo-os/repoos/releases/tag/v0.6.0",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const wrapper = mount(ReleaseUpdateNotification, { attachTo: document.body });
+    try {
+      await flushPromises();
+      expect(document.body.querySelector(".release-update-banner")).not.toBeNull();
+
+      // Open modal
+      await document.body
+        .querySelector(".release-update-banner")!
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await flushPromises();
+
+      // Click "Not now" — banner must disappear
+      const notNow = Array.from(document.body.querySelectorAll("button")).find(
+        (b) => b.textContent?.trim() === "Not now",
+      );
+      expect(notNow).not.toBeUndefined();
+      await notNow!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await flushPromises();
+      expect(document.body.querySelector(".release-update-banner")).toBeNull();
+    } finally {
+      wrapper.unmount();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("suggests the next patch version (or stabilizes a prerelease)", () => {
     expect(nextReleaseVersion("0.5.30")).toBe("0.5.31");
     expect(nextReleaseVersion("1.2.3-rc.1")).toBe("1.2.3");

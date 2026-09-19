@@ -21,7 +21,9 @@ import { compareSemver } from "../../core/agent-updates.js";
 
 const STABLE_VERSION = /^v?(\d+)\.(\d+)\.(\d+)$/;
 const RELEASE_CACHE_MS = 10 * 60 * 1000;
+const RELEASE_FAILURE_CACHE_MS = 60 * 1000;
 let releaseCache: { value: AvailableRelease; expiresAt: number } | null = null;
+let releaseFailureUntil = 0;
 let releaseRequest: Promise<AvailableRelease | null> | null = null;
 
 export interface AvailableRelease {
@@ -96,10 +98,6 @@ async function fetchAvailableRelease(): Promise<AvailableRelease | null> {
 export const getAvailableRelease: RouteHandler = async (_ctx, _req, res) => {
   const now = Date.now();
   if (releaseCache && releaseCache.expiresAt > now) return json(res, 200, releaseCache.value);
-  releaseRequest ??= fetchAvailableRelease().finally(() => {
-    releaseRequest = null;
-  });
-  const value = await releaseRequest;
   const fallback: AvailableRelease = {
     currentVersion: readBuildMeta().version,
     latestVersion: null,
@@ -107,10 +105,16 @@ export const getAvailableRelease: RouteHandler = async (_ctx, _req, res) => {
     releaseNotes: null,
     releaseUrl: "https://github.com/repo-os/repoos/releases",
   };
+  if (releaseFailureUntil > now) return json(res, 200, fallback);
+  releaseRequest ??= fetchAvailableRelease().finally(() => {
+    releaseRequest = null;
+  });
+  const value = await releaseRequest;
   if (value) {
     releaseCache = { value, expiresAt: Date.now() + RELEASE_CACHE_MS };
     return json(res, 200, value);
   }
+  releaseFailureUntil = Date.now() + RELEASE_FAILURE_CACHE_MS;
   return json(res, 200, fallback);
 };
 

@@ -103,7 +103,7 @@ function showDetails(): void {
         <p v-else class="release-update-muted">Release notes are not available for this release.</p>
         <div class="release-update-actions">
           <DialogClose as-child>
-            <Button variant="ghost" size="sm">Not now</Button>
+            <Button variant="ghost" size="sm" @click="dismiss">Not now</Button>
           </DialogClose>
           <Button
             as="a"
@@ -125,7 +125,7 @@ function showDetails(): void {
 .release-update-banner {
   position: fixed;
   z-index: 80;
-  top: calc(14px + var(--safe-top));
+  top: calc(54px + 10px + var(--safe-top));
   left: 50%;
   display: flex;
   align-items: center;
