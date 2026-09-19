@@ -2,14 +2,14 @@
 id: "0453"
 title: Add a redacted support bundle for failed setups
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-19T16:43:47Z"
-updated_at: "2026-09-19T16:43:47Z"
+updated_at: "2026-09-19T22:15:06Z"
 ---
 ## Outcome
 
@@ -64,3 +64,4 @@ P2 — Add a redacted support bundle for failed real-world setups.
 ## Activity
 
 - 2026-09-19T16:43:47Z · created · unknown
+- 2026-09-19T22:15:06Z · status inbox→ready
