@@ -2,7 +2,7 @@
 id: "0432"
 title: Fix colors in authentication & users settings section
 type: bug
-status: active
+status: review
 priority: p1
 area: web
 assigned_to: ai
@@ -12,7 +12,7 @@ cli_override: opencode
 model_override: opencode-go/hy3
 review_model_override: opencode-go/mimo-v2.5
 created_at: "2026-09-19T00:54:12Z"
-updated_at: "2026-09-19T00:57:08Z"
+updated_at: "2026-09-19T01:03:14Z"
 ---
 ## Problem
 
@@ -71,3 +71,4 @@ Fix the colors on the authentication & users section of settings. It doesn't loo
 - 2026-09-19T00:57:02Z · review_model_override
 - 2026-09-19T00:57:05Z · status inbox→ready
 - 2026-09-19T00:57:08Z · status ready→active, branch
+- 2026-09-19T01:03:14Z · status active→review
