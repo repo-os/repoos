@@ -8,8 +8,10 @@ area: core
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
+model_override: default
 created_at: "2026-09-19T16:42:56Z"
-updated_at: "2026-09-19T17:16:25Z"
+updated_at: "2026-09-19T17:16:35Z"
 ---
 ## Outcome
 
@@ -58,3 +60,4 @@ P1 — Add `repoos doctor`: a real-project readiness preflight.
 
 - 2026-09-19T16:42:56Z · created · unknown
 - 2026-09-19T17:16:25Z · status inbox→ready
+- 2026-09-19T17:16:35Z · cli_override, model_override
