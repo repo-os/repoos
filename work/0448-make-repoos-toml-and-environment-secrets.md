@@ -3,6 +3,9 @@ id: "0448"
 title: Make repoos.toml and environment secrets documentation complete
 type: docs
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "permission problem, not a code failure: GitHub Copilot denied a shell command that isn't on RepoOS's --allow-tool list"
 priority: p1
 area: docs
 assigned_to: ai
@@ -10,7 +13,8 @@ created_by: ""
 branch: feat/make-repoos-toml-and-environment-secrets
 review_model_override: default
 created_at: "2026-09-19T15:10:29Z"
-updated_at: "2026-09-19T15:27:48Z"
+updated_at: "2026-09-19T15:58:40Z"
+dev_error_count: 1
 ---
 ## Outcome
 
@@ -41,3 +45,5 @@ Give users one trustworthy explanation of every supported RepoOS project setting
 - 2026-09-19T15:20:42Z · review_cli_override
 - 2026-09-19T15:27:46Z · status inbox→ready
 - 2026-09-19T15:27:48Z · status ready→active, branch
+- 2026-09-19T15:53:05Z · agent exited with an error (copilot) · permission problem, not a code failure: GitHub Copilot denied a shell command that isn't on RepoOS's --allow-tool list
+- 2026-09-19T15:58:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
