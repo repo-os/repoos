@@ -13,8 +13,9 @@ created_by: ""
 branch: feat/make-repoos-check-stack-neutral-and-decl
 cli_override: opencode
 model_override: openrouter/tencent/hy4-preview
+review_model_override: openrouter/xiaomi/mimo-v2.5
 created_at: "2026-09-19T15:09:57Z"
-updated_at: "2026-09-19T19:36:59Z"
+updated_at: "2026-09-19T22:18:53Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 1
@@ -52,3 +53,4 @@ Make repoos check a project-defined gate that works for JavaScript, Android/Grad
 - 2026-09-19T17:26:37Z · status review→active
 - 2026-09-19T19:36:14Z · status active→review
 - 2026-09-19T19:36:59Z · needs_input
+- 2026-09-19T22:18:53Z · review_model_override
