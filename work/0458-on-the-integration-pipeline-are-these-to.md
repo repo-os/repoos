@@ -8,8 +8,9 @@ area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+review_model_override: opencode-go/mimo-v2.5
 created_at: "2026-09-19T23:52:52Z"
-updated_at: "2026-09-19T23:53:14Z"
+updated_at: "2026-09-19T23:53:49Z"
 ---
 ## Problem
 
@@ -56,3 +57,4 @@ On the integration pipeline are these tooltips still accurate (reflecting the ac
 - 2026-09-19T23:52:52Z · created · hello@repoos.org
 - 2026-09-19T23:52:55Z · screenshots
 - 2026-09-19T23:53:14Z · status draft→inbox, title, area, type, body
+- 2026-09-19T23:53:49Z · review_model_override
