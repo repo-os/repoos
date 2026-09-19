@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-19T23:12:11Z"
+review_passes: 1
 id: "0451"
 title: Add repoos doctor real-project readiness preflight
 type: feature
@@ -12,7 +14,6 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 review_model_override: openrouter/xiaomi/mimo-v2.5
 created_at: "2026-09-19T16:42:56Z"
-updated_at: "2026-09-19T23:08:56Z"
 ---
 ## Outcome
 
@@ -68,3 +69,4 @@ P1 — Add `repoos doctor`: a real-project readiness preflight.
 - 2026-09-19T22:35:34Z · review_model_override
 - 2026-09-19T22:47:26Z · status ready→active, branch
 - 2026-09-19T23:08:56Z · status active→review
+
