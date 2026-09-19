@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-19T06:31:50Z"
-updated_at: "2026-09-19T10:46:28Z"
+updated_at: "2026-09-19T11:05:06Z"
 ---
 ## Problem
 
@@ -21,7 +21,7 @@ Every built-in agent run must produce exactly two things:
 
 ### 1. A timestamped run doc
 
-Saved to \`docs/agent-runs/<agent-name>/<ISO-timestamp>.md\`. Contains:
+Saved to `docs/agent-runs/<agent-name>/<ISO-timestamp>.md`. Contains:
 - Agent name, run timestamp, duration, token cost
 - All findings with evidence (even if no tasks were created)
 - A summary line: "N findings — 1 task created" or "ran clean"
@@ -35,14 +35,28 @@ Run docs accumulate; keep the last 10 per agent and delete older ones automatica
 
 This prevents run-spam on the board.
 
+### Using `needs_input` for human clarification
+
+When a task requires human input or decision before it can be implemented, the agent should set `needs_input: true` and include a `questions` array in the task frontmatter. For example:
+
+```yaml
+needs_input: true
+questions:
+  - "Should we fix the code issue or update the documentation?"
+  - "What's the acceptable performance threshold?"
+```
+
+This signals to the human that the task is blocked on their answers, and provides a clear next action via the PM chat. The human can then discuss and update the task body with their decisions, removing `needs_input` and `questions` before setting status to ready for implementation.
+
 ## Notification
 
-Task creation is already a board notification. The run doc appearing in \`docs/agent-runs/\` should also be surfaced somewhere — at minimum a toast or SSE event the UI can show as "Tech Debt agent finished — 3 findings".
+Task creation is already a board notification. The run doc appearing in `docs/agent-runs/` should also be surfaced somewhere — at minimum a toast or SSE event the UI can show as "Tech Debt agent finished — 3 findings".
 
 ## Acceptance criteria
 
-- [ ] All five built-in agents (tech-debt, performance, docs-debt, architect, design) write a run doc to \`docs/agent-runs/<agent>/<timestamp>.md\`
+- [ ] All five built-in agents (tech-debt, performance, docs-debt, architect, design) write a run doc to `docs/agent-runs/<agent>/<timestamp>.md`
 - [ ] Each agent creates at most one inbox task per run, with all findings aggregated into the body
+- [ ] Agents use `needs_input: true` with a `questions` array when the task requires human decision before implementation
 - [ ] Run docs older than the last 10 per agent are pruned on each new run
 - [ ] A zero-finding run still writes a run doc ("ran clean") and creates no task
 - [ ] The UI surfaces a notification when a run completes (toast or similar)
@@ -51,3 +65,4 @@ Task creation is already a board notification. The run doc appearing in \`docs/a
 
 - 2026-09-19T06:31:50Z · created · unknown
 - 2026-09-19T10:46:28Z · status inbox→ready
+- 2026-09-19T11:05:06Z · body
