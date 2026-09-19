@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-19T22:13:50Z"
-review_passes: 4
 id: "0448"
 title: Make repoos.toml and environment secrets documentation complete
 type: docs
@@ -12,9 +10,10 @@ created_by: ""
 branch: feat/make-repoos-toml-and-environment-secrets
 cli_override: opencode
 model_override: openrouter/deepseek/deepseek-v4.1-flash
-review_cli_override: cursor
-review_model_override: auto
+review_model_override: default
 created_at: "2026-09-19T15:10:29Z"
+updated_at: "2026-09-19T22:17:03Z"
+review_passes: 4
 review_rounds: 2
 handoff_signal_retry_count: 1
 dev_error_count: 1
@@ -66,5 +65,4 @@ Give users one trustworthy explanation of every supported RepoOS project setting
 - 2026-09-19T17:13:34Z · needs_input
 - 2026-09-19T17:13:34Z · status review→active
 - 2026-09-19T17:31:06Z · status active→review
-
-
+- 2026-09-19T22:17:03Z · review_cli_override, review_model_override
