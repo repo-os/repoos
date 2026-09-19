@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { getConfigSchema, loadConfig } from "../../core/config.js";
+import { getConfigSchema, loadConfig, SUPPORTED_TOML_KEYS } from "../../core/config.js";
 import { parseTunnelSection } from "../../core/tunnel.js";
 
 const repoRoot = resolve(__dirname, "../../..");
@@ -24,6 +24,14 @@ describe("repoos.toml and environment docs", () => {
     const missing = getConfigSchema()
       .map((field) => field.key)
       .filter((key) => !configurationDoc.includes(key));
+    expect(missing).toEqual([]);
+  });
+
+  it("documents every key the parser supports, including parser-only sections", () => {
+    // Normalize the doc's `preview.targets[]` array notation so it matches the
+    // dotted parser keys.
+    const normalized = configurationDoc.replace(/\[\]/g, "");
+    const missing = SUPPORTED_TOML_KEYS.filter((key) => !normalized.includes(key));
     expect(missing).toEqual([]);
   });
 
@@ -57,20 +65,22 @@ describe("repoos.toml and environment docs", () => {
   });
 
   it("keeps .env.example to placeholders, never live-looking values", () => {
-    const valueFor = (line: string) => line.slice(line.indexOf("=") + 1).trim();
-    const safeValues = new Set([
-      "re_...",
-      "...",
-      "your-local-code",
-      "/absolute/path/to/private_key",
-      "auto",
-      "/path/to/bun",
-    ]);
+    // Real credentials are long opaque tokens. Check every line — commented
+    // examples included — while allowing placeholders (`...`, `<...>`), paths,
+    // and URLs.
+    const liveLooking = /[A-Za-z0-9_-]{24,}/;
     for (const raw of envExample.split("\n")) {
-      const line = raw.trim();
-      if (!line || line.startsWith("#") || !line.includes("=")) continue;
-      expect(safeValues.has(valueFor(line)), `unexpected value in .env.example: ${line}`).toBe(
-        true,
+      const line = raw.trim().replace(/^#\s*/, "");
+      if (!/^[A-Z][A-Z0-9_]*=/.test(line)) continue;
+      const value = line
+        .slice(line.indexOf("=") + 1)
+        .split(/\s+#/)[0]
+        .trim()
+        .replace(/^['"]|['"]$/g, "");
+      if (!value || value.includes("...") || value.includes("<")) continue;
+      if (value.startsWith("/") || /^https?:\/\//.test(value)) continue;
+      expect(liveLooking.test(value), `live-looking value in .env.example: ${raw.trim()}`).toBe(
+        false,
       );
     }
   });
@@ -101,7 +111,8 @@ describe("repoos.toml and environment docs", () => {
       expect(cfg.check?.themeScopes?.[0]?.selector).toBe(":root");
       expect(cfg.check?.contrastPairs?.[0]?.fg).toBe("--txt");
       expect(cfg.auth?.enabled).toBe(false);
-      expect(cfg.release?.enabled).toBe(true);
+      expect(cfg.release?.enabled).toBe(false);
+      expect(cfg.release?.provider).toBe("git-tag");
       expect(cfg.deployments?.[0]?.dashboardUrl).toBe("https://dash.cloudflare.com/…");
       expect(cfg.distribution?.[0]?.kind).toBe("npm");
       expect(cfg.tunnelEnabled).toBe(false);

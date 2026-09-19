@@ -42,7 +42,14 @@ and anything the tabs don't surface.
 ## Annotated starter `repoos.toml`
 
 Copy this and delete anything you don't need. It shows the documented defaults
-plus a realistic value for each optional section.
+plus a realistic value for each optional section. **The example is
+illustrative, not a recommended starting point:** it renames board columns and
+includes sections most repos never use, so delete what doesn't apply to you
+before committing.
+
+The example keeps optional features off by default (`release.enabled = false`,
+`autoEngineeringMode = false`, `worktrees.inheritEnv = false`, and so on) so
+copying it wholesale is safe.
 
 ```toml
 # repoos.toml — all fields optional; delete a line to take its default.
@@ -147,7 +154,7 @@ clientId = "your-client-id.apps.googleusercontent.com"
 
 # ── Releases, deployments, distribution ──────────────────────────────────
 [release]
-enabled = true
+enabled = false           # true shows the Releases UI and API
 provider = "git-tag"
 branch = "main"
 versionFile = "package.json"
@@ -399,8 +406,13 @@ the corresponding step skips cleanly. (`[checks]` is accepted as an alias for
 | --- | --- | --- | --- | --- |
 | `check.uiSmoke` | string | unset | yes | Command for the UI smoke step. Overrides a `smoke` script in `package.json`; with neither, the step skips. |
 | `check.uiStylesheet` | string | unset | yes | Repo-relative stylesheet the CSS-layering and theme-contrast guards read. With it absent, both skip. |
-| `check.themeScopes` | array of tables | unset | yes | Theme blocks for the contrast guard. Each row needs `selector` and `name`; optional `inherits` lists earlier scopes whose declarations it inherits (later wins). |
-| `check.contrastPairs` | array of tables | unset | yes | `fg`/`bg` token pairs checked for at least 3:1 contrast. |
+| `check.themeScopes` | array of tables | unset | yes | Theme blocks for the contrast guard. Each row is documented just below. |
+| `check.themeScopes.selector` | string | required | yes | CSS selector that opens the block, e.g. `:root[data-ui-theme="clear"]`. |
+| `check.themeScopes.name` | string | required | yes | Variant name used in failure messages, e.g. `clear-dark`. |
+| `check.themeScopes.inherits` | array of strings | `[name]` | yes | Names of earlier scopes whose declarations this scope inherits, in order (later wins). |
+| `check.contrastPairs` | array of tables | unset | yes | Foreground/background token pairs checked for contrast. |
+| `check.contrastPairs.fg` | string | required | yes | Foreground token, e.g. `--txt`. |
+| `check.contrastPairs.bg` | string | required | yes | Background token, e.g. `--bg`. |
 | `check.gradientTokens` | array of strings | unset | yes | Tokens consumed as `background-image`, which must resolve to a gradient. |
 | `check.backdropToken` | string | unset | yes | Token to composite semi-transparent colors over before measuring luminance. |
 | `check.bareRequireDirs` | array of strings | tsconfig `include` | yes | Source roots the bare-`require()` guard scans. Absent, it uses the repo's tsconfig `include`/`files` minus `exclude`. |
@@ -491,13 +503,13 @@ Deployments nav item and API on. A row missing `name` or `branch` is dropped.
 
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
-| `name` | string | required | yes | Human label, e.g. `Dashboard (prod)`. |
-| `service` | string | `name` | yes | Groups rows of the same service across branches into one row with a column per branch. |
-| `branch` | string | required | yes | Branch whose pushes deploy this target. |
-| `provider` | string | unset | yes | Provider label, e.g. `cloudflare-workers`. Informational only. |
-| `url` | string | unset | yes | The live target, rendered as the row's primary link. |
-| `dashboard_url` | string | unset | yes | Optional provider-dashboard URL. Note the snake_case spelling. |
-| `subdir` | string | unset | yes | Repo subdirectory this service lives in, scoping the freshness lookup so an unrelated push doesn't read as a deploy. |
+| `deployments.name` | string | required | yes | Human label, e.g. `Dashboard (prod)`. |
+| `deployments.service` | string | `name` | yes | Groups rows of the same service across branches into one row with a column per branch. |
+| `deployments.branch` | string | required | yes | Branch whose pushes deploy this target. |
+| `deployments.provider` | string | unset | yes | Provider label, e.g. `cloudflare-workers`. Informational only. |
+| `deployments.url` | string | unset | yes | The live target, rendered as the row's primary link. |
+| `deployments.dashboard_url` | string | unset | yes | Optional provider-dashboard URL. Note the snake_case spelling. |
+| `deployments.subdir` | string | unset | yes | Repo subdirectory this service lives in, scoping the freshness lookup so an unrelated push doesn't read as a deploy. |
 
 ### Distribution destinations
 
@@ -516,14 +528,14 @@ and dropped rather than poisoning the section.
 
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
-| `name` | string | required | yes | Human channel name, e.g. `npm` or `GitHub Releases`. |
-| `kind` | select | unset | yes | Public version lookup: `npm`, `homebrew`, `github-release`, or `custom`. An unrecognized value means no automatic check. |
-| `url` | string | unset | yes | Source link for the channel. Must start with `http(s)://`; may contain `{tag}` or `{version}`. |
-| `package` | string | unset | yes | Package/formula identifier, used as the lookup key for `kind = "npm"`. |
-| `repository` | string | unset | yes | `owner/repo` for `kind = "github-release"`. |
-| `versionUrl` | string | unset | yes | Explicit URL to fetch the published version from. Required for `homebrew` and `custom`. |
-| `versionRegex` | string | unset | yes | Regex with one capture group used to read the version. Must compile; invalid patterns are dropped. |
-| `install` | array of strings | unset | yes | Install commands, each independently copyable. |
+| `distribution.name` | string | required | yes | Human channel name, e.g. `npm` or `GitHub Releases`. |
+| `distribution.kind` | select | unset | yes | Public version lookup: `npm`, `homebrew`, `github-release`, or `custom`. An unrecognized value means no automatic check. |
+| `distribution.url` | string | unset | yes | Source link for the channel. Must start with `http(s)://`; may contain `{tag}` or `{version}`. |
+| `distribution.package` | string | unset | yes | Package/formula identifier, used as the lookup key for `kind = "npm"`. |
+| `distribution.repository` | string | unset | yes | `owner/repo` for `kind = "github-release"`. |
+| `distribution.versionUrl` | string | unset | yes | Explicit URL to fetch the published version from. Required for `homebrew` and `custom`. |
+| `distribution.versionRegex` | string | unset | yes | Regex with one capture group used to read the version. Must compile; invalid patterns are dropped. |
+| `distribution.install` | array of strings | unset | yes | Install commands, each independently copyable. |
 
 See [Deployments and releases](/deployments-and-releases) for how these render.
 
