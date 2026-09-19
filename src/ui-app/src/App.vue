@@ -74,9 +74,9 @@ onUnmounted(() => {
 
 <template>
   <div id="app">
+    <UiRecoveryBanner />
     <RouterView v-if="isPublicRoute" />
     <template v-else>
-      <UiRecoveryBanner />
       <TopBar />
 
       <div class="body">

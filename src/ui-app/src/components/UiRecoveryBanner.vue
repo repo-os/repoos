@@ -16,7 +16,11 @@ const title = computed(() =>
     <div class="ui-recovery-copy">
       <strong>{{ title }}</strong>
       <span>{{ recovery.message }}</span>
-      <small v-if="recovery.newBuild">Build {{ recovery.newBuild.slice(0, 12) }} is ready.</small>
+      <small v-if="recovery.newBuild"
+        >Build {{ recovery.newBuild.slice(0, 12) }} is ready<template v-if="recovery.newBuildAt">
+          ({{ new Date(recovery.newBuildAt).toLocaleTimeString() }})</template
+        >.</small
+      >
     </div>
     <button type="button" class="ui-recovery-action" @click="reloadNow">
       {{ recovery.kind === "stale" ? "Reload now" : "Retry / reload" }}

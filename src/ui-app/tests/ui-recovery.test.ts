@@ -103,4 +103,25 @@ describe("stale UI recovery", () => {
     expect(clearNewVersion).toHaveBeenCalledOnce();
     expect(uiRecoveryState().kind).toBe("offline");
   });
+
+  it("blocks auto-reload when unsentTaskChatDraft is set", () => {
+    vi.useFakeTimers();
+    let chatDraft = true;
+    configureUiRecovery({ isDirty: () => chatDraft, isBusy: () => false });
+    showStaleUi("/work");
+    vi.runAllTimers();
+    // auto-reload must NOT fire while dirty — window.location.reload/assign stay uncalled
+    expect((window.location.reload as ReturnType<typeof vi.fn>).mock.calls.length).toBe(0);
+    expect((window.location.assign as ReturnType<typeof vi.fn>).mock.calls.length).toBe(0);
+  });
+
+  it("blocks auto-reload when taskEditorDraft is set", () => {
+    vi.useFakeTimers();
+    let editorDraft = true;
+    configureUiRecovery({ isDirty: () => editorDraft, isBusy: () => false });
+    showStaleUi("/work");
+    vi.runAllTimers();
+    expect((window.location.reload as ReturnType<typeof vi.fn>).mock.calls.length).toBe(0);
+    expect((window.location.assign as ReturnType<typeof vi.fn>).mock.calls.length).toBe(0);
+  });
 });
