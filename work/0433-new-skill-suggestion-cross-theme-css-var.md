@@ -9,8 +9,9 @@ assigned_to: human
 created_by: ""
 branch: ""
 cli_override: claude code
+model_override: haiku
 created_at: "2026-09-19T01:04:15Z"
-updated_at: "2026-09-19T01:29:16Z"
+updated_at: "2026-09-19T01:29:18Z"
 ---
 ## Problem
 
@@ -65,3 +66,4 @@ Use this when a UI component has color, contrast, or visibility issues across **
 
 - 2026-09-19T01:04:15Z · created · unknown
 - 2026-09-19T01:29:16Z · cli_override
+- 2026-09-19T01:29:18Z · model_override
