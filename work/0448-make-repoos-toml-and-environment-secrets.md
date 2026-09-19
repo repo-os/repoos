@@ -3,9 +3,6 @@ id: "0448"
 title: Make repoos.toml and environment secrets documentation complete
 type: docs
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "permission problem, not a code failure: GitHub Copilot denied a shell command that isn't on RepoOS's --allow-tool list"
 priority: p1
 area: docs
 assigned_to: ai
@@ -15,7 +12,7 @@ cli_override: opencode
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_model_override: default
 created_at: "2026-09-19T15:10:29Z"
-updated_at: "2026-09-19T16:02:33Z"
+updated_at: "2026-09-19T16:02:42Z"
 dev_error_count: 1
 ---
 ## Outcome
@@ -53,3 +50,4 @@ Give users one trustworthy explanation of every supported RepoOS project setting
 - 2026-09-19T16:01:54Z · model_override
 - 2026-09-19T16:02:19Z · cli_override, model_override
 - 2026-09-19T16:02:33Z · model_override
+- 2026-09-19T16:02:42Z · needs_input
