@@ -21,6 +21,7 @@ import {
   ChevronsDownUp,
   Coins,
   Bug,
+  Expand,
 } from "lucide-vue-next";
 import type { ReviewState, Task, AgentOutputEntry, SessionUsage, DetectedAgent } from "../types";
 import {
@@ -2175,6 +2176,13 @@ const diffFiles = computed<DiffFile[]>(() => {
   return files;
 });
 
+function openFullDiff(file: DiffFile): void {
+  if (!ui.active) return;
+  const taskId = ui.active.id;
+  ui.close();
+  router.push({ name: "diff", params: { taskId }, query: { file: file.filename } });
+}
+
 /** File IDs that are currently collapsed (all expanded by default). */
 const collapsedFiles = reactive(new Set<string>());
 
@@ -3866,12 +3874,14 @@ watch(
             </div>
             <template v-else>
               <div v-if="diffFiles.length > 0" class="diff-file-list">
-                <button
+                <div
                   v-for="file in diffFiles"
                   :key="file.filename"
-                  type="button"
                   class="diff-file-item"
+                  role="button"
+                  tabindex="0"
                   @click="scrollToDiffFile(file.filename)"
+                  @keydown.enter="scrollToDiffFile(file.filename)"
                 >
                   <span class="diff-file-badge" :class="`diff-file-badge-${file.type}`">{{
                     file.type === "added" ? "A" : file.type === "deleted" ? "D" : "M"
@@ -3881,7 +3891,16 @@ watch(
                     <span v-if="file.added > 0" class="diff-file-add">+{{ file.added }}</span>
                     <span v-if="file.removed > 0" class="diff-file-rem">−{{ file.removed }}</span>
                   </span>
-                </button>
+                  <button
+                    type="button"
+                    class="diff-file-expand"
+                    :aria-label="`Expand diff for ${file.filename}`"
+                    title="Open full-screen diff"
+                    @click.stop="openFullDiff(file, $event)"
+                  >
+                    <Expand class="size-3.5" />
+                  </button>
+                </div>
                 <button
                   v-if="diffFiles.length > 8"
                   type="button"
@@ -3935,6 +3954,15 @@ watch(
                       <span v-if="file.added > 0" class="diff-file-add">+{{ file.added }}</span>
                       <span v-if="file.removed > 0" class="diff-file-rem">−{{ file.removed }}</span>
                     </span>
+                    <button
+                      type="button"
+                      class="diff-file-expand diff-file-expand-inline"
+                      :aria-label="`Expand diff for ${file.filename}`"
+                      title="Open full-screen diff"
+                      @click.stop="openFullDiff(file, $event)"
+                    >
+                      <Expand class="size-3.5" />
+                    </button>
                   </div>
                   <pre
                     v-if="!collapsedFiles.has(file.filename)"
@@ -4943,6 +4971,37 @@ watch(
   background: rgba(255, 255, 255, 0.04);
 }
 
+.diff-file-expand {
+  margin-left: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--txt-dim);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.diff-file-expand:hover,
+.diff-file-expand:focus-visible {
+  border-color: var(--border-bright);
+  color: var(--txt);
+  background: rgba(57, 224, 255, 0.08);
+  outline: none;
+}
+
+.diff-file-expand-inline {
+  margin-left: 0;
+}
+
 .diff-file-badge {
   display: inline-flex;
   align-items: center;
@@ -5011,7 +5070,6 @@ watch(
   color: var(--txt);
 }
 
-/* Diff sections */
 .diff-sections {
   display: flex;
   flex-direction: column;
