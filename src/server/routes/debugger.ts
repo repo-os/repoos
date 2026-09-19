@@ -46,9 +46,14 @@ export const sendDebuggerMessage: RouteHandler = async (ctx, req, res) => {
       error: "Debugger is disabled — enable it on the Agents page to chat",
     });
   }
-  const body = (await readBody(req)) as { text?: unknown };
+  const body = (await readBody(req)) as { text?: unknown; optimistic?: unknown };
   const text = typeof body?.text === "string" ? body.text.trim() : "";
   if (!text) return json(res, 400, { error: "message text is required" });
+  // The chat panel draws its own turn the moment the human hits send, so a
+  // broadcast would double-render it. A programmatic forward — "Send to
+  // Debugger" from a failed release, a check report, a repair action — has no
+  // client-side insert, so the server streams the turn itself (#0443).
+  const emitHumanTurn = body.optimistic !== true;
 
   const agent = debuggerAgent(fromPersisted(state));
   const context = repoContextForDebugger(index);
@@ -56,8 +61,9 @@ export const sendDebuggerMessage: RouteHandler = async (ctx, req, res) => {
   const result = existing
     ? runner.send(debuggerSessionId, text, agent, {
         resumePreamble: `Updated repository context:\n${context}`,
+        emitHumanTurn,
       })
-    : (runner as any).startChat(debuggerSessionId, text, agent, context);
+    : runner.startChat(debuggerSessionId, text, agent, context, undefined, { emitHumanTurn });
   if (!result.ok) {
     const reason = result.reason ?? "could not send message";
     // Both a busy turn (`busy`) and the concurrency race where another request
@@ -264,9 +270,12 @@ export const sendTaskDebuggerMessage: RouteHandler = async (ctx, req, res, param
   }
   const task = index.getTask(id);
   if (!task) return json(res, 404, { error: `Task #${id} not found` });
-  const body = (await readBody(req)) as { text?: unknown };
+  const body = (await readBody(req)) as { text?: unknown; optimistic?: unknown };
   const text = typeof body?.text === "string" ? body.text.trim() : "";
   if (!text) return json(res, 400, { error: "message text is required" });
+  // See sendDebuggerMessage: only the chat panel renders its own turn, so a
+  // forward from a failed close-out ("Fix") is streamed by the server (#0443).
+  const emitHumanTurn = body.optimistic !== true;
 
   const agent = debuggerAgent(fromPersisted(state));
   const currentUserEmail = getCurrentUser(req, config)?.email;
@@ -276,8 +285,9 @@ export const sendTaskDebuggerMessage: RouteHandler = async (ctx, req, res, param
   const result = existing
     ? runner.send(sessionId, text, agent, {
         resumePreamble: `Latest task context:\n${context}`,
+        emitHumanTurn,
       })
-    : runner.startChat(sessionId, text, agent, context);
+    : runner.startChat(sessionId, text, agent, context, undefined, { emitHumanTurn });
   if (!result.ok) {
     if ((result as { busy?: boolean }).busy) {
       return json(res, 409, { error: "Debugger is busy — wait for the current turn to finish" });

@@ -4150,7 +4150,7 @@ export class AgentRunner {
     agent: Agent,
     repositoryContext: string,
     promptBuilder: (text: string, context: string, agent: Agent) => string = repoGuidePrompt,
-    opts: { cwd?: string } = {},
+    opts: { cwd?: string; emitHumanTurn?: boolean } = {},
   ): StartResult {
     if (!DRIVABLE_CLIS.has(agent.cli)) {
       return { ok: false, reason: unsupportedCliMessage(agent.cli) };
@@ -4179,12 +4179,36 @@ export class AgentRunner {
       stalledEmitted: false,
     };
     this.sessions.set(sessionId, session);
+    // Persist immediately so the opening turn survives a reload even if the
+    // agent never produces output before the next restart.
+    this.schedulePersist(sessionId);
+    if (opts.emitHumanTurn) this.broadcastHumanTurn(sessionId, human);
     const mission =
       agent.name === DEBUGGER_NAME
         ? debuggerPrompt(text, repositoryContext, agent)
         : promptBuilder(text, repositoryContext, agent);
     const { cmd, args } = cliCommand(agent, mission, cwd);
     return this.spawnOrQueue(sessionId, cmd, args, cwd);
+  }
+
+  /**
+   * Stream a human turn that was appended straight onto a session's lines
+   * instead of flowing through `recordEntry` (which broadcasts as it records).
+   *
+   * Interactive chats (Debugger, RepoOS Guide, task agent, PM) render their own
+   * turn optimistically and would double-render a broadcast, so callers opt in
+   * — a programmatic handoff ("Send to Debugger", a repair action) has no
+   * client-side insert to fall back on, and without this the transcript jumps
+   * straight to the assistant with no visible prompt (#0443).
+   */
+  private broadcastHumanTurn(sessionId: string, entry: AgentOutputEntry): void {
+    this.emit({
+      type: "agent.output",
+      id: sessionId,
+      entry: entry.at ? entry : { ...entry, at: new Date().toISOString() },
+      stream: "out",
+      at: now(),
+    });
   }
 
   /**
@@ -4260,7 +4284,12 @@ export class AgentRunner {
     taskId: string,
     text: string,
     agent: Agent,
-    opts: { resumePreamble?: string; skipBoardDivergence?: boolean; cwd?: string } = {},
+    opts: {
+      resumePreamble?: string;
+      skipBoardDivergence?: boolean;
+      cwd?: string;
+      emitHumanTurn?: boolean;
+    } = {},
   ): StartResult {
     if (!DRIVABLE_CLIS.has(agent.cli)) {
       return { ok: false, reason: unsupportedCliMessage(agent.cli) };
@@ -4296,6 +4325,7 @@ export class AgentRunner {
       session.bytes -= entryBytes(dropped);
     }
     this.schedulePersist(taskId);
+    if (opts.emitHumanTurn) this.broadcastHumanTurn(taskId, entry);
     // On resume turns, resolve the task from the index if not already set in the session.
     // This ensures task/branch are always available for handoff finalization.
     if (!session.task && this.getTask) {
