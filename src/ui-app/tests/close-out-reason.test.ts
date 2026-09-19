@@ -8,7 +8,7 @@
  * failing phase so the UI can tell a check failure from a conflict.
  */
 import { describe, expect, it } from "vitest";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { execSync } from "node:child_process";
@@ -133,6 +133,54 @@ describe("failing phase recording (0215)", () => {
       const job = coordinator.getJob("0001");
       expect(job?.phase).toBe("failed");
       expect(job?.failedPhase).toBe("publishing");
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("records the failing checks, a durable log path, and the redacted log (#0428)", () => {
+    makeRepo();
+    try {
+      const coordinator = createJobCoordinator(repo);
+      coordinator.enqueue({ id: "0001", branch: "feat/x" } as never);
+      coordinator.updateJob("0001", { phase: "validating" });
+      const orch = new CloseOutOrchestrator({ root: repo } as never, coordinator);
+
+      const fmtOutput = [
+        "  ── Results ──",
+        "  ✔ staleness",
+        "  ✗ check-fmt:check  — Formatting check failed — run `bun run fmt` to fix:",
+        "Checking formatting...",
+        "src/ui-app/src/style.css (12ms)",
+        "  ✔ build  — skipped — formatting/lint failed, fix and rerun",
+        "  1 check(s) failed.",
+      ].join("\n");
+
+      const failure = (
+        orch as unknown as {
+          recordCheckFailure: (
+            job: { taskId: string },
+            label: string,
+            res: { status: number; stdout: string; stderr: string },
+          ) => { ok: false; reason: string; failedChecks: string[] };
+        }
+      ).recordCheckFailure({ taskId: "0001" }, "check failed", {
+        status: 1,
+        stdout: fmtOutput,
+        stderr: "token=ghp_AbCdEf123456",
+      });
+
+      expect(failure.failedChecks).toEqual(["check-fmt:check"]);
+      expect(failure.reason).toContain("check-fmt:check");
+      expect(failure.reason).toContain("src/ui-app/src/style.css");
+      expect(failure.reason).not.toContain("ghp_");
+
+      // The complete output lands in a durable, redacted log the job references.
+      const job = coordinator.getJob("0001");
+      expect(job?.logPath).toBe(join(".repoos", "logs", "integration", "0001-1.log"));
+      const content = readFileSync(join(repo, job!.logPath!), "utf8");
+      expect(content).toContain("src/ui-app/src/style.css");
+      expect(content).not.toContain("ghp_");
     } finally {
       cleanup();
     }

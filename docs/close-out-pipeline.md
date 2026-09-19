@@ -208,11 +208,16 @@ the candidate worktree and run it manually, that first-choice CLI selection has
 regressed — check `integration-orchestrator.ts`'s `validateCandidate()` still prefers
 `join(wtPath, "dist", "cli", "index.js")` before any fallback.**
 
-**Diagnosing a `check failed: ...` reason:** the reason string is only the LAST
-non-empty line of combined stdout+stderr (fixed in the same commit — it used to be the
-FIRST line, which for the `bun run` fallback path is a useless shell preamble like
-`$ bun src/cli/index.ts check`). If the reason is still unhelpful, don't guess — go
-reproduce it directly:
+**Diagnosing a `check failed: ...` reason (#0428):** the reason now leads with the
+gate's own `── Results ──` summary — which checks failed (`✗ check-fmt:check`,
+`✗ tests`) with the key detail for each (the files with format issues, the `FAIL`
+test names) — and the checks that were skipped because an earlier one failed
+(`⏭ build — skipped — formatting/lint failed`). The complete, untruncated output
+is written to `.repoos/logs/integration/<id>-<attempt>.log` (the job record's
+`logPath`, also named in the reason). Before that fix the reason was only the
+tail of the combined output, which is how #0423/#0425's real cause (main itself
+failing `oxfmt --check`) was hidden behind test-run stderr. If the named check
+still isn't enough, don't guess — go reproduce it directly:
 ```bash
 cd repoos-worktrees/repoos/integrate/<id>
 bun dist/cli/index.js check

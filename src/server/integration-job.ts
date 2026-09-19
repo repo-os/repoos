@@ -48,6 +48,19 @@ export interface IntegrationJob {
   candidateSha: string | null;
   /** Failure reason or recovery action (when phase is "failed") */
   reason?: string;
+  /**
+   * Repo-relative path to the durable log of the last failed gate check's full
+   * output (`.repoos/logs/integration/<id>-<attempt>.log`, #0428). Set when a
+   * `validating` check fails; the reason names the failing checks, this points
+   * at the untruncated transcript. Absent for non-check failures.
+   */
+  logPath?: string;
+  /**
+   * How many gate-check runs this job has performed (#0428). Used to give each
+   * attempt's durable log a distinct filename; carried across an explicit
+   * retry so a later run does not overwrite the failed run's log.
+   */
+  checkAttempt?: number;
   /** Queue position (0-indexed; set by coordinator) */
   queuePosition?: number;
   /**
@@ -137,6 +150,8 @@ function readJob(root: string, taskId: string): IntegrationJob | null {
       branchSha: stored.branchSha,
       candidateSha: stored.candidateSha,
       reason: stored.reason,
+      logPath: stored.logPath,
+      checkAttempt: stored.checkAttempt,
       publishDriftCount: stored.publishDriftCount,
       validateDriftCount: stored.validateDriftCount,
     };
@@ -186,6 +201,10 @@ export function createJobCoordinator(root: string): JobCoordinator {
         baseMainSha: null,
         branchSha: null,
         candidateSha: null,
+        // Continue the attempt counter across an explicit retry so each
+        // attempt's durable gate log keeps a distinct filename (#0428) instead
+        // of the new run clobbering the failed one's `<id>-1.log`.
+        checkAttempt: existing?.checkAttempt,
       };
       writeJob(root, job);
       return job;

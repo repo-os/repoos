@@ -8,7 +8,14 @@
  * Phases track recovery: if interrupted mid-flight, retry resumes from the current phase.
  */
 
-import { readFileSync, existsSync, symlinkSync, readdirSync } from "node:fs";
+import {
+  readFileSync,
+  existsSync,
+  symlinkSync,
+  readdirSync,
+  mkdirSync,
+  writeFileSync,
+} from "node:fs";
 import { join, relative } from "node:path";
 import { spawn } from "node:child_process";
 import type { RepoOSConfig, Task } from "../core/types.js";
@@ -42,6 +49,7 @@ import { markTaskReleased } from "./write.js";
 import { saveDiffSnapshot } from "./diff-snapshot.js";
 import { parseTask } from "../core/task.js";
 import { summarizeCheckFailure } from "../core/check-failure-summary.js";
+import { checkFailureSignature, summarizeCheckOutput } from "../core/check-results.js";
 import type { TaskCheckManager, TaskCheckListener } from "./task-check.js";
 
 // Candidate branch prefix. Must be a valid git refname: a leading dot is
@@ -676,6 +684,7 @@ export class CloseOutOrchestrator {
         }
         if (!validateRes.ok) {
           const firstReason = validateRes.reason ?? "unknown";
+          const firstChecks = validateRes.failedChecks;
           validateRes = await this.validateCandidate(job);
           if (validateRes.resynced) {
             // Main advanced before the retry could run: identical to the first
@@ -689,8 +698,16 @@ export class CloseOutOrchestrator {
           }
           if (!validateRes.ok) {
             const secondReason = validateRes.reason ?? "unknown";
+            // Compare the FAILED-CHECK LISTS when the gate named them, not the
+            // raw output tails (#0428): the durable log path in each reason
+            // differs per attempt, so a tail comparison would call a
+            // deterministic `check-fmt:check` failure "unrelated" and blame
+            // machine load. Only fall back to the reason when no check list is
+            // available (a non-gate failure).
+            const firstSig = checkFailureSignature(firstChecks, firstReason);
+            const secondSig = checkFailureSignature(validateRes.failedChecks, secondReason);
             const reason =
-              firstReason === secondReason
+              firstSig === secondSig
                 ? `${secondReason} — reproduced identically on retry, so this is a real failure in the branch, not machine load`
                 : `${secondReason} — NOTE: the first attempt failed differently (${firstReason}). Two unrelated failures point at machine load or infrastructure rather than a regression in this branch; check for stray serve processes and retry.`;
             return this.failOrReconcile(job, "validating", reason);
@@ -904,6 +921,43 @@ export class CloseOutOrchestrator {
   }
 
   /**
+   * Persist a failed gate check's complete output to a durable log and build
+   * the `{ reason, failedChecks }` the caller records (#0428).
+   *
+   * The reason leads with the check's own Results summary — which checks
+   * failed, with the offending files / `FAIL` test names — instead of the
+   * output tail that misled #0423/#0425 into "machine load". The full,
+   * untruncated transcript is always written to disk and referenced by both
+   * the reason text and the job's `logPath`.
+   */
+  private recordCheckFailure(
+    job: IntegrationJob,
+    label: string,
+    res: ProcessRunResult,
+  ): { ok: false; reason: string; failedChecks: string[] } {
+    const attempt = (this.coordinator.getJob(job.taskId)?.checkAttempt ?? 0) + 1;
+    const logPath = this.writeCheckLog(job.taskId, attempt, res.stdout, res.stderr);
+    this.coordinator.updateJob(job.taskId, { checkAttempt: attempt, logPath });
+    const summary = summarizeCheckOutput(`${res.stdout}\n${res.stderr}`);
+    const reason = summary
+      ? `${label}: ${summary.summary}\nFull check output: ${logPath}`
+      : `${label}: ${tailLine(res.stdout, res.stderr)}\nFull check output: ${logPath}`;
+    return { ok: false, reason, failedChecks: summary?.failedChecks ?? [] };
+  }
+
+  /** Best-effort durable log of one check run's full output; never throws. */
+  private writeCheckLog(taskId: string, attempt: number, stdout: string, stderr: string): string {
+    const rel = join(".repoos", "logs", "integration", `${taskId}-${attempt}.log`);
+    try {
+      mkdirSync(join(this.config.root, ".repoos", "logs", "integration"), { recursive: true });
+      writeFileSync(join(this.config.root, rel), redactSecrets(stripAnsi(`${stdout}\n${stderr}`)));
+    } catch {
+      /* best effort — the reason still names the failing checks */
+    }
+    return rel;
+  }
+
+  /**
    * Merge the feature branch into the candidate, then run the gate on it.
    *
    * `retryable: false` marks a failure that cannot possibly resolve on a second
@@ -917,6 +971,12 @@ export class CloseOutOrchestrator {
     reason?: string;
     candidateSha?: string;
     retryable?: boolean;
+    /**
+     * Names of the checks that failed, when the failure came from the gate's
+     * Results block (#0428). `processJob` compares these instead of raw reason
+     * tails so a deterministic failure is never classified as machine load.
+     */
+    failedChecks?: string[];
     /**
      * Main advanced between sync and validate, so the candidate was discarded
      * and the job reset to `syncing`. Distinguishes this retry from a genuine
@@ -1287,10 +1347,11 @@ export class CloseOutOrchestrator {
           checkRes = await rawCheck(process.execPath, [localCli, "check"]);
           if (checkRes.status !== 0) {
             checkHandle?.done(checkRes.status);
-            return {
-              ok: false,
-              reason: `check failed after in-place staleness re-check: ${tailLine(checkRes.stdout, checkRes.stderr)}`,
-            };
+            return this.recordCheckFailure(
+              job,
+              "check failed after in-place staleness re-check",
+              checkRes,
+            );
           }
           outcome = "absorbed";
         } else {
@@ -1306,13 +1367,16 @@ export class CloseOutOrchestrator {
       checkHandle?.done(checkRes.status);
 
       if (checkRes.status !== 0) {
-        return {
-          ok: false,
-          reason:
-            outcome === "local-missing"
-              ? `check failed: the candidate's own dist/cli/index.js was not used (CLI-selection regression — the globally linked repoos evaluates a different install's build marker). ${tailLine(checkRes.stdout, checkRes.stderr)}`
-              : `check failed: ${tailLine(checkRes.stdout, checkRes.stderr)}`,
-        };
+        const failure = this.recordCheckFailure(job, "check failed", checkRes);
+        if (outcome === "local-missing") {
+          // Keep the CLI-selection note, but lead with the actual failing
+          // checks rather than the output tail.
+          failure.reason =
+            "check failed: the candidate's own dist/cli/index.js was not used " +
+            "(CLI-selection regression — the globally linked repoos evaluates a different install's " +
+            `build marker). ${failure.reason.replace(/^check failed:\s*/, "")}`;
+        }
+        return failure;
       }
     }
 

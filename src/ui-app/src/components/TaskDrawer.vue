@@ -2958,6 +2958,7 @@ watch(
             :step="repo.doneErrorFor(ui.active.id)!.step"
             :conflicts="repo.doneErrorFor(ui.active.id)!.conflicts"
             :detail="repo.doneErrorFor(ui.active.id)!.detail"
+            :log-path="repo.doneErrorFor(ui.active.id)!.logPath"
             :hint="repo.doneErrorFor(ui.active.id)!.hint"
             :retry-hint="autoRepairRetryHint"
             :task-id="ui.active.id"

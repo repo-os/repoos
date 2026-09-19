@@ -785,6 +785,7 @@ async function openDebuggerFromError(): Promise<void> {
       :step="repo.doneErrorFor(task.id)!.step"
       :conflicts="repo.doneErrorFor(task.id)!.conflicts"
       :detail="repo.doneErrorFor(task.id)!.detail"
+      :log-path="repo.doneErrorFor(task.id)!.logPath"
       :hint="repo.doneErrorFor(task.id)!.hint"
       :retry-hint="doneErrorRetryHint"
       :task-id="task.id"

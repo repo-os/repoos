@@ -423,7 +423,16 @@ export type RepoEvent =
   /** The freeform-create PM flesh-out finished — success or failure (0335).
    *  Emitted on every exit path so the indicator can never get stuck. */
   | { type: "task.pmFinished"; id: string; at: string }
-  | { type: "task.progress"; id: string; step: string; at: string; detail?: string; phase?: string }
+  | {
+      type: "task.progress";
+      id: string;
+      step: string;
+      at: string;
+      detail?: string;
+      phase?: string;
+      /** Repo-relative durable log of the failed check's full output (#0428). */
+      logPath?: string;
+    }
   | { type: "task.corrected"; id: string; path: string; note: string; at: string }
   | { type: "preview"; id: string; preview: PreviewInfo | null; at: string }
   | {

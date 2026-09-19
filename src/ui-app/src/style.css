@@ -3445,6 +3445,17 @@
 .done-error-files {
   margin-bottom: 8px;
 }
+.done-error-log {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+.done-error-log code {
+  font-size: 11px;
+  color: var(--txt-dim);
+  word-break: break-all;
+}
 .done-error-output {
   margin-bottom: 8px;
 }
