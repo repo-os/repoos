@@ -1,7 +1,7 @@
 import { computed, reactive, ref } from "vue";
 import { defineStore } from "pinia";
 import { api, JSON_OPTS } from "../api";
-import { checkUiBuild, showStaleUi, uiRecoveryState } from "../lib/uiRecovery";
+import { checkUiBuild, isstaleDismissed, showStaleUi, uiRecoveryState } from "../lib/uiRecovery";
 import { useUiStore, type PendingScreenshot } from "./ui";
 import { useNotificationsStore, type NotificationType } from "./notifications";
 import { describeCloseOutFailure } from "../lib/closeOutFailure";
@@ -1434,7 +1434,12 @@ export const useRepoStore = defineStore("repo", () => {
         window.__REPOOS_BUILD_HASH__ ??
         document.querySelector('meta[name="repoos-build-hash"]')?.getAttribute("content") ??
         null;
-      if (clientBuild && h.buildHash && clientBuild !== h.buildHash) {
+      if (
+        clientBuild &&
+        h.buildHash &&
+        clientBuild !== h.buildHash &&
+        !isstaleDismissed(h.buildHash)
+      ) {
         clearNewVersion();
         showStaleUi(window.location.pathname + window.location.search, h.buildHash, h.buildAt);
         return;

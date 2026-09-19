@@ -4,6 +4,7 @@ import {
   checkUiBuild,
   consumeRouteIntent,
   isStaleImportError,
+  isstaleDismissed,
   showStaleUi,
   uiRecoveryState,
 } from "./lib/uiRecovery";
@@ -65,6 +66,9 @@ router.beforeEach(async (to) => {
 
 router.onError((error, to) => {
   if (uiRecoveryState().kind === "stale") return;
+  // Don't re-show after dismiss: the user has already acknowledged the stale
+  // state; chunk 404s on navigation are an expected consequence of that choice.
+  if (isstaleDismissed()) return;
   const message = error instanceof Error ? error.message : String(error);
   if (isStaleImportError(message)) {
     showStaleUi(to?.fullPath ?? window.location.pathname + window.location.search);

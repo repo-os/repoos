@@ -23,6 +23,11 @@ const state = reactive<UiRecoveryState>({
   newBuildAt: null,
 });
 
+// Set to the server build hash that was shown when the user dismissed the banner.
+// Suppresses router.onError and health-check triggers for the same build; cleared
+// when a genuinely different server hash is detected (new restart after dismiss).
+let dismissedAtHash: string | null = null;
+
 let isDirty = () => false;
 let isBusy = () => false;
 let clearNewVersion = () => {};
@@ -104,16 +109,6 @@ export function showStaleUi(
   state.attemptedRoute = nextRoute;
   state.newBuild = newBuild;
   state.newBuildAt = buildAt;
-  if (shouldAutoReload(isDirty(), isBusy())) {
-    const schedule = typeof window !== "undefined" ? window.setTimeout : globalThis.setTimeout;
-    schedule(() => {
-      if (state.kind === "stale" && !isDirty() && !isBusy()) reloadNow();
-    }, 250);
-  }
-}
-
-export function shouldAutoReload(dirty: boolean, busy: boolean): boolean {
-  return !dirty && !busy;
 }
 
 export function isStaleImportError(message: string): boolean {
@@ -148,12 +143,27 @@ export function dismissRecovery(): void {
   } catch {
     /* private browsing can disable session storage */
   }
+  // Remember the server hash we were showing so router.onError and health checks
+  // can suppress re-shows for the same build but re-enable for a newer one.
+  if (state.kind === "stale") dismissedAtHash = state.newBuild ?? clientBuild();
   state.kind = null;
   state.message = "";
   state.attemptedRoute = null;
   state.currentBuild = null;
   state.newBuild = null;
   state.newBuildAt = null;
+}
+
+/**
+ * True when the user has dismissed the stale-build banner and the server is
+ * still running the same build that was dismissed. Resets when a new server
+ * hash is detected (different from the one that was dismissed).
+ */
+export function isstaleDismissed(serverHash?: string | null): boolean {
+  if (dismissedAtHash === null) return false;
+  if (serverHash !== undefined && serverHash !== null && serverHash !== dismissedAtHash)
+    return false;
+  return true;
 }
 
 export function reloadNow(): void {
@@ -175,7 +185,12 @@ export async function checkUiBuild(): Promise<void> {
     try {
       const health = await api<Health>("/api/health");
       const local = clientBuild();
-      if (local && health.buildHash && local !== health.buildHash) {
+      if (
+        local &&
+        health.buildHash &&
+        local !== health.buildHash &&
+        !isstaleDismissed(health.buildHash)
+      ) {
         showStaleUi(
           window.location.pathname + window.location.search,
           health.buildHash,

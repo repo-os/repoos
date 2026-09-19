@@ -4,8 +4,8 @@ import {
   configureUiRecovery,
   dismissRecovery,
   isStaleImportError,
+  isstaleDismissed,
   showOffline,
-  shouldAutoReload,
   showStaleUi,
   uiRecoveryState,
 } from "../src/lib/uiRecovery";
@@ -43,12 +43,6 @@ afterEach(() => {
 });
 
 describe("stale UI recovery", () => {
-  it("only permits automatic reload while idle and clean", () => {
-    expect(shouldAutoReload(false, false)).toBe(true);
-    expect(shouldAutoReload(true, false)).toBe(false);
-    expect(shouldAutoReload(false, true)).toBe(false);
-  });
-
   it("persists the attempted route for an explicit reload", () => {
     showStaleUi("/inputs?filter=new");
     expect(sessionStorage.getItem("repoos.route-intent")).toBe("/inputs?filter=new");
@@ -104,24 +98,25 @@ describe("stale UI recovery", () => {
     expect(uiRecoveryState().kind).toBe("offline");
   });
 
-  it("blocks auto-reload when unsentTaskChatDraft is set", () => {
+  it("never auto-reloads — showStaleUi only shows the banner", () => {
     vi.useFakeTimers();
-    let chatDraft = true;
-    configureUiRecovery({ isDirty: () => chatDraft, isBusy: () => false });
+    configureUiRecovery({ isDirty: () => false, isBusy: () => false });
     showStaleUi("/work");
     vi.runAllTimers();
-    // auto-reload must NOT fire while dirty — window.location.reload/assign stay uncalled
     expect((window.location.reload as ReturnType<typeof vi.fn>).mock.calls.length).toBe(0);
     expect((window.location.assign as ReturnType<typeof vi.fn>).mock.calls.length).toBe(0);
   });
 
-  it("blocks auto-reload when taskEditorDraft is set", () => {
-    vi.useFakeTimers();
-    let editorDraft = true;
-    configureUiRecovery({ isDirty: () => editorDraft, isBusy: () => false });
-    showStaleUi("/work");
-    vi.runAllTimers();
-    expect((window.location.reload as ReturnType<typeof vi.fn>).mock.calls.length).toBe(0);
-    expect((window.location.assign as ReturnType<typeof vi.fn>).mock.calls.length).toBe(0);
+  it("dismiss suppresses re-shows for the same build hash but not a new one", () => {
+    showStaleUi("/agents", "hash-a", null);
+    expect(isstaleDismissed("hash-a")).toBe(false);
+    dismissRecovery();
+    expect(isstaleDismissed("hash-a")).toBe(true);
+    // Same hash → still suppressed.
+    expect(isstaleDismissed("hash-a")).toBe(true);
+    // Different hash (new server restart) → no longer suppressed.
+    expect(isstaleDismissed("hash-b")).toBe(false);
+    // No hash provided → still suppressed (router.onError has no hash).
+    expect(isstaleDismissed(undefined)).toBe(true);
   });
 });
