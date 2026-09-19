@@ -9,6 +9,9 @@ import { useRepoStore } from "../stores/repo";
 import type { Agent, AgentOutputEntry, AgentSessionStats } from "../types";
 import FloatingHeadPanel from "./FloatingHeadPanel.vue";
 import VoiceDictate from "./VoiceDictate.vue";
+import AiChatThinking from "./AiChatThinking.vue";
+import ChatJumpToLatest from "./ChatJumpToLatest.vue";
+import { useChatScroll } from "../composables/useChatScroll";
 import { insertTextAtCursor } from "../utils/text-insertion";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
 
@@ -46,6 +49,14 @@ const busy = computed(() => submitting.value || repo.runningIds.includes(CHAT_ID
 const lines = computed(() => repo.outputs[CHAT_ID] ?? []);
 const hasConversation = computed(() => lines.value.length > 0);
 
+// Chat scroll standard (#0444): open on the newest message, remember where the
+// reader was, and offer a jump back down once they scroll away.
+const { showJumpToLatest, onScroll, scrollToLatest } = useChatScroll(log, {
+  chatId: CHAT_ID,
+  contentSize: () => lines.value.length,
+  active: () => props.open,
+});
+
 function lineKind(entry: AgentOutputEntry): "human" | "assistant" | "status" | "hidden" {
   if ("type" in entry) {
     if (entry.type === "human") return "human";
@@ -67,12 +78,6 @@ function lineText(entry: AgentOutputEntry): string {
     return "";
   }
   return entry.d;
-}
-
-function scrollToLatest(): void {
-  nextTick(() => {
-    if (log.value) log.value.scrollTop = log.value.scrollHeight;
-  });
 }
 
 async function hydrate(): Promise<void> {
@@ -98,7 +103,7 @@ async function send(): Promise<void> {
   const optimisticIndex = lines.value.length;
   repo.outputs[CHAT_ID] = [...lines.value, optimistic];
   draft.value = "";
-  scrollToLatest();
+  scrollToLatest("auto");
   try {
     await api("/api/chat/message", JSON_OPTS("POST", { text }));
   } catch (error) {
@@ -145,12 +150,8 @@ async function interrupt(): Promise<void> {
   }
 }
 
-watch(
-  () => lines.value.length,
-  () => {
-    if (props.open) scrollToLatest();
-  },
-);
+// Following new output is useChatScroll's job — it only follows a reader who is
+// already at the bottom, so reading history is never yanked away (#0444).
 
 onMounted(() => {
   void hydrate();
@@ -196,10 +197,11 @@ watch(
 
     <div
       ref="log"
-      class="guide-log"
+      class="guide-log ai-chat-log"
       role="log"
       aria-live="polite"
       aria-label="Conversation with Ross"
+      @scroll="onScroll"
     >
       <div v-if="!hasConversation" class="guide-welcome">
         <div class="guide-welcome-avatar">
@@ -238,10 +240,10 @@ watch(
           </div>
         </div>
       </template>
-      <div v-if="busy" class="guide-thinking" aria-label="Ross is thinking">
-        <span></span><span></span><span></span>
-      </div>
+      <AiChatThinking class="ai-chat-avatar-offset" :active="busy" label="Ross is thinking" />
     </div>
+
+    <ChatJumpToLatest :visible="showJumpToLatest" :anchor="log" @click="scrollToLatest()" />
 
     <form class="guide-compose" @submit.prevent="send">
       <textarea
@@ -270,6 +272,7 @@ watch(
       <button
         v-else
         type="submit"
+        class="ai-chat-send"
         :disabled="!draft.trim() || busy || !enabled"
         aria-label="Send message"
       >
@@ -284,7 +287,6 @@ watch(
         </svg>
       </button>
     </form>
-    <div class="guide-footnote">Repo-aware assistant</div>
   </FloatingHeadPanel>
 </template>
 
@@ -341,14 +343,11 @@ watch(
   background: var(--txt-faint);
   box-shadow: none;
 }
+/* Vertical rhythm between messages comes from .ai-chat-log (style.css). */
 .guide-log {
   flex: 1;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 11px;
   padding: 16px 14px;
-  overscroll-behavior: contain;
 }
 .guide-welcome {
   margin: auto 0;
@@ -497,34 +496,11 @@ watch(
 .guide-markdown :deep(a) {
   color: var(--cyan);
 }
-.guide-thinking {
-  display: flex;
-  gap: 4px;
-  align-self: flex-start;
-  margin-left: 31px;
-  padding: 9px 12px;
-  border: 1px solid var(--border);
-  border-radius: 13px;
-  background: var(--panel);
-}
-.guide-thinking span {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--txt-faint);
-  animation: guide-bounce 1.2s infinite;
-}
-.guide-thinking span:nth-child(2) {
-  animation-delay: 0.15s;
-}
-.guide-thinking span:nth-child(3) {
-  animation-delay: 0.3s;
-}
 .guide-compose {
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  margin: 0 12px;
+  margin: 0 12px 12px;
   padding: 8px 9px 8px 12px;
   border: 1px solid var(--border);
   border-radius: 13px;
@@ -550,6 +526,10 @@ watch(
   color: var(--txt-faint);
 }
 .guide-compose button {
+  /* Deliberately no `background`/`color`: this scoped rule out-specifies
+     the shared .ai-chat-send, so setting a fill here would silently win
+     and leave the send button looking transparent. The send button takes
+     .ai-chat-send; .guide-stop sets its own. */
   width: 31px;
   height: 31px;
   display: grid;
@@ -557,8 +537,6 @@ watch(
   flex: none;
   border: 0;
   border-radius: 9px;
-  background: var(--btn-primary-bg);
-  color: var(--cyan);
   cursor: pointer;
 }
 .guide-compose button:disabled {
@@ -572,37 +550,5 @@ watch(
 .guide-compose button.guide-stop {
   background: color-mix(in srgb, var(--red, #ef5b5b) 16%, var(--btn-primary-bg));
   color: var(--red, #ef5b5b);
-}
-.guide-footnote {
-  padding: 7px 14px 10px;
-  text-align: center;
-  color: var(--txt-faint);
-  font:
-    500 8.5px "JetBrains Mono",
-    monospace;
-}
-@keyframes guide-bounce {
-  0%,
-  70%,
-  100% {
-    transform: translateY(0);
-    opacity: 0.4;
-  }
-  35% {
-    transform: translateY(-3px);
-    opacity: 1;
-  }
-}
-@keyframes guide-pulse {
-  50% {
-    opacity: 0.35;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .guide-thinking span,
-  .guide-running-dot {
-    animation: none;
-    transition: none;
-  }
 }
 </style>

@@ -771,7 +771,11 @@ describe("agent output transcript", () => {
     ]);
   });
 
-  it("adds a sys marker on agent.exited", async () => {
+  it("leaves the transcript untouched on agent.exited (#0444)", async () => {
+    // The old behaviour appended a "— agent stopped —" sys line. The AI chat
+    // standard says the opposite: pulse while the model works, render nothing
+    // when it stops, and never print a stopped status line. The exit is still
+    // recorded — in the activity feed, not in the conversation.
     const repo = useRepoStore();
     await repo.init();
     const es = FakeEventSource.instances[0];
@@ -782,9 +786,13 @@ describe("agent output transcript", () => {
       entry: { s: "out", d: "done" },
     });
     es.emit("agent.exited", { type: "agent.exited", id: "0001" });
+
+    expect(repo.outputs["0001"]).toHaveLength(1);
     const last = repo.outputs["0001"].at(-1) as { s?: string; d: string };
-    expect(last.s).toBe("sys");
-    expect(last.d).toContain("stopped");
+    expect(last.s).toBe("out");
+    expect(last.d).toBe("done");
+    expect(repo.feed[0].kind).toBe("agent.exited");
+    expect(repo.feed[0].msg).toContain("stopped");
   });
 
   it("caps the transcript at OUTPUT_MAX_LINES", async () => {

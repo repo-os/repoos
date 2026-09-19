@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { api, JSON_OPTS } from "../api";
 import { renderMarkdown } from "../lib/markdown";
 import { fmtContext } from "../lib/format";
@@ -11,6 +11,11 @@ import type {
   PlaygroundProviderGroup,
 } from "../types";
 import Button from "./ui/button.vue";
+import AiChatThinking from "./AiChatThinking.vue";
+import ChatJumpToLatest from "./ChatJumpToLatest.vue";
+import { useChatScroll } from "../composables/useChatScroll";
+
+const props = withDefaults(defineProps<{ active?: boolean }>(), { active: true });
 
 const STARTER_PROMPTS = [
   "What's this repo about?",
@@ -35,6 +40,15 @@ const sending = ref(false);
 const sendError = ref("");
 const log = ref<HTMLElement | null>(null);
 const draftTextarea = ref<HTMLTextAreaElement | null>(null);
+
+// Chat scroll standard (#0444): open on the newest message, remember where the
+// reader was, and offer a jump back down once they scroll away. Keyed per
+// model, because switching model starts a new conversation.
+const { showJumpToLatest, onScroll, scrollToLatest } = useChatScroll(log, {
+  chatId: () => `playground:${selected.value?.runId ?? "none"}`,
+  contentSize: () => messages.value.length,
+  active: () => props.active,
+});
 
 const allModels = computed<CatalogModel[]>(() =>
   providers.value.flatMap((group) =>
@@ -123,12 +137,6 @@ function clearChat(): void {
   draft.value = "";
 }
 
-function scrollToLatest(): void {
-  nextTick(() => {
-    if (log.value) log.value.scrollTop = log.value.scrollHeight;
-  });
-}
-
 async function send(text?: string): Promise<void> {
   const content = (text ?? draft.value).trim();
   if (!content || sending.value || !selected.value) return;
@@ -137,7 +145,7 @@ async function send(text?: string): Promise<void> {
   draft.value = "";
   sendError.value = "";
   sending.value = true;
-  scrollToLatest();
+  scrollToLatest("auto");
   try {
     const res = await api<PlaygroundChatResponse>(
       "/api/playground/chat",
@@ -148,7 +156,7 @@ async function send(text?: string): Promise<void> {
     sendError.value = err instanceof Error ? err.message : "The model did not respond.";
   } finally {
     sending.value = false;
-    scrollToLatest();
+    scrollToLatest("auto");
   }
 }
 
@@ -280,10 +288,11 @@ onMounted(() => {
 
         <div
           ref="log"
-          class="playground-log"
+          class="playground-log ai-chat-log"
           role="log"
           aria-live="polite"
           :aria-label="`Conversation with ${selected.name}`"
+          @scroll="onScroll"
         >
           <div v-if="!messages.length" class="playground-welcome">
             <strong>Try {{ selected.name }}</strong>
@@ -309,11 +318,11 @@ onMounted(() => {
               <span v-else>{{ m.text }}</span>
             </div>
           </div>
-          <div v-if="sending" class="playground-thinking" aria-label="Model is responding">
-            <span></span><span></span><span></span>
-          </div>
+          <AiChatThinking :active="sending" label="Model is responding" />
           <div v-if="sendError" class="playground-send-error">{{ sendError }}</div>
         </div>
+
+        <ChatJumpToLatest :visible="showJumpToLatest" :anchor="log" @click="scrollToLatest()" />
 
         <form class="playground-compose" @submit.prevent="send()">
           <textarea
@@ -325,7 +334,12 @@ onMounted(() => {
             :aria-label="`Message ${selected.name}`"
             @keydown="onKeydown"
           ></textarea>
-          <button type="submit" :disabled="!draft.trim() || sending" aria-label="Send message">
+          <button
+            type="submit"
+            class="ai-chat-send"
+            :disabled="!draft.trim() || sending"
+            aria-label="Send message"
+          >
             Send
           </button>
         </form>
@@ -585,13 +599,11 @@ onMounted(() => {
   opacity: 0.5;
   cursor: default;
 }
+/* Vertical rhythm between messages comes from .ai-chat-log (style.css). */
 .playground-log {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 11px;
   padding: 16px;
 }
 .playground-empty {
@@ -696,28 +708,6 @@ onMounted(() => {
   font-size: 11px;
   color: var(--red);
 }
-.playground-thinking {
-  display: flex;
-  gap: 4px;
-  align-self: flex-start;
-  padding: 9px 12px;
-  border: 1px solid var(--border);
-  border-radius: 13px;
-  background: var(--panel);
-}
-.playground-thinking span {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--txt-faint);
-  animation: playground-bounce 1.2s infinite;
-}
-.playground-thinking span:nth-child(2) {
-  animation-delay: 0.15s;
-}
-.playground-thinking span:nth-child(3) {
-  animation-delay: 0.3s;
-}
 .playground-compose {
   display: flex;
   align-items: flex-end;
@@ -751,30 +741,20 @@ onMounted(() => {
   opacity: 0.6;
 }
 .playground-compose button {
+  /* Deliberately no `background`/`color`: this scoped rule out-specifies
+     the shared .ai-chat-send, so setting a fill here would silently win
+     and leave the send button looking transparent. The send button takes
+     .ai-chat-send — there is no second button in this form. */
   flex: none;
   padding: 7px 14px;
   border: 0;
   border-radius: 9px;
-  background: var(--btn-primary-bg);
-  color: var(--cyan);
   font: 600 11.5px var(--font-sans);
   cursor: pointer;
 }
 .playground-compose button:disabled {
   opacity: 0.4;
   cursor: default;
-}
-@keyframes playground-bounce {
-  0%,
-  70%,
-  100% {
-    transform: translateY(0);
-    opacity: 0.4;
-  }
-  35% {
-    transform: translateY(-3px);
-    opacity: 1;
-  }
 }
 @keyframes playground-shimmer {
   0% {
@@ -799,9 +779,6 @@ onMounted(() => {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .playground-thinking span {
-    animation: none;
-  }
   .playground-skeleton-line {
     animation: none;
   }

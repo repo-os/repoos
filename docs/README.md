@@ -41,6 +41,9 @@ can't assume any.
   decision gets a new ADR, not an edit.
 - `native-auth.md`, `remote-validation.md`, `tunnel-registry.md`, `releases.md` —
   subsystem guides.
+- `ai-chat-standards.md` — the contract every AI chat surface in the web UI
+  obeys (scroll-to-newest, remembered position, jump-to-latest, pulsing working
+  indicator). Read before adding or editing an AI chat.
 - `previews.md` — how per-project preview targets work (`[preview]` config,
   area-based selection, the `repoos serve` fallback).
 - `agent-model-recommendations.md`, `opencode-models.md`, `token-optimization.md`,

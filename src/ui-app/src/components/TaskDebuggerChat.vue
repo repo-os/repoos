@@ -11,8 +11,11 @@ import VoiceDictate from "./VoiceDictate.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
 import SendToEngineerDialog from "./SendToEngineerDialog.vue";
+import AiChatThinking from "./AiChatThinking.vue";
+import ChatJumpToLatest from "./ChatJumpToLatest.vue";
+import { useChatScroll } from "../composables/useChatScroll";
 
-const props = defineProps<{ task: Task }>();
+const props = withDefaults(defineProps<{ task: Task; active?: boolean }>(), { active: true });
 const emit = defineEmits<{ close: [] }>();
 
 const DEBUGGER_AVATAR = "/assets/repoos-orchestrator-square.webp";
@@ -26,13 +29,19 @@ const submitting = ref(false);
 const hydratedEnabled = ref(false);
 const log = ref<HTMLElement | null>(null);
 const draftTextarea = ref<HTMLTextAreaElement | null>(null);
-const showScrollToBottom = ref(false);
-const SCROLL_BOTTOM_THRESHOLD = 80;
 
 const enabled = computed(() => evalBuiltInEnabled() || hydratedEnabled.value);
 const busy = computed(() => submitting.value || repo.runningIds.includes(CHAT_ID.value));
 const lines = computed(() => repo.outputs[CHAT_ID.value] ?? []);
 const hasConversation = computed(() => lines.value.length > 0);
+
+// Chat scroll standard (#0444): open on the newest message, remember the
+// reader's position per task, and offer a jump back down once they scroll away.
+const { showJumpToLatest, onScroll, scrollToLatest } = useChatScroll(log, {
+  chatId: () => CHAT_ID.value,
+  contentSize: () => lines.value.length,
+  active: () => props.active,
+});
 
 const dispatchRole = ref<null | "engineer" | "pm">(null);
 const dispatchBusy = ref(false);
@@ -76,20 +85,6 @@ function lineText(entry: AgentOutputEntry): string {
   return entry.d;
 }
 
-function scrollToLatest(): void {
-  nextTick(() => {
-    if (log.value) log.value.scrollTop = log.value.scrollHeight;
-    showScrollToBottom.value = false;
-  });
-}
-
-function onLogScroll(): void {
-  const el = log.value;
-  if (!el) return;
-  showScrollToBottom.value =
-    el.scrollHeight - el.scrollTop - el.clientHeight > SCROLL_BOTTOM_THRESHOLD;
-}
-
 async function hydrate(): Promise<void> {
   try {
     const response = await api<TaskDebuggerResponse>(`/api/tasks/${props.task.id}/debugger`);
@@ -111,7 +106,7 @@ async function send(): Promise<void> {
   const optimisticIndex = lines.value.length;
   repo.outputs[CHAT_ID.value] = [...lines.value, optimistic];
   draft.value = "";
-  scrollToLatest();
+  scrollToLatest("auto");
   try {
     await api(
       `/api/tasks/${props.task.id}/debugger/message`,
@@ -190,10 +185,7 @@ function adjustDraftHeight(): void {
   autoGrowTextarea(draftTextarea.value);
 }
 
-watch(
-  () => lines.value.length,
-  () => scrollToLatest(),
-);
+// Following new output is useChatScroll's job (#0444).
 
 watch(
   () => props.task.id,
@@ -228,11 +220,11 @@ watch(
     <template v-else>
       <div
         ref="log"
-        class="td-log"
+        class="td-log ai-chat-log"
         role="log"
         aria-live="polite"
         aria-label="Conversation with the Debugger"
-        @scroll="onLogScroll"
+        @scroll="onScroll"
       >
         <div v-if="!hasConversation" class="td-welcome">
           <div class="td-welcome-avatar"><img :src="DEBUGGER_AVATAR" alt="Debugger" /></div>
@@ -275,29 +267,11 @@ watch(
             </div>
           </div>
         </template>
-        <div v-if="busy" class="td-thinking" aria-label="Debugger is working">
-          <span></span><span></span><span></span>
-        </div>
+        <AiChatThinking class="ai-chat-avatar-offset" :active="busy" label="Debugger is working" />
         <div v-if="dispatchErr" class="td-dispatch-err" role="alert">{{ dispatchErr }}</div>
       </div>
-      <button
-        v-if="showScrollToBottom"
-        type="button"
-        class="td-scroll-bottom"
-        aria-label="Scroll to latest messages"
-        @click="scrollToLatest"
-      >
-        <svg viewBox="0 0 20 20" fill="none">
-          <path
-            d="M5 8l5 5 5-5"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-        Scroll to bottom
-      </button>
+
+      <ChatJumpToLatest :visible="showJumpToLatest" :anchor="log" @click="scrollToLatest()" />
 
       <div class="td-dispatch">
         <button type="button" :disabled="busy" @click="openDispatch('engineer')">
@@ -335,6 +309,7 @@ watch(
         <button
           v-else
           type="submit"
+          class="ai-chat-send"
           :disabled="!draft.trim() || busy || !enabled"
           aria-label="Diagnose"
         >
@@ -381,15 +356,12 @@ watch(
 .td-disabled a {
   color: var(--cyan);
 }
+/* Vertical rhythm between messages comes from .ai-chat-log (style.css). */
 .td-log {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 11px;
   padding: 4px 2px;
-  overscroll-behavior: contain;
 }
 .td-welcome {
   margin: auto 0;
@@ -538,29 +510,6 @@ watch(
 .td-markdown :deep(a) {
   color: var(--cyan);
 }
-.td-thinking {
-  display: flex;
-  gap: 4px;
-  align-self: flex-start;
-  margin-left: 31px;
-  padding: 9px 12px;
-  border: 1px solid var(--border);
-  border-radius: 13px;
-  background: var(--panel);
-}
-.td-thinking span {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--txt-faint);
-  animation: td-bounce 1.2s infinite;
-}
-.td-thinking span:nth-child(2) {
-  animation-delay: 0.15s;
-}
-.td-thinking span:nth-child(3) {
-  animation-delay: 0.3s;
-}
 .td-dispatch-err {
   padding: 8px 10px;
   border: 1px solid var(--red, #ef5b5b);
@@ -569,28 +518,6 @@ watch(
   color: var(--txt-dim);
   font-size: 11px;
   line-height: 1.45;
-}
-.td-scroll-bottom {
-  position: absolute;
-  left: 50%;
-  bottom: 96px;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 7px 12px;
-  border: 1px solid var(--border-bright);
-  border-radius: 999px;
-  background: var(--panel-solid);
-  color: var(--txt);
-  font: 600 10.5px var(--font-sans);
-  cursor: pointer;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
-  z-index: 2;
-}
-.td-scroll-bottom svg {
-  width: 13px;
-  height: 13px;
 }
 .td-dispatch {
   display: flex;
@@ -643,14 +570,17 @@ watch(
   color: var(--txt-faint);
 }
 .td-compose button {
+  /* Deliberately no `background`/`color`: this scoped rule out-specifies
+     the shared .ai-chat-send, so setting a fill here would silently win
+     and leave the send button looking transparent. The send button takes
+     .ai-chat-send; .td-stop sets its own. */
+
   width: auto;
   padding: 0 11px;
   height: 31px;
   flex: none;
   border: 0;
   border-radius: 9px;
-  background: var(--btn-primary-bg);
-  color: var(--cyan);
   cursor: pointer;
   font: 500 11px var(--font-sans);
 }
@@ -669,23 +599,5 @@ watch(
 .td-compose button.td-stop svg {
   width: 16px;
   height: 16px;
-}
-@keyframes td-bounce {
-  0%,
-  70%,
-  100% {
-    transform: translateY(0);
-    opacity: 0.4;
-  }
-  35% {
-    transform: translateY(-3px);
-    opacity: 1;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .td-thinking span {
-    animation: none;
-    transition: none;
-  }
 }
 </style>

@@ -1032,13 +1032,11 @@ export const useRepoStore = defineStore("repo", () => {
         if (prev) clearTimeout(prev);
         pendingPauseTimers.value = { ...pendingPauseTimers.value, [e.id]: timer };
       }
+      // #0444: an idle agent gets no status line at all. The running state is
+      // conveyed by the pulsing AiChatThinking indicator, which simply stops
+      // being rendered once the agent exits. The feed entry below is the whole
+      // record; the transcript itself stays clean.
       pushFeed(`<b>agent stopped</b> on #${e.id}`, "#ffb454", "agent.exited");
-      if (outputs.value[e.id]) {
-        outputs.value = {
-          ...outputs.value,
-          [e.id]: [...outputs.value[e.id], { s: "sys", d: "— agent stopped —" }],
-        };
-      }
     } else if (e.type === "task.progress") {
       doneSteps.value = { ...doneSteps.value, [e.id]: e.step };
       // Background close-out failure (0199): the /done POST only enqueues the

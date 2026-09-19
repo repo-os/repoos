@@ -1030,7 +1030,11 @@ onUnmounted(() => {
           </template>
         </div>
 
-        <ModelPlaygroundPanel v-if="playgroundActivated" v-show="activeTab === 'playground'" />
+        <ModelPlaygroundPanel
+          v-if="playgroundActivated"
+          v-show="activeTab === 'playground'"
+          :active="activeTab === 'playground'"
+        />
         <ModelProvidersPanel v-if="providersActivated" v-show="activeTab === 'providers'" />
       </div>
     </template>
