@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watchEffect } from "vue";
+import { computed, nextTick, onMounted, ref, watch, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useRepoStore } from "../stores/repo";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-vue-next";
+import { api } from "../api";
 
 const route = useRoute();
 const router = useRouter();
@@ -75,7 +76,7 @@ interface DiffRow {
   skipped?: number;
 }
 
-function buildRows(file: DiffFile | null): DiffRow[] {
+function buildPatchRows(file: DiffFile | null): DiffRow[] {
   if (!file) return [];
   const hunkRe = /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/;
   const lines = file.lines;
@@ -177,7 +178,171 @@ function buildRows(file: DiffFile | null): DiffRow[] {
   return rows;
 }
 
-const rows = computed(() => buildRows(currentFile.value));
+interface FileContents {
+  before: string;
+  after: string;
+}
+
+const fileContents = ref<FileContents | null>(null);
+const fileContentsLoading = ref(false);
+const fileContentsError = ref<string | null>(null);
+
+function linesOf(content: string): string[] {
+  if (!content) return [];
+  const lines = content.split(/\r?\n/);
+  if (lines.at(-1) === "") lines.pop();
+  return lines;
+}
+
+function addContextRows(
+  rows: DiffRow[],
+  before: string[],
+  after: string[],
+  leftStart: number,
+  rightStart: number,
+  leftCount: number,
+  rightCount: number,
+): void {
+  for (let i = 0; i < Math.max(leftCount, rightCount); i++) {
+    const leftNum = leftStart + i;
+    const rightNum = rightStart + i;
+    const leftText = i < leftCount ? before[leftNum - 1] : undefined;
+    const rightText = i < rightCount ? after[rightNum - 1] : undefined;
+    rows.push({
+      leftNum: leftText !== undefined ? leftNum : null,
+      rightNum: rightText !== undefined ? rightNum : null,
+      leftText: leftText ?? null,
+      rightText: rightText ?? null,
+      leftCls: leftText !== undefined ? "ctx" : "empty",
+      rightCls: rightText !== undefined ? "ctx" : "empty",
+      isSep: false,
+    });
+  }
+}
+
+function buildFullRows(file: DiffFile, contents: FileContents): DiffRow[] {
+  const before = linesOf(contents.before);
+  const after = linesOf(contents.after);
+  const hunkRe = /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/;
+  const rows: DiffRow[] = [];
+  const lines = file.lines;
+  let i = 0;
+  while (i < lines.length && !lines[i]!.startsWith("@@")) i++;
+  let prevLeftEnd = 0;
+  let prevRightEnd = 0;
+
+  while (i < lines.length) {
+    const match = lines[i]!.match(hunkRe);
+    if (!match) {
+      i++;
+      continue;
+    }
+    const leftStart = Number(match[1]);
+    const rightStart = Number(match[2]);
+    const leftGap = Math.max(0, leftStart - prevLeftEnd - 1);
+    const rightGap = Math.max(0, rightStart - prevRightEnd - 1);
+    addContextRows(rows, before, after, prevLeftEnd + 1, prevRightEnd + 1, leftGap, rightGap);
+
+    i++;
+    let leftNum = leftStart;
+    let rightNum = rightStart;
+    const hunk: string[] = [];
+    while (i < lines.length && !lines[i]!.startsWith("@@")) hunk.push(lines[i++]!);
+    let j = 0;
+    while (j < hunk.length) {
+      const line = hunk[j]!;
+      if (line === "\\ No newline at end of file") {
+        j++;
+        continue;
+      }
+      if (line.startsWith("-")) {
+        const removed: string[] = [];
+        const added: string[] = [];
+        while (j < hunk.length && hunk[j]!.startsWith("-")) removed.push(hunk[j++]!.slice(1));
+        while (j < hunk.length && hunk[j]!.startsWith("+")) added.push(hunk[j++]!.slice(1));
+        const count = Math.max(removed.length, added.length);
+        for (let k = 0; k < count; k++) {
+          const leftText = removed[k];
+          const rightText = added[k];
+          rows.push({
+            leftNum: leftText !== undefined ? leftNum++ : null,
+            rightNum: rightText !== undefined ? rightNum++ : null,
+            leftText: leftText ?? null,
+            rightText: rightText ?? null,
+            leftCls: leftText !== undefined ? "rem" : "empty",
+            rightCls: rightText !== undefined ? "add" : "empty",
+            isSep: false,
+          });
+        }
+      } else if (line.startsWith("+")) {
+        rows.push({
+          leftNum: null,
+          rightNum: rightNum++,
+          leftText: null,
+          rightText: line.slice(1),
+          leftCls: "empty",
+          rightCls: "add",
+          isSep: false,
+        });
+        j++;
+      } else {
+        const text = line.startsWith(" ") ? line.slice(1) : line;
+        rows.push({
+          leftNum: leftNum++,
+          rightNum: rightNum++,
+          leftText: before[leftNum - 2] ?? text,
+          rightText: after[rightNum - 2] ?? text,
+          leftCls: "ctx",
+          rightCls: "ctx",
+          isSep: false,
+        });
+        j++;
+      }
+    }
+    prevLeftEnd = leftNum - 1;
+    prevRightEnd = rightNum - 1;
+  }
+
+  addContextRows(
+    rows,
+    before,
+    after,
+    prevLeftEnd + 1,
+    prevRightEnd + 1,
+    before.length - prevLeftEnd,
+    after.length - prevRightEnd,
+  );
+  return rows;
+}
+
+watch(
+  () => [taskId.value, currentFile.value?.filename] as const,
+  async ([id, filename]) => {
+    fileContents.value = null;
+    fileContentsError.value = null;
+    if (!filename) return;
+    fileContentsLoading.value = true;
+    try {
+      const path = encodeURIComponent(filename);
+      const [before, after] = await Promise.all([
+        api<{ content: string }>(`/api/tasks/${id}/file?path=${path}&version=before`),
+        api<{ content: string }>(`/api/tasks/${id}/file?path=${path}&version=after`),
+      ]);
+      fileContents.value = { before: before.content, after: after.content };
+    } catch (err) {
+      fileContentsError.value = err instanceof Error ? err.message : String(err);
+    } finally {
+      fileContentsLoading.value = false;
+    }
+  },
+  { immediate: true },
+);
+
+const rows = computed(() =>
+  currentFile.value && fileContents.value
+    ? buildFullRows(currentFile.value, fileContents.value)
+    : buildPatchRows(currentFile.value),
+);
 
 // Two independent scroll panels, synced vertically via JS.
 const leftEl = ref<HTMLElement | null>(null);
@@ -298,6 +463,10 @@ function nextFile(): void {
         <span v-if="currentFile.added > 0" class="diff-file-add">+{{ currentFile.added }}</span>
         <span v-if="currentFile.removed > 0" class="diff-file-rem">−{{ currentFile.removed }}</span>
       </div>
+      <span v-if="fileContentsLoading" class="diff-file-status">Loading full file…</span>
+      <span v-else-if="fileContentsError" class="diff-file-status diff-file-status-error">{{
+        fileContentsError
+      }}</span>
     </div>
 
     <div v-if="diffFiles.length > 1" class="diff-page-filetabs">
@@ -650,6 +819,18 @@ function nextFile(): void {
   display: flex;
   gap: 6px;
   flex: none;
+}
+.diff-file-status {
+  flex: none;
+  color: var(--txt-faint);
+  font: 11px/1 var(--font-sans);
+}
+.diff-file-status-error {
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #ff8b8b;
 }
 .diff-file-add {
   color: #3fb950;

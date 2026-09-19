@@ -32,14 +32,19 @@ export interface SmokeConsoleMessage {
   type(): string;
   text(): string;
 }
-export interface SmokeRoute {
-  fetch(): Promise<{ json(): Promise<unknown> }>;
-  fulfill(opts: { status: number; contentType: string; body: string }): Promise<void>;
-  continue(): Promise<void>;
-}
 export interface SmokePage {
   on(event: "console", handler: (msg: SmokeConsoleMessage) => void): void;
   on(event: "pageerror", handler: (err: Error) => void): void;
+  route(
+    url: string,
+    handler: (route: {
+      fetch(): Promise<{
+        json(): Promise<unknown>;
+      }>;
+      fulfill(options: { status: number; contentType: string; body: string }): Promise<void>;
+    }) => Promise<void>,
+  ): Promise<void>;
+  close(): Promise<void>;
   goto(url: string, options: { waitUntil: string; timeout: number }): Promise<unknown>;
   title(): Promise<string>;
   evaluate<R>(fn: () => R): Promise<R>;
@@ -47,7 +52,13 @@ export interface SmokePage {
   setViewportSize(viewport: { width: number; height: number }): Promise<void>;
   waitForFunction(fn: () => unknown, options?: { timeout?: number }): Promise<unknown>;
   waitForTimeout(ms: number): Promise<void>;
-  route(url: string, handler: (route: SmokeRoute) => Promise<void>): Promise<void>;
+  route(
+    url: string,
+    handler: (route: {
+      fetch(): Promise<{ json(): Promise<unknown> }>;
+      fulfill(options: { status: number; contentType: string; body: string }): Promise<void>;
+    }) => Promise<void>,
+  ): Promise<void>;
   close(): Promise<void>;
 }
 export interface SmokeBrowser {
