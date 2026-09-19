@@ -680,7 +680,11 @@ const UI_MIME: Record<string, string> = {
 function serveStaticUi(res: ServerResponse, uiDir: string, urlPath: string): boolean {
   const rel = decodeURIComponent(urlPath).replace(/^\/+/, "");
   if (rel.includes("..")) return false;
-  const abs = resolve(uiDir, rel || "index.html");
+  // Never serve index.html through the static path — it contains the
+  // __REPOOS_BUILD_HASH__ placeholder that must be substituted at read time.
+  // The SPA fallback below handles it via readUiIndex().
+  if (!rel || rel === "index.html") return false;
+  const abs = resolve(uiDir, rel);
   if (!abs.startsWith(resolve(uiDir))) return false;
   if (!existsSync(abs) || !statSync(abs).isFile()) return false;
   const ext = extname(abs).toLowerCase();
