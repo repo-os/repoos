@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-09-19T00:23:05Z"
-review_passes: 9
+updated_at: "2026-09-18T19:00:28Z"
+review_passes: 6
 id: "0417"
 title: Add fullscreen diff modal in changes tab
 type: feature
@@ -11,9 +11,6 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-fullscreen-diff-modal-in-changes-tab
 created_at: "2026-09-18T14:45:38Z"
-review_rounds: 2
-skill_suggestion: "0422"
-handoff_signal_retry_count: 1
 ---
 ## Problem
 
@@ -74,11 +71,6 @@ In the changes tab for each file I'd like to have a way to expand to see it full
 - 2026-09-18T15:35:00Z · status inbox→ready
 - 2026-09-18T15:35:12Z · status ready→active, branch
 - 2026-09-18T15:46:03Z · status active→review
-- 2026-09-18T15:46:52Z · status review→active
-- 2026-09-18T15:48:23Z · status active→review
-- 2026-09-18T15:49:09Z · status review→active
-- 2026-09-18T15:50:25Z · status active→review
-
 
 
 
