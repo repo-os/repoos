@@ -8,8 +8,9 @@ area: web
 assigned_to: human
 created_by: ""
 branch: ""
+cli_override: claude code
 created_at: "2026-09-19T01:04:15Z"
-updated_at: "2026-09-19T01:04:15Z"
+updated_at: "2026-09-19T01:29:16Z"
 ---
 ## Problem
 
@@ -63,3 +64,4 @@ Use this when a UI component has color, contrast, or visibility issues across **
 ## Activity
 
 - 2026-09-19T01:04:15Z · created · unknown
+- 2026-09-19T01:29:16Z · cli_override
