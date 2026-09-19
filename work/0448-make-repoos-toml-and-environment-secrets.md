@@ -14,9 +14,9 @@ branch: feat/make-repoos-toml-and-environment-secrets
 cli_override: opencode
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_cli_override: cursor
-review_model_override: default
+review_model_override: auto
 created_at: "2026-09-19T15:10:29Z"
-updated_at: "2026-09-19T17:11:23Z"
+updated_at: "2026-09-19T17:11:27Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 1
@@ -65,3 +65,4 @@ Give users one trustworthy explanation of every supported RepoOS project setting
 - 2026-09-19T17:10:23Z · review_cli_override
 - 2026-09-19T17:10:25Z · review_model_override
 - 2026-09-19T17:11:23Z · review_cli_override, review_model_override
+- 2026-09-19T17:11:27Z · review_model_override
