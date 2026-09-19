@@ -413,6 +413,43 @@ describe("formatPlanToml — the migration aid behind --print-plan", () => {
     expect(reparsed.steps.map((s) => s.name)).toEqual(plan.steps.map((s) => s.name));
   });
 
+  it("carries the legacy [check] keys the built-in kinds read", () => {
+    // Committing a printed plan must not silently drop the stylesheet,
+    // bare-require or smoke guards — those kinds read their vocabulary from
+    // [check], not from the step rows.
+    const check = {
+      uiSmoke: "bun run smoke",
+      uiStylesheet: "src/app.css",
+      backdropToken: "--bg",
+      gradientTokens: ["--btn-primary-bg"],
+      bareRequireDirs: ["src/core"],
+      bareRequireExcludes: ["src/core/generated"],
+      themeScopes: [
+        { selector: ":root", name: "dark", inherits: ["dark"] },
+        { selector: '[data-theme="light"]', name: "light", inherits: ["dark", "light"] },
+      ],
+      contrastPairs: [{ fg: "--txt", bg: "--bg" }],
+      steps: [{ name: "css-layers", kind: "css-layers" }],
+    };
+    const plan = resolveCheckPlan({ check, markers: markers() });
+    const toml = formatPlanToml(plan, check);
+    const root = tmpRepo(toml);
+    const cfg = loadConfig(root);
+
+    expect(cfg.check?.uiStylesheet).toBe("src/app.css");
+    expect(cfg.check?.backdropToken).toBe("--bg");
+    expect(cfg.check?.gradientTokens).toEqual(["--btn-primary-bg"]);
+    expect(cfg.check?.bareRequireDirs).toEqual(["src/core"]);
+    expect(cfg.check?.bareRequireExcludes).toEqual(["src/core/generated"]);
+    expect(cfg.check?.uiSmoke).toBe("bun run smoke");
+    expect(cfg.check?.themeScopes).toEqual(check.themeScopes);
+    expect(cfg.check?.contrastPairs).toEqual(check.contrastPairs);
+    // …and the step survived too, so the committed plan is the same plan.
+    const reparsed = resolveCheckPlan({ check: cfg.check, markers: markers() });
+    expect(reparsed.source).toBe("declared");
+    expect(reparsed.steps.map((s) => s.name)).toEqual(["css-layers"]);
+  });
+
   it("keeps a step's cwd, requirements and dependencies", () => {
     const root = tmpRepo(`[check]
 version = 1

@@ -271,7 +271,12 @@ function resolveStep(row: CheckStepConfig, index: number, warnings: string[]): C
   };
 }
 
-/** Drop duplicate step names (later rows win) — `dependsOn` matches by name. */
+/**
+ * Drop duplicate step names — the FIRST row wins and each later duplicate is
+ * discarded with a warning. `dependsOn` matches by name, so two steps sharing
+ * one would make the dependency ambiguous; keeping the first keeps the plan
+ * deterministic under reordering of the duplicate pair only.
+ */
 function dedupeNames(steps: CheckStep[], warnings: string[]): CheckStep[] {
   const seen = new Set<string>();
   const out: CheckStep[] = [];
@@ -715,16 +720,36 @@ function tomlList(values: string[]): string {
 }
 
 /**
- * Render a plan as the `[[check.steps]]` TOML that produces it — what
- * `repoos check --print-plan` prints so a legacy or inferred plan can be
- * committed verbatim.
+ * Render a plan as the TOML that produces it — what `repoos check --print-plan`
+ * prints so a legacy or inferred plan can be committed verbatim.
+ *
+ * Self-contained by construction: the built-in `kind`s read their vocabulary
+ * from `[check]` (`uiStylesheet`, `themeScopes`, `contrastPairs`, `uiSmoke`,
+ * `bareRequireDirs`), so a plan that uses them is only reproducible if those
+ * keys come along. Emitting steps alone would silently drop those guards the
+ * moment the output replaced the legacy keys it was generated from.
  */
-export function formatPlanToml(plan: CheckPlan): string {
+export function formatPlanToml(plan: CheckPlan, check?: CheckConfig): string {
   const lines: string[] = [
     "[check]",
     `version = ${plan.version}`,
     `defaultProfile = ${tomlString(plan.defaultProfile)}`,
   ];
+  // Legacy keys the built-in kinds read — copied across when the source config
+  // still carries them.
+  if (check?.uiStylesheet) lines.push(`uiStylesheet = ${tomlString(check.uiStylesheet)}`);
+  if (check?.backdropToken) lines.push(`backdropToken = ${tomlString(check.backdropToken)}`);
+  if (check?.gradientTokens?.length) {
+    lines.push(`gradientTokens = ${tomlList(check.gradientTokens)}`);
+  }
+  if (check?.bareRequireDirs?.length) {
+    lines.push(`bareRequireDirs = ${tomlList(check.bareRequireDirs)}`);
+  }
+  if (check?.bareRequireExcludes?.length) {
+    lines.push(`bareRequireExcludes = ${tomlList(check.bareRequireExcludes)}`);
+  }
+  if (check?.uiSmoke) lines.push(`uiSmoke = ${tomlString(check.uiSmoke)}`);
+
   for (const s of plan.steps) {
     lines.push("", "[[check.steps]]", `name = ${tomlString(s.name)}`);
     if (s.kind) lines.push(`kind = ${tomlString(s.kind)}`);
@@ -737,6 +762,19 @@ export function formatPlanToml(plan: CheckPlan): string {
     if (s.requires.length) lines.push(`requires = ${tomlList(s.requires)}`);
     if (s.dependsOn.length) lines.push(`dependsOn = ${tomlList(s.dependsOn)}`);
   }
+
+  // Token vocabulary: arrays of tables, so they come after the steps (the
+  // config reader is line-oriented and each `[[…]]` opens a new array table).
+  for (const scope of check?.themeScopes ?? []) {
+    lines.push("", "[[check.themeScopes]]", `selector = ${tomlString(scope.selector)}`);
+    lines.push(`name = ${tomlString(scope.name)}`);
+    if (scope.inherits?.length) lines.push(`inherits = ${tomlList(scope.inherits)}`);
+  }
+  for (const pair of check?.contrastPairs ?? []) {
+    lines.push("", "[[check.contrastPairs]]", `fg = ${tomlString(pair.fg)}`);
+    lines.push(`bg = ${tomlString(pair.bg)}`);
+  }
+
   return `${lines.join("\n")}\n`;
 }
 

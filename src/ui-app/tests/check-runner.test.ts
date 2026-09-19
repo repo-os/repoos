@@ -18,6 +18,7 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadConfig } from "../../core/config.js";
@@ -29,7 +30,7 @@ import {
   missingBinaries,
   runCommand,
 } from "../../core/check-runner.js";
-import { runCheckPlan } from "../../commands/check.js";
+import { changedPathsSince, runCheckPlan } from "../../commands/check.js";
 
 interface Fixture {
   root: string;
@@ -266,6 +267,105 @@ kind = "build"
   });
 });
 
+describe("runCheckPlan — a step that doesn't apply skips before prerequisites are checked", () => {
+  it("lockfile-sync skips for a repo with no bun.lock even when bun isn't installed", async () => {
+    // The regression: legacy plans give lockfile-sync `requires = ["bun"]`
+    // unconditionally. Checking that before the handler's own applicability
+    // test turned "no Bun pipeline here" into a hard failure on Node-only
+    // machines — a compatibility break for repos still on the legacy keys.
+    const f = fixture(`[check]
+version = 1
+
+[[check.steps]]
+name = "lockfile-sync"
+kind = "lockfile-sync"
+requires = ["bun"]
+`);
+    // Whether bun is installed here is irrelevant: the step must skip either
+    // way, because there is no bun.lock to check.
+    const results = await runCheckPlan(planFor(f.root), { repoRoot: f.root });
+    expect(results[0].status).toBe("skipped");
+    expect(results[0].detail).toMatch(/no bun\.lock/);
+  });
+
+  it("a build step with no build script skips instead of failing on a missing runner", async () => {
+    const f = fixture(
+      `[check]
+version = 1
+
+[[check.steps]]
+name = "build"
+kind = "build"
+requires = ["definitely-not-a-real-tool"]
+`,
+      { dirs: [] },
+    );
+    writeFileSync(join(f.root, "package.json"), JSON.stringify({ name: "x" }));
+    const results = await runCheckPlan(planFor(f.root), { repoRoot: f.root });
+    expect(results[0].status).toBe("skipped");
+    expect(results[0].detail).toMatch(/no `build` script/);
+  });
+
+  it("a step that DOES apply still fails on a missing prerequisite", async () => {
+    const f = fixture(`[check]
+version = 1
+
+[[check.steps]]
+name = "build"
+kind = "build"
+requires = ["definitely-not-a-real-tool"]
+`);
+    writeFileSync(
+      join(f.root, "package.json"),
+      JSON.stringify({ name: "x", scripts: { build: "true" } }),
+    );
+    const results = await runCheckPlan(planFor(f.root), { repoRoot: f.root });
+    expect(results[0].status).toBe("missing-prereq");
+    expect(results[0].detail).toMatch(/definitely-not-a-real-tool/);
+  });
+});
+
+describe("runCheckPlan — the tests kind runs the project's own runner", () => {
+  it("uses npm for a repo with no bun.lock, and bun for one with", async () => {
+    const npm = fixture(
+      `[check]
+version = 1
+
+[[check.steps]]
+name = "tests"
+kind = "tests"
+`,
+      { bins: ["npm"] },
+    );
+    writeFileSync(
+      join(npm.root, "package.json"),
+      JSON.stringify({ name: "x", scripts: { test: "vitest run" } }),
+    );
+    const npmResults = await runCheckPlan(planFor(npm.root), { repoRoot: npm.root });
+    expect(npmResults[0].status).toBe("passed");
+    expect(commandsRun(npm)).toEqual(["npm run test"]);
+
+    const bun = fixture(
+      `[check]
+version = 1
+
+[[check.steps]]
+name = "tests"
+kind = "tests"
+`,
+      { bins: ["bun"] },
+    );
+    writeFileSync(
+      join(bun.root, "package.json"),
+      JSON.stringify({ name: "x", scripts: { test: "vitest run" } }),
+    );
+    writeFileSync(join(bun.root, "bun.lock"), "");
+    const bunResults = await runCheckPlan(planFor(bun.root), { repoRoot: bun.root });
+    expect(bunResults[0].status).toBe("passed");
+    expect(commandsRun(bun)).toEqual(["bun run --bun test"]);
+  });
+});
+
 describe("runCheckPlan — every outcome is distinguishable", () => {
   it("a command that exits non-zero is a failure that names the exit code", async () => {
     const f = fixture(`[check]
@@ -310,6 +410,30 @@ requires = ["definitely-not-a-real-tool"]
     expect(results[0].detail).toMatch(/missing prerequisite: definitely-not-a-real-tool/);
     // …and the command was never attempted.
     expect(commandsRun(f)).toEqual([]);
+  });
+
+  it("an OPTIONAL step's failure never blocks the required steps that depend on it", async () => {
+    // The regression: counting an advisory failure as a blocker let a required
+    // `build` be skipped as "blocked", so the run could exit 0 without ever
+    // building. Optional means advisory — it must not gate anything else.
+    const f = fixture(`[check]
+version = 1
+
+[[check.steps]]
+name = "lint"
+command = "false"
+required = false
+
+[[check.steps]]
+name = "build"
+command = "true"
+dependsOn = ["lint"]
+`);
+    const results = await runCheckPlan(planFor(f.root), { repoRoot: f.root });
+    expect(results.map((r) => [r.name, r.status])).toEqual([
+      ["lint", "failed"],
+      ["build", "passed"],
+    ]);
   });
 
   it("a step blocked by a failed dependency is skipped, naming the cause", async () => {
@@ -407,6 +531,38 @@ describe("runCommand — the subprocess primitive", () => {
     });
     expect(res.status).toBe("failed");
     expect(res.exitCode).not.toBe(0);
+  });
+});
+
+describe("changedPathsSince — a ref git can't resolve is an error, not an empty diff", () => {
+  it("returns null for a bogus ref so the gate fails instead of scoping to nothing", () => {
+    const root = tmpDir("repoos-ref-");
+    expect(changedPathsSince(root, "definitely-not-a-branch")).toBeNull();
+  });
+
+  it("returns the changed paths for a real ref", () => {
+    const root = tmpDir("repoos-ref-");
+    execFileSync("git", ["init", "-q"], { cwd: root });
+    execFileSync("git", ["commit", "-q", "--allow-empty", "-m", "base"], { cwd: root });
+    writeFileSync(join(root, "a.txt"), "hello\n");
+    execFileSync("git", ["add", "a.txt"], { cwd: root });
+    execFileSync("git", ["commit", "-q", "-m", "add a.txt"], { cwd: root });
+    expect(changedPathsSince(root, "HEAD~1")).toEqual(["a.txt"]);
+  });
+});
+
+describe("runCommand — the subprocess primitive", () => {
+  it("kills a command's whole process group, so a surviving grandchild can't hold the pipes", async () => {
+    // `sh -c` spawns a grandchild that ignores SIGTERM and outlives it;
+    // killing only the wrapper would leave the pipes open and `close` pending.
+    const res = await runCommand({
+      command: "(trap '' TERM; sleep 30) & wait",
+      timeoutMs: 700,
+      echo: false,
+    });
+    expect(res.status).toBe("timeout");
+    // Resolved promptly rather than waiting out the grandchild's own 30s.
+    expect(res.durationMs).toBeLessThan(10_000);
   });
 });
 

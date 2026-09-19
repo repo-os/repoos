@@ -854,6 +854,11 @@ interface StepContext {
    * `cwd = "web"` must read web's scripts, not the root's.
    */
   scriptPkg: PkgJson;
+  /**
+   * Binaries the step declared it needs. Checked only once the step knows it
+   * actually applies — see `prereqs`.
+   */
+  requires: string[];
   /** Git ref for changed-path mode, when active. */
   changedRef?: string;
 }
@@ -888,6 +893,22 @@ function scriptRunner(cwd: string): "bun" | "npm" {
 }
 
 /**
+ * A missing-prerequisite outcome for the tools this step needs, or null when
+ * everything is installed.
+ *
+ * Handlers call this AFTER deciding the step applies to this repo, never
+ * before: a `kind` that would skip anyway (no `bun.lock`, no `build` script)
+ * must keep skipping, whether or not its nominal tool is installed. Checking
+ * `requires` up front instead would turn "this repo has no Bun pipeline" into
+ * a hard failure on a Node-only machine — exactly the compatibility break
+ * #0446 exists to avoid.
+ */
+function prereqs(ctx: StepContext, extra: string[] = []): BuiltinOutcome | null {
+  const missing = missingBinaries([...ctx.requires, ...extra]);
+  return missing.length > 0 ? { status: "missing-prereq", detail: prereqDetail(missing) } : null;
+}
+
+/**
  * Run a package.json script through the project's own runner. A missing script
  * is an explicit skip — never an unconditional `bun run build` for a repo that
  * has no build script (#0446) — and a missing runner is a `missing-prereq`
@@ -904,8 +925,8 @@ async function runScript(
   }
   const runner = scriptRunner(ctx.cwd);
   const command = `${runner} run ${script}`;
-  const missing = missingBinaries([runner]);
-  if (missing.length) return { status: "missing-prereq", command, detail: prereqDetail(missing) };
+  const blocked = prereqs(ctx, [runner]);
+  if (blocked) return { ...blocked, command };
 
   const res = await runCommand({
     command,
@@ -947,6 +968,10 @@ async function stepStaleness(ctx: StepContext): Promise<BuiltinOutcome> {
 async function stepLockfileSync(ctx: StepContext): Promise<BuiltinOutcome> {
   if (!existsSync(join(ctx.cwd, "bun.lock"))) return skipped("skipped — no bun.lock");
   const command = "bun install --frozen-lockfile --dry-run";
+  // Only now does the missing `bun` matter — a repo with no bun.lock is not a
+  // Bun repo, and the step is already skipping.
+  const blocked = prereqs(ctx, ["bun"]);
+  if (blocked) return { ...blocked, command };
   const res = await runCommand({ command, cwd: ctx.cwd, timeoutMs: 60_000, echo: false });
   if (res.status === "passed") return { status: "passed", command };
   if (res.status === "timeout") {
@@ -1143,11 +1168,16 @@ async function stepTests(ctx: StepContext): Promise<BuiltinOutcome> {
   // Bun-native repo (~5x faster, and it stops the swap-thrash flake).
   const changedRef = hasTestScript ? ctx.changedRef : undefined;
   const bun = scriptRunner(ctx.cwd) === "bun";
-  const base = hasTestScript ? (bun ? "bun run --bun test" : "bun run test") : "bun test";
+  // Run the project's OWN runner. An npm project must not be handed a `bun run
+  // test` it can't execute on a machine with no Bun — the prerequisite a plan
+  // declares (`requires = ["npm"]`) and the command the step actually runs
+  // have to agree.
+  const runner = hasTestScript ? (bun ? "bun" : "npm") : "bun";
+  const base =
+    hasTestScript && !bun ? "npm run test" : hasTestScript ? "bun run --bun test" : "bun test";
   const command = changedRef ? `${base} -- --changed ${changedRef}` : base;
-  // Both spellings go through bun, so bun is the prerequisite either way.
-  const missing = missingBinaries(["bun"]);
-  if (missing.length) return { status: "missing-prereq", command, detail: prereqDetail(missing) };
+  const blocked = prereqs(ctx, [runner]);
+  if (blocked) return { ...blocked, command };
 
   const workers = hasTestScript ? testPoolSize(process.env) : undefined;
   const env = workers ? { ...process.env, REPOOS_TEST_WORKERS: String(workers) } : process.env;
@@ -1194,6 +1224,8 @@ async function stepUiSmoke(ctx: StepContext): Promise<BuiltinOutcome> {
   const command = smoke.source === "config" ? smoke.command : `${runner} run ${smoke.script}`;
   const origin =
     smoke.source === "config" ? "repoos.toml [check] uiSmoke" : "package.json smoke script";
+  const blocked = prereqs(ctx, smoke.source === "config" ? [] : [runner]);
+  if (blocked) return { ...blocked, command };
   const res = await runCommand({ command, cwd: ctx.cwd, timeoutMs: 300_000 });
   if (res.status === "passed") return { status: "passed", command, detail: `ran ${origin}` };
   if (res.status === "timeout") {
@@ -1258,8 +1290,13 @@ function outputTail(output: string | undefined, lines = 25): string | undefined 
  * Repo-relative paths that differ from `ref`, plus anything uncommitted or
  * untracked — the working tree an agent actually hands over, not just what is
  * committed on the branch.
+ *
+ * Returns `null` when `ref` itself can't be resolved. That has to be
+ * distinguishable from "nothing changed": a typo'd ref with an empty result
+ * would silently scope every `whenChanged` step away and let the gate go green
+ * having verified nothing at all.
  */
-export function changedPathsSince(repoRoot: string, ref: string): string[] {
+export function changedPathsSince(repoRoot: string, ref: string): string[] | null {
   const run = (args: string[]): string[] => {
     try {
       return execFileSync("git", args, {
@@ -1274,6 +1311,16 @@ export function changedPathsSince(repoRoot: string, ref: string): string[] {
       return [];
     }
   };
+  // Verify the ref first: `git diff <bogus>...` exits non-zero, and `run`
+  // swallows that — indistinguishable from a clean diff without this.
+  try {
+    execFileSync("git", ["rev-parse", "--verify", "--quiet", `${ref}^{commit}`], {
+      cwd: repoRoot,
+      stdio: "pipe",
+    });
+  } catch {
+    return null;
+  }
   const paths = new Set([
     ...run(["diff", "--name-only", `${ref}...`]),
     ...run(["diff", "--name-only"]),
@@ -1387,20 +1434,27 @@ export async function runCheckPlan(
       continue;
     }
 
-    const missing = missingBinaries(step.requires);
     const started = Date.now();
     let outcome: BuiltinOutcome;
-    if (missing.length > 0) {
-      outcome = { status: "missing-prereq", detail: prereqDetail(missing) };
-    } else if (step.kind) {
+    if (step.kind) {
+      // The handler decides whether the step applies to this repo BEFORE any
+      // prerequisite is checked — a guard that would skip anyway must not fail
+      // on a missing tool (see `prereqs`).
       outcome = await BUILTIN_HANDLERS[step.kind]({
         repoRoot,
         cwd,
         cfg,
         pkg,
         scriptPkg: readPkg(cwd),
+        requires: step.requires,
         changedRef: opts.changedRef,
       });
+    } else if (missingBinaries(step.requires).length > 0) {
+      outcome = {
+        status: "missing-prereq",
+        command: step.command,
+        detail: prereqDetail(missingBinaries(step.requires)),
+      };
     } else {
       const res = await runCommand({ command: step.command ?? "", cwd, timeoutMs: step.timeoutMs });
       outcome = {
@@ -1444,7 +1498,10 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   // `--print-plan` is the migration aid: it emits the plan the gate resolved
   // (legacy or inferred) as the [[check.steps]] TOML to commit.
   if (opts.printPlan) {
-    console.log(formatPlanToml(plan));
+    // Self-contained: the built-in kinds read their vocabulary from [check],
+    // so the emitted TOML carries those keys too — otherwise committing it
+    // would silently drop the stylesheet/bare-require/smoke guards.
+    console.log(formatPlanToml(plan, cfg.check));
     return;
   }
 
@@ -1484,6 +1541,18 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   }
 
   const changedPaths = changedRef ? changedPathsSince(repoRoot, changedRef) : undefined;
+  if (changedRef && changedPaths === null) {
+    // A ref git can't resolve is a mistake, not "nothing changed": scoping the
+    // run to it would skip every `whenChanged` step and could go green having
+    // verified nothing.
+    console.log(
+      c.red(
+        `\n  ✗ Changed-path mode needs a git ref this repo can resolve: "${changedRef}" is not ` +
+          "a commit, branch or tag here. Fix the ref (or drop --changed to run the full plan).\n",
+      ),
+    );
+    process.exit(1);
+  }
   if (changedRef) {
     console.log(
       c.dim(
@@ -1497,7 +1566,9 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     repoRoot,
     cfg,
     profile,
-    changedPaths,
+    // Narrowed above after the null check; `?? undefined` keeps the types
+    // honest without a cast.
+    changedPaths: changedPaths ?? undefined,
     changedRef,
     onStart: (step) => {
       heading(step.name);
@@ -1558,11 +1629,17 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   process.exit(gatingFailures.length > 0 ? 1 : 0);
 }
 
-/** Names of steps that already failed (a timeout or missing tool counts). */
+/**
+ * Names of steps that already failed and therefore block their dependents.
+ * A timeout or a missing prerequisite counts; an OPTIONAL step never does —
+ * it is advisory by declaration, so letting its failure skip the required
+ * build or test that depends on it would let the gate exit green without ever
+ * building (the failure that matters is reported on the optional step itself).
+ */
 function failedNames(results: StepRunResult[]): Set<string> {
   const out = new Set<string>();
   for (const r of results) {
-    if (r.status !== "passed" && r.status !== "skipped") out.add(r.name);
+    if (r.required && r.status !== "passed" && r.status !== "skipped") out.add(r.name);
   }
   return out;
 }

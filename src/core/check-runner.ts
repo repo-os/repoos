@@ -85,12 +85,18 @@ export function runCommand(opts: RunCommandOptions): Promise<CommandResult> {
       env: opts.env ?? process.env,
       shell: true,
       stdio: ["ignore", "pipe", "pipe"],
+      // Own process group, so a timeout can signal the whole tree. Killing
+      // only the `sh -c` wrapper leaves its children (vitest workers, a JVM,
+      // `gradle`) running: they inherit the pipes, so `close` never fires and
+      // the gate hangs past the step's own timeout.
+      detached: true,
     });
 
     const finish = (result: Omit<CommandResult, "durationMs" | "output">): void => {
       if (settled) return;
       settled = true;
       if (timer) clearTimeout(timer);
+      stopRelaying();
       resolve({
         ...result,
         output: chunks,
@@ -109,17 +115,52 @@ export function runCommand(opts: RunCommandOptions): Promise<CommandResult> {
     child.stderr?.on("data", capture);
 
     let timer: NodeJS.Timeout | undefined;
+    /**
+     * Signal the whole group the child leads, falling back to the child alone
+     * when group signalling isn't available (Windows) or the group is gone.
+     */
+    const killTree = (signal: NodeJS.Signals): void => {
+      const pid = child.pid;
+      if (pid !== undefined) {
+        try {
+          process.kill(-pid, signal);
+          return;
+        } catch {
+          /* no process group (Windows) — fall through to the single child */
+        }
+      }
+      try {
+        child.kill(signal);
+      } catch {
+        /* already exited */
+      }
+    };
     if (timeoutMs) {
       timer = setTimeout(() => {
         killed = true;
-        child.kill("SIGTERM");
+        killTree("SIGTERM");
         // A child that ignores SIGTERM (a wrapper script, a JVM) must not hold
         // the gate open past its timeout.
         setTimeout(() => {
-          if (!settled) child.kill("SIGKILL");
+          if (!settled) killTree("SIGKILL");
         }, 5_000).unref?.();
       }, timeoutMs);
     }
+
+    // The child leads its own process group, which is what makes a group kill
+    // possible — but it also means a terminal Ctrl-C (SIGINT to the CLI's
+    // group) no longer reaches it. Without this, interrupting `repoos check`
+    // would orphan a running test suite or JVM and leave it holding the
+    // terminal. Relay the signal to the tree, then exit ourselves.
+    const relay = (signal: NodeJS.Signals): void => {
+      killTree(signal === "SIGINT" ? "SIGTERM" : signal);
+      process.exit(signal === "SIGINT" ? 130 : 143);
+    };
+    const relayed: NodeJS.Signals[] = ["SIGINT", "SIGTERM", "SIGHUP"];
+    for (const sig of relayed) process.on(sig, relay);
+    const stopRelaying = (): void => {
+      for (const sig of relayed) process.off(sig, relay);
+    };
 
     child.on("error", (err) => {
       finish({ status: "error", exitCode: null, error: (err as Error).message });
