@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-09-19T08:00:33Z"
-review_passes: 3
+updated_at: "2026-09-19T08:17:01Z"
+review_passes: 4
 id: "0441"
 title: Add new release available notification
 type: feature
@@ -67,4 +67,5 @@ I'd like to make a small unobtrusive dismissable message show to the user when t
 - 2026-09-19T07:44:45Z · status active→review
 - 2026-09-19T07:47:51Z · status review→active
 - 2026-09-19T07:56:51Z · status active→review
+
 
