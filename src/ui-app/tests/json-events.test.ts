@@ -258,6 +258,16 @@ describe("parseClaudeEvent (0109)", () => {
           d: 'Copilot emitted an unknown protocol event "future.copilot_event".',
         },
       });
+      // Reasoning / thinking stream events added in newer Copilot builds — silently swallowed.
+      for (const t of [
+        "assistant.reasoning_delta",
+        "assistant.reasoning",
+        "assistant.tool_call_delta",
+        "assistant.turn_start",
+        "assistant.turn_end",
+      ]) {
+        expect(parseCopilotEvent(`{"type":"${t}","data":{}}`)).toEqual({});
+      }
     });
   });
 

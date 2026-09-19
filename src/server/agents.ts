@@ -1347,7 +1347,14 @@ export function parseCopilotEvent(
     type === "result" ||
     type.startsWith("session.") ||
     type.startsWith("model.") ||
-    type.startsWith("mcp.")
+    type.startsWith("mcp.") ||
+    // Reasoning / thinking stream events added in newer Copilot builds — all
+    // internal protocol chatter that carries no transcript-surfaceable content.
+    type === "assistant.reasoning_delta" ||
+    type === "assistant.reasoning" ||
+    type === "assistant.tool_call_delta" ||
+    type === "assistant.turn_start" ||
+    type === "assistant.turn_end"
   )
     return { sessionID };
   return {
