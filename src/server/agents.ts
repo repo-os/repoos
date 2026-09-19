@@ -258,6 +258,11 @@ interface Session {
   cursorHints?: Set<string>;
   /** Antigravity recovery hints already surfaced for this session. */
   antigravityHints?: Set<string>;
+  /** Copilot tool calls whose start/partial records are awaiting completion. */
+  copilotTools?: Record<
+    string,
+    { tool: string; input?: string; output?: string; state?: "running" | "completed" | "error" }
+  >;
   /** The first permission denial seen this turn (detectPermissionDenial). */
   permissionDenial?: string;
   /** The current Antigravity turn's terminal result, if one has arrived. */
@@ -1198,8 +1203,10 @@ interface CopilotEvent {
     input?: unknown;
     result?: unknown;
     output?: unknown;
+    partialOutput?: unknown;
     error?: unknown;
     message?: unknown;
+    toolCallId?: unknown;
   };
   sessionId?: unknown;
 }
@@ -1215,6 +1222,15 @@ function copilotText(value: unknown): string | undefined {
   return toolOutputText(value);
 }
 
+interface CopilotToolEvent {
+  phase: "start" | "partial" | "complete";
+  id: string;
+  tool?: string;
+  input?: string;
+  output?: string;
+  error?: boolean;
+}
+
 /**
  * Parse Copilot CLI's `--output-format json` JSONL stream. The CLI emits
  * lifecycle telemetry alongside assistant and tool events; lifecycle records
@@ -1222,7 +1238,7 @@ function copilotText(value: unknown): string | undefined {
  */
 export function parseCopilotEvent(
   raw: string,
-): { entry?: AgentOutputEntry; sessionID?: string } | null {
+): { entry?: AgentOutputEntry; sessionID?: string; toolEvent?: CopilotToolEvent } | null {
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
@@ -1254,10 +1270,24 @@ export function parseCopilotEvent(
           : "";
     if (!tool) return { sessionID };
     const input = toolInputText(data.arguments ?? data.input);
+    const id = typeof data.toolCallId === "string" ? data.toolCallId : "";
+    if (id)
+      return { sessionID, toolEvent: { phase: "start", id, tool, ...(input ? { input } : {}) } };
     return {
       entry: { type: "tool", tool, ...(input ? { input } : {}), state: "running" },
       sessionID,
     };
+  }
+
+  if (type === "tool.execution_partial_result") {
+    const id = typeof data.toolCallId === "string" ? data.toolCallId : "";
+    const output = copilotText(data.partialOutput);
+    return id
+      ? {
+          sessionID,
+          toolEvent: { phase: "partial", id, ...(output ? { output } : {}) },
+        }
+      : { sessionID };
   }
 
   if (type === "tool.execution_complete") {
@@ -1269,6 +1299,20 @@ export function parseCopilotEvent(
           : "tool";
     const input = toolInputText(data.arguments ?? data.input);
     const output = copilotText(data.result ?? data.output ?? data.error);
+    const id = typeof data.toolCallId === "string" ? data.toolCallId : "";
+    if (id) {
+      return {
+        sessionID,
+        toolEvent: {
+          phase: "complete",
+          id,
+          tool,
+          ...(input ? { input } : {}),
+          ...(output ? { output } : {}),
+          ...(data.error ? { error: true } : {}),
+        },
+      };
+    }
     return {
       entry: {
         type: "tool",
@@ -1293,7 +1337,13 @@ export function parseCopilotEvent(
     type.startsWith("mcp.")
   )
     return { sessionID };
-  return null;
+  return {
+    entry: {
+      type: "sys",
+      d: `Copilot emitted an unknown protocol event "${type}".`,
+    },
+    sessionID,
+  };
 }
 
 /**
@@ -4745,7 +4795,40 @@ export class AgentRunner {
     if (parsed.sessionID && (!session.sessionId || !isValidCopilotSessionId(session.sessionId))) {
       session.sessionId = parsed.sessionID;
     }
-    if (parsed.entry) {
+    if (parsed.toolEvent) {
+      const event = parsed.toolEvent;
+      const tools = (session.copilotTools ??= {});
+      const current = tools[event.id];
+      if (event.phase === "start") {
+        tools[event.id] = {
+          tool: event.tool ?? "tool",
+          ...(event.input ? { input: event.input } : {}),
+          state: "running",
+        };
+      } else if (event.phase === "partial") {
+        tools[event.id] = {
+          ...(current ?? { tool: "tool" }),
+          ...(event.output !== undefined ? { output: event.output } : {}),
+          state: current?.state ?? "running",
+        };
+      } else {
+        const merged = {
+          ...(current ?? { tool: event.tool ?? "tool" }),
+          ...(event.tool ? { tool: event.tool } : {}),
+          ...(event.input ? { input: event.input } : {}),
+          ...(event.output !== undefined ? { output: event.output } : {}),
+          state: event.error ? ("error" as const) : ("completed" as const),
+        };
+        delete tools[event.id];
+        this.recordEntry(taskId, session, "out", {
+          type: "tool",
+          tool: merged.tool,
+          ...(merged.input ? { input: merged.input } : {}),
+          ...(merged.output !== undefined ? { output: merged.output } : {}),
+          state: merged.state,
+        });
+      }
+    } else if (parsed.entry) {
       this.recordEntry(
         taskId,
         session,
@@ -5382,6 +5465,18 @@ export class AgentRunner {
     ) {
       this.recordEntry(taskId, session, "out", this.pendingToolEntry(session.pendingTool));
       session.pendingTool = undefined;
+    }
+    if (session?.engine === "copilot" && session.copilotTools) {
+      for (const pending of Object.values(session.copilotTools)) {
+        this.recordEntry(taskId, session, "out", {
+          type: "tool",
+          tool: pending.tool,
+          ...(pending.input ? { input: pending.input } : {}),
+          ...(pending.output !== undefined ? { output: pending.output } : {}),
+          ...(pending.state && pending.state !== "running" ? { state: pending.state } : {}),
+        });
+      }
+      session.copilotTools = undefined;
     }
     // Fold the finished turn's wall time into the running total (0080) — the
     // time-spent counter accumulates across turns rather than resetting each

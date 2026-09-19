@@ -27,4 +27,3 @@ GitHub Copilot CLI 1.0.86 emits JSONL tool.execution_partial_result records with
 - 2026-09-18T19:22:06Z · agent exited with an error (copilot) · To start a new session with ID:   copilot --session-id=<valid-uuid>
 - 2026-09-19T00:52:23Z · needs_input
 - 2026-09-19T00:59:02Z · status active→review
-

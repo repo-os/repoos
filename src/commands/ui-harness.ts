@@ -42,6 +42,14 @@ export interface SmokePage {
   setViewportSize(viewport: { width: number; height: number }): Promise<void>;
   waitForFunction(fn: () => unknown, options?: { timeout?: number }): Promise<unknown>;
   waitForTimeout(ms: number): Promise<void>;
+  route(
+    url: string,
+    handler: (route: {
+      fetch(): Promise<{ json(): Promise<unknown> }>;
+      fulfill(options: { status: number; contentType: string; body: string }): Promise<void>;
+    }) => Promise<void>,
+  ): Promise<void>;
+  close(): Promise<void>;
 }
 export interface SmokeBrowser {
   newPage(): Promise<SmokePage>;
