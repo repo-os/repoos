@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+cli_override: opencode
 created_at: "2026-09-19T10:26:30Z"
-updated_at: "2026-09-19T10:26:49Z"
+updated_at: "2026-09-19T10:27:07Z"
 ---
 ## Problem
 
@@ -58,3 +59,4 @@ I noticed when I open Ross the chat starts at the top (the oldest message), I th
 
 - 2026-09-19T10:26:30Z · created · hello@repoos.org
 - 2026-09-19T10:26:49Z · status draft→inbox, title, area, body
+- 2026-09-19T10:27:07Z · cli_override
