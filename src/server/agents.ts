@@ -1327,7 +1327,13 @@ export function parseCopilotEvent(
     type.startsWith("mcp.")
   )
     return { sessionID };
-  return null;
+  return {
+    entry: {
+      type: "sys",
+      d: `Copilot emitted an unknown protocol event "${type}".`,
+    },
+    sessionID,
+  };
 }
 
 /**

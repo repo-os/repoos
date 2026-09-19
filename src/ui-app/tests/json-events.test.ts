@@ -235,7 +235,7 @@ describe("parseClaudeEvent (0109)", () => {
       });
     });
 
-    it("preserves completion errors and leaves unknown JSON as diagnostics", () => {
+    it("preserves completion errors and surfaces unknown JSON as diagnostics", () => {
       expect(
         parseCopilotEvent(
           '{"type":"tool.execution_complete","data":{"toolCallId":"call-2","toolName":"shell","error":"permission denied"}}',
@@ -249,7 +249,12 @@ describe("parseClaudeEvent (0109)", () => {
           error: true,
         },
       });
-      expect(parseCopilotEvent('{"type":"future.copilot_event","data":{"value":1}}')).toBeNull();
+      expect(parseCopilotEvent('{"type":"future.copilot_event","data":{"value":1}}')).toEqual({
+        entry: {
+          type: "sys",
+          d: 'Copilot emitted an unknown protocol event "future.copilot_event".',
+        },
+      });
     });
   });
 
