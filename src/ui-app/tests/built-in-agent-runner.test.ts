@@ -224,6 +224,44 @@ describe("runSkillGuidedAgent", () => {
     expect(result.report).toContain("I found some issues");
   });
 
+  it("keeps the findings that completed before a response was cut short (#0442)", async () => {
+    const root = makeRepo({});
+    const config = configFor(root, {
+      builtInAgents: { "tech-debt": { enabled: true } },
+    });
+
+    // Serialisation stopped inside the second finding's description.
+    const output =
+      '{"findings": [{"type": "outdated-dependency", "description": "lodash is old", "severity": "high"}, {"type": "dead-code", "descript';
+    vi.mocked(runPrompt).mockResolvedValue({ ok: true, output, elapsedMs: 500 });
+
+    const result = await runSkillGuidedAgent("tech-debt", config, "Scan.");
+    expect(result.ok).toBe(true);
+    expect(result.findings).toHaveLength(2);
+    expect(result.findings[0].description).toBe("lodash is old");
+    expect(result.findings[1].type).toBe("dead-code");
+  });
+
+  it("names truncation instead of blaming the schema (#0442)", async () => {
+    const root = makeRepo({});
+    const config = configFor(root, {
+      builtInAgents: { "tech-debt": { enabled: true } },
+    });
+
+    // Cut so early that not even one finding survives.
+    vi.mocked(runPrompt).mockResolvedValue({
+      ok: true,
+      output: '{"findings":[{"ty',
+      elapsedMs: 500,
+    });
+
+    const result = await runSkillGuidedAgent("tech-debt", config, "Scan.");
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("Agent output was truncated");
+    expect(result.error).toContain("Retry or reduce context.");
+    expect(result.error).not.toContain("not valid JSON");
+  });
+
   it("returns error when runPrompt fails", async () => {
     const root = makeRepo({});
     const config = configFor(root, {
