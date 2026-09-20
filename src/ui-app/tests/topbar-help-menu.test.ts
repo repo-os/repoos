@@ -1,7 +1,7 @@
 /**
  * The top-bar Help ("?") affordance (#0378). A header control visible on every
  * route — deliberately not a `nav.ts` entry — opening a small support menu
- * (the in-app support flow, docs, GitHub Discussions and Issues) that dismisses
+ * (the in-app support flow, docs and GitHub Discussions) that dismisses
  * on click-outside and Escape.
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
@@ -42,19 +42,17 @@ describe("top-bar help menu", () => {
     await nextTick();
 
     const links = wrapper.findAll(".help-menu-link");
-    expect(links).toHaveLength(4);
+    expect(links).toHaveLength(3);
     expect(links.map((l) => l.text())).toEqual([
-      "Get support",
+      "Get help or report a bug",
       "Docs",
       "GitHub Discussions",
-      "Report a bug",
     ]);
 
     expect(links[0].attributes("href")).toBe("/settings?tab=support");
     expect(links[0].attributes("target")).toBeUndefined();
     expect(links[1].attributes("href")).toBe("https://docs.repoos.org");
     expect(links[2].attributes("href")).toBe("https://github.com/repo-os/repoos/discussions");
-    expect(links[3].attributes("href")).toBe("https://github.com/repo-os/repoos/issues/new/choose");
 
     for (const link of links.slice(1)) {
       expect(link.attributes("target")).toBe("_blank");

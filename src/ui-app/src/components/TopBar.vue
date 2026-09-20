@@ -217,13 +217,12 @@ watch(userMenuOpen, (open) => {
 /**
  * Help menu in the top bar. Deliberately NOT a `nav.ts` entry — this is a
  * persistent header affordance on every route, not a page. The first link
- * takes people to the in-app support flow; the rest are external destinations
- * (published docs + GitHub), so those URLs live in one place.
+ * takes people to the in-app guided support/reporting flow; the rest are
+ * external destinations (published docs + GitHub), so those URLs live in one place.
  */
 const HELP_LINKS: { label: string; href: string }[] = [
   { label: "Docs", href: "https://docs.repoos.org" },
   { label: "GitHub Discussions", href: "https://github.com/repo-os/repoos/discussions" },
-  { label: "Report a bug", href: "https://github.com/repo-os/repoos/issues/new/choose" },
 ];
 
 const helpMenuOpen = ref(false);
@@ -407,7 +406,7 @@ watch(repoName, () => {
           href="/settings?tab=support"
           role="menuitem"
           @click="helpMenuOpen = false"
-          >Get support</a
+          >Get help or report a bug</a
         >
         <a
           v-for="link in HELP_LINKS"
