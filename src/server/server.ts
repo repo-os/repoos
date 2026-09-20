@@ -299,6 +299,8 @@ import {
   disableAutoStartRoute,
   removeServiceRoute,
   healthCheckRoute,
+  getSupportBundlePreview,
+  createSupportBundle,
 } from "./routes/index.js";
 
 function findCloudflared(): string | null {
@@ -1881,6 +1883,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/skills/freeform", createFreeformSkillRoute);
   router.register("GET", "/api/system", getSystem);
   router.register("GET", "/api/system/logs", getSystemLogs);
+  router.register("GET", "/api/support/bundle", getSupportBundlePreview);
+  router.register("POST", "/api/support/bundle", createSupportBundle);
   router.register("GET", "/api/tunnel/readiness", getTunnelStatus);
   router.register("GET", "/api/release", getRelease);
   router.register("GET", "/api/release/available", getAvailableRelease);

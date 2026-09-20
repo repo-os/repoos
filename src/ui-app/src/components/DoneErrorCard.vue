@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, useId } from "vue";
-import { CircleAlert, ChevronDown, Wrench } from "lucide-vue-next";
+import { useRouter } from "vue-router";
+import { CircleAlert, ChevronDown, Wrench, LifeBuoy } from "lucide-vue-next";
 import { api, JSON_OPTS } from "../api";
 import type { RetryHint } from "../lib/retryHints";
 import ActivityIndicator from "./ActivityIndicator.vue";
@@ -34,6 +35,16 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{ (e: "open-panel"): void; (e: "open-debugger"): void }>();
+
+const router = useRouter();
+/**
+ * Surface the redacted support bundle right on the failed-setup path: a failed
+ * close-out/check is exactly when a user needs to hand something to support.
+ * The bundle is created on the Support tab, so this is navigation only.
+ */
+function openSupportBundle(): void {
+  void router.push({ name: "settings", query: { tab: "support" } });
+}
 
 const fixing = ref(false);
 const fixSent = ref(false);
@@ -153,6 +164,10 @@ const outputOpen = ref(true);
           "RepoOS couldn't sync this branch with main automatically — resolve the conflicting files in the worktree, then retry."
         }}
       </p>
+      <button type="button" class="done-error-support" @click="openSupportBundle">
+        <LifeBuoy class="size-3.5" />
+        Create a redacted support bundle
+      </button>
     </div>
 
     <button
