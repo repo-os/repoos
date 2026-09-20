@@ -87,7 +87,10 @@ time-bounded and per channel: a slow registry shows as **Check failed** on its
 own row rather than breaking the page, and a channel with no `kind` simply
 reads **Unverified** — RepoOS never claims a channel is current when it can't
 confirm the version. No registry token or credential is ever sent to the
-browser.
+browser. CI finishing means it handed the release to each destination; npm,
+Homebrew, and CDNs can take several more minutes to make it installable. The
+page re-checks when RepoOS finishes cutting the tag, and **Check again** refreshes
+the downstream status whenever you want.
 
 Leaving the section out entirely keeps the plain Releases page — no empty
 marketing box.

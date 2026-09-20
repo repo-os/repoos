@@ -295,7 +295,13 @@ failure is **Check failed**. When the release being viewed has a version, a
 channel at the same version reads **Up to date**, and any other version reads
 **Out of sync** with both versions shown. All of this is computed for the UI
 only: it is never a prerequisite for viewing releases, and no token, registry
-secret or repository credential is ever sent to the browser.
+secret or repository credential is ever sent to the browser. The initial
+check is a snapshot: publishing CI can finish before a registry or CDN makes
+the package available. RepoOS re-checks destinations when its local tag push
+finishes, and the operator can use **Check again** on the Releases page while
+downstream destinations catch up. Treat a few minutes of propagation as
+normal; a channel is not a release failure merely because it has not updated
+yet.
 
 ## API
 

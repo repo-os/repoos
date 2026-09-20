@@ -94,6 +94,7 @@ let pollTimer: ReturnType<typeof setInterval> | null = null;
 /** "Published to" destinations for the release being viewed (empty when none). */
 const distribution = ref<DistributionChannel[]>([]);
 const distributionReleaseVersion = ref<string | null>(null);
+const distributionLoading = ref(false);
 const copiedCommand = ref("");
 let copyTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -236,6 +237,7 @@ async function load(): Promise<void> {
  * simply hides the section.
  */
 async function loadDistribution(): Promise<void> {
+  distributionLoading.value = true;
   try {
     const data = await api<DistributionSummary>("/api/release/distribution");
     distribution.value = data.channels ?? [];
@@ -243,6 +245,8 @@ async function loadDistribution(): Promise<void> {
   } catch {
     distribution.value = [];
     distributionReleaseVersion.value = null;
+  } finally {
+    distributionLoading.value = false;
   }
 }
 
@@ -395,7 +399,7 @@ async function pollRun(): Promise<void> {
     if (latest.state === "succeeded") {
       message.value = latest.message;
       confirmOpen.value = false;
-      await load();
+      await Promise.all([load(), loadDistribution()]);
     } else if (latest.state === "failed" && latest.message) {
       // A failed phase reports its full command output (repoos check log, build
       // errors). Classify the common causes into the headline, then show the
@@ -571,13 +575,24 @@ onBeforeUnmount(() => {
              declares [[distribution]] destinations; nothing otherwise. -->
         <section v-if="distribution.length" class="rel-card rel-dist">
           <div class="rel-dist-head">
-            <h2 class="rel-dist-title">Published to</h2>
+            <div class="rel-dist-title-row">
+              <h2 class="rel-dist-title">Published to</h2>
+              <Button
+                variant="outline"
+                size="sm"
+                :disabled="distributionLoading"
+                @click="loadDistribution"
+              >
+                {{ distributionLoading ? "Checking…" : "Check again" }}
+              </Button>
+            </div>
             <p class="rel-dist-sub">
               Where people can install this release.
               <template v-if="distributionReleaseVersion">
                 Comparing each channel to <code>{{ distributionReleaseVersion }}</code
                 >.
               </template>
+              Registry and package-manager updates can take several minutes after CI succeeds.
             </p>
           </div>
 
@@ -1039,6 +1054,12 @@ onBeforeUnmount(() => {
 }
 .rel-dist-head {
   margin-bottom: 16px;
+}
+.rel-dist-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 .rel-dist-title {
   font-size: 14px;

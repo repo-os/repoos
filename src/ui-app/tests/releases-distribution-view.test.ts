@@ -117,6 +117,20 @@ describe("ReleasesView Published to (#0445)", () => {
     wrapper.unmount();
   });
 
+  it("rechecks downstream destinations on demand", async () => {
+    mockApi([channel({ state: "unavailable", version: null, detail: "Not published yet" })]);
+    const wrapper = await mountView();
+
+    expect(api.mock.calls.filter(([path]) => path === "/api/release/distribution")).toHaveLength(1);
+    const checkAgain = wrapper.findAll("button").find((button) => button.text() === "Check again");
+    expect(checkAgain).toBeDefined();
+    await checkAgain!.trigger("click");
+    await flushPromises();
+    expect(api.mock.calls.filter(([path]) => path === "/api/release/distribution")).toHaveLength(2);
+
+    wrapper.unmount();
+  });
+
   it("copies an individual install command", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
