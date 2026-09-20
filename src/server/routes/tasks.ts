@@ -334,6 +334,44 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
   // PROTECTED_SECTIONS preserves the section across the rewrite.
   const sourceInputId = typeof body?.inputId === "string" && body.inputId ? body.inputId : null;
 
+  // Parse the freeform pane's PM picker overrides. "default" is the sentinel
+  // for "use the configured pm agent's own model" — not a real pin (same bug
+  // class as resolveAgentForTask / resolveReviewerForTask / the PM-message
+  // override below).
+  const freeformAgentName =
+    typeof body?.agentOverride === "string" && body.agentOverride ? body.agentOverride : undefined;
+  const freeformCli =
+    typeof body?.cliOverride === "string" && body.cliOverride ? body.cliOverride : undefined;
+  const freeformModel =
+    typeof body?.modelOverride === "string" && body.modelOverride ? body.modelOverride : undefined;
+  const freeformModelPinned = isModelOverridePinned(freeformModel);
+  const hasFreeformOverride = freeformAgentName || freeformCli || freeformModelPinned;
+
+  let pm: Agent | null;
+  if (hasFreeformOverride) {
+    const list = agentsForConfig(config);
+    const baseName = freeformAgentName || "pm";
+    const base = list.find((a) => a.enabled && a.name === baseName) ?? null;
+    pm = base ? mergeAgentOverride(base, freeformCli, freeformModel) : null;
+  } else {
+    pm = resolvePmAgent(config);
+  }
+
+  // #0461: persist the picker selection as the task's PM assignment at creation
+  // so every later PM action (reply-from-context, re-flesh-out, restart) keeps
+  // it — not just this one-off run. Only fields that actually differ from the
+  // configured PM default are saved, mirroring the PM tab's own save logic
+  // (nulls unchanged values, keeps the board tidy); "default" is never
+  // persisted as a model pin. The saved values are the SAME parsed overrides
+  // the flesh-out run above uses, so there is no drift between what ran and
+  // what is stored.
+  const defaultPm = resolvePmAgent(config);
+  const pmAgentOverride =
+    freeformAgentName && freeformAgentName !== (defaultPm?.name ?? "") ? freeformAgentName : null;
+  const pmCliOverride = freeformCli && freeformCli !== (defaultPm?.cli ?? "") ? freeformCli : null;
+  const pmModelOverride =
+    freeformModelPinned && freeformModel !== (defaultPm?.model ?? "") ? freeformModel : null;
+
   // #0251: create a draft task with the raw prompt preserved FIRST, then spawn
   // the PM agent asynchronously to flesh it out. The draft survives a PM
   // failure, a slow/unavailable agent, or a bad response — the user's capture
@@ -344,6 +382,9 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
     originalPrompt: explanation,
     status: "draft",
     createdBy: getCurrentUser(req, config)?.email,
+    pmAgentOverride,
+    pmCliOverride,
+    pmModelOverride,
   });
   logger.task(created.id, "info", "Task created as draft, PM agent will flesh it out", {
     title: created.title,
@@ -410,28 +451,6 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
         );
       }
     }
-  }
-
-  const freeformAgentName =
-    typeof body?.agentOverride === "string" && body.agentOverride ? body.agentOverride : undefined;
-  const freeformCli =
-    typeof body?.cliOverride === "string" && body.cliOverride ? body.cliOverride : undefined;
-  const freeformModel =
-    typeof body?.modelOverride === "string" && body.modelOverride ? body.modelOverride : undefined;
-  // "default" is the sentinel for "use the configured pm agent's own
-  // model" — not a real pin (same bug class as resolveAgentForTask /
-  // resolveReviewerForTask / the PM-message override above).
-  const freeformModelPinned = isModelOverridePinned(freeformModel);
-  const hasFreeformOverride = freeformAgentName || freeformCli || freeformModelPinned;
-
-  let pm: Agent | null;
-  if (hasFreeformOverride) {
-    const list = agentsForConfig(config);
-    const baseName = freeformAgentName || "pm";
-    const base = list.find((a) => a.enabled && a.name === baseName) ?? null;
-    pm = base ? mergeAgentOverride(base, freeformCli, freeformModel) : null;
-  } else {
-    pm = resolvePmAgent(config);
   }
 
   // No PM agent configured: leave the draft exactly as created (the fallback

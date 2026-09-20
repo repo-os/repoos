@@ -42,6 +42,17 @@ export interface CreateTaskInput {
    * capture is never lost, even if a later agent pass rewrites the body.
    */
   originalPrompt?: string;
+  /**
+   * Per-task PM agent assignment persisted at creation (#0461). The freeform
+   * pane's picker chooses the PM agent/model for the one-off flesh-out run;
+   * these carry that same selection into the task's frontmatter so later PM
+   * actions (reply-from-context, re-flesh-out, restart) keep it. Only values
+   * that differ from the configured PM default are set — `null` means "use the
+   * configured default", matching the PM tab's own save logic.
+   */
+  pmAgentOverride?: string | null;
+  pmCliOverride?: string | null;
+  pmModelOverride?: string | null;
 }
 
 export { ORIGINAL_PROMPT_HEADING };
@@ -260,9 +271,9 @@ export function createRepoOS(root?: string): RepoOS {
         agentOverride: null,
         cliOverride: null,
         modelOverride: null,
-        pmAgentOverride: null,
-        pmCliOverride: null,
-        pmModelOverride: null,
+        pmAgentOverride: input.pmAgentOverride ?? null,
+        pmCliOverride: input.pmCliOverride ?? null,
+        pmModelOverride: input.pmModelOverride ?? null,
         reviewAgentOverride: null,
         reviewCliOverride: null,
         reviewModelOverride: null,
