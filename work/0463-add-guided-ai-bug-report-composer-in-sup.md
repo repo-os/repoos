@@ -2,14 +2,14 @@
 id: "0463"
 title: Add guided AI bug-report composer in Support
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: support
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-20T09:02:32Z"
-updated_at: "2026-09-20T09:02:32Z"
+updated_at: "2026-09-20T09:06:46Z"
 ---
 ## Goal
 
@@ -38,3 +38,4 @@ Add focused tests for generation request/error states, edit/copy behavior, priva
 ## Activity
 
 - 2026-09-20T09:02:32Z · created · unknown
+- 2026-09-20T09:06:46Z · status inbox→ready
