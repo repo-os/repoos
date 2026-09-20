@@ -2521,6 +2521,9 @@
   z-index: 1;
   pointer-events: auto;
   width: min(560px, 100%);
+  max-height: min(90vh, calc(100vh - 40px));
+  display: flex;
+  flex-direction: column;
   background: var(--panel-solid);
   border: 1px solid var(--border-bright);
   border-radius: 16px;
@@ -2541,12 +2544,16 @@
   color: var(--txt-dim);
 }
 .dep-modal-head {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 .dep-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   display: grid;
   gap: 14px;
   margin-top: 8px;
@@ -2599,6 +2606,7 @@
   white-space: pre-wrap;
 }
 .dep-modal-actions {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 12px;
