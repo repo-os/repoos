@@ -1,8 +1,8 @@
 /**
  * The top-bar Help ("?") affordance (#0378). A header control visible on every
- * route — deliberately not a `nav.ts` entry — opening a small external-link
- * menu (Docs, GitHub Discussions, Issues) that dismisses on click-outside and
- * Escape.
+ * route — deliberately not a `nav.ts` entry — opening a small support menu
+ * (the in-app support flow, docs, GitHub Discussions and Issues) that dismisses
+ * on click-outside and Escape.
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
@@ -36,20 +36,27 @@ describe("top-bar help menu", () => {
     expect(trigger.attributes("aria-expanded")).toBe("false");
   });
 
-  it("opens on click with Docs, Discussions and Issues links", async () => {
+  it("opens on click with the local support flow and external help links", async () => {
     const wrapper = mountTopBar();
     await wrapper.find(".help-menu-trigger").trigger("click");
     await nextTick();
 
     const links = wrapper.findAll(".help-menu-link");
-    expect(links).toHaveLength(3);
-    expect(links.map((l) => l.text())).toEqual(["Docs", "GitHub Discussions", "GitHub Issues"]);
+    expect(links).toHaveLength(4);
+    expect(links.map((l) => l.text())).toEqual([
+      "Get support",
+      "Docs",
+      "GitHub Discussions",
+      "Report a bug",
+    ]);
 
-    expect(links[0].attributes("href")).toBe("https://docs.repoos.org");
-    expect(links[1].attributes("href")).toBe("https://github.com/repo-os/repoos/discussions");
-    expect(links[2].attributes("href")).toBe("https://github.com/repo-os/repoos/issues");
+    expect(links[0].attributes("href")).toBe("/settings?tab=support");
+    expect(links[0].attributes("target")).toBeUndefined();
+    expect(links[1].attributes("href")).toBe("https://docs.repoos.org");
+    expect(links[2].attributes("href")).toBe("https://github.com/repo-os/repoos/discussions");
+    expect(links[3].attributes("href")).toBe("https://github.com/repo-os/repoos/issues/new/choose");
 
-    for (const link of links) {
+    for (const link of links.slice(1)) {
       expect(link.attributes("target")).toBe("_blank");
       expect(link.attributes("rel")).toBe("noopener noreferrer");
     }

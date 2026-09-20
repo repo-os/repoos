@@ -26,7 +26,12 @@ It excludes source code, prompts, task bodies, credentials, environment values
 and raw logs, and minimizes home/repo paths. It is written locally and never
 uploaded — you decide what to share. See
 [CLI → `repoos support bundle`](/cli#repoos-support-bundle-repoos-support-inspect).
-The same action is on **Settings → Support** in the web UI.
+The same action is on **Settings → Support** in the web UI. Inspect the archive
+before sharing it. For a reproducible bug, attach it to a
+[GitHub issue](https://github.com/repo-os/repoos/issues/new/choose) along with
+what you expected, what happened, and the smallest way to reproduce it. For a
+question or idea, start a [GitHub discussion](https://github.com/repo-os/repoos/discussions)
+instead.
 
 ## Running RepoOS in more than one repo at once
 

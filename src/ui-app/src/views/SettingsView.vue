@@ -1067,13 +1067,39 @@ onUnmounted(() => {
         <Card style="padding: 0 18px 16px; margin-bottom: 16px">
           <div class="setting-group">
             <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-              <span class="live-dot"></span>Support bundle
+              <span class="live-dot"></span>Get support
             </div>
             <div class="setting-desc" style="padding: 8px 0 12px">
-              Create a small, redacted diagnostic archive you can attach to an issue. It stays on
-              this machine and is never uploaded. Source code, prompts, task bodies, credentials,
-              environment values and raw logs are excluded, and home/repo paths are minimized.
+              Start here for an unexpected setup, server, check, or coding-agent problem. For a
+              common fix, see the
+              <a
+                class="support-link"
+                href="https://docs.repoos.org/troubleshooting"
+                target="_blank"
+                rel="noreferrer"
+                >troubleshooting guide ↗</a
+              >.
             </div>
+
+            <div class="support-subhead">Share a reproducible problem safely</div>
+            <ol class="support-steps">
+              <li>
+                Run <code>repoos doctor</code> first when possible — it often identifies a missing
+                tool or invalid setting immediately.
+              </li>
+              <li>
+                Create the support bundle below. It stays on this machine and is never uploaded by
+                RepoOS.
+              </li>
+              <li>
+                Inspect it before sharing, then attach it to a GitHub issue with what you expected,
+                what happened, and the smallest way to reproduce it.
+              </li>
+            </ol>
+            <p class="setting-desc support-privacy">
+              Bundles exclude source code, prompts, task bodies, credentials, environment values and
+              raw logs; home and repository paths are minimized.
+            </p>
 
             <div v-if="supportLoading" class="setting-desc">Checking what would be included…</div>
 
@@ -1124,6 +1150,29 @@ onUnmounted(() => {
               <div v-if="supportResult" class="setting-desc" style="padding-top: 8px">
                 Inspect before sharing:
                 <span class="mono">repoos support inspect {{ supportResult.path }}</span>
+              </div>
+              <div v-if="supportResult" class="support-handoff">
+                <div class="support-subhead">Choose where to ask</div>
+                <p class="setting-desc">
+                  Use an issue for a reproducible bug; use a discussion for a question, idea, or
+                  help choosing an approach.
+                </p>
+                <div class="support-links">
+                  <a
+                    class="support-link"
+                    href="https://github.com/repo-os/repoos/issues/new/choose"
+                    target="_blank"
+                    rel="noreferrer"
+                    >Report a bug on GitHub ↗</a
+                  >
+                  <a
+                    class="support-link"
+                    href="https://github.com/repo-os/repoos/discussions"
+                    target="_blank"
+                    rel="noreferrer"
+                    >Start a GitHub discussion ↗</a
+                  >
+                </div>
               </div>
             </template>
 

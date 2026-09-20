@@ -5929,6 +5929,39 @@
   gap: 8px;
   padding-top: 14px;
 }
+.support-steps {
+  margin: 0;
+  padding: 0 0 0 18px;
+  color: var(--txt-dim);
+  font-size: 12px;
+  line-height: 1.55;
+}
+.support-steps li + li {
+  margin-top: 4px;
+}
+.support-steps code {
+  color: var(--txt);
+  font-family: var(--mono);
+}
+.support-privacy {
+  padding-top: 8px;
+}
+.support-handoff {
+  padding-top: 8px;
+}
+.support-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 4px;
+}
+.support-link {
+  color: var(--cyan);
+  text-decoration: none;
+}
+.support-link:hover {
+  text-decoration: underline;
+}
 .support-warning {
   margin-top: 10px;
   padding: 8px 11px;
