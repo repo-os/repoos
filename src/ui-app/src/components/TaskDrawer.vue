@@ -3236,11 +3236,6 @@ watch(
           >
             <ShieldCheck class="tab-icon" />
             Review
-            <ActivityIndicator
-              v-if="ui.activeTab !== 'review' && review?.running"
-              variant="reviewing"
-              label="Reviewing…"
-            />
           </button>
           <button
             type="button"

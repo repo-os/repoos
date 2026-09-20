@@ -2042,9 +2042,6 @@
 .drawer-run.reviewing {
   color: var(--amber);
 }
-.drawer-run.reviewing {
-  color: var(--amber);
-}
 
 /* review substate chip (reviewing / coding / waiting for human) */
 .rs-chip {

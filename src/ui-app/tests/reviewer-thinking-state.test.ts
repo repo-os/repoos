@@ -140,6 +140,17 @@ describe("reviewer thinking state in the task panel (#0209)", () => {
     expect(working.find(".ai").exists()).toBe(true);
     // ...and it is the ONLY place that status appears (#0456).
     expect(wrapper.findAll(".drawer-run.reviewing")).toHaveLength(1);
+    expect(wrapper.findAll(".ai-reviewing")).toHaveLength(1);
+    expect(wrapper.findAll(".tab-btn .ai")).toHaveLength(0);
+    expect(wrapper.text().match(/Reviewer is reviewing this task…/g)).toHaveLength(1);
+
+    // Switching to another tab must not surface a second reviewer indicator —
+    // historically the Review tab carried its own animated badge here.
+    const ui = useUiStore();
+    ui.activeTab = "details";
+    await flush();
+    expect(wrapper.findAll(".ai-reviewing")).toHaveLength(1);
+    expect(wrapper.findAll(".tab-btn .ai")).toHaveLength(0);
     expect(wrapper.text().match(/Reviewer is reviewing this task…/g)).toHaveLength(1);
 
     // The Review tab no longer repeats the working status as its own banner or
