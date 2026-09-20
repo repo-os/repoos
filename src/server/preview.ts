@@ -21,6 +21,7 @@ import { createServer as createTcpServer } from "node:net";
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
 import type { RepoOSConfig, Status, Task } from "../core/types.js";
+import { readPreviewOverlayKeys } from "../core/config.js";
 import { linkInheritedEnv, worktreePathForBranch } from "../core/git.js";
 import type { RepoEvent } from "./live-index.js";
 
@@ -53,6 +54,13 @@ export interface PreviewInfo {
    * shell's whole tree down with it.
    */
   processGroup?: boolean;
+  /**
+   * Preview-only config override keys (#0464) the worktree's `repoos.toml`
+   * declares, as sorted dotted base-key paths (e.g. `["auth.enabled"]`). The
+   * child applies them because PreviewManager spawns it with
+   * REPOOS_PREVIEW_CHILD=1; empty/absent means the preview runs the base config.
+   */
+  overrides?: string[];
 }
 
 export interface PreviewResult {
@@ -63,6 +71,8 @@ export interface PreviewResult {
   readyPath?: string;
   /** Which preview target ran (#0362 review) — see `PreviewInfo.label`. */
   label?: string;
+  /** Preview-only config override keys this preview applied (#0464). */
+  overrides?: string[];
   error?: string;
 }
 
@@ -513,6 +523,7 @@ export class PreviewManager {
         url: existing.url,
         readyPath: existing.readyPath,
         label: existing.label,
+        ...(existing.overrides?.length ? { overrides: existing.overrides } : {}),
       };
     }
     // Concurrent starts for the same task (e.g. duplicate transition events)
@@ -564,6 +575,13 @@ export class PreviewManager {
     // fail-soft; on a worktree that already has it (or a repo that didn't opt
     // in) this is a no-op.
     linkInheritedEnv(this.config.root, root);
+
+    // Preview-only config overrides (#0464): the worktree's own `[preview.*]`
+    // keys. The child is spawned with REPOOS_PREVIEW_CHILD=1 below, so a
+    // `repoos serve` preview applies them; reporting them here makes the
+    // deliberate divergence from base config visible even though the child's
+    // console is not attached.
+    const overrides = readPreviewOverlayKeys(root);
 
     // Decide how to preview this task (#0362): a project-declared command
     // selected by area. A task whose area matches no configured target — or a
@@ -618,13 +636,15 @@ export class PreviewManager {
       label: target.label,
       ...(spawned.command ? { command: spawned.command } : {}),
       ...(spawned.processGroup ? { processGroup: true } : {}),
+      ...(overrides.length ? { overrides } : {}),
     };
     this.registry.set(task.id, info);
     this.persist();
     this.logLifecycle(
       "started",
       task.id,
-      `target=${info.label} url=${info.url} pid=${info.pid} port=${info.port}`,
+      `target=${info.label} url=${info.url} pid=${info.pid} port=${info.port}` +
+        (overrides.length ? ` overrides=${overrides.join(",")}` : ""),
     );
     this.emit({
       type: "preview",
@@ -638,6 +658,7 @@ export class PreviewManager {
       url: info.url,
       readyPath: target.readyPath,
       label: info.label,
+      ...(overrides.length ? { overrides } : {}),
     };
   }
 

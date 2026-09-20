@@ -90,6 +90,28 @@ export function resolveServeHost(explicitHost?: string): {
 }
 
 /**
+ * Whether this `repoos serve` should apply the repo's preview-only
+ * `[preview.*]` config overlay (#0464).
+ *
+ * Precedence, lowest to highest: the REPOOS_PREVIEW_CHILD=1 marker (set by
+ * PreviewManager on every managed preview child) turns it on; an explicit
+ * `--no-preview-overrides`/`--preview-overrides` flag always wins. An ordinary
+ * `repoos serve` has neither, so it resolves the base configuration unchanged.
+ * Exported for tests.
+ */
+export function resolvePreviewOverrides(
+  args: readonly string[],
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
+  let explicit: boolean | undefined;
+  for (const arg of args) {
+    if (arg === "--preview-overrides") explicit = true;
+    else if (arg === "--no-preview-overrides") explicit = false;
+  }
+  return explicit ?? env.REPOOS_PREVIEW_CHILD === "1";
+}
+
+/**
  * True when this process is a managed agent (REPOOS_AGENT=1) attempting to
  * launch `repoos serve` directly, as opposed to a preview child or a reload
  * replacement spawned by the main server. The AgentRunner sets REPOOS_AGENT=1
@@ -138,6 +160,12 @@ export async function cmdServe(
     else if (args[i] === "--host") explicitHost = args[++i];
     else if (args[i] === "--quiet" || args[i] === "-q") quiet = true;
   }
+  // Preview-only config overlay (#0464). A managed preview child
+  // (REPOOS_PREVIEW_CHILD=1, set by PreviewManager) applies the repo's
+  // `[preview.*]` overlay by default; every ordinary `repoos serve` resolves
+  // the base configuration. `--preview-overrides` forces it on (UI-test
+  // previews); `--no-preview-overrides` is the escape hatch back to base.
+  const applyPreviewOverrides = resolvePreviewOverrides(args);
   const { host, tailscaleDetected, tailscaleIP } = resolveServeHost(explicitHost);
 
   let handle;
@@ -147,6 +175,8 @@ export async function cmdServe(
     handle = await startServer({
       port,
       host,
+      hostExplicit: explicitHost !== undefined,
+      previewOverrides: applyPreviewOverrides,
       reloadReplacement: process.env.REPOOS_RELOAD === "1",
     });
   } catch (e) {
@@ -175,6 +205,13 @@ export async function cmdServe(
       c.dim(" tasks  ·  SSE stream at ") +
       c.cyan(handle.url + "/api/events"),
   );
+  // Report an active preview-only overlay and its effective keys (#0464), so a
+  // preview that deliberately differs from the base config is never silent.
+  if (handle.previewOverrides?.length) {
+    console.log(
+      c.yellow("  preview overrides active: ") + c.dim(handle.previewOverrides.join(", ")),
+    );
+  }
   const rt = isBun()
     ? `Bun ${(process.versions as { bun?: string }).bun ?? ""}`.trim()
     : `Node ${process.versions.node}`;

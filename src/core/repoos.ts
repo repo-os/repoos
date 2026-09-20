@@ -6,7 +6,7 @@
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { loadConfig } from "./config.js";
+import { loadConfig, type LoadConfigOptions } from "./config.js";
 import { buildIndex, writeIndexCache } from "./indexer.js";
 import {
   parseTask,
@@ -119,8 +119,8 @@ _What should the end experience be?_
 _Constraints, files to touch, things NOT to do._
 `;
 
-export function createRepoOS(root?: string): RepoOS {
-  const config = loadConfig(root);
+export function createRepoOS(root?: string, loadOptions: LoadConfigOptions = {}): RepoOS {
+  const config = loadConfig(root, loadOptions);
 
   function freshIndex(): RepoIndex {
     return buildIndex(config);

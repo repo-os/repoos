@@ -418,6 +418,14 @@ export interface RepoOSConfig {
    */
   preview?: PreviewConfig;
   /**
+   * Preview-only config overrides that were applied (task #0464), as sorted
+   * dotted base key paths (e.g. `["auth.enabled"]`). Set only when config was
+   * resolved with the preview overlay turned on — the preview/UI-test preview
+   * runtime does this; every normal command resolves the base config and leaves
+   * this undefined. Runtime information, not a `repoos.toml` field of its own.
+   */
+  previewOverrides?: string[];
+  /**
    * Per-project task-worktree behavior (#0373). Omitted means defaults — in
    * particular, no `.env` is placed in any worktree.
    */

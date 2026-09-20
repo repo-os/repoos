@@ -191,6 +191,56 @@ would avoid — a worktree process writing *through* the symlink back into main'
 `.env` — is narrow: the only writer, `setDotEnvSecret`, is called by the
 server's model-provider settings and targets its own config root.
 
+## Preview-only config overrides (#0464)
+
+A preview sometimes needs a deliberately different runtime config from the base
+`repoos.toml` — the motivating case is auth: keep `auth.enabled = true` for
+normal use, but boot local previews with it off so screenshot/browser tooling
+needn't clear the OTP flow. `repoos.toml` therefore accepts a `[preview.<path>]`
+overlay:
+
+```toml
+[auth]
+enabled = true
+
+[preview.auth]
+enabled = false
+```
+
+Mechanically this is small and deliberately narrow:
+
+- `parsePreviewOverlays` (`src/core/config.ts`) treats every flat `preview.*`
+  key whose head is not a preview-feature key (`command`, `cwd`, `readyPath`,
+  `readyTimeoutMs`, `targets`) as an override of the base key after the prefix.
+  Because `parseFlatToml` already flattens nested tables, deep merge is inherent:
+  `[preview.auth] enabled = false` contributes only `auth.enabled`, leaving the
+  rest of `[auth]` at base values.
+- `loadConfig(root, { previewOverrides: true })` re-applies those keys over the
+  base parse before the normal field reads, so precedence is defaults → base
+  config → preview overlay → explicit CLI flags. Only supported keys
+  (`SUPPORTED_TOML_KEYS`) may be overridden; an unknown path warns and is
+  dropped. Applied keys land on `config.previewOverrides` for reporting.
+- The option is threaded `cmdServe` → `startServer` → `createRepoOS` →
+  `loadConfig`. `cmdServe` defaults it to `process.env.REPOOS_PREVIEW_CHILD ===
+  "1"`, which `PreviewManager.spawnPreview` already sets on every preview child,
+  so a `repoos serve` preview applies the overlay automatically. Ordinary
+  `repoos serve` never does. `--preview-overrides` forces it on (UI-test
+  previews); **`--no-preview-overrides`** is the escape hatch back to base.
+- Safety: when an override disables auth, `startServer` coerces a wildcard bind
+  (`0.0.0.0`, from the Tailscale auto-default) back to `127.0.0.1` unless the
+  caller passed `--host` explicitly — an auth-less preview must not reach the
+  tailnet. `resolveServeHost`'s Tailscale branch is the only way that wildcard
+  arises. The preview child already gets `--host 127.0.0.1` from
+  `spawnPreview`, so this is the backstop, not the primary path.
+- Reporting: `PreviewManager.doStart` reads the worktree's declared keys via
+  `readPreviewOverlayKeys` and records them on `PreviewInfo` /
+  `PreviewResult` and the `started` lifecycle log; `startServer` logs
+  `preview configuration overrides active: …`; and the agent-preview transcript
+  and preview API response name the keys.
+
+The user-facing explanation, precedence, and copyable example live in
+[`user-docs/configuration.md`](../user-docs/configuration.md#preview-only-overrides).
+
 ## Open question: `area` is free text and single-valued
 
 `area:` has no schema (`--area` is documented as free text) and a task carries

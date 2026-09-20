@@ -1344,6 +1344,7 @@ export const startPreview: RouteHandler = async (ctx, req, res, params) => {
     port: result.port,
     url: result.url,
     label: result.label,
+    ...(result.overrides?.length ? { overrides: result.overrides } : {}),
   });
 };
 
