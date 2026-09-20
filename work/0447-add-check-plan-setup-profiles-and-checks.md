@@ -2,14 +2,14 @@
 id: "0447"
 title: "Add check-plan setup, profiles, and Checks visibility"
 type: feature
-status: ready
+status: active
 priority: p2
 area: ui
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/add-check-plan-setup-profiles-and-checks
 created_at: "2026-09-19T15:10:16Z"
-updated_at: "2026-09-20T00:49:29Z"
+updated_at: "2026-09-20T00:50:41Z"
 ---
 ## Outcome
 
@@ -34,3 +34,4 @@ Make a project's check plan understandable and easy to bootstrap after the stack
 
 - 2026-09-19T15:10:16Z · created · unknown
 - 2026-09-20T00:49:29Z · status inbox→ready
+- 2026-09-20T00:50:41Z · status ready→active, branch
