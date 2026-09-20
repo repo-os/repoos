@@ -69,6 +69,7 @@ import { STATUSES } from "../../core/types.js";
 import { parseTask } from "../../core/task.js";
 import type { UsageRange } from "../../core/db.js";
 import { buildIntegrationSnapshot } from "../integration-status.js";
+import { resolvePipelineCheckPlan } from "../check-plan-info.js";
 import { loadDiffSnapshot } from "../diff-snapshot.js";
 import { previewTargetOptions, type PreviewTargetOption } from "../preview.js";
 
@@ -1033,7 +1034,11 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     // even before job processing's own snapshot emission picks it up.
     ctx.emitEvent({
       type: "integration",
-      pipeline: buildIntegrationSnapshot(ctx.jobCoordinator, {}),
+      pipeline: buildIntegrationSnapshot(
+        ctx.jobCoordinator,
+        {},
+        resolvePipelineCheckPlan(ctx.config),
+      ),
     });
 
     // Trigger job processing to start the pipeline.
@@ -1684,7 +1689,11 @@ export const getIntegrationJobs: RouteHandler = (ctx, _req, res) => {
 export const getIntegrationPipeline: RouteHandler = (ctx, _req, res) => {
   return json(res, 200, {
     ok: true,
-    pipeline: buildIntegrationSnapshot(ctx.jobCoordinator, ctx.reportedStages),
+    pipeline: buildIntegrationSnapshot(
+      ctx.jobCoordinator,
+      ctx.reportedStages,
+      resolvePipelineCheckPlan(ctx.config),
+    ),
   });
 };
 
@@ -1715,7 +1724,7 @@ export const retryIntegration: RouteHandler = (ctx, _req, res, params) => {
   }
   ctx.emitEvent({
     type: "integration",
-    pipeline: buildIntegrationSnapshot(jobCoordinator, {}),
+    pipeline: buildIntegrationSnapshot(jobCoordinator, {}, resolvePipelineCheckPlan(ctx.config)),
   });
   ctx.triggerJobProcessing();
   return json(res, 200, {

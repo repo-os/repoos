@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { AlertTriangle, ChevronDown, ChevronRight, RefreshCw } from "lucide-vue-next";
 import type { Task, TaskCheckRun, TaskLogEntry } from "../types";
 import { useRepoStore } from "../stores/repo";
+import { useUiStore } from "../stores/ui";
 import { relTime } from "../lib/time";
 import { summarizeCheckFailure } from "../../../core/check-failure-summary.js";
 import Card from "./ui/card.vue";
@@ -11,6 +12,7 @@ import TaskDebuggerChat from "./TaskDebuggerChat.vue";
 
 const props = defineProps<{ task: Task }>();
 const repo = useRepoStore();
+const ui = useUiStore();
 
 /** The Debug tab shows two views: the existing task logs, and a task-scoped
  *  Debugger chat. Both stay reachable (the chat is additive, never a
@@ -200,6 +202,40 @@ function toggleExpanded(key: string): void {
   else next.add(key);
   expanded.value = next;
 }
+
+/**
+ * When a pipeline stage click asks to reveal a specific check run (#0458),
+ * clear any filter that would hide it, expand its row, and scroll it into
+ * view. A no-op once consumed — or while the run hasn't started yet: the
+ * watcher re-runs as check runs stream in, so a not-yet-started check is
+ * revealed the moment it begins. Focus targeting the same task only.
+ */
+function applyDebugFocus(): void {
+  const focus = ui.debugCheckFocus;
+  if (!focus || focus.taskId !== props.task.id) return;
+  const runs = repo.taskChecks[props.task.id] ?? [];
+  const match = [...runs].reverse().find((c) => c.kind === focus.kind);
+  if (!match) return;
+  if (kindFilter.value !== "all" && kindFilter.value !== "check") kindFilter.value = "check";
+  if (filter.value === "errors" && match.passed !== false) filter.value = "all";
+  expanded.value = new Set([...expanded.value, `check-${match.id}`]);
+  nextTick(() => {
+    const el = document.querySelector(`[data-debug-event="check-${match.id}"]`);
+    if (el instanceof HTMLElement && typeof el.scrollIntoView === "function") {
+      try {
+        el.scrollIntoView({ block: "center", behavior: "smooth" });
+      } catch {
+        /* jsdom/older engines: reveal without scrolling */
+      }
+    }
+    ui.clearDebugCheckFocus();
+  });
+}
+
+watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDebugFocus, {
+  immediate: true,
+  deep: true,
+});
 </script>
 
 <template>
@@ -287,6 +323,7 @@ function toggleExpanded(key: string): void {
           v-for="e in filteredEvents"
           :key="e.key"
           class="debug-event"
+          :data-debug-event="e.key"
           :class="[
             `debug-level-${e.level}`,
             { 'debug-event-expandable': e.kind === 'check' || e.detail },
