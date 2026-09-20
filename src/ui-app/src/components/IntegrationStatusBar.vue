@@ -5,7 +5,13 @@ import { ChevronDown, ChevronUp } from "lucide-vue-next";
 import { useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { formatDuration } from "../lib/time";
-import { INTEGRATION_STAGES, type IntegrationPipelineSnapshot } from "../types";
+import { api } from "../api";
+import {
+  INTEGRATION_STAGES,
+  type CheckPlanStep,
+  type IntegrationPipelineSnapshot,
+  type Task,
+} from "../types";
 
 /** Grace period the expanded bar stays open once the pipeline is idle
  *  (nothing active, nothing queued) before it folds itself back to a strip. */
@@ -125,20 +131,94 @@ function retry(): void {
   });
 }
 
-/** What each pipeline stage actually does — shown as a hover tooltip so the
- *  bar isn't a black box (0309 follow-up: a human watching "check" sit for
- *  a long time had no way to know that's the full test-suite run, not a
- *  hang). Order matches INTEGRATION_STAGES. */
+/**
+ * What each of the pipeline's fixed orchestrator stages does, shown as a hover
+ * tooltip so the bar isn't a black box. Worded stack-neutrally: the same text
+ * has to read correctly for a Go, Rust or Android repo, so it never names
+ * RepoOS's own `tsc`/asset pipeline. The `check` stage is different — it runs
+ * the repo's declared plan, so its tooltip is built from `repoos.toml` (see
+ * `checkTooltip`) rather than a fixed string. Order matches INTEGRATION_STAGES.
+ */
 const STAGE_INFO: Record<string, string> = {
   sync: "Syncing: fast-forwarding the task's branch onto the latest main before validating, so it's tested against current main, not a stale base.",
   merge:
     "Merge: merging the branch into a temporary candidate alongside current main. Fast — a real hang here is unusual.",
   build:
-    "Build: compiling the merged candidate (tsc + asset bundling) to catch build breaks the branch's own diff couldn't see.",
-  check:
-    "Check: running the full repoos check — typecheck, the complete test suite (1000+ tests), and a UI smoke test — against the merged candidate. This is normally the slowest stage, often several minutes; it is not scoped to just this branch's changes since it's validating the actual merge onto main.",
+    "Build: building the merged candidate with the project's own build script, to catch build breaks the branch's diff alone couldn't see.",
   done: "Done: fast-forwarding main to the validated candidate and cleaning up the temporary worktree/branch.",
 };
+
+/** What a check step actually runs: its command, or the built-in guard name. */
+function stepAction(s: CheckPlanStep): string {
+  if (s.command) return s.command;
+  if (s.kind) return `${s.kind} (built-in guard)`;
+  return "—";
+}
+
+function fmtTimeout(ms: number): string {
+  if (!Number.isFinite(ms) || ms <= 0) return "no timeout";
+  if (ms < 60_000) return `${Math.round(ms / 1000)}s`;
+  const min = ms / 60_000;
+  return `${Number.isInteger(min) ? min : min.toFixed(1)}m`;
+}
+
+/** One tooltip line per check step: label, command/kind, timeout, dependencies. */
+function stepLine(s: CheckPlanStep): string {
+  const bits = [`timeout ${fmtTimeout(s.timeoutMs)}`];
+  if (s.cwd) bits.push(`in ${s.cwd}`);
+  if (s.dependsOn.length) bits.push(`after ${s.dependsOn.join(", ")}`);
+  if (!s.required) bits.push("optional");
+  return `  • ${s.name}: ${stepAction(s)} · ${bits.join(" · ")}`;
+}
+
+/**
+ * Tooltip for the `check` stage (#0458) — the real merge-gate steps resolved
+ * from this repo's `repoos.toml`, not a hardcoded RepoOS flow. The snapshot is
+ * re-resolved on every pipeline event, so a config change mid-run is reflected
+ * on the next stage update. Falls back to a generic line with no plan.
+ */
+const checkTooltip = computed<string>(() => {
+  const plan = snapshot.value?.checkPlan;
+  if (!plan || plan.steps.length === 0) {
+    return (
+      "Check: running the repo's merge gate against the merged candidate — `repoos check` " +
+      "with the steps declared in repoos.toml. (No check plan was resolved for this repo.)"
+    );
+  }
+  const intro =
+    `Check: running the repo's merge gate against the merged candidate — ${plan.steps.length} ` +
+    `step(s) from repoos.toml, profile "${plan.defaultProfile}".`;
+  return [intro, ...plan.steps.map(stepLine)].join("\n");
+});
+
+/** The hover tooltip for a stage: plan-driven for `check`, fixed otherwise. */
+function stageTitle(s: string): string {
+  return s === "check" ? checkTooltip.value : (STAGE_INFO[s] ?? "");
+}
+
+/**
+ * Click a pipeline stage → open that task's drawer on the Debug tab (#0458).
+ * The `check` stage also asks the Debug panel to reveal the merge-gate check's
+ * execution: while running it scrolls to the live output, after it finishes to
+ * the recorded run, and before it starts the panel simply opens — the focus is
+ * applied as soon as a matching run appears.
+ */
+async function onStageClick(stage: string): Promise<void> {
+  const job = active.value;
+  if (!job) return;
+  let task: Task | null = repo.tasks.find((t) => t.id === job.taskId) ?? null;
+  if (!task) {
+    try {
+      task = await api<Task>(`/api/tasks/${encodeURIComponent(job.taskId)}`);
+    } catch {
+      return;
+    }
+  }
+  ui.open(task);
+  ui.activeTab = "debug";
+  ui.debugView = "logs";
+  if (stage === "check") ui.focusDebugCheck(job.taskId, "merge-gate");
+}
 
 function stageClass(s: string, i: number): string {
   // On failure the failing stage is pinned red; earlier stages stay checked
@@ -223,30 +303,33 @@ function stageClass(s: string, i: number): string {
           </span>
 
           <ol class="stages" :aria-label="'Integration stages'">
-            <li
-              v-for="(s, i) in INTEGRATION_STAGES"
-              :key="s"
-              class="stage"
-              :class="stageClass(s, i)"
-              :title="STAGE_INFO[s]"
-            >
-              <span class="stage-mark" aria-hidden="true">
-                <svg v-if="i < currentIndex" viewBox="0 0 24 24" class="stage-check" fill="none">
-                  <path
-                    d="M5 13l4 4L19 7"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-                <span
-                  v-else
-                  class="stage-dot"
-                  :class="{ spinning: i === currentIndex && !active.failed }"
-                ></span>
-              </span>
-              <span class="stage-name">{{ s }}</span>
+            <li v-for="(s, i) in INTEGRATION_STAGES" :key="s" class="stage-item">
+              <button
+                type="button"
+                class="stage"
+                :class="stageClass(s, i)"
+                :title="stageTitle(s)"
+                :aria-label="`${s}: ${stageTitle(s)}`"
+                @click="onStageClick(s)"
+              >
+                <span class="stage-mark" aria-hidden="true">
+                  <svg v-if="i < currentIndex" viewBox="0 0 24 24" class="stage-check" fill="none">
+                    <path
+                      d="M5 13l4 4L19 7"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  <span
+                    v-else
+                    class="stage-dot"
+                    :class="{ spinning: i === currentIndex && !active.failed }"
+                  ></span>
+                </span>
+                <span class="stage-name">{{ s }}</span>
+              </button>
               <span v-if="i < INTEGRATION_STAGES.length - 1" class="stage-arrow" aria-hidden="true"
                 >→</span
               >
@@ -385,14 +468,27 @@ function stageClass(s: string, i: number): string {
   flex-wrap: wrap;
 }
 
+.stage-item {
+  display: flex;
+  align-items: center;
+}
+
 .stage {
   display: flex;
   align-items: center;
   gap: 6px;
+  font: inherit;
   font-size: 12px;
   color: var(--txt-faint);
   white-space: nowrap;
-  cursor: help;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+.stage:hover .stage-name {
+  color: var(--txt);
 }
 
 .stage-mark {
