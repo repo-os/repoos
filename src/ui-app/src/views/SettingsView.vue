@@ -1081,72 +1081,94 @@ onUnmounted(() => {
               >.
             </div>
 
-            <div class="support-subhead">Share a reproducible problem safely</div>
-            <ol class="support-steps">
-              <li>
-                Run <code>repoos doctor</code> first when possible — it often identifies a missing
-                tool or invalid setting immediately.
-              </li>
-              <li>
-                Create the support bundle below. It stays on this machine and is never uploaded by
-                RepoOS.
-              </li>
-              <li>
-                Inspect it before sharing, then attach it to a GitHub issue with what you expected,
-                what happened, and the smallest way to reproduce it.
-              </li>
-            </ol>
-            <p class="setting-desc support-privacy">
-              Bundles exclude source code, prompts, task bodies, credentials, environment values and
-              raw logs; home and repository paths are minimized.
-            </p>
+            <div class="support-steps-grid" aria-label="How to get support">
+              <article class="support-step">
+                <span class="support-step-num">1</span>
+                <div>
+                  <strong>Diagnose</strong>
+                  <p>
+                    Run <code>repoos doctor</code> first. It often identifies the fix immediately.
+                  </p>
+                </div>
+              </article>
+              <article class="support-step">
+                <span class="support-step-num">2</span>
+                <div>
+                  <strong>Create a safe bundle</strong>
+                  <p>It stays on this machine; RepoOS never uploads it.</p>
+                </div>
+              </article>
+              <article class="support-step">
+                <span class="support-step-num">3</span>
+                <div>
+                  <strong>Share the right context</strong>
+                  <p>Inspect it, then attach it to a bug report with reproduction steps.</p>
+                </div>
+              </article>
+            </div>
 
-            <div v-if="supportLoading" class="setting-desc">Checking what would be included…</div>
+            <section v-if="supportLoading" class="support-preview-loading" aria-live="polite">
+              <span class="support-spinner" aria-hidden="true"></span>
+              <div>
+                <strong>Preparing a private bundle preview</strong>
+                <p>Checking safe diagnostics. This creates nothing and uploads nothing.</p>
+              </div>
+            </section>
 
             <template v-else-if="supportPreview">
-              <div class="support-subhead">Included</div>
-              <ul class="support-list">
-                <li v-for="f in supportPreview.manifest.files" :key="f.path">
-                  <span class="mono">{{ f.path }}</span>
-                  <span class="setting-desc"> — {{ f.description }}</span>
-                </li>
-                <li>
-                  <span class="mono">manifest.json</span>
-                  <span class="setting-desc"> — machine-readable index of every file above.</span>
-                </li>
-              </ul>
-
-              <template v-if="supportPreview.manifest.omitted.length">
-                <div class="support-subhead">Omitted (with reason)</div>
-                <ul class="support-list">
-                  <li v-for="o in supportPreview.manifest.omitted" :key="o.category">
-                    <span class="mono">{{ o.category }}</span>
-                    <span class="setting-desc"> — {{ o.reason }}</span>
-                  </li>
-                </ul>
-              </template>
-
-              <div class="setting-desc" style="padding: 12px 0 0">
-                Will be written to
-                <span class="mono">{{ supportResult?.path ?? supportPreview.path }}</span>
-                <span v-if="supportResult"> ({{ supportResult.bytes }} bytes)</span>.
-              </div>
-              <div v-if="supportPreview.warning" class="support-warning" role="alert">
-                {{ supportPreview.warning }}
-              </div>
-
-              <div class="support-actions">
-                <Button size="sm" :disabled="supportCreating" @click="createSupportBundle">{{
-                  supportCreating ? "Creating…" : "Create support bundle"
-                }}</Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  :disabled="supportLoading"
-                  @click="refreshSupportPreview"
-                  >Refresh</Button
-                >
-              </div>
+              <section class="support-preview-ready">
+                <div class="support-preview-ready-copy">
+                  <strong>Bundle preview ready</strong>
+                  <p>
+                    {{ supportPreview.manifest.files.length + 1 }} small diagnostic files will be
+                    collected locally. Source code, credentials, prompts, environment values and raw
+                    logs are excluded.
+                  </p>
+                </div>
+                <div class="support-actions">
+                  <Button size="sm" :disabled="supportCreating" @click="createSupportBundle">{{
+                    supportCreating ? "Creating…" : "Create support bundle"
+                  }}</Button>
+                  <Button variant="outline" size="sm" @click="refreshSupportPreview"
+                    >Refresh</Button
+                  >
+                </div>
+                <p class="setting-desc support-output-path">
+                  {{ supportResult ? "Written to" : "Will be written to" }}
+                  <span class="mono">{{ supportResult?.path ?? supportPreview.path }}</span>
+                  <span v-if="supportResult"> ({{ supportResult.bytes }} bytes)</span>.
+                </p>
+                <div v-if="supportPreview.warning" class="support-warning" role="alert">
+                  {{ supportPreview.warning }}
+                </div>
+                <details class="support-details">
+                  <summary>Review included information and exclusions</summary>
+                  <div class="support-details-body">
+                    <div class="support-subhead">Included</div>
+                    <ul class="support-list">
+                      <li v-for="f in supportPreview.manifest.files" :key="f.path">
+                        <span class="mono">{{ f.path }}</span>
+                        <span class="setting-desc"> — {{ f.description }}</span>
+                      </li>
+                      <li>
+                        <span class="mono">manifest.json</span>
+                        <span class="setting-desc">
+                          — machine-readable index of every file above.</span
+                        >
+                      </li>
+                    </ul>
+                    <template v-if="supportPreview.manifest.omitted.length">
+                      <div class="support-subhead">Omitted (with reason)</div>
+                      <ul class="support-list">
+                        <li v-for="o in supportPreview.manifest.omitted" :key="o.category">
+                          <span class="mono">{{ o.category }}</span>
+                          <span class="setting-desc"> — {{ o.reason }}</span>
+                        </li>
+                      </ul>
+                    </template>
+                  </div>
+                </details>
+              </section>
               <div v-if="supportResult" class="setting-desc" style="padding-top: 8px">
                 Inspect before sharing:
                 <span class="mono">repoos support inspect {{ supportResult.path }}</span>
@@ -1176,7 +1198,10 @@ onUnmounted(() => {
               </div>
             </template>
 
-            <div v-if="supportError" class="toml-raw-error" role="alert">{{ supportError }}</div>
+            <div v-if="supportError" class="support-error" role="alert">
+              <span>{{ supportError }}</span>
+              <Button variant="outline" size="sm" @click="refreshSupportPreview">Try again</Button>
+            </div>
           </div>
         </Card>
       </div>
