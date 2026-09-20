@@ -2,14 +2,14 @@
 id: "0460"
 title: Replace pipeline stage tooltips with a styled on-hover pane
 type: feature
-status: ready
+status: active
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/replace-pipeline-stage-tooltips-with-a-s
 created_at: "2026-09-20T00:56:47Z"
-updated_at: "2026-09-20T01:53:15Z"
+updated_at: "2026-09-20T01:53:17Z"
 ---
 ## Problem
 
@@ -65,3 +65,4 @@ Instead of using the standard tooltip behaviour here let's make it a proper on-h
 - 2026-09-20T00:56:48Z · screenshots
 - 2026-09-20T00:57:29Z · status draft→inbox, title, area, body
 - 2026-09-20T01:53:15Z · status inbox→ready
+- 2026-09-20T01:53:17Z · status ready→active, branch
