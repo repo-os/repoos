@@ -2,14 +2,14 @@
 id: "0462"
 title: Cap deployment modal error height so it can't overflow the page
 type: bug
-status: ready
+status: active
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/cap-deployment-modal-error-height-so-it-
 created_at: "2026-09-20T03:45:32Z"
-updated_at: "2026-09-20T03:47:14Z"
+updated_at: "2026-09-20T03:47:22Z"
 ---
 ## Problem
 When a deploy fails, the error message is rendered in a `.dep-modal-error` block inside the deploy-confirmation modal (`DeploymentsView.vue`). The modal card (`.dep-card` in `src/ui-app/src/style.css:2519`) has no `max-height` and no internal scroll, and `.dep-modal-error` (`src/ui-app/src/style.css:2594`) only sets `white-space: pre-wrap` with no height cap. Long error output (multi-line git/push failures) makes the card grow taller than the viewport, overflowing the page and pushing the action buttons (Deploy / Cancel) out of reach — the user can't dismiss or retry the dialog.
@@ -52,3 +52,4 @@ Please fix the deployment modal error height so that it doesn't overflow the pag
 - 2026-09-20T03:45:32Z · screenshots
 - 2026-09-20T03:46:21Z · status draft→inbox, title, area, type, body
 - 2026-09-20T03:47:14Z · status inbox→ready
+- 2026-09-20T03:47:22Z · status ready→active, branch
