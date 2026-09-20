@@ -1737,6 +1737,55 @@ export const retryIntegration: RouteHandler = (ctx, _req, res, params) => {
   });
 };
 
+/**
+ * Stop an in-flight close-out (#0459). Marks the integration job cancelled so
+ * the running orchestrator aborts at its next checkpoint (killing any running
+ * build/check child), and drops a not-yet-started job immediately. The task is
+ * left in `review` with its feature branch/worktree intact — nothing is merged
+ * — so "Move to done" can be clicked again.
+ */
+export const cancelDone: RouteHandler = (ctx, _req, res, params) => {
+  const { jobCoordinator, index } = ctx;
+  const id = params.param1;
+  const task = index.getTask(id);
+  if (!task) {
+    return json(res, 404, { error: `Task #${id} not found` });
+  }
+  const job = jobCoordinator.getJob(id);
+  if (!job) {
+    return json(res, 404, { error: `Task #${id} is not in the close-out pipeline` });
+  }
+  if (job.phase === "done") {
+    return json(res, 409, { error: `Task #${id} already finished close-out` });
+  }
+  if (job.cancelled) {
+    return json(res, 200, { ok: true, alreadyCancelled: true });
+  }
+  // Once the merge has committed, the close-out has effectively landed; all
+  // that remains is bookkeeping. Refusing here is honest — cancelling would
+  // not undo the merge.
+  if (job.phase === "cleanup") {
+    return json(res, 409, {
+      error: `Task #${id} already merged into main and is finishing up; it cannot be stopped now`,
+    });
+  }
+
+  jobCoordinator.requestCancel(id);
+  // A queued job has no orchestrator watching it yet, so cancel it outright
+  // rather than leaving it for a future drain to pick up and cancel.
+  if (job.phase === "queued") {
+    jobCoordinator.removeJob(id);
+  }
+
+  // The snapshot hides cancelled jobs, so this event drops the task out of the
+  // pipeline bar (and re-enables the drawer's Move to done) immediately.
+  ctx.emitEvent({
+    type: "integration",
+    pipeline: buildIntegrationSnapshot(jobCoordinator, {}, resolvePipelineCheckPlan(ctx.config)),
+  });
+  return json(res, 200, { ok: true });
+};
+
 // Session stats endpoints
 export const getTaskStats: RouteHandler = (ctx, _req, res, params) => {
   const { runner } = ctx;

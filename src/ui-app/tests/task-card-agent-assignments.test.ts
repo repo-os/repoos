@@ -8,6 +8,7 @@ import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia, type Pinia } from "pinia";
 import { nextTick } from "vue";
 import TaskCard from "../src/components/TaskCard.vue";
+import AgentModelModal from "../src/components/AgentModelModal.vue";
 import { useRepoStore } from "../src/stores/repo";
 import { useConfigStore } from "../src/stores/config";
 import type { Task } from "../src/types";
@@ -91,6 +92,7 @@ function stubFetch(task: Task): void {
         return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
       if (url.includes("/api/index"))
         return json({ tasks: [task], counts: { ...EMPTY_COUNTS, ready: 1 }, taskCount: 1 });
+      if (url.includes(`/api/tasks/${task.id}`)) return json(task);
       if (url.includes("/api/agents/running")) return json({ tasks: [] });
       if (url.includes("/diff-stats")) return json({ filesChanged: 0, additions: 0, deletions: 0 });
       throw new Error("unexpected fetch: " + url);
@@ -112,44 +114,49 @@ afterEach(() => {
 });
 
 describe("TaskCard agent assignments panel (0455)", () => {
-  it("renders a robot button and reveals the three assignment rows on hover", async () => {
+  it("renders a robot beside the metadata and reveals CLI/model rows only on click", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     FakeEventSource.instances = [];
     vi.stubGlobal("EventSource", FakeEventSource);
-    const task = makeTask({
-      agentOverride: "codex",
-      pmAgentOverride: "Ross",
-      reviewAgentOverride: "reviewer-pro",
-    });
+    const task = makeTask();
     stubFetch(task);
     await useRepoStore().init();
+    const config = useConfigStore();
+    config.agents = [
+      { name: "engineer", cli: "opencode", model: "opencode-go/nimo-v2.5", enabled: true },
+      { name: "pm", cli: "opencode", model: "openrouter/xiaomi/mimo-v2.5", enabled: true },
+      {
+        name: "reviewer",
+        cli: "opencode",
+        model: "opencode-go/deepseek-v4.1-flash",
+        enabled: true,
+      },
+    ];
 
     const wrapper = await mountCard(pinia, task);
 
     expect(wrapper.find(".tc-agent-btn").exists()).toBe(true);
     expect(wrapper.find(".tc-agent-panel").exists()).toBe(false);
-
-    await wrapper.find(".tc-agent").trigger("mouseenter");
+    // Hover does nothing; a deliberate click opens the compact table.
+    await wrapper.find(".tc-agent-btn").trigger("mouseenter");
+    await flush();
+    expect(wrapper.find(".tc-agent-panel").exists()).toBe(false);
+    await wrapper.find(".tc-agent-btn").trigger("click");
     await flush();
 
     const rows = wrapper.findAll(".tc-agent-row");
     expect(rows).toHaveLength(3);
     const text = rows.map((r) => r.text());
     expect(text[0]).toContain("PM");
-    expect(text[0]).toContain("Ross");
-    expect(text[1]).toContain("Engineer");
-    expect(text[1]).toContain("codex");
-    expect(text[2]).toContain("Reviewer");
-    expect(text[2]).toContain("reviewer-pro");
-
-    // Mouse-leave collapses a hover-opened panel.
-    await wrapper.find(".tc-agent").trigger("mouseleave");
-    await flush();
-    expect(wrapper.find(".tc-agent-panel").exists()).toBe(false);
+    expect(text[0]).toContain("openrouter/xiaomi/mimo-v2.5");
+    expect(text[1]).toContain("EN");
+    expect(text[1]).toContain("opencode-go/nimo-v2.5");
+    expect(text[2]).toContain("RV");
+    expect(text[2]).toContain("opencode-go/deepseek-v4.1-flash");
   });
 
-  it("toggles on click and stays pinned across mouse-leave until a second click", async () => {
+  it("toggles open and closed only from the robot button", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     FakeEventSource.instances = [];
@@ -164,8 +171,8 @@ describe("TaskCard agent assignments panel (0455)", () => {
     await flush();
     expect(wrapper.find(".tc-agent-panel").exists()).toBe(true);
 
-    // Pinned: leaving the region does not collapse it.
-    await wrapper.find(".tc-agent").trigger("mouseleave");
+    // Hovering elsewhere does not collapse the click-opened table.
+    await wrapper.find(".task-card").trigger("mouseleave");
     await flush();
     expect(wrapper.find(".tc-agent-panel").exists()).toBe(true);
 
@@ -175,7 +182,7 @@ describe("TaskCard agent assignments panel (0455)", () => {
     expect(wrapper.find(".tc-agent-panel").exists()).toBe(false);
   });
 
-  it("falls back to the enabled board-default agent per role when no override is set", async () => {
+  it("falls back to the enabled board-default CLI and model per role", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     FakeEventSource.instances = [];
@@ -192,12 +199,48 @@ describe("TaskCard agent assignments panel (0455)", () => {
     await useRepoStore().init();
 
     const wrapper = await mountCard(pinia, task);
-    await wrapper.find(".tc-agent").trigger("mouseenter");
+    await wrapper.find(".tc-agent-btn").trigger("click");
     await flush();
 
     const text = wrapper.findAll(".tc-agent-row").map((r) => r.text());
-    expect(text[0]).toContain("pm");
-    expect(text[1]).toContain("engineer");
-    expect(text[2]).toContain("reviewer");
+    expect(text[0]).toContain("opencode");
+    expect(text[0]).toContain("default");
+    expect(text[1]).toContain("opencode");
+    expect(text[2]).toContain("opencode");
+  });
+
+  it("opens the shared picker from a row and writes that role's override", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    FakeEventSource.instances = [];
+    vi.stubGlobal("EventSource", FakeEventSource);
+    const task = makeTask();
+    stubFetch(task);
+    await useRepoStore().init();
+    const config = useConfigStore();
+    config.agents = [
+      { name: "engineer", cli: "opencode", model: "default", enabled: true },
+      { name: "pm", cli: "opencode", model: "default", enabled: true },
+      { name: "reviewer", cli: "opencode", model: "default", enabled: true },
+    ];
+    config.agentsMeta.clis = ["opencode"];
+
+    const wrapper = await mountCard(pinia, task);
+    await wrapper.find(".tc-agent-btn").trigger("click");
+    await wrapper.findAll(".tc-agent-row")[0].trigger("click");
+    await flush();
+    expect(document.body.querySelector(".am-modal")).not.toBeNull();
+
+    wrapper.findComponent(AgentModelModal).vm.$emit("update:model", "opencode-go/nimo-v2.5");
+    await flush();
+    const patch = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls.find(
+      ([url, options]) =>
+        String(url).includes(`/api/tasks/${task.id}`) &&
+        (options as RequestInit)?.method === "PATCH",
+    );
+    expect(JSON.parse((patch?.[1] as RequestInit).body as string)).toEqual({
+      pmCliOverride: null,
+      pmModelOverride: "opencode-go/nimo-v2.5",
+    });
   });
 });

@@ -232,6 +232,7 @@ import {
   getIntegrationJobs,
   getIntegrationPipeline,
   retryIntegration,
+  cancelDone,
   startPreview,
   stopPreview,
   getTaskReview,
@@ -300,6 +301,8 @@ import {
   removeServiceRoute,
   healthCheckRoute,
   getCheckPlan,
+  getSupportBundlePreview,
+  createSupportBundle,
 } from "./routes/index.js";
 
 function findCloudflared(): string | null {
@@ -1882,6 +1885,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/skills/freeform", createFreeformSkillRoute);
   router.register("GET", "/api/system", getSystem);
   router.register("GET", "/api/system/logs", getSystemLogs);
+  router.register("GET", "/api/support/bundle", getSupportBundlePreview);
+  router.register("POST", "/api/support/bundle", createSupportBundle);
   router.register("GET", "/api/tunnel/readiness", getTunnelStatus);
   router.register("GET", "/api/release", getRelease);
   router.register("GET", "/api/release/available", getAvailableRelease);
@@ -2054,6 +2059,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/check-plan", getCheckPlan);
   router.register("GET", "/api/integration/pipeline", getIntegrationPipeline);
   router.register("POST", /^\/api\/integration\/pipeline\/retry\/([^/]+)$/, retryIntegration);
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/done\/cancel$/, cancelDone);
   router.register(
     "POST",
     /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync|hotfix|abandon|reopen)$/,

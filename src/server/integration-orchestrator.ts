@@ -62,6 +62,13 @@ const CANDIDATE_BRANCH_PREFIX = "repoos/integrate/";
 const PHASE_FAILED = "failed";
 
 /**
+ * Reason recorded when the user stops an in-flight close-out (#0459). Not a
+ * gate failure and never surfaced as a `failed` job — the task returns to a
+ * plain, actionable `review` state.
+ */
+export const CANCEL_REASON = "close-out cancelled by user";
+
+/**
  * Cap on consecutive publish-time "main advanced" resyncs (#0386). Every
  * OTHER retry path in the close-out pipeline is capped (#0216's validate
  * retry, handoff.ts's MAX_*_RETRY_ATTEMPTS) — this one wasn't, so on a busy
@@ -396,6 +403,12 @@ interface ProcessRunResult {
   timedOut?: boolean;
   /** Spawn error code, e.g. "ENOENT" when the command isn't installed. */
   errorCode?: string;
+  /**
+   * True when the child was SIGKILLed because the job was cancelled by the
+   * user (#0459). Distinct from `timedOut`: the caller must abort the whole
+   * close-out rather than report a gate failure.
+   */
+  cancelled?: boolean;
 }
 
 function runProcess(
@@ -406,6 +419,12 @@ function runProcess(
     timeout: number;
     env?: NodeJS.ProcessEnv;
     onChunk?: (text: string) => void;
+    /**
+     * Polled while the child runs; when it returns true the child is killed
+     * and the result is flagged `cancelled` (#0459). This is how "Stop MTD"
+     * interrupts a hung build or check without waiting for its own timeout.
+     */
+    isCancelled?: () => boolean;
   },
 ): Promise<ProcessRunResult> {
   return new Promise((resolve) => {
@@ -413,15 +432,18 @@ function runProcess(
     let stdout = "";
     let stderr = "";
     let timedOut = false;
+    let cancelled = false;
     let errorCode: string | undefined;
     let settled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let cancelPoll: ReturnType<typeof setInterval> | undefined;
 
     const finish = (status: number | null): void => {
       if (settled) return;
       settled = true;
       if (timer) clearTimeout(timer);
-      resolve({ status, stdout, stderr, timedOut, errorCode });
+      if (cancelPoll) clearInterval(cancelPoll);
+      resolve({ status, stdout, stderr, timedOut, errorCode, cancelled });
     };
 
     child.stdout.on("data", (d: Buffer) => {
@@ -439,6 +461,15 @@ function runProcess(
       finish(null);
     });
     child.on("close", (code: number | null) => finish(code));
+
+    if (opts.isCancelled) {
+      cancelPoll = setInterval(() => {
+        if (opts.isCancelled!()) {
+          cancelled = true;
+          child.kill("SIGKILL");
+        }
+      }, 400);
+    }
 
     timer = setTimeout(() => {
       timedOut = true;
@@ -550,6 +581,33 @@ export class CloseOutOrchestrator {
     pruneWorktrees(root);
   }
 
+  /**
+   * Whether the user asked to stop this close-out (#0459). Read fresh from the
+   * durable job record so a "Stop MTD" issued from an HTTP request is observed
+   * by this already-running orchestrator at its next checkpoint.
+   */
+  private isCancelled(taskId: string): boolean {
+    return this.coordinator.getJob(taskId)?.cancelled === true;
+  }
+
+  /**
+   * Abort a cancelled close-out cooperatively (#0459). Tears down the throwaway
+   * `repoos/integrate/<id>` candidate and drops the job record so the task
+   * leaves `inPipeline` and becomes actionable again. The task's own feature
+   * branch/worktree is deliberately never touched: it is not merged, so the
+   * work is intact and a fresh "Move to done" resumes from it.
+   *
+   * Never marks the task `done` and never records a `failed` job — a user
+   * cancellation is not a failure, and a stale failure badge would be
+   * misleading.
+   */
+  private cancelJob(job: IntegrationJob): { ok: boolean; reason?: string } {
+    this.removeCandidate(job.taskId);
+    this.coordinator.removeJob(job.taskId);
+    this.logger?.integration(job.taskId, "info", "close-out cancelled by user (#0459)");
+    return { ok: false, reason: CANCEL_REASON };
+  }
+
   private failOrReconcile(
     job: IntegrationJob,
     failedPhase: JobPhase,
@@ -605,6 +663,12 @@ export class CloseOutOrchestrator {
         return { ok: false, reason: "not a git repository" };
       }
 
+      // A job the user already stopped before this run began (#0459): drop the
+      // throwaway candidate and the record without touching the task branch.
+      if (job.cancelled || this.isCancelled(job.taskId)) {
+        return this.cancelJob(job);
+      }
+
       // Transition from queued to syncing.
       if (job.phase === "queued") {
         const updated = this.coordinator.updateJob(job.taskId, {
@@ -618,6 +682,7 @@ export class CloseOutOrchestrator {
       // Syncing phase: ensure the candidate worktree exists and is up to date with main.
       if (job.phase === "syncing") {
         const syncRes = await this.syncCandidate(job);
+        if (syncRes.cancelled) return this.cancelJob(job);
         if (!syncRes.ok) {
           this.logger?.integration(job.taskId, "error", "sync failed", {
             reason: syncRes.reason,
@@ -650,6 +715,7 @@ export class CloseOutOrchestrator {
       // the cap — this must never loop.
       if (job.phase === "validating") {
         let validateRes = await this.validateCandidate(job);
+        if (validateRes.cancelled) return this.cancelJob(job);
         if (validateRes.resynced) {
           // Main advanced while the candidate was being validated: it was
           // discarded and the job reset to `syncing`. Return now so the next
@@ -686,6 +752,7 @@ export class CloseOutOrchestrator {
           const firstReason = validateRes.reason ?? "unknown";
           const firstChecks = validateRes.failedChecks;
           validateRes = await this.validateCandidate(job);
+          if (validateRes.cancelled) return this.cancelJob(job);
           if (validateRes.resynced) {
             // Main advanced before the retry could run: identical to the first
             // call's drift branch — candidate discarded, job reset to
@@ -722,6 +789,7 @@ export class CloseOutOrchestrator {
       // Publishing phase: merge candidate to live main, holding the repo lock.
       if (job.phase === "publishing") {
         const pubRes = await this.publishCandidate(job);
+        if (pubRes.cancelled) return this.cancelJob(job);
         if (!pubRes.ok) {
           // Check if the job phase was changed by publishCandidate() (e.g., drift handling).
           // If it was moved back to "syncing" for retry, don't overwrite it to "failed".
@@ -834,10 +902,16 @@ export class CloseOutOrchestrator {
     reason?: string;
     candidateSha?: string;
     conflict?: boolean;
+    cancelled?: boolean;
   }> {
     this.onProgress?.("sync");
     const root = this.config.root;
     const branch = candidateBranchName(job.taskId);
+
+    // Stop MTD (#0459) can land between a queued job and this phase.
+    if (this.isCancelled(job.taskId)) {
+      return { ok: false, cancelled: true, reason: CANCEL_REASON };
+    }
 
     // Resolve the repository's actual default branch
     const mainBranch = await resolveDefaultBranch(root);
@@ -978,6 +1052,12 @@ export class CloseOutOrchestrator {
      */
     failedChecks?: string[];
     /**
+     * True when the user stopped this close-out (#0459) — either before the
+     * gate started or by killing a running build/check child. `processJob`
+     * must abort the job rather than record a gate failure.
+     */
+    cancelled?: boolean;
+    /**
      * Main advanced between sync and validate, so the candidate was discarded
      * and the job reset to `syncing`. Distinguishes this retry from a genuine
      * validation failure — `processJob` must return to the phase machine
@@ -990,6 +1070,11 @@ export class CloseOutOrchestrator {
     const wtPath = worktreePathForBranch(root, branch);
     if (!wtPath) {
       return { ok: false, reason: "candidate worktree not found" };
+    }
+
+    // Stop MTD (#0459): abort before the merge/gate if already requested.
+    if (this.isCancelled(job.taskId)) {
+      return { ok: false, cancelled: true, reason: CANCEL_REASON };
     }
 
     // Check for main SHA changes. If main advanced, discard candidate and rebuild.
@@ -1175,12 +1260,20 @@ export class CloseOutOrchestrator {
       let buildRes = await runProcess("bun", ["run", "build"], {
         cwd: wtPath,
         timeout: 300_000,
+        isCancelled: () => this.isCancelled(job.taskId),
       });
+      if (buildRes.cancelled) {
+        return { ok: false, cancelled: true, reason: CANCEL_REASON };
+      }
       if (commandMissing(buildRes)) {
         buildRes = await runProcess("npm", ["run", "build"], {
           cwd: wtPath,
           timeout: 300_000,
+          isCancelled: () => this.isCancelled(job.taskId),
         });
+      }
+      if (buildRes.cancelled) {
+        return { ok: false, cancelled: true, reason: CANCEL_REASON };
       }
       if (buildRes.status !== 0) {
         return {
@@ -1236,6 +1329,11 @@ export class CloseOutOrchestrator {
         }
       }
 
+      // Stop MTD (#0459) may have landed while the remote runner was busy.
+      if (this.isCancelled(job.taskId)) {
+        return { ok: false, cancelled: true, reason: CANCEL_REASON };
+      }
+
       this.onProgress?.("check");
       // The candidate's OWN freshly-built CLI comes first, same as the legacy
       // done.ts close-out gate (#0130): a globally linked `repoos` resolves
@@ -1263,6 +1361,7 @@ export class CloseOutOrchestrator {
           timeout: 600_000,
           env: checkEnv,
           onChunk: checkHandle?.chunk,
+          isCancelled: () => this.isCancelled(job.taskId),
         });
       // A check whose ONLY failure is a stale build marker: the same marker the
       // close-out build above should have refreshed. This is the self-resolving
@@ -1333,8 +1432,13 @@ export class CloseOutOrchestrator {
           await runProcess("bun", ["run", "build"], {
             cwd: wtPath,
             timeout: 300_000,
+            isCancelled: () => this.isCancelled(job.taskId),
           });
           checkRes = await rawCheck(process.execPath, [localCli, "check", ...CLOSEOUT_CHECK_ARGS]);
+          if (checkRes.cancelled) {
+            checkHandle?.done(checkRes.status);
+            return { ok: false, cancelled: true, reason: CANCEL_REASON };
+          }
           if (checkRes.status !== 0) {
             checkHandle?.done(checkRes.status);
             return this.recordCheckFailure(
@@ -1355,6 +1459,11 @@ export class CloseOutOrchestrator {
         }
       }
       checkHandle?.done(checkRes.status);
+
+      // A check killed by Stop MTD (#0459) is not a gate failure — abort.
+      if (checkRes.cancelled) {
+        return { ok: false, cancelled: true, reason: CANCEL_REASON };
+      }
 
       if (checkRes.status !== 0) {
         const failure = this.recordCheckFailure(job, "check failed", checkRes);
@@ -1390,7 +1499,11 @@ export class CloseOutOrchestrator {
     return { ok: true, candidateSha: candidateShaRes.stdout.trim() };
   }
 
-  private async publishCandidate(job: IntegrationJob): Promise<{ ok: boolean; reason?: string }> {
+  private async publishCandidate(job: IntegrationJob): Promise<{
+    ok: boolean;
+    reason?: string;
+    cancelled?: boolean;
+  }> {
     const root = this.config.root;
     const mainBranch = await resolveDefaultBranch(root);
 
@@ -1401,6 +1514,11 @@ export class CloseOutOrchestrator {
         ok: false,
         reason: "candidate worktree missing at publish time",
       };
+    }
+
+    // Stop MTD (#0459): never mutate live main for a job the user cancelled.
+    if (this.isCancelled(job.taskId)) {
+      return { ok: false, cancelled: true, reason: CANCEL_REASON };
     }
 
     // Acquire the repository lock before publishing.
@@ -1603,6 +1721,12 @@ export class CloseOutOrchestrator {
       // merge above where the candidate's own file is what's being tested in
       // isolation. Project source and generated-output conflicts are not
       // auto-resolved at publish time.
+      // Final cancellation checkpoint before the irreversible merge (#0459):
+      // Stop MTD is only safe while main has not yet been mutated.
+      if (this.isCancelled(job.taskId)) {
+        return { ok: false, cancelled: true, reason: CANCEL_REASON };
+      }
+
       const publishMerge = await mergeBranch(root, branch, {
         autoResolve: [],
         autoResolveOurs: [`${this.config.workDir}/`],

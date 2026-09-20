@@ -2,14 +2,14 @@
 id: "0459"
 title: Add Stop MTD / Restart MTD action when close-out is in progress
 type: feature
-status: ready
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/add-stop-mtd-restart-mtd-action-when-clo
 created_at: "2026-09-20T00:11:42Z"
-updated_at: "2026-09-20T00:12:22Z"
+updated_at: "2026-09-20T01:51:42Z"
 ---
 ## Problem
 
@@ -35,3 +35,6 @@ Optionally, a **Restart MTD** variant could re-queue immediately without going b
 
 - 2026-09-20T00:11:42Z · created · unknown
 - 2026-09-20T00:12:22Z · status inbox→ready
+- 2026-09-20T00:50:49Z · status ready→active, branch
+- 2026-09-20T01:17:08Z · status active→review
+- 2026-09-20T01:51:42Z · status review→done, release:success

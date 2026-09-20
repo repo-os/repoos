@@ -114,6 +114,16 @@ nothing but documentation: every changed path under your configured docs directo
 or ending in `.md`. There is no "mostly docs" scoring; any other path runs the
 full set of checks.
 
+### Stopping a close-out
+
+A close-out can get stuck — a flaky check, a test timeout, a runner that never
+returns. While a task is in the pipeline, its task drawer shows **Stop MTD**
+next to the disabled **Move to done**. Stopping cancels the in-flight job, tears
+down the throwaway candidate, and leaves the task in `review` with its branch
+untouched, so you can inspect what happened and click **Move to done** again.
+Once the candidate has merged into your primary branch (the cleanup phase) it is
+too late to stop — the job finishes on its own.
+
 ### Merge conflicts repair themselves
 
 The first time two tasks are in flight at once, one of them may conflict with

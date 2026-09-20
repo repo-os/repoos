@@ -1202,6 +1202,29 @@ export const useRepoStore = defineStore("repo", () => {
     await api<{ ok: boolean }>(`/api/integration/pipeline/retry/${taskId}`, { method: "POST" });
   }
 
+  /**
+   * Stop an in-flight close-out (#0459). The server cancels the integration
+   * job (aborting a running build/check and tearing down only the throwaway
+   * candidate), leaving the task in `review` with its branch intact. We drop
+   * the task from the local pipeline snapshot right away so the drawer's
+   * "Move to done" is actionable without waiting for the next SSE frame.
+   */
+  async function cancelDone(taskId: string): Promise<void> {
+    await api<{ ok: boolean }>(`/api/tasks/${taskId}/done/cancel`, { method: "POST" });
+    const snap = integration.value;
+    if (snap) {
+      const wasActive = snap.active?.taskId === taskId;
+      const queue = snap.queue.filter((q) => q !== taskId);
+      integration.value = {
+        ...snap,
+        active: wasActive ? null : snap.active,
+        queue,
+        empty: wasActive ? queue.length === 0 : snap.empty,
+      };
+    }
+    setDoneError(taskId, null);
+  }
+
   /** Hydrate test-run state after a refresh/SSE gap — picks up a run already
    *  in progress (or its last result) rather than showing empty until the
    *  next chunk arrives. */
@@ -1358,17 +1381,17 @@ export const useRepoStore = defineStore("repo", () => {
       // Use existing full body if we have it; otherwise use the preview from the board response.
       body: existingBodies.has(t.id) ? (existingBodies.get(t.id) ?? "") : (t.bodyPreview ?? ""),
       extra: {},
-      // The board payload carries the per-task agent overrides (#0455) so the
-      // card's agent panel can show effective assignments without the drawer.
+      // The board payload carries the compact per-task agent/model overrides
+      // so a card can show and edit effective assignments without the drawer.
       agentOverride: t.agentOverride ?? null,
-      cliOverride: null,
-      modelOverride: null,
+      cliOverride: t.cliOverride ?? null,
+      modelOverride: t.modelOverride ?? null,
       pmAgentOverride: t.pmAgentOverride ?? null,
-      pmCliOverride: null,
-      pmModelOverride: null,
+      pmCliOverride: t.pmCliOverride ?? null,
+      pmModelOverride: t.pmModelOverride ?? null,
       reviewAgentOverride: t.reviewAgentOverride ?? null,
-      reviewCliOverride: null,
-      reviewModelOverride: null,
+      reviewCliOverride: t.reviewCliOverride ?? null,
+      reviewModelOverride: t.reviewModelOverride ?? null,
       releasedAt: t.releasedAt ?? null,
     })) as unknown as Task[];
     // Index hydration is the recovery path after reconnecting while a review
@@ -2296,6 +2319,7 @@ export const useRepoStore = defineStore("repo", () => {
     integration,
     refreshIntegration,
     retryIntegration,
+    cancelDone,
     testRun,
     refreshTestRun,
     startTestRun,

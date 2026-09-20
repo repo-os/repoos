@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-20T01:19:38Z"
+review_passes: 1
 id: "0447"
 title: "Add check-plan setup, profiles, and Checks visibility"
 type: feature
@@ -9,7 +11,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/add-check-plan-setup-profiles-and-checks
 created_at: "2026-09-19T15:10:16Z"
-updated_at: "2026-09-20T01:16:35Z"
+handoff_signal_retry_count: 1
 ---
 ## Outcome
 
@@ -36,3 +38,4 @@ Make a project's check plan understandable and easy to bootstrap after the stack
 - 2026-09-20T00:49:29Z · status inbox→ready
 - 2026-09-20T00:50:41Z · status ready→active, branch
 - 2026-09-20T01:16:35Z · status active→review
+

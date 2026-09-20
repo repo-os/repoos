@@ -23,6 +23,7 @@ import { cmdUpgrade } from "../commands/upgrade.js";
 import { cmdUninstall } from "../commands/uninstall.js";
 import { cmdStatus } from "../commands/status.js";
 import { cmdDoctor } from "../commands/doctor.js";
+import { cmdSupport } from "../commands/support.js";
 import { cmdService } from "../commands/service.js";
 import { checkBuild } from "../core/build.js";
 import { loadConfig } from "../core/config.js";
@@ -119,6 +120,7 @@ function help(): void {
       "doctor [--json]",
       "Read-only readiness preflight: identity, config, layout, tools, check plan, server, secrets",
     ),
+    cmdRow("support bundle", "Write a redacted, inspectable diagnostic bundle for failed setups"),
     cmdRow("show <id>", "Show a task's full spec"),
     cmdRow(
       "mv <id> <status>",
@@ -215,6 +217,7 @@ function main(): void {
     "check",
     "status",
     "doctor",
+    "support",
     "help",
     "--help",
     "-h",
@@ -253,6 +256,9 @@ function main(): void {
       break;
     case "doctor":
       void cmdDoctor(rest);
+      break;
+    case "support":
+      void cmdSupport(rest);
       break;
     case "show":
     case "cat":
