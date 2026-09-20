@@ -93,6 +93,7 @@ describe("ReleasesView Published to (#0445)", () => {
     expect(wrapper.find(".rel-current-number").text()).toBe("v1.2.3");
     expect(wrapper.find(".rel-current-sync").text()).toBe("All distribution destinations in sync");
     expect(wrapper.find(".rel-next-release strong").text()).toBe("v1.2.4");
+    expect(wrapper.text()).toContain("Cut next release");
 
     wrapper.unmount();
   });

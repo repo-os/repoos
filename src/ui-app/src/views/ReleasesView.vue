@@ -562,7 +562,7 @@ onBeforeUnmount(() => {
             </div>
             <div class="rel-actions rel-next-actions">
               <Button variant="accent" :disabled="!canOpen" @click="openConfirm">
-                {{ suggestedVersion ? `Cut ${tagPrefix}${suggestedVersion}` : "Cut a release" }}
+                {{ suggestedVersion ? "Cut next release" : "Cut a release" }}
               </Button>
               <a
                 v-if="status.workflowUrl"
