@@ -2,7 +2,7 @@
 id: "0452"
 title: Build a polyglot real-repo adoption test matrix
 type: feature
-status: review
+status: active
 priority: p1
 area: core
 assigned_to: ai
@@ -12,7 +12,7 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 review_model_override: openrouter/xiaomi/mimo-v2.5
 created_at: "2026-09-19T16:43:21Z"
-updated_at: "2026-09-20T00:03:12Z"
+updated_at: "2026-09-20T00:03:16Z"
 ---
 ## Outcome
 
@@ -79,3 +79,4 @@ P1 — Build a polyglot real-repo adoption test matrix.
 - 2026-09-19T22:35:58Z · review_model_override
 - 2026-09-19T23:08:42Z · status ready→active, branch
 - 2026-09-20T00:03:12Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-09-20T00:03:16Z · status review→active
