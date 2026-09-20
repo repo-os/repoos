@@ -17,9 +17,13 @@ import {
   CHECK_PLAN_VERSION,
   EMPTY_MARKERS,
   FULL_PROFILE,
+  STACK_CHANGED,
+  detectedStacks,
   formatPlanToml,
   globToRegExp,
   hasLegacyCheckConfig,
+  isCrossCutting,
+  listProfiles,
   resolveCheckPlan,
   selectSteps,
   stepInProfile,
@@ -323,6 +327,66 @@ uiStylesheet = "src/app.css"
     expect(plan.steps).toHaveLength(1);
     expect(plan.steps[0].command).toBe("go build ./...");
     expect(plan.warnings.join(" ")).toMatch(/duplicate name "build"/);
+  });
+});
+
+describe("inference — stack scoping and cross-cutting steps (#0447)", () => {
+  it("scopes each inferred stack to its own paths so changed-path mode narrows", () => {
+    const plan = resolveCheckPlan({ check: undefined, markers: markers({ hasGoMod: true }) });
+    const build = plan.steps.find((s) => s.name === "build");
+    expect(build?.whenChanged).toEqual(STACK_CHANGED.go);
+    expect(stepMatchesChanged(build!, ["cmd/main.go"])).toBe(true);
+    expect(stepMatchesChanged(build!, ["web/app.ts"])).toBe(false);
+    // The generic guards are cross-cutting: no whenChanged, always run.
+    expect(plan.steps.find((s) => s.name === "task-assets")?.whenChanged).toEqual([]);
+    expect(isCrossCutting(plan.steps.find((s) => s.name === "task-assets")!)).toBe(true);
+  });
+
+  it("flags a mixed repo and points at a cross-cutting contract step", () => {
+    const plan = resolveCheckPlan({
+      check: undefined,
+      markers: markers({ hasGoMod: true, hasPackageJson: true }),
+    });
+    expect(plan.warnings.join(" ")).toMatch(/Mixed stacks detected \(go, js\)/);
+    expect(plan.warnings.join(" ")).toMatch(/cross-stack contract test/);
+  });
+
+  it("does not warn about mixed stacks for a single-stack repo", () => {
+    const plan = resolveCheckPlan({ check: undefined, markers: markers({ hasGoMod: true }) });
+    expect(plan.warnings.join(" ")).not.toMatch(/Mixed stacks/);
+  });
+
+  it("detectedStacks reports the recognised stacks in a stable order", () => {
+    expect(detectedStacks(markers())).toEqual([]);
+    expect(
+      detectedStacks(
+        markers({ hasGoMod: true, hasCargoToml: true, hasGradlew: true, hasPackageJson: true }),
+      ),
+    ).toEqual(["go", "rust", "gradle", "js"]);
+  });
+});
+
+describe("listProfiles — the profiles a plan declares", () => {
+  const plan = {
+    version: 1,
+    defaultProfile: "default",
+    source: "declared" as const,
+    warnings: [],
+    errors: [],
+    steps: [
+      step({ name: "fast" }),
+      step({ name: "slow", profiles: ["full"] }),
+      step({ name: "integration", profiles: ["integration"] }),
+      step({ name: "release", profiles: ["release", "integration"] }),
+    ],
+  };
+
+  it("returns named profiles in first-appearance order, excluding default and full", () => {
+    expect(listProfiles(plan)).toEqual(["integration", "release"]);
+  });
+
+  it("returns nothing for a plan with no named profiles", () => {
+    expect(listProfiles({ ...plan, steps: [step({ name: "a" })] })).toEqual([]);
   });
 });
 

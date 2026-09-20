@@ -366,6 +366,61 @@ export function hasLegacyCheckConfig(check: CheckConfig | undefined): boolean {
 // ── Inference ───────────────────────────────────────────────────────────
 
 /**
+ * Conventional path globs each inferred stack watches, so changed-path mode
+ * (`repoos check --changed <ref>`) narrows to the stack that actually moved
+ * instead of running every stack in a mixed repo (#0447). A change that spans
+ * two stacks matches both sets, so both run — the fast mode never hides a
+ * cross-stack change. A user-declared step with no `whenChanged` (a contract or
+ * integration check) always runs, which is how a project makes a cross-cutting
+ * step explicit.
+ */
+export const STACK_CHANGED: Record<string, string[]> = {
+  go: ["**/*.go", "go.mod", "go.sum"],
+  rust: ["**/*.rs", "Cargo.toml", "Cargo.lock"],
+  gradle: [
+    "**/*.kt",
+    "**/*.java",
+    "**/*.gradle",
+    "**/*.gradle.kts",
+    "gradle/**",
+    "gradlew",
+    "gradlew.bat",
+  ],
+  js: [
+    "**/*.js",
+    "**/*.mjs",
+    "**/*.cjs",
+    "**/*.ts",
+    "**/*.mts",
+    "**/*.cts",
+    "**/*.tsx",
+    "**/*.jsx",
+    "**/*.vue",
+    "package.json",
+    "tsconfig.json",
+    "bun.lock",
+    "bun.lockb",
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+  ],
+};
+
+/**
+ * The stacks a marker set recognises, in a stable order. Used to warn about a
+ * mixed repo (where a cross-cutting contract step is worth declaring) and by
+ * the Checks surface to explain a step's changed-path scope.
+ */
+export function detectedStacks(markers: RepoMarkers): string[] {
+  const out: string[] = [];
+  if (markers.hasGoMod) out.push("go");
+  if (markers.hasCargoToml) out.push("rust");
+  if (markers.hasGradlew || markers.hasGradleBuild) out.push("gradle");
+  if (markers.hasPackageJson) out.push("js");
+  return out;
+}
+
+/**
  * A plan derived from repo markers — used only when nothing is declared. It is
  * deliberately conservative: real, conventional commands for the stack it can
  * see, and nothing (never a guessed pass) for what it can't.
@@ -417,27 +472,34 @@ export function inferPlan(markers: RepoMarkers): CheckStep[] {
     });
   };
 
+  const goChanged = STACK_CHANGED.go;
+  const rustChanged = STACK_CHANGED.rust;
+  const gradleChanged = STACK_CHANGED.gradle;
+  const jsChanged = STACK_CHANGED.js;
+
   // Go: `go build ./...` compiles every package; `go test ./...` runs them.
   if (markers.hasGoMod) {
-    push(unique("build", "go"), "go build ./...", ["go"]);
-    push(unique("tests", "go"), "go test ./...", ["go"]);
+    push(unique("build", "go"), "go build ./...", ["go"], { whenChanged: goChanged });
+    push(unique("tests", "go"), "go test ./...", ["go"], { whenChanged: goChanged });
   }
 
   // Rust: `cargo build` + `cargo test`, plus the formatter's own check mode.
   if (markers.hasCargoToml) {
-    push(unique("build", "rust"), "cargo build", ["cargo"]);
-    push(unique("check-fmt:check", "rust"), "cargo fmt --check", ["cargo"]);
-    push(unique("tests", "rust"), "cargo test", ["cargo"]);
+    push(unique("build", "rust"), "cargo build", ["cargo"], { whenChanged: rustChanged });
+    push(unique("check-fmt:check", "rust"), "cargo fmt --check", ["cargo"], {
+      whenChanged: rustChanged,
+    });
+    push(unique("tests", "rust"), "cargo test", ["cargo"], { whenChanged: rustChanged });
   }
 
   // Android/Gradle: always prefer the committed wrapper so the build uses the
   // project's own Gradle version rather than whatever `gradle` is on PATH.
   if (markers.hasGradlew) {
-    push(unique("build", "gradle"), "./gradlew assemble", []);
-    push(unique("tests", "gradle"), "./gradlew test", []);
+    push(unique("build", "gradle"), "./gradlew assemble", [], { whenChanged: gradleChanged });
+    push(unique("tests", "gradle"), "./gradlew test", [], { whenChanged: gradleChanged });
   } else if (markers.hasGradleBuild) {
-    push(unique("build", "gradle"), "gradle build", ["gradle"]);
-    push(unique("tests", "gradle"), "gradle test", ["gradle"]);
+    push(unique("build", "gradle"), "gradle build", ["gradle"], { whenChanged: gradleChanged });
+    push(unique("tests", "gradle"), "gradle test", ["gradle"], { whenChanged: gradleChanged });
   }
 
   // JS/TS: the same zero-config script names `repoos check` always honoured.
@@ -447,21 +509,34 @@ export function inferPlan(markers: RepoMarkers): CheckStep[] {
     const gate: string[] = [];
     if (has("fmt:check")) {
       const name = unique("check-fmt:check", "js");
-      pushKind(name, "format", { requires: [runner] });
+      pushKind(name, "format", { requires: [runner], whenChanged: jsChanged });
       gate.push(name);
     }
     if (has("lint")) {
       const name = unique("check-lint", "js");
-      pushKind(name, "lint", { requires: [runner] });
+      pushKind(name, "lint", { requires: [runner], whenChanged: jsChanged });
       gate.push(name);
     }
     if (has("build")) {
-      pushKind(unique("build", "js"), "build", { requires: [runner], dependsOn: [...gate] });
+      pushKind(unique("build", "js"), "build", {
+        requires: [runner],
+        dependsOn: [...gate],
+        whenChanged: jsChanged,
+      });
     }
     if (has("test")) {
-      pushKind(unique("tests", "js"), "tests", { requires: [runner], dependsOn: [...gate] });
+      pushKind(unique("tests", "js"), "tests", {
+        requires: [runner],
+        dependsOn: [...gate],
+        whenChanged: jsChanged,
+      });
     }
-    if (has("smoke")) pushKind(unique("ui-smoke", "js"), "ui-smoke", { dependsOn: [...gate] });
+    if (has("smoke")) {
+      pushKind(unique("ui-smoke", "js"), "ui-smoke", {
+        dependsOn: [...gate],
+        whenChanged: jsChanged,
+      });
+    }
   }
 
   if (steps.length === 0) return steps;
@@ -579,6 +654,16 @@ export function resolveCheckPlan(input: ResolvePlanInput): CheckPlan {
         "No [[check.steps]] in repoos.toml — this plan was inferred from the repo layout. " +
           "Commit it (`repoos check --print-plan`) so the gate is explicit and stable.",
       );
+      const stacks = detectedStacks(markers);
+      if (stacks.length > 1) {
+        warnings.push(
+          `Mixed stacks detected (${stacks.join(", ")}). Each inferred stack step is scoped to ` +
+            "its own paths, so in changed-path mode a change spanning both runs both — but a " +
+            "cross-stack contract test needs an explicit step of its own. Declare one with no " +
+            "`whenChanged` (runs on any change) or globs covering both stacks, and put the slow " +
+            'ones in `profiles = ["integration"]`.',
+        );
+      }
       return { version, defaultProfile, steps, source: "inferred", warnings, errors };
     }
   }
@@ -610,6 +695,30 @@ export function stepInProfile(step: CheckStep, profile: string): boolean {
   if (profile === FULL_PROFILE) return true;
   if (step.profiles.length === 0) return true;
   return step.profiles.includes(profile);
+}
+
+/**
+ * A step is cross-cutting when it has no `whenChanged`: it runs whatever
+ * changed, so it is the natural place to hang a contract or integration check
+ * that must not be skipped just because one side of the change did.
+ */
+export function isCrossCutting(step: CheckStep): boolean {
+  return step.whenChanged.length === 0;
+}
+
+/**
+ * The named profiles declared across a plan, in first-appearance order.
+ * `default` and the universal `full` profile are excluded — callers add those
+ * themselves, so a plan that declares only `["release"]` yields `["release"]`.
+ */
+export function listProfiles(plan: CheckPlan): string[] {
+  const out = new Set<string>();
+  for (const step of plan.steps) {
+    for (const p of step.profiles) {
+      if (p !== DEFAULT_PROFILE && p !== FULL_PROFILE) out.add(p);
+    }
+  }
+  return [...out];
 }
 
 function escapeRegExp(s: string): string {

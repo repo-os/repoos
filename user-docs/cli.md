@@ -13,6 +13,11 @@ root. `repoos.toml` and `AGENTS.md` always stay at the root. Run outside a git
 repo, it starts a guided new-project flow instead, which can launch the web
 console for you.
 
+When the repo has no check plan yet, init inspects its stack and writes a
+starter plan to an uncommitted `repoos.check-plan.proposed.toml` for review;
+interactive init offers to move it into `repoos.toml`. See
+[Checks before merge](/check).
+
 ### `repoos upgrade [--channel beta|canary|rc]`
 
 Self-updates a standalone (curl-installed) RepoOS to the latest release.

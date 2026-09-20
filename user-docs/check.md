@@ -145,6 +145,45 @@ globs; steps without it still run. This is a **fast pre-review pass** — an
 agent's self-check before handoff — never the final gate. Close-out runs the
 full plan.
 
+### Cross-cutting steps
+
+A step with **no** `whenChanged` runs whatever changed. That is how you keep a
+contract or integration check from being skipped just because only one side of
+a change moved — an Android client and a TypeScript backend, or a Vue frontend
+and a Go backend. Give the inferred per-stack steps path globs (they already
+carry them) and add one explicit cross-cutting step for the contract:
+
+```toml
+[[check.steps]]
+name = "cross-stack-contract"
+command = "make contract-test"
+profiles = ["integration"]     # keep it out of a routine run
+```
+
+A change that touches both stacks still matches both sets of globs, so the fast
+mode never hides a cross-stack change; the contract step runs on top of that.
+
+## The Checks page
+
+The **Checks** page shows what `repoos check` will run without running it. For
+the profile you pick it lists every step in order — command, `cwd`, timeout,
+dependencies, profile membership, and the paths `whenChanged` watches — and says
+for each one whether it will run or why it is skipped. A required step whose
+declared tool is missing is shown as a **missing prerequisite with the exact
+command to install it**, never as a success, and the last completed run's
+result, duration and command output are shown alongside.
+
+## Bootstrapping a plan with `repoos init`
+
+When a repo has no check plan yet, `repoos init` inspects its durable signals
+(a package manifest, `go.mod`, `Cargo.toml`, a Gradle wrapper, a Makefile or
+justfile) and writes a **proposal** to `repoos.check-plan.proposed.toml`. The
+proposal is not configuration: `repoos check` never reads it. Review and edit
+it, then move its `[[check.steps]]` into `repoos.toml` (interactive init offers
+to do this for you). Until then `repoos check` still fails with a "no check
+plan" diagnostic rather than passing vacuously — a starter plan that ran before
+anyone looked at it would make the gate lie.
+
 ## When a repo declares nothing
 
 Nothing is assumed. If a repo declares no `[[check.steps]]`, `repoos check`

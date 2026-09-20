@@ -20,6 +20,7 @@ export const router = createRouter({
     },
     { path: "/", name: "dashboard", component: () => import("./views/DashboardView.vue") },
     { path: "/work", name: "work", component: () => import("./views/WorkView.vue") },
+    { path: "/checks", name: "checks", component: () => import("./views/ChecksView.vue") },
     { path: "/releases", name: "releases", component: () => import("./views/ReleasesView.vue") },
     {
       path: "/deployments",

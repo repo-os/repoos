@@ -299,6 +299,7 @@ import {
   disableAutoStartRoute,
   removeServiceRoute,
   healthCheckRoute,
+  getCheckPlan,
 } from "./routes/index.js";
 
 function findCloudflared(): string | null {
@@ -2050,6 +2051,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   );
   router.register("GET", /^\/api\/tasks\/([^/]+)\/integration-job$/, getIntegrationJob);
   router.register("GET", "/api/integration-jobs", getIntegrationJobs);
+  router.register("GET", "/api/check-plan", getCheckPlan);
   router.register("GET", "/api/integration/pipeline", getIntegrationPipeline);
   router.register("POST", /^\/api\/integration\/pipeline\/retry\/([^/]+)$/, retryIntegration);
   router.register(
