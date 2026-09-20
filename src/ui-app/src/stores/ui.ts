@@ -1,7 +1,7 @@
 import { reactive, ref } from "vue";
 import { defineStore } from "pinia";
 import { api } from "../api";
-import type { Task } from "../types";
+import type { Task, TaskCheckKind } from "../types";
 
 export interface NewTaskForm {
   title: string;
@@ -51,6 +51,19 @@ export const useUiStore = defineStore("ui", () => {
   /** Sub-view of the Debug tab: the task logs (default) or the task-scoped
    *  Debugger chat. Shared so a "Fix" handoff can land directly on the chat. */
   const debugView = ref<"logs" | "debugger">("logs");
+  /**
+   * A request for the Debug tab to reveal one task's check execution (#0458).
+   * Set when a pipeline stage is clicked: the Debug panel scrolls to (and
+   * expands) the newest matching check run. Consumed — cleared — once the
+   * panel has applied it, so it never re-scrolls on a later unrelated update.
+   */
+  const debugCheckFocus = ref<{ taskId: string; kind: TaskCheckKind; nonce: number } | null>(null);
+  function focusDebugCheck(taskId: string, kind: TaskCheckKind): void {
+    debugCheckFocus.value = { taskId, kind, nonce: Date.now() };
+  }
+  function clearDebugCheckFocus(): void {
+    debugCheckFocus.value = null;
+  }
   /** True when showing the new-document panel instead of a task. */
   const isNewDoc = ref(false);
   /** True when showing the new-skill panel instead of a task. */
@@ -277,6 +290,7 @@ export const useUiStore = defineStore("ui", () => {
     active.value = t;
     activeTab.value = defaultTabFor(t);
     debugView.value = "logs";
+    debugCheckFocus.value = null;
     // The PM conversation is per task — a compose draft (and its picked
     // screenshots) never carries over to a different task's drawer.
     clearPmScreenshots();
@@ -322,6 +336,7 @@ export const useUiStore = defineStore("ui", () => {
     isNewInput.value = false;
     activeTab.value = "details";
     debugView.value = "logs";
+    debugCheckFocus.value = null;
     clearPmScreenshots();
   }
 
@@ -373,6 +388,9 @@ export const useUiStore = defineStore("ui", () => {
     tunnelOpen,
     activeTab,
     debugView,
+    debugCheckFocus,
+    focusDebugCheck,
+    clearDebugCheckFocus,
     nt,
     nd,
     ns,

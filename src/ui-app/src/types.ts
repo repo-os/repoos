@@ -565,6 +565,26 @@ export interface AutoEngineeringDecision {
 export const INTEGRATION_STAGES = ["sync", "merge", "build", "check", "done"] as const;
 export type IntegrationStage = (typeof INTEGRATION_STAGES)[number];
 
+/** One resolved step of the repo's `[[check.steps]]` plan (#0458) — what the
+ *  integration bar's "check" tooltip renders instead of hardcoded prose. */
+export interface CheckPlanStep {
+  name: string;
+  kind?: string;
+  command?: string;
+  cwd?: string;
+  timeoutMs: number;
+  required: boolean;
+  dependsOn: string[];
+  profiles: string[];
+}
+
+/** The repo's resolved check plan, from its `repoos.toml` (#0446/#0458). */
+export interface CheckPlanInfo {
+  source: "declared" | "legacy" | "inferred" | "empty";
+  defaultProfile: string;
+  steps: CheckPlanStep[];
+}
+
 /** Live read-model of the integration pipeline for the pinned status bar (0207). */
 export interface IntegrationPipelineSnapshot {
   /** True when nothing is queued or in progress — the idle empty state. */
@@ -580,6 +600,8 @@ export interface IntegrationPipelineSnapshot {
   } | null;
   /** Task ids queued behind the active job, in FIFO order. */
   queue: string[];
+  /** The repo's resolved check plan (`repoos.toml`), for data-driven tooltips (#0458). */
+  checkPlan?: CheckPlanInfo;
   at: string;
 }
 

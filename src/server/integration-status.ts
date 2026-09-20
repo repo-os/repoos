@@ -9,6 +9,7 @@
  */
 import type { IntegrationJob, JobCoordinator } from "./integration-job.js";
 import type { DoneStep } from "./done.js";
+import type { PipelineCheckPlan } from "./check-plan-info.js";
 
 /** The five discrete stages surfaced to the user, in pipeline order. */
 export const PIPELINE_STAGES: readonly string[] = [
@@ -37,6 +38,13 @@ export interface IntegrationSnapshot {
   } | null;
   /** Task ids queued behind the active job, in FIFO order. */
   queue: string[];
+  /**
+   * The repo's resolved check plan (`repoos.toml`, #0446), so the pipeline's
+   * tooltips describe the real merge-gate steps for THIS repo instead of a
+   * hardcoded RepoOS flow (#0458). Resolved fresh on every snapshot, so a
+   * config change mid-run is reflected on the next pipeline event.
+   */
+  checkPlan?: PipelineCheckPlan;
   at: string;
 }
 
@@ -79,6 +87,7 @@ export function isStageComplete(stageIndex: number, currentIndex: number): boole
 export function buildIntegrationSnapshot(
   coordinator: JobCoordinator,
   reported: Record<string, DoneStep>,
+  checkPlan?: PipelineCheckPlan,
   at = new Date().toISOString(),
 ): IntegrationSnapshot {
   const all = coordinator.allJobs();
@@ -92,7 +101,7 @@ export function buildIntegrationSnapshot(
   }
 
   if (!inFlight) {
-    return { empty: queue.length === 0, active: null, queue, at };
+    return { empty: queue.length === 0, active: null, queue, checkPlan, at };
   }
 
   const failed = inFlight.phase === "failed";
@@ -106,6 +115,7 @@ export function buildIntegrationSnapshot(
       startedAt: inFlight.startedAt ?? inFlight.enqueuedAt,
     },
     queue,
+    checkPlan,
     at,
   };
 }

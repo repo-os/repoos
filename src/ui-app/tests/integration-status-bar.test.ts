@@ -5,7 +5,7 @@ import { nextTick } from "vue";
 import IntegrationStatusBar from "../src/components/IntegrationStatusBar.vue";
 import { useRepoStore } from "../src/stores/repo";
 import { useUiStore } from "../src/stores/ui";
-import type { IntegrationPipelineSnapshot } from "../src/types";
+import type { IntegrationPipelineSnapshot, Task } from "../src/types";
 
 const activeSnapshot = (over: Partial<IntegrationPipelineSnapshot["active"]> = {}) =>
   ({
@@ -115,5 +115,84 @@ describe("IntegrationStatusBar", () => {
     vi.advanceTimersByTime(10_000);
     await nextTick();
     expect(ui.integrationBarCollapsed).toBe(true);
+  });
+
+  it("builds the check tooltip from the repo's resolved check plan (#0458)", async () => {
+    const repo = useRepoStore();
+    repo.integration = {
+      ...activeSnapshot(),
+      checkPlan: {
+        source: "declared",
+        defaultProfile: "full",
+        steps: [
+          {
+            name: "go-build",
+            command: "go build ./...",
+            timeoutMs: 600_000,
+            required: true,
+            dependsOn: [],
+            profiles: [],
+          },
+          {
+            name: "unit",
+            kind: "tests",
+            timeoutMs: 1_200_000,
+            required: false,
+            dependsOn: ["go-build"],
+            profiles: [],
+          },
+        ],
+      },
+    };
+    const wrapper = render();
+    await nextTick();
+
+    const title = wrapper.findAll(".stage")[3].attributes("title") ?? "";
+    expect(title).toContain("2 step(s)");
+    expect(title).toContain('profile "full"');
+    expect(title).toContain("go-build: go build ./...");
+    expect(title).toContain("timeout 10m");
+    expect(title).toContain("unit: tests (built-in guard)");
+    expect(title).toContain("after go-build");
+    expect(title).toContain("optional");
+    // The old hardcoded RepoOS prose must be gone.
+    expect(title).not.toContain("1000+ tests");
+  });
+
+  it("falls back to a generic check tooltip when no plan resolved", async () => {
+    const repo = useRepoStore();
+    repo.integration = activeSnapshot();
+    const wrapper = render();
+    await nextTick();
+
+    const title = wrapper.findAll(".stage")[3].attributes("title") ?? "";
+    expect(title).toContain("No check plan was resolved");
+  });
+
+  it("clicking the check stage opens Debug focused on the merge-gate run", async () => {
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    repo.integration = activeSnapshot();
+    repo.tasks = [{ id: "0042", status: "review" } as Task];
+    const wrapper = render();
+    await nextTick();
+
+    await wrapper.findAll(".stage")[3].trigger("click");
+    expect(ui.activeTab).toBe("debug");
+    expect(ui.debugView).toBe("logs");
+    expect(ui.debugCheckFocus).toMatchObject({ taskId: "0042", kind: "merge-gate" });
+  });
+
+  it("clicking a non-check stage opens Debug without a check focus", async () => {
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    repo.integration = activeSnapshot();
+    repo.tasks = [{ id: "0042", status: "review" } as Task];
+    const wrapper = render();
+    await nextTick();
+
+    await wrapper.findAll(".stage")[0].trigger("click");
+    expect(ui.activeTab).toBe("debug");
+    expect(ui.debugCheckFocus).toBeNull();
   });
 });

@@ -120,6 +120,7 @@ import { createJobCoordinator, type JobCoordinator } from "./integration-job.js"
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
 import { RemoteValidationRunner, type RemoteValidator } from "./remote-validation.js";
 import { buildIntegrationSnapshot } from "./integration-status.js";
+import { resolvePipelineCheckPlan } from "./check-plan-info.js";
 import { createRepositoryLock, createRootLock } from "./repo-lock.js";
 import { handoffTask, scheduleCheckFailureRetry, scheduleMergeConflictRetry } from "./handoff.js";
 import { guardReviewTransition } from "./review-guard.js";
@@ -1030,7 +1031,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const emitIntegration = (): void => {
     emitEvent({
       type: "integration",
-      pipeline: buildIntegrationSnapshot(jobCoordinator, reportedStages),
+      pipeline: buildIntegrationSnapshot(
+        jobCoordinator,
+        reportedStages,
+        resolvePipelineCheckPlan(config),
+      ),
     });
   };
 
