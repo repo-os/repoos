@@ -1,4 +1,5 @@
 export * from "./agents.js";
+export * from "./check-plan.js";
 export * from "./config.js";
 export * from "./docs.js";
 export * from "./inputs.js";
