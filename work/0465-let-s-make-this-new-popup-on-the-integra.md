@@ -2,14 +2,14 @@
 id: "0465"
 title: Widen integration bar popup so text wraps less
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-20T12:50:19Z"
-updated_at: "2026-09-20T12:51:40Z"
+updated_at: "2026-09-20T12:52:55Z"
 ---
 ## Problem
 
@@ -96,3 +96,4 @@ Let's make this new popup on the integration bar wider so the text doesn't need 
 - 2026-09-20T12:50:19Z · created · hello@repoos.org
 - 2026-09-20T12:50:20Z · screenshots
 - 2026-09-20T12:51:40Z · status draft→inbox, title, area, body
+- 2026-09-20T12:52:55Z · status inbox→ready
