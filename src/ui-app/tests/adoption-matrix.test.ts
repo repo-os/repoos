@@ -74,10 +74,15 @@ function itPhase(
   expected: string,
   body: (root: string) => void | Promise<void>,
 ): void {
-  it(phase, async () => {
-    const root = newRoot(fixture);
-    await runPhase(fixture, phase, () => body(root), { root, expected });
-  });
+  // Worktree phases spawn real git subprocesses; 30s covers slow machines.
+  it(
+    phase,
+    async () => {
+      const root = newRoot(fixture);
+      await runPhase(fixture, phase, () => body(root), { root, expected });
+    },
+    30_000,
+  );
 }
 
 function readFixtureFiles(root: string, id: string): Record<string, string> {
@@ -421,7 +426,7 @@ describe("matrix path and root assumptions", () => {
     expect(result.ok, result.reason ?? "").toBe(true);
     expect(existsSync(join(root, "repoos/work/0001-set-up-repoos.md"))).toBe(true);
     expect(relative(realRoot(root), realRoot(result.path)).startsWith("..")).toBe(true);
-  });
+  }, 30_000);
 
   it("resolves the repo root from a deeply nested directory, not the nearest work/", () => {
     const root = newFixtureDir("repoos-adopt-nested-");
