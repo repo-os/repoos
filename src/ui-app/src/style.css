@@ -6008,6 +6008,32 @@
   padding-top: 10px;
   overflow-wrap: anywhere;
 }
+.support-bundle-location {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--cyan-border-tint);
+  border-radius: 9px;
+  background: var(--cyan-tint);
+}
+.support-bundle-location strong {
+  color: var(--txt);
+  font-size: 12px;
+  font-weight: 650;
+}
+.support-bundle-location p {
+  margin: 4px 0 0;
+  color: var(--txt-dim);
+  font-size: 11.5px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.support-bundle-location .mono {
+  color: var(--txt);
+}
 .support-details {
   margin-top: 12px;
   border-top: 1px solid var(--border);
@@ -6079,6 +6105,10 @@
     grid-template-columns: 1fr;
   }
   .support-error {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .support-bundle-location {
     align-items: flex-start;
     flex-direction: column;
   }

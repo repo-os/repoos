@@ -10,7 +10,7 @@ import {
   PUSH_AVAILABILITY_HELP,
   type NotificationType,
 } from "../stores/notifications";
-import { api } from "../api";
+import { api, JSON_OPTS } from "../api";
 import { highlightToml } from "../lib/toml-highlight";
 import Button from "../components/ui/button.vue";
 import Card from "../components/ui/card.vue";
@@ -167,6 +167,7 @@ interface SupportPreview {
 const supportPreview = ref<SupportPreview | null>(null);
 const supportLoading = ref(false);
 const supportCreating = ref(false);
+const supportOpening = ref(false);
 const supportError = ref("");
 const supportResult = ref<{ path: string; bytes: number } | null>(null);
 
@@ -205,6 +206,19 @@ async function createSupportBundle(): Promise<void> {
     supportError.value = (e as Error).message;
   } finally {
     supportCreating.value = false;
+  }
+}
+
+async function openSupportBundle(): Promise<void> {
+  if (!supportResult.value) return;
+  supportOpening.value = true;
+  supportError.value = "";
+  try {
+    await api("/api/support/bundle/open", JSON_OPTS("POST", { path: supportResult.value.path }));
+  } catch (e) {
+    supportError.value = (e as Error).message;
+  } finally {
+    supportOpening.value = false;
   }
 }
 
@@ -1133,10 +1147,26 @@ onUnmounted(() => {
                     >Refresh</Button
                   >
                 </div>
-                <p class="setting-desc support-output-path">
-                  {{ supportResult ? "Written to" : "Will be written to" }}
-                  <span class="mono">{{ supportResult?.path ?? supportPreview.path }}</span>
-                  <span v-if="supportResult"> ({{ supportResult.bytes }} bytes)</span>.
+                <section v-if="supportResult" class="support-bundle-location" aria-live="polite">
+                  <div>
+                    <strong>Support bundle saved</strong>
+                    <p>
+                      Inspect this archive before sharing it:
+                      <span class="mono">{{ supportResult.path }}</span>
+                      <span> ({{ supportResult.bytes }} bytes)</span>
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    :disabled="supportOpening"
+                    @click="openSupportBundle"
+                  >
+                    {{ supportOpening ? "Opening…" : "Open in file browser" }}
+                  </Button>
+                </section>
+                <p v-else class="setting-desc support-output-path">
+                  Planned location: <span class="mono">{{ supportPreview.path }}</span>
                 </p>
                 <div v-if="supportPreview.warning" class="support-warning" role="alert">
                   {{ supportPreview.warning }}
@@ -1174,18 +1204,19 @@ onUnmounted(() => {
                 <span class="mono">repoos support inspect {{ supportResult.path }}</span>
               </div>
               <div v-if="supportResult" class="support-handoff">
-                <div class="support-subhead">Choose where to ask</div>
+                <div class="support-subhead">Send it with the right report</div>
                 <p class="setting-desc">
-                  Use an issue for a reproducible bug; use a discussion for a question, idea, or
-                  help choosing an approach.
+                  The bug-report form asks for what you expected, what happened, a small
+                  reproduction, your version, and an optional inspected bundle. Use a discussion for
+                  a question, idea, or help choosing an approach.
                 </p>
                 <div class="support-links">
                   <a
                     class="support-link"
-                    href="https://github.com/repo-os/repoos/issues/new/choose"
+                    href="https://github.com/repo-os/repoos/issues/new?template=bug_report.yml"
                     target="_blank"
                     rel="noreferrer"
-                    >Report a bug on GitHub ↗</a
+                    >Open the bug-report form ↗</a
                   >
                   <a
                     class="support-link"
