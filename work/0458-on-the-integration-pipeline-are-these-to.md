@@ -2,7 +2,7 @@
 id: "0458"
 title: Fix integration pipeline tooltips and add debug panel link
 type: chore
-status: review
+status: done
 priority: p2
 area: ui
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/fix-integration-pipeline-tooltips-and-ad
 review_model_override: opencode-go/mimo-v2.5
 created_at: "2026-09-19T23:52:52Z"
-updated_at: "2026-09-20T00:24:21Z"
+updated_at: "2026-09-20T00:38:53Z"
 ---
 ## Problem
 
@@ -61,3 +61,4 @@ On the integration pipeline are these tooltips still accurate (reflecting the ac
 - 2026-09-19T23:53:54Z · status inbox→ready
 - 2026-09-19T23:57:26Z · status ready→active, branch
 - 2026-09-20T00:24:21Z · status active→review
+- 2026-09-20T00:38:53Z · status review→done, release:success
