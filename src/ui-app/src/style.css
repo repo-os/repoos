@@ -3534,6 +3534,25 @@
   font: 600 11px var(--font-sans);
   cursor: pointer;
 }
+/* Secondary, quieter action next to Fix: hand a redacted bundle to support
+     without leaving the failure panel. */
+.done-error-support {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 9px;
+  padding: 5px 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--txt-dim);
+  font: 600 11px var(--font-sans);
+  cursor: pointer;
+}
+.done-error-support:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
 .done-error-fix:hover:not(:disabled) {
   border-color: var(--red);
   background: var(--red-tint);

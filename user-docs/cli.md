@@ -142,8 +142,9 @@ an explicit omission with the reason, and the rest of the bundle is still
 written. The default output lands under the cache directory (gitignored in most
 repos); if that path is inside the repo and not gitignored, both the CLI and the
 UI warn that the archive could be committed and suggest `--out` or a
-`.gitignore` entry. The same action is available from **Settings → Support** in
-the web UI.
+`.gitignore` entry. In the web UI it is on **Settings → Support**, and a
+**Create a redacted support bundle** action also sits on the failed
+Move-to-done / check panel — the moment you're most likely to need it.
 
 ## Quality and maintenance
 

@@ -212,7 +212,9 @@ export function sanitizePathText(text: string, ctx: PathContext = {}): string {
   }
   const home = ctx.home?.replace(/[/\\]+$/, "");
   if (home && home.length > 1) {
-    out = out.split(ctx.home as string).join("~");
+    // Split on the stripped `home`, not the raw value: a HOME ending in `/`
+    // would otherwise never match a path that Omits the trailing slash.
+    out = out.split(home).join("~");
     const username = home.split(/[/\\]/).pop();
     if (username && username.length > 1) {
       const re = new RegExp(`(^|[/\\\\])${escapeRegExp(username)}([/\\\\]|$)`, "g");

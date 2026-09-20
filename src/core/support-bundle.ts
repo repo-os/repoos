@@ -26,6 +26,8 @@ import {
   redactText,
   redactValue,
   sanitizePathText,
+  scanSecrets,
+  RedactionLeakError,
   REDACTION_VERSION,
 } from "./redact.js";
 import {
@@ -617,27 +619,106 @@ export async function buildSupportBundle(opts: BuildBundleOptions = {}): Promise
     omissions,
   };
 
-  // Sanitize every string in the report once more (defence in depth), then
-  // rebuild the omissions from the sanitized report.
-  const safeReport = sanitizeReport(report, pathCtx);
+  // Sanitize every string in the report once more (defence in depth). Free-form
+  // sections (doctor findings, error messages) are additionally *scrubbed*:
+  // any individual string that still fails verification is neutralized to
+  // `[redacted]` in place, so an exotic value in one finding cannot take down
+  // the rest of the report. The verify pass shares patterns with `redactText`,
+  // so this is rare — but a user hitting an exotic failure mode is exactly the
+  // person who needs the bundle.
+  const safeReport = scrubContaminated(sanitizeReport(report, pathCtx), pathCtx);
 
-  const files = buildFiles(safeReport);
-  const manifest = buildManifest(safeReport, files, {
+  // Verification runs per section, not over the whole archive at once. A
+  // section that still matches a secret shape or a raw path after redaction is
+  // DROPPED and recorded as an omission — never allowed to abort the bundle.
+  const { files, dropped } = verifySections(buildFiles(safeReport), pathCtx);
+  for (const d of dropped) {
+    omit(d.category, `dropped after redaction verification found ${d.patterns.join(", ")}`);
+  }
+
+  const safeReportWithOmissions: SupportReport = { ...safeReport, omissions };
+
+  const manifest = buildManifest(safeReportWithOmissions, files, {
     homeMinimized: home !== null,
     repoRootMinimized: true,
   });
 
-  // Verification: no file — including the manifest — may carry a secret shape
-  // or a raw home/root path. This is the blocker the task requires.
-  for (const file of [
-    ...files,
-    { path: "manifest.json", content: stringify(manifest), category: "manifest", description: "" },
-  ]) {
-    assertRedacted(file.content, file.path);
-    assertNoRawPaths(file.content, pathCtx, file.path);
-  }
+  // The manifest itself is the last gate: a manifest that fails verification
+  // would mean the redaction ruleset is broken, which is the one case where
+  // refusing to write anything is correct.
+  const manifestContent = stringify(manifest);
+  assertRedacted(manifestContent, "manifest.json");
+  assertNoRawPaths(manifestContent, pathCtx, "manifest.json");
 
-  return { report: safeReport, manifest, files, root, cacheDir: config.cacheDir };
+  return {
+    report: safeReportWithOmissions,
+    manifest,
+    files,
+    root,
+    cacheDir: config.cacheDir,
+  };
+}
+
+/**
+ * Walk the report and replace any string that still trips the secret or path
+ * verifier with `[redacted]`. This is the per-field safety net beneath the
+ * per-section drop: it keeps the structured shape (so counts and classifications
+ * survive) while guaranteeing no offending value reaches a file.
+ */
+function scrubContaminated<T>(value: T, pathCtx: { root: string; home?: string }): T {
+  const walk = (v: unknown): unknown => {
+    if (typeof v === "string") {
+      const contaminated = scanSecrets(v).length > 0 || rawPathLeak(v, pathCtx) !== null;
+      return contaminated ? "[redacted]" : v;
+    }
+    if (Array.isArray(v)) return v.map(walk);
+    if (v && typeof v === "object") {
+      const out: Record<string, unknown> = {};
+      for (const [k, val] of Object.entries(v as Record<string, unknown>)) out[k] = walk(val);
+      return out;
+    }
+    return v;
+  };
+  return walk(value) as T;
+}
+
+/** The raw-path leak kinds present in `text`, or null when clean. */
+function rawPathLeak(text: string, ctx: { root: string; home?: string }): string | null {
+  const leaks: string[] = [];
+  if (ctx.root && ctx.root.length > 1 && text.includes(ctx.root)) leaks.push("repo root");
+  if (ctx.home && ctx.home.length > 1 && text.includes(ctx.home)) leaks.push("home dir");
+  if (RAW_USER_PATH_RE.test(text)) leaks.push("user path");
+  return leaks.length ? leaks.join(", ") : null;
+}
+
+interface DroppedSection {
+  category: string;
+  patterns: string[];
+}
+
+/**
+ * Verify every serialized file; return the clean ones plus a record of any
+ * section dropped for failing verification. A `RedactionLeakError` or a raw
+ * path is caught here rather than propagated — the caller turns each into an
+ * omission, so the bundle still builds.
+ */
+function verifySections(
+  files: SupportBundleFile[],
+  pathCtx: { root: string; home?: string },
+): { files: SupportBundleFile[]; dropped: DroppedSection[] } {
+  const clean: SupportBundleFile[] = [];
+  const dropped: DroppedSection[] = [];
+  for (const file of files) {
+    try {
+      assertRedacted(file.content, file.path);
+      assertNoRawPaths(file.content, pathCtx, file.path);
+      clean.push(file);
+    } catch (e) {
+      const patterns = e instanceof RedactionLeakError ? e.patterns : ["an unsanitized path"];
+      dropped.push({ category: file.category, patterns });
+    }
+  }
+  return { files: clean, dropped };
 }
 
 function safeCpus(): number {
@@ -687,13 +768,10 @@ const RAW_USER_PATH_RE =
 
 /** Throw if a raw home directory, repo root or user/private path survived minimization. */
 function assertNoRawPaths(text: string, ctx: { root: string; home?: string }, label: string): void {
-  const leaks: string[] = [];
-  if (ctx.root && ctx.root.length > 1 && text.includes(ctx.root)) leaks.push("repo root");
-  if (ctx.home && ctx.home.length > 1 && text.includes(ctx.home)) leaks.push("home dir");
-  if (RAW_USER_PATH_RE.test(text)) leaks.push("user path");
-  if (leaks.length) {
+  const leak = rawPathLeak(text, ctx);
+  if (leak) {
     throw new Error(
-      `refusing to write support bundle: ${label} still contains ${leaks.join(", ")} after path minimization`,
+      `refusing to write support bundle: ${label} still contains ${leak} after path minimization`,
     );
   }
 }

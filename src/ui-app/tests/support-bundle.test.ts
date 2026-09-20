@@ -408,6 +408,39 @@ describe("buildSupportBundle", () => {
     }
     expect(JSON.stringify(bundle.manifest)).not.toMatch(/\/private\/var\/folders\//);
   });
+
+  it("degrades a contaminated doctor finding instead of aborting the whole bundle", async () => {
+    const root = fixtureRepo();
+    // A token shape redactText's patterns do not cover (an unrecognized
+    // KEY=... value) still must not ship — and must not cost the user every
+    // other diagnostic. The whole environment is failing in this scenario.
+    const exotic = "MYSTERYKEY=ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ";
+    const bundle = await buildSupportBundle({
+      root,
+      env: { HOME: FAKE_HOME } as NodeJS.ProcessEnv,
+      doctor: async () => ({
+        ...fakeDoctor(root),
+        findings: [
+          {
+            id: "config.values",
+            category: "config",
+            severity: "fail",
+            title: "leaked value",
+            detail: exotic,
+            remediation: "fix it",
+          },
+        ],
+      }),
+      detectAgents: async () => [],
+      status: async () => fakeStatus(root),
+      readLogs: () => [],
+    });
+    // The bundle exists, the report is still structured, and the offending
+    // string never reaches any file.
+    expect(bundle.files.map((f) => f.path)).toContain("report.json");
+    for (const f of bundle.files) expect(f.content, f.path).not.toContain(exotic);
+    expect(JSON.stringify(bundle.manifest)).not.toContain(exotic);
+  });
 });
 
 describe("bundlePathWarning", () => {
