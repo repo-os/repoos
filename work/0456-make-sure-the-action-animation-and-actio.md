@@ -2,7 +2,7 @@
 id: "0456"
 title: Fix task panel animation and message consistency
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/fix-task-panel-animation-and-message-con
 review_model_override: opencode-go/hy3
 created_at: "2026-09-19T23:18:59Z"
-updated_at: "2026-09-20T00:09:28Z"
+updated_at: "2026-09-20T00:13:21Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 1
@@ -69,3 +69,4 @@ Make sure the action animation and action text in the tasks are the same color (
 - 2026-09-19T23:46:10Z · needs_input
 - 2026-09-20T00:07:02Z · status active→review
 - 2026-09-20T00:09:28Z · status review→active
+- 2026-09-20T00:13:21Z · status active→review
