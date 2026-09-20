@@ -4,6 +4,7 @@ import type { RouteHandler } from "./types.js";
 import { json } from "./utils.js";
 import {
   buildSupportBundle,
+  bundlePathWarning,
   defaultBundlePath,
   serializeSupportBundle,
   type SupportBundle,
@@ -17,10 +18,12 @@ import { RedactionLeakError } from "../../core/redact.js";
 export const getSupportBundlePreview: RouteHandler = async (ctx, _req, res) => {
   try {
     const bundle = await buildSupportBundle({ root: ctx.config.root });
+    const out = bundlePath(bundle);
     return json(res, 200, {
       ok: true,
       dryRun: true,
-      path: bundlePath(bundle),
+      path: out,
+      warning: bundlePathWarning(out, bundle.root),
       manifest: bundle.manifest,
     });
   } catch (e) {
@@ -44,6 +47,7 @@ export const createSupportBundle: RouteHandler = async (ctx, _req, res) => {
       dryRun: false,
       path: out,
       bytes: buffer.length,
+      warning: bundlePathWarning(out, bundle.root),
       manifest: bundle.manifest,
     });
   } catch (e) {

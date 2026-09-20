@@ -139,7 +139,11 @@ to `~` and `<repo>`. A final scan verifies no known secret shape or private path
 survived; a miss **aborts** the write rather than packaging it. A down server, a
 missing agent CLI or an unparseable `repoos.toml` degrade that one section into
 an explicit omission with the reason, and the rest of the bundle is still
-written. The same action is available from **Settings → Support** in the web UI.
+written. The default output lands under the cache directory (gitignored in most
+repos); if that path is inside the repo and not gitignored, both the CLI and the
+UI warn that the archive could be committed and suggest `--out` or a
+`.gitignore` entry. The same action is available from **Settings → Support** in
+the web UI.
 
 ## Quality and maintenance
 

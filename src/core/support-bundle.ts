@@ -17,7 +17,7 @@
  */
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { basename, dirname, join, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { cpus, totalmem } from "node:os";
 import { gunzipSync, gzipSync } from "node:zlib";
 import {
@@ -29,6 +29,7 @@ import {
   REDACTION_VERSION,
 } from "./redact.js";
 import {
+  DEFAULT_CONFIG,
   findRepoRoot,
   isLinkedWorktreeRoot,
   loadConfig,
@@ -260,7 +261,9 @@ export function summarizeConfigShape(
     inputsDir: config.inputsDir ?? null,
     taskExtensions: config.taskExtensions,
     defaultStatus: config.defaultStatus,
-    defaultAssignee: config.defaultAssignee,
+    // defaultAssignee is deliberately omitted: it is a free-form value that is
+    // commonly an email address, which the redaction ruleset does not (and
+    // should not) treat as a secret — so it must not enter the bundle at all.
     defaultTaskMode: config.defaultTaskMode ?? null,
     cacheDir: config.cacheDir,
     strictBuild: Boolean(config.strictBuild),
@@ -387,14 +390,18 @@ export async function buildSupportBundle(opts: BuildBundleOptions = {}): Promise
   };
 
   // ── config ──
-  let config: RepoOSConfig;
   let configParse: SupportReport["config"]["parse"] = "defaults";
   let configParseDetail: string | null = null;
+  // A failed `loadConfig` must never abort the bundle: fall back to a
+  // defaults-only config and record why. `loadConfig` reads `.env` (which can
+  // throw on an unreadable file) before merging repoos.toml, so this is a real
+  // failure mode, not just defensive shape.
+  let config: RepoOSConfig;
   try {
     config = loadConfig(root);
   } catch (e) {
-    omit("config", `loadConfig failed: ${(e as Error).message}`);
-    config = loadConfig(root);
+    omit("config", `loadConfig failed: ${(e as Error).message} — using built-in defaults`);
+    config = { root, ...DEFAULT_CONFIG };
   }
   const tomlPath = join(root, "repoos.toml");
   if (existsSync(tomlPath)) {
@@ -615,7 +622,10 @@ export async function buildSupportBundle(opts: BuildBundleOptions = {}): Promise
   const safeReport = sanitizeReport(report, pathCtx);
 
   const files = buildFiles(safeReport);
-  const manifest = buildManifest(safeReport, files);
+  const manifest = buildManifest(safeReport, files, {
+    homeMinimized: home !== null,
+    repoRootMinimized: true,
+  });
 
   // Verification: no file — including the manifest — may carry a secret shape
   // or a raw home/root path. This is the blocker the task requires.
@@ -666,12 +676,21 @@ function sanitizeReport(
   return redactValue(walk(report)) as SupportReport;
 }
 
-/** Throw if a raw home directory or repo root survived minimization. */
+/**
+ * Any absolute path prefix that identifies a user, a home directory, or a
+ * machine-specific temp dir. This MUST stay in step with the prefixes
+ * `sanitizePathText` rewrites — a prefix it minimizes but this does not gate
+ * can survive into a bundle unverified.
+ */
+const RAW_USER_PATH_RE =
+  /\/(?:Users|home|private\/var\/folders|var\/folders)\/[A-Za-z0-9._-]+|[A-Za-z]:\\Users\\[A-Za-z0-9._-]+/;
+
+/** Throw if a raw home directory, repo root or user/private path survived minimization. */
 function assertNoRawPaths(text: string, ctx: { root: string; home?: string }, label: string): void {
   const leaks: string[] = [];
   if (ctx.root && ctx.root.length > 1 && text.includes(ctx.root)) leaks.push("repo root");
   if (ctx.home && ctx.home.length > 1 && text.includes(ctx.home)) leaks.push("home dir");
-  if (/\/(?:Users|home)\/[A-Za-z0-9._-]+/.test(text)) leaks.push("user path");
+  if (RAW_USER_PATH_RE.test(text)) leaks.push("user path");
   if (leaks.length) {
     throw new Error(
       `refusing to write support bundle: ${label} still contains ${leaks.join(", ")} after path minimization`,
@@ -729,7 +748,18 @@ function buildFiles(report: SupportReport): SupportBundleFile[] {
   return files;
 }
 
-function buildManifest(report: SupportReport, files: SupportBundleFile[]): SupportManifest {
+function buildManifest(
+  report: SupportReport,
+  files: SupportBundleFile[],
+  pathFlags: { homeMinimized: boolean; repoRootMinimized: boolean },
+): SupportManifest {
+  // The path claims describe what actually happened, not what usually happens:
+  // with no HOME in the environment there is no home directory to minimize, so
+  // claiming it was would be misleading.
+  const pathRules: string[] = [];
+  if (pathFlags.homeMinimized) pathRules.push("Home directories minimized to ~");
+  if (pathFlags.repoRootMinimized) pathRules.push("Repo root minimized to <repo>");
+  pathRules.push("User-profile paths (/Users, /home, /private/var/folders) minimized to ~");
   return {
     schemaVersion: SUPPORT_BUNDLE_SCHEMA_VERSION,
     redactionVersion: REDACTION_VERSION,
@@ -751,13 +781,10 @@ function buildManifest(report: SupportReport, files: SupportBundleFile[]): Suppo
         "Allowlist collection: only selected structured fields are read; files are never copied wholesale",
         "Known credential formats (API keys, tokens, bearer/basic auth, JWTs, private key blocks, URL credentials) replaced with [redacted]",
         "Sensitive key=value assignments and dotenv lines replaced with [redacted]",
-        "Home directories and user-profile paths minimized to ~; repo root minimized to <repo>",
+        ...pathRules,
         "A final scan verifies no rule was missed; a miss aborts the bundle",
       ],
-      paths: {
-        homeMinimized: true,
-        repoRootMinimized: true,
-      },
+      paths: pathFlags,
     },
   };
 }
@@ -841,6 +868,46 @@ export function serializeSupportBundle(bundle: SupportBundle): Buffer {
 export function defaultBundlePath(root: string, cacheDir: string, now: Date): string {
   const stamp = now.toISOString().replace(/[:.]/g, "-");
   return join(root, cacheDir, "support", `repoos-support-${stamp}.tar.gz`);
+}
+
+/** Whether `outPath` is inside `root` (i.e. could be picked up by git). */
+function isInside(outPath: string, root: string): boolean {
+  const rel = relative(root, outPath);
+  return rel !== "" && !rel.startsWith("..") && !isAbsolute(rel);
+}
+
+/** Lines of `.gitignore` at `root`, if any. */
+function gitignorePatterns(root: string): string[] {
+  try {
+    const text = readFileSync(join(root, ".gitignore"), "utf8");
+    return text
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter((l) => l && !l.startsWith("#"));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * A warning when writing the default bundle path could commit the artifact:
+ * the archive lands inside the repo, and the segment it lives under is not
+ * covered by `.gitignore`. Returns null when the target is outside the repo or
+ * already ignored — the safe cases.
+ */
+export function bundlePathWarning(outPath: string, root: string): string | null {
+  if (!isInside(outPath, root)) return null;
+  const rel = relative(root, outPath).split("\\").join("/");
+  const first = rel.split("/")[0];
+  const ignored = gitignorePatterns(root).some((raw) => {
+    const pat = raw.replace(/^\/+/, "").replace(/\/+$/, "");
+    return pat === first || pat === rel || pat.startsWith(`${first}/`);
+  });
+  if (ignored) return null;
+  return (
+    `the bundle is written inside the repo at ${rel} and that path is not in .gitignore — ` +
+    `the archive could be committed. Use --out to write it elsewhere, or add ${first}/ to .gitignore.`
+  );
 }
 
 /** Write the archive to `outPath`, creating parent directories. */

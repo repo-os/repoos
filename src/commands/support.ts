@@ -14,6 +14,7 @@
 import { dirname, resolve } from "node:path";
 import {
   buildSupportBundle,
+  bundlePathWarning,
   defaultBundlePath,
   readBundleManifest,
   serializeSupportBundle,
@@ -140,6 +141,8 @@ async function cmdBundle(argv: string[]): Promise<void> {
     console.log("");
     console.log(`  ${c.green("✔")} wrote ${c.cyan(outPath)} ${c.dim(`(${buffer.length} bytes)`)}`);
     console.log(c.dim("    Inspect before sharing: ") + c.dim(`repoos support inspect ${outPath}`));
+    const warning = bundlePathWarning(outPath, bundle.root);
+    if (warning) console.log("  " + c.yellow("⚠ ") + warning);
     console.log("");
   }
 }

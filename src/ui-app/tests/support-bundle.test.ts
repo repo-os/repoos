@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -13,6 +13,7 @@ import {
 } from "../../core/redact";
 import {
   buildSupportBundle,
+  bundlePathWarning,
   defaultBundlePath,
   packageTarGz,
   readBundleManifest,
@@ -52,6 +53,7 @@ function fixtureRepo(): string {
       'cacheDir = ".repoos"',
       'ntfyTopic = "gh" + "p_AbCdEfGhIjKlMnOpQrStUvWxYz012345"',
       'auth.bootstrapAdmin = "admin@example.com"',
+      'defaultAssignee = "somebody@example.com"',
       "",
       "[check]",
       "version = 1",
@@ -296,6 +298,8 @@ describe("buildSupportBundle", () => {
       expect(text, entry.path).not.toContain("hunter2");
       expect(text, entry.path).not.toContain("abcdefghijklmnopqrstuvwxyz012345");
       expect(text, entry.path).not.toContain("admin@example.com");
+      // defaultAssignee is frequently an email and is deliberately dropped.
+      expect(text, entry.path).not.toContain("somebody@example.com");
       expect(text, entry.path).not.toContain("alice");
       expect(text, entry.path).not.toContain("PROMPT-SNIPPET-DO-NOT-LEAK");
       expect(text, entry.path).not.toContain("SOURCE-SNIPPET-DO-NOT-LEAK");
@@ -306,6 +310,8 @@ describe("buildSupportBundle", () => {
     expect(bundle.report.latestOperation?.result).toBe("fail");
     expect(bundle.report.recentErrors.count).toBe(2);
     expect(bundle.report.config.shape.auth).toMatchObject({ bootstrapAdminSet: true });
+    // defaultAssignee is not represented at all.
+    expect(JSON.stringify(bundle.report.config.shape)).not.toContain("defaultAssignee");
   });
 
   it("records an omission (with reason) for every section that fails", async () => {
@@ -348,6 +354,76 @@ describe("buildSupportBundle", () => {
     expect(bundle.report.config.parse).toBe("syntax-error");
     expect(bundle.report.config.parseDetail).toBeTruthy();
     expect(bundle.manifest.omitted.some((o) => o.category === "config.toml-syntax")).toBe(true);
+  });
+
+  it("falls back to defaults (and says so) when loadConfig throws", async () => {
+    const root = fixtureRepo();
+    // An unreadable `.env` makes loadConfig throw while reading it — the exact
+    // failure the old catch re-ran loadConfig into.
+    writeFileSync(join(root, ".env"), "SECRET=abc\n");
+    chmodSync(join(root, ".env"), 0o000);
+    try {
+      const bundle = await buildSupportBundle({
+        root,
+        env: { HOME: FAKE_HOME } as NodeJS.ProcessEnv,
+        doctor: async () => fakeDoctor(root),
+        detectAgents: async () => [],
+        status: async () => fakeStatus(root),
+        readLogs: () => [],
+      });
+      // Either real loadConfig succeeded (root can read its own 000 file?) or
+      // it failed, but the bundle must exist with an omission explaining it.
+      expect(bundle.report.config.shape.workDir).toBe("work");
+      const entries = readTarGz(serializeSupportBundle(bundle));
+      expect(entries.map((e) => e.path)).toContain("report.json");
+    } finally {
+      chmodSync(join(root, ".env"), 0o600);
+    }
+  });
+
+  it("minimizes a /private/var/folders temp path so it cannot survive", async () => {
+    const root = fixtureRepo();
+    const bundle = await buildSupportBundle({
+      root,
+      env: { HOME: FAKE_HOME } as NodeJS.ProcessEnv,
+      doctor: async () => fakeDoctor(root),
+      detectAgents: async () => [
+        {
+          ...fakeAgent("1.2.3"),
+          path: "/private/var/folders/ab/cdefgh/T/opencode/bin",
+        },
+      ],
+      status: async () => fakeStatus(root),
+      readLogs: () => [
+        {
+          timestamp: "2026-01-01T00:00:00.000Z",
+          level: "error",
+          component: "system",
+          message: "crashed under /private/var/folders/ab/cdefgh/T/tmp.XYZ",
+        },
+      ],
+    });
+    for (const f of bundle.files) {
+      expect(f.content, f.path).not.toMatch(/\/private\/var\/folders\//);
+    }
+    expect(JSON.stringify(bundle.manifest)).not.toMatch(/\/private\/var\/folders\//);
+  });
+});
+
+describe("bundlePathWarning", () => {
+  it("warns when the default path is inside an unignored repo", () => {
+    const root = fixtureRepo();
+    writeFileSync(join(root, ".gitignore"), "node_modules/\n");
+    const out = defaultBundlePath(root, ".repoos", new Date("2026-01-01T00:00:00.000Z"));
+    expect(bundlePathWarning(out, root)).toMatch(/not in .gitignore/);
+  });
+
+  it("stays silent when the directory is gitignored or outside the repo", () => {
+    const root = fixtureRepo();
+    writeFileSync(join(root, ".gitignore"), ".repoos/\n");
+    const ignored = defaultBundlePath(root, ".repoos", new Date("2026-01-01T00:00:00.000Z"));
+    expect(bundlePathWarning(ignored, root)).toBeNull();
+    expect(bundlePathWarning("/tmp/somewhere/repoos-support.tar.gz", root)).toBeNull();
   });
 });
 

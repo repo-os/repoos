@@ -156,6 +156,7 @@ interface SupportPreview {
   ok: boolean;
   dryRun: boolean;
   path: string;
+  warning?: string | null;
   manifest: {
     schemaVersion: number;
     redactionVersion: number;
@@ -189,6 +190,7 @@ async function createSupportBundle(): Promise<void> {
     const res = (await api("/api/support/bundle", { method: "POST" })) as {
       path: string;
       bytes: number;
+      warning?: string | null;
       manifest: SupportPreview["manifest"];
     };
     supportResult.value = { path: res.path, bytes: res.bytes };
@@ -196,6 +198,7 @@ async function createSupportBundle(): Promise<void> {
       ok: true,
       dryRun: false,
       path: res.path,
+      warning: res.warning,
       manifest: res.manifest,
     };
   } catch (e) {
@@ -1088,6 +1091,9 @@ onUnmounted(() => {
                 Will be written to
                 <span class="mono">{{ supportResult?.path ?? supportPreview.path }}</span>
                 <span v-if="supportResult"> ({{ supportResult.bytes }} bytes)</span>.
+              </div>
+              <div v-if="supportPreview.warning" class="support-warning" role="alert">
+                {{ supportPreview.warning }}
               </div>
 
               <div class="support-actions">
