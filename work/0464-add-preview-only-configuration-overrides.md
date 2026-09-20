@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-20T09:34:23Z"
-updated_at: "2026-09-20T09:36:44Z"
+updated_at: "2026-09-20T09:39:04Z"
 ---
 ## Problem
 
@@ -42,13 +42,15 @@ For preview startup, effective configuration precedence should be: defaults, bas
 - [ ] Add focused tests covering base-only behavior, nested merge behavior, CLI precedence, and confirmation that non-preview startup ignores the overlay.
 - [ ] Update this RepoOS repository’s `repoos.toml` to set `preview.auth.enabled = false` while keeping its normal `auth.enabled` setting unchanged.
 - [ ] When auth is disabled by preview config, preserve safe local-preview defaults (for example, loopback binding unless separately and explicitly overridden).
+- [ ] Update the user documentation with an explanation of preview-only overrides, their scope and precedence, supported commands, and a copyable auth example. Clearly document that they are for local preview/UI-test processes and do not alter normal or production-like startup.
 
 ## Notes for AI
 
-Keep the override scope intentionally narrow: it is an isolated preview-runtime feature, not a general environment/profile system. Reuse the existing configuration parsing and server/preview launch paths where possible; avoid duplicating configuration schemas. Document the exact supported command(s) and behavior in the relevant config/CLI documentation.
+Keep the override scope intentionally narrow: it is an isolated preview-runtime feature, not a general environment/profile system. Reuse the existing configuration parsing and server/preview launch paths where possible; avoid duplicating configuration schemas. Keep developer/config references in sync with the user-facing documentation.
 
 ## Activity
 
 - 2026-09-20T09:34:23Z · created · unknown
 - 2026-09-20T09:35:45Z · body
 - 2026-09-20T09:36:44Z · status inbox→ready
+- 2026-09-20T09:39:04Z · body
