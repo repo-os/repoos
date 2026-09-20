@@ -304,6 +304,7 @@ import {
   getSupportBundlePreview,
   createSupportBundle,
   revealSupportBundle,
+  generateBugReport,
 } from "./routes/index.js";
 
 function findCloudflared(): string | null {
@@ -1939,6 +1940,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/support/bundle", getSupportBundlePreview);
   router.register("POST", "/api/support/bundle", createSupportBundle);
   router.register("POST", "/api/support/bundle/open", revealSupportBundle);
+  router.register("POST", "/api/support/bug-report", generateBugReport);
   router.register("GET", "/api/tunnel/readiness", getTunnelStatus);
   router.register("GET", "/api/release", getRelease);
   router.register("GET", "/api/release/available", getAvailableRelease);

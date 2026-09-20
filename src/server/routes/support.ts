@@ -10,7 +10,10 @@ import {
   serializeSupportBundle,
   type SupportBundle,
 } from "../../core/support-bundle.js";
-import { RedactionLeakError } from "../../core/redact.js";
+import { redactText, RedactionLeakError } from "../../core/redact.js";
+import { resolvePmAgent, runPrompt, recordOneShotSession } from "../agents.js";
+import { loadBuildInfo } from "./helpers.js";
+import { isBun } from "../../core/runtime.js";
 
 /**
  * Build the bundle in memory and report exactly what it would contain and
@@ -122,6 +125,94 @@ function revealInFileBrowser(file: string, directory: string): Promise<void> {
 function bundlePath(bundle: SupportBundle): string {
   return defaultBundlePath(bundle.root, bundle.cacheDir, new Date(bundle.report.generatedAt));
 }
+
+function bugReportPrompt(
+  description: string,
+  buildInfo: { version: string | null; buildAt: string | null },
+): string {
+  const envLines: string[] = [];
+  if (buildInfo.version) envLines.push(`- RepoOS version: ${buildInfo.version}`);
+  if (buildInfo.buildAt) envLines.push(`- Built at: ${buildInfo.buildAt}`);
+  envLines.push(`- Platform: ${process.platform} ${process.arch}`);
+  envLines.push(`- Runtime: ${isBun() ? "bun" : "node"} ${process.version}`);
+  const envBlock = envLines.length ? `\nKnown environment:\n${envLines.join("\n")}` : "";
+
+  return [
+    "You are the RepoOS PM agent. A user is reporting a bug.",
+    "Turn their description into a GitHub-ready bug report.",
+    "",
+    "RULES:",
+    "- Generate a concise, descriptive title (under 80 characters).",
+    "- Output ONLY valid Markdown with these sections: ## Title, ## Expected Behavior, ## Actual Behavior, ## Steps to Reproduce, ## Environment, ## Additional Context.",
+    "- Use the user's words wherever possible. Do not invent facts or speculate.",
+    "- If a section cannot be filled from the description, write <!-- TODO: ... --> with what is needed.",
+    "- Never include credentials, API keys, tokens, passwords, repo paths, source code, task bodies, raw logs, or private environment values.",
+    "- Keep reproduction steps minimal and actionable.",
+    "- Under ## Environment, use the known environment data provided below.",
+    "- Under ## Additional Context, optionally suggest attaching an inspected support bundle.",
+    "",
+    "Known environment:" + envBlock,
+    "",
+    "---",
+    "",
+    "User description:",
+    description,
+  ].join("\n");
+}
+
+/**
+ * Generate an editable bug report from a user's problem description using the
+ * configured PM agent. The report stays entirely local — nothing is uploaded.
+ * Attachments are intentionally excluded from the PM input (0463).
+ */
+export const generateBugReport: RouteHandler = async (ctx, req, res) => {
+  const body = (await readBody(req)) as Record<string, unknown>;
+  const text = typeof body.text === "string" ? body.text.trim() : "";
+  if (!text) return json(res, 400, { error: "text is required" });
+
+  const pm = resolvePmAgent(ctx.config);
+  if (!pm) {
+    return json(res, 200, {
+      ok: false,
+      error: "no-pm-agent",
+      hint:
+        "No PM agent is configured. Go to Settings → Agents to add one, " +
+        "or write the bug report manually and open the GitHub issue form directly.",
+    });
+  }
+
+  const buildInfo = loadBuildInfo();
+  const prompt = bugReportPrompt(redactText(text), buildInfo);
+  try {
+    const result = await runPrompt(pm, prompt, { cwd: ctx.config.root, timeoutMs: 60_000 });
+    recordOneShotSession(ctx.config.root, pm, result, { sessionType: "support", taskId: null });
+    if (!result.ok || !result.output) {
+      return json(res, 200, {
+        ok: false,
+        error: "generation-failed",
+        hint:
+          result.error ??
+          "The PM agent did not return a response. Try again or write the report manually.",
+      });
+    }
+    // Extract title from the Markdown output (first ## Title line).
+    const titleMatch = result.output.match(/^##\s+Title\s*\n\s*(.+)$/m);
+    const title = titleMatch?.[1]?.trim() ?? text.split("\n")[0].slice(0, 80);
+    // Body is the full output minus the title section.
+    const bodyStart = titleMatch ? result.output.indexOf(titleMatch[0]) + titleMatch[0].length : 0;
+    const body = result.output.slice(bodyStart).trim() || result.output;
+    return json(res, 200, { ok: true, title, body });
+  } catch (err) {
+    return json(res, 200, {
+      ok: false,
+      error: "generation-failed",
+      hint:
+        err instanceof Error
+          ? err.message
+          : "Unknown error. Try again or write the report manually.",
+    });
+  }
+};
 
 function bundleError(res: Parameters<RouteHandler>[2], e: unknown): void {
   if (e instanceof RedactionLeakError) {
