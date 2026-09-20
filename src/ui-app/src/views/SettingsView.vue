@@ -472,21 +472,26 @@ onUnmounted(() => {
 
 <template>
   <div class="settings-page" :class="{ 'settings-page--fill': activeTab === 'toml' }">
-    <div class="page-title">Settings</div>
-    <div class="page-desc">
-      RepoOS configuration · <span class="mono" style="color: var(--cyan)">repoos.toml</span>
-      ·
-      <a
-        class="settings-help-link"
-        href="https://docs.repoos.org/configuration"
-        target="_blank"
-        rel="noreferrer"
-        >Configuration reference ↗</a
-      >
-      <span v-if="config.saving"> · Saving…</span>
-      <span v-else-if="config.error" class="save-msg err"> · {{ config.error }}</span>
-      <span v-else-if="config.msg" class="save-msg ok"> · {{ config.msg }}</span>
-    </div>
+    <header class="page-header">
+      <div>
+        <div class="page-title">Settings</div>
+        <div class="page-desc">
+          RepoOS configuration · <span class="mono" style="color: var(--cyan)">repoos.toml</span>
+          <span v-if="config.saving"> · Saving…</span>
+          <span v-else-if="config.error" class="save-msg err"> · {{ config.error }}</span>
+          <span v-else-if="config.msg" class="save-msg ok"> · {{ config.msg }}</span>
+        </div>
+      </div>
+      <div class="page-header-actions">
+        <a
+          class="page-help-link"
+          href="https://docs.repoos.org/configuration"
+          target="_blank"
+          rel="noreferrer"
+          >Configuration reference ↗</a
+        >
+      </div>
+    </header>
 
     <!-- Tab strip -->
     <div ref="tablistRef" class="settings-tabs" role="tablist" aria-label="Settings sections">
@@ -1191,13 +1196,3 @@ onUnmounted(() => {
     </div>
   </div>
 </template>
-
-<style scoped>
-.settings-help-link {
-  color: var(--cyan);
-  text-decoration: none;
-}
-.settings-help-link:hover {
-  text-decoration: underline;
-}
-</style>

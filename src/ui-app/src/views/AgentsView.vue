@@ -501,25 +501,30 @@ onUnmounted(() => {
 
 <template>
   <div class="agents-page">
-    <div class="page-title agents-page-title">Agents</div>
-    <div class="page-desc">
-      The AI agents that work this repo ·
-      <a
-        class="model-pricing-link"
-        href="https://docs.repoos.org/agents"
-        target="_blank"
-        rel="noreferrer"
-        >Set up agents ↗</a
-      >
-      ·
-      <button class="model-pricing-link" @click="openRecommendations">
-        View the full agent &amp; model selection guide →
-      </button>
-      · <a class="model-pricing-link" href="/settings?tab=toml">Advanced config</a>
-      <span v-if="config.saving"> · Saving…</span>
-      <span v-else-if="config.error" class="save-msg err"> · {{ config.error }}</span>
-      <span v-else-if="config.msg" class="save-msg ok"> · Saved</span>
-    </div>
+    <header class="page-header">
+      <div>
+        <div class="page-title agents-page-title">Agents</div>
+        <div class="page-desc">
+          The AI agents that work this repo
+          <span v-if="config.saving"> · Saving…</span>
+          <span v-else-if="config.error" class="save-msg err"> · {{ config.error }}</span>
+          <span v-else-if="config.msg" class="save-msg ok"> · Saved</span>
+        </div>
+      </div>
+      <div class="page-header-actions">
+        <a
+          class="page-help-link"
+          href="https://docs.repoos.org/agents"
+          target="_blank"
+          rel="noreferrer"
+          >Set up agents ↗</a
+        >
+        <button class="page-help-link" @click="openRecommendations">
+          Model &amp; agent guide →
+        </button>
+        <a class="page-help-link" href="/settings?tab=toml">Advanced config</a>
+      </div>
+    </header>
 
     <div v-if="!config.loaded" class="spin"></div>
 
