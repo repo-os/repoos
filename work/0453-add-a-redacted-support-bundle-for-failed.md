@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-20T00:40:07Z"
+review_passes: 3
 id: "0453"
 title: Add a redacted support bundle for failed setups
 type: feature
@@ -12,9 +14,7 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 review_model_override: opencode-go/hy3
 created_at: "2026-09-19T16:43:47Z"
-updated_at: "2026-09-20T00:37:14Z"
 review_rounds: 2
-review_passes: 2
 handoff_signal_retry_count: 1
 ---
 ## Outcome
@@ -80,3 +80,4 @@ P2 — Add a redacted support bundle for failed real-world setups.
 - 2026-09-20T00:29:02Z · status active→review
 - 2026-09-20T00:32:19Z · status review→active
 - 2026-09-20T00:37:14Z · status active→review
+
