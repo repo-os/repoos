@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 model_override: opencode-go/mimo-v2.5
+review_model_override: opencode-go/hy3
 created_at: "2026-09-20T09:02:32Z"
-updated_at: "2026-09-20T11:54:09Z"
+updated_at: "2026-09-20T11:54:12Z"
 ---
 ## Goal
 
@@ -41,3 +42,4 @@ Add focused tests for generation request/error states, edit/copy behavior, priva
 - 2026-09-20T09:02:32Z · created · unknown
 - 2026-09-20T09:06:46Z · status inbox→ready
 - 2026-09-20T11:54:09Z · model_override
+- 2026-09-20T11:54:12Z · review_model_override
