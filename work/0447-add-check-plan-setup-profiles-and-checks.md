@@ -1,4 +1,5 @@
 ---
+merge_conflict_retry_count: 1
 updated_at: "2026-09-20T01:19:38Z"
 review_passes: 1
 id: "0447"
@@ -38,4 +39,5 @@ Make a project's check plan understandable and easy to bootstrap after the stack
 - 2026-09-20T00:49:29Z · status inbox→ready
 - 2026-09-20T00:50:41Z · status ready→active, branch
 - 2026-09-20T01:16:35Z · status active→review
+
 
