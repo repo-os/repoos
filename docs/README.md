@@ -51,4 +51,8 @@ can't assume any.
 - `dogfooding-vs-general.md` — which problems are artifacts of RepoOS running on
   itself versus real for every repo. Read this before generalizing from a
   dogfooding incident.
+- `adoption-matrix.md` — the polyglot synthetic-fixture matrix that proves init,
+  layout, check-plan inference and worktree behavior on Go, Rust, Gradle/Kotlin,
+  mixed and existing-AGENTS.md repositories (#0452). Read before changing check
+  inference or init scaffolding assumptions.
 - `audits/`, `agents/` — point-in-time audits and raw agent reports.
