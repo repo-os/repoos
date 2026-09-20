@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0447"
 title: "Add check-plan setup, profiles, and Checks visibility"
 type: feature
@@ -35,3 +36,4 @@ Make a project's check plan understandable and easy to bootstrap after the stack
 - 2026-09-19T15:10:16Z · created · unknown
 - 2026-09-20T00:49:29Z · status inbox→ready
 - 2026-09-20T00:50:41Z · status ready→active, branch
+

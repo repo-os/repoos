@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0459"
 title: Add Stop MTD / Restart MTD action when close-out is in progress
 type: feature
@@ -36,3 +37,4 @@ Optionally, a **Restart MTD** variant could re-queue immediately without going b
 - 2026-09-20T00:11:42Z · created · unknown
 - 2026-09-20T00:12:22Z · status inbox→ready
 - 2026-09-20T00:50:49Z · status ready→active, branch
+
