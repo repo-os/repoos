@@ -2,7 +2,7 @@
 id: "0465"
 title: Widen integration bar popup so text wraps less
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/widen-integration-bar-popup-so-text-wrap
 model_override: opencode-go/mimo-v2.5
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-20T12:50:19Z"
-updated_at: "2026-09-20T12:53:19Z"
+updated_at: "2026-09-20T12:57:44Z"
 ---
 ## Problem
 
@@ -102,3 +102,4 @@ Let's make this new popup on the integration bar wider so the text doesn't need 
 - 2026-09-20T12:53:01Z · model_override
 - 2026-09-20T12:53:04Z · review_model_override
 - 2026-09-20T12:53:19Z · status ready→active, branch
+- 2026-09-20T12:57:44Z · status active→review
