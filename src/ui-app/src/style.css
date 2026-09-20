@@ -5738,6 +5738,31 @@
   word-break: break-word;
 }
 
+/* ---------- support bundle (#0453) ---------- */
+.support-subhead {
+  padding: 10px 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--txt-dim);
+}
+.support-list {
+  margin: 0;
+  padding: 0 0 0 2px;
+  list-style: none;
+}
+.support-list li {
+  padding: 2px 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.support-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 14px;
+}
+
 /* ---------- agents page ---------- */
 /* Keep the page chrome stable on desktop; long agent forms scroll within
      the active tab rather than moving the title and tab strip. */

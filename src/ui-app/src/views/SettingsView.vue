@@ -35,13 +35,14 @@ const router = useRouter();
 
 // ---- Tab navigation ----
 
-type TabId = "general" | "notifications" | "security" | "advanced" | "toml";
+type TabId = "general" | "notifications" | "security" | "advanced" | "support" | "toml";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "general", label: "General" },
   { id: "notifications", label: "Notifications" },
   { id: "security", label: "Security" },
   { id: "advanced", label: "Advanced" },
+  { id: "support", label: "Support" },
   { id: "toml", label: "repoos.toml" },
 ];
 
@@ -60,7 +61,15 @@ const FIELD_TAB: Record<string, TabId> = {
 
 const activeTab = computed<TabId>(() => {
   const q = route.query.tab;
-  if (q === "notifications" || q === "security" || q === "advanced" || q === "toml") return q;
+  if (
+    q === "notifications" ||
+    q === "security" ||
+    q === "advanced" ||
+    q === "support" ||
+    q === "toml"
+  ) {
+    return q;
+  }
   return "general";
 });
 
@@ -138,6 +147,64 @@ async function refreshRvStatus(): Promise<void> {
     rvStatus.value = null;
   }
 }
+
+// ---- Support bundle (#0453) ----
+// Builds a redacted diagnostic artifact locally. The preview is fetched first
+// so the user sees exactly which categories are included and where the archive
+// will be written before anything is created; nothing is ever uploaded.
+interface SupportPreview {
+  ok: boolean;
+  dryRun: boolean;
+  path: string;
+  manifest: {
+    schemaVersion: number;
+    redactionVersion: number;
+    files: Array<{ path: string; category: string; bytes: number; description: string }>;
+    omitted: Array<{ category: string; reason: string }>;
+  };
+}
+const supportPreview = ref<SupportPreview | null>(null);
+const supportLoading = ref(false);
+const supportCreating = ref(false);
+const supportError = ref("");
+const supportResult = ref<{ path: string; bytes: number } | null>(null);
+
+async function refreshSupportPreview(): Promise<void> {
+  supportLoading.value = true;
+  supportError.value = "";
+  try {
+    supportPreview.value = (await api("/api/support/bundle")) as SupportPreview;
+  } catch (e) {
+    supportPreview.value = null;
+    supportError.value = (e as Error).message;
+  } finally {
+    supportLoading.value = false;
+  }
+}
+
+async function createSupportBundle(): Promise<void> {
+  supportCreating.value = true;
+  supportError.value = "";
+  try {
+    const res = (await api("/api/support/bundle", { method: "POST" })) as {
+      path: string;
+      bytes: number;
+      manifest: SupportPreview["manifest"];
+    };
+    supportResult.value = { path: res.path, bytes: res.bytes };
+    supportPreview.value = {
+      ok: true,
+      dryRun: false,
+      path: res.path,
+      manifest: res.manifest,
+    };
+  } catch (e) {
+    supportError.value = (e as Error).message;
+  } finally {
+    supportCreating.value = false;
+  }
+}
+
 onMounted(async () => {
   notifications.refreshAvailability();
   try {
@@ -316,6 +383,17 @@ watch(
   () => config.loaded,
   (loaded) => {
     if (loaded) sync();
+  },
+  { immediate: true },
+);
+
+// Load the support-bundle preview lazily, the first time its tab is opened.
+watch(
+  activeTab,
+  (tab) => {
+    if (tab === "support" && !supportPreview.value && !supportLoading.value) {
+      void refreshSupportPreview();
+    }
   },
   { immediate: true },
 );
@@ -959,6 +1037,78 @@ onUnmounted(() => {
               </div>
               <span v-if="f.restartRequired" class="restart-badge">restart required</span>
             </div>
+          </div>
+        </Card>
+      </div>
+
+      <!-- ─── Support tab ─────────────────────────────────── -->
+      <div
+        id="settings-panel-support"
+        role="tabpanel"
+        :aria-labelledby="`settings-tab-support`"
+        v-show="activeTab === 'support'"
+      >
+        <Card style="padding: 0 18px 16px; margin-bottom: 16px">
+          <div class="setting-group">
+            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+              <span class="live-dot"></span>Support bundle
+            </div>
+            <div class="setting-desc" style="padding: 8px 0 12px">
+              Create a small, redacted diagnostic archive you can attach to an issue. It stays on
+              this machine and is never uploaded. Source code, prompts, task bodies, credentials,
+              environment values and raw logs are excluded, and home/repo paths are minimized.
+            </div>
+
+            <div v-if="supportLoading" class="setting-desc">Checking what would be included…</div>
+
+            <template v-else-if="supportPreview">
+              <div class="support-subhead">Included</div>
+              <ul class="support-list">
+                <li v-for="f in supportPreview.manifest.files" :key="f.path">
+                  <span class="mono">{{ f.path }}</span>
+                  <span class="setting-desc"> — {{ f.description }}</span>
+                </li>
+                <li>
+                  <span class="mono">manifest.json</span>
+                  <span class="setting-desc"> — machine-readable index of every file above.</span>
+                </li>
+              </ul>
+
+              <template v-if="supportPreview.manifest.omitted.length">
+                <div class="support-subhead">Omitted (with reason)</div>
+                <ul class="support-list">
+                  <li v-for="o in supportPreview.manifest.omitted" :key="o.category">
+                    <span class="mono">{{ o.category }}</span>
+                    <span class="setting-desc"> — {{ o.reason }}</span>
+                  </li>
+                </ul>
+              </template>
+
+              <div class="setting-desc" style="padding: 12px 0 0">
+                Will be written to
+                <span class="mono">{{ supportResult?.path ?? supportPreview.path }}</span>
+                <span v-if="supportResult"> ({{ supportResult.bytes }} bytes)</span>.
+              </div>
+
+              <div class="support-actions">
+                <Button size="sm" :disabled="supportCreating" @click="createSupportBundle">{{
+                  supportCreating ? "Creating…" : "Create support bundle"
+                }}</Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  :disabled="supportLoading"
+                  @click="refreshSupportPreview"
+                  >Refresh</Button
+                >
+              </div>
+              <div v-if="supportResult" class="setting-desc" style="padding-top: 8px">
+                Inspect before sharing:
+                <span class="mono">repoos support inspect {{ supportResult.path }}</span>
+              </div>
+            </template>
+
+            <div v-if="supportError" class="toml-raw-error" role="alert">{{ supportError }}</div>
           </div>
         </Card>
       </div>

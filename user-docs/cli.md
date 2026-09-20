@@ -109,6 +109,38 @@ provider, kills a process or mutates git, and it works offline. It exits
 non-zero when any finding is a failure, so it is usable in a script. Paste
 `repoos doctor` output into an issue to report a setup problem.
 
+### `repoos support bundle` / `repoos support inspect`
+
+Creates a small, inspectable, **redacted** diagnostic archive to attach to an
+issue when RepoOS fails on a real-world project. It is built locally and never
+uploaded; opening a browser, copying to the clipboard or filing an issue are all
+separate, explicit actions you take yourself.
+
+```bash
+repoos support bundle                   # write .repoos/support/repoos-support-<ts>.tar.gz
+repoos support bundle --dry-run         # show exactly what would be included; write nothing
+repoos support bundle --out /tmp/x.tar.gz
+repoos support inspect <bundle.tar.gz>  # list every file inside an existing bundle
+```
+
+The bundle contains a versioned structured report: RepoOS version/build metadata,
+platform/runtime versions, the effective configuration *shape* (flags, counts,
+schema versions — never secret values or free-form fields), agent/tool detection
+and versions, the resolved check plan, the sanitized `repoos doctor` findings,
+the classified result of the latest doctor run, server/health/lifecycle
+diagnostics, bounded recent error messages, and a machine-readable
+`manifest.json` listing every file, its size and hash, the collection time and
+the redaction rules/version.
+
+It never includes `.env`, environment values, API tokens, passwords, cookies,
+SSH keys, session material, prompts, transcripts, task bodies, source code,
+diffs, attachments or raw logs. Home directories and the repo root are minimized
+to `~` and `<repo>`. A final scan verifies no known secret shape or private path
+survived; a miss **aborts** the write rather than packaging it. A down server, a
+missing agent CLI or an unparseable `repoos.toml` degrade that one section into
+an explicit omission with the reason, and the rest of the bundle is still
+written. The same action is available from **Settings → Support** in the web UI.
+
 ## Quality and maintenance
 
 ### `repoos check`
