@@ -1358,13 +1358,15 @@ export const useRepoStore = defineStore("repo", () => {
       // Use existing full body if we have it; otherwise use the preview from the board response.
       body: existingBodies.has(t.id) ? (existingBodies.get(t.id) ?? "") : (t.bodyPreview ?? ""),
       extra: {},
-      agentOverride: null,
+      // The board payload carries the per-task agent overrides (#0455) so the
+      // card's agent panel can show effective assignments without the drawer.
+      agentOverride: t.agentOverride ?? null,
       cliOverride: null,
       modelOverride: null,
-      pmAgentOverride: null,
+      pmAgentOverride: t.pmAgentOverride ?? null,
       pmCliOverride: null,
       pmModelOverride: null,
-      reviewAgentOverride: null,
+      reviewAgentOverride: t.reviewAgentOverride ?? null,
       reviewCliOverride: null,
       reviewModelOverride: null,
       releasedAt: t.releasedAt ?? null,

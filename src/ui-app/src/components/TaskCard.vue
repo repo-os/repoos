@@ -3,6 +3,7 @@ import { computed, ref, onMounted, onUnmounted, onBeforeUnmount } from "vue";
 import type { Task } from "../types";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
+import { useConfigStore } from "../stores/config";
 import { recordOrigin, takeOrigin } from "../lib/flip";
 import { parseReviewVerdict } from "../lib/reviewVerdict";
 import {
@@ -28,6 +29,44 @@ const props = withDefaults(
 
 const ui = useUiStore();
 const repo = useRepoStore();
+const config = useConfigStore();
+
+/**
+ * Per-task agent assignments shown by the card's agent button (#0455). Each
+ * row is the per-task override when set, else the enabled board-default agent
+ * for that role, else the literal role name — mirroring how the drawer's
+ * override tabs resolve their base agent.
+ */
+const agentAssignments = computed(() => {
+  const enabled = (config.agents ?? []).filter((a) => a.enabled);
+  const defaultName = (role: string): string | null =>
+    enabled.find((a) => a.name.toLowerCase() === role)?.name ?? null;
+  const t = props.task;
+  return [
+    { role: "PM", name: t.pmAgentOverride || defaultName("pm") || "pm" },
+    { role: "Engineer", name: t.agentOverride || defaultName("engineer") || "engineer" },
+    { role: "Reviewer", name: t.reviewAgentOverride || defaultName("reviewer") || "reviewer" },
+  ];
+});
+
+/** Whether the agent panel is visible: hover opens it, a click pins it open. */
+const agentPanelOpen = ref(false);
+/** Click-to-toggle state — while true, mouse-leave no longer collapses the panel. */
+const agentPanelPinned = ref(false);
+
+function openAgentPanel(): void {
+  agentPanelOpen.value = true;
+}
+
+function closeAgentPanel(): void {
+  if (!agentPanelPinned.value) agentPanelOpen.value = false;
+}
+
+/** Click toggles the panel and pins it; a second click collapses it. */
+function toggleAgentPanel(): void {
+  agentPanelPinned.value = !agentPanelPinned.value;
+  agentPanelOpen.value = agentPanelPinned.value;
+}
 
 const busy = ref(false);
 const dragging = ref(false);
@@ -701,6 +740,58 @@ async function openDebuggerFromError(): Promise<void> {
           <ActivityIndicator v-else-if="hint.cls === 'tc-moving'" label="Moving to done…" />
           {{ hint.label }}
         </span>
+      </div>
+    </div>
+
+    <!-- Per-task agent assignments (#0455): a small robot button in the card's
+         bottom-right, above the action footer, toggling a compact PM / Engineer
+         / Reviewer summary. In-flow inside the card so the panel can never
+         overflow or clip against the card's rounded, overflow-hidden bounds. -->
+    <div class="tc-agent-dock">
+      <div
+        class="tc-agent"
+        :class="{ open: agentPanelOpen }"
+        @mouseenter="openAgentPanel"
+        @mouseleave="closeAgentPanel"
+      >
+        <transition name="tc-agent-panel">
+          <div v-if="agentPanelOpen" class="tc-agent-panel" @click.stop>
+            <div v-for="a in agentAssignments" :key="a.role" class="tc-agent-row">
+              <span class="tc-agent-role">{{ a.role }}</span>
+              <span class="tc-agent-name" :title="a.name">{{ a.name }}</span>
+            </div>
+          </div>
+        </transition>
+        <button
+          type="button"
+          class="tc-agent-btn"
+          :aria-expanded="agentPanelOpen"
+          aria-label="Show agent assignments for this task"
+          title="Agents assigned to this task"
+          @click.stop="toggleAgentPanel"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+            <rect
+              x="4.5"
+              y="8"
+              width="15"
+              height="11"
+              rx="3"
+              stroke="currentColor"
+              stroke-width="1.8"
+            />
+            <path d="M12 8V5.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            <circle cx="12" cy="4.3" r="1.4" fill="currentColor" />
+            <circle cx="9.6" cy="12.6" r="1.2" fill="currentColor" />
+            <circle cx="14.4" cy="12.6" r="1.2" fill="currentColor" />
+            <path
+              d="M9.2 15.7h5.6"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            />
+          </svg>
+        </button>
       </div>
     </div>
 
