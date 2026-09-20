@@ -692,7 +692,82 @@ function normalizeReadyTimeoutMs(value: unknown): number | undefined {
   return value;
 }
 
-export function loadConfig(rootArg?: string): RepoOSConfig {
+/**
+ * The `[preview]` keys that configure *how a preview boots* — the preview
+ * feature's own settings. Any other `[preview.<path>]` table is a preview-only
+ * override of the base configuration (#0464), not a preview setting.
+ */
+const PREVIEW_FEATURE_KEYS = new Set(["command", "cwd", "readyPath", "readyTimeoutMs", "targets"]);
+
+export interface PreviewOverlay {
+  /** Overridden base config paths (dotted, e.g. `"auth.enabled"`) -> value. */
+  entries: Record<string, unknown>;
+  /** The overridden paths, sorted, for reporting. */
+  keys: string[];
+}
+
+/**
+ * Extract the preview-only overrides from a flat-TOML parse (#0464). A key is
+ * an overlay when it sits under `preview.` but is not one of the preview
+ * feature's own keys; the path after `preview.` is the base config key it
+ * overrides. Because `parseFlatToml` already flattens nested tables, merging is
+ * deep by construction: `[preview.auth] enabled = false` contributes only
+ * `auth.enabled`, leaving every other `[auth]` key at its base value.
+ */
+export function parsePreviewOverlays(parsed: Record<string, unknown>): PreviewOverlay {
+  const entries: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(parsed)) {
+    if (!key.startsWith("preview.")) continue;
+    const path = key.slice("preview.".length);
+    const head = path.split(".")[0];
+    if (PREVIEW_FEATURE_KEYS.has(head)) continue;
+    if (typeof value === "object" && value !== null) continue; // no table arrays
+    entries[path] = value;
+  }
+  const keys = Object.keys(entries).sort();
+  return { entries, keys };
+}
+
+/**
+ * True when `path` names a base configuration key RepoOS actually reads, so an
+ * overlay targeting it is meaningful. `SUPPORTED_TOML_KEYS` (the same contract
+ * the docs-drift test and `repoos doctor` use) lists the dotted leaves, so a
+ * nested override like `auth.emailProvider.type` resolves while a typo or a
+ * section name is dropped with a warning.
+ */
+function isOverridableConfigPath(path: string): boolean {
+  return SUPPORTED_TOML_KEYS.includes(path);
+}
+
+/**
+ * The preview-only override keys a repo's `repoos.toml` declares that the
+ * runtime will actually apply (supported base keys only), sorted. Fail-soft: a
+ * missing/unreadable file yields `[]`. Used by the preview manager to report
+ * the effective overrides a preview boot is applying (#0464) — the child itself
+ * warns about and drops the same unknown paths.
+ */
+export function readPreviewOverlayKeys(root: string): string[] {
+  const tomlPath = join(root, "repoos.toml");
+  if (!existsSync(tomlPath)) return [];
+  try {
+    return parsePreviewOverlays(parseFlatToml(readFileSync(tomlPath, "utf8"))).keys.filter(
+      isOverridableConfigPath,
+    );
+  } catch {
+    return [];
+  }
+}
+
+export interface LoadConfigOptions {
+  /**
+   * Apply the repo's `[preview.*]` configuration overlay (#0464). Only the
+   * preview/UI-test preview runtime sets this; every normal command leaves it
+   * unset and resolves the base configuration unchanged.
+   */
+  previewOverrides?: boolean;
+}
+
+export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): RepoOSConfig {
   const root = rootArg ? resolve(rootArg) : findRepoRoot();
   // Load .env before resolving [auth]/[whisper] secrets below, so every path
   // that boots a real server (repoos serve, previews, the UI smoke test)
@@ -704,6 +779,26 @@ export function loadConfig(rootArg?: string): RepoOSConfig {
   const tomlPath = join(root, "repoos.toml");
   if (existsSync(tomlPath)) {
     const parsed = parseFlatToml(readFileSync(tomlPath, "utf8"));
+    // Preview-only overlay (#0464): re-apply the `[preview.*]` keys over the
+    // base parse before the normal field reads below, so precedence is
+    // defaults → base repoos.toml → preview overlay → explicit CLI flags. Only
+    // the preview/UI-test runtime opts in; every other caller sees the base
+    // config. An overlay path RepoOS does not read is dropped with a warning
+    // rather than silently accepted as a typo.
+    const appliedOverrides: string[] = [];
+    if (options.previewOverrides) {
+      const overlay = parsePreviewOverlays(parsed);
+      for (const [path, value] of Object.entries(overlay.entries)) {
+        if (!isOverridableConfigPath(path)) {
+          console.warn(`[preview] ignoring unknown preview override "${path}"`);
+          continue;
+        }
+        parsed[path] = value;
+        appliedOverrides.push(path);
+      }
+      appliedOverrides.sort();
+      if (appliedOverrides.length) cfg.previewOverrides = appliedOverrides;
+    }
     const get = (k: string) => parsed[k] ?? parsed[`repoos.${k}`];
     if (typeof get("workDir") === "string") cfg.workDir = get("workDir") as string;
     if (typeof get("docsDir") === "string") cfg.docsDir = get("docsDir") as string;
@@ -1448,6 +1543,10 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "preview.targets.cwd",
   "preview.targets.readyPath",
   "preview.targets.readyTimeoutMs",
+  // Preview-only overrides (#0464): a `[preview.<base path>]` table applied
+  // only by the preview/UI-test preview runtime. auth.enabled is the headline
+  // case; any supported base key can be overridden the same way.
+  "preview.auth.enabled",
   // Checks
   "check.uiSmoke",
   "check.uiStylesheet",

@@ -370,6 +370,15 @@ readyTimeoutMs = 240000
 # explicitly, or every preview here silently regresses to the full timeout.
 readyPath = "/api/health"
 
+# Preview-only config override (#0464): local preview instances run with auth
+# OFF so browser/screenshot tooling can reach the UI without an OTP flow, while
+# normal `repoos serve` keeps auth.enabled = true above. The `[preview.*]`
+# overlay deep-merges over the base config and is applied ONLY by the preview
+# runtime (a managed preview child carries REPOOS_PREVIEW_CHILD=1); every other
+# command ignores it. Run a preview without it via `--no-preview-overrides`.
+[preview.auth]
+enabled = false
+
 [[preview.targets]]
 name = "Landing page"
 areas = ["landing"]

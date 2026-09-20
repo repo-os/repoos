@@ -478,6 +478,20 @@ export interface ServeOptions {
    */
   disableAuth?: boolean;
   /**
+   * Apply the repo's `[preview.*]` configuration overlay for this instance
+   * (#0464). The preview/UI-test runtime sets this (a managed preview child
+   * carries REPOOS_PREVIEW_CHILD=1); `repoos serve --preview-overrides` sets it
+   * explicitly. Every normal `repoos serve` leaves it unset, so the base
+   * configuration is untouched. `--no-preview-overrides` clears it.
+   */
+  previewOverrides?: boolean;
+  /**
+   * True when the caller passed an explicit `--host`. Only used to decide
+   * whether the preview-override loopback guard may coerce a wildcard bind back
+   * to `127.0.0.1`: an explicit host always wins (#0464).
+   */
+  hostExplicit?: boolean;
+  /**
    * Fired synchronously the instant the HTTP listener actually binds
    * (`server.listen()`'s own callback), with the live index instance at that
    * exact moment. Exists so a test can assert a STATE invariant instead of a
@@ -514,6 +528,17 @@ export interface ServerHandle {
   port: number;
   close: (reason?: string) => Promise<void>;
   index: LiveIndex;
+  /**
+   * The preview-only `[preview.*]` config overrides this instance applied
+   * (#0464), as sorted dotted base-key paths — undefined when none applied
+   * (every normal command). Surfaced so `repoos serve` can report them.
+   */
+  previewOverrides?: string[];
+}
+
+/** A bind address that listens on every interface (vs an explicit loopback). */
+function isWildcardHost(host: string | undefined): boolean {
+  return host === undefined || host === "" || host === "0.0.0.0" || host === "::";
 }
 
 function json(res: ServerResponse, status: number, body: unknown): void {
@@ -777,10 +802,20 @@ function registerFatalHandlersOnce(): void {
 }
 
 export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
-  const repoos = createRepoOS(opts.root);
+  const repoos = createRepoOS(opts.root, { previewOverrides: opts.previewOverrides });
   const config = repoos.config;
   if (opts.disableAuth && config.auth) {
     config.auth = { ...config.auth, enabled: false };
+  }
+  // Preview-override loopback guard (#0464): the repo's `[preview.*]` overlay
+  // may turn auth off. An auth-less preview must stay on loopback unless the
+  // caller explicitly overrode the host — otherwise the Tailscale default of
+  // binding 0.0.0.0 would publish an unauthenticated server to the tailnet.
+  const previewDisabledAuth =
+    config.auth?.enabled === false && (config.previewOverrides ?? []).includes("auth.enabled");
+  let bindHost = opts.host ?? "127.0.0.1";
+  if (previewDisabledAuth && !opts.hostExplicit && isWildcardHost(bindHost)) {
+    bindHost = "127.0.0.1";
   }
   const logger = createLogger(config.root);
   // Best-effort: enable git's fsmonitor + untracked-cache so the per-worktree
@@ -814,10 +849,19 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     root: config.root,
     pid: process.pid,
     requestedPort,
-    host: opts.host ?? "127.0.0.1",
+    host: bindHost,
     mode,
     buildHash: readBuildHash(config.root),
   });
+  // Report that preview-only overrides are active, naming the effective keys
+  // (#0464) — silence here means the base configuration is in use.
+  if (config.previewOverrides?.length) {
+    logger.system(
+      "warn",
+      `preview configuration overrides active: ${config.previewOverrides.join(", ")}`,
+      { overrides: config.previewOverrides, host: bindHost },
+    );
+  }
   activeLogger = logger;
   registerFatalHandlersOnce();
 
@@ -1345,7 +1389,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         // command keeps the original, unannotated message.
         const targetNote =
           result.label && result.label !== "default" ? ` (target: ${result.label})` : "";
-        runner.system(request.taskId, `✓ Managed preview ready${targetNote}: ${url}`);
+        const overrideNote = result.overrides?.length
+          ? ` (preview overrides active: ${result.overrides.join(", ")})`
+          : "";
+        runner.system(
+          request.taskId,
+          `✓ Managed preview ready${targetNote}${overrideNote}: ${url}`,
+        );
         // The sandbox may not be able to open the URL — probe it from the
         // privileged server side and record the structured outcome.
         const probe = await probePreview(url, result.readyPath);
@@ -2435,7 +2485,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   });
 
   const port = requestedPort;
-  const host = opts.host ?? "127.0.0.1";
+  const host = bindHost;
 
   /** One bind attempt: resolves once listening, rejects on the listen error. */
   const bindOnce = (withReusePort: boolean): Promise<void> =>
@@ -2559,6 +2609,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         url,
         port: actualPort,
         index,
+        ...(config.previewOverrides?.length ? { previewOverrides: config.previewOverrides } : {}),
         close: async (reason: string = "handle.close") => {
           if (isControlPlane) {
             logger.system("info", "RepoOS control plane shutting down", {

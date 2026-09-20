@@ -388,6 +388,57 @@ configuration gets an actionable "no preview configured" message rather than
 booting a random app. Previews are one-at-a-time and a new request evicts the
 previous preview.
 
+### Preview-only overrides
+
+A `[preview.<base key>]` table deep-merges over the base configuration **only
+when a preview starts**, so a local preview can run with deliberately different
+settings without weakening normal startup:
+
+```toml
+[auth]
+enabled = true          # normal `repoos serve` still requires login
+
+[preview.auth]
+enabled = false         # local previews skip the OTP/login step
+```
+
+The dotted key here is `preview.auth.enabled`. The effective configuration a
+preview boots with is resolved in this order, later winning:
+
+1. built-in defaults,
+2. the base `repoos.toml`,
+3. the `[preview.*]` overlay,
+4. explicit command-line flags (`--port`, `--host`).
+
+Because the overlay deep-merges, an override changes only the keys it names:
+`[preview.auth] enabled = false` leaves `auth.sessionMaxAge`,
+`auth.bootstrapAdmin`, and every other `[auth]` setting at their base values.
+Only keys the parser supports can be overridden; an unknown override is ignored
+with a warning rather than silently accepted as a typo.
+
+Overrides apply **only** to the preview runtime — a managed preview child
+(`REPOOS_PREVIEW_CHILD=1`, set by the preview manager) and the UI-test preview
+harness. A normal `repoos serve`, `repoos check`, or any other command reads the
+base configuration and ignores `[preview.*]` entirely, so this is a local
+preview/UI-test convenience that never alters normal or production-like startup.
+
+Supported commands and the escape hatch:
+
+- `repoos serve` applies the overlay automatically when it is a preview child.
+  Pass `--preview-overrides` to force it on for a manual UI-test preview, or
+  **`--no-preview-overrides`** to run a preview against the base configuration.
+- Managed task previews (the **Preview** button, and the
+  `::repoos-preview-request::` agent signal) always apply the overlay.
+
+Preview startup reports the effective override keys it applied — in the server
+log, the preview status, and the task transcript. When an override disables
+auth, the listener stays on `127.0.0.1` unless `--host` was passed explicitly,
+so an auth-less local preview is never accidentally exposed beyond loopback.
+
+> `[preview.auth]` is a preview *override*, not a preview *target* key such as
+> `preview.command` or `preview.targets[]`. Keep target keys under `[preview]`
+> itself.
+
 ### `[check]`
 
 `repoos check` runs a plan your repo declares, so the same gate works for any

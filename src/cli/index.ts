@@ -141,7 +141,10 @@ function help(): void {
       "gc [--yes|--dry-run]",
       "Collect leaked task worktrees/branches (done/absent tasks, integrate candidates)",
     ),
-    cmdRow("serve [--port N]", "Start the local server (live API + SSE stream)"),
+    cmdRow(
+      "serve [--port N]",
+      `Start the local server (live API + SSE stream)   ${c.dim("flags: --host, --preview-overrides, --no-preview-overrides")}`,
+    ),
     cmdRow("stop [--port N]", "Stop this repo's serve process (by its own lockfile)"),
     cmdRow(
       "service [sub]",

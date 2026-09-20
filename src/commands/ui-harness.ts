@@ -75,7 +75,17 @@ export async function startPreviewServer(root?: string): Promise<PreviewServer> 
   // disableAuth: the smoke gate tests generic rendering (title, board,
   // buttons), not auth flows — a project with [auth] enabled must not make
   // `repoos check` itself unable to reach the dashboard.
-  const opts: ServeOptions = { host: "127.0.0.1", port: 0, disableAuth: true };
+  //
+  // previewOverrides: this is the UI-test preview path, so it resolves the same
+  // preview-only `[preview.*]` overlay a managed preview applies (#0464). The
+  // smoke test's throwaway fixture declares no overlay, so this is normally a
+  // no-op; it matters when the harness serves a real root.
+  const opts: ServeOptions = {
+    host: "127.0.0.1",
+    port: 0,
+    disableAuth: true,
+    previewOverrides: true,
+  };
   if (root !== undefined) opts.root = root;
   return startServer(opts);
 }
