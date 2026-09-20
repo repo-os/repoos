@@ -222,4 +222,66 @@ describe("IntegrationStatusBar", () => {
     expect(ui.activeTab).toBe("debug");
     expect(ui.debugCheckFocus).toBeNull();
   });
+
+  it("pane width uses bar rendered width as min-width, capped at 80vw (#0465)", async () => {
+    const repo = useRepoStore();
+    repo.integration = activeSnapshot();
+    Object.defineProperty(window, "innerWidth", {
+      value: 1000,
+      writable: true,
+      configurable: true,
+    });
+    const wrapper = render();
+    await nextTick();
+
+    const barEl = wrapper.find(".ibar").element;
+    vi.spyOn(barEl, "getBoundingClientRect").mockReturnValue({
+      left: 200,
+      right: 600,
+      top: 700,
+      bottom: 750,
+      width: 400,
+      height: 50,
+      x: 200,
+      y: 700,
+      toJSON: () => {},
+    } as DOMRect);
+
+    await wrapper.findAll(".stage")[0].trigger("mouseenter");
+    const pane = wrapper.find(".stage-pane");
+    expect(pane.exists()).toBe(true);
+    const style = pane.attributes("style");
+    // min-width = bar width (400px), max-width = min(80vw, 1000-28) = 800px
+    expect(style).toContain("min-width: 400px");
+    expect(style).toContain("max-width: 800px");
+  });
+
+  it("pane width respects 80vw cap over bar width on narrow windows (#0465)", async () => {
+    const repo = useRepoStore();
+    repo.integration = activeSnapshot();
+    Object.defineProperty(window, "innerWidth", { value: 500, writable: true, configurable: true });
+    const wrapper = render();
+    await nextTick();
+
+    const barEl = wrapper.find(".ibar").element;
+    vi.spyOn(barEl, "getBoundingClientRect").mockReturnValue({
+      left: 20,
+      right: 480,
+      top: 700,
+      bottom: 750,
+      width: 460,
+      height: 50,
+      x: 20,
+      y: 700,
+      toJSON: () => {},
+    } as DOMRect);
+
+    await wrapper.findAll(".stage")[0].trigger("mouseenter");
+    const pane = wrapper.find(".stage-pane");
+    const style = pane.attributes("style");
+    // min-width clamped to max-width (400px), max-width = min(80vw=400, 500-28=472) = 400px
+    // The 80% cap wins over the bar width
+    expect(style).toContain("min-width: 400px");
+    expect(style).toContain("max-width: 400px");
+  });
 });

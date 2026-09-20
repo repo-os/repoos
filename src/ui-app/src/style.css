@@ -8827,7 +8827,7 @@
   position: fixed;
   z-index: 65;
   pointer-events: none;
-  max-width: calc(100vw - 28px);
+  width: max-content;
   padding: 10px 13px;
   border: 1px solid var(--border);
   border-radius: 12px;

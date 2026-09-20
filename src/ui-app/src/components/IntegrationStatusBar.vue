@@ -49,16 +49,19 @@ const paneStyle = ref<Record<string, string>>({});
 function positionPane(): void {
   const rect = barEl.value?.getBoundingClientRect();
   if (!rect || typeof window === "undefined") return;
-  const width = Math.min(window.innerWidth - 28, 560);
+  const maxW = Math.max(0, Math.min(window.innerWidth * 0.8, window.innerWidth - 28));
+  const minW = Math.min(rect.width, maxW);
   const gap = 10;
+  const half = maxW / 2;
   const centre = Math.min(
-    Math.max(rect.left + rect.width / 2, width / 2 + 14),
-    window.innerWidth - width / 2 - 14,
+    Math.max(rect.left + rect.width / 2, half + 14),
+    window.innerWidth - half - 14,
   );
   paneStyle.value = {
     left: `${centre}px`,
     bottom: `${window.innerHeight - rect.top + gap}px`,
-    width: `${width}px`,
+    minWidth: `${minW}px`,
+    maxWidth: `${maxW}px`,
   };
 }
 
