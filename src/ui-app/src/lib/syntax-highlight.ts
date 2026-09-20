@@ -20,7 +20,7 @@
  * one off `[data-theme]`. That means switching appearance never re-tokenizes.
  */
 
-import type { HighlighterCore } from "shiki/core";
+import type { HighlighterCore } from "@shikijs/core";
 
 /**
  * The deliberately scoped initial language set. Each id is a Shiki grammar id
@@ -86,26 +86,26 @@ const EXTENSION_LANGUAGE: Record<string, SupportedLanguage> = {
 
 /** Lazy grammar loaders, one dynamic chunk each — never in the initial bundle. */
 const LANGUAGE_LOADERS: Record<SupportedLanguage, () => Promise<unknown>> = {
-  typescript: () => import("shiki/langs/typescript.mjs"),
-  tsx: () => import("shiki/langs/tsx.mjs"),
-  javascript: () => import("shiki/langs/javascript.mjs"),
-  jsx: () => import("shiki/langs/jsx.mjs"),
-  vue: () => import("shiki/langs/vue.mjs"),
-  json: () => import("shiki/langs/json.mjs"),
-  jsonc: () => import("shiki/langs/jsonc.mjs"),
-  toml: () => import("shiki/langs/toml.mjs"),
-  yaml: () => import("shiki/langs/yaml.mjs"),
-  markdown: () => import("shiki/langs/markdown.mjs"),
-  css: () => import("shiki/langs/css.mjs"),
-  html: () => import("shiki/langs/html.mjs"),
-  go: () => import("shiki/langs/go.mjs"),
-  rust: () => import("shiki/langs/rust.mjs"),
-  kotlin: () => import("shiki/langs/kotlin.mjs"),
-  groovy: () => import("shiki/langs/groovy.mjs"),
-  java: () => import("shiki/langs/java.mjs"),
-  python: () => import("shiki/langs/python.mjs"),
-  shellscript: () => import("shiki/langs/shellscript.mjs"),
-  sql: () => import("shiki/langs/sql.mjs"),
+  typescript: () => import("@shikijs/langs/typescript"),
+  tsx: () => import("@shikijs/langs/tsx"),
+  javascript: () => import("@shikijs/langs/javascript"),
+  jsx: () => import("@shikijs/langs/jsx"),
+  vue: () => import("@shikijs/langs/vue"),
+  json: () => import("@shikijs/langs/json"),
+  jsonc: () => import("@shikijs/langs/jsonc"),
+  toml: () => import("@shikijs/langs/toml"),
+  yaml: () => import("@shikijs/langs/yaml"),
+  markdown: () => import("@shikijs/langs/markdown"),
+  css: () => import("@shikijs/langs/css"),
+  html: () => import("@shikijs/langs/html"),
+  go: () => import("@shikijs/langs/go"),
+  rust: () => import("@shikijs/langs/rust"),
+  kotlin: () => import("@shikijs/langs/kotlin"),
+  groovy: () => import("@shikijs/langs/groovy"),
+  java: () => import("@shikijs/langs/java"),
+  python: () => import("@shikijs/langs/python"),
+  shellscript: () => import("@shikijs/langs/shellscript"),
+  sql: () => import("@shikijs/langs/sql"),
 };
 
 /**
@@ -130,6 +130,8 @@ export interface SyntaxToken {
   variants?: Record<string, { color?: string; fontStyle?: number } | undefined>;
 }
 
+/** Escape a raw token for HTML text content. Quotes are intentionally left
+ * alone: this output is only ever inserted as element text, never an attribute. */
 export function escapeHtml(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
@@ -190,13 +192,13 @@ function getCore(): Promise<HighlighterCore> {
   if (!corePromise) {
     corePromise = (async () => {
       const [{ createHighlighterCore }, { createJavaScriptRegexEngine }] = await Promise.all([
-        import("shiki/core"),
-        import("shiki/engine/javascript"),
+        import("@shikijs/core"),
+        import("@shikijs/engine-javascript"),
       ]);
       return createHighlighterCore({
         themes: [
-          import("shiki/themes/github-light-default.mjs"),
-          import("shiki/themes/github-dark-default.mjs"),
+          import("@shikijs/themes/github-light-default"),
+          import("@shikijs/themes/github-dark-default"),
         ],
         langs: [],
         engine: createJavaScriptRegexEngine(),
@@ -213,7 +215,7 @@ async function ensureLanguage(core: HighlighterCore, language: SupportedLanguage
   if (core.getLoadedLanguages().includes(language)) return;
   let pending = languageLoads.get(language);
   if (!pending) {
-    pending = core.loadLanguage(LANGUAGE_LOADERS[language]() as never);
+    pending = Promise.resolve(core.loadLanguage(LANGUAGE_LOADERS[language]() as never));
     languageLoads.set(language, pending);
   }
   await pending;
