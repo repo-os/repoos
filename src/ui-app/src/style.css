@@ -2141,9 +2141,6 @@
 .drawer-run.reviewing {
   color: var(--amber);
 }
-.drawer-run.reviewing {
-  color: var(--amber);
-}
 
 /* review substate chip (reviewing / coding / waiting for human) */
 .rs-chip {
@@ -2214,6 +2211,18 @@
   background: var(--amber);
   box-shadow: 0 0 7px var(--amber);
   animation-name: review-sweep;
+}
+/* Board "moving to done" is cyan (#0456): the animation must match its label,
+   not the default violet, or the dots read as a different state. */
+.tc-moving .ai-dot {
+  background: var(--cyan);
+  box-shadow: 0 0 7px var(--cyan);
+}
+/* The dev-tab wait hint pairs its dots with faint text — inherit the label's
+   colour so the animation can never disagree with it (#0456). */
+.agent-hint .ai-dot {
+  background: currentColor;
+  box-shadow: 0 0 7px currentColor;
 }
 .ai-md .ai-dot {
   width: 7px;
@@ -3661,34 +3670,6 @@
 .drawer-done-error {
   margin-top: 12px;
 }
-.review-running {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: var(--amber);
-  font-family: "JetBrains Mono", monospace;
-}
-.review-thinking {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 24px 16px;
-  font-size: 11px;
-  color: var(--amber);
-  font-family: "JetBrains Mono", monospace;
-}
-.review-thinking {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 24px 16px;
-  font-size: 11px;
-  color: var(--amber);
-  font-family: "JetBrains Mono", monospace;
-}
 .review-meta {
   display: flex;
   align-items: center;
@@ -4540,6 +4521,12 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+/* Critical task status (needs input / reviewer crashed) sits above the tab
+   strip so it is visible on every tab, not just the one that happens to
+   render it (#0456). */
+.drawer-critical {
+  padding: 0 22px;
 }
 .quickbar-row {
   display: flex;

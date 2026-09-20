@@ -133,16 +133,31 @@ describe("reviewer thinking state in the task panel (#0209)", () => {
 
     const wrapper = await mountDrawer(pinia, makeTask());
 
-    // Quickbar: prominent animated status with spinner + status text.
+    // Quickbar: the single prominent animated status, above the tab strip.
     const working = wrapper.find(".drawer-run.reviewing");
     expect(working.exists()).toBe(true);
     expect(working.text()).toContain("Reviewer is reviewing this task…");
     expect(working.find(".ai").exists()).toBe(true);
+    // ...and it is the ONLY place that status appears (#0456).
+    expect(wrapper.findAll(".drawer-run.reviewing")).toHaveLength(1);
+    expect(wrapper.findAll(".ai-reviewing")).toHaveLength(1);
+    expect(wrapper.findAll(".tab-btn .ai")).toHaveLength(0);
+    expect(wrapper.text().match(/Reviewer is reviewing this task…/g)).toHaveLength(1);
 
-    // Reviewer tab (default for a task in review): banner + thinking placeholder.
-    expect(wrapper.find(".review-running").exists()).toBe(true);
-    expect(wrapper.find(".review-thinking").exists()).toBe(true);
-    expect(wrapper.find(".review-thinking").text()).toContain("The reviewer is thinking…");
+    // Switching to another tab must not surface a second reviewer indicator —
+    // historically the Review tab carried its own animated badge here.
+    const ui = useUiStore();
+    ui.activeTab = "details";
+    await flush();
+    expect(wrapper.findAll(".ai-reviewing")).toHaveLength(1);
+    expect(wrapper.findAll(".tab-btn .ai")).toHaveLength(0);
+    expect(wrapper.text().match(/Reviewer is reviewing this task…/g)).toHaveLength(1);
+
+    // The Review tab no longer repeats the working status as its own banner or
+    // an animated "thinking" placeholder.
+    expect(wrapper.find(".review-running").exists()).toBe(false);
+    expect(wrapper.find(".review-thinking").exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("The reviewer is thinking…");
 
     // The report has not landed yet — no report card, and the indicator is live.
     expect(wrapper.find(".review-card").exists()).toBe(false);

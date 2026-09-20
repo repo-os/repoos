@@ -3153,6 +3153,46 @@ watch(
             </Button>
           </div>
         </div>
+        <!-- Critical status lives above the tabs so it is visible no matter
+             which tab is open — a "needs input" / "reviewer crashed" message
+             buried in one tab is a message the human never sees. -->
+        <div v-if="ui.active && ui.active.needsInput" class="drawer-critical">
+          <div class="agent-waiting">
+            <span class="agent-waiting-dot"></span>
+            <div>
+              <div class="agent-waiting-title">waiting for you</div>
+              <div class="agent-waiting-sub">
+                {{ needsInputReasonText(ui.active.needsInputReason) }}
+              </div>
+              <div v-if="ui.active.needsInputDetail" class="agent-waiting-detail">
+                {{ ui.active.needsInputDetail }}
+              </div>
+              <div
+                v-if="needsInputSuggestionText(ui.active.needsInputReason)"
+                class="agent-waiting-suggestion"
+              >
+                {{ needsInputSuggestionText(ui.active.needsInputReason) }}
+              </div>
+              <Button
+                v-if="
+                  (ui.active.needsInputReason === 'dev-error' ||
+                    ui.active.needsInputReason === 'watchdog-stuck') &&
+                  ui.active.status === 'active' &&
+                  !repo.isRunning(ui.active.id)
+                "
+                variant="outline"
+                size="sm"
+                class="agent-waiting-action"
+                :disabled="ui.saving"
+                @click="startWork"
+              >
+                <Play v-if="!startingWork" class="size-3.5" />
+                <ActivityIndicator v-else />
+                {{ startingWork ? "Starting work…" : "Restart work" }}
+              </Button>
+            </div>
+          </div>
+        </div>
         <div class="drawer-tabs">
           <button
             type="button"
@@ -3196,11 +3236,6 @@ watch(
           >
             <ShieldCheck class="tab-icon" />
             Review
-            <ActivityIndicator
-              v-if="ui.activeTab !== 'review' && review?.running"
-              variant="reviewing"
-              label="Reviewing…"
-            />
           </button>
           <button
             type="button"
@@ -3455,41 +3490,6 @@ watch(
                 No new output for a while. This isn't proof it's stuck — a slow step looks the same
                 from here — but if it stays quiet, check in.
               </div>
-            </div>
-          </div>
-          <div v-if="ui.active && ui.active.needsInput" class="agent-waiting">
-            <span class="agent-waiting-dot"></span>
-            <div>
-              <div class="agent-waiting-title">waiting for you</div>
-              <div class="agent-waiting-sub">
-                {{ needsInputReasonText(ui.active.needsInputReason) }}
-              </div>
-              <div v-if="ui.active.needsInputDetail" class="agent-waiting-detail">
-                {{ ui.active.needsInputDetail }}
-              </div>
-              <div
-                v-if="needsInputSuggestionText(ui.active.needsInputReason)"
-                class="agent-waiting-suggestion"
-              >
-                {{ needsInputSuggestionText(ui.active.needsInputReason) }}
-              </div>
-              <Button
-                v-if="
-                  (ui.active.needsInputReason === 'dev-error' ||
-                    ui.active.needsInputReason === 'watchdog-stuck') &&
-                  ui.active.status === 'active' &&
-                  !repo.isRunning(ui.active.id)
-                "
-                variant="outline"
-                size="sm"
-                class="agent-waiting-action"
-                :disabled="ui.saving"
-                @click="startWork"
-              >
-                <Play v-if="!startingWork" class="size-3.5" />
-                <ActivityIndicator v-else />
-                {{ startingWork ? "Starting work…" : "Restart work" }}
-              </Button>
             </div>
           </div>
           <div class="agent-log-wrap">
@@ -3753,28 +3753,25 @@ watch(
           </section>
 
           <section v-else class="review-pane review-chat-pane" role="tabpanel">
-            <div v-if="review?.running" class="review-running" role="status">
-              <ActivityIndicator variant="reviewing" label="Reviewing…" />
-              Reviewer is reviewing this task…
-            </div>
-            <p v-else-if="review && !review.enabled" class="review-hint">
+            <p v-if="review && !review.enabled" class="review-hint">
               The review agent is disabled on the Agents page, so no automatic review runs.
             </p>
-            <p v-else-if="!review?.report" class="review-hint">
+            <p v-else-if="!review?.running && !review?.report" class="review-hint">
               No agent review for this task yet.
             </p>
 
             <div class="review-log-wrap">
               <div class="agent-log review-log" ref="reviewLogEl" @scroll="onReviewLogScroll">
                 <template v-if="reviewEntries.length === 0">
-                  <div v-if="review?.running" class="review-thinking" role="status">
-                    <ActivityIndicator variant="reviewing" label="Reviewing…" />
-                    The reviewer is thinking…
-                  </div>
-                  <div v-else class="agent-empty">
-                    The reviewer's conversation appears here once a review runs.
-                    <br />
-                    Start a review to see the reviewer at work, then chat below.
+                  <div class="agent-empty">
+                    <template v-if="review?.running">
+                      Waiting for the reviewer's first output…
+                    </template>
+                    <template v-else>
+                      The reviewer's conversation appears here once a review runs.
+                      <br />
+                      Start a review to see the reviewer at work, then chat below.
+                    </template>
                   </div>
                 </template>
                 <div v-for="entry in reviewEntries" :key="entry.key" class="agent-entry">
@@ -3864,9 +3861,6 @@ watch(
                 <Send class="size-3.5" />
                 Send
               </Button>
-            </div>
-            <div v-if="review?.running" class="agent-hint">
-              <ActivityIndicator /> reviewer is working — wait for this turn to finish
             </div>
           </section>
         </div>
