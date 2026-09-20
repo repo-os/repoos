@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, useId } from "vue";
-import { useRouter } from "vue-router";
 import { CircleAlert, ChevronDown, Wrench, LifeBuoy } from "lucide-vue-next";
 import { api, JSON_OPTS } from "../api";
 import type { RetryHint } from "../lib/retryHints";
@@ -34,16 +33,18 @@ const props = withDefaults(
   { mode: "card" },
 );
 
-const emit = defineEmits<{ (e: "open-panel"): void; (e: "open-debugger"): void }>();
-
-const router = useRouter();
+const emit = defineEmits<{
+  (e: "open-panel"): void;
+  (e: "open-debugger"): void;
+  (e: "open-support"): void;
+}>();
 /**
  * Surface the redacted support bundle right on the failed-setup path: a failed
  * close-out/check is exactly when a user needs to hand something to support.
  * The bundle is created on the Support tab, so this is navigation only.
  */
 function openSupportBundle(): void {
-  void router.push({ name: "settings", query: { tab: "support" } });
+  emit("open-support");
 }
 
 const fixing = ref(false);
@@ -67,6 +68,9 @@ async function fix(): Promise<void> {
       }),
     );
     fixSent.value = true;
+    // The Debugger is the next focus. Keep the concise failure headline, but
+    // collapse raw check output so it cannot crowd the newly opened chat.
+    outputOpen.value = false;
     // Hand off to the task's own debugger, not the global one — the parent
     // opens the failing task's Debug tab so the context stays scoped.
     emit("open-debugger");
@@ -91,8 +95,8 @@ const detailId = `done-error-detail-${useId().replaceAll(":", "-")}`;
 const msgEl = ref<HTMLElement | null>(null);
 
 // The raw output is shown open by default (it's the reason the panel exists),
-// but it can run to hundreds of lines — collapsible so it doesn't dominate
-// the task panel once you've seen enough of it (0253).
+// but it can run to hundreds of lines. It collapses automatically after a
+// debugger handoff, while remaining available on demand.
 const outputOpen = ref(true);
 </script>
 

@@ -562,6 +562,14 @@ function openDebuggerFromError(): void {
   ui.debugView = "debugger";
 }
 
+/** The Support page is the next step after a failed close-out. Close this
+ * drawer only after the local navigation succeeds so the destination is
+ * immediately visible instead of sitting behind the task panel. */
+async function openSupportFromError(): Promise<void> {
+  await router.push({ name: "settings", query: { tab: "support" } });
+  ui.close();
+}
+
 async function reopenTask(): Promise<void> {
   if (!ui.active) return;
   if (
@@ -3057,6 +3065,7 @@ watch(
             :task-id="ui.active.id"
             :task-title="ui.active.title"
             @open-debugger="openDebuggerFromError"
+            @open-support="openSupportFromError"
           />
           <div
             v-if="

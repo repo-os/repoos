@@ -120,8 +120,8 @@ describe("DoneErrorCard (card mode — the compact board surface)", () => {
   });
 });
 
-describe("DoneErrorCard (panel mode — the spacious task panel)", () => {
-  it("renders the full detail always, scrollable, without a collapse toggle", async () => {
+describe("DoneErrorCard (panel mode — the task panel)", () => {
+  it("renders detail open initially, with an explicit collapse toggle", async () => {
     const wrapper = mount(DoneErrorCard, {
       props: {
         mode: "panel",
@@ -134,9 +134,8 @@ describe("DoneErrorCard (panel mode — the spacious task panel)", () => {
     });
     await flush();
 
-    // No collapse toggle — the detail is always present.
-    expect(wrapper.find(".done-error-toggle").exists()).toBe(false);
     // Message is not clamped — the full error is shown.
+    expect(wrapper.find(".done-error-toggle").exists()).toBe(false);
     expect(wrapper.find(".done-error-msg").classes()).not.toContain("clamped");
     expect(wrapper.find(".done-error-detail").exists()).toBe(true);
     expect(wrapper.text()).toContain("Move to done failed");
@@ -147,6 +146,7 @@ describe("DoneErrorCard (panel mode — the spacious task panel)", () => {
     expect(wrapper.text()).toContain("src/a.ts");
     expect(wrapper.text()).toContain("Fix the failure in the feature branch's worktree");
     expect(wrapper.find(".done-error--panel").exists()).toBe(true);
+    expect(wrapper.find(".done-error-output-toggle").attributes("aria-expanded")).toBe("true");
   });
 
   it("renders full detail without needing any interaction (0272)", async () => {
@@ -156,6 +156,31 @@ describe("DoneErrorCard (panel mode — the spacious task panel)", () => {
     await flush();
     expect(wrapper.find(".done-error-detail").exists()).toBe(true);
     expect(wrapper.text()).toContain("long stack trace");
+  });
+
+  it("collapses raw output after handing the failure to the Debugger", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ ok: true }) })),
+    );
+    const wrapper = mount(DoneErrorCard, {
+      props: { mode: "panel", message: "boom", detail: "long stack trace", taskId: "0459" },
+    });
+    await flush();
+    expect(wrapper.find(".done-error-pre").exists()).toBe(true);
+
+    await wrapper.find(".done-error-fix").trigger("click");
+    await flush();
+
+    expect(wrapper.find(".done-error-pre").exists()).toBe(false);
+    expect(wrapper.find(".done-error-output-toggle").attributes("aria-expanded")).toBe("false");
+    expect(wrapper.emitted("open-debugger")).toHaveLength(1);
+  });
+
+  it("signals that Support should be opened from the task drawer", async () => {
+    const wrapper = mount(DoneErrorCard, { props: { mode: "panel", message: "boom" } });
+    await wrapper.find(".done-error-support").trigger("click");
+    expect(wrapper.emitted("open-support")).toHaveLength(1);
   });
 });
 

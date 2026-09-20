@@ -3740,10 +3740,10 @@
   padding: 8px 12px;
   font-size: 12px;
 }
-/* Panel mode (0272): the detail is open by default (collapsible — 0253);
-     let long check output scroll inside a taller box while it's open. */
+/* Keep a failing check readable without consuming the entire drawer. The
+   output is still expandable, and collapses automatically for Debugger. */
 .done-error--panel .done-error-pre {
-  max-height: min(55vh, 480px);
+  max-height: min(30vh, 220px);
 }
 .tc-done-error {
   margin-top: 10px;
