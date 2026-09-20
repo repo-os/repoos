@@ -2,14 +2,14 @@
 id: "0464"
 title: Add preview-only configuration overrides
 type: feature
-status: active
+status: review
 priority: p1
 area: ui
 assigned_to: ai
 created_by: ""
 branch: feat/add-preview-only-configuration-overrides
 created_at: "2026-09-20T09:34:23Z"
-updated_at: "2026-09-20T11:48:33Z"
+updated_at: "2026-09-20T12:09:37Z"
 ---
 ## Problem
 
@@ -55,3 +55,4 @@ Keep the override scope intentionally narrow: it is an isolated preview-runtime 
 - 2026-09-20T09:36:44Z · status inbox→ready
 - 2026-09-20T09:39:04Z · body
 - 2026-09-20T11:48:33Z · status ready→active, branch
+- 2026-09-20T12:09:37Z · status active→review
