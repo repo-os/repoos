@@ -2,14 +2,14 @@
 id: "0449"
 title: Add lazy syntax highlighting to full-file diff views
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-19T16:20:19Z"
-updated_at: "2026-09-19T16:20:19Z"
+updated_at: "2026-09-20T04:36:55Z"
 ---
 ## Problem
 
@@ -52,3 +52,4 @@ Can we get proper text highlighting in code file views, particularly the full-sc
 ## Activity
 
 - 2026-09-19T16:20:19Z · created · unknown
+- 2026-09-20T04:36:55Z · status inbox→ready
