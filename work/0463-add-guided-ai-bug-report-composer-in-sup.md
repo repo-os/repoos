@@ -2,16 +2,16 @@
 id: "0463"
 title: Add guided AI bug-report composer in Support
 type: feature
-status: ready
+status: active
 priority: p1
 area: support
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/add-guided-ai-bug-report-composer-in-sup
 model_override: opencode-go/mimo-v2.5
 review_model_override: opencode-go/hy3
 created_at: "2026-09-20T09:02:32Z"
-updated_at: "2026-09-20T11:54:12Z"
+updated_at: "2026-09-20T11:54:15Z"
 ---
 ## Goal
 
@@ -43,3 +43,4 @@ Add focused tests for generation request/error states, edit/copy behavior, priva
 - 2026-09-20T09:06:46Z · status inbox→ready
 - 2026-09-20T11:54:09Z · model_override
 - 2026-09-20T11:54:12Z · review_model_override
+- 2026-09-20T11:54:15Z · status ready→active, branch
