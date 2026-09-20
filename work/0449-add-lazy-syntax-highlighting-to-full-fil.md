@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-09-20T11:55:58Z"
-review_passes: 2
+updated_at: "2026-09-20T12:51:04Z"
+review_passes: 3
 id: "0449"
 title: Add lazy syntax highlighting to full-file diff views
 type: feature
@@ -60,4 +60,5 @@ Can we get proper text highlighting in code file views, particularly the full-sc
 - 2026-09-20T11:45:30Z · status review→active
 - 2026-09-20T11:45:30Z · note: Fix the MTD TypeScript errors in src/ui-app/src/lib/syntax-highlight.ts. Shiki 4.4.3 is installed, but TypeScript does not resolve the shiki/... convenience subpaths used here. Use the canonical packages instead: - @shikijs/core - @shikijs/engine-javascript - @shikijs/themes/github-light-default - @shikijs/themes/github-dark-default Keep lazy loading. Also fix the loadLanguage() typing issue: it may return undefined, so store/await a guaranteed Promise<void> (for example, wrap its return with Promise.resolve(...)). Run bun run build and the relevant syntax-highlighting tests, commit the fix, then retry Move to done.
 - 2026-09-20T11:53:16Z · status active→review
+
 
