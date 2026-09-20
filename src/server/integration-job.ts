@@ -78,6 +78,13 @@ export interface IntegrationJob {
    * forever.
    */
   validateDriftCount?: number;
+  /**
+   * Set by the user's "Stop MTD" action (#0459). A cooperatively-cancelled job
+   * is hidden from the pipeline snapshot immediately and the orchestrator
+   * aborts it at its next checkpoint — killing any running build/check child
+   * and tearing down only the throwaway candidate, never the task branch.
+   */
+  cancelled?: boolean;
 }
 
 export interface JobCoordinator {
@@ -109,6 +116,14 @@ export interface JobCoordinator {
 
   /** Remove a job from the queue (after successful cleanup or explicit cancellation). */
   removeJob(taskId: string): void;
+
+  /**
+   * Mark an in-flight/queued job cancelled (#0459). Returns false when no job
+   * exists or it already reached a terminal phase. The orchestrator observes
+   * the flag and aborts at its next checkpoint; the pipeline snapshot hides
+   * the job immediately so the UI reacts without waiting for that abort.
+   */
+  requestCancel(taskId: string): boolean;
 
   /**
    * Recover a job from an interrupted phase. Called on server startup to find
@@ -154,6 +169,7 @@ function readJob(root: string, taskId: string): IntegrationJob | null {
       checkAttempt: stored.checkAttempt,
       publishDriftCount: stored.publishDriftCount,
       validateDriftCount: stored.validateDriftCount,
+      cancelled: stored.cancelled,
     };
   } catch {
     return null;
@@ -190,7 +206,12 @@ export function createJobCoordinator(root: string): JobCoordinator {
       // own current status is the authority here, same principle as #0210:
       // a job record must never outrank observable task state.
       const staleDoneJob = existing?.phase === "done" && task.status !== "done";
-      if (existing && existing.phase !== "failed" && !staleDoneJob) return existing;
+      // A CANCELLED job is stale too (#0459): the user stopped the close-out
+      // and a fresh "Move to done" must enqueue a brand-new run rather than
+      // hand back the cancelled record and refuse to start.
+      if (existing && existing.phase !== "failed" && !existing.cancelled && !staleDoneJob) {
+        return existing;
+      }
 
       const job: IntegrationJob = {
         taskId: task.id,
@@ -253,6 +274,14 @@ export function createJobCoordinator(root: string): JobCoordinator {
       } catch {
         /* best-effort cleanup */
       }
+    },
+
+    requestCancel(taskId: string): boolean {
+      const existing = readJob(root, taskId);
+      if (!existing || existing.phase === "done" || existing.phase === "failed") return false;
+      if (existing.cancelled) return true;
+      writeJob(root, { ...existing, cancelled: true });
+      return true;
     },
 
     findInterruptedJobs(): IntegrationJob[] {
