@@ -2,7 +2,7 @@
 id: "0456"
 title: Fix task panel animation and message consistency
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/fix-task-panel-animation-and-message-con
 review_model_override: opencode-go/hy3
 created_at: "2026-09-19T23:18:59Z"
-updated_at: "2026-09-19T23:46:10Z"
+updated_at: "2026-09-20T00:07:02Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -65,3 +65,4 @@ Make sure the action animation and action text in the tasks are the same color (
 - 2026-09-19T23:41:15Z · agent exited with an error (opencode) · error: Upstream request failed: [insufficient_user_quota] You're out of credits — this request needs $0.03. Add credits to keep going: https://www.orcarouter.ai/console/billing?ref=err_credit_gate#add-credits (request id: 202609192341146656946338268d9d6zYF9SpNt)
 - 2026-09-19T23:46:01Z · review_model_override
 - 2026-09-19T23:46:10Z · needs_input
+- 2026-09-20T00:07:02Z · status active→review
