@@ -11,6 +11,23 @@ id (`identity.project-root`, `config.toml-syntax`, `runtime.check-tools`, …) a
 for anything amber or red, the exact next command. `repoos doctor --json` emits
 the same findings for scripts and the UI.
 
+## Sharing a failed setup without pasting secrets
+
+When you need to report a setup problem, `repoos support bundle` produces a
+small, redacted archive you can attach to an issue:
+
+```bash
+repoos support bundle --dry-run   # show what would be included and where it goes
+repoos support bundle             # write it under .repoos/support/
+repoos support inspect <file>     # list every file inside before sharing
+```
+
+It excludes source code, prompts, task bodies, credentials, environment values
+and raw logs, and minimizes home/repo paths. It is written locally and never
+uploaded — you decide what to share. See
+[CLI → `repoos support bundle`](/cli#repoos-support-bundle-repoos-support-inspect).
+The same action is on **Settings → Support** in the web UI.
+
 ## Running RepoOS in more than one repo at once
 
 Each repo gets its own server, and they don't fight over a port. Without a
