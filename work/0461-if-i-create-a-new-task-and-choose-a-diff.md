@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-20T07:50:11Z"
-review_passes: 1
 id: "0461"
 title: If I create a new task and choose a different model than…
 type: feature
@@ -11,6 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/if-i-create-a-new-task-and-choose-a-diff
 created_at: "2026-09-20T01:10:43Z"
+updated_at: "2026-09-20T07:39:53Z"
 ---
 When you create a task from the "New task (freeform)" pane and pick a non-default agent/CLI/model for the PM picker, that choice only drives the one-off flesh-out run. The created task's frontmatter gets no `pmAgentOverride`/`pmCliOverride`/`pmModelOverride`, so every later PM action on the task (reply-from-context runs, re-flesh-out after a failed run, restart) silently falls back to the default configured PM agent/model. The user's pick is lost right after creation.
 
@@ -48,4 +47,3 @@ If I create a new task and choose a different model than the default for PM, tha
 - 2026-09-20T04:37:26Z · status inbox→ready
 - 2026-09-20T07:29:09Z · status ready→active, branch
 - 2026-09-20T07:39:53Z · status active→review
-
