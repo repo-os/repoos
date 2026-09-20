@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-09-19T23:33:30Z"
-review_passes: 1
+updated_at: "2026-09-20T00:13:36Z"
+review_passes: 2
 id: "0455"
 title: "Show per-task agent assignments (PM, Engineer, Reviewer) on the task card"
 type: feature
@@ -61,4 +61,5 @@ In scope: a display-only, togglable agent summary on the card (PM / Engineer / R
 - 2026-09-19T23:19:44Z · status inbox→ready
 - 2026-09-19T23:21:34Z · status ready→active, branch
 - 2026-09-19T23:31:21Z · status active→review
+
 
