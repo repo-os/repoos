@@ -8542,3 +8542,50 @@
     animation: none;
   }
 }
+
+/* Integration pipeline stage hover pane (#0460). Rendered by
+ * IntegrationStatusBar.vue, teleported to <body> and anchored directly above
+ * the bar. pointer-events: none so it never intercepts a stage click. */
+.stage-pane {
+  position: fixed;
+  z-index: 65;
+  pointer-events: none;
+  max-width: calc(100vw - 28px);
+  padding: 10px 13px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+  transform: translateX(-50%);
+  animation: stage-pane-in 0.12s ease-out;
+}
+.stage-pane-text {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--txt-dim);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.stage-pane.is-check .stage-pane-text {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11.5px;
+  line-height: 1.65;
+  color: var(--txt);
+}
+@keyframes stage-pane-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 4px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stage-pane {
+    animation: none;
+  }
+}

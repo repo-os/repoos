@@ -117,7 +117,7 @@ describe("IntegrationStatusBar", () => {
     expect(ui.integrationBarCollapsed).toBe(true);
   });
 
-  it("builds the check tooltip from the repo's resolved check plan (#0458)", async () => {
+  it("builds the check pane from the repo's resolved check plan (#0458)", async () => {
     const repo = useRepoStore();
     repo.integration = {
       ...activeSnapshot(),
@@ -147,26 +147,53 @@ describe("IntegrationStatusBar", () => {
     const wrapper = render();
     await nextTick();
 
-    const title = wrapper.findAll(".stage")[3].attributes("title") ?? "";
-    expect(title).toContain("2 step(s)");
-    expect(title).toContain('profile "full"');
-    expect(title).toContain("go-build: go build ./...");
-    expect(title).toContain("timeout 10m");
-    expect(title).toContain("unit: tests (built-in guard)");
-    expect(title).toContain("after go-build");
-    expect(title).toContain("optional");
+    const checkStage = wrapper.findAll(".stage")[3];
+    // The native tooltip is gone in favour of the pane.
+    expect(checkStage.attributes("title")).toBeUndefined();
+
+    await checkStage.trigger("mouseenter");
+    const text = wrapper.get(".stage-pane").text();
+    expect(text).toContain("2 step(s)");
+    expect(text).toContain('profile "full"');
+    expect(text).toContain("go-build: go build ./...");
+    expect(text).toContain("timeout 10m");
+    expect(text).toContain("unit: tests (built-in guard)");
+    expect(text).toContain("after go-build");
+    expect(text).toContain("optional");
     // The old hardcoded RepoOS prose must be gone.
-    expect(title).not.toContain("1000+ tests");
+    expect(text).not.toContain("1000+ tests");
   });
 
-  it("falls back to a generic check tooltip when no plan resolved", async () => {
+  it("falls back to a generic check pane when no plan resolved", async () => {
     const repo = useRepoStore();
     repo.integration = activeSnapshot();
     const wrapper = render();
     await nextTick();
 
-    const title = wrapper.findAll(".stage")[3].attributes("title") ?? "";
-    expect(title).toContain("No check plan was resolved");
+    await wrapper.findAll(".stage")[3].trigger("mouseenter");
+    expect(wrapper.get(".stage-pane").text()).toContain("No check plan was resolved");
+  });
+
+  it("shows a stage's description in the pane and hides it on mouseleave (#0460)", async () => {
+    const repo = useRepoStore();
+    repo.integration = activeSnapshot();
+    const wrapper = render();
+    await nextTick();
+
+    expect(wrapper.find(".stage-pane").exists()).toBe(false);
+
+    await wrapper.findAll(".stage")[0].trigger("mouseenter");
+    expect(wrapper.get(".stage-pane").text()).toContain("Syncing: fast-forwarding");
+
+    // Moving straight to an adjacent stage swaps the copy without spawning a
+    // second pane.
+    await wrapper.findAll(".stage")[1].trigger("mouseenter");
+    expect(wrapper.findAll(".stage-pane")).toHaveLength(1);
+    expect(wrapper.get(".stage-pane").text()).toContain("Merge: merging the branch");
+
+    // Leaving the stage row dismisses it.
+    await wrapper.get(".stages").trigger("mouseleave");
+    expect(wrapper.find(".stage-pane").exists()).toBe(false);
   });
 
   it("clicking the check stage opens Debug focused on the merge-gate run", async () => {
