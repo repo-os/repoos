@@ -1,16 +1,16 @@
 ---
-updated_at: "2026-09-20T07:57:27Z"
-review_passes: 1
 id: "0449"
 title: Add lazy syntax highlighting to full-file diff views
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: feat/add-lazy-syntax-highlighting-to-full-fil
 created_at: "2026-09-19T16:20:19Z"
+updated_at: "2026-09-20T11:45:30Z"
+review_passes: 1
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -57,4 +57,5 @@ Can we get proper text highlighting in code file views, particularly the full-sc
 - 2026-09-20T04:36:55Z · status inbox→ready
 - 2026-09-20T07:22:40Z · status ready→active, branch
 - 2026-09-20T07:55:23Z · status active→review
-
+- 2026-09-20T11:45:30Z · status review→active
+- 2026-09-20T11:45:30Z · note: Fix the MTD TypeScript errors in src/ui-app/src/lib/syntax-highlight.ts. Shiki 4.4.3 is installed, but TypeScript does not resolve the shiki/... convenience subpaths used here. Use the canonical packages instead: - @shikijs/core - @shikijs/engine-javascript - @shikijs/themes/github-light-default - @shikijs/themes/github-dark-default Keep lazy loading. Also fix the loadLanguage() typing issue: it may return undefined, so store/await a guaranteed Promise<void> (for example, wrap its return with Promise.resolve(...)). Run bun run build and the relevant syntax-highlighting tests, commit the fix, then retry Move to done.
