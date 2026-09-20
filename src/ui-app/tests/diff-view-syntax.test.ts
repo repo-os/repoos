@@ -23,6 +23,7 @@ interface Fixture {
 }
 
 let fixture: Fixture;
+let fileUnavailable = false;
 
 /** A minimal one-hunk patch: common context, then removed/added tails. */
 function makePatch({ filename, before, after }: Fixture): string {
@@ -51,6 +52,7 @@ function installApi(): void {
       return { ok: true, diff: { patch: makePatch(fixture), truncated: false } };
     }
     if (path.includes("/file?")) {
+      if (fileUnavailable) return { content: "", exists: false, noWorktree: true };
       const url = new URL(path, "http://local");
       const version = url.searchParams.get("version");
       const content = (version === "before" ? fixture.before : fixture.after).join("\n");
@@ -89,6 +91,7 @@ async function mountView(): Promise<VueWrapper> {
 }
 
 beforeEach(() => {
+  fileUnavailable = false;
   // jsdom has no 2D canvas; the minimap guards a null context.
   canvasSpy = vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
 });
@@ -160,6 +163,22 @@ describe("DiffView full-file syntax highlighting (#0449)", () => {
     await waitFor(() => wrapper.text().includes("world"));
     expect(wrapper.find(".diff-tok").exists()).toBe(false);
     expect(wrapper.text()).toContain("hello");
+    wrapper.unmount();
+  });
+
+  it("keeps the readable patch view when a completed task worktree was collected", async () => {
+    fixture = {
+      filename: "src/app.ts",
+      before: ["const before = 1;"],
+      after: ["const after = 2;"],
+    };
+    fileUnavailable = true;
+    installApi();
+    const wrapper = await mountView();
+    await waitFor(() => wrapper.text().includes("const before = 1;"));
+    expect(wrapper.text()).toContain("const after = 2;");
+    expect(wrapper.text()).toContain("Showing changed hunks");
+    expect(wrapper.find(".diff-tok").exists()).toBe(false);
     wrapper.unmount();
   });
 });

@@ -184,9 +184,17 @@ interface FileContents {
   after: string;
 }
 
+interface FileContentsResponse {
+  content: string;
+  /** False when a completed task's collected worktree can no longer supply this file. */
+  exists?: boolean;
+  noWorktree?: boolean;
+}
+
 const fileContents = ref<FileContents | null>(null);
 const fileContentsLoading = ref(false);
 const fileContentsError = ref<string | null>(null);
+const fullFileNotice = ref<string | null>(null);
 
 function linesOf(content: string): string[] {
   if (!content) return [];
@@ -321,15 +329,25 @@ watch(
   async ([id, filename]) => {
     fileContents.value = null;
     fileContentsError.value = null;
+    fullFileNotice.value = null;
     if (!filename) return;
     fileContentsLoading.value = true;
     try {
       const path = encodeURIComponent(filename);
       const [before, after] = await Promise.all([
-        api<{ content: string }>(`/api/tasks/${id}/file?path=${path}&version=before`),
-        api<{ content: string }>(`/api/tasks/${id}/file?path=${path}&version=after`),
+        api<FileContentsResponse>(`/api/tasks/${id}/file?path=${path}&version=before`),
+        api<FileContentsResponse>(`/api/tasks/${id}/file?path=${path}&version=after`),
       ]);
-      fileContents.value = { before: before.content, after: after.content };
+      // Done-task worktrees are intentionally collected. The durable diff
+      // snapshot still supplies changed hunks, but not complete file bodies;
+      // keep that readable patch renderer rather than handing empty arrays to
+      // the syntax highlighter (which would blank every line).
+      if (before.exists === false || after.exists === false) {
+        fullFileNotice.value =
+          "Showing changed hunks — full files were removed with the task worktree.";
+      } else {
+        fileContents.value = { before: before.content, after: after.content };
+      }
     } catch (err) {
       fileContentsError.value = err instanceof Error ? err.message : String(err);
     } finally {
@@ -510,9 +528,12 @@ function nextFile(): void {
       <span v-else-if="fileContentsError" class="diff-file-status diff-file-status-error">{{
         fileContentsError
       }}</span>
-      <span v-else-if="highlightNotice" class="diff-file-status" :title="highlightNotice">{{
-        highlightNotice
-      }}</span>
+      <span
+        v-else-if="fullFileNotice ?? highlightNotice"
+        class="diff-file-status"
+        :title="fullFileNotice ?? highlightNotice ?? undefined"
+        >{{ fullFileNotice ?? highlightNotice }}</span
+      >
     </div>
 
     <div v-if="diffFiles.length > 1" class="diff-page-filetabs">
