@@ -1703,9 +1703,9 @@
 }
 .tc-agent-row {
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr);
+  grid-template-columns: 18px minmax(0, 1fr);
   grid-template-rows: auto auto;
-  column-gap: 8px;
+  column-gap: 3px;
   width: 100%;
   min-height: 31px;
   padding: 3px 13px;
@@ -1742,7 +1742,7 @@
   min-width: 0;
   overflow: hidden;
   white-space: nowrap;
-  text-overflow: ellipsis;
+  text-overflow: clip;
 }
 .tc-agent-cli {
   color: var(--violet);
