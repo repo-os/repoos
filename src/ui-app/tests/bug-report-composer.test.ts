@@ -256,6 +256,20 @@ describe("bug-report composer (#0463)", () => {
     expect(prompt).toContain("[redacted]");
   });
 
+  it("uses the feature-request structure when requested", async () => {
+    vi.mocked(resolvePmAgent).mockReturnValue({ id: "pm", name: "PM", enabled: true } as any);
+    vi.mocked(runPrompt).mockResolvedValue({ ok: true, output: "## Title\nCompare task runs" });
+    const { req, res } = makeReqRes({
+      text: "I need to compare two task runs.",
+      type: "feature",
+    });
+    await generateBugReport(ctx, req, res, {});
+    const prompt = vi.mocked(runPrompt).mock.calls[0][1] as string;
+    expect(prompt).toContain("feature request");
+    expect(prompt).toContain("## Problem to Solve");
+    expect(prompt).not.toContain("## Steps to Reproduce");
+  });
+
   it("uses first line as fallback title when no title heading found", async () => {
     vi.mocked(resolvePmAgent).mockReturnValue({ id: "pm", name: "PM", enabled: true } as any);
     vi.mocked(runPrompt).mockResolvedValue({

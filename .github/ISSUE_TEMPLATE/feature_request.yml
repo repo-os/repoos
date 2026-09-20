@@ -1,0 +1,30 @@
+name: Feature request
+description: Suggest an improvement or new RepoOS capability
+title: "feature: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for sharing an idea. Please remove credentials, private repository details, or other sensitive material before submitting.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Tell us who it helps and what is difficult today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like RepoOS to do?
+      description: A rough idea is enough; implementation details are optional.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered (optional)
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context (optional)

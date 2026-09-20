@@ -24,12 +24,6 @@ import SelectItem from "../components/ui/select/item.vue";
 import SelectTrigger from "../components/ui/select/trigger.vue";
 import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
-import Dialog from "../components/ui/dialog/root.vue";
-import DialogClose from "../components/ui/dialog/close.vue";
-import DialogContent from "../components/ui/dialog/content.vue";
-import DialogDescription from "../components/ui/dialog/description.vue";
-import DialogOverlay from "../components/ui/dialog/overlay.vue";
-import DialogTitle from "../components/ui/dialog/title.vue";
 
 const config = useConfigStore();
 const ui = useUiStore();
@@ -228,31 +222,77 @@ async function openSupportBundle(): Promise<void> {
   }
 }
 
-// ---- Guided AI bug-report composer (#0463) ----
-const bugReportOpen = ref(false);
+// ---- Guided AI report composer (#0463) ----
+type SupportReportType = "bug" | "feature";
+const bugReportType = ref<SupportReportType>("bug");
 const bugReportText = ref("");
 const bugReportPending = ref(false);
 const bugReportError = ref("");
 const bugReportHint = ref("");
 const bugReportTitle = ref("");
 const bugReportBody = ref("");
-const bugReportGenerated = ref(false);
+const bugReportDraftOpen = ref(false);
 const bugReportCopied = ref<"title" | "body" | null>(null);
+const bugReportScreenshots = ref<{ name: string; mime: string; size: number; dataUrl: string }[]>(
+  [],
+);
+const bugReportAttachmentHint = ref("");
+const MAX_BUG_REPORT_SCREENSHOTS = 5;
 let copyTimer: ReturnType<typeof setTimeout> | undefined;
 
-function openBugReportComposer(): void {
-  bugReportOpen.value = true;
-  bugReportText.value = "";
-  bugReportError.value = "";
-  bugReportHint.value = "";
-  bugReportTitle.value = "";
-  bugReportBody.value = "";
-  bugReportGenerated.value = false;
-  bugReportPending.value = false;
+function selectBugReportType(type: SupportReportType): void {
+  if (type === bugReportType.value) return;
+  if (bugReportDraftOpen.value) {
+    bugReportHint.value = "Finish or reload this draft before changing its report type.";
+    return;
+  }
+  bugReportType.value = type;
 }
 
-function closeBugReportComposer(): void {
-  bugReportOpen.value = false;
+function beginManualBugReport(): void {
+  bugReportError.value = "";
+  bugReportHint.value = "";
+  bugReportDraftOpen.value = true;
+  if (!bugReportTitle.value) {
+    bugReportTitle.value = bugReportText.value.trim().split("\n")[0]?.slice(0, 80) ?? "";
+  }
+  if (!bugReportBody.value && bugReportText.value.trim()) {
+    bugReportBody.value = bugReportText.value.trim();
+  }
+}
+
+function addBugReportScreenshots(event: Event): void {
+  const files = Array.from((event.target as HTMLInputElement).files ?? []);
+  const images = files.filter((file) => file.type.startsWith("image/"));
+  const remaining = MAX_BUG_REPORT_SCREENSHOTS - bugReportScreenshots.value.length;
+  bugReportAttachmentHint.value = "";
+  if (files.length !== images.length) {
+    bugReportAttachmentHint.value = "Only image files can be added to a report.";
+  }
+  if (remaining <= 0) {
+    bugReportAttachmentHint.value = `You can add up to ${MAX_BUG_REPORT_SCREENSHOTS} screenshots.`;
+  } else if (images.length > remaining) {
+    bugReportAttachmentHint.value = `Added the first ${remaining} screenshot${remaining === 1 ? "" : "s"}.`;
+  }
+  for (const file of images.slice(0, Math.max(0, remaining))) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== "string") return;
+      bugReportScreenshots.value.push({
+        name: file.name,
+        mime: file.type,
+        size: file.size,
+        dataUrl: reader.result,
+      });
+    };
+    reader.readAsDataURL(file);
+  }
+  (event.target as HTMLInputElement).value = "";
+}
+
+function removeBugReportScreenshot(index: number): void {
+  bugReportScreenshots.value.splice(index, 1);
+  bugReportAttachmentHint.value = "";
 }
 
 async function generateBugReport(): Promise<void> {
@@ -262,7 +302,10 @@ async function generateBugReport(): Promise<void> {
   bugReportError.value = "";
   bugReportHint.value = "";
   try {
-    const res = (await api("/api/support/bug-report", JSON_OPTS("POST", { text }))) as {
+    const res = (await api(
+      "/api/support/bug-report",
+      JSON_OPTS("POST", { text, type: bugReportType.value }),
+    )) as {
       ok: boolean;
       title?: string;
       body?: string;
@@ -272,7 +315,7 @@ async function generateBugReport(): Promise<void> {
     if (res.ok && res.title && res.body) {
       bugReportTitle.value = res.title;
       bugReportBody.value = res.body;
-      bugReportGenerated.value = true;
+      bugReportDraftOpen.value = true;
     } else {
       bugReportError.value = res.error ?? "generation-failed";
       bugReportHint.value = res.hint ?? "";
@@ -298,7 +341,8 @@ const bugReportGitHubUrl = computed(() => {
   const params = new URLSearchParams();
   if (bugReportTitle.value) params.set("title", bugReportTitle.value);
   if (bugReportBody.value) params.set("body", bugReportBody.value);
-  return `https://github.com/repo-os/repoos/issues/new?template=bug_report.yml&${params.toString()}`;
+  const template = bugReportType.value === "feature" ? "feature_request.yml" : "bug_report.yml";
+  return `https://github.com/repo-os/repoos/issues/new?template=${template}&${params.toString()}`;
 });
 
 onMounted(async () => {
@@ -1157,9 +1201,9 @@ onUnmounted(() => {
         :aria-labelledby="`settings-tab-support`"
         v-show="activeTab === 'support'"
       >
-        <Card style="padding: 0 18px 16px; margin-bottom: 16px">
+        <div class="support-tab-content">
           <div class="setting-group">
-            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+            <div class="sec-label" style="margin-bottom: 0">
               <span class="live-dot"></span>Get support
             </div>
             <div class="setting-desc" style="padding: 8px 0 12px">
@@ -1195,10 +1239,209 @@ onUnmounted(() => {
                 <span class="support-step-num">3</span>
                 <div>
                   <strong>Share the right context</strong>
-                  <p>Inspect it, then attach it to a bug report with reproduction steps.</p>
+                  <p>Inspect it, then attach it to a bug report or feature request if useful.</p>
                 </div>
               </article>
             </div>
+
+            <section class="support-bug-report-section" aria-labelledby="bug-report-heading">
+              <div class="support-bug-report-header">
+                <div class="sec-label"><span class="live-dot"></span>Share feedback</div>
+                <h2 id="bug-report-heading">Report a bug or request a feature</h2>
+                <p class="setting-desc">
+                  Jot down what happened or the improvement you want. Include the RepoOS page, your
+                  goal, and any useful context. You can turn those notes into an editable AI draft,
+                  or write the report yourself.
+                </p>
+              </div>
+
+              <div class="bug-report-type-picker" role="radiogroup" aria-label="Report type">
+                <button
+                  type="button"
+                  :class="{ active: bugReportType === 'bug' }"
+                  role="radio"
+                  :aria-checked="bugReportType === 'bug'"
+                  @click="selectBugReportType('bug')"
+                >
+                  <strong>Bug report</strong><span>Something is not working as expected</span>
+                </button>
+                <button
+                  type="button"
+                  :class="{ active: bugReportType === 'feature' }"
+                  role="radio"
+                  :aria-checked="bugReportType === 'feature'"
+                  @click="selectBugReportType('feature')"
+                >
+                  <strong>Feature request</strong
+                  ><span>Suggest an improvement or new capability</span>
+                </button>
+              </div>
+
+              <div class="field support-bug-report-notes">
+                <label for="bug-report-text">Notes and description</label>
+                <textarea
+                  id="bug-report-text"
+                  v-model="bugReportText"
+                  class="input-textarea"
+                  rows="7"
+                  :placeholder="
+                    bugReportType === 'bug'
+                      ? 'For example: On Settings → Support, I expected the bundle preview to load. Instead it stayed blank after I refreshed. I was using…'
+                      : 'For example: I would like a way to compare two task runs because it would help me understand what changed between them…'
+                  "
+                ></textarea>
+              </div>
+
+              <div class="bug-report-attachments">
+                <div>
+                  <strong>Screenshots <span class="optional-label">optional</span></strong>
+                  <p class="setting-desc">
+                    Add screenshots of the page or error. They stay on this machine and are never
+                    sent to the AI.
+                  </p>
+                </div>
+                <label class="bug-report-add-screenshot" for="bug-report-screenshot-input">
+                  Add screenshots
+                </label>
+                <input
+                  id="bug-report-screenshot-input"
+                  class="sr-only"
+                  type="file"
+                  accept="image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp"
+                  multiple
+                  @change="addBugReportScreenshots"
+                />
+              </div>
+              <div v-if="bugReportScreenshots.length" class="bug-report-screenshot-grid">
+                <figure
+                  v-for="(screenshot, index) in bugReportScreenshots"
+                  :key="screenshot.name + screenshot.size + index"
+                  class="bug-report-screenshot"
+                >
+                  <img :src="screenshot.dataUrl" :alt="screenshot.name" />
+                  <figcaption :title="screenshot.name">{{ screenshot.name }}</figcaption>
+                  <button
+                    type="button"
+                    class="bug-report-remove-screenshot"
+                    :aria-label="`Remove ${screenshot.name}`"
+                    @click="removeBugReportScreenshot(index)"
+                  >
+                    Remove
+                  </button>
+                </figure>
+              </div>
+              <p v-if="bugReportAttachmentHint" class="bug-report-hint" role="status">
+                {{ bugReportAttachmentHint }}
+              </p>
+
+              <p class="bug-report-privacy">
+                <strong>Choose your path.</strong> Generate with AI sends only your notes to the
+                configured PM agent to make a draft. Writing manually sends nothing. In either case,
+                you review and edit everything before opening GitHub.
+              </p>
+              <div class="bug-report-actions">
+                <Button
+                  :disabled="!bugReportText.trim() || bugReportPending"
+                  @click="generateBugReport"
+                >
+                  {{
+                    bugReportPending
+                      ? "Generating…"
+                      : `${bugReportDraftOpen ? "Regenerate" : "Generate"} editable ${bugReportType === "bug" ? "bug report" : "feature request"} with AI`
+                  }}
+                </Button>
+                <Button variant="outline" @click="beginManualBugReport">Write it manually</Button>
+              </div>
+              <div v-if="bugReportError" class="support-error" role="alert">
+                <span>{{
+                  bugReportError === "no-pm-agent" ? "No PM agent configured" : bugReportError
+                }}</span>
+              </div>
+              <div v-if="bugReportHint" class="bug-report-hint" role="status">
+                {{ bugReportHint }}
+              </div>
+
+              <section
+                v-if="bugReportDraftOpen"
+                class="bug-report-review"
+                aria-labelledby="bug-report-review-heading"
+              >
+                <div>
+                  <h3 id="bug-report-review-heading">Review and edit before sending</h3>
+                  <p class="setting-desc">
+                    This is your report. Edit the title and details as much as you like; RepoOS will
+                    not submit anything automatically.
+                  </p>
+                </div>
+                <div class="field">
+                  <label for="bug-report-title">Title</label>
+                  <input
+                    id="bug-report-title"
+                    v-model="bugReportTitle"
+                    class="bug-report-title-input"
+                    type="text"
+                    placeholder="Short summary of the bug"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    class="bug-report-copy-btn"
+                    :disabled="!bugReportTitle"
+                    @click="copyBugReport('title')"
+                  >
+                    {{ bugReportCopied === "title" ? "Copied!" : "Copy title" }}
+                  </Button>
+                </div>
+                <div class="field">
+                  <label for="bug-report-body">Report</label>
+                  <textarea
+                    id="bug-report-body"
+                    v-model="bugReportBody"
+                    class="input-textarea"
+                    rows="14"
+                    placeholder="What happened, what you expected, steps to reproduce, and any useful context…"
+                  ></textarea>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    class="bug-report-copy-btn"
+                    :disabled="!bugReportBody"
+                    @click="copyBugReport('body')"
+                  >
+                    {{ bugReportCopied === "body" ? "Copied!" : "Copy report" }}
+                  </Button>
+                </div>
+                <p v-if="bugReportScreenshots.length" class="bug-report-attachment-reminder">
+                  {{ bugReportScreenshots.length }} screenshot{{
+                    bugReportScreenshots.length === 1 ? "" : "s"
+                  }}
+                  selected. After GitHub opens, attach these same files to the issue if you choose
+                  to share them.
+                </p>
+                <div class="bug-report-actions">
+                  <a
+                    :href="bugReportGitHubUrl"
+                    target="_blank"
+                    rel="noreferrer"
+                    class="bug-report-github-link"
+                  >
+                    <Button :disabled="!bugReportTitle.trim() || !bugReportBody.trim()" tag="span">
+                      Open editable
+                      {{ bugReportType === "bug" ? "bug report" : "feature request" }} on GitHub
+                    </Button>
+                  </a>
+                </div>
+                <details class="support-details">
+                  <summary>Attach a support bundle</summary>
+                  <div class="support-details-body">
+                    <p class="setting-desc">
+                      You can attach an inspected support bundle to the GitHub issue for additional
+                      context. Create one from the bundle section below before opening the issue.
+                    </p>
+                  </div>
+                </details>
+              </section>
+            </section>
 
             <section v-if="supportLoading" class="support-preview-loading" aria-live="polite">
               <span class="support-spinner" aria-hidden="true"></span>
@@ -1312,19 +1555,8 @@ onUnmounted(() => {
               <span>{{ supportError }}</span>
               <Button variant="outline" size="sm" @click="refreshSupportPreview">Try again</Button>
             </div>
-
-            <section class="support-bug-report-section">
-              <div class="support-bug-report-header">
-                <strong>Describe a problem</strong>
-                <p class="setting-desc">
-                  Describe what went wrong and RepoOS will draft a bug report you can review and
-                  open on GitHub. Notes and attachments stay local unless you share them.
-                </p>
-              </div>
-              <Button size="sm" @click="openBugReportComposer">Describe a problem</Button>
-            </section>
           </div>
-        </Card>
+        </div>
       </div>
 
       <!-- ─── repoos.toml tab ─────────────────────────────── -->
@@ -1390,122 +1622,4 @@ onUnmounted(() => {
       </div>
     </div>
   </div>
-
-  <!-- Bug report composer dialog (#0463) -->
-  <Dialog :open="bugReportOpen" @update:open="closeBugReportComposer">
-    <DialogOverlay />
-    <DialogContent :style="{ width: '560px', 'max-width': '100vw' }">
-      <div class="drawer-head">
-        <div class="drawer-head-title">
-          <DialogTitle>Describe a problem</DialogTitle>
-          <DialogDescription class="sr-only">
-            Describe a bug and generate a GitHub-ready report
-          </DialogDescription>
-        </div>
-        <DialogClose class="close-x" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </DialogClose>
-      </div>
-      <div class="drawer-body">
-        <!-- Input step -->
-        <template v-if="!bugReportGenerated">
-          <div class="field">
-            <label for="bug-report-text">What went wrong?</label>
-            <textarea
-              id="bug-report-text"
-              v-model="bugReportText"
-              class="input-textarea"
-              rows="10"
-              placeholder="Describe the problem: what you expected, what happened, and how to reproduce it…"
-            ></textarea>
-          </div>
-          <p class="bug-report-privacy">
-            Your description stays on this machine. It is sent only to the configured PM agent to
-            draft a report. Do not include credentials, private source code, or raw environment
-            values.
-          </p>
-          <div class="btn-row" style="margin-top: 16px">
-            <Button variant="outline" @click="closeBugReportComposer">Cancel</Button>
-            <Button
-              variant="default"
-              :disabled="!bugReportText.trim() || bugReportPending"
-              @click="generateBugReport"
-            >
-              {{ bugReportPending ? "Generating…" : "Generate bug report" }}
-            </Button>
-          </div>
-          <div v-if="bugReportError" class="support-error" role="alert" style="margin-top: 12px">
-            <span>{{
-              bugReportError === "no-pm-agent" ? "No PM agent configured" : bugReportError
-            }}</span>
-          </div>
-          <div v-if="bugReportHint" class="bug-report-hint" role="status" style="margin-top: 8px">
-            {{ bugReportHint }}
-          </div>
-        </template>
-
-        <!-- Review step -->
-        <template v-else>
-          <div class="field">
-            <label for="bug-report-title">Title</label>
-            <input
-              id="bug-report-title"
-              v-model="bugReportTitle"
-              class="bug-report-title-input"
-              type="text"
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              class="bug-report-copy-btn"
-              @click="copyBugReport('title')"
-            >
-              {{ bugReportCopied === "title" ? "Copied!" : "Copy title" }}
-            </Button>
-          </div>
-          <div class="field">
-            <label for="bug-report-body">Report</label>
-            <textarea
-              id="bug-report-body"
-              v-model="bugReportBody"
-              class="input-textarea"
-              rows="16"
-            ></textarea>
-            <Button
-              variant="outline"
-              size="sm"
-              class="bug-report-copy-btn"
-              @click="copyBugReport('body')"
-            >
-              {{ bugReportCopied === "body" ? "Copied!" : "Copy report" }}
-            </Button>
-          </div>
-          <p class="bug-report-privacy">
-            Review and edit above before sharing. Nothing is submitted automatically.
-          </p>
-          <div class="btn-row" style="margin-top: 16px">
-            <Button variant="outline" @click="bugReportGenerated = false">Back</Button>
-            <Button variant="outline" @click="closeBugReportComposer">Done</Button>
-            <a
-              :href="bugReportGitHubUrl"
-              target="_blank"
-              rel="noreferrer"
-              class="bug-report-github-link"
-            >
-              <Button variant="default" tag="span">Open on GitHub</Button>
-            </a>
-          </div>
-          <details class="support-details" style="margin-top: 16px">
-            <summary>Attach a support bundle</summary>
-            <div class="support-details-body">
-              <p class="setting-desc">
-                You can attach an inspected support bundle to the GitHub issue for additional
-                context. Create one from the bundle section above before opening the issue.
-              </p>
-            </div>
-          </details>
-        </template>
-      </div>
-    </DialogContent>
-  </Dialog>
 </template>

@@ -5566,6 +5566,12 @@
 .setting-group {
   margin-bottom: 16px;
 }
+.support-tab-content {
+  margin-bottom: 16px;
+}
+.support-tab-content .setting-group {
+  margin-bottom: 0;
+}
 .setting-row {
   display: flex;
   align-items: center;
@@ -6101,20 +6107,179 @@
   line-height: 1.5;
 }
 .support-bug-report-section {
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
+  margin: 18px 0;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-secondary);
 }
-.support-bug-report-header strong {
-  font-size: 13px;
-  font-weight: 500;
+.support-bug-report-header .sec-label {
+  padding: 0;
+  margin-bottom: 7px;
+}
+.support-bug-report-header h2,
+.bug-report-review h3 {
+  margin: 0;
   color: var(--txt);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.3;
 }
 .support-bug-report-header p {
-  margin-top: 4px;
+  max-width: 760px;
+  margin: 6px 0 0;
+}
+.bug-report-type-picker {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+.bug-report-type-picker button {
+  display: grid;
+  gap: 3px;
+  cursor: pointer;
+  padding: 10px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--txt-secondary);
+  font-family: var(--font-sans);
+  text-align: left;
+}
+.bug-report-type-picker button:hover,
+.bug-report-type-picker button.active {
+  border-color: var(--cyan-border-tint);
+  background: var(--cyan-tint);
+  color: var(--txt);
+}
+.bug-report-type-picker strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+.bug-report-type-picker span {
+  color: var(--txt-dim);
+  font-size: 11px;
+  line-height: 1.35;
+}
+.support-bug-report-notes {
+  margin-top: 16px;
+}
+.support-bug-report-section .input-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  resize: vertical;
+  background: var(--panel-solid);
+  color: var(--txt);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.support-bug-report-section .input-textarea:focus {
+  outline: none;
+  border-color: var(--border-focus);
+}
+.bug-report-attachments {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 12px;
+  padding: 11px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}
+.bug-report-attachments strong {
+  color: var(--txt);
+  font-size: 12px;
+  font-weight: 600;
+}
+.bug-report-attachments p {
+  margin: 3px 0 0;
+}
+.optional-label {
+  color: var(--txt-dim);
+  font-size: 11px;
+  font-weight: 400;
+}
+.bug-report-add-screenshot {
+  flex-shrink: 0;
+  cursor: pointer;
+  color: var(--cyan);
+  font-size: 12px;
+  font-weight: 500;
+}
+.bug-report-add-screenshot:hover {
+  text-decoration: underline;
+}
+.bug-report-screenshot-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+.bug-report-screenshot {
+  position: relative;
+  width: 126px;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+.bug-report-screenshot img {
+  display: block;
+  width: 100%;
+  height: 76px;
+  object-fit: cover;
+}
+.bug-report-screenshot figcaption {
+  overflow: hidden;
+  padding: 6px 7px;
+  color: var(--txt-secondary);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bug-report-remove-screenshot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  cursor: pointer;
+  padding: 3px 5px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  color: var(--txt);
+  font-family: var(--font-sans);
+  font-size: 10px;
+}
+.bug-report-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.bug-report-review {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+.bug-report-review h3 + .setting-desc {
+  margin: 5px 0 0;
+}
+.bug-report-attachment-reminder {
+  margin: -3px 0 0;
+  color: var(--txt-dim);
+  font-size: 11.5px;
+  line-height: 1.5;
 }
 .bug-report-privacy {
-  margin-top: 10px;
+  margin: 12px 0 0;
   padding: 8px 11px;
   border-radius: 8px;
   background: var(--bg-secondary);
@@ -6165,6 +6330,14 @@
   .support-bundle-location {
     align-items: flex-start;
     flex-direction: column;
+  }
+  .bug-report-attachments {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .bug-report-type-picker {
+    grid-template-columns: 1fr;
   }
 }
 
