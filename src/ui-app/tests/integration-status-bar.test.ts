@@ -279,9 +279,9 @@ describe("IntegrationStatusBar", () => {
     await wrapper.findAll(".stage")[0].trigger("mouseenter");
     const pane = wrapper.find(".stage-pane");
     const style = pane.attributes("style");
-    // min-width = bar width (460px), but max-width = min(80vw=400, 500-28=472) = 400px
+    // min-width clamped to max-width (400px), max-width = min(80vw=400, 500-28=472) = 400px
     // The 80% cap wins over the bar width
-    expect(style).toContain("min-width: 460px");
+    expect(style).toContain("min-width: 400px");
     expect(style).toContain("max-width: 400px");
   });
 });
