@@ -1,0 +1,203 @@
+{
+  "$comment": "The polyglot adoption matrix (#0452). One row per synthetic fixture; `expectedPlan` pins what repoos check must infer and run so a change to a stack's inference fails a test that names the fixture. File contents live in fixtures.ts keyed by the same id. See docs/adoption-matrix.md.",
+  "version": 1,
+  "fixtures": [
+    {
+      "id": "ts-bun-web",
+      "stack": "TypeScript web (Bun)",
+      "intent": "A minimal Bun + TypeScript web app whose package.json declares fmt:check/lint/build/test scripts and ships a bun.lock.",
+      "kind": "new",
+      "hasAgentsMd": false,
+      "toolchain": ["bun"],
+      "toolchainTier": "local",
+      "toolchainChecks": [
+        { "label": "build", "tool": "bun", "command": "bun run build" },
+        { "label": "test", "tool": "bun", "command": "bun run --bun test" }
+      ],
+      "expectedPlan": {
+        "source": "inferred",
+        "steps": [
+          "staleness",
+          "lockfile-sync",
+          "check-fmt:check",
+          "check-lint",
+          "build",
+          "tests",
+          "task-assets"
+        ],
+        "commands": [],
+        "requires": {
+          "lockfile-sync": ["bun"],
+          "check-fmt:check": ["bun"],
+          "check-lint": ["bun"],
+          "build": ["bun"],
+          "tests": ["bun"]
+        }
+      }
+    },
+    {
+      "id": "ts-node-web",
+      "stack": "TypeScript web (Node/npm)",
+      "intent": "The Node/npm variant: no bun.lock, so the inferred JS runner must be npm, not an unconditional Bun assumption.",
+      "kind": "new",
+      "hasAgentsMd": false,
+      "toolchain": ["npm"],
+      "toolchainTier": "local",
+      "toolchainChecks": [
+        { "label": "build", "tool": "npm", "command": "npm run build" },
+        { "label": "test", "tool": "npm", "command": "npm run test" }
+      ],
+      "expectedPlan": {
+        "source": "inferred",
+        "steps": ["staleness", "build", "tests", "task-assets"],
+        "commands": [],
+        "requires": { "build": ["npm"], "tests": ["npm"] }
+      }
+    },
+    {
+      "id": "go-service",
+      "stack": "Go backend/service",
+      "intent": "A conventional Go module with a cmd entrypoint and an internal package that has a real test.",
+      "kind": "existing",
+      "hasAgentsMd": false,
+      "toolchain": ["go"],
+      "toolchainTier": "local",
+      "toolchainChecks": [
+        { "label": "build", "tool": "go", "command": "go build ./..." },
+        { "label": "test", "tool": "go", "command": "go test ./..." }
+      ],
+      "expectedPlan": {
+        "source": "inferred",
+        "steps": ["staleness", "build", "tests", "task-assets"],
+        "commands": ["go build ./...", "go test ./..."],
+        "requires": { "build": ["go"], "tests": ["go"] }
+      }
+    },
+    {
+      "id": "rust-cargo",
+      "stack": "Rust/Cargo",
+      "intent": "A no-dependency Cargo crate with a library target and a unit test.",
+      "kind": "new",
+      "hasAgentsMd": false,
+      "toolchain": ["cargo"],
+      "toolchainTier": "ci",
+      "toolchainChecks": [
+        { "label": "build", "tool": "cargo", "command": "cargo build" },
+        { "label": "test", "tool": "cargo", "command": "cargo test" }
+      ],
+      "expectedPlan": {
+        "source": "inferred",
+        "steps": ["staleness", "build", "check-fmt:check", "tests", "task-assets"],
+        "commands": ["cargo build", "cargo fmt --check", "cargo test"],
+        "requires": {
+          "build": ["cargo"],
+          "check-fmt:check": ["cargo"],
+          "tests": ["cargo"]
+        }
+      }
+    },
+    {
+      "id": "android-gradle",
+      "stack": "Android/Kotlin/Gradle",
+      "intent": "A Gradle project shaped like an Android app (settings/build scripts, wrapper, Kotlin sources, a unit test). The committed wrapper is preferred over a PATH gradle.",
+      "kind": "new",
+      "hasAgentsMd": false,
+      "toolchain": ["gradle"],
+      "toolchainTier": "scheduled",
+      "toolchainChecks": [
+        { "label": "project-resolves", "tool": "gradle", "command": "./gradlew help" }
+      ],
+      "expectedPlan": {
+        "source": "inferred",
+        "steps": ["staleness", "build", "tests", "task-assets"],
+        "commands": ["./gradlew assemble", "./gradlew test"],
+        "requires": {}
+      }
+    },
+    {
+      "id": "vue-go-mixed",
+      "stack": "Vue frontend + Go backend (mixed)",
+      "intent": "One repository with a root Go module and a root package.json + bun.lock, so inference must produce both stacks without letting either drop the other.",
+      "kind": "existing",
+      "hasAgentsMd": false,
+      "toolchain": ["go"],
+      "toolchainTier": "local",
+      "toolchainChecks": [
+        { "label": "go-build", "tool": "go", "command": "go build ./..." },
+        { "label": "go-test", "tool": "go", "command": "go test ./..." }
+      ],
+      "expectedPlan": {
+        "source": "inferred",
+        "steps": [
+          "staleness",
+          "lockfile-sync",
+          "build",
+          "tests",
+          "build-js",
+          "tests-js",
+          "task-assets"
+        ],
+        "commands": ["go build ./...", "go test ./..."],
+        "requires": {
+          "lockfile-sync": ["bun"],
+          "build": ["go"],
+          "tests": ["go"],
+          "build-js": ["bun"],
+          "tests-js": ["bun"]
+        }
+      }
+    },
+    {
+      "id": "existing-agents-docs",
+      "stack": "Existing AGENTS.md + project docs",
+      "intent": "A repo that already owns its AGENTS.md and docs/acknowledgements: init must add RepoOS without ever rewriting user instructions.",
+      "kind": "existing",
+      "hasAgentsMd": true,
+      "toolchain": ["npm"],
+      "toolchainTier": "local",
+      "toolchainChecks": [
+        { "label": "test", "tool": "npm", "command": "npm run test" }
+      ],
+      "expectedPlan": {
+        "source": "inferred",
+        "steps": ["staleness", "tests", "task-assets"],
+        "commands": [],
+        "requires": { "tests": ["npm"] }
+      }
+    },
+    {
+      "id": "empty-repo",
+      "stack": "New/empty repository",
+      "intent": "A directory with no files at all. Inference must yield an EMPTY plan (never a vacuous green), and init must still scaffold a working layout.",
+      "kind": "new",
+      "hasAgentsMd": false,
+      "toolchain": [],
+      "toolchainTier": "local",
+      "toolchainChecks": [],
+      "expectedPlan": {
+        "source": "empty",
+        "steps": [],
+        "commands": [],
+        "requires": {}
+      }
+    },
+    {
+      "id": "existing-git-repo",
+      "stack": "Existing Git repository",
+      "intent": "An already-initialized Git repo with history, an AGENTS.md and source. Root detection from a nested directory and worktree placement are the scenarios under test.",
+      "kind": "existing",
+      "hasAgentsMd": true,
+      "toolchain": ["go"],
+      "toolchainTier": "local",
+      "toolchainChecks": [
+        { "label": "build", "tool": "go", "command": "go build ./..." }
+      ],
+      "expectedPlan": {
+        "source": "inferred",
+        "steps": ["staleness", "build", "tests", "task-assets"],
+        "commands": ["go build ./...", "go test ./..."],
+        "requires": { "build": ["go"], "tests": ["go"] }
+      }
+    }
+  ]
+}

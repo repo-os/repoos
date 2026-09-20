@@ -1,0 +1,110 @@
+# The polyglot real-repo adoption matrix (#0452).
+#
+# Runs the fixture suite on the two platforms this project supports — Linux and
+# macOS — so a path, process or package-manager assumption that only holds on
+# one of them fails a named fixture instead of surfacing in a user's repo. A
+# failure writes a redacted per-fixture/per-phase diagnostic under
+# REPOOS_ADOPTION_DIAGNOSTICS_DIR, which is uploaded for inspection.
+#
+# Jobs are labelled by cost. `matrix` is the routine, PR-blocking run: hermetic
+# scenarios plus toolchain checks for the tools a runner can install cheaply
+# (Go, Rust, Java). `gradle-scheduled` is the heavier Gradle/Android-shaped job,
+# opt-in via workflow_dispatch or the weekly schedule, never on every PR.
+name: Adoption matrix
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: adoption-matrix-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  matrix:
+    name: adoption matrix (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+
+      - name: Show toolchain prerequisites
+        run: go version && cargo --version && node --version
+
+      - name: Run adoption matrix
+        run: bun run test adoption
+        env:
+          REPOOS_ADOPTION_DIAGNOSTICS_DIR: ${{ github.workspace }}/adoption-matrix-diagnostics
+
+      - name: Upload redacted diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: adoption-matrix-${{ matrix.os }}
+          path: adoption-matrix-diagnostics
+          if-no-files-found: ignore
+          retention-days: 7
+
+  gradle-scheduled:
+    name: adoption matrix (gradle, scheduled)
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+
+      - name: Run scheduled toolchain checks
+        run: bun run test adoption-matrix-toolchain
+        env:
+          REPOOS_ADOPTION_SCHEDULED: "1"
+          REPOOS_ADOPTION_DIAGNOSTICS_DIR: ${{ github.workspace }}/adoption-matrix-diagnostics
+
+      - name: Upload redacted diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: adoption-matrix-gradle
+          path: adoption-matrix-diagnostics
+          if-no-files-found: ignore
+          retention-days: 7
