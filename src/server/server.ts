@@ -89,6 +89,7 @@ import {
   syncBranchWithMain,
   worktreePathForBranch,
   tuneRepoForScale,
+  headCommitISO,
 } from "../core/git.js";
 import { sweepAndWarn } from "../core/worktree-gc.js";
 import { runBuiltInAgent, isDueForScheduledRun, builtInAgentLabel } from "./built-in-agents.js";
@@ -1700,6 +1701,19 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       return;
     }
     pendingReview.delete(task.id);
+    // Skip if a fresh report already exists for this branch HEAD — avoids
+    // unnecessary re-reviews when a task bounces through `review` due to a
+    // server restart or the MTD race described in AGENTS.md (2026-09-20).
+    if (task.branch) {
+      const workdir = worktreePathForBranch(config.root, task.branch);
+      if (workdir) {
+        const report = reviews.read(task.id);
+        const headAt = headCommitISO(workdir);
+        const fresh =
+          report?.at != null && headAt != null && Date.parse(report.at) >= Date.parse(headAt);
+        if (fresh) return;
+      }
+    }
     void reviews.run(task);
   };
 
