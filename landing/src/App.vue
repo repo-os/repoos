@@ -259,7 +259,7 @@ const year = new Date().getFullYear();
             </div>
             <img
               src="/board.webp"
-              alt="RepoOS work board: a kanban of task cards, with task #0338 — this landing page — active in the coding column"
+              alt="RepoOS work board from this repository, captured while task #0338 — the landing page — was active in the coding column"
               width="1200"
               height="750"
               fetchpriority="high"
@@ -268,36 +268,52 @@ const year = new Date().getFullYear();
           <figcaption
             class="mt-4 border-l-2 border-[rgba(157,123,255,0.4)] pl-3.5 text-[13px] leading-relaxed text-[var(--txt-dim)]"
           >
-            This is the board RepoOS uses for its own development. The active task,
-            <span class="text-[var(--violet)]">#0338</span>, is the one that built this page.
+            This is the board from this repository, captured while
+            <span class="text-[var(--violet)]">#0338</span> — the task that built this page — was
+            active.
           </figcaption>
         </figure>
       </div>
     </section>
 
-    <!-- ============ DOGFOODING ============ -->
+    <!-- ============ SELF-DEVELOPMENT ============ -->
     <section class="wrap pb-20 sm:pb-24">
       <div class="panel p-6 sm:p-8">
         <div class="grid items-center gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <p class="text-[15.5px] leading-relaxed text-[var(--txt-dim)]">
-            <span class="text-[var(--txt)]">RepoOS manages its own development.</span> The board,
-            tasks and status shown on this page come from the same repository used to build the
-            project, and every change went through the process described below.
+            <span class="text-[var(--txt)]">RepoOS is built using RepoOS.</span> The board and tasks
+            above are from this repository.
+            <span class="text-[var(--txt)]">399 real development tasks</span> have gone through the
+            same workflow described below.
           </p>
-          <dl class="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <dt class="text-[12px] text-[var(--txt-faint)]">tasks</dt>
-              <dd class="mt-1 text-[26px] font-bold tracking-tight">300+</dd>
-            </div>
-            <div>
-              <dt class="text-[12px] text-[var(--txt-faint)]">done</dt>
-              <dd class="mt-1 text-[26px] font-bold tracking-tight text-[var(--green)]">
-                dogfooded
+          <dl class="grid grid-cols-3 gap-2 text-center sm:gap-4">
+            <div class="min-w-0">
+              <dt class="text-[11px] leading-tight text-[var(--txt-faint)]">
+                real tasks completed
+              </dt>
+              <dd
+                class="mt-1 whitespace-nowrap text-[22px] font-bold tracking-tight sm:text-[26px]"
+              >
+                399+
               </dd>
             </div>
-            <div>
-              <dt class="text-[12px] text-[var(--txt-faint)]">version</dt>
-              <dd class="mt-1 text-[26px] font-bold tracking-tight">0.5.x</dd>
+            <div class="min-w-0">
+              <dt class="text-[11px] leading-tight text-[var(--txt-faint)]">
+                built through RepoOS
+              </dt>
+              <dd
+                class="mt-1 whitespace-nowrap text-[22px] font-bold tracking-tight text-[var(--green)] sm:text-[26px]"
+              >
+                100%
+              </dd>
+            </div>
+            <div class="min-w-0">
+              <dt class="text-[11px] leading-tight text-[var(--txt-faint)]">current version</dt>
+              <dd
+                class="mt-1 whitespace-nowrap text-[22px] font-bold tracking-tight sm:text-[26px]"
+              >
+                v0.5.48
+              </dd>
             </div>
           </dl>
         </div>
@@ -517,7 +533,7 @@ const year = new Date().getFullYear();
             <span class="text-[var(--cyan)] font-mono text-[13px] mr-2">Q</span>Is it stable?
           </summary>
           <p class="mt-3 text-[14px] leading-relaxed text-[var(--txt-dim)]">
-            RepoOS has been used to build itself across 300+ tasks. Every feature and fix on its
+            RepoOS has been built through 399 real development tasks. Every feature and fix on its
             board went through the same checks and review you would be using.
           </p>
         </details>
