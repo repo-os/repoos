@@ -597,6 +597,66 @@ export interface CheckPlanInfo {
   steps: CheckPlanStep[];
 }
 
+/** One step of the Checks surface, with prerequisites and selection (#0447). */
+export interface CheckPlanStepView {
+  name: string;
+  kind?: string;
+  command?: string;
+  cwd?: string;
+  timeoutMs: number;
+  required: boolean;
+  profiles: string[];
+  whenChanged: string[];
+  dependsOn: string[];
+  requires: string[];
+  /** No `whenChanged` → runs on any change (a contract/integration step). */
+  crossCutting: boolean;
+  /** Whether the selected profile includes this step. */
+  selected: boolean;
+  /** Set when the step will not run this invocation, with the reason why. */
+  skip?: { reason: string; detail: string };
+  /** Declared prerequisites missing from PATH, with install advice. */
+  missing: { tool: string; hint: string }[];
+}
+
+/** One persisted step result from the last `repoos check` run. */
+export interface CheckRunStepResult {
+  name: string;
+  status: "passed" | "failed" | "timeout" | "missing-prereq" | "skipped";
+  command?: string;
+  cwd?: string;
+  durationMs: number;
+  output?: string;
+  detail?: string;
+  required: boolean;
+}
+
+/** The last completed `repoos check` run, or null when none was recorded. */
+export interface CheckRunRecord {
+  profile: string;
+  source: "declared" | "legacy" | "inferred" | "empty";
+  changedRef?: string;
+  startedAt: string;
+  finishedAt: string;
+  durationMs: number;
+  passed: boolean;
+  results: CheckRunStepResult[];
+}
+
+/** The full Checks surface payload from `GET /api/check-plan` (#0447). */
+export interface CheckPlanView {
+  source: "declared" | "legacy" | "inferred" | "empty";
+  defaultProfile: string;
+  profile: string;
+  profiles: string[];
+  changedRef?: string;
+  changedPaths?: string[];
+  warnings: string[];
+  errors: string[];
+  steps: CheckPlanStepView[];
+  lastRun: CheckRunRecord | null;
+}
+
 /** Live read-model of the integration pipeline for the pinned status bar (0207). */
 export interface IntegrationPipelineSnapshot {
   /** True when nothing is queued or in progress — the idle empty state. */

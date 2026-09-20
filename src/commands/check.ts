@@ -49,6 +49,7 @@ import {
   type StepRunResult,
   type StepStatus,
 } from "../core/check-runner.js";
+import { writeCheckRun } from "../core/check-results-store.js";
 
 /**
  * Split a CSS selector list on top-level commas (respecting parentheses,
@@ -1562,6 +1563,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     );
   }
 
+  const runStartedAt = new Date();
   const results = await runCheckPlan(plan, {
     repoRoot,
     cfg,
@@ -1626,6 +1628,34 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
       ),
     );
   }
+
+  // Persist the run for the Checks surface (#0447) before exiting. Fail-soft:
+  // visibility only, never a reason to fail an otherwise-green gate.
+  const finishedAt = new Date();
+  writeCheckRun(
+    repoRoot,
+    {
+      profile,
+      source: plan.source,
+      changedRef,
+      startedAt: runStartedAt.toISOString(),
+      finishedAt: finishedAt.toISOString(),
+      durationMs: finishedAt.getTime() - runStartedAt.getTime(),
+      passed: gatingFailures.length === 0,
+      results: results.map((r) => ({
+        name: r.name,
+        status: r.status,
+        command: r.command,
+        cwd: r.cwd,
+        durationMs: r.durationMs,
+        output: r.output,
+        detail: r.detail,
+        required: r.required,
+      })),
+    },
+    cfg.cacheDir,
+  );
+
   process.exit(gatingFailures.length > 0 ? 1 : 0);
 }
 

@@ -41,6 +41,12 @@ export const NAV: NavItem[] = [
     icon: '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="4" height="16" rx="1" stroke="currentColor" stroke-width="1.8"/><rect x="10" y="4" width="4" height="11" rx="1" stroke="currentColor" stroke-width="1.8"/><rect x="17" y="4" width="4" height="7" rx="1" stroke="currentColor" stroke-width="1.8"/></svg>',
   },
   {
+    id: "checks",
+    path: "/checks",
+    label: "Checks",
+    icon: '<svg viewBox="0 0 24 24" fill="none"><path d="M9 6h10M9 12h10M9 18h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 6l1.5 1.5L8 5M4 12l1.5 1.5L8 11M4 18l1.5 1.5L8 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  },
+  {
     id: "agents",
     path: "/agents",
     label: "Agents",
@@ -67,7 +73,7 @@ export const NAV: NavItem[] = [
  */
 export function navFor(releasesEnabled: boolean, deploymentsEnabled = false): NavItem[] {
   const items = [...NAV];
-  let at = 3; // after Work
+  let at = 4; // after Work + Checks
   if (releasesEnabled) {
     items.splice(at++, 0, RELEASE_NAV);
   }

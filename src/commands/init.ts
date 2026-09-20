@@ -16,6 +16,7 @@ import {
   mkdirSync,
   readFileSync,
   readdirSync,
+  rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
@@ -24,6 +25,8 @@ import { join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { deriveServePort, findRepoRoot, loadConfig } from "../core/config.js";
+import { CHECK_PLAN_PROPOSAL_FILE, proposeCheckPlan } from "../core/check-plan-proposal.js";
+import { formatPlanToml } from "../core/check-plan.js";
 import { gitAvailable, gitCommitAll, gitConfig, gitInit, isGitRepo } from "../core/git.js";
 import { c } from "../cli/colors.js";
 import { cmdServe } from "./serve.js";
@@ -625,6 +628,88 @@ async function offerRepoOSAgentsSection(root: string, workDir = "work"): Promise
 }
 
 /**
+ * Offer a starter check plan (#0447). Init inspects the repo's durable signals
+ * and, when nothing is configured and a stack is recognisable, writes the
+ * inferred plan to an uncommitted proposal file for review. In a terminal it
+ * also offers to move it into `repoos.toml` — never automatically, and never
+ * over an edit made while the prompt was open. Non-interactive init leaves the
+ * proposal file in place and exits without touching the effective config.
+ */
+async function offerCheckPlanProposal(root: string): Promise<void> {
+  const proposal = proposeCheckPlan(root);
+  if (!proposal) return;
+
+  console.log(c.dim("\n  No check plan is configured for this repo."));
+  console.log(c.dim(`  Proposed starter plan (${proposal.stacks.join(" + ")}):`));
+  console.log(
+    c.dim(
+      proposal.toml
+        .trimEnd()
+        .split("\n")
+        .map((line) => `    ${line}`)
+        .join("\n"),
+    ),
+  );
+
+  const proposalPath = join(root, CHECK_PLAN_PROPOSAL_FILE);
+  try {
+    if (existsSync(proposalPath)) {
+      console.log(c.dim(`  · kept the existing proposal at ${CHECK_PLAN_PROPOSAL_FILE}`));
+    } else {
+      writeFileSync(proposalPath, proposal.toml);
+      console.log("  " + c.green("proposed ") + c.dim(CHECK_PLAN_PROPOSAL_FILE));
+    }
+  } catch {
+    console.log(
+      c.yellow(`  Could not write ${CHECK_PLAN_PROPOSAL_FILE}; the plan is printed above.`),
+    );
+  }
+
+  if (!input.isTTY || !output.isTTY) {
+    console.log(
+      c.dim(
+        `  Review and edit it, then move its [[check.steps]] into repoos.toml before repoos check will pass.`,
+      ),
+    );
+    return;
+  }
+
+  if (!(await confirm("\n  Add this plan to repoos.toml now?", false))) {
+    console.log(
+      c.dim(`  Left as a proposal — edit ${CHECK_PLAN_PROPOSAL_FILE} and merge it when ready.`),
+    );
+    return;
+  }
+
+  const tomlPath = join(root, "repoos.toml");
+  const original = existsSync(tomlPath) ? readFileSync(tomlPath, "utf8") : null;
+  if (original === null) {
+    console.log(c.yellow("  repoos.toml is missing; nothing was added."));
+    return;
+  }
+  // Do not clobber a config changed while the preview was on screen.
+  try {
+    if (readFileSync(tomlPath, "utf8") !== original) {
+      console.log(
+        c.yellow(
+          "  repoos.toml changed while this prompt was open; nothing was added. Run repoos init again.",
+        ),
+      );
+      return;
+    }
+    // Reformat the plan without the proposal's header comments so the committed
+    // config reads as configuration, not as a note-to-self.
+    const addition =
+      (original.endsWith("\n") ? "\n" : "\n\n") + formatPlanToml(proposal.plan) + "\n";
+    writeFileSync(tomlPath, original + addition);
+    rmSync(proposalPath, { force: true });
+    console.log("  " + c.green("added") + c.dim(" the check plan to repoos.toml"));
+  } catch {
+    console.log(c.yellow("  Could not update repoos.toml; the proposal file was left in place."));
+  }
+}
+
+/**
  * Validate a user-supplied namespace string. Returns null when the input means
  * "repo root" (the special `/` or empty), a normalized repo-relative path when
  * valid, or an error message prefixed with `!` when invalid. The caller
@@ -890,6 +975,7 @@ async function guidedNewRepo(args: string[]): Promise<void> {
 
   const { created, skipped } = scaffoldInto(target, description, layout);
   reportInit(target, created, skipped);
+  await offerCheckPlanProposal(target);
 
   if (!gitOk) {
     console.log(c.dim("  To add git later: git init && git add -A && git commit"));
@@ -1059,6 +1145,7 @@ export async function cmdInit(args: string[]): Promise<void> {
     const { created, skipped } = scaffoldInto(root, "", namespace, "existing");
     const config = loadConfig(root);
     await offerRepoOSAgentsSection(root, config.workDir);
+    await offerCheckPlanProposal(root);
     if (created.length === 0) {
       warnAlreadySetUp(root, "Nothing to initialize here.");
       for (const f of skipped) console.log("  " + c.dim("exists  " + f));

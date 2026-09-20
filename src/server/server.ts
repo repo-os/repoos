@@ -300,6 +300,7 @@ import {
   disableAutoStartRoute,
   removeServiceRoute,
   healthCheckRoute,
+  getCheckPlan,
   getSupportBundlePreview,
   createSupportBundle,
 } from "./routes/index.js";
@@ -2055,6 +2056,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   );
   router.register("GET", /^\/api\/tasks\/([^/]+)\/integration-job$/, getIntegrationJob);
   router.register("GET", "/api/integration-jobs", getIntegrationJobs);
+  router.register("GET", "/api/check-plan", getCheckPlan);
   router.register("GET", "/api/integration/pipeline", getIntegrationPipeline);
   router.register("POST", /^\/api\/integration\/pipeline\/retry\/([^/]+)$/, retryIntegration);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/done\/cancel$/, cancelDone);

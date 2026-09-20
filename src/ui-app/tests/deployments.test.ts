@@ -642,6 +642,7 @@ describe("navFor deployments gating", () => {
       "dashboard",
       "inputs",
       "work",
+      "checks",
       "releases",
       "deployments",
       "agents",
