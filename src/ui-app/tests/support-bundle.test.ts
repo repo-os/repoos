@@ -51,7 +51,7 @@ function fixtureRepo(): string {
     [
       'workDir = "work"',
       'cacheDir = ".repoos"',
-      'ntfyTopic = "gh" + "p_AbCdEfGhIjKlMnOpQrStUvWxYz012345"',
+      'ntfyTopic = "' + "gh" + 'p_AbCdEfGhIjKlMnOpQrStUvWxYz012345"',
       'auth.bootstrapAdmin = "admin@example.com"',
       'defaultAssignee = "somebody@example.com"',
       "",
@@ -166,7 +166,7 @@ async function buildFixture(root: string) {
         timestamp: "2026-01-01T00:00:00.000Z",
         level: "error",
         component: "system",
-        message: `failed at /Users/alice/code/alice/secret-project with key sk" + "-proj-abcdefghijklmnopqrstuvwxyz0123456789`,
+        message: `failed at /Users/alice/code/alice/secret-project with key ${"sk" + "-proj-abcdefghijklmnopqrstuvwxyz0123456789"}`,
       },
       {
         timestamp: "2026-01-01T00:00:01.000Z",
