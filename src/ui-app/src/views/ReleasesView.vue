@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { ArrowRight, Bug, Check, Copy, Sparkles } from "lucide-vue-next";
+import { Bug, Check, Copy, Sparkles } from "lucide-vue-next";
 import { copyToClipboard } from "../lib/clipboard";
 import Button from "../components/ui/button.vue";
 import Dialog from "../components/ui/dialog/root.vue";
@@ -97,6 +97,14 @@ const distributionReleaseVersion = ref<string | null>(null);
 const distributionLoading = ref(false);
 const copiedCommand = ref("");
 let copyTimer: ReturnType<typeof setTimeout> | null = null;
+
+const distributionSync = computed(() => {
+  if (!distribution.value.length) return null;
+  if (distribution.value.every((channel) => channel.state === "matching")) {
+    return { state: "matching", label: "All distribution destinations in sync" };
+  }
+  return { state: "attention", label: "Some distribution destinations need attention" };
+});
 
 function stopPolling(): void {
   if (!pollTimer) return;
@@ -509,33 +517,29 @@ onBeforeUnmount(() => {
             <span class="rel-pill" :data-phase="phase">{{ phaseLabel }}</span>
           </div>
 
-          <!-- Version lineage: last shipped → next. Versions are a real
-               sequence, so a left-to-right progression is honest structure. -->
-          <div class="rel-lineage">
-            <div class="rel-node rel-node--past">
-              <span class="rel-ver">{{ publishedTag ?? "no releases yet" }}</span>
-              <span v-if="status.released" class="rel-node-meta">
+          <div class="rel-current-release">
+            <div class="rel-current-version">
+              <span class="rel-current-label">Current release</span>
+              <span class="rel-current-number">{{ publishedTag ?? "Not released yet" }}</span>
+              <span v-if="status.released" class="rel-current-meta">
                 shipped {{ relativeTime(status.latestTagAt) || "—" }}
                 <template v-if="status.latestTagSha">
                   · <code>{{ status.latestTagSha }}</code>
                 </template>
               </span>
-              <span v-else-if="status.latestTag" class="rel-node-meta">
+              <span v-else-if="status.latestTag" class="rel-current-meta">
                 last tag · {{ relativeTime(status.latestTagAt) || "—" }}
               </span>
-              <span v-if="lastStableTag" class="rel-node-meta">
+              <span v-if="lastStableTag" class="rel-current-meta">
                 last stable · <code>{{ lastStableTag }}</code>
               </span>
             </div>
-
-            <ArrowRight class="rel-arrow" aria-hidden="true" />
-
-            <div class="rel-node rel-node--next">
-              <span class="rel-ver">{{ suggestedTag ?? "—" }}</span>
-              <span class="rel-node-meta">{{
-                pendingVersion ? "ready to cut" : "suggested next"
-              }}</span>
-            </div>
+            <span
+              v-if="distributionSync"
+              class="rel-current-sync"
+              :data-state="distributionSync.state"
+              >{{ distributionSync.label }}</span
+            >
           </div>
 
           <div class="rel-context">
@@ -548,26 +552,35 @@ onBeforeUnmount(() => {
             <div v-for="b in blockers" :key="b">{{ b }}</div>
           </div>
 
-          <div class="rel-actions">
-            <Button variant="accent" :disabled="!canOpen" @click="openConfirm">
-              {{ suggestedVersion ? `Cut ${tagPrefix}${suggestedVersion}` : "Cut a release" }}
-            </Button>
-            <a
-              v-if="status.workflowUrl"
-              class="rel-link"
-              :href="status.workflowUrl"
-              target="_blank"
-              rel="noreferrer"
-              >CI workflow ↗</a
-            >
-            <a
-              v-if="status.releaseUrl"
-              class="rel-link"
-              :href="status.releaseUrl"
-              target="_blank"
-              rel="noreferrer"
-              >GitHub release ↗</a
-            >
+          <div class="rel-next-release">
+            <div>
+              <span class="rel-next-label">Next release</span>
+              <strong>{{ suggestedTag ?? "—" }}</strong>
+              <span class="rel-next-hint">{{
+                pendingVersion ? "ready to cut" : "suggested when ready"
+              }}</span>
+            </div>
+            <div class="rel-actions rel-next-actions">
+              <Button variant="accent" :disabled="!canOpen" @click="openConfirm">
+                {{ suggestedVersion ? `Cut ${tagPrefix}${suggestedVersion}` : "Cut a release" }}
+              </Button>
+              <a
+                v-if="status.workflowUrl"
+                class="rel-link"
+                :href="status.workflowUrl"
+                target="_blank"
+                rel="noreferrer"
+                >CI workflow ↗</a
+              >
+              <a
+                v-if="status.releaseUrl"
+                class="rel-link"
+                :href="status.releaseUrl"
+                target="_blank"
+                rel="noreferrer"
+                >GitHub release ↗</a
+              >
+            </div>
           </div>
         </section>
 
@@ -894,51 +907,60 @@ onBeforeUnmount(() => {
   border-color: var(--violet-border-tint);
 }
 
-/* Version lineage — the signature of the page. */
-.rel-lineage {
+/* The page answers "what is live now?" before offering the next cut. */
+.rel-current-release {
   display: flex;
-  align-items: center;
-  gap: 18px;
-  margin: 24px 0 14px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin: 26px 0 14px;
   flex-wrap: wrap;
 }
-.rel-node {
+.rel-current-version {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
 }
-.rel-ver {
+.rel-current-label,
+.rel-next-label {
+  color: var(--txt-faint);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.rel-current-number {
   font-family: var(--mono);
   font-weight: 700;
   line-height: 1;
-}
-.rel-node--past .rel-ver {
-  font-size: 20px;
-  color: var(--txt-dim);
-}
-.rel-node--next {
-  padding: 10px 16px;
-  border-radius: 12px;
-  background: var(--btn-new-bg);
-  border: 1px solid var(--border-bright);
-}
-.rel-node--next .rel-ver {
-  font-size: 26px;
   color: var(--txt);
+  font-size: clamp(32px, 5vw, 48px);
 }
-.rel-node-meta {
+.rel-current-meta {
   font-size: 11.5px;
   color: var(--txt-faint);
 }
-.rel-node-meta code {
+.rel-current-meta code {
   font-family: var(--mono);
   color: var(--txt-dim);
 }
-.rel-arrow {
-  width: 20px;
-  height: 20px;
-  color: var(--txt-faint);
-  flex-shrink: 0;
+.rel-current-sync {
+  margin-top: 8px;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.rel-current-sync[data-state="matching"] {
+  color: var(--green);
+  background: var(--green-tint);
+  border-color: var(--green-border-tint);
+}
+.rel-current-sync[data-state="attention"] {
+  color: var(--amber);
+  background: var(--amber-tint);
+  border-color: var(--amber-border-tint);
 }
 
 .rel-context {
@@ -961,12 +983,44 @@ onBeforeUnmount(() => {
   font-size: 13px;
 }
 
+.rel-next-release {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 22px;
+  padding: 15px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-2);
+}
+.rel-next-release > div:first-child {
+  display: grid;
+  align-items: baseline;
+  gap: 2px 10px;
+  grid-template-columns: auto auto;
+}
+.rel-next-release strong {
+  color: var(--txt-dim);
+  font-family: var(--mono);
+  font-size: 17px;
+}
+.rel-next-hint {
+  grid-column: 1 / -1;
+  color: var(--txt-faint);
+  font-size: 11.5px;
+}
+
 .rel-actions {
   display: flex;
   align-items: center;
   gap: 16px;
   margin-top: 22px;
   flex-wrap: wrap;
+}
+.rel-next-actions {
+  margin-top: 0;
+  justify-content: flex-end;
 }
 .rel-link {
   color: var(--cyan);
@@ -1193,14 +1247,17 @@ a.rel-channel-name:hover {
 }
 
 @media (max-width: 560px) {
-  .rel-lineage {
+  .rel-current-release,
+  .rel-next-release {
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
   }
-  .rel-arrow {
-    transform: rotate(90deg);
-    align-self: center;
+  .rel-current-sync {
+    align-self: flex-start;
+    margin-top: 0;
+  }
+  .rel-next-actions {
+    justify-content: flex-start;
   }
 }
 </style>

@@ -85,6 +85,18 @@ afterEach(() => {
 });
 
 describe("ReleasesView Published to (#0445)", () => {
+  it("makes the current release and its distribution sync state the primary summary", async () => {
+    mockApi([channel()]);
+    const wrapper = await mountView();
+
+    expect(wrapper.find(".rel-current-label").text()).toBe("Current release");
+    expect(wrapper.find(".rel-current-number").text()).toBe("v1.2.3");
+    expect(wrapper.find(".rel-current-sync").text()).toBe("All distribution destinations in sync");
+    expect(wrapper.find(".rel-next-release strong").text()).toBe("v1.2.4");
+
+    wrapper.unmount();
+  });
+
   it("renders each configured channel with its install commands", async () => {
     mockApi([
       channel(),
