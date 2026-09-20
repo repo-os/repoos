@@ -11,7 +11,9 @@
 import {
   readFileSync,
   existsSync,
+  lstatSync,
   symlinkSync,
+  unlinkSync,
   readdirSync,
   mkdirSync,
   writeFileSync,
@@ -284,6 +286,29 @@ export function isDocsOnlyChange(paths: string[], docsDir = "docs"): boolean {
 }
 
 /**
+ * Does a merged candidate declare a dependency tree that may differ from the
+ * one already installed in main?
+ *
+ * Candidates normally symlink main's node_modules for a warm, cheap gate. A
+ * feature that adds or changes a package cannot safely use that tree: it may
+ * compile in its own worktree but fail after the merge because main has not
+ * installed the new dependency yet (#0449). Treat package manifests and every
+ * conventional JavaScript lockfile as an exact, conservative boundary.
+ */
+export function hasDependencyInputChange(paths: readonly string[]): boolean {
+  return paths.some((path) => {
+    const filename = path.slice(path.lastIndexOf("/") + 1);
+    return (
+      filename === "package.json" ||
+      filename === "bun.lock" ||
+      filename === "package-lock.json" ||
+      filename === "pnpm-lock.yaml" ||
+      filename === "yarn.lock"
+    );
+  });
+}
+
+/**
  * Resolve the repository's actual default branch name.
  * Tries (in order):
  * 1. git symbolic-ref refs/remotes/origin/HEAD (when remote exists)
@@ -485,6 +510,66 @@ function runProcess(
  */
 function commandMissing(res: ProcessRunResult): boolean {
   return res.errorCode === "ENOENT" || res.errorCode === "EACCES";
+}
+
+interface CandidateDependencyPreparation {
+  ok: boolean;
+  reason?: string;
+  cancelled?: boolean;
+}
+
+/**
+ * Turn a candidate's shared node_modules link into a private, lockfile-exact
+ * install after its merge changed package inputs. Never run this against main:
+ * doing so would mutate the shared install to match code that has not passed
+ * the gate yet.
+ */
+async function prepareCandidateDependencies(
+  candidatePath: string,
+  isCancelled: () => boolean,
+): Promise<CandidateDependencyPreparation> {
+  const nodeModules = join(candidatePath, "node_modules");
+  try {
+    // A normal candidate reuses main's tree through this link. Removing only
+    // the link leaves main completely untouched; the frozen install below then
+    // creates a candidate-local tree from the merged lockfile.
+    if (lstatSync(nodeModules).isSymbolicLink()) unlinkSync(nodeModules);
+  } catch {
+    /* Missing or unreadable node_modules is fine: the install recreates it. */
+  }
+
+  const commands: Array<{ command: string; args: string[] }> = existsSync(
+    join(candidatePath, "bun.lock"),
+  )
+    ? [{ command: "bun", args: ["install", "--frozen-lockfile"] }]
+    : existsSync(join(candidatePath, "pnpm-lock.yaml"))
+      ? [{ command: "pnpm", args: ["install", "--frozen-lockfile"] }]
+      : existsSync(join(candidatePath, "package-lock.json"))
+        ? [{ command: "npm", args: ["ci"] }]
+        : existsSync(join(candidatePath, "yarn.lock"))
+          ? [{ command: "yarn", args: ["install", "--frozen-lockfile"] }]
+          : [];
+
+  if (commands.length === 0) {
+    return {
+      ok: false,
+      reason:
+        "package inputs changed but no recognized lockfile is available to prepare candidate dependencies",
+    };
+  }
+
+  const { command, args } = commands[0];
+  const result = await runProcess(command, args, {
+    cwd: candidatePath,
+    timeout: 300_000,
+    isCancelled,
+  });
+  if (result.cancelled) return { ok: false, cancelled: true };
+  if (result.status === 0) return { ok: true };
+  const detail = commandMissing(result)
+    ? `${command} is not available to prepare candidate dependencies`
+    : tailLine(result.stdout, result.stderr);
+  return { ok: false, reason: `dependency install failed: ${detail}` };
 }
 
 /** Candidate validation and publication orchestrator for one job. */
@@ -1255,6 +1340,27 @@ export class CloseOutOrchestrator {
         { paths: changedPaths },
       );
     } else {
+      // The candidate normally points at main's node_modules to avoid a cold
+      // install. That tree cannot satisfy a dependency added by this branch,
+      // however, because main has not merged its package.json/lockfile yet.
+      // Give only dependency-changing candidates their own frozen install.
+      if (changedPaths !== null && hasDependencyInputChange(changedPaths)) {
+        this.onProgress?.("build");
+        const dependencies = await prepareCandidateDependencies(wtPath, () =>
+          this.isCancelled(job.taskId),
+        );
+        if (dependencies.cancelled) {
+          return { ok: false, cancelled: true, reason: CANCEL_REASON };
+        }
+        if (!dependencies.ok) {
+          return {
+            ok: false,
+            retryable: !dependencies.reason?.startsWith("package inputs changed"),
+            reason: dependencies.reason ?? "could not prepare candidate dependencies",
+          };
+        }
+      }
+
       // Run the post-merge gate: build + check via bun/npm.
       this.onProgress?.("build");
       let buildRes = await runProcess("bun", ["run", "build"], {

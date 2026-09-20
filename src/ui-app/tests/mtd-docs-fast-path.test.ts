@@ -16,7 +16,11 @@ import { dirname, join } from "node:path";
 import { rmFixture } from "./helpers";
 import { ensureWorktree, getChangedFilePaths } from "../../core/git.js";
 import { createJobCoordinator } from "../../server/integration-job.js";
-import { CloseOutOrchestrator, isDocsOnlyChange } from "../../server/integration-orchestrator.js";
+import {
+  CloseOutOrchestrator,
+  hasDependencyInputChange,
+  isDocsOnlyChange,
+} from "../../server/integration-orchestrator.js";
 
 function git(root: string, args: string[]): string {
   return execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
@@ -95,6 +99,23 @@ describe("isDocsOnlyChange (#0355)", () => {
 
   it("treats an empty diff as docs-only (a legitimate no-op merge has nothing to gate)", () => {
     expect(isDocsOnlyChange([])).toBe(true);
+  });
+});
+
+describe("hasDependencyInputChange (#0449)", () => {
+  it("requires a candidate-local install for root or workspace dependency inputs", () => {
+    expect(hasDependencyInputChange(["package.json"])).toBe(true);
+    expect(hasDependencyInputChange(["bun.lock"])).toBe(true);
+    expect(hasDependencyInputChange(["apps/web/package.json"])).toBe(true);
+    expect(hasDependencyInputChange(["packages/api/pnpm-lock.yaml"])).toBe(true);
+    expect(hasDependencyInputChange(["package-lock.json"])).toBe(true);
+    expect(hasDependencyInputChange(["yarn.lock"])).toBe(true);
+  });
+
+  it("keeps the shared dependency fast path for source and documentation changes", () => {
+    expect(hasDependencyInputChange(["src/ui-app/src/App.vue"])).toBe(false);
+    expect(hasDependencyInputChange(["docs/guide.md", "work/0449-task.md"])).toBe(false);
+    expect(hasDependencyInputChange([])).toBe(false);
   });
 });
 
