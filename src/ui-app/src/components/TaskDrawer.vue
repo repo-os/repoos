@@ -735,6 +735,27 @@ async function moveToDone(): Promise<void> {
   }
 }
 
+/** True while a Stop MTD request is in flight (#0459). */
+const stoppingDone = ref(false);
+
+/**
+ * Stop an in-flight close-out (#0459). The server aborts the job and returns
+ * the task to `review`; its branch is untouched, so Move to done can be
+ * clicked again once the user has inspected what went wrong.
+ */
+async function stopMtd(): Promise<void> {
+  if (!ui.active || stoppingDone.value) return;
+  const id = ui.active.id;
+  stoppingDone.value = true;
+  try {
+    await repo.cancelDone(id);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    stoppingDone.value = false;
+  }
+}
+
 /** Dirty-main confirmation (0204): the task whose close-out is paused on
  *  `main` having uncommitted files. `null` hides the modal. */
 const dirtyTask = ref<Task | null>(null);
@@ -2987,6 +3008,17 @@ watch(
                     ? doneProgress
                     : "Move to done"
               }}
+            </Button>
+            <Button
+              v-if="ui.active.status === 'review' && inPipeline"
+              variant="destructive"
+              :disabled="ui.saving || stoppingDone"
+              title="Cancel this close-out and return the task to review. Nothing is merged; the branch is left untouched."
+              @click="stopMtd"
+            >
+              <ActivityIndicator v-if="stoppingDone" />
+              <Square v-else class="size-3.5" />
+              {{ stoppingDone ? "Stopping…" : "Stop MTD" }}
             </Button>
           </div>
           <span v-if="review?.running" class="drawer-run reviewing" role="status">

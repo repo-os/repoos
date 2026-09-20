@@ -1202,6 +1202,29 @@ export const useRepoStore = defineStore("repo", () => {
     await api<{ ok: boolean }>(`/api/integration/pipeline/retry/${taskId}`, { method: "POST" });
   }
 
+  /**
+   * Stop an in-flight close-out (#0459). The server cancels the integration
+   * job (aborting a running build/check and tearing down only the throwaway
+   * candidate), leaving the task in `review` with its branch intact. We drop
+   * the task from the local pipeline snapshot right away so the drawer's
+   * "Move to done" is actionable without waiting for the next SSE frame.
+   */
+  async function cancelDone(taskId: string): Promise<void> {
+    await api<{ ok: boolean }>(`/api/tasks/${taskId}/done/cancel`, { method: "POST" });
+    const snap = integration.value;
+    if (snap) {
+      const wasActive = snap.active?.taskId === taskId;
+      const queue = snap.queue.filter((q) => q !== taskId);
+      integration.value = {
+        ...snap,
+        active: wasActive ? null : snap.active,
+        queue,
+        empty: wasActive ? queue.length === 0 : snap.empty,
+      };
+    }
+    setDoneError(taskId, null);
+  }
+
   /** Hydrate test-run state after a refresh/SSE gap — picks up a run already
    *  in progress (or its last result) rather than showing empty until the
    *  next chunk arrives. */
@@ -2296,6 +2319,7 @@ export const useRepoStore = defineStore("repo", () => {
     integration,
     refreshIntegration,
     retryIntegration,
+    cancelDone,
     testRun,
     refreshTestRun,
     startTestRun,

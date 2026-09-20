@@ -83,6 +83,9 @@ export function isStageComplete(stageIndex: number, currentIndex: number): boole
  * Build the pipeline snapshot from the coordinator plus the last-reported
  * progress step per task id. `queue` is every non-terminal job ahead of or
  * behind the currently-in-flight one; jobs already done/failed are hidden.
+ * A cooperatively-cancelled job (#0459) is hidden the moment the user asks to
+ * stop it — before the orchestrator has finished tearing it down — so the UI
+ * reacts immediately instead of showing a job the user just cancelled.
  */
 export function buildIntegrationSnapshot(
   coordinator: JobCoordinator,
@@ -90,12 +93,13 @@ export function buildIntegrationSnapshot(
   checkPlan?: PipelineCheckPlan,
   at = new Date().toISOString(),
 ): IntegrationSnapshot {
-  const all = coordinator.allJobs();
-  const inFlight = coordinator.peekNext();
+  const live = coordinator
+    .allJobs()
+    .filter((job) => !job.cancelled && job.phase !== "done" && job.phase !== "failed");
+  const inFlight = live[0] ?? null;
   const queue: string[] = [];
 
-  for (const job of all) {
-    if (job.phase === "done" || job.phase === "failed") continue;
+  for (const job of live) {
     if (inFlight && job.taskId === inFlight.taskId) continue;
     queue.push(job.taskId);
   }

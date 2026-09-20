@@ -232,6 +232,7 @@ import {
   getIntegrationJobs,
   getIntegrationPipeline,
   retryIntegration,
+  cancelDone,
   startPreview,
   stopPreview,
   getTaskReview,
@@ -2056,6 +2057,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/integration-jobs", getIntegrationJobs);
   router.register("GET", "/api/integration/pipeline", getIntegrationPipeline);
   router.register("POST", /^\/api\/integration\/pipeline\/retry\/([^/]+)$/, retryIntegration);
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/done\/cancel$/, cancelDone);
   router.register(
     "POST",
     /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync|hotfix|abandon|reopen)$/,
