@@ -1,8 +1,9 @@
 /**
- * `resolvePipelineCheckPlan` (#0458): the integration pipeline's tooltips render
- * the real merge-gate steps from this repo's `repoos.toml`, so the resolver has
- * to surface labels, commands, timeouts and dependencies with the plan defaults
- * applied — and degrade to an empty plan (never throw) when there is none.
+ * `resolvePipelineCheckPlan` (#0458): the integration pipeline's `check` stage
+ * hover pane renders the real merge-gate steps from this repo's `repoos.toml`,
+ * so the resolver has to surface labels, commands, timeouts and dependencies
+ * with the plan defaults applied — and degrade to an empty plan (never throw)
+ * when there is none.
  */
 import { afterEach, describe, expect, it } from "vitest";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";

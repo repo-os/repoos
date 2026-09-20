@@ -10,6 +10,7 @@ import {
   INTEGRATION_STAGES,
   type CheckPlanStep,
   type IntegrationPipelineSnapshot,
+  type IntegrationStage,
   type Task,
 } from "../types";
 
@@ -33,6 +34,52 @@ const snapshot = computed<IntegrationPipelineSnapshot | null>(() => integration.
 const idle = computed(() => snapshot.value === null || snapshot.value.empty);
 const active = computed(() => snapshot.value?.active ?? null);
 const queue = computed(() => snapshot.value?.queue ?? []);
+
+// ── Stage hover pane (#0460) ───────────────────────────────────────────────
+// The bar's stage explanations used to be native `title` tooltips, which are
+// plain-text and unstyled. They now render in a themed pane teleported to
+// <body> (the bar's stacking context would otherwise trap it) and anchored
+// directly above the bar, centred on it so moving between adjacent stages
+// doesn't make the pane jump.
+const barEl = ref<HTMLElement | null>(null);
+const hoveredStage = ref<IntegrationStage | null>(null);
+const paneStyle = ref<Record<string, string>>({});
+
+/** Position the pane just above the bar, clamped into the viewport. */
+function positionPane(): void {
+  const rect = barEl.value?.getBoundingClientRect();
+  if (!rect || typeof window === "undefined") return;
+  const width = Math.min(window.innerWidth - 28, 560);
+  const gap = 10;
+  const centre = Math.min(
+    Math.max(rect.left + rect.width / 2, width / 2 + 14),
+    window.innerWidth - width / 2 - 14,
+  );
+  paneStyle.value = {
+    left: `${centre}px`,
+    bottom: `${window.innerHeight - rect.top + gap}px`,
+    width: `${width}px`,
+  };
+}
+
+function showStagePane(stage: IntegrationStage): void {
+  hoveredStage.value = stage;
+  positionPane();
+}
+
+function hideStagePane(): void {
+  hoveredStage.value = null;
+}
+
+function onWindowResize(): void {
+  if (hoveredStage.value) positionPane();
+}
+
+// The stage row can unmount (pipeline drains, bar folds) without emitting a
+// mouseleave, which would leave a stale pane pinned to the screen.
+watch([active, collapsed], () => {
+  if (!active.value || collapsed.value) hoveredStage.value = null;
+});
 
 // ── Live stopwatch ─────────────────────────────────────────────────────────
 // Ticks once a second only while a job is actually integrating (not failed),
@@ -100,11 +147,13 @@ onMounted(() => {
   // Minimised by default when there's nothing to show.
   if (idle.value) collapsed.value = true;
   syncClock();
+  window.addEventListener("resize", onWindowResize);
 });
 
 onUnmounted(() => {
   if (clockTimer !== null) clearInterval(clockTimer);
   cancelAutoCollapse();
+  window.removeEventListener("resize", onWindowResize);
 });
 
 /** Index of the current stage within INTEGRATION_STAGES, or -1. */
@@ -132,12 +181,13 @@ function retry(): void {
 }
 
 /**
- * What each of the pipeline's fixed orchestrator stages does, shown as a hover
- * tooltip so the bar isn't a black box. Worded stack-neutrally: the same text
- * has to read correctly for a Go, Rust or Android repo, so it never names
- * RepoOS's own `tsc`/asset pipeline. The `check` stage is different — it runs
- * the repo's declared plan, so its tooltip is built from `repoos.toml` (see
- * `checkTooltip`) rather than a fixed string. Order matches INTEGRATION_STAGES.
+ * What each of the pipeline's fixed orchestrator stages does, shown in the
+ * stage's hover pane (#0460) so the bar isn't a black box. Worded stack-
+ * neutrally: the same text has to read correctly for a Go, Rust or Android
+ * repo, so it never names RepoOS's own `tsc`/asset pipeline. The `check` stage
+ * is different — it runs the repo's declared plan, so its pane text is built
+ * from `repoos.toml` (see `checkTooltip`) rather than a fixed string. Order
+ * matches INTEGRATION_STAGES.
  */
 const STAGE_INFO: Record<string, string> = {
   sync: "Syncing: fast-forwarding the task's branch onto the latest main before validating, so it's tested against current main, not a stale base.",
@@ -172,16 +222,17 @@ function stepLine(s: CheckPlanStep): string {
 }
 
 /**
- * Tooltip for the `check` stage (#0458) — the real merge-gate steps resolved
- * from this repo's `repoos.toml`, not a hardcoded RepoOS flow. The snapshot is
- * re-resolved on every pipeline event, so a config change mid-run is reflected
- * on the next stage update. Falls back to a generic line with no plan.
+ * Text for the `check` stage pane (#0458/#0460) — the real merge-gate steps
+ * resolved from this repo's `repoos.toml`, not a hardcoded RepoOS flow. The
+ * snapshot is re-resolved on every pipeline event, so a config change mid-run
+ * is reflected on the next stage update. Falls back to a generic line with no
+ * plan. Rendered in the teleported hover pane and reused for the aria-label.
  */
 const checkTooltip = computed<string>(() => {
   const plan = snapshot.value?.checkPlan;
   if (!plan || plan.steps.length === 0) {
     return (
-      "Check: running the repo's merge gate against the merged candidate — `repoos check` " +
+      "Check: running the repo's merge gate against the merged candidate — repoos check " +
       "with the steps declared in repoos.toml. (No check plan was resolved for this repo.)"
     );
   }
@@ -267,7 +318,7 @@ function stageClass(s: string, i: number): string {
     </button>
 
     <!-- Expanded bar -->
-    <div v-else class="ibar">
+    <div v-else ref="barEl" class="ibar">
       <div class="ibar-top">
         <button
           type="button"
@@ -302,14 +353,16 @@ function stageClass(s: string, i: number): string {
             >
           </span>
 
-          <ol class="stages" :aria-label="'Integration stages'">
+          <ol class="stages" :aria-label="'Integration stages'" @mouseleave="hideStagePane">
             <li v-for="(s, i) in INTEGRATION_STAGES" :key="s" class="stage-item">
               <button
                 type="button"
                 class="stage"
                 :class="stageClass(s, i)"
-                :title="stageTitle(s)"
                 :aria-label="`${s}: ${stageTitle(s)}`"
+                @mouseenter="showStagePane(s)"
+                @focus="showStagePane(s)"
+                @blur="hideStagePane"
                 @click="onStageClick(s)"
               >
                 <span class="stage-mark" aria-hidden="true">
@@ -354,6 +407,23 @@ function stageClass(s: string, i: number): string {
         <span class="queue-count">+{{ queue.length }}</span>
       </div>
     </div>
+
+    <!-- Stage hover pane (#0460). Teleported to <body>: the bar lives in a
+         stacking context (fixed + transform on the desktop variant) where a
+         plain fixed child would be trapped. Anchored above the bar, centred
+         on it, and pointer-transparent so it never blocks a stage click.
+         Content comes from the same `stageTitle()` source the aria-labels use. -->
+    <Teleport to="body">
+      <div
+        v-if="hoveredStage"
+        class="stage-pane"
+        :class="{ 'is-check': hoveredStage === 'check' }"
+        role="tooltip"
+        :style="paneStyle"
+      >
+        <p class="stage-pane-text">{{ stageTitle(hoveredStage) }}</p>
+      </div>
+    </Teleport>
   </div>
 </template>
 
