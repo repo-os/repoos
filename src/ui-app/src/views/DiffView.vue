@@ -4,6 +4,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useRepoStore } from "../stores/repo";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-vue-next";
 import { api } from "../api";
+import { escapeHtml, highlightPair } from "../lib/syntax-highlight";
 
 const route = useRoute();
 const router = useRouter();
@@ -338,6 +339,48 @@ watch(
   { immediate: true },
 );
 
+// Tokenized HTML per before/after line, indexed by 1-based line number. Null
+// until a supported, in-budget file has been highlighted, in which case the
+// template falls back to escaped plain text.
+const highlightBefore = ref<string[] | null>(null);
+const highlightAfter = ref<string[] | null>(null);
+const highlightNotice = ref<string | null>(null);
+let highlightSeq = 0;
+
+watch(
+  () => [currentFile.value?.filename, fileContents.value] as const,
+  async ([filename, contents]) => {
+    const seq = ++highlightSeq;
+    highlightBefore.value = null;
+    highlightAfter.value = null;
+    highlightNotice.value = null;
+    if (!filename || !contents) return;
+    try {
+      const result = await highlightPair({
+        filename,
+        before: linesOf(contents.before),
+        after: linesOf(contents.after),
+      });
+      if (seq !== highlightSeq) return;
+      highlightBefore.value = result.before;
+      highlightAfter.value = result.after;
+      highlightNotice.value = result.notice;
+    } catch {
+      // highlightPair already degrades internally; never let it break the view.
+    }
+  },
+  { immediate: true },
+);
+
+/** Cell content as HTML: tokenized when available, otherwise safely escaped. */
+function cellHtml(row: DiffRow, side: "left" | "right"): string {
+  const num = side === "left" ? row.leftNum : row.rightNum;
+  const lineHtml = side === "left" ? highlightBefore.value : highlightAfter.value;
+  if (lineHtml && num != null) return lineHtml[num - 1] ?? "";
+  const text = side === "left" ? row.leftText : row.rightText;
+  return text == null ? "" : escapeHtml(text);
+}
+
 const rows = computed(() =>
   currentFile.value && fileContents.value
     ? buildFullRows(currentFile.value, fileContents.value)
@@ -400,9 +443,9 @@ function drawMinimap(): void {
     const viewFrac = el.clientHeight / el.scrollHeight;
     const vy = scrollFrac * H;
     const vh = Math.max(viewFrac * H, 8);
-    ctx.fillStyle = "rgba(255,255,255,0.07)";
+    ctx.fillStyle = "rgba(128,128,128,0.16)";
     ctx.fillRect(0, vy, W, vh);
-    ctx.strokeStyle = "rgba(255,255,255,0.18)";
+    ctx.strokeStyle = "rgba(128,128,128,0.4)";
     ctx.lineWidth = 1;
     ctx.strokeRect(0.5, vy + 0.5, W - 1, Math.max(vh - 1, 1));
   }
@@ -467,6 +510,9 @@ function nextFile(): void {
       <span v-else-if="fileContentsError" class="diff-file-status diff-file-status-error">{{
         fileContentsError
       }}</span>
+      <span v-else-if="highlightNotice" class="diff-file-status" :title="highlightNotice">{{
+        highlightNotice
+      }}</span>
     </div>
 
     <div v-if="diffFiles.length > 1" class="diff-page-filetabs">
@@ -521,9 +567,11 @@ function nextFile(): void {
             </div>
             <div v-else class="diff-row" :class="'diff-row-' + row.leftCls">
               <span class="diff-ln" :class="'diff-ln-' + row.leftCls">{{ row.leftNum ?? "" }}</span>
-              <span class="diff-cell" :class="'diff-cell-' + row.leftCls">{{
-                row.leftText ?? ""
-              }}</span>
+              <span
+                class="diff-cell"
+                :class="'diff-cell-' + row.leftCls"
+                v-html="cellHtml(row, 'left')"
+              ></span>
             </div>
           </template>
         </div>
@@ -544,9 +592,11 @@ function nextFile(): void {
               <span class="diff-ln" :class="'diff-ln-' + row.rightCls">{{
                 row.rightNum ?? ""
               }}</span>
-              <span class="diff-cell" :class="'diff-cell-' + row.rightCls">{{
-                row.rightText ?? ""
-              }}</span>
+              <span
+                class="diff-cell"
+                :class="'diff-cell-' + row.rightCls"
+                v-html="cellHtml(row, 'right')"
+              ></span>
             </div>
           </template>
         </div>
@@ -562,8 +612,8 @@ function nextFile(): void {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #0d1117;
-  color: #c9d1d9;
+  background: var(--bg);
+  color: var(--txt);
   font-family: var(--font-sans);
 }
 
@@ -701,8 +751,8 @@ function nextFile(): void {
   font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, monospace;
   font-size: 12px;
   line-height: 1.6;
-  background: #0d1117;
-  color: #c9d1d9;
+  background: var(--bg);
+  color: var(--txt);
   display: flex;
   flex-direction: column;
 }
@@ -718,7 +768,7 @@ function nextFile(): void {
   width: 60px;
   height: 100%;
   display: block;
-  background: #070b12;
+  background: var(--bg-2);
   border-left: 1px solid var(--border);
   cursor: pointer;
 }
@@ -731,7 +781,7 @@ function nextFile(): void {
   flex: none;
   padding: 6px 12px;
   border-bottom: 1px solid var(--border);
-  background: #0d1117;
+  background: var(--bg);
   color: var(--txt-faint);
   font: 600 10px/1 var(--font-sans);
   letter-spacing: 0.1em;
@@ -747,9 +797,9 @@ function nextFile(): void {
 .diff-sep-row {
   display: flex;
   min-width: max-content;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(255, 255, 255, 0.015);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--nav-hover-bg);
 }
 
 .diff-ln {
@@ -757,7 +807,7 @@ function nextFile(): void {
   width: 44px;
   text-align: right;
   padding: 0 6px;
-  color: rgba(140, 160, 180, 0.4);
+  color: var(--txt-faint);
   user-select: none;
   white-space: pre;
   font-size: 11px;
@@ -774,43 +824,43 @@ function nextFile(): void {
 .diff-sep-cell {
   flex: 1;
   padding: 1px 12px;
-  color: rgba(140, 160, 180, 0.35);
+  color: var(--txt-faint);
   font-size: 11px;
 }
 
 /* Row backgrounds */
 .diff-row-rem {
-  background: rgba(255, 80, 80, 0.06);
+  background: var(--red-tint);
 }
 .diff-row-add {
-  background: rgba(70, 210, 100, 0.06);
+  background: var(--green-tint);
 }
 .diff-row-empty {
-  background: rgba(120, 140, 200, 0.03);
+  background: var(--nav-hover-bg);
 }
 
 /* Line number column colours */
 .diff-ln-rem {
-  background: rgba(255, 80, 80, 0.12);
-  color: rgba(255, 120, 120, 0.65);
+  background: var(--red-tint);
+  color: var(--red);
 }
 .diff-ln-add {
-  background: rgba(70, 210, 100, 0.1);
-  color: rgba(100, 210, 100, 0.65);
+  background: var(--green-tint);
+  color: var(--green);
 }
 .diff-ln-empty {
-  background: rgba(120, 140, 200, 0.03);
+  background: var(--nav-hover-bg);
 }
 
-/* Cell text colours */
+/* Cell text colours (used for plain-text fallback; tokens colour themselves) */
 .diff-cell-ctx {
-  color: #c9d1d9;
+  color: var(--txt);
 }
 .diff-cell-rem {
-  color: #ff9090;
+  color: var(--red);
 }
 .diff-cell-add {
-  color: #7ee8a2;
+  color: var(--green);
 }
 .diff-cell-empty {
 }
@@ -830,14 +880,14 @@ function nextFile(): void {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #ff8b8b;
+  color: var(--red);
 }
 .diff-file-add {
-  color: #3fb950;
+  color: var(--green);
   font: 600 12px/1 var(--font-sans);
 }
 .diff-file-rem {
-  color: #f85149;
+  color: var(--red);
   font: 600 12px/1 var(--font-sans);
 }
 </style>
