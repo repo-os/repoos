@@ -203,6 +203,12 @@ export interface BoardTask {
   tags: string[];
   created_at: string | null;
   updated_at: string | null;
+  /** Per-task Engineer agent name override, or null when using the default (#0455). */
+  agentOverride: string | null;
+  /** Per-task PM agent name override, or null when using the default (#0455). */
+  pmAgentOverride: string | null;
+  /** Per-task Reviewer agent name override, or null when using the default (#0455). */
+  reviewAgentOverride: string | null;
   /** ISO timestamp of the successful review-to-done merge, derived from Activity. */
   releasedAt: string | null;
   /** Truncated body preview for search (first 500 chars). */

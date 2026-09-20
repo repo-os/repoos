@@ -1690,6 +1690,105 @@
   font-family: "JetBrains Mono", monospace;
   cursor: help;
 }
+/* Per-task agent assignments (#0455): a small robot button in the card's
+   bottom-right, above the action footer, toggling a compact PM / Engineer /
+   Reviewer summary. The dock is a full-width row that right-aligns a
+   content-hugging inner column; the panel flows in normal order above the
+   button, so it can never overflow or clip the card's rounded bounds. */
+.tc-agent-dock {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 12px 9px;
+}
+.tc-agent {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  max-width: 100%;
+}
+.tc-agent-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 172px;
+  max-width: 100%;
+  margin-bottom: 6px;
+  padding: 7px 9px;
+  border: 1px solid var(--violet-border-tint);
+  border-radius: 9px;
+  background: var(--chip-bg);
+}
+.tc-agent-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  white-space: nowrap;
+  font-size: 10px;
+  line-height: 1.4;
+  font-family: "JetBrains Mono", monospace;
+}
+.tc-agent-role {
+  min-width: 52px;
+  color: var(--txt-faint);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.tc-agent-name {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--violet);
+  font-weight: 600;
+  text-overflow: ellipsis;
+}
+.tc-agent-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--violet);
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
+}
+.tc-agent-btn:hover,
+.tc-agent.open .tc-agent-btn {
+  background: var(--violet-dim);
+  border-color: var(--violet-border-tint);
+}
+.tc-agent-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--violet-border-tint);
+}
+.tc-agent-btn svg {
+  width: 15px;
+  height: 15px;
+}
+.tc-agent-panel-enter-active,
+.tc-agent-panel-leave-active {
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
+}
+.tc-agent-panel-enter-from,
+.tc-agent-panel-leave-to {
+  opacity: 0;
+  transform: translateY(3px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tc-agent-panel-enter-active,
+  .tc-agent-panel-leave-active {
+    transition: none;
+  }
+}
 .task-card.coding {
   border-color: var(--violet-border-tint);
 }
