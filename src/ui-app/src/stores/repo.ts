@@ -1358,17 +1358,17 @@ export const useRepoStore = defineStore("repo", () => {
       // Use existing full body if we have it; otherwise use the preview from the board response.
       body: existingBodies.has(t.id) ? (existingBodies.get(t.id) ?? "") : (t.bodyPreview ?? ""),
       extra: {},
-      // The board payload carries the per-task agent overrides (#0455) so the
-      // card's agent panel can show effective assignments without the drawer.
+      // The board payload carries the compact per-task agent/model overrides
+      // so a card can show and edit effective assignments without the drawer.
       agentOverride: t.agentOverride ?? null,
-      cliOverride: null,
-      modelOverride: null,
+      cliOverride: t.cliOverride ?? null,
+      modelOverride: t.modelOverride ?? null,
       pmAgentOverride: t.pmAgentOverride ?? null,
-      pmCliOverride: null,
-      pmModelOverride: null,
+      pmCliOverride: t.pmCliOverride ?? null,
+      pmModelOverride: t.pmModelOverride ?? null,
       reviewAgentOverride: t.reviewAgentOverride ?? null,
-      reviewCliOverride: null,
-      reviewModelOverride: null,
+      reviewCliOverride: t.reviewCliOverride ?? null,
+      reviewModelOverride: t.reviewModelOverride ?? null,
       releasedAt: t.releasedAt ?? null,
     })) as unknown as Task[];
     // Index hydration is the recovery path after reconnecting while a review

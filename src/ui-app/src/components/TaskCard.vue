@@ -18,6 +18,7 @@ import DirtyMainDialog from "./DirtyMainDialog.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
 import CopyableNumber from "./CopyableNumber.vue";
+import AgentModelModal from "./AgentModelModal.vue";
 
 const props = withDefaults(
   defineProps<{ task: Task; dragEnabled?: boolean; highlighted?: boolean }>(),
@@ -32,40 +33,110 @@ const repo = useRepoStore();
 const config = useConfigStore();
 
 /**
- * Per-task agent assignments shown by the card's agent button (#0455). Each
- * row is the per-task override when set, else the enabled board-default agent
- * for that role, else the literal role name — mirroring how the drawer's
- * override tabs resolve their base agent.
+ * Effective per-task agent/model assignments shown by the card's robot toggle.
+ * The compact board snapshot carries the lightweight overrides so this need
+ * not fetch or open the task drawer first.
  */
+type AssignmentRole = "pm" | "engineer" | "reviewer";
+interface AgentAssignment {
+  key: AssignmentRole;
+  label: "PM" | "EN" | "RV";
+  cli: string;
+  model: string;
+  baseCli: string;
+  baseModel: string;
+}
+
 const agentAssignments = computed(() => {
   const enabled = (config.agents ?? []).filter((a) => a.enabled);
-  const defaultName = (role: string): string | null =>
-    enabled.find((a) => a.name.toLowerCase() === role)?.name ?? null;
   const t = props.task;
+  const resolve = (
+    key: AssignmentRole,
+    label: AgentAssignment["label"],
+    agentOverride: string | null | undefined,
+    cliOverride: string | null | undefined,
+    modelOverride: string | null | undefined,
+  ): AgentAssignment => {
+    const name = (agentOverride || key).toLowerCase();
+    const base = enabled.find((a) => a.name.toLowerCase() === name) ?? null;
+    const baseCli = base?.cli ?? "default";
+    const baseModel = base?.model ?? "default";
+    const cli = cliOverride || baseCli;
+    // `default` is a sentinel rather than a real pin. When a CLI override
+    // changes the harness, the resolver intentionally uses that harness's
+    // default model; otherwise retain the configured role model.
+    const model =
+      modelOverride && modelOverride !== "default"
+        ? modelOverride
+        : cli !== baseCli
+          ? "default"
+          : baseModel;
+    return { key, label, cli, model, baseCli, baseModel };
+  };
   return [
-    { role: "PM", name: t.pmAgentOverride || defaultName("pm") || "pm" },
-    { role: "Engineer", name: t.agentOverride || defaultName("engineer") || "engineer" },
-    { role: "Reviewer", name: t.reviewAgentOverride || defaultName("reviewer") || "reviewer" },
+    resolve("pm", "PM", t.pmAgentOverride, t.pmCliOverride, t.pmModelOverride),
+    resolve("engineer", "EN", t.agentOverride, t.cliOverride, t.modelOverride),
+    resolve("reviewer", "RV", t.reviewAgentOverride, t.reviewCliOverride, t.reviewModelOverride),
   ];
 });
 
-/** Whether the agent panel is visible: hover opens it, a click pins it open. */
+/** The compact assignment table only opens or closes from the robot button. */
 const agentPanelOpen = ref(false);
-/** Click-to-toggle state — while true, mouse-leave no longer collapses the panel. */
-const agentPanelPinned = ref(false);
-
-function openAgentPanel(): void {
-  agentPanelOpen.value = true;
-}
-
-function closeAgentPanel(): void {
-  if (!agentPanelPinned.value) agentPanelOpen.value = false;
-}
-
-/** Click toggles the panel and pins it; a second click collapses it. */
 function toggleAgentPanel(): void {
-  agentPanelPinned.value = !agentPanelPinned.value;
-  agentPanelOpen.value = agentPanelPinned.value;
+  agentPanelOpen.value = !agentPanelOpen.value;
+}
+
+const assignmentModalOpen = ref(false);
+const assignmentModalRole = ref<AssignmentRole | null>(null);
+const assignmentModalCli = ref("");
+const assignmentModalModel = ref("");
+const modalAssignment = computed(
+  () => agentAssignments.value.find((a) => a.key === assignmentModalRole.value) ?? null,
+);
+const assignmentCliOptions = computed(() => {
+  const current = assignmentModalCli.value;
+  const options = config.agentsMeta.clis ?? [];
+  return current && !options.includes(current) ? [current, ...options] : options;
+});
+const assignmentModelOptions = computed(() =>
+  config.modelsFor(assignmentModalCli.value, assignmentModalModel.value || undefined),
+);
+
+function openAssignmentModal(assignment: AgentAssignment): void {
+  assignmentModalRole.value = assignment.key;
+  assignmentModalCli.value = assignment.cli;
+  assignmentModalModel.value = assignment.model;
+  assignmentModalOpen.value = true;
+}
+
+function onAssignmentCli(cli: string): void {
+  assignmentModalCli.value = cli;
+}
+
+async function onAssignmentModel(model: string): Promise<void> {
+  assignmentModalModel.value = model;
+  const assignment = modalAssignment.value;
+  if (!assignment) return;
+  const cliOverride =
+    assignmentModalCli.value === assignment.baseCli ? null : assignmentModalCli.value;
+  const modelOverride =
+    assignmentModalCli.value === assignment.baseCli &&
+    assignmentModalModel.value === assignment.baseModel
+      ? null
+      : assignmentModalCli.value !== assignment.baseCli && assignmentModalModel.value === "default"
+        ? null
+        : assignmentModalModel.value;
+  const patch =
+    assignment.key === "pm"
+      ? { pmCliOverride: cliOverride, pmModelOverride: modelOverride }
+      : assignment.key === "engineer"
+        ? { cliOverride, modelOverride }
+        : { reviewCliOverride: cliOverride, reviewModelOverride: modelOverride };
+  try {
+    await repo.patchTask(props.task.id, patch);
+  } catch (err) {
+    repo.onError(err);
+  }
 }
 
 const busy = ref(false);
@@ -691,7 +762,7 @@ async function openDebuggerFromError(): Promise<void> {
         {{ task.title }}
       </h3>
 
-      <div class="mt-[11px] flex flex-wrap gap-[6px]">
+      <div class="mt-[11px] flex flex-wrap items-center gap-[6px]">
         <span
           class="rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
           >{{ task.area }}</span
@@ -715,6 +786,37 @@ async function openDebuggerFromError(): Promise<void> {
           title="No code changes"
           >0 changes</span
         >
+        <button
+          type="button"
+          class="tc-agent-btn ml-auto"
+          :class="{ open: agentPanelOpen }"
+          :aria-expanded="agentPanelOpen"
+          aria-label="Show or hide agent assignments for this task"
+          title="Show agent assignments"
+          @click.stop="toggleAgentPanel"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+            <rect
+              x="4.5"
+              y="8"
+              width="15"
+              height="11"
+              rx="3"
+              stroke="currentColor"
+              stroke-width="1.8"
+            />
+            <path d="M12 8V5.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            <circle cx="12" cy="4.3" r="1.4" fill="currentColor" />
+            <circle cx="9.6" cy="12.6" r="1.2" fill="currentColor" />
+            <circle cx="14.4" cy="12.6" r="1.2" fill="currentColor" />
+            <path
+              d="M9.2 15.7h5.6"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            />
+          </svg>
+        </button>
       </div>
 
       <div v-if="hint" class="mt-[13px]">
@@ -743,57 +845,24 @@ async function openDebuggerFromError(): Promise<void> {
       </div>
     </div>
 
-    <!-- Per-task agent assignments (#0455): a small robot button in the card's
-         bottom-right, above the action footer, toggling a compact PM / Engineer
-         / Reviewer summary. In-flow inside the card so the panel can never
-         overflow or clip against the card's rounded, overflow-hidden bounds. -->
-    <div class="tc-agent-dock">
-      <div
-        class="tc-agent"
-        :class="{ open: agentPanelOpen }"
-        @mouseenter="openAgentPanel"
-        @mouseleave="closeAgentPanel"
-      >
-        <transition name="tc-agent-panel">
-          <div v-if="agentPanelOpen" class="tc-agent-panel" @click.stop>
-            <div v-for="a in agentAssignments" :key="a.role" class="tc-agent-row">
-              <span class="tc-agent-role">{{ a.role }}</span>
-              <span class="tc-agent-name" :title="a.name">{{ a.name }}</span>
-            </div>
-          </div>
-        </transition>
+    <!-- A full-width, unframed assignment table. The robot opens it; each
+         row opens the same agent/model picker used everywhere else. -->
+    <transition name="tc-agent-panel">
+      <div v-if="agentPanelOpen" class="tc-agent-panel" @click.stop>
         <button
+          v-for="a in agentAssignments"
+          :key="a.key"
           type="button"
-          class="tc-agent-btn"
-          :aria-expanded="agentPanelOpen"
-          aria-label="Show agent assignments for this task"
-          title="Agents assigned to this task"
-          @click.stop="toggleAgentPanel"
+          class="tc-agent-row"
+          :title="`${a.label}: ${a.cli} · ${a.model}`"
+          @click.stop="openAssignmentModal(a)"
         >
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
-            <rect
-              x="4.5"
-              y="8"
-              width="15"
-              height="11"
-              rx="3"
-              stroke="currentColor"
-              stroke-width="1.8"
-            />
-            <path d="M12 8V5.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-            <circle cx="12" cy="4.3" r="1.4" fill="currentColor" />
-            <circle cx="9.6" cy="12.6" r="1.2" fill="currentColor" />
-            <circle cx="14.4" cy="12.6" r="1.2" fill="currentColor" />
-            <path
-              d="M9.2 15.7h5.6"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-            />
-          </svg>
+          <span class="tc-agent-role">{{ a.label }}</span>
+          <span class="tc-agent-cli">{{ a.cli }}</span>
+          <span class="tc-agent-model">{{ a.model }}</span>
         </button>
       </div>
-    </div>
+    </transition>
 
     <div v-if="action" class="tc-foot tc-actions !ml-0 w-full">
       <button
@@ -900,5 +969,16 @@ async function openDebuggerFromError(): Promise<void> {
     :files="dirtyFiles"
     @commit="confirmCommitDirty"
     @cancel="cancelDirty"
+  />
+  <AgentModelModal
+    :open="assignmentModalOpen"
+    :cli-options="assignmentCliOptions"
+    :model-options="assignmentModelOptions"
+    :cli="assignmentModalCli"
+    :model="assignmentModalModel"
+    :memory-key="`task:${task.id}:${assignmentModalRole ?? 'agent'}`"
+    @update:open="(value) => (assignmentModalOpen = value)"
+    @update:cli="onAssignmentCli"
+    @update:model="onAssignmentModel"
   />
 </template>

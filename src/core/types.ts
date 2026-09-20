@@ -1016,9 +1016,9 @@ export interface RepoIndex {
 
 /**
  * Lightweight task view for the board — everything TaskCard.vue renders,
- * without the full body, extra, agent overrides, or activity (saved ~4-5 KB per
- * task at current task counts). Includes a body preview for search and
- * releasedAt for the release timeline.
+ * without the full body, extra, or activity (saved ~4-5 KB per task at current
+ * task counts). Includes a body preview for search, the compact agent/model
+ * overrides rendered on cards, and releasedAt for the release timeline.
  */
 export interface BoardTask {
   id: string;
@@ -1043,10 +1043,22 @@ export interface BoardTask {
    *  Carried on the board payload so a card can show effective assignments
    *  without opening the drawer (#0455). */
   agentOverride: string | null;
+  /** Per-task Engineer CLI override, or null when using the agent default. */
+  cliOverride: string | null;
+  /** Per-task Engineer model override, or null when using the agent default. */
+  modelOverride: string | null;
   /** Per-task PM agent name override, or null when using the default (#0455). */
   pmAgentOverride: string | null;
+  /** Per-task PM CLI override, or null when using the agent default. */
+  pmCliOverride: string | null;
+  /** Per-task PM model override, or null when using the agent default. */
+  pmModelOverride: string | null;
   /** Per-task Reviewer agent name override, or null when using the default (#0455). */
   reviewAgentOverride: string | null;
+  /** Per-task Reviewer CLI override, or null when using the agent default. */
+  reviewCliOverride: string | null;
+  /** Per-task Reviewer model override, or null when using the agent default. */
+  reviewModelOverride: string | null;
   /** ISO timestamp of the successful review-to-done merge, derived from Activity. */
   releasedAt: string | null;
   /** Truncated body preview for search (first 500 chars). */

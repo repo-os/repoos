@@ -182,8 +182,8 @@ export interface RepoIndex {
   counts: Counts;
 }
 
-/** Lightweight task view for board cards — no full body, extra, or agent overrides.
- * Includes a body preview for search and releasedAt for the release timeline. */
+/** Lightweight task view for board cards — no full body or extra. Includes a
+ * body preview, compact agent/model overrides, and releasedAt. */
 export interface BoardTask {
   id: string;
   title: string;
@@ -205,10 +205,16 @@ export interface BoardTask {
   updated_at: string | null;
   /** Per-task Engineer agent name override, or null when using the default (#0455). */
   agentOverride: string | null;
+  cliOverride: string | null;
+  modelOverride: string | null;
   /** Per-task PM agent name override, or null when using the default (#0455). */
   pmAgentOverride: string | null;
+  pmCliOverride: string | null;
+  pmModelOverride: string | null;
   /** Per-task Reviewer agent name override, or null when using the default (#0455). */
   reviewAgentOverride: string | null;
+  reviewCliOverride: string | null;
+  reviewModelOverride: string | null;
   /** ISO timestamp of the successful review-to-done merge, derived from Activity. */
   releasedAt: string | null;
   /** Truncated body preview for search (first 500 chars). */
