@@ -235,7 +235,17 @@ onBeforeUnmount(() => {
           <code>main</code>.
         </p>
       </div>
-      <Button variant="ghost" size="sm" :disabled="loading" @click="load">Refresh</Button>
+      <div class="dep-actions">
+        <a
+          class="dep-help-link"
+          href="https://docs.repoos.org/deployments-and-releases"
+          target="_blank"
+          rel="noreferrer"
+          >Deployment guide ↗</a
+        >
+        <a class="dep-help-link" href="/settings?tab=toml">Edit deployments</a>
+        <Button variant="ghost" size="sm" :disabled="loading" @click="load">Refresh</Button>
+      </div>
     </header>
 
     <div v-if="loading" class="spin"></div>
@@ -244,8 +254,8 @@ onBeforeUnmount(() => {
     <template v-else-if="status">
       <div v-if="!status.enabled" class="dep-panel dep-empty">
         Deployments aren't configured for this repository. Add a
-        <code>[[deployments]]</code> block to <code>repoos.toml</code> — one per service and branch
-        — to turn this page on.
+        <code>[[deployments]]</code> block to <a href="/settings?tab=toml">repoos.toml</a> — one per
+        service and branch — to turn this page on.
       </div>
 
       <template v-else>
@@ -491,6 +501,23 @@ onBeforeUnmount(() => {
   align-items: flex-end;
   gap: 16px;
   margin-bottom: 22px;
+}
+.dep-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.dep-help-link,
+.dep-empty a {
+  color: var(--cyan);
+  font-size: 12px;
+  text-decoration: none;
+}
+.dep-help-link:hover,
+.dep-empty a:hover {
+  text-decoration: underline;
 }
 .dep-title {
   font-size: 22px;

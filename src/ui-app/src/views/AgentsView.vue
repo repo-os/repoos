@@ -504,9 +504,18 @@ onUnmounted(() => {
     <div class="page-title agents-page-title">Agents</div>
     <div class="page-desc">
       The AI agents that work this repo ·
+      <a
+        class="model-pricing-link"
+        href="https://docs.repoos.org/agents"
+        target="_blank"
+        rel="noreferrer"
+        >Set up agents ↗</a
+      >
+      ·
       <button class="model-pricing-link" @click="openRecommendations">
         View the full agent &amp; model selection guide →
       </button>
+      · <a class="model-pricing-link" href="/settings?tab=toml">Advanced config</a>
       <span v-if="config.saving"> · Saving…</span>
       <span v-else-if="config.error" class="save-msg err"> · {{ config.error }}</span>
       <span v-else-if="config.msg" class="save-msg ok"> · Saved</span>

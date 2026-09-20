@@ -473,7 +473,17 @@ onBeforeUnmount(() => {
         <h1 class="rel-title">Releases</h1>
         <p class="rel-sub">Cut and track tagged releases of this repository.</p>
       </div>
-      <Button variant="ghost" size="sm" :disabled="loading" @click="load">Refresh</Button>
+      <div class="rel-actions rel-head-actions">
+        <a
+          class="rel-link"
+          href="https://docs.repoos.org/deployments-and-releases"
+          target="_blank"
+          rel="noreferrer"
+          >Release guide ↗</a
+        >
+        <a class="rel-link" href="/settings?tab=toml">Edit release config</a>
+        <Button variant="ghost" size="sm" :disabled="loading" @click="load">Refresh</Button>
+      </div>
     </header>
 
     <div v-if="loading" class="spin"></div>
@@ -481,7 +491,8 @@ onBeforeUnmount(() => {
 
     <template v-else-if="status">
       <div v-if="!status.enabled" class="rel-card rel-empty">
-        Releases aren't configured for this repository.
+        Releases aren't configured for this repository. Add a <code>[release]</code> block in
+        <a class="rel-link" href="/settings?tab=toml">repoos.toml</a> to turn this page on.
       </div>
 
       <template v-else>
@@ -787,6 +798,12 @@ onBeforeUnmount(() => {
   align-items: flex-end;
   gap: 16px;
   margin-bottom: 22px;
+}
+.rel-head-actions {
+  margin: 0;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
 }
 .rel-title {
   font-size: 22px;

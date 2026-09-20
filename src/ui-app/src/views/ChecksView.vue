@@ -109,7 +109,17 @@ const RESULT_ICON: Record<string, string> = {
           step is skipped. Nothing here runs a command — it reads the same plan the gate resolves.
         </p>
       </div>
-      <Button variant="ghost" size="sm" :disabled="loading" @click="load">Refresh</Button>
+      <div class="ck-actions">
+        <a
+          class="ck-help-link"
+          href="https://docs.repoos.org/check"
+          target="_blank"
+          rel="noreferrer"
+          >How checks work ↗</a
+        >
+        <a class="ck-help-link" href="/settings?tab=toml">Edit check plan</a>
+        <Button variant="ghost" size="sm" :disabled="loading" @click="load">Refresh</Button>
+      </div>
     </header>
 
     <div v-if="loading" class="ck-loading">Loading the check plan…</div>
@@ -151,7 +161,16 @@ const RESULT_ICON: Record<string, string> = {
       <!-- Plan-level facts: source, selection summary, warnings. -->
       <section class="ck-banner">
         <div class="ck-banner-facts">
-          <span class="ck-fact" :data-source="plan.source">{{ SOURCE_LABEL[plan.source] }}</span>
+          <a
+            v-if="plan.source === 'declared'"
+            class="ck-fact ck-fact-link"
+            :data-source="plan.source"
+            href="/settings?tab=toml"
+            >{{ SOURCE_LABEL[plan.source] }}</a
+          >
+          <span v-else class="ck-fact" :data-source="plan.source">{{
+            SOURCE_LABEL[plan.source]
+          }}</span>
           <span class="ck-fact"
             >Profile <strong>{{ plan.profile }}</strong> · {{ selectedCount }} of
             {{ steps.length }} steps run</span
@@ -288,6 +307,26 @@ const RESULT_ICON: Record<string, string> = {
   align-items: flex-end;
   gap: 16px;
   margin-bottom: 20px;
+}
+.ck-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.ck-help-link,
+.ck-fact-link {
+  color: var(--cyan);
+  font-size: 12px;
+  text-decoration: none;
+}
+.ck-help-link:hover,
+.ck-fact-link:hover {
+  text-decoration: underline;
+}
+.ck-fact-link {
+  font-weight: inherit;
 }
 .ck-title {
   font-size: 22px;

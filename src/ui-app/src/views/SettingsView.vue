@@ -475,6 +475,14 @@ onUnmounted(() => {
     <div class="page-title">Settings</div>
     <div class="page-desc">
       RepoOS configuration · <span class="mono" style="color: var(--cyan)">repoos.toml</span>
+      ·
+      <a
+        class="settings-help-link"
+        href="https://docs.repoos.org/configuration"
+        target="_blank"
+        rel="noreferrer"
+        >Configuration reference ↗</a
+      >
       <span v-if="config.saving"> · Saving…</span>
       <span v-else-if="config.error" class="save-msg err"> · {{ config.error }}</span>
       <span v-else-if="config.msg" class="save-msg ok"> · {{ config.msg }}</span>
@@ -1183,3 +1191,13 @@ onUnmounted(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.settings-help-link {
+  color: var(--cyan);
+  text-decoration: none;
+}
+.settings-help-link:hover {
+  text-decoration: underline;
+}
+</style>
