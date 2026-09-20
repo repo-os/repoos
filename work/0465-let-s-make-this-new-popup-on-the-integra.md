@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 model_override: opencode-go/mimo-v2.5
+review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-20T12:50:19Z"
-updated_at: "2026-09-20T12:53:01Z"
+updated_at: "2026-09-20T12:53:04Z"
 ---
 ## Problem
 
@@ -99,3 +100,4 @@ Let's make this new popup on the integration bar wider so the text doesn't need 
 - 2026-09-20T12:51:40Z · status draft→inbox, title, area, body
 - 2026-09-20T12:52:55Z · status inbox→ready
 - 2026-09-20T12:53:01Z · model_override
+- 2026-09-20T12:53:04Z · review_model_override
