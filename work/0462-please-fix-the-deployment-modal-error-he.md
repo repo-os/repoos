@@ -5,7 +5,7 @@ type: feature
 status: draft
 priority: p2
 area: general
-assigned_to: ""
+assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-20T03:45:32Z"
@@ -17,6 +17,11 @@ Please fix the deployment modal error height so that it doesn't overflow the pag
 
 Please fix the deployment modal error height so that it doesn't overflow the page
 
+## Screenshots
+
+![Screenshot-2026-09-20-at-10.51.32](/api/tasks/0462/attachments/screenshot-1.png)
+
 ## Activity
 
 - 2026-09-20T03:45:32Z · created · hello@repoos.org
+- 2026-09-20T03:45:32Z · screenshots
