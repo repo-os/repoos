@@ -1,0 +1,208 @@
+/** Authenticated, read-only API for the native RepoOS Hub. */
+import type { IncomingMessage, ServerResponse } from "node:http";
+import type { RouteHandler } from "./types.js";
+import { json, readBody } from "./utils.js";
+import { getAuthStore } from "../../core/auth-store.js";
+import {
+  capabilityRequestOrigin,
+  clampHubTtl,
+  createHubCapabilityToken,
+  HUB_CAPABILITY_AUDIENCE,
+  HUB_CAPABILITY_SCOPE,
+  HUB_CAPABILITY_VERSION,
+  normalizeHubLabel,
+  normalizeHubOrigin,
+} from "../../core/hub-capabilities.js";
+import { getCurrentUser } from "./auth.js";
+import { RateLimiter } from "../../core/auth.js";
+
+const summaryRateLimiter = new RateLimiter(60_000, 60);
+
+function clientIp(req: IncomingMessage): string {
+  const forwarded = req.headers["x-forwarded-for"];
+  return typeof forwarded === "string"
+    ? forwarded.split(",")[0].trim()
+    : (req.socket.remoteAddress ?? "unknown");
+}
+
+function publicCapability(capability: any) {
+  if (!capability) return null;
+  const { tokenHash: _tokenHash, ...safe } = capability;
+  return safe;
+}
+
+function getBearer(req: IncomingMessage): string | null {
+  const header = req.headers.authorization;
+  if (typeof header !== "string") return null;
+  return /^Bearer\s+(\S+)$/.exec(header)?.[1] ?? null;
+}
+
+function userForCapability(
+  req: IncomingMessage,
+  ctx: Parameters<RouteHandler>[0],
+  res: ServerResponse,
+) {
+  const user = getCurrentUser(req, ctx.config);
+  if (!user) {
+    json(res, 401, { error: "Authentication required" });
+    return null;
+  }
+  return user;
+}
+
+function originForRequest(req: IncomingMessage): string | null {
+  return capabilityRequestOrigin(req.headers);
+}
+
+function issueCapability(
+  store: NonNullable<ReturnType<typeof getAuthStore>>,
+  ownerEmail: string,
+  origin: string,
+  label: string,
+  expiresInSeconds: unknown,
+) {
+  const issued = createHubCapabilityToken();
+  const now = new Date();
+  const capability = {
+    id: `hub_${issued.token.slice(4, 20)}`,
+    label,
+    ownerEmail,
+    tokenHash: issued.tokenHash,
+    origin: normalizeHubOrigin(origin)!,
+    audience: HUB_CAPABILITY_AUDIENCE,
+    scope: HUB_CAPABILITY_SCOPE,
+    version: HUB_CAPABILITY_VERSION,
+    createdAt: now.toISOString(),
+    expiresAt: new Date(now.getTime() + clampHubTtl(expiresInSeconds) * 1000).toISOString(),
+  } as const;
+  store.createHubCapability(capability);
+  return { capability: { ...capability, revokedAt: null, lastUsedAt: null }, token: issued.token };
+}
+
+/** POST /api/auth/hub-capabilities — explicit, one-time token issuance. */
+export const createHubCapability: RouteHandler = async (ctx, req, res) => {
+  const user = userForCapability(req, ctx, res);
+  if (!user) return;
+  const origin = originForRequest(req);
+  if (!origin) return json(res, 400, { error: "Hub capabilities must be created over HTTPS" });
+  const store = getAuthStore(ctx.config.root);
+  if (!store) return json(res, 500, { error: "Auth store unavailable" });
+  const body = (await readBody(req)) as Record<string, unknown>;
+  const label = normalizeHubLabel(body.label);
+  if (!label) return json(res, 400, { error: "label must be 1–80 characters" });
+  const issued = issueCapability(store, user.email, origin, label, body.expiresInSeconds);
+  store.logAudit(
+    "hub_capability_created",
+    null,
+    user.email,
+    JSON.stringify({ id: issued.capability.id, label, origin }),
+  );
+  return json(res, 201, {
+    capability: publicCapability(issued.capability),
+    token: issued.token,
+    warning: "Store this token in the macOS Keychain. It will not be shown again.",
+  });
+};
+
+/** GET /api/auth/hub-capabilities — metadata only; never returns plaintext. */
+export const listHubCapabilities: RouteHandler = (ctx, req, res) => {
+  const user = userForCapability(req, ctx, res);
+  if (!user) return;
+  const store = getAuthStore(ctx.config.root);
+  if (!store) return json(res, 500, { error: "Auth store unavailable" });
+  return json(res, 200, {
+    capabilities: store.listHubCapabilities(user.email).map(publicCapability),
+  });
+};
+
+export const revokeHubCapability: RouteHandler = (ctx, req, res, params) => {
+  const user = userForCapability(req, ctx, res);
+  if (!user) return;
+  const store = getAuthStore(ctx.config.root);
+  if (!store) return json(res, 500, { error: "Auth store unavailable" });
+  const existing = store.getHubCapability(params.param1);
+  if (!existing || existing.ownerEmail !== user.email)
+    return json(res, 404, { error: "Hub capability not found" });
+  if (!store.revokeHubCapability(existing.id))
+    return json(res, 404, { error: "Hub capability not found" });
+  store.logAudit("hub_capability_revoked", null, user.email, JSON.stringify({ id: existing.id }));
+  return json(res, 200, { ok: true });
+};
+
+/** POST /api/auth/hub-capabilities/:id/rotate — revoke and issue a replacement. */
+export const rotateHubCapability: RouteHandler = async (ctx, req, res, params) => {
+  const user = userForCapability(req, ctx, res);
+  if (!user) return;
+  const origin = originForRequest(req);
+  if (!origin) return json(res, 400, { error: "Hub capabilities must be rotated over HTTPS" });
+  const store = getAuthStore(ctx.config.root);
+  if (!store) return json(res, 500, { error: "Auth store unavailable" });
+  const existing = store.getHubCapability(params.param1);
+  if (!existing || existing.ownerEmail !== user.email)
+    return json(res, 404, { error: "Hub capability not found" });
+  if (!store.revokeHubCapability(existing.id))
+    return json(res, 404, { error: "Hub capability not found" });
+  const body = (await readBody(req)) as Record<string, unknown>;
+  const replacement = issueCapability(
+    store,
+    user.email,
+    origin,
+    normalizeHubLabel(body.label) ?? existing.label,
+    body.expiresInSeconds,
+  );
+  store.logAudit(
+    "hub_capability_rotated",
+    null,
+    user.email,
+    JSON.stringify({ revokedId: existing.id, id: replacement.capability.id, origin }),
+  );
+  return json(res, 201, {
+    capability: publicCapability(replacement.capability),
+    token: replacement.token,
+    warning: "Store this token in the macOS Keychain. It will not be shown again.",
+  });
+};
+
+function latestActivity(taskTimes: Array<string | null>, agentTimes: string[]): string | null {
+  const times = [...taskTimes.filter((value): value is string => Boolean(value)), ...agentTimes];
+  return times.length ? (times.sort().at(-1) ?? null) : null;
+}
+
+/** GET /api/hub/v1/summary — compact v1 contract for native clients. */
+export const hubSummary: RouteHandler = async (ctx, req, res) => {
+  const token = getBearer(req);
+  const origin = originForRequest(req);
+  const store = getAuthStore(ctx.config.root);
+  if (!token || !origin || !store) return json(res, 401, { error: "Invalid Hub capability" });
+  const capability = store.getHubCapabilityByToken(token);
+  if (
+    !capability ||
+    capability.version !== HUB_CAPABILITY_VERSION ||
+    capability.audience !== HUB_CAPABILITY_AUDIENCE ||
+    capability.scope !== HUB_CAPABILITY_SCOPE ||
+    capability.origin !== origin
+  ) {
+    return json(res, 401, { error: "Invalid Hub capability" });
+  }
+  if (!summaryRateLimiter.tryAcquire(`${capability.id}:${clientIp(req)}`)) {
+    return json(res, 429, { error: "Too many Hub summary requests", retryAfterSeconds: 60 });
+  }
+  await ctx.indexReady;
+  const tasks = ctx.index.getTasks();
+  const running = ctx.runner.running();
+  const generatedAt = new Date().toISOString();
+  store.markHubCapabilityUsed(capability.id);
+  return json(res, 200, {
+    apiVersion: "v1",
+    generatedAt,
+    lastActivityAt: latestActivity(
+      tasks.map((task) => task.updated_at),
+      running.map((agent) => agent.startedAt),
+    ),
+    attention: {
+      activeAgents: running.length,
+      reviewReadyTasks: tasks.filter((task) => task.status === "review").length,
+      needsInputTasks: tasks.filter((task) => task.needsInput).length,
+    },
+  });
+};

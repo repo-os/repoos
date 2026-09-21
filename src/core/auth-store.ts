@@ -11,6 +11,7 @@ import { createRequire } from "node:module";
 import { join } from "node:path";
 import type { AuthRole } from "./auth.js";
 import { hashOtp, hashSessionToken, randomHex, DEFAULT_SESSION_MAX_AGE } from "./auth.js";
+import type { HubCapability } from "./hub-capabilities.js";
 
 let Database: any;
 let dbAvailable = false;
@@ -94,6 +95,21 @@ export interface AuditLogEntry {
   createdAt: string;
 }
 
+interface HubCapabilityRow {
+  id: string;
+  label: string;
+  owner_email: string;
+  token_hash: string;
+  origin: string;
+  audience: string;
+  scope: string;
+  version: number;
+  created_at: string;
+  expires_at: string;
+  revoked_at: string | null;
+  last_used_at: string | null;
+}
+
 // ---------------------------------------------------------------------------
 // Schema migration
 // ---------------------------------------------------------------------------
@@ -145,6 +161,23 @@ const AUTH_MIGRATION = `
     details TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS auth_hub_capabilities (
+    id TEXT PRIMARY KEY,
+    label TEXT NOT NULL,
+    owner_email TEXT NOT NULL,
+    token_hash TEXT NOT NULL UNIQUE,
+    origin TEXT NOT NULL,
+    audience TEXT NOT NULL,
+    scope TEXT NOT NULL,
+    version INTEGER NOT NULL,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    revoked_at TEXT,
+    last_used_at TEXT
+  );
+  CREATE INDEX IF NOT EXISTS idx_auth_hub_capabilities_owner ON auth_hub_capabilities(owner_email);
+  CREATE INDEX IF NOT EXISTS idx_auth_hub_capabilities_token ON auth_hub_capabilities(token_hash);
 `;
 
 // ---------------------------------------------------------------------------
@@ -479,6 +512,120 @@ export class AuthStore {
     } catch {
       return [];
     }
+  }
+
+  // ---- Native Hub capabilities ----
+
+  createHubCapability(
+    input: Omit<HubCapability, "tokenHash" | "revokedAt" | "lastUsedAt"> & { tokenHash: string },
+  ): void {
+    if (!this.available) return;
+    try {
+      this.db
+        .prepare(`
+        INSERT INTO auth_hub_capabilities
+          (id, label, owner_email, token_hash, origin, audience, scope, version, created_at, expires_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `)
+        .run(
+          input.id,
+          input.label,
+          input.ownerEmail,
+          input.tokenHash,
+          input.origin,
+          input.audience,
+          input.scope,
+          input.version,
+          input.createdAt,
+          input.expiresAt,
+        );
+    } catch {
+      /* ignore */
+    }
+  }
+
+  getHubCapabilityByToken(token: string): HubCapability | null {
+    if (!this.available) return null;
+    try {
+      const rows = this.db
+        .prepare(`
+        SELECT * FROM auth_hub_capabilities
+        WHERE token_hash = ? AND revoked_at IS NULL AND expires_at > ?
+      `)
+        .all(hashSessionToken(token), new Date().toISOString());
+      return rows.length ? this.toHubCapability(rows[0]) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  listHubCapabilities(ownerEmail?: string): HubCapability[] {
+    if (!this.available) return [];
+    try {
+      const rows = ownerEmail
+        ? this.db
+            .prepare(
+              "SELECT * FROM auth_hub_capabilities WHERE owner_email = ? ORDER BY created_at DESC",
+            )
+            .all(ownerEmail)
+        : this.db.prepare("SELECT * FROM auth_hub_capabilities ORDER BY created_at DESC").all();
+      return rows.map((row: HubCapabilityRow) => this.toHubCapability(row));
+    } catch {
+      return [];
+    }
+  }
+
+  getHubCapability(id: string): HubCapability | null {
+    if (!this.available) return null;
+    try {
+      const rows = this.db.prepare("SELECT * FROM auth_hub_capabilities WHERE id = ?").all(id);
+      return rows.length ? this.toHubCapability(rows[0]) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  revokeHubCapability(id: string): boolean {
+    if (!this.available) return false;
+    try {
+      const result = this.db
+        .prepare(`
+        UPDATE auth_hub_capabilities SET revoked_at = datetime('now')
+        WHERE id = ? AND revoked_at IS NULL
+      `)
+        .run(id);
+      return (result.changes ?? 0) > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  markHubCapabilityUsed(id: string): void {
+    if (!this.available) return;
+    try {
+      this.db
+        .prepare("UPDATE auth_hub_capabilities SET last_used_at = datetime('now') WHERE id = ?")
+        .run(id);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  private toHubCapability(row: HubCapabilityRow): HubCapability {
+    return {
+      id: row.id,
+      label: row.label,
+      ownerEmail: row.owner_email,
+      tokenHash: row.token_hash,
+      origin: row.origin,
+      audience: row.audience as HubCapability["audience"],
+      scope: row.scope as HubCapability["scope"],
+      version: row.version as HubCapability["version"],
+      createdAt: row.created_at,
+      expiresAt: row.expires_at,
+      revokedAt: row.revoked_at,
+      lastUsedAt: row.last_used_at,
+    };
   }
 
   // ---- Row mappers ----
