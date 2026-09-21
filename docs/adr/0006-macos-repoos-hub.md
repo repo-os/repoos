@@ -274,4 +274,5 @@ into a privileged native extension.
 
 - [0004 — Core stays minimal; project-specific integrations are plugins](0004-plugin-architecture.md)
 - [Native authentication](../native-auth.md)
+- [macOS Hub WebKit boundary](../native-hub-webkit.md)
 - [Mobile hub architecture](../mobile-architecture.md)
