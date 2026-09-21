@@ -13,9 +13,9 @@ branch: feat/add-opt-in-stories-page-for-cross-area-d
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: cursor
-review_model_override: default
+review_model_override: auto
 created_at: "2026-09-21T12:19:02Z"
-updated_at: "2026-09-21T18:15:37Z"
+updated_at: "2026-09-21T18:15:39Z"
 check_retry_count: 2
 last_check_failure: "[object Object]"
 dev_error_count: 3
@@ -79,3 +79,4 @@ After implementation, the project-updates email-list tasks (#0477, #0478, #0479)
 - 2026-09-21T15:54:26Z · handoff failed · check failed after 2 automatic retries · repoos check failed: [32m✓[39m tests/auth-bootstrap.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 23[2mms[22m[39m · [32m✓[39m tests/check-smoke-command.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 10[2mms[22m[39m · error: script "test" was terminated by signal SIGTERM (Polite quit request) · ✗ tests (355.3s) · ◆ ui-smoke · · kind: ui-smoke · $ bun scripts/ui-smoke.mjs · · UI smoke runtime: Bun 1.3.14
 - 2026-09-21T15:56:43Z · status active→review
 - 2026-09-21T18:15:37Z · review_cli_override, review_model_override
+- 2026-09-21T18:15:39Z · review_model_override
