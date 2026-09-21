@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p2
 area: infra
-assigned_to: ""
+story: Email subscriber list
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-21T12:09:32Z"
-updated_at: "2026-09-21T12:09:32Z"
+updated_at: "2026-09-21T20:10:53Z"
 ---
 ## Problem
 
@@ -41,3 +42,4 @@ Run after #0477 and #0478.
 ## Activity
 
 - 2026-09-21T12:09:32Z · created · unknown
+- 2026-09-21T20:10:53Z · story
