@@ -11,7 +11,9 @@ branch: feat/add-opt-in-stories-page-for-cross-area-d
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-21T12:19:02Z"
-updated_at: "2026-09-21T13:18:21Z"
+updated_at: "2026-09-21T14:27:05Z"
+check_retry_count: 2
+last_check_failure: "[object Object]"
 dev_error_count: 3
 ---
 ## Problem
@@ -65,3 +67,5 @@ After implementation, the project-updates email-list tasks (#0477, #0478, #0479)
 - 2026-09-21T13:18:15Z · cli_override
 - 2026-09-21T13:18:18Z · model_override
 - 2026-09-21T13:18:21Z · needs_input
+- 2026-09-21T14:21:55Z · handoff failed · check failed after 2 automatic retries · repoos check failed: Automatic merge went well; stopped before committing as requested · Switched to a new branch 'feat/current' · Switched to a new branch 'feat/current' · Preparing worktree (new branch 'other/thing') · ❯ tests/mtd-docs-fast-path.test.ts (13 tests | 1 failed) 1854ms · × runs a declared bootstrap check without inventing a build step 326ms · Switched to a new branch 'other' · Switched to a new branch 'hotfix/0999-already'
+- 2026-09-21T14:27:05Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
