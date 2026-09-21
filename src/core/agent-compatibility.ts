@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { DetectedAgent } from "./detect.js";
 
 export type CompatibilityStatus =
@@ -34,23 +35,91 @@ export interface AgentCompatibility {
 }
 
 const manifestUrl = new URL("./agent-compatibility.json", import.meta.url);
-const manifestPath =
-  manifestUrl.protocol === "file:"
-    ? manifestUrl
-    : ([
-        join(process.cwd(), "src/core/agent-compatibility.json"),
-        join(process.cwd(), "../../src/core/agent-compatibility.json"),
-      ].find((candidate) => existsSync(candidate)) ??
-      join(process.cwd(), "src/core/agent-compatibility.json"));
 
-export const AGENT_COMPATIBILITY_MANIFEST = JSON.parse(readFileSync(manifestPath, "utf8")) as {
+let warnedMissingManifest = false;
+
+/**
+ * Resolve the compatibility manifest from disk, honoring every way the module
+ * can be loaded:
+ *   - built  — dist/core/agent-compatibility.js → ./agent-compatibility.json
+ *              (copied into dist/ by scripts/copy-assets.mjs; tsc never emits
+ *              JSON siblings itself)
+ *   - dev    — src/core/agent-compatibility.ts at module load time, plus
+ *              cwd-relative candidates for `bun repoos <cmd>` launcher runs
+ *   - linked — dist installed side-by-side with a src checkout via
+ *              REPOOS_ROOT (the self-hosted `bun link` layout)
+ * Never throws: a build that predates the copy step, or a source checkout
+ * without the manifest, degrades to an empty manifest instead of crashing the
+ * CLI/server at import time. The `repoos check` dist-artifact test catches a
+ * missing copy.
+ */
+function resolveManifestPath(): string | null {
+  const candidates: string[] = [];
+  // In some environments (vitest's transformed modules) import.meta.url is not
+  // a file: URL; those get skipped and the cwd-relative candidates below win.
+  if (manifestUrl.protocol === "file:") {
+    candidates.push(fileURLToPath(manifestUrl));
+  }
+  candidates.push(
+    join(process.cwd(), "src/core/agent-compatibility.json"),
+    join(process.cwd(), "dist/core/agent-compatibility.json"),
+  );
+  const root = process.env.REPOOS_ROOT;
+  if (root) {
+    candidates.push(
+      join(root, "src/core/agent-compatibility.json"),
+      join(root, "dist/core/agent-compatibility.json"),
+    );
+  }
+  for (const candidate of candidates) {
+    try {
+      if (existsSync(candidate)) return candidate;
+    } catch {
+      /* per-candidate failures are ignored; keep scanning */
+    }
+  }
+  return null;
+}
+
+function loadManifest(): {
   schemaVersion: number;
   contracts: AgentCompatibilityContract[];
-};
+} {
+  const path = resolveManifestPath();
+  if (!path) {
+    if (!warnedMissingManifest) {
+      warnedMissingManifest = true;
+      // Debug-level noise, not a hard failure: an empty manifest makes every
+      // harness render "not yet probed" rather than crashing the process.
+      console.error(
+        "[repoos] agent-compatibility.json not found in build or source tree; compatibility statuses will report 'not yet probed'. Rebuild (scripts/copy-assets.mjs copies it into dist/) or restore the file under src/core/.",
+      );
+    }
+    return { schemaVersion: 1, contracts: [] };
+  }
+  return JSON.parse(readFileSync(path, "utf8")) as {
+    schemaVersion: number;
+    contracts: AgentCompatibilityContract[];
+  };
+}
+
+export const AGENT_COMPATIBILITY_MANIFEST = loadManifest();
 
 const VERSION_RE = /(?:^|[^0-9])v?(\d+)(?:\.(\d+))?(?:\.(\d+))?/i;
 const EXPLICIT_VERSION_RE = /\bv(\d+(?:\.\d+){0,2})\b/i;
 const DOTTED_VERSION_RE = /(?:^|[^0-9])(\d+\.\d+(?:\.\d+)?)(?:[^0-9]|$)/;
+
+/**
+ * Reject a bare integer version token when it is longer than three digits.
+ * Bare numbers that long are overwhelmingly build numbers or dates
+ * (`20260921`, `2026`), and reading them as a major version would label a
+ * current release "newer than verified" or "unsupported" on a parser artifact.
+ * Dotted and `v`-prefixed forms are handled by the explicit/dotted paths and
+ * are not affected.
+ */
+function isPlausibleBareMajor(token: string): boolean {
+  return /^\d{1,3}$/.test(token);
+}
 
 export function parseAgentVersion(value: string | null): [number, number, number] | null {
   if (!value) return null;
@@ -62,7 +131,7 @@ export function parseAgentVersion(value: string | null): [number, number, number
     return [Number(parts[0]), Number(parts[1] ?? 0), Number(parts[2] ?? 0)];
   }
   const match = VERSION_RE.exec(value);
-  if (!match) return null;
+  if (!match || !isPlausibleBareMajor(match[1])) return null;
   return [Number(match[1]), Number(match[2] ?? 0), Number(match[3] ?? 0)];
 }
 
@@ -83,36 +152,57 @@ function parseRangeOperatorToken(
   return { op: match[1], value };
 }
 
-function versionSatisfiesRange(version: [number, number, number], range: string): boolean {
-  const normalized = range.trim();
-  if (!normalized) return false;
-  const tokens = normalized.split(/\s+/).filter(Boolean);
-  if (tokens.length === 0) return false;
-
-  if (tokens.length === 1) {
-    const operator = parseRangeOperatorToken(tokens[0]);
-    if (!operator) {
-      const exact = parseAgentVersion(tokens[0]);
-      return exact ? compareVersion(version, exact) === 0 : false;
+/**
+ * Expand a semver-ish token that is not a plain operator-prefixed version into
+ * one or more operator tokens:
+ *   `*`        → any             `^2` / `^2.1` / `^2.1.3` → >=lower <next-major
+ *   `1.2.*`    → >=1.2.0 <1.3.0  `~1.2` / `~1.2.3`       → >=lower <next-minor
+ *   `a || b`   → handled by the caller as an OR clause
+ * Returns null when the token is not a recognized shape.
+ */
+function expandSemverToken(token: string): Array<{ op: string; value: [number, number, number] }> {
+  const trimmed = token.trim();
+  if (trimmed === "*" || trimmed === "x" || trimmed === "X") return [];
+  const caret = trimmed.match(/^\^(\d+)(?:\.(\d+))?(?:\.(\d+))?$/);
+  if (caret) {
+    const [a, b, c] = caret.slice(1).map((n) => (n === undefined ? 0 : Number(n)));
+    // ^0.y.z is <0.(y+1).0 (the first non-zero component is the defining one).
+    if (a === 0) {
+      const upper = b + 1;
+      return [
+        { op: ">=", value: [0, b, c] },
+        { op: "<", value: [0, upper, 0] },
+      ];
     }
-    const cmp = compareVersion(version, operator.value);
-    if (operator.op === ">=") return cmp >= 0;
-    if (operator.op === ">") return cmp > 0;
-    if (operator.op === "<=") return cmp <= 0;
-    if (operator.op === "<") return cmp < 0;
-    return cmp === 0;
+    return [
+      { op: ">=", value: [a, b, c] },
+      { op: "<", value: [a + 1, 0, 0] },
+    ];
   }
-
-  const rangeChecks = tokens.map((token) => parseRangeOperatorToken(token)).filter(Boolean) as {
-    op: string;
-    value: [number, number, number];
-  }[];
-  if (rangeChecks.length !== tokens.length) {
-    const exact = parseAgentVersion(normalized);
-    return exact ? compareVersion(version, exact) === 0 : false;
+  const tilde = trimmed.match(/^~(\d+)(?:\.(\d+))?(?:\.(\d+))?$/);
+  if (tilde) {
+    const [a, b, c] = tilde.slice(1).map((n) => (n === undefined ? 0 : Number(n)));
+    return [
+      { op: ">=", value: [a, b, c] },
+      { op: "<", value: [a, b + 1, 0] },
+    ];
   }
+  const star = trimmed.match(/^(\d+)(?:\.(\d+))?\.\*$/);
+  if (star) {
+    const [a, b] = star.slice(1).map((n) => (n === undefined ? 0 : Number(n)));
+    return [
+      { op: ">=", value: [a, b, 0] },
+      { op: "<", value: [a, b + 1, 0] },
+    ];
+  }
+  return null as unknown as Array<{ op: string; value: [number, number, number] }>;
+}
 
-  return rangeChecks.every(({ op, value }) => {
+function tokensSatisfy(
+  version: [number, number, number],
+  checks: Array<{ op: string; value: [number, number, number] }>,
+): boolean {
+  return checks.every(({ op, value }) => {
     const cmp = compareVersion(version, value);
     if (op === ">=") return cmp >= 0;
     if (op === ">") return cmp > 0;
@@ -120,6 +210,38 @@ function versionSatisfiesRange(version: [number, number, number], range: string)
     if (op === "<") return cmp < 0;
     return cmp === 0;
   });
+}
+
+/** True when `version` falls inside the semver `range` (e.g. `>=2.0.0 <3.0.0`, `^2.1`, `1.2.*`, `a || b`). */
+export function versionSatisfiesRange(version: [number, number, number], range: string): boolean {
+  const normalized = range.trim();
+  if (!normalized) return false;
+
+  // `a || b` — any alternative clause may satisfy.
+  const alternatives = normalized.split("||").map((s) => s.trim());
+  if (alternatives.length > 1) {
+    return alternatives.some((alt) => versionSatisfiesRange(version, alt));
+  }
+
+  const tokens = normalized.split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return false;
+
+  const checks: Array<{ op: string; value: [number, number, number] }> = [];
+  for (const token of tokens) {
+    const operator = parseRangeOperatorToken(token);
+    if (operator) {
+      checks.push(operator);
+      continue;
+    }
+    const expanded = expandSemverToken(token);
+    if (expanded === null) {
+      // Not an operator or a semver shape — fall back to exact match.
+      const exact = parseAgentVersion(normalized);
+      return exact ? compareVersion(version, exact) === 0 : false;
+    }
+    checks.push(...expanded);
+  }
+  return tokensSatisfy(version, checks);
 }
 
 export function compatibilityForAgent(
@@ -131,17 +253,28 @@ export function compatibilityForAgent(
   const installed = parseAgentVersion(agent.version);
   const hasEvidence = !!contract?.verifiedAt && !!contract?.verificationSource;
 
-  if (!contract || !agent.drivable) {
+  if (!contract) {
     return {
-      status: contract ? "unsupported" : "not_probed",
-      label: contract ? "unsupported" : "not yet probed",
-      explanation: contract
-        ? "RepoOS does not have a drivable adapter for this installation."
-        : "RepoOS has not certified this harness yet.",
+      status: agent.drivable ? "not_probed" : "unsupported",
+      label: agent.drivable ? "not yet probed" : "unsupported",
+      explanation: agent.drivable
+        ? "RepoOS has not certified this harness yet."
+        : "RepoOS does not have a drivable adapter for this installation.",
       installedVersion: agent.version,
-      newestCertifiedVersion: contract?.newestCertifiedVersion ?? null,
+      newestCertifiedVersion: null,
+      contract: null,
+      capabilities: [],
+    };
+  }
+  if (!agent.drivable) {
+    return {
+      status: "unsupported",
+      label: "unsupported",
+      explanation: "RepoOS does not have a drivable adapter for this installation.",
+      installedVersion: agent.version,
+      newestCertifiedVersion: contract.newestCertifiedVersion,
       contract,
-      capabilities: contract?.requiredCapabilities ?? [],
+      capabilities: contract.requiredCapabilities,
     };
   }
   if (!installed) {
@@ -183,7 +316,7 @@ export function compatibilityForAgent(
     explanation = `This version family is known incompatible with the ${contract.name} adapter.`;
   } else if (compareVersion(installed, newest) > 0) {
     status = "newer_than_verified";
-    explanation = `This release is newer than the newest tracked ${contract.name} release (${contract.newestCertifiedVersion}). Review the release guidance before important work; RepoOS has no live compatibility probe yet.`;
+    explanation = `This release is newer than the newest tracked ${contract.name} release (${contract.newestCertifiedVersion}). It is not blocked; run \`repoos doctor --probe ${contract.cli}\` for a deliberate compatibility probe before important work.`;
   } else if (isSupportedRange && hasEvidence) {
     status = "verified";
     explanation = `The ${contract.name} v${contract.supportedMajor} contract is certified through ${contract.newestCertifiedVersion}.`;

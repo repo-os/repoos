@@ -6,7 +6,14 @@
 //     it is gitignored. Only "how old is this build" readers consult it.
 // The web UI is no longer copied verbatim — it is built by Vite into dist/ui/
 // via `bun run build:ui` (see src/ui-app/vite.config.ts).
-import { chmodSync, existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
@@ -51,6 +58,46 @@ if (existsSync(srcDir)) {
 
 const infoPath = join(root, "dist", ".build-info.json");
 writeFileSync(infoPath, JSON.stringify(buildInfo, null, 2) + "\n");
+
+// Copy JSON data files that are read at runtime into dist/, preserving their
+// src/ relative path (src/core/agent-compatibility.json → dist/core/…). tsc
+// never emits JSON siblings, so a runtime `readFileSync(new URL(...))` would
+// ENOENT on a clean build otherwise. src/ui-app is excluded: Vite bundles that
+// tree itself into dist/ui/ (src/ui-app/vite.config.ts), and its tsconfig.json
+// must not leak into the runtime tree.
+const uiAppDir = join(root, "src", "ui-app");
+function copyJsonDataFiles() {
+  const jsonFiles = [];
+  function walk(dir) {
+    let entries;
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const e of entries) {
+      if (e.isDirectory() && e.name === "node_modules") continue;
+      const full = join(dir, e.name);
+      if (e.isDirectory()) {
+        if (full === uiAppDir) continue;
+        walk(full);
+      } else if (e.isFile() && e.name.endsWith(".json")) {
+        jsonFiles.push(full);
+      }
+    }
+  }
+  walk(srcDir);
+  jsonFiles.sort();
+  for (const file of jsonFiles) {
+    const dest = join(root, "dist", file.slice(srcDir.length + 1));
+    mkdirSync(dirname(dest), { recursive: true });
+    writeFileSync(dest, readFileSync(file));
+  }
+  if (jsonFiles.length > 0) {
+    console.log(`copy-assets: copied ${jsonFiles.length} JSON data file(s) into dist/`);
+  }
+}
+copyJsonDataFiles();
 
 // The build timestamp lives in its own gitignored file. Keeping it out of
 // .build-info.json is what makes that marker deterministic — with the

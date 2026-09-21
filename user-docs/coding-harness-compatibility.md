@@ -12,8 +12,8 @@ against the latest certified line.
 - **Upgrade recommended** — the installed release is older than the supported
   line. RepoOS still permits work when local capability checks pass.
 - **Newer than verified** — the release is newer than RepoOS's last tracked
-  certification. It is not blocked; review the release guidance before
-  important work. RepoOS does not currently provide a live compatibility probe.
+  certification. It is not blocked; run a compatibility probe before important
+  work — see [Probes, privacy, and upgrades](#probes-privacy-and-upgrades).
 - **Unsupported** — a known incompatible family or a required local capability
   is missing.
 - **Not yet probed** — RepoOS could not parse a version or has not yet
@@ -36,12 +36,25 @@ silently widen a range because a newer binary happens to start.
 
 The default detector and `repoos doctor` are offline and token-free. They read
 the local binary version and static contract metadata; they do not send version
-telemetry or collect prompts and project code. A future live compatibility probe
-must be explicitly started by the user, clearly warn that provider credentials
-may be used, and run in an isolated temporary fixture/worktree that is cleaned
-up afterward. No live probe is available in the current release.
+telemetry or collect prompts and project code.
 
-Upgrade or roll back a harness using its official installer and then refresh
-the Detected Coding Agents tab. Review the resulting status before assigning
-important work. Keep the previous release available if a rollback is needed;
-RepoOS never installs, upgrades, or changes a harness automatically.
+A live compatibility probe is available on request and is opt-in:
+
+```
+repoos doctor --probe opencode --yes
+```
+
+It runs the harness's adapter-contract suite inside an isolated temporary
+directory (throwing away a version, help, model-listing, one-shot, event-
+parsing, auto-mode, session-continuation, and cancellation probe) and reports
+each seam honestly. The command warns clearly that provider credentials may be
+used, asks for confirmation when you are at a terminal (pass `--yes` to skip
+the prompt), and cleans up the fixture when it finishes. Run it when:
+
+- the Agents page marks your installed harness **newer than verified** and you
+  want to start important work with it, or
+- you are a maintainer certifying a release (see the upgrade path below).
+
+RepoOS never installs, upgrades, or changes a harness automatically. Upgrade or
+roll back a harness using its official installer and then refresh the Detected
+Coding Agents tab. Keep the previous release available if a rollback is needed.

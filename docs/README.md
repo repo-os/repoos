@@ -48,6 +48,9 @@ can't assume any.
   area-based selection, the `repoos serve` fallback).
 - `agent-model-recommendations.md`, `opencode-models.md`, `token-optimization.md`,
   `prompt-caching-audit.md` — agent and model operations.
+- `agent-compatibility.md` — the versioned coding-harness compatibility
+  contracts (#0466): manifest schema, status semantics, the adapter contract
+  suite, credential/privacy boundaries, and the certification workflow.
 - `dogfooding-vs-general.md` — which problems are artifacts of RepoOS running on
   itself versus real for every repo. Read this before generalizing from a
   dogfooding incident.
