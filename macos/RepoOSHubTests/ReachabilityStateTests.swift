@@ -5,7 +5,7 @@ final class ReachabilityStateTests: XCTestCase {
     func testSuccessMarksHealthy() {
         var entry = ServerEntry(name: "Local", origin: URL(string: "https://local.test")!)
         entry.lastHealth = .unknown
-        ReachabilityTransition.applyHealthCheck(to: &entry, outcome: .success)
+        ReachabilityTransition.applyHealthCheck(to: &entry, outcome: .success(projectName: nil))
         XCTAssertEqual(entry.lastHealth, .healthy)
         XCTAssertNotNil(entry.lastHealthAt)
     }

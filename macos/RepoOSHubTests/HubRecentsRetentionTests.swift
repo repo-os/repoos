@@ -119,10 +119,40 @@ final class HubRecentsRetentionTests: XCTestCase {
 
         XCTAssertEqual(state.workspaceNavigation, snapshot)
     }
+
+    @MainActor
+    func testAddingServerUsesProjectNameReportedByHealthCheck() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("hub-project-name-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let state = HubAppState(
+            store: ServerRegistryStore(directoryURL: directory),
+            healthChecker: StubHealthChecker(projectName: "  My Repo  "),
+            attentionCoordinator: HubAttentionCoordinator()
+        )
+        let error = await state.saveFromEditor(
+            ServerEditorDraft(
+                mode: .add,
+                name: "",
+                originText: "localhost:7171",
+                groupName: "",
+                accentColorHex: "",
+                iconSymbolName: "",
+                isPinned: false
+            )
+        )
+
+        XCTAssertNil(error)
+        XCTAssertEqual(state.entries.first?.name, "My Repo")
+    }
 }
 
 private struct StubHealthChecker: HealthChecking {
+    var projectName: String? = nil
+
     func checkHealth(origin: URL) async -> HealthCheckOutcome {
-        .success
+        .success(projectName: projectName)
     }
 }

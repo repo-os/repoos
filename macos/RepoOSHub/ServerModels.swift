@@ -185,7 +185,7 @@ struct ServerRegistryDocument: Codable, Equatable, Sendable {
 enum ReachabilityTransition {
     static func healthState(after outcome: HealthCheckOutcome, previous: HealthState) -> HealthState {
         switch outcome {
-        case .success:
+        case .success(_):
             return .healthy
         case .failure(let failure):
             switch failure {
@@ -200,7 +200,7 @@ enum ReachabilityTransition {
 
     static func applyHealthCheck(to entry: inout ServerEntry, outcome: HealthCheckOutcome, checkedAt: Date = Date()) {
         entry.lastHealth = healthState(after: outcome, previous: entry.lastHealth)
-        if case .success = outcome {
+        if case .success(_) = outcome {
             entry.lastHealthAt = checkedAt
         }
         entry.updatedAt = checkedAt

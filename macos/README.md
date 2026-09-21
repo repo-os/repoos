@@ -9,7 +9,8 @@ The scaffold ships a native sidebar workspace with a **local server registry**
 (Application Support JSON). Adding or editing a server normalizes HTTPS origins
 (or HTTP for a loopback development server such as `localhost:7171`),
 calls `GET /api/health` with a 10-second timeout, and only then persists the
-entry. Adding takes only an address; the Hub derives a sidebar name, and the
+entry. Adding takes only an address; the Hub derives the sidebar name from the
+server's reported repository name (falling back to its address), and the
 server's name, group, icon, color, and pin state remain editable from its
 sidebar context menu. The main content area loads the selected server's RepoOS web UI in an
 isolated `WKWebView` (per-server data store, no native JavaScript bridge), with

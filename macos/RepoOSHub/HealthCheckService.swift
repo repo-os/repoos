@@ -11,7 +11,7 @@ enum HealthCheckFailure: Error, Equatable {
 }
 
 enum HealthCheckOutcome: Equatable {
-    case success
+    case success(projectName: String?)
     case failure(HealthCheckFailure)
 }
 
@@ -21,6 +21,7 @@ protocol HealthChecking: Sendable {
 
 struct HealthResponsePayload: Decodable {
     let ok: Bool?
+    let projectName: String?
 }
 
 final class HealthCheckRedirectGuard: NSObject, URLSessionTaskDelegate {
@@ -91,7 +92,7 @@ struct RepoOSHealthChecker: HealthChecking {
             guard payload.ok == true else {
                 return .failure(.notRepoOS)
             }
-            return .success
+            return .success(projectName: payload.projectName)
         } catch let error as URLError {
             switch error.code {
             case .timedOut:

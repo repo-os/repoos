@@ -369,7 +369,7 @@ final class HubAppState: ObservableObject {
             let originKey = ServerOriginNormalizer.canonicalOriginKey(for: origin)
 
             let outcome = await healthChecker.checkHealth(origin: origin)
-            guard case .success = outcome else {
+            guard case .success(let projectName) = outcome else {
                 if case .failure(let failure) = outcome {
                     return failure.userMessage
                 }
@@ -384,7 +384,9 @@ final class HubAppState: ObservableObject {
 
             switch draft.mode {
             case .add:
-                let name = ServerOriginNormalizer.defaultDisplayName(for: origin)
+                let reportedName = projectName?.trimmingCharacters(in: .whitespacesAndNewlines)
+                let name = reportedName.flatMap { $0.isEmpty ? nil : $0 }
+                    ?? ServerOriginNormalizer.defaultDisplayName(for: origin)
                 var entry = ServerEntry(
                     name: name,
                     origin: origin,
