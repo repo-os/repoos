@@ -123,6 +123,21 @@ user-docs-build:
     bun install
     bun run build
 
+# build the native macOS Hub without opening Xcode `just macos-build`
+[group('build')]
+macos-build:
+    xcodebuild -project macos/RepoOSHub.xcodeproj -scheme RepoOSHub -configuration Debug -sdk macosx -derivedDataPath macos/.derived-data CODE_SIGNING_ALLOWED=NO build
+
+# run the native macOS Hub from the command line `just macos-run`
+[group('dev')]
+macos-run: macos-build
+    open macos/.derived-data/Build/Products/Debug/RepoOSHub.app
+
+# run native macOS Hub unit tests without opening Xcode `just macos-test`
+[group('quality')]
+macos-test:
+    xcodebuild -project macos/RepoOSHub.xcodeproj -scheme RepoOSHub -destination 'platform=macOS' -derivedDataPath macos/.derived-data CODE_SIGNING_ALLOWED=NO test
+
 # ── quality ──────────────────────────────────────────────────────────────
 
 # run repoos check
