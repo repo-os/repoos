@@ -11,7 +11,7 @@ branch: ""
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-09-21T11:50:25Z"
-updated_at: "2026-09-21T18:25:48Z"
+updated_at: "2026-09-21T18:25:54Z"
 ---
 Implement the first useful native Hub workflow: users can maintain a local list of RepoOS servers and switch among them from a macOS-native sidebar.
 
