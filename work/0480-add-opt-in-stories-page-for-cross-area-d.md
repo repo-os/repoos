@@ -3,13 +3,17 @@ id: "0480"
 title: Add opt-in Stories page for cross-area delivery tracking
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "• If the problem persists, retry later or contact support with the Request ID above"
 priority: p2
 area: web + core
 assigned_to: ai
 created_by: ""
 branch: feat/add-opt-in-stories-page-for-cross-area-d
 created_at: "2026-09-21T12:19:02Z"
-updated_at: "2026-09-21T12:22:46Z"
+updated_at: "2026-09-21T12:33:28Z"
+dev_error_count: 1
 ---
 ## Problem
 
@@ -55,3 +59,5 @@ After implementation, the project-updates email-list tasks (#0477, #0478, #0479)
 - 2026-09-21T12:19:02Z · created · unknown
 - 2026-09-21T12:22:42Z · status inbox→ready
 - 2026-09-21T12:22:46Z · status ready→active, branch
+- 2026-09-21T12:23:37Z · agent exited with an error (copilot) · • If the problem persists, retry later or contact support with the Request ID above
+- 2026-09-21T12:33:28Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
