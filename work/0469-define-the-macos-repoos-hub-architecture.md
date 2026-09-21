@@ -2,14 +2,14 @@
 id: "0469"
 title: Define the macOS RepoOS Hub architecture and security contract
 type: feature
-status: review
+status: done
 priority: p1
 area: desktop
 assigned_to: ai
 created_by: ""
 branch: feat/define-the-macos-repoos-hub-architecture
 created_at: "2026-09-21T11:50:23Z"
-updated_at: "2026-09-21T12:09:06Z"
+updated_at: "2026-09-21T13:21:14Z"
 ---
 Create the implementation-ready architecture for a native macOS wrapper that connects to multiple local and remote RepoOS servers. Decide and document the application boundary: a native SwiftUI shell, the selected server’s ordinary RepoOS web UI in WebKit, and a local-only registry of user-added servers.
 
@@ -31,3 +31,4 @@ This is a design/ADR task. Do not scaffold the app yet.
 - 2026-09-21T12:06:53Z · status inbox→ready
 - 2026-09-21T12:07:18Z · status ready→active, branch
 - 2026-09-21T12:09:06Z · status active→review
+- 2026-09-21T13:21:14Z · status review→done, release:success
