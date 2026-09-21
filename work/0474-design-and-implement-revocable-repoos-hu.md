@@ -2,16 +2,16 @@
 id: "0474"
 title: Design and implement revocable RepoOS Hub read capabilities and summary API
 type: feature
-status: ready
+status: active
 priority: p2
 area: server
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/design-and-implement-revocable-repoos-hu
 cli_override: codex
 model_override: gpt-5.6-luna
 created_at: "2026-09-21T11:50:27Z"
-updated_at: "2026-09-21T13:24:30Z"
+updated_at: "2026-09-21T13:24:33Z"
 ---
 Enable a trusted native Hub to read small authenticated summaries from multiple RepoOS servers without scraping WebViews or exposing native privileges to server pages.
 
@@ -33,3 +33,4 @@ Depends on the macOS Hub architecture task. This task is intentionally independe
 - 2026-09-21T12:09:17Z · status inbox→ready
 - 2026-09-21T13:24:24Z · cli_override
 - 2026-09-21T13:24:30Z · model_override
+- 2026-09-21T13:24:33Z · status ready→active, branch
