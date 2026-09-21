@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-21T11:53:39Z"
-review_passes: 2
 id: "0466"
 title: Add versioned coding-harness compatibility contracts
 type: feature
-status: review
+status: active
 priority: p1
 area: agent
 assigned_to: ai
@@ -14,7 +12,9 @@ cli_override: github copilot
 model_override: default
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-21T09:13:33Z"
-review_rounds: 1
+updated_at: "2026-09-21T11:53:39Z"
+review_rounds: 2
+review_passes: 2
 handoff_signal_retry_count: 1
 ---
 ## Outcome
@@ -86,4 +86,4 @@ Create a sustainable versioned coding-harness compatibility policy. Support the 
 - 2026-09-21T11:04:51Z · status active→review
 - 2026-09-21T11:06:02Z · status review→active
 - 2026-09-21T11:52:32Z · status active→review
-
+- 2026-09-21T11:53:39Z · status review→active
