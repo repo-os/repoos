@@ -215,12 +215,17 @@ export function draftColumnWithLabel(labels: Record<string, string>): Column {
   return { id: "draft", label: labels.draft ?? "Proposed / Drafts", color: "var(--txt-faint)" };
 }
 
-/** "recent" sorts by updated_at desc; "current" is the backend's status/priority/id order. */
-export type SortOrder = "recent" | "current";
+/** Sort modes for work-page task columns. "recent" sorts by updated_at desc,
+ * "current" keeps the backend's status/priority/id order, and the task-number
+ * modes compare the numeric task id (e.g. 0468) rather than its string form.
+ */
+export type SortOrder = "recent" | "current" | "taskNumberNewest" | "taskNumberOldest";
 
 export const SORT_ORDER_OPTIONS: { value: SortOrder; label: string }[] = [
   { value: "recent", label: "Most recently updated" },
   { value: "current", label: "Priority level" },
+  { value: "taskNumberNewest", label: "Task number newest" },
+  { value: "taskNumberOldest", label: "Task number oldest" },
 ];
 
 const SORT_ORDER_KEY = "repoos.board.sortOrder";
@@ -306,10 +311,19 @@ function readSortOrder(): SortOrder {
     const raw = localStorage.getItem(SORT_ORDER_KEY);
     if (raw === null) return "recent";
     const v = JSON.parse(raw);
-    return v === "recent" || v === "current" ? v : "recent";
+    return v === "recent" || v === "current" || v === "taskNumberNewest" || v === "taskNumberOldest"
+      ? v
+      : "recent";
   } catch {
     return "recent";
   }
+}
+
+function taskNumberValue(task: Pick<Task, "id">): number {
+  const raw = task.id.trim();
+  if (!/^\d+$/.test(raw)) return Number.NEGATIVE_INFINITY;
+  const value = Number.parseInt(raw, 10);
+  return Number.isFinite(value) ? value : Number.NEGATIVE_INFINITY;
 }
 
 /** The persisted "new version available" notice, or null. */
@@ -537,12 +551,36 @@ export const useRepoStore = defineStore("repo", () => {
 
   const byStatus = (s: string): Task[] => {
     const filtered = tasks.value.filter((t) => t.status === s);
-    if (sortOrder.value !== "recent") return filtered;
-    return [...filtered].sort((a, b) => {
-      if (!a.updated_at) return b.updated_at ? 1 : 0;
-      if (!b.updated_at) return -1;
-      return b.updated_at.localeCompare(a.updated_at);
-    });
+
+    switch (sortOrder.value) {
+      case "recent":
+        return [...filtered].sort((a, b) => {
+          if (!a.updated_at) return b.updated_at ? 1 : 0;
+          if (!b.updated_at) return -1;
+          return b.updated_at.localeCompare(a.updated_at);
+        });
+      case "taskNumberNewest":
+        return [...filtered].sort((a, b) => {
+          const na = taskNumberValue(a);
+          const nb = taskNumberValue(b);
+          if (na === nb) return 0;
+          if (!Number.isFinite(na)) return 1;
+          if (!Number.isFinite(nb)) return -1;
+          return nb - na;
+        });
+      case "taskNumberOldest":
+        return [...filtered].sort((a, b) => {
+          const na = taskNumberValue(a);
+          const nb = taskNumberValue(b);
+          if (na === nb) return 0;
+          if (!Number.isFinite(na)) return 1;
+          if (!Number.isFinite(nb)) return -1;
+          return na - nb;
+        });
+      case "current":
+      default:
+        return filtered;
+    }
   };
 
   function setSortOrder(order: SortOrder): void {
