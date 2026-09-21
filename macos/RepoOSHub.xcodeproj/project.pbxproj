@@ -21,6 +21,12 @@
 		A0000000000000000000000C /* ServerOriginNormalizerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001E /* ServerOriginNormalizerTests.swift */; };
 		A0000000000000000000000D /* ServerRegistryStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001F /* ServerRegistryStoreTests.swift */; };
 		A0000000000000000000000E /* ReachabilityStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000020 /* ReachabilityStateTests.swift */; };
+		A0000000000000000000000F /* HubNavigationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000027 /* HubNavigationModels.swift */; };
+		A00000000000000000000010 /* HubCommandPaletteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000028 /* HubCommandPaletteView.swift */; };
+		A00000000000000000000011 /* HubWorkspaceToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000029 /* HubWorkspaceToolbar.swift */; };
+		A00000000000000000000012 /* CommandPaletteMatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000002A /* CommandPaletteMatcherTests.swift */; };
+		A00000000000000000000014 /* PinTaskContextSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000002C /* PinTaskContextSheet.swift */; };
+		A00000000000000000000013 /* HubRecentsRetentionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000002B /* HubRecentsRetentionTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -45,6 +51,12 @@
 		A0000000000000000000001E /* ServerOriginNormalizerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerOriginNormalizerTests.swift; sourceTree = "<group>"; };
 		A0000000000000000000001F /* ServerRegistryStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerRegistryStoreTests.swift; sourceTree = "<group>"; };
 		A00000000000000000000020 /* ReachabilityStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReachabilityStateTests.swift; sourceTree = "<group>"; };
+		A00000000000000000000027 /* HubNavigationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubNavigationModels.swift; sourceTree = "<group>"; };
+		A00000000000000000000028 /* HubCommandPaletteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubCommandPaletteView.swift; sourceTree = "<group>"; };
+		A00000000000000000000029 /* HubWorkspaceToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubWorkspaceToolbar.swift; sourceTree = "<group>"; };
+		A0000000000000000000002A /* CommandPaletteMatcherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandPaletteMatcherTests.swift; sourceTree = "<group>"; };
+		A0000000000000000000002B /* HubRecentsRetentionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubRecentsRetentionTests.swift; sourceTree = "<group>"; };
+		A0000000000000000000002C /* PinTaskContextSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinTaskContextSheet.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -54,8 +66,8 @@
 
 /* Begin PBXGroup section */
 		A00000000000000000000030 = {isa = PBXGroup; children = ( A00000000000000000000031, A00000000000000000000032, A00000000000000000000033, ); sourceTree = "<group>"; };
-		A00000000000000000000031 /* RepoOSHub */ = {isa = PBXGroup; children = ( A00000000000000000000011, A00000000000000000000012, A00000000000000000000016, A00000000000000000000017, A00000000000000000000018, A00000000000000000000019, A0000000000000000000001A, A0000000000000000000001B, A0000000000000000000001C, A0000000000000000000001D, A00000000000000000000015, ); path = RepoOSHub; sourceTree = "<group>"; };
-		A00000000000000000000032 /* RepoOSHubTests */ = {isa = PBXGroup; children = ( A00000000000000000000013, A0000000000000000000001E, A0000000000000000000001F, A00000000000000000000020, ); path = RepoOSHubTests; sourceTree = "<group>"; };
+		A00000000000000000000031 /* RepoOSHub */ = {isa = PBXGroup; children = ( A00000000000000000000011, A00000000000000000000012, A00000000000000000000016, A00000000000000000000017, A00000000000000000000018, A00000000000000000000019, A0000000000000000000001A, A0000000000000000000001B, A0000000000000000000001C, A0000000000000000000001D, A00000000000000000000027, A00000000000000000000028, A00000000000000000000029, A0000000000000000000002C, A00000000000000000000015, ); path = RepoOSHub; sourceTree = "<group>"; };
+		A00000000000000000000032 /* RepoOSHubTests */ = {isa = PBXGroup; children = ( A00000000000000000000013, A0000000000000000000001E, A0000000000000000000001F, A00000000000000000000020, A0000000000000000000002A, A0000000000000000000002B, ); path = RepoOSHubTests; sourceTree = "<group>"; };
 		A00000000000000000000033 /* Products */ = {isa = PBXGroup; children = ( A00000000000000000000010, A00000000000000000000014, ); name = Products; sourceTree = "<group>"; };
 /* End PBXGroup section */
 
@@ -74,8 +86,8 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		A00000000000000000000041 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = ( A00000000000000000000001, A00000000000000000000002, A00000000000000000000004, A00000000000000000000005, A00000000000000000000006, A00000000000000000000007, A00000000000000000000008, A00000000000000000000009, A0000000000000000000000A, A0000000000000000000000B, ); runOnlyForDeploymentPostprocessing = 0; };
-		A00000000000000000000044 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = ( A00000000000000000000003, A0000000000000000000000C, A0000000000000000000000D, A0000000000000000000000E, ); runOnlyForDeploymentPostprocessing = 0; };
+		A00000000000000000000041 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = ( A00000000000000000000001, A00000000000000000000002, A00000000000000000000004, A00000000000000000000005, A00000000000000000000006, A00000000000000000000007, A00000000000000000000008, A00000000000000000000009, A0000000000000000000000A, A0000000000000000000000B, A0000000000000000000000F, A00000000000000000000010, A00000000000000000000011, A00000000000000000000014, ); runOnlyForDeploymentPostprocessing = 0; };
+		A00000000000000000000044 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = ( A00000000000000000000003, A0000000000000000000000C, A0000000000000000000000D, A0000000000000000000000E, A00000000000000000000012, A00000000000000000000013, ); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */

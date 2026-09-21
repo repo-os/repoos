@@ -32,7 +32,7 @@ private struct RegistryEmptyState: View {
             Text("Add your first RepoOS server")
                 .font(.title2.weight(.semibold))
 
-            Text("Servers stay on this Mac. The Hub checks /api/health when you add or edit an entry, then opens the web workspace here in a later release.")
+            Text("Servers stay on this Mac. The Hub checks /api/health when you add or edit an entry, then opens the web workspace here. Use ⌘K to switch servers or reopen recent contexts.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: 440)
@@ -92,7 +92,7 @@ private struct SelectedServerWorkspace: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Web workspace")
                         .font(.headline)
-                    Text("The RepoOS web UI for this server will load in this area once the isolated WebKit shell ships. Your saved entry and session settings remain on this device.")
+                    Text("The RepoOS web UI for this server loads in this area when the isolated WebKit shell is active. Back, forward, and reload in the toolbar target the embedded page; ⌘K switches servers without using the sidebar.")
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -101,6 +101,10 @@ private struct SelectedServerWorkspace: View {
             }
 
             HStack(spacing: 12) {
+                Button("Quick switcher…") {
+                    appState.presentCommandPalette()
+                }
+                .keyboardShortcut("k", modifiers: .command)
                 Button("Check connection") {
                     Task { await appState.refreshHealth(for: entry.id) }
                 }

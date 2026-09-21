@@ -8,8 +8,11 @@ no third-party dependencies.
 The scaffold ships a native sidebar workspace with a **local server registry**
 (Application Support JSON). Adding or editing a server normalizes HTTPS origins,
 calls `GET /api/health` with a 10-second timeout, and only then persists the
-entry. The main content area shows the selected server and connection recovery
-actions; isolated WebKit loading is a follow-up task.
+entry. The main content area hosts the selected server workspace (WebKit when
+available) with native back/forward/reload and a **⌘K quick switcher** for
+servers, recents, and pinned task contexts. See
+[docs/macos-hub-navigation-retention.md](../docs/macos-hub-navigation-retention.md)
+for recents retention rules.
 
 ## Requirements
 

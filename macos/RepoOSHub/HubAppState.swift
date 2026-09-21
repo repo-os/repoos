@@ -8,6 +8,10 @@ final class HubAppState: ObservableObject {
     @Published var editorSheet: ServerEditorSheetModel?
     @Published var lastConnectionMessage: String?
     @Published private(set) var isPerformingHealthCheck = false
+    @Published var isCommandPalettePresented = false
+    @Published var pinTaskContextServerID: UUID?
+    @Published private(set) var workspaceNavigation = WorkspaceNavigationSnapshot.placeholder
+    @Published private(set) var pendingNavigationRequest: HubNavigationRequest?
 
     private let store: ServerRegistryStore
     private let healthChecker: HealthChecking
@@ -34,6 +38,18 @@ final class HubAppState: ObservableObject {
 
     var pinnedEntries: [ServerEntry] {
         entries.filter(\.isPinned).sorted(by: entrySort)
+    }
+
+    var serverRecents: [ServerRecentMetadata] {
+        document.serverRecents
+    }
+
+    var pinnedTaskContexts: [PinnedTaskContext] {
+        document.pinnedTaskContexts
+    }
+
+    var pinnedTaskContextsForSidebar: [PinnedTaskContext] {
+        document.pinnedTaskContexts.sorted { $0.pinnedAt > $1.pinnedAt }
     }
 
     var groupedEntries: [(title: String, entries: [ServerEntry])] {
@@ -63,6 +79,8 @@ final class HubAppState: ObservableObject {
             } else {
                 selectedServerID = entries.first?.id
             }
+            pruneOrphanNavigationMetadata()
+            restorePendingRouteForSelectedServer()
         } catch {
             document = ServerRegistryDocument()
             entries = []
@@ -74,10 +92,131 @@ final class HubAppState: ObservableObject {
         guard selectedServerID != id else { return }
         selectedServerID = id
         document.lastSelectedServerID = id
+        workspaceNavigation = .placeholder
         persistQuietly()
+        restorePendingRouteForSelectedServer()
         if let id {
             Task { await refreshHealth(for: id) }
         }
+    }
+
+    func presentPinTaskContext(for entry: ServerEntry) {
+        pinTaskContextServerID = entry.id
+    }
+
+    func dismissPinTaskContextSheet() {
+        pinTaskContextServerID = nil
+    }
+
+    func presentCommandPalette() {
+        isCommandPalettePresented = true
+    }
+
+    func dismissCommandPalette() {
+        isCommandPalettePresented = false
+    }
+
+    func performCommandPaletteAction(_ action: CommandPaletteAction) {
+        switch action {
+        case .selectServer(let id):
+            selectServer(id)
+        case .openRecent(let serverID, let path):
+            selectServer(serverID)
+            requestNavigation(serverID: serverID, path: path)
+        case .openPinned(let pin):
+            selectServer(pin.serverID)
+            requestNavigation(serverID: pin.serverID, path: pin.routePath)
+        case .addServer:
+            presentAddServer()
+        }
+    }
+
+    func requestNavigation(serverID: UUID, path: String) {
+        let normalized = HubRecentsRetention.normalizeRoutePath(path)
+        guard !normalized.isEmpty else { return }
+        recordRouteVisit(serverID: serverID, path: normalized, title: nil)
+        pendingNavigationRequest = HubNavigationRequest(serverID: serverID, path: normalized)
+        NotificationCenter.default.post(
+            name: .hubWebNavigationNavigate,
+            object: nil,
+            userInfo: ["serverID": serverID, "path": normalized]
+        )
+    }
+
+    func recordRouteVisit(serverID: UUID, path: String, title: String?) {
+        let normalized = HubRecentsRetention.normalizeRoutePath(path)
+        guard !normalized.isEmpty else { return }
+        var meta = document.serverRecents.first { $0.serverID == serverID }
+            ?? ServerRecentMetadata(serverID: serverID)
+        meta = HubRecentsRetention.recordVisit(
+            path: normalized,
+            title: title,
+            visitedAt: Date(),
+            metadata: meta
+        )
+        upsertRecentMetadata(meta)
+        persistQuietly()
+    }
+
+    func pinTaskContext(
+        serverID: UUID,
+        taskIdentifier: String,
+        routePath: String,
+        label: String
+    ) {
+        let normalizedPath = HubRecentsRetention.normalizeRoutePath(routePath)
+        let trimmedLabel = label.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedTask = taskIdentifier.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalizedPath.isEmpty, !trimmedLabel.isEmpty, !trimmedTask.isEmpty else { return }
+
+        document.pinnedTaskContexts.removeAll {
+            $0.serverID == serverID && $0.taskIdentifier == trimmedTask
+        }
+        document.pinnedTaskContexts.append(
+            PinnedTaskContext(
+                serverID: serverID,
+                taskIdentifier: trimmedTask,
+                routePath: normalizedPath,
+                label: trimmedLabel
+            )
+        )
+        try? store.save(document)
+    }
+
+    func unpinTaskContext(_ context: PinnedTaskContext) {
+        document.pinnedTaskContexts.removeAll { $0.id == context.id }
+        try? store.save(document)
+    }
+
+    func updateWorkspaceNavigation(_ snapshot: WorkspaceNavigationSnapshot) {
+        workspaceNavigation = snapshot
+    }
+
+    func workspaceGoBack() {
+        guard workspaceNavigation.canGoBack else { return }
+        NotificationCenter.default.post(name: .hubWebNavigationBack, object: selectedServerID)
+    }
+
+    func workspaceGoForward() {
+        guard workspaceNavigation.canGoForward else { return }
+        NotificationCenter.default.post(name: .hubWebNavigationForward, object: selectedServerID)
+    }
+
+    func workspaceReload() {
+        if workspaceNavigation.hasEmbeddedWebContent {
+            NotificationCenter.default.post(name: .hubWebNavigationReload, object: selectedServerID)
+            if let selectedServerID {
+                NotificationCenter.default.post(name: .serverWebViewReload, object: selectedServerID)
+            }
+        } else if let id = selectedServerID {
+            Task { await refreshHealth(for: id) }
+        }
+    }
+
+    func consumePendingNavigationRequest(for serverID: UUID) -> HubNavigationRequest? {
+        guard let request = pendingNavigationRequest, request.serverID == serverID else { return nil }
+        pendingNavigationRequest = nil
+        return request
     }
 
     func setPinned(_ entry: ServerEntry, pinned: Bool) {
@@ -108,6 +247,7 @@ final class HubAppState: ObservableObject {
             if selectedServerID == entry.id {
                 selectedServerID = document.lastSelectedServerID
             }
+            pruneOrphanNavigationMetadata()
             try store.save(document)
             lastConnectionMessage = nil
         } catch {
@@ -228,6 +368,28 @@ final class HubAppState: ObservableObject {
 
     private func persistQuietly() {
         try? store.save(document)
+    }
+
+    private func upsertRecentMetadata(_ metadata: ServerRecentMetadata) {
+        if let index = document.serverRecents.firstIndex(where: { $0.serverID == metadata.serverID }) {
+            document.serverRecents[index] = metadata
+        } else {
+            document.serverRecents.append(metadata)
+        }
+    }
+
+    private func pruneOrphanNavigationMetadata() {
+        let valid = Set(document.entries.map(\.id))
+        document.serverRecents = HubRecentsRetention.prune(metadata: document.serverRecents, validServerIDs: valid)
+        document.pinnedTaskContexts = HubRecentsRetention.prune(pinned: document.pinnedTaskContexts, validServerIDs: valid)
+    }
+
+    private func restorePendingRouteForSelectedServer() {
+        guard let serverID = selectedServerID,
+              let meta = document.serverRecents.first(where: { $0.serverID == serverID }),
+              let path = meta.lastRoutePath
+        else { return }
+        pendingNavigationRequest = HubNavigationRequest(serverID: serverID, path: path)
     }
 
     private func reorder(entries subset: [ServerEntry], subsetIDs: Set<UUID>, from source: IndexSet, to destination: Int) {
