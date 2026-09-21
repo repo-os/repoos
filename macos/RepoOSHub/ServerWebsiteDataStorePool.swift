@@ -47,4 +47,16 @@ final class ServerWebsiteDataStorePool {
             }
         }
     }
+
+    /// Drops in-memory web session handles for servers that are not active; cookies remain on disk.
+    func releaseCachedStores(except activeServerID: UUID?) {
+        lock.lock()
+        if let activeServerID {
+            let active = stores[activeServerID]
+            stores = active.map { [activeServerID: $0] } ?? [:]
+        } else {
+            stores = [:]
+        }
+        lock.unlock()
+    }
 }

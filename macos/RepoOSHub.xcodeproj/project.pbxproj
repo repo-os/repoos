@@ -7,33 +7,45 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A00000000000000000000001 /* RepoOSHubApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000011 /* RepoOSHubApp.swift */; };
-		A00000000000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000012 /* ContentView.swift */; };
-		A00000000000000000000003 /* RepoOSHubTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000013 /* RepoOSHubTests.swift */; };
-		A00000000000000000000004 /* ServerModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000016 /* ServerModels.swift */; };
-		A00000000000000000000005 /* ServerOriginNormalizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000017 /* ServerOriginNormalizer.swift */; };
-		A00000000000000000000006 /* HealthCheckService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000018 /* HealthCheckService.swift */; };
-		A00000000000000000000007 /* ServerRegistryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000019 /* ServerRegistryStore.swift */; };
-		A00000000000000000000008 /* HubAppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001A /* HubAppState.swift */; };
-		A00000000000000000000009 /* ServerSidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001B /* ServerSidebarView.swift */; };
-		A0000000000000000000000A /* ServerEditorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001C /* ServerEditorSheet.swift */; };
-		A0000000000000000000000B /* WorkspaceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001D /* WorkspaceDetailView.swift */; };
-		A0000000000000000000000C /* ServerOriginNormalizerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001E /* ServerOriginNormalizerTests.swift */; };
-		A0000000000000000000000D /* ServerRegistryStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001F /* ServerRegistryStoreTests.swift */; };
-		A0000000000000000000000E /* ReachabilityStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000020 /* ReachabilityStateTests.swift */; };
-		A0000000000000000000000F /* HubNavigationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000027 /* HubNavigationModels.swift */; };
-		A00000000000000000000080 /* HubCommandPaletteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000028 /* HubCommandPaletteView.swift */; };
-		A00000000000000000000081 /* HubWorkspaceToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000029 /* HubWorkspaceToolbar.swift */; };
-		A00000000000000000000082 /* CommandPaletteMatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000002A /* CommandPaletteMatcherTests.swift */; };
-		A00000000000000000000083 /* PinTaskContextSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000002C /* PinTaskContextSheet.swift */; };
-		A00000000000000000000084 /* HubRecentsRetentionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000002B /* HubRecentsRetentionTests.swift */; };
-		A00000000000000000000085 /* ServerNavigationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003B /* ServerNavigationPolicy.swift */; };
-		A00000000000000000000086 /* ServerWebsiteDataStorePool.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003C /* ServerWebsiteDataStorePool.swift */; };
-		A00000000000000000000087 /* IsolatedServerWebViewFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000034 /* IsolatedServerWebViewFactory.swift */; };
-		A00000000000000000000088 /* ServerWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000035 /* ServerWebView.swift */; };
-		A00000000000000000000089 /* ServerWebWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000036 /* ServerWebWorkspaceView.swift */; };
-		A00000000000000000000037 /* ServerNavigationPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000038 /* ServerNavigationPolicyTests.swift */; };
-		A00000000000000000000039 /* IsolatedServerWebViewFactoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003A /* IsolatedServerWebViewFactoryTests.swift */; };
+		C00000000000000000000001 /* RepoOSHubApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000011 /* RepoOSHubApp.swift */; };
+		C00000000000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000012 /* ContentView.swift */; };
+		C00000000000000000000003 /* RepoOSHubTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000013 /* RepoOSHubTests.swift */; };
+		C00000000000000000000004 /* ServerModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000016 /* ServerModels.swift */; };
+		C00000000000000000000005 /* ServerOriginNormalizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000017 /* ServerOriginNormalizer.swift */; };
+		C00000000000000000000006 /* HealthCheckService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000018 /* HealthCheckService.swift */; };
+		C00000000000000000000007 /* ServerRegistryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000019 /* ServerRegistryStore.swift */; };
+		C00000000000000000000008 /* HubAppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001A /* HubAppState.swift */; };
+		C00000000000000000000009 /* ServerSidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001B /* ServerSidebarView.swift */; };
+		C0000000000000000000000A /* ServerEditorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001C /* ServerEditorSheet.swift */; };
+		C0000000000000000000000B /* WorkspaceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001D /* WorkspaceDetailView.swift */; };
+		C0000000000000000000000C /* ServerOriginNormalizerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001E /* ServerOriginNormalizerTests.swift */; };
+		C0000000000000000000000D /* ServerRegistryStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001F /* ServerRegistryStoreTests.swift */; };
+		C0000000000000000000000E /* ReachabilityStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000020 /* ReachabilityStateTests.swift */; };
+		C0000000000000000000000F /* HubNavigationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000027 /* HubNavigationModels.swift */; };
+		C00000000000000000000010 /* HubCommandPaletteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000028 /* HubCommandPaletteView.swift */; };
+		C00000000000000000000011 /* HubWorkspaceToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000029 /* HubWorkspaceToolbar.swift */; };
+		C00000000000000000000012 /* CommandPaletteMatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000002A /* CommandPaletteMatcherTests.swift */; };
+		C00000000000000000000013 /* HubRecentsRetentionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000002B /* HubRecentsRetentionTests.swift */; };
+		C00000000000000000000014 /* PinTaskContextSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000002C /* PinTaskContextSheet.swift */; };
+		C00000000000000000000015 /* ServerNavigationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003B /* ServerNavigationPolicy.swift */; };
+		C00000000000000000000016 /* ServerWebsiteDataStorePool.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003C /* ServerWebsiteDataStorePool.swift */; };
+		C00000000000000000000017 /* IsolatedServerWebViewFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000034 /* IsolatedServerWebViewFactory.swift */; };
+		C00000000000000000000018 /* ServerWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000035 /* ServerWebView.swift */; };
+		C00000000000000000000019 /* ServerWebWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000036 /* ServerWebWorkspaceView.swift */; };
+		C0000000000000000000001A /* ServerNavigationPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000038 /* ServerNavigationPolicyTests.swift */; };
+		C0000000000000000000001B /* IsolatedServerWebViewFactoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003A /* IsolatedServerWebViewFactoryTests.swift */; };
+		C0000000000000000000001C /* HubAttentionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000063 /* HubAttentionModels.swift */; };
+		C0000000000000000000001D /* HubSummaryRefreshPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000064 /* HubSummaryRefreshPolicy.swift */; };
+		C0000000000000000000001E /* HubSummaryClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000065 /* HubSummaryClient.swift */; };
+		C0000000000000000000001F /* HubCapabilityKeychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000066 /* HubCapabilityKeychain.swift */; };
+		C00000000000000000000020 /* HubNotificationEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000067 /* HubNotificationEngine.swift */; };
+		C00000000000000000000021 /* HubAttentionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000068 /* HubAttentionCoordinator.swift */; };
+		C00000000000000000000022 /* HubServerAttentionSettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000069 /* HubServerAttentionSettingsSheet.swift */; };
+		C00000000000000000000023 /* HubNotificationDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000006A /* HubNotificationDelegate.swift */; };
+		C00000000000000000000024 /* HubSummaryRefreshPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000006B /* HubSummaryRefreshPolicyTests.swift */; };
+		C00000000000000000000025 /* HubAttentionFreshnessTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000006C /* HubAttentionFreshnessTests.swift */; };
+		C00000000000000000000026 /* HubNotificationEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000006D /* HubNotificationEngineTests.swift */; };
+		C00000000000000000000027 /* HubBadgeTransitionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000006E /* HubBadgeTransitionTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -71,6 +83,18 @@
 		A00000000000000000000036 /* ServerWebWorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerWebWorkspaceView.swift; sourceTree = "<group>"; };
 		A00000000000000000000038 /* ServerNavigationPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerNavigationPolicyTests.swift; sourceTree = "<group>"; };
 		A0000000000000000000003A /* IsolatedServerWebViewFactoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IsolatedServerWebViewFactoryTests.swift; sourceTree = "<group>"; };
+		A00000000000000000000063 /* HubAttentionModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubAttentionModels.swift; sourceTree = "<group>"; };
+		A00000000000000000000064 /* HubSummaryRefreshPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubSummaryRefreshPolicy.swift; sourceTree = "<group>"; };
+		A00000000000000000000065 /* HubSummaryClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubSummaryClient.swift; sourceTree = "<group>"; };
+		A00000000000000000000066 /* HubCapabilityKeychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubCapabilityKeychain.swift; sourceTree = "<group>"; };
+		A00000000000000000000067 /* HubNotificationEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubNotificationEngine.swift; sourceTree = "<group>"; };
+		A00000000000000000000068 /* HubAttentionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubAttentionCoordinator.swift; sourceTree = "<group>"; };
+		A00000000000000000000069 /* HubServerAttentionSettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubServerAttentionSettingsSheet.swift; sourceTree = "<group>"; };
+		A0000000000000000000006A /* HubNotificationDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubNotificationDelegate.swift; sourceTree = "<group>"; };
+		A0000000000000000000006B /* HubSummaryRefreshPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubSummaryRefreshPolicyTests.swift; sourceTree = "<group>"; };
+		A0000000000000000000006C /* HubAttentionFreshnessTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubAttentionFreshnessTests.swift; sourceTree = "<group>"; };
+		A0000000000000000000006D /* HubNotificationEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubNotificationEngineTests.swift; sourceTree = "<group>"; };
+		A0000000000000000000006E /* HubBadgeTransitionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubBadgeTransitionTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -79,9 +103,9 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		A00000000000000000000030 = {isa = PBXGroup; children = ( A00000000000000000000031, A00000000000000000000032, A00000000000000000000033, ); sourceTree = "<group>"; };
-		A00000000000000000000031 /* RepoOSHub */ = {isa = PBXGroup; children = ( A00000000000000000000011, A00000000000000000000012, A00000000000000000000016, A00000000000000000000017, A00000000000000000000018, A00000000000000000000019, A0000000000000000000001A, A0000000000000000000001B, A0000000000000000000001C, A0000000000000000000001D, A00000000000000000000027, A00000000000000000000028, A00000000000000000000029, A0000000000000000000002C, A0000000000000000000003B, A0000000000000000000003C, A00000000000000000000034, A00000000000000000000035, A00000000000000000000036, A00000000000000000000015, ); path = RepoOSHub; sourceTree = "<group>"; };
-		A00000000000000000000032 /* RepoOSHubTests */ = {isa = PBXGroup; children = ( A00000000000000000000013, A0000000000000000000001E, A0000000000000000000001F, A00000000000000000000020, A0000000000000000000002A, A0000000000000000000002B, A00000000000000000000038, A0000000000000000000003A, ); path = RepoOSHubTests; sourceTree = "<group>"; };
+		B00000000000000000000001 = {isa = PBXGroup; children = ( B00000000000000000000002, A00000000000000000000032, A00000000000000000000033, ); sourceTree = "<group>"; };
+		B00000000000000000000002 /* RepoOSHub */ = {isa = PBXGroup; children = ( A00000000000000000000011, A00000000000000000000012, A00000000000000000000016, A00000000000000000000017, A00000000000000000000018, A00000000000000000000019, A0000000000000000000001A, A0000000000000000000001B, A0000000000000000000001C, A0000000000000000000001D, A00000000000000000000027, A00000000000000000000028, A00000000000000000000029, A0000000000000000000002C, A0000000000000000000003B, A0000000000000000000003C, A00000000000000000000034, A00000000000000000000035, A00000000000000000000036, A00000000000000000000063, A00000000000000000000064, A00000000000000000000065, A00000000000000000000066, A00000000000000000000067, A00000000000000000000068, A00000000000000000000069, A0000000000000000000006A, A00000000000000000000015, ); path = RepoOSHub; sourceTree = "<group>"; };
+		A00000000000000000000032 /* RepoOSHubTests */ = {isa = PBXGroup; children = ( A00000000000000000000013, A0000000000000000000001E, A0000000000000000000001F, A00000000000000000000020, A0000000000000000000002A, A0000000000000000000002B, A00000000000000000000038, A0000000000000000000003A, A0000000000000000000006B, A0000000000000000000006C, A0000000000000000000006D, A0000000000000000000006E, ); path = RepoOSHubTests; sourceTree = "<group>"; };
 		A00000000000000000000033 /* Products */ = {isa = PBXGroup; children = ( A00000000000000000000010, A00000000000000000000014, ); name = Products; sourceTree = "<group>"; };
 /* End PBXGroup section */
 
@@ -91,7 +115,7 @@
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		A00000000000000000000060 /* Project object */ = {isa = PBXProject; attributes = { LastSwiftUpdateCheck = 1500; LastUpgradeCheck = 1500; TargetAttributes = { A00000000000000000000040 = { CreatedOnToolsVersion = 15.0; }; A00000000000000000000043 = { CreatedOnToolsVersion = 15.0; TestTargetID = A00000000000000000000040; }; }; }; buildConfigurationList = A00000000000000000000052 /* Build configuration list for PBXProject "RepoOSHub" */; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = ( en, Base, ); mainGroup = A00000000000000000000030; productRefGroup = A00000000000000000000033 /* Products */; projectDirPath = ""; projectRoot = ""; targets = ( A00000000000000000000040, A00000000000000000000043, ); };
+		A00000000000000000000060 /* Project object */ = {isa = PBXProject; attributes = { LastSwiftUpdateCheck = 1500; LastUpgradeCheck = 1500; TargetAttributes = { A00000000000000000000040 = { CreatedOnToolsVersion = 15.0; }; A00000000000000000000043 = { CreatedOnToolsVersion = 15.0; TestTargetID = A00000000000000000000040; }; }; }; buildConfigurationList = A00000000000000000000052 /* Build configuration list for PBXProject "RepoOSHub" */; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = ( en, Base, ); mainGroup = B00000000000000000000001; productRefGroup = A00000000000000000000033 /* Products */; projectDirPath = ""; projectRoot = ""; targets = ( A00000000000000000000040, A00000000000000000000043, ); };
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
@@ -100,8 +124,8 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		A00000000000000000000041 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = ( A00000000000000000000001, A00000000000000000000002, A00000000000000000000004, A00000000000000000000005, A00000000000000000000006, A00000000000000000000007, A00000000000000000000008, A00000000000000000000009, A0000000000000000000000A, A0000000000000000000000B, A0000000000000000000000F, A00000000000000000000080, A00000000000000000000081, A00000000000000000000083, A00000000000000000000085, A00000000000000000000086, A00000000000000000000087, A00000000000000000000088, A00000000000000000000089, ); runOnlyForDeploymentPostprocessing = 0; };
-		A00000000000000000000044 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = ( A00000000000000000000003, A0000000000000000000000C, A0000000000000000000000D, A0000000000000000000000E, A00000000000000000000082, A00000000000000000000084, A00000000000000000000037, A00000000000000000000039, ); runOnlyForDeploymentPostprocessing = 0; };
+		A00000000000000000000041 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = ( C00000000000000000000001, C00000000000000000000002, C00000000000000000000004, C00000000000000000000005, C00000000000000000000006, C00000000000000000000007, C00000000000000000000008, C00000000000000000000009, C0000000000000000000000A, C0000000000000000000000B, C0000000000000000000000F, C00000000000000000000010, C00000000000000000000011, C00000000000000000000014, C00000000000000000000015, C00000000000000000000016, C00000000000000000000017, C00000000000000000000018, C00000000000000000000019, C0000000000000000000001C, C0000000000000000000001D, C0000000000000000000001E, C0000000000000000000001F, C00000000000000000000020, C00000000000000000000021, C00000000000000000000022, C00000000000000000000023, ); runOnlyForDeploymentPostprocessing = 0; };
+		A00000000000000000000044 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = ( C00000000000000000000003, C0000000000000000000000C, C0000000000000000000000D, C0000000000000000000000E, C00000000000000000000012, C00000000000000000000013, C0000000000000000000001A, C0000000000000000000001B, C00000000000000000000024, C00000000000000000000025, C00000000000000000000026, C00000000000000000000027, ); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */

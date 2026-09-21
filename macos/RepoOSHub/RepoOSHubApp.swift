@@ -1,14 +1,23 @@
 import SwiftUI
+import UserNotifications
 
 @main
 struct RepoOSHubApp: App {
     @StateObject private var appState = HubAppState()
+    @State private var notificationDelegate = HubNotificationDelegate()
 
     var body: some Scene {
         WindowGroup("RepoOS Hub") {
             ContentView()
                 .environmentObject(appState)
                 .frame(minWidth: 880, minHeight: 520)
+                .onAppear {
+                    UNUserNotificationCenter.current().delegate = notificationDelegate
+                    notificationDelegate.requestAuthorizationIfNeeded()
+                    notificationDelegate.onOpenNavigation = { serverID, path in
+                        appState.handleHubNotificationOpen(serverID: serverID, path: path)
+                    }
+                }
         }
         .commands {
             CommandGroup(after: .newItem) {
@@ -42,6 +51,10 @@ struct RepoOSHubApp: App {
                 }
                 .keyboardShortcut("r", modifiers: .command)
             }
+        }
+        Settings {
+            HubGlobalAttentionSettingsView()
+                .environmentObject(appState)
         }
     }
 }
