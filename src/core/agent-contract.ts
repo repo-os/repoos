@@ -234,6 +234,21 @@ function waitForExit(proc: ReturnType<typeof spawn>, timeoutMs: number): Promise
       clearTimeout(timer);
       done({ code, signal, stdout, stderr, timedOut: false });
     });
+    // A process that already exited (e.g. it errored out on its own before
+    // SIGTERM was delivered) will never emit another `close`. The listeners are
+    // attached above first, so resolving from the recorded state here cannot
+    // race a not-yet-delivered event; without this, the probe would stall for
+    // the full timeout on every run that exits early.
+    if (proc.exitCode !== null || proc.signalCode !== null) {
+      clearTimeout(timer);
+      done({
+        code: proc.exitCode,
+        signal: proc.signalCode,
+        stdout,
+        stderr,
+        timedOut: false,
+      });
+    }
   });
 }
 
@@ -475,18 +490,26 @@ export async function runAdapterContract(
       });
       // Give the harness a moment to actually start, then ask it to stop.
       await new Promise((resolve) => setTimeout(resolve, 300));
-      try {
-        cancelProc.kill("SIGTERM");
-      } catch {
-        /* process already gone */
+      if (cancelProc.exitCode !== null || cancelProc.signalCode !== null) {
+        // The run ended before we could signal it: cancellation was never
+        // exercised, so do not credit the seam. (Common for a harness that
+        // fails immediately — e.g. the broken-stream fixture.)
+        cancelOk = false;
+        cancelDetail = `the run exited on its own (code ${cancelProc.exitCode ?? "signal " + cancelProc.signalCode}) before SIGTERM could be delivered; cancellation was not exercised`;
+      } else {
+        try {
+          cancelProc.kill("SIGTERM");
+        } catch {
+          /* process already gone */
+        }
+        const cancelExit = await waitForExit(cancelProc, 10_000);
+        cancelOk = cancelExit.code !== null || cancelExit.signal !== null;
+        cancelDetail = cancelOk
+          ? `SIGTERM stopped the run (exit ${cancelExit.code ?? "signal " + cancelExit.signal})`
+          : cancelExit.timedOut
+            ? "the run ignored SIGTERM and had to be SIGKILLed after 10s"
+            : "the run exited without a code/signal";
       }
-      const cancelExit = await waitForExit(cancelProc, 10_000);
-      cancelOk = cancelExit.code !== null || cancelExit.signal !== null;
-      cancelDetail = cancelOk
-        ? `SIGTERM stopped the run (exit ${cancelExit.code ?? "signal " + cancelExit.signal})`
-        : cancelExit.timedOut
-          ? "the run ignored SIGTERM and had to be SIGKILLed after 10s"
-          : "the run exited without a code/signal";
     } catch (e) {
       cancelDetail = String(e);
     }

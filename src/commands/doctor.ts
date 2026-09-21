@@ -26,6 +26,32 @@ import { c } from "../cli/colors.js";
 
 const ICON: Record<DoctorFinding["severity"], string> = { pass: "✔", warn: "⚠", fail: "✗" };
 
+export interface DoctorCliArgs {
+  json: boolean;
+  yes: boolean;
+  /** Value passed to `--probe`, or null when the flag is absent. */
+  probe: string | null;
+  /** True when `--probe` was given without a value (or before another flag). */
+  probeMissingValue: boolean;
+}
+
+/**
+ * Parse `repoos doctor`'s argument list. Kept pure and exported so the probe
+ * arming rules (`--probe` needs a value; `--probe --yes` is a usage error) are
+ * unit-tested rather than only exercised through a live run.
+ */
+export function parseDoctorArgs(argv: string[]): DoctorCliArgs {
+  const json = argv.includes("--json");
+  const yes = argv.includes("--yes");
+  const probeArg = argv.indexOf("--probe");
+  if (probeArg === -1) return { json, yes, probe: null, probeMissingValue: false };
+  const value = argv[probeArg + 1];
+  if (!value || value.startsWith("--")) {
+    return { json, yes, probe: null, probeMissingValue: true };
+  }
+  return { json, yes, probe: value, probeMissingValue: false };
+}
+
 function severityColor(severity: DoctorFinding["severity"], text: string): string {
   if (severity === "pass") return c.green(text);
   if (severity === "warn") return c.yellow(text);
@@ -75,11 +101,14 @@ export function renderDoctor(report: DoctorReport): void {
 
 /** `repoos doctor [--json] [--probe <cli>] [--yes]` */
 export async function cmdDoctor(argv: string[]): Promise<void> {
-  const asJson = argv.includes("--json");
-  const probeArg = argv.indexOf("--probe");
-  const probeCli = probeArg !== -1 ? argv[probeArg + 1] : undefined;
+  const { json: asJson, yes, probe: probeCli, probeMissingValue } = parseDoctorArgs(argv);
+  if (probeMissingValue) {
+    console.error(c.red("  repoos doctor --probe needs a harness id, e.g. `--probe opencode`."));
+    process.exitCode = 1;
+    return;
+  }
   if (probeCli) {
-    await cmdProbe(probeCli, { asJson, yes: argv.includes("--yes") });
+    await cmdProbe(probeCli, { asJson, yes });
     return;
   }
   try {
@@ -110,9 +139,10 @@ async function cmdProbe(cli: string, opts: { asJson: boolean; yes: boolean }): P
     "    This runs the installed harness in an isolated temporary directory,",
     "    exercising version, help, model listing, a headless one-shot, event",
     "    parsing, permission/auto mode, session continuation, and cancellation.",
-    "    It may use your provider credentials and spend tokens on the one-shot",
-    "    and resume probes. It never reads task files, prompts, or project",
-    "    content, and the temporary fixture is removed when done.",
+    "    It may use your provider credentials and spend tokens: the one-shot,",
+    "    resume, and cancellation seams each start a real harness run. It never",
+    "    reads task files, prompts, or project content, and the temporary fixture",
+    "    is removed when done.",
     "",
   ].join("\n");
 

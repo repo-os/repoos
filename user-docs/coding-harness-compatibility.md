@@ -3,7 +3,7 @@
 Detection on `PATH` means only that RepoOS found a binary. It does not promise
 that the adapter can safely drive that release. RepoOS keeps a small,
 versioned contract for each drivable harness and checks the installed version
-against the latest certified line.
+against its supported line and any recorded certification.
 
 ## Statuses
 
@@ -26,7 +26,7 @@ model-selection check is not certification of the complete adapter contract.
 
 | Harness | Supported major/range | Newest certified | Status and notes | Verified |
 | --- | --- | --- | --- | --- |
-| [OpenCode](https://opencode.ai/docs/) | v2 (`>=2.0.0 <3.0.0`) | 2.0.0 | OpenCode v2 is tracked in the manifest, but the in-repo adapter contract suite is still pending; do not treat it as certified until evidence is added. | Pending |
+| [OpenCode](https://opencode.ai/docs/) | v2 (`>=2.0.0 <3.0.0`) | — | OpenCode v2 is tracked in the manifest, but no release is certified yet; do not treat it as certified until evidence is added. | Pending |
 
 This table is derived from `src/core/agent-compatibility.json`; update that
 manifest and add contract evidence together when certifying a release. Do not
@@ -47,9 +47,11 @@ repoos doctor --probe opencode --yes
 It runs the harness's adapter-contract suite inside an isolated temporary
 directory (throwing away a version, help, model-listing, one-shot, event-
 parsing, auto-mode, session-continuation, and cancellation probe) and reports
-each seam honestly. The command warns clearly that provider credentials may be
-used, asks for confirmation when you are at a terminal (pass `--yes` to skip
-the prompt), and cleans up the fixture when it finishes. Run it when:
+each seam honestly. The one-shot, resume, and cancellation seams each start a
+real harness run, so the probe may consume provider tokens — the command warns
+clearly about this, asks for confirmation when you are at a terminal (pass
+`--yes` to skip the prompt), and cleans up the fixture when it finishes. Run it
+when:
 
 - the Agents page marks your installed harness **newer than verified** and you
   want to start important work with it, or

@@ -18,8 +18,8 @@ that an explicit, evidence-based claim instead of a hope.
 
 - `src/core/agent-compatibility.json` — the source-controlled manifest (`schemaVersion`,
   `contracts[]`). Each contract records canonical `cli` id, `supportedMajor`,
-  `supportedRange` (semver-ish), `newestCertifiedVersion`,
-  `knownIncompatibleRanges`, `requiredCapabilities`, `verifiedAt`,
+  `supportedRange` (semver-ish), `newestCertifiedVersion` (null until a release
+  is certified), `knownIncompatibleRanges`, `requiredCapabilities`, `verifiedAt`,
   `verificationSource`, `upgradeGuidance`, `officialUrl`.
 - `src/core/agent-compatibility.ts` — loads the manifest and maps
   `(cli, installedVersion, drivable)` → a `CompatibilityStatus` + explanation.
@@ -47,9 +47,9 @@ that an explicit, evidence-based claim instead of a hope.
   certification below.
 - **Upgrade recommended** — older than `supportedMajor`. Work still permitted
   if local capability checks pass.
-- **Newer than verified** — newer than `newestCertifiedVersion`, but not in a
-  `knownIncompatibleRanges` family. Not blocked; guidance points at
-  `repoos doctor --probe`.
+- **Newer than verified** — newer than `newestCertifiedVersion`, once a
+  certified baseline has been recorded, but not in a `knownIncompatibleRanges`
+  family. Not blocked; guidance points at `repoos doctor --probe`.
 - **Unsupported** — inside a `knownIncompatibleRanges` family, outside
   `supportedRange`, or a known-undrivable harness (e.g. `gemini`, `aider`).
 - **Not yet probed** — no contract, version unparseable, or
@@ -72,13 +72,14 @@ temporary directory:
 | headless-one-shot | a controlled run completes with an answer | `run --format json --dir <fixture> --auto <trivial prompt>` |
 | structured-events | the `--format json` stream parses to known event shapes with a session id | (same run's stdout) |
 | auto-permissions | the run accepts `--auto` and completes without a permission prompt | (same run) |
-| session-continuation | a follow-up resumes the same session | `run --format json --dir <fixture> --session <id> <prompt>` |
+| session-continuation | a follow-up resumes the same session | `run --format json --dir <fixture> --session <id> --auto <prompt>` |
 | cancellation | SIGTERM stops a run promptly | (a second run killed at ~300 ms) |
 
 Two modes: **fixture** (deterministic, against a fake binary that exercises the
 same argument shapes — what the test suite runs) and **live** (the same seats
-against the real installed binary — `repoos doctor --probe`). The one-shot and
-resume probes are the only live probes that can consume provider tokens.
+against the real installed binary — `repoos doctor --probe`). The one-shot,
+resume, and cancellation seams each start a real harness run in live mode, so
+all three can consume provider tokens.
 
 Where a seam's output is opencode-specific (`--format json` events), the
 validator lives in the same module: `parseEventStream` /
@@ -127,7 +128,9 @@ manifest entry pending.
 ## Worked example: OpenCode v2
 
 Templates in `OPENCODE_CONTRACT` mirror `agents.ts`:
-`run --format json --dir <dir> --model <model> --auto <prompt>` for turns,
+`run --format json --dir <dir> --auto <prompt>` for turns (the real runner also
+appends `--model <model>` when one is configured, but the probe deliberately
+omits it so certification does not depend on a chosen model),
 `run --format json --dir <dir> --session <id>` for follow-up. The fixture
 opencode in `agent-contract.test.ts` echoes `--auto`/`--session` shapes and a
 four-event `--format json` stream. The manifest entry stays

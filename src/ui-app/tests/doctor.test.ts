@@ -4,12 +4,16 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  checkAgentCompatibility,
+  compatibilityFindingSeverity,
   doctorRemediations,
   findConfigValueProblems,
   isKnownConfigKey,
   runDoctor,
   type DoctorReport,
 } from "../../core/doctor";
+import { parseDoctorArgs } from "../../commands/doctor";
+import type { RepoOSConfig } from "../../core/types";
 
 const dirs: string[] = [];
 
@@ -266,5 +270,56 @@ describe("config key and value helpers", () => {
     const fixes = doctorRemediations(report);
     expect(fixes.length).toBeGreaterThan(0);
     expect(new Set(fixes).size).toBe(fixes.length);
+  });
+});
+
+describe("doctor compatibility bridge and probe arguments", () => {
+  it("maps compatibility statuses to severities — only unsupported fails", () => {
+    expect(compatibilityFindingSeverity("verified")).toBe("pass");
+    expect(compatibilityFindingSeverity("unsupported")).toBe("fail");
+    for (const status of ["upgrade_recommended", "newer_than_verified", "not_probed"] as const) {
+      expect(compatibilityFindingSeverity(status)).toBe("warn");
+    }
+  });
+
+  it("parses every live-probe argument shape, including a missing value", () => {
+    const base = { json: false, yes: false, probe: null, probeMissingValue: false };
+    expect(parseDoctorArgs(["doctor"])).toEqual(base);
+    expect(parseDoctorArgs(["doctor", "--json", "--probe", "kiro"])).toEqual({
+      json: true,
+      yes: false,
+      probe: "kiro",
+      probeMissingValue: false,
+    });
+    expect(parseDoctorArgs(["doctor", "--probe", "opencode", "--yes"])).toEqual({
+      json: false,
+      yes: true,
+      probe: "opencode",
+      probeMissingValue: false,
+    });
+    // `--probe` at the end, or followed by another flag, is a usage error — it
+    // must not silently fall through to the static report.
+    expect(parseDoctorArgs(["doctor", "--probe"])).toEqual({ ...base, probeMissingValue: true });
+    expect(parseDoctorArgs(["doctor", "--probe", "--yes"])).toEqual({
+      json: false,
+      yes: true,
+      probe: null,
+      probeMissingValue: true,
+    });
+  });
+
+  it("adds a warn finding for an enabled harness that is not installed", async () => {
+    const config = {
+      agents: [{ cli: "opencode", name: "OpenCode", enabled: true }],
+    } as unknown as RepoOSConfig;
+    const findings = await checkAgentCompatibility(config, tools());
+    const matching = findings.filter((f) => f.id === "runtime.compatibility.opencode");
+    expect(matching).toHaveLength(1);
+    expect(matching[0].severity).toBe("warn");
+  });
+
+  it("returns no compatibility findings when nothing is enabled", async () => {
+    const config = { agents: [] } as unknown as RepoOSConfig;
+    expect(await checkAgentCompatibility(config, tools())).toEqual([]);
   });
 });

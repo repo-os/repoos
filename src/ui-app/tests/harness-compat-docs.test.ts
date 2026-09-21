@@ -60,10 +60,11 @@ describe("user-docs supported-versions table vs. manifest", () => {
     for (const contract of AGENT_COMPATIBILITY_MANIFEST.contracts) {
       const row = rows.find((cells) => cells[0] === contract.name);
       expect(row, `no docs row for manifest contract "${contract.name}"`).toBeDefined();
+      const certifiedCell = contract.newestCertifiedVersion ?? "—";
       expect(
         row![2],
-        `row for ${contract.name} must show newest certified ${contract.newestCertifiedVersion}`,
-      ).toContain(contract.newestCertifiedVersion);
+        `row for ${contract.name} must show newest certified ${certifiedCell}`,
+      ).toContain(certifiedCell);
       const expectedVerified = contract.verifiedAt ? contract.verifiedAt.slice(0, 10) : "Pending";
       expect(row![4], `Verified column for ${contract.name}`).toBe(expectedVerified);
     }

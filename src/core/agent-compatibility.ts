@@ -15,7 +15,13 @@ export interface AgentCompatibilityContract {
   name: string;
   supportedMajor: number;
   supportedRange: string;
-  newestCertifiedVersion: string;
+  /**
+   * Newest release with recorded certification evidence, or `null` when the
+   * line is tracked but nothing has been certified yet. This pairs with
+   * `verifiedAt`/`verificationSource`: a non-null value without evidence, or
+   * evidence without a value, is a manifest inconsistency.
+   */
+  newestCertifiedVersion: string | null;
   knownIncompatibleRanges: string[];
   requiredCapabilities: string[];
   verifiedAt: string | null;
@@ -157,6 +163,7 @@ function parseRangeOperatorToken(
  * one or more operator tokens:
  *   `*`        → any             `^2` / `^2.1` / `^2.1.3` → >=lower <next-major
  *   `1.2.*`    → >=1.2.0 <1.3.0  `~1.2` / `~1.2.3`       → >=lower <next-minor
+ *   `1.*`/`1.x` → >=1.0.0 <2.0.0 (a lone-major wildcard is <next-major, not <1.1.0)
  *   `a || b`   → handled by the caller as an OR clause
  * Returns null when the token is not a recognized shape.
  */
@@ -187,13 +194,30 @@ function expandSemverToken(token: string): Array<{ op: string; value: [number, n
       { op: "<", value: [a, b + 1, 0] },
     ];
   }
-  const star = trimmed.match(/^(\d+)(?:\.(\d+))?\.\*$/);
-  if (star) {
-    const [a, b] = star.slice(1).map((n) => (n === undefined ? 0 : Number(n)));
-    return [
-      { op: ">=", value: [a, b, 0] },
-      { op: "<", value: [a, b + 1, 0] },
-    ];
+  // Wildcard component ranges: `1.*` / `1.x` means any 1.y (npm: <2.0.0),
+  // and `1.2.*` / `1.2.x` means any 1.2.z. Only tokens that actually contain a
+  // wildcard marker are treated as ranges, so a plain `1.2.3` still falls
+  // through to exact matching.
+  if (/[xX*]/.test(trimmed)) {
+    const parts = trimmed.split(".");
+    const valid =
+      parts.length >= 2 &&
+      parts.length <= 3 &&
+      parts.every((part) => /^\d+$/.test(part) || /^[xX*]$/.test(part));
+    if (valid) {
+      const major = Number(parts[0]);
+      if (/^[xX*]$/.test(parts[1])) {
+        return [
+          { op: ">=", value: [major, 0, 0] },
+          { op: "<", value: [major + 1, 0, 0] },
+        ];
+      }
+      const minor = Number(parts[1]);
+      return [
+        { op: ">=", value: [major, minor, 0] },
+        { op: "<", value: [major, minor + 1, 0] },
+      ];
+    }
   }
   return null as unknown as Array<{ op: string; value: [number, number, number] }>;
 }
@@ -244,28 +268,23 @@ export function versionSatisfiesRange(version: [number, number, number], range: 
   return tokensSatisfy(version, checks);
 }
 
-export function compatibilityForAgent(
-  agent: Pick<DetectedAgent, "cli" | "version" | "drivable">,
+/**
+ * Classify one detected installation against a single contract. Exported so the
+ * full status ladder — including `verified` and `newer_than_verified`, which are
+ * only reachable once a contract carries certification evidence — can be tested
+ * against a synthetic certified contract without touching the live manifest.
+ */
+export function compatibilityForContract(
+  contract: AgentCompatibilityContract,
+  agent: Pick<DetectedAgent, "version" | "drivable">,
 ): AgentCompatibility {
-  const contract = agent.cli
-    ? (AGENT_COMPATIBILITY_MANIFEST.contracts.find((entry) => entry.cli === agent.cli) ?? null)
-    : null;
   const installed = parseAgentVersion(agent.version);
-  const hasEvidence = !!contract?.verifiedAt && !!contract?.verificationSource;
+  const hasEvidence = !!contract.verifiedAt && !!contract.verificationSource;
+  const certified = contract.newestCertifiedVersion
+    ? parseAgentVersion(contract.newestCertifiedVersion)
+    : null;
+  const invalidCertified = contract.newestCertifiedVersion !== null && certified === null;
 
-  if (!contract) {
-    return {
-      status: agent.drivable ? "not_probed" : "unsupported",
-      label: agent.drivable ? "not yet probed" : "unsupported",
-      explanation: agent.drivable
-        ? "RepoOS has not certified this harness yet."
-        : "RepoOS does not have a drivable adapter for this installation.",
-      installedVersion: agent.version,
-      newestCertifiedVersion: null,
-      contract: null,
-      capabilities: [],
-    };
-  }
   if (!agent.drivable) {
     return {
       status: "unsupported",
@@ -288,36 +307,38 @@ export function compatibilityForAgent(
       capabilities: contract.requiredCapabilities,
     };
   }
-
-  const newest = parseAgentVersion(contract.newestCertifiedVersion);
-  if (!newest) {
+  if (invalidCertified) {
     return {
       status: "not_probed",
       label: "not yet probed",
       explanation: `The ${contract.name} compatibility manifest has an invalid newest certified version; review the manifest before relying on this status.`,
       installedVersion: agent.version,
-      newestCertifiedVersion: contract.newestCertifiedVersion ?? null,
+      newestCertifiedVersion: contract.newestCertifiedVersion,
       contract,
       capabilities: contract.requiredCapabilities,
     };
   }
+
   const isKnownIncompatible = contract.knownIncompatibleRanges.some((range) =>
     versionSatisfiesRange(installed, range),
   );
   const isSupportedRange = versionSatisfiesRange(installed, contract.supportedRange);
+  const isNewer = certified !== null && compareVersion(installed, certified) > 0;
 
   let status: CompatibilityStatus;
   let explanation: string;
-  if (installed[0] < contract.supportedMajor) {
-    status = "upgrade_recommended";
-    explanation = `This is older than the certified ${contract.name} v${contract.supportedMajor} line. Local capability checks may still permit work.`;
-  } else if (isKnownIncompatible) {
+  if (isKnownIncompatible) {
+    // Checked before the old-major branch so a known-bad family is reported
+    // unsupported even when it also sits below the supported major.
     status = "unsupported";
     explanation = `This version family is known incompatible with the ${contract.name} adapter.`;
-  } else if (compareVersion(installed, newest) > 0) {
+  } else if (installed[0] < contract.supportedMajor) {
+    status = "upgrade_recommended";
+    explanation = `This is older than the supported ${contract.name} v${contract.supportedMajor} line. Local capability checks may still permit work.`;
+  } else if (isNewer) {
     status = "newer_than_verified";
-    explanation = `This release is newer than the newest tracked ${contract.name} release (${contract.newestCertifiedVersion}). It is not blocked; run \`repoos doctor --probe ${contract.cli}\` for a deliberate compatibility probe before important work.`;
-  } else if (isSupportedRange && hasEvidence) {
+    explanation = `This release is newer than the newest certified ${contract.name} release (${contract.newestCertifiedVersion}). It is not blocked; run \`repoos doctor --probe ${contract.cli}\` for a deliberate compatibility probe before important work.`;
+  } else if (isSupportedRange && hasEvidence && certified !== null) {
     status = "verified";
     explanation = `The ${contract.name} v${contract.supportedMajor} contract is certified through ${contract.newestCertifiedVersion}.`;
   } else if (isSupportedRange) {
@@ -325,7 +346,7 @@ export function compatibilityForAgent(
     explanation = `RepoOS tracks ${contract.name} v${contract.supportedMajor} in its compatibility manifest, but this release family has not yet been proven by a RepoOS adapter contract suite.`;
   } else {
     status = "unsupported";
-    explanation = `This version family is outside the certified ${contract.name} range (${contract.supportedRange}).`;
+    explanation = `This version family is outside the supported ${contract.name} range (${contract.supportedRange}).`;
   }
   return {
     status,
@@ -336,6 +357,29 @@ export function compatibilityForAgent(
     contract,
     capabilities: contract.requiredCapabilities,
   };
+}
+
+export function compatibilityForAgent(
+  agent: Pick<DetectedAgent, "cli" | "version" | "drivable">,
+): AgentCompatibility {
+  const contract = agent.cli
+    ? (AGENT_COMPATIBILITY_MANIFEST.contracts.find((entry) => entry.cli === agent.cli) ?? null)
+    : null;
+
+  if (!contract) {
+    return {
+      status: agent.drivable ? "not_probed" : "unsupported",
+      label: agent.drivable ? "not yet probed" : "unsupported",
+      explanation: agent.drivable
+        ? "RepoOS has not certified this harness yet."
+        : "RepoOS does not have a drivable adapter for this installation.",
+      installedVersion: agent.version,
+      newestCertifiedVersion: null,
+      contract: null,
+      capabilities: [],
+    };
+  }
+  return compatibilityForContract(contract, agent);
 }
 
 export function compatibilityForDetectedAgent(agent: DetectedAgent): AgentCompatibility {

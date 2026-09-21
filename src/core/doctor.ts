@@ -39,7 +39,7 @@ import { resolveCheckPlan, type CheckPlan } from "./check-plan.js";
 import { isBun, preferBunForDevTasks } from "./runtime.js";
 import { detectPackageManager } from "./bootstrap.js";
 import { detectAgents, KNOWN_AGENTS } from "./detect.js";
-import { compatibilityForDetectedAgent } from "./agent-compatibility.js";
+import { compatibilityForDetectedAgent, type CompatibilityStatus } from "./agent-compatibility.js";
 import { parseDocument } from "./frontmatter.js";
 import { isGitRepo } from "./git.js";
 import { portListening } from "./net-probe.js";
@@ -122,7 +122,18 @@ export interface DoctorOptions {
   version?: string | null;
 }
 
-async function checkAgentCompatibility(
+/**
+ * Map a compatibility status to a doctor severity. Exported so the contract
+ * that only `unsupported` fails the run (and the exit code) is unit-tested
+ * directly, independent of live binary detection.
+ */
+export function compatibilityFindingSeverity(status: CompatibilityStatus): DoctorSeverity {
+  if (status === "verified") return "pass";
+  if (status === "unsupported") return "fail";
+  return "warn";
+}
+
+export async function checkAgentCompatibility(
   config: RepoOSConfig,
   hasBin: (tool: string) => boolean,
 ): Promise<DoctorFinding[]> {
@@ -164,8 +175,7 @@ async function checkAgentCompatibility(
       continue;
     }
 
-    const severity =
-      result.status === "verified" ? "pass" : result.status === "unsupported" ? "fail" : "warn";
+    const severity = compatibilityFindingSeverity(result.status);
     findings.push(
       finding(
         `runtime.compatibility.${cli}`,

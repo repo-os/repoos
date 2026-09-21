@@ -6,7 +6,7 @@
       "name": "OpenCode",
       "supportedMajor": 2,
       "supportedRange": ">=2.0.0 <3.0.0",
-      "newestCertifiedVersion": "2.0.0",
+      "newestCertifiedVersion": null,
       "knownIncompatibleRanges": [">=3.0.0"],
       "requiredCapabilities": [
         "version",

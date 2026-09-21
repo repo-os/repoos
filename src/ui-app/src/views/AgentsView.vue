@@ -487,6 +487,12 @@ function compatibilityColor(agent: DetectedAgent): string {
   return "var(--txt-dim)";
 }
 
+/** Copyable live-probe command for a harness that is newer than the certified line. */
+function probeHint(agent: DetectedAgent): string {
+  const id = agent.cli || agent.binary;
+  return `repoos doctor --probe ${id} --yes`;
+}
+
 function checkedLabel(update: AgentUpdate | undefined): string {
   return update?.checkedAt ? `checked ${new Date(update.checkedAt).toLocaleString()}` : "";
 }
@@ -977,13 +983,23 @@ onUnmounted(() => {
                 "
                 class="detect-hint-inline"
               >
-                {{
-                  r.agent.compatibility.status === "newer_than_verified"
-                    ? "review release guidance; no live probe is available yet"
-                    : r.agent.compatibility.status === "upgrade_recommended"
+                <template v-if="r.agent.compatibility.status === 'newer_than_verified'">
+                  <code
+                    class="detect-hint-code"
+                    :title="'Run a deliberate compatibility probe for ' + r.agent.name"
+                    >{{ probeHint(r.agent) }}</code
+                  >
+                  <button class="detect-copy" @click="copyHint(probeHint(r.agent))">
+                    {{ detectHintCopied === probeHint(r.agent) ? "copied" : "copy" }}
+                  </button>
+                </template>
+                <template v-else>
+                  {{
+                    r.agent.compatibility.status === "upgrade_recommended"
                       ? "upgrade recommended"
                       : "use a supported release"
-                }}
+                  }}
+                </template>
               </span>
               <details v-if="r.agent.installed && r.agent.update" class="detect-update-detail">
                 <summary :style="{ color: updateColor(r.agent.update) }">

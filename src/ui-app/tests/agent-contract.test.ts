@@ -139,6 +139,11 @@ describe("adapter contract suite", () => {
     expect(byId.get("version")?.ok).toBe(true);
     expect(byId.get("help")?.ok).toBe(true);
     expect(byId.get("model-discovery")?.ok).toBe(true);
+    // The broken fixture exits on its own before SIGTERM lands, so cancellation
+    // is honestly "not exercised" rather than a false pass (and must not stall
+    // for the full waitForExit window).
+    expect(byId.get("cancellation")?.ok).toBe(false);
+    expect(byId.get("cancellation")?.detail).toMatch(/not exercised/i);
     expect(result.evidence).toBeNull();
   });
 
