@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 cli_override: cursor
-model_override: composer-2.5-fast
+model_override: composer-2.5
 created_at: "2026-09-21T11:50:25Z"
-updated_at: "2026-09-21T18:24:11Z"
+updated_at: "2026-09-21T18:25:48Z"
 ---
 Implement the first useful native Hub workflow: users can maintain a local list of RepoOS servers and switch among them from a macOS-native sidebar.
 
@@ -34,3 +34,4 @@ Depends on the approved macOS Hub architecture and the standalone project scaffo
 - 2026-09-21T18:23:56Z · cli_override
 - 2026-09-21T18:23:57Z · cli_override
 - 2026-09-21T18:24:11Z · model_override
+- 2026-09-21T18:25:48Z · model_override
