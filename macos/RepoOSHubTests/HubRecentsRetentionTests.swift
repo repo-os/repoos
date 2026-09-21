@@ -67,6 +67,7 @@ final class HubRecentsRetentionTests: XCTestCase {
         XCTAssertTrue(pinned.isEmpty)
     }
 
+    @MainActor
     func testRegistryRestoresLastSelectedServer() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("hub-nav-restore-\(UUID().uuidString)", isDirectory: true)

@@ -53,9 +53,6 @@ struct ServerSidebarView: View {
                 }
                 .help("Add a RepoOS server to the local registry")
             }
-            ToolbarItem(placement: .automatic) {
-                EditButton()
-            }
         }
         .overlay {
             if appState.entries.isEmpty {

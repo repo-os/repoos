@@ -20,12 +20,9 @@ enum ServerOriginNormalizer {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { throw ServerOriginError.empty }
 
-        guard var components = URLComponents(string: trimmed) else {
+        let input = trimmed.contains("://") ? trimmed : "https://\(trimmed)"
+        guard var components = URLComponents(string: input) else {
             throw ServerOriginError.invalidURL
-        }
-
-        if components.scheme == nil {
-            components.scheme = "https"
         }
 
         guard let scheme = components.scheme?.lowercased(), scheme == "https" else {
