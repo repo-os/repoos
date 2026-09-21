@@ -2,14 +2,14 @@
 id: "0470"
 title: Scaffold the standalone native macOS RepoOS Hub project
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: desktop
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-21T11:50:24Z"
-updated_at: "2026-09-21T11:52:34Z"
+updated_at: "2026-09-21T12:06:59Z"
 ---
 After the macOS Hub architecture/security contract is approved, add a standalone macOS application project as a sibling to mobile/, without adding runtime dependencies to the core repoos package.
 
@@ -27,3 +27,4 @@ Follow the approved architecture task. Keep this foundation small; server regist
 
 - 2026-09-21T11:50:24Z · created · unknown
 - 2026-09-21T11:52:34Z · body
+- 2026-09-21T12:06:59Z · status inbox→ready
