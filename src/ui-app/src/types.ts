@@ -741,6 +741,19 @@ export interface DetectedAgent {
   migrationNote?: string;
   /** Auth state from the CLI's own status probe: true/false/null (unknown). */
   auth: boolean | null;
+  compatibility?: {
+    status:
+      | "verified"
+      | "upgrade_recommended"
+      | "newer_than_verified"
+      | "unsupported"
+      | "not_probed";
+    label: string;
+    explanation: string;
+    installedVersion: string | null;
+    newestCertifiedVersion: string | null;
+    capabilities: string[];
+  };
   update?: AgentUpdate;
 }
 

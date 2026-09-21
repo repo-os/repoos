@@ -38,7 +38,8 @@ import {
 import { resolveCheckPlan, type CheckPlan } from "./check-plan.js";
 import { isBun, preferBunForDevTasks } from "./runtime.js";
 import { detectPackageManager } from "./bootstrap.js";
-import { KNOWN_AGENTS } from "./detect.js";
+import { detectAgents, KNOWN_AGENTS } from "./detect.js";
+import { compatibilityForDetectedAgent } from "./agent-compatibility.js";
 import { parseDocument } from "./frontmatter.js";
 import { isGitRepo } from "./git.js";
 import { portListening } from "./net-probe.js";
@@ -119,6 +120,47 @@ export interface DoctorOptions {
   hasBinary?: (tool: string) => boolean;
   /** RepoOS version string to stamp into the report. */
   version?: string | null;
+}
+
+async function checkAgentCompatibility(
+  config: RepoOSConfig,
+  hasBin: (tool: string) => boolean,
+): Promise<DoctorFinding[]> {
+  const enabled = (config.agents ?? []).filter(
+    (a): a is NonNullable<typeof a> => !!a && a.enabled === true && typeof a.cli === "string",
+  );
+  if (enabled.length === 0) return [];
+  const installed = new Set(
+    KNOWN_AGENTS.filter((agent) => hasBin(agent.binary)).map((agent) => agent.id),
+  );
+  const rows = (await detectAgents()).filter((agent) => installed.has(agent.id));
+  return enabled.map((entry) => {
+    const row = rows.find((agent) => agent.cli === entry.cli);
+    if (!row) {
+      return finding(
+        `runtime.compatibility.${entry.cli}`,
+        "runtime",
+        "warn",
+        `${entry.name || entry.cli} compatibility not probed`,
+        "The configured harness is installed, but RepoOS could not collect a version.",
+        "open the Agents page and run the optional compatibility probe",
+      );
+    }
+    const result = compatibilityForDetectedAgent(row);
+    const severity =
+      result.status === "verified" ? "pass" : result.status === "unsupported" ? "fail" : "warn";
+    return finding(
+      `runtime.compatibility.${entry.cli}`,
+      "runtime",
+      severity,
+      `${entry.name || entry.cli}: ${result.label}`,
+      `${result.explanation} Installed: ${result.installedVersion ?? "unknown"}; certified: ${result.newestCertifiedVersion ?? "none"}.`,
+      result.status === "verified"
+        ? null
+        : (result.contract?.upgradeGuidance ??
+            "open the Agents page and run the optional compatibility probe"),
+    );
+  });
 }
 
 // ── Small helpers ───────────────────────────────────────────────────────────
@@ -1376,6 +1418,9 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorReport>
     ...(await guard("config", "config.error", () => checkConfig(root, config))),
     ...(await guard("layout", "layout.error", () => checkLayout(root, config))),
     ...(await guard("runtime", "runtime.error", () => checkRuntime(root, config, hasBin, plan))),
+    ...(await guard("runtime", "runtime.compatibility.error", () =>
+      checkAgentCompatibility(config, hasBin),
+    )),
     ...(await guard("gate", "gate.error", () => checkGate(plan))),
     ...(await guard("lifecycle", "lifecycle.error", () => checkLifecycle(root, config, opts))),
     ...(await guard("secrets", "secrets.error", () => checkSecrets(config, process.env))),

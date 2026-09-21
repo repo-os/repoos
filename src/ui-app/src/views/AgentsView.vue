@@ -477,6 +477,16 @@ function updateColor(update: AgentUpdate | undefined): string {
   return "var(--txt-dim)";
 }
 
+function compatibilityColor(agent: DetectedAgent): string {
+  const status = agent.compatibility?.status;
+  if (status === "verified") return "var(--green)";
+  if (status === "unsupported") return "var(--red)";
+  if (status === "upgrade_recommended" || status === "newer_than_verified") {
+    return "var(--amber)";
+  }
+  return "var(--txt-dim)";
+}
+
 function checkedLabel(update: AgentUpdate | undefined): string {
   return update?.checkedAt ? `checked ${new Date(update.checkedAt).toLocaleString()}` : "";
 }
@@ -951,6 +961,30 @@ onUnmounted(() => {
               <span v-if="r.agent.version" class="detect-ver detect-ver-inline">{{
                 r.agent.version
               }}</span>
+              <span
+                v-if="r.agent.drivable && r.agent.compatibility"
+                class="detect-pill detect-compatibility-pill"
+                :style="{ color: compatibilityColor(r.agent) }"
+                :title="r.agent.compatibility.explanation"
+              >
+                compatibility: {{ r.agent.compatibility.label }}
+              </span>
+              <span
+                v-if="
+                  r.agent.compatibility &&
+                  r.agent.compatibility.status !== 'verified' &&
+                  r.agent.compatibility.status !== 'not_probed'
+                "
+                class="detect-hint-inline"
+              >
+                {{
+                  r.agent.compatibility.status === "newer_than_verified"
+                    ? "run the optional probe before important work"
+                    : r.agent.compatibility.status === "upgrade_recommended"
+                      ? "upgrade recommended"
+                      : "use a supported release"
+                }}
+              </span>
               <details v-if="r.agent.installed && r.agent.update" class="detect-update-detail">
                 <summary :style="{ color: updateColor(r.agent.update) }">
                   {{ updateLabel(r.agent.update) }}

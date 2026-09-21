@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "contracts": [
+    {
+      "cli": "opencode",
+      "name": "OpenCode",
+      "supportedMajor": 2,
+      "supportedRange": ">=2.0.0 <3.0.0",
+      "newestCertifiedVersion": "2.0.0",
+      "knownIncompatibleRanges": [">=3.0.0"],
+      "requiredCapabilities": [
+        "version",
+        "help",
+        "model-discovery",
+        "headless-one-shot",
+        "structured-events",
+        "auto-permissions",
+        "session-continuation",
+        "cancellation"
+      ],
+      "verifiedAt": "2026-09-21",
+      "verificationSource": "RepoOS adapter contract suite (OpenCode v2 fixture; live provider probe opt-in)",
+      "upgradeGuidance": "Install the latest OpenCode v2 release, then run the optional RepoOS harness probe before important work.",
+      "officialUrl": "https://opencode.ai/docs/"
+    }
+  ]
+}

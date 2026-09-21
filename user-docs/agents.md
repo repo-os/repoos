@@ -38,6 +38,12 @@ matching safe command; you must run it yourself. Registry failures, timeouts,
 and opaque vendor versions remain per-agent **could not check** or **check
 manually** states rather than hiding the detected-agent list.
 
+The row also shows a versioned compatibility status. `PATH` detection alone is
+not certification: **verified**, **upgrade recommended**, **newer than
+verified**, and **unsupported** describe the adapter contract, not model
+quality or task success. See the [Supported coding harness versions](/coding-harness-compatibility)
+table for certified ranges, evidence, and safe upgrade guidance.
+
 ### Cursor Agent CLI
 
 Install with Cursor's official installer:

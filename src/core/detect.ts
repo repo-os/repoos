@@ -11,6 +11,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { accessSync, constants } from "node:fs";
 import { delimiter, join } from "node:path";
 import { AGENT_CLIS } from "./config.js";
+import { compatibilityForAgent, type AgentCompatibility } from "./agent-compatibility.js";
 
 /** A coding agent RepoOS knows about, regardless of whether it is installed. */
 export interface KnownAgent {
@@ -78,6 +79,8 @@ export interface DetectedAgent extends KnownAgent {
    * - `null` — no probe available, or it timed out / returned unparseable output
    */
   auth: boolean | null;
+  /** Version-contract result; this is advisory and does not replace capability checks. */
+  compatibility?: AgentCompatibility;
 }
 
 /** Default ceiling on the `--version` probe, ms. A hung binary is SIGKILLed. */
@@ -437,6 +440,11 @@ export async function detectAgents(opts: DetectOptions = {}): Promise<DetectedAg
           version: null,
           headless: null,
           auth: null,
+          compatibility: compatibilityForAgent({
+            cli: agent.cli,
+            version: null,
+            drivable: agent.drivable,
+          }),
         };
       }
       const appBundle = isAppBundleBinary(resolved);
@@ -465,6 +473,7 @@ export async function detectAgents(opts: DetectOptions = {}): Promise<DetectedAg
         version,
         headless: !desktopOnly,
         auth,
+        compatibility: compatibilityForAgent({ cli: agent.cli, version, drivable: agent.drivable }),
       };
     }),
   );
