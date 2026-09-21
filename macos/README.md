@@ -9,9 +9,12 @@ The scaffold ships a native sidebar workspace with a **local server registry**
 (Application Support JSON). Adding or editing a server normalizes HTTPS origins,
 calls `GET /api/health` with a 10-second timeout, and only then persists the
 entry. The main content area loads the selected server's RepoOS web UI in an
-isolated `WKWebView` (per-server data store, no native JavaScript bridge). See
-[`docs/native-hub-webkit.md`](../docs/native-hub-webkit.md) for navigation,
-OAuth, session, and manual privilege-verification steps.
+isolated `WKWebView` (per-server data store, no native JavaScript bridge), with
+native back/forward/reload and a **⌘K quick switcher** for servers, recents, and
+pinned task contexts. See [`docs/native-hub-webkit.md`](../docs/native-hub-webkit.md)
+for WebKit navigation, OAuth, and session behavior, and
+[docs/macos-hub-navigation-retention.md](../docs/macos-hub-navigation-retention.md)
+for recents and pinned-context retention rules.
 
 ## Requirements
 

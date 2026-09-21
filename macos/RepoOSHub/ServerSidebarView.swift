@@ -12,6 +12,14 @@ struct ServerSidebarView: View {
 
     var body: some View {
         List(selection: serverSelection) {
+            if !appState.pinnedTaskContextsForSidebar.isEmpty {
+                Section("Pinned contexts") {
+                    ForEach(appState.pinnedTaskContextsForSidebar) { context in
+                        PinnedContextSidebarRow(context: context)
+                    }
+                }
+            }
+
             if !appState.pinnedEntries.isEmpty {
                 Section("Pinned") {
                     ForEach(appState.pinnedEntries) { entry in
@@ -91,6 +99,7 @@ struct ServerSidebarRow: View {
         }
         .contextMenu {
             Button("Edit…") { appState.presentEditServer(entry) }
+            Button("Pin task context…") { appState.presentPinTaskContext(for: entry) }
             Button(entry.isPinned ? "Unpin" : "Pin") {
                 appState.setPinned(entry, pinned: !entry.isPinned)
             }
@@ -103,6 +112,40 @@ struct ServerSidebarRow: View {
         .accessibilityLabel("\(entry.name), \(entry.lastHealth.displayTitle)")
     }
 
+}
+
+private struct PinnedContextSidebarRow: View {
+    @EnvironmentObject private var appState: HubAppState
+    let context: PinnedTaskContext
+
+    var body: some View {
+        Button {
+            appState.performCommandPaletteAction(.openPinned(context))
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "pin.fill")
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(context.label)
+                        .lineLimit(1)
+                    Text("#\(context.taskIdentifier)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Button("Open") {
+                appState.performCommandPaletteAction(.openPinned(context))
+            }
+            Button("Unpin") {
+                appState.unpinTaskContext(context)
+            }
+        }
+        .accessibilityLabel("\(context.label), task \(context.taskIdentifier)")
+    }
 }
 
 struct ServerIconView: View {

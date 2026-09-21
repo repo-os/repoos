@@ -1,0 +1,161 @@
+import AppKit
+import SwiftUI
+
+struct HubCommandPaletteView: View {
+    @EnvironmentObject private var appState: HubAppState
+    @FocusState private var queryFocused: Bool
+    @State private var query = ""
+    @State private var highlightedIndex = 0
+    @State private var keyMonitor: Any?
+
+    private var items: [CommandPaletteItem] {
+        CommandPaletteMatcher.buildItems(
+            query: query,
+            entries: appState.entries,
+            recents: appState.serverRecents,
+            pinnedContexts: appState.pinnedTaskContexts
+        )
+    }
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.35)
+                .ignoresSafeArea()
+                .onTapGesture { appState.dismissCommandPalette() }
+
+            VStack(spacing: 0) {
+                TextField("Switch server or open a recent context", text: $query)
+                    .textFieldStyle(.plain)
+                    .font(.title3)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                    .focused($queryFocused)
+                    .onSubmit { commitHighlighted() }
+                    .accessibilityLabel("Quick switcher search")
+
+                Divider()
+
+                ScrollViewReader { proxy in
+                    List {
+                        ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                            CommandPaletteRow(item: item, isHighlighted: index == highlightedIndex)
+                                .id(item.id)
+                                .listRowInsets(EdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12))
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    highlightedIndex = index
+                                    commit(item)
+                                }
+                        }
+                    }
+                    .listStyle(.plain)
+                    .frame(maxHeight: 360)
+                    .onChange(of: highlightedIndex) { newValue in
+                        guard items.indices.contains(newValue) else { return }
+                        withAnimation(.easeOut(duration: 0.12)) {
+                            proxy.scrollTo(items[newValue].id, anchor: .center)
+                        }
+                    }
+                    .onChange(of: query) { _ in
+                        highlightedIndex = 0
+                    }
+                }
+
+                if items.isEmpty {
+                    Text("No matches")
+                        .foregroundStyle(.secondary)
+                        .padding(16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+            .frame(width: 560)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.primary.opacity(0.08)))
+            .shadow(color: .black.opacity(0.25), radius: 24, y: 12)
+            .padding(.top, 80)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        }
+        .onAppear {
+            query = ""
+            highlightedIndex = 0
+            queryFocused = true
+            keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+                switch event.keyCode {
+                case 126:
+                    moveHighlightUp()
+                    return nil
+                case 125:
+                    moveHighlightDown()
+                    return nil
+                default:
+                    return event
+                }
+            }
+        }
+        .onDisappear {
+            if let keyMonitor {
+                NSEvent.removeMonitor(keyMonitor)
+                self.keyMonitor = nil
+            }
+        }
+        .onExitCommand { appState.dismissCommandPalette() }
+    }
+
+    private func moveHighlightUp() {
+        highlightedIndex = max(0, highlightedIndex - 1)
+    }
+
+    private func moveHighlightDown() {
+        highlightedIndex = min(max(0, items.count - 1), highlightedIndex + 1)
+    }
+
+    private func commitHighlighted() {
+        guard items.indices.contains(highlightedIndex) else { return }
+        commit(items[highlightedIndex])
+    }
+
+    private func commit(_ item: CommandPaletteItem) {
+        appState.performCommandPaletteAction(item.action)
+        appState.dismissCommandPalette()
+    }
+}
+
+private struct CommandPaletteRow: View {
+    let item: CommandPaletteItem
+    let isHighlighted: Bool
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Image(systemName: iconName)
+                .foregroundStyle(.secondary)
+                .frame(width: 18)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.title)
+                    .font(.body.weight(.medium))
+                if let subtitle = item.subtitle {
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            Spacer()
+        }
+        .padding(.vertical, 4)
+        .padding(.horizontal, 6)
+        .background(isHighlighted ? Color.accentColor.opacity(0.18) : Color.clear, in: RoundedRectangle(cornerRadius: 6))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(item.subtitle.map { "\(item.title), \($0)" } ?? item.title)
+        .accessibilityAddTraits(isHighlighted ? .isSelected : [])
+    }
+
+    private var iconName: String {
+        switch item.kind {
+        case .server: return "server.rack"
+        case .recent: return "clock"
+        case .pinned: return "pin"
+        case .action: return "plus.circle"
+        }
+    }
+}

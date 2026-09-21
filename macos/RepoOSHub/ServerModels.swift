@@ -69,11 +69,46 @@ struct ServerRegistryDocument: Codable, Equatable, Sendable {
     var version: Int
     var entries: [ServerEntry]
     var lastSelectedServerID: UUID?
+    var serverRecents: [ServerRecentMetadata]
+    var pinnedTaskContexts: [PinnedTaskContext]
 
-    init(entries: [ServerEntry] = [], lastSelectedServerID: UUID? = nil) {
+    init(
+        entries: [ServerEntry] = [],
+        lastSelectedServerID: UUID? = nil,
+        serverRecents: [ServerRecentMetadata] = [],
+        pinnedTaskContexts: [PinnedTaskContext] = []
+    ) {
         self.version = Self.currentVersion
         self.entries = entries
         self.lastSelectedServerID = lastSelectedServerID
+        self.serverRecents = serverRecents
+        self.pinnedTaskContexts = pinnedTaskContexts
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case version
+        case entries
+        case lastSelectedServerID
+        case serverRecents
+        case pinnedTaskContexts
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        version = try container.decode(Int.self, forKey: .version)
+        entries = try container.decode([ServerEntry].self, forKey: .entries)
+        lastSelectedServerID = try container.decodeIfPresent(UUID.self, forKey: .lastSelectedServerID)
+        serverRecents = try container.decodeIfPresent([ServerRecentMetadata].self, forKey: .serverRecents) ?? []
+        pinnedTaskContexts = try container.decodeIfPresent([PinnedTaskContext].self, forKey: .pinnedTaskContexts) ?? []
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(version, forKey: .version)
+        try container.encode(entries, forKey: .entries)
+        try container.encodeIfPresent(lastSelectedServerID, forKey: .lastSelectedServerID)
+        try container.encode(serverRecents, forKey: .serverRecents)
+        try container.encode(pinnedTaskContexts, forKey: .pinnedTaskContexts)
     }
 }
 

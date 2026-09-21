@@ -17,6 +17,31 @@ struct RepoOSHubApp: App {
                 }
                 .keyboardShortcut("n", modifiers: [.command, .shift])
             }
+            CommandMenu("Go") {
+                Button("Quick Switcher…") {
+                    appState.presentCommandPalette()
+                }
+                .keyboardShortcut("k", modifiers: .command)
+
+                Divider()
+
+                Button("Back") {
+                    appState.workspaceGoBack()
+                }
+                .keyboardShortcut("[", modifiers: .command)
+                .disabled(!appState.workspaceNavigation.canGoBack)
+
+                Button("Forward") {
+                    appState.workspaceGoForward()
+                }
+                .keyboardShortcut("]", modifiers: .command)
+                .disabled(!appState.workspaceNavigation.canGoForward)
+
+                Button("Reload") {
+                    appState.workspaceReload()
+                }
+                .keyboardShortcut("r", modifiers: .command)
+            }
         }
     }
 }

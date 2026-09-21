@@ -32,7 +32,9 @@ private struct RegistryEmptyState: View {
             Text("Add your first RepoOS server")
                 .font(.title2.weight(.semibold))
 
-            Text("Servers stay on this Mac. The Hub checks /api/health when you add or edit an entry, then opens the RepoOS web UI here in an isolated web view.")
+            Text(
+                "Servers stay on this Mac. The Hub checks /api/health when you add or edit an entry, then opens the RepoOS web UI in an isolated web view. Use ⌘K to switch servers or reopen recent contexts."
+            )
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: 440)

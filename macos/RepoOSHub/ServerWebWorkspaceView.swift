@@ -19,7 +19,7 @@ struct ServerWebWorkspaceView: View {
     var body: some View {
         ZStack {
             if entry.originURL != nil {
-                ServerWebView(model: webModel)
+                ServerWebView(model: webModel, appState: appState)
                     .id(entry.id)
             } else {
                 invalidOriginState
@@ -60,6 +60,9 @@ struct ServerWebWorkspaceView: View {
             )
         }
         .navigationTitle(entry.name)
+        .onDisappear {
+            appState.updateWorkspaceNavigation(.placeholder)
+        }
     }
 
     private var invalidOriginState: some View {

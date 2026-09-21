@@ -19,7 +19,7 @@ final class ServerWebViewModel: ObservableObject {
 
     func reload() {
         loadFailure = nil
-        NotificationCenter.default.post(name: .serverWebViewReload, object: serverID)
+        NotificationCenter.default.post(name: .hubWebNavigationReload, object: serverID)
     }
 
     func openPendingExternalURL() {
@@ -41,9 +41,10 @@ extension Notification.Name {
 
 struct ServerWebView: NSViewRepresentable {
     @ObservedObject var model: ServerWebViewModel
+    @ObservedObject var appState: HubAppState
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(model: model)
+        Coordinator(model: model, appState: appState)
     }
 
     func makeNSView(context: Context) -> WKWebView {
@@ -54,54 +55,133 @@ struct ServerWebView: NSViewRepresentable {
         webView.uiDelegate = context.coordinator
         webView.allowsBackForwardNavigationGestures = true
         context.coordinator.webView = webView
-        context.coordinator.loadHomeIfNeeded()
-        context.coordinator.observeReload()
+        context.coordinator.loadInitialPage()
+        context.coordinator.observeHubCommands()
         return webView
     }
 
     func updateNSView(_ webView: WKWebView, context: Context) {
         context.coordinator.model = model
+        context.coordinator.appState = appState
         if context.coordinator.loadedOriginKey
             != ServerOriginNormalizer.canonicalOriginKey(for: model.origin)
         {
             context.coordinator.loadedOriginKey = ServerOriginNormalizer.canonicalOriginKey(for: model.origin)
-            context.coordinator.loadHomeIfNeeded()
+            context.coordinator.loadInitialPage()
         }
+        context.coordinator.syncNavigationState()
     }
 
     @MainActor
     final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
         var model: ServerWebViewModel
+        var appState: HubAppState
         weak var webView: WKWebView?
         var loadedOriginKey: String?
-        private var reloadObserver: NSObjectProtocol?
+        private var commandObservers: [NSObjectProtocol] = []
 
-        init(model: ServerWebViewModel) {
+        init(model: ServerWebViewModel, appState: HubAppState) {
             self.model = model
+            self.appState = appState
         }
 
         deinit {
-            if let reloadObserver {
-                NotificationCenter.default.removeObserver(reloadObserver)
+            for observer in commandObservers {
+                NotificationCenter.default.removeObserver(observer)
             }
         }
 
-        func observeReload() {
-            reloadObserver = NotificationCenter.default.addObserver(
-                forName: .serverWebViewReload,
-                object: model.serverID,
-                queue: .main
-            ) { [weak self] _ in
-                self?.loadHomeIfNeeded()
+        func observeHubCommands() {
+            let serverID = model.serverID
+            commandObservers.append(
+                NotificationCenter.default.addObserver(
+                    forName: .serverWebViewReload,
+                    object: serverID,
+                    queue: .main
+                ) { [weak self] _ in
+                    self?.loadInitialPage()
+                }
+            )
+            commandObservers.append(
+                NotificationCenter.default.addObserver(
+                    forName: .hubWebNavigationReload,
+                    object: serverID,
+                    queue: .main
+                ) { [weak self] _ in
+                    self?.webView?.reload()
+                }
+            )
+            commandObservers.append(
+                NotificationCenter.default.addObserver(
+                    forName: .hubWebNavigationBack,
+                    object: serverID,
+                    queue: .main
+                ) { [weak self] _ in
+                    self?.webView?.goBack()
+                }
+            )
+            commandObservers.append(
+                NotificationCenter.default.addObserver(
+                    forName: .hubWebNavigationForward,
+                    object: serverID,
+                    queue: .main
+                ) { [weak self] _ in
+                    self?.webView?.goForward()
+                }
+            )
+            commandObservers.append(
+                NotificationCenter.default.addObserver(
+                    forName: .hubWebNavigationNavigate,
+                    object: nil,
+                    queue: .main
+                ) { [weak self] note in
+                    guard let self,
+                          let targetID = note.userInfo?["serverID"] as? UUID,
+                          targetID == serverID,
+                          let path = note.userInfo?["path"] as? String
+                    else { return }
+                    self.load(path: path)
+                }
+            )
+        }
+
+        func loadInitialPage() {
+            if let pending = appState.consumePendingNavigationRequest(for: model.serverID) {
+                load(path: pending.path)
+            } else {
+                load(path: "/")
             }
         }
 
-        func loadHomeIfNeeded() {
+        func load(path: String) {
             guard let webView else { return }
             model.isLoading = true
             model.loadFailure = nil
-            let request = URLRequest(url: model.origin, cachePolicy: .useProtocolCachePolicy)
-            webView.load(request)
+            let normalized = HubRecentsRetention.normalizeRoutePath(path)
+            let target: URL
+            if normalized == "/" || normalized.isEmpty {
+                target = model.origin
+            } else if let resolved = URL(string: normalized, relativeTo: model.origin)?.absoluteURL {
+                target = resolved
+            } else {
+                target = model.origin
+            }
+            webView.load(URLRequest(url: target, cachePolicy: .useProtocolCachePolicy))
+        }
+
+        func syncNavigationState() {
+            guard let webView else {
+                appState.updateWorkspaceNavigation(.placeholder)
+                return
+            }
+            appState.updateWorkspaceNavigation(
+                WorkspaceNavigationSnapshot(
+                    hasEmbeddedWebContent: true,
+                    webCanGoBack: webView.canGoBack,
+                    webCanGoForward: webView.canGoForward,
+                    webIsLoading: model.isLoading
+                )
+            )
         }
 
         func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
@@ -154,16 +234,26 @@ struct ServerWebView: NSViewRepresentable {
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             model.isLoading = false
             model.loadFailure = nil
+            if let url = webView.url,
+               ServerOriginNormalizer.canonicalOriginKey(for: url)
+                   == ServerOriginNormalizer.canonicalOriginKey(for: model.origin)
+            {
+                let path = url.path.isEmpty ? "/" : url.path
+                appState.recordRouteVisit(serverID: model.serverID, path: path, title: webView.title)
+            }
+            syncNavigationState()
         }
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
             model.isLoading = false
             model.loadFailure = mapError(error)
+            syncNavigationState()
         }
 
         func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
             model.isLoading = false
             model.loadFailure = mapError(error)
+            syncNavigationState()
         }
 
         func webView(
