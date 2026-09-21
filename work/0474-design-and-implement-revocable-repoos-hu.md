@@ -11,7 +11,7 @@ branch: feat/design-and-implement-revocable-repoos-hu
 cli_override: codex
 model_override: gpt-5.6-luna
 created_at: "2026-09-21T11:50:27Z"
-updated_at: "2026-09-21T13:24:33Z"
+updated_at: "2026-09-21T14:02:57Z"
 ---
 Enable a trusted native Hub to read small authenticated summaries from multiple RepoOS servers without scraping WebViews or exposing native privileges to server pages.
 
@@ -34,3 +34,4 @@ Depends on the macOS Hub architecture task. This task is intentionally independe
 - 2026-09-21T13:24:24Z · cli_override
 - 2026-09-21T13:24:30Z · model_override
 - 2026-09-21T13:24:33Z · status ready→active, branch
+- 2026-09-21T14:02:57Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
