@@ -29,6 +29,10 @@ struct ServerEntry: Identifiable, Codable, Equatable, Sendable {
     var iconSymbolName: String?
     var groupName: String?
     var isPinned: Bool
+    var attentionAggregationEnabled: Bool
+    var notifyReviewReady: Bool
+    var notifyNeedsInput: Bool
+    var notifyActiveAgents: Bool
 
     var originURL: URL? {
         URL(string: originString)
@@ -46,7 +50,11 @@ struct ServerEntry: Identifiable, Codable, Equatable, Sendable {
         accentColorHex: String? = nil,
         iconSymbolName: String? = nil,
         groupName: String? = nil,
-        isPinned: Bool = false
+        isPinned: Bool = false,
+        attentionAggregationEnabled: Bool = true,
+        notifyReviewReady: Bool = true,
+        notifyNeedsInput: Bool = true,
+        notifyActiveAgents: Bool = false
     ) {
         self.id = id
         self.name = name
@@ -60,29 +68,82 @@ struct ServerEntry: Identifiable, Codable, Equatable, Sendable {
         self.iconSymbolName = iconSymbolName
         self.groupName = groupName
         self.isPinned = isPinned
+        self.attentionAggregationEnabled = attentionAggregationEnabled
+        self.notifyReviewReady = notifyReviewReady
+        self.notifyNeedsInput = notifyNeedsInput
+        self.notifyActiveAgents = notifyActiveAgents
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, originString, createdAt, updatedAt, lastHealth, lastHealthAt, sortOrder
+        case accentColorHex, iconSymbolName, groupName, isPinned
+        case attentionAggregationEnabled, notifyReviewReady, notifyNeedsInput, notifyActiveAgents
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        originString = try container.decode(String.self, forKey: .originString)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+        lastHealth = try container.decode(HealthState.self, forKey: .lastHealth)
+        lastHealthAt = try container.decodeIfPresent(Date.self, forKey: .lastHealthAt)
+        sortOrder = try container.decode(Int.self, forKey: .sortOrder)
+        accentColorHex = try container.decodeIfPresent(String.self, forKey: .accentColorHex)
+        iconSymbolName = try container.decodeIfPresent(String.self, forKey: .iconSymbolName)
+        groupName = try container.decodeIfPresent(String.self, forKey: .groupName)
+        isPinned = try container.decodeIfPresent(Bool.self, forKey: .isPinned) ?? false
+        attentionAggregationEnabled = try container.decodeIfPresent(Bool.self, forKey: .attentionAggregationEnabled) ?? true
+        notifyReviewReady = try container.decodeIfPresent(Bool.self, forKey: .notifyReviewReady) ?? true
+        notifyNeedsInput = try container.decodeIfPresent(Bool.self, forKey: .notifyNeedsInput) ?? true
+        notifyActiveAgents = try container.decodeIfPresent(Bool.self, forKey: .notifyActiveAgents) ?? false
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encode(originString, forKey: .originString)
+        try container.encode(createdAt, forKey: .createdAt)
+        try container.encode(updatedAt, forKey: .updatedAt)
+        try container.encode(lastHealth, forKey: .lastHealth)
+        try container.encodeIfPresent(lastHealthAt, forKey: .lastHealthAt)
+        try container.encode(sortOrder, forKey: .sortOrder)
+        try container.encodeIfPresent(accentColorHex, forKey: .accentColorHex)
+        try container.encodeIfPresent(iconSymbolName, forKey: .iconSymbolName)
+        try container.encodeIfPresent(groupName, forKey: .groupName)
+        try container.encode(isPinned, forKey: .isPinned)
+        try container.encode(attentionAggregationEnabled, forKey: .attentionAggregationEnabled)
+        try container.encode(notifyReviewReady, forKey: .notifyReviewReady)
+        try container.encode(notifyNeedsInput, forKey: .notifyNeedsInput)
+        try container.encode(notifyActiveAgents, forKey: .notifyActiveAgents)
     }
 }
 
 struct ServerRegistryDocument: Codable, Equatable, Sendable {
-    static let currentVersion = 1
+    static let currentVersion = 2
 
     var version: Int
     var entries: [ServerEntry]
     var lastSelectedServerID: UUID?
     var serverRecents: [ServerRecentMetadata]
     var pinnedTaskContexts: [PinnedTaskContext]
+    var hubGlobalPreferences: HubGlobalPreferences
 
     init(
         entries: [ServerEntry] = [],
         lastSelectedServerID: UUID? = nil,
         serverRecents: [ServerRecentMetadata] = [],
-        pinnedTaskContexts: [PinnedTaskContext] = []
+        pinnedTaskContexts: [PinnedTaskContext] = [],
+        hubGlobalPreferences: HubGlobalPreferences = .default
     ) {
         self.version = Self.currentVersion
         self.entries = entries
         self.lastSelectedServerID = lastSelectedServerID
         self.serverRecents = serverRecents
         self.pinnedTaskContexts = pinnedTaskContexts
+        self.hubGlobalPreferences = hubGlobalPreferences
     }
 
     enum CodingKeys: String, CodingKey {
@@ -91,24 +152,33 @@ struct ServerRegistryDocument: Codable, Equatable, Sendable {
         case lastSelectedServerID
         case serverRecents
         case pinnedTaskContexts
+        case hubGlobalPreferences
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         version = try container.decode(Int.self, forKey: .version)
+        guard version == 1 || version == 2 else {
+            throw DecodingError.dataCorruptedError(forKey: .version, in: container, debugDescription: "Unsupported registry version")
+        }
         entries = try container.decode([ServerEntry].self, forKey: .entries)
         lastSelectedServerID = try container.decodeIfPresent(UUID.self, forKey: .lastSelectedServerID)
         serverRecents = try container.decodeIfPresent([ServerRecentMetadata].self, forKey: .serverRecents) ?? []
         pinnedTaskContexts = try container.decodeIfPresent([PinnedTaskContext].self, forKey: .pinnedTaskContexts) ?? []
+        hubGlobalPreferences = try container.decodeIfPresent(HubGlobalPreferences.self, forKey: .hubGlobalPreferences) ?? .default
+        if version < ServerRegistryDocument.currentVersion {
+            self.version = ServerRegistryDocument.currentVersion
+        }
     }
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(version, forKey: .version)
+        try container.encode(ServerRegistryDocument.currentVersion, forKey: .version)
         try container.encode(entries, forKey: .entries)
         try container.encodeIfPresent(lastSelectedServerID, forKey: .lastSelectedServerID)
         try container.encode(serverRecents, forKey: .serverRecents)
         try container.encode(pinnedTaskContexts, forKey: .pinnedTaskContexts)
+        try container.encode(hubGlobalPreferences, forKey: .hubGlobalPreferences)
     }
 }
 

@@ -33,6 +33,22 @@ final class ServerWebsiteDataStorePool {
         lock.lock()
         stores.removeValue(forKey: serverID)
         lock.unlock()
-        WKWebsiteDataStore.remove(forIdentifier: serverID)
+        if #available(macOS 14.0, *) {
+            Task {
+                try? await WKWebsiteDataStore.remove(forIdentifier: serverID)
+            }
+        }
+    }
+
+    /// Drops in-memory web session handles for servers that are not active; cookies remain on disk.
+    func releaseCachedStores(except activeServerID: UUID?) {
+        lock.lock()
+        if let activeServerID {
+            let active = stores[activeServerID]
+            stores = active.map { [activeServerID: $0] } ?? [:]
+        } else {
+            stores = [:]
+        }
+        lock.unlock()
     }
 }

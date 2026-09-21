@@ -53,9 +53,6 @@ struct ServerSidebarView: View {
                 }
                 .help("Add a RepoOS server to the local registry")
             }
-            ToolbarItem(placement: .automatic) {
-                EditButton()
-            }
         }
         .overlay {
             if appState.entries.isEmpty {
@@ -95,9 +92,12 @@ struct ServerSidebarRow: View {
                     .lineLimit(1)
             }
             Spacer(minLength: 4)
+            AttentionSummaryBadges(snapshot: appState.attentionSnapshot(for: entry.id))
             HealthIndicator(state: entry.lastHealth, checkedAt: entry.lastHealthAt)
+            SummaryFreshnessIndicator(snapshot: appState.attentionSnapshot(for: entry.id))
         }
         .contextMenu {
+            Button("Attention & notifications…") { appState.presentAttentionSettings(for: entry) }
             Button("Edit…") { appState.presentEditServer(entry) }
             Button("Pin task context…") { appState.presentPinTaskContext(for: entry) }
             Button(entry.isPinned ? "Unpin" : "Pin") {
@@ -165,6 +165,63 @@ struct ServerIconView: View {
             return color
         }
         return .accentColor
+    }
+}
+
+struct AttentionSummaryBadges: View {
+    let snapshot: ServerAttentionSnapshot?
+
+    var body: some View {
+        HStack(spacing: 4) {
+            if let counts = snapshot?.counts, snapshot?.freshness != .unavailable {
+                if counts.reviewReadyTasks > 0 {
+                    AttentionBadge(count: counts.reviewReadyTasks, tint: .blue, label: "In review")
+                }
+                if counts.needsInputTasks > 0 {
+                    AttentionBadge(count: counts.needsInputTasks, tint: .orange, label: "Needs input")
+                }
+                if counts.activeAgents > 0 {
+                    AttentionBadge(count: counts.activeAgents, tint: .purple, label: "Active agents")
+                }
+            }
+        }
+        .accessibilityHidden(true)
+    }
+}
+
+private struct AttentionBadge: View {
+    let count: Int
+    let tint: Color
+    let label: String
+
+    var body: some View {
+        Text(count > 9 ? "9+" : "\(count)")
+            .font(.caption2.weight(.semibold).monospacedDigit())
+            .foregroundStyle(.white)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 2)
+            .background(Capsule().fill(tint))
+            .help(label)
+    }
+}
+
+struct SummaryFreshnessIndicator: View {
+    let snapshot: ServerAttentionSnapshot?
+
+    var body: some View {
+        Circle()
+            .fill(color)
+            .frame(width: 6, height: 6)
+            .help(snapshot?.freshness.displayTitle ?? SummaryFreshness.unavailable.displayTitle)
+            .accessibilityLabel(snapshot?.freshness.displayTitle ?? SummaryFreshness.unavailable.displayTitle)
+    }
+
+    private var color: Color {
+        switch snapshot?.freshness {
+        case .fresh: return .teal
+        case .stale: return .yellow
+        case .unavailable, .none: return Color.secondary.opacity(0.25)
+        }
     }
 }
 

@@ -67,6 +67,7 @@ final class HubRecentsRetentionTests: XCTestCase {
         XCTAssertTrue(pinned.isEmpty)
     }
 
+    @MainActor
     func testRegistryRestoresLastSelectedServer() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("hub-nav-restore-\(UUID().uuidString)", isDirectory: true)
@@ -85,7 +86,11 @@ final class HubRecentsRetentionTests: XCTestCase {
         ]
         try store.save(document)
 
-        let state = await HubAppState(store: store, healthChecker: StubHealthChecker())
+        let state = HubAppState(
+            store: store,
+            healthChecker: StubHealthChecker(),
+            attentionCoordinator: HubAttentionCoordinator()
+        )
         XCTAssertEqual(state.selectedServerID, second.id)
         XCTAssertEqual(state.pendingNavigationRequest?.path, "/tasks/0473")
     }
