@@ -13,7 +13,7 @@ created_by: ""
 branch: feat/add-opt-in-stories-page-for-cross-area-d
 created_at: "2026-09-21T12:19:02Z"
 updated_at: "2026-09-21T12:33:28Z"
-dev_error_count: 1
+dev_error_count: 2
 ---
 ## Problem
 
