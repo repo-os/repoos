@@ -2,11 +2,21 @@ import SwiftUI
 
 @main
 struct RepoOSHubApp: App {
+    @StateObject private var appState = HubAppState()
+
     var body: some Scene {
         WindowGroup("RepoOS Hub") {
             ContentView()
-                .frame(minWidth: 720, minHeight: 460)
+                .environmentObject(appState)
+                .frame(minWidth: 880, minHeight: 520)
         }
-        .windowResizability(.contentSize)
+        .commands {
+            CommandGroup(after: .newItem) {
+                Button("Add Server…") {
+                    appState.presentAddServer()
+                }
+                .keyboardShortcut("n", modifiers: [.command, .shift])
+            }
+        }
     }
 }
