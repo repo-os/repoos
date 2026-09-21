@@ -426,12 +426,12 @@ final class HubAppState: ObservableObject {
 
     private func originErrorMessage(_ error: ServerOriginError) -> String {
         switch error {
-        case .empty: return "Enter the HTTPS address for the RepoOS server."
+        case .empty: return "Enter the HTTPS address for the RepoOS server, or a localhost development address."
         case .invalidURL: return "That does not look like a valid URL."
-        case .notHTTPS: return "Only HTTPS origins are allowed."
+        case .notHTTPS: return "Only HTTPS origins are allowed, except HTTP localhost addresses for development."
         case .credentialsNotAllowed: return "Remove credentials from the URL and sign in through the web UI instead."
         case .fragmentNotAllowed, .queryNotAllowed, .pathNotAllowed:
-            return "Use the server root HTTPS origin only, without paths or query parameters."
+            return "Use the server root origin only, without paths or query parameters."
         case .missingHost: return "The URL must include a host name."
         case .nameEmpty: return "Enter a display name for this server."
         case .nameTooLong: return "Display names can be at most 80 characters."

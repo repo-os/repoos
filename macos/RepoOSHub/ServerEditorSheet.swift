@@ -23,7 +23,7 @@ struct ServerEditorSheet: View {
             Text(title)
                 .font(.title2.weight(.semibold))
 
-            Text("RepoOS checks GET /api/health over HTTPS before saving. Nothing is sent except that health request.")
+            Text("RepoOS checks GET /api/health before saving. HTTPS is required except for localhost development servers.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -31,7 +31,7 @@ struct ServerEditorSheet: View {
             Form {
                 TextField("Display name", text: $draft.name)
                     .focused($focusedField, equals: .name)
-                TextField("HTTPS origin", text: $draft.originText)
+                TextField("Server origin", text: $draft.originText)
                     .focused($focusedField, equals: .origin)
                 TextField("Group (optional)", text: $draft.groupName)
                     .focused($focusedField, equals: .group)

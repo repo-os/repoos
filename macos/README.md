@@ -6,7 +6,8 @@ not import, build, or package anything from `macos/`, and the macOS target has
 no third-party dependencies.
 
 The scaffold ships a native sidebar workspace with a **local server registry**
-(Application Support JSON). Adding or editing a server normalizes HTTPS origins,
+(Application Support JSON). Adding or editing a server normalizes HTTPS origins
+(or HTTP for a loopback development server such as `localhost:7171`),
 calls `GET /api/health` with a 10-second timeout, and only then persists the
 entry. The main content area loads the selected server's RepoOS web UI in an
 isolated `WKWebView` (per-server data store, no native JavaScript bridge), with

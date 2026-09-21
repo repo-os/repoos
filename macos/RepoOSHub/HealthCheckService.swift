@@ -125,9 +125,9 @@ extension HealthCheckFailure {
         case .network(let detail):
             return "Could not reach the server. \(detail)"
         case .httpStatus(let code):
-            return "The server returned HTTP \(code). Confirm this is a RepoOS HTTPS endpoint."
+            return "The server returned HTTP \(code). Confirm this is a RepoOS endpoint."
         case .redirect(let url):
-            return "The server redirected away from \(url.absoluteString). Use the canonical HTTPS origin."
+            return "The server redirected away from \(url.absoluteString). Use the canonical server origin."
         case .invalidJSON:
             return "The health response was not valid JSON from a RepoOS server."
         case .notRepoOS:

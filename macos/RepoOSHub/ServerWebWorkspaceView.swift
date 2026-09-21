@@ -68,7 +68,7 @@ struct ServerWebWorkspaceView: View {
     private var invalidOriginState: some View {
         WebLoadFailureOverlay(
             origin: entry.originString,
-            failure: .unknown("This saved server has an invalid HTTPS origin."),
+            failure: .unknown("This saved server has an invalid origin."),
             onRetry: { appState.presentEditServer(entry) },
             onEdit: { appState.presentEditServer(entry) },
             onRemove: { appState.deleteServer(entry) },

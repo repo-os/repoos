@@ -20,12 +20,22 @@ enum ServerOriginNormalizer {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { throw ServerOriginError.empty }
 
-        let input = trimmed.contains("://") ? trimmed : "https://\(trimmed)"
+        let input: String
+        if trimmed.contains("://") {
+            input = trimmed
+        } else {
+            // A bare local address is the common development-server input.
+            // Remote servers still default to the secure scheme.
+            let candidate = URLComponents(string: "http://\(trimmed)")
+            input = isLoopbackHost(candidate?.host) ? "http://\(trimmed)" : "https://\(trimmed)"
+        }
         guard var components = URLComponents(string: input) else {
             throw ServerOriginError.invalidURL
         }
 
-        guard let scheme = components.scheme?.lowercased(), scheme == "https" else {
+        guard let scheme = components.scheme?.lowercased(),
+              scheme == "https" || (scheme == "http" && isLoopbackHost(components.host))
+        else {
             throw ServerOriginError.notHTTPS
         }
 
@@ -48,14 +58,14 @@ enum ServerOriginNormalizer {
             throw ServerOriginError.missingHost
         }
         components.host = host
-        components.scheme = "https"
+        components.scheme = scheme
         components.path = ""
         components.fragment = nil
         components.query = nil
         components.user = nil
         components.password = nil
 
-        if components.port == 443 {
+        if (scheme == "https" && components.port == 443) || (scheme == "http" && components.port == 80) {
             components.port = nil
         }
 
@@ -68,6 +78,13 @@ enum ServerOriginNormalizer {
 
     static func canonicalOriginKey(for url: URL) -> String {
         url.absoluteString
+    }
+
+    /// Plain HTTP is permitted only for a loopback development server. This
+    /// intentionally does not treat private-network hosts as local.
+    static func isLoopbackHost(_ host: String?) -> Bool {
+        guard let host = host?.lowercased() else { return false }
+        return host == "localhost" || host == "::1" || host.split(separator: ".").first == "127"
     }
 
     static func validateDisplayName(_ name: String) throws -> String {

@@ -23,7 +23,8 @@ enum ServerNavigationBlockReason: Equatable {
 }
 
 enum ServerNavigationPolicy {
-    /// Top-level and subresource requests must stay on the selected server's canonical HTTPS origin.
+    /// Top-level and subresource requests must stay on the selected server's canonical origin.
+    /// HTTPS is required except for a saved loopback HTTP development server.
     static func decide(
         requestURL: URL,
         allowedOrigin: URL,
@@ -44,15 +45,18 @@ enum ServerNavigationPolicy {
             return .cancel(reason: .unsafeScheme)
         }
 
-        if scheme != "https" {
-            if requestURL.absoluteString == "about:blank" {
-                return .allowInWebView
-            }
-            return .cancel(reason: .unsafeScheme)
+        if requestURL.absoluteString == "about:blank" {
+            return .allowInWebView
         }
 
         if isSameOrigin(requestURL, allowedOrigin) {
             return .allowInWebView
+        }
+
+        // HTTP is never an external-navigation escape hatch. It is only safe
+        // when it is the exact saved loopback origin above.
+        if scheme != "https" {
+            return .cancel(reason: .unsafeScheme)
         }
 
         if activation == .linkActivated || activation == .formSubmitted {
@@ -71,9 +75,17 @@ enum ServerNavigationPolicy {
         else {
             return false
         }
-        let requestPort = url.port ?? (requestScheme == "https" ? 443 : nil)
-        let allowedPort = allowedOrigin.port ?? (allowedScheme == "https" ? 443 : nil)
+        let requestPort = url.port ?? defaultPort(for: requestScheme)
+        let allowedPort = allowedOrigin.port ?? defaultPort(for: allowedScheme)
         return requestScheme == allowedScheme && requestHost == allowedHost && requestPort == allowedPort
+    }
+
+    private static func defaultPort(for scheme: String) -> Int? {
+        switch scheme {
+        case "https": return 443
+        case "http": return 80
+        default: return nil
+        }
     }
 }
 

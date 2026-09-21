@@ -16,6 +16,32 @@ final class ServerNavigationPolicyTests: XCTestCase {
         XCTAssertEqual(decision, .allowInWebView)
     }
 
+    func testAllowsSameLoopbackHTTPOrigin() {
+        let localOrigin = URL(string: "http://localhost:7171")!
+        let taskURL = URL(string: "http://localhost:7171/tasks/0042")!
+        let decision = ServerNavigationPolicy.decide(
+            requestURL: taskURL,
+            allowedOrigin: localOrigin,
+            isMainFrame: true,
+            activation: .linkActivated,
+            opensNewWindow: false
+        )
+        XCTAssertEqual(decision, .allowInWebView)
+    }
+
+    func testBlocksForeignHTTPNavigation() {
+        let localOrigin = URL(string: "http://localhost:7171")!
+        let foreign = URL(string: "http://localhost:7172")!
+        let decision = ServerNavigationPolicy.decide(
+            requestURL: foreign,
+            allowedOrigin: localOrigin,
+            isMainFrame: true,
+            activation: .linkActivated,
+            opensNewWindow: false
+        )
+        XCTAssertEqual(decision, .cancel(reason: .unsafeScheme))
+    }
+
     func testBlocksForeignOriginWithoutUserActivation() {
         let foreign = URL(string: "https://evil.example")!
         let decision = ServerNavigationPolicy.decide(
