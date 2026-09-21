@@ -23,6 +23,7 @@ import {
   type CommitNewFileResult,
 } from "./git.js";
 import { STATUSES, type RepoOSConfig, type RepoIndex, type Task, type Status } from "./types.js";
+import { normalizeStoryName } from "./stories.js";
 
 export interface CreateTaskInput {
   title: string;
@@ -30,6 +31,8 @@ export interface CreateTaskInput {
   status?: Status;
   priority?: string;
   area?: string;
+  /** Optional cross-area delivery slice (a "story"). */
+  story?: string;
   assignedTo?: string;
   createdBy?: string;
   branch?: string;
@@ -251,6 +254,7 @@ export function createRepoOS(root?: string, loadOptions: LoadConfigOptions = {})
         noSourceChange: false,
         priority: input.priority ?? "p2",
         area: input.area ?? "general",
+        story: normalizeStoryName(input.story),
         assignee: (input.assignedTo ?? "").toLowerCase() === "ai" ? "ai" : "unassigned",
         assignedTo: input.assignedTo ?? "",
         createdBy: input.createdBy ?? "",

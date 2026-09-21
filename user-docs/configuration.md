@@ -36,8 +36,8 @@ The only place the parser accepts both `[check]` and `[checks]` spellings is the
 
 The Settings UI edits the most common fields directly, and its raw
 `repoos.toml` editor can edit the whole file — including `[preview]`, `[check]`,
-`[release]`, `[[deployments]]`, `[[distribution]]`, `[worktrees]`, `[tunnel]`,
-and anything the tabs don't surface.
+`[release]`, `[stories]`, `[[deployments]]`, `[[distribution]]`, `[worktrees]`,
+`[tunnel]`, and anything the tabs don't surface.
 
 ## Annotated starter `repoos.toml`
 
@@ -183,6 +183,10 @@ kind = "npm"
 package = "@scope/package"
 url = "https://www.npmjs.com/package/@scope/package"
 install = ["npm install -g @scope/package"]
+
+# ── Stories (opt-in cross-area delivery tracking) ────────────────────────
+[stories]
+enabled = false           # true shows the Stories page and task Story field
 
 # ── Tunnels (managed by `repoos tunnel`) ─────────────────────────────────
 [tunnel]
@@ -622,6 +626,43 @@ and dropped rather than poisoning the section.
 | `distribution.install` | array of strings | unset | yes | Install commands, each independently copyable. |
 
 See [Deployments and releases](/deployments-and-releases) for how these render.
+
+## Stories
+
+```toml
+[stories]
+enabled = false
+```
+
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `stories.enabled` | boolean | `false` | yes | Turns the Stories page, its navigation item (between Work and Checks), and the task drawer's Story field on. |
+
+Stories are an optional, purely derived grouping over tasks: a delivery slice
+that spans several technical areas and owners. Tag a task by giving it a
+`story:` value in frontmatter — from the task drawer's Story field, or with
+`repoos new "…" --story "Project updates email"` / `repoos update <id> --story
+"Project updates email"`. A story has no file, worktree, agent, branch, or
+status of its own; the Stories page is rebuilt from the tagged tasks on every
+index update. A story counts as complete only when every one of its tasks is
+done, and there is no manual completion control.
+
+Story names are whitespace-normalized and matched case-insensitively, so
+`Project updates email` and `project  updates  email` group together under one
+stable display name. Clearing the field removes the task from every story.
+
+### A story is not an area
+
+`area` describes **where work lands** — the part of the product or codebase a
+task touches (`web`, `core`, `cli`, `api`), and it drives preview-target
+selection. A `story` describes **what outcome the work serves**, and it can
+span any number of areas. The project-updates email list, for example, can be
+one story whose tasks are individually tagged `neon`, `landing`, and `ops`
+areas. Use an area when routing work to the right code; use a story when you
+want to see whether a whole customer-visible outcome is ready.
+
+With `enabled` missing, false, or malformed, nothing changes: no nav item, no
+route entry point, no Story field in the drawer, and no extra API work.
 
 ## Notifications
 

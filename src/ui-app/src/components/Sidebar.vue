@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { storeToRefs } from "pinia";
-import { navFor } from "../nav";
+import { navFromConfig } from "../nav";
 import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
 import { relTime } from "../lib/time";
@@ -45,12 +45,7 @@ onBeforeUnmount(() => {
 });
 
 const version = computed(() => (health.value?.version ? `v${health.value.version}` : ""));
-const nav = computed(() =>
-  navFor(
-    (config.data?.release as { enabled?: unknown } | undefined)?.enabled === true,
-    Array.isArray(config.data?.deployments) && (config.data?.deployments as unknown[]).length > 0,
-  ),
-);
+const nav = computed(() => navFromConfig(config.data));
 const age = computed(() => relTime(health.value?.buildAt ?? null, new Date(now.value)));
 const buildTitle = computed(() =>
   health.value?.buildAt

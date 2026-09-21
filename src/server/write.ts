@@ -28,6 +28,7 @@ import {
   SCREENSHOTS_HEADING,
   ORIGINAL_PROMPT_HEADING,
 } from "../core/task.js";
+import { normalizeStoryName } from "../core/stories.js";
 import { commitTaskFile } from "../core/git.js";
 import { appendScreenshotsSection, type ScreenshotMeta } from "./attachments.js";
 
@@ -66,6 +67,8 @@ export interface TaskPatch {
   title?: string;
   priority?: string;
   area?: string;
+  /** Cross-area delivery slice (a "story"), or empty string to clear it. */
+  story?: string;
   assignedTo?: string;
   branch?: string;
   type?: string;
@@ -222,6 +225,13 @@ export function patchTaskFile(
   if (patch.area !== undefined) {
     if (patch.area !== current.area) changes.push("area");
     current.area = patch.area;
+  }
+  if (patch.story !== undefined) {
+    // Whitespace-normalize on write, same as parse, so " Email  launch "
+    // and "Email launch" can never land as two distinct tags.
+    const story = normalizeStoryName(patch.story);
+    if (story !== (current.story ?? "")) changes.push("story");
+    current.story = story;
   }
   if (patch.branch !== undefined) {
     if (patch.branch !== current.branch) changes.push("branch");

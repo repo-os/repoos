@@ -1800,8 +1800,10 @@ export class CloseOutOrchestrator {
       // The configured cache is entirely RepoOS runtime state: locks, job
       // checkpoints, logs, and the local database. It must never block a
       // publish, including for older projects whose cache was accidentally
-      // committed before their ignore rule was corrected.
-      const cachePrefix = `${this.config.cacheDir.replace(/\/+$/, "")}/`;
+      // committed before their ignore rule was corrected. Fall back to the
+      // documented default when a partial config omits it (loadConfig always
+      // fills it; a hand-built fixture may not).
+      const cachePrefix = `${(this.config.cacheDir ?? ".repoos").replace(/\/+$/, "")}/`;
       dirtyOnMain = dirtyOnMain.filter((path) => !path.startsWith(cachePrefix));
       if (dirtyOnMain.length > 0) {
         // Auto-checkpoint routine, server-written churn instead of blocking
@@ -1825,7 +1827,7 @@ export class CloseOutOrchestrator {
         // a stray build artifact) still fails closed exactly as before,
         // since that's genuinely ambiguous and worth a human's attention
         // rather than a blind auto-commit.
-        const workPrefix = `${this.config.workDir}/`;
+        const workPrefix = `${this.config.workDir ?? "work"}/`;
         const isSafeChurn = (p: string): boolean => p.startsWith(workPrefix) || p === "repoos.toml";
         const onlySafeChurn = dirtyOnMain.every(isSafeChurn);
         if (onlySafeChurn) {

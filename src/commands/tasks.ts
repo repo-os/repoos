@@ -275,6 +275,7 @@ export function cmdNote(args: string[]): void {
 const UPDATE_FLAGS: Record<string, keyof TaskPatch> = {
   title: "title",
   area: "area",
+  story: "story",
   priority: "priority",
   type: "type",
   body: "body",
@@ -285,8 +286,8 @@ const UPDATE_FLAGS: Record<string, keyof TaskPatch> = {
 };
 
 /**
- * `repoos update <id> [--title ...] [--area ...] [--priority ...] [--type ...]
- *   [--body ... | --body -] [--branch ...] [--assigned-to ai|human]
+ * `repoos update <id> [--title ...] [--area ...] [--story ...] [--priority ...]
+ *   [--type ...] [--body ... | --body -] [--branch ...] [--assigned-to ai|human]
  *   [--needs-input true|false] [--questions "Question one\nQuestion two"]`
  *
  * Writes directly via patchTaskFile (same path the server's PATCH route uses),
@@ -297,7 +298,7 @@ const UPDATE_FLAGS: Record<string, keyof TaskPatch> = {
 export function cmdUpdate(args: string[]): void {
   const [id, ...rest] = args;
   const usage =
-    '  Usage: repoos update <id> [--title "..."] [--area a] [--priority p] [--type t] [--body "..."|-] [--branch b] [--assigned-to ai|human] [--needs-input true|false] [--questions "Question one\\nQuestion two"] [--clear-questions]';
+    '  Usage: repoos update <id> [--title "..."] [--area a] [--story "Delivery slice"] [--priority p] [--type t] [--body "..."|-] [--branch b] [--assigned-to ai|human] [--needs-input true|false] [--questions "Question one\\nQuestion two"] [--clear-questions]';
   if (!id) {
     console.error(c.red(usage));
     process.exitCode = 1;
@@ -367,7 +368,16 @@ export function cmdUpdate(args: string[]): void {
   }
 }
 
-const NEW_FLAGS = new Set(["ai", "type", "area", "priority", "body", "needs-input", "questions"]);
+const NEW_FLAGS = new Set([
+  "ai",
+  "type",
+  "area",
+  "story",
+  "priority",
+  "body",
+  "needs-input",
+  "questions",
+]);
 
 function parseQuestions(raw: string): string[] {
   try {
@@ -387,7 +397,7 @@ function parseQuestions(raw: string): string[] {
 /** `repoos new <title> [--ai] [--needs-input true] [--questions "..."]` */
 export function cmdNew(args: string[]): void {
   const usage =
-    '  Usage: repoos new "Task title" [--ai] [--type bug] [--area web] [--priority p1] [--body "..."|-] [--needs-input true|false] [--questions "Question one\\nQuestion two"]';
+    '  Usage: repoos new "Task title" [--ai] [--type bug] [--area web] [--story "Delivery slice"] [--priority p1] [--body "..."|-] [--needs-input true|false] [--questions "Question one\\nQuestion two"]';
   const flags: Record<string, string | boolean> = {};
   const positional: string[] = [];
   for (let i = 0; i < args.length; i++) {
@@ -428,6 +438,7 @@ export function cmdNew(args: string[]): void {
     title,
     type: (flags.type as string) || undefined,
     area: (flags.area as string) || undefined,
+    story: (flags.story as string) || undefined,
     priority: (flags.priority as string) || undefined,
     assignedTo: flags.ai ? "ai" : undefined,
     body: (flags.body as string) || undefined,

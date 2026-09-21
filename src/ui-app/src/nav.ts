@@ -21,6 +21,13 @@ export const DEPLOYMENTS_NAV: NavItem = {
   icon: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z" stroke="currentColor" stroke-width="1.8"/></svg>',
 };
 
+export const STORIES_NAV: NavItem = {
+  id: "stories",
+  path: "/stories",
+  label: "Stories",
+  icon: '<svg viewBox="0 0 24 24" fill="none"><path d="M5 4h11a3 3 0 013 3v10a3 3 0 01-3 3H5z" stroke="currentColor" stroke-width="1.8"/><path d="M8 8h7M8 12h7M8 16h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+};
+
 export const NAV: NavItem[] = [
   {
     id: "dashboard",
@@ -69,9 +76,15 @@ export const NAV: NavItem[] = [
 /**
  * The nav for a repo's enabled surfaces. Releases and Deployments are both
  * opt-in (a `[release]` block / a non-empty `[[deployments]]` array in
- * repoos.toml) and slot in after Work, ahead of the everyday pages.
+ * repoos.toml) and slot in after Work, ahead of the everyday pages. Stories is
+ * opt-in too (`[stories] enabled = true`) but sits exactly between Work and
+ * Checks, so it is spliced at a fixed index independent of the other two.
  */
-export function navFor(releasesEnabled: boolean, deploymentsEnabled = false): NavItem[] {
+export function navFor(
+  releasesEnabled: boolean,
+  deploymentsEnabled = false,
+  storiesEnabled = false,
+): NavItem[] {
   const items = [...NAV];
   let at = 4; // after Work + Checks
   if (releasesEnabled) {
@@ -80,5 +93,27 @@ export function navFor(releasesEnabled: boolean, deploymentsEnabled = false): Na
   if (deploymentsEnabled) {
     items.splice(at, 0, DEPLOYMENTS_NAV);
   }
+  // Work is index 2 and Checks index 3 in the base NAV, so index 3 is exactly
+  // between them — regardless of whether Releases/Deployments are present.
+  if (storiesEnabled) {
+    items.splice(3, 0, STORIES_NAV);
+  }
   return items;
+}
+
+/**
+ * Derive the nav from the raw `/api/config` payload. Each opt-in surface is
+ * read from the same shape the server ships it in: `release.enabled`,
+ * a non-empty `deployments` array, and `stories.enabled`. A missing or
+ * malformed section reads as disabled, so a repo that never configures these
+ * gets exactly the default NAV.
+ */
+export function navFromConfig(config: Record<string, unknown> | null | undefined): NavItem[] {
+  const release = config?.release as { enabled?: unknown } | undefined;
+  const stories = config?.stories as { enabled?: unknown } | undefined;
+  return navFor(
+    release?.enabled === true,
+    Array.isArray(config?.deployments) && (config?.deployments as unknown[]).length > 0,
+    stories?.enabled === true,
+  );
 }
