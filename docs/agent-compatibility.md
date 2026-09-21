@@ -47,11 +47,17 @@ that an explicit, evidence-based claim instead of a hope.
   certification below.
 - **Upgrade recommended** — older than `supportedMajor`. Work still permitted
   if local capability checks pass.
-- **Newer than verified** — newer than `newestCertifiedVersion`, once a
-  certified baseline has been recorded, but not in a `knownIncompatibleRanges`
-  family. Not blocked; guidance points at `repoos doctor --probe`.
+- **Newer than verified** — newer than `newestCertifiedVersion` (once a
+  certified baseline has been recorded), or a major above `supportedMajor` for
+  which no breakage has been recorded. Not blocked; guidance points at
+  `repoos doctor --probe`. This is the rung that implements the task's non-goal
+  ("do not block all newer releases by default; prefer visible uncertainty plus
+  a safe probe") — a higher major is never `unsupported` merely for being higher,
+  only when it sits in a `knownIncompatibleRanges` family or a required
+  capability is missing.
 - **Unsupported** — inside a `knownIncompatibleRanges` family, outside
-  `supportedRange`, or a known-undrivable harness (e.g. `gemini`, `aider`).
+  `supportedRange` on the low side, or a known-undrivable harness (e.g.
+  `gemini`, `aider`).
 - **Not yet probed** — no contract, version unparseable, or
   `supportedRange`-compatible but without certification evidence yet.
 
@@ -112,8 +118,8 @@ contract check, not a reimplementation.
      version, date). Never set evidence without a real passing run — that is
      the "no undocumented optimistic version bump" rule.
 4. Update the user-docs table row (the drift test
-   `harness-compat-docs.test.ts` enforces the newest-certified + verified
-   columns match the manifest).
+   `harness-compat-docs.test.ts` enforces the supported-range, newest-certified,
+   status, verified, and official-link columns match the manifest).
 5. Commit manifest + docs together with the probe evidence; `repoos check`
    passes before the change lands.
 

@@ -117,8 +117,8 @@ function help(): void {
       "One-screen health snapshot: server, build freshness, board, worktrees, tunnel, git",
     ),
     cmdRow(
-      "doctor [--json]",
-      "Read-only readiness preflight: identity, config, layout, tools, check plan, server, secrets",
+      "doctor [--json] [--probe <cli>]",
+      "Readiness preflight: identity, config, layout, tools, check plan, server, secrets (--probe runs a live contract check)",
     ),
     cmdRow("support bundle", "Write a redacted, inspectable diagnostic bundle for failed setups"),
     cmdRow("show <id>", "Show a task's full spec"),

@@ -7,7 +7,7 @@
       "supportedMajor": 2,
       "supportedRange": ">=2.0.0 <3.0.0",
       "newestCertifiedVersion": null,
-      "knownIncompatibleRanges": [">=3.0.0"],
+      "knownIncompatibleRanges": [],
       "requiredCapabilities": [
         "version",
         "help",
@@ -19,7 +19,7 @@
         "cancellation"
       ],
       "verifiedAt": null,
-      "verificationSource": "Pending: RepoOS has not yet validated an OpenCode v2 adapter contract suite in-repo.",
+      "verificationSource": null,
       "upgradeGuidance": "Install the current OpenCode v2 release, then review its local capabilities and this compatibility contract before important work.",
       "officialUrl": "https://opencode.ai/docs/"
     }

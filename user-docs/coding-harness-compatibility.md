@@ -24,9 +24,9 @@ model-selection check is not certification of the complete adapter contract.
 
 ## Supported coding harness versions
 
-| Harness | Supported major/range | Newest certified | Status and notes | Verified |
-| --- | --- | --- | --- | --- |
-| [OpenCode](https://opencode.ai/docs/) | v2 (`>=2.0.0 <3.0.0`) | — | OpenCode v2 is tracked in the manifest, but no release is certified yet; do not treat it as certified until evidence is added. | Pending |
+| Harness | Supported major/range | Newest certified | Status and notes | Verified | Official install/upgrade |
+| --- | --- | --- | --- | --- | --- |
+| OpenCode | v2 (`>=2.0.0 <3.0.0`) | — | OpenCode v2 is tracked in the manifest but is not yet certified; do not treat it as certified until evidence is added. | Pending | [https://opencode.ai/docs/](https://opencode.ai/docs/) |
 
 This table is derived from `src/core/agent-compatibility.json`; update that
 manifest and add contract evidence together when certifying a release. Do not

@@ -270,9 +270,9 @@ export function versionSatisfiesRange(version: [number, number, number], range: 
 
 /**
  * Classify one detected installation against a single contract. Exported so the
- * full status ladder — including `verified` and `newer_than_verified`, which are
- * only reachable once a contract carries certification evidence — can be tested
- * against a synthetic certified contract without touching the live manifest.
+ * full status ladder — including `verified` and the `newer_than_verified`
+ * rungs — can be tested against synthetic contracts without touching the live
+ * manifest.
  */
 export function compatibilityForContract(
   contract: AgentCompatibilityContract,
@@ -330,6 +330,10 @@ export function compatibilityForContract(
   );
   const isSupportedRange = versionSatisfiesRange(installed, contract.supportedRange);
   const isNewer = certified !== null && compareVersion(installed, certified) > 0;
+  // A major above the supported line is a newer release we have not certified —
+  // visible uncertainty, not a *known* break. It must not hard-fail (`unsupported`
+  // → doctor exit 1); the task's non-goal is to prefer uncertainty plus a probe.
+  const isNewerMajor = installed[0] > contract.supportedMajor;
 
   let status: CompatibilityStatus;
   let explanation: string;
@@ -341,9 +345,11 @@ export function compatibilityForContract(
   } else if (installed[0] < contract.supportedMajor) {
     status = "upgrade_recommended";
     explanation = `This is older than the supported ${contract.name} v${contract.supportedMajor} line. Local capability checks may still permit work.`;
-  } else if (isNewer) {
+  } else if (isNewerMajor || isNewer) {
     status = "newer_than_verified";
-    explanation = `This release is newer than the newest certified ${contract.name} release (${contract.newestCertifiedVersion}). It is not blocked; run \`repoos doctor --probe ${contract.cli}\` for a deliberate compatibility probe before important work.`;
+    explanation = certified
+      ? `This release is newer than the newest certified ${contract.name} release (${contract.newestCertifiedVersion}). It is not blocked; run \`repoos doctor --probe ${contract.cli}\` for a deliberate compatibility probe before important work.`
+      : `This is a newer ${contract.name} major than the supported v${contract.supportedMajor} line, which RepoOS has not certified yet. It is not blocked; run \`repoos doctor --probe ${contract.cli}\` for a deliberate compatibility probe before important work.`;
   } else if (isSupportedRange && hasEvidence && certified !== null) {
     status = "verified";
     explanation = `The ${contract.name} v${contract.supportedMajor} contract is certified through ${contract.newestCertifiedVersion}.`;

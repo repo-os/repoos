@@ -56,17 +56,35 @@ describe("user-docs supported-versions table vs. manifest", () => {
     expect(rows.length).toBe(AGENT_COMPATIBILITY_MANIFEST.contracts.length);
   });
 
-  it("keeps each row's newest certified version and verification state in sync", () => {
+  it("keeps each row's range, certification, status, and official link in sync", () => {
     for (const contract of AGENT_COMPATIBILITY_MANIFEST.contracts) {
       const row = rows.find((cells) => cells[0] === contract.name);
       expect(row, `no docs row for manifest contract "${contract.name}"`).toBeDefined();
+      // Supported range must match the manifest verbatim.
+      expect(row![1], `Supported major/range for ${contract.name}`).toContain(
+        contract.supportedRange,
+      );
       const certifiedCell = contract.newestCertifiedVersion ?? "—";
       expect(
         row![2],
         `row for ${contract.name} must show newest certified ${certifiedCell}`,
       ).toContain(certifiedCell);
+      // The status cell must not overclaim: with no baseline it says so; with one
+      // it names the certified release.
+      const status = row![3]!.toLowerCase();
+      if (contract.newestCertifiedVersion) {
+        expect(status, `Status column for ${contract.name}`).toContain(
+          contract.newestCertifiedVersion.toLowerCase(),
+        );
+      } else {
+        expect(status, `Status column for ${contract.name}`).toContain("not yet certified");
+      }
       const expectedVerified = contract.verifiedAt ? contract.verifiedAt.slice(0, 10) : "Pending";
       expect(row![4], `Verified column for ${contract.name}`).toBe(expectedVerified);
+      // A distinct, clickable official install/upgrade link column.
+      expect(row![5], `Official install/upgrade link for ${contract.name}`).toContain(
+        contract.officialUrl,
+      );
     }
   });
 });

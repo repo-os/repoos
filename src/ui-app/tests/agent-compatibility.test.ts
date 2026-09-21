@@ -39,9 +39,13 @@ describe("agent compatibility contracts", () => {
         cli: "opencode",
         supportedMajor: 2,
         // Nothing is certified yet: the manifest must not name a "certified"
-        // release while `verifiedAt` is null.
+        // release while `verifiedAt` is null, must not carry prose as evidence
+        // (`verificationSource`), and must not assert a known-incompatible range
+        // that has no evidence behind it.
         newestCertifiedVersion: null,
         verifiedAt: null,
+        verificationSource: null,
+        knownIncompatibleRanges: [],
       }),
     );
   });
@@ -64,16 +68,17 @@ describe("agent compatibility contracts", () => {
       version: "opencode v2.1.0",
       drivable: true,
     });
-    const breaking = compatibilityForAgent({
+    const newerMajor = compatibilityForAgent({
       cli: "opencode",
       version: "opencode v3.0.0",
       drivable: true,
     });
     // Old line → nudge to upgrade; in-range but uncertified → not yet probed
-    // (there is no certified baseline to be "newer than"); known-bad → unsupported.
+    // (there is no certified baseline to be "newer than"); a newer major we have
+    // no breakage evidence for → visible uncertainty (warn), never a hard block.
     expect(old.status).toBe("upgrade_recommended");
     expect(tracked.status).toBe("not_probed");
-    expect(breaking.status).toBe("unsupported");
+    expect(newerMajor.status).toBe("newer_than_verified");
   });
 
   it("walks the full status ladder once a contract carries certification evidence", () => {
@@ -83,7 +88,18 @@ describe("agent compatibility contracts", () => {
     expect(at("opencode v2.1.0")).toBe("verified");
     expect(at("opencode v2.2.0")).toBe("newer_than_verified");
     expect(at("opencode v1.9.0")).toBe("upgrade_recommended");
+    // v3 is inside this synthetic contract's `knownIncompatibleRanges`.
     expect(at("opencode v3.0.0")).toBe("unsupported");
+  });
+
+  it("does not block a newer major that has no known-incompatibility evidence", () => {
+    const contract: AgentCompatibilityContract = {
+      ...CERTIFIED_CONTRACT,
+      knownIncompatibleRanges: [],
+    };
+    expect(
+      compatibilityForContract(contract, { version: "opencode v3.0.0", drivable: true }).status,
+    ).toBe("newer_than_verified");
   });
 
   it("prefers a known-incompatible family over the old-major nudge", () => {

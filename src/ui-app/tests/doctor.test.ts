@@ -314,13 +314,18 @@ describe("doctor compatibility bridge and probe arguments", () => {
   });
 
   it("adds a warn finding for an enabled harness that is not installed", async () => {
+    // The configured `name` is the *role* ("Data analyst"), not the harness; the
+    // finding must title with the canonical harness name so several roles do not
+    // each produce a differently-labelled finding for the same CLI.
     const config = {
-      agents: [{ cli: "opencode", name: "OpenCode", enabled: true }],
+      agents: [{ cli: "opencode", name: "Data analyst", enabled: true }],
     } as unknown as RepoOSConfig;
     const findings = await checkAgentCompatibility(config, tools());
     const matching = findings.filter((f) => f.id === "runtime.compatibility.opencode");
     expect(matching).toHaveLength(1);
     expect(matching[0].severity).toBe("warn");
+    expect(matching[0].title).toContain("OpenCode");
+    expect(matching[0].title).not.toContain("Data analyst");
   });
 
   it("returns no compatibility findings when nothing is enabled", async () => {

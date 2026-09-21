@@ -43,6 +43,7 @@ import { isBun, preferBunForDevTasks } from "./runtime.js";
 import { detectPackageManager } from "./bootstrap.js";
 import { detectAgents, KNOWN_AGENTS } from "./detect.js";
 import {
+  AGENT_COMPATIBILITY_MANIFEST,
   compatibilityForDetectedAgent,
   type AgentCompatibility,
   type CompatibilityStatus,
@@ -186,6 +187,15 @@ export async function checkAgentCompatibility(
     if (!enabledClis.has(cli)) continue;
     const row = rows.find((agent) => agent.cli === cli);
     const result = row ? (byCli.get(cli) ?? compatibilityForDetectedAgent(row)) : null;
+    // Title with the canonical harness name, not the configured role name: if a
+    // user enables several `opencode` roles, the deduped finding must not read
+    // "data analyst: not yet probed".
+    const harnessName =
+      result?.contract?.name ??
+      AGENT_COMPATIBILITY_MANIFEST.contracts.find((c) => c.cli === cli)?.name ??
+      KNOWN_AGENTS.find((agent) => agent.cli === cli)?.name ??
+      entry.name ??
+      cli;
 
     if (!row || !result) {
       findings.push(
@@ -193,7 +203,7 @@ export async function checkAgentCompatibility(
           `runtime.compatibility.${cli}`,
           "runtime",
           "warn",
-          `${entry.name || cli} is not installed`,
+          `${harnessName} is not installed`,
           "The configured harness is not installed on PATH, so RepoOS cannot assess its compatibility.",
           "Install the harness using its official instructions, then refresh the Agents page",
         ),
@@ -208,7 +218,7 @@ export async function checkAgentCompatibility(
         `runtime.compatibility.${cli}`,
         "runtime",
         severity,
-        `${entry.name || cli}: ${result.label}`,
+        `${harnessName}: ${result.label}`,
         `${result.explanation} Installed: ${result.installedVersion ?? "unknown"}; certified: ${result.newestCertifiedVersion ?? "none"}.`,
         remediation,
       ),

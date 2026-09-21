@@ -487,7 +487,7 @@ function compatibilityColor(agent: DetectedAgent): string {
   return "var(--txt-dim)";
 }
 
-/** Copyable live-probe command for a harness that is newer than the certified line. */
+/** Copyable live-probe command for a harness that is not yet proven or beyond the certified line. */
 function probeHint(agent: DetectedAgent): string {
   const id = agent.cli || agent.binary;
   return `repoos doctor --probe ${id} --yes`;
