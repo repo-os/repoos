@@ -92,6 +92,16 @@ and latency trade-off rather than pinning a named model. RepoOS uses Copilot's
 documented `--model auto --auto-tier <tier>` flags, so it does not need to
 scrape the interactive `/model` picker.
 
+For a managed engineering task, RepoOS uses Copilot's documented
+`--allow-all-tools` mode. This is necessary because Copilot cannot stop for a
+human approval prompt during a headless run, and a small fixed command allowlist
+will eventually miss a real project's build, test, or tooling command. RepoOS
+uses it only inside the task's dedicated worktree and only for engineering
+turns and follow-ups. It does **not** use `--allow-all` or `--yolo`, which would
+also disable Copilot's path and URL verification; PM and review passes remain
+read-only. Use a trusted task prompt and review the resulting branch before
+moving it to done.
+
 ### Antigravity CLI (`agy`)
 
 Install the official CLI with:

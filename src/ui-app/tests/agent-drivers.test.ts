@@ -432,7 +432,7 @@ describe("claude code driver", () => {
   });
 
   describe("GitHub Copilot CLI driver", () => {
-    it("uses JSONL, narrow permissions, and an extracted session id for resume", async () => {
+    it("uses JSONL, non-interactive tool approval, and an extracted session id for resume", async () => {
       const fx = makeFixture();
       const oldPath = withFakePath(fx);
       process.env.REPOOS_FAKEBIN_LOG = fx.log;
@@ -468,18 +468,10 @@ describe("claude code driver", () => {
             "--output-format",
             "json",
             "--no-ask-user",
-            "--allow-tool",
-            "write",
-            "shell(git:*)",
-            // The gate and single-file test runs; without these Copilot's
-            // --no-ask-user denies them and the engineer can't hand off (#0412).
-            "shell(repoos:*)",
-            "shell(bunx:*)",
+            "--allow-all-tools",
           ]),
         );
-        expect(run.args).not.toEqual(
-          expect.arrayContaining(["--allow-all", "--allow-all-tools", "--yolo"]),
-        );
+        expect(run.args).not.toEqual(expect.arrayContaining(["--allow-all", "--yolo"]));
         expect(run.cwd).toBe(realpathSync(cwd));
 
         runner.send("0001", "continue the work", agent("github copilot"));

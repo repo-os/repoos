@@ -218,8 +218,8 @@ allowlist, an OS sandbox), and with no human to answer prompts, a command the
 launch doesn't cover is simply refused. The agent then can't pass `repoos
 check`, never emits the handoff signal, and the task stalls with an error that
 looks unrelated. This happened three times on 2026-09-18: Codex's sandbox
-blocked localhost binds (#0406), Copilot's allowlist lacked `repoos` and `bunx`
-(#0412), and Qwen was launched without approvals turned off.
+blocked localhost binds (#0406), Copilot's narrow allowlist omitted commands
+needed by the task (#0412), and Qwen was launched without approvals turned off.
 
 Two guards now exist, both in `src/server/agents.ts`:
 
@@ -235,17 +235,18 @@ Two guards now exist, both in `src/server/agents.ts`:
 ## GitHub Copilot CLI driver
 
 RepoOS runs GitHub Copilot CLI (`npm i -g @github/copilot`) in a task worktree
-with `-p`, `--output-format json`, and `--no-ask-user`. Its JSONL transcript
-captures assistant text, tool activity, errors, and the final `sessionId`;
-follow-up task-chat prompts use that id with `--resume=<session-id>`. It does
-not use `--continue`, which could resume a different task's most recent
-session.
+with `-p`, `--output-format json`, `--no-ask-user`, and
+`--allow-all-tools`. GitHub documents that last flag as required for reliable
+non-interactive work: a static command allowlist cannot cover a real project's
+test/build commands. Its JSONL transcript captures assistant text, tool
+activity, errors, and the final `sessionId`; follow-up task-chat prompts use
+that id with `--resume=<session-id>`. It does not use `--continue`, which could
+resume a different task's most recent session.
 
-The driver intentionally never passes `--allow-all`, `--allow-all-tools`, or
-`--yolo`. It grants file writes and only the engineering command families
-needed for a RepoOS task (`bun`, `bunx`, `repoos`, `node`, `npm`, `npx`, `git`,
-`curl`, `ls`, and `cat`), while the CLI's default worktree path boundary remains
-in force.
+The driver deliberately does **not** pass `--allow-all` or `--yolo`: those also
+disable Copilot's path and URL verification. Full tool approval is limited to
+managed engineering turns in a task worktree; PM and review one-shots stay
+read-only.
 Copilot's live model listing is not yet a stable CLI interface, so the Agents
 page offers its three documented Auto tiers instead of guessing account-specific
 model IDs. `default` means `Auto · Efficiency`; Balance and Intelligence pass

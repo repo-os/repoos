@@ -30,16 +30,8 @@ describe("engineer launch permissions", () => {
     ]);
   });
 
-  it("names each missing Copilot allowlist entry", () => {
-    const gaps = engineerPermissionGaps("github copilot", [
-      "--allow-tool",
-      "shell(bun:*)",
-      "--allow-tool",
-      "shell(git:*)",
-    ]);
-    expect(gaps).toHaveLength(2);
-    expect(gaps.join(" ")).toContain("`repoos`");
-    expect(gaps.join(" ")).toContain("`bunx`");
+  it("accepts Copilot's non-interactive all-tools permission", () => {
+    expect(engineerPermissionGaps("github copilot", ["--allow-all-tools"])).toEqual([]);
   });
 
   it("flags a Codex sandbox without network", () => {
@@ -58,7 +50,7 @@ describe("runtime permission-denial detection", () => {
         error: { message: "Permission denied and could not request permission from user" },
       },
     });
-    expect(detectPermissionDenial("copilot", line)).toContain("--allow-tool");
+    expect(detectPermissionDenial("copilot", line)).toContain("non-interactive permission");
   });
 
   it("ignores the same text when an agent is only reading source code", () => {

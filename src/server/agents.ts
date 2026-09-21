@@ -2233,41 +2233,16 @@ const CODEX_SANDBOX_ARGS = [
 ];
 
 /**
- * Copilot runs with --no-ask-user, so any shell command not on this list is
- * denied outright ("Permission denied and could not request permission").
- * `repoos` and `bunx` must be here: the mission requires `repoos check`, and
- * this repo runs single test files and tools via `bunx` — without them the
- * engineer can't reach a green gate and stops without a handoff (#0412).
- * Verified live: `shell(repoos:*)` also covers `REPOOS_CHECK_CHANGED=main
- * repoos check`.
+ * Copilot's non-interactive `-p` mode has nobody to answer its tool-approval
+ * prompts. GitHub documents --allow-all-tools as required for this mode: an
+ * allowlist inevitably misses valid project commands and makes an engineering
+ * turn fail partway through (for example, a stack-specific check command).
+ *
+ * This is deliberately narrower than --allow-all / --yolo: RepoOS retains
+ * Copilot's path and URL verification. The flag is used only for managed
+ * engineering turns, which RepoOS starts in the task's dedicated worktree;
+ * PM/review one-shots remain read-only.
  */
-const COPILOT_TOOL_PERMISSIONS = [
-  "--allow-tool",
-  "write",
-  "--allow-tool",
-  "shell(bun:*)",
-  "--allow-tool",
-  "shell(bunx:*)",
-  "--allow-tool",
-  "shell(repoos:*)",
-  "--allow-tool",
-  "shell(node:*)",
-  "--allow-tool",
-  "shell(npm:*)",
-  "--allow-tool",
-  "shell(npx:*)",
-  "--allow-tool",
-  "shell(git:*)",
-  "--allow-tool",
-  "shell(curl:*)",
-  "--allow-tool",
-  "shell(ls)",
-  "--allow-tool",
-  "shell(cat)",
-  "--allow-tool",
-  "shell(cd:*)",
-] as const;
-
 function copilotArgs(options: { write: boolean }): string[] {
   return [
     "--output-format",
@@ -2276,7 +2251,7 @@ function copilotArgs(options: { write: boolean }): string[] {
     "--no-auto-update",
     "--no-remote",
     "--no-remote-export",
-    ...(options.write ? COPILOT_TOOL_PERMISSIONS : []),
+    ...(options.write ? ["--allow-all-tools"] : []),
   ];
 }
 
@@ -2322,8 +2297,9 @@ export const ENGINEER_REQUIRED_COMMANDS = ["repoos", "bun", "bunx", "git"] as co
  * - qwen code: --yolo (headless qwen denies every approval-gated tool).
  * - codex: workspace-write sandbox WITH network, or localhost binds fail with
  *   EPERM and `repoos check` can never pass (#0406).
- * - github copilot: an explicit shell(<cmd>:*) allowlist under --no-ask-user;
- *   a missing command is denied outright (#0412: repoos and bunx).
+ * - github copilot: --allow-all-tools under --no-ask-user. GitHub documents
+ *   it as required for non-interactive mode; unlike --allow-all/--yolo, it
+ *   does not disable Copilot's path or URL verification.
  */
 export function engineerPermissionGaps(cli: string, args: readonly string[]): string[] {
   const needFlag = (flag: string): string[] =>
@@ -2379,7 +2355,7 @@ export function detectPermissionDenial(engine: string | undefined, raw: string):
     raw.includes("Permission denied and could not request permission") &&
     /"success"\s*:\s*false/.test(raw)
   ) {
-    return "GitHub Copilot denied a shell command that isn't on RepoOS's --allow-tool list";
+    return "GitHub Copilot denied a tool call despite RepoOS's non-interactive permission setting";
   }
   if ((engine === "claude" || engine === "qwen") && /"type"\s*:\s*"result"/.test(raw)) {
     if (/"permission_denials"\s*:\s*\[\s*\{/.test(raw)) {
