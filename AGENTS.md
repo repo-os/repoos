@@ -308,6 +308,11 @@ cannot tell from the code alone:
   `work/*.md` task files (which must never be rewritten outside the RepoOS
   API), and `**/*.json` stops it reordering `package.json` keys and rewriting
   Xcode asset catalogs. `bun run fmt` is otherwise safe to run on a change.
+- **Every user-facing `repoos.toml` feature setting needs a Settings UI control.** When adding a
+  configuration key that enables, disables, or materially changes a user-visible feature, add it
+  to `getConfigSchema()` and the appropriate Settings tab in the same change, with clear copy and
+  a test. Reserve raw-TOML-only settings for advanced/internal configuration where a dedicated UI
+  would be misleading or unsafe; document that deliberate exception.
 - **Direct commits to `main` must pass format and lint, and a hook enforces it.**
   Close-out runs the full gate before anything merges, but a hand commit
   straight to `main` skips it. On 2026-09-18 one such commit left a stray blank

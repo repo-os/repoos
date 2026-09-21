@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadConfig } from "../../core/config.js";
+import { getConfigSchema, loadConfig } from "../../core/config.js";
 
 function load(toml: string): ReturnType<typeof loadConfig> {
   const root = mkdtempSync(join(tmpdir(), "repoos-stories-config-"));
@@ -20,6 +20,15 @@ function load(toml: string): ReturnType<typeof loadConfig> {
 }
 
 describe("[stories] configuration", () => {
+  it("is exposed as a live Settings toggle", () => {
+    expect(getConfigSchema().find((field) => field.key === "stories.enabled")).toMatchObject({
+      label: "Stories",
+      type: "boolean",
+      tier: "live",
+      default: false,
+    });
+  });
+
   it("is dormant when the section is missing", () => {
     expect(load('workDir = "work"\n').stories).toBeUndefined();
   });

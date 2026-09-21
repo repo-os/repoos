@@ -1221,6 +1221,15 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       description: "Publish local apps securely through Cloudflare Tunnel + Access",
     },
     {
+      key: "stories.enabled",
+      label: "Stories",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: false,
+      description: "Show the Stories page and group tasks into cross-area delivery slices",
+    },
+    {
       key: "ntfyEnabled",
       label: "ntfy notifications",
       type: "boolean",
