@@ -2,14 +2,14 @@
 id: "0480"
 title: Add opt-in Stories page for cross-area delivery tracking
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web + core
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-21T12:19:02Z"
-updated_at: "2026-09-21T12:19:02Z"
+updated_at: "2026-09-21T12:22:42Z"
 ---
 ## Problem
 
@@ -53,3 +53,4 @@ After implementation, the project-updates email-list tasks (#0477, #0478, #0479)
 ## Activity
 
 - 2026-09-21T12:19:02Z · created · unknown
+- 2026-09-21T12:22:42Z · status inbox→ready
