@@ -2,10 +2,7 @@
 id: "0466"
 title: Add versioned coding-harness compatibility contracts
 type: feature
-status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: the opencode agent timed out after 900s
+status: active
 priority: p1
 area: agent
 assigned_to: ai
@@ -13,9 +10,9 @@ created_by: ""
 branch: feat/add-versioned-coding-harness-compatibili
 cli_override: github copilot
 model_override: default
-review_model_override: opencode-go/deepseek-v4.1-flash
+review_model_override: default
 created_at: "2026-09-21T09:13:33Z"
-updated_at: "2026-09-21T17:08:14Z"
+updated_at: "2026-09-21T18:13:27Z"
 handoff_signal_retry_count: 2
 review_passes: 7
 review_rounds: 2
@@ -103,3 +100,4 @@ Create a sustainable versioned coding-harness compatibility policy. Support the 
 - 2026-09-21T16:16:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-09-21T16:16:10Z · needs_input
 - 2026-09-21T17:08:14Z · status active→review
+- 2026-09-21T18:13:27Z · status review→active, needs_input, review_model_override
