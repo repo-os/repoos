@@ -245,7 +245,10 @@ resume a different task's most recent session.
 
 The driver deliberately does **not** pass `--allow-all` or `--yolo`: those also
 disable Copilot's path and URL verification. Full tool approval is limited to
-managed engineering turns in a task worktree; PM and review one-shots stay
+managed engineering turns in a task worktree. Task-PM chat receives only
+`shell(repoos:*)`, so it can use RepoOS's constrained task-management commands
+without arbitrary project tooling. Freeform PM authoring, reviews, Debugger,
+and RepoOS Guide conversations get no Copilot permission bypass and remain
 read-only.
 Copilot's live model listing is not yet a stable CLI interface, so the Agents
 page offers its three documented Auto tiers instead of guessing account-specific

@@ -2240,10 +2240,18 @@ const CODEX_SANDBOX_ARGS = [
  *
  * This is deliberately narrower than --allow-all / --yolo: RepoOS retains
  * Copilot's path and URL verification. The flag is used only for managed
- * engineering turns, which RepoOS starts in the task's dedicated worktree;
- * PM/review one-shots remain read-only.
+ * engineering turns, which RepoOS starts in the task's dedicated worktree.
+ * Task-PM chat has a separate narrow `repoos`-only profile; all other advisory
+ * conversations remain read-only.
  */
-function copilotArgs(options: { write: boolean }): string[] {
+type CopilotPermissionScope = "engineering" | "task-management" | "read-only";
+
+/**
+ * Permissions are role-specific, not a property of the Copilot binary alone.
+ * The engineer needs arbitrary project tooling; a task PM may only invoke
+ * RepoOS's task-management CLI; advisory conversations need no bypass at all.
+ */
+function copilotArgs(options: { scope: CopilotPermissionScope }): string[] {
   return [
     "--output-format",
     "json",
@@ -2251,8 +2259,20 @@ function copilotArgs(options: { write: boolean }): string[] {
     "--no-auto-update",
     "--no-remote",
     "--no-remote-export",
-    ...(options.write ? ["--allow-all-tools"] : []),
+    ...(options.scope === "engineering"
+      ? ["--allow-all-tools"]
+      : options.scope === "task-management"
+        ? ["--allow-tool", "shell(repoos:*)"]
+        : []),
   ];
+}
+
+/** The safe Copilot permission profile for a persistent non-engineering chat. */
+function copilotChatPermissionScope(sessionId: string): CopilotPermissionScope {
+  // Task PM chat is the one advisory conversation allowed to mutate task
+  // metadata, and taskPmPrompt limits it to `repoos` commands. Every other
+  // chat (Debugger, Ross, and future advisory roles) remains read-only.
+  return sessionId.startsWith("pm-task-v2:") ? "task-management" : "read-only";
 }
 
 /**
@@ -2371,7 +2391,12 @@ export function detectPermissionDenial(engine: string | undefined, raw: string):
   return null;
 }
 
-function cliCommand(agent: Agent, mission: string, cwd: string): { cmd: string; args: string[] } {
+function cliCommand(
+  agent: Agent,
+  mission: string,
+  cwd: string,
+  copilotScope: CopilotPermissionScope = "engineering",
+): { cmd: string; args: string[] } {
   const { cli, model } = agent;
   ensureDrivableCli(cli);
   if (cli === "claude code") {
@@ -2416,7 +2441,7 @@ function cliCommand(agent: Agent, mission: string, cwd: string): { cmd: string; 
   if (cli === "github copilot") {
     return {
       cmd: "copilot",
-      args: ["-p", mission, ...modelArgs(cli, model), ...copilotArgs({ write: true })],
+      args: ["-p", mission, ...modelArgs(cli, model), ...copilotArgs({ scope: copilotScope })],
     };
   }
   if (cli === "kiro") {
@@ -2480,6 +2505,7 @@ function resumeCommand(
   text: string,
   sessionId?: string,
   cwd?: string,
+  copilotScope: CopilotPermissionScope = "engineering",
 ): { cmd: string; args: string[] } {
   const { cli, model } = agent;
   ensureDrivableCli(cli);
@@ -2538,7 +2564,7 @@ function resumeCommand(
         text,
         ...(isValidCopilotSessionId(sessionId) ? [`--resume=${sessionId}`] : []),
         ...modelArgs(cli, model),
-        ...copilotArgs({ write: true }),
+        ...copilotArgs({ scope: copilotScope }),
       ],
     };
   }
@@ -2946,10 +2972,10 @@ export function pmCommand(
   }
   if (agent.cli === "github copilot") {
     // copilotArgs already emits `--output-format json`, so usage is captured;
-    // write:false keeps the authoring pass read-only.
+    // the read-only scope keeps the authoring pass output-only.
     return {
       cmd: "copilot",
-      args: ["-p", prompt, ...extra, ...copilotArgs({ write: false })],
+      args: ["-p", prompt, ...extra, ...copilotArgs({ scope: "read-only" })],
     };
   }
   if (agent.cli === "kiro") {
@@ -3060,7 +3086,7 @@ export function reviewCommand(
     // copilotArgs already emits `--output-format json`, so usage is captured.
     return {
       cmd: "copilot",
-      args: ["-p", prompt, ...extra, ...copilotArgs({ write: false })],
+      args: ["-p", prompt, ...extra, ...copilotArgs({ scope: "read-only" })],
     };
   }
   if (agent.cli === "kiro") {
@@ -4238,7 +4264,7 @@ export class AgentRunner {
       agent.name === DEBUGGER_NAME
         ? debuggerPrompt(text, repositoryContext, agent)
         : promptBuilder(text, repositoryContext, agent);
-    const { cmd, args } = cliCommand(agent, mission, cwd);
+    const { cmd, args } = cliCommand(agent, mission, cwd, copilotChatPermissionScope(sessionId));
     return this.spawnOrQueue(sessionId, cmd, args, cwd);
   }
 
@@ -4405,7 +4431,8 @@ export class AgentRunner {
         d: "Antigravity conversation id unavailable; starting a clearly-labelled fresh turn instead of guessing a session.",
       });
     }
-    const { cmd, args } = resumeCommand(agent, fullText, sessionId, cwd);
+    const copilotScope = session.task ? "engineering" : copilotChatPermissionScope(taskId);
+    const { cmd, args } = resumeCommand(agent, fullText, sessionId, cwd, copilotScope);
     return this.spawnOrQueue(taskId, cmd, args, cwd, session.task, session.branch, {
       skipBoardDivergence: opts.skipBoardDivergence,
     });
