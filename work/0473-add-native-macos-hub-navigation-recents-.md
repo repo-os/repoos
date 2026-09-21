@@ -5,13 +5,14 @@ type: feature
 status: done
 priority: p2
 area: desktop
+story: MacOS native app
 assigned_to: ai
 created_by: ""
 branch: feat/add-native-macos-hub-navigation-recents-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-09-21T11:50:27Z"
-updated_at: "2026-09-21T18:56:51Z"
+updated_at: "2026-09-21T20:10:35Z"
 merge_conflict_retry_count: 1
 review_passes: 1
 ---
@@ -37,3 +38,4 @@ Depends on the server registry and isolated WebKit container tasks.
 - 2026-09-21T18:44:15Z · status ready→active, branch
 - 2026-09-21T18:48:25Z · status active→review
 - 2026-09-21T18:56:51Z · status review→done, release:success
+- 2026-09-21T20:10:35Z · story
