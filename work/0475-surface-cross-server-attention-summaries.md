@@ -8,8 +8,9 @@ area: desktop
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
 created_at: "2026-09-21T11:50:28Z"
-updated_at: "2026-09-21T18:27:14Z"
+updated_at: "2026-09-21T19:04:48Z"
 ---
 Use the explicit Hub summary capability to make the native wrapper an attention-management layer rather than a prettier collection of browser tabs.
 
@@ -29,3 +30,4 @@ Depends on the macOS registry/WebKit tasks and the Hub read-capability/summary A
 - 2026-09-21T11:50:28Z · created · unknown
 - 2026-09-21T11:52:37Z · body
 - 2026-09-21T18:27:14Z · status inbox→ready
+- 2026-09-21T19:04:48Z · cli_override
