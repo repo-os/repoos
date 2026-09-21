@@ -2,7 +2,7 @@
 id: "0475"
 title: Surface cross-server attention summaries and native notifications in the macOS Hub
 type: feature
-status: active
+status: review
 priority: p2
 area: desktop
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/surface-cross-server-attention-summaries
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-09-21T11:50:28Z"
-updated_at: "2026-09-21T19:04:55Z"
+updated_at: "2026-09-21T19:12:15Z"
 ---
 Use the explicit Hub summary capability to make the native wrapper an attention-management layer rather than a prettier collection of browser tabs.
 
@@ -34,3 +34,4 @@ Depends on the macOS registry/WebKit tasks and the Hub read-capability/summary A
 - 2026-09-21T19:04:48Z · cli_override
 - 2026-09-21T19:04:50Z · model_override
 - 2026-09-21T19:04:55Z · status ready→active, branch
+- 2026-09-21T19:12:15Z · status active→review
