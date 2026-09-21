@@ -753,6 +753,8 @@ export interface DetectedAgent {
     installedVersion: string | null;
     newestCertifiedVersion: string | null;
     capabilities: string[];
+    /** Present when a source-controlled contract tracks this harness. */
+    contract?: { cli: string; name: string } | null;
   };
   update?: AgentUpdate;
 }

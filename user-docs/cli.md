@@ -94,7 +94,7 @@ server belonging to a different repo.
 One-screen health snapshot: server, build freshness, board counts, worktrees,
 tunnel, and git state.
 
-### `repoos doctor [--json]`
+### `repoos doctor [--json] [--probe <cli>]`
 
 A read-only readiness preflight for a real project. It checks the repository
 identity (root, git, linked worktree), parses and validates `repoos.toml`,
@@ -102,17 +102,31 @@ verifies the configured layout and existing task frontmatter, detects the
 required runtimes and enabled agent CLIs, explains whether a meaningful
 `repoos check` plan is configured, and reports server, auth and credential
 readiness — each with a stable finding id, a severity (`pass` / `warn` / `fail`)
-and a concrete next step.
+and a concrete next step. It also reports each enabled harness's compatibility
+contract status (verified, upgrade recommended, newer than verified, unsupported,
+or not yet probed).
 
 ```bash
 repoos doctor            # compact pass/warn/fail report with remediation
 repoos doctor --json     # the same findings, machine-readable
 ```
 
-It never initializes, rewrites config, installs, logs in, contacts a model
-provider, kills a process or mutates git, and it works offline. It exits
+The default run never initializes, rewrites config, installs, logs in, contacts
+a model provider, kills a process or mutates git, and it works offline. It exits
 non-zero when any finding is a failure, so it is usable in a script. Paste
 `repoos doctor` output into an issue to report a setup problem.
+
+```bash
+repoos doctor --probe opencode --yes   # run the live adapter-contract probe
+```
+
+`--probe <cli>` is a separate, explicitly **opt-in** mode: it runs the named
+harness's adapter-contract suite against the installed binary inside an isolated
+temporary directory, then cleans up. Unlike the default report it starts real
+harness runs, so it **may use provider credentials and spend tokens** (the
+one-shot, resume and cancellation seams each start a run). It refuses to run
+headless without `--yes`, and it never reads task files, prompts or project
+content. See [Coding harness compatibility](./coding-harness-compatibility.md).
 
 ### `repoos support bundle` / `repoos support inspect`
 

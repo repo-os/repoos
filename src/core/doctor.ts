@@ -6,8 +6,11 @@
  * hand work to an agent — and if not, what exact action fixes it? Every check
  * is strictly read-only: no init, config write, login, install, network call,
  * process kill, task dispatch or git mutation. It never contacts a model
- * provider and never spends tokens; agent CLIs are detected by resolving their
- * binary on PATH, never by running them.
+ * provider and never spends tokens. Agent CLIs are detected by resolving their
+ * binary on PATH, and an enabled harness also gets a bounded, credential-free
+ * `--version` read so its compatibility contract can be classified — but no
+ * model turn is ever run. (The opt-in live probe lives in the CLI wrapper,
+ * `repoos doctor --probe`, not in this engine.)
  *
  * The engine is pure-ish and returns a structured, versioned `DoctorReport`.
  * The CLI (`src/commands/doctor.ts`) and, later, the support bundle (#0453) and
@@ -39,7 +42,11 @@ import { resolveCheckPlan, type CheckPlan } from "./check-plan.js";
 import { isBun, preferBunForDevTasks } from "./runtime.js";
 import { detectPackageManager } from "./bootstrap.js";
 import { detectAgents, KNOWN_AGENTS } from "./detect.js";
-import { compatibilityForDetectedAgent, type CompatibilityStatus } from "./agent-compatibility.js";
+import {
+  compatibilityForDetectedAgent,
+  type AgentCompatibility,
+  type CompatibilityStatus,
+} from "./agent-compatibility.js";
 import { parseDocument } from "./frontmatter.js";
 import { isGitRepo } from "./git.js";
 import { portListening } from "./net-probe.js";
@@ -133,6 +140,25 @@ export function compatibilityFindingSeverity(status: CompatibilityStatus): Docto
   return "warn";
 }
 
+/**
+ * The next step shown for a compatibility finding. A release we have not
+ * certified yet needs a probe, not "upgrade" — telling someone already on the
+ * current v2 line to install it is misleading.
+ */
+export function compatibilityRemediation(cli: string, result: AgentCompatibility): string | null {
+  if (result.status === "verified") return null;
+  const needsProbe =
+    result.contract !== null &&
+    (result.status === "not_probed" || result.status === "newer_than_verified");
+  if (needsProbe) {
+    return `Run \`repoos doctor --probe ${cli} --yes\` to validate this release against the adapter contract before important work`;
+  }
+  return (
+    result.contract?.upgradeGuidance ??
+    "Review the harness release guidance and verify its local capabilities before important work"
+  );
+}
+
 export async function checkAgentCompatibility(
   config: RepoOSConfig,
   hasBin: (tool: string) => boolean,
@@ -176,6 +202,7 @@ export async function checkAgentCompatibility(
     }
 
     const severity = compatibilityFindingSeverity(result.status);
+    const remediation = compatibilityRemediation(cli, result);
     findings.push(
       finding(
         `runtime.compatibility.${cli}`,
@@ -183,10 +210,7 @@ export async function checkAgentCompatibility(
         severity,
         `${entry.name || cli}: ${result.label}`,
         `${result.explanation} Installed: ${result.installedVersion ?? "unknown"}; certified: ${result.newestCertifiedVersion ?? "none"}.`,
-        result.status === "verified"
-          ? null
-          : (result.contract?.upgradeGuidance ??
-              "Review the harness release guidance and verify its local capabilities before important work"),
+        remediation,
       ),
     );
   }

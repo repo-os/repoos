@@ -125,6 +125,23 @@ Contract fixtures must stay credential-free and deterministic; where a harness
 cannot be tested in public CI, record the manual procedure and leave the
 manifest entry pending.
 
+## CI coverage and the deferred canary
+
+- The deterministic fixture suite runs on every change through `repoos check`
+  (the `tests` step) — that is the CI-visible contract job today. It exercises
+  every seam against a fake binary and needs no credentials.
+- A **per-release job pinned to a certified version** is not meaningful yet:
+  nothing is certified, so there is no pinned release to hold. It is added
+  together with the first certification (step 3 above), which is where the
+  evidence it would assert on is produced.
+- A **scheduled latest-stable canary** is deliberately **deferred**, not
+  silently omitted: it needs paid provider credentials/licensing that public CI
+  must not carry, so it cannot run for this repo at this time. When it is added,
+  it must run out-of-band from public CI, file an actionable task on failure,
+  and **never** auto-edit `supportedRange` / `newestCertifiedVersion` — a canary
+  failure must not silently redefine support (only a human-certified manifest
+  update may).
+
 ## Worked example: OpenCode v2
 
 Templates in `OPENCODE_CONTRACT` mirror `agents.ts`:

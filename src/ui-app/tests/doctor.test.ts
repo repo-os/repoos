@@ -6,6 +6,7 @@ import { join } from "node:path";
 import {
   checkAgentCompatibility,
   compatibilityFindingSeverity,
+  compatibilityRemediation,
   doctorRemediations,
   findConfigValueProblems,
   isKnownConfigKey,
@@ -13,6 +14,10 @@ import {
   type DoctorReport,
 } from "../../core/doctor";
 import { parseDoctorArgs } from "../../commands/doctor";
+import {
+  compatibilityForContract,
+  type AgentCompatibilityContract,
+} from "../../core/agent-compatibility";
 import type { RepoOSConfig } from "../../core/types";
 
 const dirs: string[] = [];
@@ -321,5 +326,40 @@ describe("doctor compatibility bridge and probe arguments", () => {
   it("returns no compatibility findings when nothing is enabled", async () => {
     const config = { agents: [] } as unknown as RepoOSConfig;
     expect(await checkAgentCompatibility(config, tools())).toEqual([]);
+  });
+
+  it("points an uncertified harness at the probe, never at a redundant upgrade", () => {
+    const certified: AgentCompatibilityContract = {
+      cli: "opencode",
+      name: "OpenCode",
+      supportedMajor: 2,
+      supportedRange: ">=2.0.0 <3.0.0",
+      newestCertifiedVersion: "2.1.0",
+      knownIncompatibleRanges: [">=3.0.0"],
+      requiredCapabilities: ["version"],
+      verifiedAt: "2026-09-01",
+      verificationSource: "repoos doctor --probe opencode --yes (fixture)",
+      upgradeGuidance: "Install the current OpenCode v2 release.",
+      officialUrl: "https://opencode.ai/docs/",
+    };
+    const uncertified: AgentCompatibilityContract = {
+      ...certified,
+      newestCertifiedVersion: null,
+      verifiedAt: null,
+      verificationSource: null,
+    };
+    const at = (contract: AgentCompatibilityContract, version: string) =>
+      compatibilityRemediation(
+        "opencode",
+        compatibilityForContract(contract, { version, drivable: true }),
+      );
+
+    expect(at(certified, "opencode v2.1.0")).toBeNull();
+    expect(at(certified, "opencode v2.2.0")).toMatch(/--probe opencode/);
+    expect(at(certified, "opencode v1.9.0")).toMatch(/Install the current OpenCode v2/);
+    expect(at(certified, "opencode v3.0.0")).toMatch(/Install the current OpenCode v2/);
+    // The shipped, uncertified manifest: still on the supported line, so the
+    // action is a probe — not "upgrade" to the release you already have.
+    expect(at(uncertified, "opencode v2.1.0")).toMatch(/--probe opencode/);
   });
 });

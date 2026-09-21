@@ -493,6 +493,28 @@ function probeHint(agent: DetectedAgent): string {
   return `repoos doctor --probe ${id} --yes`;
 }
 
+/**
+ * True when a deliberate live probe is the actionable next step: the harness
+ * has a RepoOS contract we track, but the installed release is not yet proven
+ * (`not_probed`) or is beyond the certified baseline (`newer_than_verified`).
+ * Without this, the shipped uncertified config would show no action at all.
+ */
+function probeAvailable(agent: DetectedAgent): boolean {
+  const compatibility = agent.compatibility;
+  if (!compatibility?.contract) return false;
+  return compatibility.status === "not_probed" || compatibility.status === "newer_than_verified";
+}
+
+/** Pill tooltip: explanation plus the newest certified release (or none yet). */
+function compatibilityTitle(agent: DetectedAgent): string {
+  const compatibility = agent.compatibility;
+  if (!compatibility) return "";
+  const certified = compatibility.newestCertifiedVersion
+    ? `Newest certified: ${compatibility.newestCertifiedVersion}.`
+    : "No release is certified yet.";
+  return `${compatibility.explanation} ${certified}`;
+}
+
 function checkedLabel(update: AgentUpdate | undefined): string {
   return update?.checkedAt ? `checked ${new Date(update.checkedAt).toLocaleString()}` : "";
 }
@@ -971,7 +993,7 @@ onUnmounted(() => {
                 v-if="r.agent.compatibility"
                 class="detect-pill detect-compatibility-pill"
                 :style="{ color: compatibilityColor(r.agent) }"
-                :title="r.agent.compatibility.explanation"
+                :title="compatibilityTitle(r.agent)"
               >
                 compatibility: {{ r.agent.compatibility.label }}
               </span>
@@ -979,11 +1001,13 @@ onUnmounted(() => {
                 v-if="
                   r.agent.compatibility &&
                   r.agent.compatibility.status !== 'verified' &&
-                  r.agent.compatibility.status !== 'not_probed'
+                  (probeAvailable(r.agent) ||
+                    r.agent.compatibility.status === 'upgrade_recommended' ||
+                    r.agent.compatibility.status === 'unsupported')
                 "
                 class="detect-hint-inline"
               >
-                <template v-if="r.agent.compatibility.status === 'newer_than_verified'">
+                <template v-if="probeAvailable(r.agent)">
                   <code
                     class="detect-hint-code"
                     :title="'Run a deliberate compatibility probe for ' + r.agent.name"
@@ -993,13 +1017,10 @@ onUnmounted(() => {
                     {{ detectHintCopied === probeHint(r.agent) ? "copied" : "copy" }}
                   </button>
                 </template>
-                <template v-else>
-                  {{
-                    r.agent.compatibility.status === "upgrade_recommended"
-                      ? "upgrade recommended"
-                      : "use a supported release"
-                  }}
+                <template v-else-if="r.agent.compatibility.status === 'upgrade_recommended'">
+                  upgrade recommended
                 </template>
+                <template v-else>use a supported release</template>
               </span>
               <details v-if="r.agent.installed && r.agent.update" class="detect-update-detail">
                 <summary :style="{ color: updateColor(r.agent.update) }">

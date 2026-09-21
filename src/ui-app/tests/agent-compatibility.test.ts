@@ -96,6 +96,36 @@ describe("agent compatibility contracts", () => {
     ).toBe("unsupported");
   });
 
+  it("flags a manifest that records evidence and a certified version inconsistently", () => {
+    // Evidence without a certified version.
+    const evidenceNoVersion: AgentCompatibilityContract = {
+      ...CERTIFIED_CONTRACT,
+      newestCertifiedVersion: null,
+    };
+    expect(
+      compatibilityForContract(evidenceNoVersion, { version: "opencode v2.1.0", drivable: true })
+        .status,
+    ).toBe("not_probed");
+    // A certified version without evidence.
+    const versionNoEvidence: AgentCompatibilityContract = {
+      ...CERTIFIED_CONTRACT,
+      verifiedAt: null,
+      verificationSource: null,
+    };
+    expect(
+      compatibilityForContract(versionNoEvidence, { version: "opencode v2.1.0", drivable: true })
+        .status,
+    ).toBe("not_probed");
+    // An unparseable certified version.
+    const junkVersion: AgentCompatibilityContract = {
+      ...CERTIFIED_CONTRACT,
+      newestCertifiedVersion: "not-a-version",
+    };
+    expect(
+      compatibilityForContract(junkVersion, { version: "opencode v2.1.0", drivable: true }).status,
+    ).toBe("not_probed");
+  });
+
   it("keeps currently tracked v2 releases as unverified until a contract suite exists", () => {
     expect(
       compatibilityForAgent({ cli: "opencode", version: "opencode v2.0.0", drivable: true }).status,

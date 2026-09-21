@@ -283,7 +283,13 @@ export function compatibilityForContract(
   const certified = contract.newestCertifiedVersion
     ? parseAgentVersion(contract.newestCertifiedVersion)
     : null;
-  const invalidCertified = contract.newestCertifiedVersion !== null && certified === null;
+  // `verifiedAt`/`verificationSource` and `newestCertifiedVersion` must be set
+  // together: evidence without a certified version (or vice versa) is a manifest
+  // bug, and an unparseable value is too. Report it honestly instead of quietly
+  // returning a normal status.
+  const manifestInconsistent =
+    hasEvidence !== (contract.newestCertifiedVersion !== null) ||
+    (contract.newestCertifiedVersion !== null && certified === null);
 
   if (!agent.drivable) {
     return {
@@ -307,11 +313,11 @@ export function compatibilityForContract(
       capabilities: contract.requiredCapabilities,
     };
   }
-  if (invalidCertified) {
+  if (manifestInconsistent) {
     return {
       status: "not_probed",
       label: "not yet probed",
-      explanation: `The ${contract.name} compatibility manifest has an invalid newest certified version; review the manifest before relying on this status.`,
+      explanation: `The ${contract.name} compatibility manifest is inconsistent: verifiedAt/verificationSource and newestCertifiedVersion must be recorded together, and the version must parse. Review src/core/agent-compatibility.json before relying on this status.`,
       installedVersion: agent.version,
       newestCertifiedVersion: contract.newestCertifiedVersion,
       contract,
