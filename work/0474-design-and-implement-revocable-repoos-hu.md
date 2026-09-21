@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 cli_override: codex
+model_override: gpt-5.6-luna
 created_at: "2026-09-21T11:50:27Z"
-updated_at: "2026-09-21T13:24:24Z"
+updated_at: "2026-09-21T13:24:30Z"
 ---
 Enable a trusted native Hub to read small authenticated summaries from multiple RepoOS servers without scraping WebViews or exposing native privileges to server pages.
 
@@ -31,3 +32,4 @@ Depends on the macOS Hub architecture task. This task is intentionally independe
 - 2026-09-21T11:52:36Z · body
 - 2026-09-21T12:09:17Z · status inbox→ready
 - 2026-09-21T13:24:24Z · cli_override
+- 2026-09-21T13:24:30Z · model_override
