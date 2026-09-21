@@ -3800,7 +3800,6 @@ watch(
             role="tabpanel"
           >
             <div v-if="reviewStale" class="review-stale" role="status">
-              <ActivityIndicator variant="reviewing" />
               <div class="review-stale-body">
                 <span class="review-stale-title">This report is stale</span>
                 <span class="review-stale-sub"
