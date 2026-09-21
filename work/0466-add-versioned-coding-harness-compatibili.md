@@ -10,8 +10,9 @@ created_by: ""
 branch: ""
 cli_override: github copilot
 model_override: default
+review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-21T09:13:33Z"
-updated_at: "2026-09-21T10:47:13Z"
+updated_at: "2026-09-21T10:47:27Z"
 ---
 ## Outcome
 
@@ -76,3 +77,4 @@ Create a sustainable versioned coding-harness compatibility policy. Support the 
 
 - 2026-09-21T09:13:33Z · created · unknown
 - 2026-09-21T10:47:13Z · cli_override, model_override
+- 2026-09-21T10:47:27Z · review_model_override
