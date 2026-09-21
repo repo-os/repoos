@@ -133,7 +133,7 @@ import { TaskCheckManager, type TaskCheckListener } from "./task-check.js";
 import { CTOManager } from "./cto.js";
 import { CTOMonitor } from "./cto-monitor.js";
 import { ReloadManager, readBuildHash, isDevBuild } from "./reload.js";
-import { ServeReaper } from "./serve-reaper.js";
+import { ServeReaper, isPortListening } from "./serve-reaper.js";
 import { testModelCombination } from "./model-test.js";
 import {
   generateReleaseNotes,
@@ -667,6 +667,28 @@ const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms
 /** How long a reload replacement retries EADDRINUSE before giving up. */
 const RELOAD_BIND_TIMEOUT_MS = 40_000;
 const RELOAD_BIND_RETRY_MS = 300;
+
+/**
+ * Bun's node:http compatibility layer can report EADDRINUSE for a sandboxed
+ * bind that the kernel actually rejected with EPERM.  A successful loopback
+ * connection is the useful discriminator: without a listener there is no
+ * process to kill, so report the real class of problem instead of sending the
+ * user on a false port-conflict investigation.
+ */
+export function explainBindFailure(
+  error: Error,
+  port: number,
+  host: string,
+  listenerReachable: boolean,
+): Error {
+  const code = (error as NodeJS.ErrnoException).code;
+  if (code !== "EADDRINUSE" || listenerReachable) return error;
+  return new Error(
+    `Unable to bind ${host}:${port}, although no listener is reachable there. ` +
+      "The OS or a sandbox denied this local-network bind; it is not a port collision. " +
+      "Run RepoOS from a terminal with local-network permission or allow the sandbox to bind local ports.",
+  );
+}
 
 /**
  * Build metadata served to the UI: the package version and the timestamp of
@@ -2563,7 +2585,17 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           // lockfile can't mask a process that already owns this port (#0284).
           const conflict = await reaper.detectConflict(port, host);
           if (conflict) throw new Error(conflict);
-          await bindOnce(false);
+          try {
+            await bindOnce(false);
+          } catch (error) {
+            const probeHost = host === "0.0.0.0" ? "127.0.0.1" : host;
+            throw explainBindFailure(
+              error as Error,
+              port,
+              host,
+              await isPortListening(port, probeHost),
+            );
+          }
         }
       } catch (err) {
         logger.system("error", "RepoOS server bind failed", {
