@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-21T15:17:41Z"
-review_passes: 2
 id: "0470"
 title: Scaffold the standalone native macOS RepoOS Hub project
 type: feature
-status: review
+status: done
 priority: p1
 area: desktop
 assigned_to: ai
@@ -13,6 +11,8 @@ branch: feat/scaffold-the-standalone-native-macos-rep
 cli_override: codex
 model_override: gpt-5.6-luna
 created_at: "2026-09-21T11:50:24Z"
+updated_at: "2026-09-21T15:51:47Z"
+review_passes: 2
 handoff_signal_retry_count: 2
 ---
 After the macOS Hub architecture/security contract is approved, add a standalone macOS application project as a sibling to mobile/, without adding runtime dependencies to the core repoos package.
@@ -38,5 +38,4 @@ Follow the approved architecture task. Keep this foundation small; server regist
 - 2026-09-21T14:02:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-09-21T15:07:55Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-09-21T15:09:05Z · status active→review
-
-
+- 2026-09-21T15:51:47Z · status review→done, release:success
