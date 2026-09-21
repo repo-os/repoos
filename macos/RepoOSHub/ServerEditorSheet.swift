@@ -33,7 +33,6 @@ struct ServerEditorSheet: View {
                     .focused($focusedField, equals: .name)
                 TextField("HTTPS origin", text: $draft.originText)
                     .focused($focusedField, equals: .origin)
-                    .textContentType(.URL)
                 TextField("Group (optional)", text: $draft.groupName)
                     .focused($focusedField, equals: .group)
                 TextField("SF Symbol name (optional)", text: $draft.iconSymbolName)

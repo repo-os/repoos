@@ -14,7 +14,15 @@ final class ServerWebsiteDataStorePool {
         if let existing = stores[serverID] {
             return existing
         }
-        let store = WKWebsiteDataStore(forIdentifier: serverID)
+        // Identifier-backed stores are macOS 14+. Keep macOS 13 support with
+        // a distinct in-memory store per workspace; it preserves isolation,
+        // while persistence begins once the host OS supports the API.
+        let store: WKWebsiteDataStore
+        if #available(macOS 14.0, *) {
+            store = WKWebsiteDataStore(forIdentifier: serverID)
+        } else {
+            store = .nonPersistent()
+        }
         stores[serverID] = store
         return store
     }

@@ -4,7 +4,7 @@ import XCTest
 
 final class IsolatedServerWebViewFactoryTests: XCTestCase {
     func testConfigurationHasNoInjectedScriptsOrDefaultStore() {
-        let store = WKWebsiteDataStore(forIdentifier: UUID())
+        let store = WKWebsiteDataStore.nonPersistent()
         let configuration = IsolatedServerWebViewFactory.makeConfiguration(dataStore: store)
         XCTAssertTrue(PrivilegeBoundaryAudit.isHardened(configuration))
         XCTAssertTrue(configuration.userContentController.userScripts.isEmpty)
@@ -12,7 +12,7 @@ final class IsolatedServerWebViewFactoryTests: XCTestCase {
 
     func testMaliciousPageCannotReachNativeBridgeByConfiguration() {
         // Server JavaScript only sees a stock WKWebView configuration: no handlers are registered.
-        let store = WKWebsiteDataStore(forIdentifier: UUID())
+        let store = WKWebsiteDataStore.nonPersistent()
         let configuration = IsolatedServerWebViewFactory.makeConfiguration(dataStore: store)
         let controller = configuration.userContentController
         XCTAssertTrue(controller.userScripts.isEmpty)

@@ -63,8 +63,17 @@ enum ServerNavigationPolicy {
     }
 
     static func isSameOrigin(_ url: URL, _ allowedOrigin: URL) -> Bool {
-        ServerOriginNormalizer.canonicalOriginKey(for: url)
-            == ServerOriginNormalizer.canonicalOriginKey(for: allowedOrigin)
+        guard
+            let requestScheme = url.scheme?.lowercased(),
+            let allowedScheme = allowedOrigin.scheme?.lowercased(),
+            let requestHost = url.host?.lowercased(),
+            let allowedHost = allowedOrigin.host?.lowercased()
+        else {
+            return false
+        }
+        let requestPort = url.port ?? (requestScheme == "https" ? 443 : nil)
+        let allowedPort = allowedOrigin.port ?? (allowedScheme == "https" ? 443 : nil)
+        return requestScheme == allowedScheme && requestHost == allowedHost && requestPort == allowedPort
     }
 }
 
