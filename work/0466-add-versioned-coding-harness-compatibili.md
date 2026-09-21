@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-09-21T14:46:25Z"
-review_passes: 6
+updated_at: "2026-09-21T14:46:41Z"
+review_passes: 7
 id: "0466"
 title: Add versioned coding-harness compatibility contracts
 type: feature
@@ -94,4 +94,5 @@ Create a sustainable versioned coding-harness compatibility policy. Support the 
 - 2026-09-21T14:27:03Z · status active→review
 - 2026-09-21T14:44:06Z · status review→active
 - 2026-09-21T14:44:07Z · status active→review
+
 
