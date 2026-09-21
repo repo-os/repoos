@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-09-21T15:11:17Z"
-review_passes: 1
+updated_at: "2026-09-21T15:17:41Z"
+review_passes: 2
 id: "0470"
 title: Scaffold the standalone native macOS RepoOS Hub project
 type: feature
@@ -38,4 +38,5 @@ Follow the approved architecture task. Keep this foundation small; server regist
 - 2026-09-21T14:02:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-09-21T15:07:55Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-09-21T15:09:05Z · status active→review
+
 
