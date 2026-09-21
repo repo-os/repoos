@@ -14,6 +14,7 @@ export * from "./debugger.js";
 export * from "./notify.js";
 export * from "./transcribe.js";
 export * from "./auth.js";
+export * from "./hub.js";
 export * from "./skill-registry.js";
 export * from "./service.js";
 export * from "./support.js";
