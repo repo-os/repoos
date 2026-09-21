@@ -391,7 +391,10 @@ export const useConfigStore = defineStore("config", () => {
       const val = configValue(res.config, f.key) ?? f.default;
       if (f.type === "array") form[f.key] = Array.isArray(val) ? val.join(", ") : String(val);
       else if (f.type === "boolean") form[f.key] = !!val;
-      else if (f.type === "select") form[f.key] = String(val);
+      // Settings saves include the complete schema-backed form. Preserve the
+      // wire type declared by the schema so an unrelated toggle cannot submit
+      // a numeric runtime value to a string-only setting (auth.sessionMaxAge).
+      else if (f.type === "select" || f.type === "string") form[f.key] = String(val);
       else form[f.key] = val;
     }
   }

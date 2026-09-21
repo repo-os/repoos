@@ -1,7 +1,8 @@
 /**
  * Tests for the config store's settings-persistence wiring (#0240):
- * select fields are coerced to strings on fillForm so an auto-save of an
- * unrelated setting never sends a raw number (which the server rejects),
+ * schema fields whose wire type is string are coerced on fillForm so an
+ * auto-save of an unrelated setting never sends a raw number (which the
+ * server rejects),
  * and the sidebar theme switcher keeps `form.uiTheme` in sync with `uiTheme`.
  *
  * As of #0254, theme/uiTheme are client-side only (localStorage) and are no
@@ -65,7 +66,7 @@ afterEach(() => {
   localStorage.clear();
 });
 
-describe("fillForm select coercion (#0240)", () => {
+describe("fillForm schema-type coercion (#0240)", () => {
   it("stores select values as strings even when the server config has numbers", async () => {
     const store = useConfigStore();
     api.mockResolvedValueOnce(
@@ -75,15 +76,15 @@ describe("fillForm select coercion (#0240)", () => {
     expect(store.form.maxActiveTasks).toBe("5");
   });
 
-  it("auto-saves an unrelated setting with an unchanged select present and succeeds", async () => {
+  it("auto-saves an unrelated setting with unchanged numeric-backed fields as strings", async () => {
     const store = useConfigStore();
     api.mockResolvedValueOnce(
       configResponse({ maxActiveTasks: 5, "whisper.enabled": false, ntfyTopic: "x" }),
     );
     await store.load();
-    // The form now carries a string "5" for maxActiveTasks. Persisting every
-    // form field (as buildBody does) must not 400 on the select. We assert the
-    // PATCH body is a string, i.e. the value the server accepts.
+    // The form now carries strings for values whose schema wire types require
+    // them. Persisting every form field (as buildBody does) must not 400 when
+    // an unrelated toggle, such as Stories, is changed.
     let sent: unknown;
     api.mockImplementation(async (_path, opts) => {
       if (opts && String(opts.method) === "PATCH") sent = JSON.parse(String(opts.body));
@@ -91,7 +92,9 @@ describe("fillForm select coercion (#0240)", () => {
     });
     const body = Object.fromEntries(SCHEMA.map((f) => [f.key, store.form[f.key]]));
     await store.save(body as Record<string, unknown>);
-    expect(sent).toEqual(expect.objectContaining({ maxActiveTasks: "5" }));
+    expect(sent).toEqual(
+      expect.objectContaining({ maxActiveTasks: "5", "auth.sessionMaxAge": "604800" }),
+    );
   });
 });
 
@@ -112,7 +115,7 @@ describe("fillForm resolves nested config keys", () => {
     );
     await store.load();
     expect(store.form["auth.enabled"]).toBe(true);
-    expect(store.form["auth.sessionMaxAge"]).toBe(604800);
+    expect(store.form["auth.sessionMaxAge"]).toBe("604800");
     expect(store.form["remoteValidation.enabled"]).toBe(true);
   });
 
