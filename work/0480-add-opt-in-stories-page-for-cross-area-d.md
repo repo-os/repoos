@@ -12,8 +12,9 @@ assigned_to: ai
 created_by: ""
 branch: feat/add-opt-in-stories-page-for-cross-area-d
 cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-21T12:19:02Z"
-updated_at: "2026-09-21T13:18:15Z"
+updated_at: "2026-09-21T13:18:18Z"
 dev_error_count: 3
 ---
 ## Problem
@@ -65,3 +66,4 @@ After implementation, the project-updates email-list tasks (#0477, #0478, #0479)
 - 2026-09-21T13:14:57Z · needs_input
 - 2026-09-21T13:16:55Z · agent exited with an error (copilot) · • If the problem persists, retry later or contact support with the Request ID above
 - 2026-09-21T13:18:15Z · cli_override
+- 2026-09-21T13:18:18Z · model_override
