@@ -1797,6 +1797,12 @@ export class CloseOutOrchestrator {
         }
         throw err;
       }
+      // The configured cache is entirely RepoOS runtime state: locks, job
+      // checkpoints, logs, and the local database. It must never block a
+      // publish, including for older projects whose cache was accidentally
+      // committed before their ignore rule was corrected.
+      const cachePrefix = `${this.config.cacheDir.replace(/\/+$/, "")}/`;
+      dirtyOnMain = dirtyOnMain.filter((path) => !path.startsWith(cachePrefix));
       if (dirtyOnMain.length > 0) {
         // Auto-checkpoint routine, server-written churn instead of blocking
         // the merge on it (#0271 follow-up, confirmed live: #0293's close-out
