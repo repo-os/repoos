@@ -23,23 +23,30 @@ struct ServerEditorSheet: View {
             Text(title)
                 .font(.title2.weight(.semibold))
 
-            Text("RepoOS checks GET /api/health before saving. HTTPS is required except for localhost development servers.")
+            Text(addsServer
+                ? "Paste a RepoOS server address. We’ll infer the connection and check it before saving."
+                : "Update this server’s name and sidebar appearance.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
             Form {
-                TextField("Display name", text: $draft.name)
-                    .focused($focusedField, equals: .name)
-                TextField("Server origin", text: $draft.originText)
-                    .focused($focusedField, equals: .origin)
-                TextField("Group (optional)", text: $draft.groupName)
-                    .focused($focusedField, equals: .group)
-                TextField("SF Symbol name (optional)", text: $draft.iconSymbolName)
-                    .focused($focusedField, equals: .icon)
-                TextField("Accent color hex (optional)", text: $draft.accentColorHex)
-                    .focused($focusedField, equals: .color)
-                Toggle("Pin in sidebar", isOn: $draft.isPinned)
+                if addsServer {
+                    TextField("Server URL", text: $draft.originText, prompt: Text("localhost:7171 or repo.example.com"))
+                        .focused($focusedField, equals: .origin)
+                } else {
+                    TextField("Display name", text: $draft.name)
+                        .focused($focusedField, equals: .name)
+                    TextField("Server origin", text: $draft.originText)
+                        .focused($focusedField, equals: .origin)
+                    TextField("Group (optional)", text: $draft.groupName)
+                        .focused($focusedField, equals: .group)
+                    TextField("SF Symbol name (optional)", text: $draft.iconSymbolName)
+                        .focused($focusedField, equals: .icon)
+                    TextField("Accent color hex (optional)", text: $draft.accentColorHex)
+                        .focused($focusedField, equals: .color)
+                    Toggle("Pin in sidebar", isOn: $draft.isPinned)
+                }
             }
             .formStyle(.grouped)
 
@@ -64,7 +71,7 @@ struct ServerEditorSheet: View {
         .padding(24)
         .frame(width: 460)
         .onAppear {
-            focusedField = .name
+            focusedField = addsServer ? .origin : .name
         }
     }
 
@@ -76,7 +83,12 @@ struct ServerEditorSheet: View {
     }
 
     private var primaryActionTitle: String {
-        appState.isPerformingHealthCheck ? "Checking…" : "Save"
+        appState.isPerformingHealthCheck ? "Checking…" : (addsServer ? "Add server" : "Save")
+    }
+
+    private var addsServer: Bool {
+        if case .add = model.mode { return true }
+        return false
     }
 
     private func save() async {

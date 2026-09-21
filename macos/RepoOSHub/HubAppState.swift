@@ -365,7 +365,6 @@ final class HubAppState: ObservableObject {
         defer { isPerformingHealthCheck = false }
 
         do {
-            let name = try ServerOriginNormalizer.validateDisplayName(draft.name)
             let origin = try ServerOriginNormalizer.normalizeOriginInput(draft.originText)
             let originKey = ServerOriginNormalizer.canonicalOriginKey(for: origin)
 
@@ -385,6 +384,7 @@ final class HubAppState: ObservableObject {
 
             switch draft.mode {
             case .add:
+                let name = ServerOriginNormalizer.defaultDisplayName(for: origin)
                 var entry = ServerEntry(
                     name: name,
                     origin: origin,
@@ -403,6 +403,7 @@ final class HubAppState: ObservableObject {
                 selectedServerID = entry.id
                 document.lastSelectedServerID = entry.id
             case .edit(let existing):
+                let name = try ServerOriginNormalizer.validateDisplayName(draft.name)
                 guard var entry = document.entries.first(where: { $0.id == existing.id }) else {
                     return "That server is no longer in the registry."
                 }
@@ -515,9 +516,9 @@ final class HubAppState: ObservableObject {
 
     private func originErrorMessage(_ error: ServerOriginError) -> String {
         switch error {
-        case .empty: return "Enter the HTTPS address for the RepoOS server, or a localhost development address."
+        case .empty: return "Enter a server address."
         case .invalidURL: return "That does not look like a valid URL."
-        case .notHTTPS: return "Only HTTPS origins are allowed, except HTTP localhost addresses for development."
+        case .notHTTPS: return "That address is not supported. Use a server URL or hostname."
         case .credentialsNotAllowed: return "Remove credentials from the URL and sign in through the web UI instead."
         case .fragmentNotAllowed, .queryNotAllowed, .pathNotAllowed:
             return "Use the server root origin only, without paths or query parameters."
@@ -563,7 +564,7 @@ extension ServerEditorDraft {
         case .add:
             self.mode = .add
             name = ""
-            originText = "https://"
+            originText = ""
             groupName = ""
             accentColorHex = ""
             iconSymbolName = "server.rack"

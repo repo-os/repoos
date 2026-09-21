@@ -35,6 +35,11 @@ final class ServerOriginNormalizerTests: XCTestCase {
         XCTAssertEqual(url.absoluteString, "http://127.0.0.1:7171")
     }
 
+    func testDerivesAddFlowNameFromHostAndPort() throws {
+        let url = try ServerOriginNormalizer.normalizeOriginInput("localhost:7171")
+        XCTAssertEqual(ServerOriginNormalizer.defaultDisplayName(for: url), "localhost:7171")
+    }
+
     func testRejectsHTTPForNonLoopbackHost() {
         XCTAssertThrowsError(try ServerOriginNormalizer.normalizeOriginInput("http://repo.example.com")) { error in
             XCTAssertEqual(error as? ServerOriginError, .notHTTPS)

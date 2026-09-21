@@ -80,6 +80,14 @@ enum ServerOriginNormalizer {
         url.absoluteString
     }
 
+    /// The add flow needs no separate display-name prompt. A user can refine
+    /// this later from the sidebar’s Edit action.
+    static func defaultDisplayName(for origin: URL) -> String {
+        guard let host = origin.host, !host.isEmpty else { return "RepoOS server" }
+        guard let port = origin.port else { return host }
+        return "\(host):\(port)"
+    }
+
     /// Compares URL origins, deliberately ignoring paths such as `/api/health`.
     static func hasSameOrigin(_ lhs: URL, _ rhs: URL) -> Bool {
         guard
