@@ -2,10 +2,7 @@
 id: "0474"
 title: Design and implement revocable RepoOS Hub read capabilities and summary API
 type: feature
-status: review
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "2026-09-21T14:02:58.619784Z  WARN codex_core::agents_md: project doc exceeds remaining budget; truncating path=file:///Users/nick/code/nick/repoos-worktrees/feat/design-and-implement-revocable-repoos-hu/AGENTS.md remaining_bytes=32768"
+status: done
 priority: p2
 area: server
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/design-and-implement-revocable-repoos-hu
 cli_override: cursor
 model_override: auto
 created_at: "2026-09-21T11:50:27Z"
-updated_at: "2026-09-21T18:16:35Z"
+updated_at: "2026-09-21T18:33:05Z"
 review_passes: 2
 handoff_signal_retry_count: 1
 dev_error_count: 1
@@ -45,3 +42,4 @@ Depends on the macOS Hub architecture task. This task is intentionally independe
 - 2026-09-21T15:09:08Z · agent exited with an error (codex) · 2026-09-21T14:02:58.619784Z  WARN codex_core::agents_md: project doc exceeds remaining budget; truncating path=file:///Users/nick/code/nick/repoos-worktrees/feat/design-and-implement-revocable-repoos-hu/AGENTS.md remaining_bytes=32768
 - 2026-09-21T18:16:32Z · cli_override, model_override
 - 2026-09-21T18:16:35Z · model_override
+- 2026-09-21T18:33:05Z · status review→done, release:success
