@@ -8,8 +8,9 @@ area: desktop
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
 created_at: "2026-09-21T11:50:27Z"
-updated_at: "2026-09-21T12:09:21Z"
+updated_at: "2026-09-21T18:44:09Z"
 ---
 Make the multi-server Hub materially faster than a browser-tab collection once server loading is working.
 
@@ -28,3 +29,4 @@ Depends on the server registry and isolated WebKit container tasks.
 - 2026-09-21T11:50:27Z · created · unknown
 - 2026-09-21T11:52:36Z · body
 - 2026-09-21T12:09:21Z · status inbox→ready
+- 2026-09-21T18:44:09Z · cli_override
