@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-21T18:50:44Z"
+review_passes: 1
 id: "0473"
 title: "Add native macOS Hub navigation, recents, and quick switching"
 type: feature
@@ -11,7 +13,6 @@ branch: feat/add-native-macos-hub-navigation-recents-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-09-21T11:50:27Z"
-updated_at: "2026-09-21T18:48:24Z"
 ---
 Make the multi-server Hub materially faster than a browser-tab collection once server loading is working.
 
@@ -33,4 +34,4 @@ Depends on the server registry and isolated WebKit container tasks.
 - 2026-09-21T18:44:09Z · cli_override
 - 2026-09-21T18:44:11Z · model_override
 - 2026-09-21T18:44:15Z · status ready→active, branch
-- 2026-09-21T18:48:24Z · status active→review
+- 2026-09-21T18:48:25Z · status active→review

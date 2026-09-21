@@ -205,9 +205,6 @@ final class HubAppState: ObservableObject {
     func workspaceReload() {
         if workspaceNavigation.hasEmbeddedWebContent {
             NotificationCenter.default.post(name: .hubWebNavigationReload, object: selectedServerID)
-            if let selectedServerID {
-                NotificationCenter.default.post(name: .serverWebViewReload, object: selectedServerID)
-            }
         } else if let id = selectedServerID {
             Task { await refreshHealth(for: id) }
         }
@@ -240,7 +237,17 @@ final class HubAppState: ObservableObject {
         editorSheet = ServerEditorSheetModel(mode: .edit(entry))
     }
 
+    func clearWebsiteSession(for serverID: UUID) {
+        ServerWebsiteDataStorePool.shared.clearWebsiteData(for: serverID) { [weak self] in
+            Task { @MainActor in
+                NotificationCenter.default.post(name: .serverWebViewReload, object: serverID)
+                self?.lastConnectionMessage = nil
+            }
+        }
+    }
+
     func deleteServer(_ entry: ServerEntry) {
+        ServerWebsiteDataStorePool.shared.removeStore(for: entry.id)
         do {
             try store.removeEntry(id: entry.id, document: &document)
             entries = document.entries.sorted(by: entrySort)

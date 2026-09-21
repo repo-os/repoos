@@ -304,6 +304,4 @@ extension Notification.Name {
     static let hubWebNavigationForward = Notification.Name("org.repoos.hub.webNavigation.forward")
     static let hubWebNavigationReload = Notification.Name("org.repoos.hub.webNavigation.reload")
     static let hubWebNavigationNavigate = Notification.Name("org.repoos.hub.webNavigation.navigate")
-    /// Same name as the isolated WebKit workspace uses for reload (#0472).
-    static let serverWebViewReload = Notification.Name("org.repoos.hub.serverWebViewReload")
 }

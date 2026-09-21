@@ -8,7 +8,7 @@ struct WorkspaceDetailView: View {
             if appState.entries.isEmpty {
                 RegistryEmptyState(onAdd: appState.presentAddServer)
             } else if let entry = appState.selectedEntry {
-                SelectedServerWorkspace(entry: entry)
+                ServerWebWorkspaceView(entry: entry)
             } else {
                 SelectServerPrompt()
             }
@@ -32,7 +32,9 @@ private struct RegistryEmptyState: View {
             Text("Add your first RepoOS server")
                 .font(.title2.weight(.semibold))
 
-            Text("Servers stay on this Mac. The Hub checks /api/health when you add or edit an entry, then opens the web workspace here. Use ⌘K to switch servers or reopen recent contexts.")
+            Text(
+                "Servers stay on this Mac. The Hub checks /api/health when you add or edit an entry, then opens the RepoOS web UI in an isolated web view. Use ⌘K to switch servers or reopen recent contexts."
+            )
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: 440)
@@ -54,87 +56,6 @@ private struct SelectServerPrompt: View {
                 .foregroundStyle(.secondary)
         }
         .padding()
-    }
-}
-
-private struct SelectedServerWorkspace: View {
-    @EnvironmentObject private var appState: HubAppState
-    let entry: ServerEntry
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HStack(alignment: .top, spacing: 16) {
-                ServerIconView(entry: entry)
-                    .font(.system(size: 28))
-                    .frame(width: 44, height: 44)
-
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(entry.name)
-                        .font(.title2.weight(.semibold))
-                    Text(entry.originString)
-                        .font(.body.monospaced())
-                        .foregroundStyle(.secondary)
-                        .textSelection(.enabled)
-                    Label(entry.lastHealth.displayTitle, systemImage: healthSymbol)
-                        .foregroundStyle(healthColor)
-                }
-                Spacer()
-            }
-
-            if let message = appState.lastConnectionMessage {
-                ConnectionFailurePanel(
-                    message: message,
-                    onRetry: { Task { await appState.refreshHealth(for: entry.id) } },
-                    onEdit: { appState.presentEditServer(entry) },
-                    onRemove: { appState.deleteServer(entry) }
-                )
-            } else {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Web workspace")
-                        .font(.headline)
-                    Text("The RepoOS web UI for this server loads in this area when the isolated WebKit shell is active. Back, forward, and reload in the toolbar target the embedded page; ⌘K switches servers without using the sidebar.")
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .padding()
-                .background(RoundedRectangle(cornerRadius: 10).fill(Color(nsColor: .controlBackgroundColor)))
-            }
-
-            HStack(spacing: 12) {
-                Button("Quick switcher…") {
-                    appState.presentCommandPalette()
-                }
-                .keyboardShortcut("k", modifiers: .command)
-                Button("Check connection") {
-                    Task { await appState.refreshHealth(for: entry.id) }
-                }
-                Button("Edit server…") {
-                    appState.presentEditServer(entry)
-                }
-                Button("Remove server", role: .destructive) {
-                    appState.deleteServer(entry)
-                }
-            }
-        }
-        .padding(28)
-    }
-
-    private var healthSymbol: String {
-        switch entry.lastHealth {
-        case .healthy: return "checkmark.circle.fill"
-        case .unreachable: return "wifi.exclamationmark"
-        case .invalid: return "xmark.octagon.fill"
-        case .unknown: return "questionmark.circle"
-        }
-    }
-
-    private var healthColor: Color {
-        switch entry.lastHealth {
-        case .healthy: return .green
-        case .unreachable: return .orange
-        case .invalid: return .red
-        case .unknown: return .secondary
-        }
     }
 }
 
