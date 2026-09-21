@@ -2,14 +2,14 @@
 id: "0474"
 title: Design and implement revocable RepoOS Hub read capabilities and summary API
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: server
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-21T11:50:27Z"
-updated_at: "2026-09-21T11:52:36Z"
+updated_at: "2026-09-21T12:09:17Z"
 ---
 Enable a trusted native Hub to read small authenticated summaries from multiple RepoOS servers without scraping WebViews or exposing native privileges to server pages.
 
@@ -28,3 +28,4 @@ Depends on the macOS Hub architecture task. This task is intentionally independe
 
 - 2026-09-21T11:50:27Z · created · unknown
 - 2026-09-21T11:52:36Z · body
+- 2026-09-21T12:09:17Z · status inbox→ready
