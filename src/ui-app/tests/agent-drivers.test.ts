@@ -519,6 +519,37 @@ describe("claude code driver", () => {
         fx.clean();
       }
     });
+
+    it("limits task-PM chat to RepoOS commands and keeps debugger chat read-only", async () => {
+      const fx = makeFixture();
+      const oldPath = withFakePath(fx);
+      process.env.REPOOS_FAKEBIN_LOG = fx.log;
+      try {
+        const runner = new AgentRunner(config(fx.bin), () => {});
+        const pm = { ...agent("github copilot"), name: "pm" };
+        expect(
+          runner.startChat("pm-task-v2:0001", "update the task", pm, "Task #0001 context").ok,
+        ).toBe(true);
+        await waitFor(() => !runner.isRunning("pm-task-v2:0001"), "Copilot PM turn exit");
+
+        const debuggerAgent = { ...agent("github copilot"), name: "debugger" };
+        expect(
+          runner.startChat("debugger:0001", "diagnose this", debuggerAgent, "context").ok,
+        ).toBe(true);
+        await waitFor(() => !runner.isRunning("debugger:0001"), "Copilot debugger turn exit");
+
+        const [pmRun, debuggerRun] = spawns(fx);
+        expect(pmRun?.args).toEqual(expect.arrayContaining(["--allow-tool", "shell(repoos:*)"]));
+        expect(pmRun?.args).not.toContain("--allow-all-tools");
+        expect(debuggerRun?.args).not.toEqual(
+          expect.arrayContaining(["--allow-tool", "--allow-all-tools", "--allow-all", "--yolo"]),
+        );
+      } finally {
+        process.env.PATH = oldPath;
+        delete process.env.REPOOS_FAKEBIN_LOG;
+        fx.clean();
+      }
+    });
   });
 });
 

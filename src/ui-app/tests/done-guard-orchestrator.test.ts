@@ -55,7 +55,7 @@ describe("publish-time dirty-main guard (#0211)", () => {
       expect(rootLock.acquire("H1", "hotfix")).toBe(true);
 
       const orchestrator = new CloseOutOrchestrator(
-        { root } as RepoOSConfig,
+        { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
         coordinator,
         createRepositoryLock(root),
         rootLock,
@@ -103,7 +103,7 @@ describe("publish-time dirty-main guard (#0211)", () => {
       writeFileSync(join(root, "dirty.txt"), "uncommitted\n");
 
       const orchestrator = new CloseOutOrchestrator(
-        { root } as RepoOSConfig,
+        { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
         coordinator,
         createRepositoryLock(root),
         createRootLock(root),
@@ -158,7 +158,7 @@ describe("publish-time dirty-main guard (#0211)", () => {
       writeFileSync(join(root, "work", "0099-other-task.md"), "---\nid: 0099\n---\nstamp\n");
 
       const orchestrator = new CloseOutOrchestrator(
-        { root, workDir: "work" } as RepoOSConfig,
+        { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
         coordinator,
         createRepositoryLock(root),
         createRootLock(root),
@@ -206,7 +206,7 @@ describe("publish-time dirty-main guard (#0211)", () => {
       writeFileSync(join(root, "repoos.toml"), 'theme = "dark"\n');
 
       const orchestrator = new CloseOutOrchestrator(
-        { root, workDir: "work" } as RepoOSConfig,
+        { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
         coordinator,
         createRepositoryLock(root),
         createRootLock(root),
@@ -252,7 +252,7 @@ describe("publish-time dirty-main guard (#0211)", () => {
       writeFileSync(join(root, "src-file.ts"), "export const x = 1;\n");
 
       const orchestrator = new CloseOutOrchestrator(
-        { root, workDir: "work" } as RepoOSConfig,
+        { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
         coordinator,
         createRepositoryLock(root),
         createRootLock(root),
@@ -280,7 +280,7 @@ describe("close-out candidate cleanup on failure (worktree leak)", () => {
       coordinator.enqueue({ id: "T9", branch: "feat/t9" } as any);
 
       const orchestrator = new CloseOutOrchestrator(
-        { root, workDir: "work" } as RepoOSConfig,
+        { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
         coordinator,
         createRepositoryLock(root),
         createRootLock(root),
@@ -321,7 +321,7 @@ describe("publish-time main-drift retry cap (#0386)", () => {
       coordinator.enqueue({ id: "T10", branch } as any);
 
       const orchestrator = new CloseOutOrchestrator(
-        { root } as RepoOSConfig,
+        { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
         coordinator,
         createRepositoryLock(root),
         createRootLock(root),
@@ -499,7 +499,7 @@ describe("publish-time drift with bookkeeping-only advance (#0386)", () => {
       });
 
       const orchestrator = new CloseOutOrchestrator(
-        { root, workDir: "work" } as RepoOSConfig,
+        { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
         coordinator,
         createRepositoryLock(root),
         createRootLock(root),

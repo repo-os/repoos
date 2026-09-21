@@ -145,6 +145,56 @@ describe("getChangedFilePaths (#0355)", () => {
 });
 
 describe("validateCandidate docs-only fast path (#0355)", () => {
+  it("runs a declared bootstrap check without inventing a build step", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const feat = ensureWorktree(root, "feat/task-bootstrap");
+      commitFile(
+        feat.path!,
+        "repoos.toml",
+        `[check]\nversion = 1\n\n[[check.steps]]\nname = "bootstrap"\ncommand = "sh scripts/check-bootstrap.sh"\n`,
+        "declare bootstrap gate",
+      );
+      commitFile(
+        feat.path!,
+        "scripts/check-bootstrap.sh",
+        "#!/bin/sh\ntest -f repoos.toml\n",
+        "add bootstrap gate",
+      );
+
+      const { validate } = makeCandidate(root, "0203", "feat/task-bootstrap");
+      const res = await validate({ taskId: "0203", branch: "feat/task-bootstrap" });
+
+      // The fixture has no package.json or build script. MTD must run the
+      // declared check, not invent `bun run build` before it.
+      expect(res.ok).toBe(true);
+      expect(res.candidateSha).toBeTruthy();
+    } finally {
+      clean();
+    }
+  });
+
+  it("allows a completely code-free bootstrap candidate with no check plan", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const feat = ensureWorktree(root, "feat/task-bootstrap-empty");
+      commitFile(
+        feat.path!,
+        "settings/project.json",
+        '{"name":"new project"}\n',
+        "bootstrap config",
+      );
+
+      const { validate } = makeCandidate(root, "0204", "feat/task-bootstrap-empty");
+      const res = await validate({ taskId: "0204", branch: "feat/task-bootstrap-empty" });
+
+      expect(res.ok).toBe(true);
+      expect(res.candidateSha).toBeTruthy();
+    } finally {
+      clean();
+    }
+  });
+
   it("skips build + check for a markdown-only diff and still publishes", async () => {
     const { root, clean } = makeRepo();
     try {
@@ -164,7 +214,7 @@ describe("validateCandidate docs-only fast path (#0355)", () => {
     }
   });
 
-  it("runs the full gate when even one source file is in the diff", async () => {
+  it("allows source scaffolding before a project declares its first check plan", async () => {
     const { root, clean } = makeRepo();
     try {
       const feat = ensureWorktree(root, "feat/task202");
@@ -174,10 +224,11 @@ describe("validateCandidate docs-only fast path (#0355)", () => {
       const { coordinator, validate } = makeCandidate(root, "0202", "feat/task202");
       const res = await validate(coordinator.getJob("0202"));
 
-      // The mixed diff must NOT take the fast path; the fixture's missing
-      // build config surfaces as a real build failure.
-      expect(res.ok).toBe(false);
-      expect(res.reason).toContain("build failed");
+      // A new project may add its first source file before it has selected a
+      // build/test stack. MTD preserves merge safety but does not invent a
+      // Bun build requirement during that bootstrap phase.
+      expect(res.ok).toBe(true);
+      expect(res.candidateSha).toBeTruthy();
     } finally {
       clean();
     }

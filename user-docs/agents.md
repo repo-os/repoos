@@ -104,9 +104,16 @@ human approval prompt during a headless run, and a small fixed command allowlist
 will eventually miss a real project's build, test, or tooling command. RepoOS
 uses it only inside the task's dedicated worktree and only for engineering
 turns and follow-ups. It does **not** use `--allow-all` or `--yolo`, which would
-also disable Copilot's path and URL verification; PM and review passes remain
-read-only. Use a trusted task prompt and review the resulting branch before
-moving it to done.
+also disable Copilot's path and URL verification. Use a trusted task prompt and
+review the resulting branch before moving it to done.
+
+Copilot permissions are role-specific:
+
+| RepoOS role | Copilot access |
+| --- | --- |
+| Engineer | `--allow-all-tools` inside the task worktree, so it can edit, build, test, and use the project's tooling without an unanswerable approval prompt. |
+| Task PM chat | Only `repoos` CLI commands for approved task-management actions such as creating or updating task metadata. It does not receive arbitrary project-tool access. |
+| Freeform PM, reviewer, Debugger, and RepoOS Guide | Read-only. RepoOS applies freeform PM output itself; the other roles may inspect the repository but cannot edit it. |
 
 ### Antigravity CLI (`agy`)
 

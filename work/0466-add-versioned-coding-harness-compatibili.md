@@ -10,9 +10,12 @@ created_by: ""
 branch: feat/add-versioned-coding-harness-compatibili
 cli_override: github copilot
 model_override: default
-review_model_override: opencode-go/deepseek-v4.1-flash
+review_model_override: default
 created_at: "2026-09-21T09:13:33Z"
-updated_at: "2026-09-21T11:04:51Z"
+updated_at: "2026-09-21T18:13:52Z"
+handoff_signal_retry_count: 2
+review_passes: 7
+review_rounds: 2
 ---
 ## Outcome
 
@@ -81,3 +84,21 @@ Create a sustainable versioned coding-harness compatibility policy. Support the 
 - 2026-09-21T10:47:29Z · status inbox→ready
 - 2026-09-21T10:47:31Z · status ready→active, branch
 - 2026-09-21T11:04:51Z · status active→review
+- 2026-09-21T11:06:02Z · status review→active
+- 2026-09-21T11:52:32Z · status active→review
+- 2026-09-21T11:53:39Z · status review→active
+- 2026-09-21T12:00:11Z · status active→review
+- 2026-09-21T14:02:54Z · status review→active
+- 2026-09-21T14:04:04Z · status active→review
+- 2026-09-21T14:27:01Z · status review→active
+- 2026-09-21T14:27:03Z · status active→review
+- 2026-09-21T14:44:06Z · status review→active
+- 2026-09-21T14:44:07Z · status active→review
+- 2026-09-21T15:57:01Z · status review→active
+- 2026-09-21T15:57:10Z · status active→review
+- 2026-09-21T15:57:11Z · status review→active
+- 2026-09-21T16:16:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-09-21T16:16:10Z · needs_input
+- 2026-09-21T17:08:14Z · status active→review
+- 2026-09-21T18:13:27Z · status review→active, needs_input, review_model_override
+- 2026-09-21T18:13:52Z · status active→review
