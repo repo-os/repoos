@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-21T18:33:45Z"
+review_passes: 2
 id: "0471"
 title: Build the macOS Hub server registry and sidebar workspace
 type: feature
@@ -13,8 +15,6 @@ model_override: composer-2.5
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-21T11:50:25Z"
-updated_at: "2026-09-21T18:32:51Z"
-review_passes: 1
 ---
 Implement the first useful native Hub workflow: users can maintain a local list of RepoOS servers and switch among them from a macOS-native sidebar.
 
@@ -42,3 +42,4 @@ Depends on the approved macOS Hub architecture and the standalone project scaffo
 - 2026-09-21T18:29:09Z · status active→review
 - 2026-09-21T18:32:49Z · review_cli_override, review_model_override
 - 2026-09-21T18:32:51Z · review_model_override
+
