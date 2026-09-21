@@ -2,14 +2,14 @@
 id: "0476"
 title: Add privacy-preserving cross-server task search to the macOS Hub
 type: feature
-status: inbox
+status: ready
 priority: p3
 area: desktop
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-21T11:50:29Z"
-updated_at: "2026-09-21T11:52:37Z"
+updated_at: "2026-09-21T18:27:17Z"
 ---
 Extend the macOS Hub command palette with an opt-in cross-server task search that helps users locate work without reopening browser tabs.
 
@@ -26,3 +26,4 @@ Depends on the Hub summary capability work and the native navigation/command pal
 
 - 2026-09-21T11:50:29Z · created · unknown
 - 2026-09-21T11:52:37Z · body
+- 2026-09-21T18:27:17Z · status inbox→ready
