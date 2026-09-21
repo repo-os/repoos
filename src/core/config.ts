@@ -29,6 +29,7 @@ import type {
   RepoOSConfig,
   Status,
   Assignee,
+  StoriesConfig,
   Theme,
   UiTheme,
   WhisperConfig,
@@ -862,6 +863,14 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     // declarative; an unconfigured project keeps the existing Releases view.
     const distribution = parseDistributionConfig(parsed);
     if (distribution) cfg.distribution = distribution;
+    // [stories] section — opt-in cross-area delivery tracking. Missing,
+    // malformed, or `enabled = false` leaves `cfg.stories` undefined and keeps
+    // the nav item, route and task-edit control entirely dormant.
+    const storiesEnabled = parsed["stories.enabled"];
+    if (typeof storiesEnabled === "boolean") {
+      const stories: StoriesConfig = { enabled: storiesEnabled };
+      cfg.stories = stories;
+    }
     if (typeof get("ntfyEnabled") === "boolean") cfg.ntfyEnabled = get("ntfyEnabled") as boolean;
     if (typeof get("ntfyTopic") === "string") cfg.ntfyTopic = get("ntfyTopic") as string;
     if (typeof get("ntfyBaseUrl") === "string") cfg.ntfyBaseUrl = get("ntfyBaseUrl") as string;
@@ -1587,6 +1596,8 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "deployments.url",
   "deployments.dashboard_url",
   "deployments.subdir",
+  // Stories
+  "stories.enabled",
   // Distribution
   "distribution.name",
   "distribution.kind",

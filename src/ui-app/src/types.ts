@@ -47,6 +47,8 @@ export interface Task {
   needsMerge: boolean;
   priority: string;
   area: string;
+  /** Optional cross-area delivery slice; empty string means untagged. */
+  story?: string;
   assignee: "ai" | "human" | "unassigned";
   assignedTo: string;
   createdBy: string;
@@ -196,6 +198,8 @@ export interface BoardTask {
   needsMerge: boolean;
   priority: string;
   area: string;
+  /** Optional cross-area delivery slice; empty string means untagged. */
+  story?: string;
   assignee: "ai" | "human" | "unassigned";
   assignedTo: string;
   createdBy: string;

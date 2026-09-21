@@ -191,6 +191,23 @@ function onOpenAutoFocus(e: Event): void {
 const taskTypes = ["feature", "bug", "chore", "spec", "refactor"];
 const priorities = ["p0", "p1", "p2", "p3"];
 
+/** The Stories surface is opt-in; hide the story control entirely when off. */
+const storiesEnabled = computed(
+  () => (config.data?.stories as { enabled?: unknown } | undefined)?.enabled === true,
+);
+
+/** Existing story names across the board, deduped case-insensitively. */
+const storyOptions = computed(() => {
+  const seen = new Map<string, string>();
+  for (const t of repo.tasks) {
+    const name = (t.story ?? "").replace(/\s+/g, " ").trim();
+    if (!name) continue;
+    const key = name.toLowerCase();
+    if (!seen.has(key)) seen.set(key, name);
+  }
+  return [...seen.values()].sort((a, b) => a.localeCompare(b));
+});
+
 // ---- freeform creation flow ----
 
 /** Which new-task flow the drawer is showing (default from settings). */
@@ -809,14 +826,23 @@ interface TaskDraft {
   type: string;
   priority: string;
   area: string;
+  story: string;
   assignedTo: string;
   body: string;
 }
 
-const DRAFT_FIELDS = ["title", "type", "priority", "area", "assignedTo", "body"] as const;
+const DRAFT_FIELDS = ["title", "type", "priority", "area", "story", "assignedTo", "body"] as const;
 
 function emptyDraft(): TaskDraft {
-  return { title: "", type: "feature", priority: "p2", area: "", assignedTo: "", body: "" };
+  return {
+    title: "",
+    type: "feature",
+    priority: "p2",
+    area: "",
+    story: "",
+    assignedTo: "",
+    body: "",
+  };
 }
 
 /** Editable field values while the drawer is open. */
@@ -833,6 +859,7 @@ function initDraft(t: Task): void {
   draft.type = t.type;
   draft.priority = t.priority;
   draft.area = t.area;
+  draft.story = t.story ?? "";
   draft.assignedTo = t.assignedTo;
   draft.body = t.body;
   baseline();
@@ -3374,6 +3401,18 @@ watch(
                 <option value="human"></option>
               </datalist>
             </div>
+          </div>
+          <div v-if="storiesEnabled" class="field" style="margin-top: 12px">
+            <label for="et-story">Story</label>
+            <Input
+              id="et-story"
+              v-model="draft.story"
+              list="story-options"
+              placeholder="Cross-area delivery slice"
+            />
+            <datalist id="story-options">
+              <option v-for="name in storyOptions" :key="name" :value="name"></option>
+            </datalist>
           </div>
           <div
             v-if="ui.active?.needsInput && ui.active.questions?.length"
