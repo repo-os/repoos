@@ -220,6 +220,12 @@ authenticated APIs, infer status from rendered HTML, or send credentials to
 other servers. Capability design and server-side implementation require a
 separate ADR and security review.
 
+The server contract for this gate is documented in
+[Native Hub capabilities](../native-hub-capabilities.md): the v1 endpoint is
+`GET /api/hub/v1/summary`, authenticated by a server-issued `summary:read`
+bearer capability. The native client stores that capability in the macOS
+Keychain and sends it only to its exact bound HTTPS origin.
+
 ## macOS build, signing, testing, and release assumptions
 
 The app is a separate Swift Package/Xcode target with a declared minimum macOS
