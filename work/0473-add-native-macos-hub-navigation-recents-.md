@@ -1,4 +1,5 @@
 ---
+merge_conflict_retry_count: 1
 updated_at: "2026-09-21T18:50:44Z"
 review_passes: 1
 id: "0473"
@@ -35,4 +36,5 @@ Depends on the server registry and isolated WebKit container tasks.
 - 2026-09-21T18:44:11Z · model_override
 - 2026-09-21T18:44:15Z · status ready→active, branch
 - 2026-09-21T18:48:25Z · status active→review
+
 
