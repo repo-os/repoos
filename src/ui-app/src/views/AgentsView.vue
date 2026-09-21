@@ -979,7 +979,7 @@ onUnmounted(() => {
               >
                 {{
                   r.agent.compatibility.status === "newer_than_verified"
-                    ? "run the optional probe before important work"
+                    ? "review release guidance; no live probe is available yet"
                     : r.agent.compatibility.status === "upgrade_recommended"
                       ? "upgrade recommended"
                       : "use a supported release"

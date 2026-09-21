@@ -12,8 +12,8 @@ against the latest certified line.
 - **Upgrade recommended** — the installed release is older than the supported
   line. RepoOS still permits work when local capability checks pass.
 - **Newer than verified** — the release is newer than RepoOS's last tracked
-  certification. It is not blocked; run the optional probe before important
-  work.
+  certification. It is not blocked; review the release guidance before
+  important work. RepoOS does not currently provide a live compatibility probe.
 - **Unsupported** — a known incompatible family or a required local capability
   is missing.
 - **Not yet probed** — RepoOS could not parse a version or has not yet
@@ -39,7 +39,7 @@ the local binary version and static contract metadata; they do not send version
 telemetry or collect prompts and project code. A future live compatibility probe
 must be explicitly started by the user, clearly warn that provider credentials
 may be used, and run in an isolated temporary fixture/worktree that is cleaned
-up afterward.
+up afterward. No live probe is available in the current release.
 
 Upgrade or roll back a harness using its official installer and then refresh
 the Detected Coding Agents tab. Review the resulting status before assigning

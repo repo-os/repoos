@@ -20,7 +20,7 @@
       ],
       "verifiedAt": null,
       "verificationSource": "Pending: RepoOS has not yet validated an OpenCode v2 adapter contract suite in-repo.",
-      "upgradeGuidance": "Install the current OpenCode v2 release, then run the optional RepoOS compatibility probe before important work.",
+      "upgradeGuidance": "Install the current OpenCode v2 release, then review its local capabilities and this compatibility contract before important work.",
       "officialUrl": "https://opencode.ai/docs/"
     }
   ]

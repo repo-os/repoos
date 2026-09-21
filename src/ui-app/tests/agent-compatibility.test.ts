@@ -20,6 +20,7 @@ describe("agent compatibility contracts", () => {
   it("parses common CLI version spellings", () => {
     expect(parseAgentVersion("opencode v2.4.1")).toEqual([2, 4, 1]);
     expect(parseAgentVersion("2")).toEqual([2, 0, 0]);
+    expect(parseAgentVersion("build 2026 opencode v2.4.1")).toEqual([2, 4, 1]);
     expect(parseAgentVersion("unknown")).toBeNull();
   });
 

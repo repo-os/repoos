@@ -135,7 +135,6 @@ async function checkAgentCompatibility(
   const configured = KNOWN_AGENTS.filter(
     (agent) => agent.cli && enabledClis.has(agent.cli) && hasBin(agent.binary),
   );
-  if (configured.length === 0) return [];
 
   const rows = await detectAgents({ agents: configured, probeAuth: false });
   const byCli = new Map<string, ReturnType<typeof compatibilityForDetectedAgent>>();
@@ -157,9 +156,9 @@ async function checkAgentCompatibility(
           `runtime.compatibility.${cli}`,
           "runtime",
           "warn",
-          `${entry.name || cli} compatibility not probed`,
-          "The configured harness is installed, but RepoOS could not collect a version.",
-          "open the Agents page and run the optional compatibility probe",
+          `${entry.name || cli} is not installed`,
+          "The configured harness is not installed on PATH, so RepoOS cannot assess its compatibility.",
+          "Install the harness using its official instructions, then refresh the Agents page",
         ),
       );
       continue;
@@ -177,7 +176,7 @@ async function checkAgentCompatibility(
         result.status === "verified"
           ? null
           : (result.contract?.upgradeGuidance ??
-              "open the Agents page and run the optional compatibility probe"),
+              "Review the harness release guidance and verify its local capabilities before important work"),
       ),
     );
   }
