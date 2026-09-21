@@ -2,14 +2,14 @@
 id: "0471"
 title: Build the macOS Hub server registry and sidebar workspace
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: desktop
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-21T11:50:25Z"
-updated_at: "2026-09-21T11:52:34Z"
+updated_at: "2026-09-21T12:06:56Z"
 ---
 Implement the first useful native Hub workflow: users can maintain a local list of RepoOS servers and switch among them from a macOS-native sidebar.
 
@@ -28,3 +28,4 @@ Depends on the approved macOS Hub architecture and the standalone project scaffo
 
 - 2026-09-21T11:50:25Z · created · unknown
 - 2026-09-21T11:52:34Z · body
+- 2026-09-21T12:06:56Z · status inbox→ready
