@@ -8,9 +8,11 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+cli_override: cursor
+model_override: default
 pm_cli_override: github copilot
 created_at: "2026-09-21T11:33:55Z"
-updated_at: "2026-09-21T11:35:32Z"
+updated_at: "2026-09-21T11:53:00Z"
 ---
 ## Problem
 
@@ -66,3 +68,4 @@ Let's add another sort order option to the work page: order by task number newes
 
 - 2026-09-21T11:33:55Z · created · hello@repoos.org
 - 2026-09-21T11:35:32Z · status draft→inbox, title, area, body
+- 2026-09-21T11:53:00Z · cli_override, model_override
