@@ -94,6 +94,31 @@ final class HubRecentsRetentionTests: XCTestCase {
         XCTAssertEqual(state.selectedServerID, second.id)
         XCTAssertEqual(state.pendingNavigationRequest?.path, "/tasks/0473")
     }
+
+    @MainActor
+    func testWorkspaceNavigationUpdateIsStableForAnUnchangedSnapshot() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("hub-navigation-state-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let state = HubAppState(
+            store: ServerRegistryStore(directoryURL: directory),
+            healthChecker: StubHealthChecker(),
+            attentionCoordinator: HubAttentionCoordinator()
+        )
+        let snapshot = WorkspaceNavigationSnapshot(
+            hasEmbeddedWebContent: true,
+            webCanGoBack: false,
+            webCanGoForward: false,
+            webIsLoading: true
+        )
+
+        state.updateWorkspaceNavigation(snapshot)
+        state.updateWorkspaceNavigation(snapshot)
+
+        XCTAssertEqual(state.workspaceNavigation, snapshot)
+    }
 }
 
 private struct StubHealthChecker: HealthChecking {

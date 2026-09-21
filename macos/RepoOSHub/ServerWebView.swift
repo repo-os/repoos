@@ -69,6 +69,9 @@ struct ServerWebView: NSViewRepresentable {
             context.coordinator.loadedOriginKey = ServerOriginNormalizer.canonicalOriginKey(for: model.origin)
             context.coordinator.loadInitialPage()
         }
+        // `updateNSView` runs during SwiftUI rendering. The coordinator defers
+        // its observable-state update so a WebKit navigation change cannot
+        // recursively trigger another view update.
         context.coordinator.syncNavigationState()
     }
 
@@ -170,17 +173,27 @@ struct ServerWebView: NSViewRepresentable {
         }
 
         func syncNavigationState() {
-            guard let webView else {
-                appState.updateWorkspaceNavigation(.placeholder)
-                return
+            let snapshot = navigationSnapshot()
+            guard appState.workspaceNavigation != snapshot else { return }
+
+            // This method is also called by `updateNSView`; publishing there
+            // synchronously causes SwiftUI's “Publishing changes from within
+            // view updates” feedback loop.
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                let latestSnapshot = self.navigationSnapshot()
+                guard self.appState.workspaceNavigation != latestSnapshot else { return }
+                self.appState.updateWorkspaceNavigation(latestSnapshot)
             }
-            appState.updateWorkspaceNavigation(
-                WorkspaceNavigationSnapshot(
-                    hasEmbeddedWebContent: true,
-                    webCanGoBack: webView.canGoBack,
-                    webCanGoForward: webView.canGoForward,
-                    webIsLoading: model.isLoading
-                )
+        }
+
+        private func navigationSnapshot() -> WorkspaceNavigationSnapshot {
+            guard let webView else { return .placeholder }
+            return WorkspaceNavigationSnapshot(
+                hasEmbeddedWebContent: true,
+                webCanGoBack: webView.canGoBack,
+                webCanGoForward: webView.canGoForward,
+                webIsLoading: model.isLoading
             )
         }
 

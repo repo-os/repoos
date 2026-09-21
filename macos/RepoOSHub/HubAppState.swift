@@ -267,6 +267,7 @@ final class HubAppState: ObservableObject {
     }
 
     func updateWorkspaceNavigation(_ snapshot: WorkspaceNavigationSnapshot) {
+        guard workspaceNavigation != snapshot else { return }
         workspaceNavigation = snapshot
     }
 
