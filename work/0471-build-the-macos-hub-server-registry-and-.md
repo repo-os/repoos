@@ -8,8 +8,9 @@ area: desktop
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: claude code
 created_at: "2026-09-21T11:50:25Z"
-updated_at: "2026-09-21T12:06:56Z"
+updated_at: "2026-09-21T18:23:56Z"
 ---
 Implement the first useful native Hub workflow: users can maintain a local list of RepoOS servers and switch among them from a macOS-native sidebar.
 
@@ -29,3 +30,4 @@ Depends on the approved macOS Hub architecture and the standalone project scaffo
 - 2026-09-21T11:50:25Z · created · unknown
 - 2026-09-21T11:52:34Z · body
 - 2026-09-21T12:06:56Z · status inbox→ready
+- 2026-09-21T18:23:56Z · cli_override
