@@ -22,16 +22,16 @@
 		A0000000000000000000000D /* ServerRegistryStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000001F /* ServerRegistryStoreTests.swift */; };
 		A0000000000000000000000E /* ReachabilityStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000020 /* ReachabilityStateTests.swift */; };
 		A0000000000000000000000F /* HubNavigationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000027 /* HubNavigationModels.swift */; };
-		A00000000000000000000010 /* HubCommandPaletteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000028 /* HubCommandPaletteView.swift */; };
-		A00000000000000000000011 /* HubWorkspaceToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000029 /* HubWorkspaceToolbar.swift */; };
-		A00000000000000000000012 /* CommandPaletteMatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000002A /* CommandPaletteMatcherTests.swift */; };
-		A00000000000000000000014 /* PinTaskContextSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000002C /* PinTaskContextSheet.swift */; };
-		A00000000000000000000013 /* HubRecentsRetentionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000002B /* HubRecentsRetentionTests.swift */; };
-		A0000000000000000000002D /* ServerNavigationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003B /* ServerNavigationPolicy.swift */; };
-		A0000000000000000000002E /* ServerWebsiteDataStorePool.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003C /* ServerWebsiteDataStorePool.swift */; };
-		A0000000000000000000002F /* IsolatedServerWebViewFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000034 /* IsolatedServerWebViewFactory.swift */; };
-		A00000000000000000000030 /* ServerWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000035 /* ServerWebView.swift */; };
-		A00000000000000000000031 /* ServerWebWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000036 /* ServerWebWorkspaceView.swift */; };
+		A00000000000000000000080 /* HubCommandPaletteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000028 /* HubCommandPaletteView.swift */; };
+		A00000000000000000000081 /* HubWorkspaceToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000029 /* HubWorkspaceToolbar.swift */; };
+		A00000000000000000000082 /* CommandPaletteMatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000002A /* CommandPaletteMatcherTests.swift */; };
+		A00000000000000000000083 /* PinTaskContextSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000002C /* PinTaskContextSheet.swift */; };
+		A00000000000000000000084 /* HubRecentsRetentionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000002B /* HubRecentsRetentionTests.swift */; };
+		A00000000000000000000085 /* ServerNavigationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003B /* ServerNavigationPolicy.swift */; };
+		A00000000000000000000086 /* ServerWebsiteDataStorePool.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003C /* ServerWebsiteDataStorePool.swift */; };
+		A00000000000000000000087 /* IsolatedServerWebViewFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000034 /* IsolatedServerWebViewFactory.swift */; };
+		A00000000000000000000088 /* ServerWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000035 /* ServerWebView.swift */; };
+		A00000000000000000000089 /* ServerWebWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000036 /* ServerWebWorkspaceView.swift */; };
 		A00000000000000000000037 /* ServerNavigationPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000038 /* ServerNavigationPolicyTests.swift */; };
 		A00000000000000000000039 /* IsolatedServerWebViewFactoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000003A /* IsolatedServerWebViewFactoryTests.swift */; };
 /* End PBXBuildFile section */
@@ -100,8 +100,8 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		A00000000000000000000041 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = ( A00000000000000000000001, A00000000000000000000002, A00000000000000000000004, A00000000000000000000005, A00000000000000000000006, A00000000000000000000007, A00000000000000000000008, A00000000000000000000009, A0000000000000000000000A, A0000000000000000000000B, A0000000000000000000000F, A00000000000000000000010, A00000000000000000000011, A00000000000000000000014, A0000000000000000000002D, A0000000000000000000002E, A0000000000000000000002F, A00000000000000000000030, A00000000000000000000031, ); runOnlyForDeploymentPostprocessing = 0; };
-		A00000000000000000000044 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = ( A00000000000000000000003, A0000000000000000000000C, A0000000000000000000000D, A0000000000000000000000E, A00000000000000000000012, A00000000000000000000013, A00000000000000000000037, A00000000000000000000039, ); runOnlyForDeploymentPostprocessing = 0; };
+		A00000000000000000000041 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = ( A00000000000000000000001, A00000000000000000000002, A00000000000000000000004, A00000000000000000000005, A00000000000000000000006, A00000000000000000000007, A00000000000000000000008, A00000000000000000000009, A0000000000000000000000A, A0000000000000000000000B, A0000000000000000000000F, A00000000000000000000080, A00000000000000000000081, A00000000000000000000083, A00000000000000000000085, A00000000000000000000086, A00000000000000000000087, A00000000000000000000088, A00000000000000000000089, ); runOnlyForDeploymentPostprocessing = 0; };
+		A00000000000000000000044 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = ( A00000000000000000000003, A0000000000000000000000C, A0000000000000000000000D, A0000000000000000000000E, A00000000000000000000082, A00000000000000000000084, A00000000000000000000037, A00000000000000000000039, ); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
