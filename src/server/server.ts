@@ -46,7 +46,7 @@
  *   GET  /api/tasks/:id/attachments/:file -> serve a stored screenshot image
  *   GET  /api/agents/running   -> [{ id, pid, startedAt }] running agents
  *   GET  /api/agents/queued    -> [{ id, queuedAt }] agents waiting for a free maxConcurrentAgents slot
- *   GET  /api/agents/detect    -> { agents: [{ id, name, binary, installed, path, version, headless, drivable, installHint, auth, authHint?, capability? }] }
+ *   GET  /api/agents/detect    -> { agents: [{ id, name, binary, installed, path, version, headless, drivable, installHint, auth, compatibility, authHint?, capability? }] }
  *   POST /api/agents/updates   -> { updates: { [id]: { status, source, checkedAt, ... } } }
  *   GET  /api/supervisor/status -> { ok, enabled, mode, latestHeartbeat } supervisor status
  *   GET  /api/supervisor/heartbeats -> { ok, heartbeats } recent supervisor heartbeats

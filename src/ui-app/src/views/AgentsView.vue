@@ -477,6 +477,44 @@ function updateColor(update: AgentUpdate | undefined): string {
   return "var(--txt-dim)";
 }
 
+function compatibilityColor(agent: DetectedAgent): string {
+  const status = agent.compatibility?.status;
+  if (status === "verified") return "var(--green)";
+  if (status === "unsupported") return "var(--red)";
+  if (status === "upgrade_recommended" || status === "newer_than_verified") {
+    return "var(--amber)";
+  }
+  return "var(--txt-dim)";
+}
+
+/** Copyable live-probe command for a harness that is not yet proven or beyond the certified line. */
+function probeHint(agent: DetectedAgent): string {
+  const id = agent.cli || agent.binary;
+  return `repoos doctor --probe ${id} --yes`;
+}
+
+/**
+ * True when a deliberate live probe is the actionable next step: the harness
+ * has a RepoOS contract we track, but the installed release is not yet proven
+ * (`not_probed`) or is beyond the certified baseline (`newer_than_verified`).
+ * Without this, the shipped uncertified config would show no action at all.
+ */
+function probeAvailable(agent: DetectedAgent): boolean {
+  const compatibility = agent.compatibility;
+  if (!compatibility?.contract) return false;
+  return compatibility.status === "not_probed" || compatibility.status === "newer_than_verified";
+}
+
+/** Pill tooltip: explanation plus the newest certified release (or none yet). */
+function compatibilityTitle(agent: DetectedAgent): string {
+  const compatibility = agent.compatibility;
+  if (!compatibility) return "";
+  const certified = compatibility.newestCertifiedVersion
+    ? `Newest certified: ${compatibility.newestCertifiedVersion}.`
+    : "No release is certified yet.";
+  return `${compatibility.explanation} ${certified}`;
+}
+
 function checkedLabel(update: AgentUpdate | undefined): string {
   return update?.checkedAt ? `checked ${new Date(update.checkedAt).toLocaleString()}` : "";
 }
@@ -951,6 +989,39 @@ onUnmounted(() => {
               <span v-if="r.agent.version" class="detect-ver detect-ver-inline">{{
                 r.agent.version
               }}</span>
+              <span
+                v-if="r.agent.compatibility"
+                class="detect-pill detect-compatibility-pill"
+                :style="{ color: compatibilityColor(r.agent) }"
+                :title="compatibilityTitle(r.agent)"
+              >
+                compatibility: {{ r.agent.compatibility.label }}
+              </span>
+              <span
+                v-if="
+                  r.agent.compatibility &&
+                  r.agent.compatibility.status !== 'verified' &&
+                  (probeAvailable(r.agent) ||
+                    r.agent.compatibility.status === 'upgrade_recommended' ||
+                    r.agent.compatibility.status === 'unsupported')
+                "
+                class="detect-hint-inline"
+              >
+                <template v-if="probeAvailable(r.agent)">
+                  <code
+                    class="detect-hint-code"
+                    :title="'Run a deliberate compatibility probe for ' + r.agent.name"
+                    >{{ probeHint(r.agent) }}</code
+                  >
+                  <button class="detect-copy" @click="copyHint(probeHint(r.agent))">
+                    {{ detectHintCopied === probeHint(r.agent) ? "copied" : "copy" }}
+                  </button>
+                </template>
+                <template v-else-if="r.agent.compatibility.status === 'upgrade_recommended'">
+                  upgrade recommended
+                </template>
+                <template v-else>use a supported release</template>
+              </span>
               <details v-if="r.agent.installed && r.agent.update" class="detect-update-detail">
                 <summary :style="{ color: updateColor(r.agent.update) }">
                   {{ updateLabel(r.agent.update) }}

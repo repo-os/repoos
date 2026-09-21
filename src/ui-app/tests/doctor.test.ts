@@ -4,12 +4,21 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  checkAgentCompatibility,
+  compatibilityFindingSeverity,
+  compatibilityRemediation,
   doctorRemediations,
   findConfigValueProblems,
   isKnownConfigKey,
   runDoctor,
   type DoctorReport,
 } from "../../core/doctor";
+import { parseDoctorArgs } from "../../commands/doctor";
+import {
+  compatibilityForContract,
+  type AgentCompatibilityContract,
+} from "../../core/agent-compatibility";
+import type { RepoOSConfig } from "../../core/types";
 
 const dirs: string[] = [];
 
@@ -266,5 +275,96 @@ describe("config key and value helpers", () => {
     const fixes = doctorRemediations(report);
     expect(fixes.length).toBeGreaterThan(0);
     expect(new Set(fixes).size).toBe(fixes.length);
+  });
+});
+
+describe("doctor compatibility bridge and probe arguments", () => {
+  it("maps compatibility statuses to severities — only unsupported fails", () => {
+    expect(compatibilityFindingSeverity("verified")).toBe("pass");
+    expect(compatibilityFindingSeverity("unsupported")).toBe("fail");
+    for (const status of ["upgrade_recommended", "newer_than_verified", "not_probed"] as const) {
+      expect(compatibilityFindingSeverity(status)).toBe("warn");
+    }
+  });
+
+  it("parses every live-probe argument shape, including a missing value", () => {
+    const base = { json: false, yes: false, probe: null, probeMissingValue: false };
+    expect(parseDoctorArgs(["doctor"])).toEqual(base);
+    expect(parseDoctorArgs(["doctor", "--json", "--probe", "kiro"])).toEqual({
+      json: true,
+      yes: false,
+      probe: "kiro",
+      probeMissingValue: false,
+    });
+    expect(parseDoctorArgs(["doctor", "--probe", "opencode", "--yes"])).toEqual({
+      json: false,
+      yes: true,
+      probe: "opencode",
+      probeMissingValue: false,
+    });
+    // `--probe` at the end, or followed by another flag, is a usage error — it
+    // must not silently fall through to the static report.
+    expect(parseDoctorArgs(["doctor", "--probe"])).toEqual({ ...base, probeMissingValue: true });
+    expect(parseDoctorArgs(["doctor", "--probe", "--yes"])).toEqual({
+      json: false,
+      yes: true,
+      probe: null,
+      probeMissingValue: true,
+    });
+  });
+
+  it("adds a warn finding for an enabled harness that is not installed", async () => {
+    // The configured `name` is the *role* ("Data analyst"), not the harness; the
+    // finding must title with the canonical harness name so several roles do not
+    // each produce a differently-labelled finding for the same CLI.
+    const config = {
+      agents: [{ cli: "opencode", name: "Data analyst", enabled: true }],
+    } as unknown as RepoOSConfig;
+    const findings = await checkAgentCompatibility(config, tools());
+    const matching = findings.filter((f) => f.id === "runtime.compatibility.opencode");
+    expect(matching).toHaveLength(1);
+    expect(matching[0].severity).toBe("warn");
+    expect(matching[0].title).toContain("OpenCode");
+    expect(matching[0].title).not.toContain("Data analyst");
+  });
+
+  it("returns no compatibility findings when nothing is enabled", async () => {
+    const config = { agents: [] } as unknown as RepoOSConfig;
+    expect(await checkAgentCompatibility(config, tools())).toEqual([]);
+  });
+
+  it("points an uncertified harness at the probe, never at a redundant upgrade", () => {
+    const certified: AgentCompatibilityContract = {
+      cli: "opencode",
+      name: "OpenCode",
+      supportedMajor: 2,
+      supportedRange: ">=2.0.0 <3.0.0",
+      newestCertifiedVersion: "2.1.0",
+      knownIncompatibleRanges: [">=3.0.0"],
+      requiredCapabilities: ["version"],
+      verifiedAt: "2026-09-01",
+      verificationSource: "repoos doctor --probe opencode --yes (fixture)",
+      upgradeGuidance: "Install the current OpenCode v2 release.",
+      officialUrl: "https://opencode.ai/docs/",
+    };
+    const uncertified: AgentCompatibilityContract = {
+      ...certified,
+      newestCertifiedVersion: null,
+      verifiedAt: null,
+      verificationSource: null,
+    };
+    const at = (contract: AgentCompatibilityContract, version: string) =>
+      compatibilityRemediation(
+        "opencode",
+        compatibilityForContract(contract, { version, drivable: true }),
+      );
+
+    expect(at(certified, "opencode v2.1.0")).toBeNull();
+    expect(at(certified, "opencode v2.2.0")).toMatch(/--probe opencode/);
+    expect(at(certified, "opencode v1.9.0")).toMatch(/Install the current OpenCode v2/);
+    expect(at(certified, "opencode v3.0.0")).toMatch(/Install the current OpenCode v2/);
+    // The shipped, uncertified manifest: still on the supported line, so the
+    // action is a probe — not "upgrade" to the release you already have.
+    expect(at(uncertified, "opencode v2.1.0")).toMatch(/--probe opencode/);
   });
 });

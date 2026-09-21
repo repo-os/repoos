@@ -11,6 +11,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { accessSync, constants } from "node:fs";
 import { delimiter, join } from "node:path";
 import { AGENT_CLIS } from "./config.js";
+import { compatibilityForAgent, type AgentCompatibility } from "./agent-compatibility.js";
 
 /** A coding agent RepoOS knows about, regardless of whether it is installed. */
 export interface KnownAgent {
@@ -78,6 +79,8 @@ export interface DetectedAgent extends KnownAgent {
    * - `null` — no probe available, or it timed out / returned unparseable output
    */
   auth: boolean | null;
+  /** Version-contract result; this is advisory and does not replace capability checks. */
+  compatibility?: AgentCompatibility;
 }
 
 /** Default ceiling on the `--version` probe, ms. A hung binary is SIGKILLed. */
@@ -322,6 +325,8 @@ export interface DetectOptions {
   versionTimeoutMs?: number;
   /** Agent list to probe (tests inject a narrowed list). */
   agents?: readonly KnownAgent[];
+  /** Whether to run the CLI auth probe too. Default: true. */
+  probeAuth?: boolean;
 }
 
 /**
@@ -425,6 +430,7 @@ export async function detectAgents(opts: DetectOptions = {}): Promise<DetectedAg
   const pathEnv = opts.pathEnv ?? process.env.PATH ?? "";
   const timeoutMs = opts.versionTimeoutMs ?? VERSION_TIMEOUT_MS;
   const list = opts.agents ?? KNOWN_AGENTS;
+  const probeAuth = opts.probeAuth ?? true;
 
   const rows = await Promise.all(
     list.map(async (agent) => {
@@ -437,6 +443,11 @@ export async function detectAgents(opts: DetectOptions = {}): Promise<DetectedAg
           version: null,
           headless: null,
           auth: null,
+          compatibility: compatibilityForAgent({
+            cli: agent.cli,
+            version: null,
+            drivable: agent.drivable,
+          }),
         };
       }
       const appBundle = isAppBundleBinary(resolved);
@@ -451,7 +462,7 @@ export async function detectAgents(opts: DetectOptions = {}): Promise<DetectedAg
       const desktopOnly =
         appBundle || (agent.id === "opencode" && isDesktopOutputSignature(version));
       let auth: boolean | null = null;
-      if (!desktopOnly && agent.authCheckArgs?.length) {
+      if (probeAuth && !desktopOnly && agent.authCheckArgs?.length) {
         try {
           auth = await captureAuthState(resolved, agent.authCheckArgs, timeoutMs);
         } catch {
@@ -465,6 +476,7 @@ export async function detectAgents(opts: DetectOptions = {}): Promise<DetectedAg
         version,
         headless: !desktopOnly,
         auth,
+        compatibility: compatibilityForAgent({ cli: agent.cli, version, drivable: agent.drivable }),
       };
     }),
   );

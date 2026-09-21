@@ -6711,6 +6711,10 @@
   white-space: nowrap;
   flex: none;
 }
+
+.detect-compatibility-pill {
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+}
 .detect-updates-btn {
   margin-left: auto;
 }

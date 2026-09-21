@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "contracts": [
+    {
+      "cli": "opencode",
+      "name": "OpenCode",
+      "supportedMajor": 2,
+      "supportedRange": ">=2.0.0 <3.0.0",
+      "newestCertifiedVersion": null,
+      "knownIncompatibleRanges": [],
+      "requiredCapabilities": [
+        "version",
+        "help",
+        "model-discovery",
+        "headless-one-shot",
+        "structured-events",
+        "auto-permissions",
+        "session-continuation",
+        "cancellation"
+      ],
+      "verifiedAt": null,
+      "verificationSource": null,
+      "upgradeGuidance": "Install the current OpenCode v2 release, then review its local capabilities and this compatibility contract before important work.",
+      "officialUrl": "https://opencode.ai/docs/"
+    }
+  ]
+}

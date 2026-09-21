@@ -6,8 +6,11 @@
  * hand work to an agent — and if not, what exact action fixes it? Every check
  * is strictly read-only: no init, config write, login, install, network call,
  * process kill, task dispatch or git mutation. It never contacts a model
- * provider and never spends tokens; agent CLIs are detected by resolving their
- * binary on PATH, never by running them.
+ * provider and never spends tokens. Agent CLIs are detected by resolving their
+ * binary on PATH, and an enabled harness also gets a bounded, credential-free
+ * `--version` read so its compatibility contract can be classified — but no
+ * model turn is ever run. (The opt-in live probe lives in the CLI wrapper,
+ * `repoos doctor --probe`, not in this engine.)
  *
  * The engine is pure-ish and returns a structured, versioned `DoctorReport`.
  * The CLI (`src/commands/doctor.ts`) and, later, the support bundle (#0453) and
@@ -38,7 +41,13 @@ import {
 import { resolveCheckPlan, type CheckPlan } from "./check-plan.js";
 import { isBun, preferBunForDevTasks } from "./runtime.js";
 import { detectPackageManager } from "./bootstrap.js";
-import { KNOWN_AGENTS } from "./detect.js";
+import { detectAgents, KNOWN_AGENTS } from "./detect.js";
+import {
+  AGENT_COMPATIBILITY_MANIFEST,
+  compatibilityForDetectedAgent,
+  type AgentCompatibility,
+  type CompatibilityStatus,
+} from "./agent-compatibility.js";
 import { parseDocument } from "./frontmatter.js";
 import { isGitRepo } from "./git.js";
 import { portListening } from "./net-probe.js";
@@ -119,6 +128,109 @@ export interface DoctorOptions {
   hasBinary?: (tool: string) => boolean;
   /** RepoOS version string to stamp into the report. */
   version?: string | null;
+}
+
+/**
+ * Map a compatibility status to a doctor severity. Exported so the contract
+ * that only `unsupported` fails the run (and the exit code) is unit-tested
+ * directly, independent of live binary detection.
+ */
+export function compatibilityFindingSeverity(status: CompatibilityStatus): DoctorSeverity {
+  if (status === "verified") return "pass";
+  if (status === "unsupported") return "fail";
+  return "warn";
+}
+
+/**
+ * The next step shown for a compatibility finding. A release we have not
+ * certified yet needs a probe, not "upgrade" — telling someone already on the
+ * current v2 line to install it is misleading.
+ */
+export function compatibilityRemediation(cli: string, result: AgentCompatibility): string | null {
+  if (result.status === "verified") return null;
+  const needsProbe =
+    result.contract !== null &&
+    (result.status === "not_probed" || result.status === "newer_than_verified");
+  if (needsProbe) {
+    return `Run \`repoos doctor --probe ${cli} --yes\` to validate this release against the adapter contract before important work`;
+  }
+  return (
+    result.contract?.upgradeGuidance ??
+    "Review the harness release guidance and verify its local capabilities before important work"
+  );
+}
+
+export async function checkAgentCompatibility(
+  config: RepoOSConfig,
+  hasBin: (tool: string) => boolean,
+): Promise<DoctorFinding[]> {
+  const enabled = (config.agents ?? []).filter(
+    (a): a is NonNullable<typeof a> => !!a && a.enabled === true && typeof a.cli === "string",
+  );
+  if (enabled.length === 0) return [];
+
+  const enabledClis = new Set(enabled.map((agent) => agent.cli));
+  const configured = KNOWN_AGENTS.filter(
+    (agent) => agent.cli && enabledClis.has(agent.cli) && hasBin(agent.binary),
+  );
+
+  const rows = await detectAgents({ agents: configured, probeAuth: false });
+  const byCli = new Map<string, ReturnType<typeof compatibilityForDetectedAgent>>();
+  for (const row of rows) {
+    if (!row.cli) continue;
+    byCli.set(row.cli, compatibilityForDetectedAgent(row));
+  }
+
+  const findings: DoctorFinding[] = [];
+  for (const entry of enabled) {
+    const cli = entry.cli!;
+    if (!enabledClis.has(cli)) continue;
+    const row = rows.find((agent) => agent.cli === cli);
+    const result = row ? (byCli.get(cli) ?? compatibilityForDetectedAgent(row)) : null;
+    // Title with the canonical harness name, not the configured role name: if a
+    // user enables several `opencode` roles, the deduped finding must not read
+    // "data analyst: not yet probed".
+    const harnessName =
+      result?.contract?.name ??
+      AGENT_COMPATIBILITY_MANIFEST.contracts.find((c) => c.cli === cli)?.name ??
+      KNOWN_AGENTS.find((agent) => agent.cli === cli)?.name ??
+      entry.name ??
+      cli;
+
+    if (!row || !result) {
+      findings.push(
+        finding(
+          `runtime.compatibility.${cli}`,
+          "runtime",
+          "warn",
+          `${harnessName} is not installed`,
+          "The configured harness is not installed on PATH, so RepoOS cannot assess its compatibility.",
+          "Install the harness using its official instructions, then refresh the Agents page",
+        ),
+      );
+      continue;
+    }
+
+    const severity = compatibilityFindingSeverity(result.status);
+    const remediation = compatibilityRemediation(cli, result);
+    findings.push(
+      finding(
+        `runtime.compatibility.${cli}`,
+        "runtime",
+        severity,
+        `${harnessName}: ${result.label}`,
+        `${result.explanation} Installed: ${result.installedVersion ?? "unknown"}; certified: ${result.newestCertifiedVersion ?? "none"}.`,
+        remediation,
+      ),
+    );
+  }
+
+  const deduped = new Map<string, DoctorFinding>();
+  for (const findingRecord of findings) {
+    const key = findingRecord.id;
+    deduped.set(key, findingRecord);
+  }
+  return [...deduped.values()];
 }
 
 // ── Small helpers ───────────────────────────────────────────────────────────
@@ -1376,6 +1488,9 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorReport>
     ...(await guard("config", "config.error", () => checkConfig(root, config))),
     ...(await guard("layout", "layout.error", () => checkLayout(root, config))),
     ...(await guard("runtime", "runtime.error", () => checkRuntime(root, config, hasBin, plan))),
+    ...(await guard("runtime", "runtime.compatibility.error", () =>
+      checkAgentCompatibility(config, hasBin),
+    )),
     ...(await guard("gate", "gate.error", () => checkGate(plan))),
     ...(await guard("lifecycle", "lifecycle.error", () => checkLifecycle(root, config, opts))),
     ...(await guard("secrets", "secrets.error", () => checkSecrets(config, process.env))),

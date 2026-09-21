@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-21T18:19:30Z"
-review_passes: 8
 id: "0466"
 title: Add versioned coding-harness compatibility contracts
 type: feature
@@ -12,10 +10,11 @@ created_by: ""
 branch: feat/add-versioned-coding-harness-compatibili
 cli_override: github copilot
 model_override: default
-review_cli_override: cursor
-review_model_override: auto
+review_model_override: default
 created_at: "2026-09-21T09:13:33Z"
+updated_at: "2026-09-21T18:15:12Z"
 handoff_signal_retry_count: 2
+review_passes: 7
 review_rounds: 2
 ---
 ## Outcome
@@ -105,6 +104,3 @@ Create a sustainable versioned coding-harness compatibility policy. Support the 
 - 2026-09-21T18:13:52Z · status active→review
 - 2026-09-21T18:15:10Z · status review→active
 - 2026-09-21T18:15:11Z · status active→review
-- 2026-09-21T18:15:51Z · review_cli_override
-- 2026-09-21T18:15:53Z · review_model_override
-
