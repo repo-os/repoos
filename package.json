@@ -63,7 +63,7 @@
     "access": "public"
   },
   "devDependencies": {
-    "@playwright/test": "1.40.0",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/jsdom": "^30.0.0",
     "@types/node": "^26.2.0",
