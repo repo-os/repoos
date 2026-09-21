@@ -2,16 +2,16 @@
 id: "0472"
 title: Embed selected RepoOS servers in an isolated macOS WebKit container
 type: feature
-status: ready
+status: active
 priority: p1
 area: desktop
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/embed-selected-repoos-servers-in-an-isol
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-09-21T11:50:26Z"
-updated_at: "2026-09-21T18:37:13Z"
+updated_at: "2026-09-21T18:37:16Z"
 ---
 Let the macOS Hub open the selected saved RepoOS server in the main content area while preserving the native shell’s security boundary.
 
@@ -33,3 +33,4 @@ Depends on the architecture, project scaffold, and server registry tasks. Do not
 - 2026-09-21T12:07:02Z · status inbox→ready
 - 2026-09-21T18:37:11Z · cli_override
 - 2026-09-21T18:37:13Z · model_override
+- 2026-09-21T18:37:16Z · status ready→active, branch
