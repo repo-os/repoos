@@ -8,8 +8,9 @@ area: desktop
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: codex
 created_at: "2026-09-21T11:50:24Z"
-updated_at: "2026-09-21T12:06:59Z"
+updated_at: "2026-09-21T13:28:02Z"
 ---
 After the macOS Hub architecture/security contract is approved, add a standalone macOS application project as a sibling to mobile/, without adding runtime dependencies to the core repoos package.
 
@@ -28,3 +29,4 @@ Follow the approved architecture task. Keep this foundation small; server regist
 - 2026-09-21T11:50:24Z · created · unknown
 - 2026-09-21T11:52:34Z · body
 - 2026-09-21T12:06:59Z · status inbox→ready
+- 2026-09-21T13:28:02Z · cli_override
