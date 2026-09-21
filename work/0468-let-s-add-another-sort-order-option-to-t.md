@@ -2,17 +2,17 @@
 id: "0468"
 title: Add task number sort options to work page
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/add-task-number-sort-options-to-work-pag
 cli_override: github copilot
 model_override: default
 pm_cli_override: github copilot
 created_at: "2026-09-21T11:33:55Z"
-updated_at: "2026-09-21T11:53:05Z"
+updated_at: "2026-09-21T11:53:10Z"
 ---
 ## Problem
 
@@ -71,3 +71,4 @@ Let's add another sort order option to the work page: order by task number newes
 - 2026-09-21T11:53:00Z · cli_override, model_override
 - 2026-09-21T11:53:01Z · cli_override
 - 2026-09-21T11:53:05Z · status inbox→ready
+- 2026-09-21T11:53:10Z · status ready→active, branch
