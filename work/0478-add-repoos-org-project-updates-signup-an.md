@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p2
 area: landing
+story: Email subscriber list
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-21T12:08:58Z"
-updated_at: "2026-09-21T12:08:58Z"
+updated_at: "2026-09-21T20:11:02Z"
 ---
 ## Problem
 
@@ -40,3 +41,4 @@ Run after #0477 (Build Neon Functions double-opt-in updates service).
 ## Activity
 
 - 2026-09-21T12:08:58Z · created · unknown
+- 2026-09-21T20:11:02Z · story
