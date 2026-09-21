@@ -113,6 +113,7 @@ describe("repoos.toml and environment docs", () => {
       expect(cfg.auth?.enabled).toBe(false);
       expect(cfg.release?.enabled).toBe(false);
       expect(cfg.release?.provider).toBe("git-tag");
+      expect(cfg.stories?.enabled).toBe(false);
       expect(cfg.deployments?.[0]?.dashboardUrl).toBe("https://dash.cloudflare.com/…");
       expect(cfg.distribution?.[0]?.kind).toBe("npm");
       expect(cfg.tunnelEnabled).toBe(false);

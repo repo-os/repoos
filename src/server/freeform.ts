@@ -14,6 +14,8 @@ export interface GeneratedTaskInput {
   type?: string;
   priority?: string;
   area?: string;
+  /** Optional cross-area delivery slice (a "story"). */
+  story?: string;
   assignedTo?: string;
   body: string;
   /**
@@ -145,6 +147,7 @@ export function parseGeneratedTask(rawOutput: string): GeneratedTaskInput {
       type: firstMatch(data.type, TASK_TYPES),
       priority: firstMatch(data.priority, PRIORITIES),
       area: typeof data.area === "string" && data.area.trim() ? data.area.trim() : undefined,
+      story: typeof data.story === "string" && data.story.trim() ? data.story.trim() : undefined,
       assignedTo:
         typeof data.assigned_to === "string" && data.assigned_to.trim()
           ? data.assigned_to.trim()

@@ -67,6 +67,12 @@ export interface TaskFrontmatter {
   /** True when a legitimate no-op task opts out of the vacuous-handoff rejection. */
   no_source_change?: boolean;
   area?: string;
+  /**
+   * Optional cross-area delivery slice this task belongs to (a "story"). Free
+   * text, whitespace-normalized; grouping is case-insensitive. There is no
+   * story file or status — a story is derived entirely from its tagged tasks.
+   */
+  story?: string;
   assigned_to?: string;
   created_by?: string;
   branch?: string;
@@ -119,6 +125,8 @@ export interface Task {
   noSourceChange: boolean;
   priority: Priority | string;
   area: string;
+  /** Optional cross-area delivery slice; empty string means untagged. */
+  story?: string;
   assignee: Assignee;
   /** Raw assigned_to value, e.g. "ai", "nick", "product". */
   assignedTo: string;
@@ -397,6 +405,12 @@ export interface RepoOSConfig {
   /** Optional product-release integration. Omitted means the Releases UI is hidden. */
   release?: ReleaseConfig;
   /**
+   * Optional Stories page (cross-area delivery tracking). Absent, malformed, or
+   * `enabled = false` keeps every story surface — nav item, route entry point
+   * and task-edit control — entirely dormant, with no change to existing boards.
+   */
+  stories?: StoriesConfig;
+  /**
    * Distribution destinations shown as the Releases page's "Published to"
    * summary (a `[[distribution]]` array of tables). Omitted/empty keeps the
    * existing Releases experience with no extra section. See [DistributionConfig].
@@ -495,6 +509,18 @@ export interface DeploymentConfig {
    * signal.
    */
   subdir?: string;
+}
+
+/**
+ * Opt-in configuration for the Stories page, from `repoos.toml`'s `[stories]`
+ * section. A story is optional task metadata (`story:` frontmatter) grouped
+ * into named delivery slices — it is not a second task system: no worktree,
+ * agent, branch, independent status or hierarchy. When disabled (the default)
+ * nothing about the existing board changes.
+ */
+export interface StoriesConfig {
+  /** Whether the Stories page and its navigation item are shown. Default false. */
+  enabled?: boolean;
 }
 
 /**
@@ -1040,6 +1066,8 @@ export interface BoardTask {
   needsMerge: boolean;
   priority: Priority | string;
   area: string;
+  /** Optional cross-area delivery slice; empty string means untagged. */
+  story?: string;
   assignee: Assignee;
   assignedTo: string;
   createdBy: string;
