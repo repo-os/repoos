@@ -3,6 +3,8 @@ id: "0480"
 title: Add opt-in Stories page for cross-area delivery tracking
 type: feature
 status: active
+needs_input: true
+needs_input_reason: watchdog-stuck
 priority: p2
 area: web + core
 assigned_to: ai
@@ -11,7 +13,7 @@ branch: feat/add-opt-in-stories-page-for-cross-area-d
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-21T12:19:02Z"
-updated_at: "2026-09-21T14:27:05Z"
+updated_at: "2026-09-21T14:44:25Z"
 check_retry_count: 2
 last_check_failure: "[object Object]"
 dev_error_count: 3
@@ -69,3 +71,5 @@ After implementation, the project-updates email-list tasks (#0477, #0478, #0479)
 - 2026-09-21T13:18:21Z · needs_input
 - 2026-09-21T14:21:55Z · handoff failed · check failed after 2 automatic retries · repoos check failed: Automatic merge went well; stopped before committing as requested · Switched to a new branch 'feat/current' · Switched to a new branch 'feat/current' · Preparing worktree (new branch 'other/thing') · ❯ tests/mtd-docs-fast-path.test.ts (13 tests | 1 failed) 1854ms · × runs a declared bootstrap check without inventing a build step 326ms · Switched to a new branch 'other' · Switched to a new branch 'hotfix/0999-already'
 - 2026-09-21T14:27:05Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-09-21T14:35:35Z · handoff failed · check failed after 2 automatic retries · repoos check failed: [global-reap] removed 52 stale repoos-* fixture dirs from the tmpdir — a test is likely leaking. Check which prefix dominates (`ls "$TMPDIR" | grep '^repoos-' | sed 's/-[A-Za-z0-9]\{6\}.*//' | sort | uniq -c | sort -rn`). · ❯ tests/mtd-docs-fast-path.test.ts (13 tests | 1 failed) 1329ms · × runs a declared bootstrap check without inventing a build step 306ms · ❯ tests/task-watchdog.test.ts (35 tests | 1 failed) 22235ms · × does not touch a task with a running agent or a fresh activity entry 2755ms · Switched to a new branch 'feat/current' · Switched to a new branch 'feat/current' · Automatic merge went well; stopped before committing as requested
+- 2026-09-21T14:44:25Z · watchdog: escalated to needs_input · check-failed-after-retries · check failed after 2 automatic retries · repoos check failed: Automatic merge went well; stopped before committing as requested · Switched to a new branch 'feat/current' · Switched to a new branch 'feat/current' · Preparing worktree (new branch 'other/thing') · ❯ tests/mtd-docs-fast-path.test.ts (13 tests | 1 failed) 1854ms · × runs a declared bootstrap check without inventing a build step 326ms · Switched to a new branch 'other' · Switched to a new branch 'hotfix/0999-already' · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
