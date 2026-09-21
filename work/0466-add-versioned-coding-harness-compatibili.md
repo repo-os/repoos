@@ -8,8 +8,10 @@ area: agent
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: github copilot
+model_override: default
 created_at: "2026-09-21T09:13:33Z"
-updated_at: "2026-09-21T09:13:33Z"
+updated_at: "2026-09-21T10:47:13Z"
 ---
 ## Outcome
 
@@ -73,3 +75,4 @@ Create a sustainable versioned coding-harness compatibility policy. Support the 
 ## Activity
 
 - 2026-09-21T09:13:33Z · created · unknown
+- 2026-09-21T10:47:13Z · cli_override, model_override
