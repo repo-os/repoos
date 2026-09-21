@@ -80,6 +80,30 @@ enum ServerOriginNormalizer {
         url.absoluteString
     }
 
+    /// Compares URL origins, deliberately ignoring paths such as `/api/health`.
+    static func hasSameOrigin(_ lhs: URL, _ rhs: URL) -> Bool {
+        guard
+            let lhsScheme = lhs.scheme?.lowercased(),
+            let rhsScheme = rhs.scheme?.lowercased(),
+            let lhsHost = lhs.host?.lowercased(),
+            let rhsHost = rhs.host?.lowercased()
+        else {
+            return false
+        }
+        return lhsScheme == rhsScheme
+            && lhsHost == rhsHost
+            && effectivePort(for: lhs) == effectivePort(for: rhs)
+    }
+
+    private static func effectivePort(for url: URL) -> Int? {
+        guard let scheme = url.scheme?.lowercased() else { return url.port }
+        switch scheme {
+        case "https": return url.port ?? 443
+        case "http": return url.port ?? 80
+        default: return url.port
+        }
+    }
+
     /// Plain HTTP is permitted only for a loopback development server. This
     /// intentionally does not treat private-network hosts as local.
     static func isLoopbackHost(_ host: String?) -> Bool {

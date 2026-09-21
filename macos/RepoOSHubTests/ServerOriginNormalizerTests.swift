@@ -41,6 +41,18 @@ final class ServerOriginNormalizerTests: XCTestCase {
         }
     }
 
+    func testComparesOriginWithoutTreatingHealthPathAsRedirect() {
+        let origin = URL(string: "http://localhost:7171")!
+        let healthURL = URL(string: "http://localhost:7171/api/health")!
+        XCTAssertTrue(ServerOriginNormalizer.hasSameOrigin(healthURL, origin))
+    }
+
+    func testOriginComparisonRejectsDifferentPort() {
+        let origin = URL(string: "http://localhost:7171")!
+        let other = URL(string: "http://localhost:7172/api/health")!
+        XCTAssertFalse(ServerOriginNormalizer.hasSameOrigin(other, origin))
+    }
+
     func testRejectsQueryAndPath() {
         XCTAssertThrowsError(try ServerOriginNormalizer.normalizeOriginInput("https://example.com/api")) { error in
             XCTAssertEqual(error as? ServerOriginError, .pathNotAllowed)

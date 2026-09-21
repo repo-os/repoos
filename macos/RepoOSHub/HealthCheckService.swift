@@ -41,8 +41,7 @@ final class HealthCheckRedirectGuard: NSObject, URLSessionTaskDelegate {
             completionHandler(nil)
             return
         }
-        if ServerOriginNormalizer.canonicalOriginKey(for: target)
-            != ServerOriginNormalizer.canonicalOriginKey(for: expectedOrigin)
+        if !ServerOriginNormalizer.hasSameOrigin(target, expectedOrigin)
         {
             completionHandler(nil)
             return
@@ -82,10 +81,7 @@ struct RepoOSHealthChecker: HealthChecking {
             guard let http = response as? HTTPURLResponse else {
                 return .failure(.invalidJSON)
             }
-            if http.url.map({
-                ServerOriginNormalizer.canonicalOriginKey(for: $0)
-                    != ServerOriginNormalizer.canonicalOriginKey(for: origin)
-            }) == true {
+            if http.url.map({ !ServerOriginNormalizer.hasSameOrigin($0, origin) }) == true {
                 return .failure(.redirect(http.url ?? origin))
             }
             guard (200 ... 299).contains(http.statusCode) else {

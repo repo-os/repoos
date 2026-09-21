@@ -235,8 +235,7 @@ struct ServerWebView: NSViewRepresentable {
             model.isLoading = false
             model.loadFailure = nil
             if let url = webView.url,
-               ServerOriginNormalizer.canonicalOriginKey(for: url)
-                   == ServerOriginNormalizer.canonicalOriginKey(for: model.origin)
+               ServerOriginNormalizer.hasSameOrigin(url, model.origin)
             {
                 let path = url.path.isEmpty ? "/" : url.path
                 appState.recordRouteVisit(serverID: model.serverID, path: path, title: webView.title)
