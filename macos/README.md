@@ -5,10 +5,11 @@ independent from the root TypeScript package: the server and web application do
 not import, build, or package anything from `macos/`, and the macOS target has
 no third-party dependencies.
 
-The first scaffold renders a harmless local placeholder workspace. It does not
-load remote content, persist server records, use WebKit, expose a JavaScript
-bridge, or access credentials. Server registry and isolated WebKit loading are
-follow-up features covered by the macOS Hub architecture ADR.
+The scaffold ships a native sidebar workspace with a **local server registry**
+(Application Support JSON). Adding or editing a server normalizes HTTPS origins,
+calls `GET /api/health` with a 10-second timeout, and only then persists the
+entry. The main content area shows the selected server and connection recovery
+actions; isolated WebKit loading is a follow-up task.
 
 ## Requirements
 
