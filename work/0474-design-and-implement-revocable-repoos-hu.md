@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-09-21T15:11:19Z"
-review_passes: 1
+updated_at: "2026-09-21T15:18:22Z"
+review_passes: 2
 id: "0474"
 title: Design and implement revocable RepoOS Hub read capabilities and summary API
 type: feature
@@ -43,4 +43,5 @@ Depends on the macOS Hub architecture task. This task is intentionally independe
 - 2026-09-21T14:02:57Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-09-21T15:09:07Z · status active→review
 - 2026-09-21T15:09:08Z · agent exited with an error (codex) · 2026-09-21T14:02:58.619784Z  WARN codex_core::agents_md: project doc exceeds remaining budget; truncating path=file:///Users/nick/code/nick/repoos-worktrees/feat/design-and-implement-revocable-repoos-hu/AGENTS.md remaining_bytes=32768
+
 
