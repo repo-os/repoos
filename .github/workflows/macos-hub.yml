@@ -1,0 +1,40 @@
+name: macOS Hub
+
+on:
+  pull_request:
+    paths:
+      - "macos/**"
+      - ".github/workflows/macos-hub.yml"
+  push:
+    branches: [main]
+    paths:
+      - "macos/**"
+      - ".github/workflows/macos-hub.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build and test native Hub
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build without signing
+        run: >-
+          xcodebuild -project macos/RepoOSHub.xcodeproj
+          -scheme RepoOSHub
+          -configuration Debug
+          -sdk macosx
+          -derivedDataPath macos/.derived-data
+          CODE_SIGNING_ALLOWED=NO build
+
+      - name: Run unit tests without signing
+        run: >-
+          xcodebuild -project macos/RepoOSHub.xcodeproj
+          -scheme RepoOSHub
+          -destination 'platform=macOS'
+          -derivedDataPath macos/.derived-data
+          CODE_SIGNING_ALLOWED=NO test
