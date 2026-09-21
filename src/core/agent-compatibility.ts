@@ -16,8 +16,8 @@ export interface AgentCompatibilityContract {
   newestCertifiedVersion: string;
   knownIncompatibleRanges: string[];
   requiredCapabilities: string[];
-  verifiedAt: string;
-  verificationSource: string;
+  verifiedAt: string | null;
+  verificationSource: string | null;
   upgradeGuidance: string;
   officialUrl: string;
 }
@@ -53,6 +53,55 @@ function compareVersion(a: [number, number, number], b: [number, number, number]
   return 0;
 }
 
+function parseRangeOperatorToken(
+  token: string,
+): { op: string; value: [number, number, number] } | null {
+  const match = token.match(/^(>=|<=|==|=|>|<)\s*(\d+(?:\.\d+){0,2})$/i);
+  if (!match) return null;
+  const value = parseAgentVersion(match[2]);
+  if (!value) return null;
+  return { op: match[1], value };
+}
+
+function versionSatisfiesRange(version: [number, number, number], range: string): boolean {
+  const normalized = range.trim();
+  if (!normalized) return false;
+  const tokens = normalized.split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return false;
+
+  if (tokens.length === 1) {
+    const operator = parseRangeOperatorToken(tokens[0]);
+    if (!operator) {
+      const exact = parseAgentVersion(tokens[0]);
+      return exact ? compareVersion(version, exact) === 0 : false;
+    }
+    const cmp = compareVersion(version, operator.value);
+    if (operator.op === ">=") return cmp >= 0;
+    if (operator.op === ">") return cmp > 0;
+    if (operator.op === "<=") return cmp <= 0;
+    if (operator.op === "<") return cmp < 0;
+    return cmp === 0;
+  }
+
+  const rangeChecks = tokens.map((token) => parseRangeOperatorToken(token)).filter(Boolean) as {
+    op: string;
+    value: [number, number, number];
+  }[];
+  if (rangeChecks.length !== tokens.length) {
+    const exact = parseAgentVersion(normalized);
+    return exact ? compareVersion(version, exact) === 0 : false;
+  }
+
+  return rangeChecks.every(({ op, value }) => {
+    const cmp = compareVersion(version, value);
+    if (op === ">=") return cmp >= 0;
+    if (op === ">") return cmp > 0;
+    if (op === "<=") return cmp <= 0;
+    if (op === "<") return cmp < 0;
+    return cmp === 0;
+  });
+}
+
 export function compatibilityForAgent(
   agent: Pick<DetectedAgent, "cli" | "version" | "drivable">,
 ): AgentCompatibility {
@@ -60,6 +109,7 @@ export function compatibilityForAgent(
     ? (AGENT_COMPATIBILITY_MANIFEST.contracts.find((entry) => entry.cli === agent.cli) ?? null)
     : null;
   const installed = parseAgentVersion(agent.version);
+  const hasEvidence = !!contract?.verifiedAt && !!contract?.verificationSource;
 
   if (!contract || !agent.drivable) {
     return {
@@ -87,24 +137,28 @@ export function compatibilityForAgent(
   }
 
   const newest = parseAgentVersion(contract.newestCertifiedVersion)!;
+  const isKnownIncompatible = contract.knownIncompatibleRanges.some((range) =>
+    versionSatisfiesRange(installed, range),
+  );
+  const isSupportedRange = versionSatisfiesRange(installed, contract.supportedRange);
+
   let status: CompatibilityStatus;
   let explanation: string;
   if (installed[0] < contract.supportedMajor) {
     status = "upgrade_recommended";
     explanation = `This is older than the certified ${contract.name} v${contract.supportedMajor} line. Local capability checks may still permit work.`;
-  } else if (
-    contract.knownIncompatibleRanges.some(
-      (range) => range.includes(">=") && installed[0] >= Number(range.match(/\d+/)?.[0] ?? 0),
-    )
-  ) {
+  } else if (isKnownIncompatible) {
     status = "unsupported";
     explanation = `This version family is known incompatible with the ${contract.name} adapter.`;
   } else if (compareVersion(installed, newest) > 0) {
     status = "newer_than_verified";
-    explanation = `This release is newer than the newest certified ${contract.name} release (${contract.newestCertifiedVersion}). Run the optional probe before important work.`;
-  } else if (installed[0] === contract.supportedMajor) {
+    explanation = `This release is newer than the newest tracked ${contract.name} release (${contract.newestCertifiedVersion}). Run the optional probe before important work.`;
+  } else if (isSupportedRange && hasEvidence) {
     status = "verified";
     explanation = `The ${contract.name} v${contract.supportedMajor} contract is certified through ${contract.newestCertifiedVersion}.`;
+  } else if (isSupportedRange) {
+    status = "not_probed";
+    explanation = `RepoOS tracks ${contract.name} v${contract.supportedMajor} in its compatibility manifest, but this release family has not yet been proven by a RepoOS adapter contract suite.`;
   } else {
     status = "unsupported";
     explanation = `This version family is outside the certified ${contract.name} range (${contract.supportedRange}).`;

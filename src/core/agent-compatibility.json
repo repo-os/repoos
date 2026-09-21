@@ -18,9 +18,9 @@
         "session-continuation",
         "cancellation"
       ],
-      "verifiedAt": "2026-09-21",
-      "verificationSource": "RepoOS adapter contract suite (OpenCode v2 fixture; live provider probe opt-in)",
-      "upgradeGuidance": "Install the latest OpenCode v2 release, then run the optional RepoOS harness probe before important work.",
+      "verifiedAt": null,
+      "verificationSource": "Pending: RepoOS has not yet validated an OpenCode v2 adapter contract suite in-repo.",
+      "upgradeGuidance": "Install the current OpenCode v2 release, then run the optional RepoOS compatibility probe before important work.",
       "officialUrl": "https://opencode.ai/docs/"
     }
   ]

@@ -325,6 +325,8 @@ export interface DetectOptions {
   versionTimeoutMs?: number;
   /** Agent list to probe (tests inject a narrowed list). */
   agents?: readonly KnownAgent[];
+  /** Whether to run the CLI auth probe too. Default: true. */
+  probeAuth?: boolean;
 }
 
 /**
@@ -428,6 +430,7 @@ export async function detectAgents(opts: DetectOptions = {}): Promise<DetectedAg
   const pathEnv = opts.pathEnv ?? process.env.PATH ?? "";
   const timeoutMs = opts.versionTimeoutMs ?? VERSION_TIMEOUT_MS;
   const list = opts.agents ?? KNOWN_AGENTS;
+  const probeAuth = opts.probeAuth ?? true;
 
   const rows = await Promise.all(
     list.map(async (agent) => {
@@ -459,7 +462,7 @@ export async function detectAgents(opts: DetectOptions = {}): Promise<DetectedAg
       const desktopOnly =
         appBundle || (agent.id === "opencode" && isDesktopOutputSignature(version));
       let auth: boolean | null = null;
-      if (!desktopOnly && agent.authCheckArgs?.length) {
+      if (probeAuth && !desktopOnly && agent.authCheckArgs?.length) {
         try {
           auth = await captureAuthState(resolved, agent.authCheckArgs, timeoutMs);
         } catch {

@@ -130,37 +130,64 @@ async function checkAgentCompatibility(
     (a): a is NonNullable<typeof a> => !!a && a.enabled === true && typeof a.cli === "string",
   );
   if (enabled.length === 0) return [];
-  const installed = new Set(
-    KNOWN_AGENTS.filter((agent) => hasBin(agent.binary)).map((agent) => agent.id),
+
+  const enabledClis = new Set(enabled.map((agent) => agent.cli));
+  const configured = KNOWN_AGENTS.filter(
+    (agent) => agent.cli && enabledClis.has(agent.cli) && hasBin(agent.binary),
   );
-  const rows = (await detectAgents()).filter((agent) => installed.has(agent.id));
-  return enabled.map((entry) => {
-    const row = rows.find((agent) => agent.cli === entry.cli);
-    if (!row) {
-      return finding(
-        `runtime.compatibility.${entry.cli}`,
-        "runtime",
-        "warn",
-        `${entry.name || entry.cli} compatibility not probed`,
-        "The configured harness is installed, but RepoOS could not collect a version.",
-        "open the Agents page and run the optional compatibility probe",
+  if (configured.length === 0) return [];
+
+  const rows = await detectAgents({ agents: configured, probeAuth: false });
+  const byCli = new Map<string, ReturnType<typeof compatibilityForDetectedAgent>>();
+  for (const row of rows) {
+    if (!row.cli) continue;
+    byCli.set(row.cli, compatibilityForDetectedAgent(row));
+  }
+
+  const findings: DoctorFinding[] = [];
+  for (const entry of enabled) {
+    const cli = entry.cli!;
+    if (!enabledClis.has(cli)) continue;
+    const row = rows.find((agent) => agent.cli === cli);
+    const result = row ? (byCli.get(cli) ?? compatibilityForDetectedAgent(row)) : null;
+
+    if (!row || !result) {
+      findings.push(
+        finding(
+          `runtime.compatibility.${cli}`,
+          "runtime",
+          "warn",
+          `${entry.name || cli} compatibility not probed`,
+          "The configured harness is installed, but RepoOS could not collect a version.",
+          "open the Agents page and run the optional compatibility probe",
+        ),
       );
+      continue;
     }
-    const result = compatibilityForDetectedAgent(row);
+
     const severity =
       result.status === "verified" ? "pass" : result.status === "unsupported" ? "fail" : "warn";
-    return finding(
-      `runtime.compatibility.${entry.cli}`,
-      "runtime",
-      severity,
-      `${entry.name || entry.cli}: ${result.label}`,
-      `${result.explanation} Installed: ${result.installedVersion ?? "unknown"}; certified: ${result.newestCertifiedVersion ?? "none"}.`,
-      result.status === "verified"
-        ? null
-        : (result.contract?.upgradeGuidance ??
-            "open the Agents page and run the optional compatibility probe"),
+    findings.push(
+      finding(
+        `runtime.compatibility.${cli}`,
+        "runtime",
+        severity,
+        `${entry.name || cli}: ${result.label}`,
+        `${result.explanation} Installed: ${result.installedVersion ?? "unknown"}; certified: ${result.newestCertifiedVersion ?? "none"}.`,
+        result.status === "verified"
+          ? null
+          : (result.contract?.upgradeGuidance ??
+              "open the Agents page and run the optional compatibility probe"),
+      ),
     );
-  });
+  }
+
+  const deduped = new Map<string, DoctorFinding>();
+  for (const findingRecord of findings) {
+    const key = findingRecord.id;
+    deduped.set(key, findingRecord);
+  }
+  return [...deduped.values()];
 }
 
 // ── Small helpers ───────────────────────────────────────────────────────────

@@ -7,16 +7,17 @@ against the latest certified line.
 
 ## Statuses
 
-- **Verified** — the release family is covered by the adapter contract suite.
+- **Verified** — the release family is covered by a real RepoOS adapter
+  contract suite and a recorded evidence source.
 - **Upgrade recommended** — the installed release is older than the supported
   line. RepoOS still permits work when local capability checks pass.
-- **Newer than verified** — the release is newer than RepoOS's last
+- **Newer than verified** — the release is newer than RepoOS's last tracked
   certification. It is not blocked; run the optional probe before important
   work.
 - **Unsupported** — a known incompatible family or a required local capability
   is missing.
-- **Not yet probed** — RepoOS could not parse a version or has not certified
-  that harness.
+- **Not yet probed** — RepoOS could not parse a version or has not yet
+  validated that harness with an in-repo contract suite.
 
 Compatibility is narrower than model quality, cost, or task success. A green
 model-selection check is not certification of the complete adapter contract.
@@ -25,7 +26,7 @@ model-selection check is not certification of the complete adapter contract.
 
 | Harness | Supported major/range | Newest certified | Status and notes | Verified |
 | --- | --- | --- | --- | --- |
-| [OpenCode](https://opencode.ai/docs/) | v2 (`>=2.0.0 <3.0.0`) | 2.0.0 | Contract fixture covers version/help, model discovery, headless one-shot, structured events, permissions, continuation, and cancellation. | 2026-09-21 |
+| [OpenCode](https://opencode.ai/docs/) | v2 (`>=2.0.0 <3.0.0`) | 2.0.0 | OpenCode v2 is tracked in the manifest, but the in-repo adapter contract suite is still pending; do not treat it as certified until evidence is added. | Pending |
 
 This table is derived from `src/core/agent-compatibility.json`; update that
 manifest and add contract evidence together when certifying a release. Do not

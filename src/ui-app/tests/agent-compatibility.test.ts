@@ -44,9 +44,17 @@ describe("agent compatibility contracts", () => {
     expect(breaking.status).toBe("unsupported");
   });
 
-  it("marks the certified major as verified", () => {
+  it("keeps currently tracked v2 releases as unverified until a contract suite exists", () => {
     expect(
       compatibilityForAgent({ cli: "opencode", version: "opencode v2.0.0", drivable: true }).status,
-    ).toBe("verified");
+    ).toBe("not_probed");
+  });
+
+  it("matches version ranges and known incompatible releases", () => {
+    expect(parseAgentVersion("opencode v2.0.0")).toEqual([2, 0, 0]);
+    expect(parseAgentVersion("2.0.0-beta.1")).toEqual([2, 0, 0]);
+    expect(
+      compatibilityForAgent({ cli: "opencode", version: "opencode v2.0.0", drivable: true }).status,
+    ).toBe("not_probed");
   });
 });

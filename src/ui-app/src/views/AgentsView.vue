@@ -962,7 +962,7 @@ onUnmounted(() => {
                 r.agent.version
               }}</span>
               <span
-                v-if="r.agent.drivable && r.agent.compatibility"
+                v-if="r.agent.compatibility"
                 class="detect-pill detect-compatibility-pill"
                 :style="{ color: compatibilityColor(r.agent) }"
                 :title="r.agent.compatibility.explanation"
