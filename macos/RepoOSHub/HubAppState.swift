@@ -12,23 +12,43 @@ final class HubAppState: ObservableObject {
     @Published var pinTaskContextServerID: UUID?
     @Published private(set) var workspaceNavigation = WorkspaceNavigationSnapshot.placeholder
     @Published private(set) var pendingNavigationRequest: HubNavigationRequest?
+    @Published var attentionSettingsServerID: UUID?
+    @Published private(set) var hubGlobalPreferences: HubGlobalPreferences = .default
 
     private let store: ServerRegistryStore
     private let healthChecker: HealthChecking
+    let attentionCoordinator: HubAttentionCoordinator
     private var document = ServerRegistryDocument()
 
-    init(store: ServerRegistryStore, healthChecker: HealthChecking) {
+    init(
+        store: ServerRegistryStore,
+        healthChecker: HealthChecking,
+        attentionCoordinator: HubAttentionCoordinator
+    ) {
         self.store = store
         self.healthChecker = healthChecker
+        self.attentionCoordinator = attentionCoordinator
+        self.attentionCoordinator.onSnapshotsUpdated = { [weak self] in
+            self?.objectWillChange.send()
+        }
         reloadFromDisk()
     }
 
     convenience init() {
         let directory = ServerRegistryStore.applicationSupportDirectory()
-        self.init(store: ServerRegistryStore(directoryURL: directory), healthChecker: RepoOSHealthChecker())
+        let coordinator = HubAttentionCoordinator()
+        self.init(
+            store: ServerRegistryStore(directoryURL: directory),
+            healthChecker: RepoOSHealthChecker(),
+            attentionCoordinator: coordinator
+        )
         if let selectedServerID {
             Task { await refreshHealth(for: selectedServerID) }
         }
+    }
+
+    func attentionSnapshot(for serverID: UUID) -> ServerAttentionSnapshot? {
+        attentionCoordinator.snapshots[serverID]
     }
 
     var selectedEntry: ServerEntry? {
@@ -80,7 +100,9 @@ final class HubAppState: ObservableObject {
                 selectedServerID = entries.first?.id
             }
             pruneOrphanNavigationMetadata()
+            hubGlobalPreferences = document.hubGlobalPreferences
             restorePendingRouteForSelectedServer()
+            syncAttentionCoordinator()
         } catch {
             document = ServerRegistryDocument()
             entries = []
@@ -93,11 +115,67 @@ final class HubAppState: ObservableObject {
         selectedServerID = id
         document.lastSelectedServerID = id
         workspaceNavigation = .placeholder
+        ServerWebsiteDataStorePool.shared.releaseCachedStores(except: id)
         persistQuietly()
         restorePendingRouteForSelectedServer()
+        attentionCoordinator.setSelectedServerID(id)
+        syncAttentionCoordinator()
         if let id {
             Task { await refreshHealth(for: id) }
         }
+    }
+
+    func presentAttentionSettings(for entry: ServerEntry) {
+        attentionSettingsServerID = entry.id
+    }
+
+    func dismissAttentionSettingsSheet() {
+        attentionSettingsServerID = nil
+    }
+
+    func saveHubCapability(for entry: ServerEntry, token: String) throws {
+        try attentionCoordinator.saveCapabilityToken(serverID: entry.id, origin: entry.originString, token: token)
+        syncAttentionCoordinator()
+    }
+
+    func removeHubCapability(for entry: ServerEntry) {
+        attentionCoordinator.deleteCapabilityToken(serverID: entry.id, origin: entry.originString)
+        syncAttentionCoordinator()
+    }
+
+    func updateAttentionPreferences(
+        for serverID: UUID,
+        aggregationEnabled: Bool,
+        notifyReviewReady: Bool,
+        notifyNeedsInput: Bool,
+        notifyActiveAgents: Bool
+    ) {
+        guard let index = document.entries.firstIndex(where: { $0.id == serverID }) else { return }
+        document.entries[index].attentionAggregationEnabled = aggregationEnabled
+        document.entries[index].notifyReviewReady = notifyReviewReady
+        document.entries[index].notifyNeedsInput = notifyNeedsInput
+        document.entries[index].notifyActiveAgents = notifyActiveAgents
+        document.entries[index].updatedAt = Date()
+        entries = document.entries.sorted(by: entrySort)
+        try? store.save(document)
+        syncAttentionCoordinator()
+    }
+
+    func updateHubGlobalPreferences(notificationsEnabled: Bool?, dockBadgeEnabled: Bool?) {
+        if let notificationsEnabled {
+            document.hubGlobalPreferences.notificationsEnabled = notificationsEnabled
+        }
+        if let dockBadgeEnabled {
+            document.hubGlobalPreferences.dockBadgeEnabled = dockBadgeEnabled
+        }
+        hubGlobalPreferences = document.hubGlobalPreferences
+        try? store.save(document)
+        syncAttentionCoordinator()
+    }
+
+    func handleHubNotificationOpen(serverID: UUID, path: String) {
+        selectServer(serverID)
+        requestNavigation(serverID: serverID, path: path)
     }
 
     func presentPinTaskContext(for entry: ServerEntry) {
@@ -248,6 +326,7 @@ final class HubAppState: ObservableObject {
 
     func deleteServer(_ entry: ServerEntry) {
         ServerWebsiteDataStorePool.shared.removeStore(for: entry.id)
+        attentionCoordinator.deleteCapabilityToken(serverID: entry.id, origin: entry.originString)
         do {
             try store.removeEntry(id: entry.id, document: &document)
             entries = document.entries.sorted(by: entrySort)
@@ -342,6 +421,7 @@ final class HubAppState: ObservableObject {
             }
 
             try store.save(document)
+            syncAttentionCoordinator()
             lastConnectionMessage = nil
             return nil
         } catch ServerRegistryStoreError.duplicateOrigin {
@@ -375,6 +455,14 @@ final class HubAppState: ObservableObject {
 
     private func persistQuietly() {
         try? store.save(document)
+    }
+
+    private func syncAttentionCoordinator() {
+        attentionCoordinator.configure(
+            entries: entries,
+            selectedServerID: selectedServerID,
+            global: hubGlobalPreferences
+        )
     }
 
     private func upsertRecentMetadata(_ metadata: ServerRecentMetadata) {

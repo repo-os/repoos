@@ -33,6 +33,19 @@ struct ContentView: View {
             }
         }
         .animation(.easeOut(duration: 0.15), value: appState.isCommandPalettePresented)
+        .sheet(
+            isPresented: Binding(
+                get: { appState.attentionSettingsServerID != nil },
+                set: { if !$0 { appState.dismissAttentionSettingsSheet() } }
+            )
+        ) {
+            if let serverID = appState.attentionSettingsServerID,
+               let entry = appState.entries.first(where: { $0.id == serverID })
+            {
+                HubServerAttentionSettingsSheet(entry: entry)
+                    .environmentObject(appState)
+            }
+        }
     }
 }
 
