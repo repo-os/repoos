@@ -5,10 +5,12 @@ type: chore
 status: inbox
 priority: p2
 area: docs-debt
+story: MacOS native app
 assigned_to: unassigned
 created_by: docs-debt-agent
+branch: ""
 created_at: "2026-09-19T02:09:23.307Z"
-updated_at: "2026-09-19T02:09:23.307Z"
+updated_at: "2026-09-21T20:11:34Z"
 ---
 ## Docs Debt Findings
 
@@ -26,3 +28,7 @@ The Docs Debt Agent verified concrete claims in `AGENTS.md`/`docs/`/`user-docs/`
 1. Confirm each finding is real drift and not a deliberate, documented difference.
 2. Update the doc(s) or the code so the two agree.
 3. Move this task to done when complete.
+
+## Activity
+
+- 2026-09-21T20:11:34Z · story
