@@ -11,7 +11,7 @@ branch: feat/scaffold-the-standalone-native-macos-rep
 cli_override: codex
 model_override: gpt-5.6-luna
 created_at: "2026-09-21T11:50:24Z"
-updated_at: "2026-09-21T13:28:07Z"
+updated_at: "2026-09-21T14:02:56Z"
 ---
 After the macOS Hub architecture/security contract is approved, add a standalone macOS application project as a sibling to mobile/, without adding runtime dependencies to the core repoos package.
 
@@ -33,3 +33,4 @@ Follow the approved architecture task. Keep this foundation small; server regist
 - 2026-09-21T13:28:02Z · cli_override
 - 2026-09-21T13:28:05Z · model_override
 - 2026-09-21T13:28:07Z · status ready→active, branch
+- 2026-09-21T14:02:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
