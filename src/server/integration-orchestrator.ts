@@ -50,7 +50,9 @@ import type { RemoteValidator } from "./remote-validation.js";
 import { markTaskReleased } from "./write.js";
 import { saveDiffSnapshot } from "./diff-snapshot.js";
 import { parseTask } from "../core/task.js";
-import { CLOSEOUT_CHECK_ARGS } from "../core/check-plan.js";
+import { CLOSEOUT_CHECK_ARGS, resolveCheckPlan } from "../core/check-plan.js";
+import { detectRepoMarkers } from "../core/check-runner.js";
+import { loadConfig } from "../core/config.js";
 import { summarizeCheckFailure } from "../core/check-failure-summary.js";
 import { checkFailureSignature, summarizeCheckOutput } from "../core/check-results.js";
 import type { TaskCheckManager, TaskCheckListener } from "./task-check.js";
@@ -1331,6 +1333,16 @@ export class CloseOutOrchestrator {
     // gate unchanged — and a git error (`null`) always fails safe to the full
     // gate too.
     const changedPaths = await getChangedFilePaths(wtPath, mainBranch);
+    // Resolve from the merged CANDIDATE, not the live checkout. A task can
+    // introduce its first check plan, as pn's initial documentation task did.
+    // The close-out must honour the state it is about to publish.
+    const candidateCheckPlan = resolveCheckPlan({
+      check: loadConfig(wtPath).check,
+      markers: detectRepoMarkers(wtPath),
+    });
+    const hasBuildStep = candidateCheckPlan.steps.some((step) => step.kind === "build");
+    const bootstrapWithoutPlan =
+      candidateCheckPlan.source === "empty" && candidateCheckPlan.errors.length === 0;
     const docsOnly = changedPaths !== null && isDocsOnlyChange(changedPaths, this.config.docsDir);
     if (docsOnly) {
       this.logger?.integration(
@@ -1361,31 +1373,38 @@ export class CloseOutOrchestrator {
         }
       }
 
-      // Run the post-merge gate: build + check via bun/npm.
-      this.onProgress?.("build");
-      let buildRes = await runProcess("bun", ["run", "build"], {
-        cwd: wtPath,
-        timeout: 300_000,
-        isCancelled: () => this.isCancelled(job.taskId),
-      });
-      if (buildRes.cancelled) {
-        return { ok: false, cancelled: true, reason: CANCEL_REASON };
-      }
-      if (commandMissing(buildRes)) {
-        buildRes = await runProcess("npm", ["run", "build"], {
+      // A close-out used to run `bun run build` unconditionally here. That
+      // makes an empty RepoOS project unable to complete its first docs,
+      // config, or scaffolding task: there is deliberately no build script
+      // yet. The declared check plan is the contract. Prebuild only when it
+      // actually includes the built-in build step; raw commands remain owned
+      // by their plan and run below through `repoos check`.
+      if (hasBuildStep) {
+        this.onProgress?.("build");
+        let buildRes = await runProcess("bun", ["run", "build"], {
           cwd: wtPath,
           timeout: 300_000,
           isCancelled: () => this.isCancelled(job.taskId),
         });
-      }
-      if (buildRes.cancelled) {
-        return { ok: false, cancelled: true, reason: CANCEL_REASON };
-      }
-      if (buildRes.status !== 0) {
-        return {
-          ok: false,
-          reason: `build failed: ${tailLine(buildRes.stdout, buildRes.stderr)}`,
-        };
+        if (buildRes.cancelled) {
+          return { ok: false, cancelled: true, reason: CANCEL_REASON };
+        }
+        if (commandMissing(buildRes)) {
+          buildRes = await runProcess("npm", ["run", "build"], {
+            cwd: wtPath,
+            timeout: 300_000,
+            isCancelled: () => this.isCancelled(job.taskId),
+          });
+        }
+        if (buildRes.cancelled) {
+          return { ok: false, cancelled: true, reason: CANCEL_REASON };
+        }
+        if (buildRes.status !== 0) {
+          return {
+            ok: false,
+            reason: `build failed: ${tailLine(buildRes.stdout, buildRes.stderr)}`,
+          };
+        }
       }
 
       // Remote Validation Runner (docs/remote-validation.md): hand the expensive
@@ -1397,7 +1416,7 @@ export class CloseOutOrchestrator {
       // `remoteValidation.fallbackToLocal` is set; a real remote test failure is
       // non-retryable — fix it in the feature branch and resubmit.
       let skipTestsLocally = false;
-      if (this.remoteValidator && this.config.remoteValidation?.enabled) {
+      if (hasBuildStep && this.remoteValidator && this.config.remoteValidation?.enabled) {
         this.onProgress?.("check");
         const headRes = await runGit(wtPath, ["rev-parse", "HEAD"], 4000);
         if (headRes.status !== 0) {
@@ -1440,148 +1459,160 @@ export class CloseOutOrchestrator {
         return { ok: false, cancelled: true, reason: CANCEL_REASON };
       }
 
-      this.onProgress?.("check");
-      // The candidate's OWN freshly-built CLI comes first, same as the legacy
-      // done.ts close-out gate (#0130): a globally linked `repoos` resolves
-      // build freshness and gate code against its own install snapshot, which
-      // can disagree with the checkout actually being validated here. Running
-      // `check` via the candidate's own `dist/cli/index.js` guarantees the gate
-      // evaluates the exact code that was just merged and built above.
-      // The build above already ran `bun run build` with nothing changed since,
-      // and `bun run build` is staleness-aware now (#0377), so `check`'s own
-      // "Full build" step detects the fresh marker and skips itself — no
-      // private skip env flag needed.
-      const checkEnv = {
-        ...process.env,
-        ...(skipTestsLocally ? { REPOOS_SKIP_TESTS: "1" } : {}),
-      };
-      const localCli = join(wtPath, "dist", "cli", "index.js");
-      const localCliPresent = existsSync(localCli);
-      const checkHandle =
-        this.taskChecks && this.onTaskCheckEvent
-          ? this.taskChecks.start(job.taskId, "merge-gate", this.onTaskCheckEvent)
-          : undefined;
-      const rawCheck = (cli: string, args: string[]): Promise<ProcessRunResult> =>
-        runProcess(cli, args, {
-          cwd: wtPath,
-          timeout: 600_000,
-          env: checkEnv,
-          onChunk: checkHandle?.chunk,
-          isCancelled: () => this.isCancelled(job.taskId),
-        });
-      // A check whose ONLY failure is a stale build marker: the same marker the
-      // close-out build above should have refreshed. This is the self-resolving
-      // staleness pattern (#0276 Flavour B) — refreshing the marker and re-running
-      // the identical check on the same tree passes. Cases that are NOT this (a
-      // genuine non-staleness failure, or the local CLI being absent entirely) must
-      // not be absorbed; see the branching below.
-      const isStalenessFailure = (res: ProcessRunResult): boolean =>
-        /stale build|no build found|build-info\.json|build is stale|cannot verify build freshness/i.test(
-          `${res.stdout}\n${res.stderr}`,
+      if (bootstrapWithoutPlan) {
+        this.logger?.integration(
+          job.taskId,
+          "info",
+          "bootstrap candidate — no check plan or recognised build stack yet; skipping check gate",
         );
-
-      let checkRes: ProcessRunResult;
-      // Why the check result deviates from a plain local-CLI pass:
-      //   'local-ok'     — candidate's own CLI passed (common case)
-      //   'absorbed'     — local CLI reported staleness; marker refreshed and
-      //                    re-check passed on the same tree (self-resolving)
-      //   'fallback'     — local CLI failed for a genuine non-staleness reason;
-      //                    fell through to the global CLI fallback
-      //   'local-missing'— candidate's own CLI was absent AND this project is
-      //                    meant to build one — only the global CLI fallback
-      //                    could run (Flavour A, not self-resolving)
-      //   'no-cli-expected' — candidate's own CLI was absent, but this project
-      //                    never builds a dist/cli/index.js at all (the common
-      //                    case for a managed web/backend project) — the
-      //                    fallback is expected, not a regression signal
-      let outcome: "local-ok" | "absorbed" | "fallback" | "local-missing" | "no-cli-expected";
-
-      if (!localCliPresent) {
-        // Only a project that is itself meant to build dist/cli/index.js
-        // (RepoOS self-hosting, or another project with the same bin target)
-        // can suffer the #0213/3fbbd707 CLI-selection regression, where the
-        // global CLI fallback compares this candidate's src hash against a
-        // DIFFERENT install's marker — a guaranteed "stale" mismatch regardless
-        // of how fresh the candidate really is. For every other managed
-        // project (the common case) there was never a local CLI to find, so a
-        // missing one is expected, not a regression; labelling it as one on
-        // every such MTD (#0345) buried the real failure reason behind a false
-        // lead.
-        const cliExpected = expectsOwnCli(wtPath);
-        checkRes = await rawCheck("repoos", ["check", ...CLOSEOUT_CHECK_ARGS]);
-        outcome = cliExpected ? "local-missing" : "no-cli-expected";
-        if (cliExpected) {
-          this.logger?.integration(
-            job.taskId,
-            "error",
-            "candidate dist/cli/index.js is missing — gate fell back to the globally linked repoos; any 'stale' result here is a CLI-selection regression (#0276 Flavour A), not self-resolving staleness",
-          );
-        }
       } else {
-        checkRes = await rawCheck(process.execPath, [localCli, "check", ...CLOSEOUT_CHECK_ARGS]);
-        if (checkRes.status === 0) {
-          outcome = "local-ok";
-        } else if (isStalenessFailure(checkRes)) {
-          // Self-resolving build staleness: only the stale-marker report failed,
-          // and that same marker is what `bun run build` below refreshes. Refresh
-          // it provably for the current source — `bun run build` is
-          // staleness-aware (#0377) and rebuilds because the marker is stale —
-          // then re-run the SAME check on the same candidate tree. Bounded to
-          // this one re-check — it never loops, and it stays inside
-          // validateCandidate rather than triggering an extra orchestrator-level
-          // retry / re-sync / debugger.
-          this.logger?.integration(
-            job.taskId,
-            "info",
-            "check reported self-resolving build staleness — refreshing marker and re-checking the same tree in place (no debugger detour)",
-          );
-          await runProcess("bun", ["run", "build"], {
+        this.onProgress?.("check");
+        // The candidate's OWN freshly-built CLI comes first, same as the legacy
+        // done.ts close-out gate (#0130): a globally linked `repoos` resolves
+        // build freshness and gate code against its own install snapshot, which
+        // can disagree with the checkout actually being validated here. Running
+        // `check` via the candidate's own `dist/cli/index.js` guarantees the gate
+        // evaluates the exact code that was just merged and built above.
+        // The build above already ran `bun run build` with nothing changed since,
+        // and `bun run build` is staleness-aware now (#0377), so `check`'s own
+        // "Full build" step detects the fresh marker and skips itself — no
+        // private skip env flag needed.
+        const checkEnv = {
+          ...process.env,
+          ...(skipTestsLocally ? { REPOOS_SKIP_TESTS: "1" } : {}),
+        };
+        const localCli = join(wtPath, "dist", "cli", "index.js");
+        const localCliPresent = existsSync(localCli);
+        const checkHandle =
+          this.taskChecks && this.onTaskCheckEvent
+            ? this.taskChecks.start(job.taskId, "merge-gate", this.onTaskCheckEvent)
+            : undefined;
+        const rawCheck = (cli: string, args: string[]): Promise<ProcessRunResult> =>
+          runProcess(cli, args, {
             cwd: wtPath,
-            timeout: 300_000,
+            timeout: 600_000,
+            env: checkEnv,
+            onChunk: checkHandle?.chunk,
             isCancelled: () => this.isCancelled(job.taskId),
           });
-          checkRes = await rawCheck(process.execPath, [localCli, "check", ...CLOSEOUT_CHECK_ARGS]);
-          if (checkRes.cancelled) {
-            checkHandle?.done(checkRes.status);
-            return { ok: false, cancelled: true, reason: CANCEL_REASON };
-          }
-          if (checkRes.status !== 0) {
-            checkHandle?.done(checkRes.status);
-            return this.recordCheckFailure(
-              job,
-              "check failed after in-place staleness re-check",
-              checkRes,
+        // A check whose ONLY failure is a stale build marker: the same marker the
+        // close-out build above should have refreshed. This is the self-resolving
+        // staleness pattern (#0276 Flavour B) — refreshing the marker and re-running
+        // the identical check on the same tree passes. Cases that are NOT this (a
+        // genuine non-staleness failure, or the local CLI being absent entirely) must
+        // not be absorbed; see the branching below.
+        const isStalenessFailure = (res: ProcessRunResult): boolean =>
+          /stale build|no build found|build-info\.json|build is stale|cannot verify build freshness/i.test(
+            `${res.stdout}\n${res.stderr}`,
+          );
+
+        let checkRes: ProcessRunResult;
+        // Why the check result deviates from a plain local-CLI pass:
+        //   'local-ok'     — candidate's own CLI passed (common case)
+        //   'absorbed'     — local CLI reported staleness; marker refreshed and
+        //                    re-check passed on the same tree (self-resolving)
+        //   'fallback'     — local CLI failed for a genuine non-staleness reason;
+        //                    fell through to the global CLI fallback
+        //   'local-missing'— candidate's own CLI was absent AND this project is
+        //                    meant to build one — only the global CLI fallback
+        //                    could run (Flavour A, not self-resolving)
+        //   'no-cli-expected' — candidate's own CLI was absent, but this project
+        //                    never builds a dist/cli/index.js at all (the common
+        //                    case for a managed web/backend project) — the
+        //                    fallback is expected, not a regression signal
+        let outcome: "local-ok" | "absorbed" | "fallback" | "local-missing" | "no-cli-expected";
+
+        if (!localCliPresent) {
+          // Only a project that is itself meant to build dist/cli/index.js
+          // (RepoOS self-hosting, or another project with the same bin target)
+          // can suffer the #0213/3fbbd707 CLI-selection regression, where the
+          // global CLI fallback compares this candidate's src hash against a
+          // DIFFERENT install's marker — a guaranteed "stale" mismatch regardless
+          // of how fresh the candidate really is. For every other managed
+          // project (the common case) there was never a local CLI to find, so a
+          // missing one is expected, not a regression; labelling it as one on
+          // every such MTD (#0345) buried the real failure reason behind a false
+          // lead.
+          const cliExpected = expectsOwnCli(wtPath);
+          checkRes = await rawCheck("repoos", ["check", ...CLOSEOUT_CHECK_ARGS]);
+          outcome = cliExpected ? "local-missing" : "no-cli-expected";
+          if (cliExpected) {
+            this.logger?.integration(
+              job.taskId,
+              "error",
+              "candidate dist/cli/index.js is missing — gate fell back to the globally linked repoos; any 'stale' result here is a CLI-selection regression (#0276 Flavour A), not self-resolving staleness",
             );
           }
-          outcome = "absorbed";
         } else {
-          // Genuine non-staleness failure from the local CLI: preserve the prior
-          // fallback behaviour (retry via the global repoos, then bun run repoos).
-          outcome = "fallback";
-          checkRes = await rawCheck("repoos", ["check", ...CLOSEOUT_CHECK_ARGS]);
-          if (checkRes.status !== 0) {
-            checkRes = await rawCheck("bun", ["run", "repoos", "check", ...CLOSEOUT_CHECK_ARGS]);
+          checkRes = await rawCheck(process.execPath, [localCli, "check", ...CLOSEOUT_CHECK_ARGS]);
+          if (checkRes.status === 0) {
+            outcome = "local-ok";
+          } else if (isStalenessFailure(checkRes)) {
+            // Self-resolving build staleness: only the stale-marker report failed,
+            // and that same marker is what `bun run build` below refreshes. Refresh
+            // it provably for the current source — `bun run build` is
+            // staleness-aware (#0377) and rebuilds because the marker is stale —
+            // then re-run the SAME check on the same candidate tree. Bounded to
+            // this one re-check — it never loops, and it stays inside
+            // validateCandidate rather than triggering an extra orchestrator-level
+            // retry / re-sync / debugger.
+            this.logger?.integration(
+              job.taskId,
+              "info",
+              "check reported self-resolving build staleness — refreshing marker and re-checking the same tree in place (no debugger detour)",
+            );
+            await runProcess("bun", ["run", "build"], {
+              cwd: wtPath,
+              timeout: 300_000,
+              isCancelled: () => this.isCancelled(job.taskId),
+            });
+            checkRes = await rawCheck(process.execPath, [
+              localCli,
+              "check",
+              ...CLOSEOUT_CHECK_ARGS,
+            ]);
+            if (checkRes.cancelled) {
+              checkHandle?.done(checkRes.status);
+              return { ok: false, cancelled: true, reason: CANCEL_REASON };
+            }
+            if (checkRes.status !== 0) {
+              checkHandle?.done(checkRes.status);
+              return this.recordCheckFailure(
+                job,
+                "check failed after in-place staleness re-check",
+                checkRes,
+              );
+            }
+            outcome = "absorbed";
+          } else {
+            // Genuine non-staleness failure from the local CLI: preserve the prior
+            // fallback behaviour (retry via the global repoos, then bun run repoos).
+            outcome = "fallback";
+            checkRes = await rawCheck("repoos", ["check", ...CLOSEOUT_CHECK_ARGS]);
+            if (checkRes.status !== 0) {
+              checkRes = await rawCheck("bun", ["run", "repoos", "check", ...CLOSEOUT_CHECK_ARGS]);
+            }
           }
         }
-      }
-      checkHandle?.done(checkRes.status);
+        checkHandle?.done(checkRes.status);
 
-      // A check killed by Stop MTD (#0459) is not a gate failure — abort.
-      if (checkRes.cancelled) {
-        return { ok: false, cancelled: true, reason: CANCEL_REASON };
-      }
-
-      if (checkRes.status !== 0) {
-        const failure = this.recordCheckFailure(job, "check failed", checkRes);
-        if (outcome === "local-missing") {
-          // Keep the CLI-selection note, but lead with the actual failing
-          // checks rather than the output tail.
-          failure.reason =
-            "check failed: the candidate's own dist/cli/index.js was not used " +
-            "(CLI-selection regression — the globally linked repoos evaluates a different install's " +
-            `build marker). ${failure.reason.replace(/^check failed:\s*/, "")}`;
+        // A check killed by Stop MTD (#0459) is not a gate failure — abort.
+        if (checkRes.cancelled) {
+          return { ok: false, cancelled: true, reason: CANCEL_REASON };
         }
-        return failure;
+
+        if (checkRes.status !== 0) {
+          const failure = this.recordCheckFailure(job, "check failed", checkRes);
+          if (outcome === "local-missing") {
+            // Keep the CLI-selection note, but lead with the actual failing
+            // checks rather than the output tail.
+            failure.reason =
+              "check failed: the candidate's own dist/cli/index.js was not used " +
+              "(CLI-selection regression — the globally linked repoos evaluates a different install's " +
+              `build marker). ${failure.reason.replace(/^check failed:\s*/, "")}`;
+          }
+          return failure;
+        }
       }
     }
 
