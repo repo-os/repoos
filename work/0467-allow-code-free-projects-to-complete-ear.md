@@ -2,7 +2,7 @@
 id: "0467"
 title: Allow code-free projects to complete early bootstrap tasks
 type: bug
-status: inbox
+status: active
 priority: p1
 area: server
 assigned_to: ai
@@ -17,3 +17,5 @@ Move-to-done must not require bun run build before a project has code or a decla
 
 - 2026-09-21T11:12:25Z · created · unknown
 - 2026-09-21T11:13:24Z · branch
+- 2026-09-21T11:13:24Z · status inbox→active
+- 2026-09-21T11:13:24Z · note: Implementing bootstrap-aware close-out validation in an isolated hotfix worktree.
