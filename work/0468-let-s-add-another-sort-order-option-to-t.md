@@ -2,7 +2,7 @@
 id: "0468"
 title: Add task number sort options to work page
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
@@ -12,7 +12,7 @@ cli_override: github copilot
 model_override: default
 pm_cli_override: github copilot
 created_at: "2026-09-21T11:33:55Z"
-updated_at: "2026-09-21T11:56:23Z"
+updated_at: "2026-09-21T13:17:42Z"
 ---
 ## Problem
 
@@ -73,3 +73,4 @@ Let's add another sort order option to the work page: order by task number newes
 - 2026-09-21T11:53:05Z · status inbox→ready
 - 2026-09-21T11:53:10Z · status ready→active, branch
 - 2026-09-21T11:56:23Z · status active→review
+- 2026-09-21T13:17:42Z · status review→done, release:success
