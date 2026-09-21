@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p2
 area: infra
+story: Email subscriber list
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-21T12:07:13Z"
-updated_at: "2026-09-21T12:07:13Z"
+updated_at: "2026-09-21T20:11:12Z"
 ---
 ## Problem
 
@@ -42,3 +43,4 @@ Run before the landing-page signup task. A human must provision the Neon project
 ## Activity
 
 - 2026-09-21T12:07:13Z · created · unknown
+- 2026-09-21T20:11:12Z · story
