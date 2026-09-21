@@ -1,12 +1,8 @@
 ---
-updated_at: "2026-09-21T18:17:35Z"
-review_passes: 1
 id: "0480"
 title: Add opt-in Stories page for cross-area delivery tracking
 type: feature
-status: review
-needs_input: true
-needs_input_reason: watchdog-stuck
+status: done
 priority: p2
 area: web + core
 assigned_to: ai
@@ -17,6 +13,8 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: cursor
 review_model_override: auto
 created_at: "2026-09-21T12:19:02Z"
+updated_at: "2026-09-21T18:29:49Z"
+review_passes: 1
 check_retry_count: 2
 last_check_failure: "[object Object]"
 dev_error_count: 3
@@ -81,4 +79,4 @@ After implementation, the project-updates email-list tasks (#0477, #0478, #0479)
 - 2026-09-21T15:56:43Z · status active→review
 - 2026-09-21T18:15:37Z · review_cli_override, review_model_override
 - 2026-09-21T18:15:39Z · review_model_override
-
+- 2026-09-21T18:29:49Z · status review→done, release:success
