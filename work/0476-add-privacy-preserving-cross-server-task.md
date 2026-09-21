@@ -5,11 +5,12 @@ type: feature
 status: ready
 priority: p3
 area: desktop
+story: MacOS native app
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-21T11:50:29Z"
-updated_at: "2026-09-21T18:27:17Z"
+updated_at: "2026-09-21T20:10:14Z"
 ---
 Extend the macOS Hub command palette with an opt-in cross-server task search that helps users locate work without reopening browser tabs.
 
@@ -27,3 +28,4 @@ Depends on the Hub summary capability work and the native navigation/command pal
 - 2026-09-21T11:50:29Z · created · unknown
 - 2026-09-21T11:52:37Z · body
 - 2026-09-21T18:27:17Z · status inbox→ready
+- 2026-09-21T20:10:14Z · story
