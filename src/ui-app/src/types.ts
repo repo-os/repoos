@@ -724,6 +724,7 @@ export interface AgentsMeta {
 
 /** One row from GET /api/agents/detect. */
 export interface DetectedBinary {
+  name: string;
   path: string;
   version: string | null;
   headless: boolean;

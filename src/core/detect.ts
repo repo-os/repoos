@@ -8,8 +8,8 @@
  * must never throw — callers (the HTTP endpoint, the UI) always get a row.
  */
 import { spawn, type ChildProcess } from "node:child_process";
-import { accessSync, constants } from "node:fs";
-import { delimiter, join } from "node:path";
+import { accessSync, constants, readdirSync } from "node:fs";
+import { basename, delimiter, join } from "node:path";
 import { AGENT_CLIS } from "./config.js";
 import { compatibilityForAgent, type AgentCompatibility } from "./agent-compatibility.js";
 
@@ -32,8 +32,20 @@ export interface KnownAgent {
    * `drivable` is false — there is no `AGENT_CLIS` entry to map to.
    */
   cli?: (typeof AGENT_CLIS)[number];
-  /** The binary searched on PATH. */
+  /** The primary binary searched on PATH. */
   binary: string;
+  /**
+   * Additional exact binary names to search on PATH alongside `binary`.
+   * Useful when a tool ships under multiple names (e.g. "opencode2" as an alias
+   * for "opencode"). All resolved paths are merged into `allBinaries`.
+   */
+  binaryAliases?: string[];
+  /**
+   * When set, every executable in each PATH directory whose name starts with
+   * `<binaryPrefix>-` is also included. Enables discovery of profile-suffixed
+   * installs such as `claude-work` or `claude-jago` alongside the base `claude`.
+   */
+  binaryPrefix?: string;
   /** True when RepoOS has a driver for this CLI (can start headless runs). */
   drivable: boolean;
   /** Copyable install hint shown when the CLI is missing. */
@@ -59,6 +71,8 @@ export interface KnownAgent {
 
 /** One discovered binary for an agent (when multiple copies exist on PATH). */
 export interface DetectedBinary {
+  /** The filename used to locate this binary (e.g. "opencode2" or "claude-work"). */
+  name: string;
   path: string;
   version: string | null;
   headless: boolean;
@@ -108,6 +122,7 @@ export const KNOWN_AGENTS: KnownAgent[] = [
     name: "opencode",
     cli: "opencode",
     binary: "opencode",
+    binaryAliases: ["opencode2"],
     drivable: true,
     installHint: "npm i -g opencode-ai",
   },
@@ -116,6 +131,7 @@ export const KNOWN_AGENTS: KnownAgent[] = [
     name: "claude code",
     cli: "claude code",
     binary: "claude",
+    binaryPrefix: "claude",
     drivable: true,
     installHint: "npm i -g @anthropic-ai/claude-code",
   },
@@ -279,6 +295,37 @@ export function resolveAllBinaries(
       if (isExecutable(full) && !seen.has(full)) {
         seen.add(full);
         out.push(full);
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Scan each PATH directory for executables whose filename starts with
+ * `<prefix>-`. Useful for profile-suffixed real binaries like `claude-work`.
+ * Shell aliases are invisible to this scan.
+ */
+export function resolvePrefixedBinaries(
+  prefix: string,
+  pathEnv: string = process.env.PATH ?? "",
+): Array<{ name: string; path: string }> {
+  const seen = new Set<string>();
+  const out: Array<{ name: string; path: string }> = [];
+  for (const dir of pathEnv.split(delimiter)) {
+    if (!dir) continue;
+    let entries: string[];
+    try {
+      entries = readdirSync(dir);
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      if (!entry.startsWith(`${prefix}-`)) continue;
+      const full = join(dir, entry);
+      if (isExecutable(full) && !seen.has(full)) {
+        seen.add(full);
+        out.push({ name: entry, path: full });
       }
     }
   }
@@ -498,9 +545,27 @@ export async function detectAgents(opts: DetectOptions = {}): Promise<DetectedAg
 
   await Promise.all(
     list.map(async (agent, i) => {
-      const paths = resolveAllBinaries(agent.binary, pathEnv);
+      // Collect all named binary candidates: primary + aliases + prefix scan.
+      const seen = new Set<string>();
+      const namedPaths: Array<{ name: string; path: string }> = [];
+      for (const bin of [agent.binary, ...(agent.binaryAliases ?? [])]) {
+        for (const p of resolveAllBinaries(bin, pathEnv)) {
+          if (!seen.has(p)) {
+            seen.add(p);
+            namedPaths.push({ name: bin, path: p });
+          }
+        }
+      }
+      if (agent.binaryPrefix) {
+        for (const { name, path: p } of resolvePrefixedBinaries(agent.binaryPrefix, pathEnv)) {
+          if (!seen.has(p)) {
+            seen.add(p);
+            namedPaths.push({ name, path: p });
+          }
+        }
+      }
 
-      if (!paths.length) {
+      if (!namedPaths.length) {
         const row: DetectedAgent = {
           ...agent,
           installed: false,
@@ -521,11 +586,16 @@ export async function detectAgents(opts: DetectOptions = {}): Promise<DetectedAg
 
       // Probe all found copies concurrently.
       const probed = await Promise.all(
-        paths.map(async (p) => ({ path: p, ...(await probeBinary(p, agent.id, timeoutMs)) })),
+        namedPaths.map(async ({ name, path: p }) => ({
+          name,
+          path: p,
+          ...(await probeBinary(p, agent.id, timeoutMs)),
+        })),
       );
 
       const primary = probed[0];
       const allBinaries: DetectedBinary[] = probed.map((b) => ({
+        name: b.name,
         path: b.path,
         version: b.version,
         headless: b.headless,

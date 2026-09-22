@@ -1120,8 +1120,10 @@ onUnmounted(() => {
                         v-for="(bin, idx) in r.agent.allBinaries"
                         :key="bin.path"
                         :value="String(idx)"
+                        :text-value="`${bin.name} ${bin.version ?? '?'}`"
                         class="detect-binary-item"
                       >
+                        <span class="detect-binary-item-name">{{ bin.name }}</span>
                         <span class="detect-binary-item-ver">{{ bin.version ?? "?" }}</span>
                         <span class="detect-binary-item-path">{{ bin.path }}</span>
                       </SelectItem>
