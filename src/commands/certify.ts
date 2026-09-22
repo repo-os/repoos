@@ -24,14 +24,18 @@ export interface CertifyCliArgs {
   yes: boolean;
   json: boolean;
   missingCli: boolean;
+  /** Explicit binary path — skips PATH resolution and probes this binary directly. */
+  binary: string | null;
 }
 
 export function parseCertifyArgs(argv: string[]): CertifyCliArgs {
   const yes = argv.includes("--yes");
   const json = argv.includes("--json");
-  const positional = argv.filter((a) => !a.startsWith("--"));
+  const binaryIdx = argv.indexOf("--binary");
+  const binary = binaryIdx !== -1 ? (argv[binaryIdx + 1] ?? null) : null;
+  const positional = argv.filter((a, i) => !a.startsWith("--") && argv[i - 1] !== "--binary");
   const cli = positional[0] ?? null;
-  return { cli, yes, json, missingCli: !cli };
+  return { cli, yes, json, missingCli: !cli, binary };
 }
 
 /** Locate the live manifest file on disk (src or dist). */
@@ -76,10 +80,13 @@ function saveManifest(path: string, manifest: Manifest): void {
 }
 
 export async function cmdCertify(argv: string[]): Promise<void> {
-  const { cli, yes, json: asJson, missingCli } = parseCertifyArgs(argv);
+  const { cli, yes, json: asJson, missingCli, binary } = parseCertifyArgs(argv);
 
   if (missingCli || !cli) {
     console.error(c.red("  repoos certify needs a harness id, e.g. `repoos certify opencode`."));
+    console.error(
+      c.dim("    Use --binary <path> to probe a specific binary instead of PATH resolution."),
+    );
     process.exitCode = 1;
     return;
   }
@@ -120,7 +127,11 @@ export async function cmdCertify(argv: string[]): Promise<void> {
   }
 
   // Run the probe.
-  const result = await runAdapterContract({ cli, mode: "live" });
+  const result = await runAdapterContract({
+    cli,
+    mode: "live",
+    ...(binary ? { bin: binary } : {}),
+  });
 
   if (asJson) {
     console.log(JSON.stringify(result, null, 2));

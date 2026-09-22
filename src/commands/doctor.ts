@@ -33,6 +33,8 @@ export interface DoctorCliArgs {
   probe: string | null;
   /** True when `--probe` was given without a value (or before another flag). */
   probeMissingValue: boolean;
+  /** Explicit binary path for the probe — bypasses PATH resolution. */
+  binary: string | null;
 }
 
 /**
@@ -43,13 +45,15 @@ export interface DoctorCliArgs {
 export function parseDoctorArgs(argv: string[]): DoctorCliArgs {
   const json = argv.includes("--json");
   const yes = argv.includes("--yes");
+  const binaryIdx = argv.indexOf("--binary");
+  const binary = binaryIdx !== -1 ? (argv[binaryIdx + 1] ?? null) : null;
   const probeArg = argv.indexOf("--probe");
-  if (probeArg === -1) return { json, yes, probe: null, probeMissingValue: false };
+  if (probeArg === -1) return { json, yes, probe: null, probeMissingValue: false, binary };
   const value = argv[probeArg + 1];
   if (!value || value.startsWith("--")) {
-    return { json, yes, probe: null, probeMissingValue: true };
+    return { json, yes, probe: null, probeMissingValue: true, binary };
   }
-  return { json, yes, probe: value, probeMissingValue: false };
+  return { json, yes, probe: value, probeMissingValue: false, binary };
 }
 
 function severityColor(severity: DoctorFinding["severity"], text: string): string {
@@ -101,14 +105,14 @@ export function renderDoctor(report: DoctorReport): void {
 
 /** `repoos doctor [--json] [--probe <cli>] [--yes]` */
 export async function cmdDoctor(argv: string[]): Promise<void> {
-  const { json: asJson, yes, probe: probeCli, probeMissingValue } = parseDoctorArgs(argv);
+  const { json: asJson, yes, probe: probeCli, probeMissingValue, binary } = parseDoctorArgs(argv);
   if (probeMissingValue) {
     console.error(c.red("  repoos doctor --probe needs a harness id, e.g. `--probe opencode`."));
     process.exitCode = 1;
     return;
   }
   if (probeCli) {
-    await cmdProbe(probeCli, { asJson, yes });
+    await cmdProbe(probeCli, { asJson, yes, binary });
     return;
   }
   try {
@@ -132,7 +136,10 @@ export async function cmdDoctor(argv: string[]): Promise<void> {
  * the honest result. A passed probe is the evidence a maintainer records in
  * `src/core/agent-compatibility.json` (verifiedAt + verificationSource).
  */
-async function cmdProbe(cli: string, opts: { asJson: boolean; yes: boolean }): Promise<void> {
+async function cmdProbe(
+  cli: string,
+  opts: { asJson: boolean; yes: boolean; binary: string | null },
+): Promise<void> {
   const WARNING = [
     "",
     c.yellow(c.bold("⚠ Live compatibility probe")),
@@ -169,7 +176,11 @@ async function cmdProbe(cli: string, opts: { asJson: boolean; yes: boolean }): P
   }
 
   try {
-    const result = await runAdapterContract({ cli, mode: "live" });
+    const result = await runAdapterContract({
+      cli,
+      mode: "live",
+      ...(opts.binary ? { bin: opts.binary } : {}),
+    });
     if (opts.asJson) {
       console.log(JSON.stringify(result, null, 2));
     } else {

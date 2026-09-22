@@ -118,12 +118,12 @@ function help(): void {
       "One-screen health snapshot: server, build freshness, board, worktrees, tunnel, git",
     ),
     cmdRow(
-      "doctor [--json] [--probe <cli>]",
-      "Readiness preflight: identity, config, layout, tools, check plan, server, secrets (--probe runs a live contract check)",
+      "doctor [--json] [--probe <cli>] [--binary <path>]",
+      "Readiness preflight: identity, config, layout, tools, check plan, server, secrets (--probe runs a live contract check; --binary overrides PATH resolution)",
     ),
     cmdRow(
-      "certify <cli> [--yes]",
-      "Run the adapter contract suite and write certification evidence into agent-compatibility.json",
+      "certify <cli> [--yes] [--binary <path>]",
+      "Run the adapter contract suite and write certification evidence into agent-compatibility.json (--binary probes a specific binary)",
     ),
     cmdRow("support bundle", "Write a redacted, inspectable diagnostic bundle for failed setups"),
     cmdRow("show <id>", "Show a task's full spec"),
