@@ -95,6 +95,10 @@ export default defineConfig({
         ],
       },
       {
+        text: "Apps",
+        items: [{ text: "RepoOS Hub for Mac", link: "/macos-hub" }],
+      },
+      {
         text: "Help",
         items: [{ text: "Troubleshooting", link: "/troubleshooting" }],
       },

@@ -247,6 +247,14 @@ const year = new Date().getFullYear();
           </p>
 
           <InstallBox class="mt-8" show-note />
+          <p class="mt-3 text-[13px] text-[var(--txt-faint)]">
+            Prefer a native app?
+            <a
+              href="https://github.com/repo-os/repoos/releases/latest/download/RepoOSHub.dmg"
+              class="text-[var(--cyan)] hover:underline"
+              >Download RepoOS Hub for Mac &darr;</a
+            >
+          </p>
         </div>
 
         <figure class="min-w-0">
