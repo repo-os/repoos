@@ -1139,6 +1139,22 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof rvEnabled === "boolean") {
       cfg.remoteValidation = { ...cfg.remoteValidation, enabled: rvEnabled };
     }
+    const rvProvider = parsed["remoteValidation.provider"];
+    if (rvProvider === "hetzner" || rvProvider === "tailscale") {
+      cfg.remoteValidation = { ...cfg.remoteValidation, provider: rvProvider };
+    }
+    const rvTailscaleHost = parsed["remoteValidation.tailscaleHost"];
+    if (typeof rvTailscaleHost === "string" && rvTailscaleHost) {
+      cfg.remoteValidation = { ...cfg.remoteValidation, tailscaleHost: rvTailscaleHost };
+    }
+    const rvTailscaleUser = parsed["remoteValidation.tailscaleUser"];
+    if (typeof rvTailscaleUser === "string" && rvTailscaleUser) {
+      cfg.remoteValidation = { ...cfg.remoteValidation, tailscaleUser: rvTailscaleUser };
+    }
+    const rvContainerImage = parsed["remoteValidation.containerImage"];
+    if (typeof rvContainerImage === "string" && rvContainerImage) {
+      cfg.remoteValidation = { ...cfg.remoteValidation, containerImage: rvContainerImage };
+    }
     const rvServerType = parsed["remoteValidation.serverType"];
     if (typeof rvServerType === "string" && rvServerType) {
       cfg.remoteValidation = { ...cfg.remoteValidation, serverType: rvServerType };
@@ -1468,8 +1484,52 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: true,
       default: false,
       description:
-        "Run the close-out build + test suite on a disposable Hetzner VM instead of this machine " +
-        "(needs HETZNER_API_TOKEN + REPOOS_REMOTE_SSH_KEY env vars and [remoteValidation] snapshotId/sshKeyName in repoos.toml — see docs/remote-validation.md). Sends repo contents to a third-party host.",
+        "Run the close-out build + test suite on a remote machine instead of this one. " +
+        "See docs/remote-validation.md for provider-specific setup.",
+    },
+    {
+      key: "remoteValidation.provider",
+      label: "Remote validation: provider",
+      type: "select",
+      tier: "restart",
+      restartRequired: true,
+      default: "hetzner",
+      options: [
+        { label: "Tailscale (persistent machine on your tailnet)", value: "tailscale" },
+        { label: "Hetzner (disposable cloud VM)", value: "hetzner" },
+      ],
+      description:
+        "tailscale: SSH into a persistent machine on your Tailscale network and run the gate in a fresh Docker container. " +
+        "hetzner: provision a disposable Hetzner Cloud VM from a prebuilt snapshot.",
+    },
+    {
+      key: "remoteValidation.tailscaleHost",
+      label: "Remote validation: tailscale host",
+      type: "string",
+      tier: "restart",
+      restartRequired: true,
+      default: "",
+      description:
+        "Tailscale hostname (e.g. 'bee') or 100.x.x.x IP of the persistent runner machine. Required when provider is 'tailscale'.",
+    },
+    {
+      key: "remoteValidation.tailscaleUser",
+      label: "Remote validation: tailscale SSH user",
+      type: "string",
+      tier: "restart",
+      restartRequired: true,
+      default: "root",
+      description: "SSH user on the tailscale runner. Default 'root'.",
+    },
+    {
+      key: "remoteValidation.containerImage",
+      label: "Remote validation: container image",
+      type: "string",
+      tier: "restart",
+      restartRequired: true,
+      default: "repoos-ci",
+      description:
+        "Docker/Podman image to run the gate in on the tailscale runner. Default 'repoos-ci'.",
     },
     {
       key: "remoteValidation.fallbackToLocal",
@@ -1629,6 +1689,10 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "tunnel.apps",
   // Remote validation
   "remoteValidation.enabled",
+  "remoteValidation.provider",
+  "remoteValidation.tailscaleHost",
+  "remoteValidation.tailscaleUser",
+  "remoteValidation.containerImage",
   "remoteValidation.serverType",
   "remoteValidation.location",
   "remoteValidation.snapshotId",

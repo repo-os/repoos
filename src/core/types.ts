@@ -624,8 +624,15 @@ export interface DistributionConfig {
 export interface RemoteValidationConfig {
   /** Master switch. Default false. */
   enabled?: boolean;
-  /** Cloud provider. Only "hetzner" is implemented for the MVP. */
-  provider?: "hetzner";
+  /**
+   * Which provider runs the validation. "hetzner" (default) provisions a
+   * disposable cloud VM per job. "tailscale" SSHes into a persistent machine
+   * on your tailnet and runs the gate inside a fresh Docker/Podman container.
+   */
+  provider?: "hetzner" | "tailscale";
+
+  // ── Hetzner-specific ──────────────────────────────────────────────────────
+
   /**
    * Hetzner server type. Default "cax31" (8 vCPU Ampere ARM / 16 GB) — the
    * cheapest type that fills the vitest 8-worker pool; this repo has no native
@@ -653,6 +660,27 @@ export interface RemoteValidationConfig {
    * mid-job (the job then fails retryably). Default 120.
    */
   maxServerLifetimeMinutes?: number;
+
+  // ── Tailscale-specific ────────────────────────────────────────────────────
+
+  /**
+   * Tailscale hostname or IP of the persistent runner machine
+   * (e.g. "mybox.tail1234.ts.net" or "100.x.x.x").
+   * Required when provider is "tailscale".
+   */
+  tailscaleHost?: string;
+  /**
+   * SSH user on the tailscale runner. Default "root".
+   */
+  tailscaleUser?: string;
+  /**
+   * Docker/Podman image to run the gate in. Defaults to "repoos-ci",
+   * the same image the Hetzner snapshot preloads.
+   */
+  containerImage?: string;
+
+  // ── Shared ────────────────────────────────────────────────────────────────
+
   /**
    * When the remote runner is unreachable / provisioning fails, fall back to
    * running the full gate locally instead of failing the close-out. Default

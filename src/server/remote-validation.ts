@@ -3,23 +3,30 @@
  *
  * The close-out gate's expensive half — `bun install` + `bun run build` +
  * `bun run test` — is what makes MTD fail on the developer's machine under
- * memory pressure (see docs/remote-validation.md, memory
- * `repoos-check-flakes-under-memory-pressure`). This module runs that half on a
- * disposable Hetzner VM instead:
+ * memory pressure (see docs/remote-validation.md). This module runs that half
+ * on a remote machine via one of two providers:
  *
+ * **hetzner** (default) — disposable cloud VM, provisioned on demand:
  *   1. ensure a runner VM exists (create from a prebuilt snapshot, or reuse a
  *      still-warm one), one at a time, never more than one
  *   2. `git bundle` the already-merged candidate tree and scp it up
- *   3. ssh in and run `/opt/repoos/validate.sh` — which checks out the exact
- *      candidate SHA and runs build + test inside the `repoos-ci` Docker image
- *   4. stream combined output back to a per-task log file and the caller
- *   5. pull any artifacts, then arm an idle-shutdown timer
+ *   3. ssh in and run `/opt/repoos/validate.sh` inside the `repoos-ci` Docker
+ *      image, stream output, pull artifacts, then arm an idle-shutdown timer
+ *
+ * **tailscale** — persistent machine on your tailnet, no VM lifecycle:
+ *   1. `git bundle` the candidate tree and scp it to the tailnet host
+ *   2. ssh in and run `docker run --rm` with the gate script — fresh container
+ *      every time, persistent bun-cache volume for speed
+ *   3. stream output and pull artifacts (same as Hetzner path)
  *
  * The result is shaped as a {@link CheckSummary} so it is a drop-in for
- * `runCloseOutCheck` in the two close-out paths (done.ts, integration-
+ * `runCloseOutCheck` in both close-out paths (done.ts, integration-
  * orchestrator.ts). Infra failures (provisioning, ssh) come back with
  * `transient: true` — the caller decides whether to fail retryably or fall
  * back to a local run (`remoteValidation.fallbackToLocal`).
+ *
+ * Use {@link createRemoteValidator} (called by server.ts) to get the right
+ * implementation for the configured provider.
  */
 
 import { spawn } from "node:child_process";
@@ -51,8 +58,8 @@ const SSH_PORT = 22;
 export interface RemoteHost {
   ip: string;
   user: string;
-  /** Path to the private key matching the Hetzner-registered public key. */
-  keyPath: string;
+  /** Path to the private key. Omit to let SSH use its default resolution (agent, ~/.ssh/config). */
+  keyPath?: string;
 }
 
 export interface RemoteExecResult {
@@ -153,8 +160,7 @@ function tail(output: string, lines = 20, maxChars = 1200): string {
 
 function sshArgs(host: RemoteHost): string[] {
   return [
-    "-i",
-    host.keyPath,
+    ...(host.keyPath ? ["-i", host.keyPath] : []),
     "-o",
     "BatchMode=yes",
     "-o",
@@ -612,4 +618,188 @@ export class RemoteValidationRunner implements RemoteValidator {
     await this.hetzner.deleteServer(id).catch(() => undefined);
     this.logger?.system("info", `remote validation runner ${id} deleted (${why})`);
   }
+}
+
+// ── Tailscale runner ─────────────────────────────────────────────────────────
+
+/**
+ * Runs the validation gate on a persistent machine reachable via Tailscale.
+ * No VM provisioning — the host is always there. Each job runs inside a fresh
+ * Docker/Podman container (`docker run --rm`) so the environment is clean, with
+ * a persistent bun-cache volume mounted for speed. The same `validate.sh` and
+ * `repoos-ci` image used by the Hetzner runner work here without modification.
+ */
+export class TailscaleRunner implements RemoteValidator {
+  private readonly exec: RemoteExecDeps;
+  private readonly timings: RunnerTimings;
+  private readonly keyPath: string;
+
+  constructor(
+    private readonly config: RepoOSConfig,
+    private readonly logger?: Logger,
+    deps?: { exec?: RemoteExecDeps; timings?: Partial<RunnerTimings> },
+  ) {
+    this.exec = deps?.exec ?? defaultRemoteExec();
+    this.timings = { ...DEFAULT_TIMINGS, ...deps?.timings };
+    this.keyPath = process.env.REPOOS_REMOTE_SSH_KEY ?? "";
+  }
+
+  logPath(taskId: string): string {
+    return join(this.config.root, ".repoos", "logs", "remote-validation", `${taskId}.log`);
+  }
+
+  private appendLog(taskId: string, text: string): void {
+    try {
+      const p = this.logPath(taskId);
+      mkdirSync(join(this.config.root, ".repoos", "logs", "remote-validation"), {
+        recursive: true,
+      });
+      appendFileSync(p, redactSecrets(text));
+    } catch {
+      /* best effort */
+    }
+  }
+
+  private infraFail(detail: string): CheckSummary {
+    this.logger?.system("warn", `remote validation unavailable: ${detail}`);
+    return {
+      ok: false,
+      stage: "check",
+      transient: true,
+      detail: `remote validation unavailable: ${detail}`,
+    };
+  }
+
+  private host(): RemoteHost | null {
+    const rv = this.config.remoteValidation ?? {};
+    const ip = rv.tailscaleHost;
+    if (!ip) return null;
+    const keyPath = this.keyPath && existsSync(this.keyPath) ? this.keyPath : undefined;
+    return { ip, user: rv.tailscaleUser ?? "root", keyPath };
+  }
+
+  async validate(opts: ValidateOptions): Promise<CheckSummary> {
+    const rv = this.config.remoteValidation ?? {};
+    if (!rv.enabled) return this.infraFail("remote validation is disabled");
+    const host = this.host();
+    if (!host) return this.infraFail("remoteValidation.tailscaleHost is not configured");
+
+    const startedAt = Date.now();
+    const emit = (s: string): void => {
+      this.appendLog(opts.taskId, s);
+      opts.onChunk?.(s);
+    };
+    emit(
+      `\n── remote validation (tailscale) for #${opts.taskId} @ ${opts.candidateSha.slice(0, 12)} ──\n`,
+    );
+    emit(`[runner ${host.ip} (tailscale)]\n`);
+
+    let tmp: string | null = null;
+    try {
+      // 1. bundle the candidate tree
+      tmp = mkdtempSync(join(tmpdir(), "repoos-rvr-"));
+      const bundlePath = join(tmp, "candidate.bundle");
+      const bundle = await this.exec.bundleRepo(opts.worktreePath, bundlePath);
+      if (!bundle.ok) return this.infraFail(`git bundle failed: ${bundle.detail ?? "unknown"}`);
+
+      // 2. upload
+      const remoteBundle = `/tmp/repoos-${opts.taskId}.bundle`;
+      const up = await this.exec.uploadFile(host, bundlePath, remoteBundle);
+      if (!up.ok)
+        return this.infraFail(`scp of candidate bundle failed: ${up.detail ?? "unknown"}`);
+
+      // 3. run build + test inside a fresh container
+      const image = rv.containerImage ?? "repoos-ci";
+      emit(`[running build + test in ${image} container on ${host.ip}]\n`);
+      // Mount a persistent bun cache volume (same as the Hetzner validate.sh
+      // already does inside the container) so installs stay fast across jobs.
+      const cmd =
+        `docker run --rm ` +
+        `-v /var/cache/repoos/bun:/root/.bun/install/cache ` +
+        `-v ${remoteBundle}:${remoteBundle}:ro ` +
+        `${image} ` +
+        `/opt/repoos/validate.sh ${remoteBundle} ${opts.candidateSha}`;
+      const run = await this.exec.runRemote(host, cmd, emit, this.timings.remoteRunTimeoutMs);
+
+      // 4. pull artifacts (best effort)
+      await this.exec.downloadDir(
+        host,
+        "/tmp/repoos-artifacts/*",
+        join(this.config.root, ".repoos", "logs", "remote-validation", opts.taskId),
+      );
+
+      const elapsed = Math.round((Date.now() - startedAt) / 1000);
+      if (run.timedOut) {
+        emit(
+          `\n[remote run SIGKILLed after ${Math.round(this.timings.remoteRunTimeoutMs / 60000)}m]\n`,
+        );
+        this.logger?.integration(
+          opts.taskId,
+          "warn",
+          `remote validation timed out after ${elapsed}s`,
+        );
+        return {
+          ok: false,
+          stage: "check",
+          transient: true,
+          exitCode: null,
+          output: tail(run.output, 40, 4000),
+          detail: `remote validation timed out after ${elapsed}s — retrying resumes from the check step`,
+        };
+      }
+      if (run.code === 0) {
+        emit(`\n[remote validation PASSED in ${elapsed}s]\n`);
+        this.logger?.integration(opts.taskId, "info", `remote validation passed in ${elapsed}s`);
+        return { ok: true, stage: "check" };
+      }
+
+      if (
+        run.code === 255 &&
+        /(?:Connection|ssh:|closed by remote host|Broken pipe)/i.test(run.output)
+      ) {
+        return this.infraFail(
+          `ssh connection to the tailscale runner dropped mid-run: ${tail(run.output)}`,
+        );
+      }
+      const transient = looksTransient(run.output);
+      emit(`\n[remote validation FAILED (exit ${run.code}) in ${elapsed}s]\n`);
+      this.logger?.integration(opts.taskId, "warn", `remote validation failed (exit ${run.code})`, {
+        transient,
+      });
+      return {
+        ok: false,
+        stage: "check",
+        exitCode: run.code,
+        transient,
+        output: tail(run.output, 40, 4000),
+        detail: `remote validation failed (exit ${run.code}) — ${tail(run.output)}`,
+      };
+    } catch (e) {
+      return this.infraFail((e as Error).message);
+    } finally {
+      if (tmp) rmSync(tmp, { recursive: true, force: true });
+    }
+  }
+
+  // The tailscale runner has no VMs to reconcile or dispose.
+  async reconcile(): Promise<void> {}
+  async dispose(): Promise<void> {}
+}
+
+// ── factory ──────────────────────────────────────────────────────────────────
+
+/**
+ * Returns the right RemoteValidator for the configured provider, or undefined
+ * if remote validation is disabled. Called once at server boot.
+ */
+export function createRemoteValidator(
+  config: RepoOSConfig,
+  logger?: Logger,
+): RemoteValidator | undefined {
+  if (!config.remoteValidation?.enabled) return undefined;
+  const provider = config.remoteValidation.provider ?? "hetzner";
+  if (provider === "tailscale") {
+    return new TailscaleRunner(config, logger);
+  }
+  return new RemoteValidationRunner(config, logger);
 }

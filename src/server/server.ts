@@ -120,7 +120,7 @@ import { attachPendingPmImages } from "./pm-attachments.js";
 import { completeTask, type DoneStep, type CloseOutLock } from "./done.js";
 import { createJobCoordinator, type JobCoordinator } from "./integration-job.js";
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
-import { RemoteValidationRunner, type RemoteValidator } from "./remote-validation.js";
+import { createRemoteValidator, type RemoteValidator } from "./remote-validation.js";
 import { buildIntegrationSnapshot } from "./integration-status.js";
 import { resolvePipelineCheckPlan } from "./check-plan-info.js";
 import { createRepositoryLock, createRootLock } from "./repo-lock.js";
@@ -1000,8 +1000,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   let remoteValidator: RemoteValidator | undefined;
   if (config.remoteValidation?.enabled) {
     try {
-      remoteValidator = new RemoteValidationRunner(config, logger);
-      void remoteValidator.reconcile().catch((e) => {
+      remoteValidator = createRemoteValidator(config, logger);
+      void remoteValidator?.reconcile().catch((e) => {
         logger.system("warn", `remote validation reconcile failed: ${(e as Error).message}`);
       });
     } catch (e) {
@@ -2120,8 +2120,62 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       sshKeyName: rv.sshKeyName ?? "",
       hasApiToken: !!process.env.HETZNER_API_TOKEN,
       hasSshKey: !!sshKeyEnv && existsSync(sshKeyEnv),
+      tailscaleHost: rv.tailscaleHost ?? "",
+      tailscaleUser: rv.tailscaleUser ?? "root",
+      containerImage: rv.containerImage ?? "repoos-ci",
       activeServer,
     });
+  });
+  router.register("POST", "/api/remote-validation/test", async (_ctx, _req, res) => {
+    const rv = config.remoteValidation ?? {};
+    const provider = rv.provider ?? "hetzner";
+    try {
+      let output = "";
+      if (provider === "tailscale") {
+        const host = rv.tailscaleHost;
+        if (!host)
+          return json(res, 400, {
+            ok: false,
+            error: "remoteValidation.tailscaleHost is not configured.",
+          });
+        const sshKeyEnv = process.env.REPOOS_REMOTE_SSH_KEY;
+        const keyPath = sshKeyEnv && existsSync(sshKeyEnv) ? sshKeyEnv : undefined;
+        const { defaultRemoteExec } = await import("./remote-validation.js");
+        const exec = defaultRemoteExec();
+        const result = await exec.runRemote(
+          { ip: host, user: rv.tailscaleUser ?? "root", keyPath },
+          "docker info --format '{{.ServerVersion}}' 2>&1 && echo OK",
+          (chunk) => {
+            output += chunk;
+          },
+          15_000,
+        );
+        if (result.code === 0 && output.includes("OK")) {
+          return json(res, 200, { ok: true, output: output.trim() });
+        }
+        return json(res, 200, {
+          ok: false,
+          error: `SSH/Docker check failed (exit ${result.code})`,
+          output: output.trim(),
+        });
+      } else {
+        // Hetzner: just verify the API token and that provider config is present
+        if (!process.env.HETZNER_API_TOKEN)
+          return json(res, 200, { ok: false, error: "HETZNER_API_TOKEN is not set." });
+        if (!rv.snapshotId)
+          return json(res, 200, {
+            ok: false,
+            error: "remoteValidation.snapshotId is not configured.",
+          });
+        const { createHetznerClient } = await import("./hetzner.js");
+        const client = createHetznerClient(process.env.HETZNER_API_TOKEN);
+        const servers = await client.listServers("repoos-ci=1");
+        output = `API token valid. ${servers.length} runner VM(s) currently running.`;
+        return json(res, 200, { ok: true, output });
+      }
+    } catch (e) {
+      return json(res, 200, { ok: false, error: (e as Error).message });
+    }
   });
   router.register(
     "GET",

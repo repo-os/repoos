@@ -1,7 +1,10 @@
 # Remote Validation Runner
 
-Written 2026-08-28. Runs the expensive half of the close-out gate on a
-disposable cloud VM instead of the developer's machine.
+Written 2026-08-28. Updated 2026-09-22 to add the Tailscale provider.
+Runs the expensive half of the close-out gate on a remote machine instead of
+the developer's machine. Two providers are supported: **hetzner** (disposable
+cloud VM, the original) and **tailscale** (persistent machine on your tailnet,
+runs the gate in a fresh Docker container).
 
 ## Why
 
@@ -83,12 +86,49 @@ Both close-out paths call the runner in place of the local test run:
 
 ## Config
 
+### Tailscale provider
+
 `repoos.toml`:
 
 ```toml
 [remoteValidation]
 enabled = true
-serverType = "cax31"           # 8 vCPU Ampere ARM / 16 GB (default). "cpx41" = 8 vCPU AMD x86.
+provider = "tailscale"
+tailscaleHost = "mybox.tail1234.ts.net"   # or 100.x.x.x
+tailscaleUser = "root"                     # default "root"
+containerImage = "repoos-ci"               # default "repoos-ci"
+fallbackToLocal = false
+```
+
+`.env`:
+
+```
+REPOOS_REMOTE_SSH_KEY=/abs/path/to/private_key
+```
+
+The key must be authorised on the tailscale host (in `~/.ssh/authorized_keys`
+for `tailscaleUser`). No Hetzner token is needed.
+
+**One-time setup on the tailnet host:** install Docker (or Podman aliased as
+`docker`), pull the `repoos-ci` image, and create the bun-cache volume:
+
+```sh
+docker pull repoos-ci
+docker volume create repoos-bun-cache   # or mkdir -p /var/cache/repoos/bun
+```
+
+Concurrent close-outs queue on a single tailnet machine (no autoscaling). That
+is usually fine for solo/small-team use.
+
+### Hetzner provider (original)
+
+`repoos.toml`:
+
+```toml
+[remoteValidation]
+enabled = true
+provider = "hetzner"                       # default when omitted
+serverType = "cax31"           # 8 vCPU Ampere ARM / 16 GB. "cpx41" = 8 vCPU AMD x86.
 location = "hil"
 snapshotId = "123456789"
 sshKeyName = "your-key-name"
@@ -98,12 +138,11 @@ fallbackToLocal = false
 ```
 
 Sizing: the local gate caps the vitest worker pool at 8 (`testPoolSize` in
-`src/commands/check.ts`), so 8 vCPU is the sweet spot — a 16-vCPU type buys
-nothing for this suite, a 4-vCPU type drops to ~3 workers. `serverType` **must
+`src/commands/check.ts`), so 8 vCPU is the sweet spot. `serverType` **must
 match the architecture the snapshot was built on** (arm64 for `cax*`, x86 for
 `cpx*`/`cx*`).
 
-`.env` (secrets — never a git-tracked TOML key, same rule as `[auth]`):
+`.env`:
 
 ```
 HETZNER_API_TOKEN=...

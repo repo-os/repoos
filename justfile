@@ -57,6 +57,69 @@ status:
         echo "  dirty: no"
     fi
 
+# ── runner setup ─────────────────────────────────────────────────────────
+
+# set up bee (Arch) as a tailscale validation runner
+[group('runner')]
+setup-bee:
+    just _setup-runner bee arch
+
+# set up thinkpad (Arch) as a tailscale validation runner
+[group('runner')]
+setup-thinkpad:
+    just _setup-runner thinkpad arch
+
+# set up mini (macOS) as a tailscale validation runner
+[group('runner')]
+setup-mini:
+    just _setup-runner mini macos
+
+# internal: provision a remote tailscale host as a repoos-ci runner
+# usage: just _setup-runner <host> <arch|macos>
+[group('runner')]
+[private]
+_setup-runner host os:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    HOST="{{host}}"
+    OS="{{os}}"
+
+    echo "==> copying Dockerfile and validate.sh to $HOST"
+    ssh "$HOST" 'mkdir -p /tmp/repoos-build'
+    scp scripts/remote-runner/Dockerfile.ci scripts/remote-runner/validate.sh "$HOST:/tmp/repoos-build/"
+
+    if [ "$OS" = "arch" ]; then
+        echo "==> installing Docker on $HOST (Arch)"
+        ssh "$HOST" '
+            if ! command -v docker >/dev/null 2>&1; then
+                sudo pacman -Sy --noconfirm docker
+                sudo systemctl enable --now docker
+                sudo usermod -aG docker "$USER"
+                echo "Docker installed — you may need to re-login for group membership to take effect"
+            else
+                echo "Docker already installed: $(docker --version)"
+            fi
+        '
+    else
+        echo "==> checking Docker on $HOST (macOS — must be installed via Docker Desktop)"
+        ssh "$HOST" 'docker --version || { echo "ERROR: Docker not found. Install Docker Desktop from https://www.docker.com/products/docker-desktop/"; exit 1; }'
+    fi
+
+    echo "==> building repoos-ci image on $HOST"
+    ssh "$HOST" "docker build -f /tmp/repoos-build/Dockerfile.ci -t repoos-ci /tmp/repoos-build"
+
+    echo "==> installing validate.sh and creating cache dir on $HOST"
+    ssh -t "$HOST" "
+        sudo mkdir -p /opt/repoos /var/cache/repoos/bun &&
+        sudo install -m 755 /tmp/repoos-build/validate.sh /opt/repoos/validate.sh &&
+        rm -rf /tmp/repoos-build &&
+        echo done
+    "
+
+    echo "==> testing docker on $HOST"
+    ssh "$HOST" "docker run --rm repoos-ci 'echo container ok'"
+    echo "==> $HOST is ready as a repoos-ci runner"
+
 # ── dev ──────────────────────────────────────────────────────────────────
 
 # dev HMR UI
@@ -69,10 +132,20 @@ dev:
 serve:
     nohup bun dist/cli/index.js serve --host 127.0.0.1 --quiet > .repoos/logs/server.out 2>&1 < /dev/null &
 
-# stop THIS repo's background server (by its own .repoos/serve-<port>.lock — never a machine-wide pkill)
+# stop THIS repo's background server (lock file first, then fall back to killing by port)
 [group('dev')]
 kill:
+    #!/usr/bin/env bash
+    set -uo pipefail
     bun dist/cli/index.js stop || true
+    # Fallback: kill any stale process on the configured port that the lock missed
+    port=$(bun -p "const fs=require('fs'); try { const t=fs.readFileSync('repoos.toml','utf8'); const m=t.match(/servePort\s*=\s*(\d+)/); m ? m[1] : '7171' } catch { '7171' }" 2>/dev/null || echo 7171)
+    pids=$(lsof -nP -iTCP:"$port" -sTCP:LISTEN -t 2>/dev/null || true)
+    if [ -n "$pids" ]; then
+        echo "killing stale process(es) on port $port: $pids"
+        echo "$pids" | xargs kill
+        sleep 0.5
+    fi
 
 # restart: build then kill then serve
 [group('dev')]
@@ -245,6 +318,20 @@ api-log:
 [group('logs')]
 api-log-task id:
     curl -s http://127.0.0.1:7171/api/tasks/{{id}}/logs | jq '.logs[:20]'
+
+# show the live in-memory config of the running server (useful to verify a repoos.toml change was picked up)
+[group('logs')]
+server-config:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    COOKIE=$(mktemp)
+    trap 'rm -f "$COOKIE"' EXIT
+    CODE="${REPOOS_AUTH_DEV_BACKDOOR_CODE:-}"
+    if [ -f .env ]; then source .env 2>/dev/null || true; CODE="${REPOOS_AUTH_DEV_BACKDOOR_CODE:-}"; fi
+    curl -s -c "$COOKIE" -b "$COOKIE" -X POST http://127.0.0.1:7171/api/auth/verify-otp \
+      -H "Content-Type: application/json" \
+      -d "{\"email\":\"hello@repoos.org\",\"code\":\"$CODE\"}" > /dev/null
+    curl -s -b "$COOKIE" http://127.0.0.1:7171/api/config | python3 -c "import sys,json; d=json.load(sys.stdin); print(json.dumps(d.get('config', d), indent=2))"
 
 # ── mobile ───────────────────────────────────────────────────────────────
 

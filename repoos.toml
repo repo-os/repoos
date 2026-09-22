@@ -48,7 +48,7 @@ auth.emailProvider.fromAddress = "otp@send.repoos.org"
 # # clientSecret likewise goes in .env as REPOOS_GOOGLE_CLIENT_SECRET, not here.
 whisper.provider = "none"
 
-remoteValidation.enabled = false
+remoteValidation.enabled = true
 remoteValidation.fallbackToLocal = false
 
 worktreeWarnThreshold = 20
@@ -66,6 +66,8 @@ skillsDir = "skills"
 taskExtensions = [".md"]
 skillSuggestions = false
 remoteValidation.useForReleases = false
+remoteValidation.provider = "tailscale"
+remoteValidation.tailscaleHost = "bee"
 [worktrees]
 inheritEnv = true
 
@@ -444,3 +446,9 @@ name = "data analyst"
 cli = "opencode"
 model = "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731"
 enabled = true
+
+
+
+
+
+
