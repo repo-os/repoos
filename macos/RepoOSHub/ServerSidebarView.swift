@@ -95,13 +95,17 @@ struct ServerSidebarRow: View {
             ServerIconActionButton(entry: entry)
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.name)
-                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .clipped()
                 Text(sidebarSubtitle)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .clipped()
             }
-            Spacer(minLength: 4)
+            Spacer(minLength: 2)
             InfoOrBadgesTrigger(
                 snapshot: appState.attentionSnapshot(for: entry.id),
                 isShowingDetails: $isShowingDetails
@@ -130,7 +134,7 @@ struct ServerSidebarRow: View {
     private var sidebarSubtitle: String {
         guard let repositoryName = entry.repositoryName,
               repositoryName.caseInsensitiveCompare(entry.name) != .orderedSame
-        else { return entry.originString }
+        else { return entry.originString.strippingURLScheme }
         return repositoryName
     }
 }
@@ -522,6 +526,14 @@ private struct AttentionBadge: View {
     }
 }
 
+
+extension String {
+    var strippingURLScheme: String {
+        if hasPrefix("https://") { return String(dropFirst(8)) }
+        if hasPrefix("http://") { return String(dropFirst(7)) }
+        return self
+    }
+}
 
 extension Color {
     init?(hex: String) {
