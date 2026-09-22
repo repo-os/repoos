@@ -1,4 +1,5 @@
 .derived-data/
+dmg-staging/
 build/
 xcuserdata/
 *.xcuserstate
