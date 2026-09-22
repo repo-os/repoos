@@ -25,12 +25,12 @@ final class HubAppState: ObservableObject {
         store: ServerRegistryStore,
         healthChecker: HealthChecking,
         attentionCoordinator: HubAttentionCoordinator,
-        crossServerTaskSearch: HubCrossServerTaskSearchEngine = HubCrossServerTaskSearchEngine()
+        crossServerTaskSearch: HubCrossServerTaskSearchEngine? = nil
     ) {
         self.store = store
         self.healthChecker = healthChecker
         self.attentionCoordinator = attentionCoordinator
-        self.crossServerTaskSearch = crossServerTaskSearch
+        self.crossServerTaskSearch = crossServerTaskSearch ?? HubCrossServerTaskSearchEngine()
         self.attentionCoordinator.onSnapshotsUpdated = { [weak self] in
             self?.objectWillChange.send()
         }
