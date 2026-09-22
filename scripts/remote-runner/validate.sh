@@ -47,7 +47,7 @@ docker run --rm \
   -e BUN_INSTALL_CACHE_DIR=/bun-cache \
   -w /repo \
   "$IMAGE" \
-  'set -o pipefail; bun install --frozen-lockfile && bun run build && bun run test 2>&1 | tee /artifacts/test-output.log'
+  'set -o pipefail; bun install --frozen-lockfile && bun run build && printf "#!/bin/sh\nexec bun /repo/dist/cli/index.js \"\$@\"\n" > /usr/local/bin/repoos && chmod +x /usr/local/bin/repoos && bun run test 2>&1 | tee /artifacts/test-output.log'
 CODE=$?
 set -e
 
