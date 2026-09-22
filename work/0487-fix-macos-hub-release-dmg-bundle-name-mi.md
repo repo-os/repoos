@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-22T16:56:13Z"
-review_passes: 2
 id: "0487"
 title: Fix macOS Hub release DMG bundle-name mismatch
 type: bug
@@ -11,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/fix-macos-hub-release-dmg-bundle-name-mi
 created_at: "2026-09-22T16:44:33Z"
-review_rounds: 1
+updated_at: "2026-09-22T16:47:52Z"
 ---
 Fix the macOS Hub release workflow before the first DMG release.
 
@@ -30,6 +28,3 @@ Acceptance criteria:
 - 2026-09-22T16:45:51Z · status inbox→ready
 - 2026-09-22T16:45:53Z · status ready→active, branch
 - 2026-09-22T16:47:52Z · status active→review
-- 2026-09-22T16:53:28Z · status review→active
-- 2026-09-22T16:54:35Z · status active→review
-
