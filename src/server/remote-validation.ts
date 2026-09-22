@@ -708,17 +708,12 @@ export class TailscaleRunner implements RemoteValidator {
       if (!up.ok)
         return this.infraFail(`scp of candidate bundle failed: ${up.detail ?? "unknown"}`);
 
-      // 3. run build + test inside a fresh container
+      // 3. run build + test via validate.sh on the host (which calls docker run internally)
       const image = rv.containerImage ?? "repoos-ci";
       emit(`[running build + test in ${image} container on ${host.ip}]\n`);
-      // Mount a persistent bun cache volume (same as the Hetzner validate.sh
-      // already does inside the container) so installs stay fast across jobs.
-      const cmd =
-        `docker run --rm ` +
-        `-v /var/cache/repoos/bun:/root/.bun/install/cache ` +
-        `-v ${remoteBundle}:${remoteBundle}:ro ` +
-        `${image} ` +
-        `/opt/repoos/validate.sh ${remoteBundle} ${opts.candidateSha}`;
+      // validate.sh lives on the host at /opt/repoos/validate.sh and calls docker run
+      // itself — same script used by the Hetzner runner VM.
+      const cmd = `REPOOS_CI_IMAGE=${image} /opt/repoos/validate.sh ${remoteBundle} ${opts.candidateSha}`;
       const run = await this.exec.runRemote(host, cmd, emit, this.timings.remoteRunTimeoutMs);
 
       // 4. pull artifacts (best effort)

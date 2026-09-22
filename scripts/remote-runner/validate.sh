@@ -18,6 +18,7 @@ SHA="${2:?usage: validate.sh <bundle-path> <expected-sha>}"
 WORK="$(mktemp -d /tmp/repoos-validate.XXXXXX)"
 ART="/tmp/repoos-artifacts"
 CACHE="/var/cache/repoos/bun"
+IMAGE="${REPOOS_CI_IMAGE:-repoos-ci}"
 mkdir -p "$CACHE"
 rm -rf "$ART" && mkdir -p "$ART"
 trap 'rm -rf "$WORK" "$BUNDLE"' EXIT
@@ -40,7 +41,7 @@ docker run --rm --user 0:0 \
   -v "$CACHE":/root/.bun/install/cache \
   -v "$ART":/artifacts \
   -w /repo \
-  repoos-ci \
+  "$IMAGE" \
   'set -o pipefail; bun install --frozen-lockfile && bun run build && bun run test 2>&1 | tee /artifacts/test-output.log'
 CODE=$?
 set -e
