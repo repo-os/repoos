@@ -28,8 +28,9 @@ type InputsViewMode = "list" | "board";
 
 const ui = useUiStore(),
   repo = useRepoStore(),
-  inputs = ref<Input[]>([]),
   activeInput = ref<Input | null>(null);
+// Read inputs from the store so they survive navigation (like repo.tasks).
+const inputs = computed(() => repo.inputs);
 const statuses = [
   { id: "new", label: "New", color: "#39e0ff" },
   { id: "reviewing", label: "Reviewing", color: "#ffb454" },
@@ -60,7 +61,7 @@ watch(statusCounts, (now, prev) => {
   revealInputArrivals(prev ?? {}, now);
 });
 async function load(): Promise<void> {
-  inputs.value = await repo.loadInputs();
+  await repo.refreshInputs();
   const firstLoad = !inputsLoaded.value;
   inputsLoaded.value = true;
   // Defer empty-column defaults until real data is in — mirrors BoardColumn

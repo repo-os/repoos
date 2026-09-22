@@ -2159,6 +2159,15 @@ export const useRepoStore = defineStore("repo", () => {
     return api<{ ok: true }>("/api/docs/create", JSON_OPTS("POST", form));
   }
 
+  const inputs = ref<Input[]>([]);
+  async function refreshInputs(): Promise<void> {
+    try {
+      inputs.value = await api<Input[]>("/api/inputs");
+    } catch {
+      /* leave existing value in place on error */
+    }
+  }
+  /** @deprecated use repo.inputs + repo.refreshInputs() */
   async function loadInputs(): Promise<Input[]> {
     return api<Input[]>("/api/inputs");
   }
@@ -2183,6 +2192,7 @@ export const useRepoStore = defineStore("repo", () => {
       `/api/inputs/${id}/resolve`,
       JSON_OPTS("POST", { resolution, taskId }),
     );
+    void refreshInputs();
     window.dispatchEvent(new Event("repoos:inputs-updated"));
     return updated;
   }
@@ -2191,6 +2201,7 @@ export const useRepoStore = defineStore("repo", () => {
       `/api/inputs/${id}/attachments`,
       JSON_OPTS("POST", { name: s.name, data: s.dataUrl.split(",")[1] ?? "" }),
     );
+    void refreshInputs();
   }
 
   /**
@@ -2304,6 +2315,7 @@ export const useRepoStore = defineStore("repo", () => {
       // A persisted notice from before this page load: reconcile it against
       // the running server so a reload that already landed clears it.
       void reconcileVersion();
+      void refreshInputs();
     } catch {
       /* server not reachable — UI still renders */
     } finally {
@@ -2391,6 +2403,8 @@ export const useRepoStore = defineStore("repo", () => {
     createFreeformTask,
     deleteTask,
     createDocument,
+    inputs,
+    refreshInputs,
     loadInputs,
     createInput,
     updateInput,
