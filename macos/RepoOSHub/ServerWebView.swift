@@ -305,13 +305,13 @@ struct ServerWebView: NSViewRepresentable {
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
             model.isLoading = false
-            model.loadFailure = mapError(error)
+            if !isCancellation(error) { model.loadFailure = mapError(error) }
             syncNavigationState()
         }
 
         func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
             model.isLoading = false
-            model.loadFailure = mapError(error)
+            if !isCancellation(error) { model.loadFailure = mapError(error) }
             syncNavigationState()
         }
 
@@ -344,6 +344,10 @@ struct ServerWebView: NSViewRepresentable {
             } else {
                 panel.begin(completionHandler: finish)
             }
+        }
+
+        private func isCancellation(_ error: Error) -> Bool {
+            (error as? URLError)?.code == .cancelled
         }
 
         private func mapError(_ error: Error) -> ServerWebLoadFailure {
