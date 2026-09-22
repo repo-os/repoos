@@ -125,8 +125,10 @@ describe("AuthStore sessions", () => {
   });
 
   it("returns empty string when store is unavailable", () => {
-    // Create a store pointing to a non-existent path
-    const badStore = new AuthStore("/nonexistent/path/to/repo");
+    // Use a path where the .repoos subdir cannot be created: /dev/null is a
+    // character device (not a directory), so mkdirSync("/dev/null/.repoos")
+    // always fails ENOTDIR, even as root inside a Linux container.
+    const badStore = new AuthStore("/dev/null");
     const token = badStore.createSession("alice@test.com", "admin", 3600);
     expect(token).toBe("");
     badStore.close();
@@ -260,7 +262,7 @@ describe("AuthStore session security", () => {
 
 describe("AuthStore edge cases", () => {
   it("handles null/empty operations gracefully when unavailable", () => {
-    const badStore = new AuthStore("/nonexistent/path");
+    const badStore = new AuthStore("/dev/null");
     expect(badStore.isAvailable()).toBe(false);
     expect(badStore.getUser("x@test.com")).toBeNull();
     expect(badStore.listUsers()).toEqual([]);

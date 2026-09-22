@@ -8,7 +8,7 @@
 FROM oven/bun:1-debian
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends git ca-certificates curl \
+ && apt-get install -y --no-install-recommends git ca-certificates curl procps \
  && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
  && apt-get install -y --no-install-recommends nodejs \
  && apt-get clean \
@@ -21,4 +21,8 @@ RUN git config --system user.email "ci@repoos.org" \
  && git config --system init.defaultBranch main
 
 WORKDIR /repo
+# Make binaries installed by `bun install` (e.g. repoos itself) available
+# to subprocesses spawned during `bun run test`, which don't always inherit
+# the bun-managed PATH augmentation that applies to `bun run` scripts.
+ENV PATH="/repo/node_modules/.bin:$PATH"
 ENTRYPOINT ["/bin/bash", "-lc"]
