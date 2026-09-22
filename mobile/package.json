@@ -2,7 +2,7 @@
   "name": "repoos-mobile",
   "version": "0.1.0",
   "private": true,
-  "description": "Privacy-first native RepoOS mobile hub. A native server picker + chromeless WebView around the existing RepoOS web UI. Server list lives on-device only.",
+  "description": "Privacy-first native RepoOS Hub for iPhone and Android. A native server picker + chromeless WebView around the existing RepoOS web UI. Server list lives on-device only.",
   "type": "module",
   "scripts": {
     "dev": "vite",

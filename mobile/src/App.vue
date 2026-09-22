@@ -55,7 +55,7 @@ async function gateLock(serverId: string | null): Promise<boolean> {
   if (!lockSettings.value.enabled) return true;
   lockStagingId.value = serverId;
   lockOpen.value = true;
-  const ok = await verifyWithDeviceLock("Unlock RepoOS to continue");
+  const ok = await verifyWithDeviceLock("Unlock RepoOS Hub to continue");
   lockOpen.value = false;
   return ok;
 }
