@@ -249,7 +249,9 @@ const year = new Date().getFullYear();
           <InstallBox class="mt-8" show-note />
           <p class="mt-3 text-[13px] text-[var(--txt-faint)]">
             Prefer a native app?
-            <a href="https://docs.repoos.org/macos-hub" class="text-[var(--cyan)] hover:underline"
+            <a
+              href="https://github.com/repo-os/repoos/blob/main/user-docs/macos-hub.md"
+              class="text-[var(--cyan)] hover:underline"
               >RepoOS Hub for Mac &rarr;</a
             >
           </p>
@@ -299,7 +301,9 @@ const year = new Date().getFullYear();
               stored in your Keychain.
             </p>
             <p class="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-[14px]">
-              <a href="https://docs.repoos.org/macos-hub" class="text-[var(--cyan)] hover:underline"
+              <a
+                href="https://github.com/repo-os/repoos/blob/main/user-docs/macos-hub.md"
+                class="text-[var(--cyan)] hover:underline"
                 >Read the guide &rarr;</a
               >
               <a

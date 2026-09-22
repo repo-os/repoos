@@ -40,7 +40,7 @@ release has an attached DMG. Until it lands, either build the app from source
 ## Install and first launch
 
 1. Open the downloaded `RepoOSHub.dmg`.
-2. Drag the **RepoOS** app into your **Applications** folder.
+2. Drag the **RepoOS Hub** app into your **Applications** folder.
 3. Eject the disk image and open the app from Applications.
 
 ### Distribution status (when the DMG ships)
@@ -48,17 +48,17 @@ release has an attached DMG. Until it lands, either build the app from source
 The release pipeline produces an **ad-hoc signed, not-notarized** DMG. That
 means the first time you open the app, macOS shows a Gatekeeper warning:
 
-> "RepoOS cannot be opened because it is from an unidentified developer."
+> "RepoOS Hub cannot be opened because it is from an unidentified developer."
 
 To open it anyway:
 
-- **Right-click** (or Control-click) **RepoOS** in Finder and choose **Open**,
+- **Right-click** (or Control-click) **RepoOS Hub** in Finder and choose **Open**,
   then click **Open** in the dialog. You only need to do this once.
 
 Or, from Terminal:
 
 ```sh
-xattr -dr com.apple.quarantine /Applications/RepoOS.app
+xattr -dr com.apple.quarantine "/Applications/RepoOS Hub.app"
 ```
 
 Notarization and a stable Developer ID signature are planned but are not in

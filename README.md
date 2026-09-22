@@ -311,7 +311,7 @@ for their attention and search endpoints.
 The Hub's DMG is published on
 [GitHub Releases](https://github.com/repo-os/repoos/releases) with each tag
 release (the first Hub DMG is pending). Setup, pairing, and limitation details
-are in the [Hub guide](https://docs.repoos.org/macos-hub).
+are in the [Hub guide](https://github.com/repo-os/repoos/blob/main/user-docs/macos-hub.md).
 
 ## Roadmap
 
