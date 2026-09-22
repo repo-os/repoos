@@ -35,7 +35,7 @@ model-selection check is not certification of the complete adapter contract.
 | **GitHub Copilot** | `github copilot` | `copilot` | `>=1.0.0 <2.0.0` | **1.0.87** (2026-09-22) | `--output-format json` JSONL; `--no-ask-user --allow-all-tools` for headless. |
 | **Qwen Code** | `qwen code` | `qwen` | `>=0.1.0 <1.0.0` | Pending | Claude-compatible interface; `--yolo` for headless. Requires `--auth-type` configured. |
 
-This table reflects `src/core/agent-compatibility.json`. Update that manifest
+This table is derived from `src/core/agent-compatibility.json`. Update that manifest
 and add contract evidence together when certifying a release. Do not silently
 widen a range because a newer binary happens to start.
 

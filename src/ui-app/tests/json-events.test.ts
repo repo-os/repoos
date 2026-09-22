@@ -559,7 +559,7 @@ describe("opencode driver (structured JSON events)", () => {
       const [run] = spawns(fx);
       expect(run.args[0]).toBe("run");
       expect(run.args).toEqual(expect.arrayContaining(["--format", "json"]));
-      expect(run.args).toEqual(expect.arrayContaining(["--dir", cwd]));
+      expect(realpathSync(run.cwd)).toBe(realpathSync(cwd)); // --dir removed in opencode v2; cwd is set via spawn option
       // --auto is load-bearing: stdin is ignored, so an unanswered permission
       // prompt hangs the process forever (confirmed live on #0069 — ~2 hours
       // at ~1% CPU with zero commits before being killed).
@@ -573,7 +573,8 @@ describe("opencode driver (structured JSON events)", () => {
 
       const [, resume] = spawns(fx);
       expect(resume.args.slice(0, 3)).toEqual(["run", "--format", "json"]);
-      expect(resume.args).toEqual(expect.arrayContaining(["--session", "ses-123", "--dir", cwd]));
+      expect(resume.args).toEqual(expect.arrayContaining(["--session", "ses-123"]));
+      expect(realpathSync(resume.cwd)).toBe(realpathSync(cwd)); // --dir removed in opencode v2; cwd is set via spawn option
       expect(resume.args).toContain("--auto");
     } finally {
       process.env.PATH = oldPath;
