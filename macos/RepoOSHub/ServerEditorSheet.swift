@@ -8,6 +8,8 @@ struct ServerEditorSheet: View {
     @State private var draft: ServerEditorDraft
     @State private var errorMessage: String?
     @FocusState private var focusedField: Field?
+    @State private var discoveredServers: [DiscoveredLocalServer] = []
+    @State private var isDiscovering = false
 
     private enum Field: Hashable {
         case name, origin, group, icon, color
@@ -50,6 +52,14 @@ struct ServerEditorSheet: View {
             }
             .formStyle(.grouped)
 
+            if addsServer {
+                LocalDiscoverySection(
+                    servers: discoveredServers,
+                    isDiscovering: isDiscovering,
+                    onSelect: { draft.originText = $0.originString }
+                )
+            }
+
             if let errorMessage {
                 Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.red)
@@ -72,6 +82,7 @@ struct ServerEditorSheet: View {
         .frame(width: 460)
         .onAppear {
             focusedField = addsServer ? .origin : .name
+            if addsServer { Task { await runDiscovery() } }
         }
     }
 
@@ -95,6 +106,69 @@ struct ServerEditorSheet: View {
         errorMessage = await appState.saveFromEditor(draft)
         if errorMessage == nil {
             dismiss()
+        }
+    }
+
+    private func runDiscovery() async {
+        isDiscovering = true
+        let knownPorts = Set(appState.entries.compactMap { entry -> Int? in
+            guard let url = entry.originURL,
+                  url.host == "localhost" || url.host == "127.0.0.1"
+            else { return nil }
+            return url.port
+        })
+        discoveredServers = await LocalServerDiscovery.discover(knownLocalPorts: knownPorts)
+        isDiscovering = false
+    }
+}
+
+private struct LocalDiscoverySection: View {
+    let servers: [DiscoveredLocalServer]
+    let isDiscovering: Bool
+    let onSelect: (DiscoveredLocalServer) -> Void
+
+    var body: some View {
+        if isDiscovering || !servers.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 6) {
+                    Text("Running locally")
+                        .font(.subheadline.weight(.semibold))
+                    if isDiscovering {
+                        ProgressView()
+                            .controlSize(.mini)
+                            .scaleEffect(0.7)
+                    }
+                }
+
+                if !servers.isEmpty {
+                    VStack(spacing: 2) {
+                        ForEach(servers) { server in
+                            HStack {
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(server.displayName)
+                                        .font(.callout)
+                                    Text("localhost:\(server.port)")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Button {
+                                    onSelect(server)
+                                } label: {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.title3)
+                                        .foregroundStyle(.blue)
+                                }
+                                .buttonStyle(.plain)
+                                .help("Use localhost:\(server.port)")
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 7))
+                        }
+                    }
+                }
+            }
         }
     }
 }
