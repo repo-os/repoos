@@ -12,6 +12,7 @@ final class HubAppState: ObservableObject {
     @Published var pinTaskContextServerID: UUID?
     @Published private(set) var workspaceNavigation = WorkspaceNavigationSnapshot.placeholder
     @Published private(set) var pendingNavigationRequest: HubNavigationRequest?
+    @Published private(set) var retainedWorkspaceServerIDs = Set<UUID>()
     @Published var attentionSettingsServerID: UUID?
     @Published private(set) var hubGlobalPreferences: HubGlobalPreferences = .default
 
@@ -57,6 +58,12 @@ final class HubAppState: ObservableObject {
         return entries.first { $0.id == selectedServerID }
     }
 
+    /// Workspaces visited during this launch stay in the view hierarchy so their
+    /// isolated WKWebViews retain their page, history, and sign-in state.
+    var retainedWorkspaceEntries: [ServerEntry] {
+        entries.filter { retainedWorkspaceServerIDs.contains($0.id) }
+    }
+
     var pinnedEntries: [ServerEntry] {
         entries.filter(\.isPinned).sorted(by: entrySort)
     }
@@ -100,6 +107,7 @@ final class HubAppState: ObservableObject {
             } else {
                 selectedServerID = entries.first?.id
             }
+            retainedWorkspaceServerIDs = selectedServerID.map { [$0] } ?? []
             pruneOrphanNavigationMetadata()
             hubGlobalPreferences = document.hubGlobalPreferences
             restorePendingRouteForSelectedServer()
@@ -114,10 +122,20 @@ final class HubAppState: ObservableObject {
 
     func selectServer(_ id: UUID?) {
         guard selectedServerID != id else { return }
+        let previousServerID = selectedServerID
+        if let previousServerID {
+            NotificationCenter.default.post(
+                name: .hubWebReadAccentColor,
+                object: nil,
+                userInfo: HubWebNavigationCommand.userInfo(serverID: previousServerID)
+            )
+        }
         selectedServerID = id
         document.lastSelectedServerID = id
         workspaceNavigation = .placeholder
-        ServerWebsiteDataStorePool.shared.releaseCachedStores(except: id)
+        if let id {
+            retainedWorkspaceServerIDs.insert(id)
+        }
         persistQuietly()
         restorePendingRouteForSelectedServer()
         attentionCoordinator.setSelectedServerID(id)
@@ -353,6 +371,7 @@ final class HubAppState: ObservableObject {
 
     func deleteServer(_ entry: ServerEntry) {
         ServerWebsiteDataStorePool.shared.removeStore(for: entry.id)
+        retainedWorkspaceServerIDs.remove(entry.id)
         attentionCoordinator.deleteCapabilityToken(serverID: entry.id, origin: entry.originString)
         do {
             try store.removeEntry(id: entry.id, document: &document)
@@ -431,6 +450,7 @@ final class HubAppState: ObservableObject {
                 entries = document.entries.sorted(by: entrySort)
                 selectedServerID = entry.id
                 document.lastSelectedServerID = entry.id
+                retainedWorkspaceServerIDs.insert(entry.id)
             case .edit(let existing):
                 let name = try ServerOriginNormalizer.validateDisplayName(draft.name)
                 guard var entry = document.entries.first(where: { $0.id == existing.id }) else {
@@ -449,6 +469,7 @@ final class HubAppState: ObservableObject {
                 entries = document.entries.sorted(by: entrySort)
                 selectedServerID = entry.id
                 document.lastSelectedServerID = entry.id
+                retainedWorkspaceServerIDs.insert(entry.id)
             }
 
             try store.save(document)
@@ -503,6 +524,16 @@ final class HubAppState: ObservableObject {
             entry.name = reportedName
         }
         entry.repositoryName = reportedName
+    }
+
+    func updateWorkspaceAccentColor(_ color: String?, for serverID: UUID) {
+        guard let index = document.entries.firstIndex(where: { $0.id == serverID }) else { return }
+        let normalized = ServerAccentColor.normalizedHex(color)
+        guard document.entries[index].accentColorHex != normalized else { return }
+        document.entries[index].accentColorHex = normalized
+        document.entries[index].updatedAt = Date()
+        entries = document.entries.sorted(by: entrySort)
+        try? store.save(document)
     }
 
     private func persistQuietly() {

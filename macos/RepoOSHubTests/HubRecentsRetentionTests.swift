@@ -96,6 +96,32 @@ final class HubRecentsRetentionTests: XCTestCase {
     }
 
     @MainActor
+    func testSelectingServersRetainsEachVisitedWorkspace() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("hub-retained-workspaces-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let store = ServerRegistryStore(directoryURL: directory)
+        let first = ServerEntry(name: "First", origin: URL(string: "https://first.test")!)
+        let second = ServerEntry(name: "Second", origin: URL(string: "https://second.test")!)
+        var document = ServerRegistryDocument()
+        try store.upsertEntry(first, in: &document)
+        try store.upsertEntry(second, in: &document)
+        document.lastSelectedServerID = first.id
+        try store.save(document)
+
+        let state = HubAppState(
+            store: store,
+            healthChecker: StubHealthChecker(),
+            attentionCoordinator: HubAttentionCoordinator()
+        )
+        state.selectServer(second.id)
+
+        XCTAssertEqual(Set(state.retainedWorkspaceEntries.map(\.id)), [first.id, second.id])
+    }
+
+    @MainActor
     func testWorkspaceNavigationUpdateIsStableForAnUnchangedSnapshot() throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("hub-navigation-state-\(UUID().uuidString)", isDirectory: true)

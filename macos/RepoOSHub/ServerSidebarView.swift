@@ -85,11 +85,17 @@ struct ServerSidebarRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
+            if let accentColor = ServerAccentColor.color(from: entry.accentColorHex) {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(accentColor)
+                    .frame(width: 4, height: 30)
+                    .accessibilityHidden(true)
+            }
             ServerIconView(entry: entry)
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.name)
                     .lineLimit(1)
-                Text(entry.originString)
+                Text(sidebarSubtitle)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -115,6 +121,12 @@ struct ServerSidebarRow: View {
         .help(ServerSidebarStatus.tooltip(for: entry))
     }
 
+    private var sidebarSubtitle: String {
+        guard let repositoryName = entry.repositoryName,
+              repositoryName.caseInsensitiveCompare(entry.name) != .orderedSame
+        else { return entry.originString }
+        return repositoryName
+    }
 }
 
 private struct PinnedContextSidebarRow: View {
@@ -202,6 +214,23 @@ enum ServerSidebarStatus {
         case .unreachable: return "orange"
         case .invalid: return "red"
         }
+    }
+}
+
+enum ServerAccentColor {
+    static func normalizedHex(_ value: String?) -> String? {
+        guard let value else { return nil }
+        let hex = value.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        guard hex.range(of: "^#[0-9A-F]{6}$", options: .regularExpression) != nil else { return nil }
+        return hex
+    }
+
+    static func color(from value: String?) -> Color? {
+        guard let hex = normalizedHex(value) else { return nil }
+        let red = Double(Int(hex.dropFirst().prefix(2), radix: 16) ?? 0) / 255
+        let green = Double(Int(hex.dropFirst(3).prefix(2), radix: 16) ?? 0) / 255
+        let blue = Double(Int(hex.suffix(2), radix: 16) ?? 0) / 255
+        return Color(red: red, green: green, blue: blue)
     }
 }
 

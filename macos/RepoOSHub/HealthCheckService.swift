@@ -22,6 +22,7 @@ protocol HealthChecking: Sendable {
 struct HealthResponsePayload: Decodable {
     let ok: Bool?
     let projectName: String?
+    let root: String?
 }
 
 final class HealthCheckRedirectGuard: NSObject, URLSessionTaskDelegate {
@@ -92,7 +93,7 @@ struct RepoOSHealthChecker: HealthChecking {
             guard payload.ok == true else {
                 return .failure(.notRepoOS)
             }
-            return .success(projectName: payload.projectName)
+            return .success(projectName: payload.projectName ?? repositoryName(from: payload.root))
         } catch let error as URLError {
             switch error.code {
             case .timedOut:
@@ -109,6 +110,14 @@ struct RepoOSHealthChecker: HealthChecking {
         } catch {
             return .failure(.network(error.localizedDescription))
         }
+    }
+
+    private func repositoryName(from root: String?) -> String? {
+        guard let root = root?.trimmingCharacters(in: .whitespacesAndNewlines), !root.isEmpty else {
+            return nil
+        }
+        let name = URL(fileURLWithPath: root).lastPathComponent
+        return name.isEmpty || name == "/" ? nil : name
     }
 }
 

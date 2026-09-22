@@ -7,12 +7,20 @@ struct WorkspaceDetailView: View {
         Group {
             if appState.entries.isEmpty {
                 RegistryEmptyState(onAdd: appState.presentAddServer)
-            } else if let entry = appState.selectedEntry {
-                ServerWebWorkspaceView(entry: entry)
-                    // ServerWebWorkspaceView owns its web-view model. Give each selected
-                    // server a distinct identity so SwiftUI discards the previous model
-                    // instead of retaining its already-loaded WKWebView.
-                    .id(entry.id)
+            } else if appState.selectedEntry != nil {
+                ZStack {
+                    ForEach(appState.retainedWorkspaceEntries) { entry in
+                        let isSelected = entry.id == appState.selectedServerID
+                        ServerWebWorkspaceView(entry: entry)
+                            // Keep every visited server alive in this ZStack. Hiding an
+                            // inactive workspace preserves its WKWebView rather than
+                            // rebuilding it (and reloading the server) on every switch.
+                            .opacity(isSelected ? 1 : 0)
+                            .allowsHitTesting(isSelected)
+                            .accessibilityHidden(!isSelected)
+                            .id(entry.id)
+                    }
+                }
             } else {
                 SelectServerPrompt()
             }

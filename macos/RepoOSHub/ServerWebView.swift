@@ -41,6 +41,7 @@ final class ServerWebViewModel: ObservableObject {
 
 extension Notification.Name {
     static let serverWebViewReload = Notification.Name("org.repoos.hub.serverWebViewReload")
+    static let hubWebReadAccentColor = Notification.Name("org.repoos.hub.webReadAccentColor")
 }
 
 struct ServerWebView: NSViewRepresentable {
@@ -100,6 +101,18 @@ struct ServerWebView: NSViewRepresentable {
 
         func observeHubCommands() {
             let serverID = model.serverID
+            commandObservers.append(
+                NotificationCenter.default.addObserver(
+                    forName: .hubWebReadAccentColor,
+                    object: nil,
+                    queue: .main
+                ) { [weak self] note in
+                    guard HubWebNavigationCommand.targets(note, serverID: serverID) else { return }
+                    Task { @MainActor in
+                        self?.readRepositoryAccentColor()
+                    }
+                }
+            )
             commandObservers.append(
                 NotificationCenter.default.addObserver(
                     forName: .serverWebViewReload,
@@ -180,6 +193,7 @@ struct ServerWebView: NSViewRepresentable {
         }
 
         func syncNavigationState() {
+            guard appState.selectedServerID == model.serverID else { return }
             let snapshot = navigationSnapshot()
             guard appState.workspaceNavigation != snapshot else { return }
 
@@ -188,6 +202,7 @@ struct ServerWebView: NSViewRepresentable {
             // view updates” feedback loop.
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
+                guard self.appState.selectedServerID == self.model.serverID else { return }
                 let latestSnapshot = self.navigationSnapshot()
                 guard self.appState.workspaceNavigation != latestSnapshot else { return }
                 self.appState.updateWorkspaceNavigation(latestSnapshot)
@@ -260,7 +275,32 @@ struct ServerWebView: NSViewRepresentable {
                 let path = url.path.isEmpty ? "/" : url.path
                 appState.recordRouteVisit(serverID: model.serverID, path: path, title: webView.title)
             }
+            readRepositoryAccentColor()
             syncNavigationState()
+        }
+
+        /// Repo color is a visual preference stored by the RepoOS web UI in
+        /// this server's isolated local storage. Read only that public key when
+        /// a page finishes or the user leaves a server; no web-to-native bridge
+        /// or injected script is exposed to server content.
+        private func readRepositoryAccentColor() {
+            let script = """
+            (() => {
+                const prefix = 'repoos.repoColor.';
+                for (let index = 0; index < localStorage.length; index += 1) {
+                    const key = localStorage.key(index);
+                    if (key && key.startsWith(prefix)) return localStorage.getItem(key) || '';
+                }
+                return '';
+            })()
+            """
+            webView?.evaluateJavaScript(script) { [weak self] value, error in
+                guard let self, error == nil else { return }
+                let color = value as? String
+                Task { @MainActor in
+                    self.appState.updateWorkspaceAccentColor(color, for: self.model.serverID)
+                }
+            }
         }
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {

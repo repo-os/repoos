@@ -61,7 +61,9 @@ struct ServerWebWorkspaceView: View {
         }
         .navigationTitle(entry.name)
         .onDisappear {
-            appState.updateWorkspaceNavigation(.placeholder)
+            if appState.selectedServerID == entry.id {
+                appState.updateWorkspaceNavigation(.placeholder)
+            }
         }
     }
 

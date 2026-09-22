@@ -41,4 +41,10 @@ final class ReachabilityStateTests: XCTestCase {
         XCTAssertTrue(tooltip.contains("Status: Healthy (green)"))
         XCTAssertTrue(tooltip.contains("Icon colors: green = healthy"))
     }
+
+    func testAccentColorNormalizesAndRejectsInvalidHex() {
+        XCTAssertEqual(ServerAccentColor.normalizedHex(" #e07a8a "), "#E07A8A")
+        XCTAssertNil(ServerAccentColor.normalizedHex("blue"))
+        XCTAssertNil(ServerAccentColor.normalizedHex("#ABC"))
+    }
 }
