@@ -6657,9 +6657,6 @@
   background: var(--panel-solid);
   position: relative;
 }
-.detect-row + .detect-row {
-  margin-top: 8px;
-}
 .detect-badge {
   width: 8px;
   height: 8px;
@@ -6712,8 +6709,14 @@
   flex: none;
 }
 
+.detect-row-wrap {
+  display: flex;
+  flex-direction: column;
+}
+.detect-row-wrap + .detect-row-wrap {
+  margin-top: 8px;
+}
 .detect-compat-icon {
-  position: relative;
   flex: none;
   display: inline-flex;
   align-items: center;
@@ -6725,56 +6728,45 @@
   font-size: 9px;
   font-weight: 700;
   line-height: 1;
-  cursor: default;
-  opacity: 0.75;
+  cursor: pointer;
+  opacity: 0.7;
+  background: none;
+  padding: 0;
   transition: opacity 0.1s;
 }
-.detect-compat-icon:hover {
+.detect-compat-icon:hover,
+.detect-compat-icon.active {
   opacity: 1;
 }
-.detect-compat-tooltip {
-  display: none;
-  position: absolute;
-  left: 50%;
-  top: calc(100% + 7px);
-  transform: translateX(-50%);
-  background: var(--panel-solid);
-  border: 1px solid var(--border-bright);
-  border-radius: 9px;
-  padding: 10px 12px;
-  min-width: 240px;
-  max-width: 340px;
-  z-index: 200;
+.detect-compat-card {
+  display: flex;
   flex-direction: column;
   gap: 6px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-  pointer-events: auto;
+  margin-top: 6px;
+  padding: 10px 14px;
+  background: var(--panel-solid);
+  border: 1px solid var(--border-bright);
+  border-radius: 8px;
 }
-.detect-compat-icon:hover .detect-compat-tooltip {
-  display: flex;
-}
-.detect-compat-tooltip-label {
+.detect-compat-card-label {
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
 }
-.detect-compat-tooltip-explanation {
+.detect-compat-card-explanation {
   font-size: 12px;
   color: var(--txt-secondary);
   line-height: 1.45;
-  white-space: normal;
 }
 .detect-compat-probe-row {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 2px;
 }
-.detect-compat-hint {
+.detect-compat-card-hint {
   font-size: 11px;
   color: var(--txt-dim);
-  margin-top: 2px;
 }
 .detect-updates-btn {
   margin-left: auto;

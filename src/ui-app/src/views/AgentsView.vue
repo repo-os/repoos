@@ -329,6 +329,11 @@ const detected = ref<DetectedAgent[]>([]);
 const detectLoading = ref(false);
 const detectError = ref(false);
 const detectHintCopied = ref<string>("");
+const openCompatId = ref<string | null>(null);
+
+function toggleCompat(id: string): void {
+  openCompatId.value = openCompatId.value === id ? null : id;
+}
 const updateLoading = ref(false);
 const updateError = ref(false);
 const updates = ref<Record<string, AgentUpdate>>({});
@@ -977,140 +982,157 @@ onUnmounted(() => {
           </div>
 
           <template v-else>
-            <div v-for="r in detectRows" :key="r.agent.id" class="detect-row">
-              <span
-                class="detect-badge"
-                :style="{ background: r.color, boxShadow: '0 0 8px ' + r.color }"
-              ></span>
-              <span class="agent-name detect-agent-name">{{ r.agent.name }}</span>
-              <span class="detect-pill" :style="{ color: r.color }">{{ r.statusLabel }}</span>
-              <span
-                class="agent-badge"
-                :class="r.agent.drivable ? 'detect-driver-yes' : 'detect-driver-no'"
-              >
-                {{ r.agent.drivable ? "RepoOS driver" : "detected only" }}
-              </span>
-              <span v-if="r.agent.deprecated" class="agent-badge detect-deprecated"
-                >Deprecated</span
-              >
-              <span v-if="r.agent.version" class="detect-ver detect-ver-inline">{{
-                r.agent.version
-              }}</span>
-              <span
-                v-if="r.agent.compatibility"
-                class="detect-compat-icon"
-                :style="{ color: compatibilityColor(r.agent) }"
-                >{{ compatibilityIcon(r.agent)
-                }}<span class="detect-compat-tooltip">
-                  <span class="detect-compat-tooltip-label">{{ r.agent.compatibility.label }}</span>
-                  <span class="detect-compat-tooltip-explanation">{{
-                    compatibilityTitle(r.agent)
-                  }}</span>
-                  <template v-if="probeAvailable(r.agent)">
-                    <span class="detect-compat-probe-row">
-                      <code class="detect-hint-code">{{ probeHint(r.agent) }}</code>
-                      <button class="detect-copy" @click.stop="copyHint(probeHint(r.agent))">
-                        {{ detectHintCopied === probeHint(r.agent) ? "copied" : "copy" }}
-                      </button>
-                    </span>
-                  </template>
-                  <template v-else-if="r.agent.compatibility.status === 'upgrade_recommended'">
-                    <span class="detect-compat-hint">upgrade recommended</span>
-                  </template>
-                  <template v-else-if="r.agent.compatibility.status === 'unsupported'">
-                    <span class="detect-compat-hint">use a supported release</span>
-                  </template>
-                </span></span
-              >
-              <details v-if="r.agent.installed && r.agent.update" class="detect-update-detail">
-                <summary :style="{ color: updateColor(r.agent.update) }">
-                  {{ updateLabel(r.agent.update) }}
-                </summary>
-                <span class="detect-update-meta">
-                  <span v-if="r.agent.update.source">{{ r.agent.update.source }}</span>
-                  <span v-if="checkedLabel(r.agent.update)">{{
-                    checkedLabel(r.agent.update)
-                  }}</span>
-                  <span v-if="r.agent.update.error" class="detect-update-reason">{{
-                    r.agent.update.error
-                  }}</span>
-                  <button
-                    v-if="r.agent.update.updateCommand"
-                    class="detect-copy"
-                    @click="copyHint(r.agent.update.updateCommand)"
+            <div v-for="r in detectRows" :key="r.agent.id" class="detect-row-wrap">
+              <div class="detect-row">
+                <span
+                  class="detect-badge"
+                  :style="{ background: r.color, boxShadow: '0 0 8px ' + r.color }"
+                ></span>
+                <span class="agent-name detect-agent-name">{{ r.agent.name }}</span>
+                <span class="detect-pill" :style="{ color: r.color }">{{ r.statusLabel }}</span>
+                <span
+                  class="agent-badge"
+                  :class="r.agent.drivable ? 'detect-driver-yes' : 'detect-driver-no'"
+                >
+                  {{ r.agent.drivable ? "RepoOS driver" : "detected only" }}
+                </span>
+                <span v-if="r.agent.deprecated" class="agent-badge detect-deprecated"
+                  >Deprecated</span
+                >
+                <span v-if="r.agent.version" class="detect-ver detect-ver-inline">{{
+                  r.agent.version
+                }}</span>
+                <button
+                  v-if="r.agent.compatibility"
+                  type="button"
+                  class="detect-compat-icon"
+                  :class="{ active: openCompatId === r.agent.id }"
+                  :style="{ color: compatibilityColor(r.agent) }"
+                  :aria-label="`Compatibility details for ${r.agent.name}`"
+                  @click.stop="toggleCompat(r.agent.id)"
+                >
+                  {{ compatibilityIcon(r.agent) }}
+                </button>
+                <details v-if="r.agent.installed && r.agent.update" class="detect-update-detail">
+                  <summary :style="{ color: updateColor(r.agent.update) }">
+                    {{ updateLabel(r.agent.update) }}
+                  </summary>
+                  <span class="detect-update-meta">
+                    <span v-if="r.agent.update.source">{{ r.agent.update.source }}</span>
+                    <span v-if="checkedLabel(r.agent.update)">{{
+                      checkedLabel(r.agent.update)
+                    }}</span>
+                    <span v-if="r.agent.update.error" class="detect-update-reason">{{
+                      r.agent.update.error
+                    }}</span>
+                    <button
+                      v-if="r.agent.update.updateCommand"
+                      class="detect-copy"
+                      @click="copyHint(r.agent.update.updateCommand)"
+                    >
+                      {{
+                        detectHintCopied === r.agent.update.updateCommand
+                          ? "copied"
+                          : "copy update command"
+                      }}
+                    </button>
+                  </span>
+                </details>
+                <span v-if="r.status === 'auth'" class="detect-hint-inline">
+                  <code
+                    class="detect-hint-code"
+                    :title="r.agent.authHint || 'sign in with the CLI'"
+                    >{{ r.agent.authHint || "sign in with the CLI" }}</code
                   >
-                    {{
-                      detectHintCopied === r.agent.update.updateCommand
-                        ? "copied"
-                        : "copy update command"
-                    }}
+                  <button
+                    v-if="r.agent.authHint"
+                    class="detect-copy"
+                    @click="copyHint(r.agent.authHint!)"
+                  >
+                    {{ detectHintCopied === r.agent.authHint ? "copied" : "copy" }}
                   </button>
                 </span>
-              </details>
-              <span v-if="r.status === 'auth'" class="detect-hint-inline">
-                <code
-                  class="detect-hint-code"
-                  :title="r.agent.authHint || 'sign in with the CLI'"
-                  >{{ r.agent.authHint || "sign in with the CLI" }}</code
-                >
+                <span v-else-if="r.status === 'desktop'" class="detect-hint-inline">
+                  <code class="detect-hint-code" :title="r.agent.installHint">{{
+                    r.agent.installHint
+                  }}</code>
+                  <button class="detect-copy" @click="copyHint(r.agent.installHint)">
+                    {{ detectHintCopied === r.agent.installHint ? "copied" : "copy" }}
+                  </button>
+                </span>
+                <span v-else-if="r.status === 'missing'" class="detect-hint-inline">
+                  <code class="detect-hint-code" :title="r.agent.installHint">{{
+                    r.agent.installHint
+                  }}</code>
+                  <button class="detect-copy" @click="copyHint(r.agent.installHint)">
+                    {{ detectHintCopied === r.agent.installHint ? "copied" : "copy" }}
+                  </button>
+                </span>
+                <span v-if="r.agent.deprecated" class="detect-migration-inline">
+                  {{ r.agent.installHint }}
+                  <a
+                    v-if="r.agent.migrationUrl"
+                    :href="r.agent.migrationUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Official migration and auth docs
+                  </a>
+                  <span v-if="r.agent.migrationNote">{{ r.agent.migrationNote }}</span>
+                </span>
                 <button
-                  v-if="r.agent.authHint"
-                  class="detect-copy"
-                  @click="copyHint(r.agent.authHint!)"
+                  type="button"
+                  class="detect-star-btn"
+                  :class="{ on: isAgentFavorite(favoriteKey(r.agent)) }"
+                  :aria-pressed="isAgentFavorite(favoriteKey(r.agent))"
+                  :aria-label="
+                    isAgentFavorite(favoriteKey(r.agent))
+                      ? `Remove ${r.agent.name} from favorites`
+                      : `Add ${r.agent.name} to favorites`
+                  "
+                  :title="
+                    isAgentFavorite(favoriteKey(r.agent))
+                      ? 'Remove from favorites'
+                      : 'Add to favorites'
+                  "
+                  @click="toggleAgentFavorite(favoriteKey(r.agent))"
                 >
-                  {{ detectHintCopied === r.agent.authHint ? "copied" : "copy" }}
+                  <Star
+                    class="size-3.5"
+                    :fill="isAgentFavorite(favoriteKey(r.agent)) ? 'currentColor' : 'none'"
+                  />
                 </button>
-              </span>
-              <span v-else-if="r.status === 'desktop'" class="detect-hint-inline">
-                <code class="detect-hint-code" :title="r.agent.installHint">{{
-                  r.agent.installHint
-                }}</code>
-                <button class="detect-copy" @click="copyHint(r.agent.installHint)">
-                  {{ detectHintCopied === r.agent.installHint ? "copied" : "copy" }}
-                </button>
-              </span>
-              <span v-else-if="r.status === 'missing'" class="detect-hint-inline">
-                <code class="detect-hint-code" :title="r.agent.installHint">{{
-                  r.agent.installHint
-                }}</code>
-                <button class="detect-copy" @click="copyHint(r.agent.installHint)">
-                  {{ detectHintCopied === r.agent.installHint ? "copied" : "copy" }}
-                </button>
-              </span>
-              <span v-if="r.agent.deprecated" class="detect-migration-inline">
-                {{ r.agent.installHint }}
-                <a
-                  v-if="r.agent.migrationUrl"
-                  :href="r.agent.migrationUrl"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Official migration and auth docs
-                </a>
-                <span v-if="r.agent.migrationNote">{{ r.agent.migrationNote }}</span>
-              </span>
-              <button
-                type="button"
-                class="detect-star-btn"
-                :class="{ on: isAgentFavorite(favoriteKey(r.agent)) }"
-                :aria-pressed="isAgentFavorite(favoriteKey(r.agent))"
-                :aria-label="
-                  isAgentFavorite(favoriteKey(r.agent))
-                    ? `Remove ${r.agent.name} from favorites`
-                    : `Add ${r.agent.name} to favorites`
-                "
-                :title="
-                  isAgentFavorite(favoriteKey(r.agent))
-                    ? 'Remove from favorites'
-                    : 'Add to favorites'
-                "
-                @click="toggleAgentFavorite(favoriteKey(r.agent))"
+              </div>
+              <div
+                v-if="r.agent.compatibility && openCompatId === r.agent.id"
+                class="detect-compat-card"
               >
-                <Star
-                  class="size-3.5"
-                  :fill="isAgentFavorite(favoriteKey(r.agent)) ? 'currentColor' : 'none'"
-                />
-              </button>
+                <div
+                  class="detect-compat-card-label"
+                  :style="{ color: compatibilityColor(r.agent) }"
+                >
+                  {{ r.agent.compatibility.label }}
+                </div>
+                <div class="detect-compat-card-explanation">{{ compatibilityTitle(r.agent) }}</div>
+                <div v-if="probeAvailable(r.agent)" class="detect-compat-probe-row">
+                  <code class="detect-hint-code">{{ probeHint(r.agent) }}</code>
+                  <button class="detect-copy" @click="copyHint(probeHint(r.agent))">
+                    {{ detectHintCopied === probeHint(r.agent) ? "copied" : "copy" }}
+                  </button>
+                </div>
+                <div
+                  v-else-if="r.agent.compatibility.status === 'upgrade_recommended'"
+                  class="detect-compat-card-hint"
+                >
+                  upgrade recommended
+                </div>
+                <div
+                  v-else-if="r.agent.compatibility.status === 'unsupported'"
+                  class="detect-compat-card-hint"
+                >
+                  use a supported release
+                </div>
+              </div>
             </div>
           </template>
         </div>
