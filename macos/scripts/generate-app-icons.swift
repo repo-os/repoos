@@ -146,50 +146,60 @@ let assetsDir = scriptURL.deletingLastPathComponent()
   .appendingPathComponent("RepoOSHub/Assets.xcassets", isDirectory: true)
 let appIconDir = assetsDir.appendingPathComponent("AppIcon.appiconset", isDirectory: true)
 
-for staleFile in ["AppIcon-512-dark.png", "AppIcon-1024-dark.png"] {
-  try? FileManager.default.removeItem(at: appIconDir.appendingPathComponent(staleFile))
-}
-
 func writeContents(_ contents: [String: Any], to url: URL) throws {
   var jsonData = try JSONSerialization.data(withJSONObject: contents, options: [.prettyPrinted, .sortedKeys])
   jsonData.append(0x0A)
   try jsonData.write(to: url)
 }
 
-for size in [512, 1024] {
-  let file = appIconDir.appendingPathComponent("AppIcon-\(size)-light.png")
-  try writePNG(drawIcon(size: size, theme: themes["light"]!), size: size, to: file)
-  fputs("wrote \(file.lastPathComponent)\n", stderr)
+var appIconImages: [[String: Any]] = []
+for name in ["light", "dark"] {
+  let theme = themes[name]!
+  for (size, scale) in [(512, "1x"), (1024, "2x")] {
+    let file = appIconDir.appendingPathComponent("AppIcon-\(size)-\(name).png")
+    try writePNG(drawIcon(size: size, theme: theme), size: size, to: file)
+    fputs("wrote \(file.lastPathComponent)\n", stderr)
+    appIconImages.append([
+      "appearances": [["appearance": "luminosity", "value": name]],
+      "filename": file.lastPathComponent,
+      "idiom": "mac",
+      "scale": scale,
+      "size": "512x512",
+    ])
+  }
 }
 
-let contents: [String: Any] = [
-  "images": [
-    [
-      "filename": "AppIcon-512-light.png",
-      "idiom": "mac",
-      "scale": "1x",
-      "size": "512x512",
-    ],
-    [
-      "filename": "AppIcon-1024-light.png",
-      "idiom": "mac",
-      "scale": "2x",
-      "size": "512x512",
-    ],
-  ],
-  "info": ["author": "xcode", "version": 1],
-]
-
-try writeContents(contents, to: appIconDir.appendingPathComponent("Contents.json"))
+try writeContents(
+  ["images": appIconImages, "info": ["author": "xcode", "version": 1]],
+  to: appIconDir.appendingPathComponent("Contents.json")
+)
+fputs("updated AppIcon.appiconset/Contents.json\n", stderr)
 
 for name in ["light", "dark"] {
   let dockIconDir = assetsDir.appendingPathComponent("DockIcon\(name.capitalized).imageset", isDirectory: true)
   try FileManager.default.createDirectory(at: dockIconDir, withIntermediateDirectories: true)
-  let file = dockIconDir.appendingPathComponent("DockIcon-\(name).png")
-  try writePNG(drawIcon(size: 1024, theme: themes[name]!), size: 1024, to: file)
+  let theme = themes[name]!
+  let file1x = dockIconDir.appendingPathComponent("DockIcon-\(name)@1x.png")
+  let file2x = dockIconDir.appendingPathComponent("DockIcon-\(name)@2x.png")
+  try writePNG(drawIcon(size: 512, theme: theme), size: 512, to: file1x)
+  try writePNG(drawIcon(size: 1024, theme: theme), size: 1024, to: file2x)
   try writeContents([
-    "images": [["filename": file.lastPathComponent, "idiom": "universal", "scale": "1x"]],
+    "images": [
+      ["filename": file1x.lastPathComponent, "idiom": "universal", "scale": "1x"],
+      ["filename": file2x.lastPathComponent, "idiom": "universal", "scale": "2x"],
+    ],
     "info": ["author": "xcode", "version": 1],
   ], to: dockIconDir.appendingPathComponent("Contents.json"))
-  fputs("wrote \(file.lastPathComponent)\n", stderr)
+  fputs("wrote \(file1x.lastPathComponent) and \(file2x.lastPathComponent)\n", stderr)
+}
+
+for stale in [
+  appIconDir.appendingPathComponent("AppIcon-512.png"),
+  appIconDir.appendingPathComponent("AppIcon-1024.png"),
+] {
+  try? FileManager.default.removeItem(at: stale)
+}
+for dockName in ["light", "dark"] {
+  let dockIconDir = assetsDir.appendingPathComponent("DockIcon\(dockName.capitalized).imageset", isDirectory: true)
+  try? FileManager.default.removeItem(at: dockIconDir.appendingPathComponent("DockIcon-\(dockName).png"))
 }

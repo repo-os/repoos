@@ -85,6 +85,6 @@ final class DockIconAppearanceController {
     }
 
     static func assetName(for appearance: NSAppearance) -> NSImage.Name {
-        appearance.bestMatch(from: [.darkAqua]) == .darkAqua ? "DockIconDark" : "DockIconLight"
+        appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? "DockIconDark" : "DockIconLight"
     }
 }

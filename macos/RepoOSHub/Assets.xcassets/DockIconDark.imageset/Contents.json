@@ -1,9 +1,14 @@
 {
   "images" : [
     {
-      "filename" : "DockIcon-dark.png",
+      "filename" : "DockIcon-dark@1x.png",
       "idiom" : "universal",
       "scale" : "1x"
+    },
+    {
+      "filename" : "DockIcon-dark@2x.png",
+      "idiom" : "universal",
+      "scale" : "2x"
     }
   ],
   "info" : {
