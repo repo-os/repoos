@@ -9,11 +9,11 @@ assigned_to: ai
 created_by: ""
 branch: ""
 cli_override: opencode
-model_override: default
+model_override: opencode/big-pickle
 pm_cli_override: github copilot
 pm_model_override: default
 created_at: "2026-09-22T05:30:52Z"
-updated_at: "2026-09-22T15:21:33Z"
+updated_at: "2026-09-22T15:21:45Z"
 ---
 Update the RepoOS Hub documentation and landing-page presentation now that the native macOS product surface and remote capability flow are ready to describe. Treat this as a documentation/publishing task, not a request to invent or change Hub behavior.
 
@@ -76,3 +76,4 @@ Add screenshots or product visuals only if the native UI is stable and an approv
 - 2026-09-22T14:27:25Z · body
 - 2026-09-22T14:28:27Z · status inbox→ready
 - 2026-09-22T15:21:33Z · cli_override, model_override
+- 2026-09-22T15:21:45Z · model_override
