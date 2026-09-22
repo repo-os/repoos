@@ -13,6 +13,7 @@ final class HubAppState: ObservableObject {
     @Published private(set) var workspaceNavigation = WorkspaceNavigationSnapshot.placeholder
     @Published private(set) var pendingNavigationRequest: HubNavigationRequest?
     @Published private(set) var retainedWorkspaceServerIDs = Set<UUID>()
+    @Published private(set) var runtimeInfoByServerID: [UUID: ServerRuntimeInfo] = [:]
     @Published var attentionSettingsServerID: UUID?
     @Published private(set) var hubGlobalPreferences: HubGlobalPreferences = .default
 
@@ -62,6 +63,10 @@ final class HubAppState: ObservableObject {
     /// isolated WKWebViews retain their page, history, and sign-in state.
     var retainedWorkspaceEntries: [ServerEntry] {
         entries.filter { retainedWorkspaceServerIDs.contains($0.id) }
+    }
+
+    func runtimeInfo(for serverID: UUID) -> ServerRuntimeInfo? {
+        runtimeInfoByServerID[serverID]
     }
 
     var pinnedEntries: [ServerEntry] {
@@ -414,7 +419,7 @@ final class HubAppState: ObservableObject {
             let originKey = ServerOriginNormalizer.canonicalOriginKey(for: origin)
 
             let outcome = await healthChecker.checkHealth(origin: origin)
-            guard case .success(let projectName) = outcome else {
+            guard case .success(let projectName, _) = outcome else {
                 if case .failure(let failure) = outcome {
                     return failure.userMessage
                 }
@@ -494,8 +499,13 @@ final class HubAppState: ObservableObject {
         let outcome = await healthChecker.checkHealth(origin: origin)
         var entry = document.entries[index]
         ReachabilityTransition.applyHealthCheck(to: &entry, outcome: outcome)
-        if case .success(let projectName) = outcome {
+        if case .success(let projectName, let runtimeInfo) = outcome {
             updateRepositoryIdentity(for: &entry, projectName: projectName)
+            if let runtimeInfo {
+                runtimeInfoByServerID[id] = runtimeInfo
+            } else {
+                runtimeInfoByServerID.removeValue(forKey: id)
+            }
         }
         document.entries[index] = entry
         entries = document.entries.sorted(by: entrySort)

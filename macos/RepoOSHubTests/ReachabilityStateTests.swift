@@ -47,4 +47,18 @@ final class ReachabilityStateTests: XCTestCase {
         XCTAssertNil(ServerAccentColor.normalizedHex("blue"))
         XCTAssertNil(ServerAccentColor.normalizedHex("#ABC"))
     }
+
+    func testHealthPayloadCapturesRuntimeDetailsForServerCard() throws {
+        let data = """
+        {"ok":true,"projectName":"RepoOS","branch":"main","taskCount":42,"version":"0.5.50","buildAt":"2026-09-22T02:38:48.398Z","serverStartedAt":"2026-09-22T02:38:50.440Z"}
+        """.data(using: .utf8)!
+        let payload = try JSONDecoder().decode(HealthResponsePayload.self, from: data)
+        let info = ServerRuntimeInfo(payload: payload)
+
+        XCTAssertEqual(info.branch, "main")
+        XCTAssertEqual(info.taskCount, 42)
+        XCTAssertEqual(info.version, "0.5.50")
+        XCTAssertNotNil(info.buildAt)
+        XCTAssertNotNil(info.startedAt)
+    }
 }

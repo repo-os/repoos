@@ -82,6 +82,7 @@ private struct SidebarEmptyHint: View {
 struct ServerSidebarRow: View {
     @EnvironmentObject private var appState: HubAppState
     let entry: ServerEntry
+    @State private var isShowingDetails = false
 
     var body: some View {
         HStack(spacing: 10) {
@@ -103,6 +104,7 @@ struct ServerSidebarRow: View {
             Spacer(minLength: 4)
             AttentionSummaryBadges(snapshot: appState.attentionSnapshot(for: entry.id))
         }
+        .contentShape(Rectangle())
         .contextMenu {
             Button("Attention & notifications…") { appState.presentAttentionSettings(for: entry) }
             Button("Edit…") { appState.presentEditServer(entry) }
@@ -118,7 +120,16 @@ struct ServerSidebarRow: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(entry.name), \(entry.lastHealth.displayTitle)")
         .accessibilityHint(ServerSidebarStatus.tooltip(for: entry))
-        .help(ServerSidebarStatus.tooltip(for: entry))
+        .onHover { isHovering in
+            isShowingDetails = isHovering
+        }
+        .popover(
+            isPresented: $isShowingDetails,
+            attachmentAnchor: .rect(.bounds),
+            arrowEdge: .leading
+        ) {
+            ServerDetailsPopover(entry: entry, runtimeInfo: appState.runtimeInfo(for: entry.id))
+        }
     }
 
     private var sidebarSubtitle: String {
@@ -126,6 +137,112 @@ struct ServerSidebarRow: View {
               repositoryName.caseInsensitiveCompare(entry.name) != .orderedSame
         else { return entry.originString }
         return repositoryName
+    }
+}
+
+private struct ServerDetailsPopover: View {
+    let entry: ServerEntry
+    let runtimeInfo: ServerRuntimeInfo?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 10) {
+                ServerIconView(entry: entry)
+                    .font(.system(size: 18, weight: .semibold))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(entry.name)
+                        .font(.headline)
+                    Text(entry.repositoryName ?? "Repository not reported")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
+                StatusPill(health: entry.lastHealth)
+            }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 9) {
+                ServerDetailRow(icon: "network", title: "Address", value: entry.originString, monospaced: true)
+                ServerDetailRow(
+                    icon: "clock",
+                    title: "Last checked",
+                    value: relativeDate(entry.lastHealthAt) ?? "Not checked yet"
+                )
+                if let runtimeInfo {
+                    if let version = runtimeInfo.version {
+                        ServerDetailRow(icon: "tag", title: "Version", value: version)
+                    }
+                    if let startedAt = runtimeInfo.startedAt {
+                        ServerDetailRow(icon: "timer", title: "Uptime", value: uptime(since: startedAt))
+                    }
+                    if let taskCount = runtimeInfo.taskCount {
+                        ServerDetailRow(icon: "checklist", title: "Tasks", value: "\(taskCount) indexed")
+                    }
+                    if let branch = runtimeInfo.branch, !branch.isEmpty {
+                        ServerDetailRow(icon: "arrow.triangle.branch", title: "Branch", value: branch, monospaced: true)
+                    }
+                    if let buildAt = runtimeInfo.buildAt {
+                        ServerDetailRow(icon: "hammer", title: "Build", value: relativeDate(buildAt) ?? "Unknown")
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .frame(width: 330)
+        .accessibilityElement(children: .contain)
+    }
+
+    private func relativeDate(_ date: Date?) -> String? {
+        guard let date else { return nil }
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .full
+        return formatter.localizedString(for: date, relativeTo: Date())
+    }
+
+    private func uptime(since date: Date) -> String {
+        let interval = max(0, Date().timeIntervalSince(date))
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = [.day, .hour, .minute]
+        formatter.unitsStyle = .abbreviated
+        formatter.maximumUnitCount = 2
+        return formatter.string(from: interval) ?? "Just started"
+    }
+}
+
+private struct StatusPill: View {
+    let health: HealthState
+
+    var body: some View {
+        Label(health.displayTitle, systemImage: ServerSidebarStatus.symbol(for: health))
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(ServerSidebarStatus.color(for: health))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(ServerSidebarStatus.color(for: health).opacity(0.12), in: Capsule())
+    }
+}
+
+private struct ServerDetailRow: View {
+    let icon: String
+    let title: String
+    let value: String
+    var monospaced = false
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Image(systemName: icon)
+                .frame(width: 15)
+                .foregroundStyle(.secondary)
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(width: 72, alignment: .leading)
+            Text(value)
+                .font(monospaced ? .caption.monospaced() : .caption)
+                .lineLimit(1)
+                .truncationMode(.middle)
+        }
     }
 }
 
@@ -176,7 +293,14 @@ struct ServerIconView: View {
     }
 
     private var statusColor: Color {
-        switch entry.lastHealth {
+        ServerSidebarStatus.color(for: entry.lastHealth)
+    }
+
+}
+
+enum ServerSidebarStatus {
+    static func color(for health: HealthState) -> Color {
+        switch health {
         case .unknown: return .secondary
         case .healthy: return .green
         case .unreachable: return .orange
@@ -184,9 +308,15 @@ struct ServerIconView: View {
         }
     }
 
-}
+    static func symbol(for health: HealthState) -> String {
+        switch health {
+        case .unknown: return "questionmark.circle"
+        case .healthy: return "checkmark.circle.fill"
+        case .unreachable: return "wifi.exclamationmark"
+        case .invalid: return "exclamationmark.triangle.fill"
+        }
+    }
 
-enum ServerSidebarStatus {
     static func tooltip(for entry: ServerEntry, now: Date = Date()) -> String {
         let checkedAt: String
         if let lastHealthAt = entry.lastHealthAt {

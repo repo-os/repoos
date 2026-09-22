@@ -11,7 +11,7 @@ enum HealthCheckFailure: Error, Equatable {
 }
 
 enum HealthCheckOutcome: Equatable {
-    case success(projectName: String?)
+    case success(projectName: String?, runtimeInfo: ServerRuntimeInfo? = nil)
     case failure(HealthCheckFailure)
 }
 
@@ -23,6 +23,38 @@ struct HealthResponsePayload: Decodable {
     let ok: Bool?
     let projectName: String?
     let root: String?
+    let branch: String?
+    let taskCount: Int?
+    let version: String?
+    let buildAt: String?
+    let serverStartedAt: String?
+}
+
+struct ServerRuntimeInfo: Equatable, Sendable {
+    let branch: String?
+    let taskCount: Int?
+    let version: String?
+    let buildAt: Date?
+    let startedAt: Date?
+
+    init(payload: HealthResponsePayload) {
+        branch = payload.branch
+        taskCount = payload.taskCount
+        version = payload.version
+        buildAt = Self.date(from: payload.buildAt)
+        startedAt = Self.date(from: payload.serverStartedAt)
+    }
+
+    private static func date(from value: String?) -> Date? {
+        guard let value else { return nil }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.date(from: value)
+    }
+
+    var hasDetails: Bool {
+        branch != nil || taskCount != nil || version != nil || buildAt != nil || startedAt != nil
+    }
 }
 
 final class HealthCheckRedirectGuard: NSObject, URLSessionTaskDelegate {
@@ -93,7 +125,11 @@ struct RepoOSHealthChecker: HealthChecking {
             guard payload.ok == true else {
                 return .failure(.notRepoOS)
             }
-            return .success(projectName: payload.projectName ?? repositoryName(from: payload.root))
+            let runtimeInfo = ServerRuntimeInfo(payload: payload)
+            return .success(
+                projectName: payload.projectName ?? repositoryName(from: payload.root),
+                runtimeInfo: runtimeInfo.hasDetails ? runtimeInfo : nil
+            )
         } catch let error as URLError {
             switch error.code {
             case .timedOut:
