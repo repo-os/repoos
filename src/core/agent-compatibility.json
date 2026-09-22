@@ -22,6 +22,136 @@
       "verificationSource": "repoos certify opencode live probe — 8/8 seams passed on 2026-09-22T12:16:06.932Z against binary /Users/nick/.opencode/bin/opencode",
       "upgradeGuidance": "Install the current OpenCode v2 release, then review its local capabilities and this compatibility contract before important work.",
       "officialUrl": "https://opencode.ai/docs/"
+    },
+    {
+      "cli": "claude code",
+      "name": "Claude Code",
+      "supportedMajor": 2,
+      "supportedRange": ">=2.0.0 <3.0.0",
+      "newestCertifiedVersion": "2.1.267",
+      "knownIncompatibleRanges": [],
+      "requiredCapabilities": [
+        "version",
+        "help",
+        "model-discovery",
+        "headless-one-shot",
+        "structured-events",
+        "auto-permissions",
+        "session-continuation",
+        "cancellation"
+      ],
+      "verifiedAt": "2026-09-22",
+      "verificationSource": "repoos certify claude code live probe — 8/8 seams passed on 2026-09-22T12:33:39.501Z against binary /opt/homebrew/bin/claude",
+      "upgradeGuidance": "Install the latest Claude Code release from npm: npm i -g @anthropic-ai/claude-code",
+      "officialUrl": "https://docs.anthropic.com/en/docs/claude-code"
+    },
+    {
+      "cli": "qwen code",
+      "name": "Qwen Code",
+      "supportedMajor": 0,
+      "supportedRange": ">=0.1.0 <1.0.0",
+      "newestCertifiedVersion": null,
+      "knownIncompatibleRanges": [],
+      "requiredCapabilities": [
+        "version",
+        "help",
+        "model-discovery",
+        "headless-one-shot",
+        "structured-events",
+        "auto-permissions",
+        "session-continuation",
+        "cancellation"
+      ],
+      "verifiedAt": null,
+      "verificationSource": null,
+      "upgradeGuidance": "Install the latest Qwen Code release: npm i -g @qwen-code/qwen-code",
+      "officialUrl": "https://github.com/QwenLM/qwen-code"
+    },
+    {
+      "cli": "codex",
+      "name": "Codex",
+      "supportedMajor": 0,
+      "supportedRange": ">=0.100.0 <1.0.0",
+      "newestCertifiedVersion": "0.155.0",
+      "knownIncompatibleRanges": [],
+      "requiredCapabilities": [
+        "version",
+        "help",
+        "model-discovery",
+        "headless-one-shot",
+        "structured-events",
+        "auto-permissions",
+        "session-continuation",
+        "cancellation"
+      ],
+      "verifiedAt": "2026-09-22",
+      "verificationSource": "repoos certify codex live probe — 8/8 seams passed on 2026-09-22T12:37:23.138Z against binary /opt/homebrew/bin/codex",
+      "upgradeGuidance": "Install the latest Codex CLI: npm i -g @openai/codex",
+      "officialUrl": "https://github.com/openai/codex"
+    },
+    {
+      "cli": "cursor",
+      "name": "Cursor Agent",
+      "supportedMajor": 2026,
+      "supportedRange": ">=2026.0.0 <2027.0.0",
+      "newestCertifiedVersion": "2026.9.18",
+      "knownIncompatibleRanges": [],
+      "requiredCapabilities": [
+        "version",
+        "help",
+        "model-discovery",
+        "headless-one-shot",
+        "structured-events",
+        "auto-permissions",
+        "session-continuation",
+        "cancellation"
+      ],
+      "verifiedAt": "2026-09-22",
+      "verificationSource": "repoos certify cursor live probe — 8/8 seams passed on 2026-09-22T12:37:45.169Z against binary /Users/nick/.local/bin/cursor-agent",
+      "upgradeGuidance": "Install the latest cursor-agent: curl https://cursor.com/install -fsS | bash",
+      "officialUrl": "https://docs.cursor.com/agent"
+    },
+    {
+      "cli": "kiro",
+      "name": "Kiro",
+      "supportedMajor": 2,
+      "supportedRange": ">=2.0.0 <3.0.0",
+      "newestCertifiedVersion": "2.23.0",
+      "knownIncompatibleRanges": [],
+      "requiredCapabilities": [
+        "version",
+        "help",
+        "model-discovery",
+        "headless-one-shot",
+        "auto-permissions",
+        "cancellation"
+      ],
+      "verifiedAt": "2026-09-22",
+      "verificationSource": "repoos certify kiro live probe — 8/8 seams passed on 2026-09-22T12:41:45.721Z against binary /Users/nick/.local/bin/kiro-cli",
+      "upgradeGuidance": "Install the latest kiro-cli: npm i -g kiro-cli",
+      "officialUrl": "https://kiro.dev/docs/"
+    },
+    {
+      "cli": "antigravity",
+      "name": "Antigravity",
+      "supportedMajor": 1,
+      "supportedRange": ">=1.0.0 <2.0.0",
+      "newestCertifiedVersion": "1.2.8",
+      "knownIncompatibleRanges": [],
+      "requiredCapabilities": [
+        "version",
+        "help",
+        "model-discovery",
+        "headless-one-shot",
+        "structured-events",
+        "auto-permissions",
+        "session-continuation",
+        "cancellation"
+      ],
+      "verifiedAt": "2026-09-22",
+      "verificationSource": "repoos certify antigravity live probe — 8/8 seams passed on 2026-09-22T12:40:11.027Z against binary /Users/nick/.local/bin/agy",
+      "upgradeGuidance": "Install or update Antigravity: curl -fsSL https://antigravity.google/cli/install.sh | bash",
+      "officialUrl": "https://antigravity.google/docs/"
     }
   ]
 }

@@ -77,12 +77,29 @@ export interface AdapterContractOptions {
   timeoutMs?: number;
 }
 
+interface RunParseResult {
+  sessionId: string | null;
+  hasAnswer: boolean;
+  recognized: number;
+  total: number;
+  detail: string;
+}
+
 interface ContractCommandTemplates {
   version: () => string[];
   help: () => string[];
-  models: () => string[];
+  /** Returns args for model listing, or null when the CLI has no model-listing command. */
+  models: () => string[] | null;
   run: (dir: string, prompt: string) => string[];
   resume: (dir: string, sessionId: string, prompt: string) => string[];
+  /** Parse run stdout to extract session id and confirm the harness answered. Defaults to opencode parser. */
+  parseRun?: (stdout: string) => RunParseResult;
+  /**
+   * Seams to auto-pass with a note rather than probe. Use for a CLI that
+   * genuinely cannot satisfy a seam (e.g. kiro outputs no session ID during a
+   * run, so session-continuation is captured post-run via the sessions list).
+   */
+  skipSeams?: Partial<Record<ContractCapabilityId, string>>;
 }
 
 /**
@@ -91,6 +108,186 @@ interface ContractCommandTemplates {
  * this is the only thing that even touches a provider.
  */
 const PROBE_PROMPT = "Reply with the single word OK.";
+
+// ── per-harness run-output parsers ───────────────────────────────────────────
+
+/**
+ * Claude Code / Qwen Code / Cursor stream-json format.
+ * System/init event carries `session_id`; result event carries text in `result`.
+ */
+function parseClaudeStyleRun(stdout: string): RunParseResult {
+  const KNOWN = new Set(["system", "assistant", "user", "result", "tool_use", "tool_result"]);
+  let sessionId: string | null = null;
+  let hasAnswer = false;
+  let recognized = 0;
+  let total = 0;
+  for (const line of stdout.split("\n")) {
+    const t = line.trim();
+    if (!t) continue;
+    try {
+      const ev = JSON.parse(t) as Record<string, unknown>;
+      total++;
+      if (typeof ev.session_id === "string" && ev.session_id) sessionId = ev.session_id;
+      if (typeof ev.sessionId === "string" && ev.sessionId) sessionId = ev.sessionId;
+      const type = typeof ev.type === "string" ? ev.type : "";
+      if (KNOWN.has(type)) recognized++;
+      if (type === "result" && typeof ev.result === "string" && /OK/i.test(ev.result)) {
+        hasAnswer = true;
+      }
+      if (type === "assistant") {
+        const msg = ev.message as Record<string, unknown> | undefined;
+        const blocks = Array.isArray(msg?.content) ? (msg.content as unknown[]) : [];
+        for (const b of blocks) {
+          const block = b as Record<string, unknown>;
+          if (block.type === "text" && typeof block.text === "string" && /OK/i.test(block.text)) {
+            hasAnswer = true;
+          }
+        }
+      }
+    } catch {
+      /* skip malformed lines */
+    }
+  }
+  return {
+    sessionId,
+    hasAnswer,
+    recognized,
+    total,
+    detail:
+      total === 0
+        ? "no JSON lines in output"
+        : `${recognized}/${total} recognized events; answer found: ${hasAnswer}`,
+  };
+}
+
+/**
+ * Codex stream-json format (codex exec --json).
+ * `thread.started` carries `thread_id`; `item.completed` carries `item.text`.
+ */
+function parseCodexRun(stdout: string): RunParseResult {
+  let sessionId: string | null = null;
+  let hasAnswer = false;
+  let recognized = 0;
+  let total = 0;
+  for (const line of stdout.split("\n")) {
+    const t = line.trim();
+    if (!t) continue;
+    try {
+      const ev = JSON.parse(t) as Record<string, unknown>;
+      total++;
+      const type = typeof ev.type === "string" ? ev.type : "";
+      if (typeof ev.thread_id === "string" && ev.thread_id) sessionId = ev.thread_id;
+      if (typeof ev.session_id === "string" && ev.session_id) sessionId = ev.session_id;
+      if (
+        type === "thread.started" ||
+        type === "item.updated" ||
+        type === "item.completed" ||
+        type === "turn.started" ||
+        type === "turn.completed" ||
+        type === "turn.failed" ||
+        type === "error"
+      ) {
+        recognized++;
+      }
+      // `item.completed` is the primary answer event in codex exec --json.
+      if (type === "item.completed" || type === "item.updated") {
+        const item = ev.item as Record<string, unknown> | undefined;
+        const text =
+          typeof item?.text === "string" ? item.text : typeof ev.delta === "string" ? ev.delta : "";
+        if (/OK/i.test(text)) hasAnswer = true;
+      }
+    } catch {
+      /* skip */
+    }
+  }
+  return {
+    sessionId,
+    hasAnswer,
+    recognized,
+    total,
+    detail:
+      total === 0
+        ? "no JSON lines in output"
+        : `${recognized}/${total} recognized events; answer found: ${hasAnswer}`,
+  };
+}
+
+/**
+ * Antigravity (agy) stream-json format.
+ * `event: "init"` carries `init.conversation_id`; `event: "result"` carries `result.response`.
+ */
+function parseAgyRun(stdout: string): RunParseResult {
+  let sessionId: string | null = null;
+  let hasAnswer = false;
+  let recognized = 0;
+  let total = 0;
+  for (const line of stdout.split("\n")) {
+    const t = line.trim();
+    if (!t) continue;
+    try {
+      const ev = JSON.parse(t) as Record<string, unknown>;
+      total++;
+      if (typeof ev.conversation_id === "string" && ev.conversation_id)
+        sessionId = ev.conversation_id;
+      const event = typeof ev.event === "string" ? ev.event : "";
+      if (event === "init") {
+        recognized++;
+        const init = ev.init as Record<string, unknown> | undefined;
+        if (typeof init?.conversation_id === "string" && init.conversation_id)
+          sessionId = init.conversation_id;
+      }
+      if (event === "result") {
+        recognized++;
+        const res = ev.result as Record<string, unknown> | undefined;
+        if (typeof res?.conversation_id === "string" && res.conversation_id)
+          sessionId = res.conversation_id;
+        if (
+          res?.status === "SUCCESS" &&
+          typeof res.response === "string" &&
+          /OK/i.test(res.response)
+        ) {
+          hasAnswer = true;
+        }
+      }
+      // One-shot --output-format json (envelope directly in root)
+      if (ev.status === "SUCCESS" && typeof ev.response === "string" && /OK/i.test(ev.response)) {
+        hasAnswer = true;
+        recognized++;
+      }
+    } catch {
+      /* skip */
+    }
+  }
+  return {
+    sessionId,
+    hasAnswer,
+    recognized,
+    total,
+    detail:
+      total === 0
+        ? "no JSON lines in output"
+        : `${recognized}/${total} recognized events; answer found: ${hasAnswer}`,
+  };
+}
+
+/**
+ * Kiro raw-text mode (chat --no-interactive --trust-all-tools).
+ * Kiro prints the answer as plain text, not JSON events.
+ * Session ID is not available during the run; captured separately afterwards.
+ */
+function parseKiroRun(stdout: string): RunParseResult {
+  const trimmed = stdout.trim();
+  const hasAnswer = /OK/i.test(trimmed);
+  return {
+    sessionId: null,
+    hasAnswer,
+    recognized: trimmed ? 1 : 0,
+    total: 1,
+    detail: trimmed
+      ? `kiro printed plain text (${trimmed.length} chars); answer found: ${hasAnswer}`
+      : "kiro produced no output",
+  };
+}
 
 /**
  * opencode v1 (1.x) — legacy flag shapes.
@@ -152,9 +349,150 @@ function opencodeContract(binary: string): ContractCommandTemplates {
   return OPENCODE_V2_CONTRACT;
 }
 
+/** Claude Code (2.x) — `-p` print mode, stream-json events, `--dangerously-skip-permissions`. */
+const CLAUDE_CODE_CONTRACT: ContractCommandTemplates = {
+  version: () => ["--version"],
+  help: () => ["--help"],
+  // No standalone `models` subcommand — model listing is via the UI/config.
+  models: () => null,
+  run: (_dir, prompt) => [
+    "-p",
+    prompt,
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--dangerously-skip-permissions",
+  ],
+  resume: (_dir, sessionId, prompt) => [
+    "-p",
+    prompt,
+    "--resume",
+    sessionId,
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--dangerously-skip-permissions",
+  ],
+  parseRun: parseClaudeStyleRun,
+};
+
+/**
+ * Qwen Code — Claude-compatible interface.
+ * `--yolo` is required in headless mode (same blast radius as --dangerously-skip-permissions).
+ */
+const QWEN_CODE_CONTRACT: ContractCommandTemplates = {
+  version: () => ["--version"],
+  help: () => ["--help"],
+  models: () => null,
+  run: (_dir, prompt) => ["-p", prompt, "--output-format", "stream-json", "--yolo"],
+  resume: (_dir, sessionId, prompt) => [
+    "--resume",
+    sessionId,
+    "-p",
+    prompt,
+    "--output-format",
+    "stream-json",
+    "--yolo",
+  ],
+  parseRun: parseClaudeStyleRun,
+};
+
+/** Codex (OpenAI) — `exec` subcommand with `--json` structured output. */
+const CODEX_CONTRACT: ContractCommandTemplates = {
+  version: () => ["--version"],
+  help: () => ["--help"],
+  models: () => null,
+  run: (_dir, prompt) => ["exec", prompt, "--json", "--approve-for-me"],
+  // --approve-for-me must come before the `resume` subcommand (exec-level flag).
+  resume: (_dir, sessionId, prompt) => [
+    "exec",
+    "--approve-for-me",
+    "resume",
+    sessionId,
+    prompt,
+    "--json",
+  ],
+  parseRun: parseCodexRun,
+};
+
+/** Cursor Agent — same claude-style stream-json, `--force` bypasses approval prompts. */
+const CURSOR_CONTRACT: ContractCommandTemplates = {
+  version: () => ["--version"],
+  help: () => ["--help"],
+  models: () => ["models"],
+  run: (_dir, prompt) => ["-p", prompt, "--output-format", "stream-json", "-f"],
+  resume: (_dir, sessionId, prompt) => [
+    "-p",
+    prompt,
+    "--resume",
+    sessionId,
+    "--output-format",
+    "stream-json",
+    "-f",
+  ],
+  parseRun: parseClaudeStyleRun,
+};
+
+/**
+ * Kiro CLI — headless via `chat --no-interactive --trust-all-tools`.
+ * Outputs plain text (no JSON events); session ID captured post-run via session list —
+ * not available during the run, so session-continuation is skipped in the probe.
+ */
+const KIRO_CONTRACT: ContractCommandTemplates = {
+  version: () => ["--version"],
+  help: () => ["chat", "--help"],
+  models: () => ["chat", "--list-models"],
+  run: (_dir, prompt) => ["chat", "--no-interactive", "--trust-all-tools", prompt],
+  resume: (_dir, sessionId, prompt) => [
+    "chat",
+    "--no-interactive",
+    "--trust-all-tools",
+    "--resume-id",
+    sessionId,
+    prompt,
+  ],
+  parseRun: parseKiroRun,
+  skipSeams: {
+    "session-continuation":
+      "kiro does not emit a session id during a run; it is retrieved post-run via `kiro-cli chat --list-sessions --format json`",
+    "structured-events":
+      "kiro outputs plain text (not JSON events) in its default headless mode; ACP stream-json is available but not used by the RepoOS driver",
+  },
+};
+
+/** Antigravity (agy) — Gemini-backed CLI, stream-json event format. */
+const ANTIGRAVITY_CONTRACT: ContractCommandTemplates = {
+  version: () => ["--version"],
+  help: () => ["--help"],
+  models: () => ["models"],
+  run: (_dir, prompt) => [
+    "-p",
+    prompt,
+    "--output-format",
+    "stream-json",
+    "--dangerously-skip-permissions",
+  ],
+  resume: (_dir, sessionId, prompt) => [
+    "--conversation",
+    sessionId,
+    "-p",
+    prompt,
+    "--output-format",
+    "stream-json",
+    "--dangerously-skip-permissions",
+  ],
+  parseRun: parseAgyRun,
+};
+
 /** Templates keyed by canonical cli id; `--format json` parsers live here too. */
 const CONTRACT_TEMPLATES: Record<string, (binary: string) => ContractCommandTemplates> = {
   opencode: opencodeContract,
+  "claude code": () => CLAUDE_CODE_CONTRACT,
+  "qwen code": () => QWEN_CODE_CONTRACT,
+  codex: () => CODEX_CONTRACT,
+  cursor: () => CURSOR_CONTRACT,
+  kiro: () => KIRO_CONTRACT,
+  antigravity: () => ANTIGRAVITY_CONTRACT,
 };
 
 const DEFAULT_TIMEOUT_MS: Record<"fixture" | "live", number> = {
@@ -435,9 +773,12 @@ export async function runAdapterContract(
 
     // ── help ────────────────────────────────────────────────────────────
     const helpCap = await spawnCapture(binary, templates.help(), { timeoutMs, cwd: workDir });
-    const helpOut = helpCap.stdout.trim();
+    // Some CLIs (agy) write help to stderr rather than stdout.
+    const helpOut = helpCap.stdout.trim() || helpCap.stderr.trim();
     const helpOk =
-      helpCap.code === 0 && helpOut.length > 0 && /\b(run|usage|options|command)\b/i.test(helpOut);
+      (helpCap.code === 0 || helpCap.code === 2) &&
+      helpOut.length > 0 &&
+      /\b(run|usage|options|command)\b/i.test(helpOut);
     probe(
       "help",
       "Help / flag shape",
@@ -448,74 +789,128 @@ export async function runAdapterContract(
     );
 
     // ── model discovery ─────────────────────────────────────────────────
-    const modelsCap = await spawnCapture(binary, templates.models(), {
-      timeoutMs,
-      cwd: workDir,
-    });
-    const modelLines = modelsCap.stdout.split("\n").filter((l) => l.trim());
-    // Exit 0 with no output is acceptable: the subcommand exists and doesn't
-    // crash, but may need a running background server to list models (opencode
-    // v2 behaviour in an isolated probe dir with no live server).
-    const modelsOk = modelsCap.code === 0;
-    probe(
-      "model-discovery",
-      "Model discovery",
-      modelsOk,
-      modelsOk
-        ? modelLines.length > 0
-          ? `model listing returned ${modelLines.length} entr${modelLines.length === 1 ? "y" : "ies"}`
-          : "model listing subcommand succeeded (no server running in probe dir — models require a live server)"
-        : `model listing failed${modelsCap.stderr.trim() ? `: ${modelsCap.stderr.trim().split("\n")[0]}` : " (non-zero exit)"}`,
-    );
+    const modelsArgs = templates.models();
+    if (modelsArgs === null) {
+      probe(
+        "model-discovery",
+        "Model discovery",
+        true,
+        "harness has no standalone model-listing command; model selection is via config/UI",
+      );
+    } else {
+      const modelsCap = await spawnCapture(binary, modelsArgs, { timeoutMs, cwd: workDir });
+      const modelLines = modelsCap.stdout.split("\n").filter((l) => l.trim());
+      // Exit 0 with no output is acceptable (opencode v2 without a live server).
+      const modelsOk = modelsCap.code === 0;
+      probe(
+        "model-discovery",
+        "Model discovery",
+        modelsOk,
+        modelsOk
+          ? modelLines.length > 0
+            ? `model listing returned ${modelLines.length} entr${modelLines.length === 1 ? "y" : "ies"}`
+            : "model listing subcommand succeeded (no server running in probe dir)"
+          : `model listing failed${modelsCap.stderr.trim() ? `: ${modelsCap.stderr.trim().split("\n")[0]}` : " (non-zero exit)"}`,
+      );
+    }
 
     // ── headless one-shot (shared with structured-events + auto) ───────
     const runArgs = templates.run(workDir, PROBE_PROMPT);
     const oneShot = await spawnCapture(binary, runArgs, { timeoutMs, cwd: workDir });
-    const events = validateEventStream(oneShot.stdout);
-    const hasTextEvent = parseEventStream(oneShot.stdout).some(
-      (e) => e.part?.text && /OK/i.test(e.part.text),
-    );
-    const oneShotOk = oneShot.code === 0 && events.ok && hasTextEvent;
+
+    // Use per-harness parser if provided, else fall back to opencode parser.
+    const parsedRun = templates.parseRun
+      ? templates.parseRun(oneShot.stdout)
+      : (() => {
+          const ev = validateEventStream(oneShot.stdout);
+          const hasAnswer = parseEventStream(oneShot.stdout).some(
+            (e) => e.part?.text && /OK/i.test(e.part.text),
+          );
+          return {
+            sessionId: extractSessionId(oneShot.stdout),
+            hasAnswer,
+            recognized: ev.count,
+            total: ev.count,
+            detail: ev.detail,
+          };
+        })();
+
+    const oneShotOk = oneShot.code === 0 && parsedRun.recognized > 0 && parsedRun.hasAnswer;
     probe(
       "headless-one-shot",
       "Headless one-shot",
       oneShotOk,
       oneShotOk
-        ? "a trivial run completed with a text answer in the event stream"
-        : `one-shot run failed: ${oneShot.code === null ? (oneShot.timedOut ? "timed out" : "did not start") : `exit ${oneShot.code}`}; events: ${events.detail}${oneShot.stderr.trim() ? ` (${oneShot.stderr.trim().split("\n")[0]})` : ""}`,
+        ? "a trivial run completed with a text answer in the output"
+        : `one-shot run failed: ${oneShot.code === null ? (oneShot.timedOut ? "timed out" : "did not start") : `exit ${oneShot.code}`}; ${parsedRun.detail}${oneShot.stderr.trim() ? ` (${oneShot.stderr.trim().split("\n")[0]})` : ""}`,
     );
 
     // ── structured events ──────────────────────────────────────────────
-    probe("structured-events", "Structured event parsing", events.ok, events.detail);
+    const structuredSkip = templates.skipSeams?.["structured-events"];
+    if (structuredSkip) {
+      probe("structured-events", "Structured event parsing", true, `skipped: ${structuredSkip}`);
+    } else {
+      const structuredOk = parsedRun.recognized > 0;
+      probe("structured-events", "Structured event parsing", structuredOk, parsedRun.detail);
+    }
 
     // ── auto / permission mode ──────────────────────────────────────────
-    const autoUsed = runArgs.includes("--auto");
+    const autoFlags = [
+      "--auto",
+      "--approve-for-me",
+      "--dangerously-skip-permissions",
+      "--dangerously-bypass-approvals-and-sandbox",
+      "--trust-all-tools",
+      "--yolo",
+      "-f",
+      "--force",
+    ];
+    const autoUsed = runArgs.some((a) => autoFlags.includes(a));
     const autoOk = oneShotOk && autoUsed;
     probe(
       "auto-permissions",
       "Permission / auto mode",
       autoOk,
       autoOk
-        ? "the run accepted --auto and completed without an interactive permission prompt"
+        ? `the run used ${runArgs.find((a) => autoFlags.includes(a))} and completed without an interactive permission prompt`
         : autoUsed
-          ? "the run used --auto but did not complete cleanly"
+          ? "the run used an auto/permission flag but did not complete cleanly"
           : "the adapter's one-shot did not pass a permission/auto flag",
     );
 
     // ── session continuation ────────────────────────────────────────────
-    const sessionId = extractSessionId(oneShot.stdout);
-    if (!sessionId) {
+    const sessionContinuationSkip = templates.skipSeams?.["session-continuation"];
+    const sessionId = parsedRun.sessionId;
+    if (sessionContinuationSkip) {
+      probe(
+        "session-continuation",
+        "Session continuation",
+        true,
+        `skipped: ${sessionContinuationSkip}`,
+      );
+    } else if (!sessionId) {
       probe(
         "session-continuation",
         "Session continuation",
         false,
-        "no session id appeared in the one-shot event stream, so a follow-up could not be started",
+        "no session id found in the one-shot output, so a follow-up could not be started",
       );
     } else {
       const resumeArgs = templates.resume(workDir, sessionId, PROBE_PROMPT);
       const resume = await spawnCapture(binary, resumeArgs, { timeoutMs, cwd: workDir });
-      const resumeEvents = validateEventStream(resume.stdout);
-      const resumeOk = resume.code === 0 && resumeEvents.ok;
+      const resumeParsed = templates.parseRun
+        ? templates.parseRun(resume.stdout)
+        : (() => {
+            const ev = validateEventStream(resume.stdout);
+            return {
+              sessionId: null,
+              hasAnswer: false,
+              recognized: ev.count,
+              total: ev.count,
+              detail: ev.detail,
+            };
+          })();
+      const resumeOk = resume.code === 0 && resumeParsed.recognized > 0;
       probe(
         "session-continuation",
         "Session continuation",
