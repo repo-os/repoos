@@ -13,7 +13,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
  */
 const config: CapacitorConfig = {
   appId: "org.repoos.mobile",
-  appName: "RepoOS",
+  appName: "RepoOS Hub",
   webDir: "www",
   server: {
     androidScheme: "https",
