@@ -1,16 +1,16 @@
 ---
-updated_at: "2026-09-22T17:07:30Z"
-review_passes: 1
 id: "0488"
 title: Rename native clients to RepoOS Hub
 type: feature
-status: active
+status: review
 priority: p1
 area: macos
 assigned_to: ai
 created_by: ""
 branch: feat/rename-native-clients-to-repoos-hub
 created_at: "2026-09-22T16:53:51Z"
+updated_at: "2026-09-22T17:13:25Z"
+review_passes: 1
 ---
 Rename the user-facing native client product to “RepoOS Hub” on macOS, iOS, and Android.
 
@@ -34,4 +34,4 @@ Coordinate with #0487: the release workflow must package the newly named RepoOS 
 - 2026-09-22T16:54:06Z · status inbox→active
 - 2026-09-22T17:01:27Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
 - 2026-09-22T17:01:29Z · status review→active
-
+- 2026-09-22T17:13:25Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
