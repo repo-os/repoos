@@ -89,7 +89,7 @@ local service port.
 
 ## The mobile app
 
-The RepoOS mobile app is a native shell around the ordinary web UI: it stores a
+RepoOS Hub for iPhone and Android is a native shell around the ordinary web UI: it stores a
 list of servers on-device and opens the selected one, chromeless, in an isolated
 WebView. Add a server by its published `https://…` URL — the app only accepts
 HTTPS and verifies the server answers `/api/health` before saving it.

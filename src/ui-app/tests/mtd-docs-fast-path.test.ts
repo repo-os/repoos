@@ -167,6 +167,7 @@ describe("validateCandidate docs-only fast path (#0355)", () => {
 
       // The fixture has no package.json or build script. MTD must run the
       // declared check, not invent `bun run build` before it.
+      if (!res.ok) console.error("[mtd-bootstrap-diag] reason:", res.reason);
       expect(res.ok).toBe(true);
       expect(res.candidateSha).toBeTruthy();
     } finally {

@@ -5,6 +5,7 @@ import UserNotifications
 struct RepoOSHubApp: App {
     @StateObject private var appState = HubAppState()
     @State private var notificationDelegate = HubNotificationDelegate()
+    @State private var memoryPressureMonitor: HubMemoryPressureMonitor?
 
     var body: some Scene {
         WindowGroup("RepoOS") {
@@ -16,6 +17,11 @@ struct RepoOSHubApp: App {
                     notificationDelegate.requestAuthorizationIfNeeded()
                     notificationDelegate.onOpenNavigation = { serverID, path in
                         appState.handleHubNotificationOpen(serverID: serverID, path: path)
+                    }
+                    if memoryPressureMonitor == nil {
+                        memoryPressureMonitor = HubMemoryPressureMonitor { level in
+                            appState.applyWorkspaceResidencyMemoryPressure(level)
+                        }
                     }
                 }
         }

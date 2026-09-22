@@ -35,14 +35,19 @@ if [ "$ACTUAL" != "$SHA" ]; then
 fi
 echo "[validate] HEAD verified at $SHA"
 
+# The bun base image runs as uid 1000 ('bun'); make the cloned repo and
+# artifacts dir writable by that user before entering the container.
+chmod -R o+rw "$WORK/repo" "$ART"
+
 set +e
-docker run --rm --user 0:0 \
+docker run --rm \
   -v "$WORK/repo":/repo \
-  -v "$CACHE":/root/.bun/install/cache \
+  -v "$CACHE":/bun-cache \
   -v "$ART":/artifacts \
+  -e BUN_INSTALL_CACHE_DIR=/bun-cache \
   -w /repo \
   "$IMAGE" \
-  'set -o pipefail; bun install --frozen-lockfile && bun run build && bun run test 2>&1 | tee /artifacts/test-output.log'
+  'set -o pipefail; bun install --frozen-lockfile && bun run build && printf "#!/bin/sh\nexec bun /repo/dist/cli/index.js \"\$@\"\n" > /usr/local/bin/repoos && chmod +x /usr/local/bin/repoos && bun run test 2>&1 | tee /artifacts/test-output.log'
 CODE=$?
 set -e
 

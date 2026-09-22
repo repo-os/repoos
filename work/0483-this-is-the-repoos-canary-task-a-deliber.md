@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-22T15:00:35Z"
-review_passes: 1
 id: "0483"
 title: Bump canary counter by 1
 type: chore
-status: review
+status: done
 priority: p2
 area: core
 assigned_to: ai
@@ -12,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/bump-canary-counter-by-1
 review_model_override: opencode-go/hy3
 created_at: "2026-09-22T14:36:07Z"
-handoff_signal_retry_count: 1
+updated_at: "2026-09-22T17:06:59Z"
 ---
 ## Problem
 
@@ -54,4 +52,4 @@ This is the repoos canary task: a deliberately trivial change used to smoke-test
 - 2026-09-22T14:37:18Z · status inbox→ready
 - 2026-09-22T14:37:21Z · status ready→active, branch
 - 2026-09-22T15:00:01Z · status active→review
-
+- 2026-09-22T17:06:59Z · status review→done, release:success

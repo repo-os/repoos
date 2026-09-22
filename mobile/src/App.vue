@@ -55,7 +55,7 @@ async function gateLock(serverId: string | null): Promise<boolean> {
   if (!lockSettings.value.enabled) return true;
   lockStagingId.value = serverId;
   lockOpen.value = true;
-  const ok = await verifyWithDeviceLock("Unlock RepoOS to continue");
+  const ok = await verifyWithDeviceLock("Unlock RepoOS Hub to continue");
   lockOpen.value = false;
   return ok;
 }
@@ -157,7 +157,7 @@ async function persistLock() {
             stroke-linecap="round"
           />
         </svg>
-        <span class="brand-name">RepoOS</span>
+        <span class="brand-name">RepoOS Hub</span>
       </div>
       <button
         class="icon-btn"
@@ -173,7 +173,7 @@ async function persistLock() {
     <div v-if="lockOpen" class="lock-overlay">
       <div class="lock-card">
         <div class="lock-icon" aria-hidden="true">🔒</div>
-        <div class="lock-title">RepoOS is locked</div>
+        <div class="lock-title">RepoOS Hub is locked</div>
         <div class="lock-sub">Authenticate with your device to continue.</div>
       </div>
     </div>

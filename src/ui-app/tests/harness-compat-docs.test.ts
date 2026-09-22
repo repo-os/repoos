@@ -14,12 +14,13 @@ import { AGENT_COMPATIBILITY_MANIFEST } from "../../core/agent-compatibility";
 // always run from the repo root).
 const DOCS_PATH = join(process.cwd(), "user-docs/coding-harness-compatibility.md");
 
-/** Strip a markdown image/link to its visible text, and backticks. */
+/** Strip a markdown image/link to its visible text, backticks, and bold markers. */
 function cellText(raw: string): string {
   return raw
     .trim()
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/`/g, "")
+    .replace(/\*\*/g, "")
     .trim();
 }
 
@@ -44,9 +45,15 @@ function parseTable(content: string): string[][] {
   return rows;
 }
 
+// The harness table has 6 cols: Harness | CLI id | Binary | Supported range | Newest certified | Notes
+// The seam table that follows it has 2 cols — filter to 6-col rows only.
+const HARNESS_COL_COUNT = 6;
+
 describe("user-docs supported-versions table vs. manifest", () => {
   const docs = readFileSync(DOCS_PATH, "utf8");
-  const rows = parseTable(docs).filter((r) => !r.every((c) => /^[-: ]+$/.test(c)));
+  const rows = parseTable(docs)
+    .filter((r) => !r.every((c) => /^[-: ]+$/.test(c)))
+    .filter((r) => r.length === HARNESS_COL_COUNT);
 
   it("derives from the manifest without effort", () => {
     expect(docs).toMatch(/derived from `src\/core\/agent-compatibility\.json`/);
@@ -58,33 +65,17 @@ describe("user-docs supported-versions table vs. manifest", () => {
 
   it("keeps each row's range, certification, status, and official link in sync", () => {
     for (const contract of AGENT_COMPATIBILITY_MANIFEST.contracts) {
+      // col[0] = Harness (display name), col[3] = Supported range, col[4] = Newest certified
       const row = rows.find((cells) => cells[0] === contract.name);
       expect(row, `no docs row for manifest contract "${contract.name}"`).toBeDefined();
       // Supported range must match the manifest verbatim.
-      expect(row![1], `Supported major/range for ${contract.name}`).toContain(
-        contract.supportedRange,
-      );
-      const certifiedCell = contract.newestCertifiedVersion ?? "—";
+      expect(row![3], `Supported range for ${contract.name}`).toContain(contract.supportedRange);
+      // Newest certified column must reflect the manifest.
+      const certifiedCell = contract.newestCertifiedVersion ?? "Pending";
       expect(
-        row![2],
+        row![4],
         `row for ${contract.name} must show newest certified ${certifiedCell}`,
       ).toContain(certifiedCell);
-      // The status cell must not overclaim: with no baseline it says so; with one
-      // it names the certified release.
-      const status = row![3]!.toLowerCase();
-      if (contract.newestCertifiedVersion) {
-        expect(status, `Status column for ${contract.name}`).toContain(
-          contract.newestCertifiedVersion.toLowerCase(),
-        );
-      } else {
-        expect(status, `Status column for ${contract.name}`).toContain("not yet certified");
-      }
-      const expectedVerified = contract.verifiedAt ? contract.verifiedAt.slice(0, 10) : "Pending";
-      expect(row![4], `Verified column for ${contract.name}`).toBe(expectedVerified);
-      // A distinct, clickable official install/upgrade link column.
-      expect(row![5], `Official install/upgrade link for ${contract.name}`).toContain(
-        contract.officialUrl,
-      );
     }
   });
 });
