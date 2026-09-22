@@ -9,8 +9,9 @@ story: MacOS native app
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
 created_at: "2026-09-21T11:50:29Z"
-updated_at: "2026-09-21T20:10:14Z"
+updated_at: "2026-09-22T02:07:17Z"
 ---
 Extend the macOS Hub command palette with an opt-in cross-server task search that helps users locate work without reopening browser tabs.
 
@@ -29,3 +30,4 @@ Depends on the Hub summary capability work and the native navigation/command pal
 - 2026-09-21T11:52:37Z · body
 - 2026-09-21T18:27:17Z · status inbox→ready
 - 2026-09-21T20:10:14Z · story
+- 2026-09-22T02:07:17Z · cli_override
