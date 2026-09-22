@@ -2,14 +2,14 @@
 id: "0484"
 title: Cap inactive macOS Hub WebView residency with an LRU working set
 type: feature
-status: ready
+status: active
 priority: p2
 area: desktop
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/cap-inactive-macos-hub-webview-residency
 created_at: "2026-09-22T14:46:35Z"
-updated_at: "2026-09-22T14:52:26Z"
+updated_at: "2026-09-22T14:52:27Z"
 ---
 Cap the macOS Hub's live WKWebView residency so a user who has visited many RepoOS servers does not retain every page process and DOM in memory.
 
@@ -40,3 +40,4 @@ This should preserve the strict no-native-bridge WebKit security boundary.
 - 2026-09-22T14:46:35Z · created · unknown
 - 2026-09-22T14:51:50Z · body
 - 2026-09-22T14:52:26Z · status inbox→ready
+- 2026-09-22T14:52:27Z · status ready→active, branch
