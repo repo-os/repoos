@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-22T17:18:17Z"
-review_passes: 2
 id: "0488"
 title: Rename native clients to RepoOS Hub
 type: feature
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: ""
 branch: feat/rename-native-clients-to-repoos-hub
 created_at: "2026-09-22T16:53:51Z"
+updated_at: "2026-09-22T17:20:16Z"
+review_passes: 2
 ---
 Rename the user-facing native client product to “RepoOS Hub” on macOS, iOS, and Android.
 
