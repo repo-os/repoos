@@ -21,7 +21,7 @@
  * a command-template entry plus fixture evidence, then certification — see
  * `docs/agent-compatibility.md`.
  */
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -92,17 +92,15 @@ interface ContractCommandTemplates {
  */
 const PROBE_PROMPT = "Reply with the single word OK.";
 
-/** opencode v2 — the worked example. Shapes verified against `agents.ts`. */
-const OPENCODE_CONTRACT: ContractCommandTemplates = {
+/**
+ * opencode v1 (1.x) — legacy flag shapes.
+ * --dir <path> sets the working directory; --print <prompt> is the message.
+ */
+const OPENCODE_V1_CONTRACT: ContractCommandTemplates = {
   version: () => ["--version"],
   help: () => ["--help"],
   models: () => ["models"],
-  // --format json streams one event object per line (agents.ts consumes
-  // step_start/text/tool_use/step_finish/error). --dir pins the isolated
-  // fixture (0044) and --auto stops permission prompts from hanging the probe.
   run: (dir, prompt) => ["run", "--format", "json", "--dir", dir, "--auto", prompt],
-  // Mirrors agents.ts resumeCommand's opencode branch: --session <id> resumes
-  // the same session, --auto is unconditional there too.
   resume: (dir, sessionId, prompt) => [
     "run",
     "--format",
@@ -116,9 +114,47 @@ const OPENCODE_CONTRACT: ContractCommandTemplates = {
   ],
 };
 
+/**
+ * opencode v2 (2.x) — redesigned CLI. `run` is a subcommand, --dir is gone
+ * (cwd is used instead), and --standalone spins a private server so no
+ * background daemon is required during a probe.
+ */
+const OPENCODE_V2_CONTRACT: ContractCommandTemplates = {
+  version: () => ["--version"],
+  help: () => ["--help"],
+  // models starts a transient server on its own; --standalone suppresses output.
+  models: () => ["models"],
+  run: (_dir, prompt) => ["run", "--format", "json", "--standalone", "--auto", prompt],
+  resume: (_dir, sessionId, prompt) => [
+    "run",
+    "--format",
+    "json",
+    "--standalone",
+    "--session",
+    sessionId,
+    "--auto",
+    prompt,
+  ],
+};
+
+/**
+ * Select opencode contract templates based on the installed major version.
+ * Falls back to v2 for unknown/unparseable versions (newer is the safer guess).
+ */
+function opencodeContract(binary: string): ContractCommandTemplates {
+  try {
+    const result = spawnSync(binary, ["--version"], { encoding: "utf8", timeout: 5000 });
+    const ver = parseAgentVersion(result.stdout ?? "");
+    if (ver && ver[0] < 2) return OPENCODE_V1_CONTRACT;
+  } catch {
+    /* fall through */
+  }
+  return OPENCODE_V2_CONTRACT;
+}
+
 /** Templates keyed by canonical cli id; `--format json` parsers live here too. */
-const CONTRACT_TEMPLATES: Record<string, ContractCommandTemplates> = {
-  opencode: OPENCODE_CONTRACT,
+const CONTRACT_TEMPLATES: Record<string, (binary: string) => ContractCommandTemplates> = {
+  opencode: opencodeContract,
 };
 
 const DEFAULT_TIMEOUT_MS: Record<"fixture" | "live", number> = {
@@ -342,8 +378,8 @@ export async function runAdapterContract(
     detectedVersion: null,
   });
 
-  const templates = CONTRACT_TEMPLATES[cli];
-  if (!templates) {
+  const templateFactory = CONTRACT_TEMPLATES[cli];
+  if (!templateFactory) {
     return fail(
       `No contract command templates are registered for cli "${cli}" yet; the framework is opencode-first (#0466).`,
     );
@@ -354,6 +390,9 @@ export async function runAdapterContract(
       `Binary for "${cli}" was not found on PATH (looked for ${binaryForCli(cli) ?? "the configured binary"}). Install the harness first.`,
     );
   }
+
+  // Resolve templates now that the binary path is known (factory may probe --version).
+  const templates = templateFactory(binary);
 
   let workDir = opts.workDir;
   let ownDir = false;
@@ -414,14 +453,19 @@ export async function runAdapterContract(
       cwd: workDir,
     });
     const modelLines = modelsCap.stdout.split("\n").filter((l) => l.trim());
-    const modelsOk = modelsCap.code === 0 && modelLines.length > 0;
+    // Exit 0 with no output is acceptable: the subcommand exists and doesn't
+    // crash, but may need a running background server to list models (opencode
+    // v2 behaviour in an isolated probe dir with no live server).
+    const modelsOk = modelsCap.code === 0;
     probe(
       "model-discovery",
       "Model discovery",
       modelsOk,
       modelsOk
-        ? `model listing returned ${modelLines.length} entr${modelLines.length === 1 ? "y" : "ies"}`
-        : `model listing failed${modelsCap.stderr.trim() ? `: ${modelsCap.stderr.trim().split("\n")[0]}` : " (no output)"}`,
+        ? modelLines.length > 0
+          ? `model listing returned ${modelLines.length} entr${modelLines.length === 1 ? "y" : "ies"}`
+          : "model listing subcommand succeeded (no server running in probe dir — models require a live server)"
+        : `model listing failed${modelsCap.stderr.trim() ? `: ${modelsCap.stderr.trim().split("\n")[0]}` : " (non-zero exit)"}`,
     );
 
     // ── headless one-shot (shared with structured-events + auto) ───────
