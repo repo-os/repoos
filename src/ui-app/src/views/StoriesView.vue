@@ -92,26 +92,24 @@ function lastActivity(story: { lastActivity: string | null }): string {
 
 <template>
   <div class="stories-page">
-    <header class="stories-header">
+    <header class="page-header">
       <div>
-        <h1 class="stories-title">Stories</h1>
-        <p class="stories-sub">
+        <div class="page-title">Stories</div>
+        <div class="page-desc" style="margin: 3px 0 0">
           Cross-area delivery slices, derived from tasks tagged with a
           <code>story</code>. A story is complete only when every one of its tasks is done.
-        </p>
+        </div>
       </div>
     </header>
 
-    <div v-if="!enabled" class="stories-panel stories-empty">
+    <div v-if="!enabled" class="glass stories-notice">
       Stories aren't enabled for this repository. Add a <code>[stories]</code> block with
       <code>enabled = true</code> to <a href="/settings?tab=toml">repoos.toml</a> to turn this page
       on.
     </div>
 
-    <div v-else-if="stories.length === 0" class="stories-panel stories-empty">
-      <div class="stories-empty-title">
-        {{ repo.tasks.length === 0 ? "No tasks yet" : "No stories yet" }}
-      </div>
+    <div v-else-if="stories.length === 0" class="empty-state">
+      <div class="big">{{ repo.tasks.length === 0 ? "No tasks yet" : "No stories yet" }}</div>
       <div v-if="repo.tasks.length > 0">
         Tag a task with a story to group it with related work. Use the Story field in the task
         drawer, or <code>repoos update &lt;id&gt; --story "Project updates email"</code>.
@@ -122,7 +120,7 @@ function lastActivity(story: { lastActivity: string | null }): string {
       <article
         v-for="story in stories"
         :key="story.key"
-        class="story-card"
+        class="glass story-card"
         :class="{ complete: story.complete }"
       >
         <button
@@ -206,56 +204,29 @@ function lastActivity(story: { lastActivity: string | null }): string {
 
 <style scoped>
 .stories-page {
-  padding: 22px 26px 60px;
-  max-width: 1100px;
-  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 0 80px;
 }
-.stories-header {
-  margin-bottom: 20px;
-}
-.stories-title {
-  margin: 0 0 4px;
-  font-size: 20px;
-  font-weight: 650;
-  color: var(--txt);
-  letter-spacing: -0.01em;
-}
-.stories-sub {
-  margin: 0;
-  max-width: 640px;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--txt-dim);
-}
-.stories-sub code,
-.stories-empty code {
-  font-family: var(--mono, ui-monospace, monospace);
+.stories-page :deep(.page-desc code),
+.stories-notice code,
+.stories-page .empty-state code {
+  font-family: var(--mono);
   font-size: 12px;
-  padding: 1px 5px;
-  border-radius: 5px;
-  background: var(--panel-solid);
-  border: 1px solid var(--border);
-  color: var(--txt);
-}
-.stories-panel {
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--panel);
-  padding: 28px;
-}
-.stories-empty {
   color: var(--txt-dim);
-  font-size: 13px;
+}
+.stories-notice {
+  padding: 22px;
+  color: var(--txt-faint);
+  font-size: 12.5px;
   line-height: 1.6;
 }
-.stories-empty-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--txt);
-  margin-bottom: 6px;
-}
-.stories-empty a {
+.stories-notice a {
   color: var(--cyan);
+  text-decoration: none;
+}
+.stories-notice a:hover {
+  text-decoration: underline;
 }
 
 .stories-grid {
@@ -264,10 +235,6 @@ function lastActivity(story: { lastActivity: string | null }): string {
   gap: 12px;
 }
 .story-card {
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--panel);
-  overflow: hidden;
   transition:
     border-color 0.15s ease,
     opacity 0.15s ease;
@@ -323,11 +290,13 @@ function lastActivity(story: { lastActivity: string | null }): string {
 }
 .story-badge-done {
   color: var(--green);
-  background: color-mix(in srgb, var(--green) 14%, transparent);
+  background: var(--green-tint);
+  border: 1px solid var(--green-border-tint);
 }
 .story-badge-attention {
   color: var(--amber);
-  background: color-mix(in srgb, var(--amber) 15%, transparent);
+  background: var(--amber-tint);
+  border: 1px solid var(--amber-border-tint);
 }
 .story-meta {
   margin-top: 4px;
@@ -357,7 +326,7 @@ function lastActivity(story: { lastActivity: string | null }): string {
   width: 120px;
   height: 6px;
   border-radius: 999px;
-  background: var(--panel-solid);
+  background: var(--chip-bg);
   border: 1px solid var(--border);
   overflow: hidden;
 }
@@ -387,18 +356,20 @@ function lastActivity(story: { lastActivity: string | null }): string {
 .story-chip {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  color: var(--txt-dim);
-  padding: 2px 8px 2px 6px;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--txt);
+  padding: 4px 11px 4px 9px;
   border-radius: 999px;
   border: 1px solid var(--border);
-  background: var(--panel-solid);
+  background: var(--panel);
 }
 .story-chip-dot {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
+  flex-shrink: 0;
   background: var(--chip);
 }
 
@@ -450,15 +421,18 @@ function lastActivity(story: { lastActivity: string | null }): string {
 }
 .story-live-cue.attention {
   color: var(--amber);
-  background: color-mix(in srgb, var(--amber) 15%, transparent);
+  background: var(--amber-tint);
+  border: 1px solid var(--amber-border-tint);
 }
 .story-live-cue.review {
   color: var(--amber);
-  background: color-mix(in srgb, var(--amber) 12%, transparent);
+  background: var(--amber-tint);
+  border: 1px solid var(--amber-border-tint);
 }
 .story-live-cue.active {
   color: var(--violet);
-  background: color-mix(in srgb, var(--violet) 14%, transparent);
+  background: var(--violet-tint);
+  border: 1px solid var(--violet-border-tint);
 }
 
 .story-members {
@@ -467,13 +441,10 @@ function lastActivity(story: { lastActivity: string | null }): string {
   gap: 10px;
   padding: 14px 16px;
   border-top: 1px solid var(--border);
-  background: color-mix(in srgb, var(--panel-solid) 45%, transparent);
+  background: var(--chip-bg);
 }
 
-@media (max-width: 640px) {
-  .stories-page {
-    padding: 16px 14px 48px;
-  }
+@media (max-width: 720px) {
   .story-head {
     flex-wrap: wrap;
     gap: 10px;
