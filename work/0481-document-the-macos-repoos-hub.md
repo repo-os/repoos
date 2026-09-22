@@ -2,7 +2,7 @@
 id: "0481"
 title: Document the macOS RepoOS Hub
 type: documentation
-status: review
+status: done
 priority: p2
 area: macos
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: opencode/big-pickle
 pm_cli_override: github copilot
 pm_model_override: default
 created_at: "2026-09-22T05:30:52Z"
-updated_at: "2026-09-22T18:07:52Z"
+updated_at: "2026-09-22T18:20:39Z"
 review_rounds: 1
 review_passes: 2
 ---
@@ -83,3 +83,4 @@ Add screenshots or product visuals only if the native UI is stable and an approv
 - 2026-09-22T16:01:54Z · status active→review
 - 2026-09-22T17:16:03Z · status review→active
 - 2026-09-22T18:07:52Z · status active→review
+- 2026-09-22T18:20:39Z · status review→done, release:success
