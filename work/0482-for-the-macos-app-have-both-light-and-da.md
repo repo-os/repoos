@@ -21,9 +21,11 @@ for the macos app, have both light and dark app icons for the dock (set it dynam
 
 ![Screenshot-2026-09-22-at-12.59.57](/api/tasks/0482/attachments/screenshot-1.png)
 ![Screenshot-2026-09-22-at-12.56.52](/api/tasks/0482/attachments/screenshot-2.png)
+![Screenshot-2026-09-22-at-12.56.43](/api/tasks/0482/attachments/screenshot-3.png)
 
 ## Activity
 
 - 2026-09-22T14:34:23Z · created · hello@repoos.org
+- 2026-09-22T14:34:24Z · screenshots
 - 2026-09-22T14:34:24Z · screenshots
 - 2026-09-22T14:34:24Z · screenshots
