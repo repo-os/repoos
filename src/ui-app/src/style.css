@@ -6655,7 +6655,7 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--panel-solid);
-  overflow: hidden;
+  position: relative;
 }
 .detect-row + .detect-row {
   margin-top: 8px;
