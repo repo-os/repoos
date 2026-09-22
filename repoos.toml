@@ -60,6 +60,12 @@ worktreeWarnThreshold = 20
 # makes `ensureWorktree` symlink the main `.env` into every task worktree, so a
 # worktree-local preview or build can actually boot. Off by default for repos
 # whose build/preview needs no secrets; see user-docs/configuration.md.
+stories.enabled = true
+ntfyBaseUrl = "https://ntfy.sh"
+skillsDir = "skills"
+taskExtensions = [".md"]
+skillSuggestions = false
+remoteValidation.useForReleases = false
 [worktrees]
 inheritEnv = true
 
@@ -402,6 +408,7 @@ tunnel_id = "961e778d-b048-46ff-a848-756e3cf235b0"
 hostname = "dev.repoos.org"
 service = "http://localhost:7171"
 access = ["njachowski@gmail.com", "faizullah.misrab@gmail.com", "nick@tukapp.co"]
+
 [[agents]]
 name = "engineer"
 cli = "github copilot"

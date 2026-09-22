@@ -1,4 +1,4 @@
-# RepoOS Hub for macOS
+# RepoOS for macOS
 
 This directory is a standalone native macOS shell for RepoOS. It is deliberately
 independent from the root TypeScript package: the server and web application do

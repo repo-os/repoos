@@ -146,6 +146,31 @@ final class HubRecentsRetentionTests: XCTestCase {
 
         XCTAssertNil(error)
         XCTAssertEqual(state.entries.first?.name, "My Repo")
+        XCTAssertEqual(state.entries.first?.repositoryName, "My Repo")
+    }
+
+    @MainActor
+    func testHealthRefreshNamesLegacyAddressEntriesFromTheirRepository() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("hub-legacy-name-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let store = ServerRegistryStore(directoryURL: directory)
+        let entry = ServerEntry(name: "localhost:7171", origin: URL(string: "http://localhost:7171")!)
+        var document = ServerRegistryDocument()
+        try store.upsertEntry(entry, in: &document)
+        try store.save(document)
+
+        let state = HubAppState(
+            store: store,
+            healthChecker: StubHealthChecker(projectName: "RepoOS"),
+            attentionCoordinator: HubAttentionCoordinator()
+        )
+        await state.refreshHealth(for: entry.id)
+
+        XCTAssertEqual(state.entries.first?.name, "RepoOS")
+        XCTAssertEqual(state.entries.first?.repositoryName, "RepoOS")
     }
 }
 

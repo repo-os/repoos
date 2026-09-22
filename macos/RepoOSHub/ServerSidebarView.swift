@@ -43,16 +43,19 @@ struct ServerSidebarView: View {
             }
         }
         .listStyle(.sidebar)
-        .navigationTitle("RepoOS Hub")
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    appState.presentAddServer()
-                } label: {
-                    Label("Add server", systemImage: "plus")
-                }
-                .help("Add a RepoOS server to the local registry")
+        .navigationTitle("RepoOS")
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            Button {
+                appState.presentAddServer()
+            } label: {
+                Label("Add server", systemImage: "plus")
+                    .frame(maxWidth: .infinity)
             }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.regular)
+            .padding(12)
+            .background(.bar)
+            .help("Add a RepoOS server to the local registry")
         }
         .overlay {
             if appState.entries.isEmpty {
@@ -93,8 +96,6 @@ struct ServerSidebarRow: View {
             }
             Spacer(minLength: 4)
             AttentionSummaryBadges(snapshot: appState.attentionSnapshot(for: entry.id))
-            HealthIndicator(state: entry.lastHealth, checkedAt: entry.lastHealthAt)
-            SummaryFreshnessIndicator(snapshot: appState.attentionSnapshot(for: entry.id))
         }
         .contextMenu {
             Button("Attention & notifications…") { appState.presentAttentionSettings(for: entry) }
@@ -155,16 +156,48 @@ struct ServerIconView: View {
         let symbol = entry.iconSymbolName ?? "server.rack"
         Image(systemName: symbol)
             .font(.system(size: 16, weight: .medium))
-            .foregroundStyle(entryAccentColor)
+            .foregroundStyle(statusColor)
             .frame(width: 24, height: 24)
-            .accessibilityHidden(true)
+            .help(statusHelp)
+            .accessibilityLabel(statusHelp)
     }
 
-    private var entryAccentColor: Color {
-        if let hex = entry.accentColorHex, let color = Color(hex: hex) {
-            return color
+    private var statusColor: Color {
+        switch entry.lastHealth {
+        case .unknown: return .secondary
+        case .healthy: return .green
+        case .unreachable: return .orange
+        case .invalid: return .red
         }
-        return .accentColor
+    }
+
+    private var statusHelp: String {
+        let checkedAt: String
+        if let lastHealthAt = entry.lastHealthAt {
+            let formatter = RelativeDateTimeFormatter()
+            formatter.unitsStyle = .short
+            checkedAt = "\nLast checked: \(formatter.localizedString(for: lastHealthAt, relativeTo: Date()))"
+        } else {
+            checkedAt = ""
+        }
+        let repository = entry.repositoryName ?? "Not reported yet"
+        return """
+        Server: \(entry.name)
+        Repository: \(repository)
+        Address: \(entry.originString)
+        Status: \(entry.lastHealth.displayTitle) (\(statusColorMeaning))\(checkedAt)
+
+        Icon colors: green = healthy, orange = unreachable, red = invalid response, gray = not checked.
+        """
+    }
+
+    private var statusColorMeaning: String {
+        switch entry.lastHealth {
+        case .unknown: return "gray"
+        case .healthy: return "green"
+        case .unreachable: return "orange"
+        case .invalid: return "red"
+        }
     }
 }
 
@@ -205,56 +238,6 @@ private struct AttentionBadge: View {
     }
 }
 
-struct SummaryFreshnessIndicator: View {
-    let snapshot: ServerAttentionSnapshot?
-
-    var body: some View {
-        Circle()
-            .fill(color)
-            .frame(width: 6, height: 6)
-            .help(snapshot?.freshness.displayTitle ?? SummaryFreshness.unavailable.displayTitle)
-            .accessibilityLabel(snapshot?.freshness.displayTitle ?? SummaryFreshness.unavailable.displayTitle)
-    }
-
-    private var color: Color {
-        switch snapshot?.freshness {
-        case .fresh: return .teal
-        case .stale: return .yellow
-        case .unavailable, .none: return Color.secondary.opacity(0.25)
-        }
-    }
-}
-
-struct HealthIndicator: View {
-    let state: HealthState
-    let checkedAt: Date?
-
-    var body: some View {
-        Circle()
-            .fill(color)
-            .frame(width: 8, height: 8)
-            .help(helpText)
-            .accessibilityLabel(state.displayTitle)
-    }
-
-    private var color: Color {
-        switch state {
-        case .unknown: return Color.secondary.opacity(0.45)
-        case .healthy: return .green
-        case .unreachable: return .orange
-        case .invalid: return .red
-        }
-    }
-
-    private var helpText: String {
-        if let checkedAt {
-            let formatter = RelativeDateTimeFormatter()
-            formatter.unitsStyle = .short
-            return "\(state.displayTitle) · checked \(formatter.localizedString(for: checkedAt, relativeTo: Date()))"
-        }
-        return state.displayTitle
-    }
-}
 
 extension Color {
     init?(hex: String) {

@@ -45,9 +45,7 @@ final class HubAppState: ObservableObject {
             healthChecker: RepoOSHealthChecker(),
             attentionCoordinator: coordinator
         )
-        if let selectedServerID {
-            Task { await refreshHealth(for: selectedServerID) }
-        }
+        Task { await refreshAllHealth() }
     }
 
     func attentionSnapshot(for serverID: UUID) -> ServerAttentionSnapshot? {
@@ -229,7 +227,7 @@ final class HubAppState: ObservableObject {
         NotificationCenter.default.post(
             name: .hubWebNavigationNavigate,
             object: nil,
-            userInfo: ["serverID": serverID, "path": normalized]
+            userInfo: HubWebNavigationCommand.userInfo(serverID: serverID, path: normalized)
         )
     }
 
@@ -284,18 +282,30 @@ final class HubAppState: ObservableObject {
     }
 
     func workspaceGoBack() {
-        guard workspaceNavigation.canGoBack else { return }
-        NotificationCenter.default.post(name: .hubWebNavigationBack, object: selectedServerID)
+        guard workspaceNavigation.canGoBack, let selectedServerID else { return }
+        NotificationCenter.default.post(
+            name: .hubWebNavigationBack,
+            object: nil,
+            userInfo: HubWebNavigationCommand.userInfo(serverID: selectedServerID)
+        )
     }
 
     func workspaceGoForward() {
-        guard workspaceNavigation.canGoForward else { return }
-        NotificationCenter.default.post(name: .hubWebNavigationForward, object: selectedServerID)
+        guard workspaceNavigation.canGoForward, let selectedServerID else { return }
+        NotificationCenter.default.post(
+            name: .hubWebNavigationForward,
+            object: nil,
+            userInfo: HubWebNavigationCommand.userInfo(serverID: selectedServerID)
+        )
     }
 
     func workspaceReload() {
-        if workspaceNavigation.hasEmbeddedWebContent {
-            NotificationCenter.default.post(name: .hubWebNavigationReload, object: selectedServerID)
+        if workspaceNavigation.hasEmbeddedWebContent, let selectedServerID {
+            NotificationCenter.default.post(
+                name: .hubWebNavigationReload,
+                object: nil,
+                userInfo: HubWebNavigationCommand.userInfo(serverID: selectedServerID)
+            )
         } else if let id = selectedServerID {
             Task { await refreshHealth(for: id) }
         }
@@ -331,7 +341,11 @@ final class HubAppState: ObservableObject {
     func clearWebsiteSession(for serverID: UUID) {
         ServerWebsiteDataStorePool.shared.clearWebsiteData(for: serverID) { [weak self] in
             Task { @MainActor in
-                NotificationCenter.default.post(name: .serverWebViewReload, object: serverID)
+                NotificationCenter.default.post(
+                    name: .serverWebViewReload,
+                    object: nil,
+                    userInfo: HubWebNavigationCommand.userInfo(serverID: serverID)
+                )
                 self?.lastConnectionMessage = nil
             }
         }
@@ -399,8 +413,9 @@ final class HubAppState: ObservableObject {
                 let reportedName = projectName?.trimmingCharacters(in: .whitespacesAndNewlines)
                 let name = reportedName.flatMap { $0.isEmpty ? nil : $0 }
                     ?? ServerOriginNormalizer.defaultDisplayName(for: origin)
-                var entry = ServerEntry(
+                let entry = ServerEntry(
                     name: name,
+                    repositoryName: reportedName.flatMap { $0.isEmpty ? nil : $0 },
                     origin: origin,
                     createdAt: now,
                     updatedAt: now,
@@ -458,6 +473,9 @@ final class HubAppState: ObservableObject {
         let outcome = await healthChecker.checkHealth(origin: origin)
         var entry = document.entries[index]
         ReachabilityTransition.applyHealthCheck(to: &entry, outcome: outcome)
+        if case .success(let projectName) = outcome {
+            updateRepositoryIdentity(for: &entry, projectName: projectName)
+        }
         document.entries[index] = entry
         entries = document.entries.sorted(by: entrySort)
 
@@ -468,6 +486,23 @@ final class HubAppState: ObservableObject {
         }
 
         try? store.save(document)
+    }
+
+    private func refreshAllHealth() async {
+        for entry in entries {
+            await refreshHealth(for: entry.id)
+        }
+    }
+
+    private func updateRepositoryIdentity(for entry: inout ServerEntry, projectName: String?) {
+        let reportedName = projectName?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let reportedName, !reportedName.isEmpty else { return }
+
+        let fallbackName = entry.originURL.map(ServerOriginNormalizer.defaultDisplayName) ?? "RepoOS server"
+        if entry.name == fallbackName {
+            entry.name = reportedName
+        }
+        entry.repositoryName = reportedName
     }
 
     private func persistQuietly() {

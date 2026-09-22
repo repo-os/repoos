@@ -108,4 +108,15 @@ final class CommandPaletteMatcherTests: XCTestCase {
         XCTAssertTrue(items.contains { $0.kind == .remoteTask })
         XCTAssertTrue(items.contains { $0.subtitle?.contains("fresh") == true })
     }
+
+    func testWebNavigationCommandTargetsOnlyItsServer() {
+        let notification = Notification(
+            name: .hubWebNavigationReload,
+            object: nil,
+            userInfo: HubWebNavigationCommand.userInfo(serverID: serverA)
+        )
+
+        XCTAssertTrue(HubWebNavigationCommand.targets(notification, serverID: serverA))
+        XCTAssertFalse(HubWebNavigationCommand.targets(notification, serverID: serverB))
+    }
 }
