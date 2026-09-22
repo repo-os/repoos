@@ -111,6 +111,8 @@ struct ServerSidebarRow: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(entry.name), \(entry.lastHealth.displayTitle)")
+        .accessibilityHint(ServerSidebarStatus.tooltip(for: entry))
+        .help(ServerSidebarStatus.tooltip(for: entry))
     }
 
 }
@@ -158,8 +160,7 @@ struct ServerIconView: View {
             .font(.system(size: 16, weight: .medium))
             .foregroundStyle(statusColor)
             .frame(width: 24, height: 24)
-            .help(statusHelp)
-            .accessibilityLabel(statusHelp)
+            .accessibilityLabel(ServerSidebarStatus.tooltip(for: entry))
     }
 
     private var statusColor: Color {
@@ -171,12 +172,15 @@ struct ServerIconView: View {
         }
     }
 
-    private var statusHelp: String {
+}
+
+enum ServerSidebarStatus {
+    static func tooltip(for entry: ServerEntry, now: Date = Date()) -> String {
         let checkedAt: String
         if let lastHealthAt = entry.lastHealthAt {
             let formatter = RelativeDateTimeFormatter()
             formatter.unitsStyle = .short
-            checkedAt = "\nLast checked: \(formatter.localizedString(for: lastHealthAt, relativeTo: Date()))"
+            checkedAt = "\nLast checked: \(formatter.localizedString(for: lastHealthAt, relativeTo: now))"
         } else {
             checkedAt = ""
         }
@@ -185,14 +189,14 @@ struct ServerIconView: View {
         Server: \(entry.name)
         Repository: \(repository)
         Address: \(entry.originString)
-        Status: \(entry.lastHealth.displayTitle) (\(statusColorMeaning))\(checkedAt)
+        Status: \(entry.lastHealth.displayTitle) (\(colorName(for: entry.lastHealth)))\(checkedAt)
 
         Icon colors: green = healthy, orange = unreachable, red = invalid response, gray = not checked.
         """
     }
 
-    private var statusColorMeaning: String {
-        switch entry.lastHealth {
+    private static func colorName(for health: HealthState) -> String {
+        switch health {
         case .unknown: return "gray"
         case .healthy: return "green"
         case .unreachable: return "orange"

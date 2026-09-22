@@ -9,6 +9,10 @@ struct WorkspaceDetailView: View {
                 RegistryEmptyState(onAdd: appState.presentAddServer)
             } else if let entry = appState.selectedEntry {
                 ServerWebWorkspaceView(entry: entry)
+                    // ServerWebWorkspaceView owns its web-view model. Give each selected
+                    // server a distinct identity so SwiftUI discards the previous model
+                    // instead of retaining its already-loaded WKWebView.
+                    .id(entry.id)
             } else {
                 SelectServerPrompt()
             }
