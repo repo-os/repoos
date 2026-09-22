@@ -28,7 +28,9 @@ for recents and pinned-context retention rules.
 
 ## Requirements
 
-- macOS 14 or later (per-server `WKWebsiteDataStore` identifiers)
+- macOS 13 or later (the app declares a macOS 13 deployment target; per-server
+  `WKWebsiteDataStore` identifiers, which persist sessions across relaunches,
+  are macOS 14+, so on 13 the Hub falls back to in-memory per-server stores)
 - Xcode 15 or later, with the macOS platform installed
 - An Apple ID configured in Xcode for development signing (only needed to run
   a signed build from Xcode; command-line verification uses ad-hoc/no signing)

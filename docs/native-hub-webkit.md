@@ -6,6 +6,40 @@ how to verify that loaded server JavaScript cannot reach native capabilities.
 
 See also [ADR 0006](adr/0006-macos-repoos-hub.md) for the full architecture.
 
+## Shipped scope
+
+The Hub is an ordinary web browser window bound to each saved server, wrapped
+in native chrome: the server sidebar (add / edit / pin / remove, health and
+offline states), per-origin sign-in that persists across launches, the Cmd-K
+command palette with cross-server task search, attention summaries with
+notifications and a Dock badge, and task pins. The Hub renders each server's
+real web UI and adds **no write access of its own**; the native additions are
+read-only conveniences on top of the server's own endpoints.
+
+The authenticated parts of that — attention counts, notifications, cross-server
+search — sit behind the capability gate that ADR 0006's v1 milestone held for
+its "v2 gate": a server-issued, scoped, expiry-bound, revocable Hub capability
+([native-hub-capabilities.md](native-hub-capabilities.md)). Nothing native
+polls authenticated APIs, infers status from rendered HTML, or sends
+credentials to a server unless that server issued such a capability.
+
+Still deliberately **not** shipped:
+
+- **Background operation.** Attention is polled only while the app is running.
+  There is no push channel or scheduled fetch that fires after the Hub is quit.
+- **Cookie sharing** — with Safari or between servers. Each server session
+  lives in its own WebKit store; enterprise SSO that requires the system
+  browser is opened there, and that sign-in is not shared back into the Hub's
+  web view.
+- **Offline mode.** The Hub needs its servers reachable; what it caches locally
+  is limited to registry entries, pins, and capabilities.
+- **Automatic remote pairing.** Remote capabilities are created on the server
+  and pasted into the Hub once (see the capabilities doc); there is no token
+  exchange handshake yet.
+
+Keep this list honest: when an item ships, remove it here and in the
+user-facing guide (`user-docs/macos-hub.md`) in the same change.
+
 ## Per-origin session isolation
 
 - Each registry entry (`serverID`) maps to a dedicated
@@ -16,8 +50,12 @@ See also [ADR 0006](adr/0006-macos-repoos-hub.md) for the full architecture.
 - **Clear sign-in** removes website data only for that server's store.
 - Removing a server from the registry deletes its data store.
 
-Sessions survive app restarts and switching away to another server in the
-sidebar; WebKit persists the per-identifier store on disk.
+Sessions survive switching away to another server in the sidebar. Persistence
+across app relaunches depends on the OS: on macOS 14+ the pool uses
+identifier-backed stores (`WKWebsiteDataStore(forIdentifier:)`) that WebKit
+persists on disk, so sign-in survives relaunch; on macOS 13 the pool falls back
+to one distinct in-memory store per server (isolation and switching still hold,
+but sign-in is dropped when the app quits).
 
 ## Privilege boundary
 
@@ -82,3 +120,21 @@ On a development build with a local RepoOS server (HTTPS, or loopback HTTP such 
 
 CI runs `xcodebuild test` for the Swift unit suite on macOS when `macos/**`
 changes.
+
+## User-visible terminology
+
+Internal names in the Swift code and in these docs differ from the terms the
+app and the user guide use. Keep the two aligned in both directions:
+
+| Internal (code / these docs) | User-visible (app / `user-docs/macos-hub.md`) |
+| --- | --- |
+| registry entry (`ServerRegistryEntry`) | a server in the **Servers** list |
+| attention summary (`/api/hub/v1/summary`) | the counts in the sidebar badge / details popover |
+| Hub capability (bearer token, `roh_…`) | **capability token**, entered under **Advanced remote pairing** |
+| command palette | the **Cmd-K** quick switcher |
+| pinned task | a **pin** |
+| per-origin web session | that server's sign-in |
+
+When you add a user-facing feature, ship the app string (with a test) *and* a
+line in `user-docs/macos-hub.md`; when you rename one, update both in the same
+change so the docs never describe a control by a name the app doesn't use.

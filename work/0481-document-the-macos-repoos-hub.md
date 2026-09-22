@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-22T18:16:54Z"
-review_passes: 3
 id: "0481"
 title: Document the macOS RepoOS Hub
 type: documentation
@@ -15,7 +13,9 @@ model_override: opencode/big-pickle
 pm_cli_override: github copilot
 pm_model_override: default
 created_at: "2026-09-22T05:30:52Z"
+updated_at: "2026-09-22T18:07:52Z"
 review_rounds: 1
+review_passes: 2
 ---
 Update the RepoOS Hub documentation and landing-page presentation now that the native macOS product surface and remote capability flow are ready to describe. Treat this as a documentation/publishing task, not a request to invent or change Hub behavior.
 
@@ -83,4 +83,3 @@ Add screenshots or product visuals only if the native UI is stable and an approv
 - 2026-09-22T16:01:54Z · status active→review
 - 2026-09-22T17:16:03Z · status review→active
 - 2026-09-22T18:07:52Z · status active→review
-
