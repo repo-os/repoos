@@ -147,7 +147,7 @@ private struct LocalDiscoverySection: View {
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(server.displayName)
                                         .font(.callout)
-                                    Text("localhost:\(server.port)")
+                                    Text(server.originString)
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }
@@ -160,7 +160,7 @@ private struct LocalDiscoverySection: View {
                                         .foregroundStyle(.blue)
                                 }
                                 .buttonStyle(.plain)
-                                .help("Use localhost:\(server.port)")
+                                .help("Use \(server.originString)")
                             }
                             .padding(.horizontal, 10)
                             .padding(.vertical, 7)
