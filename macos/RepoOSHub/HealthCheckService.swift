@@ -11,7 +11,7 @@ enum HealthCheckFailure: Error, Equatable {
 }
 
 enum HealthCheckOutcome: Equatable {
-    case success(projectName: String?, runtimeInfo: ServerRuntimeInfo? = nil)
+    case success(projectName: String?, runtimeInfo: ServerRuntimeInfo? = nil, projectPath: String? = nil)
     case failure(HealthCheckFailure)
 }
 
@@ -128,7 +128,8 @@ struct RepoOSHealthChecker: HealthChecking {
             let runtimeInfo = ServerRuntimeInfo(payload: payload)
             return .success(
                 projectName: payload.projectName ?? repositoryName(from: payload.root),
-                runtimeInfo: runtimeInfo.hasDetails ? runtimeInfo : nil
+                runtimeInfo: runtimeInfo.hasDetails ? runtimeInfo : nil,
+                projectPath: payload.root
             )
         } catch let error as URLError {
             switch error.code {

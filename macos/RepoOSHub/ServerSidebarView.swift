@@ -92,7 +92,13 @@ struct ServerSidebarRow: View {
                     .frame(width: 4, height: 30)
                     .accessibilityHidden(true)
             }
-            ServerIconView(entry: entry)
+            Menu {
+                ServerActionsMenu(entry: entry)
+            } label: {
+                ServerIconView(entry: entry)
+            }
+            .menuStyle(.borderlessButton)
+            .help("Server actions")
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.name)
                     .lineLimit(1)
@@ -106,16 +112,7 @@ struct ServerSidebarRow: View {
         }
         .contentShape(Rectangle())
         .contextMenu {
-            Button("Notifications…") { appState.presentAttentionSettings(for: entry) }
-            Button("Pin task…") { appState.presentPinTaskContext(for: entry) }
-            Button(entry.isPinned ? "Unpin server" : "Pin server") {
-                appState.setPinned(entry, pinned: !entry.isPinned)
-            }
-            Button("Edit server…") { appState.presentEditServer(entry) }
-            Divider()
-            Button("Remove server", role: .destructive) {
-                appState.deleteServer(entry)
-            }
+            ServerActionsMenu(entry: entry)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(entry.name), \(entry.lastHealth.displayTitle)")
@@ -128,7 +125,11 @@ struct ServerSidebarRow: View {
             attachmentAnchor: .rect(.bounds),
             arrowEdge: .leading
         ) {
-            ServerDetailsPopover(entry: entry, runtimeInfo: appState.runtimeInfo(for: entry.id))
+            ServerDetailsPopover(
+                entry: entry,
+                runtimeInfo: appState.runtimeInfo(for: entry.id),
+                attention: appState.attentionSnapshot(for: entry.id)
+            )
         }
     }
 
@@ -140,9 +141,48 @@ struct ServerSidebarRow: View {
     }
 }
 
+private struct ServerActionsMenu: View {
+    @EnvironmentObject private var appState: HubAppState
+    let entry: ServerEntry
+
+    var body: some View {
+        Button("Notifications…") { appState.presentAttentionSettings(for: entry) }
+        Button("Pin task…") { appState.presentPinTaskContext(for: entry) }
+        Button(entry.isPinned ? "Unpin server" : "Pin server") {
+            appState.setPinned(entry, pinned: !entry.isPinned)
+        }
+        Button("Edit server…") { appState.presentEditServer(entry) }
+        if canManageLocalService {
+            Divider()
+            if entry.lastHealth == .healthy {
+                Button("Stop local server") {
+                    Task { await appState.performLocalServiceAction(.stop, for: entry) }
+                }
+                Button("Restart local server") {
+                    Task { await appState.performLocalServiceAction(.restart, for: entry) }
+                }
+            } else {
+                Button("Start local server") {
+                    Task { await appState.performLocalServiceAction(.start, for: entry) }
+                }
+            }
+        }
+        Divider()
+        Button("Remove server", role: .destructive) {
+            appState.deleteServer(entry)
+        }
+    }
+
+    private var canManageLocalService: Bool {
+        entry.originURL.map(HubAccessPolicy.permitsLoopbackWithoutCapability) == true
+            && entry.localProjectPath != nil
+    }
+}
+
 private struct ServerDetailsPopover: View {
     let entry: ServerEntry
     let runtimeInfo: ServerRuntimeInfo?
+    let attention: ServerAttentionSnapshot?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -187,9 +227,24 @@ private struct ServerDetailsPopover: View {
                     }
                 }
             }
+
+            if let counts = attention?.counts, attention?.freshness != .unavailable {
+                Divider()
+                VStack(alignment: .leading, spacing: 9) {
+                    Text("Attention")
+                        .font(.subheadline.weight(.semibold))
+                    ServerDetailRow(icon: "questionmark.circle", title: "Needs input", value: "\(counts.needsInputTasks) task\(counts.needsInputTasks == 1 ? "" : "s")")
+                    ServerDetailRow(icon: "checkmark.seal", title: "In review", value: "\(counts.reviewReadyTasks) task\(counts.reviewReadyTasks == 1 ? "" : "s")")
+                    ServerDetailRow(icon: "cpu", title: "Active agents", value: "\(counts.activeAgents)")
+                    Text("Each colored badge is its category count. For example, an orange 4 means four tasks need input — not four active tasks.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
         }
         .padding(16)
-        .frame(width: 330)
+        .frame(width: 350)
         .accessibilityElement(children: .contain)
     }
 

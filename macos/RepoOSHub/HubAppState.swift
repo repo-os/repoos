@@ -16,6 +16,7 @@ final class HubAppState: ObservableObject {
     @Published private(set) var runtimeInfoByServerID: [UUID: ServerRuntimeInfo] = [:]
     @Published var attentionSettingsServerID: UUID?
     @Published private(set) var hubGlobalPreferences: HubGlobalPreferences = .default
+    @Published var serviceActionMessage: String?
 
     private let store: ServerRegistryStore
     private let healthChecker: HealthChecking
@@ -464,7 +465,7 @@ final class HubAppState: ObservableObject {
             let originKey = ServerOriginNormalizer.canonicalOriginKey(for: origin)
 
             let outcome = await healthChecker.checkHealth(origin: origin)
-            guard case .success(let projectName, _) = outcome else {
+            guard case .success(let projectName, _, _) = outcome else {
                 if case .failure(let failure) = outcome {
                     return failure.userMessage
                 }
@@ -544,8 +545,13 @@ final class HubAppState: ObservableObject {
         let outcome = await healthChecker.checkHealth(origin: origin)
         var entry = document.entries[index]
         ReachabilityTransition.applyHealthCheck(to: &entry, outcome: outcome)
-        if case .success(let projectName, let runtimeInfo) = outcome {
+        if case .success(let projectName, let runtimeInfo, let projectPath) = outcome {
             updateRepositoryIdentity(for: &entry, projectName: projectName)
+            if HubAccessPolicy.permitsLoopbackWithoutCapability(origin), let projectPath,
+               projectPath.hasPrefix("/")
+            {
+                entry.localProjectPath = projectPath
+            }
             if let runtimeInfo {
                 runtimeInfoByServerID[id] = runtimeInfo
             } else {
@@ -562,6 +568,25 @@ final class HubAppState: ObservableObject {
         }
 
         try? store.save(document)
+    }
+
+    func performLocalServiceAction(_ action: LocalRepoOSServiceAction, for entry: ServerEntry) async {
+        guard entry.originURL.map(HubAccessPolicy.permitsLoopbackWithoutCapability) == true,
+              let root = entry.localProjectPath
+        else {
+            serviceActionMessage = "RepoOS needs to see this local server online once before it can manage its background service."
+            return
+        }
+        do {
+            try await LocalRepoOSServiceController.perform(action, projectRoot: root)
+            serviceActionMessage = action.successMessage
+            if action != .stop {
+                try? await Task.sleep(nanoseconds: 750_000_000)
+                await refreshHealth(for: entry.id)
+            }
+        } catch {
+            serviceActionMessage = error.localizedDescription
+        }
     }
 
     private func refreshAllHealth() async {

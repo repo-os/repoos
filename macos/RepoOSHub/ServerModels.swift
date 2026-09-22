@@ -35,6 +35,10 @@ struct ServerEntry: Identifiable, Codable, Equatable, Sendable {
     var notifyNeedsInput: Bool
     var notifyActiveAgents: Bool
     var crossServerTaskSearchEnabled: Bool
+    /// Trusted only for loopback servers, from their /api/health response.
+    /// Lets the Hub use RepoOS's existing managed-service commands while the
+    /// server itself is offline.
+    var localProjectPath: String?
 
     var originURL: URL? {
         URL(string: originString)
@@ -58,7 +62,8 @@ struct ServerEntry: Identifiable, Codable, Equatable, Sendable {
         notifyReviewReady: Bool = true,
         notifyNeedsInput: Bool = true,
         notifyActiveAgents: Bool = false,
-        crossServerTaskSearchEnabled: Bool = false
+        crossServerTaskSearchEnabled: Bool = false,
+        localProjectPath: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -78,6 +83,7 @@ struct ServerEntry: Identifiable, Codable, Equatable, Sendable {
         self.notifyNeedsInput = notifyNeedsInput
         self.notifyActiveAgents = notifyActiveAgents
         self.crossServerTaskSearchEnabled = crossServerTaskSearchEnabled
+        self.localProjectPath = localProjectPath
     }
 
     enum CodingKeys: String, CodingKey {
@@ -85,6 +91,7 @@ struct ServerEntry: Identifiable, Codable, Equatable, Sendable {
         case accentColorHex, iconSymbolName, groupName, isPinned
         case attentionAggregationEnabled, notifyReviewReady, notifyNeedsInput, notifyActiveAgents
         case crossServerTaskSearchEnabled
+        case localProjectPath
     }
 
     init(from decoder: Decoder) throws {
@@ -107,6 +114,7 @@ struct ServerEntry: Identifiable, Codable, Equatable, Sendable {
         notifyNeedsInput = try container.decodeIfPresent(Bool.self, forKey: .notifyNeedsInput) ?? true
         notifyActiveAgents = try container.decodeIfPresent(Bool.self, forKey: .notifyActiveAgents) ?? false
         crossServerTaskSearchEnabled = try container.decodeIfPresent(Bool.self, forKey: .crossServerTaskSearchEnabled) ?? false
+        localProjectPath = try container.decodeIfPresent(String.self, forKey: .localProjectPath)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -128,6 +136,7 @@ struct ServerEntry: Identifiable, Codable, Equatable, Sendable {
         try container.encode(notifyNeedsInput, forKey: .notifyNeedsInput)
         try container.encode(notifyActiveAgents, forKey: .notifyActiveAgents)
         try container.encode(crossServerTaskSearchEnabled, forKey: .crossServerTaskSearchEnabled)
+        try container.encodeIfPresent(localProjectPath, forKey: .localProjectPath)
     }
 }
 
@@ -195,7 +204,7 @@ struct ServerRegistryDocument: Codable, Equatable, Sendable {
 enum ReachabilityTransition {
     static func healthState(after outcome: HealthCheckOutcome, previous: HealthState) -> HealthState {
         switch outcome {
-        case .success(_, _):
+        case .success(_, _, _):
             return .healthy
         case .failure(let failure):
             switch failure {
@@ -210,7 +219,7 @@ enum ReachabilityTransition {
 
     static func applyHealthCheck(to entry: inout ServerEntry, outcome: HealthCheckOutcome, checkedAt: Date = Date()) {
         entry.lastHealth = healthState(after: outcome, previous: entry.lastHealth)
-        if case .success(_, _) = outcome {
+        if case .success(_, _, _) = outcome {
             entry.lastHealthAt = checkedAt
         }
         entry.updatedAt = checkedAt

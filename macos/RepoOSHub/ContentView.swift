@@ -33,6 +33,17 @@ struct ContentView: View {
             }
         }
         .animation(.easeOut(duration: 0.15), value: appState.isCommandPalettePresented)
+        .alert(
+            "Local server",
+            isPresented: Binding(
+                get: { appState.serviceActionMessage != nil },
+                set: { if !$0 { appState.serviceActionMessage = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) { appState.serviceActionMessage = nil }
+        } message: {
+            Text(appState.serviceActionMessage ?? "")
+        }
         .sheet(
             isPresented: Binding(
                 get: { appState.attentionSettingsServerID != nil },
