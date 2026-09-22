@@ -20,8 +20,10 @@ Fix the spacing/positioning/style on the new Stories page to match all the other
 ## Screenshots
 
 ![Screenshot-2026-09-22-at-13.06.34](/api/tasks/0485/attachments/screenshot-1.png)
+![Screenshot-2026-09-22-at-13.06.07](/api/tasks/0485/attachments/screenshot-2.png)
 
 ## Activity
 
 - 2026-09-22T15:52:13Z · created · hello@repoos.org
+- 2026-09-22T15:52:13Z · screenshots
 - 2026-09-22T15:52:13Z · screenshots
