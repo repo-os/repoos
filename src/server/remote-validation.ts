@@ -174,6 +174,42 @@ function sshArgs(host: RemoteHost): string[] {
   ];
 }
 
+function runLocalWithStdin(
+  cmd: string,
+  args: string[],
+  stdin: Buffer,
+  opts: { timeoutMs: number },
+): Promise<RemoteExecResult> {
+  return new Promise((resolve) => {
+    const child = spawn(cmd, args, { stdio: ["pipe", "pipe", "pipe"] });
+    let output = "";
+    let timedOut = false;
+    let settled = false;
+    const done = (code: number | null): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve({ code, output, timedOut });
+    };
+    child.stdout?.on("data", (b: Buffer) => {
+      output += b.toString("utf8");
+    });
+    child.stderr?.on("data", (b: Buffer) => {
+      output += b.toString("utf8");
+    });
+    child.on("error", (e) => {
+      output += `\n[spawn error: ${(e as Error).message}]\n`;
+      done(null);
+    });
+    child.on("close", (code) => done(code));
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill("SIGKILL");
+    }, opts.timeoutMs);
+    child.stdin?.end(stdin);
+  });
+}
+
 function runLocal(
   cmd: string,
   args: string[],
@@ -219,9 +255,13 @@ export function defaultRemoteExec(): RemoteExecDeps {
       return res.code === 0 ? { ok: true } : { ok: false, detail: tail(res.output) };
     },
     async uploadFile(host, localPath, remotePath) {
-      const res = await runLocal(
-        "scp",
-        [...sshArgs(host), localPath, `${host.user}@${host.ip}:${remotePath}`],
+      // Use SSH pipe instead of scp to avoid Tailscale MTU issues with the
+      // SFTP subsystem — plain SSH data channel handles large files reliably.
+      const fileData = readFileSync(localPath);
+      const res = await runLocalWithStdin(
+        "ssh",
+        [...sshArgs(host), `${host.user}@${host.ip}`, `cat > ${remotePath}`],
+        fileData,
         { timeoutMs: 120_000 },
       );
       return res.code === 0 ? { ok: true } : { ok: false, detail: tail(res.output) };
