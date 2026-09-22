@@ -305,3 +305,20 @@ extension Notification.Name {
     static let hubWebNavigationReload = Notification.Name("org.repoos.hub.webNavigation.reload")
     static let hubWebNavigationNavigate = Notification.Name("org.repoos.hub.webNavigation.navigate")
 }
+
+enum HubWebNavigationCommand {
+    static let serverIDKey = "serverID"
+    static let pathKey = "path"
+
+    static func userInfo(serverID: UUID, path: String? = nil) -> [AnyHashable: Any] {
+        var info: [AnyHashable: Any] = [serverIDKey: serverID.uuidString]
+        if let path {
+            info[pathKey] = path
+        }
+        return info
+    }
+
+    static func targets(_ notification: Notification, serverID: UUID) -> Bool {
+        notification.userInfo?[serverIDKey] as? String == serverID.uuidString
+    }
+}

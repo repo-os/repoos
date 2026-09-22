@@ -81,4 +81,15 @@ final class CommandPaletteMatcherTests: XCTestCase {
         )
         XCTAssertTrue(items.contains { $0.title == "Task board" })
     }
+
+    func testWebNavigationCommandTargetsOnlyItsServer() {
+        let notification = Notification(
+            name: .hubWebNavigationReload,
+            object: nil,
+            userInfo: HubWebNavigationCommand.userInfo(serverID: serverA)
+        )
+
+        XCTAssertTrue(HubWebNavigationCommand.targets(notification, serverID: serverA))
+        XCTAssertFalse(HubWebNavigationCommand.targets(notification, serverID: serverB))
+    }
 }

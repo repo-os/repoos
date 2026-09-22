@@ -43,7 +43,7 @@ struct ServerSidebarView: View {
             }
         }
         .listStyle(.sidebar)
-        .navigationTitle("RepoOS Hub")
+        .navigationTitle("RepoOS")
         .safeAreaInset(edge: .bottom, spacing: 0) {
             Button {
                 appState.presentAddServer()

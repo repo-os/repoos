@@ -215,7 +215,7 @@ final class HubAppState: ObservableObject {
         NotificationCenter.default.post(
             name: .hubWebNavigationNavigate,
             object: nil,
-            userInfo: ["serverID": serverID, "path": normalized]
+            userInfo: HubWebNavigationCommand.userInfo(serverID: serverID, path: normalized)
         )
     }
 
@@ -270,18 +270,30 @@ final class HubAppState: ObservableObject {
     }
 
     func workspaceGoBack() {
-        guard workspaceNavigation.canGoBack else { return }
-        NotificationCenter.default.post(name: .hubWebNavigationBack, object: selectedServerID)
+        guard workspaceNavigation.canGoBack, let selectedServerID else { return }
+        NotificationCenter.default.post(
+            name: .hubWebNavigationBack,
+            object: nil,
+            userInfo: HubWebNavigationCommand.userInfo(serverID: selectedServerID)
+        )
     }
 
     func workspaceGoForward() {
-        guard workspaceNavigation.canGoForward else { return }
-        NotificationCenter.default.post(name: .hubWebNavigationForward, object: selectedServerID)
+        guard workspaceNavigation.canGoForward, let selectedServerID else { return }
+        NotificationCenter.default.post(
+            name: .hubWebNavigationForward,
+            object: nil,
+            userInfo: HubWebNavigationCommand.userInfo(serverID: selectedServerID)
+        )
     }
 
     func workspaceReload() {
-        if workspaceNavigation.hasEmbeddedWebContent {
-            NotificationCenter.default.post(name: .hubWebNavigationReload, object: selectedServerID)
+        if workspaceNavigation.hasEmbeddedWebContent, let selectedServerID {
+            NotificationCenter.default.post(
+                name: .hubWebNavigationReload,
+                object: nil,
+                userInfo: HubWebNavigationCommand.userInfo(serverID: selectedServerID)
+            )
         } else if let id = selectedServerID {
             Task { await refreshHealth(for: id) }
         }
@@ -317,7 +329,11 @@ final class HubAppState: ObservableObject {
     func clearWebsiteSession(for serverID: UUID) {
         ServerWebsiteDataStorePool.shared.clearWebsiteData(for: serverID) { [weak self] in
             Task { @MainActor in
-                NotificationCenter.default.post(name: .serverWebViewReload, object: serverID)
+                NotificationCenter.default.post(
+                    name: .serverWebViewReload,
+                    object: nil,
+                    userInfo: HubWebNavigationCommand.userInfo(serverID: serverID)
+                )
                 self?.lastConnectionMessage = nil
             }
         }

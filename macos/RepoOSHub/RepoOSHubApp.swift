@@ -7,7 +7,7 @@ struct RepoOSHubApp: App {
     @State private var notificationDelegate = HubNotificationDelegate()
 
     var body: some Scene {
-        WindowGroup("RepoOS Hub") {
+        WindowGroup("RepoOS") {
             ContentView()
                 .environmentObject(appState)
                 .frame(minWidth: 880, minHeight: 520)

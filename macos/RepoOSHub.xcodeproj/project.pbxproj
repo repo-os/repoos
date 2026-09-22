@@ -46,6 +46,7 @@
 		C00000000000000000000025 /* HubAttentionFreshnessTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000006C /* HubAttentionFreshnessTests.swift */; };
 		C00000000000000000000026 /* HubNotificationEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000006D /* HubNotificationEngineTests.swift */; };
 		C00000000000000000000027 /* HubBadgeTransitionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000006E /* HubBadgeTransitionTests.swift */; };
+		C00000000000000000000028 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000076 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -53,7 +54,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		A00000000000000000000010 /* RepoOSHub.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RepoOSHub.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A00000000000000000000010 /* RepoOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RepoOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A00000000000000000000011 /* RepoOSHubApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepoOSHubApp.swift; sourceTree = "<group>"; };
 		A00000000000000000000012 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A00000000000000000000013 /* RepoOSHubTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepoOSHubTests.swift; sourceTree = "<group>"; };
@@ -95,6 +96,7 @@
 		A0000000000000000000006C /* HubAttentionFreshnessTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubAttentionFreshnessTests.swift; sourceTree = "<group>"; };
 		A0000000000000000000006D /* HubNotificationEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubNotificationEngineTests.swift; sourceTree = "<group>"; };
 		A0000000000000000000006E /* HubBadgeTransitionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubBadgeTransitionTests.swift; sourceTree = "<group>"; };
+		A00000000000000000000076 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -104,13 +106,13 @@
 
 /* Begin PBXGroup section */
 		B00000000000000000000001 = {isa = PBXGroup; children = ( B00000000000000000000002, A00000000000000000000032, A00000000000000000000033, ); sourceTree = "<group>"; };
-		B00000000000000000000002 /* RepoOSHub */ = {isa = PBXGroup; children = ( A00000000000000000000011, A00000000000000000000012, A00000000000000000000016, A00000000000000000000017, A00000000000000000000018, A00000000000000000000019, A0000000000000000000001A, A0000000000000000000001B, A0000000000000000000001C, A0000000000000000000001D, A00000000000000000000027, A00000000000000000000028, A00000000000000000000029, A0000000000000000000002C, A0000000000000000000003B, A0000000000000000000003C, A00000000000000000000034, A00000000000000000000035, A00000000000000000000036, A00000000000000000000063, A00000000000000000000064, A00000000000000000000065, A00000000000000000000066, A00000000000000000000067, A00000000000000000000068, A00000000000000000000069, A0000000000000000000006A, A00000000000000000000015, ); path = RepoOSHub; sourceTree = "<group>"; };
+		B00000000000000000000002 /* RepoOSHub */ = {isa = PBXGroup; children = ( A00000000000000000000011, A00000000000000000000012, A00000000000000000000016, A00000000000000000000017, A00000000000000000000018, A00000000000000000000019, A0000000000000000000001A, A0000000000000000000001B, A0000000000000000000001C, A0000000000000000000001D, A00000000000000000000027, A00000000000000000000028, A00000000000000000000029, A0000000000000000000002C, A0000000000000000000003B, A0000000000000000000003C, A00000000000000000000034, A00000000000000000000035, A00000000000000000000036, A00000000000000000000063, A00000000000000000000064, A00000000000000000000065, A00000000000000000000066, A00000000000000000000067, A00000000000000000000068, A00000000000000000000069, A0000000000000000000006A, A00000000000000000000015, A00000000000000000000076, ); path = RepoOSHub; sourceTree = "<group>"; };
 		A00000000000000000000032 /* RepoOSHubTests */ = {isa = PBXGroup; children = ( A00000000000000000000013, A0000000000000000000001E, A0000000000000000000001F, A00000000000000000000020, A0000000000000000000002A, A0000000000000000000002B, A00000000000000000000038, A0000000000000000000003A, A0000000000000000000006B, A0000000000000000000006C, A0000000000000000000006D, A0000000000000000000006E, ); path = RepoOSHubTests; sourceTree = "<group>"; };
 		A00000000000000000000033 /* Products */ = {isa = PBXGroup; children = ( A00000000000000000000010, A00000000000000000000014, ); name = Products; sourceTree = "<group>"; };
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		A00000000000000000000040 /* RepoOSHub */ = {isa = PBXNativeTarget; buildConfigurationList = A00000000000000000000050 /* Build configuration list for PBXNativeTarget "RepoOSHub" */; buildPhases = ( A00000000000000000000041, A00000000000000000000021, A00000000000000000000042, ); buildRules = ( ); dependencies = ( ); name = RepoOSHub; productName = RepoOSHub; productReference = A00000000000000000000010 /* RepoOSHub.app */; productType = "com.apple.product-type.application"; };
+		A00000000000000000000040 /* RepoOSHub */ = {isa = PBXNativeTarget; buildConfigurationList = A00000000000000000000050 /* Build configuration list for PBXNativeTarget "RepoOSHub" */; buildPhases = ( A00000000000000000000041, A00000000000000000000021, A00000000000000000000042, ); buildRules = ( ); dependencies = ( ); name = RepoOSHub; productName = RepoOS; productReference = A00000000000000000000010 /* RepoOS.app */; productType = "com.apple.product-type.application"; };
 		A00000000000000000000043 /* RepoOSHubTests */ = {isa = PBXNativeTarget; buildConfigurationList = A00000000000000000000051 /* Build configuration list for PBXNativeTarget "RepoOSHubTests" */; buildPhases = ( A00000000000000000000044, A00000000000000000000022, A00000000000000000000045, ); buildRules = ( ); dependencies = ( A00000000000000000000047 /* PBXTargetDependency */, ); name = RepoOSHubTests; productName = RepoOSHubTests; productReference = A00000000000000000000014 /* RepoOSHubTests.xctest */; productType = "com.apple.product-type.bundle.unit-test"; };
 /* End PBXNativeTarget section */
 
@@ -119,7 +121,7 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		A00000000000000000000042 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = ( ); runOnlyForDeploymentPostprocessing = 0; };
+		A00000000000000000000042 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = ( C00000000000000000000028 /* Assets.xcassets in Resources */, ); runOnlyForDeploymentPostprocessing = 0; };
 		A00000000000000000000045 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = ( ); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
 
@@ -133,10 +135,10 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		A00000000000000000000070 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; CODE_SIGN_IDENTITY = "-"; CURRENT_PROJECT_VERSION = 1; ENABLE_TESTABILITY = YES; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = RepoOSHub/Info.plist; MACOSX_DEPLOYMENT_TARGET = 13.0; MARKETING_VERSION = 0.1.0; PRODUCT_BUNDLE_IDENTIFIER = org.repoos.hub; PRODUCT_NAME = RepoOSHub; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; SWIFT_VERSION = 5.0; }; name = Debug; };
-		A00000000000000000000071 /* Release */ = {isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; CODE_SIGN_IDENTITY = "-"; CURRENT_PROJECT_VERSION = 1; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = RepoOSHub/Info.plist; MACOSX_DEPLOYMENT_TARGET = 13.0; MARKETING_VERSION = 0.1.0; PRODUCT_BUNDLE_IDENTIFIER = org.repoos.hub; PRODUCT_NAME = RepoOSHub; SWIFT_VERSION = 5.0; }; name = Release; };
-		A00000000000000000000072 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = { BUNDLE_LOADER = "$(TEST_HOST)"; CODE_SIGN_IDENTITY = "-"; CURRENT_PROJECT_VERSION = 1; GENERATE_INFOPLIST_FILE = YES; MACOSX_DEPLOYMENT_TARGET = 13.0; PRODUCT_BUNDLE_IDENTIFIER = org.repoos.hub.tests; PRODUCT_NAME = RepoOSHubTests; SWIFT_VERSION = 5.0; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RepoOSHub.app/Contents/MacOS/RepoOSHub"; }; name = Debug; };
-		A00000000000000000000073 /* Release */ = {isa = XCBuildConfiguration; buildSettings = { BUNDLE_LOADER = "$(TEST_HOST)"; CODE_SIGN_IDENTITY = "-"; CURRENT_PROJECT_VERSION = 1; GENERATE_INFOPLIST_FILE = YES; MACOSX_DEPLOYMENT_TARGET = 13.0; PRODUCT_BUNDLE_IDENTIFIER = org.repoos.hub.tests; PRODUCT_NAME = RepoOSHubTests; SWIFT_VERSION = 5.0; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RepoOSHub.app/Contents/MacOS/RepoOSHub"; }; name = Release; };
+		A00000000000000000000070 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; CLANG_ENABLE_MODULES = YES; CODE_SIGN_IDENTITY = "-"; CURRENT_PROJECT_VERSION = 1; ENABLE_TESTABILITY = YES; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = RepoOSHub/Info.plist; MACOSX_DEPLOYMENT_TARGET = 13.0; MARKETING_VERSION = 0.1.0; PRODUCT_BUNDLE_IDENTIFIER = org.repoos.hub; PRODUCT_MODULE_NAME = RepoOSHub; PRODUCT_NAME = RepoOS; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; SWIFT_VERSION = 5.0; }; name = Debug; };
+		A00000000000000000000071 /* Release */ = {isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; CLANG_ENABLE_MODULES = YES; CODE_SIGN_IDENTITY = "-"; CURRENT_PROJECT_VERSION = 1; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = RepoOSHub/Info.plist; MACOSX_DEPLOYMENT_TARGET = 13.0; MARKETING_VERSION = 0.1.0; PRODUCT_BUNDLE_IDENTIFIER = org.repoos.hub; PRODUCT_MODULE_NAME = RepoOSHub; PRODUCT_NAME = RepoOS; SWIFT_VERSION = 5.0; }; name = Release; };
+		A00000000000000000000072 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = { BUNDLE_LOADER = "$(TEST_HOST)"; CODE_SIGN_IDENTITY = "-"; CURRENT_PROJECT_VERSION = 1; GENERATE_INFOPLIST_FILE = YES; MACOSX_DEPLOYMENT_TARGET = 13.0; PRODUCT_BUNDLE_IDENTIFIER = org.repoos.hub.tests; PRODUCT_NAME = RepoOSHubTests; SWIFT_VERSION = 5.0; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RepoOS.app/Contents/MacOS/RepoOS"; }; name = Debug; };
+		A00000000000000000000073 /* Release */ = {isa = XCBuildConfiguration; buildSettings = { BUNDLE_LOADER = "$(TEST_HOST)"; CODE_SIGN_IDENTITY = "-"; CURRENT_PROJECT_VERSION = 1; GENERATE_INFOPLIST_FILE = YES; MACOSX_DEPLOYMENT_TARGET = 13.0; PRODUCT_BUNDLE_IDENTIFIER = org.repoos.hub.tests; PRODUCT_NAME = RepoOSHubTests; SWIFT_VERSION = 5.0; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RepoOS.app/Contents/MacOS/RepoOS"; }; name = Release; };
 		A00000000000000000000074 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; SWIFT_VERSION = 5.0; }; name = Debug; };
 		A00000000000000000000075 /* Release */ = {isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; SWIFT_VERSION = 5.0; }; name = Release; };
 /* End XCBuildConfiguration section */

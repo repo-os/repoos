@@ -19,7 +19,11 @@ final class ServerWebViewModel: ObservableObject {
 
     func reload() {
         loadFailure = nil
-        NotificationCenter.default.post(name: .hubWebNavigationReload, object: serverID)
+        NotificationCenter.default.post(
+            name: .hubWebNavigationReload,
+            object: nil,
+            userInfo: HubWebNavigationCommand.userInfo(serverID: serverID)
+        )
     }
 
     func openPendingExternalURL() {
@@ -99,36 +103,40 @@ struct ServerWebView: NSViewRepresentable {
             commandObservers.append(
                 NotificationCenter.default.addObserver(
                     forName: .serverWebViewReload,
-                    object: serverID,
+                    object: nil,
                     queue: .main
-                ) { [weak self] _ in
+                ) { [weak self] note in
+                    guard HubWebNavigationCommand.targets(note, serverID: serverID) else { return }
                     self?.loadInitialPage()
                 }
             )
             commandObservers.append(
                 NotificationCenter.default.addObserver(
                     forName: .hubWebNavigationReload,
-                    object: serverID,
+                    object: nil,
                     queue: .main
-                ) { [weak self] _ in
+                ) { [weak self] note in
+                    guard HubWebNavigationCommand.targets(note, serverID: serverID) else { return }
                     self?.webView?.reload()
                 }
             )
             commandObservers.append(
                 NotificationCenter.default.addObserver(
                     forName: .hubWebNavigationBack,
-                    object: serverID,
+                    object: nil,
                     queue: .main
-                ) { [weak self] _ in
+                ) { [weak self] note in
+                    guard HubWebNavigationCommand.targets(note, serverID: serverID) else { return }
                     self?.webView?.goBack()
                 }
             )
             commandObservers.append(
                 NotificationCenter.default.addObserver(
                     forName: .hubWebNavigationForward,
-                    object: serverID,
+                    object: nil,
                     queue: .main
-                ) { [weak self] _ in
+                ) { [weak self] note in
+                    guard HubWebNavigationCommand.targets(note, serverID: serverID) else { return }
                     self?.webView?.goForward()
                 }
             )
@@ -139,9 +147,8 @@ struct ServerWebView: NSViewRepresentable {
                     queue: .main
                 ) { [weak self] note in
                     guard let self,
-                          let targetID = note.userInfo?["serverID"] as? UUID,
-                          targetID == serverID,
-                          let path = note.userInfo?["path"] as? String
+                          HubWebNavigationCommand.targets(note, serverID: serverID),
+                          let path = note.userInfo?[HubWebNavigationCommand.pathKey] as? String
                     else { return }
                     self.load(path: path)
                 }
