@@ -105,11 +105,12 @@ struct ServerSidebarRow: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .clipped()
             }
-            Spacer(minLength: 2)
-            InfoOrBadgesTrigger(
-                snapshot: appState.attentionSnapshot(for: entry.id),
-                isShowingDetails: $isShowingDetails
-            )
+            .overlay(alignment: .trailing) {
+                InfoOrBadgesTrigger(
+                    snapshot: appState.attentionSnapshot(for: entry.id),
+                    isShowingDetails: $isShowingDetails
+                )
+            }
         }
         .contentShape(Rectangle())
         .contextMenu {
