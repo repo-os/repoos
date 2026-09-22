@@ -515,6 +515,13 @@ function compatibilityTitle(agent: DetectedAgent): string {
   return `${compatibility.explanation} ${certified}`;
 }
 
+function compatibilityIcon(agent: DetectedAgent): string {
+  const status = agent.compatibility?.status;
+  if (status === "verified") return "✓";
+  if (status === "unsupported") return "!";
+  return "?";
+}
+
 function checkedLabel(update: AgentUpdate | undefined): string {
   return update?.checkedAt ? `checked ${new Date(update.checkedAt).toLocaleString()}` : "";
 }
@@ -991,37 +998,30 @@ onUnmounted(() => {
               }}</span>
               <span
                 v-if="r.agent.compatibility"
-                class="detect-pill detect-compatibility-pill"
+                class="detect-compat-icon"
                 :style="{ color: compatibilityColor(r.agent) }"
-                :title="compatibilityTitle(r.agent)"
+                >{{ compatibilityIcon(r.agent)
+                }}<span class="detect-compat-tooltip">
+                  <span class="detect-compat-tooltip-label">{{ r.agent.compatibility.label }}</span>
+                  <span class="detect-compat-tooltip-explanation">{{
+                    compatibilityTitle(r.agent)
+                  }}</span>
+                  <template v-if="probeAvailable(r.agent)">
+                    <span class="detect-compat-probe-row">
+                      <code class="detect-hint-code">{{ probeHint(r.agent) }}</code>
+                      <button class="detect-copy" @click.stop="copyHint(probeHint(r.agent))">
+                        {{ detectHintCopied === probeHint(r.agent) ? "copied" : "copy" }}
+                      </button>
+                    </span>
+                  </template>
+                  <template v-else-if="r.agent.compatibility.status === 'upgrade_recommended'">
+                    <span class="detect-compat-hint">upgrade recommended</span>
+                  </template>
+                  <template v-else-if="r.agent.compatibility.status === 'unsupported'">
+                    <span class="detect-compat-hint">use a supported release</span>
+                  </template>
+                </span></span
               >
-                compatibility: {{ r.agent.compatibility.label }}
-              </span>
-              <span
-                v-if="
-                  r.agent.compatibility &&
-                  r.agent.compatibility.status !== 'verified' &&
-                  (probeAvailable(r.agent) ||
-                    r.agent.compatibility.status === 'upgrade_recommended' ||
-                    r.agent.compatibility.status === 'unsupported')
-                "
-                class="detect-hint-inline"
-              >
-                <template v-if="probeAvailable(r.agent)">
-                  <code
-                    class="detect-hint-code"
-                    :title="'Run a deliberate compatibility probe for ' + r.agent.name"
-                    >{{ probeHint(r.agent) }}</code
-                  >
-                  <button class="detect-copy" @click="copyHint(probeHint(r.agent))">
-                    {{ detectHintCopied === probeHint(r.agent) ? "copied" : "copy" }}
-                  </button>
-                </template>
-                <template v-else-if="r.agent.compatibility.status === 'upgrade_recommended'">
-                  upgrade recommended
-                </template>
-                <template v-else>use a supported release</template>
-              </span>
               <details v-if="r.agent.installed && r.agent.update" class="detect-update-detail">
                 <summary :style="{ color: updateColor(r.agent.update) }">
                   {{ updateLabel(r.agent.update) }}
