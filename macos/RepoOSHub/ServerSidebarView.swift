@@ -92,9 +92,7 @@ struct ServerSidebarRow: View {
                     .frame(width: 4, height: 30)
                     .accessibilityHidden(true)
             }
-            ServerIconActionButton(entry: entry) { isHoveringIcon in
-                isShowingDetails = !isHoveringIcon
-            }
+            ServerIconActionButton(entry: entry)
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.name)
                     .lineLimit(1)
@@ -104,7 +102,10 @@ struct ServerSidebarRow: View {
                     .lineLimit(1)
             }
             Spacer(minLength: 4)
-            AttentionSummaryBadges(snapshot: appState.attentionSnapshot(for: entry.id))
+            InfoOrBadgesTrigger(
+                snapshot: appState.attentionSnapshot(for: entry.id),
+                isShowingDetails: $isShowingDetails
+            )
         }
         .contentShape(Rectangle())
         .contextMenu {
@@ -113,9 +114,6 @@ struct ServerSidebarRow: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(entry.name), \(entry.lastHealth.displayTitle)")
         .accessibilityHint(ServerSidebarStatus.tooltip(for: entry))
-        .onHover { isHovering in
-            isShowingDetails = isHovering
-        }
         .popover(
             isPresented: $isShowingDetails,
             attachmentAnchor: .rect(.bounds),
@@ -194,7 +192,6 @@ private struct ServerActionsMenu: View {
 
 private struct ServerIconActionButton: View {
     let entry: ServerEntry
-    var onHoverChanged: (Bool) -> Void
     @State private var isHovering = false
 
     var body: some View {
@@ -211,17 +208,40 @@ private struct ServerIconActionButton: View {
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
                         .stroke(isHovering ? ServerSidebarStatus.color(for: entry.lastHealth).opacity(0.38) : .clear, lineWidth: 1)
                 }
+                .scaleEffect(isHovering ? 1.05 : 1.0)
+                .animation(.easeInOut(duration: 0.1), value: isHovering)
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
         .tint(ServerSidebarStatus.color(for: entry.lastHealth))
-        .onHover {
-            isHovering = $0
-            onHoverChanged($0)
-        }
+        .onHover { isHovering = $0 }
         .help("Server actions")
         .accessibilityLabel("Actions for \(entry.name)")
         .accessibilityHint("Opens server settings and local service controls")
+    }
+}
+
+private struct InfoOrBadgesTrigger: View {
+    let snapshot: ServerAttentionSnapshot?
+    @Binding var isShowingDetails: Bool
+
+    private var hasBadges: Bool {
+        guard let counts = snapshot?.counts, snapshot?.freshness != .unavailable else { return false }
+        return counts.reviewReadyTasks > 0 || counts.needsInputTasks > 0 || counts.activeAgents > 0
+    }
+
+    var body: some View {
+        Group {
+            if hasBadges {
+                AttentionSummaryBadges(snapshot: snapshot)
+            } else {
+                Image(systemName: "info.circle")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .onHover { isShowingDetails = $0 }
+        .help("Server details")
     }
 }
 
