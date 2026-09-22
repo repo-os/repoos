@@ -57,6 +57,13 @@ export interface KnownAgent {
   migrationNote?: string;
 }
 
+/** One discovered binary for an agent (when multiple copies exist on PATH). */
+export interface DetectedBinary {
+  path: string;
+  version: string | null;
+  headless: boolean;
+}
+
 /** One row of the detection result. */
 export interface DetectedAgent extends KnownAgent {
   /** Whether the binary resolves on PATH. */
@@ -81,6 +88,12 @@ export interface DetectedAgent extends KnownAgent {
   auth: boolean | null;
   /** Version-contract result; this is advisory and does not replace capability checks. */
   compatibility?: AgentCompatibility;
+  /**
+   * All copies of this binary found across PATH directories, in PATH order.
+   * Only populated when more than one distinct path is found. `path`/`version`
+   * always reflect the first (highest-priority) entry.
+   */
+  allBinaries?: DetectedBinary[];
 }
 
 /** Default ceiling on the `--version` probe, ms. A hung binary is SIGKILLed. */
@@ -248,6 +261,30 @@ export function resolveBinary(
   return null;
 }
 
+/**
+ * Like {@link resolveBinary} but returns every distinct path found across all
+ * PATH directories, in PATH order (highest priority first). Deduplicates by
+ * resolved path so symlink chains don't produce phantom duplicates.
+ */
+export function resolveAllBinaries(
+  binary: string,
+  pathEnv: string = process.env.PATH ?? "",
+): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const dir of pathEnv.split(delimiter)) {
+    if (!dir) continue;
+    for (const name of binaryCandidates(binary)) {
+      const full = join(dir, name);
+      if (isExecutable(full) && !seen.has(full)) {
+        seen.add(full);
+        out.push(full);
+      }
+    }
+  }
+  return out;
+}
+
 /** True when a resolved binary path lives inside a macOS `.app` bundle. */
 export function isAppBundleBinary(p: string): boolean {
   return APP_BUNDLE_RE.test(p.replace(/\\/g, "/"));
@@ -327,6 +364,11 @@ export interface DetectOptions {
   agents?: readonly KnownAgent[];
   /** Whether to run the CLI auth probe too. Default: true. */
   probeAuth?: boolean;
+  /**
+   * Called as each agent result resolves so the caller can stream it.
+   * Results still accumulate for the final return value.
+   */
+  onResult?: (agent: DetectedAgent) => void;
 }
 
 /**
@@ -418,13 +460,32 @@ export function captureAuthState(
   });
 }
 
+/** Probe a single binary path and return its headless + version details. */
+async function probeBinary(
+  binaryPath: string,
+  agentId: string,
+  timeoutMs: number,
+): Promise<{ version: string | null; headless: boolean }> {
+  const appBundle = isAppBundleBinary(binaryPath);
+  let version: string | null = null;
+  if (!appBundle) {
+    try {
+      version = await captureVersion(binaryPath, timeoutMs);
+    } catch {
+      version = null;
+    }
+  }
+  const desktopOnly = appBundle || (agentId === "opencode" && isDesktopOutputSignature(version));
+  return { version, headless: !desktopOnly };
+}
+
 /**
- * Probe every known coding agent: resolve its binary on PATH and, when found,
- * capture a version. Rows for missing binaries carry `installed: false`.
+ * Probe every known coding agent: resolve all copies of its binary on PATH,
+ * capture versions, and emit each result via `opts.onResult` as it resolves.
+ * The returned array is in the same order as `KNOWN_AGENTS`.
  *
- * A binary inside a macOS `.app` bundle is not probed for a version — spawning
- * it could relaunch the desktop app on the user's screen — and is reported as
- * desktop-only (`headless: false`).
+ * A binary inside a macOS `.app` bundle is reported as desktop-only and skips
+ * the version probe (spawning it could relaunch a GUI app).
  */
 export async function detectAgents(opts: DetectOptions = {}): Promise<DetectedAgent[]> {
   const pathEnv = opts.pathEnv ?? process.env.PATH ?? "";
@@ -432,11 +493,15 @@ export async function detectAgents(opts: DetectOptions = {}): Promise<DetectedAg
   const list = opts.agents ?? KNOWN_AGENTS;
   const probeAuth = opts.probeAuth ?? true;
 
-  const rows = await Promise.all(
-    list.map(async (agent) => {
-      const resolved = resolveBinary(agent.binary, pathEnv);
-      if (!resolved) {
-        return {
+  // Preserve output order via index slots filled as each probe settles.
+  const results: DetectedAgent[] = new Array(list.length);
+
+  await Promise.all(
+    list.map(async (agent, i) => {
+      const paths = resolveAllBinaries(agent.binary, pathEnv);
+
+      if (!paths.length) {
+        const row: DetectedAgent = {
           ...agent,
           installed: false,
           path: null,
@@ -449,36 +514,50 @@ export async function detectAgents(opts: DetectOptions = {}): Promise<DetectedAg
             drivable: agent.drivable,
           }),
         };
+        results[i] = row;
+        opts.onResult?.(row);
+        return;
       }
-      const appBundle = isAppBundleBinary(resolved);
-      let version: string | null = null;
-      if (!appBundle) {
-        try {
-          version = await captureVersion(resolved, timeoutMs);
-        } catch {
-          version = null;
-        }
-      }
-      const desktopOnly =
-        appBundle || (agent.id === "opencode" && isDesktopOutputSignature(version));
+
+      // Probe all found copies concurrently.
+      const probed = await Promise.all(
+        paths.map(async (p) => ({ path: p, ...(await probeBinary(p, agent.id, timeoutMs)) })),
+      );
+
+      const primary = probed[0];
+      const allBinaries: DetectedBinary[] = probed.map((b) => ({
+        path: b.path,
+        version: b.version,
+        headless: b.headless,
+      }));
+
       let auth: boolean | null = null;
-      if (probeAuth && !desktopOnly && agent.authCheckArgs?.length) {
+      if (probeAuth && primary.headless && agent.authCheckArgs?.length) {
         try {
-          auth = await captureAuthState(resolved, agent.authCheckArgs, timeoutMs);
+          auth = await captureAuthState(primary.path, agent.authCheckArgs, timeoutMs);
         } catch {
           auth = null;
         }
       }
-      return {
+
+      const row: DetectedAgent = {
         ...agent,
         installed: true,
-        path: resolved,
-        version,
-        headless: !desktopOnly,
+        path: primary.path,
+        version: primary.version,
+        headless: primary.headless,
         auth,
-        compatibility: compatibilityForAgent({ cli: agent.cli, version, drivable: agent.drivable }),
+        compatibility: compatibilityForAgent({
+          cli: agent.cli,
+          version: primary.version,
+          drivable: agent.drivable,
+        }),
+        ...(allBinaries.length > 1 ? { allBinaries } : {}),
       };
+      results[i] = row;
+      opts.onResult?.(row);
     }),
   );
-  return rows;
+
+  return results;
 }

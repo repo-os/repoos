@@ -17,6 +17,12 @@ import type {
 import Button from "../components/ui/button.vue";
 import Input from "../components/ui/input.vue";
 import Switch from "../components/ui/switch.vue";
+import Select from "../components/ui/select/root.vue";
+import SelectContent from "../components/ui/select/content.vue";
+import SelectItem from "../components/ui/select/item.vue";
+import SelectTrigger from "../components/ui/select/trigger.vue";
+import SelectValue from "../components/ui/select/value.vue";
+import SelectViewport from "../components/ui/select/viewport.vue";
 import AgentModelControl from "../components/AgentModelControl.vue";
 import BuiltInAgentCard from "../components/BuiltInAgentCard.vue";
 import VoiceDictate from "../components/VoiceDictate.vue";
@@ -326,13 +332,41 @@ watch(
 // ---- Detected coding agents ----
 
 const detected = ref<DetectedAgent[]>([]);
+/** Set of agent ids whose fresh probe is still in flight. */
+const detectPending = ref<Set<string>>(new Set());
 const detectLoading = ref(false);
 const detectError = ref(false);
+const detectCachedAt = ref<string | null>(null);
 const detectHintCopied = ref<string>("");
 const openCompatId = ref<string | null>(null);
+/** Per-agent selected binary index (into allBinaries). Defaults to 0 (primary). */
+const selectedBinaryIdx = ref<Record<string, number>>({});
 
 function toggleCompat(id: string): void {
   openCompatId.value = openCompatId.value === id ? null : id;
+}
+
+function selectBinary(agentId: string, idx: number): void {
+  selectedBinaryIdx.value = { ...selectedBinaryIdx.value, [agentId]: idx };
+}
+
+function effectiveBinary(agent: DetectedAgent): { path: string | null; version: string | null } {
+  const idx = selectedBinaryIdx.value[agent.id] ?? 0;
+  const bin = agent.allBinaries?.[idx];
+  if (bin) return { path: bin.path, version: bin.version };
+  return { path: agent.path, version: agent.version };
+}
+
+function cachedAtLabel(iso: string | null): string {
+  if (!iso) return "";
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  const hrs = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+  if (days >= 1) return `cached ${days}d ago`;
+  if (hrs >= 1) return `cached ${hrs}h ago`;
+  if (mins >= 1) return `cached ${mins}m ago`;
+  return "cached just now";
 }
 const updateLoading = ref(false);
 const updateError = ref(false);
@@ -419,19 +453,72 @@ const detectRows = computed<DetectRow[]>(() => {
   return rows.sort((a, b) => a.sortOrder - b.sortOrder);
 });
 
+let activeStream: EventSource | null = null;
+
 async function checkAgents(): Promise<void> {
-  detectLoading.value = true;
   detectError.value = false;
   detectHintCopied.value = "";
+
+  // 1. Load cached results immediately so the page isn't blank.
   try {
-    const data = await api<{ agents: DetectedAgent[] }>("/api/agents/detect");
-    detected.value = data.agents;
+    const cached = await api<{ agents: DetectedAgent[]; cachedAt: string | null }>(
+      "/api/agents/detect",
+    );
+    if (cached.agents.length) {
+      detected.value = cached.agents;
+      detectCachedAt.value = cached.cachedAt;
+    }
   } catch {
-    detectError.value = true;
-    detected.value = [];
-  } finally {
-    detectLoading.value = false;
+    // Cache miss is non-fatal; the stream will populate.
   }
+
+  // 2. Open SSE stream for fresh probes.
+  activeStream?.close();
+  // Mark all known agents as pending.
+  const knownIds = new Set(detected.value.map((a) => a.id));
+  detectPending.value = new Set(knownIds.size ? knownIds : ["__loading__"]);
+  detectLoading.value = true;
+
+  const es = new EventSource("/api/agents/detect/stream");
+  activeStream = es;
+
+  es.addEventListener("agent", (e: MessageEvent) => {
+    try {
+      const agent = JSON.parse(e.data as string) as DetectedAgent;
+      const idx = detected.value.findIndex((a) => a.id === agent.id);
+      if (idx >= 0) {
+        detected.value = detected.value.map((a, i) => (i === idx ? agent : a));
+      } else {
+        detected.value = [...detected.value, agent];
+      }
+      const next = new Set(detectPending.value);
+      next.delete(agent.id);
+      detectPending.value = next;
+    } catch {
+      /* ignore parse errors */
+    }
+  });
+
+  es.addEventListener("done", (e: MessageEvent) => {
+    try {
+      const { cachedAt } = JSON.parse(e.data as string) as { cachedAt: string };
+      detectCachedAt.value = cachedAt;
+    } catch {
+      /* ignore */
+    }
+    detectPending.value = new Set();
+    detectLoading.value = false;
+    es.close();
+    activeStream = null;
+  });
+
+  es.onerror = () => {
+    detectPending.value = new Set();
+    detectLoading.value = false;
+    if (!detected.value.length) detectError.value = true;
+    es.close();
+    activeStream = null;
+  };
 }
 
 /**
@@ -546,6 +633,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   clearTimeout(autoSaveTimer);
+  activeStream?.close();
+  activeStream = null;
 });
 </script>
 
@@ -975,6 +1064,12 @@ onUnmounted(() => {
           <div v-if="updateError" class="detect-update-error">
             Update checks are temporarily unavailable.
           </div>
+          <div v-if="detectCachedAt && detectLoading" class="detect-cache-label">
+            {{ cachedAtLabel(detectCachedAt) }} · scanning now…
+          </div>
+          <div v-else-if="detectCachedAt && !detectLoading" class="detect-cache-label">
+            {{ cachedAtLabel(detectCachedAt) }}
+          </div>
 
           <div v-if="detectLoading && !detected.length" class="detect-loading">Probing PATH…</div>
           <div v-else-if="!detected.length" class="agent-empty">
@@ -983,7 +1078,10 @@ onUnmounted(() => {
 
           <template v-else>
             <div v-for="r in detectRows" :key="r.agent.id" class="detect-row-wrap">
-              <div class="detect-row">
+              <div
+                class="detect-row"
+                :class="{ 'detect-row-pending': detectPending.has(r.agent.id) }"
+              >
                 <span
                   class="detect-badge"
                   :style="{ background: r.color, boxShadow: '0 0 8px ' + r.color }"
@@ -999,9 +1097,42 @@ onUnmounted(() => {
                 <span v-if="r.agent.deprecated" class="agent-badge detect-deprecated"
                   >Deprecated</span
                 >
-                <span v-if="r.agent.version" class="detect-ver detect-ver-inline">{{
-                  r.agent.version
-                }}</span>
+                <span
+                  v-if="effectiveBinary(r.agent).version"
+                  class="detect-ver detect-ver-inline"
+                  >{{ effectiveBinary(r.agent).version }}</span
+                >
+                <!-- Multi-binary dropdown: shown when more than one copy exists on PATH -->
+                <Select
+                  v-if="r.agent.allBinaries && r.agent.allBinaries.length > 1"
+                  :model-value="String(selectedBinaryIdx[r.agent.id] ?? 0)"
+                  @update:model-value="(v) => selectBinary(r.agent.id, Number(v))"
+                >
+                  <SelectTrigger
+                    class="detect-binary-select"
+                    :title="`${r.agent.allBinaries.length} copies found on PATH`"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectViewport class="detect-binary-viewport">
+                      <SelectItem
+                        v-for="(bin, idx) in r.agent.allBinaries"
+                        :key="bin.path"
+                        :value="String(idx)"
+                        class="detect-binary-item"
+                      >
+                        <span class="detect-binary-item-ver">{{ bin.version ?? "?" }}</span>
+                        <span class="detect-binary-item-path">{{ bin.path }}</span>
+                      </SelectItem>
+                    </SelectViewport>
+                  </SelectContent>
+                </Select>
+                <span
+                  v-if="detectPending.has(r.agent.id)"
+                  class="detect-row-spinner"
+                  title="Probing…"
+                ></span>
                 <button
                   v-if="r.agent.compatibility"
                   type="button"

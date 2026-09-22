@@ -723,6 +723,12 @@ export interface AgentsMeta {
 }
 
 /** One row from GET /api/agents/detect. */
+export interface DetectedBinary {
+  path: string;
+  version: string | null;
+  headless: boolean;
+}
+
 export interface DetectedAgent {
   id: string;
   name: string;
@@ -761,6 +767,8 @@ export interface DetectedAgent {
     contract?: { cli: string; name: string } | null;
   };
   update?: AgentUpdate;
+  /** All copies found on PATH when more than one exists. */
+  allBinaries?: DetectedBinary[];
 }
 
 export interface AgentUpdate {

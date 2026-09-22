@@ -46,7 +46,8 @@
  *   GET  /api/tasks/:id/attachments/:file -> serve a stored screenshot image
  *   GET  /api/agents/running   -> [{ id, pid, startedAt }] running agents
  *   GET  /api/agents/queued    -> [{ id, queuedAt }] agents waiting for a free maxConcurrentAgents slot
- *   GET  /api/agents/detect    -> { agents: [{ id, name, binary, installed, path, version, headless, drivable, installHint, auth, compatibility, authHint?, capability? }] }
+ *   GET  /api/agents/detect        -> { agents, cachedAt } — cached results, instant
+ *   GET  /api/agents/detect/stream -> SSE: event:agent per agent, event:done at end
  *   POST /api/agents/updates   -> { updates: { [id]: { status, source, checkedAt, ... } } }
  *   GET  /api/supervisor/status -> { ok, enabled, mode, latestHeartbeat } supervisor status
  *   GET  /api/supervisor/heartbeats -> { ok, heartbeats } recent supervisor heartbeats
@@ -264,6 +265,7 @@ import {
   runningAgents,
   queuedAgents,
   detectInstalledAgents,
+  streamDetectAgents,
   checkInstalledAgentUpdates,
   getAgentLogs,
   // Notifications
@@ -2181,6 +2183,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/agents/running", runningAgents);
   router.register("GET", "/api/agents/queued", queuedAgents);
   router.register("GET", "/api/agents/detect", detectInstalledAgents);
+  router.register("GET", "/api/agents/detect/stream", streamDetectAgents);
   router.register("POST", "/api/agents/updates", checkInstalledAgentUpdates);
   router.register("GET", /^\/api\/agents\/([^/]+)\/logs$/, getAgentLogs);
   router.register(
