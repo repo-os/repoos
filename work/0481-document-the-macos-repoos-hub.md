@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-09-22T16:07:52Z"
-review_passes: 1
+updated_at: "2026-09-22T17:16:02Z"
+review_passes: 2
 id: "0481"
 title: Document the macOS RepoOS Hub
 type: documentation
@@ -80,4 +80,5 @@ Add screenshots or product visuals only if the native UI is stable and an approv
 - 2026-09-22T15:21:45Z · model_override
 - 2026-09-22T15:21:47Z · status ready→active, branch
 - 2026-09-22T16:01:54Z · status active→review
+
 
