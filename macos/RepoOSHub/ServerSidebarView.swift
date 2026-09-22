@@ -101,12 +101,12 @@ struct ServerSidebarRow: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
-            .layoutPriority(0)
+            .frame(maxWidth: .infinity, alignment: .leading)
             InfoOrBadgesTrigger(
                 snapshot: appState.attentionSnapshot(for: entry.id),
                 isShowingDetails: $isShowingDetails
             )
-            .layoutPriority(1)
+            .fixedSize()
         }
         .contentShape(Rectangle())
         .contextMenu {
