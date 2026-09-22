@@ -2,7 +2,7 @@
 id: "0483"
 title: Bump canary counter by 1
 type: chore
-status: inbox
+status: ready
 priority: p2
 area: core
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: ""
 review_model_override: opencode-go/hy3
 created_at: "2026-09-22T14:36:07Z"
-updated_at: "2026-09-22T14:36:46Z"
+updated_at: "2026-09-22T14:37:18Z"
 ---
 ## Problem
 
@@ -49,3 +49,4 @@ This is the repoos canary task: a deliberately trivial change used to smoke-test
 - 2026-09-22T14:36:07Z · created · hello@repoos.org
 - 2026-09-22T14:36:26Z · review_model_override
 - 2026-09-22T14:36:46Z · status draft→inbox, title, area, type, body
+- 2026-09-22T14:37:18Z · status inbox→ready
