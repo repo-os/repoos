@@ -27,7 +27,7 @@ export async function verifyWithDeviceLock(reason: string): Promise<boolean> {
     if (!mod?.NativeBiometric) return true; // no native plugin → skip (web dev)
     await mod.NativeBiometric.verifyIdentity({
       reason,
-      title: "Unlock RepoOS",
+      title: "Unlock RepoOS Hub",
       subtitle: "Authenticate to continue",
       maxAttempts: 3,
     });

@@ -31,7 +31,7 @@ To open it anyway:
 Alternatively, from Terminal:
 
 ```sh
-xattr -dr com.apple.quarantine /Applications/RepoOSHub.app
+xattr -dr com.apple.quarantine "/Applications/RepoOS Hub.app"
 ```
 
 After the first launch, the app opens normally.
