@@ -91,10 +91,20 @@ previously saved server is not deleted when a later health check fails. Health
 is advisory after save, and selecting an unhealthy entry shows an offline
 state rather than inventing a RepoOS session.
 
-HTTPS is mandatory in v1, including for loopback and private-network hosts.
-There is no “allow insecure HTTP” preference. Local development should use a
-trusted local certificate or a deliberate HTTPS reverse proxy; weakening TLS in
-the Hub would make the same-origin cookie and credential boundary ambiguous.
+HTTPS is mandatory for every origin except loopback hosts, which may be saved
+over plain HTTP (`localhost`, `127.*`, `::1`) because `repoos serve`'s default
+origin is plain-HTTP loopback. There is no "allow insecure HTTP" preference for
+arbitrary origins: the origin normalizer rejects HTTP for any non-loopback
+host, and tokenless access to the bounded Hub endpoints additionally requires
+the server to verify the actual socket peer is loopback (see
+[native-hub-capabilities.md](../native-hub-capabilities.md)). Weakening TLS any
+further would blur the same-origin cookie and credential boundary.
+
+> **Amended at implementation (2026-09-22):** the original decision made HTTPS
+> mandatory even for loopback and private-network hosts. Keeping the TLS
+> boundary unambiguous for everything remote, the shipped normalizer allows the
+> plain-HTTP loopback exception only for local development, matching how the
+> server is normally run locally.
 
 ## Navigation and interaction model
 
@@ -202,6 +212,14 @@ server switching, ordinary authenticated web UI rendering, per-server
 session isolation, pins as local route hints, and `Cmd-K` switching. It does
 not fetch authenticated APIs from the native layer, aggregate task counts,
 show cross-server notifications, synchronize pins, or read server cookies.
+
+> **Amended at implementation (2026-09-22):** the paragraph above is the
+> shell-only first milestone. Since the capability contract described under
+> "v2 gate" below landed, the Hub also polls capability-gated attention
+> counts, shows native notifications and a Dock badge, and searches tasks
+> across opted-in servers — all read-only aggregates over the bounded Hub
+> endpoints. Pins are still local route hints and are never synchronized
+> across servers.
 
 ### v2 gate
 

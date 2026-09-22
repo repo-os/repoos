@@ -249,10 +249,8 @@ const year = new Date().getFullYear();
           <InstallBox class="mt-8" show-note />
           <p class="mt-3 text-[13px] text-[var(--txt-faint)]">
             Prefer a native app?
-            <a
-              href="https://github.com/repo-os/repoos/releases/latest/download/RepoOSHub.dmg"
-              class="text-[var(--cyan)] hover:underline"
-              >Download RepoOS Hub for Mac &darr;</a
+            <a href="https://docs.repoos.org/macos-hub" class="text-[var(--cyan)] hover:underline"
+              >RepoOS Hub for Mac &rarr;</a
             >
           </p>
         </div>
@@ -281,6 +279,51 @@ const year = new Date().getFullYear();
             active.
           </figcaption>
         </figure>
+      </div>
+    </section>
+
+    <!-- ============ REPOOS HUB FOR MAC ============ -->
+    <section class="wrap pb-20 sm:pb-24">
+      <div class="panel p-6 sm:p-8">
+        <div class="grid items-center gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+          <div class="min-w-0">
+            <p class="eyebrow mb-3">Now with a native app</p>
+            <h2 class="text-[26px] font-bold leading-tight tracking-tight sm:text-[32px]">
+              RepoOS Hub for Mac
+            </h2>
+            <p class="mt-4 max-w-[60ch] text-[15.5px] leading-relaxed text-[var(--txt-dim)]">
+              A Mac app that watches all your RepoOS servers from one place: pin tasks across
+              servers, see live attention counts in the sidebar and Dock badge, and find anything
+              with Cmd-K. Each server loads in its own isolated session — no cookie sharing, no
+              write access of its own, and remote access only through short-lived capability tokens
+              stored in your Keychain.
+            </p>
+            <p class="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-[14px]">
+              <a href="https://docs.repoos.org/macos-hub" class="text-[var(--cyan)] hover:underline"
+                >Read the guide &rarr;</a
+              >
+              <a
+                href="https://github.com/repo-os/repoos/releases"
+                class="text-[var(--cyan)] hover:underline"
+                >Releases &rarr;</a
+              >
+            </p>
+          </div>
+          <ul class="grid grid-cols-2 gap-2.5 text-[13px] leading-snug text-[var(--txt-dim)]">
+            <li class="rounded-lg border border-[var(--border)] px-3 py-2.5">
+              Pin tasks across servers
+            </li>
+            <li class="rounded-lg border border-[var(--border)] px-3 py-2.5">
+              Attention badges &amp; Dock badge
+            </li>
+            <li class="rounded-lg border border-[var(--border)] px-3 py-2.5">
+              Cmd-K palette &amp; cross-server search
+            </li>
+            <li class="rounded-lg border border-[var(--border)] px-3 py-2.5">
+              Isolated per-server sessions
+            </li>
+          </ul>
+        </div>
       </div>
     </section>
 

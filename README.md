@@ -296,6 +296,23 @@ roles alongside the engineer agent. Freeform task creation sends a description
 through the PM agent for structured drafting. All agent capability is local —
 no API tokens leave your machine unless you configure them.
 
+## RepoOS Hub for macOS
+
+A native Mac app (macOS 13+; sessions persist across relaunches on macOS 14+)
+that keeps tabs on all your RepoOS servers from
+one window: pin tasks across servers, see live attention counts in the sidebar
+and Dock badge, and jump between servers and tasks with Cmd-K. Each server
+loads in its own isolated WebKit session — sessions are never shared between
+servers, and server pages get no bridge into your files or Keychain. Local
+loopback servers need zero setup; remote servers use short-lived, revocable
+capability tokens (created over HTTPS on the server, stored in the Keychain)
+for their attention and search endpoints.
+
+The Hub's DMG is published on
+[GitHub Releases](https://github.com/repo-os/repoos/releases) with each tag
+release (the first Hub DMG is pending). Setup, pairing, and limitation details
+are in the [Hub guide](https://docs.repoos.org/macos-hub).
+
 ## Roadmap
 
 - **Stage 1 — parser + index + CLI** ✅
