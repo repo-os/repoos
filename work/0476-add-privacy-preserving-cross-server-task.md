@@ -1,4 +1,5 @@
 ---
+merge_conflict_retry_count: 1
 updated_at: "2026-09-22T02:17:42Z"
 review_passes: 1
 id: "0476"
@@ -36,4 +37,5 @@ Depends on the Hub summary capability work and the native navigation/command pal
 - 2026-09-22T02:07:20Z · model_override
 - 2026-09-22T02:07:22Z · status ready→active, branch
 - 2026-09-22T02:15:26Z · status active→review
+
 
