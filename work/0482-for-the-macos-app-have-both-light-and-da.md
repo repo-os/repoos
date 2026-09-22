@@ -2,14 +2,14 @@
 id: "0482"
 title: Ship real brand dock icon with light and dark variants
 type: feature
-status: review
+status: done
 priority: p2
 area: macos
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/ship-real-brand-dock-icon-with-light-and
 created_at: "2026-09-22T14:34:23Z"
-updated_at: "2026-09-22T15:41:05Z"
+updated_at: "2026-09-22T18:14:40Z"
 ---
 ## Problem
 
@@ -112,3 +112,4 @@ for the macos app, have both light and dark app icons for the dock (set it dynam
 - 2026-09-22T14:36:01Z · status inbox→ready
 - 2026-09-22T15:21:20Z · status ready→active, branch
 - 2026-09-22T15:41:05Z · status active→review
+- 2026-09-22T18:14:40Z · status review→done, release:success
