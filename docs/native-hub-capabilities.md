@@ -4,6 +4,15 @@ RepoOS Hub summaries use a separate, read-only device capability. A Hub
 capability is not a browser session and must never be copied from, or used as,
 the `repoos_session` cookie.
 
+## Local servers
+
+For a server reached over loopback HTTP (`localhost`, `127.0.0.1`, or `::1`),
+the Hub may read its bounded summary and task-search endpoints without a token.
+The server verifies the actual socket peer is loopback; forwarded headers and
+the Host header cannot grant this access. This makes the native per-server
+"Enable attention and notifications" toggle work for normal local development
+without a pairing ceremony. Remote origins still require a capability.
+
 ## Create a capability
 
 Sign in to the server over its HTTPS origin, then explicitly create a

@@ -24,7 +24,7 @@ enum HubTaskSearchFetchFailure: Error, Equatable, Sendable {
 }
 
 protocol HubTaskSearchFetching: Sendable {
-    func searchTasks(origin: URL, token: String, query: String) async -> Result<HubTaskSearchPayload, HubTaskSearchFetchFailure>
+    func searchTasks(origin: URL, token: String?, query: String) async -> Result<HubTaskSearchPayload, HubTaskSearchFetchFailure>
 }
 
 struct HubTaskSearchClient: HubTaskSearchFetching {
@@ -37,7 +37,7 @@ struct HubTaskSearchClient: HubTaskSearchFetching {
         decoder.dateDecodingStrategy = .iso8601
     }
 
-    func searchTasks(origin: URL, token: String, query: String) async -> Result<HubTaskSearchPayload, HubTaskSearchFetchFailure> {
+    func searchTasks(origin: URL, token: String?, query: String) async -> Result<HubTaskSearchPayload, HubTaskSearchFetchFailure> {
         var components = URLComponents(url: origin, resolvingAgainstBaseURL: true)
         components?.path = "/api/hub/v1/tasks/search"
         components?.queryItems = [
@@ -49,7 +49,9 @@ struct HubTaskSearchClient: HubTaskSearchFetching {
         }
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        if let token {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
         request.timeoutInterval = 12
 
         do {

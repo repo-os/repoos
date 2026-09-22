@@ -132,7 +132,9 @@ final class HubAttentionCoordinator: HubAttentionCoordinating, ObservableObject 
             snapshots[entry.id] = ServerAttentionSnapshot.unavailable(serverID: entry.id, hasCapability: false)
             return
         }
-        guard let token = keychain.loadToken(serverID: entry.id, origin: entry.originString) else {
+        let token = keychain.loadToken(serverID: entry.id, origin: entry.originString)
+        let hasLocalAccess = HubAccessPolicy.permitsLoopbackWithoutCapability(origin)
+        guard token != nil || hasLocalAccess else {
             snapshots[entry.id] = ServerAttentionSnapshot.unavailable(serverID: entry.id, hasCapability: false)
             scheduleNext(entryID: entry.id, isSelected: isSelected, succeeded: false, now: now)
             return
@@ -160,7 +162,7 @@ final class HubAttentionCoordinator: HubAttentionCoordinating, ObservableObject 
             emitNotifications(entry: entry, previous: previousCounts, current: payload.attention)
             scheduleNext(entryID: entry.id, isSelected: isSelected, succeeded: true, now: now)
         case .failure(let failure):
-            if failure == .unauthorized {
+            if failure == .unauthorized, token != nil {
                 keychain.deleteToken(serverID: entry.id, origin: entry.originString)
             }
             let freshness = HubAttentionFreshness.classify(
@@ -234,6 +236,7 @@ final class HubAttentionCoordinator: HubAttentionCoordinating, ObservableObject 
 
     private func hasCapability(for entry: ServerEntry) -> Bool {
         keychain.loadToken(serverID: entry.id, origin: entry.originString) != nil
+            || entry.originURL.map(HubAccessPolicy.permitsLoopbackWithoutCapability) == true
     }
 
     private func notifySnapshotsUpdated() {

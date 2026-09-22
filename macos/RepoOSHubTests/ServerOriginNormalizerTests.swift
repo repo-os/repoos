@@ -30,6 +30,10 @@ final class ServerOriginNormalizerTests: XCTestCase {
         XCTAssertEqual(url.absoluteString, "http://localhost:7171")
     }
 
+    func testDoesNotTreatLookalikeHostnameAsLoopback() {
+        XCTAssertFalse(ServerOriginNormalizer.isLoopbackHost("127.example.test"))
+    }
+
     func testBareLoopbackAddressDefaultsToHTTP() throws {
         let url = try ServerOriginNormalizer.normalizeOriginInput("127.0.0.1:7171")
         XCTAssertEqual(url.absoluteString, "http://127.0.0.1:7171")

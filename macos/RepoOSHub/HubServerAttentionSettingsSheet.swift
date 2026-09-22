@@ -27,24 +27,34 @@ struct HubServerAttentionSettingsSheet: View {
             Text("Attention & notifications")
                 .font(.title2.weight(.semibold))
 
-            Text(
-                "Create a Hub read capability in RepoOS Settings on this server, then paste the one-time token here. Summaries never use your browser session cookie."
-            )
+            Text(accessExplanation)
             .font(.callout)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
 
             Form {
-                Section("Hub capability") {
-                    SecureField("roh_… token", text: $capabilityToken)
-                    Button("Save capability token") {
-                        saveToken()
-                    }
-                    .disabled(capabilityToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    Button("Remove stored capability", role: .destructive) {
-                        appState.removeHubCapability(for: entry)
-                        capabilityToken = ""
-                        statusMessage = "Capability removed from Keychain."
+                Section("Hub access") {
+                    Toggle("Enable attention and notifications", isOn: $aggregationEnabled)
+                    if isLocalServer {
+                        Text("This local server is paired automatically. No token or sign-in handoff is needed.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("Remote servers use a scoped pairing credential. Automatic remote pairing is not available yet.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        DisclosureGroup("Advanced remote pairing") {
+                            SecureField("roh_… token", text: $capabilityToken)
+                            Button("Save capability token") {
+                                saveToken()
+                            }
+                            .disabled(capabilityToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                            Button("Remove stored capability", role: .destructive) {
+                                appState.removeHubCapability(for: entry)
+                                capabilityToken = ""
+                                statusMessage = "Capability removed from Keychain."
+                            }
+                        }
                     }
                 }
 
@@ -58,7 +68,9 @@ struct HubServerAttentionSettingsSheet: View {
                 }
 
                 Section("Aggregation") {
-                    Toggle("Show attention badges for this server", isOn: $aggregationEnabled)
+                    Text("Attention badges appear in the server list while Hub access is enabled.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
 
                 Section("Notify me when counts increase") {
@@ -97,6 +109,16 @@ struct HubServerAttentionSettingsSheet: View {
         }
         .padding(24)
         .frame(width: 480)
+    }
+
+    private var isLocalServer: Bool {
+        entry.originURL.map(HubAccessPolicy.permitsLoopbackWithoutCapability) == true
+    }
+
+    private var accessExplanation: String {
+        isLocalServer
+            ? "Enable local Hub attention for this server. RepoOS accepts these read-only requests only from this Mac's loopback connection."
+            : "Enable attention for this server. Remote servers require an explicit scoped pairing credential; browser session cookies are never shared with the Hub."
     }
 
     private func saveToken() {

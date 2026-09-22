@@ -22,13 +22,17 @@ import type { RouteContext } from "../../server/routes/types.js";
 let root: string;
 let store: AuthStore;
 
-function request(headers: Record<string, string>, body?: unknown): IncomingMessage {
+function request(
+  headers: Record<string, string>,
+  body?: unknown,
+  remoteAddress = "127.0.0.1",
+): IncomingMessage {
   const { url, ...rest } = headers;
   const bytes = Buffer.from(body === undefined ? "" : JSON.stringify(body));
   return {
     headers: rest,
     url: url ?? "/",
-    socket: { remoteAddress: "127.0.0.1" },
+    socket: { remoteAddress },
     [Symbol.asyncIterator]: async function* () {
       if (bytes.length) yield bytes;
     },
@@ -87,6 +91,19 @@ afterEach(() => {
 });
 
 describe("Hub capability contract", () => {
+  it("allows bounded Hub reads without a token only from a loopback socket", async () => {
+    const ctx = context([{ status: "review", needsInput: false } as Task]);
+    const local = response();
+    await hubSummary(ctx, request({ host: "localhost:7171" }), local.res, {});
+    expect(local.result.status).toBe(200);
+    expect(local.result.body.attention.reviewReadyTasks).toBe(1);
+
+    const remoteRequest = request({ host: "repoos.example.test" }, undefined, "203.0.113.12");
+    const remote = response();
+    await hubSummary(ctx, remoteRequest, remote.res, {});
+    expect(remote.result.status).toBe(401);
+  });
+
   it("issues one-time metadata plus a bearer token, then serves only the compact summary", async () => {
     const session = store.createSession("alice@example.com", "admin", 3600);
     const ctx = context([

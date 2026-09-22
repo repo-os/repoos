@@ -116,7 +116,13 @@ enum ServerOriginNormalizer {
     /// intentionally does not treat private-network hosts as local.
     static func isLoopbackHost(_ host: String?) -> Bool {
         guard let host = host?.lowercased() else { return false }
-        return host == "localhost" || host == "::1" || host.split(separator: ".").first == "127"
+        if host == "localhost" || host == "::1" { return true }
+        let octets = host.split(separator: ".")
+        guard octets.count == 4,
+              octets.first == "127",
+              octets.allSatisfy({ Int($0).map { (0 ... 255).contains($0) } ?? false })
+        else { return false }
+        return true
     }
 
     static func validateDisplayName(_ name: String) throws -> String {

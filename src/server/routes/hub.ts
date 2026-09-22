@@ -36,6 +36,16 @@ function clientIp(req: IncomingMessage): string {
     : (req.socket.remoteAddress ?? "unknown");
 }
 
+/**
+ * The native Hub may read its local RepoOS server without a bearer capability.
+ * This is deliberately limited to the socket peer, not Host or forwarded
+ * headers, so a proxy can never turn a remote request into local access.
+ */
+function isLoopbackPeer(req: IncomingMessage): boolean {
+  const address = req.socket.remoteAddress?.toLowerCase() ?? "";
+  return address === "::1" || address === "::ffff:127.0.0.1" || address.startsWith("127.");
+}
+
 function publicCapability(capability: any) {
   if (!capability) return null;
   const { tokenHash: _tokenHash, ...safe } = capability;
@@ -206,19 +216,35 @@ function resolveHubBearerCapability(
   return { capability, store };
 }
 
+function resolveHubReadAccess(
+  req: IncomingMessage,
+  ctx: Parameters<RouteHandler>[0],
+  res: ServerResponse,
+  requiredScope: string,
+) {
+  // A bare request is only trusted when the server can prove it arrived over
+  // loopback. Remote HTTP/HTTPS callers still require the scoped capability.
+  if (!getBearer(req) && isLoopbackPeer(req)) {
+    return { capability: null, store: null, rateLimitKey: `loopback:${clientIp(req)}` };
+  }
+  const resolved = resolveHubBearerCapability(req, ctx, res, requiredScope);
+  if (!resolved) return null;
+  return { ...resolved, rateLimitKey: `${resolved.capability.id}:${clientIp(req)}` };
+}
+
 /** GET /api/hub/v1/summary — compact v1 contract for native clients. */
 export const hubSummary: RouteHandler = async (ctx, req, res) => {
-  const resolved = resolveHubBearerCapability(req, ctx, res, HUB_CAPABILITY_SCOPE_SUMMARY);
+  const resolved = resolveHubReadAccess(req, ctx, res, HUB_CAPABILITY_SCOPE_SUMMARY);
   if (!resolved) return;
   const { capability, store } = resolved;
-  if (!summaryRateLimiter.tryAcquire(`${capability.id}:${clientIp(req)}`)) {
+  if (!summaryRateLimiter.tryAcquire(resolved.rateLimitKey)) {
     return json(res, 429, { error: "Too many Hub summary requests", retryAfterSeconds: 60 });
   }
   await ctx.indexReady;
   const tasks = ctx.index.getTasks();
   const running = ctx.runner.running();
   const generatedAt = new Date().toISOString();
-  store.markHubCapabilityUsed(capability.id);
+  if (capability && store) store.markHubCapabilityUsed(capability.id);
   return json(res, 200, {
     apiVersion: "v1",
     generatedAt,
@@ -236,10 +262,10 @@ export const hubSummary: RouteHandler = async (ctx, req, res) => {
 
 /** GET /api/hub/v1/tasks/search?q=… — bounded task lookup for the native Hub palette. */
 export const hubTaskSearch: RouteHandler = async (ctx, req, res) => {
-  const resolved = resolveHubBearerCapability(req, ctx, res, HUB_CAPABILITY_SCOPE_SEARCH);
+  const resolved = resolveHubReadAccess(req, ctx, res, HUB_CAPABILITY_SCOPE_SEARCH);
   if (!resolved) return;
   const { capability, store } = resolved;
-  if (!taskSearchRateLimiter.tryAcquire(`${capability.id}:${clientIp(req)}`)) {
+  if (!taskSearchRateLimiter.tryAcquire(resolved.rateLimitKey)) {
     return json(res, 429, { error: "Too many Hub task search requests", retryAfterSeconds: 60 });
   }
   const url = new URL(req.url ?? "/", "http://localhost");
@@ -253,7 +279,7 @@ export const hubTaskSearch: RouteHandler = async (ctx, req, res) => {
   await ctx.indexReady;
   const tasks = ctx.index.getTasks();
   const generatedAt = new Date().toISOString();
-  store.markHubCapabilityUsed(capability.id);
+  if (capability && store) store.markHubCapabilityUsed(capability.id);
   const results = searchHubTasks(
     query,
     tasks.map((task) => ({

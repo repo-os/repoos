@@ -104,7 +104,8 @@ final class HubCrossServerTaskSearchEngine: ObservableObject {
                 []
             )
         }
-        guard let token = keychain.loadToken(serverID: entry.id, origin: entry.originString) else {
+        let token = keychain.loadToken(serverID: entry.id, origin: entry.originString)
+        guard token != nil || HubAccessPolicy.permitsLoopbackWithoutCapability(origin) else {
             return (
                 entry.id,
                 HubRemoteTaskSearchServerLine(serverID: entry.id, serverName: entry.name, status: .missingCapability),

@@ -1,7 +1,13 @@
 import Foundation
 
 protocol HubSummaryFetching: Sendable {
-    func fetchSummary(origin: URL, token: String) async -> Result<HubSummaryPayload, HubSummaryFetchFailure>
+    func fetchSummary(origin: URL, token: String?) async -> Result<HubSummaryPayload, HubSummaryFetchFailure>
+}
+
+enum HubAccessPolicy {
+    static func permitsLoopbackWithoutCapability(_ origin: URL) -> Bool {
+        origin.scheme?.lowercased() == "http" && ServerOriginNormalizer.isLoopbackHost(origin.host)
+    }
 }
 
 struct HubSummaryClient: HubSummaryFetching {
@@ -14,13 +20,15 @@ struct HubSummaryClient: HubSummaryFetching {
         decoder.dateDecodingStrategy = .iso8601
     }
 
-    func fetchSummary(origin: URL, token: String) async -> Result<HubSummaryPayload, HubSummaryFetchFailure> {
+    func fetchSummary(origin: URL, token: String?) async -> Result<HubSummaryPayload, HubSummaryFetchFailure> {
         guard let url = URL(string: "/api/hub/v1/summary", relativeTo: origin) else {
             return .failure(.invalidResponse)
         }
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        if let token {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
         request.timeoutInterval = 15
 
         do {

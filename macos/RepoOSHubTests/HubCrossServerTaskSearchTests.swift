@@ -50,7 +50,7 @@ private final class StubHubTaskSearchClient: HubTaskSearchFetching, @unchecked S
         self.result = result
     }
 
-    func searchTasks(origin: URL, token: String, query: String) async -> Result<HubTaskSearchPayload, HubTaskSearchFetchFailure> {
+    func searchTasks(origin: URL, token: String?, query: String) async -> Result<HubTaskSearchPayload, HubTaskSearchFetchFailure> {
         result
     }
 }
@@ -62,7 +62,7 @@ private final class SlowHubTaskSearchClient: HubTaskSearchFetching, @unchecked S
         self.delayNanoseconds = delayNanoseconds
     }
 
-    func searchTasks(origin: URL, token: String, query: String) async -> Result<HubTaskSearchPayload, HubTaskSearchFetchFailure> {
+    func searchTasks(origin: URL, token: String?, query: String) async -> Result<HubTaskSearchPayload, HubTaskSearchFetchFailure> {
         try? await Task.sleep(nanoseconds: delayNanoseconds)
         return .success(
             HubTaskSearchPayload(
