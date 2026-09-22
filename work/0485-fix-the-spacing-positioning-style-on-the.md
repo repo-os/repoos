@@ -2,14 +2,14 @@
 id: "0485"
 title: Fix Stories page spacing and styling to match other pages
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-stories-page-spacing-and-styling-to-
 created_at: "2026-09-22T15:52:13Z"
-updated_at: "2026-09-22T18:08:09Z"
+updated_at: "2026-09-22T18:16:21Z"
 ---
 ## Problem
 
@@ -64,3 +64,4 @@ Fix the spacing/positioning/style on the new Stories page to match all the other
 - 2026-09-22T15:53:08Z · status draft→inbox, title, area, type, body
 - 2026-09-22T16:03:46Z · status inbox→ready
 - 2026-09-22T18:08:09Z · status ready→active, branch
+- 2026-09-22T18:16:21Z · status active→review
