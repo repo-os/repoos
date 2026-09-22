@@ -58,9 +58,19 @@ jobs:
           CODE_SIGN_IDENTITY="-"
           build
 
+      - name: Verify release app bundle
+        run: |
+          APP="macos/.derived-data/Build/Products/Release/RepoOS.app"
+          if [[ ! -d "$APP" ]]; then
+            echo "error: expected release bundle not found at $APP (PRODUCT_NAME=RepoOS)"
+            echo "Contents of Release products directory:"
+            ls -la macos/.derived-data/Build/Products/Release/ 2>/dev/null || echo "(directory missing)"
+            exit 1
+          fi
+
       - name: Package DMG
         run: |
-          APP=$(find macos/.derived-data/Build/Products/Release -name "RepoOSHub.app" | head -1)
+          APP="macos/.derived-data/Build/Products/Release/RepoOS.app"
           mkdir -p macos/dmg-staging
           cp -R "$APP" macos/dmg-staging/
           hdiutil create \
