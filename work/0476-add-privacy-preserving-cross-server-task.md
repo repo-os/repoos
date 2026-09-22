@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-22T02:17:42Z"
+review_passes: 1
 id: "0476"
 title: Add privacy-preserving cross-server task search to the macOS Hub
 type: feature
@@ -12,7 +14,6 @@ branch: feat/add-privacy-preserving-cross-server-task
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-09-21T11:50:29Z"
-updated_at: "2026-09-22T02:15:26Z"
 ---
 Extend the macOS Hub command palette with an opt-in cross-server task search that helps users locate work without reopening browser tabs.
 
@@ -35,3 +36,4 @@ Depends on the Hub summary capability work and the native navigation/command pal
 - 2026-09-22T02:07:20Z · model_override
 - 2026-09-22T02:07:22Z · status ready→active, branch
 - 2026-09-22T02:15:26Z · status active→review
+
