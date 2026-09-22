@@ -1274,6 +1274,7 @@ export function parseCopilotEvent(
       ? event.sessionId
       : undefined;
 
+  if (type === "assistant.message_start") return { sessionID };
   if (type === "assistant.message_delta") return { sessionID };
   if (type === "assistant.message") {
     const text = typeof data.content === "string" ? data.content : "";
@@ -2148,11 +2149,8 @@ export function resolveRepoGuide(config: RepoOSConfig): Agent | null {
 /**
  * Map an agent `cli` string to the binary + args that run it headless.
  *
- * opencode re-resolves its project directory from `--git-common-dir`, which
- * for a linked worktree points at the main repo's `.git` — so every worktree
- * path would be treated as `external_directory` and auto-rejected. `--dir`
- * forces the worktree path explicitly. claude code and qwen code use the spawn
- * `cwd` and need no flag.
+ * All drivers use the spawn `cwd` option to set the working directory.
+ * opencode v2 removed its `--dir` flag; the spawn cwd is sufficient.
  *
  * Verified flags (0042/0043):
  * - claude code: `claude -p <prompt> --output-format stream-json --verbose
@@ -2175,7 +2173,7 @@ export function resolveRepoGuide(config: RepoOSConfig): Agent | null {
  *   newline-delimited events; `--sandbox workspace-write` lets the agent edit
  *   files inside the worktree (the default is read-only). See
  *   CODEX_SANDBOX_ARGS for why network is on.
- * - opencode: `opencode run --format json --dir <cwd> --auto <prompt>` —
+ * - opencode: `opencode run --format json --auto <prompt>` —
  *   `--auto` ("auto-approve permissions that are not explicitly denied") is
  *   REQUIRED for the same reason claude's flag is: stdin is ignored, so a
  *   permission prompt can never be answered. Without it, opencode blocks on
@@ -2483,11 +2481,12 @@ function cliCommand(
   }
   // default: opencode's headless `run` mode. `--format json` streams one JSON
   // event per line (step_start / text / tool_use / step_finish / error) that
-  // the runner parses into structured transcript entries. `--dir` (0044) keeps
-  // the worktree path explicit so linked-worktree paths are never auto-rejected.
+  // the runner parses into structured transcript entries. The process is spawned
+  // with { cwd } so opencode runs in the worktree directory without a --dir flag
+  // (the flag was removed in opencode v2 and caused a help-print/exit regression).
   return {
     cmd: "opencode",
-    args: ["run", "--format", "json", "--dir", cwd, ...modelArgs(cli, model), "--auto", mission],
+    args: ["run", "--format", "json", ...modelArgs(cli, model), "--auto", mission],
   };
 }
 
@@ -2620,7 +2619,6 @@ function resumeCommand(
       "--format",
       "json",
       ...(sessionId ? ["--session", sessionId] : []),
-      ...(cwd ? ["--dir", cwd] : []),
       ...modelArgs(cli, model),
       "--auto",
       text,
@@ -3003,14 +3001,14 @@ export function pmCommand(
   }
   // opencode: `--format json` separates the final answer from step-by-step
   // narration (0264 vs 0253) and its `step_finish` events carry per-call
-  // usage deltas; `--dir` pins the repo root. Deliberately NO `--auto`: that
-  // flag auto-approves gated tool calls, and the PM must not be able to write
-  // files or run tools. A stray gated call blocks until the run's timeout —
-  // the acceptable failure mode (the draft is kept with its original prompt),
-  // and the same behavior the plain `promptCommand` path had.
+  // usage deltas. Deliberately NO `--auto`: that flag auto-approves gated tool
+  // calls, and the PM must not be able to write files or run tools. A stray
+  // gated call blocks until the run's timeout — the acceptable failure mode
+  // (the draft is kept with its original prompt). Process is spawned with
+  // { cwd } so --dir is not needed (removed in opencode v2).
   return {
     cmd: "opencode",
-    args: ["run", "--format", "json", "--dir", cwd, ...extra, prompt],
+    args: ["run", "--format", "json", ...extra, prompt],
   };
 }
 
@@ -3025,8 +3023,8 @@ export function pmCommand(
  * flags already verified for this repo's drivers are used:
  * - claude code: `--dangerously-skip-permissions` (same reason as the runner's
  *   start turns — nobody can answer a prompt).
- * - opencode: `--dir <cwd>` so a linked-worktree path is not auto-rejected,
- *   plus `--auto` so gated tool calls resolve instead of blocking.
+ * - opencode: `--auto` so gated tool calls resolve instead of blocking.
+ *   `--dir` was removed in opencode v2; cwd is set via spawn options.
  * - codex: `exec` alone — its default sandbox is already read-only, which is
  *   exactly the blast radius a reviewer should have.
  * - qwen code: plain `-p`, matching `promptCommand`.
@@ -3114,7 +3112,7 @@ export function reviewCommand(
   }
   return {
     cmd: "opencode",
-    args: ["run", "--format", "json", "--dir", cwd, ...extra, "--auto", prompt],
+    args: ["run", "--format", "json", ...extra, "--auto", prompt],
   };
 }
 

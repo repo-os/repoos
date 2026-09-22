@@ -466,6 +466,7 @@ const KIRO_CONTRACT: ContractCommandTemplates = {
  */
 function parseCopilotRun(stdout: string): RunParseResult {
   const KNOWN = new Set([
+    "assistant.message_start",
     "assistant.message",
     "assistant.message_delta",
     "tool.execution_start",
