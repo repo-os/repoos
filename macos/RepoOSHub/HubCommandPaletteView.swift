@@ -13,8 +13,14 @@ struct HubCommandPaletteView: View {
             query: query,
             entries: appState.entries,
             recents: appState.serverRecents,
-            pinnedContexts: appState.pinnedTaskContexts
+            pinnedContexts: appState.pinnedTaskContexts,
+            remoteTasks: appState.crossServerTaskSearch.remoteResults
         )
+    }
+
+    private var showsRemoteSearchFooter: Bool {
+        query.trimmingCharacters(in: .whitespacesAndNewlines).count >= HubCrossServerTaskSearchPolicy.minQueryLength
+            && !appState.crossServerTaskSearch.serverLines.isEmpty
     }
 
     var body: some View {
@@ -24,7 +30,7 @@ struct HubCommandPaletteView: View {
                 .onTapGesture { appState.dismissCommandPalette() }
 
             VStack(spacing: 0) {
-                TextField("Switch server or open a recent context", text: $query)
+                TextField("Switch server, search tasks, or open a recent context", text: $query)
                     .textFieldStyle(.plain)
                     .font(.title3)
                     .padding(.horizontal, 16)
@@ -56,9 +62,17 @@ struct HubCommandPaletteView: View {
                             proxy.scrollTo(items[newValue].id, anchor: .center)
                         }
                     }
-                    .onChange(of: query) { _ in
+                    .onChange(of: query) { newValue in
                         highlightedIndex = 0
+                        appState.crossServerTaskSearch.scheduleSearch(query: newValue)
                     }
+                }
+
+                if showsRemoteSearchFooter {
+                    HubCrossServerSearchStatusFooter(
+                        lines: appState.crossServerTaskSearch.serverLines,
+                        isSearching: appState.crossServerTaskSearch.isSearching
+                    )
                 }
 
                 if items.isEmpty {
@@ -93,6 +107,7 @@ struct HubCommandPaletteView: View {
             }
         }
         .onDisappear {
+            appState.crossServerTaskSearch.cancel()
             if let keyMonitor {
                 NSEvent.removeMonitor(keyMonitor)
                 self.keyMonitor = nil
@@ -155,7 +170,56 @@ private struct CommandPaletteRow: View {
         case .server: return "server.rack"
         case .recent: return "clock"
         case .pinned: return "pin"
+        case .remoteTask: return "tray.full"
         case .action: return "plus.circle"
+        }
+    }
+}
+
+private struct HubCrossServerSearchStatusFooter: View {
+    let lines: [HubRemoteTaskSearchServerLine]
+    let isSearching: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if isSearching {
+                Text("Searching enabled servers…")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            ForEach(lines) { line in
+                Text("\(line.serverName): \(line.status.displayText)")
+                    .font(.caption2)
+                    .foregroundStyle(line.status.isError ? Color.orange : Color.secondary)
+                    .lineLimit(1)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.primary.opacity(0.04))
+    }
+}
+
+private extension HubRemoteTaskSearchServerStatus {
+    var displayText: String {
+        switch self {
+        case .skipped: return "search disabled"
+        case .searching: return "searching…"
+        case .ok(let count, _): return count == 0 ? "no matches" : "\(count) match\(count == 1 ? "" : "es")"
+        case .offline: return "offline"
+        case .unauthorized: return "unauthorized — rotate Hub capability"
+        case .missingCapability: return "no Hub capability"
+        case .failed(let message): return message
+        }
+    }
+
+    var isError: Bool {
+        switch self {
+        case .offline, .unauthorized, .missingCapability, .failed:
+            return true
+        default:
+            return false
         }
     }
 }

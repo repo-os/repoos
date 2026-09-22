@@ -81,4 +81,31 @@ final class CommandPaletteMatcherTests: XCTestCase {
         )
         XCTAssertTrue(items.contains { $0.title == "Task board" })
     }
+
+    func testIncludesRemoteTaskHitsWithFreshnessSubtitle() {
+        let entries = [
+            entry(id: serverA, name: "Local", origin: "https://local.test", sortOrder: 0),
+        ]
+        let remote = HubRemoteTaskSearchResult(
+            serverID: serverA,
+            serverName: "Local",
+            hit: HubTaskSearchHit(
+                id: "0476",
+                title: "Cross-server search",
+                status: "active",
+                updatedAt: nil,
+                routePath: "/work?task=0476"
+            ),
+            generatedAt: Date()
+        )
+        let items = CommandPaletteMatcher.buildItems(
+            query: "cross",
+            entries: entries,
+            recents: [],
+            pinnedContexts: [],
+            remoteTasks: [remote]
+        )
+        XCTAssertTrue(items.contains { $0.kind == .remoteTask })
+        XCTAssertTrue(items.contains { $0.subtitle?.contains("fresh") == true })
+    }
 }

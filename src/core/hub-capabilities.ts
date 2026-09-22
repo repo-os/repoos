@@ -9,7 +9,12 @@ import { hashSessionToken, randomHex } from "./auth.js";
 
 export const HUB_CAPABILITY_VERSION = 1;
 export const HUB_CAPABILITY_AUDIENCE = "repoos-hub";
+/** @deprecated Use HUB_CAPABILITY_SCOPE_SUMMARY — kept for callers comparing legacy rows. */
 export const HUB_CAPABILITY_SCOPE = "summary:read";
+export const HUB_CAPABILITY_SCOPE_SUMMARY = "summary:read";
+export const HUB_CAPABILITY_SCOPE_SEARCH = "search:read";
+/** Scopes issued on new Hub capabilities (summary polling + optional palette search). */
+export const HUB_CAPABILITY_ISSUED_SCOPES = "summary:read search:read";
 export const HUB_CAPABILITY_DEFAULT_TTL_SECONDS = 30 * 24 * 60 * 60;
 export const HUB_CAPABILITY_MAX_TTL_SECONDS = 90 * 24 * 60 * 60;
 export const HUB_CAPABILITY_TOKEN_PREFIX = "roh_";
@@ -21,7 +26,7 @@ export interface HubCapability {
   tokenHash: string;
   origin: string;
   audience: typeof HUB_CAPABILITY_AUDIENCE;
-  scope: typeof HUB_CAPABILITY_SCOPE;
+  scope: string;
   version: typeof HUB_CAPABILITY_VERSION;
   createdAt: string;
   expiresAt: string;
@@ -32,6 +37,10 @@ export interface HubCapability {
 export interface IssuedHubCapability {
   capability: HubCapability;
   token: string;
+}
+
+export function hubCapabilityIncludesScope(scope: string, required: string): boolean {
+  return scope.split(/\s+/).filter(Boolean).includes(required);
 }
 
 export function createHubCapabilityToken(): { token: string; tokenHash: string } {

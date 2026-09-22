@@ -9,6 +9,7 @@ struct HubServerAttentionSettingsSheet: View {
     @State private var notifyReviewReady: Bool
     @State private var notifyNeedsInput: Bool
     @State private var notifyActiveAgents: Bool
+    @State private var crossServerTaskSearchEnabled: Bool
     @State private var capabilityToken: String = ""
     @State private var statusMessage: String?
 
@@ -18,6 +19,7 @@ struct HubServerAttentionSettingsSheet: View {
         _notifyReviewReady = State(initialValue: entry.notifyReviewReady)
         _notifyNeedsInput = State(initialValue: entry.notifyNeedsInput)
         _notifyActiveAgents = State(initialValue: entry.notifyActiveAgents)
+        _crossServerTaskSearchEnabled = State(initialValue: entry.crossServerTaskSearchEnabled)
     }
 
     var body: some View {
@@ -44,6 +46,15 @@ struct HubServerAttentionSettingsSheet: View {
                         capabilityToken = ""
                         statusMessage = "Capability removed from Keychain."
                     }
+                }
+
+                Section("Command palette search") {
+                    Toggle("Include this server in cross-server task search", isOn: $crossServerTaskSearchEnabled)
+                    Text(
+                        "When enabled, Cmd-K queries this server directly through the Hub task search API using your stored capability. Nothing is indexed on your Mac or sent to other servers."
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 }
 
                 Section("Aggregation") {
@@ -76,7 +87,8 @@ struct HubServerAttentionSettingsSheet: View {
                         aggregationEnabled: aggregationEnabled,
                         notifyReviewReady: notifyReviewReady,
                         notifyNeedsInput: notifyNeedsInput,
-                        notifyActiveAgents: notifyActiveAgents
+                        notifyActiveAgents: notifyActiveAgents,
+                        crossServerTaskSearchEnabled: crossServerTaskSearchEnabled
                     )
                     dismiss()
                 }

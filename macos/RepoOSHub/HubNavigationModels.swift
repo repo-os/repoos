@@ -146,6 +146,7 @@ enum CommandPaletteAction: Equatable {
     case selectServer(UUID)
     case openRecent(serverID: UUID, path: String)
     case openPinned(PinnedTaskContext)
+    case openRemoteTask(serverID: UUID, path: String)
     case addServer
 }
 
@@ -154,6 +155,7 @@ struct CommandPaletteItem: Equatable, Identifiable {
         case server
         case recent
         case pinned
+        case remoteTask
         case action
     }
 
@@ -171,6 +173,7 @@ enum CommandPaletteMatcher {
         entries: [ServerEntry],
         recents: [ServerRecentMetadata],
         pinnedContexts: [PinnedTaskContext],
+        remoteTasks: [HubRemoteTaskSearchResult] = [],
         includeAddServer: Bool = true
     ) -> [CommandPaletteItem] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -249,6 +252,28 @@ enum CommandPaletteMatcher {
             }
         }
 
+        for remote in remoteTasks {
+            let subtitle = remoteTaskSubtitle(remote)
+            let score = scoreMatch(
+                tokens: tokens,
+                title: remote.hit.title,
+                subtitle: subtitle,
+                extra: [remote.hit.id, remote.hit.status, remote.serverName]
+            )
+            if tokens.isEmpty || score > 0 {
+                items.append(
+                    CommandPaletteItem(
+                        id: "remote-\(remote.id)",
+                        title: "#\(remote.hit.id) · \(remote.hit.title)",
+                        subtitle: subtitle,
+                        kind: .remoteTask,
+                        action: .openRemoteTask(serverID: remote.serverID, path: remote.hit.routePath),
+                        score: (tokens.isEmpty ? 400 : score) + 30
+                    )
+                )
+            }
+        }
+
         if includeAddServer {
             let addScore = scoreMatch(tokens: tokens, title: "Add server", subtitle: "Register a RepoOS server", extra: [])
             if tokens.isEmpty || addScore > 0 {
@@ -296,6 +321,12 @@ enum CommandPaletteMatcher {
             if title.lowercased().contains(token) { score += 4 }
         }
         return score
+    }
+
+    static func remoteTaskSubtitle(_ remote: HubRemoteTaskSearchResult, now: Date = Date()) -> String {
+        let age = now.timeIntervalSince(remote.generatedAt)
+        let freshness = age <= 90 ? "fresh" : "stale"
+        return "\(remote.serverName) · \(remote.hit.status) · \(freshness)"
     }
 }
 

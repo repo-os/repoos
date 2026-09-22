@@ -18,7 +18,9 @@ native back/forward/reload and a **⌘K quick switcher** for servers, recents, a
 pinned task contexts. Authorized servers can expose compact **attention summaries**
 via `GET /api/hub/v1/summary` (Hub read capability in Keychain); the sidebar shows
 fresh/stale/unavailable state, badges, native notifications, and an optional Dock
-badge total. See [`docs/native-hub-capabilities.md`](../docs/native-hub-capabilities.md)
+badge total. Cross-server task search in Cmd-K is opt-in per server via the Hub
+task search API. See [`docs/native-hub-capabilities.md`](../docs/native-hub-capabilities.md)
+and [`docs/native-hub-cross-server-search.md`](../docs/native-hub-cross-server-search.md).
 and [`docs/native-hub-webkit.md`](../docs/native-hub-webkit.md)
 for WebKit navigation, OAuth, and session behavior, and
 [docs/macos-hub-navigation-retention.md](../docs/macos-hub-navigation-retention.md)
