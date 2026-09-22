@@ -23,6 +23,7 @@ import { cmdUpgrade } from "../commands/upgrade.js";
 import { cmdUninstall } from "../commands/uninstall.js";
 import { cmdStatus } from "../commands/status.js";
 import { cmdDoctor } from "../commands/doctor.js";
+import { cmdCertify } from "../commands/certify.js";
 import { cmdSupport } from "../commands/support.js";
 import { cmdService } from "../commands/service.js";
 import { checkBuild } from "../core/build.js";
@@ -119,6 +120,10 @@ function help(): void {
     cmdRow(
       "doctor [--json] [--probe <cli>]",
       "Readiness preflight: identity, config, layout, tools, check plan, server, secrets (--probe runs a live contract check)",
+    ),
+    cmdRow(
+      "certify <cli> [--yes]",
+      "Run the adapter contract suite and write certification evidence into agent-compatibility.json",
     ),
     cmdRow("support bundle", "Write a redacted, inspectable diagnostic bundle for failed setups"),
     cmdRow("show <id>", "Show a task's full spec"),
@@ -220,6 +225,7 @@ function main(): void {
     "check",
     "status",
     "doctor",
+    "certify",
     "support",
     "help",
     "--help",
@@ -259,6 +265,9 @@ function main(): void {
       break;
     case "doctor":
       void cmdDoctor(rest);
+      break;
+    case "certify":
+      void cmdCertify(rest);
       break;
     case "support":
       void cmdSupport(rest);

@@ -61,6 +61,8 @@ export interface AdapterContractResult {
   startedAt: string;
   /** Suggested manifest evidence when every seam passed. */
   evidence: string | null;
+  /** Parsed semver triple from the version seam, or null when unparseable. */
+  detectedVersion: [number, number, number] | null;
 }
 
 export interface AdapterContractOptions {
@@ -337,6 +339,7 @@ export async function runAdapterContract(
     durationMs: Date.now() - t0,
     startedAt,
     evidence: null,
+    detectedVersion: null,
   });
 
   const templates = CONTRACT_TEMPLATES[cli];
@@ -370,6 +373,7 @@ export async function runAdapterContract(
   }
 
   const capabilities: ContractProbeResult[] = [];
+  let parsedVersion: [number, number, number] | null = null;
   try {
     const probe = (id: ContractCapabilityId, label: string, ok: boolean, detail: string): void => {
       capabilities.push({ id, label, ok, detail });
@@ -380,7 +384,7 @@ export async function runAdapterContract(
       timeoutMs,
       cwd: workDir,
     });
-    const parsedVersion = parseAgentVersion(versionCap.stdout);
+    parsedVersion = parseAgentVersion(versionCap.stdout);
     probe(
       "version",
       "Version detection",
@@ -530,6 +534,7 @@ export async function runAdapterContract(
       durationMs: Date.now() - t0,
       startedAt,
       evidence,
+      detectedVersion: parsedVersion ?? null,
     };
   } finally {
     if (ownDir) {

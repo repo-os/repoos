@@ -1,0 +1,115 @@
+# Weekly adapter contract certification (#certify).
+#
+# Runs `repoos certify <cli>` for each harness that can be installed headlessly
+# on a GitHub-hosted Linux runner. A harness that passes all seams gets its
+# certification evidence written into src/core/agent-compatibility.json; the
+# job opens a PR with the diff so a maintainer can review and merge.
+#
+# Harnesses that require a GUI, a licensed seat, or a complex install that can't
+# be scripted here are excluded and must be certified locally with
+# `repoos certify <cli> --yes` and committed manually.
+#
+# Token spend: the headless-one-shot, session-continuation, and cancellation
+# seams each start a real provider run. Provider credentials come from repo
+# secrets (ANTHROPIC_API_KEY for claude-code, OPENAI_API_KEY for codex, etc.).
+# A harness with no secret configured is skipped cleanly.
+name: Certify harnesses
+
+on:
+  schedule:
+    - cron: "0 4 * * 1" # 04:00 UTC every Monday
+  workflow_dispatch:
+    inputs:
+      harness:
+        description: "Single harness to certify (leave blank for all)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  certify:
+    name: certify ${{ matrix.harness }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - harness: opencode
+            install: npm install -g opencode-ai
+            secret: ANTHROPIC_API_KEY
+          - harness: claude-code
+            install: npm install -g @anthropic-ai/claude-code
+            secret: ANTHROPIC_API_KEY
+          - harness: codex
+            install: npm install -g @openai/codex
+            secret: OPENAI_API_KEY
+
+    # Skip a harness if its secret is absent or if the dispatch targeted a
+    # different one.
+    if: >
+      (github.event.inputs.harness == '' || github.event.inputs.harness == matrix.harness)
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build repoos
+        run: bun run build
+
+      - name: Install ${{ matrix.harness }}
+        run: ${{ matrix.install }}
+
+      - name: Certify ${{ matrix.harness }}
+        id: certify
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets[matrix.secret] }}
+          OPENAI_API_KEY: ${{ secrets[matrix.secret] }}
+        run: |
+          # Skip if the required secret is blank (secret not configured).
+          if [ -z "${{ secrets[matrix.secret] }}" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "⚠ Skipping ${{ matrix.harness }}: ${{ matrix.secret }} not configured"
+            exit 0
+          fi
+          bun run dist/cli/index.js certify ${{ matrix.harness }} --yes || true
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Check for manifest change
+        id: diff
+        if: steps.certify.outputs.skip != 'true'
+        run: |
+          if git diff --quiet src/core/agent-compatibility.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open PR with certification
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: cert/${{ matrix.harness }}-${{ github.run_id }}
+          commit-message: "cert(${{ matrix.harness }}): certify detected version"
+          title: "cert(${{ matrix.harness }}): update compatibility certification"
+          body: |
+            Automated certification run from the `certify-harnesses` workflow.
+
+            The adapter contract suite passed all seams for `${{ matrix.harness }}`.
+            This PR updates `newestCertifiedVersion`, `verifiedAt`, and
+            `verificationSource` in `src/core/agent-compatibility.json`.
+
+            **Review the diff before merging** — confirm the detected version is
+            the one you expect and that `supportedRange` / `officialUrl` are still
+            correct if this is a new harness entry.
+          add-paths: src/core/agent-compatibility.json
+          delete-branch: true
