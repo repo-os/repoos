@@ -95,22 +95,18 @@ struct ServerSidebarRow: View {
             ServerIconActionButton(entry: entry)
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.name)
-                    .fixedSize(horizontal: true, vertical: false)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .clipped()
+                    .lineLimit(1)
                 Text(sidebarSubtitle)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: true, vertical: false)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .clipped()
+                    .lineLimit(1)
             }
-            .overlay(alignment: .trailing) {
-                InfoOrBadgesTrigger(
-                    snapshot: appState.attentionSnapshot(for: entry.id),
-                    isShowingDetails: $isShowingDetails
-                )
-            }
+            .layoutPriority(0)
+            InfoOrBadgesTrigger(
+                snapshot: appState.attentionSnapshot(for: entry.id),
+                isShowingDetails: $isShowingDetails
+            )
+            .layoutPriority(1)
         }
         .contentShape(Rectangle())
         .contextMenu {
