@@ -60,7 +60,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		A00000000000000000000010 /* RepoOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RepoOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A00000000000000000000010 /* RepoOS Hub.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "RepoOS Hub.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A00000000000000000000011 /* RepoOSHubApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepoOSHubApp.swift; sourceTree = "<group>"; };
 		A00000000000000000000012 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A00000000000000000000013 /* RepoOSHubTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepoOSHubTests.swift; sourceTree = "<group>"; };
@@ -124,7 +124,7 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		A00000000000000000000040 /* RepoOSHub */ = {isa = PBXNativeTarget; buildConfigurationList = A00000000000000000000050 /* Build configuration list for PBXNativeTarget "RepoOSHub" */; buildPhases = ( A00000000000000000000041, A00000000000000000000021, A00000000000000000000042, ); buildRules = ( ); dependencies = ( ); name = RepoOSHub; productName = RepoOS; productReference = A00000000000000000000010 /* RepoOS.app */; productType = "com.apple.product-type.application"; };
+		A00000000000000000000040 /* RepoOSHub */ = {isa = PBXNativeTarget; buildConfigurationList = A00000000000000000000050 /* Build configuration list for PBXNativeTarget "RepoOSHub" */; buildPhases = ( A00000000000000000000041, A00000000000000000000021, A00000000000000000000042, ); buildRules = ( ); dependencies = ( ); name = RepoOSHub; productName = "RepoOS Hub"; productReference = A00000000000000000000010 /* RepoOS Hub.app */; productType = "com.apple.product-type.application"; };
 		A00000000000000000000043 /* RepoOSHubTests */ = {isa = PBXNativeTarget; buildConfigurationList = A00000000000000000000051 /* Build configuration list for PBXNativeTarget "RepoOSHubTests" */; buildPhases = ( A00000000000000000000044, A00000000000000000000022, A00000000000000000000045, ); buildRules = ( ); dependencies = ( A00000000000000000000047 /* PBXTargetDependency */, ); name = RepoOSHubTests; productName = RepoOSHubTests; productReference = A00000000000000000000014 /* RepoOSHubTests.xctest */; productType = "com.apple.product-type.bundle.unit-test"; };
 /* End PBXNativeTarget section */
 
