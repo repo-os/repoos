@@ -460,6 +460,84 @@ const KIRO_CONTRACT: ContractCommandTemplates = {
   },
 };
 
+/**
+ * GitHub Copilot CLI — `--output-format json` JSONL, session id on `event.sessionId`.
+ * `--no-ask-user` suppresses approval prompts; `--allow-all-tools` for headless engineering.
+ */
+function parseCopilotRun(stdout: string): RunParseResult {
+  const KNOWN = new Set([
+    "assistant.message",
+    "assistant.message_delta",
+    "tool.execution_start",
+    "tool.execution_complete",
+    "session.completed",
+    "session.mcp_server_status_changed",
+    "session.mcp_servers_loaded",
+  ]);
+  let sessionId: string | null = null;
+  let hasAnswer = false;
+  let recognized = 0;
+  let total = 0;
+  for (const line of stdout.split("\n")) {
+    const t = line.trim();
+    if (!t) continue;
+    try {
+      const ev = JSON.parse(t) as Record<string, unknown>;
+      total++;
+      if (typeof ev.sessionId === "string" && ev.sessionId) sessionId = ev.sessionId;
+      const type = typeof ev.type === "string" ? ev.type : "";
+      if (KNOWN.has(type)) recognized++;
+      if (type === "assistant.message") {
+        const data = ev.data as Record<string, unknown> | undefined;
+        const content = typeof data?.content === "string" ? data.content : "";
+        if (/OK/i.test(content)) hasAnswer = true;
+      }
+    } catch {
+      /* skip */
+    }
+  }
+  return {
+    sessionId,
+    hasAnswer,
+    recognized,
+    total,
+    detail:
+      total === 0
+        ? "no JSON lines in output"
+        : `${recognized}/${total} recognized events; answer found: ${hasAnswer}`,
+  };
+}
+
+const COPILOT_CONTRACT: ContractCommandTemplates = {
+  version: () => ["version"],
+  help: () => ["--help"],
+  models: () => null,
+  run: (_dir, prompt) => [
+    "-p",
+    prompt,
+    "--output-format",
+    "json",
+    "--no-ask-user",
+    "--no-auto-update",
+    "--no-remote",
+    "--no-remote-export",
+    "--allow-all-tools",
+  ],
+  resume: (_dir, sessionId, prompt) => [
+    "-p",
+    prompt,
+    `--resume=${sessionId}`,
+    "--output-format",
+    "json",
+    "--no-ask-user",
+    "--no-auto-update",
+    "--no-remote",
+    "--no-remote-export",
+    "--allow-all-tools",
+  ],
+  parseRun: parseCopilotRun,
+};
+
 /** Antigravity (agy) — Gemini-backed CLI, stream-json event format. */
 const ANTIGRAVITY_CONTRACT: ContractCommandTemplates = {
   version: () => ["--version"],
@@ -493,6 +571,7 @@ const CONTRACT_TEMPLATES: Record<string, (binary: string) => ContractCommandTemp
   cursor: () => CURSOR_CONTRACT,
   kiro: () => KIRO_CONTRACT,
   antigravity: () => ANTIGRAVITY_CONTRACT,
+  "github copilot": () => COPILOT_CONTRACT,
 };
 
 const DEFAULT_TIMEOUT_MS: Record<"fixture" | "live", number> = {
@@ -858,6 +937,7 @@ export async function runAdapterContract(
     const autoFlags = [
       "--auto",
       "--approve-for-me",
+      "--no-ask-user",
       "--dangerously-skip-permissions",
       "--dangerously-bypass-approvals-and-sandbox",
       "--trust-all-tools",

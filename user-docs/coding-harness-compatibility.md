@@ -27,12 +27,13 @@ model-selection check is not certification of the complete adapter contract.
 | Harness | CLI id | Binary | Supported range | Newest certified | Notes |
 | --- | --- | --- | --- | --- | --- |
 | **OpenCode** | `opencode` | `opencode` | `>=2.0.0 <3.0.0` | **2.0.11** (2026-09-22) | Full 8-seam certification. Use `--standalone` for isolated probes. |
-| **Claude Code** | `claude code` | `claude` | `>=2.0.0 <3.0.0` | Pending | Contract templates ready; run `repoos certify "claude code" --yes` to certify. |
-| **Qwen Code** | `qwen code` | `qwen` | `>=0.1.0 <1.0.0` | Pending | Claude-compatible interface; `--yolo` used for headless approval bypass. |
-| **Codex** | `codex` | `codex` | `>=0.100.0 <1.0.0` | Pending | Uses `codex exec --json` with workspace-write sandbox. |
-| **Cursor Agent** | `cursor` | `cursor-agent` | `>=2026.0.0 <2027.0.0` | Pending | Stream-json mode; `-f/--force` bypasses approval prompts. |
-| **Kiro** | `kiro` | `kiro-cli` | `>=2.0.0 <3.0.0` | Pending | Plain-text output mode; session-continuation uses `--resume-id`. |
-| **Antigravity** | `antigravity` | `agy` | `>=1.0.0 <2.0.0` | Pending | Gemini-backed; `--dangerously-skip-permissions` for unattended work. |
+| **Claude Code** | `claude code` | `claude` | `>=2.0.0 <3.0.0` | **2.1.267** (2026-09-22) | Full 8-seam certification. Requires `--verbose` with stream-json. |
+| **Codex** | `codex` | `codex` | `>=0.100.0 <1.0.0` | **0.155.0** (2026-09-22) | `codex exec --json --approve-for-me`; `--approve-for-me` precedes `resume` subcommand. |
+| **Cursor Agent** | `cursor` | `cursor-agent` | `>=2026.0.0 <2027.0.0` | **2026.9.18** (2026-09-22) | Stream-json mode; `-f/--force` bypasses approval prompts. |
+| **Kiro** | `kiro` | `kiro-cli` | `>=2.0.0 <3.0.0` | **2.23.0** (2026-09-22) | Plain-text output; session-continuation and structured-events skipped (captured post-run). |
+| **Antigravity** | `antigravity` | `agy` | `>=1.0.0 <2.0.0` | **1.2.8** (2026-09-22) | Gemini-backed; `--dangerously-skip-permissions` for unattended work. |
+| **GitHub Copilot** | `github copilot` | `copilot` | `>=1.0.0 <2.0.0` | **1.0.87** (2026-09-22) | `--output-format json` JSONL; `--no-ask-user --allow-all-tools` for headless. |
+| **Qwen Code** | `qwen code` | `qwen` | `>=0.1.0 <1.0.0` | Pending | Claude-compatible interface; `--yolo` for headless. Requires `--auth-type` configured. |
 
 This table reflects `src/core/agent-compatibility.json`. Update that manifest
 and add contract evidence together when certifying a release. Do not silently

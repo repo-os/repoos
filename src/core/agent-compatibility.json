@@ -152,6 +152,28 @@
       "verificationSource": "repoos certify antigravity live probe — 8/8 seams passed on 2026-09-22T12:40:11.027Z against binary /Users/nick/.local/bin/agy",
       "upgradeGuidance": "Install or update Antigravity: curl -fsSL https://antigravity.google/cli/install.sh | bash",
       "officialUrl": "https://antigravity.google/docs/"
+    },
+    {
+      "cli": "github copilot",
+      "name": "GitHub Copilot",
+      "supportedMajor": 1,
+      "supportedRange": ">=1.0.0 <2.0.0",
+      "newestCertifiedVersion": "1.0.87",
+      "knownIncompatibleRanges": [],
+      "requiredCapabilities": [
+        "version",
+        "help",
+        "model-discovery",
+        "headless-one-shot",
+        "structured-events",
+        "auto-permissions",
+        "session-continuation",
+        "cancellation"
+      ],
+      "verifiedAt": "2026-09-22",
+      "verificationSource": "repoos certify github copilot live probe — 8/8 seams passed on 2026-09-22T12:47:48.942Z against binary /opt/homebrew/bin/copilot",
+      "upgradeGuidance": "Install or update the GitHub Copilot CLI: run `copilot update` or reinstall from https://cli.github.com/",
+      "officialUrl": "https://docs.github.com/en/copilot/github-copilot-in-the-cli"
     }
   ]
 }
