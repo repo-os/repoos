@@ -13,7 +13,7 @@ struct ServerSidebarView: View {
     var body: some View {
         List(selection: serverSelection) {
             if !appState.pinnedTaskContextsForSidebar.isEmpty {
-                Section("Pinned contexts") {
+                Section("Pinned tasks") {
                     ForEach(appState.pinnedTaskContextsForSidebar) { context in
                         PinnedContextSidebarRow(context: context)
                     }
@@ -106,14 +106,14 @@ struct ServerSidebarRow: View {
         }
         .contentShape(Rectangle())
         .contextMenu {
-            Button("Attention & notifications…") { appState.presentAttentionSettings(for: entry) }
-            Button("Edit…") { appState.presentEditServer(entry) }
-            Button("Pin task context…") { appState.presentPinTaskContext(for: entry) }
-            Button(entry.isPinned ? "Unpin" : "Pin") {
+            Button("Notifications…") { appState.presentAttentionSettings(for: entry) }
+            Button("Pin task…") { appState.presentPinTaskContext(for: entry) }
+            Button(entry.isPinned ? "Unpin server" : "Pin server") {
                 appState.setPinned(entry, pinned: !entry.isPinned)
             }
+            Button("Edit server…") { appState.presentEditServer(entry) }
             Divider()
-            Button("Remove", role: .destructive) {
+            Button("Remove server", role: .destructive) {
                 appState.deleteServer(entry)
             }
         }

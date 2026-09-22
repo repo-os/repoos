@@ -40,6 +40,13 @@ final class HubRecentsRetentionTests: XCTestCase {
         XCTAssertEqual(HubRecentsRetention.normalizeRoutePath("  "), "")
     }
 
+    func testNormalizesTaskNumbersForPinning() {
+        XCTAssertEqual(HubAppState.normalizedTaskIdentifier("1"), "0001")
+        XCTAssertEqual(HubAppState.normalizedTaskIdentifier(" #0471 "), "0471")
+        XCTAssertNil(HubAppState.normalizedTaskIdentifier("task 1"))
+        XCTAssertNil(HubAppState.normalizedTaskIdentifier(""))
+    }
+
     func testPruneRemovesOrphanServerMetadata() {
         let keep = UUID()
         let drop = UUID()

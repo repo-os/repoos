@@ -294,6 +294,51 @@ final class HubAppState: ObservableObject {
         try? store.save(document)
     }
 
+    /// Resolves a user-entered task number through the server, then stores a
+    /// local shortcut with the canonical task route and the task's actual title.
+    func pinTask(serverID: UUID, taskNumber: String) async -> String? {
+        guard let identifier = Self.normalizedTaskIdentifier(taskNumber) else {
+            return "Enter a task number, such as 1 or 0001."
+        }
+        guard let entry = entries.first(where: { $0.id == serverID }),
+              let origin = entry.originURL
+        else {
+            return "This server is no longer available."
+        }
+
+        let token = HubCapabilityKeychainStore.shared.loadToken(serverID: entry.id, origin: entry.originString)
+        guard token != nil || HubAccessPolicy.permitsLoopbackWithoutCapability(origin) else {
+            return "Pair this remote server in Notifications before pinning its tasks."
+        }
+
+        let result = await HubTaskSearchClient().searchTasks(origin: origin, token: token, query: identifier)
+        guard case .success(let payload) = result else {
+            return "Could not look up task #\(identifier). Check that the server is online."
+        }
+        guard let task = payload.results.first(where: {
+            Self.normalizedTaskIdentifier($0.id) == identifier
+        }) else {
+            return "Task #\(identifier) was not found on this server."
+        }
+
+        pinTaskContext(
+            serverID: serverID,
+            taskIdentifier: identifier,
+            routePath: task.routePath,
+            label: task.title
+        )
+        return nil
+    }
+
+    nonisolated static func normalizedTaskIdentifier(_ raw: String) -> String? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "#", with: "")
+        guard !trimmed.isEmpty, trimmed.allSatisfy(\.isNumber), let number = Int(trimmed), number > 0 else {
+            return nil
+        }
+        return String(format: "%04d", number)
+    }
+
     func unpinTaskContext(_ context: PinnedTaskContext) {
         document.pinnedTaskContexts.removeAll { $0.id == context.id }
         try? store.save(document)

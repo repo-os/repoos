@@ -30,7 +30,7 @@ struct HubCommandPaletteView: View {
                 .onTapGesture { appState.dismissCommandPalette() }
 
             VStack(spacing: 0) {
-                TextField("Switch server, search tasks, or open a recent context", text: $query)
+                TextField("Switch server, search tasks, or open a recent page", text: $query)
                     .textFieldStyle(.plain)
                     .font(.title3)
                     .padding(.horizontal, 16)

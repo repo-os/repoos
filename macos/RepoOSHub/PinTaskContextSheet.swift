@@ -6,33 +6,36 @@ struct PinTaskContextSheet: View {
 
     let serverID: UUID
     @State private var taskIdentifier = ""
-    @State private var routePath = "/tasks/"
-    @State private var label = ""
+    @State private var errorMessage: String?
+    @State private var isPinning = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Pin task context")
+            Text("Pin task")
                 .font(.title3.weight(.semibold))
 
-            Text("Pinned contexts are local route hints only. Visiting a task in the web UI does not pin it automatically.")
+            Text("Enter a task number, such as 1 or 0001. RepoOS finds the task and uses its title automatically.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            TextField("Task ID", text: $taskIdentifier)
-                .accessibilityLabel("Task identifier")
+            TextField("Task number", text: $taskIdentifier)
+                .accessibilityLabel("Task number")
+                .textFieldStyle(.roundedBorder)
+                .onSubmit { save() }
 
-            TextField("Route path", text: $routePath)
-                .accessibilityLabel("Route path")
-
-            TextField("Label", text: $label)
-                .accessibilityLabel("Pin label")
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
 
             HStack {
                 Spacer()
                 Button("Cancel") { dismiss() }
-                Button("Pin") { save() }
+                Button(isPinning ? "Pinning…" : "Pin") { save() }
                     .keyboardShortcut(.defaultAction)
+                    .disabled(isPinning || taskIdentifier.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
         .padding(24)
@@ -40,12 +43,16 @@ struct PinTaskContextSheet: View {
     }
 
     private func save() {
-        appState.pinTaskContext(
-            serverID: serverID,
-            taskIdentifier: taskIdentifier,
-            routePath: routePath,
-            label: label.isEmpty ? "Task \(taskIdentifier)" : label
-        )
-        dismiss()
+        errorMessage = nil
+        isPinning = true
+        Task {
+            let error = await appState.pinTask(serverID: serverID, taskNumber: taskIdentifier)
+            isPinning = false
+            if let error {
+                errorMessage = error
+            } else {
+                dismiss()
+            }
+        }
     }
 }
