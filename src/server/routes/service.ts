@@ -14,7 +14,7 @@
  */
 import type { RouteHandler } from "./types.js";
 import { json } from "./utils.js";
-import { deriveServePort } from "../../core/config.js";
+import { resolveServePort } from "../../core/config.js";
 import {
   getServiceStatus,
   listServices,
@@ -39,7 +39,7 @@ export const listServicesRoute: RouteHandler = (_ctx, _req, res) => {
 };
 
 export const installServiceRoute: RouteHandler = async (ctx, _req, res) => {
-  const port = deriveServePort(ctx.config.root);
+  const port = resolveServePort(ctx.config.root, ctx.config);
   const result = await installService(ctx.config.root, port);
   if (!result.ok) return json(res, 400, { error: result.error });
   return json(res, 200, { ok: true, service: result.entry });

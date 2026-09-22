@@ -27,7 +27,7 @@ import {
   checkHealth,
   type ServiceListEntry,
 } from "../core/service-manager.js";
-import { boardRoot, deriveServePort, loadConfig } from "../core/config.js";
+import { boardRoot, loadConfig, resolveServePort } from "../core/config.js";
 import { c } from "../cli/colors.js";
 
 function statusLabel(s: string): string {
@@ -100,7 +100,7 @@ export async function cmdService(argv: string[]): Promise<void> {
     case "install": {
       const { root } = boardRoot();
       const config = loadConfig(root);
-      const port = deriveServePort(root);
+      const port = resolveServePort(root, config);
       const result = await installService(root, port, { autoStart: false });
       if (!result.ok) {
         console.error(c.red("  ✗ " + result.error));
