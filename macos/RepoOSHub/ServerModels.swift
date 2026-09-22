@@ -34,6 +34,7 @@ struct ServerEntry: Identifiable, Codable, Equatable, Sendable {
     var notifyReviewReady: Bool
     var notifyNeedsInput: Bool
     var notifyActiveAgents: Bool
+    var crossServerTaskSearchEnabled: Bool
 
     var originURL: URL? {
         URL(string: originString)
@@ -56,7 +57,8 @@ struct ServerEntry: Identifiable, Codable, Equatable, Sendable {
         attentionAggregationEnabled: Bool = true,
         notifyReviewReady: Bool = true,
         notifyNeedsInput: Bool = true,
-        notifyActiveAgents: Bool = false
+        notifyActiveAgents: Bool = false,
+        crossServerTaskSearchEnabled: Bool = false
     ) {
         self.id = id
         self.name = name
@@ -75,12 +77,14 @@ struct ServerEntry: Identifiable, Codable, Equatable, Sendable {
         self.notifyReviewReady = notifyReviewReady
         self.notifyNeedsInput = notifyNeedsInput
         self.notifyActiveAgents = notifyActiveAgents
+        self.crossServerTaskSearchEnabled = crossServerTaskSearchEnabled
     }
 
     enum CodingKeys: String, CodingKey {
         case id, name, repositoryName, originString, createdAt, updatedAt, lastHealth, lastHealthAt, sortOrder
         case accentColorHex, iconSymbolName, groupName, isPinned
         case attentionAggregationEnabled, notifyReviewReady, notifyNeedsInput, notifyActiveAgents
+        case crossServerTaskSearchEnabled
     }
 
     init(from decoder: Decoder) throws {
@@ -102,6 +106,7 @@ struct ServerEntry: Identifiable, Codable, Equatable, Sendable {
         notifyReviewReady = try container.decodeIfPresent(Bool.self, forKey: .notifyReviewReady) ?? true
         notifyNeedsInput = try container.decodeIfPresent(Bool.self, forKey: .notifyNeedsInput) ?? true
         notifyActiveAgents = try container.decodeIfPresent(Bool.self, forKey: .notifyActiveAgents) ?? false
+        crossServerTaskSearchEnabled = try container.decodeIfPresent(Bool.self, forKey: .crossServerTaskSearchEnabled) ?? false
     }
 
     func encode(to encoder: Encoder) throws {
@@ -122,6 +127,7 @@ struct ServerEntry: Identifiable, Codable, Equatable, Sendable {
         try container.encode(notifyReviewReady, forKey: .notifyReviewReady)
         try container.encode(notifyNeedsInput, forKey: .notifyNeedsInput)
         try container.encode(notifyActiveAgents, forKey: .notifyActiveAgents)
+        try container.encode(crossServerTaskSearchEnabled, forKey: .crossServerTaskSearchEnabled)
     }
 }
 

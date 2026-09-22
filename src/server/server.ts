@@ -294,6 +294,7 @@ import {
   revokeHubCapability,
   rotateHubCapability,
   hubSummary,
+  hubTaskSearch,
   // Service routes
   getServiceStatusRoute,
   listServicesRoute,
@@ -2265,6 +2266,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("DELETE", /^\/api\/auth\/hub-capabilities\/([^/]+)$/, revokeHubCapability);
   router.register("POST", /^\/api\/auth\/hub-capabilities\/([^/]+)\/rotate$/, rotateHubCapability);
   router.register("GET", "/api/hub/v1/summary", hubSummary);
+  router.register("GET", "/api/hub/v1/tasks/search", hubTaskSearch);
 
   // Background service management routes (0185)
   router.register("GET", "/api/service/status", getServiceStatusRoute);
@@ -2306,7 +2308,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // redirect to /login. Auth-disabled deployments pass everything through.
       const authEnabled = config.auth?.enabled === true;
       if (authEnabled) {
-        const PUBLIC_PREFIXES = ["/api/health", "/api/auth/", "/api/hub/v1/summary"];
+        const PUBLIC_PREFIXES = [
+          "/api/health",
+          "/api/auth/",
+          "/api/hub/v1/summary",
+          "/api/hub/v1/tasks/search",
+        ];
         const PUBLIC_PATHS = ["/login", "/manifest.webmanifest"];
         const isPublicRoute =
           PUBLIC_PREFIXES.some((p) => path.startsWith(p)) ||

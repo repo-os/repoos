@@ -18,16 +18,19 @@ final class HubAppState: ObservableObject {
     private let store: ServerRegistryStore
     private let healthChecker: HealthChecking
     let attentionCoordinator: HubAttentionCoordinator
+    let crossServerTaskSearch: HubCrossServerTaskSearchEngine
     private var document = ServerRegistryDocument()
 
     init(
         store: ServerRegistryStore,
         healthChecker: HealthChecking,
-        attentionCoordinator: HubAttentionCoordinator
+        attentionCoordinator: HubAttentionCoordinator,
+        crossServerTaskSearch: HubCrossServerTaskSearchEngine = HubCrossServerTaskSearchEngine()
     ) {
         self.store = store
         self.healthChecker = healthChecker
         self.attentionCoordinator = attentionCoordinator
+        self.crossServerTaskSearch = crossServerTaskSearch
         self.attentionCoordinator.onSnapshotsUpdated = { [weak self] in
             self?.objectWillChange.send()
         }
@@ -101,6 +104,7 @@ final class HubAppState: ObservableObject {
             hubGlobalPreferences = document.hubGlobalPreferences
             restorePendingRouteForSelectedServer()
             syncAttentionCoordinator()
+            crossServerTaskSearch.configure(entries: entries)
         } catch {
             document = ServerRegistryDocument()
             entries = []
@@ -146,17 +150,20 @@ final class HubAppState: ObservableObject {
         aggregationEnabled: Bool,
         notifyReviewReady: Bool,
         notifyNeedsInput: Bool,
-        notifyActiveAgents: Bool
+        notifyActiveAgents: Bool,
+        crossServerTaskSearchEnabled: Bool
     ) {
         guard let index = document.entries.firstIndex(where: { $0.id == serverID }) else { return }
         document.entries[index].attentionAggregationEnabled = aggregationEnabled
         document.entries[index].notifyReviewReady = notifyReviewReady
         document.entries[index].notifyNeedsInput = notifyNeedsInput
         document.entries[index].notifyActiveAgents = notifyActiveAgents
+        document.entries[index].crossServerTaskSearchEnabled = crossServerTaskSearchEnabled
         document.entries[index].updatedAt = Date()
         entries = document.entries.sorted(by: entrySort)
         try? store.save(document)
         syncAttentionCoordinator()
+        crossServerTaskSearch.configure(entries: entries)
     }
 
     func updateHubGlobalPreferences(notificationsEnabled: Bool?, dockBadgeEnabled: Bool?) {
@@ -186,10 +193,12 @@ final class HubAppState: ObservableObject {
 
     func presentCommandPalette() {
         isCommandPalettePresented = true
+        crossServerTaskSearch.configure(entries: entries)
     }
 
     func dismissCommandPalette() {
         isCommandPalettePresented = false
+        crossServerTaskSearch.cancel()
     }
 
     func performCommandPaletteAction(_ action: CommandPaletteAction) {
@@ -202,6 +211,9 @@ final class HubAppState: ObservableObject {
         case .openPinned(let pin):
             selectServer(pin.serverID)
             requestNavigation(serverID: pin.serverID, path: pin.routePath)
+        case .openRemoteTask(let serverID, let path):
+            selectServer(serverID)
+            requestNavigation(serverID: serverID, path: path)
         case .addServer:
             presentAddServer()
         }
@@ -441,6 +453,7 @@ final class HubAppState: ObservableObject {
 
             try store.save(document)
             syncAttentionCoordinator()
+            crossServerTaskSearch.configure(entries: entries)
             lastConnectionMessage = nil
             return nil
         } catch ServerRegistryStoreError.duplicateOrigin {

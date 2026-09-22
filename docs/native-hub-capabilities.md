@@ -20,8 +20,8 @@ Content-Type: application/json
 The response includes the plaintext `roh_…` token exactly once. Store it in
 the macOS Keychain, associated with the exact canonical HTTPS origin. Do not
 put it in browser local storage, a URL, a log, a task, or a WebKit bridge. The
-server stores only a digest. The capability is limited to `summary:read`, is
-audience-bound to `repoos-hub`, and expires no later than 90 days.
+server stores only a digest. New capabilities include `summary:read` and
+`search:read`, are audience-bound to `repoos-hub`, and expire no later than 90 days.
 
 `GET /api/auth/hub-capabilities` lists metadata for the signed-in user's
 capabilities, but never returns token material. A capability can be revoked
@@ -60,6 +60,18 @@ filesystem paths, and is rate-limited. A `401` means the capability is
 missing, expired, revoked, malformed, or being presented to another origin;
 clients should remove the stored token after a confirmed revocation and ask
 the user to create or rotate a new one.
+
+## Search tasks (command palette)
+
+Native Hub clients with the `search:read` scope may look up tasks directly:
+
+```http
+GET /api/hub/v1/tasks/search?q=privacy&limit=8
+Authorization: Bearer roh_…
+```
+
+See [Native Hub cross-server task search](native-hub-cross-server-search.md) for
+the privacy model, palette behavior, and response shape.
 
 Capability creation, rotation, and revocation audit entries contain only the
 capability id, label, origin, and actor — never the bearer token.

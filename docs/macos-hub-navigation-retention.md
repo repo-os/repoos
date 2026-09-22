@@ -37,8 +37,10 @@ On launch, the Hub restores:
 ## Command palette (`Cmd-K`)
 
 The palette searches display names, origins, recent route titles/paths, pinned
-task labels/identifiers, and the “Add server…” action. It never queries server
-content or fans out network requests.
+task labels/identifiers, and — when enabled per server — live task hits from
+`GET /api/hub/v1/tasks/search`. Local registry rows and the “Add server…” action
+are always included; remote queries are debounced, cancellable, and never build a
+central index. See [Native Hub cross-server task search](native-hub-cross-server-search.md).
 
 ## Shell vs embedded page navigation
 

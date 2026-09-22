@@ -8,15 +8,26 @@ import {
   clampHubTtl,
   createHubCapabilityToken,
   HUB_CAPABILITY_AUDIENCE,
-  HUB_CAPABILITY_SCOPE,
+  HUB_CAPABILITY_ISSUED_SCOPES,
+  HUB_CAPABILITY_SCOPE_SEARCH,
+  HUB_CAPABILITY_SCOPE_SUMMARY,
   HUB_CAPABILITY_VERSION,
+  hubCapabilityIncludesScope,
   normalizeHubLabel,
   normalizeHubOrigin,
 } from "../../core/hub-capabilities.js";
+import {
+  clampHubTaskSearchLimit,
+  HUB_TASK_SEARCH_MAX_QUERY_LEN,
+  HUB_TASK_SEARCH_MIN_QUERY_LEN,
+  normalizeHubTaskSearchQuery,
+  searchHubTasks,
+} from "../../core/hub-task-search.js";
 import { getCurrentUser } from "./auth.js";
 import { RateLimiter } from "../../core/auth.js";
 
 const summaryRateLimiter = new RateLimiter(60_000, 60);
+const taskSearchRateLimiter = new RateLimiter(60_000, 30);
 
 function clientIp(req: IncomingMessage): string {
   const forwarded = req.headers["x-forwarded-for"];
@@ -70,7 +81,7 @@ function issueCapability(
     tokenHash: issued.tokenHash,
     origin: normalizeHubOrigin(origin)!,
     audience: HUB_CAPABILITY_AUDIENCE,
-    scope: HUB_CAPABILITY_SCOPE,
+    scope: HUB_CAPABILITY_ISSUED_SCOPES,
     version: HUB_CAPABILITY_VERSION,
     createdAt: now.toISOString(),
     expiresAt: new Date(now.getTime() + clampHubTtl(expiresInSeconds) * 1000).toISOString(),
@@ -168,22 +179,38 @@ function latestActivity(taskTimes: Array<string | null>, agentTimes: string[]): 
   return times.length ? (times.sort().at(-1) ?? null) : null;
 }
 
-/** GET /api/hub/v1/summary — compact v1 contract for native clients. */
-export const hubSummary: RouteHandler = async (ctx, req, res) => {
+function resolveHubBearerCapability(
+  req: IncomingMessage,
+  ctx: Parameters<RouteHandler>[0],
+  res: ServerResponse,
+  requiredScope: string,
+) {
   const token = getBearer(req);
   const origin = originForRequest(req);
   const store = getAuthStore(ctx.config.root);
-  if (!token || !origin || !store) return json(res, 401, { error: "Invalid Hub capability" });
+  if (!token || !origin || !store) {
+    json(res, 401, { error: "Invalid Hub capability" });
+    return null;
+  }
   const capability = store.getHubCapabilityByToken(token);
   if (
     !capability ||
     capability.version !== HUB_CAPABILITY_VERSION ||
     capability.audience !== HUB_CAPABILITY_AUDIENCE ||
-    capability.scope !== HUB_CAPABILITY_SCOPE ||
-    capability.origin !== origin
+    capability.origin !== origin ||
+    !hubCapabilityIncludesScope(capability.scope, requiredScope)
   ) {
-    return json(res, 401, { error: "Invalid Hub capability" });
+    json(res, 401, { error: "Invalid Hub capability" });
+    return null;
   }
+  return { capability, store };
+}
+
+/** GET /api/hub/v1/summary — compact v1 contract for native clients. */
+export const hubSummary: RouteHandler = async (ctx, req, res) => {
+  const resolved = resolveHubBearerCapability(req, ctx, res, HUB_CAPABILITY_SCOPE_SUMMARY);
+  if (!resolved) return;
+  const { capability, store } = resolved;
   if (!summaryRateLimiter.tryAcquire(`${capability.id}:${clientIp(req)}`)) {
     return json(res, 429, { error: "Too many Hub summary requests", retryAfterSeconds: 60 });
   }
@@ -204,5 +231,43 @@ export const hubSummary: RouteHandler = async (ctx, req, res) => {
       reviewReadyTasks: tasks.filter((task) => task.status === "review").length,
       needsInputTasks: tasks.filter((task) => task.needsInput).length,
     },
+  });
+};
+
+/** GET /api/hub/v1/tasks/search?q=… — bounded task lookup for the native Hub palette. */
+export const hubTaskSearch: RouteHandler = async (ctx, req, res) => {
+  const resolved = resolveHubBearerCapability(req, ctx, res, HUB_CAPABILITY_SCOPE_SEARCH);
+  if (!resolved) return;
+  const { capability, store } = resolved;
+  if (!taskSearchRateLimiter.tryAcquire(`${capability.id}:${clientIp(req)}`)) {
+    return json(res, 429, { error: "Too many Hub task search requests", retryAfterSeconds: 60 });
+  }
+  const url = new URL(req.url ?? "/", "http://localhost");
+  const query = normalizeHubTaskSearchQuery(url.searchParams.get("q") ?? "");
+  if (!query) {
+    return json(res, 400, {
+      error: `Query must be ${HUB_TASK_SEARCH_MIN_QUERY_LEN}–${HUB_TASK_SEARCH_MAX_QUERY_LEN} characters`,
+    });
+  }
+  const limit = clampHubTaskSearchLimit(Number(url.searchParams.get("limit") ?? ""));
+  await ctx.indexReady;
+  const tasks = ctx.index.getTasks();
+  const generatedAt = new Date().toISOString();
+  store.markHubCapabilityUsed(capability.id);
+  const results = searchHubTasks(
+    query,
+    tasks.map((task) => ({
+      id: task.id,
+      title: task.title,
+      status: task.status,
+      updated_at: task.updated_at,
+    })),
+    limit,
+  );
+  return json(res, 200, {
+    apiVersion: "v1",
+    generatedAt,
+    query,
+    results,
   });
 };

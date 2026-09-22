@@ -5,16 +5,29 @@ import { tmpdir } from "node:os";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { RepoOSConfig, Task } from "../../core/types.js";
 import { AuthStore, resetAuthStoreInstance } from "../../core/auth-store.js";
-import { createHubCapability, hubSummary, listHubCapabilities } from "../../server/routes/hub.js";
+import {
+  createHubCapabilityToken,
+  HUB_CAPABILITY_AUDIENCE,
+  HUB_CAPABILITY_SCOPE_SUMMARY,
+  HUB_CAPABILITY_VERSION,
+} from "../../core/hub-capabilities.js";
+import {
+  createHubCapability,
+  hubSummary,
+  hubTaskSearch,
+  listHubCapabilities,
+} from "../../server/routes/hub.js";
 import type { RouteContext } from "../../server/routes/types.js";
 
 let root: string;
 let store: AuthStore;
 
 function request(headers: Record<string, string>, body?: unknown): IncomingMessage {
+  const { url, ...rest } = headers;
   const bytes = Buffer.from(body === undefined ? "" : JSON.stringify(body));
   return {
-    headers,
+    headers: rest,
+    url: url ?? "/",
     socket: { remoteAddress: "127.0.0.1" },
     [Symbol.asyncIterator]: async function* () {
       if (bytes.length) yield bytes;
@@ -161,5 +174,84 @@ describe("Hub capability contract", () => {
       {},
     );
     expect(denied.result.status).toBe(401);
+  });
+
+  it("serves bounded task search only when the capability includes search:read", async () => {
+    const session = store.createSession("alice@example.com", "admin", 3600);
+    const ctx = context([
+      {
+        id: "0476",
+        title: "Cross-server palette search",
+        status: "active",
+        updated_at: "2026-09-22T00:00:00.000Z",
+      } as Task,
+    ]);
+    const created = response();
+    await createHubCapability(
+      ctx,
+      request(
+        {
+          cookie: `repoos_session=${session}`,
+          host: "repoos.example.test",
+          "x-forwarded-proto": "https",
+        },
+        { label: "Mac Hub" },
+      ),
+      created.res,
+      {},
+    );
+    const token = created.result.body.token as string;
+
+    const search = response();
+    await hubTaskSearch(
+      ctx,
+      request({
+        authorization: `Bearer ${token}`,
+        host: "repoos.example.test",
+        "x-forwarded-proto": "https",
+        url: "/api/hub/v1/tasks/search?q=palette",
+      }),
+      search.res,
+      {},
+    );
+    expect(search.result.status).toBe(200);
+    expect(search.result.body.results).toEqual([
+      {
+        id: "0476",
+        title: "Cross-server palette search",
+        status: "active",
+        updatedAt: "2026-09-22T00:00:00.000Z",
+        routePath: "/work?task=0476",
+      },
+    ]);
+    expect(search.result.body.results[0]).not.toHaveProperty("body");
+
+    const legacyIssued = createHubCapabilityToken();
+    const now = new Date();
+    store.createHubCapability({
+      id: "hub_legacysummary",
+      label: "Legacy summary only",
+      ownerEmail: "alice@example.com",
+      tokenHash: legacyIssued.tokenHash,
+      origin: "https://repoos.example.test",
+      audience: HUB_CAPABILITY_AUDIENCE,
+      scope: HUB_CAPABILITY_SCOPE_SUMMARY,
+      version: HUB_CAPABILITY_VERSION,
+      createdAt: now.toISOString(),
+      expiresAt: new Date(now.getTime() + 3_600_000).toISOString(),
+    });
+    const deniedSearch = response();
+    await hubTaskSearch(
+      ctx,
+      request({
+        authorization: `Bearer ${legacyIssued.token}`,
+        host: "repoos.example.test",
+        "x-forwarded-proto": "https",
+        url: "/api/hub/v1/tasks/search?q=palette",
+      }),
+      deniedSearch.res,
+      {},
+    );
+    expect(deniedSearch.result.status).toBe(401);
   });
 });
