@@ -92,13 +92,7 @@ struct ServerSidebarRow: View {
                     .frame(width: 4, height: 30)
                     .accessibilityHidden(true)
             }
-            Menu {
-                ServerActionsMenu(entry: entry)
-            } label: {
-                ServerIconView(entry: entry)
-            }
-            .menuStyle(.borderlessButton)
-            .help("Server actions")
+            ServerIconActionButton(entry: entry)
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.name)
                     .lineLimit(1)
@@ -144,38 +138,95 @@ struct ServerSidebarRow: View {
 private struct ServerActionsMenu: View {
     @EnvironmentObject private var appState: HubAppState
     let entry: ServerEntry
+    var dismiss: (() -> Void)? = nil
 
     var body: some View {
-        Button("Notifications…") { appState.presentAttentionSettings(for: entry) }
-        Button("Pin task…") { appState.presentPinTaskContext(for: entry) }
-        Button(entry.isPinned ? "Unpin server" : "Pin server") {
-            appState.setPinned(entry, pinned: !entry.isPinned)
+        Button { perform { appState.presentAttentionSettings(for: entry) } } label: {
+            Label("Notifications…", systemImage: "bell")
         }
-        Button("Edit server…") { appState.presentEditServer(entry) }
+        Button { perform { appState.presentPinTaskContext(for: entry) } } label: {
+            Label("Pin task…", systemImage: "pin")
+        }
+        Button {
+            perform { appState.setPinned(entry, pinned: !entry.isPinned) }
+        } label: {
+            Label(entry.isPinned ? "Unpin server" : "Pin server", systemImage: entry.isPinned ? "pin.slash" : "pin.fill")
+        }
+        Button { perform { appState.presentEditServer(entry) } } label: {
+            Label("Edit server…", systemImage: "pencil")
+        }
         if canManageLocalService {
             Divider()
             if entry.lastHealth == .healthy {
-                Button("Stop local server") {
-                    Task { await appState.performLocalServiceAction(.stop, for: entry) }
+                Button {
+                    perform { Task { await appState.performLocalServiceAction(.stop, for: entry) } }
+                } label: {
+                    Label("Stop local server", systemImage: "stop.circle")
                 }
-                Button("Restart local server") {
-                    Task { await appState.performLocalServiceAction(.restart, for: entry) }
+                Button {
+                    perform { Task { await appState.performLocalServiceAction(.restart, for: entry) } }
+                } label: {
+                    Label("Restart local server", systemImage: "arrow.clockwise")
                 }
             } else {
-                Button("Start local server") {
-                    Task { await appState.performLocalServiceAction(.start, for: entry) }
+                Button {
+                    perform { Task { await appState.performLocalServiceAction(.start, for: entry) } }
+                } label: {
+                    Label("Start local server", systemImage: "play.circle")
                 }
             }
         }
         Divider()
-        Button("Remove server", role: .destructive) {
-            appState.deleteServer(entry)
+        Button(role: .destructive) {
+            perform { appState.deleteServer(entry) }
+        } label: {
+            Label("Remove server", systemImage: "trash")
         }
     }
 
     private var canManageLocalService: Bool {
         entry.originURL.map(HubAccessPolicy.permitsLoopbackWithoutCapability) == true
             && entry.localProjectPath != nil
+    }
+
+    private func perform(_ action: () -> Void) {
+        dismiss?()
+        action()
+    }
+}
+
+private struct ServerIconActionButton: View {
+    let entry: ServerEntry
+    @State private var isShowingActions = false
+    @State private var isHovering = false
+
+    var body: some View {
+        Button {
+            isShowingActions.toggle()
+        } label: {
+            ServerIconView(entry: entry)
+                .padding(5)
+                .background {
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(isHovering ? ServerSidebarStatus.color(for: entry.lastHealth).opacity(0.18) : .clear)
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .stroke(isHovering ? ServerSidebarStatus.color(for: entry.lastHealth).opacity(0.38) : .clear, lineWidth: 1)
+                }
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
+        .help("Server actions")
+        .accessibilityLabel("Actions for \(entry.name)")
+        .accessibilityHint("Opens server settings and local service controls")
+        .popover(isPresented: $isShowingActions, arrowEdge: .leading) {
+            VStack(alignment: .leading, spacing: 2) {
+                ServerActionsMenu(entry: entry, dismiss: { isShowingActions = false })
+            }
+            .padding(6)
+            .frame(width: 220, alignment: .leading)
+        }
     }
 }
 
@@ -358,8 +409,8 @@ enum ServerSidebarStatus {
         switch health {
         case .unknown: return .secondary
         case .healthy: return .green
-        case .unreachable: return .orange
-        case .invalid: return .red
+        case .unreachable: return .red
+        case .invalid: return .yellow
         }
     }
 
@@ -388,7 +439,7 @@ enum ServerSidebarStatus {
         Address: \(entry.originString)
         Status: \(entry.lastHealth.displayTitle) (\(colorName(for: entry.lastHealth)))\(checkedAt)
 
-        Icon colors: green = healthy, orange = unreachable, red = invalid response, gray = not checked.
+        Icon colors: green = connected, red = disconnected, yellow = reachable but not a valid RepoOS server, gray = not checked.
         """
     }
 
@@ -396,8 +447,8 @@ enum ServerSidebarStatus {
         switch health {
         case .unknown: return "gray"
         case .healthy: return "green"
-        case .unreachable: return "orange"
-        case .invalid: return "red"
+        case .unreachable: return "red"
+        case .invalid: return "yellow"
         }
     }
 }

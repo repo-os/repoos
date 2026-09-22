@@ -39,7 +39,9 @@ final class ReachabilityStateTests: XCTestCase {
         XCTAssertTrue(tooltip.contains("Repository: planning-repo"))
         XCTAssertTrue(tooltip.contains("Address: https://planning.example"))
         XCTAssertTrue(tooltip.contains("Status: Healthy (green)"))
-        XCTAssertTrue(tooltip.contains("Icon colors: green = healthy"))
+        XCTAssertTrue(tooltip.contains("green = connected"))
+        XCTAssertTrue(tooltip.contains("red = disconnected"))
+        XCTAssertTrue(tooltip.contains("yellow = reachable but not a valid RepoOS server"))
     }
 
     func testAccentColorNormalizesAndRejectsInvalidHex() {
