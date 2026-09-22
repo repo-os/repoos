@@ -14,10 +14,11 @@ RUN apt-get update \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
-# The repo is bind-mounted at /repo and the bun cache at /root/.bun/install/cache
-# by validate.sh; the container runs as root (--user 0:0) so it can write both.
+# Write git identity and defaults into /etc/gitconfig so they apply for any uid
+# (the container runs as the non-root 'bun' user from the base image).
+RUN git config --system user.email "ci@repoos.org" \
+ && git config --system user.name "RepoOS CI" \
+ && git config --system init.defaultBranch main
+
 WORKDIR /repo
-ENV HOME=/root
-RUN git config --global user.email "ci@repoos.org" && \
-    git config --global user.name "RepoOS CI"
 ENTRYPOINT ["/bin/bash", "-lc"]
