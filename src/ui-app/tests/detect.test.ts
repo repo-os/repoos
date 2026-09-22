@@ -194,6 +194,12 @@ describe("GET /api/agents/detect", () => {
     const oldPath = process.env.PATH;
     try {
       process.env.PATH = `${join(root, "bin")}${delimiter}${join(root, "missing")}`;
+      // Live detection is on the SSE stream; the plain GET returns only cached results.
+      // Consume the stream to completion so the cache is populated, then verify via GET.
+      const stream = await fetch(`${server.url}/api/agents/detect/stream`);
+      expect(stream.status).toBe(200);
+      const text = await stream.text();
+      expect(text).toContain("event: done");
       const res = await fetch(`${server.url}/api/agents/detect`);
       expect(res.status).toBe(200);
       const body = (await res.json()) as { agents: { id: string; installed: boolean }[] };
