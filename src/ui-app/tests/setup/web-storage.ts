@@ -68,3 +68,41 @@ function ensureStorage(name: "localStorage" | "sessionStorage"): void {
 
 ensureStorage("localStorage");
 ensureStorage("sessionStorage");
+
+/**
+ * jsdom does not implement EventSource. Stub it with a no-op so components
+ * that call `new EventSource(...)` during tests don't throw an unhandled
+ * ReferenceError that poisons the test runner's exit code.
+ */
+if (typeof globalThis.EventSource === "undefined") {
+  class EventSourceStub {
+    static readonly CONNECTING = 0;
+    static readonly OPEN = 1;
+    static readonly CLOSED = 2;
+    readonly CONNECTING = 0;
+    readonly OPEN = 1;
+    readonly CLOSED = 2;
+    readyState = 2;
+    url: string;
+    withCredentials = false;
+    onopen: ((e: Event) => void) | null = null;
+    onmessage: ((e: MessageEvent) => void) | null = null;
+    onerror: ((e: Event) => void) | null = null;
+    constructor(url: string) {
+      this.url = url;
+    }
+    addEventListener() {}
+    removeEventListener() {}
+    dispatchEvent() {
+      return false;
+    }
+    close() {
+      this.readyState = 2;
+    }
+  }
+  Object.defineProperty(globalThis, "EventSource", {
+    value: EventSourceStub,
+    configurable: true,
+    writable: true,
+  });
+}

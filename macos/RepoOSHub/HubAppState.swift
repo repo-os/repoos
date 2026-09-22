@@ -23,6 +23,8 @@ final class HubAppState: ObservableObject {
     let attentionCoordinator: HubAttentionCoordinator
     let crossServerTaskSearch: HubCrossServerTaskSearchEngine
     private var document = ServerRegistryDocument()
+    private var workspaceResidencyLRU: [UUID] = []
+    private var workspaceResidencyPressure: HubWorkspaceWebViewResidency.MemoryPressureLevel?
 
     init(
         store: ServerRegistryStore,
@@ -60,8 +62,8 @@ final class HubAppState: ObservableObject {
         return entries.first { $0.id == selectedServerID }
     }
 
-    /// Workspaces visited during this launch stay in the view hierarchy so their
-    /// isolated WKWebViews retain their page, history, and sign-in state.
+    /// Workspaces in the LRU working set stay mounted so their WKWebViews keep page
+    /// state; evicted servers reload on return (cookies persist on disk).
     var retainedWorkspaceEntries: [ServerEntry] {
         entries.filter { retainedWorkspaceServerIDs.contains($0.id) }
     }
@@ -113,7 +115,14 @@ final class HubAppState: ObservableObject {
             } else {
                 selectedServerID = entries.first?.id
             }
-            retainedWorkspaceServerIDs = selectedServerID.map { [$0] } ?? []
+            if let selectedServerID {
+                retainedWorkspaceServerIDs = [selectedServerID]
+                workspaceResidencyLRU = [selectedServerID]
+            } else {
+                retainedWorkspaceServerIDs = []
+                workspaceResidencyLRU = []
+            }
+            workspaceResidencyPressure = nil
             pruneOrphanNavigationMetadata()
             hubGlobalPreferences = document.hubGlobalPreferences
             restorePendingRouteForSelectedServer()
@@ -140,7 +149,7 @@ final class HubAppState: ObservableObject {
         document.lastSelectedServerID = id
         workspaceNavigation = .placeholder
         if let id {
-            retainedWorkspaceServerIDs.insert(id)
+            noteWorkspaceUsed(id)
         }
         persistQuietly()
         restorePendingRouteForSelectedServer()
@@ -420,9 +429,15 @@ final class HubAppState: ObservableObject {
         }
     }
 
+    func applyWorkspaceResidencyMemoryPressure(_ level: HubWorkspaceWebViewResidency.MemoryPressureLevel) {
+        workspaceResidencyPressure = level
+        enforceWorkspaceResidencyBudget()
+    }
+
     func deleteServer(_ entry: ServerEntry) {
         ServerWebsiteDataStorePool.shared.removeStore(for: entry.id)
         retainedWorkspaceServerIDs.remove(entry.id)
+        workspaceResidencyLRU.removeAll { $0 == entry.id }
         attentionCoordinator.deleteCapabilityToken(serverID: entry.id, origin: entry.originString)
         do {
             try store.removeEntry(id: entry.id, document: &document)
@@ -501,7 +516,7 @@ final class HubAppState: ObservableObject {
                 entries = document.entries.sorted(by: entrySort)
                 selectedServerID = entry.id
                 document.lastSelectedServerID = entry.id
-                retainedWorkspaceServerIDs.insert(entry.id)
+                noteWorkspaceUsed(entry.id)
             case .edit(let existing):
                 let name = try ServerOriginNormalizer.validateDisplayName(draft.name)
                 guard var entry = document.entries.first(where: { $0.id == existing.id }) else {
@@ -520,7 +535,7 @@ final class HubAppState: ObservableObject {
                 entries = document.entries.sorted(by: entrySort)
                 selectedServerID = entry.id
                 document.lastSelectedServerID = entry.id
-                retainedWorkspaceServerIDs.insert(entry.id)
+                noteWorkspaceUsed(entry.id)
             }
 
             try store.save(document)
@@ -614,6 +629,28 @@ final class HubAppState: ObservableObject {
         document.entries[index].updatedAt = Date()
         entries = document.entries.sorted(by: entrySort)
         try? store.save(document)
+    }
+
+    private func noteWorkspaceUsed(_ serverID: UUID) {
+        workspaceResidencyLRU = HubWorkspaceWebViewResidency.touch(serverID: serverID, in: workspaceResidencyLRU)
+        retainedWorkspaceServerIDs.insert(serverID)
+        enforceWorkspaceResidencyBudget()
+    }
+
+    private func enforceWorkspaceResidencyBudget() {
+        let maxInactive = HubWorkspaceWebViewResidency.maxInactive(for: workspaceResidencyPressure)
+        let (newRetained, evicted) = HubWorkspaceWebViewResidency.applyingBudget(
+            retained: retainedWorkspaceServerIDs,
+            lruOrder: workspaceResidencyLRU,
+            activeServerID: selectedServerID,
+            maxInactive: maxInactive
+        )
+        guard !evicted.isEmpty else { return }
+        for serverID in evicted {
+            ServerWebsiteDataStorePool.shared.releaseCachedStore(for: serverID)
+        }
+        retainedWorkspaceServerIDs = newRetained
+        workspaceResidencyLRU.removeAll { evicted.contains($0) }
     }
 
     private func persistQuietly() {

@@ -48,6 +48,13 @@ final class ServerWebsiteDataStorePool {
         }
     }
 
+    /// Drops the in-memory handle for one server. On-disk identifier-backed storage is unchanged.
+    func releaseCachedStore(for serverID: UUID) {
+        lock.lock()
+        stores.removeValue(forKey: serverID)
+        lock.unlock()
+    }
+
     /// Drops in-memory web session handles for servers that are not active; cookies remain on disk.
     func releaseCachedStores(except activeServerID: UUID?) {
         lock.lock()

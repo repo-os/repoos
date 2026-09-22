@@ -12,9 +12,8 @@ struct WorkspaceDetailView: View {
                     ForEach(appState.retainedWorkspaceEntries) { entry in
                         let isSelected = entry.id == appState.selectedServerID
                         ServerWebWorkspaceView(entry: entry)
-                            // Keep every visited server alive in this ZStack. Hiding an
-                            // inactive workspace preserves its WKWebView rather than
-                            // rebuilding it (and reloading the server) on every switch.
+                            // Inactive workspaces in the LRU working set stay mounted (hidden)
+                            // for instant switching; evicted servers reload on return.
                             .opacity(isSelected ? 1 : 0)
                             .allowsHitTesting(isSelected)
                             .accessibilityHidden(!isSelected)

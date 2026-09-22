@@ -30,7 +30,7 @@ describe("pmCommand usage flags (0335)", () => {
     const oc = pmCommand({ ...base, cli: "opencode" }, "flesh it out", "/repo");
     expect(oc.args).toContain("--format");
     expect(oc.args).toContain("json");
-    expect(oc.args).toContain("--dir");
+    // --dir removed in opencode v2; working directory is set via spawn cwd option
 
     const copilot = pmCommand({ ...base, cli: "github copilot" }, "flesh it out", "/repo");
     expect(copilot.args).toContain("--output-format");

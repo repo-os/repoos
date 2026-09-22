@@ -12,7 +12,15 @@
  *
  * Zero runtime deps: node:fs / node:child_process / node:path only.
  */
-import { existsSync, realpathSync, readFileSync, writeFileSync, rmSync, mkdirSync } from "node:fs";
+import {
+  existsSync,
+  realpathSync,
+  readlinkSync,
+  readFileSync,
+  writeFileSync,
+  rmSync,
+  mkdirSync,
+} from "node:fs";
 import { join, dirname, sep } from "node:path";
 import { execFile, execSync, execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
@@ -377,8 +385,21 @@ export class ServeReaper {
     this.rootWatch = null;
   }
 
-  /** Read a process cwd from lsof's machine-readable output, best-effort. */
+  /** Read a process cwd, best-effort. */
   private async processCwdAsync(pid: number): Promise<string | null> {
+    // On Linux, /proc/<pid>/cwd is a symlink to the process's cwd — always
+    // present (no lsof needed) and readable as root. readlinkSync is used
+    // intentionally rather than realpathSync so we get the path even when
+    // the directory has been deleted (readlink returns "path (deleted)" in
+    // that case; realpathSync would throw ENOENT).
+    if (process.platform === "linux") {
+      try {
+        const raw = readlinkSync(`/proc/${pid}/cwd`);
+        return raw.replace(/ \(deleted\)$/, "") || null;
+      } catch {
+        return null;
+      }
+    }
     try {
       const out = await execFileAsync("lsof", ["-a", "-p", String(pid), "-d", "cwd", "-Fn"], 2_000);
       const line = out.split("\n").find((entry) => entry.startsWith("n"));

@@ -52,7 +52,7 @@ function makeFixture(body = ""): Fixture {
     join(bin, "opencode"),
     `#!/usr/bin/env node
 const fs = require("fs");
-fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args: process.argv.slice(2) }) + "\\n");
+fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args: process.argv.slice(2), cwd: process.cwd() }) + "\\n");
 ${body}
 `,
     { mode: 0o755 },
@@ -107,13 +107,17 @@ async function api(
 }
 
 /** Spawn records written by the fake binary. */
-function spawns(fx: Fixture): string[][] {
+interface SpawnRecord {
+  args: string[];
+  cwd: string;
+}
+function spawns(fx: Fixture): SpawnRecord[] {
   if (!existsSync(fx.log)) return [];
   return readFileSync(fx.log, "utf8")
     .trim()
     .split("\n")
     .filter(Boolean)
-    .map((l) => (JSON.parse(l) as { args: string[] }).args);
+    .map((l) => JSON.parse(l) as SpawnRecord);
 }
 
 /** Create a task with a real worktree on its branch, ready to land in review. */
@@ -211,16 +215,17 @@ describe("agent review before human sign-off (#0101)", () => {
 
       // The agent was pointed at the task's own worktree, with permission
       // gating resolved — a prompt nobody can answer would hang the review.
-      const args = spawns(fx).find((a) => a.includes("--dir"));
-      expect(args).toBeDefined();
+      // --dir was removed in opencode v2; working directory is set via spawn cwd.
+      const spawn = spawns(fx).find((s) => s.args.includes("--auto"));
+      expect(spawn).toBeDefined();
       // realpath-normalized: on macOS the fixture's /var path is git's
       // /private/var path, and the review still runs in the right worktree.
-      expect(realpathSync(args![args!.indexOf("--dir") + 1])).toBe(realpathSync(task.worktree));
-      expect(args).toContain("--auto");
+      expect(realpathSync(spawn!.cwd)).toBe(realpathSync(task.worktree));
+      expect(spawn!.args).toContain("--auto");
 
       // The mission asks for the things a human needs at sign-off, and draws
       // the line the review agent must not cross.
-      const mission = args!.join(" ");
+      const mission = spawn!.args.join(" ");
       expect(mission).toContain("Review me");
       expect(mission).toMatch(/bugs/i);
       expect(mission).toMatch(/edge case/i);
@@ -312,7 +317,7 @@ ${printReport}`,
       // would move it to done again.
       await new Promise((r) => setTimeout(r, 750));
       expect(readFileSync(task.absPath, "utf8")).toMatch(/^status: review$/m);
-      expect(spawns(fx).filter((a) => a.includes("--dir")).length).toBe(1);
+      expect(spawns(fx).filter((s) => s.args.includes("--auto")).length).toBe(1);
     });
   });
 
@@ -462,7 +467,7 @@ else process.stdout.write(${JSON.stringify(reportB)} + "\\n");
       expect(served.review?.markdown).toContain("SECOND RUN MARKER");
       expect(served.review?.markdown).not.toContain("FIRST RUN MARKER");
       expect(served.lines.some((l) => l.d?.includes("FIRST RUN MARKER"))).toBe(false);
-      expect(spawns(fx).filter((a) => a.includes("--dir")).length).toBe(2);
+      expect(spawns(fx).filter((s) => s.args.includes("--auto")).length).toBe(2);
       // Every completed review run (auto + manual "Review again") bumps the
       // true per-pass counter used by the D# · R# badge.
       expect(readFileSync(task.absPath, "utf8")).toMatch(/^review_passes: 2$/m);
@@ -515,7 +520,7 @@ else process.stdout.write(${JSON.stringify(needsWorkReport)} + "\\n");
       // The passing auto-review run also counted as one full review pass.
       expect(taskFile).toMatch(/^review_passes: 1$/m);
       expect(taskFile).toContain("status review→active");
-      expect(spawns(fx).some((args) => args.join(" ").includes("automated review found"))).toBe(
+      expect(spawns(fx).some((s) => s.args.join(" ").includes("automated review found"))).toBe(
         true,
       );
       await new Promise((resolve) => setTimeout(resolve, 250));
@@ -573,8 +578,8 @@ else process.stdout.write(${JSON.stringify(reply)} + "\\n");
 
       // The follow-up reached the reviewer as a continuation mission. Read the
       // log only after the reply landed, so the child has written its argv.
-      const reviewSpawns = spawns(fx).filter((a) => a.includes("--dir"));
-      const mission = reviewSpawns[reviewSpawns.length - 1]?.join(" ") ?? "";
+      const reviewSpawns = spawns(fx).filter((s) => s.args.includes("--auto"));
+      const mission = reviewSpawns[reviewSpawns.length - 1]?.args.join(" ") ?? "";
       expect(mission).toMatch(/continuing an earlier review conversation/i);
       expect(mission).toMatch(/why did you flag the empty list/);
 

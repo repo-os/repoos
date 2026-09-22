@@ -1,4 +1,4 @@
-# RepoOS Mobile Hub
+# RepoOS Hub for iPhone and Android
 
 A privacy-first native shell (iOS + Android) for the RepoOS web UI, built with
 Capacitor. It is a **private client**, not a directory or hosted service: the

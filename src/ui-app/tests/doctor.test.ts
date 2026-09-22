@@ -288,19 +288,21 @@ describe("doctor compatibility bridge and probe arguments", () => {
   });
 
   it("parses every live-probe argument shape, including a missing value", () => {
-    const base = { json: false, yes: false, probe: null, probeMissingValue: false };
+    const base = { json: false, yes: false, probe: null, probeMissingValue: false, binary: null };
     expect(parseDoctorArgs(["doctor"])).toEqual(base);
     expect(parseDoctorArgs(["doctor", "--json", "--probe", "kiro"])).toEqual({
       json: true,
       yes: false,
       probe: "kiro",
       probeMissingValue: false,
+      binary: null,
     });
     expect(parseDoctorArgs(["doctor", "--probe", "opencode", "--yes"])).toEqual({
       json: false,
       yes: true,
       probe: "opencode",
       probeMissingValue: false,
+      binary: null,
     });
     // `--probe` at the end, or followed by another flag, is a usage error — it
     // must not silently fall through to the static report.
@@ -310,6 +312,7 @@ describe("doctor compatibility bridge and probe arguments", () => {
       yes: true,
       probe: null,
       probeMissingValue: true,
+      binary: null,
     });
   });
 

@@ -730,6 +730,10 @@ machine. Enabling it sends repo contents to a third-party host.
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
 | `remoteValidation.enabled` | boolean | `false` | yes | Master switch for the remote runner. |
+| `remoteValidation.provider` | string | `hetzner` | yes | Runner backend: `hetzner` (disposable cloud VM) or `tailscale` (persistent tailnet machine). |
+| `remoteValidation.tailscaleHost` | string | unset | yes | Tailscale hostname or 100.x.x.x IP of the runner machine (Tailscale provider only). |
+| `remoteValidation.tailscaleUser` | string | `root` | yes | SSH user on the tailscale host (Tailscale provider only). |
+| `remoteValidation.containerImage` | string | `repoos-ci` | yes | Docker image to run the gate in (Tailscale provider only). |
 | `remoteValidation.serverType` | string | `cax31` | yes | Hetzner server type. Must match the architecture the snapshot was built on. |
 | `remoteValidation.location` | string | `hil` | yes | Hetzner location slug. |
 | `remoteValidation.snapshotId` | string | unset | yes | ID or name of the prebuilt Hetzner snapshot the runner boots from. |
@@ -738,8 +742,6 @@ machine. Enabling it sends repo contents to a third-party host.
 | `remoteValidation.maxServerLifetimeMinutes` | number | `120` | yes | Hard cost stop-loss: any runner older than this is force-deleted. Minimum `10`. |
 | `remoteValidation.fallbackToLocal` | boolean | `false` | yes | When the runner is unreachable, run the full gate locally instead of keeping the task in review for retry. |
 | `remoteValidation.useForReleases` | boolean | `false` | yes | Also validate release cuts on the runner. Off by default because a release is watched live. |
-
-`remoteValidation.provider` is always `hetzner` and is not read from the file.
 The `HETZNER_API_TOKEN` and `REPOOS_REMOTE_SSH_KEY` credentials are
 environment-only.
 

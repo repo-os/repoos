@@ -116,8 +116,7 @@ describe("adapter contract suite", () => {
     const resume = runs.find((args) => args.includes("--session"));
     expect(firstRun).toBeDefined();
     expect(firstRun).toContain("--format");
-    expect(firstRun).toContain("--dir");
-    expect(firstRun).toContain("--auto");
+    expect(firstRun).toContain("--auto"); // --dir removed in opencode v2; cwd is set via spawn option
     expect(resume).toBeDefined();
     expect(resume).toContain("sess-123"); // the session id the fixture emitted
   });
@@ -148,9 +147,9 @@ describe("adapter contract suite", () => {
   });
 
   it("degrades gracefully for a harness with no registered templates", async () => {
-    // kiro has a KNOWN_AGENTS entry but no contract templates yet — the
-    // framework is opencode-first. It must say so, not crash.
-    const result = await runAdapterContract({ cli: "kiro", mode: "fixture" });
+    // A synthetic cli name that has no contract templates; the framework must
+    // say so rather than crash.
+    const result = await runAdapterContract({ cli: "no-such-harness", mode: "fixture" });
     expect(result.passed).toBe(false);
     expect(result.capabilities[0].detail).toMatch(/no contract command templates/i);
   });

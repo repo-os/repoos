@@ -8,16 +8,21 @@
 FROM oven/bun:1-debian
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends git ca-certificates curl \
+ && apt-get install -y --no-install-recommends git ca-certificates curl procps lsof \
  && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
  && apt-get install -y --no-install-recommends nodejs \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
-# The repo is bind-mounted at /repo and the bun cache at /root/.bun/install/cache
-# by validate.sh; the container runs as root (--user 0:0) so it can write both.
+# Write git identity and defaults into /etc/gitconfig so they apply for any uid
+# (the container runs as the non-root 'bun' user from the base image).
+RUN git config --system user.email "ci@repoos.org" \
+ && git config --system user.name "RepoOS CI" \
+ && git config --system init.defaultBranch main
+
 WORKDIR /repo
-ENV HOME=/root
-RUN git config --global user.email "ci@repoos.org" && \
-    git config --global user.name "RepoOS CI"
+# Make binaries installed by `bun install` (e.g. repoos itself) available
+# to subprocesses spawned during `bun run test`, which don't always inherit
+# the bun-managed PATH augmentation that applies to `bun run` scripts.
+ENV PATH="/repo/node_modules/.bin:$PATH"
 ENTRYPOINT ["/bin/bash", "-lc"]
