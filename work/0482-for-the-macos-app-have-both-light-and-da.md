@@ -2,7 +2,7 @@
 id: "0482"
 title: Ship real brand dock icon with light and dark variants
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/ship-real-brand-dock-icon-with-light-and
 created_at: "2026-09-22T14:34:23Z"
-updated_at: "2026-09-22T15:37:27Z"
+updated_at: "2026-09-22T15:41:05Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -117,3 +117,4 @@ for the macos app, have both light and dark app icons for the dock (set it dynam
 - 2026-09-22T15:21:20Z · status ready→active, branch
 - 2026-09-22T15:30:18Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-09-22T15:37:27Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-09-22T15:41:05Z · status active→review
