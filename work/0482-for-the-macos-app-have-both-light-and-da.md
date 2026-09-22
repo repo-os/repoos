@@ -5,11 +5,11 @@ type: feature
 status: draft
 priority: p2
 area: general
-assigned_to: ""
+assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-22T14:34:23Z"
-updated_at: "2026-09-22T14:34:23Z"
+updated_at: "2026-09-22T14:34:24Z"
 ---
 for the macos app, have both light and dark app icons for the dock (set it dynamically based on the mac theme settings - dark/light). Also make sure to use the real icon, there’s a colored border, not white as it is now, and make sure the colored border is as thick as it’s supposed to be (see the web app top left app icon, use that)
 
@@ -17,6 +17,11 @@ for the macos app, have both light and dark app icons for the dock (set it dynam
 
 for the macos app, have both light and dark app icons for the dock (set it dynamically based on the mac theme settings - dark/light). Also make sure to use the real icon, there’s a colored border, not white as it is now, and make sure the colored border is as thick as it’s supposed to be (see the web app top left app icon, use that)
 
+## Screenshots
+
+![Screenshot-2026-09-22-at-12.59.57](/api/tasks/0482/attachments/screenshot-1.png)
+
 ## Activity
 
 - 2026-09-22T14:34:23Z · created · hello@repoos.org
+- 2026-09-22T14:34:24Z · screenshots
