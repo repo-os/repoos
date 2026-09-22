@@ -2,7 +2,7 @@
 id: "0481"
 title: Document the macOS RepoOS Hub
 type: documentation
-status: inbox
+status: ready
 priority: p2
 area: macos
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 pm_cli_override: github copilot
 pm_model_override: default
 created_at: "2026-09-22T05:30:52Z"
-updated_at: "2026-09-22T14:27:25Z"
+updated_at: "2026-09-22T14:28:27Z"
 ---
 Update the RepoOS Hub documentation and landing-page presentation now that the native macOS product surface and remote capability flow are ready to describe. Treat this as a documentation/publishing task, not a request to invent or change Hub behavior.
 
@@ -72,3 +72,4 @@ Add screenshots or product visuals only if the native UI is stable and an approv
 - 2026-09-22T14:24:02Z · pm_cli_override
 - 2026-09-22T14:24:05Z · pm_cli_override
 - 2026-09-22T14:27:25Z · body
+- 2026-09-22T14:28:27Z · status inbox→ready
