@@ -25,6 +25,25 @@ Recording a visit **deduplicates by path**, moves the route to the front, and
 updates `lastRoutePath` for relaunch restore. Removing a server prunes its recents
 and any pinned contexts that referenced it.
 
+## WebView working set (memory)
+
+Each server workspace uses one isolated `WKWebView`. To cap memory, the Hub keeps a
+**working set** of live web views rather than every server visited this session:
+
+| Constant | Value | Meaning |
+| --- | --- | --- |
+| `HubWorkspaceWebViewResidency.maxInactiveWorkspaceWebViews` | **4** | Inactive servers kept mounted |
+| `HubWorkspaceWebViewResidency.maxLiveWorkspaceWebViews` | **5** | Active server plus inactive budget |
+
+**Tradeoff:** switching among servers in the working set is instant (page and
+history stay in memory). A **cold return** to an evicted server reloads the web
+UI; cookies and `localStorage` survive via the per-server `WKWebsiteDataStore` on
+disk, and the shell restores route intent from persisted `lastRoutePath` (same as
+relaunch) — no scraping or native bridge to page content.
+
+When macOS reports memory pressure, the Hub shrinks inactive residency (warn → 2
+inactive; critical → none). The active workspace is never evicted.
+
 ## Relaunch behavior
 
 On launch, the Hub restores:
