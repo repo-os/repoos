@@ -42,9 +42,7 @@ final class HubAppState: ObservableObject {
             healthChecker: RepoOSHealthChecker(),
             attentionCoordinator: coordinator
         )
-        if let selectedServerID {
-            Task { await refreshHealth(for: selectedServerID) }
-        }
+        Task { await refreshAllHealth() }
     }
 
     func attentionSnapshot(for serverID: UUID) -> ServerAttentionSnapshot? {
@@ -387,8 +385,9 @@ final class HubAppState: ObservableObject {
                 let reportedName = projectName?.trimmingCharacters(in: .whitespacesAndNewlines)
                 let name = reportedName.flatMap { $0.isEmpty ? nil : $0 }
                     ?? ServerOriginNormalizer.defaultDisplayName(for: origin)
-                var entry = ServerEntry(
+                let entry = ServerEntry(
                     name: name,
+                    repositoryName: reportedName.flatMap { $0.isEmpty ? nil : $0 },
                     origin: origin,
                     createdAt: now,
                     updatedAt: now,
@@ -445,6 +444,9 @@ final class HubAppState: ObservableObject {
         let outcome = await healthChecker.checkHealth(origin: origin)
         var entry = document.entries[index]
         ReachabilityTransition.applyHealthCheck(to: &entry, outcome: outcome)
+        if case .success(let projectName) = outcome {
+            updateRepositoryIdentity(for: &entry, projectName: projectName)
+        }
         document.entries[index] = entry
         entries = document.entries.sorted(by: entrySort)
 
@@ -455,6 +457,23 @@ final class HubAppState: ObservableObject {
         }
 
         try? store.save(document)
+    }
+
+    private func refreshAllHealth() async {
+        for entry in entries {
+            await refreshHealth(for: entry.id)
+        }
+    }
+
+    private func updateRepositoryIdentity(for entry: inout ServerEntry, projectName: String?) {
+        let reportedName = projectName?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let reportedName, !reportedName.isEmpty else { return }
+
+        let fallbackName = entry.originURL.map(ServerOriginNormalizer.defaultDisplayName) ?? "RepoOS server"
+        if entry.name == fallbackName {
+            entry.name = reportedName
+        }
+        entry.repositoryName = reportedName
     }
 
     private func persistQuietly() {

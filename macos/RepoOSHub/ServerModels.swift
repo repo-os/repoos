@@ -19,6 +19,7 @@ enum HealthState: String, Codable, Equatable, Sendable {
 struct ServerEntry: Identifiable, Codable, Equatable, Sendable {
     var id: UUID
     var name: String
+    var repositoryName: String?
     var originString: String
     var createdAt: Date
     var updatedAt: Date
@@ -41,6 +42,7 @@ struct ServerEntry: Identifiable, Codable, Equatable, Sendable {
     init(
         id: UUID = UUID(),
         name: String,
+        repositoryName: String? = nil,
         origin: URL,
         createdAt: Date = Date(),
         updatedAt: Date = Date(),
@@ -58,6 +60,7 @@ struct ServerEntry: Identifiable, Codable, Equatable, Sendable {
     ) {
         self.id = id
         self.name = name
+        self.repositoryName = repositoryName
         self.originString = origin.absoluteString
         self.createdAt = createdAt
         self.updatedAt = updatedAt
@@ -75,7 +78,7 @@ struct ServerEntry: Identifiable, Codable, Equatable, Sendable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, name, originString, createdAt, updatedAt, lastHealth, lastHealthAt, sortOrder
+        case id, name, repositoryName, originString, createdAt, updatedAt, lastHealth, lastHealthAt, sortOrder
         case accentColorHex, iconSymbolName, groupName, isPinned
         case attentionAggregationEnabled, notifyReviewReady, notifyNeedsInput, notifyActiveAgents
     }
@@ -84,6 +87,7 @@ struct ServerEntry: Identifiable, Codable, Equatable, Sendable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
         name = try container.decode(String.self, forKey: .name)
+        repositoryName = try container.decodeIfPresent(String.self, forKey: .repositoryName)
         originString = try container.decode(String.self, forKey: .originString)
         createdAt = try container.decode(Date.self, forKey: .createdAt)
         updatedAt = try container.decode(Date.self, forKey: .updatedAt)
