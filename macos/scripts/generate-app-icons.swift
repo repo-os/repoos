@@ -113,55 +113,65 @@ extension NSColor {
   }
 }
 
-func writePNG(_ image: NSImage, to url: URL) throws {
-  guard let tiff = image.tiffRepresentation,
-        let rep = NSBitmapImageRep(data: tiff),
-        let png = rep.representation(using: .png, properties: [:]) else {
+func writePNG(_ image: NSImage, size: Int, to url: URL) throws {
+  guard let rep = NSBitmapImageRep(
+    bitmapDataPlanes: nil,
+    pixelsWide: size,
+    pixelsHigh: size,
+    bitsPerSample: 8,
+    samplesPerPixel: 4,
+    hasAlpha: true,
+    isPlanar: false,
+    colorSpaceName: .deviceRGB,
+    bytesPerRow: 0,
+    bitsPerPixel: 0
+  ), let context = NSGraphicsContext(bitmapImageRep: rep) else {
+    throw NSError(domain: "generate-app-icons", code: 1)
+  }
+
+  NSGraphicsContext.saveGraphicsState()
+  NSGraphicsContext.current = context
+  image.draw(in: NSRect(x: 0, y: 0, width: size, height: size))
+  NSGraphicsContext.restoreGraphicsState()
+
+  guard let png = rep.representation(using: NSBitmapImageRep.FileType.png, properties: [:]) else {
     throw NSError(domain: "generate-app-icons", code: 1)
   }
   try png.write(to: url)
 }
 
 let scriptURL = URL(fileURLWithPath: CommandLine.arguments[0])
-let outDir = scriptURL.deletingLastPathComponent()
+let assetsDir = scriptURL.deletingLastPathComponent()
   .deletingLastPathComponent()
-  .appendingPathComponent("RepoOSHub/Assets.xcassets/AppIcon.appiconset", isDirectory: true)
+  .appendingPathComponent("RepoOSHub/Assets.xcassets", isDirectory: true)
+let appIconDir = assetsDir.appendingPathComponent("AppIcon.appiconset", isDirectory: true)
 
-for name in ["light", "dark"] {
-  let theme = themes[name]!
-  for size in [512, 1024] {
-    let file = outDir.appendingPathComponent("AppIcon-\(size)-\(name).png")
-    try writePNG(drawIcon(size: size, theme: theme), to: file)
-    fputs("wrote \(file.lastPathComponent)\n", stderr)
-  }
+for staleFile in ["AppIcon-512-dark.png", "AppIcon-1024-dark.png"] {
+  try? FileManager.default.removeItem(at: appIconDir.appendingPathComponent(staleFile))
+}
+
+func writeContents(_ contents: [String: Any], to url: URL) throws {
+  var jsonData = try JSONSerialization.data(withJSONObject: contents, options: [.prettyPrinted, .sortedKeys])
+  jsonData.append(0x0A)
+  try jsonData.write(to: url)
+}
+
+for size in [512, 1024] {
+  let file = appIconDir.appendingPathComponent("AppIcon-\(size)-light.png")
+  try writePNG(drawIcon(size: size, theme: themes["light"]!), size: size, to: file)
+  fputs("wrote \(file.lastPathComponent)\n", stderr)
 }
 
 let contents: [String: Any] = [
   "images": [
     [
-      "appearances": [["appearance": "luminosity", "value": "light"]],
       "filename": "AppIcon-512-light.png",
       "idiom": "mac",
       "scale": "1x",
       "size": "512x512",
     ],
     [
-      "appearances": [["appearance": "luminosity", "value": "light"]],
       "filename": "AppIcon-1024-light.png",
-      "idiom": "mac",
-      "scale": "2x",
-      "size": "512x512",
-    ],
-    [
-      "appearances": [["appearance": "luminosity", "value": "dark"]],
-      "filename": "AppIcon-512-dark.png",
-      "idiom": "mac",
-      "scale": "1x",
-      "size": "512x512",
-    ],
-    [
-      "appearances": [["appearance": "luminosity", "value": "dark"]],
-      "filename": "AppIcon-1024-dark.png",
       "idiom": "mac",
       "scale": "2x",
       "size": "512x512",
@@ -170,6 +180,16 @@ let contents: [String: Any] = [
   "info": ["author": "xcode", "version": 1],
 ]
 
-let jsonData = try JSONSerialization.data(withJSONObject: contents, options: [.prettyPrinted, .sortedKeys])
-try jsonData.write(to: outDir.appendingPathComponent("Contents.json"))
-fputs("updated Contents.json\n", stderr)
+try writeContents(contents, to: appIconDir.appendingPathComponent("Contents.json"))
+
+for name in ["light", "dark"] {
+  let dockIconDir = assetsDir.appendingPathComponent("DockIcon\(name.capitalized).imageset", isDirectory: true)
+  try FileManager.default.createDirectory(at: dockIconDir, withIntermediateDirectories: true)
+  let file = dockIconDir.appendingPathComponent("DockIcon-\(name).png")
+  try writePNG(drawIcon(size: 1024, theme: themes[name]!), size: 1024, to: file)
+  try writeContents([
+    "images": [["filename": file.lastPathComponent, "idiom": "universal", "scale": "1x"]],
+    "info": ["author": "xcode", "version": 1],
+  ], to: dockIconDir.appendingPathComponent("Contents.json"))
+  fputs("wrote \(file.lastPathComponent)\n", stderr)
+}
