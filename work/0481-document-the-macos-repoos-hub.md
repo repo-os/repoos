@@ -8,10 +8,10 @@ area: macos
 assigned_to: ai
 created_by: ""
 branch: ""
-pm_cli_override: cursor
+pm_cli_override: github copilot
 pm_model_override: default
 created_at: "2026-09-22T05:30:52Z"
-updated_at: "2026-09-22T14:24:02Z"
+updated_at: "2026-09-22T14:24:05Z"
 ---
 Update the external user documentation, internal project documentation, and landing page once the native RepoOS Hub is ready to present. Explain that the Hub manages multiple RepoOS projects/servers from one macOS app, including server add/edit/pin, pinned tasks, notifications and attention, local loopback access without a token, and remote Hub capability tokens (what they authorize, how pairing works, and safe handling). Include screenshots or product visuals only once the UI is stable.
 
@@ -20,3 +20,4 @@ Update the external user documentation, internal project documentation, and land
 - 2026-09-22T05:30:52Z · created · unknown
 - 2026-09-22T14:23:59Z · pm_cli_override, pm_model_override
 - 2026-09-22T14:24:02Z · pm_cli_override
+- 2026-09-22T14:24:05Z · pm_cli_override
