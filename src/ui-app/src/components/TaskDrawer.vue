@@ -3224,7 +3224,18 @@ watch(
         <!-- Critical status lives above the tabs so it is visible no matter
              which tab is open — a "needs input" / "reviewer crashed" message
              buried in one tab is a message the human never sees. -->
-        <div v-if="ui.active && ui.active.needsInput" class="drawer-critical">
+        <!-- Suppress a dev-error card when the task is already in review:
+             the dev agent completed its work (hence status=review), the error
+             was in the handoff signal, not the implementation. The reviewer ran
+             and approved — the stale flag is misleading noise at this point. -->
+        <div
+          v-if="
+            ui.active &&
+            ui.active.needsInput &&
+            !(ui.active.needsInputReason === 'dev-error' && ui.active.status === 'review')
+          "
+          class="drawer-critical"
+        >
           <div class="agent-waiting">
             <span class="agent-waiting-dot"></span>
             <div>
@@ -3232,7 +3243,12 @@ watch(
               <div class="agent-waiting-sub">
                 {{ needsInputReasonText(ui.active.needsInputReason) }}
               </div>
-              <div v-if="ui.active.needsInputDetail" class="agent-waiting-detail">
+              <!-- needsInputDetail for dev-error is internal skill-routing
+                   metadata — not meaningful to users, so we hide it. -->
+              <div
+                v-if="ui.active.needsInputDetail && ui.active.needsInputReason !== 'dev-error'"
+                class="agent-waiting-detail"
+              >
                 {{ ui.active.needsInputDetail }}
               </div>
               <div
