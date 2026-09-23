@@ -2,23 +2,44 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRepoStore } from "../stores/repo";
+import { useConfigStore } from "../stores/config";
 import Card from "./ui/card.vue";
 import { parseTestSummary, parseFailures, countFileResultLines } from "../lib/testRunParse";
 
+withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false });
+
 const repo = useRepoStore();
+const config = useConfigStore();
 const { testRun } = storeToRefs(repo);
 
-const starting = ref(false);
+const startingLocal = ref(false);
+const startingRemote = ref(false);
 
-async function run(): Promise<void> {
-  if (starting.value || testRun.value.running) return;
-  starting.value = true;
+const remoteEnabled = computed(() => !!config.form["remoteValidation.enabled"]);
+
+const busy = computed(() => startingLocal.value || startingRemote.value || testRun.value.running);
+
+async function runLocal(): Promise<void> {
+  if (busy.value) return;
+  startingLocal.value = true;
   try {
     await repo.startTestRun();
   } catch (err) {
     repo.onError(err);
   } finally {
-    starting.value = false;
+    startingLocal.value = false;
+  }
+}
+
+async function runRemote(): Promise<void> {
+  if (busy.value) return;
+  startingRemote.value = true;
+  try {
+    await repo.startRemoteTestRun();
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    startingRemote.value = false;
   }
 }
 
@@ -88,15 +109,30 @@ watch(
 </script>
 
 <template>
-  <Card class="test-run-panel">
+  <Card class="test-run-panel" :class="{ 'test-run-panel--embedded': embedded }">
     <div class="trp-head">
       <div class="panel-title">Test Suite</div>
       <span class="trp-status" :class="status.cls">{{ status.label }}</span>
       <span v-if="testRun.startedAt" class="trp-elapsed">{{ fmtElapsed(elapsedMs) }}</span>
-      <button type="button" class="trp-run" :disabled="starting || testRun.running" @click="run">
-        {{ testRun.running ? "Running…" : "Run full test suite" }}
-      </button>
+      <div class="trp-actions">
+        <button type="button" class="trp-run" :disabled="busy" @click="runLocal">
+          {{ testRun.running ? "Running…" : "Run locally" }}
+        </button>
+        <button
+          v-if="remoteEnabled"
+          type="button"
+          class="trp-run trp-run-remote"
+          :disabled="busy"
+          @click="runRemote"
+        >
+          Run on remote runner
+        </button>
+      </div>
     </div>
+    <p v-if="embedded" class="trp-lead">
+      Run <code>bun run test</code> on this machine, or on the configured remote validation runner
+      when enabled. Output streams here live.
+    </p>
 
     <div v-if="testRun.running || testRun.startedAt" class="trp-body">
       <div class="trp-progress">
@@ -141,6 +177,10 @@ watch(
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 16px;
+}
+.test-run-panel--embedded {
+  margin-bottom: 0;
+  border-radius: 14px;
 }
 
 .panel-title {
@@ -191,8 +231,25 @@ watch(
   font-variant-numeric: tabular-nums;
 }
 
-.trp-run {
+.trp-actions {
   margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.trp-lead {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--txt-dim);
+  max-width: 62ch;
+}
+.trp-lead code {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  color: var(--txt);
+}
+.trp-run {
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 11px;
   font-weight: 600;
@@ -209,6 +266,11 @@ watch(
 .trp-run:disabled {
   cursor: default;
   opacity: 0.6;
+}
+.trp-run-remote {
+  border-color: var(--border-bright);
+  background: var(--chip-bg);
+  color: var(--txt);
 }
 
 .trp-body {
