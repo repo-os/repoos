@@ -210,6 +210,8 @@ import {
   postResolveInput,
   uploadInputAttachment,
   getInputAttachment,
+  getStoryDefinitions,
+  createFreeformStory,
   // Tasks routes
   getTasks,
   createTask,
@@ -1965,6 +1967,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/skill-registry/install", installRegistry);
   router.register("POST", "/api/skills/create", createSkillRoute);
   router.register("POST", "/api/skills/freeform", createFreeformSkillRoute);
+  router.register("GET", "/api/stories", getStoryDefinitions);
+  router.register("POST", "/api/stories/freeform", createFreeformStory);
   router.register("GET", "/api/system", getSystem);
   router.register("GET", "/api/system/logs", getSystemLogs);
   router.register("GET", "/api/support/bundle", getSupportBundlePreview);

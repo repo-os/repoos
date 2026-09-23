@@ -43,6 +43,7 @@ import {
   readWorktreeDirtyCache,
   writeWorktreeDirtyCache,
 } from "../core/indexer.js";
+import { listStoryDefinitions } from "../core/story-definition-files.js";
 import { patchTaskFile } from "./write.js";
 
 export type RepoEvent =
@@ -141,6 +142,7 @@ export type RepoEvent =
       at: string;
     }
   | { type: "hello"; taskCount: number; at: string }
+  | { type: "story.definitionsChanged"; at: string }
   | { type: "system.stats"; stats: SystemStats }
   /** Live snapshot of the integration pipeline for the pinned status bar (0207). */
   | { type: "integration"; pipeline: IntegrationSnapshot }
@@ -531,7 +533,7 @@ export class LiveIndex {
   /** Lightweight board snapshot — skips body, extra, agent overrides. */
   boardSnapshot(): BoardIndex {
     const tasks = this.getTasks();
-    return {
+    const base: BoardIndex = {
       version: 1,
       generatedAt: now(),
       root: this.config.root,
@@ -539,6 +541,17 @@ export class LiveIndex {
       tasks: tasks.map(toBoardTask),
       counts: this.counts(),
     };
+    if (this.config.stories?.enabled === true) {
+      base.storyDefinitions = listStoryDefinitions(this.config).map((d) => ({
+        key: d.key,
+        name: d.name,
+        path: d.path,
+        body: d.body,
+        createdAt: d.createdAt,
+        createdBy: d.createdBy,
+      }));
+    }
+    return base;
   }
 
   // ---- events ----
@@ -556,6 +569,11 @@ export class LiveIndex {
         /* a bad listener must not break the index */
       }
     }
+  }
+
+  /** Story definition files under `stories/` changed on disk (#0486). */
+  notifyStoryDefinitionsChanged(): void {
+    this.emit({ type: "story.definitionsChanged", at: now() });
   }
 }
 
