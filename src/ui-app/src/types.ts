@@ -306,8 +306,8 @@ export interface ReviewReport {
   cli: string;
   model: string;
   branch: string;
-  /** "ok" when the agent reported; "failed" when the run itself failed. */
-  state: "ok" | "failed";
+  /** "ok" when a parseable verdict is present; "incomplete" when output lacked one; "failed" when the run produced no usable report. */
+  state: "ok" | "incomplete" | "failed";
   markdown: string;
 }
 
@@ -480,7 +480,7 @@ export type RepoEvent =
   | {
       type: "review";
       id: string;
-      state: "running" | "ready" | "failed" | "cancelled";
+      state: "running" | "ready" | "failed" | "incomplete" | "cancelled";
       at: string;
       error?: string;
     }

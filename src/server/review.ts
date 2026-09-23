@@ -69,8 +69,8 @@ export interface ReviewReport {
   model: string;
   /** Branch that was reviewed. */
   branch: string;
-  /** "ok" when the agent reported; "failed" when the run itself failed. */
-  state: "ok" | "failed";
+  /** "ok" when a parseable verdict is present; "incomplete" when output lacked one; "failed" when the run produced no usable report. */
+  state: "ok" | "incomplete" | "failed";
   /** The report markdown (or the failure detail when state is "failed"). */
   markdown: string;
 }
@@ -548,7 +548,8 @@ export class ReviewManager {
       cli: str("cli"),
       model: str("model"),
       branch: str("branch"),
-      state: str("state") === "failed" ? "failed" : "ok",
+      state:
+        str("state") === "failed" ? "failed" : str("state") === "incomplete" ? "incomplete" : "ok",
       markdown: doc.body.trim(),
     };
   }
@@ -851,9 +852,12 @@ export class ReviewManager {
       costUsd: session?.costUsd,
     };
     const reportText = result.output?.trim() ?? "";
-    const state: ReviewReport["state"] = ok && reportText ? "ok" : "failed";
-    const body =
-      state === "ok" ? reportText : `The review agent produced no report: ${error ?? "no report"}`;
+    const hasReport = ok && reportText;
+    const verdict = hasReport ? parseVerdict(reportText) : null;
+    const state: ReviewReport["state"] = !hasReport ? "failed" : verdict ? "ok" : "incomplete";
+    const body = !hasReport
+      ? `The review agent produced no report: ${error ?? "no report"}`
+      : reportText;
     const report: ReviewReport = {
       id: task.id,
       at: now(),
@@ -865,19 +869,25 @@ export class ReviewManager {
       markdown: body.slice(0, REPORT_CHARS),
     };
     this.write(report);
-    this.appendMarker(
-      task.id,
-      state === "ok" ? "✓ review complete" : `✗ review failed: ${error ?? "no report"}`,
-    );
+    const marker =
+      state === "ok"
+        ? "✓ review complete"
+        : state === "incomplete"
+          ? "⚠ review incomplete — no verdict in report"
+          : `✗ review failed: ${error ?? "no report"}`;
+    this.appendMarker(task.id, marker);
     if (state === "ok") {
       this.logger.task(task.id, "info", "review completed");
+    } else if (state === "incomplete") {
+      this.logger.task(task.id, "warn", "review incomplete — no parseable verdict");
     } else {
       this.logger.task(task.id, "error", "review failed", { error: error ?? "no report" });
     }
+    const sseState = state === "ok" ? "ready" : state === "incomplete" ? "incomplete" : "failed";
     this.emit({
       type: "review",
       id: task.id,
-      state: state === "ok" ? "ready" : "failed",
+      state: sseState,
       at: report.at,
       ...(state === "failed" ? { error } : {}),
     });
@@ -926,9 +936,8 @@ export class ReviewManager {
 
     // Auto-bounce if review is ok and verdict is not "good to go"
     // Fire-and-forget (don't await) so the review completion isn't delayed
-    if (state === "ok") {
-      const verdict = parseVerdict(report.markdown);
-      if (verdict) {
+    if (state === "ok" && verdict) {
+      if (verdict !== "good to go") {
         this.autoBounce(task, report, verdict).catch((err) => {
           console.error(
             `[repoos] uncaught error in auto-bounce for #${task.id}: ${(err as Error).message}`,
@@ -939,8 +948,9 @@ export class ReviewManager {
 
     // Record the review session to the database
     this.recordReviewSession(task.id, agent, result, report.at, state === "ok");
-    // Track every COMPLETED review pass (a real report, not a failed/empty
-    // run) so the badge D/R counters reflect reality. See review_rounds
+    // Track every completed review pass with a parseable verdict (not failed,
+    // empty, or incomplete output) so the badge D/R counters reflect reality.
+    // See review_rounds
     // (auto-bounce bookkeeping, capped at MAX_AUTO_REVIEW_ROUNDS) vs
     // review_passes (all successful passes).
     if (state === "ok") this.bumpReviewPasses(task);

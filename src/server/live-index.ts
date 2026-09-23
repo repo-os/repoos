@@ -102,7 +102,7 @@ export type RepoEvent =
   | {
       type: "review";
       id: string;
-      state: "running" | "ready" | "failed" | "cancelled";
+      state: "running" | "ready" | "failed" | "incomplete" | "cancelled";
       at: string;
       error?: string;
     }

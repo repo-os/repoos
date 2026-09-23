@@ -1176,7 +1176,16 @@ const reviewSubstate = computed<{ label: string; cls: string } | null>(() => {
       ? { label: "fixing check failure", cls: "rs-coding" }
       : { label: "coding", cls: "rs-coding" };
   }
-  return { label: "waiting for human", cls: "rs-human" };
+  if (review.value?.report?.state === "incomplete") {
+    return { label: "review incomplete", cls: "rs-incomplete" };
+  }
+  if (verdict.value?.label === "good to go") {
+    return { label: "waiting for human", cls: "rs-human" };
+  }
+  if (verdict.value) {
+    return { label: "review findings", cls: "rs-incomplete" };
+  }
+  return { label: "awaiting review", cls: "rs-reviewing" };
 });
 
 /** Compact lifecycle counts: D = dev passes, R = review passes. The server
@@ -3831,7 +3840,15 @@ watch(
             </div>
             <template v-else>
               <div
-                v-if="verdict"
+                v-if="review.report.state === 'incomplete'"
+                class="review-incomplete"
+                role="status"
+              >
+                Review finished without a parseable verdict. The partial report is below for
+                debugging — use <strong>Review again</strong> to rerun the reviewer.
+              </div>
+              <div
+                v-else-if="verdict"
                 class="verdict-callout"
                 :class="`tone-${verdict.tone}`"
                 role="status"

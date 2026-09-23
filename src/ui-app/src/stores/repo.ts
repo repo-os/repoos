@@ -1154,8 +1154,10 @@ export const useRepoStore = defineStore("repo", () => {
         pushFeed(
           e.state === "ready"
             ? `<b>agent review</b> ready for #${e.id}`
-            : `<b>agent review failed</b> on #${e.id}${e.error ? ` — ${e.error}` : ""}`,
-          e.state === "ready" ? "#39e0ff" : "#ff6b7d",
+            : e.state === "incomplete"
+              ? `<b>agent review incomplete</b> on #${e.id} — no verdict in report`
+              : `<b>agent review failed</b> on #${e.id}${e.error ? ` — ${e.error}` : ""}`,
+          e.state === "ready" ? "#39e0ff" : e.state === "incomplete" ? "#ffb454" : "#ff6b7d",
           "review",
         );
       }

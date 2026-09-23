@@ -2244,6 +2244,15 @@
   background: var(--green);
   box-shadow: 0 0 6px var(--green);
 }
+.rs-incomplete {
+  color: var(--amber);
+  border: 1px solid var(--amber-border-tint);
+  background: var(--amber-tint);
+}
+.rs-incomplete::before {
+  background: var(--amber);
+  box-shadow: 0 0 6px var(--amber);
+}
 
 /* activity indicator — theme-aware pulsing dots (0049) */
 .ai {
@@ -3774,6 +3783,16 @@
   font-size: 12px;
   color: var(--txt);
   word-break: break-word;
+}
+.review-incomplete {
+  padding: 12px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  background: var(--amber-tint);
+  border: 1px solid var(--amber-border-tint);
+  font-size: 12px;
+  color: var(--txt);
+  line-height: 1.45;
 }
 .review-stale {
   display: flex;
