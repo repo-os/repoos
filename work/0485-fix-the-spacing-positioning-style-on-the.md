@@ -1,16 +1,18 @@
 ---
-updated_at: "2026-09-22T18:19:58Z"
-review_passes: 1
 id: "0485"
 title: Fix Stories page spacing and styling to match other pages
 type: bug
 status: review
+needs_input: true
+questions: ["Review complete and checks passing. Ready for human sign-off to move to done. Minor note: mobile bottom padding worth a visual check."]
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-stories-page-spacing-and-styling-to-
 created_at: "2026-09-22T15:52:13Z"
+updated_at: "2026-09-23T00:58:54Z"
+review_passes: 1
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -67,4 +69,4 @@ Fix the spacing/positioning/style on the new Stories page to match all the other
 - 2026-09-22T16:03:46Z · status inbox→ready
 - 2026-09-22T18:08:09Z · status ready→active, branch
 - 2026-09-22T18:16:21Z · status active→review
-
+- 2026-09-23T00:58:54Z · needs_input, questions
