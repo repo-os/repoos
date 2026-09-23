@@ -106,6 +106,8 @@ afterEach(() => {
 
 describe("inline move-to-done errors", () => {
   it("stores the failure per task and throws a MoveToDoneError without a toast", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-23T06:30:00.000Z"));
     const repo = useRepoStore();
     await repo.init();
     const task = makeTask({ id: "0042" });
@@ -117,6 +119,7 @@ describe("inline move-to-done errors", () => {
       step: "merge",
       detail: "merge conflict: src/a.ts, src/b.ts",
       hint: "RepoOS couldn't sync this branch with main automatically — resolve the conflicting files in the worktree, then retry.",
+      failedAt: "2026-09-23T06:30:00.000Z",
     });
     // The inline error replaces the global toast — nothing is pushed.
     expect(repo.toasts).toHaveLength(0);
@@ -148,12 +151,14 @@ describe("inline move-to-done errors", () => {
       type: "task.progress",
       id: "0042",
       step: "failed",
+      at: "2026-09-23T04:15:00.000Z",
       phase: "validating",
       detail: "check failed: \u001b[31m✗\u001b[0m deletion detected by watcher",
     });
 
     const err = repo.doneErrorFor("0042");
     expect(err).not.toBeNull();
+    expect(err?.failedAt).toBe("2026-09-23T04:15:00.000Z");
     expect(err?.message).not.toContain("\u001b[");
     expect(err?.message).toContain("deletion detected by watcher");
     expect(err?.conflicts).toEqual([]);
@@ -168,6 +173,7 @@ describe("inline move-to-done errors", () => {
       type: "task.progress",
       id: "0042",
       step: "failed",
+      at: "2026-09-23T04:20:00.000Z",
       phase: "validating",
       detail:
         "merge conflict in src/a.ts — resolve it in the feature branch's own worktree (merge main into the branch), then retry",
@@ -175,22 +181,28 @@ describe("inline move-to-done errors", () => {
 
     const err = repo.doneErrorFor("0042");
     expect(err).not.toBeNull();
+    expect(err?.failedAt).toBe("2026-09-23T04:20:00.000Z");
     expect(err?.conflicts).toEqual(["src/a.ts"]);
     expect(err?.hint).toMatch(/resolve the conflicting files/i);
   });
 
   it("replaces the previous error on retry and clears it on success", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-23T06:00:00.000Z"));
     const repo = useRepoStore();
     await repo.init();
     const task = makeTask({ id: "0042" });
 
     await expect(repo.completeTask(task)).rejects.toThrow();
     expect(repo.doneErrorFor("0042")?.message).toBe("Merge conflict in 2 files.");
+    expect(repo.doneErrorFor("0042")?.failedAt).toBe("2026-09-23T06:00:00.000Z");
 
     // A retry fails with a different message → replaced, still scoped.
+    vi.setSystemTime(new Date("2026-09-23T06:05:00.000Z"));
     stubDone({ "/done": { ok: false, error: "repoos check failed: build" } });
     await expect(repo.completeTask(task)).rejects.toThrow();
     expect(repo.doneErrorFor("0042")?.message).toBe("The validation check failed — build");
+    expect(repo.doneErrorFor("0042")?.failedAt).toBe("2026-09-23T06:05:00.000Z");
     expect(repo.doneErrorFor("0042")?.conflicts).toEqual([]);
     // A check failure never suggests resolving conflicts.
     expect(repo.doneErrorFor("0042")?.hint).not.toMatch(/conflict/i);

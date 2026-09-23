@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { nextTick } from "vue";
 import DoneErrorCard from "../src/components/DoneErrorCard.vue";
+import { fmtTime } from "../src/lib/time";
 
 const original = {
   scrollHeight: Object.getOwnPropertyDescriptor(HTMLElement.prototype, "scrollHeight"),
@@ -181,6 +182,27 @@ describe("DoneErrorCard (panel mode — the task panel)", () => {
     const wrapper = mount(DoneErrorCard, { props: { mode: "panel", message: "boom" } });
     await wrapper.find(".done-error-support").trigger("click");
     expect(wrapper.emitted("open-support")).toHaveLength(1);
+  });
+
+  it("shows a local clock time in the panel headline when failedAt is set", async () => {
+    const failedAt = "2026-09-23T04:32:00.000Z";
+    const wrapper = mount(DoneErrorCard, {
+      props: { mode: "panel", message: "boom", step: "check", failedAt },
+    });
+    await flush();
+    const head = wrapper.find(".done-error-head");
+    expect(head.text()).toContain(`at check · ${fmtTime(failedAt)}`);
+    expect(head.attributes("title")).toBe(new Date(failedAt).toLocaleString());
+  });
+
+  it("omits the clock time from the panel headline when failedAt is absent", async () => {
+    const wrapper = mount(DoneErrorCard, {
+      props: { mode: "panel", message: "boom", step: "check" },
+    });
+    await flush();
+    const head = wrapper.find(".done-error-head");
+    expect(head.text()).toBe("Move to done failed at check");
+    expect(head.attributes("title")).toBeUndefined();
   });
 });
 
