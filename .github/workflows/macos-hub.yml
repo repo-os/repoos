@@ -83,15 +83,26 @@ jobs:
       - name: Package DMG
         run: |
           APP="macos/.derived-data/Build/Products/Release/RepoOS Hub.app"
-          rm -rf macos/dmg-staging
-          mkdir -p macos/dmg-staging
-          ditto "$APP" "macos/dmg-staging/RepoOS Hub.app"
-          ln -s /Applications macos/dmg-staging/Applications
-          hdiutil create \
-            -volname "RepoOS Hub" \
-            -srcfolder macos/dmg-staging \
-            -ov -format UDZO \
-            RepoOSHub.dmg
+          swift macos/scripts/generate-dmg-background.swift
+          python3 -m pip install --disable-pip-version-check --no-cache-dir -r macos/requirements-dmg.txt
+          python3 -m dmgbuild -s macos/dmg-settings.py -D "app=$APP" "RepoOS Hub" RepoOSHub.dmg
+
+      - name: Verify DMG install experience
+        run: |
+          MOUNT="$(mktemp -d)"
+          DEVICE=""
+          cleanup() {
+            if [[ -n "$DEVICE" ]]; then hdiutil detach "$DEVICE" -quiet || true; fi
+            rmdir "$MOUNT" || true
+          }
+          trap cleanup EXIT
+          DEVICE="$(hdiutil attach -readonly -nobrowse -mountpoint "$MOUNT" RepoOSHub.dmg | awk '/^\/dev\// { print $1; exit }')"
+          test -d "$MOUNT/RepoOS Hub.app"
+          test -s "$MOUNT/RepoOS Hub.app/Contents/Resources/AppIcon.icns"
+          test -L "$MOUNT/Applications"
+          test "$(readlink "$MOUNT/Applications")" = "/Applications"
+          test -s "$MOUNT/.DS_Store"
+          test -s "$MOUNT/.background/RepoOSHub-install-background.png"
 
       - name: Determine channel
         id: meta

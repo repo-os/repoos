@@ -1,0 +1,2 @@
+# Release-only DMG layout metadata writer. Pin to keep the artifact stable.
+dmgbuild==1.6.7
