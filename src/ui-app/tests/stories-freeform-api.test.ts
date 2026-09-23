@@ -2,13 +2,20 @@
  * POST /api/stories/freeform (#0486): create-only story definitions gated on
  * `[stories] enabled`.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { Readable, Writable } from "node:stream";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RepoOSConfig } from "../../core/types";
+
+// No PM agent: the story is saved as written and nothing runs in the background.
+vi.mock("../../server/agents.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../server/agents.js")>()),
+  resolvePmAgent: vi.fn(() => null),
+}));
+
 import { createFreeformStory } from "../../server/routes/stories";
 import { listStoryDefinitions } from "../../core/story-definition-files";
 
@@ -83,6 +90,7 @@ describe("POST /api/stories/freeform", () => {
       });
       await createFreeformStory({ config: cfg, emitEvent: () => {} } as never, req, res, {});
       expect(capture.status).toBe(201);
+      expect((capture.body as { pending: boolean }).pending).toBe(false);
       expect(listStoryDefinitions(cfg)).toHaveLength(1);
     } finally {
       rmSync(root, { recursive: true, force: true });

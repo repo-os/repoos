@@ -647,8 +647,18 @@ updates email"` / `repoos update <id> --story "Project updates email"`. Task
 tags drive counts, progress, and completion; definition files add name and
 description before any task exists. A story has no worktree, agent, branch, or
 status of its own. The Stories page merges registered definitions with tagged
-tasks. A story counts as complete only when every one of its tasks is done, and
-there is no manual completion control.
+tasks.
+
+**New story** saves and commits the story file as soon as you submit, so you
+can leave the pane and `stories/` never leaves `main` with uncommitted changes.
+The PM agent then works in the background: it names the story (unless you gave
+it a name), writes up the scope, and tags any existing untagged tasks that
+belong to it. The story shows **PM is working** on the Stories page until the
+agent finishes. If the agent fails, the story stays as you wrote it and the
+reason appears in a notification.
+
+A story counts as complete only when every one of its tasks is done, and there
+is no manual completion control.
 
 Story names are whitespace-normalized and matched case-insensitively, so
 `Project updates email` and `project  updates  email` group together under one

@@ -1170,4 +1170,6 @@ export interface StoryDefinitionRecord {
   body: string;
   createdAt: string;
   createdBy: string;
+  /** True while the PM agent is fleshing this story out in the background. */
+  pmWorking?: boolean;
 }

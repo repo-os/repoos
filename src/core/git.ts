@@ -1215,16 +1215,28 @@ export async function preflightMerge(
  * is not clean; callers should treat that as a merge blocker.
  */
 export function commitTaskFile(root: string, absPath: string, message: string): boolean {
-  const rel = relative(root, absPath);
-  if (rel.startsWith("..") || isAbsolute(rel)) return false;
-  const status = git(root, ["status", "--porcelain", "--", rel]);
+  return commitFiles(root, [absPath], message);
+}
+
+/**
+ * `commitTaskFile` for several paths in one commit — e.g. a story definition
+ * renamed on disk, where both the removed old path and the new one must land
+ * together. A path may be deleted from the working tree; `git add` stages the
+ * removal. Same fail-soft contract and `--only` scoping as `commitTaskFile`.
+ */
+export function commitFiles(root: string, absPaths: string[], message: string): boolean {
+  const rels = absPaths.map((p) => relative(root, p));
+  if (rels.length === 0 || rels.some((rel) => rel.startsWith("..") || isAbsolute(rel))) {
+    return false;
+  }
+  const status = git(root, ["status", "--porcelain", "--", ...rels]);
   if (status === null) return false;
   if (status.trim() === "") return true;
-  if (git(root, ["add", "--", rel]) === null) return false;
-  // `--only` with a pathspec commits just this file and leaves everything else
-  // already in the index staged (#0353): a plain `git commit` would sweep in
-  // whatever a human or agent had staged in the checkout under our message.
-  return git(root, ["commit", "-o", "-m", message, "--", rel]) !== null;
+  if (git(root, ["add", "-A", "--", ...rels]) === null) return false;
+  // `--only` with a pathspec commits just these files and leaves everything
+  // else already in the index staged (#0353): a plain `git commit` would sweep
+  // in whatever a human or agent had staged in the checkout under our message.
+  return git(root, ["commit", "-o", "-m", message, "--", ...rels]) !== null;
 }
 
 /**
