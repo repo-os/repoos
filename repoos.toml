@@ -277,6 +277,13 @@ url = "https://github.com/repo-os/repoos/releases/tag/{tag}"
 install = ["curl -fsSL https://repoos.org/install | bash"]
 
 [[distribution]]
+name = "RepoOS Hub (macOS)"
+kind = "github-release"
+repository = "repo-os/repoos"
+url = "https://github.com/repo-os/repoos/releases/tag/{tag}"
+install = ["# Download RepoOSHub.dmg from the GitHub release, open it, drag RepoOS Hub.app to Applications"]
+
+[[distribution]]
 name = "npm"
 kind = "npm"
 package = "@repo-os/repoos"
