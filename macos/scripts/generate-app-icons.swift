@@ -40,6 +40,9 @@ func drawIcon(size: Int, theme: Theme) -> NSImage {
   image.lockFocus()
   defer { image.unlockFocus() }
 
+  // Do not fill the square canvas — only the outer rounded clip should paint pixels
+  // so Dock/AppIcon PNGs keep transparent corners outside the colored border.
+
   guard let ctx = NSGraphicsContext.current?.cgContext else {
     fatalError("no graphics context")
   }
