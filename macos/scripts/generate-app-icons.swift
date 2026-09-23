@@ -156,21 +156,21 @@ func writeContents(_ contents: [String: Any], to url: URL) throws {
   try jsonData.write(to: url)
 }
 
+// A macOS AppIcon needs default slots. Appearance-only entries are ignored by
+// actool for a release archive, which leaves Finder without AppIcon.icns.
+// The running app still selects light/dark Dock artwork from the separate
+// DockIcon image sets below.
 var appIconImages: [[String: Any]] = []
-for name in ["light", "dark"] {
-  let theme = themes[name]!
-  for (size, scale) in [(512, "1x"), (1024, "2x")] {
-    let file = appIconDir.appendingPathComponent("AppIcon-\(size)-\(name).png")
-    try writePNG(drawIcon(size: size, theme: theme), size: size, to: file)
-    fputs("wrote \(file.lastPathComponent)\n", stderr)
-    appIconImages.append([
-      "appearances": [["appearance": "luminosity", "value": name]],
-      "filename": file.lastPathComponent,
-      "idiom": "mac",
-      "scale": scale,
-      "size": "512x512",
-    ])
-  }
+for (size, scale) in [(512, "1x"), (1024, "2x")] {
+  let file = appIconDir.appendingPathComponent("AppIcon-\(size).png")
+  try writePNG(drawIcon(size: size, theme: themes["light"]!), size: size, to: file)
+  fputs("wrote \(file.lastPathComponent)\n", stderr)
+  appIconImages.append([
+    "filename": file.lastPathComponent,
+    "idiom": "mac",
+    "scale": scale,
+    "size": "512x512",
+  ])
 }
 
 try writeContents(
@@ -198,8 +198,10 @@ for name in ["light", "dark"] {
 }
 
 for stale in [
-  appIconDir.appendingPathComponent("AppIcon-512.png"),
-  appIconDir.appendingPathComponent("AppIcon-1024.png"),
+  appIconDir.appendingPathComponent("AppIcon-512-light.png"),
+  appIconDir.appendingPathComponent("AppIcon-1024-light.png"),
+  appIconDir.appendingPathComponent("AppIcon-512-dark.png"),
+  appIconDir.appendingPathComponent("AppIcon-1024-dark.png"),
 ] {
   try? FileManager.default.removeItem(at: stale)
 }

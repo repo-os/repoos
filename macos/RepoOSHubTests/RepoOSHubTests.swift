@@ -29,10 +29,8 @@ final class RepoOSHubTests: XCTestCase {
             assets.appendingPathComponent("DockIconDark.imageset/DockIcon-dark@2x.png"),
             assets.appendingPathComponent("DockIconLight.imageset/DockIcon-light@1x.png"),
             assets.appendingPathComponent("DockIconLight.imageset/DockIcon-light@2x.png"),
-            assets.appendingPathComponent("AppIcon.appiconset/AppIcon-512-dark.png"),
-            assets.appendingPathComponent("AppIcon.appiconset/AppIcon-512-light.png"),
-            assets.appendingPathComponent("AppIcon.appiconset/AppIcon-1024-dark.png"),
-            assets.appendingPathComponent("AppIcon.appiconset/AppIcon-1024-light.png"),
+            assets.appendingPathComponent("AppIcon.appiconset/AppIcon-512.png"),
+            assets.appendingPathComponent("AppIcon.appiconset/AppIcon-1024.png"),
         ]
 
         for url in pngs {

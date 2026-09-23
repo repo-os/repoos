@@ -311,6 +311,8 @@ for their attention and search endpoints.
 Download the latest [RepoOS Hub DMG](https://github.com/repo-os/repoos/releases/latest/download/RepoOSHub.dmg),
 or browse [GitHub Releases](https://github.com/repo-os/repoos/releases). Setup,
 pairing, and limitation details are in the [Hub guide](https://docs.repoos.org/macos-hub).
+Current builds are ad-hoc signed, so macOS requires Control-click **Open** once;
+the guide has the exact steps. Developer ID signing and notarization are planned.
 
 ## Roadmap
 

@@ -255,6 +255,9 @@ const year = new Date().getFullYear();
               >Download RepoOS Hub for Mac &rarr;</a
             >
           </p>
+          <p class="mt-1 text-[12px] text-[var(--txt-faint)]">
+            Current Mac builds require Control-click &rarr; Open once while notarization is pending.
+          </p>
         </div>
 
         <figure class="min-w-0">
@@ -309,6 +312,10 @@ const year = new Date().getFullYear();
               <a href="https://docs.repoos.org/macos-hub" class="text-[var(--cyan)] hover:underline"
                 >Read the guide &rarr;</a
               >
+            </p>
+            <p class="mt-3 text-[12px] text-[var(--txt-faint)]">
+              Current Mac builds require Control-click &rarr; Open once while notarization is
+              pending.
             </p>
           </div>
           <ul class="grid grid-cols-2 gap-2.5 text-[13px] leading-snug text-[var(--txt-dim)]">

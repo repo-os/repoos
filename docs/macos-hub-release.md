@@ -10,9 +10,11 @@ installation copy.
   scheme, Swift module, and bundle identifier remain `RepoOSHub` and
   `org.repoos.hub`.
 - The GitHub Release asset is **`RepoOSHub.dmg`**, containing `RepoOS Hub.app`
-  on a volume named `RepoOS Hub`.
+  and an **Applications** alias on a volume named `RepoOS Hub`. This makes the
+  normal Finder install action obvious: drag the app to Applications.
 - `.github/workflows/macos-hub.yml` builds/tests on Mac changes and uploads the
-  DMG on version tags.
+  DMG on version tags. It must compile `AppIcon.icns` into the release bundle
+  and inject the tag version into the app bundle; both are release checks.
 - The DMG is currently ad-hoc signed and not notarized; documentation must not
   imply Developer ID signing or a warning-free first launch.
 
@@ -22,19 +24,20 @@ installation copy.
 2. Merge to `main`, then cut a new patch tag; do not rewrite a failed release
    tag to repair a DMG upload.
 3. Confirm the macOS Hub workflow attached `RepoOSHub.dmg`, then inspect it for
-   `RepoOS Hub.app`.
+   `RepoOS Hub.app`, its branded Finder icon, and the Applications alias.
 4. The release workflow publishes npm before dispatching `repo-os/homebrew-tap`.
    It must wait for the versioned npm tarball: npm can accept a publish before
    the tarball is publicly downloadable.
 5. Confirm the tap updates `Formula/repoos.rb`, then test `brew update && brew
    upgrade repo-os/tap/repoos`.
-6. Once the first DMG is live, replace “first DMG pending” copy in the README,
-   landing page, and `user-docs/macos-hub.md` with the real download link.
 
 ## Failure triage
 
 - A built `RepoOS Hub.app` with a missing DMG usually means the workflow path
   still names the old bundle; fix the path and release a new patch version.
+- A generic Finder icon means the release bundle is missing `AppIcon.icns`.
+  Do not ship it: make the AppIcon catalog use default macOS slots, not only
+  light/dark appearance variants, then confirm the workflow's icon check.
 - A tap 404 for the npm tarball is registry propagation, not a formula checksum
   failure. Retry only after the tarball is public and retain the release wait.
 - A Gatekeeper warning is currently expected. Revisit docs only when signing or
