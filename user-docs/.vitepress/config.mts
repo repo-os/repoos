@@ -14,7 +14,7 @@ export default defineConfig({
   lang: "en",
   title: "RepoOS",
   description:
-    "The repo is the operating system. Repo-native tasks and specs as markdown files, with agents working in isolated worktrees and humans reviewing merges.",
+    "AI dev teams for CTOs and builders. Bring your own agents and models. RepoOS manages the whole development lifecycle — all in your Git repo.",
   cleanUrls: true,
   // "dark" = default dark but togglable (VitePress's built-in appearance
   // switcher renders in the navbar). Identity stays dark-first to match
