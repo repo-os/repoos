@@ -2,14 +2,14 @@
 id: "0496"
 title: Standardize New input panel styling with New task/New story panels
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-23T05:40:57Z"
-updated_at: "2026-09-23T05:41:38Z"
+updated_at: "2026-09-23T06:31:19Z"
 ---
 ## Problem
 
@@ -64,3 +64,4 @@ The "new input" panel doesn't follow the same colors/design as the new task and 
 - 2026-09-23T05:40:57Z · screenshots
 - 2026-09-23T05:40:58Z · screenshots
 - 2026-09-23T05:41:38Z · status draft→inbox, title, area, type, body
+- 2026-09-23T06:31:19Z · status inbox→ready
