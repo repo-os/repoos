@@ -60,9 +60,9 @@ jobs:
 
       - name: Verify release app bundle
         run: |
-          APP="macos/.derived-data/Build/Products/Release/RepoOS.app"
+          APP="macos/.derived-data/Build/Products/Release/RepoOS Hub.app"
           if [[ ! -d "$APP" ]]; then
-            echo "error: expected release bundle not found at $APP (PRODUCT_NAME=RepoOS)"
+            echo "error: expected release bundle not found at $APP (PRODUCT_NAME=RepoOS Hub)"
             echo "Contents of Release products directory:"
             ls -la macos/.derived-data/Build/Products/Release/ 2>/dev/null || echo "(directory missing)"
             exit 1
@@ -70,7 +70,7 @@ jobs:
 
       - name: Package DMG
         run: |
-          APP="macos/.derived-data/Build/Products/Release/RepoOS.app"
+          APP="macos/.derived-data/Build/Products/Release/RepoOS Hub.app"
           mkdir -p macos/dmg-staging
           cp -R "$APP" macos/dmg-staging/
           hdiutil create \
