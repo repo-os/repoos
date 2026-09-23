@@ -5,7 +5,7 @@ type: feature
 status: draft
 priority: p2
 area: general
-assigned_to: ""
+assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-23T05:40:57Z"
@@ -17,6 +17,11 @@ The "new input" panel doesn't follow the same colors/design as the new task and 
 
 The "new input" panel doesn't follow the same colors/design as the new task and new stories panels, can you standardise the styling so new input looks the same as the others and make sure future agents know to use consistent styling if we add a new panel etc.
 
+## Screenshots
+
+![Screenshot-2026-09-23-at-11.44.25](/api/tasks/0496/attachments/screenshot-1.png)
+
 ## Activity
 
 - 2026-09-23T05:40:57Z · created · hello@repoos.org
+- 2026-09-23T05:40:57Z · screenshots
