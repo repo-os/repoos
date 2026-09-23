@@ -96,6 +96,21 @@ jobs:
             exit 1
           }
           VERSION="${GITHUB_REF_NAME#v}"
+          TARBALL="https://registry.npmjs.org/@repo-os/repoos/-/repoos-${VERSION}.tgz"
+          # npm accepts a publish before its tarball is available to the tap.
+          # Wait here so the tap's own update job does not exhaust its retry
+          # window against a guaranteed 404.
+          for attempt in {1..60}; do
+            if curl --fail --silent --show-error --head "$TARBALL" >/dev/null; then
+              break
+            fi
+            if [[ "$attempt" == 60 ]]; then
+              echo "npm tarball for ${VERSION} did not become available after 10 minutes" >&2
+              exit 1
+            fi
+            echo "Waiting for npm tarball (attempt ${attempt}/60)…" >&2
+            sleep 10
+          done
           curl --fail-with-body --silent --show-error \
             -X POST "https://api.github.com/repos/repo-os/homebrew-tap/dispatches" \
             -H "Accept: application/vnd.github+json" \
