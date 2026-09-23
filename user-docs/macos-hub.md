@@ -30,12 +30,9 @@ Requires **macOS 13 or later**; macOS 14 or later is recommended (on macOS 13,
 per-server sessions are held in memory, so sign-in does not survive relaunching
 the app — see [Per-server sessions](#per-server-sessions)).
 
-The Hub's DMG is published on the
-[RepoOS releases page](https://github.com/repo-os/repoos/releases) as tag
-releases are cut. **The first Hub DMG has not been published yet** — the
-release pipeline (`.github/workflows/macos-hub.yml`) is in place, but no
-release has an attached DMG. Until it lands, either build the app from source
-(see `macos/README.md` in the repo) or keep an eye on the releases page.
+Download the latest [RepoOS Hub DMG](https://github.com/repo-os/repoos/releases/latest/download/RepoOSHub.dmg),
+or browse [all RepoOS releases](https://github.com/repo-os/repoos/releases).
+Each stable tag includes `RepoOSHub.dmg`.
 
 ## Install and first launch
 
@@ -43,7 +40,7 @@ release has an attached DMG. Until it lands, either build the app from source
 2. Drag the **RepoOS Hub** app into your **Applications** folder.
 3. Eject the disk image and open the app from Applications.
 
-### Distribution status (when the DMG ships)
+### Distribution status
 
 The release pipeline produces an **ad-hoc signed, not-notarized** DMG. That
 means the first time you open the app, macOS shows a Gatekeeper warning:

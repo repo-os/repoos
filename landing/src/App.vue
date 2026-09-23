@@ -250,9 +250,9 @@ const year = new Date().getFullYear();
           <p class="mt-3 text-[13px] text-[var(--txt-faint)]">
             Prefer a native app?
             <a
-              href="https://github.com/repo-os/repoos/blob/main/user-docs/macos-hub.md"
+              href="https://github.com/repo-os/repoos/releases/latest/download/RepoOSHub.dmg"
               class="text-[var(--cyan)] hover:underline"
-              >RepoOS Hub for Mac &rarr;</a
+              >Download RepoOS Hub for Mac &rarr;</a
             >
           </p>
         </div>
@@ -302,14 +302,12 @@ const year = new Date().getFullYear();
             </p>
             <p class="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-[14px]">
               <a
-                href="https://github.com/repo-os/repoos/blob/main/user-docs/macos-hub.md"
+                href="https://github.com/repo-os/repoos/releases/latest/download/RepoOSHub.dmg"
                 class="text-[var(--cyan)] hover:underline"
-                >Read the guide &rarr;</a
+                >Download for Mac &rarr;</a
               >
-              <a
-                href="https://github.com/repo-os/repoos/releases"
-                class="text-[var(--cyan)] hover:underline"
-                >Releases &rarr;</a
+              <a href="https://docs.repoos.org/macos-hub" class="text-[var(--cyan)] hover:underline"
+                >Read the guide &rarr;</a
               >
             </p>
           </div>
