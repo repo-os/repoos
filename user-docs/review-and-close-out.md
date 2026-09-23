@@ -25,6 +25,11 @@ is one of three lines:
 - `` `needs some work` `` — close, but worth fixing first.
 - `` `back to the drawing board` `` — off the mark.
 
+A review run counts as complete only when the report includes one of those
+verdicts. If the agent stops with partial output and no parseable verdict, the
+run is marked **incomplete** (the partial report is kept for debugging), the
+pass counter does not advance, and you can use **Review again** to retry.
+
 ### Auto-bounce: why a task can move back to `active`
 
 The reviewer runs on **every** `review`, not just the first one. If new commits

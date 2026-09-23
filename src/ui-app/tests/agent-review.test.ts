@@ -87,7 +87,7 @@ const REPORT = [
   "",
   "## Suggestions",
   "- Name the timeout constant.",
-].join("\\n");
+].join("\n");
 
 const printReport = `process.stdout.write(${JSON.stringify(REPORT)} + "\\n");`;
 
@@ -349,7 +349,7 @@ ${printReport}`,
       "",
       "## Bugs",
       "- (agent stopped before finishing)",
-    ].join("\\n");
+    ].join("\n");
     const fx = makeFixture(`process.stdout.write(${JSON.stringify(partial)} + "\\n");`);
     await withServer(fx, async (server) => {
       const task = await taskWithWorktree(server, fx, "Partial reviewer");
@@ -365,6 +365,11 @@ ${printReport}`,
       expect(served.review?.markdown).toContain("Still weighing");
       expect(readFileSync(task.absPath, "utf8")).toMatch(/^status: review$/m);
       expect(readFileSync(task.absPath, "utf8")).not.toMatch(/^review_passes:/m);
+      expect((await api(server, "GET", `/api/tasks/${task.id}`)).body.status).toBe("review");
+      expect(spawns(fx).filter((s) => s.args.includes("--auto")).length).toBe(1);
+      expect(spawns(fx).some((s) => s.args.join(" ").includes("automated review found"))).toBe(
+        false,
+      );
 
       const again = await api(server, "POST", `/api/tasks/${task.id}/review/again`);
       expect(again.status).toBe(200);
@@ -518,7 +523,7 @@ else process.stdout.write(${JSON.stringify(reportB)} + "\\n");
       "",
       "## Suggestions",
       "- Add a regression test.",
-    ].join("\\n");
+    ].join("\n");
     const fx = makeFixture(`
 const mission = process.argv.join(" ");
 if (mission.includes("automated review found")) process.stdout.write("engineer resumed\\n");
