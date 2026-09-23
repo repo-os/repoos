@@ -41,6 +41,14 @@ describe("parseReviewVerdict", () => {
     ).toBe("back to the drawing board");
   });
 
+  it("uses the declared verdict instead of later mentions in suggestions", () => {
+    expect(
+      parseReviewVerdict(
+        "## Verdict\n`good to go` — nothing blocks sign-off.\n\n## Suggestions\nTest needs some work and back to the drawing board paths too.",
+      ),
+    ).toBe("good to go");
+  });
+
   it("is case-insensitive", () => {
     expect(parseReviewVerdict("## Verdict\nGood To Go.")).toBe("good to go");
   });
