@@ -10,8 +10,13 @@ installation copy.
   scheme, Swift module, and bundle identifier remain `RepoOSHub` and
   `org.repoos.hub`.
 - The GitHub Release asset is **`RepoOSHub.dmg`**, containing `RepoOS Hub.app`
-  and an **Applications** alias on a volume named `RepoOS Hub`. This makes the
-  normal Finder install action obvious: drag the app to Applications.
+  and an **Applications** alias on a volume named `RepoOS Hub`. Its saved
+  Finder layout has the branded background, installation copy, and app →
+  Applications arrangement expected of a normal drag-to-install Mac app.
+- The layout comes from `macos/dmg-settings.py`, rendered by the release-only,
+  pinned `dmgbuild` tool. It writes the DMG metadata directly; do not replace
+  it with Finder or AppleScript automation. That is nondeterministic in CI and
+  can disrupt an interactive Mac session.
 - `.github/workflows/macos-hub.yml` builds/tests on Mac changes and uploads the
   DMG on version tags. It must compile `AppIcon.icns` into the release bundle
   and inject the tag version into the app bundle; both are release checks.
@@ -24,7 +29,8 @@ installation copy.
 2. Merge to `main`, then cut a new patch tag; do not rewrite a failed release
    tag to repair a DMG upload.
 3. Confirm the macOS Hub workflow attached `RepoOSHub.dmg`, then inspect it for
-   `RepoOS Hub.app`, its branded Finder icon, and the Applications alias.
+   `RepoOS Hub.app`, its branded Finder icon, Applications alias, background,
+   and saved app → Applications layout.
 4. The release workflow publishes npm before dispatching `repo-os/homebrew-tap`.
    It must wait for the versioned npm tarball: npm can accept a publish before
    the tarball is publicly downloadable.
