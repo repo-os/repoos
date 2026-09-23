@@ -41,9 +41,10 @@ set +e
   set -o pipefail
   bun install --frozen-lockfile \
     && bun run build \
-    && echo "#!/bin/sh" > /usr/local/bin/repoos \
-    && echo "exec bun $WORK/repo/dist/cli/index.js \"\$@\"" >> /usr/local/bin/repoos \
-    && chmod +x /usr/local/bin/repoos \
+    && echo "#!/bin/sh" > "$WORK/repoos" \
+    && echo "exec bun $WORK/repo/dist/cli/index.js \"\$@\"" >> "$WORK/repoos" \
+    && chmod +x "$WORK/repoos" \
+    && export PATH="$WORK:$PATH" \
     && bun run test
 ) 2>&1 | tee "$ART/test-output.log"
 CODE=${PIPESTATUS[0]}
