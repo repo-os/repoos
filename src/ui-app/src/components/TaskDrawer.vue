@@ -3091,6 +3091,7 @@ watch(
             :detail="repo.doneErrorFor(ui.active.id)!.detail"
             :log-path="repo.doneErrorFor(ui.active.id)!.logPath"
             :hint="repo.doneErrorFor(ui.active.id)!.hint"
+            :failed-at="repo.doneErrorFor(ui.active.id)!.failedAt"
             :retry-hint="autoRepairRetryHint"
             :task-id="ui.active.id"
             :task-title="ui.active.title"
