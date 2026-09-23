@@ -116,7 +116,7 @@ jobs:
           test -L "$MOUNT/Applications"
           test "$(readlink "$MOUNT/Applications")" = "/Applications"
           test -s "$MOUNT/.DS_Store"
-          test -s "$MOUNT/.background/RepoOSHub-install-background.png"
+          test -s "$MOUNT/.background.png"
 
       - name: Determine channel
         id: meta
