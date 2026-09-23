@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: feat/move-test-suite-runner-to-checks-page-as
 review_cli_override: cursor
-review_model_override: default
+review_model_override: composer-2.5
 created_at: "2026-09-23T03:24:20Z"
-updated_at: "2026-09-23T04:34:40Z"
+updated_at: "2026-09-23T04:34:42Z"
 review_passes: 1
 ---
 The 'Test Suite' section at the bottom of the Control page should move to the Checks page as a dedicated tab.
@@ -34,3 +34,4 @@ The Checks page is the natural home for anything about running verification. The
 - 2026-09-23T03:32:39Z · status ready→active, branch
 - 2026-09-23T03:44:01Z · status active→review
 - 2026-09-23T04:34:40Z · review_cli_override, review_model_override
+- 2026-09-23T04:34:42Z · review_model_override
