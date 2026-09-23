@@ -11,7 +11,7 @@ branch: feat/add-new-story-flow-with-pm-assisted-stor
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-09-22T15:56:16Z"
-updated_at: "2026-09-23T03:25:19Z"
+updated_at: "2026-09-23T03:54:30Z"
 ---
 ## Problem
 
@@ -128,3 +128,4 @@ Let's make a "new story" button in the same style as new task and new input, fol
 - 2026-09-23T02:41:37Z · status draft→inbox
 - 2026-09-23T03:25:15Z · status inbox→ready
 - 2026-09-23T03:25:19Z · status ready→active, branch
+- 2026-09-23T03:54:30Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
