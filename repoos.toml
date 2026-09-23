@@ -67,7 +67,8 @@ taskExtensions = [".md"]
 skillSuggestions = false
 remoteValidation.useForReleases = false
 remoteValidation.provider = "tailscale"
-remoteValidation.tailscaleHost = "bee"
+remoteValidation.tailscaleHost = "mini"
+remoteValidation.tailscaleUser = "peckjachowski"
 [worktrees]
 inheritEnv = true
 
