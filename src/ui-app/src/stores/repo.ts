@@ -456,7 +456,7 @@ export const useRepoStore = defineStore("repo", () => {
   const integration = ref<IntegrationPipelineSnapshot | null>(null);
   /** Live auto-engineering mode state (0124), fed by SSE + hydrated via API. */
   const autoEng = ref<AutoEngineeringState | null>(null);
-  /** Full test-suite run state (Control page's "Run full test suite" button),
+  /** Full test-suite run state (Checks → Test Suite tab),
    *  fed by SSE + hydrated via API on load (so a client that connects mid-run
    *  sees it immediately rather than waiting for the next chunk). */
   const testRun = reactive<{
@@ -1293,6 +1293,19 @@ export const useRepoStore = defineStore("repo", () => {
     });
     if (!r.ok) {
       const message = r.error ?? "could not start the test run";
+      pushToast(message, "error");
+      throw new Error(message);
+    }
+  }
+
+  /** Runs the full gate on the configured remote validation runner. */
+  async function startRemoteTestRun(): Promise<void> {
+    const r = await api<{ ok: boolean; error?: string }>("/api/system/run-tests", {
+      method: "POST",
+      body: JSON.stringify({ remote: true }),
+    });
+    if (!r.ok) {
+      const message = r.error ?? "could not start the remote test run";
       pushToast(message, "error");
       throw new Error(message);
     }
@@ -2373,6 +2386,7 @@ export const useRepoStore = defineStore("repo", () => {
     testRun,
     refreshTestRun,
     startTestRun,
+    startRemoteTestRun,
     taskChecks,
     refreshTaskChecks,
     taskLogs,

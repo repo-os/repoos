@@ -91,6 +91,7 @@ import {
   worktreePathForBranch,
   tuneRepoForScale,
   headCommitISO,
+  runGit,
 } from "../core/git.js";
 import { sweepAndWarn } from "../core/worktree-gc.js";
 import { runBuiltInAgent, isDueForScheduledRun, builtInAgentLabel } from "./built-in-agents.js";
@@ -1480,7 +1481,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Created after the runner so it can send auto-bounce messages to the engineer.
   reviews = new ReviewManager(config, emitEvent, runner, index);
 
-  // Control page's "Run full test suite" button (0296-adjacent): an
+  // Checks → Test Suite tab (0296-adjacent): an
   // ephemeral, non-durable background run, one at a time — see test-run.ts.
   const testRuns = new TestRunManager();
 
@@ -2034,31 +2035,72 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     return json(res, ok ? 200 : 404, ok ? { ok: true } : { error: "process was already gone" });
   });
 
-  // Full test-suite run (Control page). GET returns current/last state (for
-  // a client that just (re)connected mid-run); POST starts one, streaming
-  // output over the existing SSE event bus rather than the response itself
-  // — a run can take minutes, far past any sane HTTP response timeout.
+  // Full test-suite run (Checks → Test Suite tab). GET returns current/last
+  // state (for a client that just (re)connected mid-run); POST starts one,
+  // streaming output over the existing SSE event bus rather than the response
+  // itself — a run can take minutes, far past any sane HTTP response timeout.
   router.register("GET", "/api/system/run-tests", (_ctx, _req, res) => {
     return json(res, 200, testRuns.getState());
   });
-  router.register("POST", "/api/system/run-tests", (_ctx, _req, res) => {
-    const result = testRuns.start(
-      config,
-      (chunk) =>
-        emitEvent({
-          type: "test-run.output",
-          chunk,
-          at: new Date().toISOString(),
-        }),
-      (code) =>
-        emitEvent({
-          type: "test-run.done",
-          code,
-          at: new Date().toISOString(),
-        }),
-    );
+  router.register("POST", "/api/system/run-tests", async (_ctx, req, res) => {
+    const body = (await readBody(req)) as { remote?: unknown };
+    const remote = body?.remote === true;
+    const at = (): string => new Date().toISOString();
+    const emitChunk = (chunk: string): void => {
+      emitEvent({ type: "test-run.output", chunk, at: at() });
+    };
+    const emitDone = (code: number | null): void => {
+      emitEvent({ type: "test-run.done", code, at: at() });
+    };
+
+    if (remote) {
+      if (!config.remoteValidation?.enabled || !remoteValidator) {
+        return json(res, 400, {
+          ok: false,
+          error: "remote validation is not enabled or could not be initialized",
+        });
+      }
+      const begun = testRuns.begin();
+      if (!begun.ok) return json(res, 409, { error: begun.reason });
+      emitEvent({ type: "test-run.started", at: at() });
+
+      void (async () => {
+        const head = await runGit(config.root, ["rev-parse", "HEAD"], 10_000);
+        const candidateSha = head.stdout.trim();
+        if (!candidateSha) {
+          const text = "\n[could not resolve HEAD for remote test run]\n";
+          testRuns.appendOutput(text);
+          emitChunk(text);
+          testRuns.finish(null);
+          emitDone(null);
+          return;
+        }
+        const result = await remoteValidator.validate({
+          taskId: "checks-test-suite",
+          worktreePath: config.root,
+          candidateSha,
+          onChunk: (chunk) => {
+            testRuns.appendOutput(chunk);
+            emitChunk(chunk);
+          },
+        });
+        const code = result.ok ? 0 : (result.exitCode ?? 1);
+        testRuns.finish(code);
+        emitDone(code);
+      })().catch((e) => {
+        const text = `\n[remote test run failed: ${(e as Error).message}]\n`;
+        testRuns.appendOutput(text);
+        emitChunk(text);
+        testRuns.finish(null);
+        emitDone(null);
+      });
+
+      return json(res, 200, { ok: true });
+    }
+
+    const result = testRuns.start(config, emitChunk, emitDone);
     if (!result.ok) return json(res, 409, { error: result.reason });
-    emitEvent({ type: "test-run.started", at: new Date().toISOString() });
+    emitEvent({ type: "test-run.started", at: at() });
     return json(res, 200, { ok: true });
   });
 
