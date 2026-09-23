@@ -163,12 +163,12 @@ describe("StoriesView expansion and selection", () => {
 });
 
 describe("StoriesView mobile layout", () => {
-  it("collapses the member grid to one column under 640px", () => {
+  it("collapses the member grid to one column at the shared page breakpoint", () => {
     const source = readFileSync(
       join(resolve(__dirname, ".."), "src/views/StoriesView.vue"),
       "utf8",
     );
-    expect(source).toMatch(/@media \(max-width: 640px\)/);
+    expect(source).toMatch(/@media \(max-width: 720px\)/);
     expect(source).toMatch(/\.story-members\s*\{[^}]*grid-template-columns:\s*1fr/);
   });
 });
