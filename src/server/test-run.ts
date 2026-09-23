@@ -1,7 +1,7 @@
 /**
  * Runs the full `bun run test` suite as an ephemeral background process and
- * streams its output live over SSE (Control page's "Run full test suite"
- * button). Deliberately minimal compared to AgentRunner: no durable
+ * streams its output live over SSE (Checks page's Test Suite tab). Deliberately
+ * minimal compared to AgentRunner: no durable
  * registry, no reload-adoption, no per-task log files — this is a one-off
  * admin action, not a resumable session, so it doesn't need to survive a
  * server restart. A run in progress when the server restarts is simply
@@ -38,6 +38,35 @@ export class TestRunManager {
     return this.state;
   }
 
+  /** Reserve the single-run slot and reset output (local or remote). */
+  begin(): { ok: true } | { ok: false; reason: string } {
+    if (this.state.running) {
+      return { ok: false, reason: "a test run is already in progress" };
+    }
+    this.state = {
+      running: true,
+      startedAt: new Date().toISOString(),
+      finishedAt: null,
+      code: null,
+      output: "",
+    };
+    return { ok: true };
+  }
+
+  appendOutput(text: string): void {
+    this.state.output += text;
+    if (this.state.output.length > MAX_BUFFERED_CHARS) {
+      this.state.output = this.state.output.slice(this.state.output.length - MAX_BUFFERED_CHARS);
+    }
+  }
+
+  finish(code: number | null): void {
+    this.state.running = false;
+    this.state.finishedAt = new Date().toISOString();
+    this.state.code = code;
+    this.proc = null;
+  }
+
   /**
    * Starts `bun run test` in `config.root`. Rejects if a run is already in
    * progress — one at a time, so output/timing never interleaves between
@@ -50,16 +79,8 @@ export class TestRunManager {
     onChunk: (chunk: string) => void,
     onDone: (code: number | null) => void,
   ): { ok: true } | { ok: false; reason: string } {
-    if (this.state.running) {
-      return { ok: false, reason: "a test run is already in progress" };
-    }
-    this.state = {
-      running: true,
-      startedAt: new Date().toISOString(),
-      finishedAt: null,
-      code: null,
-      output: "",
-    };
+    const begun = this.begin();
+    if (!begun.ok) return begun;
 
     const proc = spawn("bun", ["run", "test"], {
       cwd: config.root,
@@ -72,30 +93,21 @@ export class TestRunManager {
 
     const handleChunk = (buf: Buffer): void => {
       const text = buf.toString("utf8");
-      this.state.output += text;
-      if (this.state.output.length > MAX_BUFFERED_CHARS) {
-        this.state.output = this.state.output.slice(this.state.output.length - MAX_BUFFERED_CHARS);
-      }
+      this.appendOutput(text);
       onChunk(text);
     };
     proc.stdout?.on("data", handleChunk);
     proc.stderr?.on("data", handleChunk);
 
     proc.on("close", (code) => {
-      this.state.running = false;
-      this.state.finishedAt = new Date().toISOString();
-      this.state.code = code;
-      this.proc = null;
+      this.finish(code);
       onDone(code);
     });
     proc.on("error", (err) => {
       const text = `\n[could not start test run: ${err.message}]\n`;
-      this.state.output += text;
+      this.appendOutput(text);
       onChunk(text);
-      this.state.running = false;
-      this.state.finishedAt = new Date().toISOString();
-      this.state.code = null;
-      this.proc = null;
+      this.finish(null);
       onDone(null);
     });
 
