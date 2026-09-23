@@ -1176,14 +1176,24 @@ const reviewSubstate = computed<{ label: string; cls: string } | null>(() => {
       ? { label: "fixing check failure", cls: "rs-coding" }
       : { label: "coding", cls: "rs-coding" };
   }
-  return { label: "waiting for human", cls: "rs-human" };
+  if (review.value?.report?.state === "incomplete") {
+    return { label: "review incomplete", cls: "rs-incomplete" };
+  }
+  if (verdict.value?.label === "good to go") {
+    return { label: "waiting for human", cls: "rs-human" };
+  }
+  if (verdict.value) {
+    return { label: "review findings", cls: "rs-incomplete" };
+  }
+  return { label: "awaiting review", cls: "rs-reviewing" };
 });
 
 /** Compact lifecycle counts: D = dev passes, R = review passes. The server
- * writes `review_passes` on EVERY completed review run (auto and manual alike),
- * so these track the true round-trips rather than `review_rounds`, which is a
- * separate auto-bounce bookkeeping counter capped at MAX_AUTO_REVIEW_ROUNDS.
- * Fall back to `review_rounds` only for tasks written before that field. */
+ * bumps `review_passes` only when a review finishes with a parseable verdict
+ * (auto and manual "Review again" alike), so these track completed review
+ * rounds rather than `review_rounds`, which is a separate auto-bounce
+ * bookkeeping counter capped at MAX_AUTO_REVIEW_ROUNDS. Fall back to
+ * `review_rounds` only for tasks written before that field. */
 const taskRounds = computed(() => {
   const task = ui.active;
   if (!task || (!task.branch && (task.status === "draft" || task.status === "inbox"))) {
@@ -3832,7 +3842,15 @@ watch(
             </div>
             <template v-else>
               <div
-                v-if="verdict"
+                v-if="review.report.state === 'incomplete'"
+                class="review-incomplete"
+                role="status"
+              >
+                Review finished without a parseable verdict. The partial report is below for
+                debugging — use <strong>Review again</strong> to rerun the reviewer.
+              </div>
+              <div
+                v-else-if="verdict"
                 class="verdict-callout"
                 :class="`tone-${verdict.tone}`"
                 role="status"

@@ -425,10 +425,18 @@ const hint = computed<CardHint | null>(() => {
     // 0381: a PM chat run on a review task outranks the idle verdicts —
     // the PM is touching the task right now.
     if (pmWorking) return PM_WORKING_HINT;
+    const lastReport = repo.reviewFor(t.id)?.report;
+    if (lastReport?.state === "incomplete") {
+      return {
+        label: "review incomplete",
+        title: "the reviewer stopped without a verdict — open the task and use Review again",
+        cls: "tc-review-warn",
+      };
+    }
     // "Nothing is currently running" isn't the same claim as "the review
     // passed" — a task can sit here idle after a "needs some work" or "back
     // to the drawing board" verdict too (e.g. auto-bounce hit its round
-    // cap). Only the green/unparseable case gets the optimistic label.
+    // cap). Only a green "good to go" verdict gets the ready-to-finish label.
     const v = reviewVerdict.value;
     if (v?.tone === "red") {
       return {
@@ -444,10 +452,17 @@ const hint = computed<CardHint | null>(() => {
         cls: "tc-review-warn",
       };
     }
+    if (v?.tone === "green") {
+      return {
+        label: "review passed · ready to finish",
+        title: "review passed — approve and move to done to finish",
+        cls: "tc-human",
+      };
+    }
     return {
-      label: "review passed · ready to finish",
-      title: "review passed — approve and move to done to finish",
-      cls: "tc-human",
+      label: "waiting for review",
+      title: "no completed review verdict yet — wait for the reviewer or use Review again",
+      cls: "tc-reviewing",
     };
   }
   if (t.status === "active") {
@@ -534,15 +549,17 @@ const action = computed<CardAction | null>(() => {
  *  actually "needs some work" or "back to the drawing board": a task can
  *  sit idle in review after a bad verdict too (e.g. auto-bounce hit its
  *  round cap), and the ready-to-merge glow shouldn't claim otherwise. */
-const reviewReady = computed(
-  () =>
+const reviewReady = computed(() => {
+  const report = repo.reviewFor(props.task.id)?.report;
+  return (
     props.task.status === "review" &&
     !inPipeline.value &&
     !repo.reviewFor(props.task.id)?.running &&
     !repo.isRunning(props.task.id) &&
-    reviewVerdict.value?.tone !== "red" &&
-    reviewVerdict.value?.tone !== "amber",
-);
+    report?.state !== "incomplete" &&
+    reviewVerdict.value?.tone === "green"
+  );
+});
 
 /** Full-width footer colors retain the board's action/status language. */
 const actionFooterClass = computed(() => {
