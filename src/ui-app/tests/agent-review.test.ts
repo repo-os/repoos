@@ -77,7 +77,7 @@ ${body}
 /** A report the fake agent prints on stdout, as a real reviewer would. */
 const REPORT = [
   "## Verdict",
-  "The change is sound; nothing blocks sign-off.",
+  "good to go — the change is sound; nothing blocks sign-off.",
   "",
   "## Bugs",
   "- src/thing.ts: the empty-list case throws instead of returning [].",
@@ -87,7 +87,7 @@ const REPORT = [
   "",
   "## Suggestions",
   "- Name the timeout constant.",
-].join("\\n");
+].join("\n");
 
 const printReport = `process.stdout.write(${JSON.stringify(REPORT)} + "\\n");`;
 
@@ -246,6 +246,7 @@ describe("agent review before human sign-off (#0101)", () => {
 
       // The review leaves the task exactly where the human needs it.
       expect(readFileSync(task.absPath, "utf8")).toMatch(/^status: review$/m);
+      expect(readFileSync(task.absPath, "utf8")).toMatch(/^review_passes: 1$/m);
       const after = await api(server, "GET", `/api/tasks/${task.id}`);
       expect(after.body.status).toBe("review");
     });
@@ -337,6 +338,41 @@ ${printReport}`,
       expect(served.review?.markdown).toContain("boom");
       // A failed review never blocks or moves the human's task.
       expect(readFileSync(task.absPath, "utf8")).toMatch(/^status: review$/m);
+      expect(readFileSync(task.absPath, "utf8")).not.toMatch(/^review_passes:/m);
+    });
+  });
+
+  it("persists partial output as incomplete when no verdict is present", async () => {
+    const partial = [
+      "## Verdict",
+      "Still weighing whether the empty-list case is handled.",
+      "",
+      "## Bugs",
+      "- (agent stopped before finishing)",
+    ].join("\n");
+    const fx = makeFixture(`process.stdout.write(${JSON.stringify(partial)} + "\\n");`);
+    await withServer(fx, async (server) => {
+      const task = await taskWithWorktree(server, fx, "Partial reviewer");
+
+      await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "review" });
+      await waitFor(
+        () => existsSync(join(fx.root, ".repoos", "reviews", `${task.id}.md`)),
+        "the partial report is written",
+      );
+
+      const served = await getReview(server, task.id);
+      expect(served.review?.state).toBe("incomplete");
+      expect(served.review?.markdown).toContain("Still weighing");
+      expect(readFileSync(task.absPath, "utf8")).toMatch(/^status: review$/m);
+      expect(readFileSync(task.absPath, "utf8")).not.toMatch(/^review_passes:/m);
+      expect((await api(server, "GET", `/api/tasks/${task.id}`)).body.status).toBe("review");
+      expect(spawns(fx).filter((s) => s.args.includes("--auto")).length).toBe(1);
+      expect(spawns(fx).some((s) => s.args.join(" ").includes("automated review found"))).toBe(
+        false,
+      );
+
+      const again = await api(server, "POST", `/api/tasks/${task.id}/review/again`);
+      expect(again.status).toBe(200);
     });
   });
 
@@ -487,7 +523,7 @@ else process.stdout.write(${JSON.stringify(reportB)} + "\\n");
       "",
       "## Suggestions",
       "- Add a regression test.",
-    ].join("\\n");
+    ].join("\n");
     const fx = makeFixture(`
 const mission = process.argv.join(" ");
 if (mission.includes("automated review found")) process.stdout.write("engineer resumed\\n");
@@ -525,6 +561,55 @@ else process.stdout.write(${JSON.stringify(needsWorkReport)} + "\\n");
       );
       await new Promise((resolve) => setTimeout(resolve, 250));
       expect(readFileSync(task.absPath, "utf8")).toMatch(/^status: active$/m);
+    });
+  });
+
+  it("returns a task to active when the verdict is back to the drawing board", async () => {
+    const rejectReport = [
+      "## Verdict",
+      "`back to the drawing board` — the approach does not match the spec.",
+      "",
+      "## Bugs",
+      "- Wrong abstraction for the feature.",
+      "",
+      "## Edge cases",
+      "- none found",
+      "",
+      "## Suggestions",
+      "- Rescope before more code.",
+    ].join("\n");
+    const fx = makeFixture(`
+const mission = process.argv.join(" ");
+if (mission.includes("automated review found")) process.stdout.write("engineer resumed\\n");
+else process.stdout.write(${JSON.stringify(rejectReport)} + "\\n");
+`);
+    await withServer(fx, async (server) => {
+      const task = await taskWithWorktree(server, fx, "Auto-bounce reject");
+      const started = await api(server, "POST", `/api/tasks/${task.id}/start`);
+      expect(started.status).toBe(200);
+      await waitForAsync(async () => {
+        const output = await api(server, "GET", `/api/tasks/${task.id}/output`);
+        return Array.isArray(output.body.lines) && output.body.lines.length > 0;
+      }, "an engineer session is available to resume");
+      await waitForAsync(async () => {
+        const response = await fetch(`${server.url}/api/agents/running`);
+        const running = (await response.json()) as { tasks: Array<{ id: string }> };
+        return !running.tasks.some((entry) => entry.id === task.id);
+      }, "the initial engineer turn exits");
+      await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "review" });
+
+      await waitForAsync(
+        async () => (await api(server, "GET", `/api/tasks/${task.id}`)).body.status === "active",
+        "auto-bounce moves task to active",
+      );
+
+      const taskFile = readFileSync(task.absPath, "utf8");
+      expect(taskFile).toMatch(/^status: active$/m);
+      expect(taskFile).toMatch(/^review_rounds: 1$/m);
+      expect(taskFile).toMatch(/^review_passes: 1$/m);
+      expect(spawns(fx).some((s) => s.args.join(" ").includes("automated review found"))).toBe(
+        true,
+      );
     });
   });
 
