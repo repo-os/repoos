@@ -14,10 +14,10 @@
  * The UI was right and the server's gate was wrong — this is now the single
  * shared implementation both sides use, so they can never disagree again.
  *
- * Order matters: each list is checked most-specific-first so a report that
- * mentions a milder verdict in passing while explaining a worse one (e.g.
- * "back to the drawing board" text discussing what would merely "need some
- * work") doesn't get misread as the mild outcome.
+ * Verdicts are read from the declared `## Verdict` section (or, for legacy
+ * reports without that heading, its first non-empty line). Review prose often
+ * names the other two outcomes while discussing tests or alternatives; scanning
+ * the entire report can turn a declared "good to go" into a false rejection.
  */
 
 export type ReviewVerdict = "good to go" | "needs some work" | "back to the drawing board";
@@ -37,7 +37,15 @@ const RELEVANCE_ORDER: ReviewRelevance[] = [
 
 export function parseReviewVerdict(markdown: string | null | undefined): ReviewVerdict | null {
   if (!markdown) return null;
-  const lower = markdown.toLowerCase();
+  const heading = /^#{1,6}\s+verdict\s*$/im.exec(markdown);
+  const candidate = heading
+    ? markdown
+        .slice((heading.index ?? 0) + heading[0].length)
+        .split(/^#{1,6}\s+/m, 1)[0]
+    : markdown;
+  const line = candidate.split(/\r?\n/).find((value) => value.trim());
+  if (!line) return null;
+  const lower = line.toLowerCase();
   for (const label of VERDICT_ORDER) {
     if (lower.includes(label)) return label;
   }
