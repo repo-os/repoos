@@ -132,7 +132,7 @@ describe("TaskCard review-passed hint reflects the actual verdict", () => {
     expect(wrapper.find(".task-card").classes()).not.toContain("review-ready");
   });
 
-  it("falls back to the optimistic hint when no report exists yet (can't know better)", () => {
+  it("shows a neutral hint when no report exists yet", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const repo = useRepoStore();
@@ -142,7 +142,33 @@ describe("TaskCard review-passed hint reflects the actual verdict", () => {
     const wrapper = mountCard(task);
 
     const hint = wrapper.find(".tc-hint");
-    expect(hint.classes()).toContain("tc-human");
-    expect(wrapper.find(".task-card").classes()).toContain("review-ready");
+    expect(hint.classes()).toContain("tc-reviewing");
+    expect(hint.text()).toContain("waiting for review");
+    expect(wrapper.find(".task-card").classes()).not.toContain("review-ready");
+  });
+
+  it("shows incomplete state without the ready-to-finish glow", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    const task = makeTask();
+    repo.reviews = {
+      "0001": {
+        running: false,
+        enabled: true,
+        lines: [],
+        report: {
+          ...report("## Bugs\nThinking aloud but never stated a verdict."),
+          state: "incomplete",
+        },
+      },
+    };
+
+    const wrapper = mountCard(task);
+
+    const hint = wrapper.find(".tc-hint");
+    expect(hint.text()).toContain("review incomplete");
+    expect(hint.text()).not.toContain("ready to finish");
+    expect(wrapper.find(".task-card").classes()).not.toContain("review-ready");
   });
 });

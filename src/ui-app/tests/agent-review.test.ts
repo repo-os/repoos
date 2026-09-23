@@ -77,7 +77,7 @@ ${body}
 /** A report the fake agent prints on stdout, as a real reviewer would. */
 const REPORT = [
   "## Verdict",
-  "The change is sound; nothing blocks sign-off.",
+  "good to go — the change is sound; nothing blocks sign-off.",
   "",
   "## Bugs",
   "- src/thing.ts: the empty-list case throws instead of returning [].",
@@ -246,6 +246,7 @@ describe("agent review before human sign-off (#0101)", () => {
 
       // The review leaves the task exactly where the human needs it.
       expect(readFileSync(task.absPath, "utf8")).toMatch(/^status: review$/m);
+      expect(readFileSync(task.absPath, "utf8")).toMatch(/^review_passes: 1$/m);
       const after = await api(server, "GET", `/api/tasks/${task.id}`);
       expect(after.body.status).toBe("review");
     });
@@ -337,6 +338,36 @@ ${printReport}`,
       expect(served.review?.markdown).toContain("boom");
       // A failed review never blocks or moves the human's task.
       expect(readFileSync(task.absPath, "utf8")).toMatch(/^status: review$/m);
+      expect(readFileSync(task.absPath, "utf8")).not.toMatch(/^review_passes:/m);
+    });
+  });
+
+  it("persists partial output as incomplete when no verdict is present", async () => {
+    const partial = [
+      "## Verdict",
+      "Still weighing whether the empty-list case is handled.",
+      "",
+      "## Bugs",
+      "- (agent stopped before finishing)",
+    ].join("\\n");
+    const fx = makeFixture(`process.stdout.write(${JSON.stringify(partial)} + "\\n");`);
+    await withServer(fx, async (server) => {
+      const task = await taskWithWorktree(server, fx, "Partial reviewer");
+
+      await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "review" });
+      await waitFor(
+        () => existsSync(join(fx.root, ".repoos", "reviews", `${task.id}.md`)),
+        "the partial report is written",
+      );
+
+      const served = await getReview(server, task.id);
+      expect(served.review?.state).toBe("incomplete");
+      expect(served.review?.markdown).toContain("Still weighing");
+      expect(readFileSync(task.absPath, "utf8")).toMatch(/^status: review$/m);
+      expect(readFileSync(task.absPath, "utf8")).not.toMatch(/^review_passes:/m);
+
+      const again = await api(server, "POST", `/api/tasks/${task.id}/review/again`);
+      expect(again.status).toBe(200);
     });
   });
 

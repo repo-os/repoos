@@ -84,6 +84,17 @@ async function mountCard(pinia: Pinia, task: Task) {
   return wrapper;
 }
 
+const GOOD_REPORT = {
+  id: "0001",
+  at: new Date().toISOString(),
+  agent: "reviewer",
+  cli: "opencode",
+  model: "default",
+  branch: "",
+  state: "ok" as const,
+  markdown: "## Verdict\ngood to go — nothing blocks sign-off.",
+};
+
 async function setupRepo(task: Task) {
   FakeEventSource.instances = [];
   vi.stubGlobal("EventSource", FakeEventSource);
@@ -97,6 +108,14 @@ async function setupRepo(task: Task) {
       if (url.includes("/api/agents/running")) return json({ tasks: [] });
       if (url.includes("/api/integration/pipeline")) return json({ ok: true, pipeline: null });
       if (url.includes("/diff-stats")) return json({ filesChanged: 0, additions: 0, deletions: 0 });
+      if (url.includes("/review"))
+        return json({
+          ok: true,
+          running: false,
+          enabled: true,
+          review: GOOD_REPORT,
+          lines: [],
+        });
       throw new Error("unexpected fetch: " + url);
     }),
   );
@@ -104,6 +123,9 @@ async function setupRepo(task: Task) {
   setActivePinia(pinia);
   const repo = useRepoStore();
   await repo.init();
+  repo.reviews = {
+    [task.id]: { running: false, enabled: true, report: GOOD_REPORT, lines: [] },
+  };
   return { pinia, repo };
 }
 
