@@ -46,6 +46,7 @@ onMounted(async () => {
       ui.isNewDoc ||
       ui.isNewSkill ||
       ui.isNewInput ||
+      ui.isNewStory ||
       ui.unsentTaskChatDraft ||
       ui.taskEditorDraft,
     isBusy: () => repo.runningIds.length > 0 || repo.testRun.running,

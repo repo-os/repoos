@@ -28,6 +28,7 @@ import type {
   Task,
   TaskCheckRun,
   TaskLogEntry,
+  StoryDefinitionRecord,
   TaskUsageStats,
 } from "../types";
 import type { Input } from "../../../core/input.js";
@@ -379,6 +380,7 @@ export const useRepoStore = defineStore("repo", () => {
   }
   const health = ref<Health | null>(null);
   const tasks = ref<Task[]>([]);
+  const storyDefinitions = ref<StoryDefinitionRecord[]>([]);
   const counts = reactive<Counts>({ draft: 0, inbox: 0, ready: 0, active: 0, review: 0, done: 0 });
   const feed = reactive<FeedItem[]>([]);
   const eventCount = ref(0);
@@ -826,6 +828,10 @@ export const useRepoStore = defineStore("repo", () => {
 
   function applyEvent(e: RepoEvent): void {
     eventCount.value++;
+    if (e.type === "story.definitionsChanged") {
+      void refresh();
+      return;
+    }
     if (e.type === "hello") {
       // Every SSE (re)connect announces a server. If this server already runs
       // the build the notice points at, a reload landed (or the server was
@@ -1472,6 +1478,7 @@ export const useRepoStore = defineStore("repo", () => {
     // server's registry — an in-flight run survives the reload, a stale id
     // (run finished or task deleted while disconnected) is dropped.
     pmWorkingIds.value = new Set(idx.tasks.filter((t) => t.pmWorking).map((t) => t.id));
+    storyDefinitions.value = idx.storyDefinitions ?? [];
     Object.assign(counts, idx.counts);
   }
 
@@ -2263,6 +2270,48 @@ export const useRepoStore = defineStore("repo", () => {
     return r;
   }
 
+  /** Create a story definition via the PM agent (#0486). */
+  async function createFreeformStory(
+    input: { name?: string; description: string },
+    runId?: string,
+    overrides?: { agent?: string; cli?: string; model?: string },
+  ): Promise<{
+    ok: boolean;
+    fallback?: boolean;
+    pmError?: string;
+    definition?: StoryDefinitionRecord;
+    reason?: string;
+  }> {
+    const body: Record<string, unknown> = {
+      name: input.name ?? "",
+      description: input.description,
+    };
+    if (runId) body.runId = runId;
+    if (overrides?.agent) body.agentOverride = overrides.agent;
+    if (overrides?.cli) body.cliOverride = overrides.cli;
+    if (overrides?.model) body.modelOverride = overrides.model;
+    const r = await api<{
+      ok: boolean;
+      fallback?: boolean;
+      pmError?: string;
+      definition?: StoryDefinitionRecord;
+      reason?: string;
+    }>("/api/stories/freeform", JSON_OPTS("POST", body));
+    if (!r.ok) {
+      throw new Error(r.reason ?? "could not create story");
+    }
+    if (r.definition) {
+      const next = [
+        ...storyDefinitions.value.filter((d) => d.key !== r.definition!.key),
+        r.definition,
+      ];
+      storyDefinitions.value = next.sort((a, b) => a.name.localeCompare(b.name));
+    } else {
+      await refresh();
+    }
+    return r;
+  }
+
   /** Create a skill manually (name + description + body) or from an uploaded SKILL.md (name + content). */
   async function createSkill(form: {
     name: string;
@@ -2331,6 +2380,7 @@ export const useRepoStore = defineStore("repo", () => {
     streamDown,
     health,
     tasks,
+    storyDefinitions,
     counts,
     feed,
     eventCount,
@@ -2412,6 +2462,7 @@ export const useRepoStore = defineStore("repo", () => {
     uploadInputAttachment,
     submitInput,
     createFreeformDocument,
+    createFreeformStory,
     createSkill,
     createFreeformSkill,
     isRunning,

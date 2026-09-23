@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { deriveStories } from "../../../core/stories.js";
+import { computed, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { mergeStoriesForDisplay, type StoryDefinition } from "../../../core/story-display.js";
 import { useRepoStore, statusColor } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
 import { useUiStore } from "../stores/ui";
 import { relTime } from "../lib/time";
 import TaskCard from "../components/TaskCard.vue";
+import NewStoryPanel from "../components/NewStoryPanel.vue";
+import Button from "../components/ui/button.vue";
 import type { Status, Task } from "../types";
 
 const STATUS_ORDER: Status[] = ["draft", "inbox", "ready", "active", "review", "done"];
@@ -13,12 +16,38 @@ const STATUS_ORDER: Status[] = ["draft", "inbox", "ready", "active", "review", "
 const repo = useRepoStore();
 const config = useConfigStore();
 const ui = useUiStore();
+const route = useRoute();
+const router = useRouter();
 
 const enabled = computed(
   () => (config.data?.stories as { enabled?: unknown } | undefined)?.enabled === true,
 );
 
-const stories = computed(() => deriveStories(repo.tasks));
+const definitions = computed((): StoryDefinition[] =>
+  repo.storyDefinitions.map((d) => ({
+    key: d.key,
+    name: d.name,
+    path: d.path,
+    body: d.body,
+    createdAt: d.createdAt,
+    createdBy: d.createdBy,
+  })),
+);
+
+const stories = computed(() => mergeStoriesForDisplay(repo.tasks, definitions.value));
+
+watch(
+  () => route.query.story,
+  (v) => {
+    if (!enabled.value) return;
+    if (v !== "new") return;
+    ui.openNewStory();
+    const query = { ...route.query };
+    delete query.story;
+    void router.replace({ query });
+  },
+  { immediate: true },
+);
 
 /** Stories whose member tasks are revealed. */
 const expanded = ref<Set<string>>(new Set());
@@ -96,9 +125,15 @@ function lastActivity(story: { lastActivity: string | null }): string {
       <div>
         <div class="page-title">Stories</div>
         <div class="page-desc" style="margin: 3px 0 0">
-          Cross-area delivery slices, derived from tasks tagged with a
-          <code>story</code>. A story is complete only when every one of its tasks is done.
+          Cross-area delivery slices — registered in <code>stories/</code> and grouped with tasks
+          tagged using the same story name. A story is complete only when every one of its tasks is
+          done.
         </div>
+      </div>
+      <div v-if="enabled" class="page-header-actions">
+        <Button variant="accent" class="new-btn" @click="ui.openNewStory()"
+          ><span class="plus">+</span> New story</Button
+        >
       </div>
     </header>
 
@@ -109,11 +144,14 @@ function lastActivity(story: { lastActivity: string | null }): string {
     </div>
 
     <div v-else-if="stories.length === 0" class="empty-state">
-      <div class="big">{{ repo.tasks.length === 0 ? "No tasks yet" : "No stories yet" }}</div>
-      <div v-if="repo.tasks.length > 0">
-        Tag a task with a story to group it with related work. Use the Story field in the task
-        drawer, or <code>repoos update &lt;id&gt; --story "Project updates email"</code>.
+      <div class="big">No stories yet</div>
+      <div>
+        Capture a delivery slice with <strong>New story</strong>, or tag a task from the Story field
+        in the task drawer.
       </div>
+      <Button variant="outline" style="margin-top: 14px" @click="ui.openNewStory()"
+        >Create your first story</Button
+      >
     </div>
 
     <div v-else class="stories-grid">
@@ -140,8 +178,11 @@ function lastActivity(story: { lastActivity: string | null }): string {
             <div class="story-meta">
               <span>{{ story.total }} {{ story.total === 1 ? "task" : "tasks" }}</span>
               <span class="story-dot-sep">·</span>
-              <span>Last activity {{ lastActivity(story) }}</span>
+              <span>{{
+                story.total > 0 ? `Last activity ${lastActivity(story)}` : "No tasks tagged yet"
+              }}</span>
             </div>
+            <p v-if="story.excerpt" class="story-excerpt">{{ story.excerpt }}</p>
           </div>
           <div class="story-progress-wrap">
             <span class="story-frac">{{ story.done }}/{{ story.total }}</span>
@@ -194,11 +235,16 @@ function lastActivity(story: { lastActivity: string | null }): string {
           </button>
         </div>
 
+        <div v-if="expanded.has(story.key) && story.body" class="story-description">
+          <div class="story-description-inner">{{ story.body }}</div>
+        </div>
+
         <div v-if="expanded.has(story.key)" class="story-members">
           <TaskCard v-for="task in story.tasks" :key="task.id" :task="task" :drag-enabled="false" />
         </div>
       </article>
     </div>
+    <NewStoryPanel v-if="enabled" />
   </div>
 </template>
 
@@ -305,6 +351,26 @@ function lastActivity(story: { lastActivity: string | null }): string {
   gap: 6px;
   font-size: 11.5px;
   color: var(--txt-faint);
+}
+.story-excerpt {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--txt-dim);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.story-description {
+  padding: 0 16px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.story-description-inner {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--txt-dim);
+  white-space: pre-wrap;
 }
 .story-dot-sep {
   opacity: 0.6;
