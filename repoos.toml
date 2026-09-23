@@ -164,6 +164,12 @@ name = "ui-smoke"
 kind = "ui-smoke"
 dependsOn = ["check-fmt:check", "check-lint", "build"]
 
+[[check.steps]]
+name = "macos-hub-icon-transparency"
+command = "bash macos/scripts/verify-dock-icon-transparency.sh"
+whenChanged = ["macos/RepoOSHub/Assets.xcassets/**", "macos/scripts/generate-app-icons.swift", "macos/scripts/verify-dock-icon-transparency.swift", "macos/scripts/verify-dock-icon-transparency.sh"]
+dependsOn = ["check-fmt:check", "check-lint"]
+
 # Each theme block in the stylesheet: the selectors it owns, a variant name for
 # failure messages, and the earlier scopes whose declarations it inherits
 # (cascade order, later wins). Order is the order the guard evaluates them in.
