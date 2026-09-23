@@ -248,11 +248,11 @@ const year = new Date().getFullYear();
 
           <InstallBox class="mt-8" show-note />
           <p class="mt-3 text-[13px] text-[var(--txt-faint)]">
-            Prefer a native app?
+            Use the native Hub alongside the CLI:
             <a
               href="https://github.com/repo-os/repoos/releases/latest/download/RepoOSHub.dmg"
               class="text-[var(--cyan)] hover:underline"
-              >Download RepoOS Hub for Mac &rarr;</a
+              >add a desktop hub for your local and remote servers &rarr;</a
             >
           </p>
           <p class="mt-1 text-[12px] text-[var(--txt-faint)]">
@@ -297,11 +297,11 @@ const year = new Date().getFullYear();
               RepoOS Hub for Mac
             </h2>
             <p class="mt-4 max-w-[60ch] text-[15.5px] leading-relaxed text-[var(--txt-dim)]">
-              A Mac app that watches all your RepoOS servers from one place: pin tasks across
-              servers, see live attention counts in the sidebar and Dock badge, and find anything
-              with Cmd-K. Each server loads in its own isolated session — no cookie sharing, no
-              write access of its own, and remote access only through short-lived capability tokens
-              stored in your Keychain.
+              RepoOS Hub complements the CLI: it brings the RepoOS servers you run locally or
+              remotely into one desktop home. Pin tasks across servers, see live attention counts in
+              the sidebar and Dock badge, and find anything with Cmd-K. Each server loads in its own
+              isolated session — no cookie sharing, no write access of its own, and remote access
+              only through short-lived capability tokens stored in your Keychain.
             </p>
             <p class="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-[14px]">
               <a
