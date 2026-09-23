@@ -81,10 +81,8 @@ convention, matching repoos.org (`landing/`):
 
 `prod` advances only as an infrequent, deliberate fast-forward merge of `main`.
 
-`user-docs/macos-hub.md` (the RepoOS Hub for Mac guide) is on `main` but not yet
-on the production site — it publishes with the next `main → prod` fast-forward.
-The repo README and landing page link the GitHub blob of the guide until this
-page is live.
+`user-docs/macos-hub.md` is the RepoOS Hub for Mac guide. Publish the docs site
+from `main` to `prod` before linking users to it from public release copy.
 
 Cloudflare's dashboard now creates git-connected static sites as **Workers**
 (`wrangler deploy`), not the older "Pages project" flow — deployment is driven

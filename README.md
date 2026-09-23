@@ -308,10 +308,9 @@ loopback servers need zero setup; remote servers use short-lived, revocable
 capability tokens (created over HTTPS on the server, stored in the Keychain)
 for their attention and search endpoints.
 
-The Hub's DMG is published on
-[GitHub Releases](https://github.com/repo-os/repoos/releases) with each tag
-release (the first Hub DMG is pending). Setup, pairing, and limitation details
-are in the [Hub guide](https://github.com/repo-os/repoos/blob/main/user-docs/macos-hub.md).
+Download the latest [RepoOS Hub DMG](https://github.com/repo-os/repoos/releases/latest/download/RepoOSHub.dmg),
+or browse [GitHub Releases](https://github.com/repo-os/repoos/releases). Setup,
+pairing, and limitation details are in the [Hub guide](https://docs.repoos.org/macos-hub).
 
 ## Roadmap
 
