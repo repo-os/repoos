@@ -204,7 +204,7 @@ macos-build:
 # run the native macOS Hub from the command line `just macos-run`
 [group('dev')]
 macos-run: macos-build
-    open macos/.derived-data/Build/Products/Debug/RepoOS.app
+    open "macos/.derived-data/Build/Products/Debug/RepoOS Hub.app"
 
 # run native macOS Hub unit tests without opening Xcode `just macos-test`
 [group('quality')]
