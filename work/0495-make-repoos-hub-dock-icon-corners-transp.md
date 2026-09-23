@@ -3,9 +3,6 @@ id: "0495"
 title: Make RepoOS Hub Dock icon corners transparent
 type: bug
 status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: the opencode agent timed out after 900s
 priority: p1
 area: macos
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: fix/hub-dock-icon-transparency
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-23T04:57:55Z"
-updated_at: "2026-09-23T05:38:51Z"
+updated_at: "2026-09-23T05:39:37Z"
 ---
 Fix the RepoOS Hub Dock icon after the branded icon rollout. The generated PNG paints the full square canvas with the dark interior color before drawing the rounded border, leaving opaque dark corners outside the intended colored rounded-square icon in the Dock. Generate icons with transparent pixels outside the outer rounded shape, preserve the dark inner rounded panel and colored border, regenerate AppIcon and DockIcon assets, and add a regression check for transparent corners.
 
@@ -27,3 +24,4 @@ Fix the RepoOS Hub Dock icon after the branded icon rollout. The generated PNG p
 - 2026-09-23T05:14:57Z · needs_input
 - 2026-09-23T05:38:49Z · review_cli_override, review_model_override
 - 2026-09-23T05:38:51Z · review_model_override
+- 2026-09-23T05:39:37Z · needs_input
