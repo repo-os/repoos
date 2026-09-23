@@ -256,6 +256,16 @@ export interface BoardIndex {
   taskCount: number;
   tasks: BoardTask[];
   counts: Counts;
+  storyDefinitions?: StoryDefinitionRecord[];
+}
+
+export interface StoryDefinitionRecord {
+  key: string;
+  name: string;
+  path: string;
+  body: string;
+  createdAt: string;
+  createdBy: string;
 }
 
 /**
@@ -441,6 +451,7 @@ export interface BoardUsageStats {
 export type RepoEvent =
   | { type: "hello"; taskCount: number; at: string }
   | { type: "index.rebuilt"; taskCount: number; at: string }
+  | { type: "story.definitionsChanged"; at: string }
   | { type: "task.created"; task: Task }
   | { type: "task.updated"; task: Task; prev?: Partial<Task> }
   | { type: "task.deleted"; id: string }
