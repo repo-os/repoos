@@ -2,14 +2,14 @@
 id: "0490"
 title: "Move test suite runner to Checks page as a tab, with local and remote options"
 type: feature
-status: active
+status: review
 priority: p2
 area: general
 assigned_to: ai
 created_by: ""
 branch: feat/move-test-suite-runner-to-checks-page-as
 created_at: "2026-09-23T03:24:20Z"
-updated_at: "2026-09-23T03:32:39Z"
+updated_at: "2026-09-23T03:44:01Z"
 ---
 The 'Test Suite' section at the bottom of the Control page should move to the Checks page as a dedicated tab.
 
@@ -29,3 +29,4 @@ The Checks page is the natural home for anything about running verification. The
 - 2026-09-23T03:24:20Z · created · unknown
 - 2026-09-23T03:26:02Z · status inbox→ready
 - 2026-09-23T03:32:39Z · status ready→active, branch
+- 2026-09-23T03:44:01Z · status active→review
