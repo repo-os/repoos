@@ -60,10 +60,10 @@ let pngs = [
   assets.appendingPathComponent("DockIconDark.imageset/DockIcon-dark@2x.png"),
   assets.appendingPathComponent("DockIconLight.imageset/DockIcon-light@1x.png"),
   assets.appendingPathComponent("DockIconLight.imageset/DockIcon-light@2x.png"),
-  assets.appendingPathComponent("AppIcon.appiconset/AppIcon-512-dark.png"),
-  assets.appendingPathComponent("AppIcon.appiconset/AppIcon-512-light.png"),
-  assets.appendingPathComponent("AppIcon.appiconset/AppIcon-1024-dark.png"),
-  assets.appendingPathComponent("AppIcon.appiconset/AppIcon-1024-light.png"),
+  // AppIcon uses the required default macOS slots. The app switches its
+  // light/dark Dock artwork through the named DockIcon image sets above.
+  assets.appendingPathComponent("AppIcon.appiconset/AppIcon-512.png"),
+  assets.appendingPathComponent("AppIcon.appiconset/AppIcon-1024.png"),
 ]
 
 do {
