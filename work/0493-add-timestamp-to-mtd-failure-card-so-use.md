@@ -10,8 +10,9 @@ created_by: ""
 branch: ""
 pm_cli_override: cursor
 pm_model_override: composer-2.5
+review_model_override: opencode-go/hy3
 created_at: "2026-09-23T04:39:06Z"
-updated_at: "2026-09-23T04:55:46Z"
+updated_at: "2026-09-23T05:44:06Z"
 ---
 ## Problem
 
@@ -76,3 +77,4 @@ No server or API changes required; timestamp is client-side display of event tim
 - 2026-09-23T04:53:54Z · pm_cli_override, pm_model_override
 - 2026-09-23T04:53:55Z · pm_model_override
 - 2026-09-23T04:55:46Z · area, body
+- 2026-09-23T05:44:06Z · review_model_override
