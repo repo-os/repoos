@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, useId } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, useId } from "vue";
 import { CircleAlert, ChevronDown, Wrench, LifeBuoy } from "lucide-vue-next";
 import { api, JSON_OPTS } from "../api";
 import type { RetryHint } from "../lib/retryHints";
+import { fmtTime } from "../lib/time";
 import ActivityIndicator from "./ActivityIndicator.vue";
 
 const props = withDefaults(
@@ -29,9 +30,19 @@ const props = withDefaults(
      *  panel (`open-panel`), where the full detail lives. "panel": the full
      *  detail is rendered inline, scrollable for long traces. */
     mode?: "card" | "panel";
+    /** ISO 8601 failure time; panel headline shows a local clock via `fmtTime`. */
+    failedAt?: string;
   }>(),
   { mode: "card" },
 );
+
+const failedAtLabel = computed(() => fmtTime(props.failedAt));
+const headlineTitle = computed(() => {
+  if (!props.failedAt) return undefined;
+  const d = new Date(props.failedAt);
+  if (Number.isNaN(d.getTime())) return undefined;
+  return d.toLocaleString();
+});
 
 const emit = defineEmits<{
   (e: "open-panel"): void;
@@ -136,9 +147,10 @@ const outputOpen = ref(true);
     </div>
 
     <div v-if="mode === 'panel'" :id="detailId" class="done-error-detail">
-      <div class="done-error-head">
+      <div class="done-error-head" :title="headlineTitle">
         Move to done failed
-        <span v-if="step" class="done-error-step">at {{ step }}</span>
+        <span v-if="step" class="done-error-step">at {{ step }}</span
+        ><span v-if="failedAtLabel" class="done-error-step"> · {{ failedAtLabel }}</span>
       </div>
       <div v-if="detail" class="done-error-output">
         <button

@@ -104,6 +104,8 @@ export interface DoneError {
    * (#0428), shown so the untruncated transcript is reachable from the task.
    */
   logPath?: string;
+  /** ISO 8601 time the failure was recorded (SSE `at` or client capture). */
+  failedAt?: string;
 }
 
 /**
@@ -1135,7 +1137,11 @@ export const useRepoStore = defineStore("repo", () => {
         // or stale job. Surfacing it would leave a permanent, misleading
         // error badge on an already-finished task, so skip it.
         if (tasks.value.find((t) => t.id === e.id)?.status !== "done") {
-          setDoneError(e.id, { ...describeCloseOutFailure(e.phase, e.detail), logPath: e.logPath });
+          setDoneError(e.id, {
+            ...describeCloseOutFailure(e.phase, e.detail),
+            logPath: e.logPath,
+            failedAt: e.at,
+          });
         }
       }
     } else if (e.type === "task.corrected") {
@@ -1819,6 +1825,7 @@ export const useRepoStore = defineStore("repo", () => {
         setDoneError(t.id, {
           ...mapped,
           step: doneSteps.value[t.id] ?? mapped.step,
+          failedAt: new Date().toISOString(),
         });
         throw new MoveToDoneError(t.id, message);
       }
@@ -1832,6 +1839,7 @@ export const useRepoStore = defineStore("repo", () => {
       setDoneError(t.id, {
         ...mapped,
         step: doneSteps.value[t.id] ?? mapped.step,
+        failedAt: new Date().toISOString(),
       });
       throw new MoveToDoneError(t.id, message);
     }

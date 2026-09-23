@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-23T06:33:30Z"
-review_passes: 1
 id: "0493"
 title: Add timestamp to MTD failure card so users can tell if it's a stale or fresh failure
 type: feature
@@ -14,6 +12,7 @@ pm_cli_override: cursor
 pm_model_override: composer-2.5
 review_model_override: opencode-go/hy3
 created_at: "2026-09-23T04:39:06Z"
+updated_at: "2026-09-23T06:32:17Z"
 ---
 ## Problem
 
@@ -82,4 +81,3 @@ No server or API changes required; timestamp is client-side display of event tim
 - 2026-09-23T05:44:09Z · status inbox→ready
 - 2026-09-23T06:30:22Z · status ready→active, branch
 - 2026-09-23T06:32:17Z · status active→review
-
