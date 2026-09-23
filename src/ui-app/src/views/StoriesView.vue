@@ -9,6 +9,7 @@ import { relTime } from "../lib/time";
 import TaskCard from "../components/TaskCard.vue";
 import NewStoryPanel from "../components/NewStoryPanel.vue";
 import Button from "../components/ui/button.vue";
+import ActivityIndicator from "../components/ActivityIndicator.vue";
 import type { Status, Task } from "../types";
 
 const STATUS_ORDER: Status[] = ["draft", "inbox", "ready", "active", "review", "done"];
@@ -35,6 +36,11 @@ const definitions = computed((): StoryDefinition[] =>
 );
 
 const stories = computed(() => mergeStoriesForDisplay(repo.tasks, definitions.value));
+
+/** Stories the PM agent is still fleshing out after a New story submit. */
+const pmWorkingKeys = computed(
+  () => new Set(repo.storyDefinitions.filter((d) => d.pmWorking).map((d) => d.key)),
+);
 
 watch(
   () => route.query.story,
@@ -170,7 +176,10 @@ function lastActivity(story: { lastActivity: string | null }): string {
           <div class="story-head-main">
             <div class="story-name-row">
               <h2 class="story-name">{{ story.name }}</h2>
-              <span v-if="story.complete" class="story-badge story-badge-done">complete</span>
+              <span v-if="pmWorkingKeys.has(story.key)" class="story-badge story-badge-pm">
+                <ActivityIndicator /> PM is working
+              </span>
+              <span v-else-if="story.complete" class="story-badge story-badge-done">complete</span>
               <span v-else-if="story.attention > 0" class="story-badge story-badge-attention">
                 {{ story.attention }} need input
               </span>
@@ -338,6 +347,13 @@ function lastActivity(story: { lastActivity: string | null }): string {
   color: var(--green);
   background: var(--green-tint);
   border: 1px solid var(--green-border-tint);
+}
+.story-badge-pm {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--txt-dim);
+  border: 1px solid var(--border-bright);
 }
 .story-badge-attention {
   color: var(--amber);

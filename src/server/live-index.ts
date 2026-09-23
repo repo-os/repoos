@@ -43,7 +43,7 @@ import {
   readWorktreeDirtyCache,
   writeWorktreeDirtyCache,
 } from "../core/indexer.js";
-import { listStoryDefinitions } from "../core/story-definition-files.js";
+import { isStoryPmWorking, listStoryDefinitions } from "../core/story-definition-files.js";
 import { patchTaskFile } from "./write.js";
 
 export type RepoEvent =
@@ -143,6 +143,16 @@ export type RepoEvent =
     }
   | { type: "hello"; taskCount: number; at: string }
   | { type: "story.definitionsChanged"; at: string }
+  /** The PM finished fleshing out a New story (ok or not); `path` is its final file. */
+  | {
+      type: "story.pmFinished";
+      path: string;
+      name: string;
+      ok: boolean;
+      reason?: string;
+      taggedTaskIds: string[];
+      at: string;
+    }
   | { type: "system.stats"; stats: SystemStats }
   /** Live snapshot of the integration pipeline for the pinned status bar (0207). */
   | { type: "integration"; pipeline: IntegrationSnapshot }
@@ -549,6 +559,7 @@ export class LiveIndex {
         body: d.body,
         createdAt: d.createdAt,
         createdBy: d.createdBy,
+        pmWorking: isStoryPmWorking(d.path),
       }));
     }
     return base;

@@ -740,6 +740,11 @@ export const useRepoStore = defineStore("repo", () => {
     Object.assign(counts, c);
   }
 
+  /** Feed entries render as HTML; escape free text (story names, agent errors). */
+  function escapeHtml(text: string): string {
+    return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+  }
+
   function pushFeed(msg: string, color: string, kind: string): void {
     feed.unshift({ key: feedKey++, msg, color, kind, time: new Date().toTimeString().slice(0, 8) });
     if (feed.length > 30) feed.pop();
@@ -830,6 +835,27 @@ export const useRepoStore = defineStore("repo", () => {
     eventCount.value++;
     if (e.type === "story.definitionsChanged") {
       void refresh();
+      return;
+    }
+    if (e.type === "story.pmFinished") {
+      // The New story pane acknowledges immediately and the PM fleshes the
+      // story out in the background, so report the outcome here.
+      if (e.ok) {
+        const n = e.taggedTaskIds.length;
+        pushFeed(
+          `<b>story ready</b> ${escapeHtml(e.name)}${n ? ` — ${n} existing task${n === 1 ? "" : "s"} added` : ""}`,
+          "#7dd3a8",
+          "story.pmFinished",
+        );
+      } else {
+        const reason = e.reason ?? "unknown error";
+        pushFeed(
+          `<b>PM agent failed</b> on a new story — kept as written: ${escapeHtml(reason)}`,
+          "#ffb454",
+          "story.pmFinished",
+        );
+        pushToast(`PM agent couldn't flesh out the new story — kept as written: ${reason}`);
+      }
       return;
     }
     if (e.type === "hello") {
@@ -1391,6 +1417,8 @@ export const useRepoStore = defineStore("repo", () => {
       "task.deleted",
       "task.aiCreateFailed",
       "task.pmWorking",
+      "story.definitionsChanged",
+      "story.pmFinished",
       "task.pmFinished",
       "task.progress",
       "task.corrected",
@@ -2290,8 +2318,8 @@ export const useRepoStore = defineStore("repo", () => {
     overrides?: { agent?: string; cli?: string; model?: string },
   ): Promise<{
     ok: boolean;
-    fallback?: boolean;
-    pmError?: string;
+    /** True when the PM agent is now fleshing the story out in the background. */
+    pending?: boolean;
     definition?: StoryDefinitionRecord;
     reason?: string;
   }> {
@@ -2305,8 +2333,7 @@ export const useRepoStore = defineStore("repo", () => {
     if (overrides?.model) body.modelOverride = overrides.model;
     const r = await api<{
       ok: boolean;
-      fallback?: boolean;
-      pmError?: string;
+      pending?: boolean;
       definition?: StoryDefinitionRecord;
       reason?: string;
     }>("/api/stories/freeform", JSON_OPTS("POST", body));

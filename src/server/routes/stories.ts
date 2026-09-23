@@ -4,15 +4,18 @@
 import type { RouteHandler } from "./types.js";
 import type { Agent } from "../../core/types.js";
 import { json, readBody } from "./utils.js";
-import { resolvePmAgent, runPrompt, recordOneShotSession, mergeAgentOverride } from "../agents.js";
+import { join } from "node:path";
+import { resolvePmAgent, mergeAgentOverride } from "../agents.js";
 import { agentsForConfig } from "../../core/config.js";
 import { getCurrentUser } from "./auth.js";
+import { commitTaskFile } from "../../core/git.js";
+import { normalizeStoryName } from "../../core/stories.js";
 import {
-  createFreeformStoryDefinition,
+  fallbackStoryName,
   listStoryDefinitions,
-  parseGeneratedStoryDefinition,
-  storyFreeformPrompt,
+  writeStoryDefinition,
 } from "../../core/story-definition-files.js";
+import { fleshOutStory } from "../story-pm.js";
 
 function pmWithOverrides(base: Agent, body: Record<string, unknown>): Agent {
   const cli =
@@ -33,6 +36,12 @@ export const getStoryDefinitions: RouteHandler = (ctx, _req, res) => {
   return json(res, 200, listStoryDefinitions(ctx.config));
 };
 
+/**
+ * Create a story from a freeform description. The placeholder definition is
+ * written and committed immediately — so `stories/` never leaves `main` dirty
+ * and the pane can acknowledge right away — and the PM agent fleshes it out in
+ * the background (`fleshOutStory`), mirroring the freeform New task flow.
+ */
 export const createFreeformStory: RouteHandler = async (ctx, req, res) => {
   const { config, emitEvent } = ctx;
   if (!storiesFeatureEnabled(config)) {
@@ -43,7 +52,7 @@ export const createFreeformStory: RouteHandler = async (ctx, req, res) => {
   if (!description) {
     return json(res, 400, { ok: false, reason: "description is required" });
   }
-  const name = typeof body?.name === "string" ? body.name : "";
+  const humanName = normalizeStoryName(typeof body?.name === "string" ? body.name : "");
   const runId = typeof body?.runId === "string" && body.runId ? body.runId : null;
   const createdBy = getCurrentUser(req, config)?.email;
 
@@ -53,53 +62,27 @@ export const createFreeformStory: RouteHandler = async (ctx, req, res) => {
       : resolvePmAgent(config);
   const pm = pmBase ? pmWithOverrides(pmBase, body) : null;
 
+  let definition;
   try {
-    const result = await createFreeformStoryDefinition(config, {
-      name,
-      description,
+    definition = writeStoryDefinition(config, {
+      name: humanName || fallbackStoryName(description),
+      body: description,
       createdBy,
-      generator: pm
-        ? async ({ name: humanName, description: desc }) => {
-            const promptResult = await runPrompt(pm, storyFreeformPrompt(humanName, desc), {
-              cwd: config.root,
-              onLine: runId
-                ? (line) => {
-                    emitEvent({
-                      type: "agent.output",
-                      id: runId,
-                      entry: { s: "out", d: line },
-                      stream: "out",
-                      at: new Date().toISOString(),
-                    });
-                  }
-                : undefined,
-            });
-            recordOneShotSession(config.root, pm, promptResult, {
-              sessionType: "pm",
-              taskId: null,
-            });
-            if (!promptResult.ok || !promptResult.output) {
-              throw new Error(promptResult.error ?? "the PM agent returned no usable output");
-            }
-            return parseGeneratedStoryDefinition(promptResult.output, humanName, desc);
-          }
-        : undefined,
-    });
-
-    emitEvent({
-      type: "story.definitionsChanged",
-      at: new Date().toISOString(),
-    });
-
-    return json(res, 201, {
-      ok: true,
-      fallback: result.fallback,
-      pmError: result.pmError,
-      definition: result.definition,
     });
   } catch (err) {
     const message = (err as Error).message;
     const status = message.includes("already exists") ? 409 : 400;
     return json(res, status, { ok: false, reason: message });
   }
+  commitTaskFile(
+    config.root,
+    join(config.root, definition.path),
+    `docs(stories): add "${definition.name}"`,
+  );
+  emitEvent({ type: "story.definitionsChanged", at: new Date().toISOString() });
+
+  if (pm) {
+    void fleshOutStory(ctx, { path: definition.path, humanName, description, pm, runId });
+  }
+  return json(res, 201, { ok: true, pending: pm !== null, definition });
 };

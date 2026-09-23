@@ -8,10 +8,10 @@ import { join } from "node:path";
 import type { RepoOSConfig } from "../../core/types";
 import {
   collisionFreeStoryPath,
-  createFreeformStoryDefinition,
   findStoryDefinitionByKey,
-  listStoryDefinitions,
   parseGeneratedStoryDefinition,
+  rewriteStoryDefinition,
+  storyFreeformPrompt,
   writeStoryDefinition,
 } from "../../core/story-definition-files";
 import { mergeStoriesForDisplay } from "../../core/story-display";
@@ -117,22 +117,55 @@ describe("parseGeneratedStoryDefinition", () => {
   });
 });
 
-describe("createFreeformStoryDefinition", () => {
-  it("falls back to human text when the generator fails", async () => {
-    const root = mkdtempSync(join(tmpdir(), "repoos-story-ff-"));
+describe("parseGeneratedStoryDefinition task ids", () => {
+  it("reads a tasks list, normalizing ids, and unwraps a whole-answer code fence", () => {
+    const parsed = parseGeneratedStoryDefinition(
+      '```markdown\n---\nname: Mobile\ntasks: ["0297", 302, "#0003"]\n---\n\nScope.\n```',
+      "",
+      "raw",
+    );
+    expect(parsed.hadFrontmatter).toBe(true);
+    expect(parsed.taskIds).toEqual(["0297", "0302", "0003"]);
+  });
+
+  it("keeps the human's name over the PM's proposal", () => {
+    const parsed = parseGeneratedStoryDefinition("---\nname: PM name\n---\n\nBody", "Mine", "d");
+    expect(parsed.name).toBe("Mine");
+  });
+});
+
+describe("storyFreeformPrompt", () => {
+  it("lists candidate tasks so the PM can pull them into the story", () => {
+    const prompt = storyFreeformPrompt("", "Mobile app", [
+      { id: "0297", title: "Build a native mobile app", status: "done" },
+    ]);
+    expect(prompt).toContain("0297 · done · Build a native mobile app");
+    expect(prompt).toContain("tasks");
+  });
+});
+
+describe("rewriteStoryDefinition", () => {
+  it("renames the file to the new slug and preserves authorship", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-story-rw-"));
     try {
       const c = config(root);
-      const result = await createFreeformStoryDefinition(c, {
-        description: "Build the onboarding tour.",
-        name: "Onboarding tour",
+      const first = writeStoryDefinition(c, {
+        name: "Placeholder text",
+        body: "Raw.",
         createdBy: "hello@repoos.org",
-        generator: async () => {
-          throw new Error("timeout");
-        },
       });
-      expect(result.fallback).toBe(true);
-      expect(result.definition.name).toBe("Onboarding tour");
-      expect(listStoryDefinitions(c)).toHaveLength(1);
+      const { definition, previousPath } = rewriteStoryDefinition(c, first.path, {
+        name: "Real name",
+        body: "Fleshed out.",
+      });
+      expect(definition.path).toBe("stories/real-name.md");
+      expect(previousPath).toBe(first.path);
+      expect(definition.createdBy).toBe("hello@repoos.org");
+      expect(readFileSync(join(root, definition.path), "utf8")).toContain("Fleshed out.");
+      writeStoryDefinition(c, { name: "Taken", body: "x", createdBy: "a" });
+      expect(() =>
+        rewriteStoryDefinition(c, definition.path, { name: "taken", body: "y" }),
+      ).toThrow(/already exists/);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

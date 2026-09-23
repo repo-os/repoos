@@ -266,6 +266,8 @@ export interface StoryDefinitionRecord {
   body: string;
   createdAt: string;
   createdBy: string;
+  /** True while the PM agent is fleshing this story out in the background. */
+  pmWorking?: boolean;
 }
 
 /**
@@ -452,6 +454,15 @@ export type RepoEvent =
   | { type: "hello"; taskCount: number; at: string }
   | { type: "index.rebuilt"; taskCount: number; at: string }
   | { type: "story.definitionsChanged"; at: string }
+  | {
+      type: "story.pmFinished";
+      path: string;
+      name: string;
+      ok: boolean;
+      reason?: string;
+      taggedTaskIds: string[];
+      at: string;
+    }
   | { type: "task.created"; task: Task }
   | { type: "task.updated"; task: Task; prev?: Partial<Task> }
   | { type: "task.deleted"; id: string }

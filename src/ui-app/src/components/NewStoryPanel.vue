@@ -30,6 +30,14 @@ const description = ref("");
 const formError = ref("");
 const freeformRunning = ref(false);
 const freeformRunId = ref<string | null>(null);
+/**
+ * True once the story is saved. The form swaps to an acknowledgment panel so
+ * the user can start another story or leave while the PM agent fleshes it out
+ * in the background — the same flow as a freeform New task (0311).
+ */
+const submitted = ref(false);
+/** Whether the PM agent is fleshing the submitted story out (false: saved as-is). */
+const submittedPending = ref(false);
 
 const pmAgentReady = computed(() => {
   if (!config.loaded) return true;
@@ -66,6 +74,7 @@ watch(
     storyName.value = "";
     description.value = "";
     formError.value = "";
+    resetRun();
     initFreeformOverrides();
   },
 );
@@ -82,12 +91,14 @@ const freeformIsCustom = computed(() => {
 
 const freeformLines = computed<{ s: "out" | "err"; d: string }[]>(() => {
   const raw = freeformRunId.value ? (repo.outputs[freeformRunId.value] ?? []) : [];
-  return raw.map((e) => {
-    if ("type" in e) {
-      return { s: "out", d: e.type === "text" ? e.text : ((e as { d?: string }).d ?? "") };
-    }
-    return { s: e.s === "err" ? "err" : "out", d: e.d };
-  });
+  return raw
+    .map((e): { s: "out" | "err"; d: string } => {
+      if ("type" in e) {
+        return { s: "out", d: e.type === "text" ? e.text : ((e as { d?: string }).d ?? "") };
+      }
+      return { s: e.s === "err" ? "err" : "out", d: e.d };
+    })
+    .filter((l) => l.d.trim() !== "");
 });
 
 const ffLogEl = ref<HTMLElement | null>(null);
@@ -110,37 +121,54 @@ function onDescriptionTranscribed(text: string): void {
   }
 }
 
+/** Drop the acknowledgment state and the previous run's buffered output. */
+function resetRun(): void {
+  submitted.value = false;
+  submittedPending.value = false;
+  if (freeformRunId.value) repo.clearOutput(freeformRunId.value);
+  freeformRunId.value = null;
+}
+
 async function createStory(): Promise<void> {
   const desc = description.value.trim();
   if (!desc || freeformRunning.value) return;
   ui.saving = true;
   freeformRunning.value = true;
   formError.value = "";
-  if (freeformRunId.value) repo.clearOutput(freeformRunId.value);
+  resetRun();
   freeformRunId.value = crypto.randomUUID();
   try {
     const overrides = freeformIsCustom.value
       ? { agent: freeformOverride.agent, cli: freeformOverride.cli, model: freeformOverride.model }
       : undefined;
+    // Returns as soon as the story is saved; the PM runs on in the background.
     const res = await repo.createFreeformStory(
       { name: storyName.value.trim(), description: desc },
       freeformRunId.value,
       overrides,
     );
-    if (res.fallback && res.pmError) {
-      formError.value = `PM agent failed: ${res.pmError} — saved as-is.`;
-      await new Promise((r) => setTimeout(r, 1200));
-    }
-    ui.close();
+    submittedPending.value = res.pending === true;
+    submitted.value = true;
     storyName.value = "";
     description.value = "";
   } catch (err) {
     formError.value = err instanceof Error ? err.message : String(err);
   } finally {
     freeformRunning.value = false;
-    freeformRunId.value = null;
     ui.saving = false;
   }
+}
+
+/** Back to a fresh form; the submitted story keeps being fleshed out. */
+function createAnotherStory(): void {
+  resetRun();
+  requestAnimationFrame(() => document.getElementById("ns-story-name")?.focus());
+}
+
+/** Acknowledge the in-flight creation and leave the pane. */
+function done(): void {
+  resetRun();
+  ui.close();
 }
 
 function onOpenAutoFocus(e: Event): void {
@@ -169,79 +197,100 @@ function onOpenAutoFocus(e: Event): void {
         <DialogClose class="close-x"><X class="size-[15px]" /></DialogClose>
       </div>
       <div class="drawer-body">
-        <div class="field">
-          <label for="ns-story-name">Story name</label>
-          <Input
-            id="ns-story-name"
-            v-model="storyName"
-            placeholder="Project updates email"
-            :disabled="freeformRunning"
-          />
-        </div>
-        <div class="field">
-          <div class="field-header">
-            <label for="ns-story-desc">Description</label>
-            <VoiceDictate @transcribed="onDescriptionTranscribed" />
+        <div v-if="submitted" class="ff-done">
+          <div class="ff-done-head">
+            <ActivityIndicator v-if="submittedPending" />
+            <span>{{ submittedPending ? "Creating your story" : "Story saved" }}</span>
           </div>
-          <textarea
-            id="ns-story-desc"
-            ref="descriptionTextarea"
-            v-model="description"
-            class="ff-textarea"
-            rows="10"
-            placeholder="Describe the outcome, areas involved, and constraints — the PM agent will flesh this out."
-            :disabled="freeformRunning"
-          ></textarea>
-        </div>
-        <div class="ff-agent-bar">
-          <div class="agent-pick-grid">
-            <div class="agent-field" style="grid-column: 1 / -1">
-              <AgentModelControl
-                :cli-options="cliOptions"
-                :model-options="modelOptions"
-                memory-key="panel:new-story"
-                v-model:cli="freeformOverride.cli"
-                v-model:model="freeformOverride.model"
-                :disabled="freeformRunning"
-              />
+          <p v-if="submittedPending" class="ff-done-copy">
+            This may take a few minutes. Your story is saved and the PM agent is fleshing it out in
+            the background — naming it, writing up the scope, and adding any existing tasks that
+            belong to it. The Stories page updates automatically when it's ready. You can keep
+            working, or start another story while you wait — nothing is lost.
+          </p>
+          <p v-else class="ff-done-copy">
+            Your story was saved as written. It's on the Stories page now.
+          </p>
+          <div class="btn-row" style="margin-top: 18px">
+            <Button variant="default" @click="createAnotherStory">Create another story</Button>
+            <Button variant="outline" @click="done">Done</Button>
+          </div>
+          <div v-if="freeformLines.length" class="ff-stream" style="margin-top: 16px">
+            <div class="ff-stream-head">
+              <ActivityIndicator />
+              PM agent
+            </div>
+            <div ref="ffLogEl" class="ff-stream-log">
+              <div
+                v-for="(line, i) in freeformLines"
+                :key="i"
+                class="ff-stream-line"
+                :class="line.s === 'err' ? 'err' : ''"
+              >
+                {{ line.d }}
+              </div>
             </div>
           </div>
         </div>
-        <div v-if="!pmAgentReady" class="ff-notice">
-          No PM agent is configured.
-          <router-link :to="{ name: 'agents' }" @click="ui.close()">
-            Set one up on the Agents page
-          </router-link>
-          — your description will be saved as-is.
-        </div>
-        <div v-if="formError" class="ff-error">{{ formError }}</div>
-        <div class="btn-row" style="margin-top: 20px">
-          <Button variant="outline" @click="ui.close()">Cancel</Button>
-          <Button
-            variant="default"
-            :disabled="ui.saving || !description.trim()"
-            @click="createStory"
-          >
-            <ActivityIndicator v-if="freeformRunning" />
-            {{ freeformRunning ? "Asking the PM agent…" : "Create story" }}
-          </Button>
-        </div>
-        <div v-if="freeformLines.length" class="ff-stream">
-          <div class="ff-stream-head">
-            <ActivityIndicator />
-            PM agent
+        <template v-else>
+          <div class="field">
+            <label for="ns-story-name">Story name</label>
+            <Input
+              id="ns-story-name"
+              v-model="storyName"
+              placeholder="Project updates email"
+              :disabled="freeformRunning"
+            />
           </div>
-          <div ref="ffLogEl" class="ff-stream-log">
-            <div
-              v-for="(line, i) in freeformLines"
-              :key="i"
-              class="ff-stream-line"
-              :class="line.s === 'err' ? 'err' : ''"
+          <div class="field">
+            <div class="field-header">
+              <label for="ns-story-desc">Description</label>
+              <VoiceDictate @transcribed="onDescriptionTranscribed" />
+            </div>
+            <textarea
+              id="ns-story-desc"
+              ref="descriptionTextarea"
+              v-model="description"
+              class="ff-textarea"
+              rows="10"
+              placeholder="Describe the outcome, areas involved, and constraints — the PM agent will flesh this out."
+              :disabled="freeformRunning"
+            ></textarea>
+          </div>
+          <div class="ff-agent-bar">
+            <div class="agent-pick-grid">
+              <div class="agent-field" style="grid-column: 1 / -1">
+                <AgentModelControl
+                  :cli-options="cliOptions"
+                  :model-options="modelOptions"
+                  memory-key="panel:new-story"
+                  v-model:cli="freeformOverride.cli"
+                  v-model:model="freeformOverride.model"
+                  :disabled="freeformRunning"
+                />
+              </div>
+            </div>
+          </div>
+          <div v-if="!pmAgentReady" class="ff-notice">
+            No PM agent is configured.
+            <router-link :to="{ name: 'agents' }" @click="ui.close()">
+              Set one up on the Agents page
+            </router-link>
+            — your description will be saved as-is.
+          </div>
+          <div v-if="formError" class="ff-error">{{ formError }}</div>
+          <div class="btn-row" style="margin-top: 20px">
+            <Button variant="outline" @click="ui.close()">Cancel</Button>
+            <Button
+              variant="default"
+              :disabled="ui.saving || !description.trim()"
+              @click="createStory"
             >
-              {{ line.d }}
-            </div>
+              <ActivityIndicator v-if="freeformRunning" />
+              {{ freeformRunning ? "Saving…" : "Create story" }}
+            </Button>
           </div>
-        </div>
+        </template>
       </div>
     </DialogContent>
   </Dialog>

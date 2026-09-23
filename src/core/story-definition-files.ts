@@ -1,7 +1,14 @@
 /**
  * Git-tracked story definition files under `stories/` (#0486). Node-only I/O.
  */
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import type { RepoOSConfig } from "./types.js";
 import { FM_DELIM, parseDocument, serializeDocument } from "./frontmatter.js";
@@ -10,7 +17,7 @@ import type { StoryDefinition } from "./story-display.js";
 
 export const STORIES_DIR = "stories";
 
-function fallbackStoryName(text: string): string {
+export function fallbackStoryName(text: string): string {
   const line =
     text
       .split("\n")
@@ -34,6 +41,22 @@ function isStoryFile(name: string): boolean {
   return name.endsWith(".md") && !name.startsWith(".");
 }
 
+/**
+ * Story files the PM agent is fleshing out right now (by repo-relative path).
+ * In-memory on purpose: a server reload drops the run, and the indicator must
+ * clear with it rather than stick. Written by `src/server/story-pm.ts`.
+ */
+const pmWorking = new Set<string>();
+
+export function setStoryPmWorking(path: string, on: boolean): void {
+  if (on) pmWorking.add(path);
+  else pmWorking.delete(path);
+}
+
+export function isStoryPmWorking(path: string): boolean {
+  return pmWorking.has(path);
+}
+
 export function storySlug(name: string): string {
   return (
     normalizeStoryName(name)
@@ -44,11 +67,16 @@ export function storySlug(name: string): string {
   );
 }
 
-export function collisionFreeStoryPath(config: RepoOSConfig, name: string): string {
+export function collisionFreeStoryPath(
+  config: RepoOSConfig,
+  name: string,
+  /** A path the caller is replacing, so it never counts as a collision. */
+  ownPath?: string,
+): string {
   const base = storySlug(name);
   let path = `${STORIES_DIR}/${base}.md`;
   let n = 2;
-  while (existsSync(join(config.root, path))) {
+  while (path !== ownPath && existsSync(join(config.root, path))) {
     path = `${STORIES_DIR}/${base}-${n}.md`;
     n += 1;
   }
@@ -141,17 +169,86 @@ export function writeStoryDefinition(
   };
 }
 
+/**
+ * Replace an existing definition's name and body in place, keeping its
+ * `created_at` / `created_by`. The PM flesh-out uses this to swap the
+ * placeholder written at submit time for the generated story. When the new
+ * name slugs differently the file is renamed to match; `previousPath` is set
+ * then so the caller can commit the removal too.
+ */
+export function rewriteStoryDefinition(
+  config: RepoOSConfig,
+  path: string,
+  input: { name: string; body: string },
+): { definition: StoryDefinition; previousPath?: string } {
+  const absOld = join(config.root, path);
+  if (!existsSync(absOld)) throw new Error(`story definition not found: ${path}`);
+  const current = parseStoryDefinitionFile(readFileSync(absOld, "utf8"), path);
+  if (!current) throw new Error(`story definition is unreadable: ${path}`);
+  const name = normalizeStoryName(input.name);
+  if (!name) throw new Error("story name is required");
+  const body = input.body.trim();
+  if (!body) throw new Error("story description is required");
+  const clash = findStoryDefinitionByKey(config, storyKey(name));
+  if (clash && clash.path !== path) {
+    throw new Error(`A story named "${clash.name}" already exists`);
+  }
+  const nextPath =
+    storySlug(name) === storySlug(current.name) ? path : collisionFreeStoryPath(config, name, path);
+  const content = serializeDocument(
+    { name, created_at: current.createdAt, created_by: current.createdBy },
+    `${body}\n`,
+  );
+  writeFileSync(join(config.root, nextPath), content, "utf8");
+  if (nextPath !== path) unlinkSync(absOld);
+  return {
+    definition: {
+      key: storyKey(name),
+      name,
+      path: nextPath,
+      body,
+      createdAt: current.createdAt,
+      createdBy: current.createdBy,
+    },
+    previousPath: nextPath !== path ? path : undefined,
+  };
+}
+
 export interface ParsedGeneratedStory {
   name: string;
   body: string;
+  /** Ids of existing tasks the PM judged part of this story. */
+  taskIds: string[];
   hadFrontmatter: boolean;
 }
 
-export function storyFreeformPrompt(humanName: string, description: string): string {
+/** An existing task the PM may pull into a new story. */
+export interface StoryTaskCandidate {
+  id: string;
+  title: string;
+  status: string;
+}
+
+export function storyFreeformPrompt(
+  humanName: string,
+  description: string,
+  candidates: StoryTaskCandidate[] = [],
+): string {
   const nameHint =
     humanName.trim().length > 0
       ? `The human already chose the story name: "${normalizeStoryName(humanName)}". Use that exact name in frontmatter.`
       : "The human did not provide a name — propose a concise story name in frontmatter.";
+  const taskList = candidates.length
+    ? [
+        "",
+        "Existing tasks that are not yet tagged with any story (id · status · title).",
+        "If any of them clearly belong to this story, list their ids in a `tasks`",
+        "frontmatter list. Leave it out (or empty) when none fit — only include a",
+        "task you are confident belongs here.",
+        "",
+        ...candidates.map((t) => `${t.id} · ${t.status} · ${t.title.replace(/\s+/g, " ")}`),
+      ]
+    : [];
   return [
     "You are the PM agent for RepoOS. Turn the user's freeform description into a",
     "story definition: a delivery slice that may later be broken into tasks tagged",
@@ -165,10 +262,12 @@ export function storyFreeformPrompt(humanName: string, description: string): str
     "```",
     description.trim(),
     "```",
+    ...taskList,
     "",
     "Respond with a frontmatter block and markdown body only, like:",
     "---",
     "name: Project updates email",
+    'tasks: ["0123", "0456"]',
     "---",
     "",
     "# Project updates email",
@@ -181,87 +280,45 @@ export function storyFreeformPrompt(humanName: string, description: string): str
   ].join("\n");
 }
 
+function parseTaskIds(raw: unknown): string[] {
+  const items = Array.isArray(raw) ? raw : typeof raw === "string" ? raw.split(/[\s,]+/) : [];
+  const ids = items
+    .map((v) =>
+      String(v ?? "")
+        .replace(/^#/, "")
+        .trim(),
+    )
+    .filter((v) => /^\d+$/.test(v))
+    .map((v) => v.padStart(4, "0"));
+  return [...new Set(ids)];
+}
+
 export function parseGeneratedStoryDefinition(
   rawOutput: string,
   humanName: string,
   rawDescription: string,
 ): ParsedGeneratedStory {
-  const { data, body, hadFrontmatter } = parseDocument(rawOutput.trim());
+  // Agents sometimes wrap the whole answer in a ```markdown fence despite the
+  // prompt; unwrap it so the frontmatter is still found.
+  const trimmed = rawOutput.trim();
+  const fenced = trimmed.match(/^```[a-z]*\n([\s\S]*?)\n```$/i);
+  const { data, body, hadFrontmatter } = parseDocument(fenced ? fenced[1].trim() : trimmed);
   const fromFm =
     typeof data.name === "string" && data.name.trim() ? normalizeStoryName(data.name) : "";
   const human = normalizeStoryName(humanName);
   if (hadFrontmatter && (fromFm || body.trim())) {
     return {
-      name: fromFm || human || fallbackStoryName(rawDescription),
+      // The human's explicit name always wins over the PM's proposal.
+      name: human || fromFm || fallbackStoryName(rawDescription),
       body: body.trim() || rawDescription.trim(),
+      taskIds: parseTaskIds(data.tasks),
       hadFrontmatter: true,
     };
   }
   return {
     name: human || fallbackStoryName(rawDescription),
     body: rawDescription.trim(),
+    taskIds: [],
     hadFrontmatter: false,
   };
-}
-
-export type StoryDefinitionGenerator = (input: {
-  name: string;
-  description: string;
-}) => Promise<ParsedGeneratedStory>;
-
-export async function createFreeformStoryDefinition(
-  config: RepoOSConfig,
-  input: {
-    name?: string;
-    description: string;
-    createdBy?: string;
-    generator?: StoryDefinitionGenerator;
-  },
-): Promise<{ definition: StoryDefinition; fallback: boolean; pmError?: string }> {
-  const description = input.description.trim();
-  if (!description) throw new Error("description is required");
-  const humanName = normalizeStoryName(input.name ?? "");
-  if (humanName && findStoryDefinitionByKey(config, storyKey(humanName))) {
-    const existing = findStoryDefinitionByKey(config, storyKey(humanName))!;
-    throw new Error(`A story named "${existing.name}" already exists`);
-  }
-
-  let parsed: ParsedGeneratedStory = {
-    name: humanName || fallbackStoryName(description),
-    body: description,
-    hadFrontmatter: false,
-  };
-  let fallback = true;
-  let pmError: string | undefined;
-
-  if (input.generator) {
-    try {
-      const generated = await input.generator({ name: humanName, description });
-      if (generated.hadFrontmatter) {
-        parsed = generated;
-        fallback = false;
-      } else {
-        pmError = "the PM agent did not return a valid story definition";
-        parsed = {
-          name: humanName || generated.name || fallbackStoryName(description),
-          body: description,
-          hadFrontmatter: false,
-        };
-      }
-    } catch (err) {
-      pmError = err instanceof Error ? err.message : String(err);
-      parsed = {
-        name: humanName || fallbackStoryName(description),
-        body: description,
-        hadFrontmatter: false,
-      };
-    }
-  }
-
-  const definition = writeStoryDefinition(config, {
-    name: parsed.name,
-    body: parsed.body,
-    createdBy: input.createdBy,
-  });
-  return { definition, fallback, pmError };
 }
