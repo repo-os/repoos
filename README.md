@@ -298,21 +298,22 @@ no API tokens leave your machine unless you configure them.
 
 ## RepoOS Hub for macOS
 
-A native Mac app (macOS 13+; sessions persist across relaunches on macOS 14+)
-that keeps tabs on all your RepoOS servers from
-one window: pin tasks across servers, see live attention counts in the sidebar
-and Dock badge, and jump between servers and tasks with Cmd-K. Each server
-loads in its own isolated WebKit session — sessions are never shared between
-servers, and server pages get no bridge into your files or Keychain. Local
-loopback servers need zero setup; remote servers use short-lived, revocable
-capability tokens (created over HTTPS on the server, stored in the Keychain)
-for their attention and search endpoints.
+A native Mac companion app (macOS 13+; sessions persist across relaunches on
+macOS 14+) that connects to the RepoOS servers you run locally or remotely.
+From one window, pin tasks across servers, see live attention counts in the
+sidebar and Dock badge, and jump between servers and tasks with Cmd-K. Each
+server loads in its own isolated WebKit session — sessions are never shared
+between servers, and server pages get no bridge into your files or Keychain.
+Local loopback servers need zero setup; remote servers use short-lived,
+revocable capability tokens (created over HTTPS on the server, stored in the
+Keychain) for their attention and search endpoints.
 
 Download the latest [RepoOS Hub DMG](https://github.com/repo-os/repoos/releases/latest/download/RepoOSHub.dmg),
 or browse [GitHub Releases](https://github.com/repo-os/repoos/releases). Setup,
 pairing, and limitation details are in the [Hub guide](https://docs.repoos.org/macos-hub).
-Current builds are ad-hoc signed, so macOS requires Control-click **Open** once;
-the guide has the exact steps. Developer ID signing and notarization are planned.
+Current builds are ad-hoc signed and not notarized. After a first blocked launch,
+use **System Settings → Privacy & Security → Open Anyway**; the guide has the
+exact steps. Developer ID signing and notarization are planned.
 
 ## Roadmap
 

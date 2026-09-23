@@ -5,6 +5,10 @@ one place — local projects on your machine and remote servers you can reach ov
 HTTPS (for example, a server published through a
 [Cloudflare Tunnel](/tunnels)).
 
+It complements the RepoOS CLI rather than replacing it: use the CLI, Homebrew,
+or npm to run or deploy RepoOS servers, then add those servers to Hub when you
+want one desktop place to work across them.
+
 Each server is shown in a sidebar with its own health state. Selecting one loads
 that server's ordinary RepoOS web UI in an **isolated window**: every server has
 its own sign-in session and cookies, so switching between servers never mixes
@@ -47,19 +51,26 @@ means the first time you open the app, macOS shows a Gatekeeper warning:
 
 > "RepoOS Hub cannot be opened because it is from an unidentified developer."
 
-To open it anyway:
+To open it anyway, first attempt to open the app and dismiss the warning. Then:
 
-- **Right-click** (or Control-click) **RepoOS Hub** in Finder and choose **Open**,
-  then click **Open** in the dialog. You only need to do this once.
+1. Open **System Settings → Privacy & Security**.
+2. Scroll to the Security section and click **Open Anyway** for RepoOS Hub.
+   macOS shows this option for about an hour after the blocked launch.
+3. Confirm **Open** in the next dialog. macOS remembers that exception for later
+   launches.
 
-Or, from Terminal:
+If **Open Anyway** is not available, the Mac may be managed by an organisation
+that disallows overrides. Do not bypass that policy. For an unmanaged machine,
+an advanced, trust-only fallback is:
 
 ```sh
 xattr -dr com.apple.quarantine "/Applications/RepoOS Hub.app"
 ```
 
 Notarization and a stable Developer ID signature are planned but are not in
-place yet; treat the DMG as you would any unsigned software you download.
+place yet; treat the DMG as you would any unsigned software you download. A
+fully trusted first-launch experience requires that signing and notarization
+work, not a different DMG layout.
 
 ## Updates
 
