@@ -2,7 +2,7 @@
 id: "0486"
 title: Add New story flow with PM-assisted story definitions
 type: feature
-status: draft
+status: inbox
 priority: p2
 area: web + core + server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-09-22T15:56:16Z"
-updated_at: "2026-09-23T02:41:36Z"
+updated_at: "2026-09-23T02:41:37Z"
 ---
 ## Problem
 
@@ -125,3 +125,4 @@ Let's make a "new story" button in the same style as new task and new input, fol
 - 2026-09-23T02:40:29Z · pm_cli_override, pm_model_override
 - 2026-09-23T02:40:31Z · pm_model_override
 - 2026-09-23T02:41:36Z · title, area, body
+- 2026-09-23T02:41:37Z · status draft→inbox
