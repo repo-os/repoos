@@ -69,6 +69,7 @@ export const useUiStore = defineStore("ui", () => {
   /** True when showing the new-skill panel instead of a task. */
   const isNewSkill = ref(false);
   const isNewInput = ref(false);
+  const isNewStory = ref(false);
   const inputText = ref("");
   /** Unsent text in one of the task drawer's chat composers. */
   const unsentTaskChatDraft = ref(false);
@@ -188,6 +189,7 @@ export const useUiStore = defineStore("ui", () => {
     isNewDoc.value = false;
     isNewSkill.value = false;
     isNewInput.value = false;
+    isNewStory.value = false;
     nt.title = "";
     nt.body = "";
     nt.area = "web";
@@ -203,6 +205,7 @@ export const useUiStore = defineStore("ui", () => {
     active.value = null;
     isNew.value = false;
     isNewInput.value = false;
+    isNewStory.value = false;
     nd.path = "";
     nd.content = "";
   }
@@ -212,14 +215,26 @@ export const useUiStore = defineStore("ui", () => {
     isNew.value = false;
     isNewDoc.value = false;
     isNewSkill.value = false;
+    isNewStory.value = false;
     active.value = null;
     inputText.value = "";
     clearScreenshots();
   }
 
+  function openNewStory(): void {
+    isNewStory.value = true;
+    isNew.value = false;
+    isNewDoc.value = false;
+    isNewSkill.value = false;
+    isNewInput.value = false;
+    active.value = null;
+  }
+
   function openNewSkill(): void {
     isNewSkill.value = true;
     isNewDoc.value = false;
+    isNewStory.value = false;
+    isNewInput.value = false;
     active.value = null;
     isNew.value = false;
     ns.name = "";
@@ -334,6 +349,7 @@ export const useUiStore = defineStore("ui", () => {
     isNewDoc.value = false;
     isNewSkill.value = false;
     isNewInput.value = false;
+    isNewStory.value = false;
     activeTab.value = "details";
     debugView.value = "logs";
     debugCheckFocus.value = null;
@@ -380,6 +396,7 @@ export const useUiStore = defineStore("ui", () => {
     isNewDoc,
     isNewSkill,
     isNewInput,
+    isNewStory,
     inputText,
     unsentTaskChatDraft,
     taskEditorDraft,
@@ -406,6 +423,7 @@ export const useUiStore = defineStore("ui", () => {
     openNewDoc,
     openNewSkill,
     openNewInput,
+    openNewStory,
     open,
     syncActive,
     openTask,

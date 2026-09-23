@@ -196,9 +196,12 @@ const storiesEnabled = computed(
   () => (config.data?.stories as { enabled?: unknown } | undefined)?.enabled === true,
 );
 
-/** Existing story names across the board, deduped case-insensitively. */
+/** Existing story names across the board and registered definitions, deduped. */
 const storyOptions = computed(() => {
   const seen = new Map<string, string>();
+  for (const d of repo.storyDefinitions) {
+    if (!seen.has(d.key)) seen.set(d.key, d.name);
+  }
   for (const t of repo.tasks) {
     const name = (t.story ?? "").replace(/\s+/g, " ").trim();
     if (!name) continue;
