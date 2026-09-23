@@ -44,9 +44,6 @@ func drawIcon(size: Int, theme: Theme) -> NSImage {
     fatalError("no graphics context")
   }
 
-  theme.bg2.setFill()
-  NSBezierPath(rect: NSRect(x: 0, y: 0, width: s, height: s)).fill()
-
   let outerRect = NSRect(x: 0, y: 0, width: s, height: s)
   let outerPath = NSBezierPath(roundedRect: outerRect, xRadius: outerRadius, yRadius: outerRadius)
 
