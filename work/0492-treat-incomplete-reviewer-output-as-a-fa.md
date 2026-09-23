@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-23T06:37:30Z"
+review_passes: 2
 id: "0492"
 title: Treat incomplete reviewer output as failed review
 type: feature
@@ -13,8 +15,6 @@ pm_model_override: composer-2.5
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-23T04:31:37Z"
-updated_at: "2026-09-23T06:36:23Z"
-review_passes: 1
 ---
 ## Problem
 
@@ -89,3 +89,4 @@ Require a parseable verdict before marking a review complete or incrementing rev
 - 2026-09-23T05:44:55Z · note: apply the suggestions if they make sense
 - 2026-09-23T06:34:32Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-09-23T06:36:23Z · status active→review
+
