@@ -16,6 +16,7 @@
 import { watch, existsSync, readdirSync, statSync, type FSWatcher } from "node:fs";
 import { join, extname } from "node:path";
 import type { RepoOSConfig } from "../core/types.js";
+import { STORIES_DIR } from "../core/story-definition-files.js";
 import type { LiveIndex } from "./live-index.js";
 
 const DEBOUNCE_MS = 60;
@@ -37,9 +38,16 @@ export class WorkWatcher {
 
   start(): void {
     const workPath = join(this.config.root, this.config.workDir);
-    if (!existsSync(workPath)) return;
-    if (!this.tryRecursive(workPath)) {
-      this.watchTree(workPath);
+    if (existsSync(workPath)) {
+      if (!this.tryRecursive(workPath)) {
+        this.watchTree(workPath);
+      }
+    }
+    if (this.config.stories?.enabled === true) {
+      const storiesPath = join(this.config.root, STORIES_DIR);
+      if (existsSync(storiesPath)) {
+        this.watchTree(storiesPath);
+      }
     }
     this.pollTimer = setInterval(() => this.reconcile(), DEFAULT_POLL_MS);
     this.pollTimer.unref?.();
@@ -120,6 +128,10 @@ export class WorkWatcher {
       setTimeout(() => {
         this.timers.delete(absPath);
         this.updateMtime(absPath);
+        if (this.isStoryDefinitionFile(absPath)) {
+          this.index.notifyStoryDefinitionsChanged();
+          return;
+        }
         this.index.applyFileChange(absPath);
       }, DEBOUNCE_MS),
     );
@@ -189,5 +201,11 @@ export class WorkWatcher {
 
   private isTaskFile(absPath: string): boolean {
     return this.config.taskExtensions.includes(extname(absPath));
+  }
+
+  private isStoryDefinitionFile(absPath: string): boolean {
+    const storiesRoot = join(this.config.root, STORIES_DIR);
+    if (!absPath.startsWith(storiesRoot)) return false;
+    return extname(absPath) === ".md";
   }
 }

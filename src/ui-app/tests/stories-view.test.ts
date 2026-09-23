@@ -3,7 +3,7 @@
  * roll-up, ordering, expanding to member tasks, retag recomputation, opening
  * the task drawer, and the mobile layout rule.
  */
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -14,15 +14,22 @@ import { useRepoStore } from "../src/stores/repo";
 import { useUiStore } from "../src/stores/ui";
 import { makeTask } from "./component-test-helpers";
 
+vi.mock("vue-router", () => ({
+  useRoute: () => ({ query: {} }),
+  useRouter: () => ({ replace: vi.fn() }),
+}));
+
 const TaskCardStub = {
   name: "TaskCard",
   props: ["task", "dragEnabled"],
   template: '<div class="stub-task" :data-id="task.id"></div>',
 };
 
+const NewStoryPanelStub = { template: "<div />" };
+
 function mountView() {
   return mount(StoriesView, {
-    global: { stubs: { TaskCard: TaskCardStub } },
+    global: { stubs: { TaskCard: TaskCardStub, NewStoryPanel: NewStoryPanelStub } },
   });
 }
 
@@ -56,6 +63,24 @@ describe("StoriesView grouping and roll-up", () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     useConfigStore().data = { stories: { enabled: true } };
+  });
+
+  it("shows a registered story with zero tasks", () => {
+    setTasks([makeTask({ id: "0001", status: "ready" })]);
+    useRepoStore().storyDefinitions = [
+      {
+        key: "planned",
+        name: "Planned slice",
+        path: "stories/planned-slice.md",
+        body: "Scope for later.",
+        createdAt: "2026-09-01T00:00:00Z",
+        createdBy: "hello@repoos.org",
+      },
+    ];
+    const wrapper = mountView();
+    expect(wrapper.findAll(".story-card")).toHaveLength(1);
+    expect(wrapper.text()).toContain("Planned slice");
+    expect(wrapper.text()).toContain("No tasks tagged yet");
   });
 
   it("groups tagged tasks and ignores untagged ones", () => {
@@ -112,6 +137,13 @@ describe("StoriesView grouping and roll-up", () => {
       .findAll(".story-name")
       .map((n) => n.text());
     expect(names).toEqual(["Attention", "Active", "Quiet", "Complete"]);
+  });
+
+  it("shows New story in the header when enabled", () => {
+    setTasks([]);
+    const wrapper = mountView();
+    expect(wrapper.text()).toContain("New story");
+    expect(wrapper.find(".new-btn").exists()).toBe(true);
   });
 
   it("shows an empty state when nothing is tagged", () => {

@@ -638,14 +638,17 @@ enabled = false
 | --- | --- | --- | --- | --- |
 | `stories.enabled` | boolean | `false` | yes | Turns the Stories page, its navigation item (between Work and Checks), and the task drawer's Story field on. |
 
-Stories are an optional, purely derived grouping over tasks: a delivery slice
-that spans several technical areas and owners. Tag a task by giving it a
-`story:` value in frontmatter — from the task drawer's Story field, or with
-`repoos new "…" --story "Project updates email"` / `repoos update <id> --story
-"Project updates email"`. A story has no file, worktree, agent, branch, or
-status of its own; the Stories page is rebuilt from the tagged tasks on every
-index update. A story counts as complete only when every one of its tasks is
-done, and there is no manual completion control.
+Stories are an optional grouping over tasks: a delivery slice that spans several
+technical areas and owners. You can **register a story up front** with a markdown
+file under `stories/` (from the Stories page **New story** flow, or by adding a
+file in git), and/or tag tasks with a matching `story:` value in frontmatter —
+from the task drawer's Story field, or with `repoos new "…" --story "Project
+updates email"` / `repoos update <id> --story "Project updates email"`. Task
+tags drive counts, progress, and completion; definition files add name and
+description before any task exists. A story has no worktree, agent, branch, or
+status of its own. The Stories page merges registered definitions with tagged
+tasks. A story counts as complete only when every one of its tasks is done, and
+there is no manual completion control.
 
 Story names are whitespace-normalized and matched case-insensitively, so
 `Project updates email` and `project  updates  email` group together under one

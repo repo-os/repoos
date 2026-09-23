@@ -1158,4 +1158,16 @@ export interface BoardIndex {
   taskCount: number;
   tasks: BoardTask[];
   counts: Record<Status, number>;
+  /** Registered story definition files (`stories/*.md`) when `[stories] enabled`. */
+  storyDefinitions?: StoryDefinitionRecord[];
+}
+
+/** One git-tracked story definition surfaced on the board payload (#0486). */
+export interface StoryDefinitionRecord {
+  key: string;
+  name: string;
+  path: string;
+  body: string;
+  createdAt: string;
+  createdBy: string;
 }
