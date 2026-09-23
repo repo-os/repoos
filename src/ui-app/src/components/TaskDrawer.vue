@@ -1189,10 +1189,11 @@ const reviewSubstate = computed<{ label: string; cls: string } | null>(() => {
 });
 
 /** Compact lifecycle counts: D = dev passes, R = review passes. The server
- * writes `review_passes` on EVERY completed review run (auto and manual alike),
- * so these track the true round-trips rather than `review_rounds`, which is a
- * separate auto-bounce bookkeeping counter capped at MAX_AUTO_REVIEW_ROUNDS.
- * Fall back to `review_rounds` only for tasks written before that field. */
+ * bumps `review_passes` only when a review finishes with a parseable verdict
+ * (auto and manual "Review again" alike), so these track completed review
+ * rounds rather than `review_rounds`, which is a separate auto-bounce
+ * bookkeeping counter capped at MAX_AUTO_REVIEW_ROUNDS. Fall back to
+ * `review_rounds` only for tasks written before that field. */
 const taskRounds = computed(() => {
   const task = ui.active;
   if (!task || (!task.branch && (task.status === "draft" || task.status === "inbox"))) {
