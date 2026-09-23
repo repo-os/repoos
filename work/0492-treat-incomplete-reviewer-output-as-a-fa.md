@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-23T07:01:51Z"
+review_passes: 3
 id: "0492"
 title: Treat incomplete reviewer output as failed review
 type: feature
@@ -13,8 +15,6 @@ pm_model_override: composer-2.5
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-23T04:31:37Z"
-updated_at: "2026-09-23T07:00:13Z"
-review_passes: 2
 ---
 ## Problem
 
@@ -91,3 +91,4 @@ Require a parseable verdict before marking a review complete or incrementing rev
 - 2026-09-23T06:36:23Z · status active→review
 - 2026-09-23T06:59:25Z · status review→active
 - 2026-09-23T07:00:13Z · status active→review
+
