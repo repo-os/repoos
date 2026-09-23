@@ -31,10 +31,14 @@ extension NSColor {
 
 func drawIcon(size: Int, theme: Theme) -> NSImage {
   let s = CGFloat(size)
-  let outerRadius = s * 9 / 30
-  let inset = s * 3 / 30
-  let innerRadius = s * 6 / 30
-  let svgScale = s * 14 / 30
+  // applicationIconImage is rendered directly by the Dock, so reserve the
+  // visual padding normally provided by an app icon's canvas.
+  let canvasInset = s * 3 / 30
+  let iconSize = s - canvasInset * 2
+  let outerRadius = iconSize * 9 / 30
+  let inset = iconSize * 3 / 30
+  let innerRadius = iconSize * 6 / 30
+  let svgScale = iconSize * 14 / 30
 
   let image = NSImage(size: NSSize(width: s, height: s))
   image.lockFocus()
@@ -47,13 +51,13 @@ func drawIcon(size: Int, theme: Theme) -> NSImage {
     fatalError("no graphics context")
   }
 
-  let outerRect = NSRect(x: 0, y: 0, width: s, height: s)
+  let outerRect = NSRect(x: canvasInset, y: canvasInset, width: iconSize, height: iconSize)
   let outerPath = NSBezierPath(roundedRect: outerRect, xRadius: outerRadius, yRadius: outerRadius)
 
   ctx.saveGState()
   outerPath.addClip()
 
-  let center = CGPoint(x: s / 2, y: s / 2)
+  let center = CGPoint(x: outerRect.midX, y: outerRect.midY)
   let startAngle = CGFloat(200) * .pi / 180
   let steps = 720
   for i in 0..<steps {
@@ -66,7 +70,7 @@ func drawIcon(size: Int, theme: Theme) -> NSImage {
     }
     let a0 = startAngle + t * 2 * .pi
     let a1 = startAngle + CGFloat(i + 1) / CGFloat(steps) * 2 * .pi
-    let radius = s * 0.75
+    let radius = iconSize * 0.75
     let p0 = CGPoint(x: center.x + cos(a0) * radius, y: center.y + sin(a0) * radius)
     let p1 = CGPoint(x: center.x + cos(a1) * radius, y: center.y + sin(a1) * radius)
     ctx.setFillColor(color.cgColor)
@@ -79,10 +83,10 @@ func drawIcon(size: Int, theme: Theme) -> NSImage {
   ctx.restoreGState()
 
   let innerRect = NSRect(
-    x: inset,
-    y: inset,
-    width: s - inset * 2,
-    height: s - inset * 2
+    x: outerRect.minX + inset,
+    y: outerRect.minY + inset,
+    width: iconSize - inset * 2,
+    height: iconSize - inset * 2
   )
   let innerPath = NSBezierPath(roundedRect: innerRect, xRadius: innerRadius, yRadius: innerRadius)
   theme.bg2.setFill()
@@ -96,7 +100,7 @@ func drawIcon(size: Int, theme: Theme) -> NSImage {
   """.data(using: .utf8)!
 
   if let rep = NSImage(data: svgData) {
-    let origin = NSPoint(x: (s - svgScale) / 2, y: (s - svgScale) / 2)
+    let origin = NSPoint(x: outerRect.midX - svgScale / 2, y: outerRect.midY - svgScale / 2)
     rep.draw(in: NSRect(x: origin.x, y: origin.y, width: svgScale, height: svgScale))
   }
 
