@@ -15,12 +15,6 @@ import DialogContent from "./ui/dialog/content.vue";
 import DialogDescription from "./ui/dialog/description.vue";
 import DialogOverlay from "./ui/dialog/overlay.vue";
 import DialogTitle from "./ui/dialog/title.vue";
-import Select from "./ui/select/root.vue";
-import SelectContent from "./ui/select/content.vue";
-import SelectItem from "./ui/select/item.vue";
-import SelectTrigger from "./ui/select/trigger.vue";
-import SelectValue from "./ui/select/value.vue";
-import SelectViewport from "./ui/select/viewport.vue";
 
 const ui = useUiStore();
 const repo = useRepoStore();
@@ -42,7 +36,6 @@ const pmAgentReady = computed(() => {
   return (config.agents ?? []).some((a) => a.name === "pm" && a.enabled);
 });
 
-const enabledAgents = computed(() => (config.agents ?? []).filter((a) => a.enabled));
 const cliOptions = computed(() => config.agentsMeta.clis ?? []);
 const modelOptions = computed(() =>
   config.modelsFor(freeformOverride.cli, freeformOverride.model || undefined),
@@ -202,21 +195,6 @@ function onOpenAutoFocus(e: Event): void {
         </div>
         <div class="ff-agent-bar">
           <div class="agent-pick-grid">
-            <div class="agent-field">
-              <label>Role</label>
-              <Select v-model="freeformOverride.agent" :disabled="freeformRunning">
-                <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                  <SelectValue placeholder="agent" />
-                </SelectTrigger>
-                <SelectContent position="popper">
-                  <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                    <SelectItem v-for="a in enabledAgents" :key="a.name" :value="a.name">
-                      {{ a.name }}
-                    </SelectItem>
-                  </SelectViewport>
-                </SelectContent>
-              </Select>
-            </div>
             <div class="agent-field" style="grid-column: 1 / -1">
               <AgentModelControl
                 :cli-options="cliOptions"
