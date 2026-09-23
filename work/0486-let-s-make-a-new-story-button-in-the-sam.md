@@ -2,7 +2,10 @@
 id: "0486"
 title: Add New story flow with PM-assisted story definitions
 type: feature
-status: active
+status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "Skill routing: frontend-design, diagnose-repoos-close-out-validation-failures, frontend-testing"
 priority: p2
 area: web + core + server
 assigned_to: ai
@@ -11,7 +14,9 @@ branch: feat/add-new-story-flow-with-pm-assisted-stor
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-09-22T15:56:16Z"
-updated_at: "2026-09-23T03:54:30Z"
+updated_at: "2026-09-23T04:12:56Z"
+handoff_signal_retry_count: 1
+dev_error_count: 1
 ---
 ## Problem
 
@@ -129,3 +134,5 @@ Let's make a "new story" button in the same style as new task and new input, fol
 - 2026-09-23T03:25:15Z · status inbox→ready
 - 2026-09-23T03:25:19Z · status ready→active, branch
 - 2026-09-23T03:54:30Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-09-23T04:12:56Z · status active→review
+- 2026-09-23T04:12:56Z · agent exited with an error (cursor) · Skill routing: frontend-design, diagnose-repoos-close-out-validation-failures, frontend-testing
