@@ -13,6 +13,11 @@ on:
     tags:
       - "v*.*.*"
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing release tag to build and attach a DMG to
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -43,14 +48,19 @@ jobs:
 
   release:
     name: Release macOS Hub DMG
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: >-
+      startsWith(github.ref, 'refs/tags/v') ||
+      (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
 
       - name: Build release app (ad-hoc signed)
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          RELEASE_TAG="${{ inputs.release_tag || github.ref_name }}"
+          VERSION="${RELEASE_TAG#v}"
           xcodebuild -project macos/RepoOSHub.xcodeproj \
           -scheme RepoOSHub \
           -configuration Release \
@@ -63,6 +73,7 @@ jobs:
 
       - name: Verify release app bundle
         run: |
+          RELEASE_TAG="${{ inputs.release_tag || github.ref_name }}"
           APP="macos/.derived-data/Build/Products/Release/RepoOS Hub.app"
           if [[ ! -d "$APP" ]]; then
             echo "error: expected release bundle not found at $APP (PRODUCT_NAME=RepoOS Hub)"
@@ -75,8 +86,8 @@ jobs:
             echo "error: release bundle is missing AppIcon.icns"
             exit 1
           fi
-          if [[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist")" != "${GITHUB_REF_NAME#v}" ]]; then
-            echo "error: release bundle version does not match ${GITHUB_REF_NAME}"
+          if [[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist")" != "${RELEASE_TAG#v}" ]]; then
+            echo "error: release bundle version does not match $RELEASE_TAG"
             exit 1
           fi
 
@@ -91,6 +102,7 @@ jobs:
 
       - name: Verify DMG install experience
         run: |
+          set -x
           MOUNT="$(mktemp -d)"
           DEVICE=""
           cleanup() {
@@ -109,7 +121,7 @@ jobs:
       - name: Determine channel
         id: meta
         run: |
-          if [[ "${{ github.ref_name }}" == *-* ]]; then
+          if [[ "${{ inputs.release_tag || github.ref_name }}" == *-* ]]; then
             echo "prerelease=true" >> "$GITHUB_OUTPUT"
           else
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
@@ -119,5 +131,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: RepoOSHub.dmg
+          tag_name: ${{ inputs.release_tag || github.ref_name }}
           prerelease: ${{ steps.meta.outputs.prerelease }}
           make_latest: false
