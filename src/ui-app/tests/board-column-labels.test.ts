@@ -119,7 +119,6 @@ const DASH_STUBS = {
   UsagePanel: true,
   AutoEngineeringPanel: true,
   ReleaseTimeline: true,
-  TestRunPanel: true,
 } as const;
 
 beforeEach(() => {
