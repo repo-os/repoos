@@ -10,8 +10,10 @@ created_by: hello@repoos.org
 branch: ""
 pm_cli_override: cursor
 pm_model_override: composer-2.5
+review_cli_override: cursor
+review_model_override: default
 created_at: "2026-09-23T04:31:37Z"
-updated_at: "2026-09-23T04:32:37Z"
+updated_at: "2026-09-23T04:57:41Z"
 ---
 ## Problem
 
@@ -77,3 +79,4 @@ Require a parseable verdict before marking a review complete or incrementing rev
 - 2026-09-23T04:31:37Z · created · hello@repoos.org
 - 2026-09-23T04:31:38Z · screenshots
 - 2026-09-23T04:32:37Z · status draft→inbox, title, area, body
+- 2026-09-23T04:57:41Z · review_cli_override, review_model_override
