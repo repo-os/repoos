@@ -256,7 +256,8 @@ const year = new Date().getFullYear();
             >
           </p>
           <p class="mt-1 text-[12px] text-[var(--txt-faint)]">
-            Current Mac builds require Control-click &rarr; Open once while notarization is pending.
+            Current Mac builds are not notarized. After a blocked first launch, use System Settings
+            &rarr; Privacy &amp; Security &rarr; Open Anyway.
           </p>
         </div>
 
@@ -314,8 +315,8 @@ const year = new Date().getFullYear();
               >
             </p>
             <p class="mt-3 text-[12px] text-[var(--txt-faint)]">
-              Current Mac builds require Control-click &rarr; Open once while notarization is
-              pending.
+              Current Mac builds are not notarized. After a blocked first launch, use System
+              Settings &rarr; Privacy &amp; Security &rarr; Open Anyway.
             </p>
           </div>
           <ul class="grid grid-cols-2 gap-2.5 text-[13px] leading-snug text-[var(--txt-dim)]">
