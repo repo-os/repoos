@@ -56,6 +56,14 @@ describe("parseReviewVerdict", () => {
   it("returns null when no known verdict phrase is present", () => {
     expect(parseReviewVerdict("## Bugs\nNone found.")).toBeNull();
   });
+
+  it("scans the full document for legacy reports without a Verdict heading", () => {
+    expect(
+      parseReviewVerdict(
+        "## Summary\nStill reviewing.\n\n## Outcome\ngood to go — ship it when ready.",
+      ),
+    ).toBe("good to go");
+  });
 });
 
 describe("parseReviewRelevance", () => {
