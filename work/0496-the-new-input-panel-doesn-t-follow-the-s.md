@@ -8,12 +8,13 @@ needs_input_reason: dev-error
 needs_input_detail: "RetriableError: [unknown] Premature close"
 priority: p2
 area: web
+story: Story numbers and deep links
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/standardize-new-input-panel-styling-with
 review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-23T05:40:57Z"
-updated_at: "2026-09-24T13:49:36Z"
+updated_at: "2026-09-24T15:47:27Z"
 dev_error_count: 2
 ---
 ## Problem
@@ -75,3 +76,4 @@ The "new input" panel doesn't follow the same colors/design as the new task and 
 - 2026-09-24T12:53:58Z · agent exited with an error (cursor) · RetriableError: [unknown] Premature close
 - 2026-09-24T12:59:02Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-09-24T13:49:36Z · status active→review
+- 2026-09-24T15:47:27Z · story
