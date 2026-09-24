@@ -4633,12 +4633,31 @@
   color: var(--txt-faint);
 }
 .ff-pending-file-name {
+  flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: "JetBrains Mono", monospace;
   font-size: 11px;
+}
+.ff-pending-file-remove {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  margin-left: auto;
+  border-radius: 6px;
+  border: 1px solid var(--border-bright);
+  background: var(--panel);
+  color: var(--txt-dim);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: 0.15s;
+}
+.ff-pending-file-remove:hover {
+  color: var(--red);
+  border-color: var(--red);
 }
 .spec-hint {
   font-size: 11px;

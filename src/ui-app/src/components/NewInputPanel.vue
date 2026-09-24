@@ -20,7 +20,9 @@ const ui = useUiStore(),
    * panel so they can queue another input or leave while creation finishes in
    * the background (0325) — mirroring the freeform new-task flow (0311).
    */
-  submitted = ref(false);
+  submitted = ref(false),
+  /** Depth counter: dragenter/leave fire once per element boundary. */
+  dragDepth = ref(0);
 function setOpen(v: boolean): void {
   if (!v) ui.close();
 }
@@ -32,7 +34,23 @@ watch(open, (v) => {
   }
 });
 function files(e: Event): void {
-  ui.addScreenshots(Array.from((e.target as HTMLInputElement).files ?? []));
+  const input = e.target as HTMLInputElement;
+  if (input.files) ui.addScreenshots(Array.from(input.files));
+  input.value = "";
+}
+function onDragEnter(): void {
+  if (submitted.value) return;
+  dragDepth.value++;
+}
+function onDragLeave(): void {
+  if (submitted.value) return;
+  dragDepth.value = Math.max(0, dragDepth.value - 1);
+}
+function onDrop(e: DragEvent): void {
+  if (submitted.value) return;
+  dragDepth.value = 0;
+  const files = e.dataTransfer?.files;
+  if (files?.length) ui.addScreenshots(Array.from(files));
 }
 /** Hand the capture to the repo store and acknowledge immediately — the input
  *  and its attachments are created in the background (0325). */
@@ -60,7 +78,12 @@ function done(): void {
 </script>
 <template>
   <Dialog :open="open" @update:open="setOpen"
-    ><DialogOverlay /><DialogContent :style="{ width: ui.drawerWidth + 'px', 'max-width': '100vw' }"
+    ><DialogOverlay /><DialogContent
+      :style="{ width: ui.drawerWidth + 'px', 'max-width': '100vw' }"
+      @dragenter.prevent="onDragEnter"
+      @dragover.prevent
+      @dragleave.prevent="onDragLeave"
+      @drop.prevent="onDrop"
       ><div class="drawer-resize" @mousedown.prevent="ui.startResize"></div>
       <div class="drawer-head">
         <div class="drawer-head-title">
@@ -102,6 +125,7 @@ function done(): void {
             <label>Attachments</label>
             <div
               class="shot-dropzone"
+              :class="{ over: dragDepth > 0 }"
               role="button"
               tabindex="0"
               @click="fileInput?.click()"
@@ -111,7 +135,7 @@ function done(): void {
               <span>{{
                 ui.pendingScreenshots.length
                   ? `Add more — ${ui.pendingScreenshots.length} file${ui.pendingScreenshots.length === 1 ? "" : "s"} attached`
-                  : "Add screenshot or file"
+                  : "Click to add a screenshot or file, or drop them anywhere on this panel"
               }}</span>
               <input
                 id="new-input-file"
@@ -129,13 +153,22 @@ function done(): void {
               aria-label="Selected attachments"
             >
               <div
-                v-for="file in ui.pendingScreenshots"
-                :key="file.name + file.size"
+                v-for="(file, i) in ui.pendingScreenshots"
+                :key="file.name + file.size + i"
                 class="ff-pending-file"
               >
                 <img v-if="file.mime.startsWith('image/')" :src="file.dataUrl" :alt="file.name" />
                 <div v-else class="ff-pending-file-icon"><Paperclip class="size-4" /></div>
                 <span class="ff-pending-file-name" :title="file.name">{{ file.name }}</span>
+                <button
+                  type="button"
+                  class="ff-pending-file-remove"
+                  :aria-label="`Remove ${file.name}`"
+                  title="Remove attachment"
+                  @click.stop="ui.removeScreenshot(i)"
+                >
+                  <X class="size-3.5" />
+                </button>
               </div>
             </div>
           </div>
