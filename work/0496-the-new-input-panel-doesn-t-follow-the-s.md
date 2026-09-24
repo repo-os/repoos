@@ -3,9 +3,6 @@ id: "0496"
 title: Standardize New input panel styling with New task/New story panels
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "RetriableError: [unknown] Premature close"
 priority: p2
 area: web
 story: Story numbers and deep links
@@ -79,3 +76,4 @@ The "new input" panel doesn't follow the same colors/design as the new task and 
 - 2026-09-24T13:49:36Z · status active→review
 - 2026-09-24T15:47:27Z · story
 - 2026-09-24T15:52:34Z · status review→active
+- 2026-09-24T15:52:34Z · needs_input
