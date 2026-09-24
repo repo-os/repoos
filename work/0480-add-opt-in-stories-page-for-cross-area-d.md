@@ -5,6 +5,7 @@ type: feature
 status: done
 priority: p2
 area: web + core
+story: Story numbers and deep links
 assigned_to: ai
 created_by: ""
 branch: feat/add-opt-in-stories-page-for-cross-area-d
@@ -13,7 +14,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: cursor
 review_model_override: auto
 created_at: "2026-09-21T12:19:02Z"
-updated_at: "2026-09-21T18:29:49Z"
+updated_at: "2026-09-24T15:47:27Z"
 review_passes: 1
 check_retry_count: 2
 last_check_failure: "[object Object]"
@@ -80,3 +81,4 @@ After implementation, the project-updates email-list tasks (#0477, #0478, #0479)
 - 2026-09-21T18:15:37Z · review_cli_override, review_model_override
 - 2026-09-21T18:15:39Z · review_model_override
 - 2026-09-21T18:29:49Z · status review→done, release:success
+- 2026-09-24T15:47:27Z · story
