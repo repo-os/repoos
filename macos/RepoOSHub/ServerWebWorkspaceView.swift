@@ -5,6 +5,7 @@ struct ServerWebWorkspaceView: View {
     let entry: ServerEntry
 
     @StateObject private var webModel: ServerWebViewModel
+    @State private var isStartingLocalServer = false
 
     init(entry: ServerEntry) {
         self.entry = entry
@@ -25,7 +26,7 @@ struct ServerWebWorkspaceView: View {
                 invalidOriginState
             }
 
-            if let healthMessage = appState.lastConnectionMessage {
+            if let healthMessage = appState.lastConnectionMessage, webModel.loadFailure == nil {
                 VStack {
                     ConnectionFailureBanner(message: healthMessage) {
                         Task { await appState.refreshHealth(for: entry.id) }
@@ -41,7 +42,9 @@ struct ServerWebWorkspaceView: View {
                     onRetry: webModel.reload,
                     onEdit: { appState.presentEditServer(entry) },
                     onRemove: { appState.deleteServer(entry) },
-                    onClearSession: { appState.clearWebsiteSession(for: entry.id) }
+                    onClearSession: { appState.clearWebsiteSession(for: entry.id) },
+                    onStart: canStartLocalServer ? startLocalServer : nil,
+                    isStarting: isStartingLocalServer
                 )
             }
 
@@ -74,8 +77,26 @@ struct ServerWebWorkspaceView: View {
             onRetry: { appState.presentEditServer(entry) },
             onEdit: { appState.presentEditServer(entry) },
             onRemove: { appState.deleteServer(entry) },
-            onClearSession: {}
+            onClearSession: {},
+            onStart: nil,
+            isStarting: false
         )
+    }
+
+    private var canStartLocalServer: Bool {
+        entry.originURL.map(HubAccessPolicy.permitsLoopbackWithoutCapability) == true
+            && entry.localProjectPath != nil
+    }
+
+    private func startLocalServer() {
+        Task {
+            isStartingLocalServer = true
+            let isReady = await appState.startLocalServerAndWait(for: entry)
+            isStartingLocalServer = false
+            if isReady {
+                webModel.reload()
+            }
+        }
     }
 }
 
@@ -112,15 +133,19 @@ struct WebLoadFailureOverlay: View {
     let onEdit: () -> Void
     let onRemove: () -> Void
     let onClearSession: () -> Void
+    let onStart: (() -> Void)?
+    let isStarting: Bool
 
     var body: some View {
         VStack(spacing: 16) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 40, weight: .light))
-                .foregroundStyle(.orange)
-                .accessibilityHidden(true)
+            if onStart == nil {
+                Image(systemName: "exclamationmark.triangle")
+                    .font(.system(size: 40, weight: .light))
+                    .foregroundStyle(.orange)
+                    .accessibilityHidden(true)
+            }
 
-            Text(failure.title)
+            Text(onStart == nil ? failure.title : (isStarting ? "Starting server" : "Start local server"))
                 .font(.title3.weight(.semibold))
 
             Text(origin)
@@ -128,10 +153,31 @@ struct WebLoadFailureOverlay: View {
                 .foregroundStyle(.secondary)
                 .textSelection(.enabled)
 
-            Text(failure.guidance)
+            Text(onStart == nil
+                ? failure.guidance
+                : (isStarting
+                    ? "Launching RepoOS and waiting for its health check. This page will open automatically when it is ready."
+                    : "This local RepoOS server is offline. Start it here, then the Hub will reconnect automatically."))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: 420)
+
+            if let onStart {
+                Button(action: onStart) {
+                    if isStarting {
+                        HStack(spacing: 8) {
+                            ProgressView()
+                                .controlSize(.small)
+                            Text("Starting server…")
+                        }
+                    } else {
+                        Label("Start server", systemImage: "play.fill")
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .disabled(isStarting)
+            }
 
             HStack(spacing: 12) {
                 Button("Retry", action: onRetry)

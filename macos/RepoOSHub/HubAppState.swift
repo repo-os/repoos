@@ -604,6 +604,33 @@ final class HubAppState: ObservableObject {
         }
     }
 
+    /// Starts a previously verified local RepoOS service and waits for its health
+    /// endpoint before the workspace reloads. Remote servers are intentionally
+    /// excluded: the Hub must never attempt to execute commands on another host.
+    func startLocalServerAndWait(for entry: ServerEntry) async -> Bool {
+        guard entry.originURL.map(HubAccessPolicy.permitsLoopbackWithoutCapability) == true,
+              let root = entry.localProjectPath
+        else {
+            serviceActionMessage = "RepoOS needs to see this local server online once before it can manage its background service."
+            return false
+        }
+
+        do {
+            try await LocalRepoOSServiceController.perform(.start, projectRoot: root)
+            for _ in 0 ..< 24 {
+                try await Task.sleep(nanoseconds: 500_000_000)
+                await refreshHealth(for: entry.id)
+                if document.entries.first(where: { $0.id == entry.id })?.lastHealth == .healthy {
+                    return true
+                }
+            }
+            serviceActionMessage = "RepoOS is taking longer than expected to start. It may still finish in the background; try again once it is ready."
+        } catch {
+            serviceActionMessage = error.localizedDescription
+        }
+        return false
+    }
+
     private func refreshAllHealth() async {
         for entry in entries {
             await refreshHealth(for: entry.id)
