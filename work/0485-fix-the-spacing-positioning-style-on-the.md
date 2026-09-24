@@ -5,11 +5,12 @@ type: bug
 status: done
 priority: p2
 area: web
+story: Story numbers and deep links
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-stories-page-spacing-and-styling-to-
 created_at: "2026-09-22T15:52:13Z"
-updated_at: "2026-09-23T02:12:01Z"
+updated_at: "2026-09-24T15:47:27Z"
 ---
 ## Problem
 
@@ -66,3 +67,4 @@ Fix the spacing/positioning/style on the new Stories page to match all the other
 - 2026-09-22T18:08:09Z · status ready→active, branch
 - 2026-09-22T18:16:21Z · status active→review
 - 2026-09-23T02:12:01Z · status review→done, release:success
+- 2026-09-24T15:47:27Z · story
