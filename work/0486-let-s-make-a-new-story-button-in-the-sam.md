@@ -5,13 +5,14 @@ type: feature
 status: done
 priority: p2
 area: web + core + server
+story: Story numbers and deep links
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-new-story-flow-with-pm-assisted-stor
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-09-22T15:56:16Z"
-updated_at: "2026-09-23T04:42:09Z"
+updated_at: "2026-09-24T15:47:27Z"
 review_passes: 1
 handoff_signal_retry_count: 1
 dev_error_count: 1
@@ -135,3 +136,4 @@ Let's make a "new story" button in the same style as new task and new input, fol
 - 2026-09-23T04:12:56Z · status active→review
 - 2026-09-23T04:12:56Z · agent exited with an error (cursor) · Skill routing: frontend-design, diagnose-repoos-close-out-validation-failures, frontend-testing
 - 2026-09-23T04:42:09Z · status review→done, release:success
+- 2026-09-24T15:47:27Z · story
