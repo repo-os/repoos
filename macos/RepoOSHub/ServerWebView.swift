@@ -67,6 +67,7 @@ struct ServerWebView: NSViewRepresentable {
         let dataStore = ServerWebsiteDataStorePool.shared.dataStore(for: model.serverID)
         let configuration = IsolatedServerWebViewFactory.makeConfiguration(dataStore: dataStore)
         let webView = WKWebView(frame: .zero, configuration: configuration)
+        webView.underPageBackgroundColor = .black
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
         webView.allowsBackForwardNavigationGestures = true

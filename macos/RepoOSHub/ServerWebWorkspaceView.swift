@@ -20,6 +20,8 @@ struct ServerWebWorkspaceView: View {
     var body: some View {
         ZStack {
             if entry.originURL != nil {
+                Color.black
+                    .ignoresSafeArea()
                 ServerWebView(model: webModel, appState: appState)
                     .id(entry.id)
             } else {

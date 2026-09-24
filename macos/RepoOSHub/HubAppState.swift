@@ -552,12 +552,12 @@ final class HubAppState: ObservableObject {
         }
     }
 
-    func refreshHealth(for id: UUID) async {
+    func refreshHealth(for id: UUID, using checker: (any HealthChecking)? = nil) async {
         guard let index = document.entries.firstIndex(where: { $0.id == id }),
               let origin = document.entries[index].originURL
         else { return }
 
-        let outcome = await healthChecker.checkHealth(origin: origin)
+        let outcome = await (checker ?? healthChecker).checkHealth(origin: origin)
         var entry = document.entries[index]
         ReachabilityTransition.applyHealthCheck(to: &entry, outcome: outcome)
         if case .success(let projectName, let runtimeInfo, let projectPath) = outcome {
@@ -617,14 +617,16 @@ final class HubAppState: ObservableObject {
 
         do {
             try await LocalRepoOSServiceController.perform(.start, projectRoot: root)
-            for _ in 0 ..< 24 {
+            let startupChecker = RepoOSHealthChecker(timeout: 1)
+            let deadline = Date().addingTimeInterval(30)
+            repeat {
                 try await Task.sleep(nanoseconds: 500_000_000)
-                await refreshHealth(for: entry.id)
+                await refreshHealth(for: entry.id, using: startupChecker)
                 if document.entries.first(where: { $0.id == entry.id })?.lastHealth == .healthy {
                     return true
                 }
-            }
-            serviceActionMessage = "RepoOS is taking longer than expected to start. It may still finish in the background; try again once it is ready."
+            } while Date() < deadline
+            serviceActionMessage = "RepoOS did not become ready within 30 seconds. Check the service logs, then try again."
         } catch {
             serviceActionMessage = error.localizedDescription
         }
