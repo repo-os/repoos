@@ -94,7 +94,7 @@ struct ServerWebWorkspaceView: View {
             let isReady = await appState.startLocalServerAndWait(for: entry)
             isStartingLocalServer = false
             if isReady {
-                webModel.reload()
+                webModel.loadRootPage()
             }
         }
     }

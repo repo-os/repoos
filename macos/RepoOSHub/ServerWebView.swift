@@ -26,6 +26,17 @@ final class ServerWebViewModel: ObservableObject {
         )
     }
 
+    /// Use a fresh origin navigation after a server has just started. Reloading
+    /// WebKit's prior provisional failure can leave it displaying a blank page.
+    func loadRootPage() {
+        loadFailure = nil
+        NotificationCenter.default.post(
+            name: .serverWebViewReload,
+            object: nil,
+            userInfo: HubWebNavigationCommand.userInfo(serverID: serverID)
+        )
+    }
+
     func openPendingExternalURL() {
         guard let url = pendingExternalURL else { return }
         NSWorkspace.shared.open(url)
