@@ -2,7 +2,7 @@
 id: "0496"
 title: Standardize New input panel styling with New task/New story panels
 type: bug
-status: active
+status: review
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "RetriableError: [unknown] Premature close"
@@ -13,8 +13,8 @@ created_by: hello@repoos.org
 branch: feat/standardize-new-input-panel-styling-with
 review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-23T05:40:57Z"
-updated_at: "2026-09-24T12:59:02Z"
-dev_error_count: 1
+updated_at: "2026-09-24T13:49:36Z"
+dev_error_count: 2
 ---
 ## Problem
 
@@ -74,3 +74,4 @@ The "new input" panel doesn't follow the same colors/design as the new task and 
 - 2026-09-24T12:30:33Z · status ready→active, branch
 - 2026-09-24T12:53:58Z · agent exited with an error (cursor) · RetriableError: [unknown] Premature close
 - 2026-09-24T12:59:02Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-09-24T13:49:36Z · status active→review
