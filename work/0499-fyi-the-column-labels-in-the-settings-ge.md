@@ -2,7 +2,7 @@
 id: "0499"
 title: "Fix Work board column labels: editable inputs, moved to Advanced"
 type: feature
-status: active
+status: ready
 priority: p2
 area: general
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/fix-work-board-column-labels-editable-in
 pm_model_override: opencode-go/deepseek-v4.1-flash
 review_model_override: opencode-go/hy3
 created_at: "2026-09-25T02:04:35Z"
-updated_at: "2026-09-25T15:37:44Z"
+updated_at: "2026-09-25T16:51:34Z"
 handoff_signal_retry_count: 1
 check_retry_count: 1
 last_check_failure: "[object Object]"
@@ -167,3 +167,4 @@ FYI the column labels in the settings (general) don't work, there's no place to 
 - 2026-09-25T06:26:12Z · needs_input
 - 2026-09-25T08:04:51Z · agent exited with an error (cursor) · RetriableError: Connection failed repeatedly
 - 2026-09-25T15:37:44Z · needs_input
+- 2026-09-25T16:51:34Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
