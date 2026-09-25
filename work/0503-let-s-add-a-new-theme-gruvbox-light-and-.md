@@ -13,7 +13,7 @@ model_override: opencode-go/space-bunny-free
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-25T16:00:20Z"
-updated_at: "2026-09-25T16:55:46Z"
+updated_at: "2026-09-25T18:32:14Z"
 ---
 Let's add a new theme: gruvbox (light and dark). Please do an online search for details if you don't know what it is, it's a famous coding theme, but I'd like to apply it to the whole RepoOS app UI, not just code blocks.
 
