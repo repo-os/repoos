@@ -14,10 +14,25 @@ export interface StoryDefinition {
   createdBy: string;
 }
 
-export interface MergedStoryGroup extends StoryGroup {
+/**
+ * Generic over the member-task type so a caller that already holds rich task
+ * objects (the UI's `Task`) keeps them through the merge instead of widening
+ * to the structural minimum — the story side panel navigates to `task` by id
+ * and needs the full object. Defaults keep bare `MergedStoryGroup` valid.
+ */
+export interface MergedStoryGroup<T extends StoryTaskLike = StoryTaskLike> extends StoryGroup<T> {
   excerpt: string;
   body: string;
   registered: boolean;
+  /**
+   * Definition metadata, null for a story that exists only as a task tag. The
+   * side panel's Details tab reads these so it can show where a story is
+   * defined and who wrote it without the view having to join the definitions
+   * back on by key a second time.
+   */
+  path: string | null;
+  createdAt: string | null;
+  createdBy: string | null;
 }
 
 export function storyExcerpt(body: string, max = 200): string {
@@ -33,10 +48,10 @@ export function storyExcerpt(body: string, max = 200): string {
 export function mergeStoriesForDisplay<T extends StoryTaskLike>(
   tasks: T[],
   definitions: StoryDefinition[],
-): MergedStoryGroup[] {
+): MergedStoryGroup<T>[] {
   const defByKey = new Map(definitions.map((d) => [d.key, d] as const));
   const derived = deriveStories(tasks);
-  const merged: MergedStoryGroup[] = [];
+  const merged: MergedStoryGroup<T>[] = [];
   const seen = new Set<string>();
   for (const group of derived) {
     seen.add(group.key);
@@ -47,6 +62,9 @@ export function mergeStoriesForDisplay<T extends StoryTaskLike>(
       excerpt: def ? storyExcerpt(def.body) : "",
       body: def?.body ?? "",
       registered: !!def,
+      path: def?.path ?? null,
+      createdAt: def?.createdAt ?? null,
+      createdBy: def?.createdBy ?? null,
     });
   }
   const emptyCounts = (): Record<Status, number> =>
@@ -68,7 +86,10 @@ export function mergeStoriesForDisplay<T extends StoryTaskLike>(
       excerpt: storyExcerpt(def.body),
       body: def.body,
       registered: true,
+      path: def.path,
+      createdAt: def.createdAt,
+      createdBy: def.createdBy,
     });
   }
-  return sortStories(merged) as MergedStoryGroup[];
+  return sortStories(merged) as MergedStoryGroup<T>[];
 }
