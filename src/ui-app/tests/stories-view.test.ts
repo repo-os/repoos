@@ -1,7 +1,7 @@
 /**
  * Stories page (#0480): the disabled gate, empty states, grouping and status
- * roll-up, ordering, expanding to member tasks, retag recomputation, opening
- * the task drawer, and the mobile layout rule.
+ * roll-up, ordering, the side panel that replaced inline expansion (#0502),
+ * opening the task drawer, and the mobile layout rule.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
@@ -27,9 +27,27 @@ const TaskCardStub = {
 
 const NewStoryPanelStub = { template: "<div />" };
 
+/**
+ * The panel has its own suite (story-panel.test.ts); here it is stubbed so
+ * these tests stay about the list itself and never leave a teleported dialog
+ * behind in `document.body`.
+ */
+const StoryPanelStub = {
+  name: "StoryPanel",
+  props: ["story", "pmWorking"],
+  emits: ["close"],
+  template: '<div v-if="story" class="stub-story-panel">{{ story.name }}</div>',
+};
+
 function mountView() {
   return mount(StoriesView, {
-    global: { stubs: { TaskCard: TaskCardStub, NewStoryPanel: NewStoryPanelStub } },
+    global: {
+      stubs: {
+        TaskCard: TaskCardStub,
+        NewStoryPanel: NewStoryPanelStub,
+        StoryPanel: StoryPanelStub,
+      },
+    },
   });
 }
 
@@ -169,21 +187,43 @@ describe("StoriesView grouping and roll-up", () => {
   });
 });
 
-describe("StoriesView expansion and selection", () => {
+describe("StoriesView side panel selection", () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     useConfigStore().data = { stories: { enabled: true } };
   });
 
-  it("reveals member tasks on expand", async () => {
+  it("opens the story side panel when a story row is selected", async () => {
+    setTasks([makeTask({ id: "0001", story: "Slice", status: "ready" })]);
+    const wrapper = mountView();
+    expect(wrapper.find(".stub-story-panel").exists()).toBe(false);
+    await wrapper.find(".story-head").trigger("click");
+    expect(wrapper.find(".stub-story-panel").text()).toBe("Slice");
+  });
+
+  it("marks the row as opening a dialog rather than expanding in place", async () => {
+    setTasks([makeTask({ id: "0001", story: "Slice", status: "ready" })]);
+    const wrapper = mountView();
+    const head = wrapper.find(".story-head");
+    expect(head.attributes("aria-haspopup")).toBe("dialog");
+    // The inline expand is gone — #0502 replaced it with the panel, so a
+    // click must not leave member cards behind in the list.
+    expect(wrapper.findAll(".stub-task")).toHaveLength(0);
+    await head.trigger("click");
+    expect(wrapper.findAll(".stub-task")).toHaveLength(0);
+  });
+
+  it("swaps the panel's story when a second row is selected", async () => {
     setTasks([
-      makeTask({ id: "0001", story: "Slice", status: "ready" }),
-      makeTask({ id: "0002", story: "Slice", status: "active" }),
+      makeTask({ id: "0001", story: "Slice", status: "active" }),
+      makeTask({ id: "0002", story: "Other", status: "ready" }),
     ]);
     const wrapper = mountView();
-    expect(wrapper.findAll(".stub-task")).toHaveLength(0);
-    await wrapper.find(".story-head").trigger("click");
-    expect(wrapper.findAll(".stub-task")).toHaveLength(2);
+    const heads = wrapper.findAll(".story-head");
+    await heads[0].trigger("click");
+    expect(wrapper.find(".stub-story-panel").text()).toBe("Slice");
+    await heads[1].trigger("click");
+    expect(wrapper.find(".stub-story-panel").text()).toBe("Other");
   });
 
   it("opens the normal task drawer when a live task row is selected", async () => {
@@ -195,12 +235,12 @@ describe("StoriesView expansion and selection", () => {
 });
 
 describe("StoriesView mobile layout", () => {
-  it("collapses the member grid to one column at the shared page breakpoint", () => {
+  it("collapses the story head's progress bar to the full width at the page breakpoint", () => {
     const source = readFileSync(
       join(resolve(__dirname, ".."), "src/views/StoriesView.vue"),
       "utf8",
     );
     expect(source).toMatch(/@media \(max-width: 720px\)/);
-    expect(source).toMatch(/\.story-members\s*\{[^}]*grid-template-columns:\s*1fr/);
+    expect(source).toMatch(/\.story-progress-wrap\s*\{[^}]*width:\s*100%/);
   });
 });
