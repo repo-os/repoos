@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 pm_model_override: opencode/big-pickle
+review_model_override: opencode/big-pickle
 created_at: "2026-09-25T02:04:17Z"
-updated_at: "2026-09-25T03:00:06Z"
+updated_at: "2026-09-25T05:53:10Z"
 ---
 ## Problem
 
@@ -81,3 +82,4 @@ When I start to write a "new input" and need to close the panel to go somewhere 
 - 2026-09-25T02:22:18Z · pm_model_override
 - 2026-09-25T02:59:54Z · title, area, body
 - 2026-09-25T03:00:06Z · status draft→inbox
+- 2026-09-25T05:53:10Z · review_model_override
