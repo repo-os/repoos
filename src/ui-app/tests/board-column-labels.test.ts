@@ -7,7 +7,7 @@
  * - Canonical status IDs are preserved alongside display labels
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { flushPromises, mount } from "@vue/test-utils";
+import { flushPromises, mount, DOMWrapper } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import * as apiMod from "../src/api";
 import { useConfigStore } from "../src/stores/config";
@@ -15,14 +15,16 @@ import { useRepoStore } from "../src/stores/repo";
 import type { ConfigField, Task } from "../src/types";
 import WorkView from "../src/views/WorkView.vue";
 import DashboardView from "../src/views/DashboardView.vue";
+import SettingsView from "../src/views/SettingsView.vue";
 
 const api = vi.spyOn(apiMod, "api");
 
 let currentQuery: Record<string, string | string[]> = {};
+const replaceSpy = vi.fn(async () => {});
 
 vi.mock("vue-router", () => ({
   useRoute: () => ({ query: currentQuery }),
-  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
+  useRouter: () => ({ replace: replaceSpy, push: vi.fn() }),
 }));
 
 function makeTask(id: string, status: Task["status"] = "ready"): Task {
@@ -124,6 +126,7 @@ const DASH_STUBS = {
 beforeEach(() => {
   setActivePinia(createPinia());
   currentQuery = {};
+  replaceSpy.mockClear();
   vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: false }));
   vi.stubGlobal(
     "fetch",
@@ -231,5 +234,158 @@ describe("DashboardView column labels", () => {
     expect(statCards[0].props("label")).toBe("Ideas");
     // done card keeps its original label
     expect(statCards[5].props("label")).toBe("done");
+  });
+});
+
+const DEFAULT_LABELS = {
+  draft: "Proposed / Drafts",
+  inbox: "Inbox",
+  ready: "Ready",
+  active: "Active",
+  review: "Review",
+  done: "Done",
+};
+
+function boardColumnSchema(): ConfigField[] {
+  return Object.entries(DEFAULT_LABELS).map(([status, label]) =>
+    schemaField(`board.columns.${status}`, label),
+  );
+}
+
+function settingsConfigResponse(boardOverrides?: Record<string, string>) {
+  const columns = { ...DEFAULT_LABELS, ...boardOverrides };
+  return {
+    config: {
+      maxActiveTasks: 3,
+      board: { columns },
+    },
+    schema: [schemaField("maxActiveTasks"), ...boardColumnSchema()],
+  };
+}
+
+async function loadSettingsConfig(boardOverrides?: Record<string, string>): Promise<void> {
+  api.mockResolvedValue(settingsConfigResponse(boardOverrides));
+  await useConfigStore().load();
+}
+
+async function mountSettings(tab: "general" | "advanced" = "general") {
+  currentQuery = { tab };
+  const wrapper = mount(SettingsView, { attachTo: document.body });
+  await flushPromises();
+  return wrapper;
+}
+
+function boardColumnDraftRow(): HTMLElement | null {
+  return document.getElementById("setting-board.columns.draft");
+}
+
+function boardColumnDraftInput(): HTMLInputElement | null {
+  return boardColumnDraftRow()?.querySelector("input") ?? null;
+}
+
+describe("SettingsView board column labels (#0499)", () => {
+  beforeEach(() => {
+    (Element.prototype as unknown as Record<string, unknown>).scrollIntoView = vi.fn();
+  });
+
+  it("renders column label inputs on Advanced, not General", async () => {
+    await loadSettingsConfig();
+    const general = await mountSettings("general");
+    const row = boardColumnDraftRow();
+    expect(row).not.toBeNull();
+    expect(document.getElementById("settings-panel-general")?.contains(row!)).toBe(false);
+    expect(document.getElementById("settings-panel-advanced")?.contains(row!)).toBe(true);
+    general.unmount();
+
+    await mountSettings("advanced");
+    expect(boardColumnDraftInput()).not.toBeNull();
+    expect(document.getElementById("setting-board.columns.done")).not.toBeNull();
+    document.body.innerHTML = "";
+  });
+
+  it("auto-save PATCH includes a new column label", async () => {
+    await loadSettingsConfig();
+    const config = useConfigStore();
+    const saveSpy = vi.spyOn(config, "save").mockResolvedValue(undefined);
+    const wrapper = await mountSettings("advanced");
+    const input = boardColumnDraftInput();
+    expect(input).not.toBeNull();
+    await new DOMWrapper(input!).setValue("Ideas");
+    await flushPromises();
+    await new Promise((r) => setTimeout(r, 500));
+    await flushPromises();
+
+    expect(saveSpy).toHaveBeenCalled();
+    const body = saveSpy.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    expect(body["board.columns.draft"]).toBe("Ideas");
+    saveSpy.mockRestore();
+    wrapper.unmount();
+  });
+
+  it("clearing a field submits the column default", async () => {
+    await loadSettingsConfig({ draft: "Ideas" });
+    const config = useConfigStore();
+    const saveSpy = vi.spyOn(config, "save").mockResolvedValue(undefined);
+    const wrapper = await mountSettings("advanced");
+    const input = boardColumnDraftInput();
+    await new DOMWrapper(input!).setValue("");
+    await flushPromises();
+    await new Promise((r) => setTimeout(r, 500));
+    await flushPromises();
+
+    expect(saveSpy).toHaveBeenCalled();
+    const body = saveSpy.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    expect(body["board.columns.draft"]).toBe(DEFAULT_LABELS.draft);
+    saveSpy.mockRestore();
+    wrapper.unmount();
+  });
+
+  it("rejects duplicate and over-length labels without PATCH", async () => {
+    vi.useFakeTimers();
+    await loadSettingsConfig();
+    const config = useConfigStore();
+    const saveSpy = vi.spyOn(config, "save").mockResolvedValue(undefined);
+    const wrapper = await mountSettings("advanced");
+
+    const draftInput = boardColumnDraftInput();
+    expect(draftInput).not.toBeNull();
+    await new DOMWrapper(draftInput!).setValue("Inbox");
+    await flushPromises();
+    await vi.advanceTimersByTimeAsync(500);
+    await flushPromises();
+    expect(saveSpy).not.toHaveBeenCalled();
+    expect(boardColumnDraftRow()?.querySelector(".ff-error")?.textContent).toMatch(/already used/i);
+
+    await new DOMWrapper(draftInput!).setValue("x".repeat(41));
+    await flushPromises();
+    await vi.advanceTimersByTimeAsync(500);
+    await flushPromises();
+    expect(saveSpy).not.toHaveBeenCalled();
+    expect(boardColumnDraftRow()?.querySelector(".ff-error")?.textContent).toMatch(
+      /40 characters/i,
+    );
+
+    vi.useRealTimers();
+    saveSpy.mockRestore();
+    wrapper.unmount();
+  });
+
+  it("?focus=board.columns.draft opens Advanced and focuses the row", async () => {
+    await loadSettingsConfig();
+    currentQuery = { focus: "board.columns.draft" };
+    const wrapper = mount(SettingsView, { attachTo: document.body });
+    await flushPromises();
+    await new Promise((r) => setTimeout(r, 250));
+
+    expect(replaceSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "settings",
+        query: expect.objectContaining({ tab: "advanced" }),
+      }),
+    );
+    const scroll = Element.prototype.scrollIntoView as unknown as ReturnType<typeof vi.fn>;
+    expect(scroll).toHaveBeenCalled();
+    expect((scroll.mock.contexts[0] as HTMLElement).id).toBe("setting-board.columns.draft");
+    wrapper.unmount();
   });
 });

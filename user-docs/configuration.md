@@ -273,9 +273,11 @@ done = "Shipped"
 
 `board.columns.draft`, `board.columns.inbox`, `board.columns.ready`,
 `board.columns.active`, `board.columns.review`, and `board.columns.done` rename
-the six column labels shown in the UI and CLI. These are display labels only:
-the canonical status IDs never change, and transitions, frontmatter, and
-API/CLI status inputs are unaffected.
+the six column labels shown in the UI and CLI. You can edit them from
+**Settings → Advanced → Work board column labels**; clearing a field restores
+that column's default. These are display labels only: the canonical status IDs
+never change, and transitions, frontmatter, and API/CLI status inputs are
+unaffected.
 
 Constraints: a label is a string of at most 40 characters; blank labels,
 duplicates of another column's label, or over-length values fall back to that
