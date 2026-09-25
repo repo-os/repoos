@@ -2,16 +2,16 @@
 id: "0498"
 title: Keep New input draft (text + screenshots) when the panel closes; add Clear buttons to New input and New task
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/keep-new-input-draft-text-screenshots-wh
 pm_model_override: opencode/big-pickle
 review_model_override: opencode/big-pickle
 created_at: "2026-09-25T02:04:17Z"
-updated_at: "2026-09-25T05:53:14Z"
+updated_at: "2026-09-25T05:53:16Z"
 ---
 ## Problem
 
@@ -84,3 +84,4 @@ When I start to write a "new input" and need to close the panel to go somewhere 
 - 2026-09-25T03:00:06Z · status draft→inbox
 - 2026-09-25T05:53:10Z · review_model_override
 - 2026-09-25T05:53:14Z · status inbox→ready
+- 2026-09-25T05:53:16Z · status ready→active, branch
