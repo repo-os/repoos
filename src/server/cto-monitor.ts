@@ -24,7 +24,7 @@ import { join } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { LiveIndex } from "./live-index.js";
 import type { CTOManager } from "./cto.js";
-import { resolveAgentForTask } from "./agents.js";
+import { resolveAgentForTask, type AgentRunner } from "./agents.js";
 import { hasRecentWorktreeActivity } from "./task-watchdog.js";
 
 const AUTOMATIC_NUDGE_IDLE_MS = 5 * 60 * 1000;
@@ -46,6 +46,7 @@ export class CTOMonitor {
   private config: RepoOSConfig;
   private index: LiveIndex;
   private cto: CTOManager;
+  private runner?: AgentRunner;
   private timer: ReturnType<typeof setInterval> | null = null;
   private eventQueue: string[] = [];
   private eventDebounce: ReturnType<typeof setTimeout> | null = null;
@@ -54,10 +55,11 @@ export class CTOMonitor {
   /** Cleared as soon as the worktree becomes active again: one nudge per idle stretch. */
   private nudgedIdleTasks = new Set<string>();
 
-  constructor(config: RepoOSConfig, index: LiveIndex, cto: CTOManager) {
+  constructor(config: RepoOSConfig, index: LiveIndex, cto: CTOManager, runner?: AgentRunner) {
     this.config = config;
     this.index = index;
     this.cto = cto;
+    this.runner = runner;
   }
 
   start(intervalMs: number = 300_000): void {
@@ -128,6 +130,9 @@ export class CTOMonitor {
         continue;
       }
       if (!this.isIdleLongEnough(task, now) || this.nudgedIdleTasks.has(task.id)) continue;
+      if (this.runner?.isHandoffInFlight(task.id) || this.runner?.hasPendingHandoff(task.id)) {
+        continue;
+      }
       if (this.wasRecentlyNudged(task, now)) {
         this.nudgedIdleTasks.add(task.id);
         continue;

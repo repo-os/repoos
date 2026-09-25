@@ -477,6 +477,13 @@ export class TaskWatchdog {
     // An agent process is running, or a server-side handoff is finalizing.
     if (this.runner.isRunning(task.id)) return false;
     if (this.runner.isHandoffInFlight(task.id)) return false;
+    // Server-side finalization persists the handoff until a terminal result
+    // (#0501). Skip only that shape — not an interrupted turn that also left
+    // a pending file but recorded HANDOFF_RETAINED in the Activity log.
+    if (this.runner.hasPendingHandoff(task.id)) {
+      const fresh = this.readCurrent(task);
+      if (!HANDOFF_RETAINED.test(fresh.body)) return false;
+    }
     // A deliberately paused agent is legitimate — never disturb it (#0180).
     if (this.runner.isPaused(task.id)) return false;
     const now = Date.now();

@@ -72,6 +72,47 @@ export type AgentEvent =
 
 export const HANDOFF_READY_SIGNAL = "::repoos-handoff-ready::";
 
+/** Dev-error detail when finalization never reached a terminal sys line (#0501). */
+export const HANDOFF_FINALIZATION_INTERRUPTED_DETAIL =
+  "handoff finalization was interrupted (server reload) — restart work to hand off again";
+
+/** True for in-progress server finalization sys lines (not ok/failure summaries). */
+export function isHandoffFinalizationProgressSysLine(text: string): boolean {
+  const t = text.trim();
+  return /^Server finalization: \S+/.test(t);
+}
+
+/** True when finalization started but never recorded complete/stopped/rejected. */
+export function handoffFinalizationWasInterrupted(session: Session | undefined): boolean {
+  if (!session) return false;
+  let started = false;
+  let terminal = false;
+  for (const line of session.lines) {
+    const text =
+      "type" in line && line.type === "sys"
+        ? line.d
+        : "s" in line && line.s === "sys"
+          ? line.d
+          : undefined;
+    if (!text) continue;
+    if (
+      text.includes("Server finalization started") ||
+      text.includes("Recovering pending handoff")
+    ) {
+      started = true;
+    }
+    if (
+      text.includes("Server finalization complete") ||
+      text.includes("Server finalization stopped") ||
+      text.includes("server-side handoff rejected") ||
+      text.includes("server-side handoff failed")
+    ) {
+      terminal = true;
+    }
+  }
+  return started && !terminal;
+}
+
 /**
  * The exact line a sandboxed agent emits to request ITS managed preview
  * (#0121). Like the handoff signal, it is an output-only intent: the agent
@@ -3921,6 +3962,14 @@ export class AgentRunner {
     writePendingHandoffs(this.cacheDir, store);
   }
 
+  /**
+   * Drop the on-disk pending handoff after server finalization finishes (ok or
+   * a recorded failure). Safe to call when none exists.
+   */
+  completeHandoffFinalization(taskId: string): void {
+    this.clearPendingHandoff(taskId);
+  }
+
   /** Remove a persisted handoff request (by task id). */
   private clearPendingHandoff(taskId: string): void {
     const store = readPendingHandoffs(this.cacheDir);
@@ -3962,10 +4011,8 @@ export class AgentRunner {
       this.authorizedHandoffs.set(request.runId, request);
       // Move to in-flight before firing so concurrent checks see it.
       this.handoffsInFlight.add(request.taskId);
-      // Clear the persisted entry so a later boot does not re-fire the same
-      // request. If finalization ultimately fails, the task stays active and
-      // can be resumed manually.
-      this.clearPendingHandoff(request.taskId);
+      // Keep the persisted entry until finalization reaches a terminal result
+      // (#0501). A server reload mid-check must find it on disk and re-fire.
       // Ensure the session is loaded so system()/appendLine() can write to
       // the transcript.  For a dead-interrupted task, adoptRunningAgents only
       // pre-loads sessions for live PIDs — the interrupted-turn session is on
@@ -5702,8 +5749,8 @@ export class AgentRunner {
       entry.branch &&
       entry.workdir
     ) {
-      // Clean exit with handoff requested: clear the persisted request and fire finalization.
-      this.clearPendingHandoff(taskId);
+      // Clean exit with handoff requested: finalization owns the persisted
+      // request until it reaches a terminal result (#0501).
       const request: AgentHandoffRequest = {
         taskId,
         runId: entry.runId,
@@ -6110,7 +6157,10 @@ export class AgentRunner {
             : "s" in line && line.s === "sys"
               ? line.d
               : undefined;
-        if (text?.trim()) return text.trim();
+        if (text?.trim()) {
+          if (isHandoffFinalizationProgressSysLine(text)) continue;
+          return text.trim();
+        }
       }
     }
     return "the agent process exited with an error — open the task to see the full output";
@@ -6148,7 +6198,10 @@ export class AgentRunner {
           (typeof errCount === "number" && Number.isFinite(errCount) ? errCount : 0) + 1,
       };
       const engine = session?.engine && session.engine !== "plain" ? ` (${session.engine})` : "";
-      const detail = this.lastFailureLine(session);
+      const detail =
+        this.hasPendingHandoff(taskId) || handoffFinalizationWasInterrupted(session)
+          ? HANDOFF_FINALIZATION_INTERRUPTED_DETAIL
+          : this.lastFailureLine(session);
       if (current.needsInput) {
         // A repeat error before the human cleared the flag — still refresh
         // the detail so the banner shows the LATEST failure, not whichever
