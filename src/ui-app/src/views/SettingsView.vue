@@ -412,9 +412,56 @@ const generalFields = computed(() =>
       field.key !== "ntfyTopic" &&
       field.key !== "auth.enabled" &&
       field.key !== "auth.sessionMaxAge" &&
-      !field.key.startsWith("remoteValidation."),
+      !field.key.startsWith("remoteValidation.") &&
+      !field.key.startsWith("board.columns."),
   ),
 );
+
+const BOARD_COLUMN_STATUSES = ["draft", "inbox", "ready", "active", "review", "done"] as const;
+
+const boardColumnFields = computed(() => {
+  const order = new Map(BOARD_COLUMN_STATUSES.map((s, i) => [`board.columns.${s}`, i]));
+  return config.visibleFields
+    .filter((f) => f.key.startsWith("board.columns."))
+    .slice()
+    .sort((a, b) => (order.get(a.key) ?? 99) - (order.get(b.key) ?? 99));
+});
+
+function effectiveBoardColumnLabel(status: (typeof BOARD_COLUMN_STATUSES)[number]): string {
+  const key = `board.columns.${status}`;
+  const field = config.schema.find((f) => f.key === key);
+  const fallback = typeof field?.default === "string" ? field.default : "";
+  const raw = form[key];
+  const trimmed = typeof raw === "string" ? raw.trim() : "";
+  return trimmed || fallback;
+}
+
+function boardColumnFieldError(status: (typeof BOARD_COLUMN_STATUSES)[number]): string | null {
+  const key = `board.columns.${status}`;
+  const raw = form[key];
+  const trimmed = typeof raw === "string" ? raw.trim() : "";
+  if (!trimmed) return null;
+  if (trimmed.length > 40) return "Label must be 40 characters or fewer.";
+  const lower = trimmed.toLowerCase();
+  for (const other of BOARD_COLUMN_STATUSES) {
+    if (other === status) continue;
+    if (effectiveBoardColumnLabel(other).toLowerCase() === lower) {
+      const otherLabel = other.charAt(0).toUpperCase() + other.slice(1);
+      return `This label is already used by the ${otherLabel} column.`;
+    }
+  }
+  return null;
+}
+
+function hasBoardColumnErrors(): boolean {
+  return BOARD_COLUMN_STATUSES.some((s) => boardColumnFieldError(s) !== null);
+}
+
+function boardColumnErrorForKey(key: string): string | null {
+  const status = key.slice("board.columns.".length);
+  if (!(BOARD_COLUMN_STATUSES as readonly string[]).includes(status)) return null;
+  return boardColumnFieldError(status as (typeof BOARD_COLUMN_STATUSES)[number]);
+}
 
 /**
  * auth.sessionMaxAge is stored and sent to the server as seconds (it backs a
@@ -477,7 +524,9 @@ watch(
     // Capture the resolved tab now so the async cleanup replace below uses
     // the *target* tab, not the stale activeTab.value (router.replace is
     // async; activeTab won't reflect the new tab until the navigation settles).
-    const targetTab = key ? FIELD_TAB[key] : undefined;
+    const targetTab = key
+      ? (FIELD_TAB[key] ?? (key.startsWith("board.columns.") ? "advanced" : undefined))
+      : undefined;
     const resolvedTab: TabId = targetTab ?? activeTab.value;
     if (targetTab && activeTab.value !== targetTab) {
       void router.replace({
@@ -541,9 +590,12 @@ watch(
 function buildBody(): Record<string, unknown> {
   const body: Record<string, unknown> = {};
   for (const f of config.schema) {
-    // Board column labels are raw TOML-only — never sent via the curated save.
-    if (f.key.startsWith("board.columns.")) continue;
     let val = form[f.key];
+    if (f.key.startsWith("board.columns.")) {
+      const trimmed = typeof val === "string" ? val.trim() : String(val ?? "").trim();
+      body[f.key] = trimmed || f.default;
+      continue;
+    }
     if (f.type === "array" && typeof val === "string") {
       val = val
         .split(",")
@@ -586,6 +638,7 @@ async function autoSave(): Promise<void> {
 
 function scheduleAutoSave(delay = 450): void {
   clearTimeout(autoSaveTimer);
+  if (hasBoardColumnErrors()) return;
   autoSaveTimer = setTimeout(() => void autoSave(), delay);
 }
 
@@ -1189,6 +1242,43 @@ onUnmounted(() => {
                 />
               </div>
               <span v-if="f.restartRequired" class="restart-badge">restart required</span>
+            </div>
+          </div>
+        </Card>
+
+        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+          <div class="setting-group">
+            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+              <span class="live-dot"></span>Work board column labels
+            </div>
+            <div class="setting-desc" style="padding: 4px 0 12px">
+              Rename the six Work board columns in the UI and CLI. Status IDs, transitions, and task
+              frontmatter are unchanged — these are display labels only.
+            </div>
+            <div
+              v-for="f in boardColumnFields"
+              :key="f.key"
+              :id="`setting-${f.key}`"
+              class="setting-row"
+            >
+              <div class="setting-info">
+                <div class="setting-label">{{ f.label }}</div>
+                <div class="setting-desc">
+                  Default: {{ f.default }}. Clear the field to restore this default.
+                </div>
+                <div v-if="boardColumnErrorForKey(f.key)" class="ff-error">
+                  {{ boardColumnErrorForKey(f.key) }}
+                </div>
+              </div>
+              <div class="setting-input">
+                <Input
+                  :model-value="String(form[f.key] ?? '')"
+                  type="text"
+                  :placeholder="String(f.default)"
+                  :disabled="config.saving"
+                  @update:model-value="(v) => (form[f.key] = v)"
+                />
+              </div>
             </div>
           </div>
         </Card>
