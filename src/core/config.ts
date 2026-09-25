@@ -1554,12 +1554,12 @@ export function getConfigSchema(): ConfigFieldMeta[] {
     // [board.columns] — display-only label overrides (#0396).
     ...STATUSES.map((status) => ({
       key: `board.columns.${status}`,
-      label: `Column label: ${status}`,
+      label: `${status.charAt(0).toUpperCase() + status.slice(1)} column`,
       type: "string" as const,
       tier: "live" as const,
       restartRequired: false,
       default: DEFAULT_COLUMN_LABELS[status],
-      description: `Display label for the "${status}" column (${DEFAULT_COLUMN_LABELS[status]})`,
+      description: `Display label only — the "${status}" status ID never changes (default: ${DEFAULT_COLUMN_LABELS[status]})`,
     })),
   ];
 }
