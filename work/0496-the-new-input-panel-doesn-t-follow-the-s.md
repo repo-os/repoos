@@ -1,19 +1,16 @@
 ---
-updated_at: "2026-09-25T02:16:28Z"
-review_passes: 2
 id: "0496"
 title: Standardize New input panel styling with New task/New story panels
 type: bug
 status: review
 priority: p2
 area: web
-story: Story numbers and deep links
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/standardize-new-input-panel-styling-with
 review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-23T05:40:57Z"
-dev_error_count: 2
+updated_at: "2026-09-24T15:54:17Z"
 ---
 ## Problem
 
@@ -71,13 +68,4 @@ The "new input" panel doesn't follow the same colors/design as the new task and 
 - 2026-09-23T06:31:19Z · status inbox→ready
 - 2026-09-24T12:30:31Z · review_model_override
 - 2026-09-24T12:30:33Z · status ready→active, branch
-- 2026-09-24T12:53:58Z · agent exited with an error (cursor) · RetriableError: [unknown] Premature close
-- 2026-09-24T12:59:02Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-09-24T13:49:36Z · status active→review
-- 2026-09-24T15:47:27Z · story
-- 2026-09-24T15:52:34Z · status review→active
-- 2026-09-24T15:52:34Z · needs_input
 - 2026-09-24T15:54:17Z · status active→review
-- 2026-09-24T16:14:12Z · needs_input
-- 2026-09-25T02:16:28Z · needs_input
-
