@@ -2,14 +2,14 @@
 id: "0500"
 title: Deduplicate agent cards and compact the Agents page
 type: refactor
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-25T06:04:32Z"
-updated_at: "2026-09-25T06:06:14Z"
+updated_at: "2026-09-25T06:10:03Z"
 ---
 ## Problem
 
@@ -144,3 +144,4 @@ I noticed that the 3 default agents (pm, engineer, reviewer)  have triplicate ht
 - 2026-09-25T06:04:32Z · created · hello@repoos.org
 - 2026-09-25T06:04:33Z · screenshots
 - 2026-09-25T06:06:14Z · status draft→inbox, title, area, type, body
+- 2026-09-25T06:10:03Z · status inbox→ready
