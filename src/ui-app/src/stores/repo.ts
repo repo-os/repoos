@@ -1487,6 +1487,8 @@ export const useRepoStore = defineStore("repo", () => {
       reviewModelOverride: t.reviewModelOverride ?? null,
       releasedAt: t.releasedAt ?? null,
     })) as unknown as Task[];
+    // The open drawer holds its own copy of the task; bring it along too.
+    void useUiStore().refreshActive();
     // Index hydration is the recovery path after reconnecting while a review
     // was running. Cards get their live activity state immediately; reports
     // would otherwise lazy-load from the drawer on open (0291).

@@ -383,6 +383,24 @@ export const useUiStore = defineStore("ui", () => {
     }
   }
 
+  /**
+   * Re-fetch the open drawer's task. The board refresh replaces the store's
+   * task list but not `active`, which only `task.updated` events keep current.
+   * An event lost across a reconnect — e.g. a close-out that lands in the same
+   * second as the server reload its merge triggers (#0499) — otherwise left the
+   * drawer showing the pre-done task (review chip, needs-input banner) forever.
+   */
+  async function refreshActive(): Promise<void> {
+    const id = active.value?.id;
+    if (!id || isNew.value) return;
+    try {
+      const fresh = await api<Task>(`/api/tasks/${id}`);
+      if (active.value?.id === id) active.value = fresh;
+    } catch {
+      /* keep the locally-known task — refresh is best-effort */
+    }
+  }
+
   function close(): void {
     active.value = null;
     isNew.value = false;
@@ -471,6 +489,7 @@ export const useUiStore = defineStore("ui", () => {
     openNewStory,
     open,
     syncActive,
+    refreshActive,
     openTask,
     close,
     openTunnel,
