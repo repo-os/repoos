@@ -297,10 +297,10 @@ describe("SettingsView board column labels (#0499)", () => {
     expect(document.getElementById("settings-panel-advanced")?.contains(row!)).toBe(true);
     general.unmount();
 
-    await mountSettings("advanced");
+    const advanced = await mountSettings("advanced");
     expect(boardColumnDraftInput()).not.toBeNull();
     expect(document.getElementById("setting-board.columns.done")).not.toBeNull();
-    document.body.innerHTML = "";
+    advanced.unmount();
   });
 
   it("auto-save PATCH includes a new column label", async () => {
@@ -312,8 +312,7 @@ describe("SettingsView board column labels (#0499)", () => {
     expect(input).not.toBeNull();
     await new DOMWrapper(input!).setValue("Ideas");
     await flushPromises();
-    await new Promise((r) => setTimeout(r, 500));
-    await flushPromises();
+    await vi.waitFor(() => expect(saveSpy).toHaveBeenCalled(), { timeout: 3000 });
 
     expect(saveSpy).toHaveBeenCalled();
     const body = saveSpy.mock.calls.at(-1)?.[0] as Record<string, unknown>;
@@ -330,8 +329,7 @@ describe("SettingsView board column labels (#0499)", () => {
     const input = boardColumnDraftInput();
     await new DOMWrapper(input!).setValue("");
     await flushPromises();
-    await new Promise((r) => setTimeout(r, 500));
-    await flushPromises();
+    await vi.waitFor(() => expect(saveSpy).toHaveBeenCalled(), { timeout: 3000 });
 
     expect(saveSpy).toHaveBeenCalled();
     const body = saveSpy.mock.calls.at(-1)?.[0] as Record<string, unknown>;
@@ -341,7 +339,6 @@ describe("SettingsView board column labels (#0499)", () => {
   });
 
   it("rejects duplicate and over-length labels without PATCH", async () => {
-    vi.useFakeTimers();
     await loadSettingsConfig();
     const config = useConfigStore();
     const saveSpy = vi.spyOn(config, "save").mockResolvedValue(undefined);
@@ -351,21 +348,20 @@ describe("SettingsView board column labels (#0499)", () => {
     expect(draftInput).not.toBeNull();
     await new DOMWrapper(draftInput!).setValue("Inbox");
     await flushPromises();
-    await vi.advanceTimersByTimeAsync(500);
+    await new Promise((r) => setTimeout(r, 600));
     await flushPromises();
     expect(saveSpy).not.toHaveBeenCalled();
     expect(boardColumnDraftRow()?.querySelector(".ff-error")?.textContent).toMatch(/already used/i);
 
     await new DOMWrapper(draftInput!).setValue("x".repeat(41));
     await flushPromises();
-    await vi.advanceTimersByTimeAsync(500);
+    await new Promise((r) => setTimeout(r, 600));
     await flushPromises();
     expect(saveSpy).not.toHaveBeenCalled();
     expect(boardColumnDraftRow()?.querySelector(".ff-error")?.textContent).toMatch(
       /40 characters/i,
     );
 
-    vi.useRealTimers();
     saveSpy.mockRestore();
     wrapper.unmount();
   });
@@ -373,9 +369,10 @@ describe("SettingsView board column labels (#0499)", () => {
   it("?focus=board.columns.draft opens Advanced and focuses the row", async () => {
     await loadSettingsConfig();
     currentQuery = { focus: "board.columns.draft" };
+    const scroll = Element.prototype.scrollIntoView as unknown as ReturnType<typeof vi.fn>;
     const wrapper = mount(SettingsView, { attachTo: document.body });
     await flushPromises();
-    await new Promise((r) => setTimeout(r, 250));
+    await vi.waitFor(() => expect(scroll).toHaveBeenCalled(), { timeout: 2500 });
 
     expect(replaceSpy).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -383,9 +380,11 @@ describe("SettingsView board column labels (#0499)", () => {
         query: expect.objectContaining({ tab: "advanced" }),
       }),
     );
-    const scroll = Element.prototype.scrollIntoView as unknown as ReturnType<typeof vi.fn>;
-    expect(scroll).toHaveBeenCalled();
     expect((scroll.mock.contexts[0] as HTMLElement).id).toBe("setting-board.columns.draft");
     wrapper.unmount();
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = "";
   });
 });
