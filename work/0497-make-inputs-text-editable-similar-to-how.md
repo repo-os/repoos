@@ -3,6 +3,9 @@ id: "0497"
 title: Make input text editable via an Edit Input modal
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: the opencode agent timed out after 900s
 priority: p2
 area: ui
 assigned_to: ai
@@ -10,7 +13,7 @@ created_by: hello@repoos.org
 branch: feat/make-input-text-editable-via-an-edit-inp
 review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-25T02:03:08Z"
-updated_at: "2026-09-25T03:15:02Z"
+updated_at: "2026-09-25T03:30:03Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -105,3 +108,4 @@ Make inputs text editable similar to how the task spec is editable (use a modal 
 - 2026-09-25T03:01:09Z · status ready→active, branch
 - 2026-09-25T03:01:16Z · review_model_override
 - 2026-09-25T03:15:02Z · status active→review
+- 2026-09-25T03:30:03Z · needs_input
