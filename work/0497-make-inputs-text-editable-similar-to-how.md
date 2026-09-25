@@ -8,8 +8,9 @@ area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/make-input-text-editable-via-an-edit-inp
+review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-25T02:03:08Z"
-updated_at: "2026-09-25T03:01:09Z"
+updated_at: "2026-09-25T03:01:16Z"
 ---
 ## Problem
 
@@ -101,3 +102,4 @@ Make inputs text editable similar to how the task spec is editable (use a modal 
 - 2026-09-25T02:05:09Z · status draft→inbox, title, area, body
 - 2026-09-25T02:21:47Z · status inbox→ready
 - 2026-09-25T03:01:09Z · status ready→active, branch
+- 2026-09-25T03:01:16Z · review_model_override
