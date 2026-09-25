@@ -149,7 +149,7 @@ describe("resolveInput (core persistence)", () => {
       const config = createRepoOS(root).config;
       const created = createInput(config, "Add a dark mode toggle", "idea", "human");
       resolveInput(config, created.id, "task", "0400");
-      const moved = updateInput(config, created.id, "reviewing");
+      const moved = updateInput(config, created.id, { status: "reviewing" });
       expect(moved.resolution).toBe("");
       expect(moved.resolvedTask).toBe("");
     } finally {

@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { RepoOSConfig } from "./types.js";
-import { parseDocument } from "./frontmatter.js";
+import { parseDocument, serializeDocument } from "./frontmatter.js";
 
 export type InputStatus = "new" | "reviewing" | "processed";
 /**
@@ -50,6 +50,20 @@ function setField(content: string, key: string, value: string): string {
   const re = new RegExp(`^${key}:.*$`, "m");
   return re.test(content) ? content.replace(re, line) : content.replace("---\n", `---\n${line}\n`);
 }
+const INPUT_KEY_ORDER = [
+  "id",
+  "number",
+  "title",
+  "status",
+  "type",
+  "area",
+  "created_by",
+  "created_at",
+  "updated_at",
+  "resolution",
+  "resolved_task",
+];
+
 const slug = (v: string) =>
   v
     .toLowerCase()
@@ -185,21 +199,35 @@ export function createInput(c: RepoOSConfig, body: string, type = "other", creat
   );
   return listInputs(c).find((i) => i.id === id)!;
 }
-export function updateInput(c: RepoOSConfig, id: string, status: InputStatus): Input {
+export type InputPatch = { status?: InputStatus; text?: string };
+
+export function updateInput(c: RepoOSConfig, id: string, patch: InputPatch): Input {
+  if (patch.status === undefined && patch.text === undefined) throw new Error("nothing to update");
   const item = listInputs(c).find((i) => i.id === id);
   if (!item) throw new Error("input not found");
   const file = join(c.root, item.path);
-  let content = readFileSync(file, "utf8")
-    .replace(/^status:.*$/m, `status: ${status}`)
-    .replace(/^updated_at:.*$/m, `updated_at: ${q(new Date().toISOString())}`);
+  const parsed = parseDocument(readFileSync(file, "utf8"));
+  const status = patch.status ?? item.status;
+  let body = parsed.body.trim();
+  let title = String(parsed.data.title ?? item.title);
+  if (patch.text !== undefined) {
+    body = patch.text.trim();
+    title = body.split(/\n/)[0].replace(/^#\s*/, "").slice(0, 100) || "Untitled input";
+  }
+  const data: Record<string, unknown> = {
+    ...parsed.data,
+    status,
+    title,
+    updated_at: new Date().toISOString(),
+  };
   // A manual move out of `processed` invalidates any recorded resolution —
   // leaving it behind would re-display a stale outcome if the input is later
   // marked processed again without a real resolve action.
   if (status !== "processed") {
-    content = setField(content, "resolution", "");
-    content = setField(content, "resolved_task", "");
+    data.resolution = "";
+    data.resolved_task = "";
   }
-  writeFileSync(file, content);
+  writeFileSync(file, serializeDocument(data, `${body}\n`, INPUT_KEY_ORDER));
   return listInputs(c).find((i) => i.id === id)!;
 }
 /**

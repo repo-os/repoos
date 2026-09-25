@@ -23,6 +23,7 @@ import SelectViewport from "../components/ui/select/viewport.vue";
 import Checkbox from "../components/ui/checkbox.vue";
 import { applyInputCollapseDefaults, revealInputArrivals } from "../lib/inputsBoardCollapse";
 import CopyableNumber from "../components/CopyableNumber.vue";
+import InputEditModal from "../components/InputEditModal.vue";
 
 type InputsViewMode = "list" | "board";
 
@@ -127,6 +128,23 @@ function inputLabel(input: Input): string {
 // the drawer can show how it was resolved after a reload.
 const resolving = ref(false);
 const resolveError = ref("");
+const inputEditOpen = ref(false);
+
+function openInputEdit(): void {
+  inputEditOpen.value = true;
+}
+
+async function applyInputEdit(text: string): Promise<void> {
+  const input = activeInput.value;
+  if (!input) return;
+  inputEditOpen.value = false;
+  try {
+    const updated = await repo.patchInput(input.id, { text });
+    Object.assign(input, updated);
+  } catch (err) {
+    repo.onError(err);
+  }
+}
 
 async function createTaskFromInput(): Promise<void> {
   const input = activeInput.value;
@@ -421,6 +439,10 @@ function tryOpenInput(ref: string, attempt: number): void {
             ><span>Created by {{ activeInput.createdBy || "Unknown" }}</span
             ><span v-if="activeInput.createdAt">Created {{ relTime(activeInput.createdAt) }}</span>
           </div>
+          <div class="detail-body-head">
+            <span class="detail-body-label">Text</span>
+            <Button variant="outline" size="sm" @click="openInputEdit">Edit</Button>
+          </div>
           <div class="detail-body">{{ activeInput.body }}</div>
           <div v-if="activeInput.status !== 'processed'" class="detail-actions">
             <Button variant="outline" :disabled="resolving" @click="doNothing">Do nothing</Button>
@@ -447,6 +469,12 @@ function tryOpenInput(ref: string, attempt: number): void {
         </div></DialogContent
       ></Dialog
     >
+    <InputEditModal
+      :open="inputEditOpen"
+      :body="activeInput?.body ?? ''"
+      @update:open="(v) => (inputEditOpen = v)"
+      @save="applyInputEdit"
+    />
   </div>
 </template>
 <style scoped>
@@ -693,6 +721,20 @@ function tryOpenInput(ref: string, attempt: number): void {
 .detail-status .detail-select {
   min-width: 120px;
   align-self: auto;
+}
+.detail-body-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.detail-body-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--txt-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 .detail-body {
   white-space: pre-wrap;
