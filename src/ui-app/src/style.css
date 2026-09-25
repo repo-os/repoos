@@ -6562,6 +6562,79 @@
   margin: -3px 0 7px;
 }
 
+.agent-instr-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 0;
+}
+
+.agent-instr-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.agent-instr-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--txt-dim);
+  cursor: pointer;
+}
+
+.agent-instr-toggle:hover {
+  color: var(--txt);
+  background: var(--nav-hover-bg);
+}
+
+.agent-field.agent-instr-field:not(:has(.agent-instr)) {
+  margin-bottom: 0;
+}
+
+.agent-skills-label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.agent-skills-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.agent-skills-add {
+  flex-shrink: 0;
+  padding: 4px 8px !important;
+  min-height: 0;
+}
+
+.agent-skills-info {
+  flex-shrink: 0;
+  color: var(--txt-muted);
+  font-size: 12px;
+  cursor: help;
+  line-height: 1;
+}
+
+.agent-skills-inline-summary {
+  flex: 1;
+  min-width: 0;
+  color: var(--txt-dim);
+  font-size: 12px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .agent-skill-option {
   display: flex;
   align-items: flex-start;
