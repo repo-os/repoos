@@ -174,6 +174,13 @@ export const useUiStore = defineStore("ui", () => {
   const pendingScreenshots = reactive<PendingScreenshot[]>([]);
 
   /**
+   * Attachments picked in the New input panel, held until submit. Kept
+   * separate from `pendingScreenshots` (the New-task panel's queue) so
+   * opening one creation flow never clobbers the other's draft (0498).
+   */
+  const inputScreenshots = reactive<PendingScreenshot[]>([]);
+
+  /**
    * Screenshots picked in the PM tab's compose box (0381), held until the
    * message is sent. Kept separate from `pendingScreenshots` (the New-task
    * panel's queue) so the two drawers can never leak into each other, and
@@ -217,8 +224,9 @@ export const useUiStore = defineStore("ui", () => {
     isNewSkill.value = false;
     isNewStory.value = false;
     active.value = null;
-    inputText.value = "";
-    clearScreenshots();
+    // Deliberately keep inputText + inputScreenshots: the draft survives
+    // closing and reopening the panel within a session (0498). Cleared only
+    // after a successful submit or via clearInputDraft().
   }
 
   function openNewStory(): void {
@@ -266,6 +274,38 @@ export const useUiStore = defineStore("ui", () => {
 
   function clearScreenshots(): void {
     pendingScreenshots.splice(0);
+  }
+
+  /** Read each image file into memory as a data URL and queue it for New input. */
+  function addInputScreenshots(files: File[]): void {
+    for (const file of files) {
+      if (inputScreenshots.length >= MAX_PENDING_SCREENSHOTS) break;
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result !== "string") return;
+        inputScreenshots.push({
+          name: file.name,
+          mime: file.type,
+          dataUrl: reader.result,
+          size: file.size,
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  function removeInputScreenshot(index: number): void {
+    inputScreenshots.splice(index, 1);
+  }
+
+  function clearInputScreenshots(): void {
+    inputScreenshots.splice(0);
+  }
+
+  /** Discard the in-progress New input draft (text + attachments). */
+  function clearInputDraft(): void {
+    inputText.value = "";
+    clearInputScreenshots();
   }
 
   /** Read PM-compose images into memory as data URLs, capped like the New-task panel. */
@@ -415,6 +455,11 @@ export const useUiStore = defineStore("ui", () => {
     addScreenshots,
     removeScreenshot,
     clearScreenshots,
+    inputScreenshots,
+    addInputScreenshots,
+    removeInputScreenshot,
+    clearInputScreenshots,
+    clearInputDraft,
     pmScreenshots,
     addPmScreenshots,
     removePmScreenshot,

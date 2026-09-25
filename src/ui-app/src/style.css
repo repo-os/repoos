@@ -3437,6 +3437,16 @@
 .field {
   margin-bottom: 13px;
 }
+.field-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.field-header label {
+  margin-bottom: 0;
+}
 .field label {
   font-size: 10px;
   letter-spacing: 0.08em;
