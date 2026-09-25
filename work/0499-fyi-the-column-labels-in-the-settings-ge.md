@@ -2,7 +2,7 @@
 id: "0499"
 title: "Fix Work board column labels: editable inputs, moved to Advanced"
 type: feature
-status: draft
+status: inbox
 priority: p2
 area: general
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 pm_model_override: opencode-go/deepseek-v4.1-flash
 review_model_override: opencode-go/hy3
 created_at: "2026-09-25T02:04:35Z"
-updated_at: "2026-09-25T05:53:39Z"
+updated_at: "2026-09-25T05:53:40Z"
 ---
 The "Column label: …" rows in Settings expose no input at all — six rows render
 just a title and description, with an empty control area (see screenshot). They
@@ -153,3 +153,4 @@ FYI the column labels in the settings (general) don't work, there's no place to 
 - 2026-09-25T02:22:04Z · pm_model_override
 - 2026-09-25T02:59:51Z · title, body
 - 2026-09-25T05:53:39Z · review_model_override
+- 2026-09-25T05:53:40Z · status draft→inbox
