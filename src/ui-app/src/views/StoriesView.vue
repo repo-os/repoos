@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { mergeStoriesForDisplay, type StoryDefinition } from "../../../core/story-display.js";
+import {
+  mergeStoriesForDisplay,
+  type MergedStoryGroup,
+  type StoryDefinition,
+} from "../../../core/story-display.js";
 import { useRepoStore, statusColor } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
 import { useUiStore } from "../stores/ui";
 import { relTime } from "../lib/time";
-import TaskCard from "../components/TaskCard.vue";
 import NewStoryPanel from "../components/NewStoryPanel.vue";
+import StoryPanel from "../components/StoryPanel.vue";
 import Button from "../components/ui/button.vue";
 import ActivityIndicator from "../components/ActivityIndicator.vue";
 import type { Status, Task } from "../types";
@@ -55,14 +59,29 @@ watch(
   { immediate: true },
 );
 
-/** Stories whose member tasks are revealed. */
-const expanded = ref<Set<string>>(new Set());
+/**
+ * The story the side panel is showing (#0502), or null when it is closed.
+ * Held as a key rather than a snapshot so the panel re-reads the merged
+ * roll-up on every store update — a task finishing must move the panel's
+ * progress without the user reopening it.
+ */
+const openStoryKey = ref<string | null>(null);
 
-function toggle(key: string): void {
-  const next = new Set(expanded.value);
-  if (next.has(key)) next.delete(key);
-  else next.add(key);
-  expanded.value = next;
+const openStory = computed<MergedStoryGroup<Task> | null>(
+  () => stories.value.find((s) => s.key === openStoryKey.value) ?? null,
+);
+
+/**
+ * Open (or swap to) a story's panel. Selecting a different row while the
+ * panel is already open updates the same dialog in place — the panel resets
+ * its own tab — rather than closing and reopening it.
+ */
+function selectStory(key: string): void {
+  openStoryKey.value = key;
+}
+
+function closeStory(): void {
+  openStoryKey.value = null;
 }
 
 function percent(done: number, total: number): string {
@@ -170,8 +189,9 @@ function lastActivity(story: { lastActivity: string | null }): string {
         <button
           type="button"
           class="story-head"
-          :aria-expanded="expanded.has(story.key)"
-          @click="toggle(story.key)"
+          aria-haspopup="dialog"
+          :aria-label="`Open ${story.name} story details`"
+          @click="selectStory(story.key)"
         >
           <div class="story-head-main">
             <div class="story-name-row">
@@ -199,15 +219,9 @@ function lastActivity(story: { lastActivity: string | null }): string {
               <i :style="{ width: percent(story.done, story.total) }"></i>
             </div>
           </div>
-          <svg
-            class="story-chevron"
-            :class="{ open: expanded.has(story.key) }"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
+          <svg class="story-chevron" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path
-              d="M6 9l6 6 6-6"
+              d="M9 6l6 6-6 6"
               stroke="currentColor"
               stroke-width="1.8"
               stroke-linecap="round"
@@ -243,17 +257,14 @@ function lastActivity(story: { lastActivity: string | null }): string {
             <span class="story-live-cue" :class="row.cueClass">{{ row.cue }}</span>
           </button>
         </div>
-
-        <div v-if="expanded.has(story.key) && story.body" class="story-description">
-          <div class="story-description-inner">{{ story.body }}</div>
-        </div>
-
-        <div v-if="expanded.has(story.key)" class="story-members">
-          <TaskCard v-for="task in story.tasks" :key="task.id" :task="task" :drag-enabled="false" />
-        </div>
       </article>
     </div>
     <NewStoryPanel v-if="enabled" />
+    <StoryPanel
+      :story="openStory"
+      :pm-working="openStory ? pmWorkingKeys.has(openStory.key) : false"
+      @close="closeStory"
+    />
   </div>
 </template>
 
@@ -378,16 +389,6 @@ function lastActivity(story: { lastActivity: string | null }): string {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.story-description {
-  padding: 0 16px 12px;
-  border-bottom: 1px solid var(--border);
-}
-.story-description-inner {
-  font-size: 12.5px;
-  line-height: 1.55;
-  color: var(--txt-dim);
-  white-space: pre-wrap;
-}
 .story-dot-sep {
   opacity: 0.6;
 }
@@ -423,10 +424,12 @@ function lastActivity(story: { lastActivity: string | null }): string {
   width: 18px;
   height: 18px;
   color: var(--txt-faint);
-  transition: transform 0.18s ease;
+  transition: color 0.15s ease;
 }
-.story-chevron.open {
-  transform: rotate(180deg);
+/* The row now opens the side panel rather than expanding inline, so the
+   chevron reads as "go deeper" and brightens on hover instead of rotating. */
+.story-head:hover .story-chevron {
+  color: var(--cyan);
 }
 
 .story-chips {
@@ -517,15 +520,6 @@ function lastActivity(story: { lastActivity: string | null }): string {
   border: 1px solid var(--violet-border-tint);
 }
 
-.story-members {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 10px;
-  padding: 14px 16px;
-  border-top: 1px solid var(--border);
-  background: var(--chip-bg);
-}
-
 @media (max-width: 720px) {
   .story-head {
     flex-wrap: wrap;
@@ -547,9 +541,6 @@ function lastActivity(story: { lastActivity: string | null }): string {
   }
   .story-card {
     position: relative;
-  }
-  .story-members {
-    grid-template-columns: 1fr;
   }
 }
 </style>
