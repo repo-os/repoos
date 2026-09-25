@@ -433,6 +433,28 @@ describe("TaskWatchdog", () => {
     if (oldPath !== undefined) process.env.PATH = oldPath;
   });
 
+  it("does not surface an active task with a pending handoff on disk (#0501)", async () => {
+    const fx = makeFx(10_000);
+    mkdirSync(join(fx.root, ".repoos"), { recursive: true });
+    writeFileSync(
+      join(fx.root, ".repoos", "pending-handoffs.json"),
+      JSON.stringify({
+        requests: [{ taskId: "0001", runId: "r1", branch: "feat/x", workdir: fx.root }],
+      }),
+    );
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    runner = new AgentRunner(fx.config, () => {});
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
+
+    await watchdog.checkNow();
+
+    const task = parseTaskAt(fx);
+    expect(task.status).toBe("active");
+    expect(task.needsInput).toBe(false);
+    fx.clean();
+  });
+
   it("surfaces an active task whose agent never started → ready, with the reason recorded (acceptance 2)", async () => {
     const fx = makeFx(10_000); // went active 10s ago, past the 1s threshold
     const index = new LiveIndex(fx.config);
