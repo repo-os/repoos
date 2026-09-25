@@ -113,7 +113,7 @@ describe("new input submit acknowledgment (0325)", () => {
   it("uploads attachments against the created input and announces the refresh", async () => {
     const { calls, releasePost } = stubFetch(true);
     const { wrapper, ui } = await mountPanel();
-    ui.pendingScreenshots.push({
+    ui.inputScreenshots.push({
       name: "shot.png",
       mime: "image/png",
       dataUrl: "data:image/png;base64,QUJD",
@@ -138,7 +138,7 @@ describe("new input submit acknowledgment (0325)", () => {
       expect(refreshed).toBe(1);
       // The form was cleared at submit; nothing reappears after success.
       expect(ui.inputText).toBe("");
-      expect(ui.pendingScreenshots.length).toBe(0);
+      expect(ui.inputScreenshots.length).toBe(0);
     } finally {
       window.removeEventListener("repoos:inputs-updated", onRefresh);
     }
@@ -180,7 +180,7 @@ describe("new input submit acknowledgment (0325)", () => {
 
   it("removes a pending attachment before submit", async () => {
     const { wrapper, ui } = await mountPanel();
-    ui.pendingScreenshots.push({
+    ui.inputScreenshots.push({
       name: "draft.png",
       mime: "image/png",
       dataUrl: "data:image/png;base64,QUJD",
@@ -189,12 +189,12 @@ describe("new input submit acknowledgment (0325)", () => {
     await flush();
     expect(wrapper.find(".ff-pending-file-remove").exists()).toBe(true);
     await wrapper.find(".ff-pending-file-remove").trigger("click");
-    expect(ui.pendingScreenshots.length).toBe(0);
+    expect(ui.inputScreenshots.length).toBe(0);
   });
 
   it("queues files dropped on the panel", async () => {
     const { wrapper, ui } = await mountPanel();
-    const addSpy = vi.spyOn(ui, "addScreenshots");
+    const addSpy = vi.spyOn(ui, "addInputScreenshots");
     const file = new File(["x"], "drop.txt", { type: "text/plain" });
     await wrapper.find(".drawer-wrap").trigger("drop", {
       dataTransfer: { files: [file] },
@@ -218,5 +218,65 @@ describe("new input submit acknowledgment (0325)", () => {
     // put back for retry and the failure surfaces through the toast channel.
     expect(ui.inputText).toBe("Something went wrong");
     expect(repo.toasts.some((t) => t.type === "error" && t.message.length > 0)).toBe(true);
+  });
+});
+
+describe("new input draft persistence (0498)", () => {
+  const sampleShot = {
+    name: "keep.png",
+    mime: "image/png",
+    dataUrl: "data:image/png;base64,QUJD",
+    size: 3,
+  };
+
+  it("keeps text and attachments across close and reopen", async () => {
+    const { wrapper, ui } = await mountPanel();
+    await wrapper.find("#new-input-text").setValue("Draft stays put");
+    ui.inputScreenshots.push({ ...sampleShot });
+    await flush();
+
+    ui.close();
+    await flush();
+    expect(ui.isNewInput).toBe(false);
+
+    ui.openNewInput();
+    await flush();
+
+    expect(ui.inputText).toBe("Draft stays put");
+    expect(ui.inputScreenshots.length).toBe(1);
+    expect((wrapper.find("#new-input-text").element as HTMLTextAreaElement).value).toBe(
+      "Draft stays put",
+    );
+  });
+
+  it("Clear discards text and attachments", async () => {
+    const { wrapper, ui } = await mountPanel();
+    await wrapper.find("#new-input-text").setValue("To be cleared");
+    ui.inputScreenshots.push({ ...sampleShot });
+    await flush();
+
+    const clearBtn = wrapper
+      .findAll("button")
+      .find((b) => b.attributes("aria-label") === "Clear draft");
+    expect(clearBtn).toBeTruthy();
+    await clearBtn!.trigger("click");
+    await flush();
+
+    expect(ui.inputText).toBe("");
+    expect(ui.inputScreenshots.length).toBe(0);
+    const submit = wrapper.findAll("button").find((b) => b.text().includes("Submit input"));
+    expect(submit!.attributes("disabled")).toBeDefined();
+  });
+
+  it("openNewTask does not wipe an in-progress New input draft", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const ui = useUiStore();
+    ui.inputText = "Input draft";
+    ui.inputScreenshots.push({ ...sampleShot });
+    ui.openNewTask();
+    expect(ui.inputText).toBe("Input draft");
+    expect(ui.inputScreenshots.length).toBe(1);
+    expect(ui.pendingScreenshots.length).toBe(0);
   });
 });

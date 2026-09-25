@@ -253,6 +253,11 @@ function onFreeformTranscribed(text: string): void {
   }
 }
 
+function clearFreeformDraft(): void {
+  freeformText.value = "";
+  ui.clearScreenshots();
+}
+
 function onDraftMsgTranscribed(text: string): void {
   if (draftMsgTextarea.value) {
     insertTextAtCursor(draftMsgTextarea.value, text); // dispatches `input` → adjustDraftMsgHeight
@@ -2730,6 +2735,15 @@ watch(
               <div class="field">
                 <div class="field-header">
                   <label for="nt-freeform">Describe the task</label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Clear draft"
+                    :disabled="!freeformText.trim() && !ui.pendingScreenshots.length"
+                    @click="clearFreeformDraft"
+                    >Clear</Button
+                  >
                 </div>
                 <div class="agent-input-wrapper">
                   <textarea
