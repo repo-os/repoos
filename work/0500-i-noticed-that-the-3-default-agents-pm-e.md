@@ -2,14 +2,14 @@
 id: "0500"
 title: Deduplicate agent cards and compact the Agents page
 type: refactor
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/deduplicate-agent-cards-and-compact-the-
 created_at: "2026-09-25T06:04:32Z"
-updated_at: "2026-09-25T06:15:47Z"
+updated_at: "2026-09-25T06:22:27Z"
 ---
 ## Problem
 
@@ -147,3 +147,4 @@ I noticed that the 3 default agents (pm, engineer, reviewer)  have triplicate ht
 - 2026-09-25T06:10:03Z · status inbox→ready
 - 2026-09-25T06:11:38Z · status ready→active, branch
 - 2026-09-25T06:15:47Z · status active→review
+- 2026-09-25T06:22:27Z · status review→done, release:success
