@@ -101,6 +101,43 @@ describe("mergeStoriesForDisplay", () => {
     expect(planned.total).toBe(0);
     expect(planned.registered).toBe(true);
   });
+
+  it("carries the definition's path and authorship for the side panel's Details tab", () => {
+    const merged = mergeStoriesForDisplay(
+      [{ story: "Tagged slice", status: "ready" }],
+      [
+        {
+          key: storyKey("Tagged slice"),
+          name: "Tagged slice",
+          path: "stories/tagged-slice.md",
+          body: "Registered body",
+          createdAt: "2026-09-01T00:00:00Z",
+          createdBy: "hello@repoos.org",
+        },
+      ],
+    );
+    expect(merged[0].path).toBe("stories/tagged-slice.md");
+    expect(merged[0].createdAt).toBe("2026-09-01T00:00:00Z");
+    expect(merged[0].createdBy).toBe("hello@repoos.org");
+  });
+
+  it("nulls the definition metadata for a story that exists only as a task tag", () => {
+    const merged = mergeStoriesForDisplay([{ story: "Tag only", status: "ready" }], []);
+    expect(merged[0].registered).toBe(false);
+    expect(merged[0].path).toBeNull();
+    expect(merged[0].createdAt).toBeNull();
+    expect(merged[0].createdBy).toBeNull();
+  });
+
+  it("preserves the caller's member-task type through the merge (#0502)", () => {
+    const merged = mergeStoriesForDisplay(
+      [{ story: "Tagged slice", status: "ready", marker: "kept" as const }],
+      [],
+    );
+    // The panel navigates to these objects, so the extra field must survive
+    // rather than being widened away to the structural minimum.
+    expect(merged[0].tasks[0].marker).toBe("kept");
+  });
 });
 
 describe("parseGeneratedStoryDefinition", () => {
