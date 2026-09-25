@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-25T15:55:13Z"
+review_passes: 1
 id: "0501"
 title: Handoff finalization lost on server reload strands task in active
 type: bug
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: ""
 branch: feat/handoff-finalization-lost-on-server-relo
 created_at: "2026-09-25T06:24:46Z"
-updated_at: "2026-09-25T15:48:15Z"
 ---
 ## Problem
 
@@ -73,3 +74,4 @@ step anyway. That's separate from the bug but worth a clearer message.
 - 2026-09-25T15:38:41Z · status inbox→ready
 - 2026-09-25T15:38:42Z · status ready→active, branch
 - 2026-09-25T15:48:15Z · status active→review
+
