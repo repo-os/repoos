@@ -2,7 +2,7 @@
 id: "0502"
 title: Add side panel with tabs for stories
 type: feature
-status: review
+status: active
 priority: p2
 area: ui
 assigned_to: ai
@@ -123,3 +123,4 @@ For stories let's use a side panel in the same style as the task/input side pane
 - 2026-09-25T16:14:40Z · status active→review
 - 2026-09-25T16:18:14Z · status review→active
 - 2026-09-25T16:28:10Z · status active→review
+- 2026-09-25T16:28:10Z · status review→active
