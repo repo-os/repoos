@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-25T02:16:28Z"
+review_passes: 2
 id: "0496"
 title: Standardize New input panel styling with New task/New story panels
 type: bug
@@ -11,8 +13,6 @@ created_by: hello@repoos.org
 branch: feat/standardize-new-input-panel-styling-with
 review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-23T05:40:57Z"
-updated_at: "2026-09-25T02:16:28Z"
-review_passes: 1
 dev_error_count: 2
 ---
 ## Problem
@@ -80,3 +80,4 @@ The "new input" panel doesn't follow the same colors/design as the new task and 
 - 2026-09-24T15:54:17Z · status active→review
 - 2026-09-24T16:14:12Z · needs_input
 - 2026-09-25T02:16:28Z · needs_input
+
