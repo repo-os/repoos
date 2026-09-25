@@ -81,11 +81,6 @@ describe("pending-handoff recovery waits for the index (#0235)", () => {
       try {
         // startServer resolves only after `await indexReady`, and the deferred
         // recovery `.then` is registered first — so it has already run.
-        const pending = JSON.parse(
-          readFileSync(join(root, ".repoos", "pending-handoffs.json"), "utf8"),
-        );
-        expect(pending.requests).toEqual([]);
-
         // The recovery path only reaches the transcript when getTask() FOUND
         // the task — the pre-fix bug cleared the request without this.
         const deadline = Date.now() + 4000;
@@ -99,6 +94,21 @@ describe("pending-handoff recovery waits for the index (#0235)", () => {
           await new Promise((r) => setTimeout(r, 100));
         }
         expect(recovered).toBe(true);
+
+        // Pending stays on disk until finalization finishes (#0501).
+        const clearDeadline = Date.now() + 120_000;
+        let pendingCleared = false;
+        while (Date.now() < clearDeadline) {
+          const pending = JSON.parse(
+            readFileSync(join(root, ".repoos", "pending-handoffs.json"), "utf8"),
+          ) as { requests: unknown[] };
+          if (pending.requests.length === 0) {
+            pendingCleared = true;
+            break;
+          }
+          await new Promise((r) => setTimeout(r, 200));
+        }
+        expect(pendingCleared).toBe(true);
       } finally {
         await handle.close("test done");
       }

@@ -3,7 +3,7 @@
  *
  * Validates the lifecycle of handoff requests that are persisted to disk:
  *  1. Recognized signal → persisted to .repoos/pending-handoffs.json
- *  2. Clean exit → persisted pending cleared (finalization owns it)
+ *  2. Clean exit → persisted pending kept until finalization completes (#0501)
  *  3. Interrupted exit → persisted pending retained (recovered on boot)
  *  4. New turn starts → stale pending superseded
  *  5. Recover on boot → re-fires onHandoff for valid pending entries
@@ -199,22 +199,39 @@ describe("pending handoff persistence (#0235)", () => {
 
   // -- Clean exit clears persisted pending --
 
-  it("clears the persisted pending handoff after a clean exit with successful handoff", async () => {
+  it("clears the persisted pending handoff only after finalization completes (#0501)", async () => {
     const fx = fixture("active");
     process.env.REPOOS_FAKEBIN_HANDOFF = "1";
     const handoffs: AgentHandoffRequest[] = [];
+    let release!: () => void;
+    const block = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const pendingFile = join(fx.cacheDir, "pending-handoffs.json");
     const runner = new AgentRunner(fx.config, () => {}, {
       writeDelayMs: 5,
       getTask: (id: string) => (id === fx.task.id ? fx.task : null),
-      onHandoff: (request) => {
+      onHandoff: async (request) => {
+        if (!runner.consumeHandoff(request)) return;
         handoffs.push(request);
+        await block;
+        runner.completeHandoffFinalization(request.taskId);
       },
     });
     try {
       runner.start(fx.task, fx.task.branch, agent, { cwd: fx.root });
       await waitFor(() => !runner.isRunning(fx.task.id), "clean exit");
       await waitFor(() => handoffs.length > 0, "onHandoff fired");
-      expect(runner.consumeHandoff(handoffs[0])).toBe(true);
+      expect(existsSync(pendingFile)).toBe(true);
+      expect(
+        (JSON.parse(readFileSync(pendingFile, "utf8")) as { requests: unknown[] }).requests,
+      ).toHaveLength(1);
+      release();
+      await waitFor(() => {
+        if (!existsSync(pendingFile)) return true;
+        const data = JSON.parse(readFileSync(pendingFile, "utf8")) as { requests: unknown[] };
+        return data.requests.length === 0;
+      }, "pending cleared after finalization");
     } finally {
       delete process.env.REPOOS_FAKEBIN_HANDOFF;
     }
@@ -260,6 +277,7 @@ describe("pending handoff persistence (#0235)", () => {
       onHandoff: async (request) => {
         if (!runner.consumeHandoff(request)) return;
         handoffs.push(request);
+        runner.completeHandoffFinalization(request.taskId);
       },
     });
     // Simulate a persisted pending handoff from an interrupted prior run
