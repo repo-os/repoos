@@ -4932,17 +4932,19 @@
   color: var(--cyan);
   border-color: color-mix(in srgb, var(--cyan) 40%, var(--border));
 }
-/* Keep a long tab strip reachable on narrow viewports rather than clipping the
-   last tabs off the right edge. */
-.drawer-tabs {
+/* Opt-in scrolling for a tab strip that can outgrow the panel. Scoped to a
+   modifier rather than applied to `.drawer-tabs` outright, so the task and
+   input panels keep exactly the shrink-to-fit behaviour they have always had
+   (#0502). */
+.drawer-tabs-scroll {
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
-.drawer-tabs::-webkit-scrollbar {
+.drawer-tabs-scroll::-webkit-scrollbar {
   display: none;
 }
-.drawer-tabs .tab-btn {
+.drawer-tabs-scroll .tab-btn {
   white-space: nowrap;
   flex: none;
 }
