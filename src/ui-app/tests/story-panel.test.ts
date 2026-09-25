@@ -101,6 +101,36 @@ describe("story side panel opening", () => {
     expect(el!.querySelector(".drawer-tabs")).toBeTruthy();
   });
 
+  /**
+   * The regression guard for round 1: a modal panel renders a full-screen
+   * scrim, which makes "select a different story to swap the contents in place"
+   * unreachable no matter how good the state handling is. Assert the two
+   * things that actually block a real click, rather than relying on a
+   * synthetic `trigger("click")` that bypasses hit-testing entirely.
+   */
+  it("leaves the stories list reachable — no scrim, no pointer-event lock", async () => {
+    useRepoStore().tasks = [
+      makeTask({ id: "0001", story: "Alpha slice", status: "active" }),
+      makeTask({ id: "0002", story: "Beta slice", status: "ready" }),
+    ];
+    useRepoStore().storyDefinitions = [
+      definition("Alpha slice", ALPHA_BODY),
+      definition("Beta slice", BETA_BODY),
+    ];
+    const wrapper = mountView();
+    await flushPromises();
+    await wrapper.findAll(".story-head")[0]!.trigger("click");
+    await flushPromises();
+
+    expect(panel()).toBeTruthy();
+    // No .overlay element anywhere, and nothing has taken the body out of the
+    // hit-testing path — both are what a modal dialog installs.
+    expect(document.body.querySelector(".overlay")).toBeNull();
+    expect(document.body.style.pointerEvents).not.toBe("none");
+    // The rows the user is supposed to click are still in the document.
+    expect(wrapper.findAll(".story-head")).toHaveLength(2);
+  });
+
   it("does not open a panel until a story is selected", async () => {
     useRepoStore().tasks = [makeTask({ id: "0001", story: "Alpha slice" })];
     mountView();
@@ -158,6 +188,62 @@ describe("story side panel tabs", () => {
     expect(md.querySelectorAll("li")).toHaveLength(2);
     // The whole body, not the 200-char excerpt the card shows.
     expect(md.textContent).toContain("The whole scope, in full.");
+  });
+
+  it("wires up a complete ARIA tabs relationship", async () => {
+    const wrapper = mountView();
+    await flushPromises();
+    await wrapper.find(".story-head").trigger("click");
+    await flushPromises();
+
+    const strip = panel()!.querySelector('[role="tablist"]')!;
+    expect(strip).toBeTruthy();
+    const list = tabs();
+    // Every tab points at the one rendered panel, and it points back.
+    for (const t of list) {
+      expect(t.getAttribute("aria-controls")).toBeTruthy();
+      expect(t.id).toBeTruthy();
+    }
+    const body = panel()!.querySelector('[role="tabpanel"]')!;
+    expect(body.getAttribute("aria-labelledby")).toBe(list[0]!.id);
+    expect(list[0]!.getAttribute("aria-controls")).toBe(body.id);
+    // Roving tabindex: only the selected tab is in the tab order.
+    expect(list.map((t) => t.getAttribute("tabindex"))).toEqual(["0", "-1", "-1"]);
+
+    await openTab("Tasks");
+    const body2 = panel()!.querySelector('[role="tabpanel"]')!;
+    expect(body2.getAttribute("aria-labelledby")).toBe(tabs()[1]!.id);
+  });
+
+  it("moves between tabs with the arrow, Home and End keys", async () => {
+    const wrapper = mountView();
+    await flushPromises();
+    await wrapper.find(".story-head").trigger("click");
+    await flushPromises();
+
+    // Focus enters the panel container on open; Tab then reaches the strip, so
+    // the roving tabindex starts on the first tab.
+    tabs()[0]!.focus();
+    const key = async (k: string): Promise<void> => {
+      document.activeElement!.dispatchEvent(
+        new KeyboardEvent("keydown", { key: k, bubbles: true }),
+      );
+      await flushPromises();
+    };
+
+    await key("ArrowRight");
+    expect(tabs()[1]!.classList.contains("active")).toBe(true);
+    expect(document.activeElement).toBe(tabs()[1]);
+    await key("ArrowRight");
+    expect(tabs()[2]!.classList.contains("active")).toBe(true);
+    await key("ArrowRight");
+    expect(tabs()[0]!.classList.contains("active")).toBe(true);
+    await key("ArrowLeft");
+    expect(tabs()[2]!.classList.contains("active")).toBe(true);
+    await key("Home");
+    expect(tabs()[0]!.classList.contains("active")).toBe(true);
+    await key("End");
+    expect(tabs()[2]!.classList.contains("active")).toBe(true);
   });
 
   it("switches between the body, related-tasks and details tabs", async () => {
@@ -234,16 +320,48 @@ describe("story side panel navigation and swapping", () => {
     await openTab("Tasks");
     expect(panel()!.querySelectorAll(".story-panel-task")).toHaveLength(1);
 
-    // Selecting a different story while the panel is open — same dialog
-    // instance, new contents, and the tab is back on the first one.
-    await heads[1].trigger("click");
+    // The real browser sequence for clicking the other row: pointerdown, then
+    // click. Both matter — radix dismisses a non-modal dialog on the
+    // pointerdown, which would close and re-open the panel (a new DOM node)
+    // rather than swap its contents.
+    const before = panel();
+    const row = heads[1]!.element as HTMLElement;
+    row.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
+    await flushPromises();
+    // Still the very same element: never closed, never remounted.
+    expect(panel()).toBe(before);
+    row.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     await flushPromises();
 
     const el = panel()!;
+    expect(el).toBe(before);
     expect(el.querySelector(".drawer-head")!.textContent).toContain("Beta slice");
     expect(tabs()[0].classList.contains("active")).toBe(true);
     expect(tabs()[1].classList.contains("active")).toBe(false);
     expect(el.querySelector(".md-rendered")!.textContent).toContain("A different slice entirely.");
+  });
+
+  it("keeps the panel open when focus moves to the list, but Escape still closes", async () => {
+    useRepoStore().tasks = [
+      makeTask({ id: "0001", story: "Alpha slice", status: "active" }),
+      makeTask({ id: "0002", story: "Beta slice", status: "ready" }),
+    ];
+    const wrapper = mountView();
+    await flushPromises();
+    const heads = wrapper.findAll(".story-head");
+    await heads[0].trigger("click");
+    await flushPromises();
+    const before = panel();
+
+    // Tabbing out of the panel into the stories list is a focusin outside, the
+    // second dismissal path. It must not close the panel either.
+    (heads[1]!.element as HTMLElement).focus();
+    await flushPromises();
+    expect(panel()).toBe(before);
+
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    await flushPromises();
+    expect(panel()).toBeNull();
   });
 
   it("opens the task drawer from a related task, reusing the existing path", async () => {
@@ -299,8 +417,9 @@ describe("story side panel styling contract", () => {
     expect(panelSource).toContain('from "./ui/dialog/root.vue"');
     expect(panelSource).toContain("ui.drawerWidth");
     expect(panelSource).toContain("ui.startResize");
-    expect(panelSource).toContain('class="drawer-tabs"');
+    expect(panelSource).toContain('class="drawer-tabs drawer-tabs-scroll"');
     expect(panelSource).toContain('class="tab-btn"');
+    expect(panelSource).toContain('class="drawer-body story-panel-body"');
     expect(panelSource).toContain("renderMarkdown");
     expect(panelSource).toContain('class="md-rendered"');
   });
@@ -310,7 +429,24 @@ describe("story side panel styling contract", () => {
     expect(narrow).toMatch(/\.story-panel-fact\s*\{[^}]*flex-direction:\s*column/);
   });
 
-  it("keeps a long tab strip scrollable rather than clipped", () => {
-    expect(css).toMatch(/\.drawer-tabs\s*\{[^}]*overflow-x:\s*auto/);
+  it("opts its own tab strip into scrolling without changing the other drawers", () => {
+    expect(panelSource).toContain('class="drawer-tabs drawer-tabs-scroll"');
+    expect(css).toMatch(/\.drawer-tabs-scroll\s*\{[^}]*overflow-x:\s*auto/);
+    // The shared rule must stay untouched: the task and input panels keep the
+    // shrink-to-fit behaviour they had before this task.
+    expect(css).not.toMatch(/^\.drawer-tabs \{[^}]*overflow-x/m);
+  });
+
+  it("declares the panel non-modal, with no scrim to block the list", () => {
+    expect(panelSource).toContain(':modal="false"');
+    expect(panelSource).not.toMatch(/<DialogOverlay/);
+  });
+
+  it("blocks both of radix's outside-dismissal paths, which run before the click", () => {
+    expect(panelSource).toContain('@pointer-down-outside="keepOpenOnOutsideInteraction"');
+    expect(panelSource).toContain('@focus-outside="keepOpenOnOutsideInteraction"');
+    expect(panelSource).toMatch(
+      /function keepOpenOnOutsideInteraction[\s\S]*?e\.preventDefault\(\)/,
+    );
   });
 });
