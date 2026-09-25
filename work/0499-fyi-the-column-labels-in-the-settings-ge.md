@@ -3,6 +3,8 @@ id: "0499"
 title: "Fix Work board column labels: editable inputs, moved to Advanced"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: watchdog-stuck
 priority: p2
 area: general
 assigned_to: ai
@@ -11,10 +13,10 @@ branch: feat/fix-work-board-column-labels-editable-in
 pm_model_override: opencode-go/deepseek-v4.1-flash
 review_model_override: opencode-go/hy3
 created_at: "2026-09-25T02:04:35Z"
-updated_at: "2026-09-25T15:37:44Z"
-handoff_signal_retry_count: 1
-check_retry_count: 1
+updated_at: "2026-09-25T16:11:22Z"
+check_retry_count: 2
 last_check_failure: "[object Object]"
+handoff_signal_retry_count: 1
 dev_error_count: 3
 ---
 The "Column label: …" rows in Settings expose no input at all — six rows render
@@ -167,3 +169,6 @@ FYI the column labels in the settings (general) don't work, there's no place to 
 - 2026-09-25T06:26:12Z · needs_input
 - 2026-09-25T08:04:51Z · agent exited with an error (cursor) · RetriableError: Connection failed repeatedly
 - 2026-09-25T15:37:44Z · needs_input
+- 2026-09-25T15:49:19Z · handoff failed · check failed after 2 automatic retries · repoos check failed: [2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m · [2m      Tests [22m [1m[32m1 passed[39m[22m[90m (1)[39m · [2m   Start at [22m 23:49:13 · [2m   Duration [22m 2.48s[2m (transform 369ms, setup 5ms, import 445ms, tests 1.79s, environment 189ms)[22m · error: script "test" exited with code 1 · ✔ ui-smoke  — ran package.json smoke script · ⏭ macos-hub-icon-transparency  — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-icon-transparency.sh · 1 check(s) failed.
+- 2026-09-25T15:54:22Z · watchdog: escalated to needs_input · check-failed-after-retries · check failed after 2 automatic retries · repoos check failed: [2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m · [2m      Tests [22m [1m[32m1 passed[39m[22m[90m (1)[39m · [2m   Start at [22m 23:49:13 · [2m   Duration [22m 2.48s[2m (transform 369ms, setup 5ms, import 445ms, tests 1.79s, environment 189ms)[22m · error: script "test" exited with code 1 · ✔ ui-smoke  — ran package.json smoke script · ⏭ macos-hub-icon-transparency  — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-icon-transparency.sh · 1 check(s) failed. · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-09-25T16:11:22Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
