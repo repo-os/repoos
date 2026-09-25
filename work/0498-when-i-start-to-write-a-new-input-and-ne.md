@@ -2,7 +2,7 @@
 id: "0498"
 title: Keep New input draft (text + screenshots) when the panel closes; add Clear buttons to New input and New task
 type: feature
-status: draft
+status: inbox
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: ""
 pm_model_override: opencode/big-pickle
 created_at: "2026-09-25T02:04:17Z"
-updated_at: "2026-09-25T02:59:54Z"
+updated_at: "2026-09-25T03:00:06Z"
 ---
 ## Problem
 
@@ -80,3 +80,4 @@ When I start to write a "new input" and need to close the panel to go somewhere 
 - 2026-09-25T02:07:18Z · note: Freeform PM run failed: the opencode agent timed out after 180s
 - 2026-09-25T02:22:18Z · pm_model_override
 - 2026-09-25T02:59:54Z · title, area, body
+- 2026-09-25T03:00:06Z · status draft→inbox
