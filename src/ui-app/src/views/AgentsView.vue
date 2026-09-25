@@ -16,16 +16,15 @@ import type {
 } from "../types";
 import Button from "../components/ui/button.vue";
 import Input from "../components/ui/input.vue";
-import Switch from "../components/ui/switch.vue";
 import Select from "../components/ui/select/root.vue";
 import SelectContent from "../components/ui/select/content.vue";
 import SelectItem from "../components/ui/select/item.vue";
 import SelectTrigger from "../components/ui/select/trigger.vue";
 import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
-import AgentModelControl from "../components/AgentModelControl.vue";
+import AgentCard from "../components/AgentCard.vue";
 import BuiltInAgentCard from "../components/BuiltInAgentCard.vue";
-import VoiceDictate from "../components/VoiceDictate.vue";
+import { sortHeadlessAgents } from "../lib/headless-agent-order";
 import ModelPlaygroundPanel from "../components/ModelPlaygroundPanel.vue";
 import ModelProvidersPanel from "../components/ModelProvidersPanel.vue";
 import { insertTextAtCursor } from "../utils/text-insertion";
@@ -138,8 +137,10 @@ const isDefaultName = (name: string): boolean => defaultNames.value.includes(nam
 // pm) shown in the "Default agents" section. Grouped by lowercase name.
 const TEAM_AGENT_NAMES = ["ross", "cto"];
 const isTeamAgent = (name: string): boolean => TEAM_AGENT_NAMES.includes(name.toLowerCase());
-const headlessAgents = computed(() =>
-  localAgents.value.filter((a) => isDefaultName(a.name) && !isTeamAgent(a.name)),
+const sortedHeadlessAgents = computed(() =>
+  sortHeadlessAgents(
+    localAgents.value.filter((a) => isDefaultName(a.name) && !isTeamAgent(a.name)),
+  ),
 );
 const teamAgents = computed(() =>
   localAgents.value.filter((a) => isDefaultName(a.name) && isTeamAgent(a.name)),
@@ -153,10 +154,6 @@ const CLI_LABELS: Record<string, string> = {
   codex: "codex",
   antigravity: "Antigravity CLI (agy)",
 };
-
-function isLegacyGemini(cli: string): boolean {
-  return cli.toLowerCase() === "gemini";
-}
 
 const defaultInstrRefs = new Map<string, HTMLTextAreaElement | null>();
 const customInstrRefs = new Map<string, HTMLTextAreaElement | null>();
@@ -714,91 +711,24 @@ onUnmounted(() => {
             Headless task-engine roles that run the roadmap. Toggle them on or off and pick their
             coding agent and model.
           </div>
-          <div
-            v-for="a in headlessAgents"
+          <AgentCard
+            v-for="a in sortedHeadlessAgents"
             :key="a.name"
-            class="agent-card"
-            :class="{ off: !a.enabled }"
-          >
-            <div class="agent-head">
-              <div class="agent-title">
-                <span class="agent-dot"></span>
-                <span class="agent-name">{{ a.name }}</span>
-                <span class="agent-badge">default</span>
-              </div>
-              <Switch :checked="a.enabled" @update:checked="(v) => (a.enabled = v)" />
-            </div>
-            <div class="agent-body">
-              <div class="agent-field">
-                <label>Coding agent + Model</label>
-                <AgentModelControl
-                  :cli-options="cliOptionsFor(a.cli)"
-                  :model-options="config.modelsFor(a.cli, a.model)"
-                  :memory-key="'headless:' + a.name"
-                  v-model:cli="a.cli"
-                  v-model:model="a.model"
-                />
-                <div v-if="isLegacyGemini(a.cli)" class="agent-legacy-notice" role="status">
-                  <strong>Deprecated Gemini CLI</strong> — this saved value is preserved for
-                  history, but new assignments use Antigravity CLI (agy).
-                  <button type="button" class="model-pricing-link" @click="openRecommendations">
-                    Migrate in the agent guide →
-                  </button>
-                </div>
-              </div>
-              <div class="agent-field agent-test-result">
-                <label>Compatibility</label>
-                <div class="agent-test-actions">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    :disabled="!!testing[testKey(a)]"
-                    @click="testAgent(a)"
-                  >
-                    <span v-if="testing[testKey(a)]" class="model-test-spinner"></span>
-                    {{ testing[testKey(a)] ? "Testing…" : resultFor(a) ? "Test again" : "Test" }}
-                  </Button>
-                  <span
-                    v-if="resultFor(a)"
-                    :class="'model-test model-test-' + resultFor(a)!.status"
-                    :title="resultFor(a)!.error"
-                  >
-                    {{ resultFor(a)!.status.replace("_", " ") }}
-                  </span>
-                </div>
-              </div>
-              <div class="agent-field agent-instr-field">
-                <div class="instr-header">
-                  <label>Instructions</label>
-                  <VoiceDictate @transcribed="onDefaultInstrTranscribed(a.name, $event)" />
-                </div>
-                <textarea
-                  :ref="(el: any) => defaultInstrRefs.set(a.name, el)"
-                  :value="a.instructions ?? ''"
-                  class="agent-instr"
-                  rows="2"
-                  placeholder="Optional — how this agent should behave"
-                  @input="setInstr(a, $event)"
-                  @blur="updateAgentInstr(a)"
-                ></textarea>
-              </div>
-              <div v-if="config.agentsMeta.skills.length" class="agent-field agent-skills-field">
-                <div class="instr-header">
-                  <label>Enabled skills</label
-                  ><Button variant="outline" size="sm" @click="openSkillsModal(a)"
-                    >Add skills to agent</Button
-                  >
-                </div>
-                <div class="agent-skills-help">
-                  ⓘ Skills are selected dynamically for each task/run from repository skills; these
-                  are this agent's preferred candidates.
-                </div>
-                <div class="agent-skills-summary">
-                  {{ (a.skills ?? []).join(", ") || "No default candidates" }}
-                </div>
-              </div>
-            </div>
-          </div>
+            :agent="a"
+            variant="default"
+            :cli-options="cliOptionsFor(a.cli)"
+            :memory-key="'headless:' + a.name"
+            :skills-available="config.agentsMeta.skills.length > 0"
+            :testing="!!testing[testKey(a)]"
+            :test-result="resultFor(a)"
+            :register-instr-ref="(el) => defaultInstrRefs.set(a.name, el)"
+            @test="testAgent(a)"
+            @open-skills="openSkillsModal(a)"
+            @instr-input="setInstr(a, $event)"
+            @instr-blur="updateAgentInstr(a)"
+            @open-recommendations="openRecommendations"
+            @transcribed="onDefaultInstrTranscribed(a.name, $event)"
+          />
         </div>
 
         <div
@@ -830,99 +760,25 @@ onUnmounted(() => {
             No custom agents yet — add one above.
           </div>
 
-          <div
+          <AgentCard
             v-for="a in customAgents"
             :key="a.name"
-            class="agent-card"
-            :class="{ off: !a.enabled }"
-          >
-            <div class="agent-head">
-              <div class="agent-title">
-                <span class="agent-dot"></span>
-                <Input
-                  :model-value="a.name"
-                  class="w-[180px] h-[30px]"
-                  @update:model-value="(v) => (a.name = String(v ?? ''))"
-                />
-              </div>
-              <div style="display: flex; align-items: center; gap: 10px">
-                <Button variant="ghost" size="sm" class="agent-remove" @click="removeCustom(a)">
-                  Remove
-                </Button>
-                <Switch :checked="a.enabled" @update:checked="(v) => (a.enabled = v)" />
-              </div>
-            </div>
-            <div class="agent-body">
-              <div class="agent-field">
-                <label>Coding agent + Model</label>
-                <AgentModelControl
-                  :cli-options="cliOptionsFor(a.cli)"
-                  :model-options="config.modelsFor(a.cli, a.model)"
-                  :memory-key="'custom:' + a.name"
-                  v-model:cli="a.cli"
-                  v-model:model="a.model"
-                />
-                <div v-if="isLegacyGemini(a.cli)" class="agent-legacy-notice" role="status">
-                  <strong>Deprecated Gemini CLI</strong> — this saved value is preserved for
-                  history, but new assignments use Antigravity CLI (agy).
-                  <button type="button" class="model-pricing-link" @click="openRecommendations">
-                    Migrate in the agent guide →
-                  </button>
-                </div>
-              </div>
-              <div class="agent-field agent-test-result">
-                <label>Compatibility</label>
-                <div class="agent-test-actions">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    :disabled="!!testing[testKey(a)]"
-                    @click="testAgent(a)"
-                  >
-                    <span v-if="testing[testKey(a)]" class="model-test-spinner"></span>
-                    {{ testing[testKey(a)] ? "Testing…" : resultFor(a) ? "Test again" : "Test" }}
-                  </Button>
-                  <span
-                    v-if="resultFor(a)"
-                    :class="'model-test model-test-' + resultFor(a)!.status"
-                    :title="resultFor(a)!.error"
-                  >
-                    {{ resultFor(a)!.status.replace("_", " ") }}
-                  </span>
-                </div>
-              </div>
-              <div class="agent-field agent-instr-field">
-                <div class="instr-header">
-                  <label>Instructions</label>
-                  <VoiceDictate @transcribed="onCustomInstrTranscribed(a.name, $event)" />
-                </div>
-                <textarea
-                  :ref="(el: any) => customInstrRefs.set(a.name, el)"
-                  :value="a.instructions ?? ''"
-                  class="agent-instr"
-                  rows="2"
-                  placeholder="Optional — how this agent should behave"
-                  @input="setInstr(a, $event)"
-                  @blur="updateAgentInstr(a)"
-                ></textarea>
-              </div>
-              <div v-if="config.agentsMeta.skills.length" class="agent-field agent-skills-field">
-                <div class="instr-header">
-                  <label>Enabled skills</label
-                  ><Button variant="outline" size="sm" @click="openSkillsModal(a)"
-                    >Add skills to agent</Button
-                  >
-                </div>
-                <div class="agent-skills-help">
-                  ⓘ Skills are selected dynamically for each task/run from repository skills; these
-                  are this agent's preferred candidates.
-                </div>
-                <div class="agent-skills-summary">
-                  {{ (a.skills ?? []).join(", ") || "No default candidates" }}
-                </div>
-              </div>
-            </div>
-          </div>
+            :agent="a"
+            variant="custom"
+            :cli-options="cliOptionsFor(a.cli)"
+            :memory-key="'custom:' + a.name"
+            :skills-available="config.agentsMeta.skills.length > 0"
+            :testing="!!testing[testKey(a)]"
+            :test-result="resultFor(a)"
+            :register-instr-ref="(el) => customInstrRefs.set(a.name, el)"
+            @test="testAgent(a)"
+            @open-skills="openSkillsModal(a)"
+            @remove="removeCustom(a)"
+            @instr-input="setInstr(a, $event)"
+            @instr-blur="updateAgentInstr(a)"
+            @open-recommendations="openRecommendations"
+            @transcribed="onCustomInstrTranscribed(a.name, $event)"
+          />
         </div>
 
         <div
@@ -937,91 +793,24 @@ onUnmounted(() => {
             The agents that talk back or extend RepoOS. Enable them to add new capabilities.
           </div>
 
-          <div
+          <AgentCard
             v-for="a in teamAgents"
             :key="'team-' + a.name"
-            class="agent-card"
-            :class="{ off: !a.enabled }"
-          >
-            <div class="agent-head">
-              <div class="agent-title">
-                <span class="agent-dot"></span>
-                <span class="agent-name">{{ a.name }}</span>
-                <span class="agent-badge">team</span>
-              </div>
-              <Switch :checked="a.enabled" @update:checked="(v) => (a.enabled = v)" />
-            </div>
-            <div class="agent-body">
-              <div class="agent-field">
-                <label>Coding agent + Model</label>
-                <AgentModelControl
-                  :cli-options="cliOptionsFor(a.cli, { team: true })"
-                  :model-options="config.modelsFor(a.cli, a.model)"
-                  :memory-key="'team:' + a.name"
-                  v-model:cli="a.cli"
-                  v-model:model="a.model"
-                />
-                <div v-if="isLegacyGemini(a.cli)" class="agent-legacy-notice" role="status">
-                  <strong>Deprecated Gemini CLI</strong> — this saved value is preserved for
-                  history, but new assignments use Antigravity CLI (agy).
-                  <button type="button" class="model-pricing-link" @click="openRecommendations">
-                    Migrate in the agent guide →
-                  </button>
-                </div>
-              </div>
-              <div class="agent-field agent-test-result">
-                <label>Compatibility</label>
-                <div class="agent-test-actions">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    :disabled="!!testing[testKey(a)]"
-                    @click="testAgent(a)"
-                  >
-                    <span v-if="testing[testKey(a)]" class="model-test-spinner"></span>
-                    {{ testing[testKey(a)] ? "Testing…" : resultFor(a) ? "Test again" : "Test" }}
-                  </Button>
-                  <span
-                    v-if="resultFor(a)"
-                    :class="'model-test model-test-' + resultFor(a)!.status"
-                    :title="resultFor(a)!.error"
-                  >
-                    {{ resultFor(a)!.status.replace("_", " ") }}
-                  </span>
-                </div>
-              </div>
-              <div class="agent-field agent-instr-field">
-                <div class="instr-header">
-                  <label>Instructions</label>
-                  <VoiceDictate @transcribed="onDefaultInstrTranscribed(a.name, $event)" />
-                </div>
-                <textarea
-                  :ref="(el: any) => defaultInstrRefs.set(a.name, el)"
-                  :value="a.instructions ?? ''"
-                  class="agent-instr"
-                  rows="2"
-                  placeholder="Optional — how this agent should behave"
-                  @input="setInstr(a, $event)"
-                  @blur="updateAgentInstr(a)"
-                ></textarea>
-              </div>
-              <div v-if="config.agentsMeta.skills.length" class="agent-field agent-skills-field">
-                <div class="instr-header">
-                  <label>Enabled skills</label
-                  ><Button variant="outline" size="sm" @click="openSkillsModal(a)"
-                    >Add skills to agent</Button
-                  >
-                </div>
-                <div class="agent-skills-help">
-                  ⓘ Skills are selected dynamically for each task/run from repository skills; these
-                  are this agent's preferred candidates.
-                </div>
-                <div class="agent-skills-summary">
-                  {{ (a.skills ?? []).join(", ") || "No default candidates" }}
-                </div>
-              </div>
-            </div>
-          </div>
+            :agent="a"
+            variant="team"
+            :cli-options="cliOptionsFor(a.cli, { team: true })"
+            :memory-key="'team:' + a.name"
+            :skills-available="config.agentsMeta.skills.length > 0"
+            :testing="!!testing[testKey(a)]"
+            :test-result="resultFor(a)"
+            :register-instr-ref="(el) => defaultInstrRefs.set(a.name, el)"
+            @test="testAgent(a)"
+            @open-skills="openSkillsModal(a)"
+            @instr-input="setInstr(a, $event)"
+            @instr-blur="updateAgentInstr(a)"
+            @open-recommendations="openRecommendations"
+            @transcribed="onDefaultInstrTranscribed(a.name, $event)"
+          />
 
           <BuiltInAgentCard agent="debugger" interactive />
           <BuiltInAgentCard agent="tech-debt" />
