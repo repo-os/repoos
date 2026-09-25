@@ -41,6 +41,8 @@ onMounted(async () => {
     isDirty: () =>
       config.rawDirty ||
       ui.pendingScreenshots.length > 0 ||
+      ui.inputScreenshots.length > 0 ||
+      ui.inputText.trim().length > 0 ||
       ui.pmScreenshots.length > 0 ||
       ui.isNew ||
       ui.isNewDoc ||

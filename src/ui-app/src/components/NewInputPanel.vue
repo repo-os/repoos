@@ -27,15 +27,11 @@ function setOpen(v: boolean): void {
   if (!v) ui.close();
 }
 watch(open, (v) => {
-  if (v) {
-    ui.inputText = "";
-    submitted.value = false;
-    ui.clearScreenshots();
-  }
+  if (v) submitted.value = false;
 });
 function files(e: Event): void {
   const input = e.target as HTMLInputElement;
-  if (input.files) ui.addScreenshots(Array.from(input.files));
+  if (input.files) ui.addInputScreenshots(Array.from(input.files));
   input.value = "";
 }
 function onDragEnter(): void {
@@ -50,16 +46,18 @@ function onDrop(e: DragEvent): void {
   if (submitted.value) return;
   dragDepth.value = 0;
   const files = e.dataTransfer?.files;
-  if (files?.length) ui.addScreenshots(Array.from(files));
+  if (files?.length) ui.addInputScreenshots(Array.from(files));
+}
+function clearDraft(): void {
+  ui.clearInputDraft();
 }
 /** Hand the capture to the repo store and acknowledge immediately — the input
  *  and its attachments are created in the background (0325). */
 function submit(): void {
   const text = ui.inputText.trim();
   if (!text || submitted.value) return;
-  const attachments = [...ui.pendingScreenshots];
-  ui.inputText = "";
-  ui.clearScreenshots();
+  const attachments = [...ui.inputScreenshots];
+  ui.clearInputDraft();
   submitted.value = true;
   void repo.submitInput(text, attachments);
 }
@@ -112,7 +110,18 @@ function done(): void {
         </div>
         <template v-else>
           <div class="field">
-            <label for="new-input-text">What would you like to share?</label>
+            <div class="field-header">
+              <label for="new-input-text">What would you like to share?</label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label="Clear draft"
+                :disabled="!ui.inputText.trim() && !ui.inputScreenshots.length"
+                @click="clearDraft"
+                >Clear</Button
+              >
+            </div>
             <textarea
               id="new-input-text"
               v-model="ui.inputText"
@@ -133,8 +142,8 @@ function done(): void {
             >
               <Paperclip class="size-4" />
               <span>{{
-                ui.pendingScreenshots.length
-                  ? `Add more — ${ui.pendingScreenshots.length} file${ui.pendingScreenshots.length === 1 ? "" : "s"} attached`
+                ui.inputScreenshots.length
+                  ? `Add more — ${ui.inputScreenshots.length} file${ui.inputScreenshots.length === 1 ? "" : "s"} attached`
                   : "Click to add a screenshot or file, or drop them anywhere on this panel"
               }}</span>
               <input
@@ -148,12 +157,12 @@ function done(): void {
               />
             </div>
             <div
-              v-if="ui.pendingScreenshots.length"
+              v-if="ui.inputScreenshots.length"
               class="ff-pending-files"
               aria-label="Selected attachments"
             >
               <div
-                v-for="(file, i) in ui.pendingScreenshots"
+                v-for="(file, i) in ui.inputScreenshots"
                 :key="file.name + file.size + i"
                 class="ff-pending-file"
               >
@@ -165,7 +174,7 @@ function done(): void {
                   class="ff-pending-file-remove"
                   :aria-label="`Remove ${file.name}`"
                   title="Remove attachment"
-                  @click.stop="ui.removeScreenshot(i)"
+                  @click.stop="ui.removeInputScreenshot(i)"
                 >
                   <X class="size-3.5" />
                 </button>
