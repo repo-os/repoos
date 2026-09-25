@@ -8,8 +8,10 @@ area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+cli_override: opencode
+model_override: default
 created_at: "2026-09-25T15:51:09Z"
-updated_at: "2026-09-25T15:51:22Z"
+updated_at: "2026-09-25T15:53:25Z"
 ---
 ## Problem
 
@@ -111,3 +113,4 @@ For stories let's use a side panel in the same style as the task/input side pane
 
 - 2026-09-25T15:51:09Z · created · hello@repoos.org
 - 2026-09-25T15:51:22Z · status draft→inbox, title, area, body
+- 2026-09-25T15:53:25Z · cli_override, model_override
