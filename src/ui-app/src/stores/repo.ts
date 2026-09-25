@@ -2289,8 +2289,8 @@ export const useRepoStore = defineStore("repo", () => {
       onError(err);
       if (!created) {
         if (!ui.inputText.trim()) ui.inputText = text;
-        if (!ui.pendingScreenshots.length && attachments.length)
-          ui.pendingScreenshots.push(...attachments);
+        if (!ui.inputScreenshots.length && attachments.length)
+          ui.inputScreenshots.push(...attachments);
       }
     }
   }
