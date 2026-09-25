@@ -2233,7 +2233,13 @@ export const useRepoStore = defineStore("repo", () => {
     return api<Input>("/api/inputs", JSON_OPTS("POST", { text }));
   }
   async function updateInput(id: string, status: string): Promise<Input> {
-    return api<Input>(`/api/inputs/${id}`, JSON_OPTS("PATCH", { status }));
+    return patchInput(id, { status });
+  }
+  async function patchInput(id: string, patch: { status?: string; text?: string }): Promise<Input> {
+    const updated = await api<Input>(`/api/inputs/${id}`, JSON_OPTS("PATCH", patch));
+    const idx = inputs.value.findIndex((i) => i.id === id);
+    if (idx >= 0) inputs.value[idx] = updated;
+    return updated;
   }
   /**
    * Record how an input was resolved and move it to `processed`. `resolution`
@@ -2509,6 +2515,7 @@ export const useRepoStore = defineStore("repo", () => {
     loadInputs,
     createInput,
     updateInput,
+    patchInput,
     resolveInput,
     uploadInputAttachment,
     submitInput,
