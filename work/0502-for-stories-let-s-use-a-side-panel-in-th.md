@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-25T16:32:43Z"
-review_passes: 2
 id: "0502"
 title: Add side panel with tabs for stories
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
@@ -13,6 +11,8 @@ branch: feat/add-side-panel-with-tabs-for-stories
 cli_override: opencode
 model_override: opencode-go/space-bunny-free
 created_at: "2026-09-25T15:51:09Z"
+updated_at: "2026-09-25T16:48:32Z"
+review_passes: 2
 review_rounds: 1
 ---
 ## Problem
@@ -124,4 +124,4 @@ For stories let's use a side panel in the same style as the task/input side pane
 - 2026-09-25T16:18:14Z · status review→active
 - 2026-09-25T16:28:10Z · status active→review
 - 2026-09-25T16:28:10Z · status review→active
-
+- 2026-09-25T16:48:32Z · status active→review
