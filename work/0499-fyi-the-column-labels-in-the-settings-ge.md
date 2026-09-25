@@ -3,6 +3,9 @@ id: "0499"
 title: "Fix Work board column labels: editable inputs, moved to Advanced"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "Server finalization: check"
 priority: p2
 area: general
 assigned_to: ai
@@ -12,6 +15,7 @@ pm_model_override: opencode-go/deepseek-v4.1-flash
 review_model_override: opencode-go/hy3
 created_at: "2026-09-25T02:04:35Z"
 updated_at: "2026-09-25T06:08:46Z"
+dev_error_count: 1
 ---
 The "Column label: …" rows in Settings expose no input at all — six rows render
 just a title and description, with an empty control area (see screenshot). They
@@ -159,3 +163,4 @@ FYI the column labels in the settings (general) don't work, there's no place to 
 - 2026-09-25T06:06:17Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-09-25T06:08:46Z · status active→review
 - 2026-09-25T06:08:46Z · status review→active
+- 2026-09-25T06:08:46Z · agent exited with an error (cursor) · Server finalization: check
