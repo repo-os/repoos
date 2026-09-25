@@ -440,7 +440,7 @@ instructions = "Review the task's implementation on its feature branch. The impl
 [[agents]]
 name = "pm"
 cli = "opencode"
-model = "openrouter/z-ai/glm-5.3-flash"
+model = "opencode-go/mimo-v2.6-flash"
 enabled = true
 instructions = "Owns the roadmap: moves tasks between statuses, writes activity entries, keeps the work board tidy."
 [[agents]]
@@ -460,9 +460,3 @@ name = "data analyst"
 cli = "opencode"
 model = "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731"
 enabled = true
-
-
-
-
-
-
