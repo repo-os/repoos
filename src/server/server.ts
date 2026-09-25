@@ -1328,57 +1328,63 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       logger,
       getTask: (taskId) => index.getTask(taskId),
       onHandoff: async (request) => {
-        if (!runner.consumeHandoff(request)) {
+        let reachedFinalization = false;
+        try {
+          if (!runner.consumeHandoff(request)) {
+            runner.system(
+              request.taskId,
+              "✗ server-side handoff rejected: invalid or expired runner session",
+            );
+            return;
+          }
+          // AgentRunner marks the handoff as in-flight *before* invoking this
+          // callback so it cannot be mistaken for a stalled task or restarted
+          // mid-finalization. The capability above is single-use, so a duplicate
+          // callback has already been rejected by consumeHandoff(). Checking the
+          // in-flight marker here would reject this very handoff every time.
+          const task = index.getTask(request.taskId);
+          if (!task) {
+            runner.system(request.taskId, "✗ server-side handoff failed: task no longer exists");
+            return;
+          }
+          reachedFinalization = true;
           runner.system(
             request.taskId,
-            "✗ server-side handoff rejected: invalid or expired runner session",
+            "Server finalization started — validating the runner handoff",
           );
-          return;
-        }
-        // AgentRunner marks the handoff as in-flight *before* invoking this
-        // callback so it cannot be mistaken for a stalled task or restarted
-        // mid-finalization. The capability above is single-use, so a duplicate
-        // callback has already been rejected by consumeHandoff(). Checking the
-        // in-flight marker here would reject this very handoff every time.
-        const task = index.getTask(request.taskId);
-        if (!task) {
-          runner.system(request.taskId, "✗ server-side handoff failed: task no longer exists");
-          return;
-        }
-        runner.system(
-          request.taskId,
-          "Server finalization started — validating the runner handoff",
-        );
-        const result = await handoffTask(
-          config,
-          task,
-          request,
-          (step) => {
-            emitEvent({
-              type: "task.progress",
-              id: task.id,
-              step: `handoff:${step}`,
-              at: new Date().toISOString(),
-            });
-            if (step !== "validate" && step !== "done") {
-              runner.system(task.id, `Server finalization: ${step}`);
-            }
-          },
-          onServerStatusChange,
-          taskChecks,
-          onTaskCheckEvent,
-        );
-        if (result.ok) {
-          index.applyFileChange(task.absPath, { guarded: true });
-          runner.system(task.id, "✓ Server finalization complete — task moved to review");
-        } else {
-          runner.system(
-            task.id,
-            `✗ Server finalization stopped at ${result.step}: ${result.detail ?? "unknown error"}. The same worktree can be resumed and retried.`,
+          const result = await handoffTask(
+            config,
+            task,
+            request,
+            (step) => {
+              emitEvent({
+                type: "task.progress",
+                id: task.id,
+                step: `handoff:${step}`,
+                at: new Date().toISOString(),
+              });
+              if (step !== "validate" && step !== "done") {
+                runner.system(task.id, `Server finalization: ${step}`);
+              }
+            },
+            onServerStatusChange,
+            taskChecks,
+            onTaskCheckEvent,
           );
-          scheduleCheckFailureRetry(config, task, result, runner, (absPath) =>
-            index.applyFileChange(absPath, { guarded: true }),
-          );
+          if (result.ok) {
+            index.applyFileChange(task.absPath, { guarded: true });
+            runner.system(task.id, "✓ Server finalization complete — task moved to review");
+          } else {
+            runner.system(
+              task.id,
+              `✗ Server finalization stopped at ${result.step}: ${result.detail ?? "unknown error"}. The same worktree can be resumed and retried.`,
+            );
+            scheduleCheckFailureRetry(config, task, result, runner, (absPath) =>
+              index.applyFileChange(absPath, { guarded: true }),
+            );
+          }
+        } finally {
+          if (reachedFinalization) runner.completeHandoffFinalization(request.taskId);
         }
       },
       onPreviewRequest: async (request) => {
@@ -1524,7 +1530,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // The CTO agent (0174): always-on board monitor that detects stuck tasks,
   // stale reviews, and broken builds, then nudges agents or escalates to the human.
   const cto = new CTOManager(config, emitEvent, runner);
-  const ctoMonitor = new CTOMonitor(config, index, cto);
+  const ctoMonitor = new CTOMonitor(config, index, cto, runner);
   // Run the monitor cadence unconditionally: `checkNow` no-ops while the CTO
   // agent is disabled, so enabling it from the Agents page takes effect on the
   // next tick without a restart, and disabling it stops runs immediately.
