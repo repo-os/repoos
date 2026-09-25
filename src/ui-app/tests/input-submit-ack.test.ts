@@ -178,6 +178,30 @@ describe("new input submit acknowledgment (0325)", () => {
     await flush();
   });
 
+  it("removes a pending attachment before submit", async () => {
+    const { wrapper, ui } = await mountPanel();
+    ui.pendingScreenshots.push({
+      name: "draft.png",
+      mime: "image/png",
+      dataUrl: "data:image/png;base64,QUJD",
+      size: 3,
+    });
+    await flush();
+    expect(wrapper.find(".ff-pending-file-remove").exists()).toBe(true);
+    await wrapper.find(".ff-pending-file-remove").trigger("click");
+    expect(ui.pendingScreenshots.length).toBe(0);
+  });
+
+  it("queues files dropped on the panel", async () => {
+    const { wrapper, ui } = await mountPanel();
+    const addSpy = vi.spyOn(ui, "addScreenshots");
+    const file = new File(["x"], "drop.txt", { type: "text/plain" });
+    await wrapper.find(".drawer-wrap").trigger("drop", {
+      dataTransfer: { files: [file] },
+    });
+    expect(addSpy).toHaveBeenCalledWith([file]);
+  });
+
   it("restores the capture and toasts when creation fails in the background", async () => {
     vi.stubGlobal(
       "fetch",

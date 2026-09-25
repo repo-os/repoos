@@ -343,6 +343,13 @@ cannot tell from the code alone:
 
 - **Dropdowns:** Use the custom styled dropdown component for every new
   dropdown in the UI. Never use default, unstyled `<select>` elements.
+- **Drawer / panel forms:** New creation drawers (New task, New story, New
+  input, and future panels) must use the shared dialog components
+  (`ui/dialog/*`, body-teleported) and the global form classes in
+  `src/ui-app/src/style.css` — `field`, `btn-row`, `ff-textarea`,
+  `ff-done`, `shot-dropzone`, `ff-notice`, `ff-error`, and related `ff-*`
+  helpers — instead of bespoke colors, borders, or spacing in a component's
+  `<style scoped>` block. Extend `style.css` when a variant is missing.
 - **Runtime: Bun. Node is only the fallback for machines without Bun.**
   Every `repoos` command re-execs under Bun when it's installed, `bunfig.toml`
   (`[run] bun = true`) runs `package.json` scripts and the Node-shebang tools
