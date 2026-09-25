@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-25T04:13:32Z"
+review_passes: 1
 id: "0497"
 title: Make input text editable via an Edit Input modal
 type: feature
@@ -11,7 +13,6 @@ branch: feat/make-input-text-editable-via-an-edit-inp
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-25T02:03:08Z"
-updated_at: "2026-09-25T04:13:32Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -110,3 +111,4 @@ Make inputs text editable similar to how the task spec is editable (use a modal 
 - 2026-09-25T04:12:25Z · review_cli_override, review_model_override
 - 2026-09-25T04:12:26Z · review_model_override
 - 2026-09-25T04:13:32Z · needs_input
+
