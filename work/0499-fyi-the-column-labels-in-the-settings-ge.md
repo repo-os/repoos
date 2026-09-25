@@ -8,8 +8,9 @@ area: general
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+pm_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-25T02:04:35Z"
-updated_at: "2026-09-25T02:07:36Z"
+updated_at: "2026-09-25T02:22:04Z"
 ---
 FYI the column labels in the settings (general) don't work, there's no place to enter anything. Let's fix that and move this to advanced as it's own section called "Work board column labels".
 
@@ -26,3 +27,4 @@ FYI the column labels in the settings (general) don't work, there's no place to 
 - 2026-09-25T02:04:35Z · created · hello@repoos.org
 - 2026-09-25T02:04:36Z · screenshots
 - 2026-09-25T02:07:36Z · note: Freeform PM run failed: the opencode agent timed out after 180s
+- 2026-09-25T02:22:04Z · pm_model_override
