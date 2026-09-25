@@ -1727,3 +1727,29 @@ describe("sync task branch with main (rebase-onto-main button)", () => {
     );
   });
 });
+
+describe("board refresh keeps the open drawer current", () => {
+  it("re-fetches the open task so a lost task.updated can't leave it stale (#0499)", async () => {
+    // The drawer holds a review-state copy with needs-input set; the task went
+    // done while the SSE stream was reconnecting, so no task.updated arrived.
+    const stale = makeTask({ id: "0499", status: "review", needsInput: true });
+    const fresh = makeTask({ id: "0499", status: "done", needsInput: false });
+    const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/board"))
+          return json({ tasks: [fresh], counts: EMPTY_COUNTS, taskCount: 1 });
+        if (url.includes("/api/tasks/0499")) return json(fresh);
+        throw new Error("unexpected fetch: " + url);
+      }),
+    );
+    const ui = useUiStore();
+    ui.active = stale;
+    const repo = useRepoStore();
+
+    await repo.refresh();
+    await vi.waitFor(() => expect(ui.active?.status).toBe("done"));
+    expect(ui.active?.needsInput).toBe(false);
+  });
+});
