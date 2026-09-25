@@ -11,8 +11,11 @@ branch: feat/fix-work-board-column-labels-editable-in
 pm_model_override: opencode-go/deepseek-v4.1-flash
 review_model_override: opencode-go/hy3
 created_at: "2026-09-25T02:04:35Z"
-updated_at: "2026-09-25T06:26:12Z"
-dev_error_count: 1
+updated_at: "2026-09-25T15:37:44Z"
+handoff_signal_retry_count: 1
+check_retry_count: 1
+last_check_failure: "[object Object]"
+dev_error_count: 3
 ---
 The "Column label: …" rows in Settings expose no input at all — six rows render
 just a title and description, with an empty control area (see screenshot). They
@@ -162,3 +165,5 @@ FYI the column labels in the settings (general) don't work, there's no place to 
 - 2026-09-25T06:08:46Z · status review→active
 - 2026-09-25T06:08:46Z · agent exited with an error (cursor) · Server finalization: check
 - 2026-09-25T06:26:12Z · needs_input
+- 2026-09-25T08:04:51Z · agent exited with an error (cursor) · RetriableError: Connection failed repeatedly
+- 2026-09-25T15:37:44Z · needs_input
