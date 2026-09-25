@@ -81,14 +81,24 @@ export const postInput: RouteHandler = async (ctx, req, res) => {
 };
 export const patchInput: RouteHandler = async (ctx, req, res, p) => {
   const b = (await readBody(req)) as Record<string, unknown>;
-  if (!["new", "reviewing", "processed"].includes(String(b.status)))
+  const hasStatus = b.status !== undefined && b.status !== null;
+  const text = typeof b.text === "string" ? b.text : undefined;
+  const hasText = text !== undefined;
+  if (!hasStatus && !hasText) return json(res, 400, { error: "status or text is required" });
+  if (hasStatus && !["new", "reviewing", "processed"].includes(String(b.status)))
     return json(res, 400, { error: "invalid status" });
+  if (hasText && !text.trim()) return json(res, 400, { error: "text is required" });
   try {
-    const updated = updateInput(ctx.config, p.param1, b.status as InputStatus);
-    commitInput(ctx.config.root, updated, updated.status);
+    const updated = updateInput(ctx.config, p.param1, {
+      ...(hasStatus ? { status: b.status as InputStatus } : {}),
+      ...(hasText ? { text } : {}),
+    });
+    commitInput(ctx.config.root, updated, hasText ? "edit body" : updated.status);
     return json(res, 200, updated);
   } catch (e) {
-    return json(res, 404, { error: (e as Error).message });
+    const msg = (e as Error).message;
+    if (msg === "input not found") return json(res, 404, { error: msg });
+    return json(res, 400, { error: msg });
   }
 };
 export const postResolveInput: RouteHandler = async (ctx, req, res, p) => {
