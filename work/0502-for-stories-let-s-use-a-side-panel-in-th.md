@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 cli_override: opencode
-model_override: opencode/big-pickle
+model_override: opencode-go/space-bunny-free
 created_at: "2026-09-25T15:51:09Z"
-updated_at: "2026-09-25T15:53:28Z"
+updated_at: "2026-09-25T15:55:05Z"
 ---
 ## Problem
 
@@ -115,3 +115,4 @@ For stories let's use a side panel in the same style as the task/input side pane
 - 2026-09-25T15:51:22Z · status draft→inbox, title, area, body
 - 2026-09-25T15:53:25Z · cli_override, model_override
 - 2026-09-25T15:53:28Z · model_override
+- 2026-09-25T15:55:05Z · model_override
