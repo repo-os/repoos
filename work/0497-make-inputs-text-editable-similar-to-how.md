@@ -2,14 +2,14 @@
 id: "0497"
 title: Make input text editable via an Edit Input modal
 type: feature
-status: review
+status: done
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/make-input-text-editable-via-an-edit-inp
 created_at: "2026-09-25T02:03:08Z"
-updated_at: "2026-09-25T03:15:02Z"
+updated_at: "2026-09-25T04:21:06Z"
 ---
 ## Problem
 
@@ -102,3 +102,4 @@ Make inputs text editable similar to how the task spec is editable (use a modal 
 - 2026-09-25T02:21:47Z · status inbox→ready
 - 2026-09-25T03:01:09Z · status ready→active, branch
 - 2026-09-25T03:15:02Z · status active→review
+- 2026-09-25T04:21:06Z · status review→done, release:success
