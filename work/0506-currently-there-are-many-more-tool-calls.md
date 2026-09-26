@@ -13,9 +13,9 @@ created_by: hello@repoos.org
 branch: feat/group-consecutive-tool-calls-into-one-ex
 cli_override: opencode
 model_override: opencode-go/space-bunny-free
-review_model_override: opencode/big-pickle
+review_cli_override: cursor
 created_at: "2026-09-26T01:56:07Z"
-updated_at: "2026-09-26T03:06:45Z"
+updated_at: "2026-09-26T03:07:27Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -238,3 +238,4 @@ Currently there are many more tool calls than actual messages in the AI chat log
 - 2026-09-26T02:54:43Z · status active→review
 - 2026-09-26T02:57:59Z · needs_input
 - 2026-09-26T03:06:45Z · review_model_override
+- 2026-09-26T03:07:27Z · review_cli_override, review_model_override
