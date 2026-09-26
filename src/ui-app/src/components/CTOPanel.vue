@@ -6,10 +6,11 @@ import { renderMarkdown } from "../lib/markdown";
 import { fmtTime } from "../lib/time";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
 import { useRepoStore } from "../stores/repo";
-import type { AgentOutputEntry } from "../types";
 import FloatingHeadPanel from "./FloatingHeadPanel.vue";
 import AiChatThinking from "./AiChatThinking.vue";
+import ChatToolCallRow from "./ChatToolCallRow.vue";
 import { useChatScroll } from "../composables/useChatScroll";
+import { bubbleRole, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
 
 const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{ close: [] }>();
@@ -34,28 +35,10 @@ const { showJumpToLatest, onScroll, scrollToLatest } = useChatScroll(log, {
   active: () => props.open,
 });
 
-function lineKind(entry: AgentOutputEntry): "human" | "assistant" | "status" | "hidden" {
-  if ("type" in entry) {
-    if (entry.type === "human") return "human";
-    if (entry.type === "text") return "assistant";
-    if (entry.type === "step") return "hidden";
-    return "status";
-  }
-  return entry.s === "out" ? "assistant" : "status";
-}
-
-function lineText(entry: AgentOutputEntry): string {
-  if ("type" in entry) {
-    if (entry.type === "human" || entry.type === "text") return entry.text;
-    if (entry.type === "sys") return entry.d;
-    if (entry.type === "tool") {
-      const state = entry.state ? ` · ${entry.state}` : "";
-      return `Checked with ${entry.tool}${state}`;
-    }
-    return "";
-  }
-  return entry.d;
-}
+// Rows are grouped by the shared transform (#0506): a run of adjacent tool
+// calls is one expandable row with counts and the time it finished, not a
+// one line of prose per call, with no count, outcome, or anything to expand.
+const rows = computed<DisplayRow[]>(() => toDisplayRows(lines.value));
 
 function onKeydown(event: KeyboardEvent): void {
   // Enter sends; Shift+Enter inserts a newline (this field became a <textarea>).
@@ -156,12 +139,15 @@ watch(
           <div class="cto-report-content" v-html="renderMarkdown(report.markdown)"></div>
         </div>
 
-        <div v-for="(entry, i) of lines" :key="i" :class="`cto-line ${lineKind(entry)}`">
-          {{ lineText(entry) }}
-          <span v-if="lineKind(entry) !== 'status' && entry.at" class="msg-time">{{
-            fmtTime(entry.at)
-          }}</span>
-        </div>
+        <template v-for="row in rows" :key="row.key">
+          <ChatToolCallRow v-if="row.kind === 'tools'" :calls="row.calls" :at="row.at" />
+          <div v-else :class="`cto-line ${bubbleRole(row)}`">
+            {{ row.text }}
+            <!-- Every row carries its last-updated time (#0506), system rows
+                 included: a `sys` entry is stamped like any other. -->
+            <span v-if="row.at" class="msg-time">{{ fmtTime(row.at) }}</span>
+          </div>
+        </template>
 
         <AiChatThinking :active="busy" label="CTO is thinking" />
       </div>

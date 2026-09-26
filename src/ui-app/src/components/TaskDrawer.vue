@@ -44,7 +44,9 @@ import ActivityIndicator from "./ActivityIndicator.vue";
 import VoiceDictate from "./VoiceDictate.vue";
 import AiChatThinking from "./AiChatThinking.vue";
 import ChatJumpToLatest from "./ChatJumpToLatest.vue";
+import ChatToolCallRow from "./ChatToolCallRow.vue";
 import { useChatScroll } from "../composables/useChatScroll";
+import { bubbleRole, stripAnsi, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyMainDialog from "./DirtyMainDialog.vue";
 import HotfixConfirmDialog from "./HotfixConfirmDialog.vue";
@@ -1265,49 +1267,12 @@ const reviewDraftMsg = ref("");
 /** Keep the long-lived reviewer transcript and the completed verdict separate. */
 const reviewPane = ref<"chat" | "report">("chat");
 
-/** The rendered reviewer conversation (report streaming + human messages). */
-const reviewEntries = computed<DisplayEntry[]>(() => {
-  const src = review.value?.lines ?? [];
-  const out: DisplayEntry[] = [];
-  for (const e of src) {
-    if ("type" in e) {
-      if (e.type === "text") {
-        const text = stripAnsi(e.text);
-        const last = out[out.length - 1];
-        if (last && last.kind === "text" && text) {
-          last.text = `${last.text}\n\n${text}`;
-          continue;
-        }
-        out.push({ key: out.length, kind: "text", text });
-      } else if (e.type === "human") {
-        out.push({ key: out.length, kind: "human", text: e.text });
-      } else if (e.type === "tool") {
-        out.push({
-          key: out.length,
-          kind: "tool",
-          toolName: e.tool,
-          toolState: e.state,
-          toolInput: e.input ? stripAnsi(e.input) : undefined,
-          toolOutput: e.output ? stripAnsi(e.output) : undefined,
-        });
-      } else if (e.type === "step") {
-        if (e.kind === "start") continue;
-        out.push({
-          key: out.length,
-          kind: "step",
-          stepKind: e.kind,
-          stepReason: e.reason,
-          stepAt: e.at,
-        });
-      } else {
-        out.push({ key: out.length, kind: "sys", d: stripAnsi(e.d) });
-      }
-    } else {
-      out.push({ key: out.length, kind: "line", s: e.s, d: stripAnsi(e.d) });
-    }
-  }
-  return out;
-});
+/**
+ * The rendered reviewer conversation (report streaming + human messages).
+ * Grouped exactly like the engineer log — same `toDisplayRows`, same shared
+ * tool-call row — so a review reads the same way the work did.
+ */
+const reviewEntries = computed<DisplayRow[]>(() => toDisplayRows(review.value?.lines ?? []));
 
 /** Stick-to-bottom for the reviewer conversation, like the agent log. */
 const reviewStick = ref(true);
@@ -1546,28 +1511,8 @@ function openPmWithNeedsInputQuestions(): void {
   });
 }
 
-function pmLineKind(entry: AgentOutputEntry): "human" | "assistant" | "status" | "hidden" {
-  if ("type" in entry) {
-    if (entry.type === "human") return "human";
-    if (entry.type === "text") return "assistant";
-    if (entry.type === "step") return "hidden";
-    return "status";
-  }
-  return entry.s === "out" ? "assistant" : "status";
-}
-
-function pmLineText(entry: AgentOutputEntry): string {
-  if ("type" in entry) {
-    if (entry.type === "human" || entry.type === "text") return entry.text;
-    if (entry.type === "sys") return entry.d;
-    if (entry.type === "tool") {
-      const state = entry.state ? ` · ${entry.state}` : "";
-      return `Checked with ${entry.tool}${state}`;
-    }
-    return "";
-  }
-  return entry.d;
-}
+/** The PM conversation as shared display rows (#0506) — same grouping as every other chat. */
+const pmEntries = computed<DisplayRow[]>(() => toDisplayRows(pmLines.value));
 
 // Following new output (and restoring a remembered position when the PM tab
 // opens) is useChatScroll's job — see docs/ai-chat-standards.md (#0444).
@@ -1879,10 +1824,9 @@ watch(
 
 // ---- agent session tab ----
 
-/** Strip ANSI escape sequences so no `[0m`-style codes ever reach the DOM. */
-const ANSI_RE =
-  /[\u001B\u009B][[\]()#;?]*(?:(?:(?:[a-zA-Z\d]*(?:;[-a-zA-Z\d/#&.:=?%@~_]*)*)?\u0007)|(?:(?:\d{1,4}(?:;\d{0,4})*)?[\dA-PR-TZcf-nq-uy=><~]))/g;
-const stripAnsi = (s: string): string => s.replace(ANSI_RE, "");
+// ANSI stripping is shared with the row grouping (#0506): `stripAnsi` lives in
+// `lib/chat-rows` so the row builder and the freeform stream below strip the
+// same way, from one copy of the pattern.
 
 // ---- freeform PM-agent live stream ----
 
@@ -1908,70 +1852,19 @@ watch(freeformLines, () => {
   });
 });
 
-interface DisplayEntry {
-  key: number;
-  kind: "line" | "text" | "human" | "tool" | "step" | "sys";
-  s?: "out" | "err" | "sys";
-  d?: string;
-  text?: string;
-  toolName?: string;
-  toolState?: string;
-  toolInput?: string;
-  toolOutput?: string;
-  stepKind?: "start" | "finish";
-  stepReason?: string;
-  stepAt?: string;
-}
-
 /**
- * The rendered transcript for the open task. Legacy `{s,d}` lines render
- * as today (ANSI stripped); structured entries become text blocks, tool
- * cards, step markers, and system lines. Consecutive text parts collapse
- * into one block so a multi-part assistant message reads as a single reply.
+ * The rendered transcript for the open task. Legacy `{s,d}` lines render as
+ * today (ANSI stripped); structured entries become text blocks, human turns,
+ * grouped tool-call rows and system lines.
+ *
+ * All of that is decided by the shared `toDisplayRows` (#0506) — this log, the
+ * reviewer conversation and every other chat in the app draw the same rows, so
+ * a run of tool calls is one expandable row with counts and the time it
+ * finished, everywhere, for every agent.
  */
-const displayEntries = computed<DisplayEntry[]>(() => {
+const displayEntries = computed<DisplayRow[]>(() => {
   const src = ui.active ? (repo.outputs[ui.active.id] ?? []) : [];
-  const out: DisplayEntry[] = [];
-  for (const e of src) {
-    if ("type" in e) {
-      if (e.type === "text") {
-        const text = stripAnsi(e.text);
-        const last = out[out.length - 1];
-        if (last && last.kind === "text" && text) {
-          last.text = `${last.text}\n\n${text}`;
-          continue;
-        }
-        out.push({ key: out.length, kind: "text", text });
-      } else if (e.type === "human") {
-        out.push({ key: out.length, kind: "human", text: e.text });
-      } else if (e.type === "tool") {
-        out.push({
-          key: out.length,
-          kind: "tool",
-          toolName: e.tool,
-          toolState: e.state,
-          toolInput: e.input ? stripAnsi(e.input) : undefined,
-          toolOutput: e.output ? stripAnsi(e.output) : undefined,
-        });
-      } else if (e.type === "step") {
-        // Only finish markers are useful continuation information; drop the
-        // "step" start line so the chat is less noisy.
-        if (e.kind === "start") continue;
-        out.push({
-          key: out.length,
-          kind: "step",
-          stepKind: e.kind,
-          stepReason: e.reason,
-          stepAt: e.at,
-        });
-      } else {
-        out.push({ key: out.length, kind: "sys", d: stripAnsi(e.d) });
-      }
-    } else {
-      out.push({ key: out.length, kind: "line", s: e.s, d: stripAnsi(e.d) });
-    }
-  }
-  return out;
+  return toDisplayRows(src);
 });
 /** A follow-up message typed in the Agent tab. */
 const draftMsg = ref("");
@@ -3625,61 +3518,32 @@ watch(
                   Start work to launch the coding agent; its output streams here.
                 </div>
               </template>
-              <div v-for="entry in displayEntries" :key="entry.key" class="agent-entry">
+              <div v-for="row in displayEntries" :key="row.key" class="agent-entry">
                 <!-- legacy plain line (claude / qwen / codex / pre-JSON sessions) -->
-                <div v-if="entry.kind === 'line'" class="agent-line" :class="entry.s">
-                  <span class="agent-pfx" :class="entry.s">{{
-                    entry.s === "err" ? "✕" : entry.s === "sys" ? "·" : "›"
+                <div v-if="row.kind === 'line'" class="agent-line" :class="row.s">
+                  <span class="agent-pfx" :class="row.s">{{
+                    row.s === "err" ? "✕" : row.s === "sys" ? "·" : "›"
                   }}</span>
-                  <span class="agent-d">{{ entry.d }}</span>
+                  <span class="agent-d">{{ row.text }}</span>
                 </div>
                 <!-- system / notice line -->
-                <div v-else-if="entry.kind === 'sys'" class="agent-line sys">
+                <div v-else-if="row.kind === 'sys'" class="agent-line sys">
+                  <time v-if="row.at" class="entry-time">{{ fmtTime(row.at) }}</time>
                   <span class="agent-pfx">·</span>
-                  <span class="agent-d">{{ entry.d }}</span>
+                  <span class="agent-d">{{ row.text }}</span>
                 </div>
                 <!-- human / user message -->
-                <div v-else-if="entry.kind === 'human'" class="agent-human">
-                  <div class="agent-human-bubble">{{ entry.text }}</div>
+                <div v-else-if="row.kind === 'human'" class="agent-human">
+                  <time v-if="row.at" class="entry-time">{{ fmtTime(row.at) }}</time>
+                  <div class="agent-human-bubble">{{ row.text }}</div>
                 </div>
                 <!-- assistant text block -->
-                <div v-else-if="entry.kind === 'text'" class="agent-text">{{ entry.text }}</div>
-                <!-- step boundary marker -->
-                <div
-                  v-else-if="entry.kind === 'step'"
-                  class="agent-step"
-                  :class="{ fin: entry.stepKind === 'finish' }"
-                >
-                  <span class="agent-step-dot"></span>
-                  <span>{{ entry.stepReason === "stop" ? "done" : "continue" }}</span>
-                  <span
-                    v-if="entry.stepReason !== 'stop' && entry.stepAt"
-                    class="agent-step-time"
-                    >{{ repo.fmtDate(entry.stepAt) }}</span
-                  >
-                  <span v-if="entry.stepReason" class="agent-step-reason">{{
-                    entry.stepReason
-                  }}</span>
+                <div v-else-if="row.kind === 'text'" class="agent-text">
+                  <time v-if="row.at" class="entry-time">{{ fmtTime(row.at) }}</time>
+                  {{ row.text }}
                 </div>
-                <!-- collapsible tool card -->
-                <details v-else class="agent-tool" :class="entry.toolState">
-                  <summary>
-                    <span class="agent-tool-icon">{{
-                      entry.toolState === "error" ? "✕" : "›"
-                    }}</span>
-                    <span class="agent-tool-name">{{ entry.toolName }}</span>
-                    <span v-if="entry.toolInput" class="agent-tool-cmd" :title="entry.toolInput">{{
-                      entry.toolInput
-                    }}</span>
-                    <span
-                      v-if="entry.toolState"
-                      class="agent-tool-state"
-                      :class="entry.toolState"
-                      >{{ entry.toolState }}</span
-                    >
-                  </summary>
-                  <div class="agent-tool-out">{{ entry.toolOutput || entry.toolInput }}</div>
-                </details>
+                <!-- one row per run of adjacent tool calls (#0506) -->
+                <ChatToolCallRow v-else :calls="row.calls" :at="row.at" />
               </div>
             </div>
             <button
@@ -3905,53 +3769,27 @@ watch(
                     </template>
                   </div>
                 </template>
-                <div v-for="entry in reviewEntries" :key="entry.key" class="agent-entry">
-                  <div v-if="entry.kind === 'line'" class="agent-line" :class="entry.s">
-                    <span class="agent-pfx" :class="entry.s">{{
-                      entry.s === "err" ? "✕" : entry.s === "sys" ? "·" : "›"
+                <div v-for="row in reviewEntries" :key="row.key" class="agent-entry">
+                  <div v-if="row.kind === 'line'" class="agent-line" :class="row.s">
+                    <span class="agent-pfx" :class="row.s">{{
+                      row.s === "err" ? "✕" : row.s === "sys" ? "·" : "›"
                     }}</span>
-                    <span class="agent-d">{{ entry.d }}</span>
+                    <span class="agent-d">{{ row.text }}</span>
                   </div>
-                  <div v-else-if="entry.kind === 'sys'" class="agent-line sys">
+                  <div v-else-if="row.kind === 'sys'" class="agent-line sys">
+                    <time v-if="row.at" class="entry-time">{{ fmtTime(row.at) }}</time>
                     <span class="agent-pfx">·</span>
-                    <span class="agent-d">{{ entry.d }}</span>
+                    <span class="agent-d">{{ row.text }}</span>
                   </div>
-                  <div v-else-if="entry.kind === 'human'" class="agent-human">
-                    <div class="agent-human-bubble">{{ entry.text }}</div>
+                  <div v-else-if="row.kind === 'human'" class="agent-human">
+                    <time v-if="row.at" class="entry-time">{{ fmtTime(row.at) }}</time>
+                    <div class="agent-human-bubble">{{ row.text }}</div>
                   </div>
-                  <div v-else-if="entry.kind === 'text'" class="agent-text">{{ entry.text }}</div>
-                  <div
-                    v-else-if="entry.kind === 'step'"
-                    class="agent-step"
-                    :class="{ fin: entry.stepKind === 'finish' }"
-                  >
-                    <span class="agent-step-dot"></span>
-                    <span>{{ entry.stepReason === "stop" ? "done" : "continue" }}</span>
-                    <span v-if="entry.stepReason" class="agent-step-reason">{{
-                      entry.stepReason
-                    }}</span>
+                  <div v-else-if="row.kind === 'text'" class="agent-text">
+                    <time v-if="row.at" class="entry-time">{{ fmtTime(row.at) }}</time>
+                    {{ row.text }}
                   </div>
-                  <details v-else class="agent-tool" :class="entry.toolState">
-                    <summary>
-                      <span class="agent-tool-icon">{{
-                        entry.toolState === "error" ? "✕" : "›"
-                      }}</span>
-                      <span class="agent-tool-name">{{ entry.toolName }}</span>
-                      <span
-                        v-if="entry.toolInput"
-                        class="agent-tool-cmd"
-                        :title="entry.toolInput"
-                        >{{ entry.toolInput }}</span
-                      >
-                      <span
-                        v-if="entry.toolState"
-                        class="agent-tool-state"
-                        :class="entry.toolState"
-                        >{{ entry.toolState }}</span
-                      >
-                    </summary>
-                    <div class="agent-tool-out">{{ entry.toolOutput || entry.toolInput }}</div>
-                  </details>
+                  <ChatToolCallRow v-else :calls="row.calls" :at="row.at" />
                 </div>
               </div>
               <button
@@ -4409,23 +4247,23 @@ watch(
               <p>Ask the PM to edit the task, suggest changes, or discuss progress.</p>
             </div>
             <template v-else>
-              <template v-for="(entry, index) in pmLines" :key="index">
+              <template v-for="row in pmEntries" :key="row.key">
+                <!-- one row per run of adjacent tool calls (#0506) -->
+                <ChatToolCallRow v-if="row.kind === 'tools'" :calls="row.calls" :at="row.at" />
                 <div
-                  v-if="pmLineKind(entry) !== 'hidden'"
+                  v-else-if="bubbleRole(row)"
                   class="pm-row"
-                  :class="`pm-row-${pmLineKind(entry)}`"
+                  :class="`pm-row-${bubbleRole(row)}`"
                 >
-                  <div v-if="pmLineKind(entry) === 'assistant'" class="pm-mini-avatar">PM</div>
-                  <div class="pm-bubble" :class="`pm-bubble-${pmLineKind(entry)}`">
+                  <div v-if="bubbleRole(row) === 'assistant'" class="pm-mini-avatar">PM</div>
+                  <div class="pm-bubble" :class="`pm-bubble-${bubbleRole(row)}`">
                     <div
-                      v-if="pmLineKind(entry) === 'assistant'"
+                      v-if="bubbleRole(row) === 'assistant'"
                       class="pm-markdown"
-                      v-html="renderMarkdown(pmLineText(entry))"
+                      v-html="renderMarkdown(row.text)"
                     ></div>
-                    <span v-else>{{ pmLineText(entry) }}</span>
-                    <span v-if="pmLineKind(entry) !== 'status' && entry.at" class="msg-time">{{
-                      fmtTime(entry.at)
-                    }}</span>
+                    <span v-else>{{ row.text }}</span>
+                    <span v-if="row.at" class="msg-time">{{ fmtTime(row.at) }}</span>
                   </div>
                 </div>
               </template>
