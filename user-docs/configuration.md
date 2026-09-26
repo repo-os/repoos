@@ -794,6 +794,21 @@ machine. Enabling it sends repo contents to a third-party host.
 The `HETZNER_API_TOKEN` and `REPOOS_REMOTE_SSH_KEY` credentials are
 environment-only.
 
+## Dev copy inspector (RepoOS self-host only)
+
+These settings appear under **Settings → Advanced** when this checkout has `src/ui-app/` **and** the running build was compiled with the dev UI bundle (`devUi: true` in `dist/.build-info.json` — a normal local `bun run build`, not `REPOOS_SHIP=1` / release tarballs). They are inert on release installs and when previewing another project's app.
+
+| Key | Type | Default | Restart | Description |
+| --- | --- | --- | --- | --- |
+| `dev.inspector.enabled` | boolean | `true` | no | Hold Alt (Option on macOS) over visible UI text to reveal a ⌖ locate control; click it to see the source file. |
+| `dev.inspector.editorCommand` | string | `""` | no | Optional editor launcher, e.g. `zed {file}:{line}`. Placeholders `{file}` and `{line}`; omit `{line}` to open without a line number. Copy path works with no command configured. |
+
+Template copy is attributed at build time with `data-repoos-file` / `data-repoos-line`
+attributes (dev builds only). Line numbers point at the template element; strings
+composed in `<script setup>` lead you to the template line that renders them.
+
+See [Dev tooling](/dev-tooling) for how to verify the inspector locally.
+
 ## Summary
 
 Commit project behavior in `repoos.toml`, keep secrets in a gitignored `.env` or

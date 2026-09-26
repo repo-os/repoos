@@ -19,6 +19,7 @@ export * from "./auth.js";
 export * from "./hub.js";
 export * from "./skill-registry.js";
 export * from "./service.js";
+export * from "./copy-inspector.js";
 export * from "./support.js";
 export { type RouteContext, type RouteHandler, type Route, type SyncResult } from "./types.js";
 export { Router } from "./router.js";

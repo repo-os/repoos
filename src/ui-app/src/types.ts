@@ -154,6 +154,8 @@ export interface Health {
   buildAvailableAt: string | null;
   /** ISO start time of the serve process (derived from process.uptime()). */
   serverStartedAt?: string;
+  /** True when the dev-only copy inspector is available on this server build. */
+  copyInspectorAvailable?: boolean;
   /** True when this server is a preview instance serving a specific task's worktree. */
   isPreviewBuild: boolean;
   /** Canary flow-test counter (0-9) — see src/core/canary.ts. */

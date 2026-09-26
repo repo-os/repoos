@@ -1,10 +1,16 @@
 import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { defineConfig, type Plugin } from "vitest/config";
 import vue from "@vitejs/plugin-vue";
 import tailwindcss from "@tailwindcss/vite";
 import { shellPrecache } from "./src/lib/sw-precache.js";
 import { serviceWorkerSource } from "./src/lib/sw-source.js";
+import { copyInspectorNodeTransform } from "./copy-inspector-compiler.js";
+
+const shipBuild = process.env.REPOOS_SHIP === "1";
+const copyInspectorBuild = !shipBuild;
+const repoRoot = join(fileURLToPath(new URL(".", import.meta.url)), "../..");
 
 /**
  * Emits the service worker (source and caching rules: `serviceWorkerSource`),
@@ -33,7 +39,24 @@ const appRoot = fileURLToPath(new URL(".", import.meta.url));
 
 export default defineConfig({
   root: appRoot,
-  plugins: [vue(), tailwindcss(), repoosSw()],
+  define: {
+    __REPOOS_COPY_INSPECTOR__: JSON.stringify(copyInspectorBuild),
+  },
+  plugins: [
+    vue(
+      copyInspectorBuild
+        ? {
+            template: {
+              compilerOptions: {
+                nodeTransforms: [copyInspectorNodeTransform(repoRoot)],
+              },
+            },
+          }
+        : {},
+    ),
+    tailwindcss(),
+    repoosSw(),
+  ],
   base: "/",
   resolve: {
     alias: {

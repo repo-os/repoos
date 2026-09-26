@@ -2,6 +2,7 @@ import { join } from "node:path";
 import type { RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
 import { loadBuildInfo, listDocs, listSkills, repoGuideContext } from "./helpers.js";
+import { copyInspectorApiEnabled } from "./copy-inspector.js";
 import { sampleSystem } from "../system.js";
 import { resolveRepoGuide, REPO_GUIDE_SESSION_ID } from "../agents.js";
 import { withPmWorking } from "../pm-runs.js";
@@ -50,6 +51,7 @@ export const health: RouteHandler = (ctx, req, res) => {
     // thin (missing startedAt) — the lockfile stays the primary source.
     serverStartedAt: new Date(Date.now() - process.uptime() * 1000).toISOString(),
     isPreviewBuild: process.env.REPOOS_PREVIEW_CHILD === "1",
+    copyInspectorAvailable: copyInspectorApiEnabled(ctx.config.root),
     canaryCounter: CANARY_COUNTER,
     ...(handshake ? { reloadHandshake: true } : {}),
   });
