@@ -35,6 +35,9 @@ const idle = computed(() => snapshot.value === null || snapshot.value.empty);
 const active = computed(() => snapshot.value?.active ?? null);
 const queue = computed(() => snapshot.value?.queue ?? []);
 
+/** Queue row/segment — hidden on failure (idle/failed copy unchanged per spec). */
+const showQueue = computed(() => queue.value.length > 0 && !active.value?.failed);
+
 // ── Stage hover pane (#0460) ───────────────────────────────────────────────
 // The bar's stage explanations used to be native `title` tooltips, which are
 // plain-text and unstyled. They now render in a themed pane teleported to
@@ -274,6 +277,19 @@ async function onStageClick(stage: string): Promise<void> {
   if (stage === "check") ui.focusDebugCheck(job.taskId, "merge-gate");
 }
 
+/** Native tooltip for the collapsed strip (active task + queued ids). */
+const stripTooltip = computed(() => {
+  let t = "Integration pipeline — ";
+  if (idle.value) return t + "idle";
+  const queueSuffix = showQueue.value
+    ? " · Queue: " + queue.value.map((id) => "#" + id).join(" ")
+    : "";
+  if (active.value) {
+    return t + "#" + active.value.taskId + " " + (active.value.stage ?? "…") + queueSuffix;
+  }
+  return t + "integrating" + queueSuffix;
+});
+
 function stageClass(s: string, i: number): string {
   // On failure the failing stage is pinned red; earlier stages stay checked
   // (green) and later stages remain pending (todo).
@@ -295,10 +311,7 @@ function stageClass(s: string, i: number): string {
       v-if="collapsed"
       type="button"
       class="ibar-strip"
-      :title="
-        'Integration pipeline — ' +
-        (idle ? 'idle' : active ? '#' + active.taskId + ' ' + (active.stage ?? '…') : '')
-      "
+      :title="stripTooltip"
       @click="collapsed = false"
     >
       <span
@@ -311,11 +324,24 @@ function stageClass(s: string, i: number): string {
           <span class="mono">#{{ active.taskId }}</span>
           <template v-if="active.failed"> integration failed</template>
           <template v-else>
-            integrating… <span class="mono dim">{{ active.stage ?? "" }}</span
-            ><span v-if="elapsed" class="mono dim strip-elapsed"> · {{ elapsed }}</span></template
-          >
+            integrating… <span class="mono dim">{{ active.stage ?? "" }}</span>
+            <span
+              v-if="elapsed"
+              class="ibar-chip mono"
+              :title="'Elapsed since integration started'"
+              >{{ elapsed }}</span
+            >
+          </template>
         </template>
         <template v-else>Integrating…</template>
+      </span>
+      <span v-if="showQueue" class="strip-queue">
+        <span class="strip-queue-ellipsis">
+          <span class="strip-queue-label">Queue:</span>
+          <span v-for="q in queue" :key="q" class="ibar-chip mono" :title="'#' + q + ' queued'"
+            >#{{ q }}</span
+          >
+        </span>
       </span>
       <ChevronUp class="strip-chev" aria-hidden="true" />
     </button>
@@ -350,7 +376,7 @@ function stageClass(s: string, i: number): string {
             <template v-else> integrating</template>
             <span
               v-if="elapsed"
-              class="ibar-elapsed mono"
+              class="ibar-chip mono"
               :title="'Elapsed since integration started'"
               >{{ elapsed }}</span
             >
@@ -404,10 +430,11 @@ function stageClass(s: string, i: number): string {
         </template>
       </div>
 
-      <div v-if="queue.length" class="ibar-queue">
-        <span class="queue-label">Queue</span>
-        <span v-for="q in queue" :key="q" class="queue-item mono">#{{ q }} queueing…</span>
-        <span class="queue-count">+{{ queue.length }}</span>
+      <div v-if="showQueue" class="ibar-queue">
+        <span class="queue-label">Queue:</span>
+        <span v-for="q in queue" :key="q" class="ibar-chip mono" :title="'#' + q + ' queued'"
+          >#{{ q }}</span
+        >
       </div>
     </div>
 
@@ -517,7 +544,7 @@ function stageClass(s: string, i: number): string {
   color: var(--txt-faint);
 }
 
-.ibar-elapsed {
+.ibar-chip {
   font-size: 11.5px;
   font-weight: 600;
   color: var(--txt-dim);
@@ -525,10 +552,7 @@ function stageClass(s: string, i: number): string {
   border-radius: 999px;
   padding: 1px 8px;
   font-variant-numeric: tabular-nums;
-}
-
-.strip-elapsed {
-  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .stages {
@@ -695,20 +719,34 @@ function stageClass(s: string, i: number): string {
 
 .queue-label {
   color: var(--txt-faint);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: 12px;
 }
 
-.queue-item {
-  color: var(--txt-dim);
-  background: var(--chip-bg);
-  border-radius: 999px;
-  padding: 2px 10px;
+/* Queue segment yields space first (higher flex-shrink); label can still ellipsize. */
+.strip-queue {
+  flex: 0 4 auto;
+  min-width: 0;
+  max-width: 45%;
+  overflow: hidden;
 }
 
-.queue-count {
+.strip-queue-ellipsis {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.strip-queue-label {
   color: var(--txt-faint);
+  font-size: 12px;
+  margin-right: 4px;
+}
+
+.strip-queue-ellipsis .ibar-chip {
+  display: inline-block;
+  vertical-align: baseline;
+  margin-left: 6px;
 }
 
 /* Collapsed thin strip */
@@ -717,6 +755,7 @@ function stageClass(s: string, i: number): string {
   align-items: center;
   gap: 10px;
   width: 100%;
+  min-width: 0;
   background: var(--panel-solid);
   border-top: 1px solid var(--border);
   box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
@@ -754,6 +793,10 @@ function stageClass(s: string, i: number): string {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.strip-label .ibar-chip {
+  margin-left: 6px;
 }
 
 .dim {
