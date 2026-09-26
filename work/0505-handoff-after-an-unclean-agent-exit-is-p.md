@@ -5,11 +5,12 @@ type: bug
 status: inbox
 priority: p1
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+review_model_override: opencode-go/space-bunny-free
 created_at: "2026-09-26T00:57:06Z"
-updated_at: "2026-09-26T00:57:06Z"
+updated_at: "2026-09-26T01:02:43Z"
 ---
 ## Problem
 
@@ -76,3 +77,4 @@ indefinitely.
 ## Activity
 
 - 2026-09-26T00:57:06Z · created · unknown
+- 2026-09-26T01:02:43Z · review_model_override
