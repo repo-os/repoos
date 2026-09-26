@@ -638,6 +638,11 @@ export function resolveSessionTaskId(taskKey: string | undefined): string | null
   // not a task's engineering work — never attribute their cost/tokens to a task
   // named "debugger:<id>" (which would otherwise surface as a phantom board task).
   if (taskKey.startsWith("debugger:")) return null;
+  // Story PM chats (#0515) are keyed `pm-story-v1:<number>` (or a slug, for a
+  // story with no definition file) plus an optional `::<email>`. They belong to
+  // no task, and the generic `pm:` alternative below would otherwise capture
+  // them and attribute their cost/tokens to a task that doesn't exist.
+  if (taskKey.startsWith("pm-story-v1:")) return null;
   // Each alternative has a strict literal prefix so nothing else is captured;
   // covers the current `pm-task-v2:<id>` scheme (with or without a `::<email>`
   // per-user suffix) and the legacy `pm-task:<id>` / `pm:<id>` forms, without
@@ -2308,10 +2313,15 @@ function copilotArgs(options: { scope: CopilotPermissionScope }): string[] {
 
 /** The safe Copilot permission profile for a persistent non-engineering chat. */
 function copilotChatPermissionScope(sessionId: string): CopilotPermissionScope {
-  // Task PM chat is the one advisory conversation allowed to mutate task
-  // metadata, and taskPmPrompt limits it to `repoos` commands. Every other
-  // chat (Debugger, Ross, and future advisory roles) remains read-only.
-  return sessionId.startsWith("pm-task-v2:") ? "task-management" : "read-only";
+  // Task and story PM chats are the one advisory conversation allowed to mutate
+  // task metadata, and taskPmPrompt/storyPmPrompt limit them to `repoos`
+  // commands. Every other chat (Debugger, Ross, and future advisory roles)
+  // remains read-only. A story PM chat is scoped by its `pm-story-v1:` prefix
+  // rather than by being tied to a task, because a story has no task to carry
+  // the flag (#0515).
+  return sessionId.startsWith("pm-task-v2:") || sessionId.startsWith("pm-story-v1:")
+    ? "task-management"
+    : "read-only";
 }
 
 /**
@@ -2742,6 +2752,32 @@ Rules:
 
 Task context:
 ${taskContext}
+
+User request:
+${request}`;
+}
+
+/**
+ * Build the writable mission for the story panel's PM tab (#0515) — the story
+ * counterpart of `taskPmPrompt`, and deliberately the same shape: the user
+ * moving between a task panel and a story panel should meet the same agent with
+ * the same rules and the same permission scope.
+ */
+export function storyPmPrompt(request: string, storyContext: string, agent: Agent): string {
+  return `You are the Product Manager for RepoOS, working on the story below. You are not Ross or the read-only repository assistant.
+
+${agent.instructions ?? "Own the roadmap and keep story scopes and task specifications accurate."}
+
+Rules:
+- You may create or update tasks, including task body, metadata, status, story tag, and human-input questions, only through RepoOS CLI commands (e.g. \`repoos new\`, \`repoos update\`, \`repoos mv\`). Never call the RepoOS HTTP API directly (no \`curl\`/fetch against localhost) — it requires a browser session and is not reachable from your sandbox.
+- A story is a delivery slice, not a task: it has a definition under \`stories/\` and a number, but no status or branch. Do not invent one, and do not try to move it through the task pipeline.
+- Break the story down into concrete tasks tagged with this story's exact name, and keep that name spelled identically on every task you create.
+- Never edit \`work/*.md\` or \`stories/*.md\` files directly.
+- Do not implement product code, commit code, merge branches, or start servers unless the user explicitly asks for that separately.
+- Explain what you changed briefly after applying it, naming the task ids you created or updated.
+
+Story context:
+${storyContext}
 
 User request:
 ${request}`;

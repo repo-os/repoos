@@ -66,6 +66,44 @@ export function storyKey(raw: string): string {
   return normalizeStoryName(raw).toLowerCase();
 }
 
+/**
+ * The part of a story PM session id that identifies *which* story (#0515).
+ *
+ * A registered story uses its stable number — the same shape a task PM chat
+ * uses (`pm-task-v2:0042`), so the two read alike in `.repoos/sessions/`. A
+ * story that exists only as a task tag has no definition file and therefore no
+ * number, so it falls back to a slug of its key. The result is always
+ * filename-safe (`[a-z0-9-]`), which is what the runner's session file requires.
+ */
+export function storyPmSessionSlug(key: string, number?: string | null): string {
+  if (number) return number;
+  return (
+    key
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 55) || "story"
+  );
+}
+
+/**
+ * Runner session key for the PM conversation about one story (#0515). Per-user
+ * when auth is on, exactly like the task PM chat (0248), so teammates sharing
+ * one instance each get their own conversation per story.
+ *
+ * `pm-story-v1:` is deliberately not a `pm-task-v2:` prefix — a story is not a
+ * task, and `resolveSessionTaskId` must not attribute a story chat's tokens to
+ * a phantom task (see that function's prefix guard).
+ */
+export function storyPmSessionId(
+  key: string,
+  number: string | null | undefined,
+  email?: string | null,
+): string {
+  const base = `pm-story-v1:${storyPmSessionSlug(key, number)}`;
+  return email ? `${base}::${email}` : base;
+}
+
 /** Pick the stable display name from every exact spelling seen for one key. */
 function pickDisplayName(spellings: Map<string, number>): string {
   let best = "";

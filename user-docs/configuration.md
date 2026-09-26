@@ -666,6 +666,36 @@ Story names are whitespace-normalized and matched case-insensitively, so
 `Project updates email` and `project  updates  email` group together under one
 stable display name. Clearing the field removes the task from every story.
 
+### Numbers and links
+
+Every registered story gets a **number** — a zero-padded four-digit value like
+`#0007`, the story counterpart to a task's `#0042` and an input's `#0001`. It
+appears in the same place on both the Stories page and the story panel, and
+clicking it copies a link straight to that story, the same as clicking a task's
+or input's number.
+
+The number is stable: it is assigned once and never renumbered or reused, and
+it survives the PM agent renaming the story and its file. Links to a story keep
+working through a rename, which a name-based link would not.
+
+`/stories?story=0007` opens that story's panel. The story's name also works, as
+does `?story=new` to open the New story form.
+
+A story that exists **only** as a task tag — tagged on a task, with no file
+under `stories/` — has no number and no link. There is no file to hold a stable
+one, so there is nothing to point a link at. Register the story to get both.
+
+### The story PM tab
+
+A story panel has a **PM** tab, right after the story body, exactly like a task
+panel's. Ask the PM to break the story down into tasks, retag or update one, or
+explain what is blocking it. It reads and writes the same tasks the story
+already holds, and the conversation is per story and per user.
+
+The PM tab is the agent's working surface for a story, not a read-only view: it
+uses the same `repoos` CLI commands the task panel's PM tab does, so the PM can
+create and update tasks tagged with this story.
+
 ### A story is not an area
 
 `area` describes **where work lands** — the part of the product or codebase a

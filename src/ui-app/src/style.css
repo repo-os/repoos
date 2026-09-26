@@ -3047,6 +3047,15 @@
   font-size: 11.5px;
   color: var(--txt-faint);
 }
+/* #0515: the copy-link number row above the panel title — the same slot and
+   rhythm the task panel's header uses (`.drawer-head` > flex row >
+   `.copyable-number` + `.tc-id`), so the two panels read identically. */
+.story-panel-ids {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+}
 .story-panel-body .md-rendered {
   margin-bottom: 0;
 }
@@ -9842,6 +9851,343 @@
   opacity: 0.4;
   cursor: default;
   box-shadow: none;
+}
+
+/* ── PM chat (#0444 shared hooks above; these classes are the PM's own) ─────
+ * Promoted out of TaskDrawer.vue's <style scoped> in #0515 so the story
+ * panel's PM tab can render the SAME conversation surface instead of a
+ * near-duplicate. The task panel and the story panel are meant to feel like
+ * one continuous product: same bubbles, same compose box, same canned
+ * prompts. They live here rather than in either component because both hosts
+ * are body-teleported drawers, where scoped styles do not reach (AGENTS.md),
+ * and because a shared surface should have exactly one definition.
+ */
+
+/* Vertical rhythm between messages comes from .ai-chat-log — never set a
+ * competing `gap` here (tests/ai-chat-standard.test.ts enforces it). */
+.pm-log-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.pm-empty {
+  margin: auto 0;
+  text-align: center;
+  padding: 22px 12px;
+  color: var(--txt-dim);
+}
+
+.pm-welcome-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 12px;
+  font-size: 16px;
+  font-weight: 800;
+  border-radius: 10px;
+  color: var(--violet);
+  background: var(--violet-dim);
+  border: 1px solid var(--border);
+}
+
+.pm-empty strong {
+  display: block;
+  color: var(--txt);
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.pm-empty p {
+  font-size: 11.5px;
+  line-height: 1.55;
+  max-width: 280px;
+  margin: 0 auto;
+}
+
+.pm-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 7px;
+}
+
+.pm-row-human {
+  justify-content: flex-end;
+}
+
+.pm-mini-avatar {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 8px;
+  font-size: 9px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  color: var(--violet);
+  background: var(--violet-dim);
+  border: 1px solid var(--border);
+}
+
+.pm-bubble {
+  max-width: 84%;
+  padding: 9px 11px;
+  border-radius: 13px;
+  font-size: 12px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.pm-bubble-human {
+  color: var(--btn-primary-color);
+  background: var(--btn-primary-bg);
+  border: 1px solid var(--border-bright);
+  border-bottom-right-radius: 4px;
+}
+
+.pm-bubble-assistant {
+  color: var(--txt);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+}
+
+.msg-time {
+  display: block;
+  margin-top: 3px;
+  text-align: right;
+  color: var(--txt-faint);
+  font:
+    500 8.5px "JetBrains Mono",
+    monospace;
+  opacity: 0.8;
+}
+
+.pm-row-status {
+  justify-content: center;
+}
+
+.pm-bubble-status {
+  padding: 4px 8px;
+  background: transparent;
+  color: var(--txt-faint);
+  font:
+    500 9.5px "JetBrains Mono",
+    monospace;
+  text-align: center;
+}
+
+.pm-markdown p {
+  margin: 0 0 7px;
+}
+
+.pm-markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.pm-markdown ul,
+.pm-markdown ol {
+  padding-left: 17px;
+  margin: 5px 0;
+}
+
+.pm-markdown code {
+  font:
+    10.5px "JetBrains Mono",
+    monospace;
+  background: var(--md-body-bg);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+
+.pm-markdown pre {
+  overflow: auto;
+  margin: 7px 0;
+  padding: 8px;
+  background: var(--md-body-bg);
+  border-radius: 7px;
+}
+
+.pm-markdown pre code {
+  padding: 0;
+  background: none;
+}
+
+.pm-markdown a {
+  color: var(--cyan);
+}
+
+.pm-compose {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin: 0 12px 12px;
+  padding: 8px 9px 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--panel-solid);
+}
+
+.pm-compose:focus-within {
+  border-color: var(--border-bright);
+  box-shadow: 0 0 0 3px var(--violet-dim);
+}
+
+.pm-compose textarea {
+  flex: 1;
+  min-height: 24px;
+  max-height: 120px;
+  overflow-y: auto;
+  resize: none;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--txt);
+  font: 12.5px / 1.55 var(--font-sans);
+}
+
+.pm-compose textarea::placeholder {
+  color: var(--txt-faint);
+}
+
+.pm-compose button {
+  /* Deliberately no `background`/`color`: this rule out-specifies the shared
+     .ai-chat-send, so setting a fill here would silently win and leave the
+     send button looking transparent. The send button takes .ai-chat-send;
+     .pm-stop and .pm-attach set their own. */
+  width: 31px;
+  height: 31px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.pm-compose button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.pm-compose button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.pm-compose button.pm-stop {
+  background: color-mix(in srgb, var(--red, #ef5b5b) 16%, var(--btn-primary-bg));
+  color: var(--red, #ef5b5b);
+}
+
+/* Compose-box attach — a muted sibling of the send button, plus the thumbnail
+   strip shown above the form while images are pending. */
+.pm-compose button.pm-attach {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--txt-dim);
+}
+
+.pm-compose button.pm-attach:hover:not(:disabled) {
+  border-color: var(--violet);
+  color: var(--violet);
+}
+
+.pm-compose button.pm-attach svg {
+  width: 16px;
+  height: 16px;
+}
+
+.pm-shot-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pm-shots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 12px 8px;
+}
+
+.pm-shot {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  overflow: hidden;
+  background: var(--panel-solid);
+}
+
+.pm-shot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pm-shot-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--panel-solid) 80%, transparent);
+  color: var(--txt-dim);
+  cursor: pointer;
+}
+
+.pm-shot-remove:hover {
+  color: var(--red, #ef5b5b);
+}
+
+.pm-canned {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 12px 10px;
+}
+
+.pm-canned-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--panel-solid);
+  color: var(--txt);
+  font-size: 12.5px;
+  line-height: 1.4;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.pm-canned-item svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--violet);
+}
+
+.pm-canned-item:hover,
+.pm-canned-item:focus-visible {
+  border-color: var(--violet);
+  background: var(--violet-dim);
+  outline: none;
 }
 
 /* Floating "Jump to latest". Rendered by ChatJumpToLatest.vue, teleported to
