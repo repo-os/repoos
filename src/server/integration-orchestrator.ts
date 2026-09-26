@@ -47,11 +47,15 @@ import { sweepAndWarn } from "../core/worktree-gc.js";
 import type { DoneStep } from "./done.js";
 import { redactSecrets, stripAnsi } from "./done.js";
 import type { RemoteValidator } from "./remote-validation.js";
-import { checkEnvAfterRemoteGate, runRemotePreReviewGate } from "./pre-review-remote-gate.js";
+import {
+  checkEnvAfterRemoteGate,
+  runRemotePreReviewGate,
+  spawnedRepoosCheckArgs,
+} from "./pre-review-remote-gate.js";
 import { markTaskReleased } from "./write.js";
 import { saveDiffSnapshot } from "./diff-snapshot.js";
 import { parseTask } from "../core/task.js";
-import { CLOSEOUT_CHECK_ARGS, resolveCheckPlan } from "../core/check-plan.js";
+import { resolveCheckPlan } from "../core/check-plan.js";
 import { detectRepoMarkers } from "../core/check-runner.js";
 import { loadConfig } from "../core/config.js";
 import { summarizeCheckFailure } from "../core/check-failure-summary.js";
@@ -1441,6 +1445,7 @@ export class CloseOutOrchestrator {
             job.taskId,
             "warn",
             "remote validation unavailable — falling back to the full local gate (remoteValidation.fallbackToLocal)",
+            { detail: remoteGateOutcome.detail },
           );
         }
       }
@@ -1472,6 +1477,7 @@ export class CloseOutOrchestrator {
           ...process.env,
           ...checkEnvAfterRemoteGate(remoteGateOutcome),
         };
+        const checkArgs = spawnedRepoosCheckArgs(this.config, remoteGateOutcome);
         const localCli = join(wtPath, "dist", "cli", "index.js");
         const localCliPresent = existsSync(localCli);
         const checkHandle =
@@ -1525,7 +1531,7 @@ export class CloseOutOrchestrator {
           // every such MTD (#0345) buried the real failure reason behind a false
           // lead.
           const cliExpected = expectsOwnCli(wtPath);
-          checkRes = await rawCheck("repoos", ["check", ...CLOSEOUT_CHECK_ARGS]);
+          checkRes = await rawCheck("repoos", ["check", ...checkArgs]);
           outcome = cliExpected ? "local-missing" : "no-cli-expected";
           if (cliExpected) {
             this.logger?.integration(
@@ -1535,7 +1541,7 @@ export class CloseOutOrchestrator {
             );
           }
         } else {
-          checkRes = await rawCheck(process.execPath, [localCli, "check", ...CLOSEOUT_CHECK_ARGS]);
+          checkRes = await rawCheck(process.execPath, [localCli, "check", ...checkArgs]);
           if (checkRes.status === 0) {
             outcome = "local-ok";
           } else if (isStalenessFailure(checkRes)) {
@@ -1557,11 +1563,7 @@ export class CloseOutOrchestrator {
               timeout: 300_000,
               isCancelled: () => this.isCancelled(job.taskId),
             });
-            checkRes = await rawCheck(process.execPath, [
-              localCli,
-              "check",
-              ...CLOSEOUT_CHECK_ARGS,
-            ]);
+            checkRes = await rawCheck(process.execPath, [localCli, "check", ...checkArgs]);
             if (checkRes.cancelled) {
               checkHandle?.done(checkRes.status);
               return { ok: false, cancelled: true, reason: CANCEL_REASON };
@@ -1579,9 +1581,9 @@ export class CloseOutOrchestrator {
             // Genuine non-staleness failure from the local CLI: preserve the prior
             // fallback behaviour (retry via the global repoos, then bun run repoos).
             outcome = "fallback";
-            checkRes = await rawCheck("repoos", ["check", ...CLOSEOUT_CHECK_ARGS]);
+            checkRes = await rawCheck("repoos", ["check", ...checkArgs]);
             if (checkRes.status !== 0) {
-              checkRes = await rawCheck("bun", ["run", "repoos", "check", ...CLOSEOUT_CHECK_ARGS]);
+              checkRes = await rawCheck("bun", ["run", "repoos", "check", ...checkArgs]);
             }
           }
         }

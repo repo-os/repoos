@@ -233,9 +233,15 @@ describe("git-tag release status", () => {
       ...config(),
       remoteValidation: { enabled: true, useForReleases: false },
     };
+    initGitRepo(cfg.root);
     let called = false;
     const runner: ReleaseCommandRunner = async (command, args) => {
-      if (command !== "git") return { code: 0, stdout: "check passed", stderr: "" };
+      if (command !== "git") {
+        if (command === process.execPath && args.some((a) => a.endsWith("check"))) {
+          expect(args).toContain("--local-tests");
+        }
+        return { code: 0, stdout: "check passed", stderr: "" };
+      }
       if (["add", "commit", "push"].includes(args[0]) || (args[0] === "tag" && args[1] === "-a")) {
         return { code: 0, stdout: "", stderr: "" };
       }

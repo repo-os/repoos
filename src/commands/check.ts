@@ -1578,7 +1578,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     );
   }
 
-  if (shouldRunCliRemotePreReviewGate(cfg, opts, process.env)) {
+  if (shouldRunCliRemotePreReviewGate(cfg, { ...opts, changedRef }, process.env)) {
     heading("Remote validation");
     const logger = new Logger({ root: repoRoot });
     let remoteValidator;

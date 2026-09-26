@@ -7,6 +7,7 @@
  * docs/remote-validation.md.
  */
 
+import { CLOSEOUT_CHECK_ARGS } from "../core/check-plan.js";
 import type { RepoOSConfig } from "../core/types.js";
 import { runGit } from "../core/git.js";
 import type { RemoteValidator } from "./remote-validation.js";
@@ -38,20 +39,43 @@ export function checkEnvAfterRemoteGate(
   return env;
 }
 
-/** Whether standalone `repoos check` should run the remote half (not when a parent already did). */
+/**
+ * Whether standalone `repoos check` should run the remote half (not when a parent
+ * already did, not for changed-path fast pre-review, not with `--local-tests`).
+ */
 export function shouldRunCliRemotePreReviewGate(
   config: RepoOSConfig,
-  opts: { localTestsOnly?: boolean },
+  opts: { localTestsOnly?: boolean; changedRef?: string },
   env: NodeJS.ProcessEnv,
 ): boolean {
+  if (opts.changedRef?.trim()) return false;
   return (
     remotePreReviewEnabled(config) && !opts.localTestsOnly && !remoteValidationAlreadyAttempted(env)
   );
 }
 
+/**
+ * `repoos check` argv for a child process spawned by handoff, close-out, release,
+ * etc. When remote validation is enabled but the parent did not run it (release
+ * with `useForReleases = false`, close-out without a build step, …), pass
+ * `--local-tests` so the CLI does not auto-run remote again.
+ */
+export function spawnedRepoosCheckArgs(
+  config: RepoOSConfig,
+  remoteGateOutcome: RemotePreReviewOutcome | { kind: "skip" },
+): readonly string[] {
+  if (remoteGateOutcome.kind !== "skip") {
+    return CLOSEOUT_CHECK_ARGS;
+  }
+  if (remotePreReviewEnabled(config)) {
+    return ["--local-tests", ...CLOSEOUT_CHECK_ARGS];
+  }
+  return CLOSEOUT_CHECK_ARGS;
+}
+
 export type RemotePreReviewOutcome =
   | { kind: "skip" }
-  | { kind: "local-only"; skipTests: boolean }
+  | { kind: "local-only"; skipTests: boolean; detail?: string }
   | { kind: "fail"; detail: string; retryable: boolean };
 
 export async function runRemotePreReviewGate(params: {
@@ -100,5 +124,9 @@ export async function runRemotePreReviewGate(params: {
         `fix it in the feature branch and re-run the gate`,
     };
   }
-  return { kind: "local-only", skipTests: false };
+  return {
+    kind: "local-only",
+    skipTests: false,
+    detail: remote.detail,
+  };
 }

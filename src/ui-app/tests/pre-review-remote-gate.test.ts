@@ -11,7 +11,9 @@ import {
   remoteValidationAlreadyAttempted,
   runRemotePreReviewGate,
   shouldRunCliRemotePreReviewGate,
+  spawnedRepoosCheckArgs,
 } from "../../server/pre-review-remote-gate.js";
+import { CLOSEOUT_CHECK_ARGS } from "../../core/check-plan.js";
 import type { RemoteValidator } from "../../server/remote-validation.js";
 import { parseCheckArgs } from "../../commands/check.js";
 import { scheduleCheckFailureRetry } from "../../server/handoff.js";
@@ -201,6 +203,32 @@ describe("shouldRunCliRemotePreReviewGate", () => {
 
   it("is true for a standalone CLI run with remote enabled", () => {
     expect(shouldRunCliRemotePreReviewGate(enabled, {}, {})).toBe(true);
+  });
+
+  it("is false in changed-path mode", () => {
+    expect(shouldRunCliRemotePreReviewGate(enabled, { changedRef: "main" }, {})).toBe(false);
+  });
+});
+
+describe("spawnedRepoosCheckArgs", () => {
+  const enabled = makeConfig("/tmp", { enabled: true });
+
+  it("adds --local-tests when remote is enabled but the parent skipped remote", () => {
+    expect(spawnedRepoosCheckArgs(enabled, { kind: "skip" })).toEqual([
+      "--local-tests",
+      ...CLOSEOUT_CHECK_ARGS,
+    ]);
+  });
+
+  it("uses close-out args only after the parent ran remote", () => {
+    expect(spawnedRepoosCheckArgs(enabled, { kind: "local-only", skipTests: true })).toEqual(
+      CLOSEOUT_CHECK_ARGS,
+    );
+  });
+
+  it("leaves args unchanged when remote validation is off", () => {
+    const off = makeConfig("/tmp", { enabled: false });
+    expect(spawnedRepoosCheckArgs(off, { kind: "skip" })).toEqual(CLOSEOUT_CHECK_ARGS);
   });
 });
 
