@@ -50,16 +50,18 @@ struct ServerSidebarView: View {
         .background(sidebarBackground)
         .navigationTitle("RepoOS")
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            Button {
-                appState.presentAddServer()
-            } label: {
-                Label("Add server", systemImage: "plus")
-                    .frame(maxWidth: .infinity)
+            ZStack {
+                sidebarBackground
+                Button {
+                    appState.presentAddServer()
+                } label: {
+                    Label("Add server", systemImage: "plus")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.regular)
+                .padding(12)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.regular)
-            .padding(12)
-            .background(sidebarBackground)
             .help("Add a RepoOS server to the local registry")
         }
         .overlay {
@@ -67,7 +69,7 @@ struct ServerSidebarView: View {
                 SidebarEmptyHint()
             }
         }
-        .background(sidebarBackground)
+        .background(sidebarBackground, ignoresSafeAreaEdges: .all)
     }
 
     private var sidebarBackground: Color {
