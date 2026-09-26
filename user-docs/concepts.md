@@ -16,6 +16,17 @@ This has practical consequences you'll feel immediately:
 - An agent can read the board with `cat`, and your project's context is sitting
   right next to the code it describes.
 
+## Git history in the UI
+
+The Context page (`/repo`) includes a **History** tab: the repository's `git
+log`, grouped by day, with branch and path filters. Commits that follow the
+`type(NNNN):` message convention (for example `docs(0514): …`) link to that
+task. Opening a commit shows the files it changed and a full diff — the same
+diff view used for task worktrees.
+
+The log is read-only. Checkout, revert, and cherry-pick stay on the command
+line.
+
 ## Status is a field, not a folder
 
 ```yaml
