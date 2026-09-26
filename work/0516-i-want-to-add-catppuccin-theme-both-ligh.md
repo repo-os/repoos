@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 cli_override: opencode
-model_override: default
+model_override: opencode-go/space-bunny-free
 created_at: "2026-09-26T08:19:31Z"
-updated_at: "2026-09-26T08:35:13Z"
+updated_at: "2026-09-26T08:35:15Z"
 ---
 title: Add Catppuccin light and dark themes
 type: feature
@@ -113,3 +113,4 @@ I want to add Catppuccin theme (both light and dark options) to RepoOS. If you d
 - 2026-09-26T08:19:31Z · created · hello@repoos.org
 - 2026-09-26T08:19:46Z · status draft→inbox, title, body
 - 2026-09-26T08:35:13Z · cli_override, model_override
+- 2026-09-26T08:35:15Z · model_override
