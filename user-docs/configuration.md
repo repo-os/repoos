@@ -800,7 +800,7 @@ These settings appear under **Settings → Advanced** when this checkout has `sr
 
 | Key | Type | Default | Restart | Description |
 | --- | --- | --- | --- | --- |
-| `dev.inspector.enabled` | boolean | `true` | no | Hold Alt (Option on macOS) over visible UI text to reveal a ⌖ locate control; click it to see the source file. |
+| `dev.inspector.enabled` | boolean | `true` | no | Hold Alt (Option on macOS) over visible UI text to reveal a **Locate source** pill; click it to see the source file. |
 | `dev.inspector.editorCommand` | string | `""` | no | Optional editor launcher, e.g. `zed {file}:{line}`. Placeholders `{file}` and `{line}`; omit `{line}` to open without a line number. Copy path works with no command configured. |
 
 Template copy is attributed at build time with `data-repoos-file` / `data-repoos-line`

@@ -43,6 +43,9 @@ const editorConfigured = computed(() => {
   return typeof cmd === "string" && cmd.trim().length > 0;
 });
 
+const EDITOR_HINT =
+  "Open in editor is off until an editor command is set: Settings → Advanced → “Copy inspector: editor command” (e.g. zed {file}:{line}).";
+
 const popupStyle = computed(() => {
   const pad = 12;
   const w = 320;
@@ -206,10 +209,24 @@ onUnmounted(() => {
         type="button"
         class="copy-inspector-affordance"
         :style="affordanceStyle"
-        title="Locate source (Alt+click)"
+        title="Show which source file this text comes from"
         @pointerdown.stop.prevent="openFromAffordance"
       >
-        ⌖
+        <svg
+          class="copy-inspector-affordance-icon"
+          viewBox="0 0 16 16"
+          width="14"
+          height="14"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <circle cx="8" cy="8" r="4.5" />
+          <path d="M8 1v3M8 12v3M1 8h3M12 8h3" />
+        </svg>
+        <span>Locate source</span>
       </button>
       <div
         v-if="popup"
@@ -228,12 +245,14 @@ onUnmounted(() => {
             variant="outline"
             size="sm"
             :disabled="!editorConfigured || opening"
+            :title="editorConfigured ? undefined : EDITOR_HINT"
             @click="openInEditor"
           >
             Open in editor
           </Button>
           <Button variant="ghost" size="sm" @click="closePopup">Close</Button>
         </div>
+        <p v-if="!editorConfigured" class="copy-inspector-msg">{{ EDITOR_HINT }}</p>
         <p v-if="popupMsg" class="copy-inspector-msg">{{ popupMsg }}</p>
       </div>
     </Teleport>
@@ -248,17 +267,26 @@ onUnmounted(() => {
 .copy-inspector-affordance {
   position: fixed;
   z-index: 200;
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px 0 8px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
   background: var(--panel-solid);
   color: var(--accent);
-  font-size: 14px;
+  font-size: 12px;
+  font-weight: 600;
   line-height: 1;
+  white-space: nowrap;
   cursor: crosshair;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
   pointer-events: auto;
+}
+
+.copy-inspector-affordance-icon {
+  flex: none;
 }
 
 .copy-inspector-pane {
