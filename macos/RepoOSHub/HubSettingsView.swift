@@ -8,7 +8,10 @@ enum HubSettingsOpener {
     static func open() {
         guard let app = NSApp else { return }
         if app.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil) { return }
-        _ = app.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
+        if app.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil) { return }
+        // Both selectors unhandled: the entry point would silently do
+        // nothing. Log so a future macOS/SwiftUI change is diagnosable.
+        NSLog("RepoOS Hub: could not open the settings window (showSettingsWindow:/showPreferencesWindow: unhandled)")
     }
 }
 
@@ -22,8 +25,8 @@ struct HubAppVersionInfo {
         let build = (bundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String)?
             .trimmingCharacters(in: .whitespacesAndNewlines)
         return HubAppVersionInfo(
-            shortVersion: (version?.isEmpty == false) ? version! : "Unknown",
-            build: (build?.isEmpty == false) ? build! : "Unknown"
+            shortVersion: version.flatMap { $0.isEmpty ? nil : $0 } ?? "Unknown",
+            build: build.flatMap { $0.isEmpty ? nil : $0 } ?? "Unknown"
         )
     }
 

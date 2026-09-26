@@ -89,8 +89,12 @@ enum HubUpdateResult: Equatable, Sendable {
     /// The direct DMG download, when the latest release actually ships one.
     /// Nil means offer the releases page instead of a download button.
     var downloadURL: URL? {
-        if case .available(_, _, let url) = self { return url }
-        return nil
+        switch self {
+        case .available(_, _, let url):
+            return url
+        case .notChecked, .checking, .upToDate, .couldNotCheck:
+            return nil
+        }
     }
 }
 
@@ -166,7 +170,15 @@ actor HubUpdateChecker {
             return existing.result
         }
         let result = await performCheck(currentVersion: currentVersion)
-        cached = (result, currentNow)
+        // Cache only definitive outcomes. A transient failure (offline,
+        // rate-limited) must not linger for six hours: reopening the window
+        // after one shows the idle prompt, and the button always re-checks.
+        switch result {
+        case .upToDate, .available:
+            cached = (result, currentNow)
+        case .notChecked, .checking, .couldNotCheck:
+            break
+        }
         return result
     }
 

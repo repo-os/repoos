@@ -45,7 +45,6 @@ struct HubWorkspaceToolbar: ToolbarContent {
             .help("RepoOS Hub settings")
             .accessibilityLabel("RepoOS Hub settings")
             .focusable()
-            .buttonStyle(.plain)
         }
     }
 

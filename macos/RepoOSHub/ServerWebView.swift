@@ -106,7 +106,7 @@ struct ServerWebView: NSViewRepresentable {
         weak var webView: WKWebView?
         var loadedOriginKey: String?
         private var commandObservers: [NSObjectProtocol] = []
-        private var systemAppearanceObserver: NSKeyValueObservation?
+        private var systemAppearanceObserver: NSObjectProtocol?
 
         init(model: ServerWebViewModel, appState: HubAppState) {
             self.model = model
@@ -116,6 +116,9 @@ struct ServerWebView: NSViewRepresentable {
         deinit {
             for observer in commandObservers {
                 NotificationCenter.default.removeObserver(observer)
+            }
+            if let systemAppearanceObserver {
+                DistributedNotificationCenter.default().removeObserver(systemAppearanceObserver)
             }
         }
 
@@ -199,16 +202,20 @@ struct ServerWebView: NSViewRepresentable {
         /// Pins this web view to the system appearance. SwiftUI's
         /// preferredColorScheme only styles the native shell, but the web
         /// view lives in that hierarchy — without this pin a forced Hub
-        /// scheme would leak into the page via NSAppearance. NSApp itself is
-        /// never overridden, so its effectiveAppearance stays the system one.
+        /// scheme would leak into the page via NSAppearance. The pin reads
+        /// the system setting directly (never `NSApp.effectiveAppearance`),
+        /// so it cannot resolve to the Hub override.
         func pinWebViewToSystemAppearance() {
-            let isDark = NSApp?.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
-            webView?.appearance = NSAppearance(named: isDark ? .darkAqua : .aqua)
+            webView?.appearance = HubSystemAppearance.appearance
         }
 
         func observeSystemAppearance() {
-            guard systemAppearanceObserver == nil, let app = NSApp else { return }
-            systemAppearanceObserver = app.observe(\.effectiveAppearance, options: .new) { [weak self] _, _ in
+            guard systemAppearanceObserver == nil else { return }
+            systemAppearanceObserver = DistributedNotificationCenter.default().addObserver(
+                forName: HubSystemAppearance.themeChangedNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
                 Task { @MainActor in
                     self?.pinWebViewToSystemAppearance()
                 }
