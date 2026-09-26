@@ -311,11 +311,22 @@ function stageClass(s: string, i: number): string {
           <span class="mono">#{{ active.taskId }}</span>
           <template v-if="active.failed"> integration failed</template>
           <template v-else>
-            integrating… <span class="mono dim">{{ active.stage ?? "" }}</span
-            ><span v-if="elapsed" class="mono dim strip-elapsed"> · {{ elapsed }}</span></template
-          >
+            integrating… <span class="mono dim">{{ active.stage ?? "" }}</span>
+            <span
+              v-if="elapsed"
+              class="ibar-chip mono"
+              :title="'Elapsed since integration started'"
+              >{{ elapsed }}</span
+            >
+          </template>
         </template>
         <template v-else>Integrating…</template>
+      </span>
+      <span v-if="!idle && queue.length" class="strip-queue" aria-label="Queued tasks">
+        <span class="strip-queue-label">Queue:</span>
+        <span v-for="q in queue" :key="q" class="ibar-chip mono" :title="'#' + q + ' queued'"
+          >#{{ q }}</span
+        >
       </span>
       <ChevronUp class="strip-chev" aria-hidden="true" />
     </button>
@@ -350,7 +361,7 @@ function stageClass(s: string, i: number): string {
             <template v-else> integrating</template>
             <span
               v-if="elapsed"
-              class="ibar-elapsed mono"
+              class="ibar-chip mono"
               :title="'Elapsed since integration started'"
               >{{ elapsed }}</span
             >
@@ -404,10 +415,11 @@ function stageClass(s: string, i: number): string {
         </template>
       </div>
 
-      <div v-if="queue.length" class="ibar-queue">
-        <span class="queue-label">Queue</span>
-        <span v-for="q in queue" :key="q" class="queue-item mono">#{{ q }} queueing…</span>
-        <span class="queue-count">+{{ queue.length }}</span>
+      <div v-if="queue.length" class="ibar-queue" aria-label="Queued tasks">
+        <span class="queue-label">Queue:</span>
+        <span v-for="q in queue" :key="q" class="ibar-chip mono" :title="'#' + q + ' queued'"
+          >#{{ q }}</span
+        >
       </div>
     </div>
 
@@ -517,7 +529,7 @@ function stageClass(s: string, i: number): string {
   color: var(--txt-faint);
 }
 
-.ibar-elapsed {
+.ibar-chip {
   font-size: 11.5px;
   font-weight: 600;
   color: var(--txt-dim);
@@ -525,10 +537,7 @@ function stageClass(s: string, i: number): string {
   border-radius: 999px;
   padding: 1px 8px;
   font-variant-numeric: tabular-nums;
-}
-
-.strip-elapsed {
-  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .stages {
@@ -695,20 +704,23 @@ function stageClass(s: string, i: number): string {
 
 .queue-label {
   color: var(--txt-faint);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: 12px;
 }
 
-.queue-item {
-  color: var(--txt-dim);
-  background: var(--chip-bg);
-  border-radius: 999px;
-  padding: 2px 10px;
+.strip-queue {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex-shrink: 1;
+  overflow: hidden;
 }
 
-.queue-count {
+.strip-queue-label {
   color: var(--txt-faint);
+  font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* Collapsed thin strip */
@@ -754,6 +766,10 @@ function stageClass(s: string, i: number): string {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.strip-label .ibar-chip {
+  margin-left: 6px;
 }
 
 .dim {

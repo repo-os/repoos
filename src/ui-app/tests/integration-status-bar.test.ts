@@ -284,4 +284,63 @@ describe("IntegrationStatusBar", () => {
     expect(style).toContain("min-width: 400px");
     expect(style).toContain("max-width: 400px");
   });
+
+  it("renders elapsed time as a chip pill in expanded and minimised views (#0522)", async () => {
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    repo.integration = activeSnapshot();
+    ui.setIntegrationBarCollapsed(false);
+    const expanded = render();
+    await nextTick();
+
+    const expandedChip = expanded.find(".ibar .ibar-chip");
+    expect(expandedChip.exists()).toBe(true);
+    expect(expandedChip.text()).toBe("3m 07s");
+    expect(expandedChip.classes()).toContain("mono");
+
+    ui.setIntegrationBarCollapsed(true);
+    await nextTick();
+    const stripChip = expanded.find(".ibar-strip .strip-label .ibar-chip");
+    expect(stripChip.exists()).toBe(true);
+    expect(stripChip.text()).toBe("3m 07s");
+    expect(expanded.find(".strip-elapsed").exists()).toBe(false);
+  });
+
+  it("shows queued task ids as chips in expanded and minimised views (#0522)", async () => {
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    repo.integration = {
+      ...activeSnapshot(),
+      queue: ["0455", "0456"],
+    };
+    ui.setIntegrationBarCollapsed(false);
+    const wrapper = render();
+    await nextTick();
+
+    const expandedQueue = wrapper.find(".ibar-queue");
+    expect(expandedQueue.text()).toContain("Queue:");
+    expect(expandedQueue.text()).toContain("#0455");
+    expect(expandedQueue.text()).toContain("#0456");
+    expect(expandedQueue.text()).not.toContain("queueing");
+    expect(wrapper.find(".queue-count").exists()).toBe(false);
+    expect(expandedQueue.findAll(".ibar-chip")).toHaveLength(2);
+
+    ui.setIntegrationBarCollapsed(true);
+    await nextTick();
+    const stripQueue = wrapper.find(".strip-queue");
+    expect(stripQueue.exists()).toBe(true);
+    expect(stripQueue.text()).toBe("Queue:#0455#0456");
+    expect(stripQueue.findAll(".ibar-chip")).toHaveLength(2);
+  });
+
+  it("hides the minimised queue segment when nothing is queued (#0522)", async () => {
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    repo.integration = activeSnapshot();
+    ui.setIntegrationBarCollapsed(true);
+    const wrapper = render();
+    await nextTick();
+
+    expect(wrapper.find(".strip-queue").exists()).toBe(false);
+  });
 });
