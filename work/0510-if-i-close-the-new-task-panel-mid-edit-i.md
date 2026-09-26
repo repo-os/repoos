@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+review_model_override: opencode-go/hy3
 created_at: "2026-09-26T03:15:14Z"
-updated_at: "2026-09-26T03:15:28Z"
+updated_at: "2026-09-26T03:20:02Z"
 ---
 ## Problem
 
@@ -119,3 +120,4 @@ If I close the new task panel mid-edit it currently keeps the text in the freefo
 - 2026-09-26T03:15:14Z · screenshots
 - 2026-09-26T03:15:15Z · screenshots
 - 2026-09-26T03:15:28Z · status draft→inbox, title, area, type, body
+- 2026-09-26T03:20:02Z · review_model_override
