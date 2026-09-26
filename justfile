@@ -168,8 +168,21 @@ kill:
     if [ -n "$pids" ]; then
         echo "killing stale process(es) on port $port: $pids"
         echo "$pids" | xargs kill
-        sleep 0.5
     fi
+
+    # A graceful RepoOS stop can take longer than half a second while it
+    # flushes durable state. Do not start the replacement until the port is
+    # actually free, or the new process will fail with a misleading
+    # "port already in use" error and the readiness loop will wait needlessly.
+    deadline=$((SECONDS + 15))
+    while lsof -nP -iTCP:"$port" -sTCP:LISTEN -t >/dev/null 2>&1; do
+        if (( SECONDS >= deadline )); then
+            echo "ERROR: port $port is still in use 15s after stopping the server"
+            lsof -nP -iTCP:"$port" -sTCP:LISTEN || true
+            exit 1
+        fi
+        sleep 0.2
+    done
 
 # restart: build, stop, start, and wait for the HTTP health check
 [group('dev')]
