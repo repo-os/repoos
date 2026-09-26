@@ -16,13 +16,18 @@ const isCommitDiff = computed(() => Boolean(commitSha.value));
 const targetFile = computed(() => (route.query.file as string) ?? "");
 
 const commitDiff = ref<{ patch: string; truncated: boolean } | null>(null);
+const loadError = ref<string | null>(null);
 
 onMounted(async () => {
   if (isCommitDiff.value) {
-    const data = await api<{ ok: boolean; patch?: string; truncated?: boolean }>(
-      `/api/repo/commits/${encodeURIComponent(commitSha.value)}`,
-    );
-    commitDiff.value = { patch: data.patch ?? "", truncated: Boolean(data.truncated) };
+    try {
+      const data = await api<{ ok: boolean; patch?: string; truncated?: boolean }>(
+        `/api/repo/commits/${encodeURIComponent(commitSha.value)}`,
+      );
+      commitDiff.value = { patch: data.patch ?? "", truncated: Boolean(data.truncated) };
+    } catch (err) {
+      loadError.value = err instanceof Error ? err.message : "Failed to load commit";
+    }
     return;
   }
   if (!repo.diffFor(taskId.value)) {
@@ -608,7 +613,8 @@ function nextFile(): void {
     </div>
 
     <div class="diff-page-body">
-      <div v-if="!taskDiff" class="diff-page-loading">Loading diff…</div>
+      <div v-if="loadError" class="diff-page-loading">{{ loadError }}</div>
+      <div v-else-if="!taskDiff" class="diff-page-loading">Loading diff…</div>
       <div v-else-if="!currentFile" class="diff-page-loading">No diff available.</div>
       <template v-else>
         <!-- Left panel: before -->

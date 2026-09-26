@@ -80,11 +80,17 @@ export function isValidBranch(value: string): boolean {
   return BRANCH_RE.test(value);
 }
 
+/** Strip trailing slashes so `src/ui-app/` is the same filter as `src/ui-app`. */
+export function normalizePathFilter(value: string): string {
+  return value.trim().replace(/\/+$/, "");
+}
+
 export function isValidPathFilter(value: string): boolean {
-  if (!value || value.length > 1024) return false;
-  if (value.startsWith("/") || value.startsWith("~")) return false;
-  if (value.includes("\0") || value.includes("\\")) return false;
-  const parts = value.split("/");
+  const path = normalizePathFilter(value);
+  if (!path || path.length > 1024) return false;
+  if (path.startsWith("/") || path.startsWith("~")) return false;
+  if (path.includes("\0") || path.includes("\\")) return false;
+  const parts = path.split("/");
   if (parts.some((p) => p === ".." || p === "")) return false;
   return true;
 }
@@ -213,6 +219,7 @@ export async function listRepoLog(
   if (!isValidBranch(branch) && branch !== "HEAD") {
     return { ok: false, error: "invalid branch", code: "invalid" };
   }
+  const pathFilter = opts.path ? normalizePathFilter(opts.path) : "";
   if (opts.path && !isValidPathFilter(opts.path)) {
     return { ok: false, error: "invalid path", code: "invalid" };
   }
@@ -230,7 +237,7 @@ export async function listRepoLog(
     "--decorate=short",
     revision,
   ];
-  if (opts.path) args.push("--", opts.path);
+  if (pathFilter) args.push("--", pathFilter);
 
   const run = await runGit(root, args, LOG_TIMEOUT_MS);
   if (run.timedOut) return { ok: false, error: "git log timed out", code: "missing" };
@@ -256,7 +263,37 @@ export async function listRepoLog(
   return { ok: true, commits, nextCursor, branch, defaultBranch };
 }
 
-function parseCommitNumstat(statOutput: string): RepoCommitFile[] {
+/**
+ * `git diff-tree SHA` prints nothing for merge commits (no `-m`/`--cc`).
+ * Compare against the first parent instead, matching GitHub-style merge diffs.
+ * Root commits have no parent — keep `diff-tree --root`.
+ */
+function commitTreeDiffArgs(sha: string, parents: string[], extra: string[]): string[] {
+  if (parents.length === 0) {
+    return ["diff-tree", "--no-commit-id", "--root", "-r", ...extra, sha];
+  }
+  return ["diff", ...extra, `${sha}^1`, sha];
+}
+
+function parseNameStatus(output: string): Map<string, Exclude<RepoCommitFile["status"], "binary">> {
+  const map = new Map<string, Exclude<RepoCommitFile["status"], "binary">>();
+  for (const line of output.split("\n")) {
+    if (!line) continue;
+    const parts = line.split("\t");
+    const letter = parts[0]?.[0];
+    const path = parts.length >= 3 ? parts[parts.length - 1] : parts[1];
+    if (!letter || !path) continue;
+    if (letter === "A") map.set(path, "added");
+    else if (letter === "D") map.set(path, "deleted");
+    else map.set(path, "modified");
+  }
+  return map;
+}
+
+function parseCommitNumstat(
+  statOutput: string,
+  nameStatus?: Map<string, Exclude<RepoCommitFile["status"], "binary">>,
+): RepoCommitFile[] {
   const files: RepoCommitFile[] = [];
   for (const line of statOutput.split("\n")) {
     const match = line.match(/^(\d+|-)\t(\d+|-)\t(.+)$/);
@@ -267,6 +304,7 @@ function parseCommitNumstat(statOutput: string): RepoCommitFile[] {
     const deletions = binary ? 0 : parseInt(match[2]!, 10);
     let status: RepoCommitFile["status"] = "modified";
     if (binary) status = "binary";
+    else if (nameStatus?.has(path)) status = nameStatus.get(path)!;
     else if (additions > 0 && deletions === 0) status = "added";
     else if (deletions > 0 && additions === 0) status = "deleted";
     files.push({ path, additions, deletions, status });
@@ -274,15 +312,12 @@ function parseCommitNumstat(statOutput: string): RepoCommitFile[] {
   return files;
 }
 
-function truncatePatch(stdout: string): DiffResult {
+export function truncatePatch(stdout: string): DiffResult {
   const buf = Buffer.from(stdout, "utf8");
   if (buf.byteLength <= MAX_DIFF_BYTES) return { patch: stdout, truncated: false };
-  let truncated = stdout;
-  while (Buffer.from(truncated, "utf8").byteLength > MAX_DIFF_BYTES) {
-    truncated = truncated.slice(0, -1024);
-  }
-  truncated += `\n\n--- diff truncated (${(buf.byteLength / 1024).toFixed(0)} kB total) ---`;
-  return { patch: truncated, truncated: true };
+  const sliced = buf.subarray(0, MAX_DIFF_BYTES).toString("utf8");
+  const note = `\n\n--- diff truncated (${(buf.byteLength / 1024).toFixed(0)} kB total) ---`;
+  return { patch: sliced + note, truncated: true };
 }
 
 export async function getRepoCommit(
@@ -292,26 +327,30 @@ export async function getRepoCommit(
   if (!isGitRepo(root)) return { ok: false, error: "not a git repository", code: "not-git" };
   if (!isValidSha(sha)) return { ok: false, error: "invalid sha", code: "invalid" };
 
-  const metaRun = await runGit(root, ["log", "-1", `--pretty=format:${LOG_FORMAT}`, sha], 8000);
+  const metaRun = await runGit(
+    root,
+    ["log", "-1", `--pretty=format:${LOG_FORMAT}`, "--decorate=short", sha],
+    8000,
+  );
   if (metaRun.status !== 0 || metaRun.timedOut) {
     return { ok: false, error: "commit not found", code: "missing" };
   }
   const [commit] = parseGitLogOutput(metaRun.stdout);
   if (!commit) return { ok: false, error: "commit not found", code: "missing" };
 
-  const statRun = await runGit(
-    root,
-    ["diff-tree", "--no-commit-id", "--root", "-r", "--numstat", sha],
-    DIFF_TIMEOUT_MS,
-  );
+  const diffBase = commit.parents;
+  const [statRun, nameRun, patchRun] = await Promise.all([
+    runGit(root, commitTreeDiffArgs(sha, diffBase, ["--numstat"]), DIFF_TIMEOUT_MS),
+    runGit(root, commitTreeDiffArgs(sha, diffBase, ["--name-status"]), DIFF_TIMEOUT_MS),
+    runGit(root, commitTreeDiffArgs(sha, diffBase, ["--patch"]), DIFF_TIMEOUT_MS),
+  ]);
+  const nameStatus =
+    nameRun.status === 0 && !nameRun.timedOut ? parseNameStatus(nameRun.stdout.trim()) : undefined;
   const files =
-    statRun.status === 0 && !statRun.timedOut ? parseCommitNumstat(statRun.stdout.trim()) : [];
+    statRun.status === 0 && !statRun.timedOut
+      ? parseCommitNumstat(statRun.stdout.trim(), nameStatus)
+      : [];
 
-  const patchRun = await runGit(
-    root,
-    ["diff-tree", "--no-commit-id", "--root", "-r", "--patch", sha],
-    DIFF_TIMEOUT_MS,
-  );
   const patchOut = patchRun.status === 0 || patchRun.stdout ? patchRun.stdout : "";
   const { patch, truncated } = truncatePatch(patchOut);
 

@@ -182,3 +182,64 @@ describe("DiffView full-file syntax highlighting (#0449)", () => {
     wrapper.unmount();
   });
 });
+
+describe("DiffView commit mode (#0514)", () => {
+  const sha = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+  async function mountCommitView(): Promise<VueWrapper> {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: "/tasks/:taskId/diff", name: "diff", component: DiffView },
+        { path: "/repo/commits/:sha", name: "commit-diff", component: DiffView },
+      ],
+    });
+    await router.push({
+      name: "commit-diff",
+      params: { sha },
+      query: { file: fixture.filename },
+    });
+    await router.isReady();
+    const wrapper = mount(DiffView, { global: { plugins: [pinia, router] } });
+    await flushPromises();
+    return wrapper;
+  }
+
+  it("renders a readable commit patch", async () => {
+    fixture = {
+      filename: "src/app.ts",
+      before: ["const a = 1;"],
+      after: ["const a = 1;", "const b = 2;"],
+    };
+    api.mockImplementation(async (path: string) => {
+      if (path === `/api/repo/commits/${sha}`) {
+        return { ok: true, patch: makePatch(fixture), truncated: false };
+      }
+      if (path.includes("/file?")) {
+        return {
+          before: `${fixture.before.join("\n")}\n`,
+          after: `${fixture.after.join("\n")}\n`,
+          existsBefore: true,
+          existsAfter: true,
+        };
+      }
+      throw new Error(`unexpected api call: ${path}`);
+    });
+    const wrapper = await mountCommitView();
+    await waitFor(() => wrapper.text().includes("const b = 2;"));
+    expect(wrapper.text()).not.toContain("Loading diff…");
+    expect(wrapper.text()).not.toContain("No diff available.");
+    wrapper.unmount();
+  });
+
+  it("shows an error instead of hanging when the commit fetch fails", async () => {
+    fixture = { filename: "src/app.ts", before: ["a"], after: ["b"] };
+    api.mockRejectedValue(new Error("commit not found"));
+    const wrapper = await mountCommitView();
+    await waitFor(() => wrapper.text().includes("commit not found"));
+    expect(wrapper.text()).not.toContain("Loading diff…");
+    wrapper.unmount();
+  });
+});
