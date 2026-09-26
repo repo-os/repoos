@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0514"
 title: Add git History tab to the Context page
 type: feature
@@ -79,3 +80,4 @@ Rejected: **Checks** (about gating pass/fail; a log there blurs its purpose, but
 - 2026-09-26T05:58:12Z · status inbox→ready
 - 2026-09-26T06:07:22Z · model_override
 - 2026-09-26T06:07:24Z · status ready→active, branch
+
