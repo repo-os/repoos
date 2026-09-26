@@ -316,6 +316,7 @@ import {
   createSupportBundle,
   revealSupportBundle,
   generateBugReport,
+  postCopyInspectorOpen,
 } from "./routes/index.js";
 
 function findCloudflared(): string | null {
@@ -2274,6 +2275,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("PATCH", "/api/config", patchConfig);
   router.register("GET", "/api/config/raw", readRawConfig);
   router.register("PUT", "/api/config/raw", writeRawConfig);
+  router.register("POST", "/api/dev/copy-inspector/open", postCopyInspectorOpen);
 
   // Model routes
   router.register("GET", "/api/models", listModels);

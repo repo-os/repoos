@@ -24,6 +24,7 @@ const srcDir = join(root, "src");
 const buildInfo = {
   hash: "",
   version: "",
+  devUi: process.env.REPOOS_SHIP !== "1",
 };
 
 // Record the package version so the served UI can display it. Best-effort.
