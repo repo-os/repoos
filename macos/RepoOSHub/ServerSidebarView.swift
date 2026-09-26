@@ -43,6 +43,11 @@ struct ServerSidebarView: View {
             }
         }
         .listStyle(.sidebar)
+        // Sidebar materials can retain the system's dark translucency after
+        // the Hub has selected Light. Supply an opaque shell background so
+        // this native surface matches the chosen appearance too.
+        .scrollContentBackground(.hidden)
+        .background(sidebarBackground)
         .navigationTitle("RepoOS")
         .safeAreaInset(edge: .bottom, spacing: 0) {
             Button {
@@ -61,6 +66,17 @@ struct ServerSidebarView: View {
             if appState.entries.isEmpty {
                 SidebarEmptyHint()
             }
+        }
+    }
+
+    private var sidebarBackground: Color {
+        switch appState.hubGlobalPreferences.appearance {
+        case .dark:
+            return .black
+        case .light:
+            return .white
+        case .system:
+            return Color(nsColor: .windowBackgroundColor)
         }
     }
 }
