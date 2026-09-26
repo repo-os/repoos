@@ -3,9 +3,6 @@ id: "0506"
 title: Group consecutive tool calls into one expandable chat row
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: "the opencode agent exited without output: no output produced"
 priority: p1
 area: web
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: opencode-go/space-bunny-free
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-26T01:56:07Z"
-updated_at: "2026-09-26T03:07:28Z"
+updated_at: "2026-09-26T03:08:47Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -241,3 +238,4 @@ Currently there are many more tool calls than actual messages in the AI chat log
 - 2026-09-26T03:06:45Z · review_model_override
 - 2026-09-26T03:07:27Z · review_cli_override, review_model_override
 - 2026-09-26T03:07:28Z · review_model_override
+- 2026-09-26T03:08:47Z · needs_input
