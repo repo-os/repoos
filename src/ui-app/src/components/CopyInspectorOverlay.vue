@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, shallowRef } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef, watch } from "vue";
 import { Teleport } from "vue";
 import { api, JSON_OPTS } from "../api";
 import Button from "./ui/button.vue";
@@ -48,11 +48,25 @@ const editorConfigured = computed(() => {
 const EDITOR_HINT =
   "Open in editor is off until an editor command is set: Settings → Advanced → “Copy inspector: editor command” (e.g. zed {file}:{line}).";
 
+/** Measured popup height (falls back to an estimate until first render). */
+const popupHeight = ref(140);
+
+async function measurePopup(): Promise<void> {
+  await nextTick();
+  const h = paneRef.value?.offsetHeight;
+  if (h) popupHeight.value = h;
+}
+
 const popupStyle = computed(() => {
   const pad = 12;
-  const w = 320;
+  const w = Math.min(500, window.innerWidth - pad * 2);
+  const h = popupHeight.value;
   const x = Math.min(Math.max(pad, popupPos.value.x - w / 2), window.innerWidth - w - pad);
-  const y = Math.max(pad, Math.min(popupPos.value.y, window.innerHeight - 160));
+  // Below the pointer by default; flip above it when that would run off the
+  // bottom, then clamp so it never leaves the viewport.
+  let y = popupPos.value.y;
+  if (y + h > window.innerHeight - pad) y = popupPos.value.y - 24 - h;
+  y = Math.min(Math.max(pad, y), Math.max(pad, window.innerHeight - h - pad));
   return { left: `${x}px`, top: `${y}px`, width: `${w}px` };
 });
 
@@ -179,6 +193,10 @@ function isEditableFocus(): boolean {
     el.tagName === "SELECT"
   );
 }
+
+watch([popup, popupMsg], () => {
+  if (popup.value) void measurePopup();
+});
 
 function closePopup(): void {
   popup.value = null;
@@ -414,8 +432,18 @@ onUnmounted(() => {
 
 .copy-inspector-actions {
   margin: 0;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
+}
+
+.copy-inspector-actions :deep(button) {
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .copy-inspector-actions {
+    flex-wrap: wrap;
+  }
 }
 
 .copy-inspector-msg {
