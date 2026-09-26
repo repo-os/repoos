@@ -2,7 +2,7 @@
 id: "0509"
 title: Add a dev-only click-to-locate inspector for UI copy
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: ""
 review_model_override: opencode-go/space-bunny-free
 created_at: "2026-09-26T03:12:15Z"
-updated_at: "2026-09-26T04:39:33Z"
+updated_at: "2026-09-26T04:39:35Z"
 ---
 ## Problem
 
@@ -168,3 +168,4 @@ Sometimes I want to edit the repoos code myself, particularly with simple copy c
 - 2026-09-26T03:12:16Z · screenshots
 - 2026-09-26T03:13:19Z · status draft→inbox, title, area, body
 - 2026-09-26T04:39:33Z · review_model_override
+- 2026-09-26T04:39:35Z · status inbox→ready
