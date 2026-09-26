@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 import { needsInputPrimaryAction } from "../src/lib/needs-input-ui";
 
 describe("needsInputPrimaryAction (#0511)", () => {
-  it("does not offer Restart work for watchdog-stuck on a review task", () => {
+  it("offers Review again for watchdog-stuck on a review task", () => {
     expect(
       needsInputPrimaryAction("watchdog-stuck", false, {
         status: "review",
         agentRunning: false,
-      }),
-    ).toBeNull();
+      })?.kind,
+    ).toBe("review");
   });
 
   it("does not offer Restart work on a review task for dev-error", () => {

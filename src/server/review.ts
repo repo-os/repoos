@@ -922,8 +922,9 @@ export class ReviewManager {
     // A review that finally comes back clean resolves the exact problem that
     // escalated this task to needsInput in the first place (the reviewer
     // crashing/timing out) — clear it so the task doesn't sit flagged forever
-    // on a stale failure. Scoped to reason "review-failed" specifically: an
-    // unrelated needsInput (e.g. a CTO policy question) must survive a review
+    // on a stale failure. Scoped to the reviewer-episode reasons (see
+    // needsInputClearsOnSuccessfulReview): an unrelated needsInput (e.g. a CTO
+    // policy question) must survive a review
     // that happens to succeed around the same time.
     if (state === "ok" && task.needsInput && needsInputClearsOnSuccessfulReview(task)) {
       try {

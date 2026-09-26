@@ -124,6 +124,7 @@ export function needsInputPrimaryAction(
     case "review-failed":
       return ctx.status === "review" ? REVIEW_AGAIN_ACTION : null;
     case "watchdog-stuck":
+      if (ctx.status === "review") return REVIEW_AGAIN_ACTION;
       return canRestartWork(ctx) ? RESTART_ACTION : null;
     case "dev-error":
     case "check-failed-after-retries":
