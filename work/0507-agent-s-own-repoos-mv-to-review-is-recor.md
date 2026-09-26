@@ -3,6 +3,9 @@ id: "0507"
 title: Unify every route into review behind the handoff finalization
 type: bug
 status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p1
 area: server
 assigned_to: ai
@@ -12,7 +15,8 @@ cli_override: opencode
 model_override: opencode-go/space-bunny-free
 review_model_override: opencode/muse-spark-1.3-contributor-free
 created_at: "2026-09-26T02:27:03Z"
-updated_at: "2026-09-26T08:22:22Z"
+updated_at: "2026-09-26T08:22:27Z"
+dev_error_count: 1
 ---
 ## Problem
 
@@ -116,3 +120,4 @@ came last (`lastFailureLine`) — "Skill routing: …", "Server finalization: ch
 - 2026-09-26T04:48:50Z · note: ⏰ CTO monitor nudge: 16 minutes idle. Please confirm you're still working or provide a status update.
 - 2026-09-26T07:39:06Z · note: ⏰ CTO monitor nudge: 166 minutes idle. Please confirm you're still working or provide a status update.
 - 2026-09-26T08:22:22Z · status active→review
+- 2026-09-26T08:22:25Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
