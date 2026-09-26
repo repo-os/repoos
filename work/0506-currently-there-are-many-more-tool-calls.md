@@ -12,7 +12,8 @@ cli_override: opencode
 model_override: opencode-go/space-bunny-free
 review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-26T01:56:07Z"
-updated_at: "2026-09-26T02:28:04Z"
+updated_at: "2026-09-26T02:48:00Z"
+dev_error_count: 1
 ---
 ## Problem
 
@@ -229,3 +230,5 @@ Currently there are many more tool calls than actual messages in the AI chat log
 - 2026-09-26T02:03:36Z · review_model_override
 - 2026-09-26T02:03:41Z · status inbox→ready
 - 2026-09-26T02:28:04Z · status ready→active, branch
+- 2026-09-26T02:41:31Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-09-26T02:48:00Z · needs_input
