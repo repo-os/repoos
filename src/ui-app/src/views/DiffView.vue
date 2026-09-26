@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch, watchEffect } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useRepoStore } from "../stores/repo";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-vue-next";
@@ -521,6 +521,26 @@ function goBack(): void {
   router.back();
 }
 
+const EDITABLE_SELECTOR = "input, textarea, [contenteditable]";
+
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  return !!target.closest(EDITABLE_SELECTOR);
+}
+
+function onEscapeKey(e: KeyboardEvent): void {
+  if (e.key !== "Escape") return;
+  if (isEditableTarget(e.target)) return;
+  goBack();
+}
+
+onMounted(() => {
+  window.addEventListener("keydown", onEscapeKey);
+});
+onBeforeUnmount(() => {
+  window.removeEventListener("keydown", onEscapeKey);
+});
+
 function switchFile(filename: string): void {
   if (isCommitDiff.value) {
     router.replace({
@@ -555,10 +575,13 @@ function nextFile(): void {
 <template>
   <div class="diff-page">
     <div class="diff-page-topbar">
-      <button class="diff-back-btn" type="button" @click="goBack">
-        <ArrowLeft class="size-4" />
-        <span>Back</span>
-      </button>
+      <div class="diff-back-group">
+        <button class="diff-back-btn" type="button" @click="goBack">
+          <ArrowLeft class="size-4" />
+          <span>Back</span>
+        </button>
+        <kbd class="diff-back-esc-hint" aria-hidden="true">esc</kbd>
+      </div>
       <div class="diff-page-file">{{ currentFile?.filename ?? "" }}</div>
       <div v-if="currentFile" class="diff-file-delta">
         <span v-if="currentFile.added > 0" class="diff-file-add">+{{ currentFile.added }}</span>
@@ -690,6 +713,13 @@ function nextFile(): void {
   background: var(--panel-solid);
 }
 
+.diff-back-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
 .diff-back-btn {
   display: inline-flex;
   align-items: center;
@@ -707,6 +737,18 @@ function nextFile(): void {
 .diff-back-btn:hover {
   background: var(--nav-hover-bg);
   color: var(--txt);
+}
+
+.diff-back-esc-hint {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9.5px;
+  color: var(--txt-faint);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 4px;
+  flex-shrink: 0;
+  font-weight: normal;
+  line-height: 1.2;
 }
 
 .diff-page-file {
