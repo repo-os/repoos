@@ -20,8 +20,10 @@ Currently there are many more tool calls than actual messages in the AI chat log
 ## Screenshots
 
 ![Screenshot-2026-09-26-at-08.47.24](/api/tasks/0506/attachments/screenshot-1.png)
+![Screenshot-2026-09-26-at-08.40.54](/api/tasks/0506/attachments/screenshot-2.png)
 
 ## Activity
 
 - 2026-09-26T01:56:07Z · created · hello@repoos.org
+- 2026-09-26T01:56:08Z · screenshots
 - 2026-09-26T01:56:08Z · screenshots
