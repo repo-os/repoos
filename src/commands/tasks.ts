@@ -13,6 +13,7 @@ import { boardRoot, loadConfig, resolveColumnLabels } from "../core/config.js";
 import { STATUSES, type Status, type Task } from "../core/types.js";
 import { c, statusColor, priorityColor } from "../cli/colors.js";
 import { patchTaskFile, type TaskPatch } from "../server/write.js";
+import { writeHandoffRequest, type HandoffRequest } from "../server/handoff-request.js";
 import { isAncestor } from "../core/git.js";
 
 /**
@@ -148,40 +149,108 @@ function detectMainBranch(root: string): string | null {
 }
 
 /**
+ * True when this process is a managed agent working on `id` — the runner
+ * injects `REPOOS_AGENT=1` into every managed agent process, and
+ * `REPOOS_TASK_ID` / `REPOOS_RUN_ID` into a task turn (agents.ts). Both must
+ * match: without the run id the recorded request could not be tied to a live
+ * turn, and without the task id this would hijack `repoos mv` calls an agent
+ * makes about some OTHER task. A human in their own shell has neither, so they
+ * keep the plain status edit (which the server still runs through the same
+ * finalization via the file-watch route).
+ */
+export function isRunnerSessionForTask(id: string): boolean {
+  return (
+    process.env.REPOOS_AGENT === "1" &&
+    Boolean(process.env.REPOOS_RUN_ID) &&
+    process.env.REPOOS_TASK_ID === id
+  );
+}
+
+/**
+ * #0507: record a handoff request instead of flipping `status: review`, when
+ * the task's own agent is the one asking. Returns true when the request was
+ * recorded and `cmdMv` must stop there. On failure it returns false so the
+ * caller falls through to the ordinary status edit — worse, but never a dead
+ * end for the agent mid-turn.
+ */
+function handoffRequestFromRunner(id: string): boolean {
+  if (!isRunnerSessionForTask(id)) return false;
+  const { root } = boardRoot();
+  const request: HandoffRequest = {
+    taskId: id,
+    runId: process.env.REPOOS_RUN_ID as string,
+    at: new Date().toISOString(),
+    source: "repoos-mv",
+  };
+  if (!writeHandoffRequest(root, loadConfig(root).cacheDir, request)) {
+    console.error(
+      c.red(`  Could not record a handoff request for #${id} — `) +
+        c.dim("RepoOS could not write its handoff-request file."),
+    );
+    console.error(
+      c.dim(
+        "  Falling back to a plain status edit, which SKIPS the checks and stops this " +
+          "agent mid-turn. Prefer ending your turn and letting the reviewer pick it up.",
+      ),
+    );
+    return false;
+  }
+  console.log(
+    "  " +
+      c.green("handoff requested ") +
+      c.dim("#" + id) +
+      c.dim(" —") +
+      "\n" +
+      c.dim("  RepoOS will run `repoos check`, pass the commit gate, and move this to review."),
+  );
+  console.log(c.dim("  `status:` was left alone — end your turn now; finalization runs on exit."));
+  return true;
+}
+
+/**
  * `repoos mv <id> <status>` — change status (frontmatter edit).
  *
- * Deliberately does NOT run this transition through `guardReviewTransition`
- * (#0263), even for a move into `review`. That gate lives in the HTTP PATCH
- * path because it operates on the task's OWN branch worktree — staging and
- * committing pending implementation changes there and rejecting a vacuous
- * (zero-source-change) transition — which is an agent-handoff guarantee, not
- * a board-write guarantee. `repoos mv` is the low-level, generic "edit this
- * frontmatter field" tool (a human or script can move ANY task to ANY status,
- * with or without a branch or worktree at all); forcing every review move
- * through worktree resolution would turn a one-line status edit into a hard
- * dependency on handoff plumbing that plenty of legitimate `mv` calls don't
- * have. The bug this task fixes is narrower and applies to every status
- * change here regardless of target: `updateStatus` (via `rewrite()` in
- * core/repoos.ts) now always commits the task file in the main checkout, so
- * the write itself is never left as an untrusted dirty file. Agents that want
- * the full handoff guarantee (implementation committed + non-vacuous) should
- * go through the trusted handoff/PATCH path, not this CLI shortcut.
+ * Two transitions are special-cased, because both are ones this command
+ * cannot perform on its own.
  *
- * `done` gets one narrow exception to the "generic, no side checks" rule
- * above (confirmed live, 2026-09-17 — see #0399 and the #0185/#0389 incidents
- * in this session): unlike every other status, `done` claims the task's code
- * is actually on `main`. The server's own HTTP PATCH route already refuses a
- * bare `status: "done"` for exactly this reason (routes/tasks.ts) and forces
- * callers through `POST /api/tasks/:id/done`, the real close-out pipeline —
- * but this CLI command never went through that route to begin with, so it
- * silently flips the flag with zero merge awareness. If the task has a
- * `branch` that still exists locally and is NOT an ancestor of main, that
- * branch's code has not landed; refuse rather than mark it done from under
- * the user. This intentionally fails OPEN (allows the move) whenever it
- * can't tell for sure — no branch recorded, the branch was already deleted
- * (the normal post-merge cleanup), or git can't answer the ancestry question
- * — so it never blocks the many legitimate `mv` calls that have nothing to
- * do with code at all.
+ * **`review` from inside the runner session for that same task (#0507)** does
+ * NOT flip `status:`. It records a handoff request in the board's cache dir
+ * (`.repoos/handoff-requests/<id>.json`) and exits 0; the runner picks that up
+ * exactly like the `::repoos-handoff-ready::` signal and finalizes when the
+ * turn ends — scoped `repoos check`, then the commit/vacuity gate, then
+ * `review`. This is the single most-used route in practice: engineers reach for
+ * it because the CTO nudge says "hand off to review" and the operating loop
+ * says "set `status: review`". A bare frontmatter write is not a handoff — it
+ * skips the check, and because the task leaves `active` the server stops the
+ * very agent that asked, which `cleanup()` then books as a dev error (#0505,
+ * #0499: "needs input" next to "waiting for human" on a task that passed
+ * review). Detection is the runner's own marker — `REPOOS_AGENT=1` plus a
+ * `REPOOS_TASK_ID` equal to the id being moved — so a human running the same
+ * command in their own shell still gets a plain status edit, picked up by the
+ * server and run through the same finalization via the file-watch route.
+ *
+ * `done` gets a narrow guard for the mirror-image reason (confirmed live,
+ * 2026-09-17 — see #0399 and the #0185/#0389 incidents in this session):
+ * unlike every other status, `done` claims the task's code is actually on
+ * `main`. The server's own HTTP PATCH route already refuses a bare
+ * `status: "done"` for exactly this reason (routes/tasks.ts) and forces callers
+ * through `POST /api/tasks/:id/done`, the real close-out pipeline — but this CLI
+ * command never went through that route to begin with, so it silently flips the
+ * flag with zero merge awareness. If the task has a `branch` that still exists
+ * locally and is NOT an ancestor of main, that branch's code has not landed;
+ * refuse rather than mark it done from under the user. This intentionally fails
+ * OPEN (allows the move) whenever it can't tell for sure — no branch recorded,
+ * the branch was already deleted (the normal post-merge cleanup), or git can't
+ * answer the ancestry question — so it never blocks the many legitimate `mv`
+ * calls that have nothing to do with code at all.
+ *
+ * Every other status is a plain frontmatter edit. `updateStatus` (via
+ * `rewrite()` in core/repoos.ts) always commits the task file in the main
+ * checkout, so the write itself is never left as an untrusted dirty file. Note
+ * that a move into `review` from OUTSIDE a runner session still goes through
+ * the full server-side finalization — the server intercepts the file write and
+ * runs the same check the handoff signal does, keeping the task `active` until
+ * it passes.
  */
 export function cmdMv(
   id?: string,
@@ -204,6 +273,7 @@ export function cmdMv(
   // .git) is a silent no-op from the board's perspective.
   const repoos = boardRepoOS();
   try {
+    if (status === "review" && handoffRequestFromRunner(id)) return;
     if (status === "done" && !opts.force) {
       const existing = repoos.getTask(id);
       if (existing && existing.status !== "done" && existing.branch) {

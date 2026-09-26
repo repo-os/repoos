@@ -727,7 +727,13 @@ describe("server-owned handoff mission (#0094)", () => {
       expect(mission).toContain("never `dist/`");
       expect(mission).toContain("build artifacts created by `repoos check` stay local");
       expect(mission).toContain(HANDOFF_READY_SIGNAL);
-      expect(mission).toContain("RepoOS will independently run `repoos check`");
+      // #0507: `repoos mv <own id> review` is a supported synonym for the
+      // signal, and BOTH are requests — the mission must say so, or an agent
+      // reads "move to review" as a status write and kills its own turn doing it.
+      expect(mission).toContain("`repoos mv <this task's id> review`");
+      expect(mission).toContain("they are synonyms");
+      expect(mission).toContain("neither one moves the task");
+      expect(mission).toContain("you never set `status: review` yourself");
       expect(mission).toContain("do NOT emit the handoff-ready signal");
     } finally {
       process.env.PATH = oldPath;

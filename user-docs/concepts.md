@@ -83,9 +83,15 @@ works locally, in CI, and inside RepoOS's own close-out pipeline.
 
 ## Humans hold the merge
 
-An agent that finishes a task moves it to `review` and **stops**. It does not
-merge its own branch, and it can't — the merge happens only when a human moves
-the task to `done`.
+An agent that finishes a task asks for it to move to `review` and **stops**. It
+does not merge its own branch, and it can't — the merge happens only when a
+human moves the task to `done`.
+
+Reaching `review` is a request, not a status edit: RepoOS commits the branch,
+runs `repoos check` and passes a commit guard first, from whichever route you
+use (the **Review** button, a board drag, `repoos mv`, or the agent). Until that
+finishes the task is still `active`. See
+[Review and close-out](/review-and-close-out).
 
 If a reviewer agent is enabled, it reads the branch diff and writes an advisory
 report for that review — findings, edge cases, suggestions. It changes nothing
