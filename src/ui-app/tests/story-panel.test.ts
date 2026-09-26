@@ -55,10 +55,11 @@ async function openTab(label: string): Promise<void> {
 }
 
 /** A registered story definition. `key` is the lowercased story name. */
-function definition(name: string, body: string) {
+function definition(name: string, body: string, number: string | undefined = "0001") {
   return {
     key: name.toLowerCase(),
     name,
+    number,
     path: `stories/${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.md`,
     body,
     createdAt: "2026-09-01T00:00:00Z",
@@ -178,7 +179,9 @@ describe("story side panel tabs", () => {
     await flushPromises();
 
     const labels = tabs().map((t) => (t.textContent ?? "").replace(/\s+/g, " ").trim());
-    expect(labels).toEqual(["Story", "Tasks 2", "Details"]);
+    // #0515 added PM directly after the body tab, matching the task panel's
+    // strip (Task · PM · Dev · …).
+    expect(labels).toEqual(["Story", "PM", "Tasks 2", "Details"]);
     expect(tabs()[0].classList.contains("active")).toBe(true);
 
     // Same renderer and same .md-rendered class the task panel's Task tab uses.
@@ -207,12 +210,15 @@ describe("story side panel tabs", () => {
     const body = panel()!.querySelector('[role="tabpanel"]')!;
     expect(body.getAttribute("aria-labelledby")).toBe(list[0]!.id);
     expect(list[0]!.getAttribute("aria-controls")).toBe(body.id);
-    // Roving tabindex: only the selected tab is in the tab order.
-    expect(list.map((t) => t.getAttribute("tabindex"))).toEqual(["0", "-1", "-1"]);
+    // Roving tabindex: only the selected tab is in the tab order. Four tabs
+    // since #0515 added PM (Story · PM · Tasks · Details).
+    expect(list.map((t) => t.getAttribute("tabindex"))).toEqual(["0", "-1", "-1", "-1"]);
 
     await openTab("Tasks");
     const body2 = panel()!.querySelector('[role="tabpanel"]')!;
-    expect(body2.getAttribute("aria-labelledby")).toBe(tabs()[1]!.id);
+    expect(body2.getAttribute("aria-labelledby")).toBe(
+      tabs().find((t) => t.textContent?.includes("Tasks"))!.id,
+    );
   });
 
   it("moves between tabs with the arrow, Home and End keys", async () => {
@@ -237,13 +243,16 @@ describe("story side panel tabs", () => {
     await key("ArrowRight");
     expect(tabs()[2]!.classList.contains("active")).toBe(true);
     await key("ArrowRight");
+    expect(tabs()[3]!.classList.contains("active")).toBe(true);
+    // Wraps back to the first tab — the strip is a cycle, not a dead end.
+    await key("ArrowRight");
     expect(tabs()[0]!.classList.contains("active")).toBe(true);
     await key("ArrowLeft");
-    expect(tabs()[2]!.classList.contains("active")).toBe(true);
+    expect(tabs()[3]!.classList.contains("active")).toBe(true);
     await key("Home");
     expect(tabs()[0]!.classList.contains("active")).toBe(true);
     await key("End");
-    expect(tabs()[2]!.classList.contains("active")).toBe(true);
+    expect(tabs()[3]!.classList.contains("active")).toBe(true);
   });
 
   it("switches between the body, related-tasks and details tabs", async () => {
@@ -402,9 +411,166 @@ describe("story side panel navigation and swapping", () => {
   });
 });
 
+describe("story copy-link number and deeplink (#0515)", () => {
+  it("leads the panel header with the number, in the same slot as the task panel", async () => {
+    useRepoStore().tasks = [makeTask({ id: "0001", story: "Alpha slice", status: "ready" })];
+    useRepoStore().storyDefinitions = [definition("Alpha slice", ALPHA_BODY, "0042")];
+    const wrapper = mountView();
+    await flushPromises();
+    await wrapper.find(".story-head").trigger("click");
+    await flushPromises();
+
+    const number = panel()!.querySelector(".drawer-head .copyable-number")!;
+    expect(number.textContent).toBe("#0042");
+    expect(number.getAttribute("aria-label")).toBe("Copy link to story 0042");
+    // The number row comes before the title, like the task panel's header.
+    const head = panel()!.querySelector(".drawer-head")!;
+    const ids = head.querySelector(".story-panel-ids")!;
+    expect(ids.contains(number)).toBe(true);
+    expect(
+      head.querySelector("[data-radix-dialog-title], .drawer-head-title")!.textContent,
+    ).toContain("Alpha slice");
+  });
+
+  it("shows no number for a story that exists only as a task tag", async () => {
+    useRepoStore().tasks = [makeTask({ id: "0001", story: "Tag only", status: "ready" })];
+    useRepoStore().storyDefinitions = [];
+    const wrapper = mountView();
+    await flushPromises();
+    await wrapper.find(".story-head").trigger("click");
+    await flushPromises();
+
+    // There is no definition file to hold a number, so there is nothing stable
+    // to show or deep-link — the same graceful degradation as an input written
+    // before numbering existed.
+    expect(panel()!.querySelector(".copyable-number")).toBeNull();
+  });
+});
+
+describe("story panel PM tab (#0515)", () => {
+  const sent: string[] = [];
+
+  function stubFetch(outputLines: unknown[] = []): void {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        const u = String(url);
+        const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+        if (u.includes("/pm/output")) return json({ ok: true, lines: outputLines });
+        if (u.includes("/pm/message")) {
+          const body = JSON.parse(String((init?.body as string) ?? "{}"));
+          sent.push(body.text ?? "");
+          return json({ ok: true });
+        }
+        if (u.includes("/api/health")) {
+          return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+        }
+        if (u.includes("/api/board") || u.includes("/api/index")) {
+          return json({
+            tasks: [],
+            counts: { draft: 0, inbox: 0, ready: 0, active: 0, review: 0, done: 0 },
+            taskCount: 0,
+          });
+        }
+        if (u.includes("/api/agents/running")) return json({ tasks: [] });
+        if (u.includes("/api/config")) return json({ agents: [] });
+        throw new Error("unexpected fetch: " + u);
+      }),
+    );
+  }
+
+  beforeEach(() => {
+    sent.length = 0;
+  });
+
+  async function openPmTab(outputLines: unknown[] = []): Promise<void> {
+    stubFetch(outputLines);
+    useRepoStore().tasks = [makeTask({ id: "0001", story: "Alpha slice", status: "ready" })];
+    useRepoStore().storyDefinitions = [definition("Alpha slice", ALPHA_BODY, "0042")];
+    const wrapper = mountView();
+    await flushPromises();
+    await wrapper.find(".story-head").trigger("click");
+    await flushPromises();
+    await openTab("PM");
+  }
+
+  it("offers a PM tab next to the body tab and renders the chat surface", async () => {
+    await openPmTab();
+    expect(tabs().map((t) => (t.textContent ?? "").trim())).toEqual([
+      "Story",
+      "PM",
+      "Tasks 1",
+      "Details",
+    ]);
+    // The chat brings its own fixed body so only the transcript scrolls, the
+    // same split the task panel's PM tab makes — never a scrolling body inside
+    // another one.
+    const tabpanel = panel()!.querySelector('[role="tabpanel"]')!;
+    expect(tabpanel.classList.contains("drawer-body")).toBe(true);
+    expect(tabpanel.classList.contains("drawer-session-body")).toBe(true);
+    expect(tabpanel.querySelector(".pm-log-wrap")).toBeTruthy();
+    expect(tabpanel.querySelector(".pm-compose")).toBeTruthy();
+    expect(tabpanel.textContent).toContain("Chat about this story");
+  });
+
+  it("sends a message to the story PM endpoint and shows it optimistically", async () => {
+    await openPmTab();
+    const compose = panel()!.querySelector<HTMLTextAreaElement>(".pm-compose textarea")!;
+    compose.value = "Break this story down into tasks.";
+    compose.dispatchEvent(new Event("input"));
+    await flushPromises();
+
+    const form = panel()!.querySelector<HTMLFormElement>(".pm-compose")!;
+    form.dispatchEvent(new Event("submit"));
+    await flushPromises();
+
+    expect(sent).toEqual(["Break this story down into tasks."]);
+    // The optimistic bubble is on screen, and the server was addressed by the
+    // story's key, URL-encoded.
+    const calls = (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls;
+    const post = calls.find((c) => String(c[0]).includes("/pm/message"));
+    expect(String(post![0])).toContain(
+      `/api/stories/${encodeURIComponent("alpha slice")}/pm/message`,
+    );
+    expect(panel()!.textContent).toContain("Break this story down into tasks.");
+  });
+
+  it("hydrates a retained transcript keyed by the story's number", async () => {
+    await openPmTab([
+      { type: "human", text: "what is left?", at: "2026-09-20T10:00:00Z" },
+      { type: "text", text: "Two tasks remain.", at: "2026-09-20T10:00:05Z" },
+    ]);
+    const calls = (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls;
+    expect(calls.some((c) => String(c[0]).includes("/api/stories/alpha%20slice/pm/output"))).toBe(
+      true,
+    );
+    // The transcript lands in the store under `pm-story-v1:0042` — the same
+    // shape as a task's `pm-task-v2:<id>`.
+    expect(useRepoStore().outputs["pm-story-v1:0042"]).toHaveLength(2);
+    expect(panel()!.querySelector(".pm-log-wrap")!.textContent).toContain("Two tasks remain.");
+  });
+
+  it("offers the same canned prompts the task panel shows", async () => {
+    await openPmTab();
+    const canned = Array.from(panel()!.querySelectorAll(".pm-canned-item")).map(
+      (el) => el.textContent ?? "",
+    );
+    expect(canned.length).toBeGreaterThan(0);
+    expect(canned.join(" ")).toContain("Break the remaining work down into tasks.");
+  });
+});
+
 describe("story side panel styling contract", () => {
   const panelSource = readFileSync(
     join(resolve(__dirname, ".."), "src/components/StoryPanel.vue"),
+    "utf8",
+  );
+  const drawerSource = readFileSync(
+    join(resolve(__dirname, ".."), "src/components/TaskDrawer.vue"),
+    "utf8",
+  );
+  const chatSource = readFileSync(
+    join(resolve(__dirname, ".."), "src/components/StoryPmChat.vue"),
     "utf8",
   );
   const css = readFileSync(join(resolve(__dirname, ".."), "src/style.css"), "utf8");
@@ -422,6 +588,49 @@ describe("story side panel styling contract", () => {
     expect(panelSource).toContain('class="drawer-body story-panel-body"');
     expect(panelSource).toContain("renderMarkdown");
     expect(panelSource).toContain('class="md-rendered"');
+  });
+
+  it("leads the header with the shared copy-link number, like the task panel (#0515)", () => {
+    // The task panel's badge leads `.drawer-head` too; the story one must be
+    // the same component in the same slot, not a lookalike.
+    expect(panelSource).toContain('import CopyableNumber from "./CopyableNumber.vue"');
+    expect(panelSource).toContain('class="story-panel-ids"');
+    expect(panelSource).toContain("CopyableNumber");
+    expect(panelSource).toContain("`Copy link to story ${story?.number}`");
+    expect(panelSource).toContain("/stories?story=");
+    expect(drawerSource).toContain("CopyableNumber");
+    // The number row sits above the title, in the same flex row the task panel
+    // uses, with the same 7px gap.
+    expect(css).toMatch(/\.story-panel-ids\s*\{[^}]*gap:\s*8px[^}]*margin-bottom:\s*7px/);
+  });
+
+  it("shares the task PM chat's classes rather than forking them (#0515)", () => {
+    // The story chat must render the SAME .pm-* surface the task panel does.
+    // They only work if both live in the global sheet, so this also guards the
+    // promotion out of TaskDrawer's scoped block.
+    for (const cls of [
+      "pm-log-wrap",
+      "ai-chat-log",
+      "pm-empty",
+      "pm-bubble",
+      "pm-markdown",
+      "pm-compose",
+      "pm-canned-item",
+    ]) {
+      expect(chatSource, `${cls} missing from the story chat`).toContain(cls);
+      expect(css, `${cls} must be global, not scoped to one component`).toContain(`.${cls}`);
+    }
+    // …and the task panel still uses the same ones, from the same place.
+    for (const cls of ["pm-log-wrap", "pm-bubble", "pm-compose"]) {
+      expect(drawerSource, `${cls} missing from the task PM chat`).toContain(cls);
+      expect(drawerSource, `${cls} must not be re-declared in a scoped block`).not.toContain(
+        `.${cls} {`,
+      );
+    }
+    expect(chatSource).toContain("useChatScroll");
+    expect(chatSource).toContain("ChatJumpToLatest");
+    expect(chatSource).toContain("AiChatThinking");
+    expect(chatSource).toContain("toDisplayRows");
   });
 
   it("stacks the details facts on narrow viewports at the shared drawer breakpoint", () => {

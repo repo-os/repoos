@@ -1,9 +1,10 @@
 # The AI chat standard
 
 Every AI chat surface in the RepoOS web UI — Ross, the CTO Board Monitor, the
-Debugger, the per-task Debugger, the Model Playground and a task's PM chat —
-obeys the same rules. They are not six independent implementations that happen
-to look alike; they are six call sites of one shared contract (#0444).
+Debugger, the per-task Debugger, the Model Playground, a task's PM chat and a
+story's PM chat (#0515) — obeys the same rules. They are not seven independent
+implementations that happen to look alike; they are seven call sites of one
+shared contract (#0444).
 
 This page is the spec. `src/ui-app/src/lib/ai-chat.ts` is the machine-readable
 half (the registry of surfaces), and `src/ui-app/tests/ai-chat-standard.test.ts`

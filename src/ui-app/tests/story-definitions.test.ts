@@ -77,6 +77,7 @@ describe("mergeStoriesForDisplay", () => {
         {
           key: storyKey("Tagged slice"),
           name: "Tagged slice",
+          number: "0001",
           path: "stories/tagged-slice.md",
           body: "Registered body",
           createdAt: "2026-09-01T00:00:00Z",
@@ -85,6 +86,7 @@ describe("mergeStoriesForDisplay", () => {
         {
           key: storyKey("Planned only"),
           name: "Planned only",
+          number: "0002",
           path: "stories/planned-only.md",
           body: "No tasks yet.",
           createdAt: "2026-09-02T00:00:00Z",
@@ -109,6 +111,7 @@ describe("mergeStoriesForDisplay", () => {
         {
           key: storyKey("Tagged slice"),
           name: "Tagged slice",
+          number: "0001",
           path: "stories/tagged-slice.md",
           body: "Registered body",
           createdAt: "2026-09-01T00:00:00Z",
@@ -117,6 +120,7 @@ describe("mergeStoriesForDisplay", () => {
       ],
     );
     expect(merged[0].path).toBe("stories/tagged-slice.md");
+    expect(merged[0].number).toBe("0001");
     expect(merged[0].createdAt).toBe("2026-09-01T00:00:00Z");
     expect(merged[0].createdBy).toBe("hello@repoos.org");
   });
@@ -125,6 +129,7 @@ describe("mergeStoriesForDisplay", () => {
     const merged = mergeStoriesForDisplay([{ story: "Tag only", status: "ready" }], []);
     expect(merged[0].registered).toBe(false);
     expect(merged[0].path).toBeNull();
+    expect(merged[0].number).toBeNull();
     expect(merged[0].createdAt).toBeNull();
     expect(merged[0].createdBy).toBeNull();
   });

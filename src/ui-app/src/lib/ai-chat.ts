@@ -48,6 +48,14 @@ export const AI_CHAT_SURFACES: readonly AiChatSurface[] = [
     chatId: "pm:<task id>",
     logClass: "pm-log-wrap",
   },
+  {
+    // #0515: the story panel's PM tab. Shares the task PM chat's `.pm-*`
+    // classes outright rather than forking them, so the two cannot drift.
+    name: "Story PM chat",
+    file: "StoryPmChat.vue",
+    chatId: "pm-story-v1:<story number>",
+    logClass: "pm-log-wrap",
+  },
 ] as const;
 
 /** The shared hooks every chat surface must use. */

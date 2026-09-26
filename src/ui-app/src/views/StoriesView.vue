@@ -14,6 +14,7 @@ import NewStoryPanel from "../components/NewStoryPanel.vue";
 import StoryPanel from "../components/StoryPanel.vue";
 import Button from "../components/ui/button.vue";
 import ActivityIndicator from "../components/ActivityIndicator.vue";
+import CopyableNumber from "../components/CopyableNumber.vue";
 import type { Status, Task } from "../types";
 import { needsInputStatusLabel, needsInputSuppressedOnReview } from "../lib/needs-input-ui";
 
@@ -33,6 +34,7 @@ const definitions = computed((): StoryDefinition[] =>
   repo.storyDefinitions.map((d) => ({
     key: d.key,
     name: d.name,
+    number: d.number ?? "",
     path: d.path,
     body: d.body,
     createdAt: d.createdAt,
@@ -47,18 +49,20 @@ const pmWorkingKeys = computed(
   () => new Set(repo.storyDefinitions.filter((d) => d.pmWorking).map((d) => d.key)),
 );
 
-watch(
-  () => route.query.story,
-  (v) => {
-    if (!enabled.value) return;
-    if (v !== "new") return;
-    ui.openNewStory();
-    const query = { ...route.query };
-    delete query.story;
-    void router.replace({ query });
-  },
-  { immediate: true },
-);
+/**
+ * Resolve a `?story=` value to a story in the current roll-up (#0515) — the
+ * same tolerance `InputsView`'s `findInputByRef` has for `?input=`: a leading
+ * `#`, a bare `7` and the padded `0007` all find the same story, and the story
+ * key is accepted too so a link made before a story was numbered still works.
+ */
+function findStoryByRef(ref: string): MergedStoryGroup<Task> | undefined {
+  const v = ref.replace(/^#/, "").trim();
+  if (!v) return undefined;
+  const numeric = /^\d+$/.test(v) ? [v, v.padStart(4, "0")] : [v];
+  return stories.value.find(
+    (s) => (s.number && numeric.includes(s.number)) || s.key === v.toLowerCase(),
+  );
+}
 
 /**
  * The story the side panel is showing (#0502), or null when it is closed.
@@ -80,6 +84,46 @@ const openStory = computed<MergedStoryGroup<Task> | null>(
 function selectStory(key: string): void {
   openStoryKey.value = key;
 }
+
+/**
+ * Open a deep-linked story once the roll-up has it. The list is derived from
+ * the board payload, which arrives asynchronously, so a link opened on a cold
+ * load resolves on a later tick — retry briefly rather than silently dropping
+ * it. Same shape as `tryOpenInput`.
+ */
+function tryOpenStory(ref: string, attempt: number): void {
+  const found = findStoryByRef(ref);
+  if (found) {
+    openStoryKey.value = found.key;
+    void clearStoryParam();
+  } else if (attempt < 20) {
+    window.setTimeout(() => tryOpenStory(ref, attempt + 1), 100);
+  }
+}
+
+/** Drop `?story=` after it has been honoured, so a refresh doesn't re-open. */
+function clearStoryParam(): Promise<unknown> {
+  const query = { ...route.query };
+  delete query.story;
+  return router.replace({ query });
+}
+
+// Declared after `openStoryKey` on purpose: this watcher runs `immediate`, and
+// `?story=` resolves straight into that ref.
+watch(
+  () => route.query.story,
+  (v) => {
+    if (!enabled.value) return;
+    if (typeof v !== "string" || !v) return;
+    if (v === "new") {
+      ui.openNewStory();
+      void clearStoryParam();
+      return;
+    }
+    tryOpenStory(v, 0);
+  },
+  { immediate: true },
+);
 
 function closeStory(): void {
   openStoryKey.value = null;
@@ -193,6 +237,21 @@ function lastActivity(story: { lastActivity: string | null }): string {
         class="glass story-card"
         :class="{ complete: story.complete }"
       >
+        <!-- #0515: the copy-link number leads the card, in the same upper left
+             position and with the same `CopyableNumber` chip the task and input
+             cards use. It sits OUTSIDE the `.story-head` button on purpose —
+             that button is the card's own control, and a <button> inside a
+             <button> is invalid markup browsers are free to flatten, which
+             would break both the copy and the click. The task/input cards get
+             away with nesting because their clickable surface is the <article>. -->
+        <div v-if="story.number" class="story-number-row">
+          <CopyableNumber
+            :label="`#${story.number}`"
+            :path="`/stories?story=${encodeURIComponent(story.number)}`"
+            :aria-label="`Copy link to story ${story.number}`"
+          />
+        </div>
+
         <button
           type="button"
           class="story-head"
@@ -332,6 +391,18 @@ function lastActivity(story: { lastActivity: string | null }): string {
   text-align: left;
   cursor: pointer;
   color: inherit;
+}
+/* #0515: the number chip row above the head. Sized off the task card's rhythm
+   (13px to the chip row, then the title's own top margin) rather than reusing
+   Tailwind utilities, because this view's cards are styled in this block. */
+.story-number-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 13px 16px 0;
+}
+.story-card:has(.story-number-row) .story-head {
+  padding-top: 11px;
 }
 .story-head-main {
   min-width: 0;
