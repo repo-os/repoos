@@ -2,14 +2,14 @@
 id: "0504"
 title: theme-contrast guard silently skips spaced rgba() tokens
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-25T17:17:00Z"
-updated_at: "2026-09-25T17:17:00Z"
+updated_at: "2026-09-26T01:02:31Z"
 ---
 Found while registering the gruvbox theme (#0503). Kept out of that task because it
 changes the guard's behaviour repo-wide and for every project that configures
@@ -68,3 +68,4 @@ a spaced `rgba()` token *is* evaluated (today a deliberately-broken
 ## Activity
 
 - 2026-09-25T17:17:00Z · created · unknown
+- 2026-09-26T01:02:31Z · status inbox→ready
