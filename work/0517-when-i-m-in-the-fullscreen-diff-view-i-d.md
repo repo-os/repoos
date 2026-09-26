@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-26T09:37:52Z"
-review_passes: 1
 id: "0517"
 title: Add Escape-to-back with a visible hint in the fullscreen diff view
 type: feature
@@ -10,9 +8,8 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-escape-to-back-with-a-visible-hint-i
-review_cli_override: cursor
-review_model_override: composer-2.5
 created_at: "2026-09-26T09:26:37Z"
+updated_at: "2026-09-26T09:31:31Z"
 ---
 ## Problem
 
@@ -90,6 +87,3 @@ When I'm in the fullscreen diff view I'd like to be able click escape key to go 
 - 2026-09-26T09:28:36Z · status inbox→ready
 - 2026-09-26T09:28:38Z · status ready→active, branch
 - 2026-09-26T09:31:31Z · status active→review
-- 2026-09-26T09:37:06Z · review_cli_override, review_model_override
-- 2026-09-26T09:37:10Z · review_model_override
-
