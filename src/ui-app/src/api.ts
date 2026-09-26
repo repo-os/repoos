@@ -18,25 +18,30 @@ export class ApiError extends Error {
 
 export const API_TIMEOUT_MS = 15_000;
 
-export async function api<T = unknown>(path: string, opts?: RequestInit): Promise<T> {
+export type ApiRequestInit = RequestInit & { timeoutMs?: number };
+
+export async function api<T = unknown>(path: string, opts?: ApiRequestInit): Promise<T> {
   let r: Response;
   const controller = new AbortController();
   let timedOut = false;
-  const method = (opts?.method ?? "GET").toUpperCase();
+  const { timeoutMs: requestedTimeoutMs, ...requestInit } = opts ?? {};
+  const method = (requestInit.method ?? "GET").toUpperCase();
   const boundsRequest = method === "GET" || method === "HEAD";
-  const timeout = boundsRequest
-    ? setTimeout(() => {
-        timedOut = true;
-        controller.abort();
-      }, API_TIMEOUT_MS)
-    : undefined;
-  const signal = opts?.signal;
+  const timeoutMs = requestedTimeoutMs ?? (boundsRequest ? API_TIMEOUT_MS : undefined);
+  const timeout =
+    timeoutMs !== undefined
+      ? setTimeout(() => {
+          timedOut = true;
+          controller.abort();
+        }, timeoutMs)
+      : undefined;
+  const signal = requestInit.signal;
   if (signal) {
     if (signal.aborted) controller.abort(signal.reason);
     else signal.addEventListener("abort", () => controller.abort(signal.reason), { once: true });
   }
   try {
-    r = await fetch(path, { ...opts, signal: controller.signal });
+    r = await fetch(path, { ...requestInit, signal: controller.signal });
   } catch (err) {
     // A deliberate abort (e.g. a superseded request) should surface as-is.
     if (err instanceof DOMException && err.name === "AbortError") {
