@@ -388,13 +388,15 @@ cannot tell from the code alone:
   bulk suite at the configured pool size, then the latency-sensitive suites
   (`boot-timing.test.ts`) alone at one worker — with `REPOOS_STRICT_TIMING=1` —
   so their absolute wall-clock ceilings aren't blown by pool contention.
-  `boot-timing.test.ts` **skips itself unless `REPOOS_STRICT_TIMING=1`**, so a
-  raw `bun run test:vitest` (single-pass) or an ad-hoc `vitest boot-timing`
-  won't run it and can't produce a spurious timing failure — run it directly
-  with `REPOOS_STRICT_TIMING=1 bunx vitest boot-timing` (`bunx`, not `npx` —
-  this repo defaults to Bun everywhere; a bare `npx` on this machine resolves
-  to a Node-based npx binary, which is fine for most single-file runs but
-  defeats the point for a *latency*-sensitive suite like this one). Extra args
+  In `boot-timing.test.ts` only the **wall-clock** test skips without
+  `REPOOS_STRICT_TIMING=1`, so a raw `bun run test:vitest` (single-pass) or an
+  ad-hoc `vitest boot-timing` can't produce a spurious timing failure. Its
+  sibling — the #0330 boot-ordering test — deliberately does *not* skip: it
+  makes no wall-clock claim, so it runs everywhere. Run the file directly with
+  `REPOOS_STRICT_TIMING=1 bunx vitest boot-timing` (`bunx`, not `npx` — this
+  repo defaults to Bun everywhere; a bare `npx` on this machine resolves to a
+  Node-based npx binary, which is fine for most single-file runs but defeats
+  the point for a *latency*-sensitive suite like this one). Extra args
   (`--changed <ref>`) forward to both passes.
 - Language: TypeScript, NodeNext modules — imports use `.js` extensions even
   for `.ts` source (this is correct, not a bug).
@@ -528,6 +530,21 @@ pass, `bun run --bun vitest run` 2/2 fail. Fixed by making
 `scripts/run-tests.mjs` self-re-exec onto Bun whenever it's resolvable
 (mirroring `reexecUnderBunIfRequested()` in `src/core/runtime.ts`), so
 every invocation path now converges on one runtime — see `docs/architecture.md`.
+
+**The sequel (#0330), and the general lesson underneath it.** Converging the
+runtimes stopped the *symptom* but left the actual defect: the assertion was a
+race, and which side won depended on how fast the box and the runtime were, so
+the test measured the machine rather than RepoOS. The fix was to stop racing
+rather than to keep the two runtimes honest — `startServer` now takes a
+test-only `indexBuildGate`, awaited inside `LiveIndex.refreshAllAsync` after
+the build finishes and immediately before its result is swapped in. A test can
+hold the build at that point indefinitely, which makes "the listener bound
+before the index was populated" a hard fact: the build provably got all the
+way to the swap, the index provably has not been published, so if `listen()`
+fired at all, it did not wait. **When a test's verdict flips with runtime
+speed, the fix is usually to remove the race, not to reconcile the
+environments** — a passing-under-Node suite that is meant to hold under Bun is
+one machine-fingerprint away from shipping the bug it was written to catch.
 
 **The general lesson:** "it passes for me but fails in the pipeline" is a
 version/environment difference far more often than it is flakiness. Reproduce

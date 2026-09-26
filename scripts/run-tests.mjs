@@ -7,12 +7,15 @@
  *   1. everything EXCEPT the isolated suites, at the configured pool size
  *   2. the isolated suites alone, single-worker, with a small retry budget
  *
- * boot-timing.test.ts (#0271) asserts an absolute ceiling on time-to-first
- * `/api/health`; on a loaded box that ceiling is blown by CPU/memory pressure
- * from the other workers, not by a regression. Pass 2 hands it the machine
- * and sets REPOOS_STRICT_TIMING=1 — the only context where those absolute
- * wall-clock assertions are meaningful. Outside pass 2 (an ad-hoc `vitest`
- * run, the parallel pass 1) the suite skips itself rather than flake.
+ * boot-timing.test.ts (#0271) has one test asserting an absolute ceiling on
+ * time-to-first `/api/health`; on a loaded box that ceiling is blown by
+ * CPU/memory pressure from the other workers, not by a regression. Pass 2
+ * hands it the machine and sets REPOOS_STRICT_TIMING=1 — the only context
+ * where that absolute wall-clock assertion is meaningful. Outside pass 2 (an
+ * ad-hoc `vitest` run, the parallel pass 1) that test skips itself rather than
+ * flake. Its sibling in the same file, the #0330 boot-ordering test, is NOT
+ * gated on that flag: it injects a gate into the background index build and
+ * makes no wall-clock claim, so it is safe (and useful) anywhere it runs.
  *
  * Extra args (e.g. `--changed <ref>` from `repoos check` re-verification) are
  * forwarded to BOTH passes; vitest's own change graph then decides whether the
