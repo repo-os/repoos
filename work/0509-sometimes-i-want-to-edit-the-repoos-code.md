@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-26T11:39:07Z"
+review_passes: 1
 id: "0509"
 title: Add a dev-only click-to-locate inspector for UI copy
 type: feature
@@ -13,7 +15,6 @@ created_by: hello@repoos.org
 branch: feat/add-a-dev-only-click-to-locate-inspector
 review_model_override: opencode-go/space-bunny-free
 created_at: "2026-09-26T03:12:15Z"
-updated_at: "2026-09-26T11:36:32Z"
 handoff_signal_retry_count: 2
 dev_error_count: 2
 ---
@@ -184,3 +185,4 @@ Sometimes I want to edit the repoos code myself, particularly with simple copy c
 - 2026-09-26T11:34:35Z · note: repoos check green locally (REPOOS_CHECK_CHANGED=main, 135s tests); handoff signal was missed due to 300s timeout under load
 - 2026-09-26T11:34:36Z · status review→active
 - 2026-09-26T11:36:32Z · status active→review
+
