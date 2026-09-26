@@ -40,10 +40,7 @@ import { stripAnsi } from "./done.js";
 import type { Logger } from "../core/logger.js";
 import { getRepoOSDb, type RepoOSDb, type UsageRange } from "../core/db.js";
 import { listSkills } from "./routes/helpers.js";
-import {
-  readHandoffRequest,
-  clearHandoffRequest,
-} from "./handoff-request.js";
+import { readHandoffRequest, clearHandoffRequest } from "./handoff-request.js";
 import {
   recoverTruncatedJson,
   TRUNCATION_NOTICE_PREFIX,

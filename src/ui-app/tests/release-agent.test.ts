@@ -228,13 +228,10 @@ describe("release agent when a task leaves active (#0087)", () => {
 
       // The fake `repoos check` exits 0, so the finalization completes and the
       // task reaches `review` — which is when the agent is released.
-      await waitForAsync(
-        async () => {
-          const t = await api(server, "GET", `/api/tasks/${id}`);
-          return t.body.status === "review";
-        },
-        "the handoff finalization moves the task to review",
-      );
+      await waitForAsync(async () => {
+        const t = await api(server, "GET", `/api/tasks/${id}`);
+        return t.body.status === "review";
+      }, "the handoff finalization moves the task to review");
 
       await waitForAsync(
         async () => !(await running(server)).some((r) => r.id === id),
@@ -293,15 +290,15 @@ describe("release agent when a task leaves active (#0087)", () => {
       // #0507: a bare file edit is no longer a transition. The index reverts it
       // to `active` and hands the task to the same finalization every other
       // route uses, so the file momentarily says `review` and then does not.
-      await waitForAsync(async () => /repoos":\[[^\]]*"check"/.test(readFileSync(fx.log, "utf8")), "the file-edit route starts the handoff finalization");
-      // The agent is untouched until the task genuinely leaves `active`.
       await waitForAsync(
-        async () => {
-          const t = await api(server, "GET", `/api/tasks/${id}`);
-          return t.body.status === "review";
-        },
-        "the handoff finalization moves the task to review",
+        async () => /repoos":\[[^\]]*"check"/.test(readFileSync(fx.log, "utf8")),
+        "the file-edit route starts the handoff finalization",
       );
+      // The agent is untouched until the task genuinely leaves `active`.
+      await waitForAsync(async () => {
+        const t = await api(server, "GET", `/api/tasks/${id}`);
+        return t.body.status === "review";
+      }, "the handoff finalization moves the task to review");
       await waitForAsync(
         async () => !(await running(server)).some((r) => r.id === id),
         "agent leaves the running registry after a direct file edit",

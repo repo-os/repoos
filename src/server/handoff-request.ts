@@ -28,7 +28,14 @@
  *  - Write is atomic (temp + rename) so a poller can never read a half-written
  *    file.
  */
-import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 
 /** One agent's request that RepoOS finalize a handoff when its turn ends. */
