@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 cli_override: opencode
-model_override: default
+model_override: opencode-go/space-bunny-free
 created_at: "2026-09-26T01:56:07Z"
-updated_at: "2026-09-26T02:02:15Z"
+updated_at: "2026-09-26T02:02:16Z"
 ---
 ## Problem
 
@@ -224,3 +224,4 @@ Currently there are many more tool calls than actual messages in the AI chat log
 - 2026-09-26T01:56:08Z · screenshots
 - 2026-09-26T01:59:03Z · status draft→inbox, title, priority, area, body
 - 2026-09-26T02:02:15Z · cli_override, model_override
+- 2026-09-26T02:02:16Z · model_override
