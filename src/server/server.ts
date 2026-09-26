@@ -521,19 +521,27 @@ export interface ServeOptions {
   /**
    * Fired synchronously the instant the HTTP listener actually binds
    * (`server.listen()`'s own callback), with the live index instance at that
-   * exact moment. Exists so a test can assert a STATE invariant instead of a
-   * timing one — see boot-timing.test.ts: comparing wall-clock timestamps
-   * (even in-process ones) can't reliably distinguish "genuinely concurrent"
-   * from "coincidentally fast" when the index build finishes within the same
-   * millisecond as listen() on a healthy/fast machine. `index.snapshot()`
-   * still reporting zero tasks at this instant is unambiguous regardless of
-   * speed: `refreshAllAsync()` only populates the index in one atomic swap
-   * at the end, so 0 here can only mean the listener bound before the async
-   * build touched anything — a real regression to the old synchronous boot
-   * (index built to completion, then listen()) would show the full count
-   * already present.
+   * exact moment. Combined with `indexBuildGate` (which holds the background
+   * index build at a "built but not published" point), this gives a test a
+   * clock-independent way to assert the #0271 boot-ordering guarantee: a
+   * listener that fired while the gate was shut provably did not wait for the
+   * build. Note this establishes ORDERING, not index state — the `index`
+   * argument is not a reliable emptiness check at this instant, because
+   * `WorkWatcher` populates the same map concurrently. See boot-timing.test.ts.
    */
   onListening?: (index: LiveIndex) => void;
+  /**
+   * Test-only seam (#0330), forwarded verbatim to
+   * `LiveIndex.refreshAllAsync({ indexBuildGate })`, which awaits it after the
+   * boot index build finishes and immediately before swapping it into the
+   * index. Holding it makes "listener bound before this build published" a
+   * deterministic fact instead of a race between the build and the ~23 awaits
+   * `startServer` performs on its way to `listen()` — a race whose winner
+   * changes with runtime speed (Bun's much faster subprocess spawning reliably
+   * wins it) and machine load. No production caller sets it;
+   * `boot-timing.test.ts` is the only user.
+   */
+  indexBuildGate?: () => void | Promise<void>;
 }
 
 /**
@@ -879,7 +887,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // replacement has to answer its health handshake (#0271 follow-up). Anything
   // that needs the populated index (the boot-time preview relaunch below, the
   // resolved ServerHandle) awaits `indexReady` explicitly instead.
-  const indexReady = index.refreshAllAsync();
+  // `opts.indexBuildGate` is the #0330 test-only park point inside that build
+  // — unset in production, see ServeOptions.
+  const indexReady = index.refreshAllAsync({ indexBuildGate: opts.indexBuildGate });
 
   // `opts.port === 0` is the explicit "ephemeral, OS-assigned" marker used by
   // harnesses — keep it. Only fall through to the resolver when no port was
