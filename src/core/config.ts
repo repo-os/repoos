@@ -534,6 +534,9 @@ export function parseBoardColumns(
       continue;
     }
     const existing = usedLabels.get(label.toLowerCase());
+    // A label equal to this column's OWN default is not a collision (the Settings
+    // form writes every default into `[board.columns]`); it needs no override.
+    if (existing === status) continue;
     if (existing) {
       console.warn(
         `[board.columns] ${status}: duplicate label "${label}" (already used by ${existing}), using default`,
