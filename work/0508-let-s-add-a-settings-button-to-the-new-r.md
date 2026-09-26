@@ -2,14 +2,14 @@
 id: "0508"
 title: Add a top-level settings panel to RepoOS Hub for Mac
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: macos
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-26T02:35:59Z"
-updated_at: "2026-09-26T02:37:26Z"
+updated_at: "2026-09-26T02:39:22Z"
 ---
 ## Problem
 
@@ -217,3 +217,4 @@ Let’s add a settings button to the new repoos mac app. from there you can have
 - 2026-09-26T02:35:59Z · created · hello@repoos.org
 - 2026-09-26T02:35:59Z · screenshots
 - 2026-09-26T02:37:26Z · status draft→inbox, title, area, body
+- 2026-09-26T02:39:22Z · status inbox→ready
