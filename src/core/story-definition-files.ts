@@ -53,8 +53,9 @@ function normalizeStoryNumber(v: unknown): string {
  * caller can detect the no-op and leave the file for the next run.
  */
 function setStoryField(content: string, key: string, value: string): string {
-  const open = /^---[ \t]*\r?\n/.exec(content);
+  const open = /^---[ \t]*(\r?\n)/.exec(content);
   if (!open) return content;
+  const eol = open[1]!;
   const start = open[0].length;
   // The first `\n---` after the opening delimiter closes the block.
   const close = content.indexOf("\n---", start);
@@ -62,7 +63,11 @@ function setStoryField(content: string, key: string, value: string): string {
   const block = content.slice(start, close);
   const line = `${key}: "${value}"`;
   const re = new RegExp(`^${key}:.*$`, "m");
-  const next = re.test(block) ? block.replace(re, line) : `${line}\n${block}`;
+  // Join with whatever the block already uses, so backfilling a CRLF file
+  // doesn't leave it with one LF line among CRLF ones.
+  const next = re.test(block)
+    ? block.replace(re, line)
+    : `${line}${eol}${block.replaceAll(/\r?\n/g, eol)}`;
   return content.slice(0, start) + next + content.slice(close);
 }
 
@@ -215,7 +220,16 @@ export function findStoryDefinitionByKey(
   return listStoryDefinitions(config).find((d) => d.key === k) ?? null;
 }
 
-/** Next free 4-digit story number: highest existing number + 1, else `"0001"`. */
+/**
+ * Next free 4-digit story number: highest existing number + 1, else `"0001"`.
+ *
+ * Read-then-write with no lock, so two creates racing on the same repo can land
+ * on one number. That is the accepted trade here and matches `nextInputNumber`
+ * exactly — story creation is a human clicking **New story**, not a fan-out, and
+ * the boot migration that backfills is effectively sequential. Making it
+ * airtight would need a persisted high-water mark, which would then disagree
+ * with the input numbering this deliberately mirrors.
+ */
 function nextStoryNumber(config: RepoOSConfig): string {
   let max = 0;
   for (const d of listStoryDefinitions(config)) {

@@ -386,6 +386,29 @@ describe("stories ?story= deep-link (#0515)", () => {
     wrapper.unmount();
   });
 
+  it("opens after the feature flag arrives, as on a cold load of a copied link", async () => {
+    // The regression this guards: `App.vue` loads `config` in its `onMounted`,
+    // AFTER `repo.init()` and the doc/skill loads, so a view mounting from a
+    // pasted `/stories?story=0007` sees `config.data` still empty. A watcher
+    // tracking only the query gated on `!enabled`, bailed, and never re-ran —
+    // dropping the link on exactly the flow a deeplink exists for.
+    useConfigStore().data = {};
+    useRepoStore().tasks = [makeTask("0001")];
+    useRepoStore().storyDefinitions = [storyDef("Alpha slice", "0007")];
+    currentQuery = { story: "0007" };
+    const wrapper = mount(StoriesView, { attachTo: document.body });
+    await flushPromises();
+    expect(storyPanel()).toBeNull();
+
+    // Config lands, flipping the flag — the link must resolve now.
+    useConfigStore().data = { stories: { enabled: true } };
+    await flushPromises();
+
+    expect(storyTitle()).toContain("Alpha slice");
+    expect(replaceSpy).toHaveBeenCalledWith({ query: {} });
+    wrapper.unmount();
+  });
+
   it("an unknown param degrades gracefully (no panel, param left intact)", async () => {
     openStories();
     useRepoStore().storyDefinitions = [storyDef("Alpha slice", "0007")];

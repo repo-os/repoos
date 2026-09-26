@@ -198,7 +198,10 @@ describe("story numbering (#0515)", () => {
     );
 
     expect(ensureStoryNumbers(config)).toHaveLength(1);
-    expect(readFileSync(join(root, "stories/crlf.md"), "utf8")).toMatch(/^number: "0001"\r?$/m);
+    const content = readFileSync(join(root, "stories/crlf.md"), "utf8");
+    expect(content).toMatch(/^number: "0001"\r$/m);
+    // No stray LF among the CRLF endings, or the next diff on this file is noise.
+    expect(content).not.toMatch(/(?<!\r)\n/);
   });
 
   it("normalizes an unpadded or non-numeric frontmatter number", () => {
@@ -248,6 +251,21 @@ describe("story PM session ids (#0515)", () => {
       "pm-story-v1:project-updates-email",
     );
     expect(storyPmSessionSlug("///")).toBe("story");
+  });
+
+  it("keeps long, similarly-prefixed slugs from sharing one conversation", () => {
+    // Truncating at 55 chars would give both of these the same id, silently
+    // merging two users' PM threads. The hash suffix keeps them apart.
+    const prefix = "a very long delivery slice name that runs well past the slug budget ";
+    const a = storyPmSessionSlug(`${prefix}alpha`);
+    const b = storyPmSessionSlug(`${prefix}beta`);
+    expect(a).not.toBe(b);
+    expect(a.length).toBeLessThanOrEqual(55);
+    expect(b.length).toBeLessThanOrEqual(55);
+    // Stable across calls, so a reload finds the same conversation.
+    expect(storyPmSessionSlug(`${prefix}alpha`)).toBe(a);
+    // …and a short name stays readable rather than hashed.
+    expect(storyPmSessionSlug("short name")).toBe("short-name");
   });
 
   it("scopes per user when auth is on, exactly like the task PM chat", () => {

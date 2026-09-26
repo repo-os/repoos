@@ -573,6 +573,10 @@ describe("story side panel styling contract", () => {
     join(resolve(__dirname, ".."), "src/components/StoryPmChat.vue"),
     "utf8",
   );
+  const surfaceSource = readFileSync(
+    join(resolve(__dirname, ".."), "src/components/PmChatSurface.vue"),
+    "utf8",
+  );
   const css = readFileSync(join(resolve(__dirname, ".."), "src/style.css"), "utf8");
 
   it("carries no scoped styles — teleported dialog CSS is global (AGENTS.md)", () => {
@@ -600,14 +604,19 @@ describe("story side panel styling contract", () => {
     expect(panelSource).toContain("/stories?story=");
     expect(drawerSource).toContain("CopyableNumber");
     // The number row sits above the title, in the same flex row the task panel
-    // uses, with the same 7px gap.
+    // uses. 8px is the task panel's inline `gap: 8px` on that row; 7px is the
+    // margin between the row and the title beneath it.
     expect(css).toMatch(/\.story-panel-ids\s*\{[^}]*gap:\s*8px[^}]*margin-bottom:\s*7px/);
   });
 
-  it("shares the task PM chat's classes rather than forking them (#0515)", () => {
-    // The story chat must render the SAME .pm-* surface the task panel does.
-    // They only work if both live in the global sheet, so this also guards the
-    // promotion out of TaskDrawer's scoped block.
+  it("shares one PM chat surface with the task panel, and one stylesheet (#0515)", () => {
+    // The story panel must not carry its own chat. Both panels render the
+    // shared <PmChatSurface>, which owns the .pm-* classes; those live in
+    // style.css because dialog content is body-teleported, so a scoped rule
+    // would reach neither panel.
+    expect(panelSource).toContain('import StoryPmChat from "./StoryPmChat.vue"');
+    expect(chatSource).toContain('from "./PmChatSurface.vue"');
+    expect(drawerSource).toContain('from "./PmChatSurface.vue"');
     for (const cls of [
       "pm-log-wrap",
       "ai-chat-log",
@@ -617,20 +626,28 @@ describe("story side panel styling contract", () => {
       "pm-compose",
       "pm-canned-item",
     ]) {
-      expect(chatSource, `${cls} missing from the story chat`).toContain(cls);
+      expect(surfaceSource, `${cls} missing from the shared surface`).toContain(cls);
       expect(css, `${cls} must be global, not scoped to one component`).toContain(`.${cls}`);
     }
-    // …and the task panel still uses the same ones, from the same place.
-    for (const cls of ["pm-log-wrap", "pm-bubble", "pm-compose"]) {
-      expect(drawerSource, `${cls} missing from the task PM chat`).toContain(cls);
-      expect(drawerSource, `${cls} must not be re-declared in a scoped block`).not.toContain(
-        `.${cls} {`,
-      );
+    // Neither host re-declares the surface's classes in a scoped block. (The
+    // drawer legitimately still uses `useChatScroll` for its *other* tabs — the
+    // Dev and Review chats, each registered in ai-chat.ts — so only assert that
+    // the story host, which has no other chat, adds nothing of its own.)
+    for (const host of [drawerSource, chatSource]) {
+      for (const cls of ["pm-log-wrap", "pm-bubble", "pm-compose"]) {
+        expect(host, `${cls} must not be re-declared in a host`).not.toContain(`.${cls} {`);
+      }
     }
-    expect(chatSource).toContain("useChatScroll");
-    expect(chatSource).toContain("ChatJumpToLatest");
-    expect(chatSource).toContain("AiChatThinking");
-    expect(chatSource).toContain("toDisplayRows");
+    expect(chatSource, "the story host must not hand-roll the standard").not.toContain(
+      "useChatScroll(",
+    );
+    expect(chatSource, "the story host must not hand-roll tool-call grouping").not.toContain(
+      "toDisplayRows(",
+    );
+    // The standard's hooks live in exactly one place.
+    for (const hook of ["useChatScroll", "ChatJumpToLatest", "AiChatThinking", "toDisplayRows"]) {
+      expect(surfaceSource, `${hook} missing from the shared surface`).toContain(hook);
+    }
   });
 
   it("stacks the details facts on narrow viewports at the shared drawer breakpoint", () => {

@@ -674,9 +674,10 @@ appears in the same place on both the Stories page and the story panel, and
 clicking it copies a link straight to that story, the same as clicking a task's
 or input's number.
 
-The number is stable: it is assigned once and never renumbered or reused, and
-it survives the PM agent renaming the story and its file. Links to a story keep
-working through a rename, which a name-based link would not.
+The number is stable for the life of the story: it is assigned once, is never
+changed, and survives the PM agent renaming the story and its file, so links
+keep working through a rename — which a name-based link would not. Deleting the
+highest-numbered story does free that number for the next one created.
 
 `/stories?story=0007` opens that story's panel. The story's name also works, as
 does `?story=new` to open the New story form.
@@ -696,7 +697,8 @@ already holds, and the conversation is per story and per user.
 
 The PM tab is the agent's working surface for a story, not a read-only view: it
 uses the same `repoos` CLI commands the task panel's PM tab does, so the PM can
-create and update tasks tagged with this story.
+create and update tasks tagged with this story. It is the same conversation
+component, so the two panels behave identically.
 
 ### A story is not an area
 
