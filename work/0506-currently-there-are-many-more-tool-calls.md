@@ -14,8 +14,9 @@ branch: feat/group-consecutive-tool-calls-into-one-ex
 cli_override: opencode
 model_override: opencode-go/space-bunny-free
 review_cli_override: cursor
+review_model_override: composer-2.5
 created_at: "2026-09-26T01:56:07Z"
-updated_at: "2026-09-26T03:07:27Z"
+updated_at: "2026-09-26T03:07:28Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -239,3 +240,4 @@ Currently there are many more tool calls than actual messages in the AI chat log
 - 2026-09-26T02:57:59Z · needs_input
 - 2026-09-26T03:06:45Z · review_model_override
 - 2026-09-26T03:07:27Z · review_cli_override, review_model_override
+- 2026-09-26T03:07:28Z · review_model_override
