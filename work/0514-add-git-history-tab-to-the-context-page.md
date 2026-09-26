@@ -2,7 +2,7 @@
 id: "0514"
 title: Add git History tab to the Context page
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/add-git-history-tab-to-the-context-page
 model_override: cursor-grok-4.6-medium
 created_at: "2026-09-26T05:57:03Z"
-updated_at: "2026-09-26T07:48:26Z"
+updated_at: "2026-09-26T09:21:02Z"
 ---
 ## Goal
 
@@ -80,3 +80,4 @@ Rejected: **Checks** (about gating pass/fail; a log there blurs its purpose, but
 - 2026-09-26T06:07:22Z · model_override
 - 2026-09-26T06:07:24Z · status ready→active, branch
 - 2026-09-26T07:48:26Z · status active→review
+- 2026-09-26T09:21:02Z · status review→done, release:success
