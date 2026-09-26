@@ -5,11 +5,11 @@ type: feature
 status: draft
 priority: p2
 area: general
-assigned_to: ""
+assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-26T09:26:37Z"
-updated_at: "2026-09-26T09:26:37Z"
+updated_at: "2026-09-26T09:26:40Z"
 ---
 When I'm in the fullscreen diff view I'd like to be able click escape key to go back instead of needing to click the "back" button, but keep the back button and also show a hint that `esc` also goes back.
 
@@ -17,6 +17,11 @@ When I'm in the fullscreen diff view I'd like to be able click escape key to go 
 
 When I'm in the fullscreen diff view I'd like to be able click escape key to go back instead of needing to click the "back" button, but keep the back button and also show a hint that `esc` also goes back.
 
+## Screenshots
+
+![Screenshot-2026-09-26-at-17.25.28](/api/tasks/0517/attachments/screenshot-1.png)
+
 ## Activity
 
 - 2026-09-26T09:26:37Z · created · hello@repoos.org
+- 2026-09-26T09:26:40Z · screenshots
