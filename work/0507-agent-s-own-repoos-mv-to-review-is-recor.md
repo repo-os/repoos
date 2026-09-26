@@ -2,17 +2,17 @@
 id: "0507"
 title: Unify every route into review behind the handoff finalization
 type: bug
-status: ready
+status: active
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/unify-every-route-into-review-behind-the
 cli_override: opencode
 model_override: opencode-go/space-bunny-free
 review_model_override: opencode/muse-spark-1.3-contributor-free
 created_at: "2026-09-26T02:27:03Z"
-updated_at: "2026-09-26T03:01:08Z"
+updated_at: "2026-09-26T03:01:13Z"
 ---
 ## Problem
 
@@ -111,3 +111,4 @@ came last (`lastFailureLine`) — "Skill routing: …", "Server finalization: ch
 - 2026-09-26T03:00:32Z · cli_override
 - 2026-09-26T03:00:58Z · model_override
 - 2026-09-26T03:01:08Z · review_model_override
+- 2026-09-26T03:01:13Z · status ready→active, branch
