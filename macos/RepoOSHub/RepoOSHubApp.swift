@@ -126,6 +126,11 @@ final class HubAppDelegate: NSObject, NSApplicationDelegate {
                 view.layer?.backgroundColor = hubAppearance.appKitWindowBackgroundColor.cgColor
                 frameView = view.superview
             }
+            applyNativeSurfaceBackgrounds(
+                in: window.contentView,
+                color: hubAppearance.appKitWindowBackgroundColor,
+                appearance: appKitAppearance
+            )
         }
     }
 }
@@ -166,7 +171,32 @@ private struct HubWindowAppearanceConfigurator: NSViewRepresentable {
                 view.layer?.backgroundColor = appearance.appKitWindowBackgroundColor.cgColor
                 frameView = view.superview
             }
+            applyNativeSurfaceBackgrounds(
+                in: window.contentView,
+                color: appearance.appKitWindowBackgroundColor,
+                appearance: appKitAppearance
+            )
         }
+    }
+}
+
+private func applyNativeSurfaceBackgrounds(
+    in view: NSView?,
+    color: NSColor,
+    appearance: NSAppearance?
+) {
+    guard let view else { return }
+    let typeName = String(describing: type(of: view))
+    guard !typeName.contains("WKWebView") else { return }
+
+    if view is NSVisualEffectView || view is NSSplitView || view is NSClipView {
+        view.appearance = appearance
+        view.wantsLayer = true
+        view.layer?.backgroundColor = color.cgColor
+    }
+
+    view.subviews.forEach { subview in
+        applyNativeSurfaceBackgrounds(in: subview, color: color, appearance: appearance)
     }
 }
 
