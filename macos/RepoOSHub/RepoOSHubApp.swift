@@ -1,5 +1,6 @@
 import SwiftUI
 import UserNotifications
+import AppKit
 
 @main
 struct RepoOSHubApp: App {
@@ -12,7 +13,7 @@ struct RepoOSHubApp: App {
         WindowGroup("RepoOS") {
             ContentView()
                 .environmentObject(appState)
-                .frame(minWidth: 880, minHeight: 520)
+                .frame(minWidth: 880, maxWidth: .infinity, minHeight: 520, maxHeight: .infinity)
                 .preferredColorScheme(appState.hubGlobalPreferences.appearance.colorScheme)
                 .background(HubWindowAppearanceConfigurator(appearance: appState.hubGlobalPreferences.appearance))
                 .onAppear {
@@ -77,6 +78,7 @@ struct RepoOSHubApp: App {
 final class HubAppDelegate: NSObject, NSApplicationDelegate {
     private let dockIconAppearance = DockIconAppearanceController()
     private var appKitAppearance: NSAppearance?
+    private var hubAppearance: HubAppAppearance = .system
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         dockIconAppearance.start()
@@ -86,6 +88,7 @@ final class HubAppDelegate: NSObject, NSApplicationDelegate {
         // preferredColorScheme updates SwiftUI content but does not update
         // AppKit-managed title bars or toolbars. Apply the same preference to
         // the application so the complete native shell follows Light/Dark.
+        hubAppearance = appearance
         appKitAppearance = appearance.appKitAppearance
         applyAppKitAppearance()
         // A WindowGroup creates its AppKit window asynchronously. Reapply on
@@ -105,19 +108,24 @@ final class HubAppDelegate: NSObject, NSApplicationDelegate {
         NSApp.windows.forEach { window in
             window.appearance = appKitAppearance
             window.titlebarAppearsTransparent = false
-            window.backgroundColor = .windowBackgroundColor
+            window.isOpaque = true
+            window.backgroundColor = hubAppearance.appKitWindowBackgroundColor
             window.toolbarStyle = .unified
+            window.contentView?.wantsLayer = true
+            window.contentView?.layer?.backgroundColor = hubAppearance.appKitWindowBackgroundColor.cgColor
 
-            // A SwiftUI WindowGroup's toolbar is a sibling of contentView in
-            // the AppKit frame. It does not consistently inherit a changed
-            // NSWindow appearance, so set that frame directly. Do not walk
-            // into contentView: its WKWebView intentionally follows the
-            // system appearance rather than this Hub-shell preference.
-            guard let frameView = window.contentView?.superview else { return }
-            frameView.appearance = appKitAppearance
-            frameView.subviews
-                .filter { $0 !== window.contentView }
-                .forEach { $0.appearance = appKitAppearance }
+            // A SwiftUI WindowGroup's toolbar and rounded outer frame are
+            // siblings/ancestors of contentView. They do not consistently
+            // inherit a changed NSWindow appearance, so set every native
+            // frame surface directly. Do not walk into contentView: its
+            // WKWebView intentionally follows the system appearance.
+            var frameView = window.contentView?.superview
+            while let view = frameView {
+                view.appearance = appKitAppearance
+                view.wantsLayer = true
+                view.layer?.backgroundColor = hubAppearance.appKitWindowBackgroundColor.cgColor
+                frameView = view.superview
+            }
         }
     }
 }
@@ -145,14 +153,19 @@ private struct HubWindowAppearanceConfigurator: NSViewRepresentable {
             let appKitAppearance = appearance.appKitAppearance
             window.appearance = appKitAppearance
             window.titlebarAppearsTransparent = false
-            window.backgroundColor = .windowBackgroundColor
+            window.isOpaque = true
+            window.backgroundColor = appearance.appKitWindowBackgroundColor
             window.toolbarStyle = .unified
+            window.contentView?.wantsLayer = true
+            window.contentView?.layer?.backgroundColor = appearance.appKitWindowBackgroundColor.cgColor
 
-            guard let frameView = window.contentView?.superview else { return }
-            frameView.appearance = appKitAppearance
-            frameView.subviews
-                .filter { $0 !== window.contentView }
-                .forEach { $0.appearance = appKitAppearance }
+            var frameView = window.contentView?.superview
+            while let view = frameView {
+                view.appearance = appKitAppearance
+                view.wantsLayer = true
+                view.layer?.backgroundColor = appearance.appKitWindowBackgroundColor.cgColor
+                frameView = view.superview
+            }
         }
     }
 }
