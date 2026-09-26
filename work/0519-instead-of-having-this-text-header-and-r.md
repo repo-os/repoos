@@ -20,8 +20,10 @@ Instead of having this "TEXT" header and raw printed text on the Input panel, do
 ## Screenshots
 
 ![Screenshot-2026-09-26-at-16.19.41](/api/tasks/0519/attachments/screenshot-1.png)
+![Screenshot-2026-09-26-at-16.22.15](/api/tasks/0519/attachments/screenshot-2.png)
 
 ## Activity
 
 - 2026-09-26T09:42:05Z · created · hello@repoos.org
+- 2026-09-26T09:42:06Z · screenshots
 - 2026-09-26T09:42:06Z · screenshots
