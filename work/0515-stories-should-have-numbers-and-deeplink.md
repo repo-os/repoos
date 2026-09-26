@@ -1,11 +1,8 @@
 ---
-merge_conflict_retry_count: 1
-updated_at: "2026-09-26T10:32:49Z"
-review_passes: 3
 id: "0515"
 title: Stories should have numbers and deeplinks just like tasks…
 type: feature
-status: review
+status: done
 priority: p2
 area: general
 assigned_to: ai
@@ -14,6 +11,9 @@ branch: feat/stories-should-have-numbers-and-deeplink
 cli_override: opencode
 model_override: opencode-go/space-bunny-free
 created_at: "2026-09-26T06:42:11Z"
+updated_at: "2026-09-26T12:21:59Z"
+merge_conflict_retry_count: 1
+review_passes: 3
 review_rounds: 2
 ---
 Stories should have numbers and deeplinks just like tasks and inputs (re-use the same styling and placement in upper left). Also story panels should have a PM tab just like task panels do (again, re-use the styling so it's familiar to the user).
@@ -36,5 +36,4 @@ Stories should have numbers and deeplinks just like tasks and inputs (re-use the
 - 2026-09-26T10:12:07Z · status active→review
 - 2026-09-26T10:16:23Z · status review→active
 - 2026-09-26T10:27:25Z · status active→review
-
-
+- 2026-09-26T12:21:59Z · status review→done, release:success
