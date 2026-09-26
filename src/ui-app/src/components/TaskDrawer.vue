@@ -61,6 +61,9 @@ import DirtyMainDialog from "./DirtyMainDialog.vue";
 import HotfixConfirmDialog from "./HotfixConfirmDialog.vue";
 import SendToEngineerDialog from "./SendToEngineerDialog.vue";
 import SpecEditModal from "./SpecEditModal.vue";
+import ScreenshotViewer from "./ScreenshotViewer.vue";
+import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
+import { pendingToShots } from "../lib/screenshot-viewer";
 import DoneErrorCard from "./DoneErrorCard.vue";
 import DebugPanel from "./DebugPanel.vue";
 import StopWorkConfirmModal from "./StopWorkConfirmModal.vue";
@@ -482,6 +485,13 @@ async function uploadPendingScreenshots(taskId: string): Promise<void> {
 const shotInput = ref<HTMLInputElement | null>(null);
 /** Depth counter: dragenter/leave fire once per element boundary. */
 const dragDepth = ref(0);
+const pendingViewerOpen = ref(false);
+const pendingViewerStart = ref(0);
+const pendingViewerShots = computed(() => pendingToShots(ui.pendingScreenshots));
+function openPendingViewer(index: number): void {
+  pendingViewerStart.value = index;
+  pendingViewerOpen.value = true;
+}
 
 function onShotFiles(e: Event): void {
   const input = e.target as HTMLInputElement;
@@ -1459,6 +1469,13 @@ const pmSubmitting = ref(false);
 const pmLog = ref<HTMLElement | null>(null);
 /** Hidden file input behind the PM compose box's attach button (0381). */
 const pmShotInput = ref<HTMLInputElement | null>(null);
+const pmViewerOpen = ref(false);
+const pmViewerStart = ref(0);
+const pmViewerShots = computed(() => pendingToShots(ui.pmScreenshots));
+function openPmViewer(index: number): void {
+  pmViewerStart.value = index;
+  pmViewerOpen.value = true;
+}
 
 function onPmShotFiles(e: Event): void {
   const input = e.target as HTMLInputElement;
@@ -2610,7 +2627,8 @@ watch(
             </div>
             <div v-if="ui.pendingScreenshots.length" class="shot-grid">
               <div v-for="(s, i) in ui.pendingScreenshots" :key="s.name + i" class="shot-thumb">
-                <img :src="s.dataUrl" :alt="s.name" />
+                <img :src="s.dataUrl" :alt="s.name" @click="openPendingViewer(i)" />
+                <ScreenshotExpandButton :name="s.name" @click="openPendingViewer(i)" />
                 <button
                   type="button"
                   class="shot-remove"
@@ -4366,7 +4384,8 @@ watch(
                task the PM creates from it, on the server, once it exists. -->
           <div v-if="ui.pmScreenshots.length" class="pm-shots" aria-label="Attached screenshots">
             <div v-for="(s, i) in ui.pmScreenshots" :key="s.name + i" class="pm-shot">
-              <img :src="s.dataUrl" :alt="s.name" />
+              <img :src="s.dataUrl" :alt="s.name" @click="openPmViewer(i)" />
+              <ScreenshotExpandButton :name="s.name" @click="openPmViewer(i)" />
               <button
                 type="button"
                 class="pm-shot-remove"
@@ -4503,6 +4522,17 @@ watch(
     :body="draft.body"
     @update:open="(v) => (specModalOpen = v)"
     @save="applySpec"
+  />
+
+  <ScreenshotViewer
+    v-model:open="pendingViewerOpen"
+    :shots="pendingViewerShots"
+    :start-index="pendingViewerStart"
+  />
+  <ScreenshotViewer
+    v-model:open="pmViewerOpen"
+    :shots="pmViewerShots"
+    :start-index="pmViewerStart"
   />
 
   <StopWorkConfirmModal

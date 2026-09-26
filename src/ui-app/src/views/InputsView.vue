@@ -24,12 +24,31 @@ import Checkbox from "../components/ui/checkbox.vue";
 import { applyInputCollapseDefaults, revealInputArrivals } from "../lib/inputsBoardCollapse";
 import CopyableNumber from "../components/CopyableNumber.vue";
 import InputEditModal from "../components/InputEditModal.vue";
+import ScreenshotViewer from "../components/ScreenshotViewer.vue";
+import ScreenshotExpandButton from "../components/ScreenshotExpandButton.vue";
+import { isImageMime, shotIndex, type ScreenshotShot } from "../lib/screenshot-viewer";
 
 type InputsViewMode = "list" | "board";
 
 const ui = useUiStore(),
   repo = useRepoStore(),
   activeInput = ref<Input | null>(null);
+const inputDetailViewerOpen = ref(false);
+const inputDetailViewerStart = ref(0);
+function inputAttachmentUrl(id: string, name: string): string {
+  return `/api/inputs/${id}/attachments/${encodeURIComponent(name)}`;
+}
+const inputDetailViewerShots = computed((): ScreenshotShot[] => {
+  const input = activeInput.value;
+  if (!input) return [];
+  return input.attachments
+    .filter((a) => isImageMime(a.mime))
+    .map((a) => ({ src: inputAttachmentUrl(input.id, a.name), name: a.name }));
+});
+function openInputDetailViewer(src: string): void {
+  inputDetailViewerStart.value = shotIndex(inputDetailViewerShots.value, src);
+  inputDetailViewerOpen.value = true;
+}
 // Read inputs from the store so they survive navigation (like repo.tasks).
 const inputs = computed(() => repo.inputs);
 const statuses = [
@@ -455,25 +474,39 @@ function tryOpenInput(ref: string, attempt: number): void {
             <strong>Attachments</strong>
             <div v-for="a in activeInput.attachments" :key="a.name" class="attachment-card">
               <img
-                v-if="a.mime.startsWith('image/')"
-                :src="`/api/inputs/${activeInput.id}/attachments/${encodeURIComponent(a.name)}`"
+                v-if="isImageMime(a.mime)"
+                :src="inputAttachmentUrl(activeInput.id, a.name)"
                 :alt="a.name"
-              /><a
-                :href="`/api/inputs/${activeInput.id}/attachments/${encodeURIComponent(a.name)}`"
-                target="_blank"
-                rel="noreferrer"
-                >{{ a.name }}</a
-              >
+                @click="openInputDetailViewer(inputAttachmentUrl(activeInput.id, a.name))"
+              />
+              <div class="attachment-card-row">
+                <a
+                  :href="inputAttachmentUrl(activeInput.id, a.name)"
+                  target="_blank"
+                  rel="noreferrer"
+                  title="Open in new tab"
+                  @click.stop
+                  >{{ a.name }}</a
+                >
+                <ScreenshotExpandButton
+                  v-if="isImageMime(a.mime)"
+                  :name="a.name"
+                  @click="openInputDetailViewer(inputAttachmentUrl(activeInput.id, a.name))"
+                />
+              </div>
             </div>
-          </div>
-        </div></DialogContent
-      ></Dialog
-    >
+          </div></div></DialogContent
+    ></Dialog>
     <InputEditModal
       :open="inputEditOpen"
       :body="activeInput?.body ?? ''"
       @update:open="(v) => (inputEditOpen = v)"
       @save="applyInputEdit"
+    />
+    <ScreenshotViewer
+      v-model:open="inputDetailViewerOpen"
+      :shots="inputDetailViewerShots"
+      :start-index="inputDetailViewerStart"
     />
   </div>
 </template>
