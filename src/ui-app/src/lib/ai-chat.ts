@@ -83,3 +83,26 @@ export function hasJumpToLatestControl(source: string): boolean {
  * absence of `AiChatThinking`, not by a status line (#0444).
  */
 export const FORBIDDEN_CHAT_STATUS_TEXT = /-\s*agent stopped\s*-|—\s*agent stopped\s*—/i;
+
+/**
+ * Tool-call grouping (#0506), the other half of the standard. A chat that
+ * renders an `AgentOutputEntry` stream must run it through `toDisplayRows` and
+ * draw a run of tool calls with `<ChatToolCallRow>`. Hand-rolling a row per
+ * tool call — or degrading them to `Checked with <tool> · <state>` text, which
+ * is what four chats used to do — is the failure this catches.
+ */
+export const AI_CHAT_TOOL_ROWS = {
+  /** The shared grouping transform, applied to the transcript's entries. */
+  grouping: "toDisplayRows",
+  /** The shared expandable tool-call row. */
+  row: "ChatToolCallRow",
+  /** The per-entry fallback text grouping replaced: flat, un-outcomed, unexpandable. */
+  forbiddenFlattening: /Checked with\s/,
+  /**
+   * Gating a row's timestamp on its speaker. A `sys` entry is stamped with an
+   * `at` like every other entry, so suppressing the time by role hides it from
+   * system rows and leaves the task drawer disagreeing with the other chats —
+   * both of which #0506 exists to end.
+   */
+  forbiddenTimeSuppression: /bubbleRole\([^)]*\)\s*!==\s*["']status["']/,
+} as const;

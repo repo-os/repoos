@@ -5202,42 +5202,6 @@
   font-size: 12px;
   line-height: 1.6;
 }
-.agent-step {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  color: var(--txt-faint);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-family: "JetBrains Mono", monospace;
-  padding: 2px 2px;
-}
-.agent-step-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--violet);
-  box-shadow: 0 0 6px var(--violet-tint);
-  flex: none;
-}
-.agent-step.fin .agent-step-dot {
-  background: var(--green);
-  box-shadow: 0 0 6px var(--green-tint);
-}
-.agent-step-time {
-  color: var(--txt-faint);
-  text-transform: none;
-  letter-spacing: 0.02em;
-  font-size: 10px;
-}
-.agent-step-reason {
-  margin-left: auto;
-  color: var(--txt-faint);
-  text-transform: none;
-  letter-spacing: 0.02em;
-  font-size: 10px;
-}
 .agent-tool {
   border: 1px solid var(--border);
   border-radius: 9px;
@@ -5315,6 +5279,138 @@
   max-height: 320px;
   overflow-y: auto;
   background: var(--md-body-bg);
+}
+
+/* ── grouped tool-call row (#0506) ──────────────────────────────────────────
+   One maximal run of adjacent tool calls, collapsed. `.agent-tool-group`
+   reuses the base `.agent-tool` card; everything below is the group chrome:
+   the count badge, its success/error split, and the expanded per-call list. */
+.agent-tool-group .agent-tool-counts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  margin-left: 2px;
+}
+.agent-tool-count {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  padding: 1px 6px;
+  border-radius: 999px;
+  white-space: nowrap;
+  color: var(--green);
+  background: var(--green-tint);
+}
+.agent-tool-count.error {
+  color: var(--red);
+  background: var(--red-tint);
+}
+/* The row's time is the newest call in the run, so it sits last, out of the
+   way of the counts — the same slot the error count vacates when all is well. */
+.agent-tool-time {
+  margin-left: auto;
+  flex: none;
+  color: var(--txt-faint);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.agent-tool-calls {
+  border-top: 1px solid var(--border);
+  background: var(--md-body-bg);
+}
+.agent-tool-call {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.agent-tool-call:last-child {
+  border-bottom: none;
+}
+.agent-tool-call.error {
+  box-shadow: inset 2px 0 0 var(--red);
+}
+.agent-tool-call-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.agent-tool-call-name {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--cyan);
+}
+.agent-tool-call.error .agent-tool-call-name {
+  color: var(--red);
+}
+.agent-tool-call-head .agent-tool-state {
+  margin-left: 0;
+}
+.agent-tool-call-time {
+  margin-left: auto;
+  color: var(--txt-faint);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.agent-tool-call-io {
+  margin-top: 5px;
+}
+.agent-tool-call-label {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--txt-faint);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  user-select: none;
+}
+/* Inside a grouped run the per-call output is nested under its own label, so
+   the block's own top border would read as a second divider. */
+.agent-tool-call-io .agent-tool-out {
+  margin: 0;
+  padding: 6px 8px;
+  border-top: none;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  max-height: 260px;
+}
+.agent-tool-call-empty {
+  margin-top: 4px;
+  color: var(--txt-faint);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10.5px;
+  font-style: italic;
+}
+
+/* ── every row's last-updated time (#0506) ─────────────────────────────────
+   Sourced from the newest entry the row represents, so a batch of work reads
+   as "finished at 14:32:07" rather than "started at the first call". Floated so
+   it tucks into the row's top-right without a second flex line; `user-select`
+   is off so dragging to copy a transcript never picks it up. */
+.entry-time {
+  float: right;
+  margin: 1px 0 2px 10px;
+  color: var(--txt-faint);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9.5px;
+  line-height: 1.4;
+  white-space: nowrap;
+  opacity: 0.85;
+  user-select: none;
+}
+/* A human bubble is a flex row, where `float` does not apply — the time is
+   just the first flex item, gapped from the bubble. */
+.agent-human .entry-time {
+  float: none;
+  margin: 0 8px 0 0;
+  align-self: center;
+}
+.agent-text .entry-time,
+.agent-line.sys .entry-time {
+  margin-top: 2px;
 }
 .agent-empty {
   color: var(--txt-faint);
