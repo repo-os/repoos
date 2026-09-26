@@ -3,14 +3,20 @@ import type { RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
 import {
   buildEditorSpawnArgs,
-  copyInspectorAvailable,
+  copyInspectorUiBuildReady,
   formatCopyInspectorPath,
   resolveCopyInspectorTarget,
 } from "../../core/copy-inspector.js";
+import { isDevBuild } from "../reload.js";
 
-/** Dev/local gate — linked `dist/` serve + self-hosted checkout with a dev UI build. */
+/**
+ * Copy-inspector API gate (#0509): server's `isDevBuild()` plus a dev UI bundle
+ * on the managed repo. Release installs never pass `isDevBuild()` even when the
+ * repo checkout still has a dev `dist/`.
+ */
 export function copyInspectorApiEnabled(root: string): boolean {
-  return copyInspectorAvailable(root);
+  if (!isDevBuild()) return false;
+  return copyInspectorUiBuildReady(root);
 }
 
 export const postCopyInspectorOpen: RouteHandler = async (ctx, req, res) => {

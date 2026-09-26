@@ -22,8 +22,8 @@ export function readDevUiBuild(root: string): boolean {
   }
 }
 
-/** True when copy-inspector UI + API are allowed for this checkout. */
-export function copyInspectorAvailable(root: string): boolean {
+/** True when the managed repo has a dev UI bundle (not REPOOS_SHIP). */
+export function copyInspectorUiBuildReady(root: string): boolean {
   return hasRepoOsUiSource(root) && readDevUiBuild(root);
 }
 
@@ -112,7 +112,11 @@ export function buildEditorSpawnArgs(
   const fileToken = substituteFileToken(repoRelFile);
   let resolved = trimmed.replace(/\{file\}/g, fileToken);
   if (hasLine) {
-    resolved = resolved.replace(/\{line\}/g, line != null ? String(line) : "");
+    if (line != null) {
+      resolved = resolved.replace(/\{line\}/g, String(line));
+    } else {
+      resolved = resolved.replace(/:\{line\}/g, "").replace(/\{line\}/g, "");
+    }
   }
   return tokenizeEditorCommand(resolved);
 }

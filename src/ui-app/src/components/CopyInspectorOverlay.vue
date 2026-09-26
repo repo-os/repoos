@@ -72,43 +72,55 @@ function textUnderPoint(x: number, y: number): Node | null {
 let moveRaf = 0;
 let lastMove: PointerEvent | null = null;
 
+const affordanceRef = ref<HTMLElement | null>(null);
+const pinnedAffordancePos = ref<{ left: string; top: string } | null>(null);
+
+function hideAffordance(): void {
+  affordanceVisible.value = false;
+  hoverTarget.value = null;
+  pinnedAffordancePos.value = null;
+}
+
 function updateAffordance(e: PointerEvent): void {
   if (!active.value || popup.value) {
-    affordanceVisible.value = false;
-    hoverTarget.value = null;
+    hideAffordance();
     return;
   }
   if (!e.altKey) {
-    affordanceVisible.value = false;
-    hoverTarget.value = null;
+    hideAffordance();
     return;
   }
   const hitEl =
     e.target instanceof Element ? e.target : document.elementFromPoint(e.clientX, e.clientY);
+  if (affordanceRef.value?.contains(hitEl instanceof Node ? hitEl : null)) {
+    return;
+  }
   if (paneRef.value?.contains(hitEl instanceof Node ? hitEl : null)) {
     return;
   }
   if (hitEl instanceof Element && isInteractiveElement(hitEl)) {
-    affordanceVisible.value = false;
-    hoverTarget.value = null;
+    hideAffordance();
     return;
   }
   const node = textUnderPoint(e.clientX, e.clientY);
   const target = findCopyInspectorTarget(node);
   if (!target) {
-    affordanceVisible.value = false;
-    hoverTarget.value = null;
+    hideAffordance();
     return;
   }
   const text = (node?.textContent ?? "").replace(/\s+/g, " ").trim();
   if (!text) {
-    affordanceVisible.value = false;
-    hoverTarget.value = null;
+    hideAffordance();
     return;
   }
+  const sameTarget =
+    hoverTarget.value?.file === target.file && hoverTarget.value?.line === target.line;
   hoverTarget.value = target;
   affordanceVisible.value = true;
-  affordanceStyle.value = { left: `${e.clientX + 10}px`, top: `${e.clientY + 10}px` };
+  if (!sameTarget || !pinnedAffordancePos.value) {
+    pinnedAffordancePos.value = { left: `${e.clientX + 10}px`, top: `${e.clientY + 10}px` };
+  }
+  affordanceStyle.value = pinnedAffordancePos.value;
 }
 
 function onPointerMove(e: PointerEvent): void {
@@ -127,8 +139,7 @@ function openFromAffordance(e: PointerEvent): void {
   popup.value = hoverTarget.value;
   popupPos.value = { x: e.clientX, y: e.clientY + 12 };
   popupMsg.value = "";
-  affordanceVisible.value = false;
-  hoverTarget.value = null;
+  hideAffordance();
 }
 
 function closePopup(): void {
@@ -165,13 +176,22 @@ function onKeydown(e: KeyboardEvent): void {
   if (e.key === "Escape") closePopup();
 }
 
+function onPointerDownOutside(e: PointerEvent): void {
+  if (!popup.value) return;
+  const hit = e.target instanceof Node ? e.target : null;
+  if (hit && paneRef.value?.contains(hit)) return;
+  closePopup();
+}
+
 onMounted(() => {
   window.addEventListener("pointermove", onPointerMove, { passive: true });
+  window.addEventListener("pointerdown", onPointerDownOutside, true);
   window.addEventListener("keydown", onKeydown);
 });
 
 onUnmounted(() => {
   window.removeEventListener("pointermove", onPointerMove);
+  window.removeEventListener("pointerdown", onPointerDownOutside, true);
   window.removeEventListener("keydown", onKeydown);
   if (moveRaf) cancelAnimationFrame(moveRaf);
 });
@@ -182,6 +202,7 @@ onUnmounted(() => {
     <Teleport to="body">
       <button
         v-if="affordanceVisible && !popup"
+        ref="affordanceRef"
         type="button"
         class="copy-inspector-affordance"
         :style="affordanceStyle"
