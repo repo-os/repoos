@@ -194,6 +194,19 @@ Responsive: sidebar on desktop, bottom tabs on mobile. Vite builds it into
   transcript -> structured JSON events parsed and emitted as SSE `agent.output`
   events -> the UI renders the agent chat tab in real time. Follow-ups via
   POST /api/tasks/:id/message resume the same session.
+
+  Rendering that transcript is a view-layer transform, shared by every chat:
+  `toDisplayRows` in `src/ui-app/src/lib/chat-rows.ts` turns a flat
+  `AgentOutputEntry[]` into the rows a chat draws — a maximal run of adjacent
+  `tool` entries collapses into one expandable row (with success/error counts and
+  the run's newest timestamp), adjacent text parts merge, and `step` markers
+  are dropped because they carried no content. `<ChatToolCallRow>` draws that
+  row. Nothing upstream changes: the stored transcript, the SSE events and the
+  export/debugger endpoints still see the original individual entries in order,
+  and `step` entries stay in the data model for the consumers that read them
+  (report extraction, skill suggestions). Because the grouping happens after
+  per-driver normalization and branches on nothing agent-specific, it behaves
+  identically for every CLI in `AGENT_CLIS` — see docs/ai-chat-standards.md.
 - Guide chat: the app-root launcher -> POST /api/chat/message -> the built-in
   RepoOS Guide agent runs read-only at the repository root with a live task and
   context-document summary. Its streamed transcript uses the same AgentRunner

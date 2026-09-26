@@ -10,7 +10,9 @@ import type { Agent, AgentOutputEntry, AgentSessionStats } from "../types";
 import FloatingHeadPanel from "./FloatingHeadPanel.vue";
 import VoiceDictate from "./VoiceDictate.vue";
 import AiChatThinking from "./AiChatThinking.vue";
+import ChatToolCallRow from "./ChatToolCallRow.vue";
 import { useChatScroll } from "../composables/useChatScroll";
+import { bubbleRole, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
 import { insertTextAtCursor } from "../utils/text-insertion";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
 
@@ -56,28 +58,10 @@ const { showJumpToLatest, onScroll, scrollToLatest } = useChatScroll(log, {
   active: () => props.open,
 });
 
-function lineKind(entry: AgentOutputEntry): "human" | "assistant" | "status" | "hidden" {
-  if ("type" in entry) {
-    if (entry.type === "human") return "human";
-    if (entry.type === "text") return "assistant";
-    if (entry.type === "step") return "hidden";
-    return "status";
-  }
-  return entry.s === "out" ? "assistant" : "status";
-}
-
-function lineText(entry: AgentOutputEntry): string {
-  if ("type" in entry) {
-    if (entry.type === "human" || entry.type === "text") return entry.text;
-    if (entry.type === "sys") return entry.d;
-    if (entry.type === "tool") {
-      const state = entry.state ? ` · ${entry.state}` : "";
-      return `Checked with ${entry.tool}${state}`;
-    }
-    return "";
-  }
-  return entry.d;
-}
+// Rows are grouped by the shared transform (#0506): a run of adjacent tool
+// calls is one expandable row with counts and the time it finished, not a
+// one line of prose per call, with no count, outcome, or anything to expand.
+const rows = computed<DisplayRow[]>(() => toDisplayRows(lines.value));
 
 async function hydrate(): Promise<void> {
   try {
@@ -218,25 +202,22 @@ watch(
             </button>
           </div>
         </div>
-        <template v-for="(entry, index) in lines" :key="index">
-          <div
-            v-if="lineKind(entry) !== 'hidden'"
-            class="guide-row"
-            :class="`guide-row-${lineKind(entry)}`"
-          >
-            <div v-if="lineKind(entry) === 'assistant'" class="guide-mini-avatar">
+        <template v-for="row in rows" :key="row.key">
+          <ChatToolCallRow v-if="row.kind === 'tools'" :calls="row.calls" :at="row.at" />
+          <div v-else class="guide-row" :class="`guide-row-${bubbleRole(row)}`">
+            <div v-if="bubbleRole(row) === 'assistant'" class="guide-mini-avatar">
               <img src="/assets/repoos-ross-from-friends-square.webp" alt="R" />
             </div>
-            <div class="guide-bubble" :class="`guide-bubble-${lineKind(entry)}`">
+            <div class="guide-bubble" :class="`guide-bubble-${bubbleRole(row)}`">
               <div
-                v-if="lineKind(entry) === 'assistant'"
+                v-if="bubbleRole(row) === 'assistant'"
                 class="guide-markdown"
-                v-html="renderMarkdown(lineText(entry))"
+                v-html="renderMarkdown(row.text)"
               ></div>
-              <span v-else>{{ lineText(entry) }}</span>
-              <span v-if="lineKind(entry) !== 'status' && entry.at" class="msg-time">{{
-                fmtTime(entry.at)
-              }}</span>
+              <span v-else>{{ row.text }}</span>
+              <!-- Every row carries its last-updated time (#0506), system rows
+                   included: a `sys` entry is stamped like any other. -->
+              <span v-if="row.at" class="msg-time">{{ fmtTime(row.at) }}</span>
             </div>
           </div>
         </template>
