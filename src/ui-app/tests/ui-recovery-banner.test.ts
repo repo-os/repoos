@@ -37,7 +37,7 @@ describe("UiRecoveryBanner", () => {
     const copy = document.body.querySelector(".ui-recovery-copy");
     expect(copy?.querySelectorAll("strong, small")).toHaveLength(2);
     expect(copy?.textContent).toContain("New RepoOS build available");
-    expect(copy?.textContent).toContain("Build 38fc043e2821 ready at");
+    expect(copy?.textContent).toContain("38fc043e2821 ready at");
     expect(copy?.textContent).not.toContain("RepoOS was updated while this page was open");
 
     await wrapper.unmount();

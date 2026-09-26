@@ -11,7 +11,7 @@ const title = computed(() =>
 const detail = computed(() => {
   if (recovery.kind !== "stale") return recovery.message;
 
-  const build = recovery.newBuild ? `Build ${recovery.newBuild.slice(0, 12)}` : "New build";
+  const build = recovery.newBuild ? recovery.newBuild.slice(0, 12) : "New build";
   const readyAt = recovery.newBuildAt
     ? new Date(recovery.newBuildAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     : null;
@@ -30,7 +30,7 @@ const detail = computed(() => {
       </div>
       <div class="ui-recovery-actions">
         <Button variant="accent" size="sm" @click="reloadNow">
-          {{ recovery.kind === "stale" ? "Reload now" : "Retry / reload" }}
+          {{ recovery.kind === "stale" ? "Reload" : "Retry / reload" }}
         </Button>
         <Button variant="ghost" size="sm" @click="dismissRecovery">Dismiss</Button>
       </div>
@@ -44,7 +44,7 @@ const detail = computed(() => {
   z-index: 1000;
   top: 16px;
   left: 50%;
-  width: min(460px, calc(100vw - 32px));
+  width: min(560px, calc(100vw - 32px));
   transform: translateX(-50%);
   display: flex;
   align-items: center;
@@ -65,6 +65,11 @@ const detail = computed(() => {
   display: grid;
   gap: 2px;
   flex: 1;
+  min-width: 0;
+}
+.ui-recovery-copy strong,
+.ui-recovery-copy small {
+  white-space: nowrap;
 }
 .ui-recovery-copy small {
   color: var(--txt-muted, #b7bdd1);
@@ -84,6 +89,10 @@ const detail = computed(() => {
   .ui-recovery-copy {
     min-width: 0;
     flex: 1;
+  }
+  .ui-recovery-copy strong,
+  .ui-recovery-copy small {
+    white-space: normal;
   }
   .ui-recovery-actions {
     width: 100%;
