@@ -2,14 +2,14 @@
 id: "0522"
 title: Surface elapsed timer and queue ids in the minimised integration bar
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-26T12:01:02Z"
-updated_at: "2026-09-26T12:01:44Z"
+updated_at: "2026-09-26T12:02:29Z"
 ---
 ## Problem
 
@@ -149,3 +149,4 @@ queue numbers and timer as pills/buttons whatever that styling is
 - 2026-09-26T12:01:03Z · screenshots
 - 2026-09-26T12:01:03Z · screenshots
 - 2026-09-26T12:01:44Z · status draft→inbox, title, area, body
+- 2026-09-26T12:02:29Z · status inbox→ready
