@@ -382,6 +382,44 @@ describe("a failed handoff leaves the task active (#0507)", () => {
     expect(result.detail).toMatch(/no implementation found/);
     expect(readStatus(fx)).toBe("active");
   });
+
+  it("leaves the task active when repoos check fails, and says so", async () => {
+    const fx = fixture();
+    // A RED check — the real failure this whole task exists to prevent. The
+    // worktree has a real source change, so the commit gate would have passed;
+    // only the check stands between this and `review`.
+    writeFileSync(
+      join(fx.bin, "repoos"),
+      [
+        "#!/usr/bin/env node",
+        'process.stderr.write("error: 1 test failed\\n");',
+        "process.exit(1);",
+      ].join("\n"),
+      { mode: 0o755 },
+    );
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${oldPath}`;
+    const { finalizeReviewHandoff } = await import("../../server/handoff");
+    try {
+      const task = parseTask({
+        content: readFileSync(fx.taskFile, "utf8"),
+        absPath: fx.taskFile,
+        root: fx.root,
+        defaultStatus: fx.config.defaultStatus,
+        defaultAssignee: fx.config.defaultAssignee,
+      });
+      const result = await finalizeReviewHandoff(fx.config, task, { origin: "ui-review" });
+      expect(result.ok).toBe(false);
+      expect(result.step).toBe("check");
+      expect(result.detail).toMatch(/repoos check failed/);
+      // The task never reaches review, and the work is untouched: nothing is
+      // committed and the status is exactly where it started.
+      expect(readStatus(fx)).toBe("active");
+      expect(gitStatus(fx.worktree)).toContain("source.txt");
+    } finally {
+      process.env.PATH = oldPath;
+    }
+  }, 60_000);
 });
 
 describe("skip checks records the override (#0507)", () => {
