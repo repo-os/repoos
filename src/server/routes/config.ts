@@ -269,6 +269,10 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     const val = body[field.key];
 
     if (field.type === "string") {
+      if (field.key === "dev.inspector.editorCommand") {
+        patch[field.key] = typeof val === "string" ? val.trim() : "";
+        continue;
+      }
       if (field.key === "whisper.apiKey") {
         // The form always carries this field (default ""). An empty value means
         // "leave the existing key untouched" — never wipe a TOML/env key, and

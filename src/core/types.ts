@@ -467,6 +467,11 @@ export interface RepoOSConfig {
    */
   servePort?: number;
   /**
+   * Dev/local tooling (#0509). Ignored on release builds (no dev UI bundle /
+   * RepoOS sources in the repo).
+   */
+  dev?: DevConfig;
+  /**
    * Display-only column label overrides for the six board columns (task
    * #0396). Keys are canonical status IDs (`draft`, `inbox`, `ready`, `active`,
    * `review`, `done`); values are display labels shown in the UI and CLI.
@@ -524,6 +529,16 @@ export interface DeploymentConfig {
 export interface StoriesConfig {
   /** Whether the Stories page and its navigation item are shown. Default false. */
   enabled?: boolean;
+}
+
+/** Dev-only UI copy inspector (#0509). */
+export interface DevInspectorConfig {
+  enabled?: boolean;
+  editorCommand?: string;
+}
+
+export interface DevConfig {
+  inspector?: DevInspectorConfig;
 }
 
 /**

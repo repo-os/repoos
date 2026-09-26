@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-26T13:17:19Z"
-review_passes: 6
 id: "0509"
 title: Add a dev-only click-to-locate inspector for UI copy
 type: feature
@@ -10,11 +8,9 @@ area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-a-dev-only-click-to-locate-inspector
+review_model_override: opencode-go/space-bunny-free
 created_at: "2026-09-26T03:12:15Z"
-last_check_failure: "[object Object]"
-review_rounds: 2
-handoff_signal_retry_count: 2
-dev_error_count: 2
+updated_at: "2026-09-26T11:36:32Z"
 ---
 ## Problem
 
@@ -174,30 +170,4 @@ Sometimes I want to edit the repoos code myself, particularly with simple copy c
 - 2026-09-26T04:39:33Z · review_model_override
 - 2026-09-26T04:39:35Z · status inbox→ready
 - 2026-09-26T04:39:36Z · status ready→active, branch
-- 2026-09-26T06:30:04Z · agent exited with an error (cursor) · the agent process exited with an error — open the task to see the full output
-- 2026-09-26T06:39:39Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-09-26T08:36:19Z · needs_input
-- 2026-09-26T09:18:49Z · agent exited with an error (cursor) · ↻ automatically resuming after a missed handoff signal (attempt 2 of 2)
-- 2026-09-26T09:26:05Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-09-26T11:34:35Z · status active→review
-- 2026-09-26T11:34:35Z · note: repoos check green locally (REPOOS_CHECK_CHANGED=main, 135s tests); handoff signal was missed due to 300s timeout under load
-- 2026-09-26T11:34:36Z · status review→active
 - 2026-09-26T11:36:32Z · status active→review
-- 2026-09-26T11:39:07Z · status review→active
-- 2026-09-26T11:44:12Z · status active→review
-- 2026-09-26T11:45:59Z · status review→active
-- 2026-09-26T11:50:24Z · needs_input dismissed by hello@repoos.org
-- 2026-09-26T12:06:05Z · status active→review
-- 2026-09-26T12:18:24Z · review_model_override
-- 2026-09-26T12:35:35Z · status review→active
-- 2026-09-26T12:35:35Z · note: Fixed spawn error handling, native-element-only annotation, aligned docs; check green with worktree CLI
-- 2026-09-26T12:35:41Z · status active→review
-- 2026-09-26T12:35:41Z · status review→active
-- 2026-09-26T12:37:52Z · status active→review
-- 2026-09-26T12:43:21Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
-- 2026-09-26T13:10:49Z · status review→active
-- 2026-09-26T13:10:49Z · note: Gate on dev UI bundle instead of isDevBuild; hidden inspector settings no longer persisted
-- 2026-09-26T13:10:55Z · status active→review
-- 2026-09-26T13:10:55Z · status review→active
-- 2026-09-26T13:13:14Z · status active→review
-
