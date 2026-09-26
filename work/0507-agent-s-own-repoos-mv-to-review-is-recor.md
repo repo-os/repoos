@@ -2,14 +2,14 @@
 id: "0507"
 title: Unify every route into review behind the handoff finalization
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: server
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-26T02:27:03Z"
-updated_at: "2026-09-26T02:39:13Z"
+updated_at: "2026-09-26T02:54:38Z"
 ---
 ## Problem
 
@@ -104,3 +104,4 @@ came last (`lastFailureLine`) — "Skill routing: …", "Server finalization: ch
 
 - 2026-09-26T02:27:03Z · created · unknown
 - 2026-09-26T02:39:13Z · title, priority, body
+- 2026-09-26T02:54:38Z · status inbox→ready
