@@ -23,7 +23,9 @@ export type Assignee = "ai" | "human" | "unassigned";
 export type Theme = "dark" | "light" | "system";
 
 /** Visual design language of the web UI. */
-export type UiTheme = "classic" | "clear" | "gen z" | "jelly" | "gruvbox";
+/** Every UI theme. `repoos doctor` validates `uiTheme` against this list. */
+export const UI_THEMES = ["classic", "clear", "gen z", "jelly", "gruvbox"] as const;
+export type UiTheme = (typeof UI_THEMES)[number];
 
 /** Which flow the New task drawer opens with. */
 export type TaskMode = "freeform" | "manual";
