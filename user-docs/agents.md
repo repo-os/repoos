@@ -173,8 +173,10 @@ These run as part of a task's life. They're what the `pm`, `engineer`, and
 `reviewer` names in a task's history refer to:
 
 - **engineer** — implements the task. Reads the task file, writes the code in
-  the task's own worktree, runs `repoos check`, and moves the task to `review`
-  when done. It never merges.
+  the task's own worktree, runs `repoos check`, and then *asks* for the task to
+  move to `review` (via `repoos mv <id> review` or the handoff signal) rather
+  than moving it. RepoOS finalizes that request when the turn ends: it re-runs
+  the check, commits the branch and moves the status. It never merges.
 - **reviewer** — reads the branch diff the moment a task lands in `review` and
   writes an advisory report: bugs, edge cases, suggestions. It changes nothing
   and never moves a task. See [Review and close-out](/review-and-close-out).

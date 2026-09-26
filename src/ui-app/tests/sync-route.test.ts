@@ -115,6 +115,9 @@ function makeCtx(
     } as any,
     syncTaskBranch: opts.sync ?? (async () => ({ ok: true, conflicts: [] })),
     onServerStatusChange: () => {},
+    // #0507: review transitions are requests, not writes -- these contexts
+    // never move a task to review, so the handoff finalization is a no-op stub.
+    startUnifiedHandoff: () => ({ started: false, reason: "not wired in this test" }),
   };
 }
 

@@ -492,10 +492,27 @@ const hint = computed<CardHint | null>(() => {
     // 0381: the engineer is idle (paused) but the PM is chatting about this
     // task right now — that is the live thing happening.
     if (pmWorking) return PM_WORKING_HINT;
+    // #0507: the handoff finalization is in flight — the task is still
+    // `active` on purpose, so say what is actually happening rather than
+    // falling through to "paused", which would read as a stopped agent.
+    if (repo.handoffInFlight(t.id)) {
+      return {
+        label: "running checks",
+        title: "RepoOS is committing and running the checks before moving this to review",
+        cls: "tc-reviewing",
+      };
+    }
+    if (repo.handoffErrorFor(t.id)) {
+      return {
+        label: "checks failed",
+        title: repo.handoffErrorFor(t.id) ?? "handoff finalization failed",
+        cls: "tc-needs-input",
+      };
+    }
     if (t.pendingHandoff) {
       return {
         label: "requested review",
-        title: "agent requested review — click Move to review to proceed",
+        title: "agent requested review — RepoOS will finalize it when the turn ends",
         cls: "tc-human",
       };
     }
