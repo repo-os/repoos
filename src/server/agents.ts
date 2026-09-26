@@ -6181,6 +6181,19 @@ export class AgentRunner {
     return "the agent process exited with an error — open the task to see the full output";
   }
 
+  /** needs_input when a handoff was requested but never reached review (#0505). */
+  private escalateHandoffExitWithoutFinalization(
+    taskId: string,
+    task: Task,
+    exitCode: number | null,
+    session: Session | undefined,
+  ): void {
+    const code = exitCode ?? "unknown";
+    const detail = `agent exited with code ${code} after requesting handoff — Restart work or click Review`;
+    this.persistHandoffFailure(taskId, task, detail);
+    this.escalateFailedExit(taskId, task, session, detail);
+  }
+
   /**
    * Flag a task for human attention the instant its agent turn ends non-
    * cleanly (and isn't a deliberate pause or an in-flight handoff recovery —
@@ -6197,19 +6210,6 @@ export class AgentRunner {
    * failed dev round. TaskDrawer.vue's `taskRounds` folds this count into
    * `dev` so D can exceed R when a round errored without being reviewed.)
    */
-  /** needs_input when a handoff was requested but never reached review (#0505). */
-  private escalateHandoffExitWithoutFinalization(
-    taskId: string,
-    task: Task,
-    exitCode: number | null,
-    session: Session | undefined,
-  ): void {
-    const code = exitCode ?? "unknown";
-    const detail = `agent exited with code ${code} after requesting handoff — Restart work or click Review`;
-    this.persistHandoffFailure(taskId, task, detail);
-    this.escalateFailedExit(taskId, task, session, detail);
-  }
-
   private escalateFailedExit(
     taskId: string,
     task: Task,
