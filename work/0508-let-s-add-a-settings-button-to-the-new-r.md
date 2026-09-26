@@ -10,8 +10,9 @@ created_by: hello@repoos.org
 branch: ""
 cli_override: opencode
 model_override: opencode/muse-spark-1.3-contributor-free
+review_model_override: opencode-go/space-bunny-free
 created_at: "2026-09-26T02:35:59Z"
-updated_at: "2026-09-26T02:45:37Z"
+updated_at: "2026-09-26T02:46:02Z"
 ---
 ## Problem
 
@@ -222,3 +223,4 @@ Let’s add a settings button to the new repoos mac app. from there you can have
 - 2026-09-26T02:39:22Z · status inbox→ready
 - 2026-09-26T02:40:10Z · cli_override
 - 2026-09-26T02:45:37Z · model_override
+- 2026-09-26T02:46:02Z · review_model_override
