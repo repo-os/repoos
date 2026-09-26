@@ -8158,6 +8158,297 @@
   }
 }
 
+/* ---------- gruvbox design theme ---------- */
+/* morhetz's retro warm palette, applied to the whole app chrome — not just
+ * code blocks. #0503. Dark is the original bg0 charcoal (#282828) with the
+ * bright accent tier; light is the cream bg0 (#fbf1c7) with the faded accent
+ * tier, so each appearance stays recognisably gruvbox rather than being a
+ * recolour of the other. The design language is deliberately flat: opaque
+ * panels, hairline warm-gray borders, no neon glow and no glass — saturation
+ * lives in the accents, as it does in the original scheme. The one signature
+ * is a carved inset bevel (--bevel-hi / --bevel-lo) on chrome and cards, for
+ * the chunky casing of a vintage terminal, plus tight 4-8px radii instead of
+ * the app's usual pills.
+ *
+ * RepoOS's accent slots are named --cyan/--violet/--green/--red/--amber, so
+ * they map onto gruvbox's hue families rather than one-for-one:
+ *   --cyan   -> aqua   (primary, focus, streaming)
+ *   --violet -> purple (secondary)
+ *   --green  -> green  --red -> red  --amber -> yellow
+ * NO COMMENTS INSIDE THE BLOCKS BELOW: `repoos check`'s theme-contrast guard
+ * parses theme blocks line-by-line, and a `/* … *\/` line between declarations
+ * corrupts the following key, silently dropping a token from the check.
+ * The alpha-carrying tokens that appear in a `[check] contrastPairs` bg
+ * (--tag-stream-bg, --tag-reconnect-bg, --doc-row-sel-bg, --nav-active-bg) are
+ * written as 8-digit hex rather than `rgba()` on purpose: the guard's colour
+ * parser rejects a spaced `rgba(r, g, b, a)`, and a pair whose colour it cannot
+ * read is skipped rather than failed, so hex8 is what makes all nine pairs
+ * genuinely checked for this theme. Do not "tidy" these back to rgba().
+ */
+:root[data-ui-theme="gruvbox"] {
+  --bg: #282828;
+  --bg-2: #32302f;
+  --panel: rgba(60, 56, 54, 0.62);
+  --panel-solid: #3c3836;
+  --border: rgba(146, 131, 116, 0.28);
+  --border-bright: rgba(146, 131, 116, 0.55);
+  --txt: #ebdbb2;
+  --txt-dim: #bdae93;
+  --txt-faint: #928374;
+  --cyan: #8ec07c;
+  --cyan-dim: rgba(142, 192, 124, 0.16);
+  --violet: #d3869b;
+  --violet-dim: rgba(211, 134, 155, 0.16);
+  --green: #b8bb26;
+  --red: #fb4934;
+  --amber: #fabd2f;
+  --bevel-hi: rgba(251, 241, 199, 0.07);
+  --bevel-lo: rgba(29, 32, 33, 0.4);
+  --body-gradient:
+    radial-gradient(900px 560px at 6% -10%, rgba(250, 189, 47, 0.07), transparent 62%),
+    radial-gradient(940px 620px at 102% -4%, rgba(211, 134, 155, 0.08), transparent 58%),
+    radial-gradient(1000px 700px at 50% 118%, rgba(142, 192, 124, 0.05), transparent 62%);
+  --topbar-bg: linear-gradient(180deg, #32302f, #282828);
+  --logo-shadow: 0 0 16px -4px rgba(250, 189, 47, 0.28), 0 4px 14px -8px rgba(0, 0, 0, 0.6);
+  --card-glow: 0 0 0 1px rgba(146, 131, 116, 0.22), 0 4px 14px -8px rgba(0, 0, 0, 0.55);
+  --nav-hover-bg: rgba(146, 131, 116, 0.12);
+  --nav-active-bg: linear-gradient(90deg, #8ec07c38, #fabd2f14);
+  --nav-active-color: #ebdbb2;
+  --overlay-bg: rgba(29, 32, 33, 0.72);
+  --panel-gradient: linear-gradient(180deg, #3c3836, #32302f);
+  --drawer-shadow: -18px 0 48px -24px rgba(0, 0, 0, 0.7);
+  --btn-primary-bg: linear-gradient(135deg, #8ec07c, #689d6a);
+  --btn-primary-color: #282828;
+  --ai-chat-send-bg: linear-gradient(135deg, #fabd2f, #fe8019);
+  --ai-chat-send-color: #282828;
+  --btn-new-bg: linear-gradient(135deg, #fabd2f, #fe8019);
+  --btn-new-color: #282828;
+  --status-on-bg: linear-gradient(135deg, #83a598, #d3869b);
+  --status-on-color: #282828;
+  --md-body-bg: rgba(29, 32, 33, 0.4);
+  --tabbar-bg: linear-gradient(180deg, #32302f, #282828);
+  --scrollbar-thumb: rgba(146, 131, 116, 0.32);
+  --doc-row-sel-bg: #d3869b2e;
+  --doc-row-sel-color: #ebdbb2;
+  --green-tint: rgba(184, 187, 38, 0.12);
+  --green-border-tint: rgba(184, 187, 38, 0.32);
+  --red-tint: rgba(251, 73, 52, 0.12);
+  --red-border-tint: rgba(251, 73, 52, 0.32);
+  --amber-tint: rgba(250, 189, 47, 0.12);
+  --amber-border-tint: rgba(250, 189, 47, 0.32);
+  --violet-tint: var(--violet-dim);
+  --violet-border-tint: rgba(211, 134, 155, 0.32);
+  --tag-stream-bg: #689d6a38;
+  --tag-stream-color: #8ec07c;
+  --tag-reconnect-bg: #cc241d33;
+  --tag-reconnect-color: #fb4934;
+  --chip-bg: rgba(146, 131, 116, 0.14);
+  --dot-glow: 0 0 6px currentColor;
+  --background: #282828;
+  --foreground: #ebdbb2;
+  --card: rgba(60, 56, 54, 0.62);
+  --card-foreground: #ebdbb2;
+  --popover: #3c3836;
+  --popover-foreground: #ebdbb2;
+  --primary: #8ec07c;
+  --primary-foreground: #282828;
+  --secondary: rgba(146, 131, 116, 0.14);
+  --secondary-foreground: #ebdbb2;
+  --muted: #32302f;
+  --muted-foreground: #bdae93;
+  --accent: rgba(142, 192, 124, 0.16);
+  --accent-foreground: #8ec07c;
+  --destructive: #fb4934;
+  --destructive-foreground: #282828;
+  --input: rgba(146, 131, 116, 0.26);
+  --ring: #fabd2f;
+  --radius: 0.5rem;
+}
+:root[data-ui-theme="gruvbox"][data-theme="light"] {
+  --bg: #fbf1c7;
+  --bg-2: #f2e5bc;
+  --panel: rgba(235, 219, 178, 0.62);
+  --panel-solid: #ebdbb2;
+  --border: rgba(60, 56, 54, 0.16);
+  --border-bright: rgba(60, 56, 54, 0.34);
+  --txt: #3c3836;
+  --txt-dim: #665c54;
+  --txt-faint: #928374;
+  --cyan: #427b58;
+  --cyan-dim: rgba(66, 123, 88, 0.1);
+  --violet: #8f3f71;
+  --violet-dim: rgba(143, 63, 113, 0.1);
+  --green: #79740e;
+  --red: #9d0006;
+  --amber: #b57614;
+  --bevel-hi: rgba(255, 249, 228, 0.55);
+  --bevel-lo: rgba(60, 56, 54, 0.14);
+  --body-gradient:
+    radial-gradient(900px 560px at 6% -10%, rgba(181, 118, 20, 0.07), transparent 62%),
+    radial-gradient(940px 620px at 102% -4%, rgba(143, 63, 113, 0.06), transparent 58%);
+  --topbar-bg: linear-gradient(180deg, #f2e5bc, #fbf1c7);
+  --logo-shadow: 0 2px 12px -4px rgba(120, 110, 100, 0.4);
+  --card-glow: 0 0 0 1px rgba(60, 56, 54, 0.1), 0 4px 14px -9px rgba(60, 56, 54, 0.22);
+  --nav-hover-bg: rgba(60, 56, 54, 0.06);
+  --nav-active-bg: linear-gradient(90deg, #427b5829, #b5761414);
+  --nav-active-color: #3c3836;
+  --overlay-bg: rgba(124, 111, 100, 0.42);
+  --panel-gradient: linear-gradient(180deg, #ebdbb2, #f2e5bc);
+  --drawer-shadow: -18px 0 48px -26px rgba(60, 56, 54, 0.35);
+  --btn-primary-bg: linear-gradient(135deg, #427b58, #076678);
+  --btn-primary-color: #fbf1c7;
+  --ai-chat-send-bg: linear-gradient(135deg, #b57614, #af3a03);
+  --ai-chat-send-color: #fbf1c7;
+  --btn-new-bg: linear-gradient(135deg, #b57614, #af3a03);
+  --btn-new-color: #fbf1c7;
+  --status-on-bg: linear-gradient(135deg, #8f3f71, #076678);
+  --status-on-color: #fbf1c7;
+  --md-body-bg: rgba(60, 56, 54, 0.04);
+  --tabbar-bg: linear-gradient(180deg, #f2e5bc, #fbf1c7);
+  --scrollbar-thumb: rgba(60, 56, 54, 0.2);
+  --doc-row-sel-bg: #8f3f711f;
+  --doc-row-sel-color: #3c3836;
+  --green-tint: rgba(121, 116, 14, 0.1);
+  --green-border-tint: rgba(121, 116, 14, 0.28);
+  --red-tint: rgba(157, 0, 6, 0.08);
+  --red-border-tint: rgba(157, 0, 6, 0.26);
+  --amber-tint: rgba(181, 118, 20, 0.1);
+  --amber-border-tint: rgba(181, 118, 20, 0.3);
+  --violet-tint: var(--violet-dim);
+  --violet-border-tint: rgba(143, 63, 113, 0.28);
+  --tag-stream-bg: #427b581f;
+  --tag-stream-color: #427b58;
+  --tag-reconnect-bg: #9d00061a;
+  --tag-reconnect-color: #9d0006;
+  --chip-bg: rgba(60, 56, 54, 0.08);
+  --dot-glow: 0 0 4px currentColor;
+  --background: #fbf1c7;
+  --foreground: #3c3836;
+  --card: rgba(235, 219, 178, 0.62);
+  --card-foreground: #3c3836;
+  --popover: #ebdbb2;
+  --popover-foreground: #3c3836;
+  --primary: #427b58;
+  --primary-foreground: #fbf1c7;
+  --secondary: rgba(60, 56, 54, 0.08);
+  --secondary-foreground: #3c3836;
+  --muted: #f2e5bc;
+  --muted-foreground: #665c54;
+  --accent: rgba(66, 123, 88, 0.12);
+  --accent-foreground: #427b58;
+  --destructive: #9d0006;
+  --destructive-foreground: #fbf1c7;
+  --input: rgba(60, 56, 54, 0.2);
+  --ring: #b57614;
+  --radius: 0.5rem;
+}
+
+/* gruvbox: flat opaque panels, hairline warm borders, a carved inset bevel on
+ * chrome and cards, and tight chunky radii — the deliberate opposite of
+ * classic's glass-and-glow and jelly's bouncy gel. */
+[data-ui-theme="gruvbox"] .glass,
+[data-ui-theme="gruvbox"] .topbar,
+[data-ui-theme="gruvbox"] .tabbar {
+  backdrop-filter: blur(3px) saturate(1.05);
+}
+[data-ui-theme="gruvbox"] .glass {
+  border-radius: 8px;
+  box-shadow:
+    inset 0 1px 0 var(--bevel-hi),
+    0 10px 26px -18px rgba(0, 0, 0, 0.65);
+}
+[data-ui-theme="gruvbox"] .topbar {
+  box-shadow: inset 0 -1px 0 var(--bevel-lo);
+}
+[data-ui-theme="gruvbox"] .task-card {
+  border-radius: 7px;
+  box-shadow:
+    inset 0 1px 0 var(--bevel-hi),
+    0 8px 20px -16px rgba(0, 0, 0, 0.6);
+}
+[data-ui-theme="gruvbox"] .task-card:hover {
+  border-color: var(--border-bright);
+}
+[data-ui-theme="gruvbox"] .md-body {
+  border-radius: 6px;
+}
+[data-ui-theme="gruvbox"] .meta-grid {
+  border-radius: 6px;
+}
+[data-ui-theme="gruvbox"] .close-x {
+  border-radius: 5px;
+}
+[data-ui-theme="gruvbox"] .btn {
+  border-radius: 6px;
+}
+[data-ui-theme="gruvbox"] .new-btn {
+  border-radius: 6px;
+  box-shadow: inset 0 1px 0 var(--bevel-hi);
+}
+[data-ui-theme="gruvbox"] .status-btn {
+  border-radius: 6px;
+}
+[data-ui-theme="gruvbox"] .chip {
+  border-radius: 4px;
+}
+[data-ui-theme="gruvbox"] .tag {
+  border-radius: 4px;
+}
+[data-ui-theme="gruvbox"] .col-count {
+  border-radius: 4px;
+}
+[data-ui-theme="gruvbox"] .stat-ico {
+  border-radius: 5px;
+  box-shadow: inset 0 1px 0 var(--bevel-hi);
+}
+[data-ui-theme="gruvbox"] .side-foot {
+  border-radius: 6px;
+}
+[data-ui-theme="gruvbox"] .nav-item {
+  border-radius: 5px;
+}
+/* The active-nav rail is the app's existing block cursor; gruvbox makes it
+ * chunkier, square and glow-free to match the flat casing. */
+[data-ui-theme="gruvbox"] .nav-item.active::before {
+  width: 4px;
+  border-radius: 0;
+  box-shadow: none;
+}
+[data-ui-theme="gruvbox"] .search-input {
+  border-radius: 5px;
+}
+[data-ui-theme="gruvbox"] .search-drop {
+  border-radius: 7px;
+}
+[data-ui-theme="gruvbox"] .doc-row {
+  border-radius: 5px;
+}
+[data-ui-theme="gruvbox"] .board-col.collapsed .col-head {
+  border-radius: 7px;
+}
+[data-ui-theme="gruvbox"] .board-col.collapsed .col-cap {
+  border-radius: 7px 7px 0 0;
+}
+[data-ui-theme="gruvbox"] .btn:active,
+[data-ui-theme="gruvbox"] .new-btn:active,
+[data-ui-theme="gruvbox"] .status-btn:active {
+  transform: translateY(1px);
+}
+[data-ui-theme="gruvbox"] :focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+/* gruvbox: no press nudge for reduced-motion users */
+@media (prefers-reduced-motion: reduce) {
+  [data-ui-theme="gruvbox"] .btn:active,
+  [data-ui-theme="gruvbox"] .new-btn:active,
+  [data-ui-theme="gruvbox"] .status-btn:active {
+    transform: none;
+  }
+}
+
 /* design-theme switch (sidebar) */
 .theme-switch {
   margin-top: 9px;

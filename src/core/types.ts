@@ -23,7 +23,7 @@ export type Assignee = "ai" | "human" | "unassigned";
 export type Theme = "dark" | "light" | "system";
 
 /** Visual design language of the web UI. */
-export type UiTheme = "classic" | "clear" | "gen z" | "jelly";
+export type UiTheme = "classic" | "clear" | "gen z" | "jelly" | "gruvbox";
 
 /** Which flow the New task drawer opens with. */
 export type TaskMode = "freeform" | "manual";
@@ -354,7 +354,7 @@ export interface RepoOSConfig {
   ntfyBaseUrl?: string;
   /** UI theme preference: dark, light, or system (follow OS). Cosmetic only. */
   theme?: Theme;
-  /** UI design language: classic (current) or clear. Cosmetic only. */
+  /** UI design language: classic, clear, gen z, jelly, or gruvbox. Cosmetic only. */
   uiTheme?: UiTheme;
   /** New-task drawer mode: freeform (PM agent) or manual form. Default "freeform". */
   defaultTaskMode?: TaskMode;
@@ -864,6 +864,17 @@ export interface CheckStepConfig {
  * scopes whose declarations it inherits (cascade order, later wins). RepoOS's
  * own `:root`/`[data-theme]`/`[data-ui-theme]` blocks are declared this way in
  * its `repoos.toml`; the guard itself knows none of those selector names.
+ *
+ * Two ways a declared scope still checks nothing, both silent rather than
+ * failures — a theme author needs to know about both:
+ *  1. An unregistered block. A `:root[data-ui-theme="…"]` block with no
+ *     matching scope here is never evaluated. (RepoOS's own suite now asserts
+ *     both directions of this match, in `check-stylesheet-config.test.ts`.)
+ *  2. A block the scanner cannot read. `parseThemeBlocks` is line-oriented:
+ *     the selector must open the block on one line ending in `{`, the block
+ *     must be top-level (not nested in `@media`/`@layer`), one declaration per
+ *     line, and no `/* … *\/` comment between declarations — a comment line
+ *     corrupts the following key and silently drops that token from the check.
  */
 export interface CheckThemeScope {
   /** CSS selector opening the block, e.g. `:root[data-ui-theme="clear"]`. */
