@@ -3970,6 +3970,14 @@ export class AgentRunner {
     this.clearPendingHandoff(taskId);
   }
 
+  /**
+   * Drop a persisted handoff without running finalization. Used when a task
+   * leaves `active` by any route (#0505) and by internal supersede paths.
+   */
+  discardPendingHandoff(taskId: string): void {
+    this.clearPendingHandoff(taskId);
+  }
+
   /** Remove a persisted handoff request (by task id). */
   private clearPendingHandoff(taskId: string): void {
     const store = readPendingHandoffs(this.cacheDir);
@@ -4731,10 +4739,10 @@ export class AgentRunner {
       // The final write can arrive just before close, before the next polling
       // tick. Drain synchronously so no trailing output is lost.
       for (const tailer of this.entries.get(taskId)?.tailers ?? []) tailer.drain();
-      this.cleanup(taskId, code === 0);
+      this.cleanup(taskId, code === 0, code);
     };
     proc.on("close", finishTurn);
-    proc.on("error", () => this.cleanup(taskId, false));
+    proc.on("error", () => this.cleanup(taskId, false, null));
     // A very short-lived command can exit between `spawn()` and listener
     // registration. ChildProcess does not replay a missed `close` event, so
     // finalize it explicitly instead of leaving its last log line and runner
@@ -5440,7 +5448,7 @@ export class AgentRunner {
           process.kill(entry.adoptedPid, 0);
         } catch {
           // PID died during adoption — clean up
-          this.cleanup(taskId, false);
+          this.cleanup(taskId, false, null);
           continue;
         }
       }
@@ -5608,7 +5616,7 @@ export class AgentRunner {
   }
 
   /** Drop the registry entry for a task (idempotent) and announce it. */
-  private cleanup(taskId: string, exitedCleanly: boolean): void {
+  private cleanup(taskId: string, exitedCleanly: boolean, exitCode: number | null = null): void {
     const entry = this.entries.get(taskId);
     if (!entry) return;
     // Capture before the entry is deleted below so the review-completion hook
@@ -5735,56 +5743,63 @@ export class AgentRunner {
     // flag it the moment the process ends rather than waiting for
     // TaskWatchdog's staleness poll, which wouldn't even catch a fast
     // crash-on-exit (an expired CLI auth session, say): the process isn't
-    // stalled, it's just done. Excludes `entry.handoffRequested`: that shape
-    // already has its own recovery path below ("retained for recovery" on
-    // next boot) and must not be double-flagged before that has a chance to
-    // run.
+    // stalled, it's just done. Handoff-requested turns finalize below instead.
     if (!exitedCleanly && !this.isPaused(taskId) && !entry.handoffRequested && taskForHandoff) {
       this.escalateFailedExit(taskId, taskForHandoff, session);
     }
-    if (
-      entry.handoffRequested &&
-      exitedCleanly &&
-      taskForHandoff &&
-      entry.branch &&
-      entry.workdir
-    ) {
-      // Clean exit with handoff requested: finalization owns the persisted
-      // request until it reaches a terminal result (#0501).
-      const request: AgentHandoffRequest = {
-        taskId,
-        runId: entry.runId,
-        branch: entry.branch,
-        workdir: entry.workdir,
-        ...(session?.sessionId ? { sessionId: session.sessionId } : {}),
-      };
-      this.authorizedHandoffs.set(request.runId, request);
-      this.handoffsInFlight.add(taskId);
-      void Promise.resolve(this.onHandoff?.(request))
-        .catch((err) => {
-          this.appendLine(taskId, "sys", `✗ server-side handoff failed: ${(err as Error).message}`);
-        })
-        .finally(() => this.handoffsInFlight.delete(taskId));
-    } else if (entry.handoffRequested && exitedCleanly && !taskForHandoff) {
-      this.appendLine(
-        taskId,
-        "sys",
-        "✗ handoff was not started because the task could not be resolved",
-      );
-      this.clearPendingHandoff(taskId);
-      this.persistHandoffFailure(taskId, undefined, "task could not be resolved");
-    } else if (entry.handoffRequested && !exitedCleanly) {
-      // Interrupted turn: the persisted request survives for recovery on next boot (#0235).
-      this.appendLine(
-        taskId,
-        "sys",
-        "⚠ handoff retained for recovery — the request will be finalized on the next server start",
-      );
-      this.persistHandoffFailure(
-        taskId,
-        entry.task,
-        "agent turn was interrupted · handoff retained for recovery",
-      );
+    if (entry.handoffRequested) {
+      if (taskForHandoff && entry.branch && entry.workdir) {
+        // Server is alive — finalize now for both clean and unclean exits (#0505).
+        // Persist-at-signal time still covers a server crash mid-turn (#0235).
+        const request: AgentHandoffRequest = {
+          taskId,
+          runId: entry.runId,
+          branch: entry.branch,
+          workdir: entry.workdir,
+          ...(session?.sessionId ? { sessionId: session.sessionId } : {}),
+        };
+        this.authorizedHandoffs.set(request.runId, request);
+        this.handoffsInFlight.add(taskId);
+        const uncleanHandoffExit = !exitedCleanly;
+        void Promise.resolve(this.onHandoff?.(request))
+          .catch((err) => {
+            this.appendLine(
+              taskId,
+              "sys",
+              `✗ server-side handoff failed: ${(err as Error).message}`,
+            );
+          })
+          .finally(() => {
+            this.handoffsInFlight.delete(taskId);
+            if (uncleanHandoffExit && !this.isPaused(taskId) && this.hasPendingHandoff(taskId)) {
+              this.escalateHandoffExitWithoutFinalization(
+                taskId,
+                taskForHandoff,
+                exitCode,
+                session,
+              );
+            }
+          });
+      } else if (!taskForHandoff) {
+        this.appendLine(
+          taskId,
+          "sys",
+          "✗ handoff was not started because the task could not be resolved",
+        );
+        this.clearPendingHandoff(taskId);
+        this.persistHandoffFailure(taskId, undefined, "task could not be resolved");
+      } else {
+        this.appendLine(
+          taskId,
+          "sys",
+          "✗ handoff was not started because branch or workdir was missing",
+        );
+        this.clearPendingHandoff(taskId);
+        this.persistHandoffFailure(taskId, taskForHandoff, "branch or workdir missing");
+        if (!exitedCleanly && !this.isPaused(taskId)) {
+          this.escalateHandoffExitWithoutFinalization(taskId, taskForHandoff, exitCode, session);
+        }
+      }
     }
     // A preview request is honored only after a clean turn (#0121): the runner
     // mints a capability bound to that run's task/branch/worktree and hands the
@@ -6182,7 +6197,25 @@ export class AgentRunner {
    * failed dev round. TaskDrawer.vue's `taskRounds` folds this count into
    * `dev` so D can exceed R when a round errored without being reviewed.)
    */
-  private escalateFailedExit(taskId: string, task: Task, session: Session | undefined): void {
+  /** needs_input when a handoff was requested but never reached review (#0505). */
+  private escalateHandoffExitWithoutFinalization(
+    taskId: string,
+    task: Task,
+    exitCode: number | null,
+    session: Session | undefined,
+  ): void {
+    const code = exitCode ?? "unknown";
+    const detail = `agent exited with code ${code} after requesting handoff — Restart work or click Review`;
+    this.persistHandoffFailure(taskId, task, detail);
+    this.escalateFailedExit(taskId, task, session, detail);
+  }
+
+  private escalateFailedExit(
+    taskId: string,
+    task: Task,
+    session: Session | undefined,
+    detailOverride?: string,
+  ): void {
     try {
       const current = parseTask({
         content: readFileSync(task.absPath, "utf8"),
@@ -6199,9 +6232,10 @@ export class AgentRunner {
       };
       const engine = session?.engine && session.engine !== "plain" ? ` (${session.engine})` : "";
       const detail =
-        this.hasPendingHandoff(taskId) || handoffFinalizationWasInterrupted(session)
+        detailOverride ??
+        (this.hasPendingHandoff(taskId) || handoffFinalizationWasInterrupted(session)
           ? HANDOFF_FINALIZATION_INTERRUPTED_DETAIL
-          : this.lastFailureLine(session);
+          : this.lastFailureLine(session));
       if (current.needsInput) {
         // A repeat error before the human cleared the flag — still refresh
         // the detail so the banner shows the LATEST failure, not whichever

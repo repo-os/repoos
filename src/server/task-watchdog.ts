@@ -492,14 +492,6 @@ export class TaskWatchdog {
     }
     // Bounded: never surface a task the watchdog already surfaced.
     if (alreadySurfaced(task.body)) return false;
-    // A task whose handoff was retained for recovery (#0235) is not stuck —
-    // the recovery is in progress or will fire on the next boot.  But only
-    // when no recovery attempt has already been recorded: if recoverPending-
-    // Handoffs fired and finalization failed, the Activity log will contain a
-    // "handoff recovery attempted" entry and the watchdog must be free to
-    // surface/escalate the task again.
-    if (HANDOFF_RETAINED.test(task.body) && !HANDOFF_RECOVERY_ATTEMPTED.test(task.body))
-      return false;
     if (!isStuckActiveTask(task.body, this.stalenessThresholdMs, now)) return false;
     // The Activity log looks stale, but `isRunning()` above only reflects the
     // in-memory registry, which is empty after every server restart with no
