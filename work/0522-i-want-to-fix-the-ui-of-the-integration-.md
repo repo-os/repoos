@@ -30,8 +30,10 @@ queue numbers and timer as pills/buttons whatever that styling is
 ## Screenshots
 
 ![Screenshot-2026-09-26-at-19.52.38](/api/tasks/0522/attachments/screenshot-1.png)
+![Screenshot-2026-09-26-at-19.52.47](/api/tasks/0522/attachments/screenshot-2.png)
 
 ## Activity
 
 - 2026-09-26T12:01:02Z · created · hello@repoos.org
+- 2026-09-26T12:01:03Z · screenshots
 - 2026-09-26T12:01:03Z · screenshots
