@@ -170,7 +170,9 @@ Assign the task to an agent from the UI. RepoOS creates a dedicated git
 worktree and branch for it, runs the coding agent there, and streams its output
 live. Your primary checkout is never touched.
 
-When the agent is finished it moves the task to `review` and stops. It does
+When the agent is finished it asks for the task to move to `review` and stops.
+RepoOS re-runs the check, commits the branch and does the moving — the task
+stays `active` with a *running checks* badge until that finishes. The agent does
 **not** merge its own work. Review the diff, then move the
 task to `done`, which is what actually merges the branch to your trunk.
 

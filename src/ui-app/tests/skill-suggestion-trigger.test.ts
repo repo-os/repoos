@@ -228,7 +228,22 @@ describe("skill-suggestion lifecycle (#0429)", () => {
       const task = await taskWithWorktree(server, fx, "Do a multi-step thing");
       seedTranscript(fx.root, task.id);
 
-      await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "review" });
+      // #0507: a move into `review` is a request that runs the handoff
+      // finalization. `skipChecks` keeps this fixture from shelling out to a
+      // real `repoos check`; the review-triggered skill pass under test is
+      // unaffected by which check path ran.
+      const moved = await api(server, "PATCH", `/api/tasks/${task.id}`, {
+        status: "review",
+        skipChecks: true,
+      });
+      expect(moved.status).toBe(202);
+      // The finalization is what moves the task, so the review (and therefore
+      // the transition this test is about) only happens after it lands.
+      await waitFor(
+        () => /^status: review$/m.test(readFileSync(task.absPath, "utf8")),
+        15_000,
+        "the handoff finalization to move the task to review",
+      );
 
       // The review itself must still run…
       const reportFile = join(fx.root, ".repoos", "reviews", `${task.id}.md`);

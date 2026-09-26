@@ -130,8 +130,13 @@ import { createRemoteValidator, type RemoteValidator } from "./remote-validation
 import { buildIntegrationSnapshot } from "./integration-status.js";
 import { resolvePipelineCheckPlan } from "./check-plan-info.js";
 import { createRepositoryLock, createRootLock } from "./repo-lock.js";
-import { handoffTask, scheduleCheckFailureRetry, scheduleMergeConflictRetry } from "./handoff.js";
-import { guardReviewTransition } from "./review-guard.js";
+import {
+  handoffTask,
+  finalizeReviewHandoff,
+  scheduleCheckFailureRetry,
+  scheduleMergeConflictRetry,
+  type HandoffOrigin,
+} from "./handoff.js";
 import { PreviewManager, probePreview } from "./preview.js";
 import { ReviewManager } from "./review.js";
 import { SkillSuggestionManager, markOriginTask } from "./skill-suggestions.js";
@@ -1776,24 +1781,131 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const runFreeformAdoption = (): void => freeformRuns.adopt();
   void indexReady.then(runFreeformAdoption, runFreeformAdoption).catch(() => {});
 
-  // #0210: every transition INTO `review` that bypasses the trusted PATCH and
-  // handoff routes — a direct task-file edit picked up by the watcher — must
-  // still pass the commit/vacuity gate. The index defers such transitions to
-  // this guard; returning false reverts the file to its previous status.
-  index.setReviewGuard(async (task: Task, prev: Task): Promise<boolean> => {
-    const gate = await guardReviewTransition(config, task);
-    if (gate.ok) return true;
-    try {
-      emitEvent({
-        type: "task.progress",
-        id: task.id,
-        step: "review-rejected",
-        detail: `Direct edit to review rejected: ${gate.detail}. The task was reverted to ${prev.status}.`,
-        at: new Date().toISOString(),
-      });
-    } catch {
-      /* best-effort signalling */
+  /**
+   * #0507: the single entry point for EVERY route into `review` that is not the
+   * agent's own handoff signal — the Review button, board drag-drop, a direct
+   * `PATCH status: review`, a task-file edit the watcher picked up, and a
+   * `repoos mv` from a human's shell. All of them run the same scoped
+   * `repoos check` → commit/vacuity gate → `review` sequence the signal does,
+   * via `finalizeReviewHandoff`.
+   *
+   * It is deliberately fire-and-forget: `repoos check` can take minutes, and
+   * holding an HTTP request (or a board drag) open for that long is not
+   * acceptable. So the task stays exactly where it was — `active` — while this
+   * runs, the in-flight marker makes the card read "running checks…", and the
+   * only thing that ever writes `status: review` is the finalization itself
+   * once the check and the gate have both passed. A failure leaves the task
+   * `active` with the reason in the transcript, the activity log and a
+   * `task.progress` event the UI shows.
+   *
+   * Unlike the agent path this is not resumable across a server reload: there
+   * is no runner capability to re-adopt. A reload mid-handoff simply leaves the
+   * task `active`, and asking again is one click.
+   */
+  const startUnifiedHandoff = (
+    task: Task,
+    opts: { origin: HandoffOrigin; skipChecks?: boolean; actor?: string } = { origin: "api" },
+  ): { started: boolean; reason?: string } => {
+    // Claimed through the runner so every existing consumer of
+    // isHandoffInFlight/hasPendingHandoff — the task card's "requested review"
+    // hint, the CTO monitor's nudge suppression, the watchdog — sees this
+    // handoff too, without each needing to know which route started it.
+    if (!runner.markHandoffInFlight(task.id)) {
+      return { started: false, reason: "a handoff is already running for this task" };
     }
+    const started = Date.now();
+    const progress = (step: string, detail?: string): void => {
+      try {
+        emitEvent({
+          type: "task.progress",
+          id: task.id,
+          step: `handoff:${step}`,
+          ...(detail ? { detail } : {}),
+          at: new Date().toISOString(),
+        });
+      } catch {
+        /* best-effort signalling */
+      }
+    };
+    progress("started", opts.skipChecks ? "commit gate only (checks skipped)" : "repoos check");
+    void finalizeReviewHandoff(config, task, {
+      origin: opts.origin,
+      skipChecks: opts.skipChecks,
+      actor: opts.actor,
+      onStatusChange: onServerStatusChange,
+      taskChecks,
+      onTaskCheckEvent,
+      onProgress: (step) => {
+        if (step === "validate") return;
+        progress(step, undefined);
+        if (step !== "done") runner.system(task.id, `Server finalization: ${step}`);
+      },
+    })
+      .then((result) => {
+        if (result.ok) {
+          // The finalization wrote both the worktree and the canonical copy;
+          // re-read the canonical file into the live index as a guarded change
+          // so the transition fires the normal review hooks exactly once.
+          index.applyFileChange(task.absPath, { guarded: true });
+          runner.system(
+            task.id,
+            `✓ Server finalization complete — task moved to review (${Math.round((Date.now() - started) / 1000)}s)`,
+          );
+          progress("done", "moved to review");
+          return;
+        }
+        const detail = result.detail ?? "unknown error";
+        const message = `✗ Server finalization stopped at ${result.step}: ${detail}. The task stays ${task.status} — fix the failure and ask again.`;
+        runner.system(task.id, message);
+        // Durable: the watchdog and any later reader of the activity log can
+        // see why this handoff did not land, across a reload.
+        runner.persistHandoffFailure(
+          task.id,
+          task,
+          `${opts.origin} handoff failed at ${result.step} · ${detail}`,
+        );
+        progress("failed", detail);
+      })
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : String(err);
+        runner.system(task.id, `✗ Server finalization crashed: ${message}`);
+        progress("failed", message);
+      })
+      .finally(() => {
+        runner.releaseHandoffInFlight(task.id);
+      });
+    return { started: true };
+  };
+
+  // #0210/#0507: every transition INTO `review` that did NOT come through one
+  // of the server's own routes — a direct task-file edit, a `repoos mv` from a
+  // human's shell, an agent editing its own file — used to be held only to the
+  // commit/vacuity gate, and then allowed straight into `review`. That made
+  // the routes agents actually use the *least* checked ones (#0505, #0499).
+  //
+  // The index defers such transitions here and reverts the file to its previous
+  // status whatever we decide, so the task stays `active` and the human sees
+  // that nothing moved. We then run the SAME finalization the handoff signal
+  // runs — scoped `repoos check`, commit gate, `review` — which is what makes
+  // "no route may reach review with only the commit/vacuity gate" true rather
+  // than aspirational. Returning false is therefore the NORMAL outcome here,
+  // not a rejection: the real transition happens inside `finalizeReviewHandoff`.
+  //
+  // The exception matters and is not an optimization. The finalization's OWN
+  // write of `status: review` reaches the same watcher, and the agent handoff
+  // path's slot stays held until `onHandoff` returns, so checking the
+  // in-flight marker is what keeps the finalizer from fighting itself: without
+  // it, the guard reverts the file the finalization just wrote, fails to claim
+  // the (already held) slot, and the task bounces back to `active` with a green
+  // check behind it — or, worse, silently starts a second check minutes later.
+  //
+  // `prev`, not the edited `task`: the index is about to rewrite the file back
+  // to `prev.status`, and the finalization is what re-writes it to `review`.
+  // Handing it the post-edit task would make it see "already in review" and skip
+  // that write entirely.
+  index.setReviewGuard(async (task: Task, prev: Task): Promise<boolean> => {
+    if (runner.isHandoffInFlight(task.id)) return true; // our own finalization's write
+    startUnifiedHandoff(prev, { origin: "task-file" });
     return false;
   });
 
@@ -2584,6 +2696,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         uiDir,
         syncTaskBranch,
         onServerStatusChange,
+        startUnifiedHandoff,
         reload,
       } as RouteContext;
 

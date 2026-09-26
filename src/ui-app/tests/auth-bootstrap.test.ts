@@ -93,6 +93,9 @@ function makeCtx(root: string, bootstrapAdminEmail: string | undefined): RouteCo
       getSystemLogs: () => [],
     } as unknown as RouteContext["logger"],
     onServerStatusChange: () => {},
+    // #0507: review transitions are requests, not writes -- these contexts
+    // never move a task to review, so the handoff finalization is a no-op stub.
+    startUnifiedHandoff: () => ({ started: false, reason: "not wired in this test" }),
     syncTaskBranch: async () => ({ ok: true, conflicts: [] }),
   };
 }

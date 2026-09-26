@@ -14,6 +14,7 @@ import type { Logger } from "../../core/logger.js";
 import type { DoneStep } from "../done.js";
 import type { RemoteValidator } from "../remote-validation.js";
 import type { FreeformRunManager } from "../freeform-runs.js";
+import type { HandoffOrigin } from "../handoff.js";
 
 export interface SyncResult {
   ok: boolean;
@@ -69,6 +70,19 @@ export interface RouteContext {
   // Functions
   syncTaskBranch: (task: Task) => Promise<SyncResult>;
   onServerStatusChange: (task: Task, prev: Status, next: Status) => void;
+  /**
+   * #0507: run the one handoff finalization for a task, from any route that is
+   * not the agent's own handoff signal. Fire-and-forget — the task stays
+   * `active` with a visible "running checks…" state until the scoped
+   * `repoos check` and the commit gate have both passed, and `finalizeReviewHandoff`
+   * itself is the only thing that writes `status: review`. Injected rather than
+   * imported so every route shares the server's single instance (and its
+   * in-flight bookkeeping) instead of each spawning its own finalization.
+   */
+  startUnifiedHandoff: (
+    task: Task,
+    opts?: { origin?: HandoffOrigin; skipChecks?: boolean; actor?: string },
+  ) => { started: boolean; reason?: string };
 }
 
 export type RouteHandler = (

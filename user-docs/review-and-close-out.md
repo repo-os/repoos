@@ -6,10 +6,36 @@ that: the **review process** — what happens while a task sits in `review` — 
 
 ## Why an agent can't merge itself
 
-When an agent finishes a task it moves it to `review` and stops. It does not
-merge its own branch, and it can't: the merge happens only when a human moves
-the task to `done`. That's the whole design — agents do the work, and you
-review and decide what merges.
+When an agent finishes a task it hands it off and stops. It does not merge its
+own branch, and it can't: the merge happens only when a human moves the task to
+`done`. That's the whole design — agents do the work, and you review and decide
+what merges.
+
+## Getting a task into `review`
+
+Moving a task to `review` is a **request**, not a status flip. RepoOS commits
+the branch, runs `repoos check`, passes the commit guard, and only then moves
+the task. Every route into `review` goes through that same finalization — the
+**Review** button in the task drawer, dragging a card into the review column, a
+`repoos mv <id> review` from a terminal, or an agent's own handoff. Nothing
+reaches `review` on the commit guard alone.
+
+Until it finishes, **the task stays in `active`** and the card reads *running
+checks*. That is deliberate: the alternative is a task that claims to be ready
+for review before anything verified it. If the check fails, the task stays
+`active` with the reason shown, the work is untouched, and you can fix it and
+ask again.
+
+**Review** opens a small dialog:
+
+- **Run checks** (default) — the full finalization described above.
+- **Skip checks** — the commit guard only. It is recorded in the task's activity
+  log as "review without checks", and **Move to done** still runs the full check
+  before it merges, so this skips the early pass, not the gate. Use it when you
+  already know the check is green and do not want to wait for it twice.
+
+Dragging a card into the review column asks the same question. Agents never get
+the skip option.
 
 ## The reviewer agent
 
