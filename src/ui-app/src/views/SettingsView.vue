@@ -500,6 +500,7 @@ const THEME_SWATCHES: Record<string, { bg: string; a: string; b: string }> = {
   clear: { bg: "#161b23", a: "#5fb8e6", b: "#9f8cf2" },
   "gen z": { bg: "#241a3d", a: "#ff5df0", b: "#b58cff" },
   jelly: { bg: "#1a2a44", a: "#33e6c4", b: "#ff5eb4" },
+  gruvbox: { bg: "#32302f", a: "#fabd2f", b: "#8ec07c" },
 };
 function swatchFor(id: string): { bg: string; a: string; b: string } {
   return THEME_SWATCHES[id] ?? { bg: "var(--panel-solid)", a: "var(--cyan)", b: "var(--violet)" };

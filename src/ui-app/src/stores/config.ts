@@ -41,6 +41,7 @@ export const DESIGN_THEMES: DesignTheme[] = [
   { id: "clear", label: "Clear" },
   { id: "gen z", label: "Gen Z" },
   { id: "jelly", label: "Jelly" },
+  { id: "gruvbox", label: "Gruvbox" },
 ];
 
 /** How many themes a user may star as favorites (#0255). */
