@@ -1731,6 +1731,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const onStatusChange = (task: Task, prev: Status, next: Status): void => {
     stopPreviewIfLeft(task, prev, next);
     stopAgentIfLeftActive(task, prev, next);
+    if (prev === "active" && next !== "active") runner.discardPendingHandoff(task.id);
     if (next === "done") runner.complete(task.id);
   };
 

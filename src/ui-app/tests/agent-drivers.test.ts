@@ -10,6 +10,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   AgentRunner,
+  type AgentHandoffRequest,
   extractUsage,
   HANDOFF_READY_SIGNAL,
   PREVIEW_REQUEST_SIGNAL,
@@ -809,25 +810,25 @@ describe("structured runner handoff (#0094)", () => {
     }
   });
 
-  it("does not authorize a signal from an interrupted turn", async () => {
+  it("finalizes a handoff signal even when the turn exits non-zero (#0505)", async () => {
     const fx = makeFixture();
     const oldPath = withFakePath(fx);
     process.env.REPOOS_FAKEBIN_LOG = fx.log;
     process.env.REPOOS_FAKEBIN_HANDOFF = "1";
     process.env.REPOOS_FAKEBIN_FAIL = "1";
     try {
-      const requests: unknown[] = [];
+      const requests: AgentHandoffRequest[] = [];
       const runner = new AgentRunner(config(fx.bin), () => {}, {
         onHandoff: (request) => {
+          if (!runner.consumeHandoff(request)) return;
           requests.push(request);
+          runner.completeHandoffFinalization(request.taskId);
         },
       });
       runner.start(TASK, "feat/x", agent("codex"), { cwd: fx.bin });
       await waitFor(() => !runner.isRunning("0001"), "failed turn exit");
-      expect(requests).toEqual([]);
-      expect(runner.output("0001")!.lines.map(dOf)).toContain(
-        "⚠ handoff retained for recovery — the request will be finalized on the next server start",
-      );
+      await waitFor(() => requests.length === 1, "handoff finalized after non-zero exit");
+      expect(runner.validateHandoff(requests[0]!)).toBe(false);
     } finally {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;

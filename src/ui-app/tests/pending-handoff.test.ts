@@ -4,7 +4,7 @@
  * Validates the lifecycle of handoff requests that are persisted to disk:
  *  1. Recognized signal → persisted to .repoos/pending-handoffs.json
  *  2. Clean exit → persisted pending kept until finalization completes (#0501)
- *  3. Interrupted exit → persisted pending retained (recovered on boot)
+ *  3. Interrupted exit → finalizes immediately while the server is alive (#0505)
  *  4. New turn starts → stale pending superseded
  *  5. Recover on boot → re-fires onHandoff for valid pending entries
  *  6. Stale entries (wrong task status/branch) → dropped, not re-fired
@@ -159,38 +159,62 @@ describe("pending handoff persistence (#0235)", () => {
 
   // -- Interrupted turn retention --
 
-  it("retains the persisted pending handoff when the agent turn is interrupted", async () => {
+  it("finalizes immediately when the agent turn exits non-zero after the handoff signal (#0505)", async () => {
+    const fx = fixture("active");
+    process.env.REPOOS_FAKEBIN_HANDOFF = "1";
+    process.env.REPOOS_FAKEBIN_FAIL = "1";
+    const handoffs: AgentHandoffRequest[] = [];
+    const runner = new AgentRunner(fx.config, () => {}, {
+      writeDelayMs: 5,
+      getTask: (id: string) => (id === fx.task.id ? fx.task : null),
+      onHandoff: async (request) => {
+        if (!runner.consumeHandoff(request)) return;
+        handoffs.push(request);
+        runner.completeHandoffFinalization(request.taskId);
+      },
+    });
+    try {
+      runner.start(fx.task, fx.task.branch, agent, { cwd: fx.root });
+      await waitFor(() => !runner.isRunning(fx.task.id), "interrupted turn exit");
+      await waitFor(() => handoffs.length > 0, "onHandoff fired on non-zero exit");
+      expect(handoffs[0]).toMatchObject({
+        taskId: fx.task.id,
+        branch: fx.task.branch,
+        workdir: fx.root,
+      });
+      const pendingFile = join(fx.cacheDir, "pending-handoffs.json");
+      expect(
+        !existsSync(pendingFile) ||
+          (JSON.parse(readFileSync(pendingFile, "utf8")) as { requests: unknown[] }).requests
+            .length === 0,
+      ).toBe(true);
+      const output = runner.output(fx.task.id)!;
+      const sysLines = output.lines.map((l) => (l as { d?: string }).d ?? "");
+      expect(sysLines.some((d) => d.includes("retained for recovery"))).toBe(false);
+    } finally {
+      delete process.env.REPOOS_FAKEBIN_HANDOFF;
+      delete process.env.REPOOS_FAKEBIN_FAIL;
+    }
+  });
+
+  it("escalates to needs_input when non-zero exit handoff cannot finalize (#0505)", async () => {
     const fx = fixture("active");
     process.env.REPOOS_FAKEBIN_HANDOFF = "1";
     process.env.REPOOS_FAKEBIN_FAIL = "1";
     const runner = new AgentRunner(fx.config, () => {}, {
       writeDelayMs: 5,
       getTask: (id: string) => (id === fx.task.id ? fx.task : null),
-      onHandoff: () => {},
     });
     try {
       runner.start(fx.task, fx.task.branch, agent, { cwd: fx.root });
       await waitFor(() => !runner.isRunning(fx.task.id), "interrupted turn exit");
-      const pendingFile = join(fx.cacheDir, "pending-handoffs.json");
-      expect(existsSync(pendingFile)).toBe(true);
-      const data = JSON.parse(readFileSync(pendingFile, "utf8")) as {
-        requests: AgentHandoffRequest[];
-      };
-      expect(data.requests).toHaveLength(1);
-      expect(data.requests[0]).toMatchObject({
-        taskId: fx.task.id,
-        branch: fx.task.branch,
-        workdir: fx.root,
-      });
-      // The transcript notes the handoff is retained for recovery
-      const output = runner.output(fx.task.id)!;
-      const sysLines = output.lines.map((l) => (l as { d?: string }).d ?? "");
-      expect(sysLines.some((d) => d.includes("retained") || d.includes("recovery"))).toBe(true);
-      // The interrupted-exit escalation (agents.ts cleanup()) must not
-      // double-flag this task — it already has its own boot-time recovery
-      // path, so needsInput would be a false alarm ahead of that retry.
+      await waitFor(() => {
+        const body = readFileSync(fx.task.absPath, "utf8");
+        return /needs_input:\s*true/.test(body);
+      }, "needs_input after unfinalized handoff");
       const body = readFileSync(fx.task.absPath, "utf8");
-      expect(body).not.toMatch(/needs_input:\s*true/);
+      expect(body).toContain("after requesting handoff");
+      expect(body).toContain("Restart work or click Review");
     } finally {
       delete process.env.REPOOS_FAKEBIN_HANDOFF;
       delete process.env.REPOOS_FAKEBIN_FAIL;
@@ -341,6 +365,58 @@ describe("pending handoff persistence (#0235)", () => {
         workdir: fx.root,
       }),
     ).toBe(false);
+  });
+
+  it("discardPendingHandoff clears a persisted request (#0505)", () => {
+    const fx = fixture("active");
+    mkdirSync(fx.cacheDir, { recursive: true });
+    writeFileSync(
+      join(fx.cacheDir, "pending-handoffs.json"),
+      JSON.stringify(
+        {
+          requests: [{ taskId: fx.task.id, runId: "r1", branch: fx.task.branch, workdir: fx.root }],
+        },
+        null,
+        2,
+      ),
+    );
+    const runner = new AgentRunner(fx.config, () => {});
+    runner.discardPendingHandoff(fx.task.id);
+    const pendingFile = join(fx.cacheDir, "pending-handoffs.json");
+    expect(
+      (JSON.parse(readFileSync(pendingFile, "utf8")) as { requests: unknown[] }).requests,
+    ).toHaveLength(0);
+  });
+
+  it("recoverPendingHandoffs drops pending for tasks already in review", async () => {
+    const fx = fixture("review");
+    const handoffs: AgentHandoffRequest[] = [];
+    const runner = new AgentRunner(fx.config, () => {}, {
+      getTask: (id: string) => (id === fx.task.id ? fx.task : null),
+      onHandoff: (request) => {
+        handoffs.push(request);
+      },
+    });
+    mkdirSync(fx.cacheDir, { recursive: true });
+    writeFileSync(
+      join(fx.cacheDir, "pending-handoffs.json"),
+      JSON.stringify(
+        {
+          requests: [
+            { taskId: fx.task.id, runId: "old-run", branch: fx.task.branch, workdir: fx.root },
+          ],
+        },
+        null,
+        2,
+      ),
+    );
+    runner.recoverPendingHandoffs();
+    await new Promise((r) => setTimeout(r, 100));
+    expect(handoffs).toHaveLength(0);
+    const pendingFile = join(fx.cacheDir, "pending-handoffs.json");
+    expect(
+      (JSON.parse(readFileSync(pendingFile, "utf8")) as { requests: unknown[] }).requests,
+    ).toHaveLength(0);
   });
 
   it("recoverPendingHandoffs drops pending for completed tasks", async () => {

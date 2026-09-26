@@ -542,23 +542,18 @@ Stuck twice.
       const start = runner.start(parseTaskAt(fx), "feat/x", engineer, { cwd: fx.root });
       expect(start.ok).toBe(true);
       await waitFor(() => !runner!.isRunning("0001"), "crashed turn exits");
-      expect(readFileSync(fx.taskPath, "utf8")).toContain(
-        "handoff failed · agent turn was interrupted",
-      );
-
-      // A killed turn is fresh activity — the task is candidate-stuck only
-      // after the staleness threshold since the interruption.
-      await new Promise((r) => setTimeout(r, 1200));
-
-      await watchdog.checkNow();
+      await waitFor(() => {
+        const body = readFileSync(fx.taskPath, "utf8");
+        return /needs_input:\s*true/.test(body);
+      }, "handoff exit escalated without server finalization");
 
       const body = readFileSync(fx.taskPath, "utf8");
       const task = parseTaskAt(fx);
-      expect(task.status).toBe("ready"); // no worktree/work → back to ready
-      expect(task.needsInput).toBe(false);
-      expect(body).toContain("watchdog: auto-surfaced stuck task");
-      expect(body).toContain("retained for recovery");
-      expect(body).toContain("agent turn was interrupted");
+      expect(task.status).toBe("active");
+      expect(task.needsInput).toBe(true);
+      expect(body).toContain("after requesting handoff");
+      await watchdog.checkNow();
+      expect(parseTaskAt(fx).needsInput).toBe(true);
       expect(spawns(fx)).toHaveLength(1); // the original turn only — no re-spawn
     } finally {
       fx.clean();
