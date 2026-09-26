@@ -10,16 +10,29 @@ const route = useRoute();
 const router = useRouter();
 const repo = useRepoStore();
 
-const taskId = computed(() => route.params.taskId as string);
+const taskId = computed(() => (route.params.taskId as string) || "");
+const commitSha = computed(() => (route.params.sha as string) || "");
+const isCommitDiff = computed(() => Boolean(commitSha.value));
 const targetFile = computed(() => (route.query.file as string) ?? "");
 
+const commitDiff = ref<{ patch: string; truncated: boolean } | null>(null);
+
 onMounted(async () => {
+  if (isCommitDiff.value) {
+    const data = await api<{ ok: boolean; patch?: string; truncated?: boolean }>(
+      `/api/repo/commits/${encodeURIComponent(commitSha.value)}`,
+    );
+    commitDiff.value = { patch: data.patch ?? "", truncated: Boolean(data.truncated) };
+    return;
+  }
   if (!repo.diffFor(taskId.value)) {
     await repo.loadDiff(taskId.value);
   }
 });
 
-const taskDiff = computed(() => repo.diffFor(taskId.value));
+const taskDiff = computed(() =>
+  isCommitDiff.value ? commitDiff.value : repo.diffFor(taskId.value),
+);
 
 interface DiffFile {
   filename: string;
@@ -325,8 +338,8 @@ function buildFullRows(file: DiffFile, contents: FileContents): DiffRow[] {
 }
 
 watch(
-  () => [taskId.value, currentFile.value?.filename] as const,
-  async ([id, filename]) => {
+  () => [taskId.value, commitSha.value, isCommitDiff.value, currentFile.value?.filename] as const,
+  async ([id, sha, commitMode, filename]) => {
     fileContents.value = null;
     fileContentsError.value = null;
     fullFileNotice.value = null;
@@ -334,6 +347,20 @@ watch(
     fileContentsLoading.value = true;
     try {
       const path = encodeURIComponent(filename);
+      if (commitMode && sha) {
+        const contents = await api<{
+          before: string;
+          after: string;
+          existsBefore: boolean;
+          existsAfter: boolean;
+        }>(`/api/repo/commits/${encodeURIComponent(sha)}/file?path=${path}`);
+        if (!contents.existsBefore && !contents.existsAfter) {
+          fullFileNotice.value = "Full file contents are not available for this path.";
+        } else {
+          fileContents.value = { before: contents.before, after: contents.after };
+        }
+        return;
+      }
       const [before, after] = await Promise.all([
         api<FileContentsResponse>(`/api/tasks/${id}/file?path=${path}&version=before`),
         api<FileContentsResponse>(`/api/tasks/${id}/file?path=${path}&version=after`),
@@ -490,6 +517,14 @@ function goBack(): void {
 }
 
 function switchFile(filename: string): void {
+  if (isCommitDiff.value) {
+    router.replace({
+      name: "commit-diff",
+      params: { sha: commitSha.value },
+      query: { file: filename },
+    });
+    return;
+  }
   router.replace({ name: "diff", params: { taskId: taskId.value }, query: { file: filename } });
 }
 
