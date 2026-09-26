@@ -50,20 +50,19 @@ const emit = defineEmits<{
         </div>
         <DialogDescription class="cc-modal-desc">
           <span v-if="taskLabel" class="review-confirm-task">{{ taskLabel }}</span>
-          RepoOS commits the work, runs the checks, and only then moves the task. Until
-          that finishes the task stays <strong>active</strong> and the card shows
+          RepoOS commits the work, runs the checks, and only then moves the task. Until that
+          finishes the task stays <strong>active</strong> and the card shows
           <em>running checks</em>.
         </DialogDescription>
         <div class="cc-modal-body">
           <p>
-            If a check fails, the task stays <strong>active</strong> with the failure shown,
-            and nothing is lost — fix it and ask again.
+            If a check fails, the task stays <strong>active</strong> with the failure shown, and
+            nothing is lost — fix it and ask again.
           </p>
           <p>
-            <strong>Skip checks</strong> runs the commit guard only. It is recorded as
-            &ldquo;review without checks&rdquo; in the activity log, and
-            <strong>Move to done</strong> still runs the full check before merging — this
-            only skips the early pass, not the gate.
+            <strong>Skip checks</strong> runs the commit guard only. It is recorded as &ldquo;review
+            without checks&rdquo; in the activity log, and <strong>Move to done</strong> still runs
+            the full check before merging — this only skips the early pass, not the gate.
           </p>
         </div>
         <div class="cc-modal-actions review-confirm-actions">

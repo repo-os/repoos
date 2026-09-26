@@ -1849,7 +1849,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         runner.system(task.id, message);
         // Durable: the watchdog and any later reader of the activity log can
         // see why this handoff did not land, across a reload.
-        runner.persistHandoffFailure(task.id, task, `${opts.origin} handoff failed at ${result.step} · ${detail}`);
+        runner.persistHandoffFailure(
+          task.id,
+          task,
+          `${opts.origin} handoff failed at ${result.step} · ${detail}`,
+        );
         progress("failed", detail);
       })
       .catch((err: unknown) => {

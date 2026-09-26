@@ -99,13 +99,17 @@ Body
     writeFileSync(join(worktree, "source.txt"), "implemented\n");
   }
 
-  // A CLI that stays alive until it is told to stop, so a turn is still
-  // running when the test writes the handoff request.
+  // A CLI that reports some output and then ends its turn on its own, so a
+  // handoff request written mid-turn is finalized at turn END (which is the
+  // contract) rather than immediately. `stallTimeoutMs` in the runner tests is
+  // kept well above this so the stall checker never fires.
   writeFileSync(
     join(bin, "qwen"),
-    ["#!/usr/bin/env node", 'process.stdout.write("working\\n");', "setInterval(() => {}, 1000);"].join(
-      "\n",
-    ),
+    [
+      "#!/usr/bin/env node",
+      'process.stdout.write("working\\n");',
+      "setTimeout(() => process.exit(0), 1200);",
+    ].join("\n"),
     { mode: 0o755 },
   );
 
@@ -126,7 +130,17 @@ Body
     defaultStatus: config.defaultStatus,
     defaultAssignee: config.defaultAssignee,
   });
-  return { root, worktrees, worktree, branch, bin, config, task, taskFile, cacheDir: join(root, ".repoos") };
+  return {
+    root,
+    worktrees,
+    worktree,
+    branch,
+    bin,
+    config,
+    task,
+    taskFile,
+    cacheDir: join(root, ".repoos"),
+  };
 }
 
 const agent: Agent = { name: "engineer", cli: "qwen code", model: "default", enabled: true };
@@ -216,6 +230,7 @@ describe("repoos mv <own id> review records a handoff request (#0507)", () => {
     process.env.REPOOS_AGENT = "1";
     process.env.REPOOS_TASK_ID = "0507";
     process.env.REPOOS_RUN_ID = "run-abc";
+    process.chdir(fx.worktree);
 
     cmdMv("0507", "review");
 
@@ -227,6 +242,7 @@ describe("repoos mv <own id> review records a handoff request (#0507)", () => {
     const fx = fixture();
     // A human in their own shell: no agent markers at all.
     delete process.env.REPOOS_AGENT;
+    process.chdir(fx.root);
     cmdMv("0507", "review");
     expect(readStatus(fx)).toBe("review");
     expect(existsSync(handoffRequestPath(fx.root, fx.config.cacheDir, "0507"))).toBe(false);
@@ -246,6 +262,7 @@ describe("repoos mv <own id> review records a handoff request (#0507)", () => {
     process.env.REPOOS_AGENT = "1";
     process.env.REPOOS_TASK_ID = "0507";
     delete process.env.REPOOS_RUN_ID;
+    process.chdir(fx.root);
 
     expect(isRunnerSessionForTask("0507")).toBe(false);
     cmdMv("0507", "review");
@@ -278,15 +295,19 @@ describe("the runner finalizes a `repoos mv review` request at turn end (#0507)"
       const runId = (runner as unknown as { entries: Map<string, { runId: string }> }).entries.get(
         fx.task.id,
       )!.runId;
-      expect(writeHandoffRequest(fx.root, fx.config.cacheDir, {
-        taskId: fx.task.id,
-        runId,
-        at: new Date().toISOString(),
-        source: "repoos-mv",
-      })).toBe(true);
+      expect(
+        writeHandoffRequest(fx.root, fx.config.cacheDir, {
+          taskId: fx.task.id,
+          runId,
+          at: new Date().toISOString(),
+          source: "repoos-mv",
+        }),
+      ).toBe(true);
 
-      // The status is untouched until finalization.
+      // The status is untouched until finalization, and stays untouched while
+      // the turn is still running — the request alone moves nothing.
       expect(readStatus(fx)).toBe("active");
+      expect(handoffs).toEqual([]);
 
       await waitFor(() => handoffs.length > 0, "the runner finalizes the recorded request");
       expect(handoffs[0]).toMatchObject({
@@ -304,7 +325,7 @@ describe("the runner finalizes a `repoos mv review` request at turn end (#0507)"
       runner.stop(fx.task.id);
       process.env.PATH = oldPath;
     }
-  });
+  }, 60_000);
 
   it("ignores a marker left behind by an earlier turn", async () => {
     const fx = fixture();
@@ -336,7 +357,7 @@ describe("the runner finalizes a `repoos mv review` request at turn end (#0507)"
     } finally {
       runner.stop(fx.task.id);
     }
-  });
+  }, 60_000);
 });
 
 describe("a failed handoff leaves the task active (#0507)", () => {

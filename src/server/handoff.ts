@@ -168,7 +168,13 @@ async function runCheck(
 const HANDOFF_DEADLINE_MS = 600_000; // 10 minutes
 
 /** Where a handoff came from. Diagnostics only — never trusted for authority. */
-export type HandoffOrigin = "agent-signal" | "agent-mv" | "ui-review" | "board-drag" | "task-file" | "api";
+export type HandoffOrigin =
+  | "agent-signal"
+  | "agent-mv"
+  | "ui-review"
+  | "board-drag"
+  | "task-file"
+  | "api";
 
 /** Side channels a caller supplies to observe a finalization as it runs. */
 export interface HandoffSink {
@@ -218,17 +224,26 @@ async function resolveWorktree(
   expectWorkdir?: string,
 ): Promise<{ ok: true; resolved: ResolvedWorktree } | { ok: false; result: HandoffResult }> {
   if (task.status !== "active" && task.status !== "review") {
-    return { ok: false, result: fail("validate", `task must be active or review, but is ${task.status}`) };
+    return {
+      ok: false,
+      result: fail("validate", `task must be active or review, but is ${task.status}`),
+    };
   }
   if (!task.branch) {
-    return { ok: false, result: fail("validate", `task #${task.id} has no branch to finalize from`) };
+    return {
+      ok: false,
+      result: fail("validate", `task #${task.id} has no branch to finalize from`),
+    };
   }
   const isHotfix = task.hotfix === true;
   const registered = worktreePathForBranch(config.root, task.branch);
   const registeredIsRoot = registered ? samePath(registered, config.root) : false;
   if (isHotfix) {
     if (!registeredIsRoot || (expectWorkdir && !samePath(config.root, expectWorkdir))) {
-      return { ok: false, result: fail("validate", "hotfix handoff must run in the main checkout") };
+      return {
+        ok: false,
+        result: fail("validate", "hotfix handoff must run in the main checkout"),
+      };
     }
   } else if (
     !registered ||
@@ -252,7 +267,10 @@ async function resolveWorktree(
   }
   const worktreeTaskPath = join(workdir, task.path);
   if (!existsSync(worktreeTaskPath)) {
-    return { ok: false, result: fail("validate", "task file is missing from the registered worktree") };
+    return {
+      ok: false,
+      result: fail("validate", "task file is missing from the registered worktree"),
+    };
   }
   let worktreeTask: Task;
   try {
@@ -337,11 +355,10 @@ async function runHandoffFinalization(
   onProgress?.("review");
   if (worktreeTask.status !== "review" || worktreeTask.branch !== task.branch) {
     try {
-      patchTaskFile(
-        { ...config, root: workdir },
-        worktreeTaskPath,
-        { status: "review", branch: task.branch },
-      );
+      patchTaskFile({ ...config, root: workdir }, worktreeTaskPath, {
+        status: "review",
+        branch: task.branch,
+      });
     } catch (error) {
       return fail("review", `could not update the worktree task: ${(error as Error).message}`);
     }
@@ -391,7 +408,9 @@ async function runHandoffFinalization(
           task.absPath,
           {
             status: "review",
-            ...(opts.skipChecks && opts.actor ? { note: `review without checks by ${opts.actor}` } : {}),
+            ...(opts.skipChecks && opts.actor
+              ? { note: `review without checks by ${opts.actor}` }
+              : {}),
           },
           { onStatusChange },
         );

@@ -196,7 +196,11 @@ function handoffRequestFromRunner(id: string): boolean {
     return false;
   }
   console.log(
-    "  " + c.green("handoff requested ") + c.dim("#" + id) + c.dim(" —") + "\n" +
+    "  " +
+      c.green("handoff requested ") +
+      c.dim("#" + id) +
+      c.dim(" —") +
+      "\n" +
       c.dim("  RepoOS will run `repoos check`, pass the commit gate, and move this to review."),
   );
   console.log(c.dim("  `status:` was left alone — end your turn now; finalization runs on exit."));

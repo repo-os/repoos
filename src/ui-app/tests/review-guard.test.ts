@@ -367,12 +367,7 @@ describe("PATCH /api/tasks/:id → review (0507: one finalization path)", () => 
       const { res, fake } = makeRes();
       const ctx = makeCtx(fx, index, () => ({ started: true }));
 
-      await patchTask(
-        ctx,
-        makeReq({ status: "review", priority: "p0" }),
-        res,
-        { param1: "0210" },
-      );
+      await patchTask(ctx, makeReq({ status: "review", priority: "p0" }), res, { param1: "0210" });
 
       expect(fake.status).toBe(202);
       const raw = readFileSync(fx.taskPath, "utf8");
