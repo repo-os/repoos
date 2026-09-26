@@ -1,15 +1,17 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   buildEditorSpawnArgs,
-  copyInspectorAvailable,
+  copyInspectorUiBuildReady,
   formatCopyInspectorPath,
   readDevUiBuild,
   resolveCopyInspectorTarget,
   tokenizeEditorCommand,
 } from "../../core/copy-inspector.js";
+import { copyInspectorApiEnabled } from "../../server/routes/copy-inspector.js";
+import * as reload from "../../server/reload.js";
 
 describe("copy inspector helpers", () => {
   it("formats repo-relative paths with optional line", () => {
@@ -61,11 +63,18 @@ describe("copy inspector helpers", () => {
     ]);
   });
 
-  it("copyInspectorAvailable requires devUi in dist/.build-info.json", () => {
+  it("drops :{line} when line is unknown", () => {
+    expect(buildEditorSpawnArgs("zed {file}:{line}", "src/ui-app/Foo.vue", null)).toEqual([
+      "zed",
+      "src/ui-app/Foo.vue",
+    ]);
+  });
+
+  it("copyInspectorUiBuildReady requires devUi in dist/.build-info.json", () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-copy-inspector-gate-"));
     mkdirSync(join(root, "src/ui-app"), { recursive: true });
     writeFileSync(join(root, "src/ui-app/vite.config.ts"), "export {}", "utf8");
-    expect(copyInspectorAvailable(root)).toBe(false);
+    expect(copyInspectorUiBuildReady(root)).toBe(false);
     mkdirSync(join(root, "dist"), { recursive: true });
     writeFileSync(
       join(root, "dist", ".build-info.json"),
@@ -73,7 +82,25 @@ describe("copy inspector helpers", () => {
       "utf8",
     );
     expect(readDevUiBuild(root)).toBe(true);
-    expect(copyInspectorAvailable(root)).toBe(true);
+    expect(copyInspectorUiBuildReady(root)).toBe(true);
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it("copyInspectorApiEnabled requires isDevBuild()", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-copy-inspector-api-gate-"));
+    mkdirSync(join(root, "src/ui-app"), { recursive: true });
+    writeFileSync(join(root, "src/ui-app/vite.config.ts"), "export {}", "utf8");
+    mkdirSync(join(root, "dist"), { recursive: true });
+    writeFileSync(
+      join(root, "dist", ".build-info.json"),
+      JSON.stringify({ hash: "a", version: "0", devUi: true }) + "\n",
+      "utf8",
+    );
+    const spy = vi.spyOn(reload, "isDevBuild").mockReturnValue(false);
+    expect(copyInspectorApiEnabled(root)).toBe(false);
+    spy.mockReturnValue(true);
+    expect(copyInspectorApiEnabled(root)).toBe(true);
+    spy.mockRestore();
     rmSync(root, { recursive: true, force: true });
   });
 });

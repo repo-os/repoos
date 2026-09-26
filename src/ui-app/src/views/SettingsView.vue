@@ -79,6 +79,15 @@ function setTab(id: TabId): void {
   void router.replace({ name: "settings", query: { ...route.query, tab: id } });
 }
 
+const advancedGuardedFields = computed(() =>
+  config.guardedFields.filter((f) => {
+    if (f.key === "dev.inspector.enabled" || f.key === "dev.inspector.editorCommand") {
+      return repo.health?.copyInspectorAvailable === true;
+    }
+    return true;
+  }),
+);
+
 // Keyboard navigation across tabs (arrow keys, Home, End)
 const tablistRef = ref<HTMLElement | null>(null);
 
@@ -1220,7 +1229,7 @@ onUnmounted(() => {
               </div>
             </div>
             <div
-              v-for="f in config.guardedFields"
+              v-for="f in advancedGuardedFields"
               :key="f.key"
               :id="`setting-${f.key}`"
               class="setting-row"

@@ -45,6 +45,7 @@ function srcHash(root: string): string {
     hash.update(f.slice(root.length + 1));
     hash.update(readFileSync(f));
   }
+  hash.update(`\0REPOOS_SHIP=${process.env.REPOOS_SHIP === "1" ? "1" : "0"}`);
   return hash.digest("hex");
 }
 
@@ -93,6 +94,26 @@ describe("checkBuildForRoot — staleness applicability (#0349)", () => {
     expect(r.code).toBe("fresh");
     expect(r.stale).toBe(false);
     expect(r.applicable).toBe(true);
+  });
+
+  it("is stale + applicable when REPOOS_SHIP mode differs from the marker", () => {
+    const root = tmp();
+    writeSrc(root);
+    mkdirSync(join(root, "dist"), { recursive: true });
+    const prevShip = process.env.REPOOS_SHIP;
+    process.env.REPOOS_SHIP = "1";
+    const shipHash = srcHash(root);
+    delete process.env.REPOOS_SHIP;
+    writeFileSync(
+      join(root, "dist", ".build-info.json"),
+      JSON.stringify({ hash: shipHash, version: "1.0.0" }),
+    );
+    const r = checkBuildForRoot(root);
+    expect(r.code).toBe("stale");
+    expect(r.stale).toBe(true);
+    expect(r.applicable).toBe(true);
+    if (prevShip === undefined) delete process.env.REPOOS_SHIP;
+    else process.env.REPOOS_SHIP = prevShip;
   });
 
   it("is stale + applicable (fails the gate) when the marker no longer matches src/", () => {

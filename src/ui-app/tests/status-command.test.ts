@@ -175,6 +175,7 @@ function srcHash(root: string): string {
     hash.update(f.slice(root.length + 1));
     hash.update(readFileSync(f));
   }
+  hash.update(`\0REPOOS_SHIP=${process.env.REPOOS_SHIP === "1" ? "1" : "0"}`);
   return hash.digest("hex");
 }
 

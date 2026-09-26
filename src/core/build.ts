@@ -55,8 +55,8 @@ export function findPackageRoot(): string | null {
   return null;
 }
 
-/** Compute a sha256 hash of every file under src/. Returns null if src/ absent. */
-function hashSrcDir(root: string): string | null {
+/** Compute a sha256 hash of every file under src/, plus the REPOOS_SHIP build mode. */
+export function buildSourceHash(root: string): string | null {
   const srcDir = join(root, "src");
   if (!existsSync(srcDir)) return null;
   const hash = createHash("sha256");
@@ -84,6 +84,8 @@ function hashSrcDir(root: string): string | null {
     hash.update(f.slice(root.length + 1));
     hash.update(readFileSync(f));
   }
+  const ship = process.env.REPOOS_SHIP === "1";
+  hash.update(`\0REPOOS_SHIP=${ship ? "1" : "0"}`);
   return hash.digest("hex");
 }
 
@@ -132,7 +134,7 @@ export function checkBuildForRoot(root: string): BuildCheckResult {
       applicable: true,
     };
   }
-  const currentHash = hashSrcDir(root);
+  const currentHash = buildSourceHash(root);
   if (!currentHash) {
     return { stale: false, message: null, code: "published", applicable: false };
   }

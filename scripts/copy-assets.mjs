@@ -54,6 +54,7 @@ if (existsSync(srcDir)) {
     hash.update(f.slice(root.length + 1)); // relative path
     hash.update(readFileSync(f));
   }
+  hash.update(`\0REPOOS_SHIP=${process.env.REPOOS_SHIP === "1" ? "1" : "0"}`);
   buildInfo.hash = hash.digest("hex");
 }
 
