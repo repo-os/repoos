@@ -1310,6 +1310,24 @@ export class ReviewManager {
     // Check if we've exceeded the max rounds
     if (reviewRounds >= MAX_AUTO_REVIEW_ROUNDS) {
       const note = `Auto-bounce stopped: reached maximum of ${MAX_AUTO_REVIEW_ROUNDS} review rounds. Human review needed.`;
+      // Nothing is running or retrying from here on, so say so on the task
+      // instead of leaving it silently parked in review. Never overwrite an
+      // existing, different needs_input reason. `task` is the snapshot from
+      // before this run: a flag a clean-ish run just cleared (reviewer-episode
+      // reasons, including this one) counts as unset.
+      if (!task.needsInput || needsInputClearsOnSuccessfulReview(task)) {
+        try {
+          patchTaskFile(this.config, task.absPath, {
+            needsInput: true,
+            needsInputReason: "review-rounds-exhausted",
+            needsInputDetail: note,
+          });
+        } catch (err) {
+          console.error(
+            `[repoos] could not flag exhausted review rounds for #${task.id}: ${(err as Error).message}`,
+          );
+        }
+      }
       this.emit({
         type: "task.corrected",
         id: task.id,

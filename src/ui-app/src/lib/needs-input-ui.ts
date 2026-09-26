@@ -19,6 +19,7 @@ export const STALE_REVIEW_DEV_ERROR_BANNER =
 
 export const NEEDS_INPUT_STATUS_LABELS: Record<string, string> = {
   "review-failed": "Reviewer failed — no report",
+  "review-rounds-exhausted": "Review still finding issues",
   "dev-error": "Agent exited with an error",
   "check-failed-after-retries": "Checks failed after retries",
   "cto-escalation": "Agent asked a question",
@@ -28,6 +29,8 @@ export const NEEDS_INPUT_STATUS_LABELS: Record<string, string> = {
 
 export const NEEDS_INPUT_BANNER_LABELS: Record<string, string> = {
   "review-failed": "The reviewer crashed or timed out without producing a report.",
+  "review-rounds-exhausted":
+    "Automatic review rounds are used up and the latest review still asks for changes. Nothing is running.",
   "dev-error": "The agent exited with an error.",
   "check-failed-after-retries": "Checks failed after automatic retries.",
   "cto-escalation": "The CTO agent flagged this for a human decision.",
@@ -38,6 +41,8 @@ export const NEEDS_INPUT_BANNER_LABELS: Record<string, string> = {
 export const NEEDS_INPUT_SUGGESTION_LABELS: Record<string, string> = {
   "review-failed":
     "Try Review again from the Review tab (or Restart work if the task is back in active). If it keeps failing, check the CLI/model picker there — an invalid pairing (e.g. after switching CLI) causes exactly this.",
+  "review-rounds-exhausted":
+    "Read the latest review report, then send it back to the engineer, fix it yourself, or move to done if the remaining findings are acceptable. Review again runs a fresh review and clears this if it comes back clean.",
   "dev-error":
     "Restart work to resume the agent, or reply below with more context first. If it keeps failing on the same error, check the coding agent/model picker above — a CLI switch without a matching model pin causes exactly this.",
   "check-failed-after-retries":
@@ -124,6 +129,8 @@ export function needsInputPrimaryAction(
     case "review-failed":
       if (ctx.status === "review") return REVIEW_AGAIN_ACTION;
       return canRestartWork(ctx) ? RESTART_ACTION : null;
+    case "review-rounds-exhausted":
+      return ctx.status === "review" ? REVIEW_AGAIN_ACTION : null;
     case "watchdog-stuck":
       if (ctx.status === "review") return REVIEW_AGAIN_ACTION;
       return canRestartWork(ctx) ? RESTART_ACTION : null;

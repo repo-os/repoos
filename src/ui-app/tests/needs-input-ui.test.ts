@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { needsInputPrimaryAction } from "../src/lib/needs-input-ui";
+import {
+  needsInputPrimaryAction,
+  needsInputStatusLabel,
+  needsInputSuggestionText,
+} from "../src/lib/needs-input-ui";
 
 describe("needsInputPrimaryAction (#0511)", () => {
   it("offers Review again for watchdog-stuck on a review task", () => {
@@ -42,5 +46,16 @@ describe("needsInputPrimaryAction (#0511)", () => {
         agentRunning: false,
       })?.kind,
     ).toBe("restart");
+  });
+
+  it("names review-rounds-exhausted and offers Review again on a review task", () => {
+    expect(needsInputStatusLabel("review-rounds-exhausted")).toBe("Review still finding issues");
+    expect(needsInputSuggestionText("review-rounds-exhausted")).toContain("send it back");
+    expect(
+      needsInputPrimaryAction("review-rounds-exhausted", false, {
+        status: "review",
+        agentRunning: false,
+      })?.kind,
+    ).toBe("review");
   });
 });
