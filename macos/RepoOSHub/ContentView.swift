@@ -18,7 +18,10 @@ struct ContentView: View {
         .toolbarColorScheme(appState.hubGlobalPreferences.appearance.colorScheme, for: .windowToolbar)
         // NavigationSplitView leaves a narrow native frame around the sidebar
         // and its bottom inset. Keep that exposed frame on the same surface.
-        .background(shellBackground)
+        .background {
+            shellBackground
+                .ignoresSafeArea()
+        }
         .sheet(item: $appState.editorSheet) { model in
             ServerEditorSheet(model: model)
                 .environmentObject(appState)

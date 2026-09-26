@@ -11,58 +11,63 @@ struct ServerSidebarView: View {
     }
 
     var body: some View {
-        List(selection: serverSelection) {
-            if !appState.pinnedTaskContextsForSidebar.isEmpty {
-                Section("Pinned tasks") {
-                    ForEach(appState.pinnedTaskContextsForSidebar) { context in
-                        PinnedContextSidebarRow(context: context)
+        ZStack {
+            sidebarBackground
+                .ignoresSafeArea()
+                .padding(.leading, -16)
+            List(selection: serverSelection) {
+                if !appState.pinnedTaskContextsForSidebar.isEmpty {
+                    Section("Pinned tasks") {
+                        ForEach(appState.pinnedTaskContextsForSidebar) { context in
+                            PinnedContextSidebarRow(context: context)
+                        }
                     }
                 }
-            }
 
-            if !appState.pinnedEntries.isEmpty {
-                Section("Pinned") {
-                    ForEach(appState.pinnedEntries) { entry in
-                        ServerSidebarRow(entry: entry)
-                            .tag(entry.id)
+                if !appState.pinnedEntries.isEmpty {
+                    Section("Pinned") {
+                        ForEach(appState.pinnedEntries) { entry in
+                            ServerSidebarRow(entry: entry)
+                                .tag(entry.id)
+                        }
+                        .onMove(perform: appState.movePinned)
                     }
-                    .onMove(perform: appState.movePinned)
                 }
-            }
 
-            ForEach(appState.groupedEntries, id: \.title) { group in
-                Section(group.title) {
-                    ForEach(group.entries) { entry in
-                        ServerSidebarRow(entry: entry)
-                            .tag(entry.id)
-                    }
-                    .onMove { source, destination in
-                        appState.moveGroup(named: group.title, from: source, to: destination)
+                ForEach(appState.groupedEntries, id: \.title) { group in
+                    Section(group.title) {
+                        ForEach(group.entries) { entry in
+                            ServerSidebarRow(entry: entry)
+                                .tag(entry.id)
+                        }
+                        .onMove { source, destination in
+                            appState.moveGroup(named: group.title, from: source, to: destination)
+                        }
                     }
                 }
             }
-        }
-        .listStyle(.sidebar)
-        .navigationTitle("RepoOS")
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            Button {
-                appState.presentAddServer()
-            } label: {
-                Label("Add server", systemImage: "plus")
-                    .frame(maxWidth: .infinity)
+            .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
+            .navigationTitle("RepoOS")
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                Button {
+                    appState.presentAddServer()
+                } label: {
+                    Label("Add server", systemImage: "plus")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.regular)
+                .padding(12)
+                .background(sidebarBackground)
+                .help("Add a RepoOS server to the local registry")
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.regular)
-            .padding(12)
-            .background(sidebarBackground)
-            .help("Add a RepoOS server to the local registry")
-        }
-        .overlay {
-            if appState.entries.isEmpty {
-                SidebarEmptyHint()
+            .overlay {
+                if appState.entries.isEmpty {
+                    SidebarEmptyHint()
+                }
             }
         }
-        .background(sidebarBackground)
     }
 
     private var sidebarBackground: Color {

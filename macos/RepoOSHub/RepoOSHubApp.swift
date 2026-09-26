@@ -189,12 +189,20 @@ private func applyNativeSurfaceBackgrounds(
     let typeName = String(describing: type(of: view))
     guard !typeName.contains("WKWebView") else { return }
 
-    // Keep the split-view/frame backing in sync with the selected Hub theme,
-    // but leave scroll and list clip views alone so SwiftUI can paint rows.
-    if view is NSVisualEffectView || view is NSSplitView {
+    // Keep the split-view/frame backing in sync with the selected Hub theme.
+    if view is NSVisualEffectView || view is NSSplitView || typeName.contains("NSBlurryAlleywayView")
+    {
         view.appearance = appearance
         view.wantsLayer = true
         view.layer?.backgroundColor = color.cgColor
+    }
+
+    // NavigationSplitView's leading frame is painted by its clip view rather
+    // than by the SwiftUI List. Match that native surface without putting a
+    // layer above the list rows themselves.
+    if let clipView = view as? NSClipView {
+        clipView.drawsBackground = true
+        clipView.backgroundColor = color
     }
 
     view.subviews.forEach { subview in
