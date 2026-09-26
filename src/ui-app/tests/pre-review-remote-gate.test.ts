@@ -5,8 +5,12 @@ import { tmpdir } from "node:os";
 import { execFileSync } from "node:child_process";
 import type { RepoOSConfig } from "../../core/types.js";
 import {
+  REPOOS_REMOTE_VALIDATION_DONE,
+  checkEnvAfterRemoteGate,
   remotePreReviewEnabled,
+  remoteValidationAlreadyAttempted,
   runRemotePreReviewGate,
+  shouldRunCliRemotePreReviewGate,
 } from "../../server/pre-review-remote-gate.js";
 import type { RemoteValidator } from "../../server/remote-validation.js";
 import { parseCheckArgs } from "../../commands/check.js";
@@ -153,8 +157,55 @@ describe("remotePreReviewEnabled", () => {
   });
 });
 
-describe("repoos check with remote validation disabled", () => {
-  it("parseCheckArgs --local-tests does not imply remote is on", () => {
+describe("remoteValidationAlreadyAttempted", () => {
+  it("is true when REPOOS_SKIP_TESTS or REPOOS_REMOTE_VALIDATION_DONE is set", () => {
+    expect(remoteValidationAlreadyAttempted({})).toBe(false);
+    expect(remoteValidationAlreadyAttempted({ REPOOS_SKIP_TESTS: "1" })).toBe(true);
+    expect(remoteValidationAlreadyAttempted({ [REPOOS_REMOTE_VALIDATION_DONE]: "1" })).toBe(true);
+  });
+});
+
+describe("checkEnvAfterRemoteGate", () => {
+  it("marks fallback local-only without skipping tests", () => {
+    expect(checkEnvAfterRemoteGate({ kind: "local-only", skipTests: false })).toEqual({
+      [REPOOS_REMOTE_VALIDATION_DONE]: "1",
+    });
+  });
+
+  it("sets both flags after a green remote gate", () => {
+    expect(checkEnvAfterRemoteGate({ kind: "local-only", skipTests: true })).toEqual({
+      [REPOOS_REMOTE_VALIDATION_DONE]: "1",
+      REPOOS_SKIP_TESTS: "1",
+    });
+  });
+});
+
+describe("shouldRunCliRemotePreReviewGate", () => {
+  const enabled = makeConfig("/tmp", { enabled: true });
+
+  it("is false when remote validation is disabled", () => {
+    const disabled = makeConfig("/tmp", { enabled: false });
+    expect(shouldRunCliRemotePreReviewGate(disabled, {}, {})).toBe(false);
+  });
+
+  it("is false when a parent already ran remote validation", () => {
+    expect(shouldRunCliRemotePreReviewGate(enabled, {}, { REPOOS_SKIP_TESTS: "1" })).toBe(false);
+    expect(
+      shouldRunCliRemotePreReviewGate(enabled, {}, { [REPOOS_REMOTE_VALIDATION_DONE]: "1" }),
+    ).toBe(false);
+  });
+
+  it("is false with --local-tests", () => {
+    expect(shouldRunCliRemotePreReviewGate(enabled, { localTestsOnly: true }, {})).toBe(false);
+  });
+
+  it("is true for a standalone CLI run with remote enabled", () => {
+    expect(shouldRunCliRemotePreReviewGate(enabled, {}, {})).toBe(true);
+  });
+});
+
+describe("repoos check CLI flags", () => {
+  it("parseCheckArgs --local-tests opts out of the remote block", () => {
     expect(parseCheckArgs(["--local-tests", "--changed", "main"])).toEqual({
       localTestsOnly: true,
       changed: "main",

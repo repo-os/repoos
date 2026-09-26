@@ -36,7 +36,12 @@ import { patchTaskFile } from "./write.js";
 import { guardReviewTransition } from "./review-guard.js";
 import type { TaskCheckManager, TaskCheckListener } from "./task-check.js";
 import type { RemoteValidator } from "./remote-validation.js";
-import { remotePreReviewEnabled, runRemotePreReviewGate } from "./pre-review-remote-gate.js";
+import {
+  remotePreReviewEnabled,
+  runRemotePreReviewGate,
+  checkEnvAfterRemoteGate,
+  type RemotePreReviewOutcome,
+} from "./pre-review-remote-gate.js";
 
 export type HandoffStep = "validate" | "check" | "commit" | "review" | "main" | "done";
 
@@ -332,31 +337,34 @@ async function runHandoffFinalization(
 
   if (!opts.skipChecks) {
     onProgress?.("check");
-    let skipTestsLocally = false;
+    let remoteOutcome: RemotePreReviewOutcome | { kind: "skip" } = { kind: "skip" };
     if (opts.remoteValidator && remotePreReviewEnabled(config)) {
-      const remote = await runRemotePreReviewGate({
+      remoteOutcome = await runRemotePreReviewGate({
         config,
         remoteValidator: opts.remoteValidator,
         worktreePath: workdir,
         taskId: task.id,
         onChunk: undefined,
       });
-      if (remote.kind === "fail") {
+      if (remoteOutcome.kind === "fail") {
         return {
           ok: false,
           step: "check",
-          detail: remote.detail,
-          checkRetryable: remote.retryable,
+          detail: remoteOutcome.detail,
+          checkRetryable: remoteOutcome.retryable,
         };
       }
-      if (remote.kind === "local-only") skipTestsLocally = remote.skipTests;
     }
     const checkHandle =
       opts.taskChecks && opts.onTaskCheckEvent
         ? opts.taskChecks.start(task.id, "handoff-finalize", opts.onTaskCheckEvent)
         : undefined;
-    const checkEnv = skipTestsLocally ? { REPOOS_SKIP_TESTS: "1" } : undefined;
-    const check = await runCheck(workdir, config, checkHandle?.chunk, checkEnv);
+    const check = await runCheck(
+      workdir,
+      config,
+      checkHandle?.chunk,
+      checkEnvAfterRemoteGate(remoteOutcome),
+    );
     checkHandle?.done(check.status);
     if (check.status !== 0) {
       return fail("check", `repoos check failed: ${concise(check)}`);

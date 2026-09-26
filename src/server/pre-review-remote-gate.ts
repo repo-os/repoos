@@ -11,8 +11,42 @@ import type { RepoOSConfig } from "../core/types.js";
 import { runGit } from "../core/git.js";
 import type { RemoteValidator } from "./remote-validation.js";
 
+/** Set on a spawned `repoos check` when a parent already ran the remote gate (#0520). */
+export const REPOOS_REMOTE_VALIDATION_DONE = "REPOOS_REMOTE_VALIDATION_DONE";
+
 export function remotePreReviewEnabled(config: RepoOSConfig): boolean {
   return config.remoteValidation?.enabled === true;
+}
+
+/** True when a parent gate (handoff, close-out, release) already ran remote validation. */
+export function remoteValidationAlreadyAttempted(env: NodeJS.ProcessEnv): boolean {
+  return env.REPOOS_SKIP_TESTS === "1" || env[REPOOS_REMOTE_VALIDATION_DONE] === "1";
+}
+
+/**
+ * Extra env for a child `repoos check` after `runRemotePreReviewGate` ran in the
+ * parent. Prevents a second remote run; optionally skips local tests.
+ */
+export function checkEnvAfterRemoteGate(
+  outcome: RemotePreReviewOutcome | { kind: "skip" },
+): NodeJS.ProcessEnv {
+  if (outcome.kind === "skip") return {};
+  const env: NodeJS.ProcessEnv = { [REPOOS_REMOTE_VALIDATION_DONE]: "1" };
+  if (outcome.kind === "local-only" && outcome.skipTests) {
+    env.REPOOS_SKIP_TESTS = "1";
+  }
+  return env;
+}
+
+/** Whether standalone `repoos check` should run the remote half (not when a parent already did). */
+export function shouldRunCliRemotePreReviewGate(
+  config: RepoOSConfig,
+  opts: { localTestsOnly?: boolean },
+  env: NodeJS.ProcessEnv,
+): boolean {
+  return (
+    remotePreReviewEnabled(config) && !opts.localTestsOnly && !remoteValidationAlreadyAttempted(env)
+  );
 }
 
 export type RemotePreReviewOutcome =
@@ -34,7 +68,7 @@ export async function runRemotePreReviewGate(params: {
   if (headRes.status !== 0) {
     return {
       kind: "fail",
-      retryable: false,
+      retryable: true,
       detail: "could not resolve worktree HEAD before remote validation",
     };
   }
