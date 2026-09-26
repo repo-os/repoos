@@ -23,30 +23,45 @@ UI smoke test) stay local — they are fast and not the resource problem.
 
 ## What runs where
 
-| Step | MVP location |
-| --- | --- |
-| merge candidate ← feature branch | local (`integration-orchestrator.ts`) |
-| `bun run build` (conflict-free tree + fresh `dist/`) | local |
-| `bun install` + `bun run build` + `bun run test` | **remote VM** |
-| build staleness / lockfile / CSS / theme / bare-require guards | local (`repoos check` with `REPOOS_SKIP_TESTS=1`) |
-| UI smoke test (Playwright/webkit) | local |
+| Step | Pre-review (handoff / `repoos check`) | Close-out (MTD) |
+| --- | --- | --- |
+| merge candidate ← feature branch | — (not merged yet) | local (`integration-orchestrator.ts`) |
+| `bun run build` (conflict-free tree + fresh `dist/`) | — | local |
+| `bun install` + `bun run build` + `bun run test` | **remote runner** (worktree `HEAD`) | **remote runner** (merged candidate `HEAD`) |
+| build staleness / lockfile / CSS / theme / bare-require guards | local (`repoos check` with `REPOOS_SKIP_TESTS=1`) | same |
+| UI smoke test (Playwright/webkit) | local | local |
 
-`REPOOS_SKIP_TESTS=1` (see `src/commands/check.ts`) is what the close-out sets
-on the local `repoos check` after a remote pass so its Tests step is skipped.
-Standalone `repoos check` from the CLI never sets it — the CLI gate is unchanged.
+`REPOOS_SKIP_TESTS=1` (see `src/commands/check.ts`) is what both paths set on the
+local `repoos check` after a remote pass so its Tests step is skipped. With
+`remoteValidation.enabled`, standalone `repoos check` runs the remote half first
+unless you pass `--local-tests`. Repos with remote validation off behave as
+before.
 
-## The two hook points
+## Hook points
 
-Both close-out paths call the runner in place of the local test run:
+All three gates share `runRemotePreReviewGate` (`src/server/pre-review-remote-gate.ts`):
 
-- **`src/server/integration-orchestrator.ts` `validateCandidate`** — the live
-  path (since #0118). After the local `bun run build`, if
-  `config.remoteValidation.enabled` and a `RemoteValidator` was injected, it
-  calls `remoteValidator.validate({ taskId, worktreePath, candidateSha })`, then
-  runs the local guards-only `check`.
-- **`src/server/done.ts` `completeTask`** — the legacy single-shot path (dead
-  code, tests only — see its header comment). Not wired to the runner; if it is
-  ever revived, inject a `steps.check` that calls `remoteValidator.validate`.
+- **Pre-review** — engineer handoff finalization (`src/server/handoff.ts`) and
+  `repoos check` when `remoteValidation.enabled` (task #0520). Bundles the task
+  worktree at `HEAD`, runs install + build + test on the runner, then local
+  guards with `REPOOS_SKIP_TESTS=1`. Logs land in
+  `.repoos/logs/remote-validation/<taskId>.log` (task id, or `pre-review` for a
+  bare CLI run).
+- **Close-out** — **`src/server/integration-orchestrator.ts` `validateCandidate`**
+  (since #0118). After the local `bun run build` on the merged candidate, same
+  remote + local-guards sequence as pre-review.
+- **`src/server/done.ts` `completeTask`** — legacy single-shot path (dead code,
+  tests only). Not wired to the runner; if revived, inject remote validation the
+  same way.
+
+### Pre-review unreachable-runner policy
+
+Same as close-out: `remoteValidation.fallbackToLocal` (Settings → Remote
+validation). When **false** (default), an unreachable runner fails **retryably**
+on handoff (the server may auto-resume the engineer) and fails `repoos check`
+with a non-zero exit. A **red** remote gate (build/test failed on the runner) is
+**non-retryable** — fix the branch and re-run. When **fallbackToLocal** is true,
+the full local test suite runs instead.
 
 ### Result handling
 
@@ -56,7 +71,7 @@ Both close-out paths call the runner in place of the local test run:
 | --- | --- | --- | --- |
 | remote gate green | `true` | — | run local guards with `REPOOS_SKIP_TESTS=1`, then publish |
 | remote gate red (build/test failed) | `false` | `false` | **non-retryable** fail — fix in the feature branch and resubmit |
-| runner unreachable / provisioning failed / ssh dropped / timed out | `false` | `true` | **retryable** fail, task stays in `review` (resume from the check step) — unless `remoteValidation.fallbackToLocal`, then run the full gate locally |
+| runner unreachable / provisioning failed / ssh dropped / timed out | `false` | `true` | **retryable** fail (close-out: task stays in `review`; pre-review handoff: may auto-resume the engineer) — unless `remoteValidation.fallbackToLocal`, then run the full gate locally |
 
 ## VM lifecycle
 

@@ -35,6 +35,8 @@ import { resolveAgentForTask } from "./agents.js";
 import { patchTaskFile } from "./write.js";
 import { guardReviewTransition } from "./review-guard.js";
 import type { TaskCheckManager, TaskCheckListener } from "./task-check.js";
+import type { RemoteValidator } from "./remote-validation.js";
+import { remotePreReviewEnabled, runRemotePreReviewGate } from "./pre-review-remote-gate.js";
 
 export type HandoffStep = "validate" | "check" | "commit" | "review" | "main" | "done";
 
@@ -42,6 +44,8 @@ export interface HandoffResult {
   ok: boolean;
   detail?: string;
   step: HandoffStep;
+  /** When false at the check step, the server must not auto-retry the engineer. */
+  checkRetryable?: boolean;
 }
 
 interface RunResult {
@@ -135,6 +139,7 @@ async function runCheck(
   worktree: string,
   config: RepoOSConfig,
   onChunk?: (text: string) => void,
+  extraEnv?: NodeJS.ProcessEnv,
 ): Promise<RunResult> {
   // Prefer the assigned worktree's compiled CLI. A globally linked `repoos`
   // resolves build freshness relative to its own package checkout, which can
@@ -154,7 +159,10 @@ async function runCheck(
   // to an unscoped (full) run when the merge-base can't be resolved.
   const baseBranch = currentBranch(config.root) ?? "main";
   const { base } = branchChangesSinceBase(worktree, baseBranch);
-  const env = base ? { ...process.env, REPOOS_CHECK_CHANGED: base } : process.env;
+  const env = {
+    ...(base ? { ...process.env, REPOOS_CHECK_CHANGED: base } : process.env),
+    ...extraEnv,
+  };
   let last: RunResult = { status: null, stdout: "", stderr: "check command unavailable" };
   for (const candidate of candidates) {
     last = await run(candidate[0], [...candidate.slice(1)], worktree, 240_000, env, onChunk);
@@ -183,6 +191,8 @@ export interface HandoffSink {
   /** Records this finalization's `repoos check` run for the Debug tab (0310). */
   taskChecks?: TaskCheckManager;
   onTaskCheckEvent?: TaskCheckListener;
+  /** When set and remote validation is enabled, tests run on the runner first (#0520). */
+  remoteValidator?: RemoteValidator;
 }
 
 /** Options for the non-capability entry point (`finalizeReviewHandoff`). */
@@ -322,11 +332,31 @@ async function runHandoffFinalization(
 
   if (!opts.skipChecks) {
     onProgress?.("check");
+    let skipTestsLocally = false;
+    if (opts.remoteValidator && remotePreReviewEnabled(config)) {
+      const remote = await runRemotePreReviewGate({
+        config,
+        remoteValidator: opts.remoteValidator,
+        worktreePath: workdir,
+        taskId: task.id,
+        onChunk: undefined,
+      });
+      if (remote.kind === "fail") {
+        return {
+          ok: false,
+          step: "check",
+          detail: remote.detail,
+          checkRetryable: remote.retryable,
+        };
+      }
+      if (remote.kind === "local-only") skipTestsLocally = remote.skipTests;
+    }
     const checkHandle =
       opts.taskChecks && opts.onTaskCheckEvent
         ? opts.taskChecks.start(task.id, "handoff-finalize", opts.onTaskCheckEvent)
         : undefined;
-    const check = await runCheck(workdir, config, checkHandle?.chunk);
+    const checkEnv = skipTestsLocally ? { REPOOS_SKIP_TESTS: "1" } : undefined;
+    const check = await runCheck(workdir, config, checkHandle?.chunk, checkEnv);
     checkHandle?.done(check.status);
     if (check.status !== 0) {
       return fail("check", `repoos check failed: ${concise(check)}`);
@@ -462,6 +492,7 @@ export async function handoffTask(
   onStatusChange?: (task: Task, prev: Status, next: Status) => void,
   taskChecks?: TaskCheckManager,
   onTaskCheckEvent?: TaskCheckListener,
+  remoteValidator?: RemoteValidator,
 ): Promise<HandoffResult> {
   return withHandoffDeadline(async (markSettled) => {
     try {
@@ -479,6 +510,7 @@ export async function handoffTask(
         onStatusChange,
         taskChecks,
         onTaskCheckEvent,
+        remoteValidator,
       });
     } catch (err) {
       markSettled();
@@ -552,6 +584,14 @@ export function scheduleCheckFailureRetry(
   onFileChange?: (absPath: string) => void,
 ): boolean {
   if (result.step !== "check") return false;
+  if (result.checkRetryable === false) {
+    runner.persistHandoffFailure(
+      task.id,
+      task,
+      result.detail ?? "pre-review gate failed (non-retryable)",
+    );
+    return false;
+  }
   let retries = task.extra?.check_retry_count as number | undefined;
   if (typeof retries !== "number") retries = 0;
   const detail = result.detail ?? "repoos check failed";
