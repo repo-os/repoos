@@ -608,6 +608,7 @@ export class TaskWatchdog {
       this.escalateToNeedsInput(
         current,
         "reviewer session died and the automatic retry did not recover it — the review agent may be misconfigured",
+        "review-failed",
       );
       return;
     }
@@ -663,7 +664,11 @@ export class TaskWatchdog {
    * notification) and append an Activity entry with the failure reason and a
    * suggested next step. The task stays `active` — visible, not silent.
    */
-  private escalateToNeedsInput(task: Task, failureReason?: string): void {
+  private escalateToNeedsInput(
+    task: Task,
+    failureReason?: string,
+    needsInputReason?: string,
+  ): void {
     let current: Task;
     try {
       current = this.readCurrent(task);
@@ -679,9 +684,11 @@ export class TaskWatchdog {
     const note = `watchdog: escalated to needs_input · ${reason} · next step: ${suggestNextStep(reason)}`;
     try {
       current.needsInput = true;
-      current.needsInputReason = reason.startsWith("check-failed-after-retries")
-        ? "check-failed-after-retries"
-        : "watchdog-stuck";
+      current.needsInputReason =
+        needsInputReason ??
+        (reason.startsWith("check-failed-after-retries")
+          ? "check-failed-after-retries"
+          : "watchdog-stuck");
       recordChange(current, note);
       this.writeTask(current);
     } catch (err) {

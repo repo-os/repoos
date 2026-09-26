@@ -470,13 +470,6 @@ const hint = computed<CardHint | null>(() => {
         cls: "tc-human",
       };
     }
-    if (repo.isQueued(t.id)) {
-      return {
-        label: "waiting for review",
-        title: "review is queued — it will start automatically",
-        cls: "tc-reviewing",
-      };
-    }
     return null;
   }
   if (t.status === "active") {

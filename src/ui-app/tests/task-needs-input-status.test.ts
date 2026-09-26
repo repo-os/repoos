@@ -96,7 +96,10 @@ async function mountDrawer(pinia: Pinia, task: Task) {
   return wrapper;
 }
 
-function stubDrawerApi(task: Task): void {
+function stubDrawerApi(
+  task: Task,
+  opts: { reviewRunning?: boolean; agentRunning?: boolean } = {},
+): void {
   vi.stubGlobal("EventSource", FakeEventSource);
   vi.stubGlobal(
     "fetch",
@@ -105,9 +108,19 @@ function stubDrawerApi(task: Task): void {
         return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
       if (url.includes("/api/index"))
         return json({ tasks: [task], counts: { ...EMPTY_COUNTS, review: 1 }, taskCount: 1 });
-      if (url.includes("/api/agents/running")) return json({ tasks: [] });
+      if (url.includes("/api/agents/running")) {
+        return json({
+          tasks: opts.agentRunning ? [{ id: task.id, agent: "engineer" }] : [],
+        });
+      }
       if (url.includes("/review"))
-        return json({ ok: true, running: false, enabled: true, review: null, lines: [] });
+        return json({
+          ok: true,
+          running: opts.reviewRunning ?? false,
+          enabled: true,
+          review: null,
+          lines: [],
+        });
       if (url.includes("/output")) return json({ ok: true, lines: [], stats: {} });
       throw new Error("unexpected fetch: " + url);
     }),
@@ -189,4 +202,34 @@ describe("needs_input status labels in the task drawer (#0511)", () => {
       expect(wrapper.find(".rs-reviewing").exists()).toBe(false);
     });
   }
+
+  it("shows no review substate chip when review is idle with no verdict and no needs_input", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    FakeEventSource.instances = [];
+    const task = makeTask({ needsInput: false });
+    stubDrawerApi(task);
+    const wrapper = await mountDrawer(pinia, task);
+    expect(wrapper.find(".rs-chip").exists()).toBe(false);
+  });
+
+  it("shows reviewing, not a stale needs-input chip, while a review is running", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    FakeEventSource.instances = [];
+    const task = makeTask({
+      needsInput: true,
+      needsInputReason: "watchdog-stuck",
+    });
+    stubDrawerApi(task, { reviewRunning: true });
+    const repo = useRepoStore();
+    repo.reviews = {
+      "0506": { running: true, enabled: true, lines: [], report: null },
+    };
+    const wrapper = await mountDrawer(pinia, task);
+    const chip = wrapper.find(".rs-chip");
+    expect(chip.classes()).toContain("rs-reviewing");
+    expect(chip.text()).toContain("reviewing");
+    expect(wrapper.find(".rs-needs-input").exists()).toBe(false);
+  });
 });
