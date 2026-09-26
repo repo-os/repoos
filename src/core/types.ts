@@ -466,8 +466,8 @@ export interface RepoOSConfig {
    */
   servePort?: number;
   /**
-   * Dev/local tooling (#0509). Ignored on release builds and when the server's
-   * `isDevBuild()` gate is false.
+   * Dev/local tooling (#0509). Ignored on release builds (no dev UI bundle /
+   * RepoOS sources in the repo).
    */
   dev?: DevConfig;
   /**

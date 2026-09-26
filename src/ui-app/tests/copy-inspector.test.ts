@@ -86,19 +86,18 @@ describe("copy inspector helpers", () => {
     rmSync(root, { recursive: true, force: true });
   });
 
-  it("copyInspectorApiEnabled requires isDevBuild()", () => {
+  it("copyInspectorApiEnabled follows the dev UI bundle, not where the server runs from", () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-copy-inspector-api-gate-"));
     mkdirSync(join(root, "src/ui-app"), { recursive: true });
     writeFileSync(join(root, "src/ui-app/vite.config.ts"), "export {}", "utf8");
     mkdirSync(join(root, "dist"), { recursive: true });
-    writeFileSync(
-      join(root, "dist", ".build-info.json"),
-      JSON.stringify({ hash: "a", version: "0", devUi: true }) + "\n",
-      "utf8",
-    );
-    const spy = vi.spyOn(reload, "isDevBuild").mockReturnValue(false);
+    const marker = join(root, "dist", ".build-info.json");
+    writeFileSync(marker, JSON.stringify({ hash: "a", version: "0" }) + "\n", "utf8");
+    // Ship-style build: no devUi marker => off.
     expect(copyInspectorApiEnabled(root)).toBe(false);
-    spy.mockReturnValue(true);
+    writeFileSync(marker, JSON.stringify({ hash: "a", version: "0", devUi: true }) + "\n", "utf8");
+    // Enabled even though this test process is not running from src/dist of the repo.
+    const spy = vi.spyOn(reload, "isDevBuild").mockReturnValue(false);
     expect(copyInspectorApiEnabled(root)).toBe(true);
     spy.mockRestore();
     rmSync(root, { recursive: true, force: true });
