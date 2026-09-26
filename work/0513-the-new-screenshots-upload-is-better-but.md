@@ -5,11 +5,11 @@ type: feature
 status: draft
 priority: p2
 area: general
-assigned_to: ""
+assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-26T05:25:23Z"
-updated_at: "2026-09-26T05:25:23Z"
+updated_at: "2026-09-26T05:25:25Z"
 ---
 The new screenshots upload is better, but when we have screenshots uploaded anywhere they are often too small to see details, so let's add an "expand" or "see larger" button next to screenshots which opens them all in a scrollable modal in the center of the screen which can be dismissed by clicking the background opacity or an [x] button on the modal. Re-use this functionality everywhere that we have screenshots in the app so that the user has a consistent uiux and the codebase is clean.
 
@@ -17,6 +17,11 @@ The new screenshots upload is better, but when we have screenshots uploaded anyw
 
 The new screenshots upload is better, but when we have screenshots uploaded anywhere they are often too small to see details, so let's add an "expand" or "see larger" button next to screenshots which opens them all in a scrollable modal in the center of the screen which can be dismissed by clicking the background opacity or an [x] button on the modal. Re-use this functionality everywhere that we have screenshots in the app so that the user has a consistent uiux and the codebase is clean.
 
+## Screenshots
+
+![Screenshot-2026-09-26-at-13.22.16](/api/tasks/0513/attachments/screenshot-1.png)
+
 ## Activity
 
 - 2026-09-26T05:25:23Z · created · hello@repoos.org
+- 2026-09-26T05:25:25Z · screenshots
