@@ -298,9 +298,9 @@ onUnmounted(() => {
   height: 28px;
   padding: 0 10px 0 8px;
   border-radius: 999px;
-  border: 1px solid var(--accent);
-  background: var(--panel-solid);
-  color: var(--accent);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: #111827;
+  color: #ffffff;
   font-size: 12px;
   font-weight: 600;
   line-height: 1;
@@ -310,17 +310,20 @@ onUnmounted(() => {
   pointer-events: auto;
 }
 
+/* Fixed high-contrast colors on purpose: theme accents are pale in some themes
+   (light mint) and made the pill and outline unreadable. */
 .copy-inspector-highlight {
   position: fixed;
   z-index: 199;
   pointer-events: none;
-  border: 2px dashed var(--accent);
+  border: 2px dashed #f97316;
   border-radius: 4px;
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  background: rgba(249, 115, 22, 0.14);
 }
 
 .copy-inspector-affordance-icon {
   flex: none;
+  color: #fb923c;
 }
 
 .copy-inspector-pane {
