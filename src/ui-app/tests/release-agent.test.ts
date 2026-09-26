@@ -143,6 +143,21 @@ async function waitForAsync(fn: () => Promise<boolean>, label: string, timeoutMs
   }
 }
 
+/**
+ * True when the fakebin spawn log matches. Tolerant of the file not existing
+ * yet: `runner.isRunning` reports a process the moment it is spawned, which is
+ * before its first line runs, so a raw `readFileSync` in a poll predicate
+ * throws ENOENT on the first iteration under load and reports a spurious
+ * failure.
+ */
+function logMatches(fx: Fixture, re: RegExp): boolean {
+  try {
+    return re.test(readFileSync(fx.log, "utf8"));
+  } catch {
+    return false;
+  }
+}
+
 /** Best-effort kill of any spawned fake agents, so a failed test leaks nothing. */
 function killSpawns(fx: Fixture): void {
   let text: string;
@@ -239,7 +254,7 @@ describe("release agent when a task leaves active (#0087)", () => {
       );
       expect(alive(info.pid)).toBe(false);
       // The full finalization ran, check included — the whole point of 0507.
-      expect(readFileSync(fx.log, "utf8")).toMatch(/"repoos":\[[^\]]*"check"/);
+      expect(logMatches(fx, /"repoos":\[[^\]]*"check"/)).toBe(true);
     } finally {
       killSpawns(fx);
       process.env.PATH = oldPath;
@@ -282,6 +297,17 @@ describe("release agent when a task leaves active (#0087)", () => {
 
       // The agent's own self-transition edits the MAIN copy on disk directly
       // (never via the API) — the watcher is the only thing that sees it.
+      //
+      // Wait for /start's own writes to land first. `/start` records the branch
+      // in the task file after the agent is already visible in the running
+      // registry, so writing the raw edit on that signal alone can race it: the
+      // two writes interleave, /start's `status: active` lands last, the
+      // watcher never sees a transition into `review`, and no finalization
+      // starts. `branch: <branch>` in the file is /start's last write.
+      await waitForAsync(
+        async () => new RegExp(`^branch: ${branch}$`, "m").test(readFileSync(absPath, "utf8")),
+        "/start finishes recording the task",
+      );
       writeFileSync(
         absPath,
         readFileSync(absPath, "utf8").replace(/^status: active$/m, "status: review"),
@@ -291,14 +317,22 @@ describe("release agent when a task leaves active (#0087)", () => {
       // to `active` and hands the task to the same finalization every other
       // route uses, so the file momentarily says `review` and then does not.
       await waitForAsync(
-        async () => /repoos":\[[^\]]*"check"/.test(readFileSync(fx.log, "utf8")),
+        async () => logMatches(fx, /repoos":\[[^\]]*"check"/),
         "the file-edit route starts the handoff finalization",
       );
+      // Gate on the ACTIVITY entry, not on `status: review` in the file: the
+      // raw edit above wrote that word itself, so polling for it would happily
+      // observe the pre-revert state and pass without the finalization having
+      // done anything. Only the finalization records `active→review`.
+      await waitForAsync(
+        async () => /· status active→review/.test(readFileSync(absPath, "utf8")),
+        "the handoff finalization moves the task to review",
+      ).catch(async (err: Error) => {
+        // The Activity log is where a finalization failure is recorded, so a
+        // timeout here must say WHY rather than just that it timed out.
+        throw new Error(`${err.message}\ntask file:\n${readFileSync(absPath, "utf8")}`);
+      });
       // The agent is untouched until the task genuinely leaves `active`.
-      await waitForAsync(async () => {
-        const t = await api(server, "GET", `/api/tasks/${id}`);
-        return t.body.status === "review";
-      }, "the handoff finalization moves the task to review");
       await waitForAsync(
         async () => !(await running(server)).some((r) => r.id === id),
         "agent leaves the running registry after a direct file edit",
