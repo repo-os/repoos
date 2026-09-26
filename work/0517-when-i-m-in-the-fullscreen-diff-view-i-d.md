@@ -2,14 +2,14 @@
 id: "0517"
 title: Add Escape-to-back with a visible hint in the fullscreen diff view
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/add-escape-to-back-with-a-visible-hint-i
 created_at: "2026-09-26T09:26:37Z"
-updated_at: "2026-09-26T09:28:36Z"
+updated_at: "2026-09-26T09:28:38Z"
 ---
 ## Problem
 
@@ -85,3 +85,4 @@ When I'm in the fullscreen diff view I'd like to be able click escape key to go 
 - 2026-09-26T09:26:40Z · screenshots
 - 2026-09-26T09:27:36Z · status draft→inbox, title, area, body
 - 2026-09-26T09:28:36Z · status inbox→ready
+- 2026-09-26T09:28:38Z · status ready→active, branch
