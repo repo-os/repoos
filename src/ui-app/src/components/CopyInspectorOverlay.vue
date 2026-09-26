@@ -4,8 +4,10 @@ import { Teleport } from "vue";
 import { api, JSON_OPTS } from "../api";
 import Button from "./ui/button.vue";
 import {
+  findCopyInspectorElement,
   findCopyInspectorTarget,
   formatInspectorPath,
+  formatInspectorShortPath,
   type CopyInspectorTarget,
 } from "../lib/copy-inspector-target";
 import { useRepoStore } from "../stores/repo";
@@ -77,11 +79,26 @@ let lastMove: PointerEvent | null = null;
 
 const affordanceRef = ref<HTMLElement | null>(null);
 const pinnedAffordancePos = ref<{ left: string; top: string } | null>(null);
+/** Outline of the exact element the pill / popup refers to. */
+const highlightStyle = ref<Record<string, string> | null>(null);
+
+function highlightFor(el: Element | null): Record<string, string> | null {
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  return {
+    left: `${r.left}px`,
+    top: `${r.top}px`,
+    width: `${r.width}px`,
+    height: `${r.height}px`,
+  };
+}
 
 function hideAffordance(): void {
   affordanceVisible.value = false;
   hoverTarget.value = null;
   pinnedAffordancePos.value = null;
+  // The popup keeps its element outlined until it closes.
+  if (!popup.value) highlightStyle.value = null;
 }
 
 function updateAffordance(e: PointerEvent): void {
@@ -89,13 +106,14 @@ function updateAffordance(e: PointerEvent): void {
     hideAffordance();
     return;
   }
-  if (!e.altKey) {
-    hideAffordance();
-    return;
-  }
   const hitEl =
     e.target instanceof Element ? e.target : document.elementFromPoint(e.clientX, e.clientY);
+  // Over the pill itself: keep it, even if Alt was released on the way there.
   if (affordanceRef.value?.contains(hitEl instanceof Node ? hitEl : null)) {
+    return;
+  }
+  if (!e.altKey) {
+    hideAffordance();
     return;
   }
   if (paneRef.value?.contains(hitEl instanceof Node ? hitEl : null)) {
@@ -119,6 +137,7 @@ function updateAffordance(e: PointerEvent): void {
   const sameTarget =
     hoverTarget.value?.file === target.file && hoverTarget.value?.line === target.line;
   hoverTarget.value = target;
+  highlightStyle.value = highlightFor(findCopyInspectorElement(node));
   affordanceVisible.value = true;
   if (!sameTarget || !pinnedAffordancePos.value) {
     pinnedAffordancePos.value = { left: `${e.clientX + 10}px`, top: `${e.clientY + 10}px` };
@@ -147,6 +166,7 @@ function openFromAffordance(e: PointerEvent): void {
 
 function closePopup(): void {
   popup.value = null;
+  highlightStyle.value = null;
   popupMsg.value = "";
 }
 
@@ -209,7 +229,7 @@ onUnmounted(() => {
         type="button"
         class="copy-inspector-affordance"
         :style="affordanceStyle"
-        title="Show which source file this text comes from"
+        title="Open the source location for the outlined element"
         @pointerdown.stop.prevent="openFromAffordance"
       >
         <svg
@@ -226,8 +246,13 @@ onUnmounted(() => {
           <circle cx="8" cy="8" r="4.5" />
           <path d="M8 1v3M8 12v3M1 8h3M12 8h3" />
         </svg>
-        <span>Locate source</span>
+        <span>{{ hoverTarget ? formatInspectorShortPath(hoverTarget) : "Locate source" }}</span>
       </button>
+      <div
+        v-if="highlightStyle && (affordanceVisible || popup)"
+        class="copy-inspector-highlight"
+        :style="highlightStyle"
+      />
       <div
         v-if="popup"
         ref="paneRef"
@@ -283,6 +308,15 @@ onUnmounted(() => {
   cursor: crosshair;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
   pointer-events: auto;
+}
+
+.copy-inspector-highlight {
+  position: fixed;
+  z-index: 199;
+  pointer-events: none;
+  border: 2px dashed var(--accent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 .copy-inspector-affordance-icon {
