@@ -30,11 +30,12 @@ const active = computed(() => {
 
 const affordanceVisible = ref(false);
 const affordanceStyle = ref<{ left: string; top: string }>({ left: "0px", top: "0px" });
+const hoverTarget = shallowRef<CopyInspectorTarget | null>(null);
 const popup = shallowRef<CopyInspectorTarget | null>(null);
 const popupPos = ref({ x: 0, y: 0 });
 const popupMsg = ref("");
 const opening = ref(false);
-const rootRef = ref<HTMLElement | null>(null);
+const paneRef = ref<HTMLElement | null>(null);
 
 const editorConfigured = computed(() => {
   const cmd = (config.data?.dev as { inspector?: { editorCommand?: string } } | undefined)
@@ -50,6 +51,13 @@ const popupStyle = computed(() => {
   return { left: `${x}px`, top: `${y}px`, width: `${w}px` };
 });
 
+function isInteractiveElement(el: Element | null): boolean {
+  if (!el) return false;
+  return !!el.closest(
+    "input, textarea, select, button, a, label, [contenteditable=''], [contenteditable='true']",
+  );
+}
+
 function textUnderPoint(x: number, y: number): Node | null {
   const docWithCaret = document as Document & {
     caretRangeFromPoint?: (x: number, y: number) => Range | null;
@@ -58,40 +66,69 @@ function textUnderPoint(x: number, y: number): Node | null {
     const range = docWithCaret.caretRangeFromPoint(x, y);
     return range?.startContainer ?? null;
   }
-  const el = document.elementFromPoint(x, y);
-  return el;
+  return document.elementFromPoint(x, y);
 }
 
-function onPointerMove(e: PointerEvent): void {
-  if (!active.value || popup.value) return;
-  if (e.target instanceof Element && rootRef.value?.contains(e.target)) return;
+let moveRaf = 0;
+let lastMove: PointerEvent | null = null;
+
+function updateAffordance(e: PointerEvent): void {
+  if (!active.value || popup.value) {
+    affordanceVisible.value = false;
+    hoverTarget.value = null;
+    return;
+  }
+  if (!e.altKey) {
+    affordanceVisible.value = false;
+    hoverTarget.value = null;
+    return;
+  }
+  const hitEl =
+    e.target instanceof Element ? e.target : document.elementFromPoint(e.clientX, e.clientY);
+  if (paneRef.value?.contains(hitEl instanceof Node ? hitEl : null)) {
+    return;
+  }
+  if (hitEl instanceof Element && isInteractiveElement(hitEl)) {
+    affordanceVisible.value = false;
+    hoverTarget.value = null;
+    return;
+  }
   const node = textUnderPoint(e.clientX, e.clientY);
   const target = findCopyInspectorTarget(node);
   if (!target) {
     affordanceVisible.value = false;
+    hoverTarget.value = null;
     return;
   }
   const text = (node?.textContent ?? "").replace(/\s+/g, " ").trim();
   if (!text) {
     affordanceVisible.value = false;
+    hoverTarget.value = null;
     return;
   }
+  hoverTarget.value = target;
   affordanceVisible.value = true;
   affordanceStyle.value = { left: `${e.clientX + 10}px`, top: `${e.clientY + 10}px` };
 }
 
-function onPointerDown(e: PointerEvent): void {
-  if (!active.value || e.button !== 0) return;
-  if (e.target instanceof Element && rootRef.value?.contains(e.target)) return;
-  const node = textUnderPoint(e.clientX, e.clientY);
-  const target = findCopyInspectorTarget(node);
-  if (!target) return;
+function onPointerMove(e: PointerEvent): void {
+  lastMove = e;
+  if (moveRaf) return;
+  moveRaf = requestAnimationFrame(() => {
+    moveRaf = 0;
+    if (lastMove) updateAffordance(lastMove);
+  });
+}
+
+function openFromAffordance(e: PointerEvent): void {
+  if (!hoverTarget.value) return;
   e.preventDefault();
   e.stopPropagation();
-  popup.value = target;
+  popup.value = hoverTarget.value;
   popupPos.value = { x: e.clientX, y: e.clientY + 12 };
   popupMsg.value = "";
   affordanceVisible.value = false;
+  hoverTarget.value = null;
 }
 
 function closePopup(): void {
@@ -130,36 +167,36 @@ function onKeydown(e: KeyboardEvent): void {
 
 onMounted(() => {
   window.addEventListener("pointermove", onPointerMove, { passive: true });
-  window.addEventListener("pointerdown", onPointerDown, true);
   window.addEventListener("keydown", onKeydown);
 });
 
 onUnmounted(() => {
   window.removeEventListener("pointermove", onPointerMove);
-  window.removeEventListener("pointerdown", onPointerDown, true);
   window.removeEventListener("keydown", onKeydown);
+  if (moveRaf) cancelAnimationFrame(moveRaf);
 });
 </script>
 
 <template>
-  <div v-if="active" ref="rootRef" class="copy-inspector-root" aria-hidden="true">
+  <div v-if="active" class="copy-inspector-root" aria-hidden="true">
     <Teleport to="body">
       <button
         v-if="affordanceVisible && !popup"
         type="button"
         class="copy-inspector-affordance"
         :style="affordanceStyle"
-        title="Locate source"
+        title="Locate source (Alt+click)"
+        @pointerdown.stop.prevent="openFromAffordance"
       >
         ⌖
       </button>
       <div
         v-if="popup"
+        ref="paneRef"
         class="copy-inspector-pane stage-pane"
         role="dialog"
         aria-label="Copy inspector"
         :style="popupStyle"
-        @pointerdown.stop
       >
         <p class="stage-pane-text copy-inspector-path mono">
           {{ formatInspectorPath(popup) }}

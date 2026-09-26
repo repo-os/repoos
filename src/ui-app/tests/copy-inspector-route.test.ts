@@ -4,6 +4,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startServer, type ServerHandle } from "../../server/server";
 
+function writeDevUiBuild(root: string): void {
+  mkdirSync(join(root, "dist"), { recursive: true });
+  writeFileSync(
+    join(root, "dist", ".build-info.json"),
+    `${JSON.stringify({ hash: "test", version: "0.0.0-test", devUi: true })}\n`,
+    "utf8",
+  );
+}
+
 async function request(server: ServerHandle, method: string, path: string, body?: unknown) {
   const res = await fetch(`http://127.0.0.1:${server.port}${path}`, {
     method,
@@ -14,6 +23,23 @@ async function request(server: ServerHandle, method: string, path: string, body?
 }
 
 describe("POST /api/dev/copy-inspector/open", () => {
+  it("is unavailable without a dev UI build marker", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-copy-inspector-route-"));
+    mkdirSync(join(root, "src/ui-app"), { recursive: true });
+    mkdirSync(join(root, "work"), { recursive: true });
+    writeFileSync(join(root, "src/ui-app/vite.config.ts"), "export {}", "utf8");
+    const server = await startServer({ root, host: "127.0.0.1", port: 0 });
+    try {
+      const res = await request(server, "POST", "/api/dev/copy-inspector/open", {
+        file: "src/ui-app/App.vue",
+        line: 1,
+      });
+      expect(res.status).toBe(404);
+    } finally {
+      await server.close();
+    }
+  });
+
   it("is unavailable when the repo has no RepoOS UI sources", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-copy-inspector-route-"));
     mkdirSync(join(root, "work"), { recursive: true });
@@ -35,6 +61,7 @@ describe("POST /api/dev/copy-inspector/open", () => {
     mkdirSync(join(root, "work"), { recursive: true });
     writeFileSync(join(root, "src/ui-app/vite.config.ts"), "export {}", "utf8");
     writeFileSync(join(root, "src/ui-app/App.vue"), "<template></template>", "utf8");
+    writeDevUiBuild(root);
     const server = await startServer({ root, host: "127.0.0.1", port: 0 });
     try {
       await request(server, "PATCH", "/api/config", {

@@ -22,6 +22,11 @@ export function readDevUiBuild(root: string): boolean {
   }
 }
 
+/** True when copy-inspector UI + API are allowed for this checkout. */
+export function copyInspectorAvailable(root: string): boolean {
+  return hasRepoOsUiSource(root) && readDevUiBuild(root);
+}
+
 /** Repo-relative display path with optional `:line` suffix. */
 export function formatCopyInspectorPath(repoRel: string, line: number | null): string {
   const normalized = repoRel.replace(/\\/g, "/");
@@ -86,8 +91,14 @@ export function tokenizeEditorCommand(command: string): string[] {
   return out.filter(Boolean);
 }
 
+/** Insert `{file}` value; quote when the path contains whitespace so tokenizing stays one argv. */
+function substituteFileToken(repoRelFile: string): string {
+  return /\s/.test(repoRelFile) ? `"${repoRelFile.replace(/"/g, '\\"')}"` : repoRelFile;
+}
+
 /**
  * Substitute `{file}` / `{line}` and return argv for `spawn(command, args)`.
+ * `{file}` is repo-relative; run the editor with `cwd` set to the repo root.
  * When `{line}` is absent from the template, `{file}` is only the path (no `:line`).
  */
 export function buildEditorSpawnArgs(
@@ -98,7 +109,8 @@ export function buildEditorSpawnArgs(
   const trimmed = template.trim();
   if (!trimmed) return [];
   const hasLine = trimmed.includes("{line}");
-  let resolved = trimmed.replace(/\{file\}/g, repoRelFile);
+  const fileToken = substituteFileToken(repoRelFile);
+  let resolved = trimmed.replace(/\{file\}/g, fileToken);
   if (hasLine) {
     resolved = resolved.replace(/\{line\}/g, line != null ? String(line) : "");
   }

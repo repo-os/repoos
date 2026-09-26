@@ -762,10 +762,7 @@ environment-only.
 
 ## Dev copy inspector (RepoOS self-host only)
 
-These settings appear under **Settings → Advanced** when you run RepoOS from a
-source checkout (`isDevBuild()` — for example `bun run repoos serve`). They are
-inert on release/npm builds and when the repo has no `src/ui-app/` tree (previews
-of other projects).
+These settings appear under **Settings → Advanced** when this checkout has `src/ui-app/` **and** the running build was compiled with the dev UI bundle (`devUi: true` in `dist/.build-info.json` — a normal local `bun run build`, not `REPOOS_SHIP=1` / release tarballs). They are inert on release installs and when previewing another project's app.
 
 | Key | Type | Default | Restart | Description |
 | --- | --- | --- | --- | --- |
