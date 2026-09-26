@@ -270,4 +270,31 @@ describe("RepoOS dogfoods the stylesheet-guard declaration", () => {
       }),
     ).toEqual([]);
   });
+
+  it("registers every design theme the stylesheet defines, in both appearances", () => {
+    const cfg = loadConfig(root).check;
+    const css = readFileSync(join(root, cfg?.uiStylesheet ?? ""), "utf8");
+    const scopes = cfg?.themeScopes ?? [];
+
+    // Every scope named in repoos.toml must genuinely match a block, or the
+    // guard skips that theme without failing.
+    for (const scope of scopes) {
+      expect(hasThemeBlocks(css, [scope]), `no stylesheet block matches ${scope.selector}`).toBe(
+        true,
+      );
+    }
+
+    // Conversely every `:root[data-ui-theme="…"]` block in the stylesheet must be
+    // registered — an unregistered theme is never contrast-checked, and nothing
+    // else in the suite notices, so this is the only guard against that drift.
+    const defined = [...css.matchAll(/^:root\[data-ui-theme="([^"]+)"\]/gm)].map((m) => m[1]);
+    expect(defined.length).toBeGreaterThan(0);
+    for (const id of defined) {
+      const registered = scopes.filter((s) => s.selector.includes(`data-ui-theme="${id}"`));
+      expect(
+        registered.map((s) => s.name).sort(),
+        `theme "${id}" is defined in the stylesheet but not registered in repoos.toml`,
+      ).toHaveLength(2); // one dark block + one [data-theme="light"] block
+    }
+  });
 });
