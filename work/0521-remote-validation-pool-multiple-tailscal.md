@@ -2,14 +2,14 @@
 id: "0521"
 title: "Remote validation: pool multiple tailscale hosts"
 type: feature
-status: inbox
+status: ready
 priority: p3
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-26T11:49:01Z"
-updated_at: "2026-09-26T11:49:01Z"
+updated_at: "2026-09-26T13:05:31Z"
 ---
 ## Problem
 
@@ -46,3 +46,4 @@ Most valuable after "Run the pre-review gate on the remote validation runner".
 ## Activity
 
 - 2026-09-26T11:49:01Z · created · unknown
+- 2026-09-26T13:05:31Z · status inbox→ready
