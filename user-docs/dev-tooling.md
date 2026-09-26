@@ -6,7 +6,7 @@ npm package.
 
 ## Copy inspector
 
-When `dev.inspector.enabled` is on (default) and the server was built with `devUi: true` in `dist/.build-info.json`, hold **Alt** (Option on macOS) over visible UI text to reveal a **⌖** control. **Alt+click** the control to open a panel with the repo-relative source path (with a `:line` suffix when known).
+When `dev.inspector.enabled` is on (default) and the server was built with `devUi: true` in `dist/.build-info.json`, hold **Alt** (Option on macOS) over visible UI text to reveal a **⌖** control, then click the control to open a panel with the repo-relative source path (with a `:line` suffix when known).
 
 - **Copy path** — puts `src/ui-app/…:line` on the clipboard; works without an
   editor configured.

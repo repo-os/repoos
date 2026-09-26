@@ -85,4 +85,30 @@ describe("POST /api/dev/copy-inspector/open", () => {
       await server.close();
     }
   });
+
+  it("returns 500 (and keeps serving) when the editor binary does not exist", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-copy-inspector-route-"));
+    mkdirSync(join(root, "src/ui-app"), { recursive: true });
+    mkdirSync(join(root, "work"), { recursive: true });
+    writeFileSync(join(root, "src/ui-app/vite.config.ts"), "export {}", "utf8");
+    writeFileSync(join(root, "src/ui-app/App.vue"), "<template></template>", "utf8");
+    writeDevUiBuild(root);
+    const server = await startServer({ root, host: "127.0.0.1", port: 0 });
+    try {
+      await request(server, "PATCH", "/api/config", {
+        "dev.inspector.enabled": true,
+        "dev.inspector.editorCommand": "repoos-no-such-editor-binary {file}",
+      });
+      const res = await request(server, "POST", "/api/dev/copy-inspector/open", {
+        file: "src/ui-app/App.vue",
+        line: 1,
+      });
+      expect(res.status).toBe(500);
+      // An unhandled async spawn "error" would have taken the server down.
+      const health = await fetch(`http://127.0.0.1:${server.port}/api/health`);
+      expect(health.status).toBe(200);
+    } finally {
+      await server.close();
+    }
+  });
 });

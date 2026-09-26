@@ -55,13 +55,26 @@ export const postCopyInspectorOpen: RouteHandler = async (ctx, req, res) => {
     return json(res, 400, { error: "invalid editor command" });
   }
   const [bin, ...spawnArgs] = args;
-  try {
-    spawn(bin, spawnArgs, {
-      detached: true,
-      stdio: "ignore",
-      cwd: config.root,
-    }).unref();
-  } catch {
+  // spawn() reports ENOENT/EACCES asynchronously via "error"; with no listener
+  // that becomes an uncaught exception and takes down the server. Wait for
+  // "spawn" or "error" so a bad editor command comes back as a 500 instead.
+  const launched = await new Promise<boolean>((resolve) => {
+    try {
+      const child = spawn(bin, spawnArgs, {
+        detached: true,
+        stdio: "ignore",
+        cwd: config.root,
+      });
+      child.once("error", () => resolve(false));
+      child.once("spawn", () => {
+        child.unref();
+        resolve(true);
+      });
+    } catch {
+      resolve(false);
+    }
+  });
+  if (!launched) {
     return json(res, 500, { error: "failed to launch editor" });
   }
 
