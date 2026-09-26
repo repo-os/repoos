@@ -2,7 +2,7 @@
 id: "0507"
 title: Unify every route into review behind the handoff finalization
 type: bug
-status: review
+status: done
 priority: p1
 area: server
 assigned_to: ai
@@ -12,7 +12,7 @@ cli_override: opencode
 model_override: opencode-go/space-bunny-free
 review_model_override: opencode/muse-spark-1.3-contributor-free
 created_at: "2026-09-26T02:27:03Z"
-updated_at: "2026-09-26T09:36:49Z"
+updated_at: "2026-09-26T09:39:52Z"
 review_passes: 2
 dev_error_count: 1
 ---
@@ -120,3 +120,4 @@ came last (`lastFailureLine`) — "Skill routing: …", "Server finalization: ch
 - 2026-09-26T08:22:22Z · status active→review
 - 2026-09-26T08:22:25Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-09-26T09:36:49Z · needs_input dismissed by hello@repoos.org
+- 2026-09-26T09:39:52Z · status review→done, release:success
