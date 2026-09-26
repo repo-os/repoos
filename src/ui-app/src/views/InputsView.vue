@@ -27,6 +27,7 @@ import InputEditModal from "../components/InputEditModal.vue";
 import ScreenshotViewer from "../components/ScreenshotViewer.vue";
 import ScreenshotExpandButton from "../components/ScreenshotExpandButton.vue";
 import { isImageMime, shotIndex, type ScreenshotShot } from "../lib/screenshot-viewer";
+import { renderMarkdown } from "../lib/markdown";
 
 type InputsViewMode = "list" | "board";
 
@@ -151,6 +152,17 @@ const inputEditOpen = ref(false);
 
 function openInputEdit(): void {
   inputEditOpen.value = true;
+}
+
+/** Rendered (safe) Markdown for the input body card. */
+const inputBodyHtml = computed(() =>
+  activeInput.value ? renderMarkdown(activeInput.value.body) : "",
+);
+
+/** Opens the input edit modal on click, but not when finishing a text-selection drag. */
+function handleInputCardClick(): void {
+  if (window.getSelection()?.toString()) return;
+  openInputEdit();
 }
 
 async function applyInputEdit(text: string): Promise<void> {
@@ -458,11 +470,17 @@ function tryOpenInput(ref: string, attempt: number): void {
             ><span>Created by {{ activeInput.createdBy || "Unknown" }}</span
             ><span v-if="activeInput.createdAt">Created {{ relTime(activeInput.createdAt) }}</span>
           </div>
-          <div class="detail-body-head">
-            <span class="detail-body-label">Text</span>
-            <Button variant="outline" size="sm" @click="openInputEdit">Edit</Button>
+          <div
+            class="md-card"
+            role="button"
+            tabindex="0"
+            @click="handleInputCardClick"
+            @keydown.enter="openInputEdit"
+            @keydown.space.prevent="openInputEdit"
+          >
+            <div v-if="inputBodyHtml" class="md-rendered" v-html="inputBodyHtml"></div>
+            <div v-else class="md-card-body">No text yet — click to add.</div>
           </div>
-          <div class="detail-body">{{ activeInput.body }}</div>
           <div v-if="activeInput.status !== 'processed'" class="detail-actions">
             <Button variant="outline" :disabled="resolving" @click="doNothing">Do nothing</Button>
             <Button variant="accent" :disabled="resolving" @click="createTaskFromInput">{{
@@ -754,26 +772,6 @@ function tryOpenInput(ref: string, attempt: number): void {
 .detail-status .detail-select {
   min-width: 120px;
   align-self: auto;
-}
-.detail-body-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-.detail-body-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--txt-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.detail-body {
-  white-space: pre-wrap;
-  color: var(--txt);
-  font-size: 14px;
-  line-height: 1.65;
 }
 .detail-resolution {
   display: flex;
