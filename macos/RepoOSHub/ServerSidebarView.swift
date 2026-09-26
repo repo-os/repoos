@@ -43,25 +43,18 @@ struct ServerSidebarView: View {
             }
         }
         .listStyle(.sidebar)
-        // Sidebar materials can retain the system's dark translucency after
-        // the Hub has selected Light. Supply an opaque shell background so
-        // this native surface matches the chosen appearance too.
-        .scrollContentBackground(.hidden)
-        .background(sidebarBackground)
         .navigationTitle("RepoOS")
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            ZStack {
-                sidebarBackground
-                Button {
-                    appState.presentAddServer()
-                } label: {
-                    Label("Add server", systemImage: "plus")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.regular)
-                .padding(12)
+            Button {
+                appState.presentAddServer()
+            } label: {
+                Label("Add server", systemImage: "plus")
+                    .frame(maxWidth: .infinity)
             }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.regular)
+            .padding(12)
+            .background(sidebarBackground)
             .help("Add a RepoOS server to the local registry")
         }
         .overlay {
@@ -69,17 +62,15 @@ struct ServerSidebarView: View {
                 SidebarEmptyHint()
             }
         }
-        .background(sidebarBackground, ignoresSafeAreaEdges: .all)
+        .background(sidebarBackground)
     }
 
     private var sidebarBackground: Color {
         switch appState.hubGlobalPreferences.appearance {
         case .dark:
-            return .black
-        case .light:
+            return Color(red: 0.12, green: 0.12, blue: 0.12)
+        case .light, .system:
             return .white
-        case .system:
-            return Color(nsColor: .windowBackgroundColor)
         }
     }
 }
