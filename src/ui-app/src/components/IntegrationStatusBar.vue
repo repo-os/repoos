@@ -274,6 +274,18 @@ async function onStageClick(stage: string): Promise<void> {
   if (stage === "check") ui.focusDebugCheck(job.taskId, "merge-gate");
 }
 
+/** Native tooltip for the collapsed strip (active task + queued ids). */
+const stripTooltip = computed(() => {
+  let t = "Integration pipeline — ";
+  if (idle.value) return t + "idle";
+  if (active.value) {
+    t += "#" + active.value.taskId + " " + (active.value.stage ?? "…");
+    if (queue.value.length) t += " · Queue: " + queue.value.map((id) => "#" + id).join(" ");
+    return t;
+  }
+  return t + "integrating";
+});
+
 function stageClass(s: string, i: number): string {
   // On failure the failing stage is pinned red; earlier stages stay checked
   // (green) and later stages remain pending (todo).
@@ -295,10 +307,7 @@ function stageClass(s: string, i: number): string {
       v-if="collapsed"
       type="button"
       class="ibar-strip"
-      :title="
-        'Integration pipeline — ' +
-        (idle ? 'idle' : active ? '#' + active.taskId + ' ' + (active.stage ?? '…') : '')
-      "
+      :title="stripTooltip"
       @click="collapsed = false"
     >
       <span
@@ -322,11 +331,13 @@ function stageClass(s: string, i: number): string {
         </template>
         <template v-else>Integrating…</template>
       </span>
-      <span v-if="!idle && queue.length" class="strip-queue" aria-label="Queued tasks">
-        <span class="strip-queue-label">Queue:</span>
-        <span v-for="q in queue" :key="q" class="ibar-chip mono" :title="'#' + q + ' queued'"
-          >#{{ q }}</span
-        >
+      <span v-if="!idle && queue.length" class="strip-queue">
+        <span class="strip-queue-ellipsis">
+          <span class="strip-queue-label">Queue:</span>
+          <span v-for="q in queue" :key="q" class="ibar-chip mono" :title="'#' + q + ' queued'"
+            >#{{ q }}</span
+          >
+        </span>
       </span>
       <ChevronUp class="strip-chev" aria-hidden="true" />
     </button>
@@ -707,20 +718,34 @@ function stageClass(s: string, i: number): string {
   font-size: 12px;
 }
 
+/* Queue segment yields space first; label keeps the active task + timer readable. */
 .strip-queue {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  flex: 0 1 auto;
   min-width: 0;
-  flex-shrink: 1;
+  max-width: 45%;
   overflow: hidden;
+}
+
+.strip-queue-ellipsis {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .strip-queue-label {
   color: var(--txt-faint);
   font-size: 12px;
-  white-space: nowrap;
-  flex-shrink: 0;
+}
+
+.strip-queue-ellipsis .ibar-chip {
+  display: inline-block;
+  vertical-align: baseline;
+  margin-left: 6px;
+}
+
+.strip-queue-ellipsis .ibar-chip:first-of-type {
+  margin-left: 4px;
 }
 
 /* Collapsed thin strip */
@@ -761,7 +786,8 @@ function stageClass(s: string, i: number): string {
 }
 
 .strip-label {
-  flex: 1;
+  flex: 1 1 auto;
+  flex-shrink: 0;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
