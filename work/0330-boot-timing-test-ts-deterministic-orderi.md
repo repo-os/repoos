@@ -5,11 +5,13 @@ type: feature
 status: inbox
 priority: p3
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: opencode
+model_override: default
 created_at: "2026-09-05T05:50:51Z"
-updated_at: "2026-09-05T05:50:51Z"
+updated_at: "2026-09-26T09:30:41Z"
 ---
 `boot-timing.test.ts` (#0271 regression guard) can no longer reliably prove
 "listener binds before the index-populated promise resolves" at its current
@@ -70,3 +72,4 @@ runtime-speed race in the process.
 ## Activity
 
 - 2026-09-05T05:50:51Z · created · unknown
+- 2026-09-26T09:30:41Z · cli_override, model_override
