@@ -12,6 +12,9 @@ final class HubAppAppearanceTests: XCTestCase {
         XCTAssertNil(HubAppAppearance.system.colorScheme)
         XCTAssertEqual(HubAppAppearance.light.colorScheme, .light)
         XCTAssertEqual(HubAppAppearance.dark.colorScheme, .dark)
+        XCTAssertNil(HubAppAppearance.system.appKitAppearance)
+        XCTAssertEqual(HubAppAppearance.light.appKitAppearance?.name, .aqua)
+        XCTAssertEqual(HubAppAppearance.dark.appKitAppearance?.name, .darkAqua)
     }
 
     func testLegacyRegistryFileDefaultsAppearanceToSystem() throws {

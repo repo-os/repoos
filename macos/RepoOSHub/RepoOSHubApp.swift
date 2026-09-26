@@ -14,6 +14,7 @@ struct RepoOSHubApp: App {
                 .environmentObject(appState)
                 .frame(minWidth: 880, minHeight: 520)
                 .preferredColorScheme(appState.hubGlobalPreferences.appearance.colorScheme)
+                .background(HubWindowAppearanceConfigurator(appearance: appState.hubGlobalPreferences.appearance))
                 .onAppear {
                     UNUserNotificationCenter.current().delegate = notificationDelegate
                     notificationDelegate.requestAuthorizationIfNeeded()
@@ -75,13 +76,84 @@ struct RepoOSHubApp: App {
 
 final class HubAppDelegate: NSObject, NSApplicationDelegate {
     private let dockIconAppearance = DockIconAppearanceController()
+    private var appKitAppearance: NSAppearance?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         dockIconAppearance.start()
     }
 
     func setAppearanceOverride(_ appearance: HubAppAppearance) {
+        // preferredColorScheme updates SwiftUI content but does not update
+        // AppKit-managed title bars or toolbars. Apply the same preference to
+        // the application so the complete native shell follows Light/Dark.
+        appKitAppearance = appearance.appKitAppearance
+        applyAppKitAppearance()
+        // A WindowGroup creates its AppKit window asynchronously. Reapply on
+        // the next run loop so its title bar and toolbar do not keep the
+        // system's previous appearance on first launch.
+        DispatchQueue.main.async { [weak self] in
+            self?.applyAppKitAppearance()
+        }
         dockIconAppearance.appearanceOverride = appearance
+    }
+
+    private func applyAppKitAppearance() {
+        // Existing SwiftUI-owned windows can retain the appearance they had
+        // when they were created. Set it directly as well so title bars and
+        // toolbars change immediately alongside the SwiftUI content.
+        NSApp.appearance = appKitAppearance
+        NSApp.windows.forEach { window in
+            window.appearance = appKitAppearance
+            window.titlebarAppearsTransparent = false
+            window.backgroundColor = .windowBackgroundColor
+            window.toolbarStyle = .unified
+
+            // A SwiftUI WindowGroup's toolbar is a sibling of contentView in
+            // the AppKit frame. It does not consistently inherit a changed
+            // NSWindow appearance, so set that frame directly. Do not walk
+            // into contentView: its WKWebView intentionally follows the
+            // system appearance rather than this Hub-shell preference.
+            guard let frameView = window.contentView?.superview else { return }
+            frameView.appearance = appKitAppearance
+            frameView.subviews
+                .filter { $0 !== window.contentView }
+                .forEach { $0.appearance = appKitAppearance }
+        }
+    }
+}
+
+/// SwiftUI's WindowGroup may assign its system appearance after the app
+/// delegate has finished launching. This view is attached only after the real
+/// NSWindow exists, making the Hub preference authoritative for its native
+/// title bar, toolbar, and sidebar.
+private struct HubWindowAppearanceConfigurator: NSViewRepresentable {
+    let appearance: HubAppAppearance
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        configureWindow(from: view)
+        return view
+    }
+
+    func updateNSView(_ view: NSView, context: Context) {
+        configureWindow(from: view)
+    }
+
+    private func configureWindow(from view: NSView) {
+        DispatchQueue.main.async {
+            guard let window = view.window else { return }
+            let appKitAppearance = appearance.appKitAppearance
+            window.appearance = appKitAppearance
+            window.titlebarAppearsTransparent = false
+            window.backgroundColor = .windowBackgroundColor
+            window.toolbarStyle = .unified
+
+            guard let frameView = window.contentView?.superview else { return }
+            frameView.appearance = appKitAppearance
+            frameView.subviews
+                .filter { $0 !== window.contentView }
+                .forEach { $0.appearance = appKitAppearance }
+        }
     }
 }
 
