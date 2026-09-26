@@ -35,6 +35,17 @@ enum HubAppAppearance: String, Codable, Equatable, Sendable, CaseIterable {
         case .dark: return NSAppearance(named: .darkAqua)
         }
     }
+
+    /// A concrete backing color for the rounded native window frame. Using
+    /// windowBackgroundColor here can resolve through the system appearance
+    /// instead of the Hub override, leaving a dark strip around a Light shell.
+    var appKitWindowBackgroundColor: NSColor {
+        switch self {
+        case .system: return .windowBackgroundColor
+        case .light: return .white
+        case .dark: return .black
+        }
+    }
 }
 
 /// The macOS system appearance, read directly from the global defaults domain
