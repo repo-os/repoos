@@ -160,4 +160,26 @@ describe("RepoHistoryPanel (#0514)", () => {
     await wrapper.get(".hist-task").trigger("click");
     expect(openTask).toHaveBeenCalledWith(expect.objectContaining({ id: "0514" }));
   });
+
+  it("strips a trailing slash before requesting the path filter", async () => {
+    const calls: string[] = [];
+    api.mockImplementation(async (path: string) => {
+      calls.push(path);
+      if (path.startsWith("/api/repo/branches")) {
+        return { ok: true, defaultBranch: "main", branches: ["main"] };
+      }
+      if (path.startsWith("/api/repo/log")) {
+        return { ok: true, commits: [commit()], nextCursor: null };
+      }
+      throw new Error(`unexpected ${path}`);
+    });
+    const wrapper = mount(RepoHistoryPanel, { global: { stubs } });
+    await flushPromises();
+    await wrapper.get('input[aria-label="Path filter"]').setValue("src/ui-app/");
+    await wrapper.get("form.hist-path").trigger("submit");
+    await flushPromises();
+    const logCall = calls.filter((c) => c.startsWith("/api/repo/log")).at(-1) ?? "";
+    expect(logCall).toContain("path=src%2Fui-app");
+    expect(logCall).not.toContain("ui-app%2F");
+  });
 });

@@ -14,12 +14,14 @@ import type { RouteContext } from "../../server/routes/types";
 import { getRepoBranches, getRepoCommitRoute, getRepoLog } from "../../server/routes/repo-log";
 import {
   extractTaskId,
+  getRepoCommit,
   isValidBranch,
   isValidPathFilter,
   isValidSha,
   listRepoLog,
   parseDecorations,
   parseGitLogOutput,
+  truncatePatch,
 } from "../../core/repo-log";
 
 function git(root: string, args: string[]): string {
@@ -143,6 +145,7 @@ describe("git log parsing (#0514)", () => {
     expect(isValidBranch("-evil")).toBe(false);
     expect(isValidBranch("foo..bar")).toBe(false);
     expect(isValidPathFilter("src/ui-app")).toBe(true);
+    expect(isValidPathFilter("src/ui-app/")).toBe(true);
     expect(isValidPathFilter("../etc/passwd")).toBe(false);
     expect(isValidPathFilter("/etc/passwd")).toBe(false);
   });
@@ -184,6 +187,17 @@ describe("listRepoLog pagination (#0514)", () => {
     if (!page.ok) return;
     expect(page.commits.every((c) => c.subject.includes("keep"))).toBe(true);
     expect(page.commits.some((c) => c.subject.includes("skip"))).toBe(false);
+  });
+
+  it("treats a trailing slash as the same path filter", async () => {
+    const root = initRepo();
+    dirs.push(root);
+    commitFile(root, "src/ui-app/a.ts", "a\n", "feat(0514): keep");
+    commitFile(root, "other.txt", "o\n", "feat(0514): skip");
+    const page = await listRepoLog(root, { branch: "main", path: "src/ui-app/", limit: 20 });
+    expect(page.ok).toBe(true);
+    if (!page.ok) return;
+    expect(page.commits.every((c) => c.subject.includes("keep"))).toBe(true);
   });
 });
 
@@ -237,5 +251,52 @@ describe("GET /api/repo/log (#0514)", () => {
     await getRepoBranches(ctx, makeReq("/api/repo/branches"), branches.res, {});
     expect(branches.fake.payload.branches).toContain("main");
     expect(branches.fake.payload.defaultBranch).toBe("main");
+  });
+});
+
+describe("getRepoCommit diffs (#0514)", () => {
+  it("returns a first-parent patch for a merge commit", async () => {
+    const root = initRepo();
+    dirs.push(root);
+    commitFile(root, "shared.txt", "base\n", "feat(0514): base");
+    git(root, ["checkout", "-b", "side"]);
+    commitFile(root, "side.txt", "from side\n", "feat(0514): side");
+    git(root, ["checkout", "main"]);
+    commitFile(root, "main.txt", "from main\n", "feat(0514): mainline");
+    git(root, ["merge", "--no-ff", "-m", "Merge branch 'side'", "side"]);
+    const sha = git(root, ["rev-parse", "HEAD"]);
+    const detail = await getRepoCommit(root, sha);
+    if (!("files" in detail)) throw new Error(detail.error);
+    expect(detail.parents.length).toBe(2);
+    expect(detail.files.some((f) => f.path === "side.txt")).toBe(true);
+    expect(detail.patch).toContain("from side");
+  });
+
+  it("includes decorate refs on the commit detail", async () => {
+    const root = initRepo();
+    dirs.push(root);
+    const sha = commitFile(root, "t.txt", "t\n", "feat(0514): tagged");
+    git(root, ["tag", "v-hist-test"]);
+    const detail = await getRepoCommit(root, sha);
+    if (!("files" in detail)) throw new Error(detail.error);
+    expect(detail.refs).toContain("v-hist-test");
+  });
+
+  it("marks a pure-addition edit to an existing file as modified", async () => {
+    const root = initRepo();
+    dirs.push(root);
+    commitFile(root, "keep.txt", "hello\n", "feat(0514): create");
+    const sha = commitFile(root, "keep.txt", "hello\nworld\n", "feat(0514): append");
+    const detail = await getRepoCommit(root, sha);
+    if (!("files" in detail)) throw new Error(detail.error);
+    expect(detail.files.find((f) => f.path === "keep.txt")?.status).toBe("modified");
+  });
+
+  it("slices an oversized patch in one pass", () => {
+    const huge = "x".repeat(300_000);
+    const result = truncatePatch(huge);
+    expect(result.truncated).toBe(true);
+    expect(result.patch).toContain("truncated");
+    expect(Buffer.from(result.patch, "utf8").byteLength).toBeLessThan(300_000);
   });
 });

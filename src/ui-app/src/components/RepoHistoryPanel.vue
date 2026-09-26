@@ -142,7 +142,7 @@ async function loadPage(more: boolean): Promise<void> {
 }
 
 function applyPath(): void {
-  pathApplied.value = pathFilter.value.trim();
+  pathApplied.value = pathFilter.value.trim().replace(/\/+$/, "");
   void loadPage(false);
 }
 
@@ -236,6 +236,7 @@ function openDiff(sha: string, file?: string): void {
             v-model="pathFilter"
             class="h-[34px] py-0"
             placeholder="Filter by path, e.g. src/ui-app"
+            title="A trailing slash is ignored. Paths must be relative (no ..)."
             aria-label="Path filter"
           />
         </label>
