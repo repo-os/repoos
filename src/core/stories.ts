@@ -84,15 +84,33 @@ export function storyKey(raw: string): string {
  * The result is always filename-safe (`[a-z0-9-]`), which is what the runner's
  * session file requires.
  */
+/**
+ * Short, stable, filename-safe hash of a string (djb2, base36). Dependency-free
+ * because `stories.ts` is shared with the UI bundle. Only ever used to
+ * disambiguate, never for anything security-relevant.
+ */
+function shortHash(value: string): string {
+  let h = 5381;
+  for (let i = 0; i < value.length; i++) h = ((h << 5) + h + value.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
+
+/** Cap on the slug part of a session id, mirroring `storySlug`'s file-name cap. */
+const SESSION_SLUG_MAX = 55;
+
 export function storyPmSessionSlug(key: string, number?: string | null): string {
   if (number) return number;
-  return (
-    key
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 55) || "story"
-  );
+  const slug = key
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  if (!slug) return "story";
+  // Truncation alone would let two long, similarly-prefixed story names share
+  // one PM conversation — silently merging two users' threads. Appending a hash
+  // of the full key keeps them distinct; the budget shrinks to fit.
+  if (slug.length <= SESSION_SLUG_MAX) return slug;
+  const suffix = `-${shortHash(key)}`;
+  return slug.slice(0, SESSION_SLUG_MAX - suffix.length) + suffix;
 }
 
 /**

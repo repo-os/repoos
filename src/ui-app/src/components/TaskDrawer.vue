@@ -86,6 +86,7 @@ import { parseReviewVerdict } from "../lib/reviewVerdict";
 import { autoRepairHint, retryCountFrom } from "../lib/retryHints";
 import { uiRecoveryState } from "../lib/uiRecovery";
 import CopyableNumber from "./CopyableNumber.vue";
+import PmChatSurface from "./PmChatSurface.vue";
 
 const repo = useRepoStore();
 const ui = useUiStore();
@@ -1456,14 +1457,10 @@ function pmSessionId(taskId: string): string {
 const pmDraft = ref("");
 const pmDraftTextarea = ref<HTMLTextAreaElement | null>(null);
 const pmSubmitting = ref(false);
-const pmLog = ref<HTMLElement | null>(null);
-/** Hidden file input behind the PM compose box's attach button (0381). */
-const pmShotInput = ref<HTMLInputElement | null>(null);
 
-function onPmShotFiles(e: Event): void {
-  const input = e.target as HTMLInputElement;
-  if (input.files) ui.addPmScreenshots(Array.from(input.files));
-  input.value = "";
+/** Screenshots picked for the next PM message (0381), into the shared buffer. */
+function onPmShotFiles(files: File[]): void {
+  if (files.length) ui.addPmScreenshots(files);
 }
 
 /** Check if PM agent is enabled. */
@@ -1483,19 +1480,11 @@ const pmBusy = computed(
   () => pmSubmitting.value || (ui.active && repo.runningIds.includes(pmSessionId(ui.active.id))),
 );
 
-const pmHasConversation = computed(() => pmLines.value.length > 0);
-
-// Chat scroll standard (#0444): open on the newest message, remember the
-// reader's position per task, and offer a jump back down once they scroll away.
-const {
-  showJumpToLatest: pmShowJumpToLatest,
-  onScroll: pmOnScroll,
-  scrollToLatest: pmScrollToLatest,
-} = useChatScroll(pmLog, {
-  chatId: () => (ui.active ? pmSessionId(ui.active.id) : "pm:none"),
-  contentSize: () => pmLines.value.length,
-  active: () => ui.activeTab === "pm",
-});
+// The PM chat's scroll, transcript grouping, compose box and canned prompts all
+// live in <PmChatSurface> (#0515) — this drawer passes data in and handles
+// events. It deliberately keeps no `useChatScroll` of its own: a second instance
+// here would hold a ref to a log element that no longer exists in this
+// component, and the drawer's other chats (Dev, Review) have their own.
 
 /**
  * Canned messages shown above the PM compose box, keyed by task status.
@@ -1536,11 +1525,8 @@ function openPmWithNeedsInputQuestions(): void {
   });
 }
 
-/** The PM conversation as shared display rows (#0506) — same grouping as every other chat. */
-const pmEntries = computed<DisplayRow[]>(() => toDisplayRows(pmLines.value));
-
-// Following new output (and restoring a remembered position when the PM tab
-// opens) is useChatScroll's job — see docs/ai-chat-standards.md (#0444).
+// Row grouping (#0506) and the scroll standard (#0444) are the surface's job now
+// — see the note above the PM section and docs/ai-chat-standards.md.
 
 async function pmSend(): Promise<void> {
   const text = pmDraft.value.trim();
@@ -1560,7 +1546,9 @@ async function pmSend(): Promise<void> {
     mime: s.mime,
     data: s.dataUrl.split(",")[1] ?? "",
   }));
-  pmScrollToLatest();
+  // No explicit scroll-to-latest: the optimistic line above grows the log, and
+  // the surface's `useChatScroll` follows it because the reader is at the
+  // bottom (they just typed). Same rule every other chat follows.
 
   try {
     await api(
@@ -1613,14 +1601,9 @@ async function pmInterrupt(): Promise<void> {
   }
 }
 
-watch(
-  () => ui.active?.id,
-  () => {
-    if (ui.active) {
-      pmScrollToLatest();
-    }
-  },
-);
+// Switching tasks changes the surface's `chatId`, and `useChatScroll` restores
+// that conversation's remembered position itself (or opens on the newest
+// message) — so there is no per-task scroll reset to do here.
 
 // ---- PM agent override (task detail) ----
 
@@ -4252,7 +4235,7 @@ watch(
         <div v-else-if="ui.activeTab === 'debug'" class="drawer-body">
           <DebugPanel v-if="ui.active" :task="ui.active" v-model:view="ui.debugView" />
         </div>
-        <div v-else-if="ui.activeTab === 'pm'" class="drawer-body drawer-session-body">
+        <template v-else-if="ui.activeTab === 'pm'">
           <div v-if="ui.active" class="agent-override-bar">
             <div class="agent-pick-grid">
               <div class="agent-field" style="grid-column: 1 / -1">
@@ -4287,167 +4270,28 @@ watch(
               </div>
             </div>
           </div>
-          <div
-            ref="pmLog"
-            class="agent-log-wrap pm-log-wrap ai-chat-log"
-            role="log"
-            aria-live="polite"
-            @scroll="pmOnScroll"
-          >
-            <div v-if="!pmHasConversation" class="agent-empty pm-empty">
-              <div class="pm-welcome-icon">PM</div>
-              <strong>Chat about this task</strong>
-              <p>Ask the PM to edit the task, suggest changes, or discuss progress.</p>
-            </div>
-            <template v-else>
-              <template v-for="row in pmEntries" :key="row.key">
-                <!-- one row per run of adjacent tool calls (#0506) -->
-                <ChatToolCallRow v-if="row.kind === 'tools'" :calls="row.calls" :at="row.at" />
-                <div
-                  v-else-if="bubbleRole(row)"
-                  class="pm-row"
-                  :class="`pm-row-${bubbleRole(row)}`"
-                >
-                  <div v-if="bubbleRole(row) === 'assistant'" class="pm-mini-avatar">PM</div>
-                  <div class="pm-bubble" :class="`pm-bubble-${bubbleRole(row)}`">
-                    <div
-                      v-if="bubbleRole(row) === 'assistant'"
-                      class="pm-markdown"
-                      v-html="renderMarkdown(row.text)"
-                    ></div>
-                    <span v-else>{{ row.text }}</span>
-                    <span v-if="row.at" class="msg-time">{{ fmtTime(row.at) }}</span>
-                  </div>
-                </div>
-              </template>
-              <AiChatThinking
-                class="ai-chat-avatar-offset"
-                :active="pmBusy"
-                label="PM is thinking"
-              />
-            </template>
-          </div>
-
-          <ChatJumpToLatest
-            :visible="pmShowJumpToLatest"
-            :anchor="pmLog"
-            @click="pmScrollToLatest()"
+          <!-- #0515: the chat itself is the shared <PmChatSurface>, which the
+               story panel's PM tab renders too. The per-task bits stay here —
+               the override bar above, and the store/buffer this feeds. -->
+          <PmChatSurface
+            v-if="ui.active"
+            v-model:draft="pmDraft"
+            :chat-id="pmSessionId(ui.active.id)"
+            :lines="pmLines"
+            :busy="pmBusy"
+            :disabled="!pmAgentEnabled"
+            placeholder="Ask PM to edit this task…"
+            welcome-title="Chat about this task"
+            welcome-body="Ask the PM to edit the task, suggest changes, or discuss progress."
+            log-label="Conversation with the PM about this task"
+            :canned="pmCannedMessages"
+            :shots="ui.pmScreenshots"
+            @send="pmSend"
+            @interrupt="pmInterrupt"
+            @attach="onPmShotFiles"
+            @remove-shot="ui.removePmScreenshot"
           />
-
-          <div v-if="showPmCanned" class="pm-canned" role="list" aria-label="Suggested prompts">
-            <div
-              v-for="(msg, i) in pmCannedMessages"
-              :key="i"
-              class="pm-canned-item"
-              role="button"
-              tabindex="0"
-              @click="pmSendCanned(msg)"
-              @keydown.enter="pmSendCanned(msg)"
-            >
-              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                <path
-                  d="M8 4 3 10l5 6"
-                  stroke="currentColor"
-                  stroke-width="1.7"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-                <path
-                  d="M5 10h11"
-                  stroke="currentColor"
-                  stroke-width="1.7"
-                  stroke-linecap="round"
-                />
-              </svg>
-              <span>{{ msg }}</span>
-            </div>
-          </div>
-          <!-- 0381: screenshots picked for this message — attached to any
-               task the PM creates from it, on the server, once it exists. -->
-          <div v-if="ui.pmScreenshots.length" class="pm-shots" aria-label="Attached screenshots">
-            <div v-for="(s, i) in ui.pmScreenshots" :key="s.name + i" class="pm-shot">
-              <img :src="s.dataUrl" :alt="s.name" />
-              <button
-                type="button"
-                class="pm-shot-remove"
-                :aria-label="`Remove ${s.name}`"
-                title="Remove screenshot"
-                @click.stop="ui.removePmScreenshot(i)"
-              >
-                <X class="size-3" />
-              </button>
-            </div>
-          </div>
-          <form class="pm-compose" @submit.prevent="pmSend">
-            <input
-              ref="pmShotInput"
-              type="file"
-              accept="image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp"
-              multiple
-              class="pm-shot-input"
-              aria-hidden="true"
-              tabindex="-1"
-              @change="onPmShotFiles"
-            />
-            <button
-              v-if="!pmBusy"
-              type="button"
-              class="pm-attach"
-              aria-label="Attach screenshots"
-              title="Attach screenshots — they're added to any task the PM creates from this message"
-              :disabled="!pmAgentEnabled"
-              @click="pmShotInput?.click()"
-            >
-              <ImagePlus />
-            </button>
-            <textarea
-              ref="pmDraftTextarea"
-              v-model="pmDraft"
-              rows="1"
-              :disabled="!pmAgentEnabled"
-              :placeholder="
-                pmAgentEnabled ? 'Ask PM to edit this task…' : 'Enable PM agent on Agents page'
-              "
-              aria-label="Message PM"
-              @keydown="pmOnKeydown"
-              @input="adjustPmHeight"
-            ></textarea>
-            <button
-              v-if="pmBusy"
-              type="button"
-              class="pm-stop"
-              aria-label="Stop PM response"
-              title="Stop response"
-              @click="pmInterrupt"
-            >
-              <svg viewBox="0 0 20 20" fill="none">
-                <rect x="5" y="5" width="10" height="10" rx="1.5" fill="currentColor" />
-              </svg>
-            </button>
-            <button
-              v-else
-              type="submit"
-              class="ai-chat-send"
-              :disabled="!pmDraft.trim() || pmBusy || !pmAgentEnabled"
-              aria-label="Send message"
-            >
-              <svg viewBox="0 0 20 20" fill="none">
-                <path
-                  d="m3 9 13-6-5.5 14-2-5.5L3 9Z"
-                  stroke="currentColor"
-                  stroke-width="1.7"
-                  stroke-linejoin="round"
-                />
-                <path
-                  d="m8.5 11.5 3-3"
-                  stroke="currentColor"
-                  stroke-width="1.7"
-                  stroke-linecap="round"
-                />
-              </svg>
-            </button>
-          </form>
-        </div>
+        </template>
         <div v-if="dirty" class="save-bar">
           <div class="save-callout">
             <span class="save-dot"></span>

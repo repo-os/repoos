@@ -110,10 +110,19 @@ function clearStoryParam(): Promise<unknown> {
 
 // Declared after `openStoryKey` on purpose: this watcher runs `immediate`, and
 // `?story=` resolves straight into that ref.
+//
+// `enabled` is watched alongside the query, and that is load-bearing rather than
+// belt-and-braces. It reads `config.data`, which `App.vue` loads in its
+// `onMounted` — last, after `repo.init()` and the doc/skill loads. On a cold load
+// of a copied link (the whole point of a deeplink) the view mounts before config
+// arrives, so a watcher tracking only `route.query.story` would gate on
+// `!enabled`, bail, and never run again. Re-running when the flag flips is what
+// makes "copy link, paste in a new tab" actually work. `InputsView`'s handler
+// needs no equivalent because it has no such gate.
 watch(
-  () => route.query.story,
-  (v) => {
-    if (!enabled.value) return;
+  [() => route.query.story, enabled],
+  ([v, on]) => {
+    if (!on) return;
     if (typeof v !== "string" || !v) return;
     if (v === "new") {
       ui.openNewStory();
