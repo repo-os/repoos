@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-26T12:15:08Z"
+review_passes: 1
 id: "0522"
 title: Surface elapsed timer and queue ids in the minimised integration bar
 type: feature
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/surface-elapsed-timer-and-queue-ids-in-t
 created_at: "2026-09-26T12:01:02Z"
-updated_at: "2026-09-26T12:13:32Z"
 ---
 ## Problem
 
@@ -152,3 +153,4 @@ queue numbers and timer as pills/buttons whatever that styling is
 - 2026-09-26T12:02:29Z · status inbox→ready
 - 2026-09-26T12:12:11Z · status ready→active, branch
 - 2026-09-26T12:13:32Z · status active→review
+
