@@ -2,7 +2,7 @@
 id: "0505"
 title: Handoff after an unclean agent exit is parked until a server restart that never comes
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: server
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: ""
 review_model_override: opencode-go/space-bunny-free
 created_at: "2026-09-26T00:57:06Z"
-updated_at: "2026-09-26T01:02:43Z"
+updated_at: "2026-09-26T01:02:46Z"
 ---
 ## Problem
 
@@ -78,3 +78,4 @@ indefinitely.
 
 - 2026-09-26T00:57:06Z · created · unknown
 - 2026-09-26T01:02:43Z · review_model_override
+- 2026-09-26T01:02:46Z · status inbox→ready
