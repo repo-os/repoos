@@ -240,6 +240,7 @@ import {
   startPreview,
   stopPreview,
   getTaskReview,
+  dismissNeedsInput,
   reviewAgain,
   reviewMessage,
   getCTO,
@@ -2259,6 +2260,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", /^\/api\/tasks\/([^/]+)\/preview$/, startPreview);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/preview\/stop$/, stopPreview);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/review$/, getTaskReview);
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/needs-input\/dismiss$/, dismissNeedsInput);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/review\/again$/, reviewAgain);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/review\/message$/, reviewMessage);
   router.register("GET", "/api/cto", getCTO);

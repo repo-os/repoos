@@ -38,6 +38,12 @@ import { renderMarkdown } from "../lib/markdown";
 import { fmtTime, formatDuration } from "../lib/time";
 import { fmtTokens } from "../lib/format";
 import { api, JSON_OPTS } from "../api";
+import {
+  needsInputBannerText,
+  needsInputPrimaryAction,
+  needsInputStatusLabel,
+  needsInputSuggestionText,
+} from "../lib/needs-input-ui";
 import Button from "./ui/button.vue";
 import Input from "./ui/input.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
@@ -1163,8 +1169,19 @@ function openSkillSuggestion(): void {
  * `reviewing` (auto review in progress), `coding` (engineer making changes),
  * or `waiting for human` (review passed, human must approve/merge).
  */
+const activeNeedsInputQuestions = computed(() => (ui.active?.questions?.length ?? 0) > 0);
+
+const needsInputHeaderChip = computed<{ label: string; cls: string } | null>(() => {
+  if (!ui.active?.needsInput) return null;
+  return {
+    label: needsInputStatusLabel(ui.active.needsInputReason, activeNeedsInputQuestions.value),
+    cls: "rs-needs-input",
+  };
+});
+
 const reviewSubstate = computed<{ label: string; cls: string } | null>(() => {
   if (!ui.active || ui.active.status !== "review") return null;
+  if (ui.active.needsInput) return null;
   if (review.value?.running) return { label: "reviewing", cls: "rs-reviewing" };
   if (repo.isRunning(ui.active.id)) {
     // A running agent on an already-review task, outside auto-review, means
@@ -1190,7 +1207,10 @@ const reviewSubstate = computed<{ label: string; cls: string } | null>(() => {
   if (verdict.value) {
     return { label: "review findings", cls: "rs-incomplete" };
   }
-  return { label: "awaiting review", cls: "rs-reviewing" };
+  if (repo.isQueued(ui.active.id)) {
+    return { label: "waiting for review", cls: "rs-reviewing" };
+  }
+  return null;
 });
 
 /** Compact lifecycle counts: D = dev passes, R = review passes. The server
@@ -2100,39 +2120,47 @@ function fmtSessionTime(iso: string | null, withDate = false): string {
   return d.toLocaleString(undefined, opts);
 }
 
-/** Human-readable text for why `needsInput` was set — see core/types.ts's NeedsInputReason. */
-const NEEDS_INPUT_REASON_LABELS: Record<string, string> = {
-  "review-failed": "The reviewer crashed or timed out without producing a report.",
-  "dev-error": "The agent exited with an error.",
-  "watchdog-stuck": "The task went quiet with no agent running.",
-  "cto-escalation": "The CTO agent flagged this for a human decision.",
-};
+const needsInputPrimary = computed(() => {
+  if (!ui.active?.needsInput) return null;
+  return needsInputPrimaryAction(ui.active.needsInputReason, activeNeedsInputQuestions.value);
+});
 
-function needsInputReasonText(reason: string | undefined): string {
-  return (
-    (reason && NEEDS_INPUT_REASON_LABELS[reason]) ||
-    "The agent needs your input — reply below to continue."
-  );
+const dismissNeedsInputBusy = ref(false);
+
+async function dismissNeedsInputFlag(): Promise<void> {
+  if (!ui.active || dismissNeedsInputBusy.value) return;
+  const task = ui.active;
+  const idleActive = task.status === "active" && !repo.isRunning(task.id);
+  const message = idleActive
+    ? "Dismiss this alert? Clearing the flag will not restart work — use Restart work when you are ready."
+    : "Dismiss this alert? Only clear it if you handled this another way.";
+  if (!confirm(message)) return;
+  dismissNeedsInputBusy.value = true;
+  try {
+    const updated = await repo.dismissNeedsInput(task.id);
+    ui.syncActive(updated);
+  } finally {
+    dismissNeedsInputBusy.value = false;
+  }
 }
 
-/**
- * A concrete next step for each `needsInput` reason (#0405 follow-up: the
- * banner used to say only "The agent exited with an error." with no hint of
- * what to actually do about it). Phrased around the actions this drawer
- * already exposes — Restart work, the review tab's Review again, or just
- * replying below — not new mechanisms.
- */
-const NEEDS_INPUT_SUGGESTION_LABELS: Record<string, string> = {
-  "review-failed":
-    "Try Review again from the Review tab. If it keeps failing, check the CLI/model picker there — an invalid pairing (e.g. after switching CLI) causes exactly this.",
-  "dev-error":
-    "Restart work to resume the agent, or reply below with more context first. If it keeps failing on the same error, check the coding agent/model picker above — a CLI switch without a matching model pin causes exactly this.",
-  "watchdog-stuck": "Restart work to resume — no agent process is currently running this task.",
-  "cto-escalation": "Reply below to answer the CTO agent's question so it can continue.",
-};
-
-function needsInputSuggestionText(reason: string | undefined): string | null {
-  return (reason && NEEDS_INPUT_SUGGESTION_LABELS[reason]) || null;
+async function runNeedsInputPrimaryAction(): Promise<void> {
+  if (!ui.active || !needsInputPrimary.value) return;
+  const action = needsInputPrimary.value;
+  if (action.kind === "restart") {
+    await startWork();
+    return;
+  }
+  if (action.kind === "review") {
+    ui.activeTab = "review";
+    await reviewAgain();
+    return;
+  }
+  if (ui.active.questions?.length) {
+    openPmWithNeedsInputQuestions();
+    return;
+  }
+  ui.activeTab = "pm";
 }
 
 watch(displayEntries, () => {
@@ -2924,13 +2952,14 @@ watch(
               />
               <span class="tc-id mono">{{ ui.active.path }}</span>
               <span
-                v-if="ui.active.needsInput"
-                class="tc-waiting"
-                :title="needsInputReasonText(ui.active.needsInputReason)"
-                >needs input</span
+                v-if="needsInputHeaderChip"
+                class="rs-chip"
+                :class="needsInputHeaderChip.cls"
+                :title="needsInputBannerText(ui.active.needsInputReason, activeNeedsInputQuestions)"
+                >{{ needsInputHeaderChip.label }}</span
               >
               <span
-                v-if="reviewSubstate"
+                v-else-if="reviewSubstate"
                 class="rs-chip"
                 :class="reviewSubstate.cls"
                 :title="reviewSubstate.label"
@@ -3269,7 +3298,7 @@ watch(
             <div>
               <div class="agent-waiting-title">waiting for you</div>
               <div class="agent-waiting-sub">
-                {{ needsInputReasonText(ui.active.needsInputReason) }}
+                {{ needsInputBannerText(ui.active.needsInputReason, activeNeedsInputQuestions) }}
               </div>
               <!-- needsInputDetail for dev-error is internal skill-routing
                    metadata — not meaningful to users, so we hide it. -->
@@ -3280,28 +3309,45 @@ watch(
                 {{ ui.active.needsInputDetail }}
               </div>
               <div
-                v-if="needsInputSuggestionText(ui.active.needsInputReason)"
+                v-if="
+                  needsInputSuggestionText(ui.active.needsInputReason, activeNeedsInputQuestions)
+                "
                 class="agent-waiting-suggestion"
               >
-                {{ needsInputSuggestionText(ui.active.needsInputReason) }}
+                {{
+                  needsInputSuggestionText(ui.active.needsInputReason, activeNeedsInputQuestions)
+                }}
               </div>
-              <Button
-                v-if="
-                  (ui.active.needsInputReason === 'dev-error' ||
-                    ui.active.needsInputReason === 'watchdog-stuck') &&
-                  ui.active.status === 'active' &&
-                  !repo.isRunning(ui.active.id)
-                "
-                variant="outline"
-                size="sm"
-                class="agent-waiting-action"
-                :disabled="ui.saving"
-                @click="startWork"
-              >
-                <Play v-if="!startingWork" class="size-3.5" />
-                <ActivityIndicator v-else />
-                {{ startingWork ? "Starting work…" : "Restart work" }}
-              </Button>
+              <div class="agent-waiting-actions">
+                <Button
+                  v-if="needsInputPrimary"
+                  variant="outline"
+                  size="sm"
+                  :disabled="ui.saving || startingWork || reviewBusy || dismissNeedsInputBusy"
+                  @click="runNeedsInputPrimaryAction"
+                >
+                  <Play
+                    v-if="needsInputPrimary.kind === 'restart' && !startingWork"
+                    class="size-3.5"
+                  />
+                  <ActivityIndicator
+                    v-else-if="needsInputPrimary.kind === 'restart' && startingWork"
+                  />
+                  {{
+                    needsInputPrimary.kind === "restart" && startingWork
+                      ? "Starting work…"
+                      : needsInputPrimary.label
+                  }}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  :disabled="ui.saving || dismissNeedsInputBusy"
+                  @click="dismissNeedsInputFlag"
+                >
+                  {{ dismissNeedsInputBusy ? "Dismissing…" : "Dismiss" }}
+                </Button>
+              </div>
             </div>
           </div>
         </div>

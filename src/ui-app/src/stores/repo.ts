@@ -2073,6 +2073,14 @@ export const useRepoStore = defineStore("repo", () => {
     }
   }
 
+  /** Clear `needs_input` when the human handled the situation elsewhere (#0511). */
+  async function dismissNeedsInput(id: string): Promise<Task> {
+    const task = await api<Task>(`/api/tasks/${id}/needs-input/dismiss`, { method: "POST" });
+    const i = tasks.value.findIndex((t) => t.id === id);
+    if (i >= 0) tasks.value[i] = task;
+    return task;
+  }
+
   /**
    * Send a follow-up to the reviewer. Routed to the reviewer's own session,
    * never to the engineer session.
@@ -2555,6 +2563,7 @@ export const useRepoStore = defineStore("repo", () => {
     syncTaskBranch,
     sendMessage,
     reviewAgain,
+    dismissNeedsInput,
     sendReviewMessage,
     fetchRunning,
     fetchQueued,

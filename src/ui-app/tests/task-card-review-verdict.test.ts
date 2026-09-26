@@ -132,7 +132,7 @@ describe("TaskCard review-passed hint reflects the actual verdict", () => {
     expect(wrapper.find(".task-card").classes()).not.toContain("review-ready");
   });
 
-  it("shows a neutral hint when no report exists yet", () => {
+  it("shows no working hint when no report exists yet and nothing is running", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const repo = useRepoStore();
@@ -141,9 +141,7 @@ describe("TaskCard review-passed hint reflects the actual verdict", () => {
 
     const wrapper = mountCard(task);
 
-    const hint = wrapper.find(".tc-hint");
-    expect(hint.classes()).toContain("tc-reviewing");
-    expect(hint.text()).toContain("waiting for review");
+    expect(wrapper.find(".tc-hint").exists()).toBe(false);
     expect(wrapper.find(".task-card").classes()).not.toContain("review-ready");
   });
 
