@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-26T04:34:43Z"
+review_passes: 1
 id: "0511"
 title: "Card and panel status should name the actual problem, not generic needs-input/working labels"
 type: feature
@@ -13,7 +15,6 @@ created_by: ""
 branch: feat/card-and-panel-status-should-name-the-ac
 review_model_override: opencode-go/space-bunny-free
 created_at: "2026-09-26T03:19:13Z"
-updated_at: "2026-09-26T04:32:05Z"
 dev_error_count: 2
 ---
 ## Problem
@@ -87,3 +88,4 @@ agent needs your input" on #0499.
 - 2026-09-26T04:18:46Z · agent exited with an error (cursor) · the agent process exited with an error — open the task to see the full output
 - 2026-09-26T04:24:04Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-09-26T04:32:05Z · status active→review
+
