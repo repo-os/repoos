@@ -2,14 +2,14 @@
 id: "0514"
 title: Add git History tab to the Context page
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-26T05:57:03Z"
-updated_at: "2026-09-26T05:57:03Z"
+updated_at: "2026-09-26T05:58:12Z"
 ---
 ## Goal
 
@@ -75,3 +75,4 @@ Rejected: **Checks** (about gating pass/fail; a log there blurs its purpose, but
 ## Activity
 
 - 2026-09-26T05:57:03Z · created · unknown
+- 2026-09-26T05:58:12Z · status inbox→ready
