@@ -296,14 +296,32 @@ describe("IntegrationStatusBar", () => {
     const expandedChip = expanded.find(".ibar .ibar-chip");
     expect(expandedChip.exists()).toBe(true);
     expect(expandedChip.text()).toBe("3m 07s");
-    expect(expandedChip.classes()).toContain("mono");
 
     ui.setIntegrationBarCollapsed(true);
     await nextTick();
     const stripChip = expanded.find(".ibar-strip .strip-label .ibar-chip");
     expect(stripChip.exists()).toBe(true);
     expect(stripChip.text()).toBe("3m 07s");
+    expect(stripChip.classes().sort()).toEqual(expandedChip.classes().sort());
     expect(expanded.find(".strip-elapsed").exists()).toBe(false);
+  });
+
+  it("keeps the active-task label in the minimised strip when many tasks are queued (#0522)", async () => {
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    repo.integration = {
+      ...activeSnapshot(),
+      queue: ["0455", "0456", "0457", "0458"],
+    };
+    ui.setIntegrationBarCollapsed(true);
+    const wrapper = render();
+    await nextTick();
+
+    const label = wrapper.get(".strip-label");
+    expect(label.text()).toContain("#0042");
+    expect(label.text()).toContain("3m 07s");
+    wrapper.get(".strip-queue-ellipsis");
+    expect(wrapper.get(".ibar-strip").attributes("title")).toContain("Queue: #0455");
   });
 
   it("shows queued task ids as chips in expanded and minimised views (#0522)", async () => {
