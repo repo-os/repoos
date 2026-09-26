@@ -37,6 +37,7 @@
  *   GET  /api/tasks/:id/review -> { ok, running, enabled, review, lines } the agent's
  *                                 review report + reviewer conversation for a task in `review`
  *   POST /api/tasks/:id/review/again   -> start a fresh review run against the current worktree
+ *   POST /api/tasks/:id/needs-input/dismiss -> clear needs_input (flag, reason, detail, questions) and log who dismissed it
  *   POST /api/tasks/:id/review/message -> send a follow-up to the reviewer (its own session)
  *   DELETE /api/tasks/:id      -> remove  the task file (emits task.deleted)
  *   POST /api/tasks/:id/preview       -> start a read-only preview of the task's worktree

@@ -37,7 +37,7 @@ export const NEEDS_INPUT_BANNER_LABELS: Record<string, string> = {
 
 export const NEEDS_INPUT_SUGGESTION_LABELS: Record<string, string> = {
   "review-failed":
-    "Try Review again from the Review tab. If it keeps failing, check the CLI/model picker there — an invalid pairing (e.g. after switching CLI) causes exactly this.",
+    "Try Review again from the Review tab (or Restart work if the task is back in active). If it keeps failing, check the CLI/model picker there — an invalid pairing (e.g. after switching CLI) causes exactly this.",
   "dev-error":
     "Restart work to resume the agent, or reply below with more context first. If it keeps failing on the same error, check the coding agent/model picker above — a CLI switch without a matching model pin causes exactly this.",
   "check-failed-after-retries":
@@ -122,7 +122,8 @@ export function needsInputPrimaryAction(
   const key = resolveNeedsInputReasonKey(reason, hasQuestions);
   switch (key) {
     case "review-failed":
-      return ctx.status === "review" ? REVIEW_AGAIN_ACTION : null;
+      if (ctx.status === "review") return REVIEW_AGAIN_ACTION;
+      return canRestartWork(ctx) ? RESTART_ACTION : null;
     case "watchdog-stuck":
       if (ctx.status === "review") return REVIEW_AGAIN_ACTION;
       return canRestartWork(ctx) ? RESTART_ACTION : null;

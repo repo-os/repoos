@@ -34,4 +34,13 @@ describe("needsInputPrimaryAction (#0511)", () => {
       }),
     ).toBeNull();
   });
+
+  it("offers Restart work for review-failed once the task is back in active", () => {
+    expect(
+      needsInputPrimaryAction("review-failed", false, {
+        status: "active",
+        agentRunning: false,
+      })?.kind,
+    ).toBe("restart");
+  });
 });
