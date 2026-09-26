@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 2
 id: "0509"
 title: Add a dev-only click-to-locate inspector for UI copy
 type: feature
@@ -174,3 +175,5 @@ Sometimes I want to edit the repoos code myself, particularly with simple copy c
 - 2026-09-26T06:30:04Z · agent exited with an error (cursor) · the agent process exited with an error — open the task to see the full output
 - 2026-09-26T06:39:39Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-09-26T08:36:19Z · needs_input
+
+
