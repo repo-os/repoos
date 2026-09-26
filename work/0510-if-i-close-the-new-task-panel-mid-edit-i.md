@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-26T03:51:41Z"
+review_passes: 1
 id: "0510"
 title: Retain screenshots when closing the new task panel and unify screenshot entry
 type: bug
@@ -13,7 +15,6 @@ created_by: hello@repoos.org
 branch: feat/retain-screenshots-when-closing-the-new-
 review_model_override: opencode-go/hy3
 created_at: "2026-09-26T03:15:14Z"
-updated_at: "2026-09-26T03:49:46Z"
 check_retry_count: 1
 last_check_failure: "[object Object]"
 dev_error_count: 2
@@ -132,3 +133,4 @@ If I close the new task panel mid-edit it currently keeps the text in the freefo
 - 2026-09-26T03:39:32Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
 - 2026-09-26T03:48:30Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-09-26T03:49:46Z · status active→review
+
