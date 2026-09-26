@@ -2,14 +2,14 @@
 id: "0509"
 title: Add a dev-only click-to-locate inspector for UI copy
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-a-dev-only-click-to-locate-inspector
 created_at: "2026-09-26T03:12:15Z"
-updated_at: "2026-09-26T13:10:55Z"
+updated_at: "2026-09-26T13:13:14Z"
 review_passes: 5
 last_check_failure: "[object Object]"
 review_rounds: 2
@@ -199,3 +199,4 @@ Sometimes I want to edit the repoos code myself, particularly with simple copy c
 - 2026-09-26T13:10:49Z · note: Gate on dev UI bundle instead of isDevBuild; hidden inspector settings no longer persisted
 - 2026-09-26T13:10:55Z · status active→review
 - 2026-09-26T13:10:55Z · status review→active
+- 2026-09-26T13:13:14Z · status active→review
