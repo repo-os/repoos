@@ -11,11 +11,16 @@ When `dev.inspector.enabled` is on (default) and the server was built with `devU
 It only appears over plain text that comes from a RepoOS template — not over buttons, inputs, links or
 icons, and not over text that comes from data (task titles, file contents).
 
-- **Copy path** — puts `src/ui-app/…:line` on the clipboard; works without an
+- **Copy path** (`C`) — puts `src/ui-app/…:line` on the clipboard; works without an
   editor configured.
-- **Open in editor** — runs the command from `dev.inspector.editorCommand`
+- **Open in editor** (`Enter`) — runs the command from `dev.inspector.editorCommand`
   (Settings → Advanced), substituting `{file}` and `{line}`. The server spawns the
   command as an argv array (no shell).
+- **Close** (`Esc`).
+
+The shortcuts work without the mouse: with the pill showing, **Enter** opens the popup;
+then **Enter** opens the editor, **C** copies the path and **Esc** closes it. They are
+ignored while you are typing in a field, and `Cmd/Ctrl+C` still copies selected text.
 
 Release builds (`REPOOS_SHIP=1` during `bun run build`, as used for npm publish)
 strip template attribution from the UI bundle and the open-in-editor API returns

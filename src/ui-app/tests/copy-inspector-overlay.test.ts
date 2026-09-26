@@ -148,4 +148,55 @@ describe("CopyInspectorOverlay affordance", () => {
     expect(pane.textContent).toContain("src/ui-app/Foo.vue:12");
     wrapper.unmount();
   });
+
+  it("popup shortcuts: Enter opens in editor, C copies the path, Cmd+C is left alone", async () => {
+    const labeled = document.createElement("p");
+    labeled.setAttribute("data-repoos-file", "src/ui-app/Foo.vue");
+    labeled.setAttribute("data-repoos-line", "12");
+    labeled.textContent = "Hello inspector";
+    document.body.appendChild(labeled);
+    document.elementFromPoint = vi.fn(() => labeled) as typeof document.elementFromPoint;
+    const config = useConfigStore();
+    config.data = {
+      dev: { inspector: { enabled: true, editorCommand: "zed {file}:{line}" } },
+    } as typeof config.data;
+    const writeText = vi.fn(async () => {});
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    const wrapper = mount(CopyInspectorOverlay, { attachTo: document.body });
+    await nextTick();
+    window.dispatchEvent(
+      new PointerEvent("pointermove", { bubbles: true, clientX: 40, clientY: 40, altKey: true }),
+    );
+    await flushAffordanceRaf();
+    await nextTick();
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    await nextTick();
+    expect(document.body.querySelector(".copy-inspector-pane")).not.toBeNull();
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "c", metaKey: true, bubbles: true }));
+    await nextTick();
+    expect(writeText).not.toHaveBeenCalled();
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "c", bubbles: true }));
+    await vi.waitFor(() => expect(writeText).toHaveBeenCalledWith("src/ui-app/Foo.vue:12"));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    await vi.waitFor(() =>
+      expect(fetchSpy.mock.calls.some((c) => String(c[0]).includes("copy-inspector/open"))).toBe(
+        true,
+      ),
+    );
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    await nextTick();
+    expect(document.body.querySelector(".copy-inspector-pane")).toBeNull();
+    wrapper.unmount();
+  });
 });
