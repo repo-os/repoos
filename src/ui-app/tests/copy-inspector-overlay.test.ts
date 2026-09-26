@@ -35,7 +35,7 @@ describe("CopyInspectorOverlay affordance", () => {
 
     document.elementFromPoint = vi.fn(() => labeled) as typeof document.elementFromPoint;
 
-    mount(CopyInspectorOverlay, { attachTo: document.body });
+    const wrapper = mount(CopyInspectorOverlay, { attachTo: document.body });
     await nextTick();
 
     window.dispatchEvent(
@@ -66,9 +66,10 @@ describe("CopyInspectorOverlay affordance", () => {
     await nextTick();
 
     expect(document.body.querySelector(".copy-inspector-affordance")).not.toBeNull();
+    wrapper.unmount();
   });
 
-  it("labels the affordance and explains a disabled Open in editor", async () => {
+  it("names the location, outlines the element and explains a disabled Open in editor", async () => {
     const labeled = document.createElement("p");
     labeled.setAttribute("data-repoos-file", "src/ui-app/Foo.vue");
     labeled.setAttribute("data-repoos-line", "12");
@@ -76,7 +77,7 @@ describe("CopyInspectorOverlay affordance", () => {
     document.body.appendChild(labeled);
     document.elementFromPoint = vi.fn(() => labeled) as typeof document.elementFromPoint;
 
-    mount(CopyInspectorOverlay, { attachTo: document.body });
+    const wrapper = mount(CopyInspectorOverlay, { attachTo: document.body });
     await nextTick();
     window.dispatchEvent(
       new PointerEvent("pointermove", { bubbles: true, clientX: 40, clientY: 40, altKey: true }),
@@ -85,7 +86,22 @@ describe("CopyInspectorOverlay affordance", () => {
     await nextTick();
 
     const btn = document.body.querySelector(".copy-inspector-affordance") as HTMLElement;
-    expect(btn.textContent).toContain("Locate source");
+    // The pill names the location and the located element is outlined.
+    expect(btn.textContent).toContain("Foo.vue:12");
+    expect(document.body.querySelector(".copy-inspector-highlight")).not.toBeNull();
+
+    // Releasing Alt while over the pill must not hide it.
+    const overPill = new PointerEvent("pointermove", {
+      bubbles: true,
+      clientX: 50,
+      clientY: 50,
+      altKey: false,
+    });
+    Object.defineProperty(overPill, "target", { value: btn });
+    window.dispatchEvent(overPill);
+    await flushAffordanceRaf();
+    await nextTick();
+    expect(document.body.querySelector(".copy-inspector-affordance")).not.toBeNull();
 
     btn.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 50, clientY: 50 }));
     await nextTick();
@@ -97,5 +113,6 @@ describe("CopyInspectorOverlay affordance", () => {
       b.textContent?.includes("Open in editor"),
     ) as HTMLButtonElement;
     expect(openBtn.disabled).toBe(true);
+    wrapper.unmount();
   });
 });

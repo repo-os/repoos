@@ -6,7 +6,7 @@ npm package.
 
 ## Copy inspector
 
-When `dev.inspector.enabled` is on (default) and the server was built with `devUi: true` in `dist/.build-info.json`, hold **Alt** (Option on macOS) over visible UI text to reveal a **Locate source** pill next to the pointer, then click the pill to open a panel with the repo-relative source path (with a `:line` suffix when known).
+When `dev.inspector.enabled` is on (default) and the server was built with `devUi: true` in `dist/.build-info.json`, hold **Alt** (Option on macOS) over visible UI text to reveal a pill showing the `File.vue:line` next to the pointer (the exact template element it points at is outlined), then click the pill to open a panel with the repo-relative source path (with a `:line` suffix when known).
 
 It only appears over plain text that comes from a RepoOS template — not over buttons, inputs, links or
 icons, and not over text that comes from data (task titles, file contents).
