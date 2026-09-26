@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-09-26T08:24:20Z"
-review_passes: 1
+updated_at: "2026-09-26T09:17:23Z"
+review_passes: 2
 id: "0507"
 title: Unify every route into review behind the handoff finalization
 type: bug
@@ -122,4 +122,5 @@ came last (`lastFailureLine`) — "Skill routing: …", "Server finalization: ch
 - 2026-09-26T07:39:06Z · note: ⏰ CTO monitor nudge: 166 minutes idle. Please confirm you're still working or provide a status update.
 - 2026-09-26T08:22:22Z · status active→review
 - 2026-09-26T08:22:25Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+
 
