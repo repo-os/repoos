@@ -2,15 +2,15 @@
 id: "0513"
 title: Add a shared full-size screenshot viewer modal used everywhere screenshots appear
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/add-a-shared-full-size-screenshot-viewer
 model_override: cursor-grok-4.6-medium
 created_at: "2026-09-26T05:25:23Z"
-updated_at: "2026-09-26T08:17:14Z"
+updated_at: "2026-09-26T08:17:16Z"
 ---
 ## Problem
 
@@ -145,3 +145,4 @@ The new screenshots upload is better, but when we have screenshots uploaded anyw
 - 2026-09-26T05:26:29Z · status draft→inbox, title, area, body
 - 2026-09-26T07:58:53Z · status inbox→ready
 - 2026-09-26T08:17:14Z · model_override
+- 2026-09-26T08:17:16Z · status ready→active, branch
