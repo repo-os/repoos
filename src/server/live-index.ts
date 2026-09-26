@@ -264,9 +264,28 @@ export class LiveIndex {
    * same as it would be by a concurrent `refreshAll`, but this call's window
    * is wider. Fine for the one-shot boot case; callers that need to
    * interleave safely with live updates should keep using `refreshAll`.
+   *
+   * `opts.indexBuildGate` is a test-only seam (#0330), forwarded from
+   * `startServer`'s option of the same name. It is awaited AFTER the build has
+   * finished and IMMEDIATELY BEFORE its result is swapped in, so a caller can
+   * hold the index at a known "built but not yet published" point for as long
+   * as it wants. That is what makes the #0271 boot-ordering guard provable
+   * without a clock: with the build parked there, a listener that bound while
+   * the gate was shut provably did not wait for this build to publish. It
+   * proves an ORDERING, not an index state — `WorkWatcher`'s poll populates
+   * the same map independently, so "the index was empty at bind time" is not
+   * a valid inference (see boot-timing.test.ts). No production caller passes
+   * it.
    */
-  async refreshAllAsync(): Promise<void> {
+  async refreshAllAsync(opts: { indexBuildGate?: () => void | Promise<void> } = {}): Promise<void> {
     const idx = await buildIndexAsync(this.config, { fastWorktreeStatus: true });
+    // `indexBuildGate` parks the build HERE — after the git-heavy work, before
+    // the swap. Note what that does and does not prove: it proves the build's
+    // result has not been published, and hence that a listener which bound
+    // while the gate was shut did not wait for this build. It does not prove
+    // the index is empty — `WorkWatcher` populates the same map
+    // independently (see boot-timing.test.ts).
+    await opts.indexBuildGate?.();
     this.byId.clear();
     this.pathToId.clear();
     this.useGit = isGitRepo(this.config.root);

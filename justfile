@@ -147,9 +147,40 @@ kill:
         sleep 0.5
     fi
 
-# restart: build then kill then serve
+# restart: build, stop, start, and wait for the HTTP health check
 [group('dev')]
-restart: build kill serve
+restart:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    started_at=$SECONDS
+    port=$(bun -p "const fs=require('fs'); try { const t=fs.readFileSync('repoos.toml','utf8'); const m=t.match(/servePort\s*=\s*(\d+)/); m ? m[1] : '7171' } catch { '7171' }" 2>/dev/null || echo 7171)
+
+    echo "==> [1/4] building RepoOS"
+    bun run build
+    echo "==> [2/4] stopping the current server"
+    just kill
+    echo "==> [3/4] starting RepoOS on port $port"
+    mkdir -p .repoos/logs
+    nohup bun dist/cli/index.js serve --host 127.0.0.1 --quiet > .repoos/logs/server.out 2>&1 < /dev/null &
+    server_pid=$!
+    echo "    server pid: $server_pid"
+    echo "==> [4/4] waiting for http://127.0.0.1:$port/api/health"
+    deadline=$((SECONDS + 60))
+    while (( SECONDS < deadline )); do
+        if health=$(curl -fsS --max-time 2 "http://127.0.0.1:$port/api/health" 2>/dev/null); then
+            echo "    health: $health"
+            echo "==> RepoOS ready in $((SECONDS - started_at))s"
+            exit 0
+        fi
+        printf "."
+        sleep 1
+    done
+    echo
+    echo "ERROR: RepoOS did not become ready within 60s"
+    echo "Last server log:"
+    tail -40 .repoos/logs/server.out || true
+    exit 1
 
 # run the repoos.org landing page locally (standalone sibling project — own package.json) `just landing-dev`
 # port 5176: repoos-ui-dev uses 5173, repoos-mobile-dev uses 5174, docs uses 5175

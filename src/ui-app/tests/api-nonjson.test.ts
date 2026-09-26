@@ -114,4 +114,27 @@ describe("api()", () => {
     await expect(request).resolves.toEqual({ saved: true });
     vi.useRealTimers();
   });
+
+  it("can bound a write when the caller opts in", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        (_path: string, opts?: RequestInit) =>
+          new Promise((_resolve, reject) => {
+            opts?.signal?.addEventListener("abort", () =>
+              reject(new DOMException("aborted", "AbortError")),
+            );
+          }),
+      ),
+    );
+    const request = api("/api/server/restart", { method: "POST", timeoutMs: 1000 }).catch(
+      (error) => error,
+    );
+    await vi.advanceTimersByTimeAsync(1000);
+    await expect(request).resolves.toMatchObject({
+      message: expect.stringMatching(/did not respond in time/i),
+    });
+    vi.useRealTimers();
+  });
 });

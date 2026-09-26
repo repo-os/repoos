@@ -2,14 +2,14 @@
 id: "0512"
 title: Close-out silently discards uncommitted task-worktree changes; handoff commit captured a stale style.css
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-26T03:50:30Z"
-updated_at: "2026-09-26T03:50:30Z"
+updated_at: "2026-09-26T09:41:27Z"
 ---
 ## Problem 1: close-out drops uncommitted work in the task worktree
 
@@ -76,3 +76,4 @@ still unidentified.
 ## Activity
 
 - 2026-09-26T03:50:30Z · created · unknown
+- 2026-09-26T09:41:27Z · status inbox→ready

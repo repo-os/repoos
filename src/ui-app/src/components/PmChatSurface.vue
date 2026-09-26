@@ -31,6 +31,7 @@ import { autoGrowTextarea } from "../utils/textarea-autogrow";
 import AiChatThinking from "./AiChatThinking.vue";
 import ChatJumpToLatest from "./ChatJumpToLatest.vue";
 import ChatToolCallRow from "./ChatToolCallRow.vue";
+import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
 
 export interface PendingShot {
   name: string;
@@ -85,6 +86,7 @@ const emit = defineEmits<{
   interrupt: [];
   attach: [files: File[]];
   removeShot: [index: number];
+  openShot: [index: number];
 }>();
 
 const draft = defineModel<string>("draft", { default: "" });
@@ -135,6 +137,18 @@ watch(
     void nextTick(() => autoGrowTextarea(draftTextarea.value));
   },
 );
+
+/**
+ * Focus the composer. Hosts need this when they pre-fill a draft and want the
+ * caret in it — the task panel's needs-input flow does, so the host can't reach
+ * the textarea element directly any more.
+ */
+function focusDraft(): void {
+  draftTextarea.value?.focus();
+  autoGrowTextarea(draftTextarea.value);
+}
+
+defineExpose({ focusDraft });
 </script>
 
 <template>
@@ -200,15 +214,18 @@ watch(
       </div>
     </div>
 
+    <!-- 0513: a pending shot opens the full-size viewer. The host owns the
+         viewer and the shots it holds; this only asks for an index. -->
     <div v-if="shots.length" class="pm-shots" aria-label="Attached screenshots">
       <div v-for="(s, i) in shots" :key="s.name + i" class="pm-shot">
-        <img :src="s.dataUrl" :alt="s.name" />
+        <img :src="s.dataUrl" :alt="s.name" @click="emit('openShot', i)" />
+        <ScreenshotExpandButton :name="s.name" @click="emit('openShot', i)" />
         <button
           type="button"
           class="pm-shot-remove"
           :aria-label="`Remove ${s.name}`"
           title="Remove screenshot"
-          @click="emit('removeShot', i)"
+          @click.stop="emit('removeShot', i)"
         >
           <X class="size-3" />
         </button>

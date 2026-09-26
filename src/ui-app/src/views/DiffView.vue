@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch, watchEffect } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useRepoStore } from "../stores/repo";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-vue-next";
@@ -10,16 +10,34 @@ const route = useRoute();
 const router = useRouter();
 const repo = useRepoStore();
 
-const taskId = computed(() => route.params.taskId as string);
+const taskId = computed(() => (route.params.taskId as string) || "");
+const commitSha = computed(() => (route.params.sha as string) || "");
+const isCommitDiff = computed(() => Boolean(commitSha.value));
 const targetFile = computed(() => (route.query.file as string) ?? "");
 
+const commitDiff = ref<{ patch: string; truncated: boolean } | null>(null);
+const loadError = ref<string | null>(null);
+
 onMounted(async () => {
+  if (isCommitDiff.value) {
+    try {
+      const data = await api<{ ok: boolean; patch?: string; truncated?: boolean }>(
+        `/api/repo/commits/${encodeURIComponent(commitSha.value)}`,
+      );
+      commitDiff.value = { patch: data.patch ?? "", truncated: Boolean(data.truncated) };
+    } catch (err) {
+      loadError.value = err instanceof Error ? err.message : "Failed to load commit";
+    }
+    return;
+  }
   if (!repo.diffFor(taskId.value)) {
     await repo.loadDiff(taskId.value);
   }
 });
 
-const taskDiff = computed(() => repo.diffFor(taskId.value));
+const taskDiff = computed(() =>
+  isCommitDiff.value ? commitDiff.value : repo.diffFor(taskId.value),
+);
 
 interface DiffFile {
   filename: string;
@@ -325,8 +343,8 @@ function buildFullRows(file: DiffFile, contents: FileContents): DiffRow[] {
 }
 
 watch(
-  () => [taskId.value, currentFile.value?.filename] as const,
-  async ([id, filename]) => {
+  () => [taskId.value, commitSha.value, isCommitDiff.value, currentFile.value?.filename] as const,
+  async ([id, sha, commitMode, filename]) => {
     fileContents.value = null;
     fileContentsError.value = null;
     fullFileNotice.value = null;
@@ -334,6 +352,20 @@ watch(
     fileContentsLoading.value = true;
     try {
       const path = encodeURIComponent(filename);
+      if (commitMode && sha) {
+        const contents = await api<{
+          before: string;
+          after: string;
+          existsBefore: boolean;
+          existsAfter: boolean;
+        }>(`/api/repo/commits/${encodeURIComponent(sha)}/file?path=${path}`);
+        if (!contents.existsBefore && !contents.existsAfter) {
+          fullFileNotice.value = "Full file contents are not available for this path.";
+        } else {
+          fileContents.value = { before: contents.before, after: contents.after };
+        }
+        return;
+      }
       const [before, after] = await Promise.all([
         api<FileContentsResponse>(`/api/tasks/${id}/file?path=${path}&version=before`),
         api<FileContentsResponse>(`/api/tasks/${id}/file?path=${path}&version=after`),
@@ -489,7 +521,35 @@ function goBack(): void {
   router.back();
 }
 
+const EDITABLE_SELECTOR = "input, textarea, [contenteditable]";
+
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  return !!target.closest(EDITABLE_SELECTOR);
+}
+
+function onEscapeKey(e: KeyboardEvent): void {
+  if (e.key !== "Escape") return;
+  if (isEditableTarget(e.target)) return;
+  goBack();
+}
+
+onMounted(() => {
+  window.addEventListener("keydown", onEscapeKey);
+});
+onBeforeUnmount(() => {
+  window.removeEventListener("keydown", onEscapeKey);
+});
+
 function switchFile(filename: string): void {
+  if (isCommitDiff.value) {
+    router.replace({
+      name: "commit-diff",
+      params: { sha: commitSha.value },
+      query: { file: filename },
+    });
+    return;
+  }
   router.replace({ name: "diff", params: { taskId: taskId.value }, query: { file: filename } });
 }
 
@@ -515,10 +575,13 @@ function nextFile(): void {
 <template>
   <div class="diff-page">
     <div class="diff-page-topbar">
-      <button class="diff-back-btn" type="button" @click="goBack">
-        <ArrowLeft class="size-4" />
-        <span>Back</span>
-      </button>
+      <div class="diff-back-group">
+        <button class="diff-back-btn" type="button" @click="goBack">
+          <ArrowLeft class="size-4" />
+          <span>Back</span>
+        </button>
+        <kbd class="diff-back-esc-hint" aria-hidden="true">esc</kbd>
+      </div>
       <div class="diff-page-file">{{ currentFile?.filename ?? "" }}</div>
       <div v-if="currentFile" class="diff-file-delta">
         <span v-if="currentFile.added > 0" class="diff-file-add">+{{ currentFile.added }}</span>
@@ -573,7 +636,8 @@ function nextFile(): void {
     </div>
 
     <div class="diff-page-body">
-      <div v-if="!taskDiff" class="diff-page-loading">Loading diff…</div>
+      <div v-if="loadError" class="diff-page-loading">{{ loadError }}</div>
+      <div v-else-if="!taskDiff" class="diff-page-loading">Loading diff…</div>
       <div v-else-if="!currentFile" class="diff-page-loading">No diff available.</div>
       <template v-else>
         <!-- Left panel: before -->
@@ -649,6 +713,13 @@ function nextFile(): void {
   background: var(--panel-solid);
 }
 
+.diff-back-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
 .diff-back-btn {
   display: inline-flex;
   align-items: center;
@@ -666,6 +737,18 @@ function nextFile(): void {
 .diff-back-btn:hover {
   background: var(--nav-hover-bg);
   color: var(--txt);
+}
+
+.diff-back-esc-hint {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9.5px;
+  color: var(--txt-faint);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 4px;
+  flex-shrink: 0;
+  font-weight: normal;
+  line-height: 1.2;
 }
 
 .diff-page-file {

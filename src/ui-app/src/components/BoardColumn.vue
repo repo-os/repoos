@@ -6,6 +6,7 @@ import type { Task } from "../types";
 import { useConfigStore } from "../stores/config";
 import TaskCard from "./TaskCard.vue";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
+import ReviewConfirmDialog from "./ReviewConfirmDialog.vue";
 import {
   applyCollapseDefaults,
   isColumnCollapsed,
@@ -185,6 +186,28 @@ function onDragLeave(): void {
  *  resume-or-clean on the human's behalf. */
 const restartTask = ref<Task | null>(null);
 
+/**
+ * #0507: a task dragged into the review column, awaiting the same
+ * run-checks / skip-checks answer the drawer's Review button asks for. Moving
+ * to `review` is a request that starts the handoff finalization (scoped
+ * `repoos check` → commit gate → `review`), not a status write — so a drag must
+ * not be the one route that skips asking.
+ */
+const reviewTask = ref<Task | null>(null);
+function closeReviewConfirm(): void {
+  reviewTask.value = null;
+}
+async function confirmReviewWith(runChecks: boolean): Promise<void> {
+  const task = reviewTask.value;
+  closeReviewConfirm();
+  if (!task) return;
+  try {
+    await repo.requestReview(task, { skipChecks: !runChecks, origin: "board-drag" });
+  } catch (err) {
+    repo.onError(err);
+  }
+}
+
 async function onDrop(e: DragEvent): Promise<void> {
   if (!props.dragEnabled) return;
   e.preventDefault();
@@ -216,6 +239,9 @@ async function onDrop(e: DragEvent): Promise<void> {
       }
     } else if (props.col.id === "review" && task.status === "active" && repo.isRunning(task.id)) {
       throw new Error("The agent is still coding — Review becomes available when the turn ends.");
+    } else if (props.col.id === "review") {
+      // Ask before starting a check, exactly like the drawer's Review button.
+      reviewTask.value = task;
     } else {
       await repo.setStatus(task, props.col.id);
     }
@@ -328,4 +354,16 @@ const unackedBadge = computed(() =>
     </div>
   </div>
   <RestartTaskDialog :task="restartTask" @close="restartTask = null" />
+
+  <!-- #0507: a drag into the review column asks the same question the
+       drawer's Review button does. Both call repo.requestReview, which is the
+       only client-side path into `review`. -->
+  <ReviewConfirmDialog
+    :open="reviewTask !== null"
+    :task-label="reviewTask ? `#${reviewTask.id} · ${reviewTask.title}` : ''"
+    :busy="false"
+    @update:open="(v) => (v ? undefined : closeReviewConfirm())"
+    @run-checks="confirmReviewWith(true)"
+    @skip-checks="confirmReviewWith(false)"
+  />
 </template>

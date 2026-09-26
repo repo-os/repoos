@@ -16,6 +16,17 @@ This has practical consequences you'll feel immediately:
 - An agent can read the board with `cat`, and your project's context is sitting
   right next to the code it describes.
 
+## Git history in the UI
+
+The Context page (`/repo`) includes a **History** tab: the repository's `git
+log`, grouped by day, with branch and path filters. Commits that follow the
+`type(NNNN):` message convention (for example `docs(0514): …`) link to that
+task. Opening a commit shows the files it changed and a full diff — the same
+diff view used for task worktrees.
+
+The log is read-only. Checkout, revert, and cherry-pick stay on the command
+line.
+
 ## Status is a field, not a folder
 
 ```yaml
@@ -72,9 +83,15 @@ works locally, in CI, and inside RepoOS's own close-out pipeline.
 
 ## Humans hold the merge
 
-An agent that finishes a task moves it to `review` and **stops**. It does not
-merge its own branch, and it can't — the merge happens only when a human moves
-the task to `done`.
+An agent that finishes a task asks for it to move to `review` and **stops**. It
+does not merge its own branch, and it can't — the merge happens only when a
+human moves the task to `done`.
+
+Reaching `review` is a request, not a status edit: RepoOS commits the branch,
+runs `repoos check` and passes a commit guard first, from whichever route you
+use (the **Review** button, a board drag, `repoos mv`, or the agent). Until that
+finishes the task is still `active`. See
+[Review and close-out](/review-and-close-out).
 
 If a reviewer agent is enabled, it reads the branch diff and writes an advisory
 report for that review — findings, edge cases, suggestions. It changes nothing

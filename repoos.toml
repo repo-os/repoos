@@ -223,6 +223,16 @@ selector = ':root[data-ui-theme="gruvbox"][data-theme="light"]'
 name = "gruvbox-light"
 inherits = ["classic-dark", "gruvbox-dark", "gruvbox-light"]
 
+[[check.themeScopes]]
+selector = ':root[data-ui-theme="catppuccin"]'
+name = "catppuccin-dark"
+inherits = ["classic-dark", "catppuccin-dark"]
+
+[[check.themeScopes]]
+selector = ':root[data-ui-theme="catppuccin"][data-theme="light"]'
+name = "catppuccin-light"
+inherits = ["classic-dark", "catppuccin-dark", "catppuccin-light"]
+
 # (fg token, bg token) pairs checked for ≥3:1 WCAG contrast in every scope.
 [[check.contrastPairs]]
 fg = "--txt"

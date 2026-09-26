@@ -59,8 +59,12 @@ import { bubbleRole, stripAnsi, toDisplayRows, type DisplayRow } from "../lib/ch
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyMainDialog from "./DirtyMainDialog.vue";
 import HotfixConfirmDialog from "./HotfixConfirmDialog.vue";
+import ReviewConfirmDialog from "./ReviewConfirmDialog.vue";
 import SendToEngineerDialog from "./SendToEngineerDialog.vue";
 import SpecEditModal from "./SpecEditModal.vue";
+import ScreenshotViewer from "./ScreenshotViewer.vue";
+import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
+import { pendingToShots } from "../lib/screenshot-viewer";
 import DoneErrorCard from "./DoneErrorCard.vue";
 import DebugPanel from "./DebugPanel.vue";
 import StopWorkConfirmModal from "./StopWorkConfirmModal.vue";
@@ -183,6 +187,35 @@ const selectableStatuses = computed(() => {
   return allStatuses.value.filter(
     (status) => status.id === current || reachable.includes(status.id),
   );
+});
+
+/**
+ * #0507: a handoff finalization is running for this task, so the Review
+ * affordances must read as busy. A task is in this state for as long as the
+ * check takes — which is exactly why the status is NOT flipped optimistically:
+ * the drawer keeps saying "active" while this is true, and a naive read of it
+ * would otherwise invite a second, concurrent request.
+ */
+const handoffBusy = computed(() => (ui.active ? repo.handoffInFlight(ui.active.id) : false));
+
+/** #0507: the last handoff finalization failure, shown while the task is still active. */
+const handoffError = computed(() => (ui.active ? repo.handoffErrorFor(ui.active.id) : null));
+
+/** Human label for the live handoff step, e.g. "Running repoos check…". */
+const handoffStepLabel = computed(() => {
+  const step = ui.active ? repo.handoffSteps[ui.active.id] : undefined;
+  switch (step) {
+    case "check":
+      return "Running repoos check…";
+    case "commit":
+      return "Committing the branch…";
+    case "review":
+      return "Moving to review…";
+    case "started":
+      return "Starting checks…";
+    default:
+      return "Running checks…";
+  }
 });
 
 const open = computed(() => ui.active !== null || ui.isNew);
@@ -483,6 +516,13 @@ async function uploadPendingScreenshots(taskId: string): Promise<void> {
 const shotInput = ref<HTMLInputElement | null>(null);
 /** Depth counter: dragenter/leave fire once per element boundary. */
 const dragDepth = ref(0);
+const pendingViewerOpen = ref(false);
+const pendingViewerStart = ref(0);
+const pendingViewerShots = computed(() => pendingToShots(ui.pendingScreenshots));
+function openPendingViewer(index: number): void {
+  pendingViewerStart.value = index;
+  pendingViewerOpen.value = true;
+}
 
 function onShotFiles(e: Event): void {
   const input = e.target as HTMLInputElement;
@@ -506,6 +546,13 @@ function onDrop(e: DragEvent): void {
 
 async function setStatus(status: string): Promise<void> {
   if (!ui.active || ui.active.status === status) return;
+  // #0507: `review` is a request, not a write — it starts the handoff
+  // finalization, so it goes through the confirm modal (run checks / skip
+  // checks) instead of a bare PATCH. Every other status is still a plain write.
+  if (status === "review") {
+    openReviewConfirm();
+    return;
+  }
   ui.saving = true;
   try {
     await repo.setStatus(ui.active, status);
@@ -640,6 +687,37 @@ const hotfixTask = ref<Task | null>(null);
 function openHotfixConfirm(): void {
   hotfixTask.value = ui.active;
   confirmHotfix.value = true;
+}
+
+// #0507: moving to `review` is a REQUEST that starts the handoff finalization
+// (scoped `repoos check` → commit gate → `review`), not a status write, so
+// every route into it — this drawer's Review button, its status dropdown, the
+// board's drag-drop — goes through one confirm modal. ReviewConfirmDialog is
+// body-teleported, so snapshot the task on open for the same reason as above:
+// the drawer's dismiss-on-outside can null `ui.active` first.
+const confirmReview = ref(false);
+const reviewTask = ref<Task | null>(null);
+function openReviewConfirm(): void {
+  if (!ui.active || ui.active.status === "review") return;
+  reviewTask.value = ui.active;
+  confirmReview.value = true;
+}
+function closeReviewConfirm(): void {
+  confirmReview.value = false;
+  reviewTask.value = null;
+}
+async function confirmReviewWith(runChecks: boolean): Promise<void> {
+  const task = reviewTask.value;
+  closeReviewConfirm();
+  if (!task) return;
+  ui.saving = true;
+  try {
+    await repo.requestReview(task, { skipChecks: !runChecks, origin: "ui-review" });
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    ui.saving = false;
+  }
 }
 
 async function deleteTask(): Promise<void> {
@@ -1455,8 +1533,20 @@ function pmSessionId(taskId: string): string {
 }
 
 const pmDraft = ref("");
-const pmDraftTextarea = ref<HTMLTextAreaElement | null>(null);
 const pmSubmitting = ref(false);
+/** The shared PM chat surface, for the needs-input prefill's focus() call. */
+const pmSurface = ref<InstanceType<typeof PmChatSurface> | null>(null);
+
+// 0513: pending PM screenshots open the shared full-size viewer. Kept here, in
+// the host, because the host owns the shot list — the shared <PmChatSurface>
+// only reports which index was clicked.
+const pmViewerOpen = ref(false);
+const pmViewerStart = ref(0);
+const pmViewerShots = computed(() => pendingToShots(ui.pmScreenshots));
+function openPmViewer(index: number): void {
+  pmViewerStart.value = index;
+  pmViewerOpen.value = true;
+}
 
 /** Screenshots picked for the next PM message (0381), into the shared buffer. */
 function onPmShotFiles(files: File[]): void {
@@ -1480,29 +1570,23 @@ const pmBusy = computed(
   () => pmSubmitting.value || (ui.active && repo.runningIds.includes(pmSessionId(ui.active.id))),
 );
 
-// The PM chat's scroll, transcript grouping, compose box and canned prompts all
-// live in <PmChatSurface> (#0515) — this drawer passes data in and handles
-// events. It deliberately keeps no `useChatScroll` of its own: a second instance
-// here would hold a ref to a log element that no longer exists in this
-// component, and the drawer's other chats (Dev, Review) have their own.
+// The PM chat's scroll, transcript grouping, compose box, Enter-to-send,
+// auto-grow and canned-prompt behaviour all live in <PmChatSurface> (#0515) —
+// this drawer passes data in and handles events. It deliberately keeps no
+// `useChatScroll` of its own: a second instance here would hold a ref to a log
+// element that no longer exists in this component, and the drawer's other chats
+// (Dev, Review) have their own.
 
 /**
  * Canned messages shown above the PM compose box, keyed by task status.
  * Empty (no chips) for statuses without a defined set.
  */
+// The surface decides whether the canned prompts are visible and sends the
+// chosen one, so this only supplies the list.
 const pmCannedMessages = computed(() => {
   const t = ui.active;
   return t ? pmCannedMessagesFor(t.status) : [];
 });
-
-/** Whether to show the canned PM messages: any status with a defined set. */
-const showPmCanned = computed(() => pmCannedMessages.value.length > 0);
-
-/** Send the chosen canned message to the PM agent, just like a typed send. */
-function pmSendCanned(text: string): void {
-  pmDraft.value = text;
-  void pmSend();
-}
 
 function buildNeedsInputPmPrompt(questions: string[]): string {
   return [
@@ -1519,10 +1603,9 @@ function openPmWithNeedsInputQuestions(): void {
   if (!ui.active?.questions?.length) return;
   ui.activeTab = "pm";
   pmDraft.value = buildNeedsInputPmPrompt(ui.active.questions);
-  nextTick(() => {
-    pmDraftTextarea.value?.focus();
-    autoGrowTextarea(pmDraftTextarea.value);
-  });
+  // The composer lives inside <PmChatSurface> since #0515, so ask it to focus
+  // rather than reaching for an element this component no longer holds.
+  void nextTick(() => pmSurface.value?.focusDraft());
 }
 
 // Row grouping (#0506) and the scroll standard (#0444) are the surface's job now
@@ -1575,16 +1658,6 @@ async function pmSend(): Promise<void> {
   } finally {
     pmSubmitting.value = false;
   }
-}
-
-function pmOnKeydown(event: KeyboardEvent): void {
-  if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
-  event.preventDefault();
-  void pmSend();
-}
-
-function adjustPmHeight(): void {
-  autoGrowTextarea(pmDraftTextarea.value);
 }
 
 /**
@@ -2499,7 +2572,8 @@ watch(
   () => pmDraft.value,
   () => {
     updateChatDraftDirty();
-    nextTick(adjustPmHeight);
+    // No auto-grow call here: the surface grows its own textarea whenever the
+    // draft changes (#0515).
   },
   { immediate: true },
 );
@@ -2593,7 +2667,8 @@ watch(
             </div>
             <div v-if="ui.pendingScreenshots.length" class="shot-grid">
               <div v-for="(s, i) in ui.pendingScreenshots" :key="s.name + i" class="shot-thumb">
-                <img :src="s.dataUrl" :alt="s.name" />
+                <img :src="s.dataUrl" :alt="s.name" @click="openPendingViewer(i)" />
+                <ScreenshotExpandButton :name="s.name" @click="openPendingViewer(i)" />
                 <button
                   type="button"
                   class="shot-remove"
@@ -2865,9 +2940,26 @@ watch(
           </DialogClose>
         </div>
         <div class="drawer-quickbar">
+          <!-- #0507: the handoff finalization is in flight. The task is still
+               `active` on purpose, so without this it would read as "nothing
+               happened" for the whole length of the check. -->
+          <div v-if="handoffBusy" class="ff-notice drawer-handoff-banner">
+            <ActivityIndicator />
+            <span>{{ handoffStepLabel }}</span>
+            <span class="drawer-handoff-sub">
+              This task stays <strong>active</strong> until the checks pass.
+            </span>
+          </div>
+          <div v-else-if="handoffError" class="ff-error drawer-handoff-banner">
+            <span>
+              <strong>Not moved to review.</strong> The handoff finalization stopped:
+              {{ handoffError }}
+            </span>
+            <span class="drawer-handoff-sub">Fix it and click Review again.</span>
+          </div>
           <div class="quickbar-row">
             <Select :model-value="ui.active.status" @update:model-value="(v) => setStatus(v ?? '')">
-              <SelectTrigger :disabled="ui.saving">
+              <SelectTrigger :disabled="ui.saving || handoffBusy">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent position="popper">
@@ -2925,12 +3017,17 @@ watch(
             <Button
               v-if="ui.active.status === 'active' && !repo.isRunning(ui.active.id)"
               variant="destructive"
-              :disabled="ui.saving"
-              title="Run the normal commit-and-check guard, then send this paused task to review"
+              :disabled="ui.saving || handoffBusy"
+              :title="
+                handoffBusy
+                  ? 'RepoOS is already running the handoff finalization for this task'
+                  : 'Ask RepoOS to commit, run the checks, and move this task to review'
+              "
               @click="setStatus('review')"
             >
-              <Send class="size-3.5" />
-              Review
+              <ActivityIndicator v-if="handoffBusy" />
+              <Send v-else class="size-3.5" />
+              {{ handoffBusy ? "Running checks…" : "Review" }}
             </Button>
             <Button
               v-if="ui.active.status === 'active' && repo.isRunning(ui.active.id)"
@@ -4275,6 +4372,7 @@ watch(
                the override bar above, and the store/buffer this feeds. -->
           <PmChatSurface
             v-if="ui.active"
+            ref="pmSurface"
             v-model:draft="pmDraft"
             :chat-id="pmSessionId(ui.active.id)"
             :lines="pmLines"
@@ -4290,6 +4388,7 @@ watch(
             @interrupt="pmInterrupt"
             @attach="onPmShotFiles"
             @remove-shot="ui.removePmScreenshot"
+            @open-shot="openPmViewer"
           />
         </template>
         <div v-if="dirty" class="save-bar">
@@ -4334,6 +4433,15 @@ watch(
     @start="startHotfix"
   />
 
+  <ReviewConfirmDialog
+    :open="confirmReview"
+    :task-label="reviewTask ? `#${reviewTask.id} · ${reviewTask.title}` : ''"
+    :busy="ui.saving"
+    @update:open="(v) => (v ? undefined : closeReviewConfirm())"
+    @run-checks="confirmReviewWith(true)"
+    @skip-checks="confirmReviewWith(false)"
+  />
+
   <SendToEngineerDialog
     :open="engineerNoteOpen"
     :busy="ui.saving"
@@ -4347,6 +4455,17 @@ watch(
     :body="draft.body"
     @update:open="(v) => (specModalOpen = v)"
     @save="applySpec"
+  />
+
+  <ScreenshotViewer
+    v-model:open="pendingViewerOpen"
+    :shots="pendingViewerShots"
+    :start-index="pendingViewerStart"
+  />
+  <ScreenshotViewer
+    v-model:open="pmViewerOpen"
+    :shots="pmViewerShots"
+    :start-index="pmViewerStart"
   />
 
   <StopWorkConfirmModal

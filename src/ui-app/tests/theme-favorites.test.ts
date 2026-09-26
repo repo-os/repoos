@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { nextTick } from "vue";
-import { useConfigStore, MAX_FAVORITE_THEMES } from "../src/stores/config";
+import { useConfigStore, MAX_FAVORITE_THEMES, DESIGN_THEMES } from "../src/stores/config";
 import * as apiMod from "../src/api";
 import type { ConfigField } from "../src/types";
 import Sidebar from "../src/components/Sidebar.vue";
@@ -91,6 +91,7 @@ describe("config store favorites (#0255)", () => {
       "gen z",
       "jelly",
       "gruvbox",
+      "catppuccin",
     ]);
   });
 
@@ -175,7 +176,7 @@ describe("config store favorites (#0255)", () => {
     localStorage.setItem("repoos.favoriteThemes", "not json");
     const store = useConfigStore();
     expect(store.favoriteThemes).toEqual([]);
-    expect(store.sidebarThemes).toHaveLength(5);
+    expect(store.sidebarThemes).toHaveLength(DESIGN_THEMES.length);
   });
 
   it("drops unknown ids, duplicates, and over-cap entries when loading", () => {
@@ -196,11 +197,13 @@ describe("config store favorites (#0255)", () => {
 });
 
 describe("sidebar quick switcher (#0255)", () => {
-  it("shows all five themes when nothing is starred (fallback)", async () => {
+  it("shows every catalogued theme when nothing is starred (fallback)", async () => {
     useConfigStore();
     const wrapper = await mountSidebar();
     const labels = wrapper.findAll(".theme-switch button").map((b) => b.text());
-    expect(labels).toEqual(["Classic", "Clear", "Gen Z", "Jelly", "Gruvbox"]);
+    // Derived from the catalog so adding a theme (#0516 catppuccin) doesn't
+    // require editing a hardcoded list here.
+    expect(labels).toEqual(DESIGN_THEMES.map((t) => t.label));
   });
 
   it("shows only the starred themes in star order", async () => {
@@ -217,7 +220,7 @@ describe("sidebar quick switcher (#0255)", () => {
     store.toggleThemeFavorite("jelly");
     store.toggleThemeFavorite("jelly"); // un-star
     const wrapper = await mountSidebar();
-    expect(wrapper.findAll(".theme-switch button")).toHaveLength(5);
+    expect(wrapper.findAll(".theme-switch button")).toHaveLength(DESIGN_THEMES.length);
   });
 
   it("switching to a starred theme works and marks it active", async () => {
@@ -243,7 +246,7 @@ describe("settings theme list (#0255)", () => {
     const wrapper = await mountSettings();
 
     const rows = wrapper.findAll(".theme-row");
-    expect(rows).toHaveLength(5);
+    expect(rows).toHaveLength(DESIGN_THEMES.length);
     expect(
       rows.map((r) =>
         r
@@ -251,7 +254,7 @@ describe("settings theme list (#0255)", () => {
           ?.replace(/^Use the /, "")
           .replace(/ theme$/, ""),
       ),
-    ).toEqual(["Classic", "Clear", "Gen Z", "Jelly", "Gruvbox"]);
+    ).toEqual(DESIGN_THEMES.map((t) => t.label));
     expect(rows[2].find(".theme-active-badge").text()).toBe("active");
     expect(rows[2].classes()).toContain("current");
     expect(rows[2].find(".theme-active-badge").text()).toBe("active");
@@ -262,7 +265,7 @@ describe("settings theme list (#0255)", () => {
     await loadConfig();
     const wrapper = await mountSettings();
     const stars = wrapper.findAll(".theme-star");
-    expect(stars).toHaveLength(5);
+    expect(stars).toHaveLength(DESIGN_THEMES.length);
 
     for (let i = 0; i < 3; i++) await stars[i].trigger("click");
     expect(wrapper.findAll(".theme-star.on")).toHaveLength(3);
@@ -300,7 +303,8 @@ describe("settings theme list (#0255)", () => {
     const sidebar = await mountSidebar();
     const settings = await mountSettings();
 
-    expect(sidebar.findAll(".theme-switch button")).toHaveLength(5);
+    // Nothing starred yet, so the switcher is still showing the whole catalog.
+    expect(sidebar.findAll(".theme-switch button")).toHaveLength(DESIGN_THEMES.length);
 
     for (const i of [0, 1, 2]) await settings.findAll(".theme-star")[i].trigger("click");
     await nextTick();

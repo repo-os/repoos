@@ -27,8 +27,9 @@ import type { AgentOutputEntry, Task } from "../types";
 import { useAuthStore } from "../stores/auth";
 import { useConfigStore } from "../stores/config";
 import { useRepoStore } from "../stores/repo";
-import { autoGrowTextarea } from "../utils/textarea-autogrow";
+import { pendingToShots } from "../lib/screenshot-viewer";
 import PmChatSurface, { type PendingShot } from "./PmChatSurface.vue";
+import ScreenshotViewer from "./ScreenshotViewer.vue";
 
 const props = defineProps<{
   /**
@@ -38,6 +39,12 @@ const props = defineProps<{
    */
   story: MergedStoryGroup<Task>;
 }>();
+
+// This component has two roots (the chat and the screenshot viewer), so Vue
+// cannot auto-inherit fallthrough attributes — and the tab's ARIA wiring
+// (`role="tabpanel"`, `aria-labelledby`, the panel id) arrives exactly that way
+// from StoryPanel. Forward it by hand onto the chat, which is the tab panel.
+defineOptions({ inheritAttrs: false });
 
 const auth = useAuthStore();
 const config = useConfigStore();
@@ -56,9 +63,19 @@ const pmAgentEnabled = computed(() => {
 });
 
 const draft = ref("");
-const draftTextarea = ref<HTMLTextAreaElement | null>(null);
 const submitting = ref(false);
 const shots = ref<PendingShot[]>([]);
+
+// 0513: pending screenshots open the shared full-size viewer, exactly as they
+// do in the task panel's PM chat — the two surfaces must not differ in an
+// affordance, which is the whole reason the chat is one component.
+const viewerOpen = ref(false);
+const viewerStart = ref(0);
+const viewerShots = computed(() => pendingToShots(shots.value));
+function openShot(index: number): void {
+  viewerStart.value = index;
+  viewerOpen.value = true;
+}
 
 /** Cap the task panel also applies, so neither buffer grows without bound. */
 const MAX_SHOTS = 6;
@@ -172,6 +189,7 @@ watch(
 
 <template>
   <PmChatSurface
+    v-bind="$attrs"
     v-model:draft="draft"
     :chat-id="sessionId"
     :lines="lines"
@@ -187,5 +205,7 @@ watch(
     @interrupt="interrupt"
     @attach="addShots"
     @remove-shot="shots.splice($event, 1)"
+    @open-shot="openShot"
   />
+  <ScreenshotViewer v-model:open="viewerOpen" :shots="viewerShots" :start-index="viewerStart" />
 </template>

@@ -72,6 +72,9 @@ function makeCtx(root: string, repoos: ReturnType<typeof createRepoOS>): RouteCo
     reload: null,
     syncTaskBranch: () => Promise.resolve({ ok: true, conflicts: [] }),
     onServerStatusChange: () => {},
+    // #0507: review transitions are requests, not writes -- these contexts
+    // never move a task to review, so the handoff finalization is a no-op stub.
+    startUnifiedHandoff: () => ({ started: false, reason: "not wired in this test" }),
   } as RouteContext;
 }
 
@@ -229,9 +232,10 @@ describe("InputsView Edit Input modal (#0497)", () => {
     await wrapper.find(".input-row").trigger("click");
     await flushPromises();
 
-    const editBtn = wrapper.find(".detail-body-head button");
-    expect(editBtn.text()).toContain("Edit");
-    await editBtn.trigger("click");
+    const bodyCard = wrapper.find(".input-detail .md-card");
+    expect(bodyCard.exists()).toBe(true);
+    expect(wrapper.find(".detail-body-head").exists()).toBe(false);
+    await bodyCard.trigger("click");
     await flushPromises();
 
     const modal = document.body.querySelector(".sm-modal");
@@ -258,12 +262,35 @@ describe("InputsView Edit Input modal (#0497)", () => {
     expect(repo.inputs[0].body).toBe("Updated input body");
   });
 
+  it("renders markdown in the body card", async () => {
+    const input = makeInput({ body: "Say **hello** and visit [docs](https://example.com)." });
+    const wrapper = await mountWith([input]);
+    await wrapper.find(".input-row").trigger("click");
+    await flushPromises();
+
+    const rendered = wrapper.find(".input-detail .md-rendered");
+    expect(rendered.exists()).toBe(true);
+    expect(rendered.html()).toContain("<strong>hello</strong>");
+    expect(rendered.html()).toContain('href="https://example.com"');
+  });
+
+  it("shows an empty-state card when the body is blank", async () => {
+    const input = makeInput({ body: "" });
+    const wrapper = await mountWith([input]);
+    await wrapper.find(".input-row").trigger("click");
+    await flushPromises();
+
+    const card = wrapper.find(".input-detail .md-card");
+    expect(card.exists()).toBe(true);
+    expect(card.find(".md-card-body").text()).toContain("No text yet");
+  });
+
   it("leaves the input unchanged when the modal is cancelled", async () => {
     const input = makeInput();
     const wrapper = await mountWith([input]);
     await wrapper.find(".input-row").trigger("click");
     await flushPromises();
-    await wrapper.find(".detail-body-head button").trigger("click");
+    await wrapper.find(".input-detail .md-card").trigger("click");
     await flushPromises();
 
     const textarea = document.body.querySelector(".sm-modal-textarea") as HTMLTextAreaElement;
@@ -277,7 +304,7 @@ describe("InputsView Edit Input modal (#0497)", () => {
     cancelBtn!.click();
     await flushPromises();
 
-    expect(wrapper.find(".detail-body").text()).toBe(input.body);
+    expect(wrapper.find(".input-detail .md-rendered").text()).toBe(input.body);
     expect(api).not.toHaveBeenCalledWith(
       expect.stringMatching(/^\/api\/inputs\//),
       expect.objectContaining({ method: "PATCH" }),

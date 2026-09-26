@@ -2,6 +2,7 @@ export * from "./agents.js";
 export * from "./check-plan.js";
 export * from "./config.js";
 export * from "./docs.js";
+export * from "./repo-log.js";
 export * from "./inputs.js";
 export * from "./stories.js";
 export * from "./models.js";

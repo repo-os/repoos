@@ -62,6 +62,24 @@ Moves a task to a new status. Takes `--note "..."` to record why.
 repoos mv 0001 ready --note "spec is settled, ready to hand over"
 ```
 
+`review` is the one status with special behaviour, because reaching it means
+running the checks, not just editing a field. From your terminal the move goes
+through the same handoff finalization the UI uses — commit the branch, run
+`repoos check`, pass the commit guard, then land in `review`. The task stays
+`active` while that runs and stays `active` with the reason if the check fails;
+the command itself still exits 0. See
+[Review and close-out](/review-and-close-out).
+
+Run from inside a RepoOS-managed agent session for that same task, `repoos mv
+<id> review` records a **handoff request** instead of moving anything: the
+runner picks it up when the turn ends and finalizes then. That is deliberate —
+an agent moving its own task out of `active` would have its turn killed
+mid-flight.
+
+`done` is refused when the task's branch still exists and is not merged into
+`main`; `repoos mv done` only flips the flag, it never merges. Use **Move to
+done** in the UI, or merge the branch yourself first.
+
 ### `repoos update <id>`
 
 Edits a task's metadata or body: `--title`, `--area`, `--priority`, `--type`,

@@ -513,6 +513,20 @@ describe("story panel PM tab (#0515)", () => {
     expect(tabpanel.textContent).toContain("Chat about this story");
   });
 
+  it("keeps the tab's ARIA wiring on the chat, not lost to a two-root component", async () => {
+    await openPmTab();
+    // StoryPmChat has two roots (the chat and the screenshot viewer), so Vue
+    // cannot auto-inherit fallthrough attrs — the tab's role/id/label arrive
+    // that way from StoryPanel. Without forwarding them by hand the whole tab
+    // silently stops being a labelled tabpanel.
+    const tabpanel = panel()!.querySelector('[role="tabpanel"]')!;
+    expect(tabpanel).toBeTruthy();
+    const tab = tabs().find((t) => t.textContent?.includes("PM"))!;
+    expect(tabpanel.getAttribute("aria-labelledby")).toBe(tab.id);
+    expect(tab.getAttribute("aria-controls")).toBe(tabpanel.id);
+    expect(tabpanel.getAttribute("tabindex")).toBe("0");
+  });
+
   it("sends a message to the story PM endpoint and shows it optimistically", async () => {
     await openPmTab();
     const compose = panel()!.querySelector<HTMLTextAreaElement>(".pm-compose textarea")!;
