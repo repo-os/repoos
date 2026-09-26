@@ -130,7 +130,7 @@ export function isStaleImportError(message: string): boolean {
 export function showOffline(
   message = "The RepoOS server is offline or stalled. Retry or reload when it is ready.",
 ): void {
-  if (state.kind === "stale") return;
+  if (state.kind === "stale" || state.kind === "offline") return;
   clearNewVersion();
   state.kind = "offline";
   state.message = message;
