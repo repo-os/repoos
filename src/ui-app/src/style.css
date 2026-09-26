@@ -2086,7 +2086,6 @@
 .task-card.needs-input {
   border-color: var(--amber);
   box-shadow: 0 0 0 1px var(--amber-tint);
-  animation: needs-input-pulse 1.6s ease-in-out infinite;
 }
 @keyframes needs-input-pulse {
   0%,

@@ -1173,6 +1173,8 @@ const activeNeedsInputQuestions = computed(() => (ui.active?.questions?.length ?
 
 const needsInputHeaderChip = computed<{ label: string; cls: string } | null>(() => {
   if (!ui.active?.needsInput) return null;
+  // A stale flag must not hide a live review or engineer session (#0511 R2).
+  if (review.value?.running || repo.isRunning(ui.active.id)) return null;
   return {
     label: needsInputStatusLabel(ui.active.needsInputReason, activeNeedsInputQuestions.value),
     cls: "rs-needs-input",
@@ -1181,7 +1183,6 @@ const needsInputHeaderChip = computed<{ label: string; cls: string } | null>(() 
 
 const reviewSubstate = computed<{ label: string; cls: string } | null>(() => {
   if (!ui.active || ui.active.status !== "review") return null;
-  if (ui.active.needsInput) return null;
   if (review.value?.running) return { label: "reviewing", cls: "rs-reviewing" };
   if (repo.isRunning(ui.active.id)) {
     // A running agent on an already-review task, outside auto-review, means
@@ -1206,9 +1207,6 @@ const reviewSubstate = computed<{ label: string; cls: string } | null>(() => {
   }
   if (verdict.value) {
     return { label: "review findings", cls: "rs-incomplete" };
-  }
-  if (repo.isQueued(ui.active.id)) {
-    return { label: "waiting for review", cls: "rs-reviewing" };
   }
   return null;
 });
@@ -2122,7 +2120,10 @@ function fmtSessionTime(iso: string | null, withDate = false): string {
 
 const needsInputPrimary = computed(() => {
   if (!ui.active?.needsInput) return null;
-  return needsInputPrimaryAction(ui.active.needsInputReason, activeNeedsInputQuestions.value);
+  return needsInputPrimaryAction(ui.active.needsInputReason, activeNeedsInputQuestions.value, {
+    status: ui.active.status,
+    agentRunning: repo.isRunning(ui.active.id),
+  });
 });
 
 const dismissNeedsInputBusy = ref(false);
@@ -2139,6 +2140,8 @@ async function dismissNeedsInputFlag(): Promise<void> {
   try {
     const updated = await repo.dismissNeedsInput(task.id);
     ui.syncActive(updated);
+  } catch (err) {
+    repo.onError(err);
   } finally {
     dismissNeedsInputBusy.value = false;
   }
@@ -2952,18 +2955,18 @@ watch(
               />
               <span class="tc-id mono">{{ ui.active.path }}</span>
               <span
-                v-if="needsInputHeaderChip"
-                class="rs-chip"
-                :class="needsInputHeaderChip.cls"
-                :title="needsInputBannerText(ui.active.needsInputReason, activeNeedsInputQuestions)"
-                >{{ needsInputHeaderChip.label }}</span
-              >
-              <span
-                v-else-if="reviewSubstate"
+                v-if="reviewSubstate"
                 class="rs-chip"
                 :class="reviewSubstate.cls"
                 :title="reviewSubstate.label"
                 >{{ reviewSubstate.label }}</span
+              >
+              <span
+                v-else-if="needsInputHeaderChip"
+                class="rs-chip"
+                :class="needsInputHeaderChip.cls"
+                :title="needsInputBannerText(ui.active.needsInputReason, activeNeedsInputQuestions)"
+                >{{ needsInputHeaderChip.label }}</span
               >
               <span class="tc-prio" :class="ui.active.priority" style="margin-left: auto">
                 {{ ui.active.priority }}
@@ -3342,9 +3345,10 @@ watch(
                 <Button
                   variant="ghost"
                   size="sm"
-                  :disabled="ui.saving || dismissNeedsInputBusy"
+                  :disabled="ui.saving"
                   @click="dismissNeedsInputFlag"
                 >
+                  <ActivityIndicator v-if="dismissNeedsInputBusy" />
                   {{ dismissNeedsInputBusy ? "Dismissing…" : "Dismiss" }}
                 </Button>
               </div>

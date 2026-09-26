@@ -29,7 +29,7 @@ export const NEEDS_INPUT_SUGGESTION_LABELS: Record<string, string> = {
   "check-failed-after-retries":
     "Open the Debug tab for the failing check output, fix the issue or adjust the check plan, then Restart work. Move to done only after checks pass.",
   "watchdog-stuck": "Restart work to resume — no agent process is currently running this task.",
-  "cto-escalation": "Reply below to answer the CTO agent's question so it can continue.",
+  "cto-escalation": "Open the PM tab and send a reply — the flag clears when your message is sent.",
   questions: "Answer the questions below or reply in the PM tab so the agent can continue.",
 };
 
@@ -38,6 +38,31 @@ export type NeedsInputPrimaryActionKind = "restart" | "review" | "answer";
 export interface NeedsInputPrimaryAction {
   kind: NeedsInputPrimaryActionKind;
   label: string;
+}
+
+/** Context for whether Restart / Review again is actually allowed by the server. */
+export interface NeedsInputActionContext {
+  status: string;
+  agentRunning: boolean;
+}
+
+const REVIEW_AGAIN_ACTION: NeedsInputPrimaryAction = {
+  kind: "review",
+  label: "Review again (clears this)",
+};
+
+const RESTART_ACTION: NeedsInputPrimaryAction = {
+  kind: "restart",
+  label: "Restart work (clears this)",
+};
+
+const PM_REPLY_ACTION: NeedsInputPrimaryAction = {
+  kind: "answer",
+  label: "Reply in PM (clears when sent)",
+};
+
+function canRestartWork(ctx: NeedsInputActionContext): boolean {
+  return ctx.status === "ready" || (ctx.status === "active" && !ctx.agentRunning);
 }
 
 /** Normalize watchdog detail strings and legacy reason shapes to a lookup key. */
@@ -76,19 +101,22 @@ export function needsInputSuggestionText(
 
 export function needsInputPrimaryAction(
   reason: string | undefined,
-  hasQuestions = false,
+  hasQuestions: boolean,
+  ctx: NeedsInputActionContext,
 ): NeedsInputPrimaryAction | null {
   const key = resolveNeedsInputReasonKey(reason, hasQuestions);
   switch (key) {
     case "review-failed":
-      return { kind: "review", label: "Review again (clears this)" };
-    case "dev-error":
+      return ctx.status === "review" ? REVIEW_AGAIN_ACTION : null;
     case "watchdog-stuck":
+      if (ctx.status === "review") return REVIEW_AGAIN_ACTION;
+      return canRestartWork(ctx) ? RESTART_ACTION : null;
+    case "dev-error":
     case "check-failed-after-retries":
-      return { kind: "restart", label: "Restart work (clears this)" };
+      return canRestartWork(ctx) ? RESTART_ACTION : null;
     case "cto-escalation":
     case "questions":
-      return { kind: "answer", label: "Answer below (clears this)" };
+      return PM_REPLY_ACTION;
     default:
       return null;
   }
