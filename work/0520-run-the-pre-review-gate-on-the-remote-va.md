@@ -2,14 +2,14 @@
 id: "0520"
 title: Run the pre-review gate on the remote validation runner
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-26T11:49:00Z"
-updated_at: "2026-09-26T11:49:00Z"
+updated_at: "2026-09-26T11:55:17Z"
 ---
 ## Problem
 
@@ -59,3 +59,4 @@ runner hosts (separate task).
 ## Activity
 
 - 2026-09-26T11:49:00Z · created · unknown
+- 2026-09-26T11:55:17Z · status inbox→ready
