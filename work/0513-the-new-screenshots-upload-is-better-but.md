@@ -2,7 +2,10 @@
 id: "0513"
 title: Add a shared full-size screenshot viewer modal used everywhere screenshots appear
 type: feature
-status: active
+status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "Skill routing: frontend-design, diagnose-repoos-close-out-validation-failures, frontend-testing"
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +13,8 @@ created_by: hello@repoos.org
 branch: feat/add-a-shared-full-size-screenshot-viewer
 model_override: cursor-grok-4.6-medium
 created_at: "2026-09-26T05:25:23Z"
-updated_at: "2026-09-26T08:30:15Z"
+updated_at: "2026-09-26T08:31:49Z"
+dev_error_count: 1
 ---
 ## Problem
 
@@ -147,3 +151,5 @@ The new screenshots upload is better, but when we have screenshots uploaded anyw
 - 2026-09-26T08:17:14Z · model_override
 - 2026-09-26T08:17:16Z · status ready→active, branch
 - 2026-09-26T08:30:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-09-26T08:31:49Z · status active→review
+- 2026-09-26T08:31:49Z · agent exited with an error (cursor) · Skill routing: frontend-design, diagnose-repoos-close-out-validation-failures, frontend-testing
