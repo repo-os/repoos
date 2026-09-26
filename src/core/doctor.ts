@@ -29,7 +29,7 @@ import {
   SUPPORTED_TOML_KEYS,
   worktreesDir,
 } from "./config.js";
-import { STATUSES, type RepoOSConfig } from "./types.js";
+import { STATUSES, UI_THEMES, type RepoOSConfig } from "./types.js";
 import { checkBuildForRoot } from "./build.js";
 import {
   detectRepoMarkers,
@@ -316,7 +316,7 @@ export function findConfigValueProblems(parsed: Record<string, unknown>): string
   enumCheck("defaultAssignee", ["ai", "human", "unassigned"]);
   enumCheck("defaultTaskMode", ["freeform", "manual"]);
   enumCheck("theme", ["dark", "light", "system"]);
-  enumCheck("uiTheme", ["classic", "clear", "gen z", "jelly"]);
+  enumCheck("uiTheme", UI_THEMES);
 
   const boolCheck = (key: string): void => {
     const v = get(key);
