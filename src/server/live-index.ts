@@ -574,6 +574,7 @@ export class LiveIndex {
       base.storyDefinitions = listStoryDefinitions(this.config).map((d) => ({
         key: d.key,
         name: d.name,
+        number: d.number,
         path: d.path,
         body: d.body,
         createdAt: d.createdAt,

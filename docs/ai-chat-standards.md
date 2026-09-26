@@ -1,9 +1,10 @@
 # The AI chat standard
 
 Every AI chat surface in the RepoOS web UI — Ross, the CTO Board Monitor, the
-Debugger, the per-task Debugger, the Model Playground and a task's PM chat —
-obeys the same rules. They are not six independent implementations that happen
-to look alike; they are six call sites of one shared contract (#0444).
+Debugger, the per-task Debugger, the Model Playground, and the PM chat behind
+both the task panel's PM tab and the story panel's (#0515) — obeys the same
+rules. They are not seven independent implementations that happen to look
+alike; they are call sites of one shared contract (#0444).
 
 This page is the spec. `src/ui-app/src/lib/ai-chat.ts` is the machine-readable
 half (the registry of surfaces), and `src/ui-app/tests/ai-chat-standard.test.ts`
@@ -20,6 +21,15 @@ A chat surface is a few shared pieces plus its own bubbles:
 | `<AiChatThinking>` | `src/ui-app/src/components/AiChatThinking.vue` | the pulsing working indicator |
 | `toDisplayRows()` | `src/ui-app/src/lib/chat-rows.ts` | turning a transcript into rows: tool-call grouping, text merging, dropping step markers |
 | `<ChatToolCallRow>` | `src/ui-app/src/components/ChatToolCallRow.vue` | one run of consecutive tool calls, as a counted, expandable row |
+
+A host may also skip all of that by rendering a surface that already complies.
+`src/ui-app/src/components/PmChatSurface.vue` is the PM chat in full — bubbles,
+compose box, canned prompts, pending screenshots, and every hook above — and both
+the task panel's PM tab and the story panel's PM tab (#0515) render it, each
+passing its own session, transcript, canned prompts and event handlers. It is the
+registered surface in `lib/ai-chat.ts`, so conformance there is structural rather
+than something each call site has to remember; adding a third PM surface means
+rendering this component, not reimplementing the standard.
 
 Visual rhythm is not per-component either: `.ai-chat-log` (message spacing),
 `.ai-chat-thinking` (the pulse) and `.ai-chat-send` (the send button's accent
