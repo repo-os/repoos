@@ -2,7 +2,7 @@
 id: "0507"
 title: Unify every route into review behind the handoff finalization
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
@@ -12,7 +12,7 @@ cli_override: opencode
 model_override: opencode-go/space-bunny-free
 review_model_override: opencode/muse-spark-1.3-contributor-free
 created_at: "2026-09-26T02:27:03Z"
-updated_at: "2026-09-26T04:48:50Z"
+updated_at: "2026-09-26T08:22:22Z"
 ---
 ## Problem
 
@@ -114,3 +114,5 @@ came last (`lastFailureLine`) — "Skill routing: …", "Server finalization: ch
 - 2026-09-26T03:01:13Z · status ready→active, branch
 - 2026-09-26T04:31:52Z · note: CTO monitor nudge: task active 88m with no worktree output. No agent process found — only orphaned vitest workers. Please resume work, commit, and hand off to review, or report the blocker.
 - 2026-09-26T04:48:50Z · note: ⏰ CTO monitor nudge: 16 minutes idle. Please confirm you're still working or provide a status update.
+- 2026-09-26T07:39:06Z · note: ⏰ CTO monitor nudge: 166 minutes idle. Please confirm you're still working or provide a status update.
+- 2026-09-26T08:22:22Z · status active→review
