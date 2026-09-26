@@ -111,6 +111,22 @@ scopes named in `inherits` (later wins), so a light variant can inherit a dark
 base and override only what differs. A `uiStylesheet` that doesn't exist is
 called out rather than silently skipped.
 
+A block you declare is only read if the guard can parse it, and two things stop
+it — both quiet, since a theme that isn't checked just isn't reported on:
+
+- A `:root[data-ui-theme="…"]`-style block with no matching `themeScopes` row is
+  never evaluated. Declare one row per appearance.
+- The scanner reads top-level blocks line by line: the selector must open the
+  block on one line ending in `{`, one declaration per line, and no `/* … */`
+  comment between declarations — a comment line corrupts the key that follows it
+  and drops that token from the check.
+
+Write the colors a `contrastPairs` token resolves to in hex, or in `rgb()`/`rgba()`
+with no spaces after the commas. A spaced `rgba(110, 157, 106, 0.22)` — which is
+how most formatters, including this repo's, write it — does not parse, and a pair
+whose color can't be read is skipped rather than failed. A gradient is judged on
+its worst stop, but only the stops that parse are considered.
+
 The **UI smoke test** is a command only you can know. Declare it either way:
 
 - a `smoke` script in `package.json`, or

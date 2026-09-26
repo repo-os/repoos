@@ -85,7 +85,13 @@ describe("config store favorites (#0255)", () => {
   it("defaults to no favorites, so sidebarThemes falls back to the full catalog in order", async () => {
     const store = useConfigStore();
     expect(store.favoriteThemes).toEqual([]);
-    expect(store.sidebarThemes.map((t) => t.id)).toEqual(["classic", "clear", "gen z", "jelly"]);
+    expect(store.sidebarThemes.map((t) => t.id)).toEqual([
+      "classic",
+      "clear",
+      "gen z",
+      "jelly",
+      "gruvbox",
+    ]);
   });
 
   it("starring adds themes in star order and persists to localStorage", async () => {
@@ -116,7 +122,7 @@ describe("config store favorites (#0255)", () => {
     }
 
     const before = [...store.favoriteThemes];
-    expect(store.toggleThemeFavorite("jelly")).toBe(false);
+    expect(store.toggleThemeFavorite("gruvbox")).toBe(false);
 
     expect(store.favoriteThemes).toEqual(before);
     expect(store.themeFavoritesNotice).toBe("Up to 3 favorites");
@@ -127,7 +133,7 @@ describe("config store favorites (#0255)", () => {
   it("un-starring always works, clears the notice, and frees a slot", async () => {
     const store = useConfigStore();
     for (const id of ["classic", "clear", "gen z"]) store.toggleThemeFavorite(id);
-    expect(store.toggleThemeFavorite("jelly")).toBe(false);
+    expect(store.toggleThemeFavorite("gruvbox")).toBe(false);
     expect(store.themeFavoritesNotice).toBe("Up to 3 favorites");
 
     expect(store.toggleThemeFavorite("classic")).toBe(true);
@@ -135,8 +141,8 @@ describe("config store favorites (#0255)", () => {
     expect(store.favoriteThemes).toEqual(["clear", "gen z"]);
 
     // The previously-blocked star now fits.
-    expect(store.toggleThemeFavorite("jelly")).toBe(true);
-    expect(store.favoriteThemes).toEqual(["clear", "gen z", "jelly"]);
+    expect(store.toggleThemeFavorite("gruvbox")).toBe(true);
+    expect(store.favoriteThemes).toEqual(["clear", "gen z", "gruvbox"]);
   });
 
   it("starring/un-starring never changes the applied uiTheme", async () => {
@@ -169,13 +175,13 @@ describe("config store favorites (#0255)", () => {
     localStorage.setItem("repoos.favoriteThemes", "not json");
     const store = useConfigStore();
     expect(store.favoriteThemes).toEqual([]);
-    expect(store.sidebarThemes).toHaveLength(4);
+    expect(store.sidebarThemes).toHaveLength(5);
   });
 
   it("drops unknown ids, duplicates, and over-cap entries when loading", () => {
     localStorage.setItem(
       "repoos.favoriteThemes",
-      JSON.stringify(["classic", "bogus", "classic", "clear", "gen z", "jelly"]),
+      JSON.stringify(["classic", "bogus", "classic", "clear", "gen z", "gruvbox", "jelly"]),
     );
     const store = useConfigStore();
     expect(store.favoriteThemes).toEqual(["classic", "clear", "gen z"]);
@@ -190,11 +196,11 @@ describe("config store favorites (#0255)", () => {
 });
 
 describe("sidebar quick switcher (#0255)", () => {
-  it("shows all four themes when nothing is starred (fallback)", async () => {
+  it("shows all five themes when nothing is starred (fallback)", async () => {
     useConfigStore();
     const wrapper = await mountSidebar();
     const labels = wrapper.findAll(".theme-switch button").map((b) => b.text());
-    expect(labels).toEqual(["Classic", "Clear", "Gen Z", "Jelly"]);
+    expect(labels).toEqual(["Classic", "Clear", "Gen Z", "Jelly", "Gruvbox"]);
   });
 
   it("shows only the starred themes in star order", async () => {
@@ -211,7 +217,7 @@ describe("sidebar quick switcher (#0255)", () => {
     store.toggleThemeFavorite("jelly");
     store.toggleThemeFavorite("jelly"); // un-star
     const wrapper = await mountSidebar();
-    expect(wrapper.findAll(".theme-switch button")).toHaveLength(4);
+    expect(wrapper.findAll(".theme-switch button")).toHaveLength(5);
   });
 
   it("switching to a starred theme works and marks it active", async () => {
@@ -237,7 +243,7 @@ describe("settings theme list (#0255)", () => {
     const wrapper = await mountSettings();
 
     const rows = wrapper.findAll(".theme-row");
-    expect(rows).toHaveLength(4);
+    expect(rows).toHaveLength(5);
     expect(
       rows.map((r) =>
         r
@@ -245,7 +251,7 @@ describe("settings theme list (#0255)", () => {
           ?.replace(/^Use the /, "")
           .replace(/ theme$/, ""),
       ),
-    ).toEqual(["Classic", "Clear", "Gen Z", "Jelly"]);
+    ).toEqual(["Classic", "Clear", "Gen Z", "Jelly", "Gruvbox"]);
     expect(rows[2].find(".theme-active-badge").text()).toBe("active");
     expect(rows[2].classes()).toContain("current");
     expect(rows[2].find(".theme-active-badge").text()).toBe("active");
@@ -256,7 +262,7 @@ describe("settings theme list (#0255)", () => {
     await loadConfig();
     const wrapper = await mountSettings();
     const stars = wrapper.findAll(".theme-star");
-    expect(stars).toHaveLength(4);
+    expect(stars).toHaveLength(5);
 
     for (let i = 0; i < 3; i++) await stars[i].trigger("click");
     expect(wrapper.findAll(".theme-star.on")).toHaveLength(3);
@@ -294,7 +300,7 @@ describe("settings theme list (#0255)", () => {
     const sidebar = await mountSidebar();
     const settings = await mountSettings();
 
-    expect(sidebar.findAll(".theme-switch button")).toHaveLength(4);
+    expect(sidebar.findAll(".theme-switch button")).toHaveLength(5);
 
     for (const i of [0, 1, 2]) await settings.findAll(".theme-star")[i].trigger("click");
     await nextTick();
@@ -312,5 +318,30 @@ describe("settings theme list (#0255)", () => {
       "Classic",
       "Clear",
     ]);
+  });
+});
+
+describe("gruvbox design theme (#0503)", () => {
+  it("is offered in the catalog and applies by setting data-ui-theme on <html>", async () => {
+    const store = await loadConfig();
+    const wrapper = await mountSettings();
+
+    const gruvbox = wrapper
+      .findAll(".theme-row")
+      .find((r) => r.attributes("aria-label") === "Use the Gruvbox theme");
+    expect(gruvbox).toBeDefined();
+
+    await gruvbox!.trigger("click");
+    await nextTick();
+
+    expect(store.uiTheme).toBe("gruvbox");
+    expect(localStorage.getItem("repoos.uiTheme")).toBe("gruvbox");
+    expect(document.documentElement.dataset.uiTheme).toBe("gruvbox");
+  });
+
+  it("can be starred like any other theme", async () => {
+    const store = useConfigStore();
+    expect(store.toggleThemeFavorite("gruvbox")).toBe(true);
+    expect(store.sidebarThemes.map((t) => t.id)).toEqual(["gruvbox"]);
   });
 });
