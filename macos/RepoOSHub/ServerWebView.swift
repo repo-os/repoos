@@ -74,6 +74,13 @@ struct ServerWebView: NSViewRepresentable {
         context.coordinator.webView = webView
         context.coordinator.loadInitialPage()
         context.coordinator.observeHubCommands()
+        // The Hub shell theme must never reach server content: pin the web
+        // view to the system appearance (not the Hub override) so a page
+        // honouring prefers-color-scheme follows the system, and the
+        // server's own web theme setting stays authoritative. No theme is
+        // injected, forced, or bridged into the web view.
+        context.coordinator.pinWebViewToSystemAppearance()
+        context.coordinator.observeSystemAppearance()
         return webView
     }
 
@@ -99,6 +106,7 @@ struct ServerWebView: NSViewRepresentable {
         weak var webView: WKWebView?
         var loadedOriginKey: String?
         private var commandObservers: [NSObjectProtocol] = []
+        private var systemAppearanceObserver: NSObjectProtocol?
 
         init(model: ServerWebViewModel, appState: HubAppState) {
             self.model = model
@@ -108,6 +116,9 @@ struct ServerWebView: NSViewRepresentable {
         deinit {
             for observer in commandObservers {
                 NotificationCenter.default.removeObserver(observer)
+            }
+            if let systemAppearanceObserver {
+                DistributedNotificationCenter.default().removeObserver(systemAppearanceObserver)
             }
         }
 
@@ -185,6 +196,29 @@ struct ServerWebView: NSViewRepresentable {
                 load(path: pending.path)
             } else {
                 load(path: "/")
+            }
+        }
+
+        /// Pins this web view to the system appearance. SwiftUI's
+        /// preferredColorScheme only styles the native shell, but the web
+        /// view lives in that hierarchy — without this pin a forced Hub
+        /// scheme would leak into the page via NSAppearance. The pin reads
+        /// the system setting directly (never `NSApp.effectiveAppearance`),
+        /// so it cannot resolve to the Hub override.
+        func pinWebViewToSystemAppearance() {
+            webView?.appearance = HubSystemAppearance.appearance
+        }
+
+        func observeSystemAppearance() {
+            guard systemAppearanceObserver == nil else { return }
+            systemAppearanceObserver = DistributedNotificationCenter.default().addObserver(
+                forName: HubSystemAppearance.themeChangedNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor in
+                    self?.pinWebViewToSystemAppearance()
+                }
             }
         }
 

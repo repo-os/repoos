@@ -13,6 +13,7 @@ struct RepoOSHubApp: App {
             ContentView()
                 .environmentObject(appState)
                 .frame(minWidth: 880, minHeight: 520)
+                .preferredColorScheme(appState.hubGlobalPreferences.appearance.colorScheme)
                 .onAppear {
                     UNUserNotificationCenter.current().delegate = notificationDelegate
                     notificationDelegate.requestAuthorizationIfNeeded()
@@ -24,6 +25,10 @@ struct RepoOSHubApp: App {
                             appState.applyWorkspaceResidencyMemoryPressure(level)
                         }
                     }
+                    appDelegate.setAppearanceOverride(appState.hubGlobalPreferences.appearance)
+                }
+                .onChange(of: appState.hubGlobalPreferences.appearance) { newValue in
+                    appDelegate.setAppearanceOverride(newValue)
                 }
         }
         .commands {
@@ -60,7 +65,7 @@ struct RepoOSHubApp: App {
             }
         }
         Settings {
-            HubGlobalAttentionSettingsView()
+            HubSettingsView()
                 .environmentObject(appState)
         }
     }
@@ -72,12 +77,19 @@ final class HubAppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         dockIconAppearance.start()
     }
+
+    func setAppearanceOverride(_ appearance: HubAppAppearance) {
+        dockIconAppearance.appearanceOverride = appearance
+    }
 }
 
 /// App icon variants are regular named assets rather than AppIcon appearances:
 /// macOS app-icon catalogs do not assign appearance variants to the Dock icon.
 final class DockIconAppearanceController {
     private var appearanceObserver: NSKeyValueObservation?
+    var appearanceOverride: HubAppAppearance = .system {
+        didSet { updateDockIcon() }
+    }
 
     func start() {
         updateDockIcon()
@@ -87,10 +99,21 @@ final class DockIconAppearanceController {
     }
 
     private func updateDockIcon() {
-        NSApp.applicationIconImage = NSImage(named: Self.assetName(for: NSApp.effectiveAppearance))
+        NSApp.applicationIconImage = NSImage(named: Self.assetName(for: NSApp.effectiveAppearance, override: appearanceOverride))
     }
 
     static func assetName(for appearance: NSAppearance) -> NSImage.Name {
-        appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? "DockIconDark" : "DockIconLight"
+        assetName(for: appearance, override: .system)
+    }
+
+    static func assetName(for appearance: NSAppearance, override: HubAppAppearance) -> NSImage.Name {
+        switch override {
+        case .light:
+            return "DockIconLight"
+        case .dark:
+            return "DockIconDark"
+        case .system:
+            return appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? "DockIconDark" : "DockIconLight"
+        }
     }
 }

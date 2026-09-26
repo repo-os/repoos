@@ -136,31 +136,3 @@ struct HubServerAttentionSettingsSheet: View {
         }
     }
 }
-
-struct HubGlobalAttentionSettingsView: View {
-    @EnvironmentObject private var appState: HubAppState
-
-    var body: some View {
-        Form {
-            Toggle("Native notifications", isOn: globalNotificationsBinding)
-            Toggle("Dock badge total", isOn: dockBadgeBinding)
-        }
-        .formStyle(.grouped)
-        .padding()
-        .frame(width: 360)
-    }
-
-    private var globalNotificationsBinding: Binding<Bool> {
-        Binding(
-            get: { appState.hubGlobalPreferences.notificationsEnabled },
-            set: { appState.updateHubGlobalPreferences(notificationsEnabled: $0, dockBadgeEnabled: nil) }
-        )
-    }
-
-    private var dockBadgeBinding: Binding<Bool> {
-        Binding(
-            get: { appState.hubGlobalPreferences.dockBadgeEnabled },
-            set: { appState.updateHubGlobalPreferences(notificationsEnabled: nil, dockBadgeEnabled: $0) }
-        )
-    }
-}
