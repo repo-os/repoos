@@ -25,6 +25,16 @@ enum HubAppAppearance: String, Codable, Equatable, Sendable, CaseIterable {
         case .dark: return .dark
         }
     }
+
+    /// The AppKit override for native window chrome such as title bars and
+    /// toolbars. Nil leaves the entire app following the system appearance.
+    var appKitAppearance: NSAppearance? {
+        switch self {
+        case .system: return nil
+        case .light: return NSAppearance(named: .aqua)
+        case .dark: return NSAppearance(named: .darkAqua)
+        }
+    }
 }
 
 /// The macOS system appearance, read directly from the global defaults domain
