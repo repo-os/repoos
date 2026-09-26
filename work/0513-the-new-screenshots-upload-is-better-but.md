@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+model_override: cursor-grok-4.6-medium
 created_at: "2026-09-26T05:25:23Z"
-updated_at: "2026-09-26T07:58:53Z"
+updated_at: "2026-09-26T08:17:14Z"
 ---
 ## Problem
 
@@ -143,3 +144,4 @@ The new screenshots upload is better, but when we have screenshots uploaded anyw
 - 2026-09-26T05:25:25Z · screenshots
 - 2026-09-26T05:26:29Z · status draft→inbox, title, area, body
 - 2026-09-26T07:58:53Z · status inbox→ready
+- 2026-09-26T08:17:14Z · model_override
