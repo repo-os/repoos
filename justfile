@@ -57,6 +57,30 @@ status:
         echo "  dirty: no"
     fi
 
+# Auth-less dev server for agents/browser tooling. Applies the [preview.*] overlay
+# (auth off), binds 127.0.0.1 only, and runs as a preview child so it never reaps
+# the real server. Run it from a task worktree or scratch checkout, NOT the
+# checkout the real `repoos serve` is serving: two servers on one root would both
+# spawn reviewers, and the second one's watchdog would think every active task is
+# dead. See AGENTS.md "Auth-less dev server".
+
+# auth-less UI server on a spare port (run from a worktree, not the served checkout): `just serve-noauth [port]`
+serve-noauth port="7272":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    here="$(pwd -P)"
+    for pid in $(pgrep -f "dist/cli/index.js serve" || true); do
+        cwd=$(lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p')
+        if [ "$cwd" = "$here" ] && ! ps eww -p "$pid" 2>/dev/null | grep -q "REPOOS_PREVIEW_CHILD=1"; then
+            echo "refusing: pid $pid is already serving this checkout ($here)." >&2
+            echo "run this from a task worktree or a scratch worktree instead." >&2
+            exit 1
+        fi
+    done
+    bun run build
+    echo "auth-less dev server: http://127.0.0.1:{{port}}"
+    REPOOS_PREVIEW_CHILD=1 exec bun dist/cli/index.js serve --preview-overrides --port {{port}}
+
 # ── runner setup ─────────────────────────────────────────────────────────
 
 # set up bee (Arch) as a tailscale validation runner
