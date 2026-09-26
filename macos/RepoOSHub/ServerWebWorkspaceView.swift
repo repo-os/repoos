@@ -22,6 +22,9 @@ struct ServerWebWorkspaceView: View {
             if entry.originURL != nil {
                 Color.black
                     .ignoresSafeArea()
+                // Theme isolation lives in ServerWebView (pinned to the
+                // system appearance): the Hub shell override above never
+                // reaches server content.
                 ServerWebView(model: webModel, appState: appState)
                     .id(entry.id)
             } else {

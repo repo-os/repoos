@@ -76,8 +76,37 @@ struct HubAttentionNotificationEvent: Equatable, Sendable {
 struct HubGlobalPreferences: Codable, Equatable, Sendable {
     var notificationsEnabled: Bool
     var dockBadgeEnabled: Bool
+    var appearance: HubAppAppearance
 
-    static let `default` = HubGlobalPreferences(notificationsEnabled: true, dockBadgeEnabled: true)
+    init(notificationsEnabled: Bool, dockBadgeEnabled: Bool, appearance: HubAppAppearance = .system) {
+        self.notificationsEnabled = notificationsEnabled
+        self.dockBadgeEnabled = dockBadgeEnabled
+        self.appearance = appearance
+    }
+
+    static let `default` = HubGlobalPreferences(notificationsEnabled: true, dockBadgeEnabled: true, appearance: .system)
+
+    enum CodingKeys: String, CodingKey {
+        case notificationsEnabled
+        case dockBadgeEnabled
+        case appearance
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        notificationsEnabled = try container.decodeIfPresent(Bool.self, forKey: .notificationsEnabled) ?? true
+        dockBadgeEnabled = try container.decodeIfPresent(Bool.self, forKey: .dockBadgeEnabled) ?? true
+        // An unrecognised raw value (e.g. written by a future build) must not
+        // throw: that would wipe the whole registry in reloadFromDisk's catch.
+        appearance = (try? container.decodeIfPresent(HubAppAppearance.self, forKey: .appearance)) ?? .system
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(notificationsEnabled, forKey: .notificationsEnabled)
+        try container.encode(dockBadgeEnabled, forKey: .dockBadgeEnabled)
+        try container.encode(appearance, forKey: .appearance)
+    }
 }
 
 enum HubAttentionFreshness {
