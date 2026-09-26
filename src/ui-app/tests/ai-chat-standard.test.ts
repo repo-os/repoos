@@ -27,6 +27,7 @@ import { useChatScroll } from "../src/composables/useChatScroll";
 import {
   AI_CHAT_REQUIREMENTS,
   AI_CHAT_SURFACES,
+  AI_CHAT_TOOL_ROWS,
   FORBIDDEN_CHAT_STATUS_TEXT,
   hasJumpToLatestControl,
 } from "../src/lib/ai-chat";
@@ -479,6 +480,40 @@ describe("every AI chat surface follows the standard", () => {
 
       it("conveys a stopped agent visually, never in text", () => {
         expect(source).not.toMatch(FORBIDDEN_CHAT_STATUS_TEXT);
+      });
+
+      it("groups tool calls through the shared transform and row (#0506)", () => {
+        // A chat that renders an AgentOutputEntry stream has to run it through
+        // `toDisplayRows` and draw a run of tool calls with the shared
+        // `<ChatToolCallRow>`. The Model Playground is exempt by construction:
+        // it is a raw model call with its own `{role, text}` messages and no
+        // tool events at all.
+        if (source.includes("AgentOutputEntry")) {
+          expect(source, `${surface.file} must use ${AI_CHAT_TOOL_ROWS.grouping}`).toContain(
+            AI_CHAT_TOOL_ROWS.grouping,
+          );
+          expect(source, `${surface.file} must render <${AI_CHAT_TOOL_ROWS.row}>`).toContain(
+            AI_CHAT_TOOL_ROWS.row,
+          );
+        }
+      });
+
+      it("never degrades a tool call to a flat text line", () => {
+        // The four chats that used to print `Checked with bash · completed` per
+        // call. That rendering has no count, no outcome, and nothing to expand.
+        expect(stripComments(source), `${surface.file} flattens tool calls to text`).not.toMatch(
+          AI_CHAT_TOOL_ROWS.forbiddenFlattening,
+        );
+      });
+
+      it("timestamps every row, system rows included", () => {
+        // A `sys` entry carries an `at` like any other, so the time is shown
+        // whenever the row has one. Gating it on the speaker would leave system
+        // rows un-timestamped here while the task drawer showed theirs.
+        expect(
+          stripComments(source),
+          `${surface.file} hides a row's timestamp by its speaker`,
+        ).not.toMatch(AI_CHAT_TOOL_ROWS.forbiddenTimeSuppression);
       });
     });
   }
