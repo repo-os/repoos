@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p2
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+review_model_override: opencode-go/space-bunny-free
 created_at: "2026-09-26T03:19:13Z"
-updated_at: "2026-09-26T03:19:13Z"
+updated_at: "2026-09-26T03:21:04Z"
 ---
 ## Problem
 
@@ -76,3 +77,4 @@ agent needs your input" on #0499.
 ## Activity
 
 - 2026-09-26T03:19:13Z · created · unknown
+- 2026-09-26T03:21:04Z · review_model_override
