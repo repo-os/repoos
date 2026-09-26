@@ -1539,7 +1539,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: true,
       default: false,
       description:
-        "When the remote runner is unreachable, run the full gate locally instead of keeping the task in review for retry.",
+        "When the remote runner is unreachable, run the full gate locally instead of failing retryably (close-out, pre-review handoff, and `repoos check`).",
     },
     {
       key: "remoteValidation.useForReleases",

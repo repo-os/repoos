@@ -47,6 +47,7 @@ import { sweepAndWarn } from "../core/worktree-gc.js";
 import type { DoneStep } from "./done.js";
 import { redactSecrets, stripAnsi } from "./done.js";
 import type { RemoteValidator } from "./remote-validation.js";
+import { runRemotePreReviewGate } from "./pre-review-remote-gate.js";
 import { markTaskReleased } from "./write.js";
 import { saveDiffSnapshot } from "./diff-snapshot.js";
 import { parseTask } from "../core/task.js";
@@ -1418,39 +1419,30 @@ export class CloseOutOrchestrator {
       let skipTestsLocally = false;
       if (hasBuildStep && this.remoteValidator && this.config.remoteValidation?.enabled) {
         this.onProgress?.("check");
-        const headRes = await runGit(wtPath, ["rev-parse", "HEAD"], 4000);
-        if (headRes.status !== 0) {
+        const gate = await runRemotePreReviewGate({
+          config: this.config,
+          remoteValidator: this.remoteValidator,
+          worktreePath: wtPath,
+          taskId: job.taskId,
+        });
+        if (gate.kind === "fail") {
           return {
             ok: false,
-            reason: "could not resolve candidate HEAD before remote validation",
+            retryable: gate.retryable,
+            reason: gate.retryable
+              ? `${gate.detail} — the branch IS merged into the candidate; retrying resumes from the check step`
+              : gate.detail,
           };
         }
-        const remote = await this.remoteValidator.validate({
-          taskId: job.taskId,
-          worktreePath: wtPath,
-          candidateSha: headRes.stdout.trim(),
-        });
-        if (remote.ok) {
-          skipTestsLocally = true;
-        } else if (remote.transient && !this.config.remoteValidation.fallbackToLocal) {
-          return {
-            ok: false,
-            retryable: true,
-            reason: `${remote.detail ?? "remote validation unavailable"} — the branch IS merged into the candidate; retrying resumes from the check step`,
-          };
-        } else if (!remote.transient) {
-          return {
-            ok: false,
-            retryable: false,
-            reason: `remote validation failed: ${remote.detail ?? "build or test suite failed on the runner"} — fix it in the feature branch and resubmit`,
-          };
-        } else {
-          this.logger?.integration(
-            job.taskId,
-            "warn",
-            "remote validation unavailable — falling back to the full local gate (remoteValidation.fallbackToLocal)",
-            { detail: remote.detail },
-          );
+        if (gate.kind === "local-only") {
+          skipTestsLocally = gate.skipTests;
+          if (!gate.skipTests) {
+            this.logger?.integration(
+              job.taskId,
+              "warn",
+              "remote validation unavailable — falling back to the full local gate (remoteValidation.fallbackToLocal)",
+            );
+          }
         }
       }
 
