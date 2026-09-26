@@ -18,7 +18,7 @@ import {
   compatibilityForContract,
   type AgentCompatibilityContract,
 } from "../../core/agent-compatibility";
-import type { RepoOSConfig } from "../../core/types";
+import { UI_THEMES, type RepoOSConfig } from "../../core/types";
 
 const dirs: string[] = [];
 
@@ -266,6 +266,14 @@ describe("config key and value helpers", () => {
     expect(problems.some((p) => p.includes("strictBuild"))).toBe(true);
     expect(problems.some((p) => p.includes("taskExtensions"))).toBe(true);
     expect(findConfigValueProblems({ defaultStatus: "inbox" })).toEqual([]);
+  });
+
+  it("accepts every UI theme, including gruvbox", () => {
+    for (const uiTheme of UI_THEMES) {
+      expect(findConfigValueProblems({ uiTheme })).toEqual([]);
+    }
+    expect(findConfigValueProblems({ uiTheme: "gruvbox" })).toEqual([]);
+    expect(findConfigValueProblems({ uiTheme: "solarized" })[0]).toContain("uiTheme");
   });
 
   it("collects only non-pass remediations, deduplicated", async () => {
