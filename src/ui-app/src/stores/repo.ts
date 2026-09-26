@@ -915,7 +915,8 @@ export const useRepoStore = defineStore("repo", () => {
       // The reload swap failed and the old server kept serving (no outage).
       // Release the "Restarting…" state so the notice stays actionable.
       restarting.value = false;
-      pushToast("Restart failed — the server kept running the current build", "error");
+      const reason = typeof e.reason === "string" && e.reason ? `: ${e.reason}` : "";
+      pushToast(`Restart failed${reason} — the server kept running the current build`, "error");
       return;
     }
     if (e.type === "built-in.run") {

@@ -143,6 +143,8 @@ const DEFAULT_POLL_MS = 5000;
 const DEFAULT_RETRY_MS = 2000;
 const DEFAULT_GRACE_MS = 2000;
 const DEFAULT_HANDSHAKE_TIMEOUT_MS = 30_000;
+/** Manual reloads should fail visibly sooner than background self-healing. */
+const MANUAL_HANDSHAKE_TIMEOUT_MS = 15_000;
 /** Sustained-health window before a replacement handoff is confirmed. */
 const DEFAULT_CONFIRM_MS = 750;
 const RELOAD_POLL_MS = 150;
@@ -337,7 +339,7 @@ export class ReloadManager {
     if (this.loadedHash === null || current === null || current === this.loadedHash) {
       return { state: "not-stale", reason };
     }
-    void this.reload(reason);
+    void this.reload(reason, opts.manual ? MANUAL_HANDSHAKE_TIMEOUT_MS : undefined);
     return { state: "reloading", reason };
   }
 
@@ -420,7 +422,10 @@ export class ReloadManager {
     }
   }
 
-  private async reload(reason: string): Promise<void> {
+  private async reload(reason: string, handshakeTimeoutMs?: number): Promise<void> {
+    const startedAt = Date.now();
+    const elapsed = (): string => `${Date.now() - startedAt}ms`;
+    this.log(`reload: starting (${reason})`);
     if (this.reloading || this.stopped) return;
     this.reloading = true;
     this.pending = false;
@@ -429,7 +434,7 @@ export class ReloadManager {
     if (!entry) {
       this.reloading = false;
       this.notifyCloseOutWaiters();
-      this.log("reload: could not locate the repoos CLI — staying on this build");
+      this.log(`reload: could not locate the repoos CLI at ${elapsed()} — staying on this build`);
       return;
     }
     const secret = randomBytes(16).toString("hex");
@@ -463,7 +468,9 @@ export class ReloadManager {
       );
     } catch (err) {
       this.reloading = false;
-      this.log(`reload: could not spawn the replacement: ${(err as Error).message}`);
+      this.log(
+        `reload: could not spawn the replacement at ${elapsed()}: ${(err as Error).message}`,
+      );
       return;
     }
     this.child = child;
@@ -479,9 +486,9 @@ export class ReloadManager {
     });
 
     this.log(
-      `reload: spawning replacement pid ${child.pid ?? "unknown"} on ${this.options.host}:${this.options.port} (${reason})`,
+      `reload: spawning replacement pid ${child.pid ?? "unknown"} on ${this.options.host}:${this.options.port} (${reason}); handshake timeout ${handshakeTimeoutMs ?? DEFAULT_HANDSHAKE_TIMEOUT_MS}ms`,
     );
-    const confirmed = await this.waitForReplacement(secret);
+    const confirmed = await this.waitForReplacement(secret, handshakeTimeoutMs);
 
     // #0096: a confirmed handshake is only trustworthy when the replacement
     // process is still alive at the moment of handover. If it died during the
@@ -511,7 +518,7 @@ export class ReloadManager {
       this.stopped = true;
       child.unref?.();
       this.log(
-        `reload: replacement is up on ${this.options.host}:${this.options.port} — handing over`,
+        `reload: replacement is up on ${this.options.host}:${this.options.port} at ${elapsed()} — handing over`,
       );
       await this.options.onReloadConfirmed();
     } else {
@@ -541,7 +548,7 @@ export class ReloadManager {
       this.backoffUntil = Date.now() + backoffMs;
       this.log(
         `reload: replacement failed to become ready${rebound === "bound" ? "" : ` — ${rebound} (server may be down)`}` +
-          ` — backing off ${Math.round(backoffMs / 1000)}s (${this.consecutiveFailures} consecutive failure${this.consecutiveFailures === 1 ? "" : "s"})`,
+          ` after ${elapsed()} — backing off ${Math.round(backoffMs / 1000)}s (${this.consecutiveFailures} consecutive failure${this.consecutiveFailures === 1 ? "" : "s"})`,
       );
       this.options.onReloadFailed?.(
         rebound === "bound"
@@ -565,8 +572,9 @@ export class ReloadManager {
    * treated as a failed reload — the parent re-binds and keeps serving rather
    * than handing over to a process that will leave the port listenerless.
    */
-  private async waitForReplacement(secret: string): Promise<boolean> {
-    const deadline = Date.now() + (this.options.handshakeTimeoutMs ?? DEFAULT_HANDSHAKE_TIMEOUT_MS);
+  private async waitForReplacement(secret: string, timeoutMs?: number): Promise<boolean> {
+    const deadline =
+      Date.now() + (timeoutMs ?? this.options.handshakeTimeoutMs ?? DEFAULT_HANDSHAKE_TIMEOUT_MS);
     const graceUntil = Date.now() + (this.options.graceMs ?? DEFAULT_GRACE_MS);
     const confirmMs = this.options.confirmMs ?? DEFAULT_CONFIRM_MS;
     const url = `http://${this.options.host}:${this.options.port}/api/health?reload=${secret}`;
