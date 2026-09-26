@@ -121,11 +121,13 @@ it — both quiet, since a theme that isn't checked just isn't reported on:
   comment between declarations — a comment line corrupts the key that follows it
   and drops that token from the check.
 
-Write the colors a `contrastPairs` token resolves to in hex, or in `rgb()`/`rgba()`
-with no spaces after the commas. A spaced `rgba(110, 157, 106, 0.22)` — which is
-how most formatters, including this repo's, write it — does not parse, and a pair
-whose color can't be read is skipped rather than failed. A gradient is judged on
-its worst stop, but only the stops that parse are considered.
+A `contrastPairs` token may resolve to hex (including 8-digit `#rrggbbaa`) or
+`rgb()`/`rgba()`, spaced or not. A color the guard cannot read is *skipped*
+rather than failed, so an unparseable value means the pair is never checked —
+prefer 8-digit hex over a low-alpha `rgba()` when a pair's background needs
+transparency, since it is unambiguous. Semi-transparent colors are composited
+over the `backdropToken` (the page background) before contrast is measured. A
+gradient is judged on its worst stop, and every stop counts.
 
 The **UI smoke test** is a command only you can know. Declare it either way:
 

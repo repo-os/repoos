@@ -42,6 +42,11 @@ export const DESIGN_THEMES: DesignTheme[] = [
   { id: "gen z", label: "Gen Z" },
   { id: "jelly", label: "Jelly" },
   { id: "gruvbox", label: "Gruvbox" },
+  // Catppuccin's two flavours are one design language with both appearances
+  // (Mocha dark / Latte light), like gruvbox — so the existing dark/light
+  // control switches between them and `repoos check` checks both. See the
+  // catppuccin block in style.css for why the two differ in more than hue.
+  { id: "catppuccin", label: "Catppuccin" },
 ];
 
 /** How many themes a user may star as favorites (#0255). */
