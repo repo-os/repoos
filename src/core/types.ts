@@ -24,7 +24,7 @@ export type Theme = "dark" | "light" | "system";
 
 /** Visual design language of the web UI. */
 /** Every UI theme. `repoos doctor` validates `uiTheme` against this list. */
-export const UI_THEMES = ["classic", "clear", "gen z", "jelly", "gruvbox"] as const;
+export const UI_THEMES = ["classic", "clear", "gen z", "jelly", "gruvbox", "catppuccin"] as const;
 export type UiTheme = (typeof UI_THEMES)[number];
 
 /** Which flow the New task drawer opens with. */
@@ -357,7 +357,7 @@ export interface RepoOSConfig {
   ntfyBaseUrl?: string;
   /** UI theme preference: dark, light, or system (follow OS). Cosmetic only. */
   theme?: Theme;
-  /** UI design language: classic, clear, gen z, jelly, or gruvbox. Cosmetic only. */
+  /** UI design language: classic, clear, gen z, jelly, gruvbox, or catppuccin. Cosmetic only. */
   uiTheme?: UiTheme;
   /** New-task drawer mode: freeform (PM agent) or manual form. Default "freeform". */
   defaultTaskMode?: TaskMode;
