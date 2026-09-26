@@ -1,4 +1,5 @@
 ---
+number: "0002"
 name: Story numbers and deep links
 created_at: "2026-09-24T15:46:29.566Z"
 created_by: hello@repoos.org
