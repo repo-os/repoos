@@ -5248,14 +5248,6 @@
 .agent-tool.error .agent-tool-name {
   color: var(--red);
 }
-.agent-tool-cmd {
-  color: var(--txt-dim);
-  font-family: "JetBrains Mono", monospace;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-}
 .agent-tool-state {
   margin-left: auto;
   font-size: 9.5px;
