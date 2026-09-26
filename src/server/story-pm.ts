@@ -10,6 +10,11 @@
  * Which stories are mid-flesh-out is held in memory only: a server reload
  * drops the run (the placeholder stays, exactly what a failed run leaves), and
  * the "PM is working" indicator clears with it rather than sticking forever.
+ *
+ * The story panel's PM chat (#0515) raises the same indicator but is tracked
+ * separately — per session key, in `story-definition-files.ts` — so one user
+ * exiting a chat never clears another user's still-running turn on the same
+ * story. This module owns only the flesh-out.
  */
 import { join } from "node:path";
 import type { Agent, RepoOSConfig } from "../core/types.js";
@@ -37,6 +42,8 @@ export interface StoryPmDeps {
   logger: Logger;
   emitEvent: (e: RepoEvent) => void;
 }
+
+/** Live story PM chat sessions live in `story-definition-files.ts`. */
 
 export interface StoryPmRun {
   /** The placeholder definition's repo-relative path. */
