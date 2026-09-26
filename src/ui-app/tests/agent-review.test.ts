@@ -184,6 +184,91 @@ async function waitForAsync(fn: () => Promise<boolean>, label: string): Promise<
   }
 }
 
+/**
+ * #0507: a move into `review` is a REQUEST, not a write — the server runs the
+ * handoff finalization and only that writes `status: review`, so the reviewer
+ * is not triggered by the PATCH but by the finalization landing.
+ *
+ * `skipChecks` is used so these fixtures never shell out to a real
+ * `repoos check`; nothing here is about the check. The wait is the real one,
+ * because every assertion downstream — the review trigger, auto-bounce, the
+ * reviewer chat — hangs off the actual transition.
+ *
+ * The budget is generous on purpose. Even with the check skipped, the
+ * finalization resolves the worktree, runs the commit/vacuity gate and writes
+ * two task files: ~10 `git` subprocess spawns. Each one costs ~200ms inside a
+ * vitest worker under Bun versus ~4ms in a plain process, so this is a few
+ * seconds of pure test-harness overhead, and a busy machine multiplies it. A
+ * real hang is unbounded, so the ceilings below still catch one; tight ones only
+ * caught the harness — which is how this read as a "finalization that never
+ * completes" bug for a while. Every test that calls this helper therefore also
+ * carries a 90s per-test timeout.
+ */
+async function requestReview(server: ServerHandle, id: string, absPath?: string): Promise<void> {
+  const res = await api(server, "PATCH", `/api/tasks/${id}`, {
+    status: "review",
+    skipChecks: true,
+  });
+  expect(res.status).toBe(202);
+  expect(res.body.status).toBe("active");
+  const deadline = Date.now() + 30_000;
+  while ((await api(server, "GET", `/api/tasks/${id}`)).body.status !== "review") {
+    if (Date.now() > deadline) {
+      // Say what the board says AND what the file says. `pendingHandoff` true
+      // means the finalization is still running; false with status `active`
+      // means it finished and something moved the task back (or refused it) —
+      // and the file's Activity log is where that reason is recorded.
+      const t = await api(server, "GET", `/api/tasks/${id}`);
+      const tail = absPath
+        ? `\n--- file ---\n${readFileSync(absPath, "utf8").split("\n## ")[0]}`
+        : "";
+      throw new Error(
+        `timed out waiting for #${id} to reach review (status=${t.body.status}, ` +
+          `pendingHandoff=${t.body.pendingHandoff})${tail}`,
+      );
+    }
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+}
+
+/**
+ * Ask for review where the reviewer's verdict is expected to bounce the task
+ * straight back to `active`.
+ *
+ * These two tests cannot wait for an observable `review` state, and the reason
+ * is worth recording: the finalization writes `status: review`, the review
+ * agent runs, and the auto-bounce writes `active` again — all inside a single
+ * poll interval at this harness's timing. A `requestReview` here fails
+ * intermittently for a reason that has nothing to do with the code under test,
+ * and asserting on a state that exists for milliseconds is asserting on nothing.
+ *
+ * So wait for the CONSEQUENCE, which is unambiguous: `review_rounds: 1` is only
+ * ever written by a completed review run on a task that reached `review`, so it
+ * proves the finalization ran AND the review triggered on the transition. The
+ * per-test assertions that follow check the rest of the shape.
+ */
+async function requestReviewExpectingBounce(
+  server: ServerHandle,
+  task: { id: string; absPath: string },
+): Promise<void> {
+  const res = await api(server, "PATCH", `/api/tasks/${task.id}`, {
+    status: "review",
+    skipChecks: true,
+  });
+  expect(res.status).toBe(202);
+  expect(res.body.status).toBe("active");
+  const deadline = Date.now() + 30_000;
+  while (!/^review_rounds: 1$/m.test(readFileSync(task.absPath, "utf8"))) {
+    if (Date.now() > deadline) {
+      throw new Error(
+        `timed out waiting for #${task.id} to be auto-bounced back to active ` +
+          `(file: ${readFileSync(task.absPath, "utf8").split("\n## ")[0]})`,
+      );
+    }
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+}
+
 /** Run `fn` with the fixture's fake binaries on PATH and the server booted. */
 async function withServer(fx: Fixture, fn: (server: ServerHandle) => Promise<void>): Promise<void> {
   const oldPath = process.env.PATH ?? "";
@@ -207,8 +292,7 @@ describe("agent review before human sign-off (#0101)", () => {
     await withServer(fx, async (server) => {
       const task = await taskWithWorktree(server, fx, "Review me");
 
-      const patched = await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "review" });
-      expect(patched.status).toBe(200);
+      await requestReview(server, task.id, task.absPath);
 
       const reportFile = join(fx.root, ".repoos", "reviews", `${task.id}.md`);
       await waitFor(() => existsSync(reportFile), "the review report is written");
@@ -250,7 +334,7 @@ describe("agent review before human sign-off (#0101)", () => {
       const after = await api(server, "GET", `/api/tasks/${task.id}`);
       expect(after.body.status).toBe("review");
     });
-  });
+  }, 90_000);
 
   it("runs no review when the review agent is disabled on the Agents page", async () => {
     const fx = makeFixture(printReport);
@@ -272,8 +356,7 @@ describe("agent review before human sign-off (#0101)", () => {
     await withServer(fx, async (server) => {
       const task = await taskWithWorktree(server, fx, "Do not review me");
 
-      const patched = await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "review" });
-      expect(patched.status).toBe(200);
+      await requestReview(server, task.id, task.absPath);
 
       // Give the trigger the same window the enabled case needs to spawn.
       await new Promise((r) => setTimeout(r, 750));
@@ -289,7 +372,7 @@ describe("agent review before human sign-off (#0101)", () => {
       expect(again.status).toBe(400);
       expect(again.body.error).toMatch(/disabled/i);
     });
-  });
+  }, 90_000);
 
   it("puts the task back in review if the review agent moves it to done", async () => {
     // A review agent that oversteps: it marks the task done before reporting.
@@ -302,8 +385,7 @@ ${printReport}`,
       const task = await taskWithWorktree(server, fx, "Overstepping reviewer");
       process.env.REPOOS_FAKEBIN_TASKFILE = task.absPath;
 
-      const patched = await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "review" });
-      expect(patched.status).toBe(200);
+      await requestReview(server, task.id, task.absPath);
 
       await waitFor(
         () => existsSync(join(fx.root, ".repoos", "reviews", `${task.id}.md`)),
@@ -320,14 +402,14 @@ ${printReport}`,
       expect(readFileSync(task.absPath, "utf8")).toMatch(/^status: review$/m);
       expect(spawns(fx).filter((s) => s.args.includes("--auto")).length).toBe(1);
     });
-  });
+  }, 90_000);
 
   it("records the failure when the review agent produces nothing", async () => {
     const fx = makeFixture(`process.stderr.write("boom\\n"); process.exit(3);`);
     await withServer(fx, async (server) => {
       const task = await taskWithWorktree(server, fx, "Failing reviewer");
 
-      await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "review" });
+      await requestReview(server, task.id, task.absPath);
       await waitFor(
         () => existsSync(join(fx.root, ".repoos", "reviews", `${task.id}.md`)),
         "the failure is recorded",
@@ -340,7 +422,7 @@ ${printReport}`,
       expect(readFileSync(task.absPath, "utf8")).toMatch(/^status: review$/m);
       expect(readFileSync(task.absPath, "utf8")).not.toMatch(/^review_passes:/m);
     });
-  });
+  }, 90_000);
 
   it("persists partial output as incomplete when no verdict is present", async () => {
     const partial = [
@@ -354,7 +436,7 @@ ${printReport}`,
     await withServer(fx, async (server) => {
       const task = await taskWithWorktree(server, fx, "Partial reviewer");
 
-      await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "review" });
+      await requestReview(server, task.id, task.absPath);
       await waitFor(
         () => existsSync(join(fx.root, ".repoos", "reviews", `${task.id}.md`)),
         "the partial report is written",
@@ -374,7 +456,7 @@ ${printReport}`,
       const again = await api(server, "POST", `/api/tasks/${task.id}/review/again`);
       expect(again.status).toBe(200);
     });
-  });
+  }, 90_000);
 
   it("rejects move-to-done while automatic review is still running without cancelling it", async () => {
     // The fake reviewer must outlive the 409 assertions below, and the index
@@ -387,7 +469,7 @@ ${printReport}`,
       const task = await taskWithWorktree(server, fx, "Wait for reviewer");
       // The review's process itself is the authoritative in-flight signal;
       // wait for it so this assertion cannot race the trigger.
-      await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "review" });
+      await requestReview(server, task.id, task.absPath);
       await waitForReviewRunning(server, task.id, true);
 
       // `/api/index` is rebuilt asynchronously after the review starts, so the
@@ -425,7 +507,7 @@ ${printReport}`,
       await waitForReviewRunning(server, task.id, false);
       expect((await getReview(server, task.id)).review?.state).toBe("ok");
     });
-  });
+  }, 90_000);
 
   it("has nothing to review for a task with no worktree", async () => {
     const fx = makeFixture(printReport);
@@ -436,13 +518,28 @@ ${printReport}`,
       });
       const id = created.body.id as string;
 
-      await api(server, "PATCH", `/api/tasks/${id}`, { status: "review" });
+      // #0507 makes this unreachable as a *transition*, which is the point: a
+      // task with no branch has nothing to commit and nothing to check, so the
+      // handoff finalization refuses it and the task stays `active`. The
+      // reviewer therefore has nothing to review, for a stronger reason than
+      // before — not "it landed in review and found no worktree" but "it never
+      // landed in review at all".
+      const res = await api(server, "PATCH", `/api/tasks/${id}`, {
+        status: "review",
+        skipChecks: true,
+      });
+      expect(res.status).toBe(202);
       await new Promise((r) => setTimeout(r, 750));
 
+      expect((await api(server, "GET", `/api/tasks/${id}`)).body.status).toBe("active");
       expect(spawns(fx)).toEqual([]);
       const served = await getReview(server, id);
       expect(served.enabled).toBe(true);
       expect(served.review).toBeNull();
+      // The refusal is recorded, not swallowed.
+      expect(readFileSync(created.body.absPath as string, "utf8")).toMatch(
+        /no branch to finalize from/,
+      );
     });
   });
 
@@ -481,7 +578,7 @@ else process.stdout.write(${JSON.stringify(reportB)} + "\\n");
 `);
     await withServer(fx, async (server) => {
       const task = await taskWithWorktree(server, fx, "Re-review me");
-      await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "review" });
+      await requestReview(server, task.id, task.absPath);
       await waitFor(
         () => existsSync(join(fx.root, ".repoos", "reviews", `${task.id}.md`)),
         "the first review report is written",
@@ -508,7 +605,7 @@ else process.stdout.write(${JSON.stringify(reportB)} + "\\n");
       // true per-pass counter used by the D# · R# badge.
       expect(readFileSync(task.absPath, "utf8")).toMatch(/^review_passes: 2$/m);
     });
-  });
+  }, 90_000);
 
   it("returns a task to active when review findings are auto-bounced to the engineer", async () => {
     const needsWorkReport = [
@@ -542,13 +639,7 @@ else process.stdout.write(${JSON.stringify(needsWorkReport)} + "\\n");
         const running = (await response.json()) as { tasks: Array<{ id: string }> };
         return !running.tasks.some((entry) => entry.id === task.id);
       }, "the initial engineer turn exits");
-      const patched = await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "review" });
-      expect(patched.status).toBe(200);
-
-      await waitForAsync(
-        async () => (await api(server, "GET", `/api/tasks/${task.id}`)).body.status === "active",
-        "auto-bounce moves task to active",
-      );
+      await requestReviewExpectingBounce(server, task);
 
       const taskFile = readFileSync(task.absPath, "utf8");
       expect(taskFile).toMatch(/^status: active$/m);
@@ -562,7 +653,7 @@ else process.stdout.write(${JSON.stringify(needsWorkReport)} + "\\n");
       await new Promise((resolve) => setTimeout(resolve, 250));
       expect(readFileSync(task.absPath, "utf8")).toMatch(/^status: active$/m);
     });
-  });
+  }, 90_000);
 
   it("returns a task to active when the verdict is back to the drawing board", async () => {
     const rejectReport = [
@@ -596,12 +687,7 @@ else process.stdout.write(${JSON.stringify(rejectReport)} + "\\n");
         const running = (await response.json()) as { tasks: Array<{ id: string }> };
         return !running.tasks.some((entry) => entry.id === task.id);
       }, "the initial engineer turn exits");
-      await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "review" });
-
-      await waitForAsync(
-        async () => (await api(server, "GET", `/api/tasks/${task.id}`)).body.status === "active",
-        "auto-bounce moves task to active",
-      );
+      await requestReviewExpectingBounce(server, task);
 
       const taskFile = readFileSync(task.absPath, "utf8");
       expect(taskFile).toMatch(/^status: active$/m);
@@ -611,7 +697,7 @@ else process.stdout.write(${JSON.stringify(rejectReport)} + "\\n");
         true,
       );
     });
-  });
+  }, 90_000);
 
   it("routes reviewer chat to its own session and serves the conversation", async () => {
     const report = [
@@ -636,7 +722,7 @@ else process.stdout.write(${JSON.stringify(reply)} + "\\n");
 `);
     await withServer(fx, async (server) => {
       const task = await taskWithWorktree(server, fx, "Chat with reviewer");
-      await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "review" });
+      await requestReview(server, task.id, task.absPath);
       await waitFor(
         () => existsSync(join(fx.root, ".repoos", "reviews", `${task.id}.md`)),
         "the review report is written",
@@ -682,5 +768,5 @@ else process.stdout.write(${JSON.stringify(reply)} + "\\n");
       const output = await api(server, "GET", `/api/tasks/${task.id}/output`);
       expect(output.body.lines).toEqual([]);
     });
-  });
+  }, 90_000);
 });

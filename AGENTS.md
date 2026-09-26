@@ -16,9 +16,16 @@ Two kinds of agent read this file, and some rules apply to only one:
 - **RepoOS task-runner agents** — spawned by the RepoOS server to work a
   specific task. You have a task id, a dedicated worktree, and a task
   transcript. The operating loop below, the `status:` frontmatter moves, the
-  `::repoos-preview-request::` signal, and "never run `repoos serve` yourself"
-  are all yours — the server enforces them and rejects direct serve attempts
-  from your process.
+  handoff request, the `::repoos-preview-request::` signal, and "never run
+  `repoos serve` yourself" are all yours — the server enforces them and rejects
+  direct serve attempts from your process. **You never move your own task out of
+  `active`.** Run the scoped check, then hand off with
+  `repoos mv <your task id> review` (or by finishing your reply with the
+  `::repoos-handoff-ready::` signal) and end your turn: both record a *request*,
+  and RepoOS runs the checks, commits the branch and moves the status itself.
+  Writing `status: review` yourself is a different path — it still goes through
+  the same checks, but it does not wait for your turn to end, so it can cut the
+  turn short.
 - **Interactive / external agent sessions** — a human is driving you directly
   (Claude Code, Codex CLI, Cursor, …) in an ordinary checkout. You have no
   task id and no managed preview. Skip the task-lifecycle mechanics; when a
@@ -70,7 +77,7 @@ RepoOS's own; in a managed repo it is that project's. See `docs/README.md`.
 3. Set its `status: active` (edit the frontmatter; do not move the file).
 4. Create a worktree on the branch named in the task's `branch:` field, or set one.
 5. Run `repoos check` and confirm it passes (the check plan declared in `repoos.toml`: build, typecheck, tests, UI smoke test). Then implement → if the repo has a git remote, open an MR/PR against `main`.
-6. Set `status: review` when ready for human sign-off, and only after a green `repoos check`. **Leave the worktree open and do not merge its branch yourself** — see "Review and sign-off" below.
+6. When ready for human sign-off, and only after a green `repoos check`, run `repoos mv <id> review` (or finish your reply with the `::repoos-handoff-ready::` signal) and stop. **That records a handoff request; it does not set the status.** RepoOS re-runs the check, commits the branch and moves the task to `review` when your turn ends. The task stays `active` with a "running checks…" state until then, and stays `active` with the failure shown if the check fails. **Leave the worktree open and do not merge its branch yourself** — see "Review and sign-off" below.
 
 ## Review and sign-off (review → done)
 
@@ -89,11 +96,11 @@ straight back into `review`.
 
 **No git remote (the common RepoOS case):**
 
-- Implementer: set `status: review`, leave the worktree open, stop. Do not merge
-  its branch.
+- Implementer: hand off (`repoos mv <id> review` or the signal), leave the
+  worktree open, stop. Do not merge its branch.
 - Reviewer: review the diff, run `repoos check`. If changes are needed, request
   them; the implementer fixes them on the SAME worktree, re-runs `repoos check`, and
-  re-sets `review` (still not merged).
+  hands off again (still not merged).
 - Approval: the reviewer says **"move task <id> to done"**. Only then the
   implementer:
   1. sets `status: done` + activity entry and commits `docs(<id>): set status done`;
@@ -381,13 +388,15 @@ cannot tell from the code alone:
   bulk suite at the configured pool size, then the latency-sensitive suites
   (`boot-timing.test.ts`) alone at one worker — with `REPOOS_STRICT_TIMING=1` —
   so their absolute wall-clock ceilings aren't blown by pool contention.
-  `boot-timing.test.ts` **skips itself unless `REPOOS_STRICT_TIMING=1`**, so a
-  raw `bun run test:vitest` (single-pass) or an ad-hoc `vitest boot-timing`
-  won't run it and can't produce a spurious timing failure — run it directly
-  with `REPOOS_STRICT_TIMING=1 bunx vitest boot-timing` (`bunx`, not `npx` —
-  this repo defaults to Bun everywhere; a bare `npx` on this machine resolves
-  to a Node-based npx binary, which is fine for most single-file runs but
-  defeats the point for a *latency*-sensitive suite like this one). Extra args
+  In `boot-timing.test.ts` only the **wall-clock** test skips without
+  `REPOOS_STRICT_TIMING=1`, so a raw `bun run test:vitest` (single-pass) or an
+  ad-hoc `vitest boot-timing` can't produce a spurious timing failure. Its
+  sibling — the #0330 boot-ordering test — deliberately does *not* skip: it
+  makes no wall-clock claim, so it runs everywhere. Run the file directly with
+  `REPOOS_STRICT_TIMING=1 bunx vitest boot-timing` (`bunx`, not `npx` — this
+  repo defaults to Bun everywhere; a bare `npx` on this machine resolves to a
+  Node-based npx binary, which is fine for most single-file runs but defeats
+  the point for a *latency*-sensitive suite like this one). Extra args
   (`--changed <ref>`) forward to both passes.
 - Language: TypeScript, NodeNext modules — imports use `.js` extensions even
   for `.ts` source (this is correct, not a bug).
@@ -400,7 +409,9 @@ cannot tell from the code alone:
 - UI sitemap: routes are declared in `src/ui-app/src/router.ts` (path → view),
   each view is one `src/ui-app/src/views/*View.vue`, and the left-nav order +
   which links show is in `src/ui-app/src/nav.ts` (some entries are conditional,
-  e.g. Releases only appears when a release provider is configured). To find the
+  e.g. Releases only appears when a release provider is configured). Context
+  (`/repo`, `ContextView.vue`) has Docs, Skills, Discover, and History tabs;
+  commit diffs reuse `DiffView.vue` at `/repo/commits/:sha`. To find the
   code behind a screen, grep `router.ts` for the path or `views/` for the name.
   Dialog/modal content is body-teleported, so its CSS lives in
   `src/ui-app/src/style.css`, not the view's `<style scoped>` block.
@@ -519,6 +530,21 @@ pass, `bun run --bun vitest run` 2/2 fail. Fixed by making
 `scripts/run-tests.mjs` self-re-exec onto Bun whenever it's resolvable
 (mirroring `reexecUnderBunIfRequested()` in `src/core/runtime.ts`), so
 every invocation path now converges on one runtime — see `docs/architecture.md`.
+
+**The sequel (#0330), and the general lesson underneath it.** Converging the
+runtimes stopped the *symptom* but left the actual defect: the assertion was a
+race, and which side won depended on how fast the box and the runtime were, so
+the test measured the machine rather than RepoOS. The fix was to stop racing
+rather than to keep the two runtimes honest — `startServer` now takes a
+test-only `indexBuildGate`, awaited inside `LiveIndex.refreshAllAsync` after
+the build finishes and immediately before its result is swapped in. A test can
+hold the build at that point indefinitely, which makes "the listener bound
+before the index was populated" a hard fact: the build provably got all the
+way to the swap, the index provably has not been published, so if `listen()`
+fired at all, it did not wait. **When a test's verdict flips with runtime
+speed, the fix is usually to remove the race, not to reconcile the
+environments** — a passing-under-Node suite that is meant to hold under Bun is
+one machine-fingerprint away from shipping the bug it was written to catch.
 
 **The general lesson:** "it passes for me but fails in the pipeline" is a
 version/environment difference far more often than it is flakiness. Reproduce

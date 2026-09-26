@@ -109,11 +109,24 @@ const LANGUAGE_LOADERS: Record<SupportedLanguage, () => Promise<unknown>> = {
 };
 
 /**
- * Dual themes, applied in a single pass via CSS variables. `github-dark-default`
- * matches the diff surface's dark palette; `github-light-default` is its light
- * counterpart. See the `.diff-tok` rules in `style.css` for the switch.
+ * Themes tokenized in a single pass and exposed as CSS variables, so switching
+ * appearance never re-tokenizes (the whole point of `codeToTokensWithThemes`).
+ *
+ * Four themes, two light/dark pairs. `light`/`dark` are the GitHub defaults every
+ * design theme inherits; `catppuccinLight`/`catppuccinDark` are shiki's bundled
+ * Catppuccin themes, used when the Catppuccin design theme is active (#0516) so
+ * code blocks come from the same palette as the chrome around them instead of
+ * hand-picked colours. `style.css` picks the pair via `[data-ui-theme]`.
+ *
+ * The two extra themes only load in the lazily-imported highlighter chunk (the
+ * first diff a user opens), not in the app shell.
  */
-const THEMES = { light: "github-light-default", dark: "github-dark-default" } as const;
+const THEMES = {
+  light: "github-light-default",
+  dark: "github-dark-default",
+  catppuccinLight: "catppuccin-latte",
+  catppuccinDark: "catppuccin-mocha",
+} as const;
 
 /**
  * Upper bound on a single before/after pair. The JS regex engine tokenizes
@@ -156,10 +169,14 @@ function tokenStyle(variants: SyntaxToken["variants"]): string {
   if (!variants) return "";
   const light = variants.light?.color;
   const dark = variants.dark?.color;
+  const catppuccinLight = variants.catppuccinLight?.color;
+  const catppuccinDark = variants.catppuccinDark?.color;
   const fontStyle = variants.light?.fontStyle ?? variants.dark?.fontStyle ?? 0;
   const parts: string[] = [];
   if (light) parts.push(`--shiki-light:${light}`);
   if (dark) parts.push(`--shiki-dark:${dark}`);
+  if (catppuccinLight) parts.push(`--shiki-catppuccin-light:${catppuccinLight}`);
+  if (catppuccinDark) parts.push(`--shiki-catppuccin-dark:${catppuccinDark}`);
   if (fontStyle & FONT_ITALIC) parts.push("font-style:italic");
   if (fontStyle & FONT_BOLD) parts.push("font-weight:600");
   const decorations: string[] = [];
@@ -199,6 +216,9 @@ function getCore(): Promise<HighlighterCore> {
         themes: [
           import("@shikijs/themes/github-light-default"),
           import("@shikijs/themes/github-dark-default"),
+          // Catppuccin's own two flavours, for the Catppuccin design theme (#0516).
+          import("@shikijs/themes/catppuccin-latte"),
+          import("@shikijs/themes/catppuccin-mocha"),
         ],
         langs: [],
         engine: createJavaScriptRegexEngine(),

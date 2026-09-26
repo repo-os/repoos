@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useDocsStore } from "../stores/docs";
 import { useUiStore } from "../stores/ui";
 import { renderMarkdown } from "../lib/markdown";
@@ -12,10 +12,13 @@ import Button from "../components/ui/button.vue";
 import Card from "../components/ui/card.vue";
 import NewDocPanel from "../components/NewDocPanel.vue";
 import NewSkillPanel from "../components/NewSkillPanel.vue";
+import RepoHistoryPanel from "../components/RepoHistoryPanel.vue";
 import { RotateCcw, ChevronDown, ChevronRight, File } from "lucide-vue-next";
 
 const docs = useDocsStore();
 const ui = useUiStore();
+const route = useRoute();
+const router = useRouter();
 const {
   docs: docList,
   selDoc,
@@ -28,8 +31,20 @@ const {
   skillDesc,
 } = storeToRefs(docs);
 
-type ContextTab = "docs" | "skills" | "discover";
-const tab = ref<ContextTab>("docs");
+type ContextTab = "docs" | "skills" | "discover" | "history";
+const TABS: ContextTab[] = ["docs", "skills", "discover", "history"];
+function tabFromQuery(raw: unknown): ContextTab {
+  return typeof raw === "string" && (TABS as string[]).includes(raw) ? (raw as ContextTab) : "docs";
+}
+const tab = ref<ContextTab>(tabFromQuery(route.query.tab));
+
+function setTab(next: ContextTab): void {
+  tab.value = next;
+  const query = { ...route.query };
+  if (next === "docs") delete query.tab;
+  else query.tab = next;
+  void router.replace({ query });
+}
 const skillQuery = ref("");
 interface RegistrySkill {
   id: string;
@@ -179,7 +194,6 @@ async function refreshDocs(): Promise<void> {
 
 // Preselect a doc from the URL (?doc=docs/foo.md) — e.g. the Agents page's
 // "Model pricing & use cases" link opens /repo?doc=docs/opencode-models.md.
-const route = useRoute();
 watch(
   docList,
   (list) => {
@@ -204,9 +218,12 @@ watch(
     >
       <div>
         <div class="page-title">Repo Context</div>
-        <div class="page-desc" style="margin: 3px 0 0">AI-readable docs · ADRs · skills</div>
+        <div class="page-desc" style="margin: 3px 0 0">
+          AI-readable docs · ADRs · skills · history
+        </div>
       </div>
       <Button
+        v-if="tab === 'docs' || tab === 'skills'"
         variant="accent"
         class="new-btn"
         @click="tab === 'docs' ? ui.openNewDoc() : ui.openNewSkill()"
@@ -224,12 +241,15 @@ watch(
     </div>
 
     <div class="ctx-tabs">
-      <button class="ctx-tab" :class="{ on: tab === 'docs' }" @click="tab = 'docs'">Docs</button>
-      <button class="ctx-tab" :class="{ on: tab === 'skills' }" @click="tab = 'skills'">
+      <button class="ctx-tab" :class="{ on: tab === 'docs' }" @click="setTab('docs')">Docs</button>
+      <button class="ctx-tab" :class="{ on: tab === 'skills' }" @click="setTab('skills')">
         Skills
       </button>
-      <button class="ctx-tab" :class="{ on: tab === 'discover' }" @click="tab = 'discover'">
+      <button class="ctx-tab" :class="{ on: tab === 'discover' }" @click="setTab('discover')">
         Discover
+      </button>
+      <button class="ctx-tab" :class="{ on: tab === 'history' }" @click="setTab('history')">
+        History
       </button>
       <Button
         v-if="tab === 'docs'"
@@ -244,7 +264,13 @@ watch(
       </Button>
     </div>
 
-    <div class="repo-grid">
+    <div v-if="tab === 'history'" class="hist-wrap">
+      <Card class="hist-card">
+        <RepoHistoryPanel />
+      </Card>
+    </div>
+
+    <div v-else class="repo-grid">
       <Card class="doc-list">
         <template v-if="tab === 'docs'">
           <div v-if="!docList.length" class="ctx-empty">No docs found.</div>
@@ -420,6 +446,23 @@ watch(
 </template>
 
 <style scoped>
+.hist-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.hist-card {
+  flex: 1;
+  min-height: min(70vh, 760px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.hist-card :deep(.hist) {
+  flex: 1;
+  min-height: 0;
+}
+
 .ctx-refresh-btn {
   margin-left: auto;
 }

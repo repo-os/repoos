@@ -16,6 +16,9 @@ import Button from "../components/ui/button.vue";
 import Card from "../components/ui/card.vue";
 import Input from "../components/ui/input.vue";
 import Switch from "../components/ui/switch.vue";
+import ScreenshotViewer from "../components/ScreenshotViewer.vue";
+import ScreenshotExpandButton from "../components/ScreenshotExpandButton.vue";
+import { pendingToShots } from "../lib/screenshot-viewer";
 import AuthSettingsPanel from "../components/AuthSettingsPanel.vue";
 import ServiceSettings from "../components/ServiceSettings.vue";
 import Select from "../components/ui/select/root.vue";
@@ -236,6 +239,13 @@ const bugReportCopied = ref<"title" | "body" | null>(null);
 const bugReportScreenshots = ref<{ name: string; mime: string; size: number; dataUrl: string }[]>(
   [],
 );
+const bugReportViewerOpen = ref(false);
+const bugReportViewerStart = ref(0);
+const bugReportViewerShots = computed(() => pendingToShots(bugReportScreenshots.value));
+function openBugReportViewer(index: number): void {
+  bugReportViewerStart.value = index;
+  bugReportViewerOpen.value = true;
+}
 const bugReportAttachmentHint = ref("");
 const MAX_BUG_REPORT_SCREENSHOTS = 5;
 let copyTimer: ReturnType<typeof setTimeout> | undefined;
@@ -501,6 +511,10 @@ const THEME_SWATCHES: Record<string, { bg: string; a: string; b: string }> = {
   "gen z": { bg: "#241a3d", a: "#ff5df0", b: "#b58cff" },
   jelly: { bg: "#1a2a44", a: "#33e6c4", b: "#ff5eb4" },
   gruvbox: { bg: "#32302f", a: "#fabd2f", b: "#8ec07c" },
+  // Mocha's base/mantle with its blue + mauve accents (#0516). The swatch
+  // previews the dark flavour; picking the theme and then choosing Light in
+  // the dark/light control gives Latte.
+  catppuccin: { bg: "#1e1e2e", a: "#89b4fa", b: "#cba6f7" },
 };
 function swatchFor(id: string): { bg: string; a: string; b: string } {
   return THEME_SWATCHES[id] ?? { bg: "var(--panel-solid)", a: "var(--cyan)", b: "var(--violet)" };
@@ -1409,13 +1423,21 @@ onUnmounted(() => {
                   :key="screenshot.name + screenshot.size + index"
                   class="bug-report-screenshot"
                 >
-                  <img :src="screenshot.dataUrl" :alt="screenshot.name" />
+                  <img
+                    :src="screenshot.dataUrl"
+                    :alt="screenshot.name"
+                    @click="openBugReportViewer(index)"
+                  />
+                  <ScreenshotExpandButton
+                    :name="screenshot.name"
+                    @click="openBugReportViewer(index)"
+                  />
                   <figcaption :title="screenshot.name">{{ screenshot.name }}</figcaption>
                   <button
                     type="button"
                     class="bug-report-remove-screenshot"
                     :aria-label="`Remove ${screenshot.name}`"
-                    @click="removeBugReportScreenshot(index)"
+                    @click.stop="removeBugReportScreenshot(index)"
                   >
                     Remove
                   </button>
@@ -1713,4 +1735,9 @@ onUnmounted(() => {
       </div>
     </div>
   </div>
+  <ScreenshotViewer
+    v-model:open="bugReportViewerOpen"
+    :shots="bugReportViewerShots"
+    :start-index="bugReportViewerStart"
+  />
 </template>

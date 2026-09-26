@@ -1,13 +1,15 @@
 ---
+resolved_task: "0518"
+resolution: "task"
 area: "sidebar"
 id: "mui5cnj3-quh81"
 number: "0029"
 title: "Sidebar: alert counts overlap server name when narrow; color bar shifts layout"
-status: new
+status: "processed"
 type: "improvement"
 created_by: "hello@repoos.org"
 created_at: "2026-09-26T08:47:39.807Z"
-updated_at: "2026-09-26T08:47:44.021Z"
+updated_at: "2026-09-26T09:41:46.580Z"
 ---
 
 2 things:
