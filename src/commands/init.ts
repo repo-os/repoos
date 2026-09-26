@@ -119,8 +119,9 @@ ${
    architecture note. Keep them specific to this project.
 4. Break the result into a handful of concrete tasks with
    \`repoos new "<title>"\`, and move the ones that are ready into \`ready\`.
-5. Record the docs you wrote here, then move this task to \`review\` (or
-   \`done\` if there is genuinely nothing left to capture).
+5. Record the docs you wrote here, then hand this task off with
+   \`repoos mv <id> review\` and stop — RepoOS runs the checks and moves the
+   status (or \`done\` if there is genuinely nothing left to capture).
 
 ## Notes for AI
 
@@ -164,8 +165,9 @@ then turn what's missing into work.
    conventions anyone working here must follow.
 3. Draft a small starter backlog of real tasks with \`repoos new "<title>"\`,
    each concrete enough to work on its own.
-4. Record what you wrote here, then move this task to \`review\` (or \`done\` if
-   there is nothing left to capture).
+4. Record what you wrote here, then hand this task off with
+   \`repoos mv <id> review\` and stop — RepoOS runs the checks and moves the
+   status (or \`done\` if there is nothing left to capture).
 
 ## Notes for AI
 
@@ -185,13 +187,23 @@ repo itself is the source of truth. This file tells AI agents how to operate.
 2. Pick a task from \`${workDir}/\` whose \`status: ready\`.
 3. Set its \`status: active\` (edit the frontmatter; do not move the file).
 4. Create a worktree on the branch named in the task's \`branch:\` field, or set one.
-5. Implement → test → if the repo has a git remote, open an MR/PR against main.
-6. Set \`status: review\` when ready for human sign-off. **Leave the worktree open; do NOT merge its branch.**
+5. Run \`repoos check\` and confirm it passes, then implement → test → if the repo
+   has a git remote, open an MR/PR against main.
+6. When ready for human sign-off, run \`repoos mv <id> review\` and stop. **That
+   records a handoff request; it does not set the status.** RepoOS re-runs the
+   check, commits the branch and moves the task to \`review\`. The task stays
+   \`active\` until then, and stays \`active\` with the failure shown if the check
+   fails. **Leave the worktree open; do NOT merge its branch.**
 
 ## Review and sign-off
 
 A \`review\` task stays in its open worktree until a human (or another AI) signs
 off; the implementer never merges to \`main\` at \`review\` time.
+
+Every route into \`review\` — the Review button, a board drag, a
+\`PATCH status: review\`, \`repoos mv\`, or an agent's handoff signal — runs the
+same finalization: scoped \`repoos check\`, then the commit guard, then
+\`review\`. Nothing reaches \`review\` on the commit guard alone.
 
 - No git remote: on approval, the reviewer says **"move task <id> to done"**. The
   implementer then sets \`status: done\` (commit \`docs(<id>): set status done\`),
@@ -202,7 +214,7 @@ off; the implementer never merges to \`main\` at \`review\` time.
   <id> to done"), then remote + local branches are deleted and \`status\` is set
   to \`done\`.
 - Requested changes are fixed on the same worktree, tests re-run, and the task
-  re-set to \`review\`.
+  handed off again.
 - If the \`reviewer\` agent is enabled on the Agents page, RepoOS reviews the
   task automatically when it lands in \`review\` and shows a short report (bugs,
   edge cases, suggestions) in the task drawer. It is advisory: the human still

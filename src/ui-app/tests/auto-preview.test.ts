@@ -85,6 +85,13 @@ created_by: test
 branch: ${branch}
 ---
 `;
+    // The task file goes in the worktree too, exactly as a worktree provisioned
+    // by `/start` would have it. The handoff finalization reads the worktree's
+    // own copy of the task and refuses to proceed without it — the same check
+    // that catches the #0151 stuck-active shape — so a fixture that only wrote
+    // it in the main checkout would be testing a failure, not the preview.
+    mkdirSync(join(wt.path, "work"), { recursive: true });
+    writeFileSync(join(wt.path, "work", `${id}-task-${i + 1}.md`), task);
     writeFileSync(join(root, "work", `${id}-task-${i + 1}.md`), task);
   }
 
@@ -134,6 +141,21 @@ async function previewUrl(server: ServerHandle, id: string): Promise<string | nu
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
+/** Poll `GET /api/tasks/:id` until the task reports `want`, or fail. */
+async function waitForStatus(
+  server: ServerHandle,
+  id: string,
+  want: string,
+  timeoutMs = 10_000,
+): Promise<void> {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    if ((await api(server, "GET", `/api/tasks/${id}`)).body.status === want) return;
+    await sleep(25);
+  }
+  throw new Error(`timed out waiting for #${id} to reach ${want}`);
+}
+
 describe("on-demand previews (#0271 follow-up)", () => {
   it("does not auto-launch on transition to review, launches on request, and closes when leaving review", async () => {
     const fx = makeFixture(1);
@@ -142,8 +164,19 @@ describe("on-demand previews (#0271 follow-up)", () => {
       expect(await previewUrl(server, "0001")).toBeNull();
 
       // Transition to review -> NO auto-launch (unlike the old #0198 behavior).
-      const moved = await api(server, "PATCH", "/api/tasks/0001", { status: "review" });
-      expect(moved.status).toBe(200);
+      // #0507: this is a REQUEST now, not a write — 202 with the task still
+      // `active`, and the finalization does the moving. `skipChecks` is used
+      // so this fixture (whose subject is previews, not the check) does not
+      // shell out to a real `repoos check`; the preview behaviour under test
+      // is identical either way.
+      const moved = await api(server, "PATCH", "/api/tasks/0001", {
+        status: "review",
+        skipChecks: true,
+      });
+      expect(moved.status).toBe(202);
+      expect(moved.body.status).toBe("active");
+      expect(await previewUrl(server, "0001")).toBeNull();
+      await waitForStatus(server, "0001", "review");
       await sleep(500);
       expect(await previewUrl(server, "0001")).toBeNull();
 

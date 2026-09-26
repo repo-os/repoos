@@ -7,9 +7,13 @@
  * (the watcher path) — and must reuse the graceful `runner.stop` path (SIGTERM,
  * SIGKILL after grace), never a bare kill.
  *
- * Drives the real HTTP server against a fixture git repo and a fake `opencode`
- * binary that stays alive (a live agent), then asserts the process dies and
- * the registry clears when the task is transitioned out of `active`.
+ * #0507 changes WHEN a task leaves `active` on these routes: a move into
+ * `review` is now a request that runs the handoff finalization, and only that
+ * finalization writes `status: review`. So the agent is released when the
+ * checks pass, not when the request is made. These tests drive the whole thing
+ * end-to-end against a fake `repoos` on PATH whose `check` exits 0 — which is
+ * the real shape of the fix, and also the acceptance criterion: the task
+ * reaches `review` after a green check, and the agent is gone with it.
  */
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
@@ -52,6 +56,20 @@ function makeFixture(): Fixture {
 const fs = require("fs");
 fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ pid: process.pid, args: process.argv.slice(2) }) + "\\n");
 setInterval(() => {}, 1000);
+`,
+    { mode: 0o755 },
+  );
+  // A green `repoos check`. Since #0507 every route into `review` runs the
+  // handoff finalization, which spawns `repoos check` in the worktree; without
+  // a fake here the fixture would invoke the REAL linked CLI against a
+  // throwaway temp repo. `check` exits 0 and records that it ran, so a test can
+  // assert the check really was part of the path.
+  writeFileSync(
+    join(bin, "repoos"),
+    `#!/usr/bin/env node
+const fs = require("fs");
+fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ repoos: process.argv.slice(2) }) + "\\n");
+process.exit(0);
 `,
     { mode: 0o755 },
   );
@@ -109,10 +127,18 @@ function alive(pid: number): boolean {
   }
 }
 
-async function waitForAsync(fn: () => Promise<boolean>, label: string): Promise<void> {
+/**
+ * Poll for an observable outcome. The default ceiling is generous because each
+ * handoff finalization resolves the worktree, runs the commit/vacuity gate and
+ * writes two task files — ~10 `git` subprocess spawns, each ~200ms inside a
+ * vitest worker under Bun versus ~4ms in a plain process, and multiplied on a
+ * busy machine. A real hang is unbounded, so 45s still catches one; a 10s
+ * ceiling mostly caught the harness.
+ */
+async function waitForAsync(fn: () => Promise<boolean>, label: string, timeoutMs = 45_000) {
   const start = Date.now();
   while (!(await fn())) {
-    if (Date.now() - start > 10_000) throw new Error(`timed out waiting for ${label}`);
+    if (Date.now() - start > timeoutMs) throw new Error(`timed out waiting for ${label}`);
     await new Promise((r) => setTimeout(r, 25));
   }
 }
@@ -144,6 +170,15 @@ afterEach(() => {
   delete process.env.REPOOS_FAKEBIN_LOG;
 });
 
+/**
+ * Each test here boots a real server, spawns a fake agent, waits for it to
+ * exit, and then drives a full handoff finalization to completion. Since #0507
+ * that finalization is the real one — resolve worktree, run the commit/vacuity
+ * gate, write two task files — which is ~10 `git` subprocess spawns at a few
+ * hundred ms each inside a vitest worker under Bun. The 120s per-test budget
+ * below is harness headroom, not a sloppier assertion: a real hang is
+ * unbounded and `waitForAsync` still caps each step.
+ */
 describe("release agent when a task leaves active (#0087)", () => {
   it("stops the live agent and clears the registry on API PATCH active -> review", async () => {
     const fx = makeFixture();
@@ -169,10 +204,9 @@ describe("release agent when a task leaves active (#0087)", () => {
       expect(info.pid).toBeGreaterThan(0);
       expect(alive(info.pid)).toBe(true);
 
-      // #0210: a transition into `review` now auto-commits the worktree's
-      // implementation work. Give the agent's worktree a real source change so
-      // the PATCH behaves like the trusted handoff and genuinely arrives in
-      // review (rather than being rejected as a vacuous transition).
+      // #0507: a transition into `review` is a REQUEST. Give the agent's
+      // worktree a real source change so the finalization's commit gate has
+      // something to commit and the transition is not rejected as vacuous.
       const branch = started.body.branch as string;
       const worktreeDir = join(dirname(fx.root), `${basename(fx.root)}-worktrees`, branch);
       // /start already registered the git worktree; just write a source file
@@ -182,14 +216,33 @@ describe("release agent when a task leaves active (#0087)", () => {
       const patched = await api(server, "PATCH", `/api/tasks/${id}`, {
         status: "review",
       });
-      expect(patched.status).toBe(200);
-      expect(patched.body.status).toBe("review");
+      // 202, and the task is still `active`: the response acknowledges the
+      // request, it does not claim the move already happened.
+      expect(patched.status).toBe(202);
+      expect(patched.body.status).toBe("active");
+      expect(patched.body.pendingHandoff).toBe(true);
+      // Crucially, the agent is NOT killed by asking — the task has not left
+      // `active`, so it is still legitimately working.
+      expect((await running(server)).some((r) => r.id === id)).toBe(true);
+      expect(alive(info.pid)).toBe(true);
+
+      // The fake `repoos check` exits 0, so the finalization completes and the
+      // task reaches `review` — which is when the agent is released.
+      await waitForAsync(
+        async () => {
+          const t = await api(server, "GET", `/api/tasks/${id}`);
+          return t.body.status === "review";
+        },
+        "the handoff finalization moves the task to review",
+      );
 
       await waitForAsync(
         async () => !(await running(server)).some((r) => r.id === id),
         "agent leaves the running registry",
       );
       expect(alive(info.pid)).toBe(false);
+      // The full finalization ran, check included — the whole point of 0507.
+      expect(readFileSync(fx.log, "utf8")).toMatch(/"repoos":\[[^\]]*"check"/);
     } finally {
       killSpawns(fx);
       process.env.PATH = oldPath;
@@ -197,7 +250,7 @@ describe("release agent when a task leaves active (#0087)", () => {
       await server.close();
       fx.clean();
     }
-  });
+  }, 120_000);
 
   it("stops the live agent when a direct task-file edit to review is picked up by the watcher", async () => {
     const fx = makeFixture();
@@ -223,9 +276,8 @@ describe("release agent when a task leaves active (#0087)", () => {
       const info = (await running(server)).find((r) => r.id === id)!;
       expect(alive(info.pid)).toBe(true);
 
-      // Give the agent's worktree real source work, so the #0210 review gate
-      // (which the watcher applies to a direct edit) commits and lets the
-      // transition through instead of reverting it as vacuous.
+      // Give the agent's worktree real source work, so the handoff
+      // finalization's commit gate has something to commit.
       const branch = started.body.branch as string;
       const worktreeDir = join(dirname(fx.root), `${basename(fx.root)}-worktrees`, branch);
       mkdirSync(worktreeDir, { recursive: true });
@@ -238,12 +290,24 @@ describe("release agent when a task leaves active (#0087)", () => {
         readFileSync(absPath, "utf8").replace(/^status: active$/m, "status: review"),
       );
 
+      // #0507: a bare file edit is no longer a transition. The index reverts it
+      // to `active` and hands the task to the same finalization every other
+      // route uses, so the file momentarily says `review` and then does not.
+      await waitForAsync(async () => /repoos":\[[^\]]*"check"/.test(readFileSync(fx.log, "utf8")), "the file-edit route starts the handoff finalization");
+      // The agent is untouched until the task genuinely leaves `active`.
+      await waitForAsync(
+        async () => {
+          const t = await api(server, "GET", `/api/tasks/${id}`);
+          return t.body.status === "review";
+        },
+        "the handoff finalization moves the task to review",
+      );
       await waitForAsync(
         async () => !(await running(server)).some((r) => r.id === id),
         "agent leaves the running registry after a direct file edit",
       );
       expect(alive(info.pid)).toBe(false);
-      // The board reflects the file as the agent left it.
+      // The board reflects what the finalization decided, not the raw edit.
       expect(readFileSync(absPath, "utf8")).toMatch(/^status: review$/m);
     } finally {
       killSpawns(fx);
@@ -252,7 +316,7 @@ describe("release agent when a task leaves active (#0087)", () => {
       await server.close();
       fx.clean();
     }
-  });
+  }, 120_000);
 
   it("is a clean no-op when no agent is running (already exited on its own)", async () => {
     const fx = makeFixture();
@@ -268,14 +332,27 @@ describe("release agent when a task leaves active (#0087)", () => {
       expect(created.status).toBe(201);
       const id = created.body.id as string;
 
-      // #0210: a task with no branch/worktree (never started, nothing to
-      // finalize) cannot be transitioned into `review` — it is rejected with a
-      // clean error and no agent is released, never a crash.
+      // A task with no branch/worktree (never started, nothing to finalize)
+      // cannot reach `review` at all. The request is accepted (202) and the
+      // finalization then fails at `validate` — which is the honest outcome and
+      // the one that keeps the task `active` instead of a rejected write. No
+      // agent is released and the server does not crash.
       const patched = await api(server, "PATCH", `/api/tasks/${id}`, {
         status: "review",
       });
-      expect(patched.status).toBe(400);
-      expect((patched.body.error as string) ?? "").toMatch(/review/);
+      expect(patched.status).toBe(202);
+      expect(patched.body.status).toBe("active");
+      await waitForAsync(
+        async () => (await api(server, "GET", `/api/tasks/${id}`)).body.status === "active",
+        "the task stays active after a failed finalization",
+      );
+      // The failure is recorded rather than swallowed: it is in the activity
+      // log, which is what the watchdog and any later reader can see.
+      await waitForAsync(
+        async () =>
+          /no branch to finalize from/.test(readFileSync(created.body.absPath as string, "utf8")),
+        "the finalization failure is persisted to the activity log",
+      );
       expect(await running(server)).toEqual([]);
     } finally {
       killSpawns(fx);
@@ -284,5 +361,5 @@ describe("release agent when a task leaves active (#0087)", () => {
       await server.close();
       fx.clean();
     }
-  });
+  }, 120_000);
 });

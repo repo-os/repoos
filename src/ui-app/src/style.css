@@ -4857,6 +4857,22 @@
   gap: 8px;
   flex-wrap: wrap;
 }
+/* #0507: the handoff finalization banner. Lives in the quickbar (above the tab
+   strip) because it is about the task's STATE, not about one tab, and the wait
+   can be minutes. Reuses ff-notice / ff-error for colour and padding, so only
+   the two-line layout is declared here. */
+.drawer-handoff-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 0;
+}
+.drawer-handoff-sub {
+  flex-basis: 100%;
+  font-size: 12px;
+  opacity: 0.85;
+}
 .quickbar-row > :first-child {
   flex: 1;
   min-width: 0;
@@ -9197,6 +9213,41 @@
   gap: 10px;
   padding: 24px;
   margin-top: 8px;
+}
+
+/* Review confirmation (0507). Body-teleported like every other confirm modal
+   so it sits above the task drawer. The shell/head/body/action-row come from
+   the shared cc-modal rules above; only the width and the action order differ. */
+.review-confirm-modal.drawer-wrap.drawer {
+  top: 50%;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  width: min(520px, 92vw);
+  height: auto;
+  transform: translate(-50%, -50%);
+  border-radius: 16px;
+  border: 1px solid var(--border-bright);
+  background: var(--panel-gradient);
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.45),
+    0 0 0 1px var(--border);
+  overflow: hidden;
+  animation: cc-modal-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* "Run checks" is the default and sits last (rightmost), with the override
+   beside it and Cancel first — the order reads left-to-right as increasing
+   commitment. */
+.review-confirm-actions {
+  flex-wrap: wrap;
+}
+@media (max-width: 420px) {
+  .review-confirm-actions {
+    justify-content: stretch;
+  }
+  .review-confirm-actions > * {
+    flex: 1 1 auto;
+  }
 }
 
 /* Built-in agent run started notice modal (#0450). Teleported to <body> so styling lives here. */

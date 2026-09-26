@@ -41,6 +41,10 @@ import type { Logger } from "../core/logger.js";
 import { getRepoOSDb, type RepoOSDb, type UsageRange } from "../core/db.js";
 import { listSkills } from "./routes/helpers.js";
 import {
+  readHandoffRequest,
+  clearHandoffRequest,
+} from "./handoff-request.js";
+import {
   recoverTruncatedJson,
   TRUNCATION_NOTICE_PREFIX,
   type TruncatedPayload,
@@ -80,6 +84,42 @@ export const HANDOFF_FINALIZATION_INTERRUPTED_DETAIL =
 export function isHandoffFinalizationProgressSysLine(text: string): boolean {
   const t = text.trim();
   return /^Server finalization: \S+/.test(t);
+}
+
+/**
+ * Whether a `sys` line actually DESCRIBES A FAILURE, and so is honest to show
+ * as the reason a turn exited badly (#0507).
+ *
+ * `lastFailureLine` falls back to the transcript's last `sys` line when stderr
+ * was empty, and that fallback used to take whatever came last — including
+ * ordinary progress. That is how a task killed by a deliberate stop ended up
+ * reporting "Skill routing: code-review, …" or "Server finalization: check" as
+ * its dev-error detail: a line that describes none of the failure that
+ * happened, presented to the human as if it did. When the honest answer is
+ * "we don't know", the generic message is the honest answer — better than a
+ * confident wrong one.
+ *
+ * RepoOS's own `sys` lines lead with a status glyph, so the glyph is the
+ * primary signal: `✗` is a failure, `✓`/`↻`/`·`/`→` are not. English failures
+ * that arrive without a glyph (a CLI's own message parsed out of its stream) are
+ * matched on vocabulary. Both directions err toward refusing: a missed match
+ * only costs the specific detail, while a false positive invents one.
+ */
+export function sysLineDescribesFailure(text: string): boolean {
+  const t = text.trim();
+  if (!t) return false;
+  // Progress markers RepoOS emits for the finalization pipeline — the exact
+  // shape #0505 reported as a failure detail.
+  if (isHandoffFinalizationProgressSysLine(t)) return false;
+  const glyph = t[0];
+  if (glyph === "✗" || glyph === "✖" || glyph === "×") return true;
+  // An explicit success/retry marker means this line is not the failure, even
+  // if its text happens to mention one ("✓ server-side handoff: check failed
+  // earlier, now green").
+  if (glyph === "✓" || glyph === "↻" || glyph === "→" || glyph === "·") return false;
+  return /\b(?:failed|failure|error|rejected|could not|couldn't|unable to|timed out|timeout|not found|denied|unauthorized)\b/i.test(
+    t,
+  );
 }
 
 /** True when finalization started but never recorded complete/stopped/rejected. */
@@ -179,6 +219,15 @@ interface Entry {
   branch: string;
   runId: string;
   handoffRequested: boolean;
+  /**
+   * #0507: set when the server or a human deliberately stopped this turn
+   * (the task left `active`, Stop work, Stop MTD, an interrupted chat
+   * response). A process killed that way did not fail — it was told to stop —
+   * so `cleanup()` must not escalate it into a dev error, a `dev_error_count`
+   * bump or a needs-input flag. That mislabelling is what put "needs input"
+   * next to "waiting for human" on #0505, a task whose reviewer had passed.
+   */
+  intentionalStop?: boolean;
   /** Whether the agent requested its managed preview during this run (#0121). */
   previewRequested: boolean;
   /** A review-fix follow-up keeps the worktree's last committed review state. */
@@ -2853,11 +2902,16 @@ function missionFor(
     "Run this fail-safe checklist IN ORDER. Do not stop until it is fully checked off:",
     "",
     "1. Read the task file and implement what it describes.",
-    `2. Run \`REPOOS_CHECK_CHANGED=${baseBranch} repoos check\` and confirm it passes (build, typecheck, tests scoped to what your branch changed vs ${baseBranch}, UI smoke test). It MUST be green before requesting handoff. RepoOS re-verifies it server-side before finalizing your handoff, and runs the full unscoped test suite again when your branch actually merges — so this scoped run is a fast correctness check, not the final word.`,
+    `2. Run \`REPOOS_CHECK_CHANGED=${baseBranch} repoos check\` and confirm it passes (build, typecheck, tests scoped to what your branch changed vs ${baseBranch}, UI smoke test). It MUST be green before handing off. RepoOS re-verifies it server-side before finalizing your handoff, and runs the full unscoped test suite again when your branch actually merges — so this scoped run is a fast correctness check, not the final word.`,
     "3. Do not run git add/commit and do not edit the main checkout; those privileged paths are intentionally outside your sandbox.",
     "   RepoOS commits only source, work, docs, and config files to the branch — never `dist/`; build artifacts created by `repoos check` stay local.",
-    `4. When the implementation is ready, finish your response with this exact line: ${HANDOFF_READY_SIGNAL}`,
-    "5. Stop. RepoOS will independently run `repoos check`, commit the implementation, set the worktree task to review, and update the canonical board copy.",
+    `4. When the implementation is ready, hand off — EITHER of these, they are synonyms:`,
+    `   - finish your response with this exact line: ${HANDOFF_READY_SIGNAL}`,
+    "   - or run `repoos mv <this task's id> review`",
+    "   Both record a handoff REQUEST; neither one moves the task. `repoos mv <id> review` from",
+    "   inside your own runner session deliberately leaves `status:` alone, precisely so that moving",
+    "   your task out of `active` cannot kill the turn you are standing in (#0505).",
+    "5. Stop. RepoOS re-runs `repoos check`, commits the implementation, moves the worktree task to review, and updates the canonical board copy. It does that when your turn ends — you never set `status: review` yourself.",
     "",
     "If you are blocked or need a decision from the human:",
     "1. Explain the blocker clearly and do NOT emit the handoff-ready signal.",
@@ -4145,6 +4199,29 @@ export class AgentRunner {
    */
   isHandoffInFlight(taskId: string): boolean {
     return this.handoffsInFlight.has(taskId);
+  }
+
+  /**
+   * Claim the in-flight slot for a handoff that did NOT come from this runner
+   * (#0507) — the Review button, a board drag, a `PATCH status: review`, or a
+   * task-file edit the watcher picked up. Those routes run the same
+   * finalization, and every existing consumer of `isHandoffInFlight` /
+   * `hasPendingHandoff` (the task card's "requested review" hint, the CTO
+   * monitor's nudge suppression, the watchdog) should see them without each
+   * one having to know which route asked.
+   *
+   * Returns false when a finalization is already running for the task, so the
+   * caller can tell the human rather than starting a second concurrent check.
+   */
+  markHandoffInFlight(taskId: string): boolean {
+    if (this.handoffsInFlight.has(taskId)) return false;
+    this.handoffsInFlight.add(taskId);
+    return true;
+  }
+
+  /** Release a slot claimed by {@link markHandoffInFlight}. Always paired. */
+  releaseHandoffInFlight(taskId: string): void {
+    this.handoffsInFlight.delete(taskId);
   }
 
   /**
@@ -5443,6 +5520,13 @@ export class AgentRunner {
    */
   private checkStalls(): void {
     for (const [taskId, entry] of this.entries) {
+      // #0507: `repoos mv <own id> review` inside this turn records a request
+      // file instead of a status write (the agent must not be the thing that
+      // moves its own task out of `active` — that kills the turn and books a
+      // dev error). Notice it here so the turn finalizes exactly like a
+      // `::repoos-handoff-ready::` signal. `cleanup()` re-checks, which is what
+      // closes the race with a turn that ends in the same tick.
+      this.adoptHandoffRequestFile(taskId, entry);
       if (entry.adoptedPid) {
         try {
           process.kill(entry.adoptedPid, 0);
@@ -5473,12 +5557,60 @@ export class AgentRunner {
   }
 
   /**
+   * Adopt a handoff request the agent recorded by running
+   * `repoos mv <own id> review` during this turn (#0507). The marker is treated
+   * exactly like the `::repoos-handoff-ready::` signal: `handoffRequested` is
+   * set, the capability is persisted so a server crash mid-turn still recovers,
+   * and `cleanup()` finalizes it when the turn ends.
+   *
+   * The request's `runId` must equal this turn's. A marker left behind by an
+   * earlier turn, or written for a different task, is deleted rather than
+   * honored — the runner binds capabilities to a live run, so adopting a stale
+   * one would let a finished turn finalize work it never finished.
+   */
+  private adoptHandoffRequestFile(taskId: string, entry: Entry): void {
+    if (entry.handoffRequested || !entry.runId) return;
+    const root = this.config.root;
+    const cacheDir = this.config.cacheDir;
+    const request = readHandoffRequest(root, cacheDir, taskId);
+    if (!request) return;
+    if (request.runId !== entry.runId) {
+      clearHandoffRequest(root, cacheDir, taskId);
+      return;
+    }
+    entry.handoffRequested = true;
+    const session = this.sessions.get(taskId);
+    this.persistPendingHandoff({
+      taskId,
+      runId: entry.runId,
+      branch: entry.branch,
+      workdir: entry.workdir ?? this.config.root,
+      ...(session?.sessionId ? { sessionId: session.sessionId } : {}),
+    });
+    clearHandoffRequest(root, cacheDir, taskId);
+    this.appendLine(
+      taskId,
+      "sys",
+      "✓ agent requested server-side handoff (`repoos mv " +
+        taskId +
+        " review`) — finalizing when this turn ends",
+    );
+  }
+
+  /**
    * Signal a running agent to stop: graceful SIGTERM first, SIGKILL after a
    * short grace period. Returns immediately; the registry clears on exit.
+   *
+   * Every caller is the server or a human acting deliberately — a task leaving
+   * `active`, Stop work / abandon, Stop MTD, an interrupted chat response. None
+   * of those is a failure, so the entry is marked `intentionalStop` and
+   * `cleanup()` will not escalate the resulting non-zero exit into a dev error
+   * (#0507). Only a process that exits badly on its OWN escalates.
    */
   stop(taskId: string): StopResult {
     const entry = this.entries.get(taskId);
     if (!entry) return { stopped: false, reason: "task is not running" };
+    entry.intentionalStop = true;
     for (const tailer of entry.tailers ?? []) {
       tailer.drain();
       tailer.flush();
@@ -5736,15 +5868,29 @@ export class AgentRunner {
     if (session && !wasReview) {
       this.recordSessionToDb(session.sessionId, session, taskId, exitedCleanly);
     }
+    // #0507: last chance to see a `repoos mv <own id> review` that landed in
+    // the same tick the process exited — checkStalls() polls on a timer, so
+    // without this a handoff requested moments before the end of the turn
+    // would be missed entirely.
+    this.adoptHandoffRequestFile(taskId, entry);
     // Resolve task from index if not in entry (important for resume turns).
     const taskForHandoff = entry.task ?? (this.getTask ? this.getTask(taskId) : null);
-    // Any non-clean exit that isn't a deliberate human pause means the task is
-    // about to sit silently in its current status with nothing left running —
-    // flag it the moment the process ends rather than waiting for
-    // TaskWatchdog's staleness poll, which wouldn't even catch a fast
-    // crash-on-exit (an expired CLI auth session, say): the process isn't
-    // stalled, it's just done. Handoff-requested turns finalize below instead.
-    if (!exitedCleanly && !this.isPaused(taskId) && !entry.handoffRequested && taskForHandoff) {
+    // Any non-clean exit that isn't a deliberate stop means the task is about
+    // to sit silently in its current status with nothing left running — flag it
+    // the moment the process ends rather than waiting for TaskWatchdog's
+    // staleness poll, which wouldn't even catch a fast crash-on-exit (an
+    // expired CLI auth session, say): the process isn't stalled, it's just
+    // done. Three things are NOT failures and must stay silent (#0507): a
+    // deliberate human pause, a stop the server or a human asked for (the task
+    // left `active`, Stop work, an interrupted chat), and a handoff-requested
+    // turn — which finalizes below instead.
+    if (
+      !exitedCleanly &&
+      !this.isPaused(taskId) &&
+      !entry.intentionalStop &&
+      !entry.handoffRequested &&
+      taskForHandoff
+    ) {
       this.escalateFailedExit(taskId, taskForHandoff, session);
     }
     if (entry.handoffRequested) {
@@ -5796,7 +5942,7 @@ export class AgentRunner {
         );
         this.clearPendingHandoff(taskId);
         this.persistHandoffFailure(taskId, taskForHandoff, "branch or workdir missing");
-        if (!exitedCleanly && !this.isPaused(taskId)) {
+        if (!exitedCleanly && !this.isPaused(taskId) && !entry.intentionalStop) {
           this.escalateHandoffExitWithoutFinalization(taskId, taskForHandoff, exitCode, session);
         }
       }
@@ -6152,8 +6298,8 @@ export class AgentRunner {
   /**
    * Best-effort one-line summary of why a turn failed. Prefers the last
    * non-empty stderr line (where CLI-level failures like an expired OAuth
-   * session land), falling back to the last `sys`/error line RepoOS itself
-   * parsed out of the CLI's own JSON stream, then a generic fallback.
+   * session land), then the last `sys` line that ACTUALLY DESCRIBES A FAILURE
+   * (see `sysLineDescribesFailure`), then a generic fallback.
    */
   private lastFailureLine(session: Session | undefined): string {
     if (session?.permissionDenial) {
@@ -6172,10 +6318,7 @@ export class AgentRunner {
             : "s" in line && line.s === "sys"
               ? line.d
               : undefined;
-        if (text?.trim()) {
-          if (isHandoffFinalizationProgressSysLine(text)) continue;
-          return text.trim();
-        }
+        if (text?.trim() && sysLineDescribesFailure(text)) return text.trim();
       }
     }
     return "the agent process exited with an error — open the task to see the full output";

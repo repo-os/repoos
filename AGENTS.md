@@ -16,9 +16,16 @@ Two kinds of agent read this file, and some rules apply to only one:
 - **RepoOS task-runner agents** — spawned by the RepoOS server to work a
   specific task. You have a task id, a dedicated worktree, and a task
   transcript. The operating loop below, the `status:` frontmatter moves, the
-  `::repoos-preview-request::` signal, and "never run `repoos serve` yourself"
-  are all yours — the server enforces them and rejects direct serve attempts
-  from your process.
+  handoff request, the `::repoos-preview-request::` signal, and "never run
+  `repoos serve` yourself" are all yours — the server enforces them and rejects
+  direct serve attempts from your process. **You never move your own task out of
+  `active`.** Run the scoped check, then hand off with
+  `repoos mv <your task id> review` (or by finishing your reply with the
+  `::repoos-handoff-ready::` signal) and end your turn: both record a *request*,
+  and RepoOS runs the checks, commits the branch and moves the status itself.
+  Writing `status: review` yourself is a different path — it still goes through
+  the same checks, but it does not wait for your turn to end, so it can cut the
+  turn short.
 - **Interactive / external agent sessions** — a human is driving you directly
   (Claude Code, Codex CLI, Cursor, …) in an ordinary checkout. You have no
   task id and no managed preview. Skip the task-lifecycle mechanics; when a
@@ -70,7 +77,7 @@ RepoOS's own; in a managed repo it is that project's. See `docs/README.md`.
 3. Set its `status: active` (edit the frontmatter; do not move the file).
 4. Create a worktree on the branch named in the task's `branch:` field, or set one.
 5. Run `repoos check` and confirm it passes (the check plan declared in `repoos.toml`: build, typecheck, tests, UI smoke test). Then implement → if the repo has a git remote, open an MR/PR against `main`.
-6. Set `status: review` when ready for human sign-off, and only after a green `repoos check`. **Leave the worktree open and do not merge its branch yourself** — see "Review and sign-off" below.
+6. When ready for human sign-off, and only after a green `repoos check`, run `repoos mv <id> review` (or finish your reply with the `::repoos-handoff-ready::` signal) and stop. **That records a handoff request; it does not set the status.** RepoOS re-runs the check, commits the branch and moves the task to `review` when your turn ends. The task stays `active` with a "running checks…" state until then, and stays `active` with the failure shown if the check fails. **Leave the worktree open and do not merge its branch yourself** — see "Review and sign-off" below.
 
 ## Review and sign-off (review → done)
 
@@ -89,11 +96,11 @@ straight back into `review`.
 
 **No git remote (the common RepoOS case):**
 
-- Implementer: set `status: review`, leave the worktree open, stop. Do not merge
-  its branch.
+- Implementer: hand off (`repoos mv <id> review` or the signal), leave the
+  worktree open, stop. Do not merge its branch.
 - Reviewer: review the diff, run `repoos check`. If changes are needed, request
   them; the implementer fixes them on the SAME worktree, re-runs `repoos check`, and
-  re-sets `review` (still not merged).
+  hands off again (still not merged).
 - Approval: the reviewer says **"move task <id> to done"**. Only then the
   implementer:
   1. sets `status: done` + activity entry and commits `docs(<id>): set status done`;

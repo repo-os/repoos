@@ -1,11 +1,12 @@
 /**
- * #0210 regression tests: closing the direct-PATCH bypass around handoff commit
- * validation.
+ * #0210 regression tests: the commit/vacuity gate itself.
  *
- * Every transition INTO `review` — the trusted handoff, `PATCH /api/tasks/:id`,
- * or a direct task-file edit picked up by the watcher — must either commit the
- * worktree's implementation changes or reject the transition, and must reject
- * a vacuous transition (zero source changes and no `no_source_change`).
+ * #0507 builds on this: the gate is no longer what a route into `review` runs —
+ * it is the middle step of one shared finalization (`handoffTask` /
+ * `finalizeReviewHandoff`), which every route now goes through. So the gate's
+ * own guarantees (commit the work, reject a vacuous transition, never fold a
+ * sibling task file in) are still asserted here directly, and the routing
+ * tests below assert that no route reaches `review` without it.
  */
 import { describe, expect, it } from "vitest";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -146,7 +147,13 @@ function makeRes(): { res: ServerResponse; fake: FakeRes } {
   return { res: res as unknown as ServerResponse, fake };
 }
 
-function makeCtx(fx: Fixture, index: LiveIndex): RouteContext {
+function makeCtx(
+  fx: Fixture,
+  index: LiveIndex,
+  startUnifiedHandoff: RouteContext["startUnifiedHandoff"] = () => ({
+    started: true,
+  }),
+): RouteContext {
   return {
     config: fx.config,
     index,
@@ -175,6 +182,7 @@ function makeCtx(fx: Fixture, index: LiveIndex): RouteContext {
       getSystemLogs: () => [],
     } as unknown as RouteContext["logger"],
     onServerStatusChange: () => {},
+    startUnifiedHandoff,
     syncTaskBranch: async () => ({ ok: true, conflicts: [] }),
   };
 }
@@ -292,70 +300,156 @@ describe("guardReviewTransition (0210)", () => {
   });
 });
 
-describe("PATCH /api/tasks/:id → review (0210)", () => {
-  it("commits an uncommitted worktree and moves the task to review (never left dirty)", async () => {
+describe("PATCH /api/tasks/:id → review (0507: one finalization path)", () => {
+  it("hands off to the unified finalization instead of writing status: review", async () => {
     const fx = makeFixture();
     try {
       uncommittedChange(fx);
       const index = new LiveIndex(fx.config);
       index.refreshAll();
       const { res, fake } = makeRes();
-
-      await patchTask(makeCtx(fx, index), makeReq({ status: "review" }), res, {
-        param1: "0210",
+      const calls: { origin?: string; skipChecks?: boolean; actor?: string }[] = [];
+      const ctx = makeCtx(fx, index, (task, opts) => {
+        calls.push({ origin: opts?.origin, skipChecks: opts?.skipChecks, actor: opts?.actor });
+        return { started: task.id === "0210" };
       });
 
-      expect(fake.status).toBe(200);
-      expect((fake.payload as { status: string }).status).toBe("review");
-      expect(dirtyPaths(fx)).toEqual([]);
-      expect(git(fx.worktree, ["log", "-1", "--format=%s"])).toBe(
-        "feat(0210): implement Patch bypass fixture",
-      );
+      await patchTask(ctx, makeReq({ status: "review" }), res, { param1: "0210" });
+
+      // The route accepted the REQUEST (202), not a write: the task is still
+      // active on disk and in the index, and the finalization owns the move.
+      expect(fake.status).toBe(202);
+      expect((fake.payload as { status: string }).status).toBe("active");
+      expect((fake.payload as { pendingHandoff: boolean }).pendingHandoff).toBe(true);
+      expect(readFileSync(fx.taskPath, "utf8")).toContain("status: active");
+      expect(index.getTask("0210")?.status).toBe("active");
+      // Crucially: the route did NOT run the commit gate itself. That is the
+      // finalization's job now, and running it here would be the "route that
+      // checks a different amount" this task closed.
+      expect(dirtyPaths(fx)).not.toEqual([]);
+      expect(calls).toEqual([{ origin: "ui-review", skipChecks: false, actor: "human" }]);
     } finally {
       fx.clean();
     }
   });
 
-  it("rejects PATCHing an empty worktree to review when no_source_change is unset", async () => {
+  it("forwards the human's explicit Skip checks choice", async () => {
     const fx = makeFixture();
     try {
       const index = new LiveIndex(fx.config);
       index.refreshAll();
       const { res, fake } = makeRes();
-
-      await patchTask(makeCtx(fx, index), makeReq({ status: "review" }), res, {
-        param1: "0210",
+      const calls: { origin?: string; skipChecks?: boolean }[] = [];
+      const ctx = makeCtx(fx, index, (_task, opts) => {
+        calls.push({ origin: opts?.origin, skipChecks: opts?.skipChecks });
+        return { started: true };
       });
 
-      expect(fake.status).toBe(400);
-      expect((fake.payload as { error: string }).error).toMatch(/no implementation found/);
-      // The task stays active and was never moved to review.
+      await patchTask(
+        ctx,
+        makeReq({ status: "review", skipChecks: true, origin: "board-drag" }),
+        res,
+        { param1: "0210" },
+      );
+
+      expect(fake.status).toBe(202);
+      expect(calls).toEqual([{ origin: "board-drag", skipChecks: true }]);
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("still applies the rest of the body while the finalization owns the status", async () => {
+    const fx = makeFixture();
+    try {
+      const index = new LiveIndex(fx.config);
+      index.refreshAll();
+      const { res, fake } = makeRes();
+      const ctx = makeCtx(fx, index, () => ({ started: true }));
+
+      await patchTask(
+        ctx,
+        makeReq({ status: "review", priority: "p0" }),
+        res,
+        { param1: "0210" },
+      );
+
+      expect(fake.status).toBe(202);
+      const raw = readFileSync(fx.taskPath, "utf8");
+      expect(raw).toContain("priority: p0");
+      expect(raw).toContain("status: active");
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("409s when a handoff is already running for the task", async () => {
+    const fx = makeFixture();
+    try {
+      const index = new LiveIndex(fx.config);
+      index.refreshAll();
+      const { res, fake } = makeRes();
+      const ctx = makeCtx(fx, index, () => ({
+        started: false,
+        reason: "a handoff is already running for this task",
+      }));
+
+      await patchTask(ctx, makeReq({ status: "review" }), res, { param1: "0210" });
+
+      expect(fake.status).toBe(409);
+      expect((fake.payload as { error: string }).error).toMatch(/already running/);
       expect(readFileSync(fx.taskPath, "utf8")).toContain("status: active");
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("rejects a no-op review PATCH from a task that is already in review", async () => {
+    const fx = makeFixture();
+    try {
+      writeFileSync(fx.taskPath, taskText("review"));
+      const index = new LiveIndex(fx.config);
+      index.refreshAll();
+      const { res, fake } = makeRes();
+      let called = 0;
+      const ctx = makeCtx(fx, index, () => {
+        called += 1;
+        return { started: true };
+      });
+
+      await patchTask(ctx, makeReq({ status: "review" }), res, { param1: "0210" });
+
+      // prevStatus === "review", so this falls through to the ordinary write
+      // path and no second finalization is started.
+      expect(fake.status).toBe(200);
+      expect(called).toBe(0);
     } finally {
       fx.clean();
     }
   });
 });
 
-describe("file-watch direct edit into review (0210)", () => {
-  it("reverts a direct edit to review on an empty worktree back to its prior status", async () => {
+describe("file-watch direct edit into review (0507: routed to the finalization)", () => {
+  it("reverts a direct edit to review and asks the finalization instead", async () => {
     const fx = makeFixture();
     try {
       const index = new LiveIndex(fx.config);
       index.refreshAll();
+      const asked: string[] = [];
+      // Mirrors server.ts: the guard starts the unified handoff and ALWAYS
+      // returns false, so the index keeps its previous state.
       index.setReviewGuard(async (task: Task) => {
-        const gate = await guardReviewTransition(fx.config, task);
-        return gate.ok;
+        asked.push(task.id);
+        return false;
       });
 
       // Simulate an agent editing its task file's frontmatter directly to review.
       writeFileSync(fx.taskPath, taskText("review"));
       expect(readFileSync(fx.taskPath, "utf8")).toContain("status: review");
 
-      // Await the deferred guard: on rejection it rewrites the file back to its
-      // prior status, so by the time this returns the bypass is already closed.
       await index.applyFileChange(fx.taskPath);
 
+      expect(asked).toEqual(["0210"]);
       expect(readFileSync(fx.taskPath, "utf8")).toContain("status: active");
       expect(index.getTask("0210")?.status).toBe("active");
     } finally {
@@ -363,23 +457,39 @@ describe("file-watch direct edit into review (0210)", () => {
     }
   });
 
-  it("keeps a direct edit to review when the guard commits real work", async () => {
+  it("commits the worker's work and moves to review, running the full check", async () => {
     const fx = makeFixture();
     try {
       uncommittedChange(fx);
       const index = new LiveIndex(fx.config);
       index.refreshAll();
-      index.setReviewGuard(async (task: Task) => {
-        const gate = await guardReviewTransition(fx.config, task);
-        return gate.ok;
+
+      // The real server wiring: the guard hands the PRE-EDIT task to the same
+      // finalization every other route uses. `skipChecks` is used here only so
+      // the test does not have to spawn a real `repoos check` — what is under
+      // test is the ROUTING (a file edit ends up going through the
+      // finalization, which commits and then moves the task), not the check.
+      // Passing `prev` matters: the index reverts the file to `prev.status`, so
+      // handing over the post-edit `review` task would make the finalization
+      // think it need not write the canonical copy at all.
+      const { finalizeReviewHandoff } = await import("../../server/handoff");
+      let handoff: Promise<{ ok: boolean; step: string; detail?: string }> | null = null;
+      index.setReviewGuard(async (_edited: Task, prev: Task) => {
+        handoff = finalizeReviewHandoff(fx.config, prev, {
+          origin: "task-file",
+          skipChecks: true,
+        });
+        return false;
       });
 
       writeFileSync(fx.taskPath, taskText("review"));
       await index.applyFileChange(fx.taskPath);
+      const result = await handoff!;
 
+      expect(result.detail ?? "").toBe("");
+      expect(result.ok).toBe(true);
       expect(readFileSync(fx.taskPath, "utf8")).toContain("status: review");
-      expect(index.getTask("0210")?.status).toBe("review");
-      // The guard committed the previously-dirty work; the worktree is clean.
+      // The finalization committed the previously-dirty work; worktree clean.
       expect(dirtyPaths(fx)).toEqual([]);
     } finally {
       fx.clean();
