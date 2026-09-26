@@ -1,7 +1,21 @@
+import type { Task } from "../../../core/types.js";
+import { needsInputSuppressedOnReview } from "../../../core/needs-input.js";
+
 /**
  * Copy and labels for `needs_input` on board cards and the task drawer (#0511).
  * Single source so card status lines, header chips, and banners stay aligned.
  */
+
+export { needsInputSuppressedOnReview } from "../../../core/needs-input.js";
+
+export function needsInputSurfaces(
+  task: Pick<Task, "status" | "needsInput" | "needsInputReason">,
+): boolean {
+  return Boolean(task.needsInput && !needsInputSuppressedOnReview(task));
+}
+
+export const STALE_REVIEW_DEV_ERROR_BANNER =
+  "This task is already in review — the dev-error flag is stale from handoff and can be dismissed if the reviewer report looks fine.";
 
 export const NEEDS_INPUT_STATUS_LABELS: Record<string, string> = {
   "review-failed": "Reviewer failed — no report",
@@ -28,7 +42,8 @@ export const NEEDS_INPUT_SUGGESTION_LABELS: Record<string, string> = {
     "Restart work to resume the agent, or reply below with more context first. If it keeps failing on the same error, check the coding agent/model picker above — a CLI switch without a matching model pin causes exactly this.",
   "check-failed-after-retries":
     "Open the Debug tab for the failing check output, fix the issue or adjust the check plan, then Restart work. Move to done only after checks pass.",
-  "watchdog-stuck": "Restart work to resume — no agent process is currently running this task.",
+  "watchdog-stuck":
+    "On a review task, use Review again. On an active task, restart work when no agent is running.",
   "cto-escalation": "Open the PM tab and send a reply — the flag clears when your message is sent.",
   questions: "Answer the questions below or reply in the PM tab so the agent can continue.",
 };
@@ -109,7 +124,6 @@ export function needsInputPrimaryAction(
     case "review-failed":
       return ctx.status === "review" ? REVIEW_AGAIN_ACTION : null;
     case "watchdog-stuck":
-      if (ctx.status === "review") return REVIEW_AGAIN_ACTION;
       return canRestartWork(ctx) ? RESTART_ACTION : null;
     case "dev-error":
     case "check-failed-after-retries":

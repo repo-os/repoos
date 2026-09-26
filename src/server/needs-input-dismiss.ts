@@ -26,10 +26,13 @@ export function dismissNeedsInputOnTask(
   if (!current.needsInput) {
     throw new WriteError("Task is not waiting for input");
   }
+  const reason = current.needsInputReason;
   current.needsInput = false;
   current.needsInputReason = undefined;
   current.needsInputDetail = undefined;
-  current.questions = undefined;
+  if (reason === "questions" || reason === "cto-escalation") {
+    current.questions = undefined;
+  }
   recordChange(current, `needs_input dismissed by ${dismissedBy}`);
   writeFileSync(absPath, serializeTask(current));
   commitTaskFile(config.root, absPath, `docs(${current.id}): update task`);

@@ -43,6 +43,9 @@ import {
   needsInputPrimaryAction,
   needsInputStatusLabel,
   needsInputSuggestionText,
+  needsInputSuppressedOnReview,
+  needsInputSurfaces,
+  STALE_REVIEW_DEV_ERROR_BANNER,
 } from "../lib/needs-input-ui";
 import Button from "./ui/button.vue";
 import Input from "./ui/input.vue";
@@ -1171,8 +1174,12 @@ function openSkillSuggestion(): void {
  */
 const activeNeedsInputQuestions = computed(() => (ui.active?.questions?.length ?? 0) > 0);
 
+const staleNeedsInputOnReview = computed(() =>
+  ui.active ? needsInputSuppressedOnReview(ui.active) : false,
+);
+
 const needsInputHeaderChip = computed<{ label: string; cls: string } | null>(() => {
-  if (!ui.active?.needsInput) return null;
+  if (!ui.active || !needsInputSurfaces(ui.active)) return null;
   // A stale flag must not hide a live review or engineer session (#0511 R2).
   if (review.value?.running || repo.isRunning(ui.active.id)) return null;
   return {
@@ -3284,24 +3291,19 @@ watch(
         <!-- Critical status lives above the tabs so it is visible no matter
              which tab is open — a "needs input" / "reviewer crashed" message
              buried in one tab is a message the human never sees. -->
-        <!-- Suppress a dev-error card when the task is already in review:
-             the dev agent completed its work (hence status=review), the error
-             was in the handoff signal, not the implementation. The reviewer ran
-             and approved — the stale flag is misleading noise at this point. -->
-        <div
-          v-if="
-            ui.active &&
-            ui.active.needsInput &&
-            !(ui.active.needsInputReason === 'dev-error' && ui.active.status === 'review')
-          "
-          class="drawer-critical"
-        >
-          <div class="agent-waiting">
-            <span class="agent-waiting-dot"></span>
+        <div v-if="ui.active && ui.active.needsInput" class="drawer-critical">
+          <div class="agent-waiting" :class="{ 'agent-waiting-static': staleNeedsInputOnReview }">
+            <span v-if="!staleNeedsInputOnReview" class="agent-waiting-dot"></span>
             <div>
-              <div class="agent-waiting-title">waiting for you</div>
+              <div class="agent-waiting-title">
+                {{ staleNeedsInputOnReview ? "stale flag" : "waiting for you" }}
+              </div>
               <div class="agent-waiting-sub">
-                {{ needsInputBannerText(ui.active.needsInputReason, activeNeedsInputQuestions) }}
+                {{
+                  staleNeedsInputOnReview
+                    ? STALE_REVIEW_DEV_ERROR_BANNER
+                    : needsInputBannerText(ui.active.needsInputReason, activeNeedsInputQuestions)
+                }}
               </div>
               <!-- needsInputDetail for dev-error is internal skill-routing
                    metadata — not meaningful to users, so we hide it. -->
@@ -3313,6 +3315,7 @@ watch(
               </div>
               <div
                 v-if="
+                  !staleNeedsInputOnReview &&
                   needsInputSuggestionText(ui.active.needsInputReason, activeNeedsInputQuestions)
                 "
                 class="agent-waiting-suggestion"
@@ -3323,7 +3326,7 @@ watch(
               </div>
               <div class="agent-waiting-actions">
                 <Button
-                  v-if="needsInputPrimary"
+                  v-if="needsInputPrimary && !staleNeedsInputOnReview"
                   variant="outline"
                   size="sm"
                   :disabled="ui.saving || startingWork || reviewBusy || dismissNeedsInputBusy"

@@ -1378,7 +1378,7 @@ export const dismissNeedsInput: RouteHandler = async (ctx, req, res, params) => 
   if (!existing) {
     return json(res, 404, { error: `Task #${id} not found` });
   }
-  const user = getCurrentUser(req, config)?.email ?? "unknown";
+  const user = getCurrentUser(req, config)?.email ?? "human";
   try {
     const updated = dismissNeedsInputOnTask(config, existing.absPath, user);
     index.applyFileChange(updated.absPath, { guarded: true });

@@ -164,6 +164,37 @@ describe("needs_input status labels on the board card (#0511)", () => {
     expect(wrapper.find(".tc-hint").text()).toContain("Needs your input");
   });
 
+  it("shows review passed when dev-error needs_input is stale on a review task", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    const task = makeTask({
+      needsInput: true,
+      needsInputReason: "dev-error",
+    });
+    repo.reviews = {
+      "0506": {
+        running: false,
+        enabled: true,
+        lines: [],
+        report: {
+          id: "0506",
+          at: new Date().toISOString(),
+          agent: "reviewer",
+          cli: "opencode",
+          model: "default",
+          branch: "feat/x",
+          state: "ok",
+          markdown: "## Verdict\ngood to go.",
+        },
+      },
+    };
+    const wrapper = mountCard(task);
+    const hint = wrapper.find(".tc-hint");
+    expect(hint.text()).toContain("ready to finish");
+    expect(wrapper.find(".task-card").classes()).not.toContain("needs-input");
+  });
+
   it("shows no working hint for review with needs_input and no running review", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
@@ -190,6 +221,7 @@ describe("needs_input status labels in the task drawer (#0511)", () => {
       setActivePinia(pinia);
       FakeEventSource.instances = [];
       const task = makeTask({
+        status: reason === "review-failed" ? "review" : "active",
         needsInput: true,
         needsInputReason: reason === "questions" ? undefined : reason,
         questions: reason === "questions" ? ["Pick A or B"] : undefined,
