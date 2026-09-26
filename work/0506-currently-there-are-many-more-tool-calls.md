@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-26T03:08:48Z"
-review_passes: 1
 id: "0506"
 title: Group consecutive tool calls into one expandable chat row
 type: feature
@@ -12,10 +10,9 @@ created_by: hello@repoos.org
 branch: feat/group-consecutive-tool-calls-into-one-ex
 cli_override: opencode
 model_override: opencode-go/space-bunny-free
-review_cli_override: cursor
-review_model_override: composer-2.5
+review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-26T01:56:07Z"
-dev_error_count: 1
+updated_at: "2026-09-26T02:54:42Z"
 ---
 ## Problem
 
@@ -232,12 +229,4 @@ Currently there are many more tool calls than actual messages in the AI chat log
 - 2026-09-26T02:03:36Z · review_model_override
 - 2026-09-26T02:03:41Z · status inbox→ready
 - 2026-09-26T02:28:04Z · status ready→active, branch
-- 2026-09-26T02:41:31Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
-- 2026-09-26T02:48:00Z · needs_input
-- 2026-09-26T02:54:43Z · status active→review
-- 2026-09-26T02:57:59Z · needs_input
-- 2026-09-26T03:06:45Z · review_model_override
-- 2026-09-26T03:07:27Z · review_cli_override, review_model_override
-- 2026-09-26T03:07:28Z · review_model_override
-- 2026-09-26T03:08:47Z · needs_input
-
+- 2026-09-26T02:54:42Z · status active→review
