@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-26T09:45:52Z"
+review_passes: 1
 id: "0519"
 title: Render input panel text entries as click-to-edit cards with markdown
 type: feature
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/render-input-panel-text-entries-as-click
 created_at: "2026-09-26T09:42:05Z"
-updated_at: "2026-09-26T09:44:49Z"
 ---
 ## Problem
 
@@ -113,3 +114,4 @@ Instead of having this "TEXT" header and raw printed text on the Input panel, do
 - 2026-09-26T09:42:36Z · status inbox→ready
 - 2026-09-26T09:42:40Z · status ready→active, branch
 - 2026-09-26T09:44:49Z · status active→review
+
