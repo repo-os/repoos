@@ -2,14 +2,14 @@
 id: "0509"
 title: Add a dev-only click-to-locate inspector for UI copy
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-a-dev-only-click-to-locate-inspector
 created_at: "2026-09-26T03:12:15Z"
-updated_at: "2026-09-26T12:35:41Z"
+updated_at: "2026-09-26T12:37:52Z"
 review_passes: 4
 last_check_failure: "[object Object]"
 review_rounds: 2
@@ -193,3 +193,4 @@ Sometimes I want to edit the repoos code myself, particularly with simple copy c
 - 2026-09-26T12:35:35Z · note: Fixed spawn error handling, native-element-only annotation, aligned docs; check green with worktree CLI
 - 2026-09-26T12:35:41Z · status active→review
 - 2026-09-26T12:35:41Z · status review→active
+- 2026-09-26T12:37:52Z · status active→review
