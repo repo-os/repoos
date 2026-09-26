@@ -31,7 +31,30 @@ final class HubUpdateCheckTests: XCTestCase {
 
     func testAvailableResult() {
         let result = HubUpdateCheck.evaluate(tag: "v1.10.0", prerelease: false, currentVersion: "1.9.0")
-        XCTAssertEqual(result, .available(current: "1.9.0", latest: "1.10.0"))
+        XCTAssertEqual(result, .available(current: "1.9.0", latest: "1.10.0", downloadURL: nil))
+    }
+
+    func testAvailableCarriesDmgDownloadURL() {
+        let url = URL(string: "https://github.com/repo-os/repoos/releases/download/v2.0.0/RepoOSHub.dmg")!
+        let result = HubUpdateCheck.evaluate(tag: "v2.0.0", prerelease: false, currentVersion: "1.0.0", dmgDownloadURL: url)
+        XCTAssertEqual(result, .available(current: "1.0.0", latest: "2.0.0", downloadURL: url))
+        XCTAssertEqual(result.downloadURL, url)
+    }
+
+    func testAvailableWithoutDmgAssetOffersReleasesPageOnly() {
+        let json = #"{"tag_name":"v2.0.0","prerelease":false,"assets":[]}"#
+        let payload = HubUpdatePayloadParsing.parse(data: Data(json.utf8))
+        XCTAssertNotNil(payload)
+        XCTAssertNil(payload?.dmgDownloadURL)
+        let result = HubUpdateCheck.evaluate(tag: payload?.tag, prerelease: payload?.prerelease, currentVersion: "1.0.0", dmgDownloadURL: payload?.dmgDownloadURL)
+        XCTAssertEqual(result, .available(current: "1.0.0", latest: "2.0.0", downloadURL: nil))
+        XCTAssertNil(result.downloadURL)
+    }
+
+    func testDmgAssetURLParsedFromPayload() {
+        let json = #"{"tag_name":"v2.0.0","prerelease":false,"assets":[{"name":"RepoOSHub.dmg","browser_download_url":"https://github.com/repo-os/repoos/releases/download/v2.0.0/RepoOSHub.dmg"},{"name":"notes.txt","browser_download_url":"https://example.com/notes.txt"}]}"#
+        let payload = HubUpdatePayloadParsing.parse(data: Data(json.utf8))
+        XCTAssertEqual(payload?.dmgDownloadURL?.absoluteString, "https://github.com/repo-os/repoos/releases/download/v2.0.0/RepoOSHub.dmg")
     }
 
     func testPrereleaseNeverOffered() {
@@ -49,12 +72,26 @@ final class HubUpdateCheckTests: XCTestCase {
         let fetcher = CountingFetcher(payload: #"{"tag_name":"v2.0.0","prerelease":false}"#)
         let checker = HubUpdateChecker(fetcher: fetcher)
         let first = await checker.check(currentVersion: "1.0.0")
-        XCTAssertEqual(first, .available(current: "1.0.0", latest: "2.0.0"))
+        XCTAssertEqual(first, .available(current: "1.0.0", latest: "2.0.0", downloadURL: nil))
         let second = await checker.check(currentVersion: "1.0.0")
         XCTAssertEqual(second, first)
-        XCTAssertEqual(fetcher.calls, 1)
+        let callsAfterCache = await fetcher.calls
+        XCTAssertEqual(callsAfterCache, 1)
         _ = await checker.check(currentVersion: "1.0.0", force: true)
-        XCTAssertEqual(fetcher.calls, 2)
+        let callsAfterForce = await fetcher.calls
+        XCTAssertEqual(callsAfterForce, 2)
+    }
+
+    func testCachedResultServesWithoutNetwork() async {
+        let fetcher = CountingFetcher(payload: #"{"tag_name":"v2.0.0","prerelease":false}"#)
+        let checker = HubUpdateChecker(fetcher: fetcher)
+        let empty = await checker.cachedResult()
+        XCTAssertNil(empty)
+        _ = await checker.check(currentVersion: "1.0.0")
+        let served = await checker.cachedResult()
+        XCTAssertEqual(served, .available(current: "1.0.0", latest: "2.0.0", downloadURL: nil))
+        let servedCalls = await fetcher.calls
+        XCTAssertEqual(servedCalls, 1)
     }
 
     func testCheckerSurfacesTransportFailureAsCouldNotCheck() async {
@@ -73,17 +110,14 @@ final class HubUpdateCheckTests: XCTestCase {
     }
 }
 
-private final class CountingFetcher: HubUpdateFetching, @unchecked Sendable {
-    private let lock = NSLock()
+private actor CountingFetcher: HubUpdateFetching {
     private(set) var calls = 0
     private let payload: String
 
     init(payload: String) { self.payload = payload }
 
     func fetchLatestRelease() async -> (data: Data?, statusCode: Int?) {
-        lock.lock()
         calls += 1
-        lock.unlock()
         return (Data(payload.utf8), 200)
     }
 }

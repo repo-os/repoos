@@ -96,7 +96,9 @@ struct HubGlobalPreferences: Codable, Equatable, Sendable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         notificationsEnabled = try container.decodeIfPresent(Bool.self, forKey: .notificationsEnabled) ?? true
         dockBadgeEnabled = try container.decodeIfPresent(Bool.self, forKey: .dockBadgeEnabled) ?? true
-        appearance = try container.decodeIfPresent(HubAppAppearance.self, forKey: .appearance) ?? .system
+        // An unrecognised raw value (e.g. written by a future build) must not
+        // throw: that would wipe the whole registry in reloadFromDisk's catch.
+        appearance = (try? container.decodeIfPresent(HubAppAppearance.self, forKey: .appearance)) ?? .system
     }
 
     func encode(to encoder: Encoder) throws {

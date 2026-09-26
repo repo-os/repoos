@@ -37,8 +37,11 @@ struct HubSettingsView: View {
     @EnvironmentObject private var appState: HubAppState
     @State private var updateResult: HubUpdateResult = .notChecked
     @State private var isChecking = false
-    private let updateChecker = HubUpdateChecker()
-    private let versionInfo = HubAppVersionInfo.current()
+    // @State (not a plain stored property): the checker — and its six-hour
+    // cache — must survive SwiftUI rebuilding this view value on every
+    // appearance change and keystroke elsewhere.
+    @State private var updateChecker = HubUpdateChecker()
+    private static let versionInfo = HubAppVersionInfo.current()
 
     var body: some View {
         Form {
@@ -56,19 +59,24 @@ struct HubSettingsView: View {
             }
 
             Section("Updates") {
-                Text(versionInfo.displayText)
+                Text(Self.versionInfo.displayText)
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                    .accessibilityLabel("Installed Hub version \(versionInfo.shortVersion), build \(versionInfo.build)")
+                    .accessibilityLabel("Installed Hub version \(Self.versionInfo.shortVersion), build \(Self.versionInfo.build)")
                 HStack {
                     Button(isChecking ? "Checking…" : "Check for Updates") {
                         checkForUpdates()
                     }
                     .disabled(isChecking)
-                    if case .available = updateResult {
+                    // The direct download is offered only when the latest
+                    // release actually ships the DMG asset; otherwise the
+                    // releases page is the honest destination.
+                    if let downloadURL = updateResult.downloadURL {
                         Button("Download update") {
-                            NSWorkspace.shared.open(HubUpdateCheck.dmgDownloadURL)
+                            NSWorkspace.shared.open(downloadURL)
                         }
+                    }
+                    if case .available = updateResult {
                         Button("View releases") {
                             NSWorkspace.shared.open(HubUpdateCheck.releasesURL)
                         }
@@ -98,7 +106,7 @@ struct HubSettingsView: View {
             }
 
             Section("About") {
-                Text(versionInfo.displayText)
+                Text(Self.versionInfo.displayText)
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 Text("RepoOS Hub for Mac — one desktop place for your RepoOS servers.")
@@ -110,6 +118,15 @@ struct HubSettingsView: View {
         .padding()
         .frame(width: 480)
         .preferredColorScheme(appState.hubGlobalPreferences.appearance.colorScheme)
+        .onAppear {
+            // Show a fresh cached outcome with no network. No cache means no
+            // fetch: the check stays strictly on demand via the button.
+            Task { @MainActor in
+                if case .notChecked = updateResult, let cached = await updateChecker.cachedResult() {
+                    updateResult = cached
+                }
+            }
+        }
     }
 
     private var appearanceBinding: Binding<HubAppAppearance> {
@@ -137,7 +154,7 @@ struct HubSettingsView: View {
         guard !isChecking else { return }
         isChecking = true
         updateResult = .checking
-        let current = versionInfo.shortVersion == "Unknown" ? nil : versionInfo.shortVersion
+        let current = Self.versionInfo.shortVersion == "Unknown" ? nil : Self.versionInfo.shortVersion
         Task { @MainActor in
             let result = await updateChecker.check(currentVersion: current, force: true)
             updateResult = result
