@@ -116,6 +116,36 @@ describe("renderTokenLines", () => {
     expect(line).toContain("font-style:italic");
   });
 
+  it("also carries the Catppuccin pair, so that theme needs no re-tokenize (#0516)", () => {
+    const catppuccin = [
+      [
+        { content: "k", variants: { light: { color: "#1" }, dark: { color: "#2" } } },
+        {
+          content: " x",
+          variants: {
+            light: { color: "#3" },
+            dark: { color: "#4" },
+            catppuccinLight: { color: "#5" },
+            catppuccinDark: { color: "#6" },
+          },
+        },
+      ],
+    ];
+    const [line] = renderTokenLines(catppuccin);
+    expect(line).toContain("--shiki-catppuccin-light:#5");
+    expect(line).toContain("--shiki-catppuccin-dark:#6");
+    // Both pairs ride on the same span — switching to Catppuccin is a
+    // custom-property swap, not a second highlight pass. (Two tokens in, two
+    // spans out; the point is that the 4-colour token produced only one.)
+    expect(line.match(/<span/g)).toHaveLength(2);
+    expect(line.match(/--shiki-catppuccin-dark/g)).toHaveLength(1);
+    // A token the Catppuccin themes leave uncoloured simply omits those two
+    // properties, and style.css falls back to --txt rather than reusing the
+    // GitHub colour.
+    expect(line).toContain("--shiki-light:#1");
+    expect(line).not.toContain("--shiki-catppuccin-light:#1");
+  });
+
   it("escapes token text and preserves its exact content", () => {
     const [line] = renderTokenLines(tokens);
     expect(line).not.toContain("= <");
