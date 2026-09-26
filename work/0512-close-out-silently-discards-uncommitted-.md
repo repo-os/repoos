@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 cli_override: opencode
-model_override: default
+model_override: opencode-go/space-bunny-free
 created_at: "2026-09-26T03:50:30Z"
-updated_at: "2026-09-26T16:30:26Z"
+updated_at: "2026-09-26T16:30:52Z"
 ---
 ## Problem
 
@@ -126,3 +126,4 @@ not depend on knowing who it was.
 - 2026-09-26T09:41:27Z · status inbox→ready
 - 2026-09-26T16:26:16Z · body
 - 2026-09-26T16:30:26Z · cli_override, model_override
+- 2026-09-26T16:30:52Z · model_override
