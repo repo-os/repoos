@@ -8,8 +8,9 @@ area: server
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: opencode
 created_at: "2026-09-26T02:27:03Z"
-updated_at: "2026-09-26T02:54:38Z"
+updated_at: "2026-09-26T03:00:32Z"
 ---
 ## Problem
 
@@ -105,3 +106,4 @@ came last (`lastFailureLine`) — "Skill routing: …", "Server finalization: ch
 - 2026-09-26T02:27:03Z · created · unknown
 - 2026-09-26T02:39:13Z · title, priority, body
 - 2026-09-26T02:54:38Z · status inbox→ready
+- 2026-09-26T03:00:32Z · cli_override
