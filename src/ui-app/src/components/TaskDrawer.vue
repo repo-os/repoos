@@ -59,6 +59,7 @@ import { bubbleRole, stripAnsi, toDisplayRows, type DisplayRow } from "../lib/ch
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyMainDialog from "./DirtyMainDialog.vue";
 import HotfixConfirmDialog from "./HotfixConfirmDialog.vue";
+import ReviewConfirmDialog from "./ReviewConfirmDialog.vue";
 import SendToEngineerDialog from "./SendToEngineerDialog.vue";
 import SpecEditModal from "./SpecEditModal.vue";
 import ScreenshotViewer from "./ScreenshotViewer.vue";
@@ -185,6 +186,35 @@ const selectableStatuses = computed(() => {
   return allStatuses.value.filter(
     (status) => status.id === current || reachable.includes(status.id),
   );
+});
+
+/**
+ * #0507: a handoff finalization is running for this task, so the Review
+ * affordances must read as busy. A task is in this state for as long as the
+ * check takes — which is exactly why the status is NOT flipped optimistically:
+ * the drawer keeps saying "active" while this is true, and a naive read of it
+ * would otherwise invite a second, concurrent request.
+ */
+const handoffBusy = computed(() => (ui.active ? repo.handoffInFlight(ui.active.id) : false));
+
+/** #0507: the last handoff finalization failure, shown while the task is still active. */
+const handoffError = computed(() => (ui.active ? repo.handoffErrorFor(ui.active.id) : null));
+
+/** Human label for the live handoff step, e.g. "Running repoos check…". */
+const handoffStepLabel = computed(() => {
+  const step = ui.active ? repo.handoffSteps[ui.active.id] : undefined;
+  switch (step) {
+    case "check":
+      return "Running repoos check…";
+    case "commit":
+      return "Committing the branch…";
+    case "review":
+      return "Moving to review…";
+    case "started":
+      return "Starting checks…";
+    default:
+      return "Running checks…";
+  }
 });
 
 const open = computed(() => ui.active !== null || ui.isNew);
@@ -515,6 +545,13 @@ function onDrop(e: DragEvent): void {
 
 async function setStatus(status: string): Promise<void> {
   if (!ui.active || ui.active.status === status) return;
+  // #0507: `review` is a request, not a write — it starts the handoff
+  // finalization, so it goes through the confirm modal (run checks / skip
+  // checks) instead of a bare PATCH. Every other status is still a plain write.
+  if (status === "review") {
+    openReviewConfirm();
+    return;
+  }
   ui.saving = true;
   try {
     await repo.setStatus(ui.active, status);
@@ -649,6 +686,37 @@ const hotfixTask = ref<Task | null>(null);
 function openHotfixConfirm(): void {
   hotfixTask.value = ui.active;
   confirmHotfix.value = true;
+}
+
+// #0507: moving to `review` is a REQUEST that starts the handoff finalization
+// (scoped `repoos check` → commit gate → `review`), not a status write, so
+// every route into it — this drawer's Review button, its status dropdown, the
+// board's drag-drop — goes through one confirm modal. ReviewConfirmDialog is
+// body-teleported, so snapshot the task on open for the same reason as above:
+// the drawer's dismiss-on-outside can null `ui.active` first.
+const confirmReview = ref(false);
+const reviewTask = ref<Task | null>(null);
+function openReviewConfirm(): void {
+  if (!ui.active || ui.active.status === "review") return;
+  reviewTask.value = ui.active;
+  confirmReview.value = true;
+}
+function closeReviewConfirm(): void {
+  confirmReview.value = false;
+  reviewTask.value = null;
+}
+async function confirmReviewWith(runChecks: boolean): Promise<void> {
+  const task = reviewTask.value;
+  closeReviewConfirm();
+  if (!task) return;
+  ui.saving = true;
+  try {
+    await repo.requestReview(task, { skipChecks: !runChecks, origin: "ui-review" });
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    ui.saving = false;
+  }
 }
 
 async function deleteTask(): Promise<void> {
@@ -2900,9 +2968,26 @@ watch(
           </DialogClose>
         </div>
         <div class="drawer-quickbar">
+          <!-- #0507: the handoff finalization is in flight. The task is still
+               `active` on purpose, so without this it would read as "nothing
+               happened" for the whole length of the check. -->
+          <div v-if="handoffBusy" class="ff-notice drawer-handoff-banner">
+            <ActivityIndicator />
+            <span>{{ handoffStepLabel }}</span>
+            <span class="drawer-handoff-sub">
+              This task stays <strong>active</strong> until the checks pass.
+            </span>
+          </div>
+          <div v-else-if="handoffError" class="ff-error drawer-handoff-banner">
+            <span>
+              <strong>Not moved to review.</strong> The handoff finalization stopped:
+              {{ handoffError }}
+            </span>
+            <span class="drawer-handoff-sub">Fix it and click Review again.</span>
+          </div>
           <div class="quickbar-row">
             <Select :model-value="ui.active.status" @update:model-value="(v) => setStatus(v ?? '')">
-              <SelectTrigger :disabled="ui.saving">
+              <SelectTrigger :disabled="ui.saving || handoffBusy">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent position="popper">
@@ -2960,12 +3045,17 @@ watch(
             <Button
               v-if="ui.active.status === 'active' && !repo.isRunning(ui.active.id)"
               variant="destructive"
-              :disabled="ui.saving"
-              title="Run the normal commit-and-check guard, then send this paused task to review"
+              :disabled="ui.saving || handoffBusy"
+              :title="
+                handoffBusy
+                  ? 'RepoOS is already running the handoff finalization for this task'
+                  : 'Ask RepoOS to commit, run the checks, and move this task to review'
+              "
               @click="setStatus('review')"
             >
-              <Send class="size-3.5" />
-              Review
+              <ActivityIndicator v-if="handoffBusy" />
+              <Send v-else class="size-3.5" />
+              {{ handoffBusy ? "Running checks…" : "Review" }}
             </Button>
             <Button
               v-if="ui.active.status === 'active' && repo.isRunning(ui.active.id)"
@@ -4507,6 +4597,15 @@ watch(
     :busy="ui.saving"
     @cancel="confirmHotfix = false"
     @start="startHotfix"
+  />
+
+  <ReviewConfirmDialog
+    :open="confirmReview"
+    :task-label="reviewTask ? `#${reviewTask.id} · ${reviewTask.title}` : ''"
+    :busy="ui.saving"
+    @update:open="(v) => (v ? undefined : closeReviewConfirm())"
+    @run-checks="confirmReviewWith(true)"
+    @skip-checks="confirmReviewWith(false)"
   />
 
   <SendToEngineerDialog

@@ -428,6 +428,16 @@ export const useRepoStore = defineStore("repo", () => {
   const doneSteps = ref<Record<string, string>>({});
   /** Last failed review→done close-out per task id (inline error card). */
   const doneErrors = ref<Record<string, DoneError>>({});
+  /**
+   * #0507: live step of the handoff finalization that moves a task to `review`,
+   * keyed by task id. Separate from `doneSteps` because the two pipelines are
+   * different work with different vocabulary, and a task can be in one while the
+   * other has never run: `handoff:check` must read "Running checks…", not fall
+   * through the close-out map's "Merging branch…" default.
+   */
+  const handoffSteps = ref<Record<string, string>>({});
+  /** Why a handoff finalization failed, per task id. Cleared on the next ask. */
+  const handoffErrors = ref<Record<string, string>>({});
   /** Dirty files on `main` blocking a move-to-done per task id (0204). Empty
    * when no confirmation is pending. The modal reads this and the caller
    * clears it via `clearDirtyMain` on Cancel (or it is overwritten by the
@@ -802,6 +812,28 @@ export const useRepoStore = defineStore("repo", () => {
   /** The inline move-to-done error for a task, or null when none is pending. */
   const doneErrorFor = (id: string): DoneError | null => doneErrors.value[id] ?? null;
 
+  /** Store or clear a failed handoff-finalization reason for a task (0507). */
+  function setHandoffError(id: string, message: string | null): void {
+    const next = { ...handoffErrors.value };
+    if (message === null) delete next[id];
+    else next[id] = message;
+    handoffErrors.value = next;
+  }
+
+  /** Why this task's last handoff finalization failed, or null. */
+  const handoffErrorFor = (id: string): string | null => handoffErrors.value[id] ?? null;
+
+  /**
+   * True while a handoff finalization is in flight for a task: the server has
+   * claimed the slot (so `pendingHandoff` reads true) but has not yet written
+   * `status: review`. This is the "running checks…" state the task card shows.
+   */
+  function handoffInFlight(id: string): boolean {
+    const step = handoffSteps.value[id];
+    if (!step) return false;
+    return step !== "done" && step !== "failed";
+  }
+
   /** Dirty files on `main` pending a move-to-done decision (0204), or [] when the modal is not needed. */
   const dirtyMainFor = (id: string): string[] => dirtyMain.value[id] ?? [];
 
@@ -1122,7 +1154,25 @@ export const useRepoStore = defineStore("repo", () => {
       // record; the transcript itself stays clean.
       pushFeed(`<b>agent stopped</b> on #${e.id}`, "#ffb454", "agent.exited");
     } else if (e.type === "task.progress") {
-      doneSteps.value = { ...doneSteps.value, [e.id]: e.step };
+      // #0507: `handoff:*` is the OTHER pipeline — the finalization that moves
+      // a task to `review`. Keep it out of `doneSteps` so its vocabulary is
+      // never read through the close-out map's labels.
+      if (e.step.startsWith("handoff:")) {
+        const stage = e.step.slice("handoff:".length);
+        handoffSteps.value = { ...handoffSteps.value, [e.id]: stage };
+        if (stage === "failed") {
+          const detail = e.detail ?? "handoff finalization failed";
+          setHandoffError(e.id, detail);
+          // One toast, not a permanent badge: the task stays `active`, so the
+          // card keeps showing the agent's own state and the reason lives in
+          // the activity log and the transcript. Re-asking clears it.
+          pushToast(`#${e.id} stayed active — ${detail}`, "error");
+        } else if (stage === "done") {
+          setHandoffError(e.id, null);
+        }
+      } else {
+        doneSteps.value = { ...doneSteps.value, [e.id]: e.step };
+      }
       // Background close-out failure (0199): the /done POST only enqueues the
       // job, so a later failure arrives here as an SSE event. Surface it as the
       // inline done error the card/drawer already render.
@@ -1681,6 +1731,43 @@ export const useRepoStore = defineStore("repo", () => {
       // Moving a review task anywhere (other than through the done workflow)
       // invalidates any close-out error shown on its card.
       if (status !== "review") setDoneError(t.id, null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      pushToast(message, "error");
+      throw err;
+    }
+  }
+
+  /**
+   * #0507: ask RepoOS to move a task to `review`. This is a REQUEST, not a
+   * status write — the server runs the handoff finalization (scoped
+   * `repoos check` → commit gate → `review`) and the task stays `active` with
+   * a "running checks…" state until that succeeds.
+   *
+   * `skipChecks` is the human override the Review confirm modal offers, and is
+   * deliberately the only way to reach `review` without the check: it is
+   * recorded in the task's activity log, and Move-to-done still runs the full
+   * gate before merging. `origin` is which affordance asked, for the log.
+   */
+  async function requestReview(
+    t: Task,
+    opts: { skipChecks?: boolean; origin?: "ui-review" | "board-drag" } = {},
+  ): Promise<void> {
+    try {
+      await patchTask(t.id, {
+        status: "review",
+        skipChecks: opts.skipChecks === true,
+        origin: opts.origin ?? "ui-review",
+      });
+      // The task has NOT moved yet. Say so once, plainly, rather than letting
+      // the button look like it did nothing while a check runs.
+      setHandoffError(t.id, null);
+      pushToast(
+        opts.skipChecks
+          ? `Committing #${t.id} and moving it to review…`
+          : `Running checks on #${t.id} — it moves to review when they pass`,
+        "info",
+      );
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       pushToast(message, "error");
@@ -2464,6 +2551,12 @@ export const useRepoStore = defineStore("repo", () => {
     doneSteps,
     doneErrors,
     doneErrorFor,
+    handoffSteps,
+    handoffErrors,
+    handoffErrorFor,
+    handoffInFlight,
+    setHandoffError,
+    requestReview,
     dirtyMain,
     dirtyMainFor,
     clearDirtyMain,
