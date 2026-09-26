@@ -200,7 +200,22 @@ describe("CopyInspectorOverlay affordance", () => {
     wrapper.unmount();
   });
 
-  it("keeps the popup inside the viewport near the edges and lays buttons out in one row", async () => {
+  it("keeps the pill and popup inside the viewport near every edge (measured sizes)", async () => {
+    // jsdom has no layout: fake the rendered sizes so the clamping math is exercised.
+    vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockImplementation(
+      function (this: HTMLElement) {
+        if (this.classList.contains("copy-inspector-pane")) return 600;
+        if (this.classList.contains("copy-inspector-affordance")) return 260;
+        return 0;
+      },
+    );
+    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockImplementation(
+      function (this: HTMLElement) {
+        if (this.classList.contains("copy-inspector-pane")) return 150;
+        if (this.classList.contains("copy-inspector-affordance")) return 28;
+        return 0;
+      },
+    );
     const labeled = document.createElement("p");
     labeled.setAttribute("data-repoos-file", "src/ui-app/Foo.vue");
     labeled.setAttribute("data-repoos-line", "12");
@@ -210,25 +225,35 @@ describe("CopyInspectorOverlay affordance", () => {
     const wrapper = mount(CopyInspectorOverlay, { attachTo: document.body });
     await nextTick();
 
-    for (const [x, y] of [
-      [2, window.innerHeight - 4],
-      [window.innerWidth - 2, 3],
-    ]) {
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    const corners: Array<[number, number]> = [
+      [2, 3],
+      [W - 2, 3],
+      [2, H - 4],
+      [W - 2, H - 4],
+    ];
+    const inside = (el: HTMLElement, w: number, h: number): void => {
+      const left = Number.parseFloat(el.style.left);
+      const top = Number.parseFloat(el.style.top);
+      expect(left).toBeGreaterThanOrEqual(12);
+      expect(left + w).toBeLessThanOrEqual(W - 12);
+      expect(top).toBeGreaterThanOrEqual(12);
+      expect(top + h).toBeLessThanOrEqual(H - 12);
+    };
+    for (const [x, y] of corners) {
       window.dispatchEvent(
         new PointerEvent("pointermove", { bubbles: true, clientX: x, clientY: y, altKey: true }),
       );
       await flushAffordanceRaf();
       await nextTick();
+      await nextTick();
+      inside(document.body.querySelector(".copy-inspector-affordance") as HTMLElement, 260, 28);
+
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
       await nextTick();
-      const pane = document.body.querySelector(".copy-inspector-pane") as HTMLElement;
-      const left = Number.parseFloat(pane.style.left);
-      const top = Number.parseFloat(pane.style.top);
-      const width = Number.parseFloat(pane.style.width);
-      expect(left).toBeGreaterThanOrEqual(12);
-      expect(left + width).toBeLessThanOrEqual(window.innerWidth - 12);
-      expect(top).toBeGreaterThanOrEqual(12);
-      expect(top).toBeLessThan(window.innerHeight - 12);
+      await nextTick();
+      inside(document.body.querySelector(".copy-inspector-pane") as HTMLElement, 600, 150);
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
       await nextTick();
     }

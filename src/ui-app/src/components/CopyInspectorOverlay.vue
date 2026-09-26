@@ -31,7 +31,9 @@ const active = computed(() => {
 });
 
 const affordanceVisible = ref(false);
-const affordanceStyle = ref<{ left: string; top: string }>({ left: "0px", top: "0px" });
+/** Pointer-anchored spot for the pill; clamped into the viewport at render time. */
+const affordancePoint = ref<{ x: number; y: number }>({ x: 0, y: 0 });
+const affordanceSize = ref({ w: 200, h: 28 });
 const hoverTarget = shallowRef<CopyInspectorTarget | null>(null);
 const popup = shallowRef<CopyInspectorTarget | null>(null);
 const popupPos = ref({ x: 0, y: 0 });
@@ -48,26 +50,49 @@ const editorConfigured = computed(() => {
 const EDITOR_HINT =
   "Open in editor is off until an editor command is set: Settings → Advanced → “Copy inspector: editor command” (e.g. zed {file}:{line}).";
 
-/** Measured popup height (falls back to an estimate until first render). */
-const popupHeight = ref(140);
+const VIEWPORT_PAD = 12;
+
+/** Measured popup size (estimates until the first render is measured). */
+const popupSize = ref({ w: 480, h: 140 });
 
 async function measurePopup(): Promise<void> {
   await nextTick();
-  const h = paneRef.value?.offsetHeight;
-  if (h) popupHeight.value = h;
+  const el = paneRef.value;
+  if (el && el.offsetWidth) popupSize.value = { w: el.offsetWidth, h: el.offsetHeight };
 }
 
+async function measureAffordance(): Promise<void> {
+  await nextTick();
+  const el = affordanceRef.value;
+  if (el && el.offsetWidth) affordanceSize.value = { w: el.offsetWidth, h: el.offsetHeight };
+}
+
+function clamp(v: number, min: number, max: number): number {
+  return Math.min(Math.max(v, min), Math.max(min, max));
+}
+
+const affordanceStyle = computed(() => {
+  const { w, h } = affordanceSize.value;
+  const { x, y } = affordancePoint.value;
+  // Default: down-right of the pointer. Flip to the left / above when that
+  // would leave the viewport, then clamp as a last resort.
+  const left = x + w > window.innerWidth - VIEWPORT_PAD ? x - 20 - w : x;
+  const top = y + h > window.innerHeight - VIEWPORT_PAD ? y - 20 - h : y;
+  return {
+    left: `${clamp(left, VIEWPORT_PAD, window.innerWidth - w - VIEWPORT_PAD)}px`,
+    top: `${clamp(top, VIEWPORT_PAD, window.innerHeight - h - VIEWPORT_PAD)}px`,
+  };
+});
+
 const popupStyle = computed(() => {
-  const pad = 12;
-  const w = Math.min(500, window.innerWidth - pad * 2);
-  const h = popupHeight.value;
-  const x = Math.min(Math.max(pad, popupPos.value.x - w / 2), window.innerWidth - w - pad);
+  const { w, h } = popupSize.value;
+  const x = clamp(popupPos.value.x - w / 2, VIEWPORT_PAD, window.innerWidth - w - VIEWPORT_PAD);
   // Below the pointer by default; flip above it when that would run off the
   // bottom, then clamp so it never leaves the viewport.
   let y = popupPos.value.y;
-  if (y + h > window.innerHeight - pad) y = popupPos.value.y - 24 - h;
-  y = Math.min(Math.max(pad, y), Math.max(pad, window.innerHeight - h - pad));
-  return { left: `${x}px`, top: `${y}px`, width: `${w}px` };
+  if (y + h > window.innerHeight - VIEWPORT_PAD) y = popupPos.value.y - 24 - h;
+  y = clamp(y, VIEWPORT_PAD, window.innerHeight - h - VIEWPORT_PAD);
+  return { left: `${x}px`, top: `${y}px` };
 });
 
 function isInteractiveElement(el: Element | null): boolean {
@@ -92,7 +117,7 @@ let moveRaf = 0;
 let lastMove: PointerEvent | null = null;
 
 const affordanceRef = ref<HTMLElement | null>(null);
-const pinnedAffordancePos = ref<{ left: string; top: string } | null>(null);
+const pinnedAffordancePos = ref<{ x: number; y: number } | null>(null);
 /** Outline of the exact element the pill / popup refers to. */
 const highlightStyle = ref<Record<string, string> | null>(null);
 
@@ -154,9 +179,10 @@ function updateAffordance(e: PointerEvent): void {
   highlightStyle.value = highlightFor(findCopyInspectorElement(node));
   affordanceVisible.value = true;
   if (!sameTarget || !pinnedAffordancePos.value) {
-    pinnedAffordancePos.value = { left: `${e.clientX + 10}px`, top: `${e.clientY + 10}px` };
+    pinnedAffordancePos.value = { x: e.clientX + 10, y: e.clientY + 10 };
   }
-  affordanceStyle.value = pinnedAffordancePos.value;
+  affordancePoint.value = pinnedAffordancePos.value;
+  void measureAffordance();
 }
 
 function onPointerMove(e: PointerEvent): void {
@@ -421,8 +447,14 @@ onUnmounted(() => {
   position: fixed;
   z-index: 201;
   pointer-events: auto;
-  padding: 12px 14px 10px;
+  box-sizing: border-box;
+  width: max-content;
   max-width: calc(100vw - 24px);
+  padding: 12px 14px 10px;
+  /* .stage-pane centers itself with translateX(-50%) and animates it; that
+     shifts the box away from the left/top we clamp to, so opt out. */
+  transform: none;
+  animation: none;
 }
 
 .copy-inspector-path {
