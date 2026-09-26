@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-26T05:06:37Z"
-review_passes: 3
 id: "0511"
 title: "Card and panel status should name the actual problem, not generic needs-input/working labels"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: the agent process exited with an error — open the task to see the full output
@@ -15,6 +13,8 @@ created_by: ""
 branch: feat/card-and-panel-status-should-name-the-ac
 review_model_override: opencode-go/space-bunny-free
 created_at: "2026-09-26T03:19:13Z"
+updated_at: "2026-09-26T05:43:50Z"
+review_passes: 3
 review_rounds: 2
 dev_error_count: 4
 ---
@@ -93,4 +93,5 @@ agent needs your input" on #0499.
 - 2026-09-26T04:51:02Z · status active→review
 - 2026-09-26T04:54:46Z · status review→active
 - 2026-09-26T05:03:59Z · status active→review
-
+- 2026-09-26T05:43:50Z · status review→active
+- 2026-09-26T05:43:50Z · note: Addressed review: dismiss clears questions, Review again for stuck review, stale comment
