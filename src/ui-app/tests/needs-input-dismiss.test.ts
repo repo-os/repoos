@@ -60,7 +60,7 @@ describe("dismissNeedsInputOnTask (#0511)", () => {
     }
   });
 
-  it("keeps questions when dismissing a dev-error flag", () => {
+  it("clears pending questions when dismissing, like patchTaskFile", () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-needs-dismiss-q-"));
     const work = join(root, "work");
     mkdirSync(work, { recursive: true });
@@ -88,8 +88,8 @@ Body.
     );
     try {
       const updated = dismissNeedsInputOnTask(config(root), absPath, "hello@repoos.org");
-      expect(updated.questions).toEqual(["Which API?"]);
-      expect(readFileSync(absPath, "utf8")).toContain("questions:");
+      expect(updated.questions ?? []).toEqual([]);
+      expect(readFileSync(absPath, "utf8")).not.toContain("questions:");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
