@@ -511,6 +511,10 @@ const THEME_SWATCHES: Record<string, { bg: string; a: string; b: string }> = {
   "gen z": { bg: "#241a3d", a: "#ff5df0", b: "#b58cff" },
   jelly: { bg: "#1a2a44", a: "#33e6c4", b: "#ff5eb4" },
   gruvbox: { bg: "#32302f", a: "#fabd2f", b: "#8ec07c" },
+  // Mocha's base/mantle with its blue + mauve accents (#0516). The swatch
+  // previews the dark flavour; picking the theme and then choosing Light in
+  // the dark/light control gives Latte.
+  catppuccin: { bg: "#1e1e2e", a: "#89b4fa", b: "#cba6f7" },
 };
 function swatchFor(id: string): { bg: string; a: string; b: string } {
   return THEME_SWATCHES[id] ?? { bg: "var(--panel-solid)", a: "var(--cyan)", b: "var(--violet)" };

@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-26T10:05:51Z"
-review_passes: 1
 id: "0516"
 title: "title: Add Catppuccin light and dark themes"
 type: feature
@@ -15,7 +13,7 @@ model_override: opencode-go/space-bunny-free
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-26T08:19:31Z"
-last_check_failure: "[object Object]"
+updated_at: "2026-09-26T10:04:50Z"
 ---
 title: Add Catppuccin light and dark themes
 type: feature
@@ -123,4 +121,3 @@ I want to add Catppuccin theme (both light and dark options) to RepoOS. If you d
 - 2026-09-26T08:35:34Z · status inbox→ready
 - 2026-09-26T08:35:37Z · status ready→active, branch
 - 2026-09-26T10:04:50Z · status active→review
-
