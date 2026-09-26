@@ -2,7 +2,7 @@
 id: "0511"
 title: "Card and panel status should name the actual problem, not generic needs-input/working labels"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: ""
 review_model_override: opencode-go/space-bunny-free
 created_at: "2026-09-26T03:19:13Z"
-updated_at: "2026-09-26T03:21:04Z"
+updated_at: "2026-09-26T03:21:06Z"
 ---
 ## Problem
 
@@ -78,3 +78,4 @@ agent needs your input" on #0499.
 
 - 2026-09-26T03:19:13Z · created · unknown
 - 2026-09-26T03:21:04Z · review_model_override
+- 2026-09-26T03:21:06Z · status inbox→ready
