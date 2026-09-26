@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { X, Paperclip } from "lucide-vue-next";
+import { X, Paperclip, ImagePlus } from "lucide-vue-next";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
 import Button from "./ui/button.vue";
@@ -109,29 +109,8 @@ function done(): void {
           </div>
         </div>
         <template v-else>
-          <div class="field">
-            <div class="field-header">
-              <label for="new-input-text">What would you like to share?</label>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                aria-label="Clear draft"
-                :disabled="!ui.inputText.trim() && !ui.inputScreenshots.length"
-                @click="clearDraft"
-                >Clear</Button
-              >
-            </div>
-            <textarea
-              id="new-input-text"
-              v-model="ui.inputText"
-              class="ff-textarea"
-              rows="12"
-              placeholder="Share an idea, question, bug, observation, or feedback…"
-            ></textarea>
-          </div>
-          <div class="field">
-            <label>Attachments</label>
+          <div class="field" style="margin-top: 4px">
+            <label>Screenshots</label>
             <div
               class="shot-dropzone"
               :class="{ over: dragDepth > 0 }"
@@ -140,11 +119,11 @@ function done(): void {
               @click="fileInput?.click()"
               @keydown.enter="fileInput?.click()"
             >
-              <Paperclip class="size-4" />
+              <ImagePlus class="size-4" />
               <span>{{
                 ui.inputScreenshots.length
-                  ? `Add more — ${ui.inputScreenshots.length} file${ui.inputScreenshots.length === 1 ? "" : "s"} attached`
-                  : "Click to add a screenshot or file, or drop them anywhere on this panel"
+                  ? `Add more — ${ui.inputScreenshots.length} screenshot${ui.inputScreenshots.length === 1 ? "" : "s"} added`
+                  : "Click to add screenshots, or drop them anywhere on this panel"
               }}</span>
               <input
                 id="new-input-file"
@@ -180,6 +159,27 @@ function done(): void {
                 </button>
               </div>
             </div>
+          </div>
+          <div class="field">
+            <div class="field-header">
+              <label for="new-input-text">What would you like to share?</label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label="Clear draft"
+                :disabled="!ui.inputText.trim() && !ui.inputScreenshots.length"
+                @click="clearDraft"
+                >Clear</Button
+              >
+            </div>
+            <textarea
+              id="new-input-text"
+              v-model="ui.inputText"
+              class="ff-textarea"
+              rows="12"
+              placeholder="Share an idea, question, bug, observation, or feedback…"
+            ></textarea>
           </div>
           <div class="btn-row" style="margin-top: 20px">
             <Button variant="outline" @click="ui.close">Cancel</Button>
