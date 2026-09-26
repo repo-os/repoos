@@ -4,7 +4,12 @@ struct ContentView: View {
     @EnvironmentObject private var appState: HubAppState
 
     var body: some View {
-        navigationShell
+        NavigationSplitView {
+            ServerSidebarView()
+        } detail: {
+            WorkspaceDetailView()
+                .toolbar { HubWorkspaceToolbar() }
+        }
         // The system may otherwise keep a dark titlebar material even when
         // the Hub shell is set to Light. Render the window toolbar explicitly
         // from the selected shell appearance instead.
@@ -64,27 +69,15 @@ struct ContentView: View {
     }
 
     private var toolbarBackground: Color {
-        appState.hubGlobalPreferences.appearance == .dark ? .black : .white
+        shellBackground
     }
 
     private var shellBackground: Color {
-        appState.hubGlobalPreferences.appearance == .dark ? .black : .white
-    }
-
-    @ViewBuilder
-    private var navigationShell: some View {
-        let splitView = NavigationSplitView {
-            ServerSidebarView()
-        } detail: {
-            WorkspaceDetailView()
-                .toolbar { HubWorkspaceToolbar() }
-        }
-        .navigationSplitViewStyle(.balanced)
-
-        if #available(macOS 15.0, *) {
-            splitView.containerBackground(shellBackground, for: .window)
-        } else {
-            splitView
+        switch appState.hubGlobalPreferences.appearance {
+        case .dark:
+            return Color(red: 0.12, green: 0.12, blue: 0.12)
+        case .light, .system:
+            return .white
         }
     }
 }

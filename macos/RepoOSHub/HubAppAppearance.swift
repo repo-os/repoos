@@ -43,7 +43,10 @@ enum HubAppAppearance: String, Codable, Equatable, Sendable, CaseIterable {
         switch self {
         case .system: return .windowBackgroundColor
         case .light: return .white
-        case .dark: return .black
+        case .dark:
+            // Match the charcoal backing used by macOS's dark window chrome;
+            // a pure black frame makes the split-view edge look detached.
+            return NSColor(calibratedWhite: 0.12, alpha: 1)
         }
     }
 }

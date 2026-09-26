@@ -189,7 +189,9 @@ private func applyNativeSurfaceBackgrounds(
     let typeName = String(describing: type(of: view))
     guard !typeName.contains("WKWebView") else { return }
 
-    if view is NSVisualEffectView || view is NSSplitView || view is NSClipView {
+    // Keep the split-view/frame backing in sync with the selected Hub theme,
+    // but leave scroll and list clip views alone so SwiftUI can paint rows.
+    if view is NSVisualEffectView || view is NSSplitView {
         view.appearance = appearance
         view.wantsLayer = true
         view.layer?.backgroundColor = color.cgColor
