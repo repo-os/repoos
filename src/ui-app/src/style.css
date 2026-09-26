@@ -5417,6 +5417,9 @@
   background: rgba(255, 180, 84, 0.08);
   animation: needs-input-pulse 1.6s ease-in-out infinite;
 }
+.agent-waiting-static {
+  animation: none;
+}
 .agent-waiting-dot {
   width: 8px;
   height: 8px;
@@ -5454,9 +5457,6 @@
   color: var(--txt-dim);
   margin-top: 8px;
   line-height: 1.5;
-}
-.agent-waiting-action {
-  margin-top: 10px;
 }
 .agent-waiting-actions {
   display: flex;

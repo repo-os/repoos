@@ -13,7 +13,11 @@ import {
   silentMs,
   STUCK_SILENCE_MS,
 } from "../lib/retryHints";
-import { needsInputBannerText, needsInputStatusLabel } from "../lib/needs-input-ui";
+import {
+  needsInputBannerText,
+  needsInputStatusLabel,
+  needsInputSurfaces,
+} from "../lib/needs-input-ui";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyMainDialog from "./DirtyMainDialog.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
@@ -432,7 +436,7 @@ const hint = computed<CardHint | null>(() => {
     // — "review passed · ready to finish" right above it reads as
     // contradictory once that attempt already failed.
     if (repo.doneErrorFor(t.id)) return null;
-    if (t.needsInput) return needsInputHint(t);
+    if (needsInputSurfaces(t)) return needsInputHint(t);
     // 0381: a PM chat run on a review task outranks the idle verdicts —
     // the PM is touching the task right now.
     if (pmWorking) return PM_WORKING_HINT;
@@ -729,7 +733,7 @@ async function openDebuggerFromError(): Promise<void> {
         !repo.reviewFor(task.id)?.running &&
         !repo.isRunning(task.id),
       'review-ready': reviewReady,
-      'needs-input': task.needsInput,
+      'needs-input': needsInputSurfaces(task),
       'done-needs-ack': ackPending,
       'ai-created-ack': createAckPending,
       dragging,

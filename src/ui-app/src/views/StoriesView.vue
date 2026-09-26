@@ -15,6 +15,7 @@ import StoryPanel from "../components/StoryPanel.vue";
 import Button from "../components/ui/button.vue";
 import ActivityIndicator from "../components/ActivityIndicator.vue";
 import type { Status, Task } from "../types";
+import { needsInputStatusLabel, needsInputSuppressedOnReview } from "../lib/needs-input-ui";
 
 const STATUS_ORDER: Status[] = ["draft", "inbox", "ready", "active", "review", "done"];
 
@@ -130,8 +131,14 @@ function liveTasks(tasks: Task[]): LiveRow[] {
     .slice(0, 5)
     .map((task) => {
       if (task.needsInput) {
-        const reason = task.needsInputReason ? ` · ${task.needsInputReason}` : "";
-        return { task, cue: `needs input${reason}`, cueClass: "attention" };
+        if (needsInputSuppressedOnReview(task)) {
+          return { task, cue: "in review", cueClass: "review" };
+        }
+        const label = needsInputStatusLabel(
+          task.needsInputReason,
+          (task.questions?.length ?? 0) > 0,
+        );
+        return { task, cue: label, cueClass: "attention" };
       }
       if (task.needsMerge) return { task, cue: "needs merge", cueClass: "attention" };
       if (task.status === "review") return { task, cue: "in review", cueClass: "review" };

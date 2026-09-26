@@ -37,6 +37,7 @@ import {
   headCommitISO,
   worktreePathForBranch,
 } from "../core/git.js";
+import { needsInputClearsOnSuccessfulReview } from "../core/needs-input.js";
 import { parseTask, utcTimestamp } from "../core/task.js";
 import {
   parseReviewVerdict as parseVerdictLabel,
@@ -924,7 +925,7 @@ export class ReviewManager {
     // on a stale failure. Scoped to reason "review-failed" specifically: an
     // unrelated needsInput (e.g. a CTO policy question) must survive a review
     // that happens to succeed around the same time.
-    if (state === "ok" && task.needsInput && task.needsInputReason === "review-failed") {
+    if (state === "ok" && task.needsInput && needsInputClearsOnSuccessfulReview(task)) {
       try {
         patchTaskFile(this.config, task.absPath, { needsInput: false, needsInputReason: null });
       } catch (err) {
