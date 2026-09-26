@@ -262,6 +262,11 @@ export interface BoardIndex {
 export interface StoryDefinitionRecord {
   key: string;
   name: string;
+  /**
+   * Stable zero-padded 4-digit number, the story's counterpart to a task's
+   * `id` (#0515). Absent/empty only for a story file not yet backfilled.
+   */
+  number?: string;
   path: string;
   body: string;
   createdAt: string;

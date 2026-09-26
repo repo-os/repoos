@@ -1,10 +1,11 @@
 /**
  * Deep-link query params (#0345): /work?task=<id|new>, /inputs?input=<id|new>,
- * and /settings?setting=<id> (an alias of the existing ?focus=). Each handler
- * opens its panel, then clears its param with router.replace while preserving
- * any other query keys, so a refresh doesn't re-open the panel. Survival of
- * the params through the login round-trip itself is covered in
- * router-guard.test.ts (the guard redirects with redirect=to.fullPath).
+ * /stories?story=<number|key|new> (#0515), and /settings?setting=<id> (an alias
+ * of the existing ?focus=). Each handler opens its panel, then clears its param
+ * with router.replace while preserving any other query keys, so a refresh
+ * doesn't re-open the panel. Survival of the params through the login
+ * round-trip itself is covered in router-guard.test.ts (the guard redirects with
+ * redirect=to.fullPath).
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
@@ -17,6 +18,7 @@ import type { ConfigField, Task } from "../src/types";
 import type { Input } from "../../core/input.js";
 import WorkView from "../src/views/WorkView.vue";
 import InputsView from "../src/views/InputsView.vue";
+import StoriesView from "../src/views/StoriesView.vue";
 import SettingsView from "../src/views/SettingsView.vue";
 import DialogContent from "../src/components/ui/dialog/content.vue";
 import DialogTitle from "../src/components/ui/dialog/title.vue";
@@ -287,6 +289,137 @@ describe("inputs ?input= deep-link (#0345)", () => {
     await flushPromises();
 
     expect(wrapper.find(".input-row .input-number").text()).toBe("#0001");
+    wrapper.unmount();
+  });
+});
+
+describe("stories ?story= deep-link (#0515)", () => {
+  /**
+   * The story side panel's drawer, found by its tablist. `NewStoryPanel` uses
+   * the same `.drawer-head-title`, and earlier tests in this file leave their
+   * teleported dialogs in `document.body`, so a bare class selector would match
+   * the wrong panel.
+   */
+  function storyPanel(): HTMLElement | null {
+    const drawers = Array.from(document.body.querySelectorAll<HTMLElement>(".drawer"));
+    return (
+      drawers.find((d) => d.querySelector('[role="tablist"][aria-label="Story details"]')) ?? null
+    );
+  }
+
+  function storyTitle(): string {
+    return storyPanel()?.querySelector(".drawer-head-title")?.textContent ?? "";
+  }
+
+  function storyDef(name: string, number: string) {
+    return {
+      key: name.toLowerCase(),
+      name,
+      number,
+      path: `stories/${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.md`,
+      body: "Scope.",
+      createdAt: "2026-09-01T00:00:00Z",
+      createdBy: "hello@repoos.org",
+    };
+  }
+
+  function openStories(): void {
+    useConfigStore().data = { stories: { enabled: true } };
+    useRepoStore().tasks = [makeTask("0001")];
+  }
+
+  it("?story=<number> opens that story's panel, then clears the param", async () => {
+    openStories();
+    useRepoStore().storyDefinitions = [storyDef("Alpha slice", "0007")];
+    currentQuery = { story: "0007" };
+    const wrapper = mount(StoriesView, { attachTo: document.body });
+    await flushPromises();
+
+    expect(storyTitle()).toContain("Alpha slice");
+    expect(replaceSpy).toHaveBeenCalledWith({ query: {} });
+    wrapper.unmount();
+  });
+
+  it("a bare numeric param (and a leading '#') still matches the padded number", async () => {
+    openStories();
+    useRepoStore().storyDefinitions = [storyDef("Alpha slice", "0007")];
+    currentQuery = { story: "#7" };
+    const wrapper = mount(StoriesView, { attachTo: document.body });
+    await flushPromises();
+
+    expect(storyTitle()).toContain("Alpha slice");
+    wrapper.unmount();
+  });
+
+  it("?story=<key> opens a story whose file predates numbering", async () => {
+    openStories();
+    useRepoStore().storyDefinitions = [storyDef("Alpha slice", "")];
+    currentQuery = { story: "alpha slice" };
+    const wrapper = mount(StoriesView, { attachTo: document.body });
+    await flushPromises();
+
+    expect(storyTitle()).toContain("Alpha slice");
+    wrapper.unmount();
+  });
+
+  it("preserves sibling query keys when clearing the param", async () => {
+    openStories();
+    useRepoStore().storyDefinitions = [storyDef("Alpha slice", "0007")];
+    currentQuery = { story: "0007", from: "digest" };
+    const wrapper = mount(StoriesView, { attachTo: document.body });
+    await flushPromises();
+
+    expect(replaceSpy).toHaveBeenCalledWith({ query: { from: "digest" } });
+    wrapper.unmount();
+  });
+
+  it("?story=new still opens the new-story panel, not a story lookup", async () => {
+    openStories();
+    useRepoStore().storyDefinitions = [storyDef("Alpha slice", "0007")];
+    currentQuery = { story: "new" };
+    const wrapper = mount(StoriesView, { attachTo: document.body });
+    await flushPromises();
+
+    expect(useUiStore().isNewStory).toBe(true);
+    expect(storyPanel()).toBeNull();
+    expect(replaceSpy).toHaveBeenCalledWith({ query: {} });
+    wrapper.unmount();
+  });
+
+  it("opens after the feature flag arrives, as on a cold load of a copied link", async () => {
+    // The regression this guards: `App.vue` loads `config` in its `onMounted`,
+    // AFTER `repo.init()` and the doc/skill loads, so a view mounting from a
+    // pasted `/stories?story=0007` sees `config.data` still empty. A watcher
+    // tracking only the query gated on `!enabled`, bailed, and never re-ran —
+    // dropping the link on exactly the flow a deeplink exists for.
+    useConfigStore().data = {};
+    useRepoStore().tasks = [makeTask("0001")];
+    useRepoStore().storyDefinitions = [storyDef("Alpha slice", "0007")];
+    currentQuery = { story: "0007" };
+    const wrapper = mount(StoriesView, { attachTo: document.body });
+    await flushPromises();
+    expect(storyPanel()).toBeNull();
+
+    // Config lands, flipping the flag — the link must resolve now.
+    useConfigStore().data = { stories: { enabled: true } };
+    await flushPromises();
+
+    expect(storyTitle()).toContain("Alpha slice");
+    expect(replaceSpy).toHaveBeenCalledWith({ query: {} });
+    wrapper.unmount();
+  });
+
+  it("an unknown param degrades gracefully (no panel, param left intact)", async () => {
+    openStories();
+    useRepoStore().storyDefinitions = [storyDef("Alpha slice", "0007")];
+    currentQuery = { story: "9999" };
+    const wrapper = mount(StoriesView, { attachTo: document.body });
+    await flushPromises();
+    // Give the retry loop a chance to give up before asserting nothing opened.
+    await new Promise((r) => setTimeout(r, 250));
+
+    expect(storyPanel()).toBeNull();
+    expect(replaceSpy).not.toHaveBeenCalled();
     wrapper.unmount();
   });
 });
