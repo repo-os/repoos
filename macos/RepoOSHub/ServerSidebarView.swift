@@ -59,7 +59,7 @@ struct ServerSidebarView: View {
             .buttonStyle(.borderedProminent)
             .controlSize(.regular)
             .padding(12)
-            .background(.bar)
+            .background(sidebarBackground)
             .help("Add a RepoOS server to the local registry")
         }
         .overlay {
@@ -67,6 +67,7 @@ struct ServerSidebarView: View {
                 SidebarEmptyHint()
             }
         }
+        .background(sidebarBackground)
     }
 
     private var sidebarBackground: Color {
