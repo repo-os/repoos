@@ -2,7 +2,7 @@
 id: "0503"
 title: "Let's add a new theme: gruvbox (light and dark). Please d…"
 type: feature
-status: active
+status: review
 priority: p2
 area: general
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: opencode-go/space-bunny-free
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-25T16:00:20Z"
-updated_at: "2026-09-25T22:23:52Z"
+updated_at: "2026-09-26T00:56:57Z"
 ---
 Let's add a new theme: gruvbox (light and dark). Please do an online search for details if you don't know what it is, it's a famous coding theme, but I'd like to apply it to the whole RepoOS app UI, not just code blocks.
 
@@ -34,3 +34,4 @@ Let's add a new theme: gruvbox (light and dark). Please do an online search for 
 - 2026-09-25T16:55:46Z · status ready→active, branch
 - 2026-09-25T22:23:44Z · status active→ready
 - 2026-09-25T22:23:52Z · status ready→active
+- 2026-09-26T00:56:57Z · status active→review
