@@ -32,10 +32,14 @@ UI smoke test) stay local — they are fast and not the resource problem.
 | UI smoke test (Playwright/webkit) | local | local |
 
 `REPOOS_SKIP_TESTS=1` (see `src/commands/check.ts`) is what both paths set on the
-local `repoos check` after a remote pass so its Tests step is skipped. With
-`remoteValidation.enabled`, standalone `repoos check` runs the remote half first
-unless you pass `--local-tests`. Repos with remote validation off behave as
-before.
+local `repoos check` after a remote pass so its Tests step is skipped.
+`REPOOS_REMOTE_VALIDATION_DONE=1` is set when a parent already ran the remote
+gate (including `fallbackToLocal` fallback) so a spawned `repoos check` does not
+run it again. With `remoteValidation.enabled`, standalone `repoos check` runs the
+remote half first unless you pass `--local-tests` or either env var is already
+set. The remote half always runs the **full** install + build + test suite on the
+runner — `repoos check --changed` only narrows the **local** plan. Repos with
+remote validation off behave as before.
 
 ## Hook points
 

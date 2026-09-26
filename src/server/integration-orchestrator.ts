@@ -47,7 +47,7 @@ import { sweepAndWarn } from "../core/worktree-gc.js";
 import type { DoneStep } from "./done.js";
 import { redactSecrets, stripAnsi } from "./done.js";
 import type { RemoteValidator } from "./remote-validation.js";
-import { runRemotePreReviewGate } from "./pre-review-remote-gate.js";
+import { checkEnvAfterRemoteGate, runRemotePreReviewGate } from "./pre-review-remote-gate.js";
 import { markTaskReleased } from "./write.js";
 import { saveDiffSnapshot } from "./diff-snapshot.js";
 import { parseTask } from "../core/task.js";
@@ -1416,33 +1416,32 @@ export class CloseOutOrchestrator {
       // failure the job fails RETRYABLY (resumes from this phase) unless
       // `remoteValidation.fallbackToLocal` is set; a real remote test failure is
       // non-retryable — fix it in the feature branch and resubmit.
-      let skipTestsLocally = false;
+      let remoteGateOutcome: Awaited<ReturnType<typeof runRemotePreReviewGate>> = {
+        kind: "skip",
+      };
       if (hasBuildStep && this.remoteValidator && this.config.remoteValidation?.enabled) {
         this.onProgress?.("check");
-        const gate = await runRemotePreReviewGate({
+        remoteGateOutcome = await runRemotePreReviewGate({
           config: this.config,
           remoteValidator: this.remoteValidator,
           worktreePath: wtPath,
           taskId: job.taskId,
         });
-        if (gate.kind === "fail") {
+        if (remoteGateOutcome.kind === "fail") {
           return {
             ok: false,
-            retryable: gate.retryable,
-            reason: gate.retryable
-              ? `${gate.detail} — the branch IS merged into the candidate; retrying resumes from the check step`
-              : gate.detail,
+            retryable: remoteGateOutcome.retryable,
+            reason: remoteGateOutcome.retryable
+              ? `${remoteGateOutcome.detail} — the branch IS merged into the candidate; retrying resumes from the check step`
+              : remoteGateOutcome.detail,
           };
         }
-        if (gate.kind === "local-only") {
-          skipTestsLocally = gate.skipTests;
-          if (!gate.skipTests) {
-            this.logger?.integration(
-              job.taskId,
-              "warn",
-              "remote validation unavailable — falling back to the full local gate (remoteValidation.fallbackToLocal)",
-            );
-          }
+        if (remoteGateOutcome.kind === "local-only" && !remoteGateOutcome.skipTests) {
+          this.logger?.integration(
+            job.taskId,
+            "warn",
+            "remote validation unavailable — falling back to the full local gate (remoteValidation.fallbackToLocal)",
+          );
         }
       }
 
@@ -1471,7 +1470,7 @@ export class CloseOutOrchestrator {
         // private skip env flag needed.
         const checkEnv = {
           ...process.env,
-          ...(skipTestsLocally ? { REPOOS_SKIP_TESTS: "1" } : {}),
+          ...checkEnvAfterRemoteGate(remoteGateOutcome),
         };
         const localCli = join(wtPath, "dist", "cli", "index.js");
         const localCliPresent = existsSync(localCli);

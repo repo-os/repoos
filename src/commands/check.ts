@@ -53,8 +53,8 @@ import { writeCheckRun } from "../core/check-results-store.js";
 import { Logger } from "../core/logger.js";
 import { createRemoteValidator } from "../server/remote-validation.js";
 import {
-  remotePreReviewEnabled,
   runRemotePreReviewGate,
+  shouldRunCliRemotePreReviewGate,
 } from "../server/pre-review-remote-gate.js";
 
 /**
@@ -1578,14 +1578,19 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     );
   }
 
-  if (remotePreReviewEnabled(cfg) && !opts.localTestsOnly) {
+  if (shouldRunCliRemotePreReviewGate(cfg, opts, process.env)) {
     heading("Remote validation");
     const logger = new Logger({ root: repoRoot });
     let remoteValidator;
     try {
       remoteValidator = createRemoteValidator(cfg, logger);
     } catch (e) {
-      console.log(c.yellow(`  ⚠ remote validation skipped — init failed: ${(e as Error).message}`));
+      const msg = `remote validation init failed: ${(e as Error).message}`;
+      if (!cfg.remoteValidation?.fallbackToLocal) {
+        console.log(c.red(`\n  ✗ ${msg}\n`));
+        process.exit(1);
+      }
+      console.log(c.yellow(`  ⚠ ${msg} — running the full local gate\n`));
     }
     if (remoteValidator) {
       const taskId = process.env.REPOOS_TASK_ID?.trim() || "pre-review";

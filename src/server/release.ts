@@ -11,6 +11,7 @@ import type { ReleaseConfig, RepoOSConfig } from "../core/types.js";
 import { CLOSEOUT_CHECK_ARGS } from "../core/check-plan.js";
 import { captureOutput } from "./done.js";
 import type { RemoteValidator } from "./remote-validation.js";
+import { checkEnvAfterRemoteGate, runRemotePreReviewGate } from "./pre-review-remote-gate.js";
 
 export interface ReleaseStatus {
   enabled: boolean;
@@ -450,40 +451,28 @@ export async function cutNewRelease(
   // is set (then we drop to the full local gate); a real remote test failure is
   // non-retryable — fix it and cut again. Close-out's resume-from-check flow has
   // no release analogue, so neither transient case auto-retries.
-  let skipTestsLocally = false;
+  let remoteGateOutcome: Awaited<ReturnType<typeof runRemotePreReviewGate>> = { kind: "skip" };
   const rv = config.remoteValidation;
   if (remoteValidator && rv?.enabled && rv.useForReleases) {
-    const headRes = await exec("git", ["rev-parse", "HEAD"], config.root, 30_000);
-    if (headRes.code !== 0)
-      return { ok: false, status, output: "Could not resolve HEAD before remote validation." };
-    const candidateSha = headRes.stdout.trim();
-    onProgress?.("checking", "Running remote validation on the Hetzner runner…");
-    const remote = await remoteValidator.validate({
-      taskId: "release",
+    onProgress?.("checking", "Running remote validation on the runner…");
+    remoteGateOutcome = await runRemotePreReviewGate({
+      config,
+      remoteValidator,
       worktreePath: config.root,
-      candidateSha,
+      taskId: "release",
       onChunk: (chunk) => onProgress?.("checking", chunk),
     });
-    if (remote.ok) {
-      skipTestsLocally = true;
-    } else if (remote.transient && !rv.fallbackToLocal) {
+    if (remoteGateOutcome.kind === "fail") {
+      const infra = remoteGateOutcome.retryable;
       return {
         ok: false,
         status,
-        output:
-          `Remote validation unavailable (infrastructure): ${remote.detail ?? "the runner could not be reached"} — ` +
-          `the release was not cut. Retry once the runner is available, or set ` +
-          `remoteValidation.fallbackToLocal to run the full gate locally.`,
+        output: infra
+          ? `Remote validation unavailable (infrastructure): ${remoteGateOutcome.detail} — the release was not cut.`
+          : `Remote validation failed: ${remoteGateOutcome.detail}`,
       };
-    } else if (!remote.transient) {
-      return {
-        ok: false,
-        status,
-        output:
-          `Remote validation failed: ${remote.detail ?? "build or test suite failed on the runner"} — ` +
-          `fix the issue and cut the release again.`,
-      };
-    } else {
+    }
+    if (remoteGateOutcome.kind === "local-only" && !remoteGateOutcome.skipTests) {
       onProgress?.(
         "checking",
         "Remote validation unavailable — falling back to the full local gate…",
@@ -497,7 +486,7 @@ export async function cutNewRelease(
     // The rebuild above already refreshed dist/ (and its build marker), and
     // `bun run build` is staleness-aware now (#0377), so check's own "Full
     // build" step skips itself — no private skip env flag needed.
-    ...(skipTestsLocally ? { REPOOS_SKIP_TESTS: "1" } : {}),
+    ...checkEnvAfterRemoteGate(remoteGateOutcome),
   };
   const check = await exec(
     process.execPath,
