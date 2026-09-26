@@ -10,6 +10,12 @@ struct ContentView: View {
             WorkspaceDetailView()
                 .toolbar { HubWorkspaceToolbar() }
         }
+        // The system may otherwise keep a dark titlebar material even when
+        // the Hub shell is set to Light. Render the window toolbar explicitly
+        // from the selected shell appearance instead.
+        .toolbarBackground(toolbarBackground, for: .windowToolbar)
+        .toolbarBackground(.visible, for: .windowToolbar)
+        .toolbarColorScheme(appState.hubGlobalPreferences.appearance.colorScheme, for: .windowToolbar)
         .sheet(item: $appState.editorSheet) { model in
             ServerEditorSheet(model: model)
                 .environmentObject(appState)
@@ -57,6 +63,10 @@ struct ContentView: View {
                     .environmentObject(appState)
             }
         }
+    }
+
+    private var toolbarBackground: Color {
+        appState.hubGlobalPreferences.appearance == .dark ? .black : .white
     }
 }
 
