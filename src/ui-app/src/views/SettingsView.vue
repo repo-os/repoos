@@ -57,6 +57,8 @@ const FIELD_TAB: Record<string, TabId> = {
   // Security tab
   "auth.enabled": "security",
   "auth.sessionMaxAge": "security",
+  "dev.inspector.enabled": "advanced",
+  "dev.inspector.editorCommand": "advanced",
 };
 
 const activeTab = computed<TabId>(() => {
