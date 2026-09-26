@@ -18,6 +18,10 @@
  *   GET  /api/stats/board      -> { ok, stats } board-level summary stats
  *   GET  /api/stats/by-type    -> { ok, stats } session stats grouped by type
  *   GET  /api/docs             -> [{ path, title }]  (context docs listing)
+ *   GET  /api/repo/log         -> git log page { commits, nextCursor, branch } (?branch=&path=&limit=&before=)
+ *   GET  /api/repo/branches    -> { defaultBranch, branches } local heads, default first
+ *   GET  /api/repo/commits/:sha -> one commit + changed files + patch
+ *   GET  /api/repo/commits/:sha/file -> { before, after } contents at parent vs commit
  *   POST /api/docs/create      -> create a document { path, content }; returns { ok, path }
  *   POST /api/docs/freeform    -> create a document from description via the PM agent; returns { ok, path }
  *   GET  /api/skills           -> [{ path, name, description }]  (skills listing)
@@ -180,6 +184,10 @@ import {
   getIndex,
   getBoard,
   getDocs,
+  getRepoLog,
+  getRepoBranches,
+  getRepoCommitRoute,
+  getRepoCommitFile,
   getSkills,
   getRegistryCurated,
   searchRegistry,
@@ -1962,6 +1970,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/index", getIndex);
   router.register("GET", "/api/board", getBoard);
   router.register("GET", "/api/docs", getDocs);
+  router.register("GET", "/api/repo/log", getRepoLog);
+  router.register("GET", "/api/repo/branches", getRepoBranches);
+  router.register("GET", /^\/api\/repo\/commits\/([^/]+)\/file$/, getRepoCommitFile);
+  router.register("GET", /^\/api\/repo\/commits\/([^/]+)$/, getRepoCommitRoute);
   router.register("POST", "/api/docs/create", createDoc);
   router.register("POST", "/api/docs/freeform", createFreeformDoc);
   router.register("GET", "/api/inputs", getInputs);

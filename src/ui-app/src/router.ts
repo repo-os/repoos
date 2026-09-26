@@ -38,6 +38,12 @@ export const router = createRouter({
       component: () => import("./views/DiffView.vue"),
       meta: { fullscreen: true },
     },
+    {
+      path: "/repo/commits/:sha",
+      name: "commit-diff",
+      component: () => import("./views/DiffView.vue"),
+      meta: { fullscreen: true },
+    },
     { path: "/:pathMatch(.*)*", redirect: "/" },
   ],
 });

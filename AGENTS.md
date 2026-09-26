@@ -400,7 +400,9 @@ cannot tell from the code alone:
 - UI sitemap: routes are declared in `src/ui-app/src/router.ts` (path → view),
   each view is one `src/ui-app/src/views/*View.vue`, and the left-nav order +
   which links show is in `src/ui-app/src/nav.ts` (some entries are conditional,
-  e.g. Releases only appears when a release provider is configured). To find the
+  e.g. Releases only appears when a release provider is configured). Context
+  (`/repo`, `ContextView.vue`) has Docs, Skills, Discover, and History tabs;
+  commit diffs reuse `DiffView.vue` at `/repo/commits/:sha`. To find the
   code behind a screen, grep `router.ts` for the path or `views/` for the name.
   Dialog/modal content is body-teleported, so its CSS lives in
   `src/ui-app/src/style.css`, not the view's `<style scoped>` block.
