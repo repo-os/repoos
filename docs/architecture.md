@@ -421,3 +421,41 @@ this file runs directly via `node`, with no TypeScript loader available). So
 `just test-node` runs `REPOOS_RUNTIME=node node scripts/run-tests.mjs`
 directly: `bunfig.toml` aliases `node` to Bun inside `bun run`, so going
 through `bun run test` can no longer reach Node at all.
+
+Converging the runtimes removed the *symptom* of that split, not its cause
+(#0330). The assertion that flipped was a race between the background index
+build and the ~23 `await`s `startServer` performs before it calls `listen()`,
+and the winner depended on machine and runtime speed — under Bun the build
+finished in ~1s and the listener bound second, so the "listener first" state
+check could never hold. No wall-clock tolerance fixes that: the quantity being
+compared was never a duration, it was an ordering, and a runtime that shifts
+the two operations relative to each other breaks any threshold built on it.
+
+The fix is a test-only seam rather than a reordering of production code.
+`ServeOptions.indexBuildGate` is forwarded to
+`LiveIndex.refreshAllAsync({ indexBuildGate })`, which awaits it after the
+build has finished and immediately before swapping the result into the index.
+`boot-timing.test.ts` holds that gate open, so the build is parked at a
+"built but not published" point: the build provably completed all its git work
+and reached its final swap step, so a listener that bound while the gate was
+shut provably did not wait for that build — a consequence of two facts rather
+than a timing observation. Option 2 from that task — restructuring `startServer`
+to call `listen()` with zero intervening `await`s — was not taken: the ordering
+it would have made structural is already provable, and it would have moved real
+setup (auth config, route wiring, port resolution) across the point where the
+port opens, for a guarantee no consumer needed.
+
+It is worth being precise about what the gate does *not* buy, because the
+obvious reading is wrong. It does not make "the index is empty when the
+listener binds" checkable. `WorkWatcher` runs its own 5s `reconcile()` poll
+that calls `applyFileChange` for every task file it has not yet tracked, and
+that populates the same `byId` map the gated build would have — so the count at
+bind time is 0 or the full board depending on which of two unrelated producers
+won. Measured on the same code: 20 on every Node run, 0 on every Bun run. The
+state-based formulation of this assertion had been tried and reverted before,
+and this is why it could not simply be revived: it looks like the same
+guaranteance in state form, but state probes and ordering probes are not
+interchangeable, and only the latter is deterministic here. The general rule:
+when a test's verdict depends on which of two concurrent operations wins,
+inject a synchronisation point rather than tuning a threshold — and check that
+the thing you are about to measure is fed by only one of the racing writers.
