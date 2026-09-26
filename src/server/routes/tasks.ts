@@ -72,6 +72,7 @@ import { buildIntegrationSnapshot } from "../integration-status.js";
 import { resolvePipelineCheckPlan } from "../check-plan-info.js";
 import { loadDiffSnapshot } from "../diff-snapshot.js";
 import { previewTargetOptions, type PreviewTargetOption } from "../preview.js";
+import { dismissNeedsInputOnTask } from "../needs-input-dismiss.js";
 
 // Helper to add review status to tasks
 function withReviewStatus<T extends { id: string }>(
@@ -1368,6 +1369,26 @@ export const getTaskReview: RouteHandler = (ctx, _req, res, params) => {
     review: reviews.read(id),
     lines: reviews.session(id),
   });
+};
+
+export const dismissNeedsInput: RouteHandler = async (ctx, req, res, params) => {
+  const { config, index } = ctx;
+  const id = params.param1;
+  const existing = index.getTask(id);
+  if (!existing) {
+    return json(res, 404, { error: `Task #${id} not found` });
+  }
+  const user = getCurrentUser(req, config)?.email ?? "human";
+  try {
+    const updated = dismissNeedsInputOnTask(config, existing.absPath, user);
+    index.applyFileChange(updated.absPath, { guarded: true });
+    return json(res, 200, index.getTask(updated.id));
+  } catch (err) {
+    if (err instanceof WriteError) {
+      return json(res, 400, { error: err.message });
+    }
+    throw err;
+  }
 };
 
 export const reviewAgain: RouteHandler = async (ctx, _req, res, params) => {
