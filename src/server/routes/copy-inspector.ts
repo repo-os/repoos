@@ -3,15 +3,14 @@ import type { RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
 import {
   buildEditorSpawnArgs,
+  copyInspectorAvailable,
   formatCopyInspectorPath,
-  hasRepoOsUiSource,
   resolveCopyInspectorTarget,
 } from "../../core/copy-inspector.js";
-import { isDevBuild } from "../reload.js";
 
-/** Dev/local gate for the inspector API — server's `isDevBuild()` plus RepoOS UI sources. */
+/** Dev/local gate — linked `dist/` serve + self-hosted checkout with a dev UI build. */
 export function copyInspectorApiEnabled(root: string): boolean {
-  return isDevBuild() && hasRepoOsUiSource(root);
+  return copyInspectorAvailable(root);
 }
 
 export const postCopyInspectorOpen: RouteHandler = async (ctx, req, res) => {
@@ -45,13 +44,17 @@ export const postCopyInspectorOpen: RouteHandler = async (ctx, req, res) => {
     return json(res, 400, { error: "invalid file path" });
   }
 
-  const args = buildEditorSpawnArgs(command, target.absPath, target.line);
+  const args = buildEditorSpawnArgs(command, target.repoRel, target.line);
   if (!args.length) {
     return json(res, 400, { error: "invalid editor command" });
   }
   const [bin, ...spawnArgs] = args;
   try {
-    spawn(bin, spawnArgs, { detached: true, stdio: "ignore" }).unref();
+    spawn(bin, spawnArgs, {
+      detached: true,
+      stdio: "ignore",
+      cwd: config.root,
+    }).unref();
   } catch {
     return json(res, 500, { error: "failed to launch editor" });
   }
