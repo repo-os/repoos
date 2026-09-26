@@ -11,13 +11,15 @@ fails the build when a surface drifts or a new one forgets the contract.
 
 ## The contract
 
-A chat surface is three shared pieces plus its own bubbles:
+A chat surface is a few shared pieces plus its own bubbles:
 
 | Piece | Where | Owns |
 | --- | --- | --- |
 | `useChatScroll()` | `src/ui-app/src/composables/useChatScroll.ts` | scroll-to-newest, position memory, "am I away from the bottom" |
 | Jump control | `<ChatJumpToLatest>` or inline `.agent-jump` | the "Jump to latest" / "Latest" button |
 | `<AiChatThinking>` | `src/ui-app/src/components/AiChatThinking.vue` | the pulsing working indicator |
+| `toDisplayRows()` | `src/ui-app/src/lib/chat-rows.ts` | turning a transcript into rows: tool-call grouping, text merging, dropping step markers |
+| `<ChatToolCallRow>` | `src/ui-app/src/components/ChatToolCallRow.vue` | one run of consecutive tool calls, as a counted, expandable row |
 
 Visual rhythm is not per-component either: `.ai-chat-log` (message spacing),
 `.ai-chat-thinking` (the pulse) and `.ai-chat-send` (the send button's accent
@@ -72,6 +74,59 @@ status line anywhere: a stopped agent is the absence of the indicator. The
 `— agent stopped —` entry that `stores/repo.ts` used to append to the agent
 transcript was removed under this rule.
 
+### 6. Group consecutive tool calls into one row
+
+A turn emits far more tool calls than messages, so one row per call buried the
+conversation under `bash` / `read` / `edit` chrome. `toDisplayRows()` in
+`src/ui-app/src/lib/chat-rows.ts` is the only place that decides what a row is,
+and `<ChatToolCallRow>` is the only thing that draws one:
+
+```
+[ ⚒  6 tool calls        4 ok · 2 failed ]                    14:32:07
+```
+
+- A **maximal run** of adjacent `tool` entries collapses into one row. A text,
+  human, system or plain line between two runs splits them; two runs are never
+  merged across a real message.
+- The row carries a **total count** so you know what is hidden, split by
+  outcome — successes in the theme's success colour, errors in its danger one.
+  The failure segment is only rendered when something actually failed.
+- The row's timestamp is the **newest** `at` among the calls it groups, so it
+  reads as when the work finished. Every other row (text, human, system) takes
+  the newest `at` among the entries it represents.
+- **Step markers draw no row at all.** A `step` entry is dropped at the display
+  boundary rather than rendered as a contentless "continue" chip, and because it
+  is dropped it cannot split a run either — the grouped row's own timestamp
+  already marks where the batch ended.
+- Adjacent assistant text parts merge into one message, so a multi-part reply
+  is one block rather than several.
+- Expansion is per row, collapsible, and defaults to collapsed. It is native
+  `<details>`, which is also why the row is keyboard-activatable and keeps its
+  open state while a live run streams more calls into it.
+
+**This is a view transform and nothing else.** The stored transcript, the SSE
+`agent.output` events and the export/debugger endpoints still see the original
+individual entries in order, and `step` entries stay in the data model — report
+extraction, skill suggestions and the debugger read them. Only the drawing
+changed.
+
+Grouping happens *after* normalization and branches on nothing agent-specific,
+so it behaves identically for every driver. One wrinkle worth knowing: the
+drivers do not agree on how a failure is spelled. Most normalize to
+`state: "error"`, but Codex passes `item.status` through verbatim and its JSONL
+says `"failed"`, so `isFailedState()` matches both — otherwise a failed Codex
+command would be counted in the green success total.
+
+### 7. Add the surface to the registry
+
+`AI_CHAT_SURFACES` in `src/ui-app/src/lib/ai-chat.ts` lists every surface, and
+the conformance tests in `src/ui-app/tests/ai-chat-standard.test.ts` assert the
+contract above against each one. A chat that renders an `AgentOutputEntry`
+stream must call `toDisplayRows` and render `<ChatToolCallRow>`; degrading tool
+entries to a line of prose is the specific regression the `Checked with` guard
+exists to catch. The Model Playground is exempt by construction — it is a raw
+model call with its own `{ role, text }` messages and no tool events at all.
+
 ## Adding an AI chat
 
 1. `useChatScroll(logRef, { chatId, contentSize, active })`; destructure
@@ -87,7 +142,11 @@ transcript was removed under this rule.
 4. Render `<AiChatThinking :active="busy" :label="..." />` at the end of the
    message list.
 5. Put `ai-chat-send` on the submit button.
-6. Add the surface to `AI_CHAT_SURFACES` in `src/ui-app/src/lib/ai-chat.ts`.
+6. Run the transcript through `toDisplayRows(lines)` and render each row:
+   `row.kind === "tools"` goes to `<ChatToolCallRow :calls="row.calls" :at="row.at" />`,
+   everything else to your own bubbles (use `bubbleRole(row)` for the speaker and
+   `row.text` / `row.at` for the body and its timestamp).
+7. Add the surface to `AI_CHAT_SURFACES` in `src/ui-app/src/lib/ai-chat.ts`.
 
 Then run `bun run test` — the standard test tells you if you missed one.
 
@@ -97,5 +156,5 @@ The six surfaces differ in what they send (repo context, board health, a bug,
 a task, a raw model call), how they authorise, and what furniture sits around
 the transcript (dispatch buttons, repair actions, model sidebar). What they
 have in common is *behaviour*, not markup — so the shared pieces are the
-behaviour (scroll, jump, working state) and the rhythm, and each surface keeps
-its own bubbles.
+behaviour (scroll, jump, working state, row grouping) and the rhythm, and each
+surface keeps its own bubbles.
