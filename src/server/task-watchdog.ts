@@ -679,7 +679,9 @@ export class TaskWatchdog {
     const note = `watchdog: escalated to needs_input · ${reason} · next step: ${suggestNextStep(reason)}`;
     try {
       current.needsInput = true;
-      current.needsInputReason = "watchdog-stuck";
+      current.needsInputReason = reason.startsWith("check-failed-after-retries")
+        ? "check-failed-after-retries"
+        : "watchdog-stuck";
       recordChange(current, note);
       this.writeTask(current);
     } catch (err) {

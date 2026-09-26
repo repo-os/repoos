@@ -13,6 +13,7 @@ import {
   silentMs,
   STUCK_SILENCE_MS,
 } from "../lib/retryHints";
+import { needsInputBannerText, needsInputStatusLabel } from "../lib/needs-input-ui";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyMainDialog from "./DirtyMainDialog.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
@@ -370,6 +371,15 @@ const PM_WORKING_HINT: CardHint = {
   cls: "tc-pm-working",
 };
 
+function needsInputHint(task: Task): CardHint {
+  const hasQuestions = (task.questions?.length ?? 0) > 0;
+  return {
+    label: needsInputStatusLabel(task.needsInputReason, hasQuestions),
+    title: needsInputBannerText(task.needsInputReason, hasQuestions),
+    cls: "tc-needs-input",
+  };
+}
+
 /** The last automatic review's actual outcome for this task, when one
  *  exists — null while no report has landed yet, or its state is
  *  unparseable. Distinct from `reviewFor(id)?.running`: that's whether a
@@ -422,6 +432,7 @@ const hint = computed<CardHint | null>(() => {
     // — "review passed · ready to finish" right above it reads as
     // contradictory once that attempt already failed.
     if (repo.doneErrorFor(t.id)) return null;
+    if (t.needsInput) return needsInputHint(t);
     // 0381: a PM chat run on a review task outranks the idle verdicts —
     // the PM is touching the task right now.
     if (pmWorking) return PM_WORKING_HINT;
@@ -459,11 +470,14 @@ const hint = computed<CardHint | null>(() => {
         cls: "tc-human",
       };
     }
-    return {
-      label: "waiting for review",
-      title: "no completed review verdict yet — wait for the reviewer or use Review again",
-      cls: "tc-reviewing",
-    };
+    if (repo.isQueued(t.id)) {
+      return {
+        label: "waiting for review",
+        title: "review is queued — it will start automatically",
+        cls: "tc-reviewing",
+      };
+    }
+    return null;
   }
   if (t.status === "active") {
     if (repo.isQueued(t.id)) return QUEUED_HINT;
@@ -477,13 +491,7 @@ const hint = computed<CardHint | null>(() => {
         }) ?? codingOrStuckHint(t.id)
       );
     }
-    if (t.needsInput) {
-      return {
-        label: "needs input",
-        title: "agent is waiting on you — open the task to reply",
-        cls: "tc-needs-input",
-      };
-    }
+    if (t.needsInput) return needsInputHint(t);
     // 0381: the engineer is idle (paused) but the PM is chatting about this
     // task right now — that is the live thing happening.
     if (pmWorking) return PM_WORKING_HINT;
@@ -751,12 +759,6 @@ async function openDebuggerFromError(): Promise<void> {
           >{{ task.type }}</span
         >
         <span
-          v-if="task.needsInput"
-          class="tc-waiting"
-          title="waiting for you — open the task to reply"
-          >needs input</span
-        >
-        <span
           v-if="task.status === 'review' && task.needsMerge"
           class="tc-merge"
           title="branch drifted from main — move to done to sync and merge"
@@ -856,6 +858,12 @@ async function openDebuggerFromError(): Promise<void> {
             variant="reviewing"
             label="Reviewing…"
           />
+          <span
+            v-else-if="hint.cls === 'tc-needs-input'"
+            class="tc-needs-input-icon"
+            aria-hidden="true"
+            >!</span
+          >
           <ActivityIndicator v-else-if="hint.cls === 'tc-moving'" label="Moving to done…" />
           {{ hint.label }}
         </span>
