@@ -552,6 +552,22 @@ interface RGB {
   a: number;
 }
 
+// KNOWN LIMITATION (fix tracked in #0504, found while registering the gruvbox
+// theme in #0503): the rgb()/rgba() branches below tolerate no whitespace between
+// components, but oxfmt writes `rgba(110, 157, 106, 0.22)` with spaces, so every
+// spaced literal fails to parse and returns null. A pair whose fg or bg yields no
+// candidates is SKIPPED rather than failed, so a `[check] contrastPairs` bg token
+// written as a spaced `rgba()` is silently never checked — as are the spaced
+// `rgba()` stops inside a gradient, which drop out of `colorCandidates`. Measured
+// on this repo's own stylesheet: 425 spaced literals, leaving 4-6 of the 9
+// configured pairs unchecked in every theme. A whitespace-tolerant regex (`\s*`
+// after each separator) was measured to produce ZERO new offenders across all five
+// themes, so the fix is a one-liner that only strengthens the gate. It is its own
+// task rather than folded into a theme change because it alters the guard's
+// behaviour repo-wide and for every project that configures
+// `[check] contrastPairs`. Until it lands, do not rely on this guard to catch a
+// contrast problem in a token written as `rgba(r, g, b, a)`; gruvbox deliberately
+// uses 8-digit hex for its checked alpha tokens to stay verifiable.
 function parseColor(v: string): RGB | null {
   const s = v.trim().toLowerCase();
   if (!s || s === "none") return null;
