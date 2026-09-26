@@ -11,6 +11,9 @@ import DialogContent from "./ui/dialog/content.vue";
 import DialogDescription from "./ui/dialog/description.vue";
 import DialogOverlay from "./ui/dialog/overlay.vue";
 import DialogTitle from "./ui/dialog/title.vue";
+import ScreenshotViewer from "./ScreenshotViewer.vue";
+import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
+import { isImageMime, pendingToShots, shotIndex } from "../lib/screenshot-viewer";
 const ui = useUiStore(),
   repo = useRepoStore(),
   fileInput = ref<HTMLInputElement | null>(null),
@@ -22,7 +25,16 @@ const ui = useUiStore(),
    */
   submitted = ref(false),
   /** Depth counter: dragenter/leave fire once per element boundary. */
-  dragDepth = ref(0);
+  dragDepth = ref(0),
+  inputViewerOpen = ref(false),
+  inputViewerStart = ref(0),
+  inputViewerShots = computed(() =>
+    pendingToShots(ui.inputScreenshots.filter((s) => isImageMime(s.mime))),
+  );
+function openInputViewer(src: string): void {
+  inputViewerStart.value = shotIndex(inputViewerShots.value, src);
+  inputViewerOpen.value = true;
+}
 function setOpen(v: boolean): void {
   if (!v) ui.close();
 }
@@ -145,9 +157,19 @@ function done(): void {
                 :key="file.name + file.size + i"
                 class="ff-pending-file"
               >
-                <img v-if="file.mime.startsWith('image/')" :src="file.dataUrl" :alt="file.name" />
+                <img
+                  v-if="isImageMime(file.mime)"
+                  :src="file.dataUrl"
+                  :alt="file.name"
+                  @click="openInputViewer(file.dataUrl)"
+                />
                 <div v-else class="ff-pending-file-icon"><Paperclip class="size-4" /></div>
                 <span class="ff-pending-file-name" :title="file.name">{{ file.name }}</span>
+                <ScreenshotExpandButton
+                  v-if="isImageMime(file.mime)"
+                  :name="file.name"
+                  @click="openInputViewer(file.dataUrl)"
+                />
                 <button
                   type="button"
                   class="ff-pending-file-remove"
@@ -191,4 +213,9 @@ function done(): void {
       </div></DialogContent
     ></Dialog
   >
+  <ScreenshotViewer
+    v-model:open="inputViewerOpen"
+    :shots="inputViewerShots"
+    :start-index="inputViewerStart"
+  />
 </template>
