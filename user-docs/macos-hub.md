@@ -72,10 +72,55 @@ place yet; treat the DMG as you would any unsigned software you download. A
 fully trusted first-launch experience requires that signing and notarization
 work, not a different DMG layout.
 
+## Hub settings
+
+The Hub's app-wide preferences live in one settings window. Open it from the
+**`…` button at the top right of the Hub window** (next to the back/forward/
+reload controls, labelled "RepoOS Hub settings"), or with the standard macOS
+**`⌘,`** shortcut. Both open the same window — there is no second app-level
+settings surface. Per-server settings stay where they are: right-click a
+server → **Notifications…** for attention, capability tokens, and
+cross-server search.
+
+The settings window holds four sections:
+
+- **Appearance** — `System` (the default), `Light`, or `Dark`. It restyles the
+  native Hub shell immediately — sidebar, workspace chrome, sheets, popovers,
+  and the ⌘K palette — with no relaunch, is remembered next launch, and moves
+  the Dock icon with it. It never touches the embedded server pages: each
+  server's web UI keeps whatever theme its own web settings use, and the Hub
+  injects no theme into any web view.
+- **Updates** — shows the installed version and build, with a **Check for
+  Updates** button (see [Updates](#updates)).
+- **Notifications** — the global **Native notifications** and **Dock badge
+  total** toggles (both on by default). These used to live in the standard
+  `Settings` scene; they moved here so the Hub has exactly one settings
+  surface, with unchanged labels, behavior, and defaults.
+- **About** — the app version and build.
+
 ## Updates
 
-Update by downloading the latest `.dmg` from the
-[releases page](https://github.com/repo-os/repoos/releases) and repeating the
+Check from inside the app: open Hub settings (`…` → settings, or `⌘,`) and
+use **Check for Updates** in the Updates section. It shows the installed
+version and build, queries the GitHub latest-release endpoint on demand, and
+reports one honest outcome: you're up to date, a specific newer version is
+available, or the check could not complete (offline, rate-limited, or an
+unexpected response — a failed check never claims an update is available).
+Only stable releases are offered; prereleases are never suggested. The result
+is cached for about six hours; pressing the button again re-checks.
+
+The check is advisory only: it never downloads or installs anything and adds
+no updater dependency. When an update exists, the window links out to the
+[releases page](https://github.com/repo-os/repoos/releases), plus a direct
+download button when that release actually ships the `RepoOSHub.dmg` asset
+— both open in your default browser. To install,
+download the latest `.dmg` and repeat the install steps below — the DMG is
+ad-hoc signed and not notarized (see
+[Distribution status](#distribution-status)), so an in-app replace would hit a
+Gatekeeper warning; the button links out instead.
+
+You can also update by hand at any time: download the latest `.dmg` from the
+[releases page](https://github.com/repo-os/repoos/releases) and repeat the
 install steps.
 
 Your servers, pinned tasks, and preferences are stored locally in
@@ -258,7 +303,7 @@ counts:
 - **Include this server in cross-server task search** — lets ⌘K query this
   server's tasks directly. Off by default.
 
-**Globally** — **Settings** in the app menu:
+**Globally** — Hub settings (`…` button, or `⌘,`):
 
 - **Native notifications** (on by default)
 - **Dock badge total** (on by default)
@@ -511,7 +556,8 @@ the provider's embedded-browser restrictions — see
 
 Work through, in order:
 
-1. **Settings → Native notifications** is on, and macOS granted the app
+1. **Hub settings → Native notifications** is on (the `…` button, or `⌘,`),
+   and macOS granted the app
    notification permission.
 2. The server has **Enable attention and notifications** on (server context
    menu → **Notifications…**).
@@ -535,8 +581,8 @@ Work through, in order:
 
 It sums *in-review + needs-input* only across servers with attention enabled,
 and it falls back to the last known counts when a server is stale — check the
-server details popover for freshness. Disable it in **Settings → Dock badge
-total**.
+server details popover for freshness. Disable it in **Hub settings → Dock badge
+total** (the `…` button, or `⌘,`).
 
 ## Further reading
 

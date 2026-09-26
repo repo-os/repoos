@@ -199,16 +199,23 @@ final class HubAppState: ObservableObject {
         crossServerTaskSearch.configure(entries: entries)
     }
 
-    func updateHubGlobalPreferences(notificationsEnabled: Bool?, dockBadgeEnabled: Bool?) {
+    func updateHubGlobalPreferences(notificationsEnabled: Bool?, dockBadgeEnabled: Bool?, appearance: HubAppAppearance? = nil) {
         if let notificationsEnabled {
             document.hubGlobalPreferences.notificationsEnabled = notificationsEnabled
         }
         if let dockBadgeEnabled {
             document.hubGlobalPreferences.dockBadgeEnabled = dockBadgeEnabled
         }
+        if let appearance {
+            document.hubGlobalPreferences.appearance = appearance
+        }
         hubGlobalPreferences = document.hubGlobalPreferences
         try? store.save(document)
         syncAttentionCoordinator()
+    }
+
+    func updateHubAppearance(_ appearance: HubAppAppearance) {
+        updateHubGlobalPreferences(notificationsEnabled: nil, dockBadgeEnabled: nil, appearance: appearance)
     }
 
     func handleHubNotificationOpen(serverID: UUID, path: String) {
