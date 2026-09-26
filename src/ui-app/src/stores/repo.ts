@@ -1,6 +1,6 @@
 import { computed, reactive, ref } from "vue";
 import { defineStore } from "pinia";
-import { api, JSON_OPTS } from "../api";
+import { api, API_TIMEOUT_MS, JSON_OPTS } from "../api";
 import { checkUiBuild, isstaleDismissed, showStaleUi, uiRecoveryState } from "../lib/uiRecovery";
 import { useUiStore, type PendingScreenshot } from "./ui";
 import { useNotificationsStore, type NotificationType } from "./notifications";
@@ -1696,22 +1696,25 @@ export const useRepoStore = defineStore("repo", () => {
    * build (a reload landed while the tab was open elsewhere), clear directly.
    */
   async function restartServer(): Promise<void> {
+    restarting.value = true;
     try {
       const r = await api<{ state: string; reason?: string }>("/api/server/restart", {
         method: "POST",
+        timeoutMs: API_TIMEOUT_MS,
       });
       if (r.state === "not-stale") {
         clearNewVersion();
         pushToast("Server already runs the current build", "info");
       } else if (r.state === "reloading") {
-        restarting.value = true;
         pushToast("Reloading server into the new build…", "info");
       } else {
+        restarting.value = false;
         // Deferred: an agent turn or the close-out pipeline itself is still
         // running. The reload will apply once the server is idle.
         pushToast("Reload deferred — the server is busy right now", "info");
       }
     } catch (err) {
+      restarting.value = false;
       const message = err instanceof Error ? err.message : String(err);
       pushToast(message, "error");
     }
