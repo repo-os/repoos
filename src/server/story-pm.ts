@@ -11,11 +11,10 @@
  * drops the run (the placeholder stays, exactly what a failed run leaves), and
  * the "PM is working" indicator clears with it rather than sticking forever.
  *
- * The story panel's PM chat (#0515) raises the same indicator, and needs the
- * same cleanup: `markStoryPmChat` remembers which story definition a live chat
- * session belongs to so the `agent.exited` hook in server.ts can clear it on
- * every exit path (clean finish, error, or user interrupt) — the exact
- * arrangement `pm-runs.ts` uses for the task PM chat.
+ * The story panel's PM chat (#0515) raises the same indicator but is tracked
+ * separately — per session key, in `story-definition-files.ts` — so one user
+ * exiting a chat never clears another user's still-running turn on the same
+ * story. This module owns only the flesh-out.
  */
 import { join } from "node:path";
 import type { Agent, RepoOSConfig } from "../core/types.js";
@@ -44,27 +43,7 @@ export interface StoryPmDeps {
   emitEvent: (e: RepoEvent) => void;
 }
 
-/** Live story PM chat sessions: runner session key → the story it is about. */
-const pmChatStories = new Map<string, string>();
-
-/**
- * Mark a PM chat session as live for a story (#0515) — the runner accepted a
- * message and a turn is starting (or queued behind maxConcurrentAgents).
- * Tracked by session key, not by story, so two users chatting about the same
- * story concurrently don't drop each other's indicator.
- */
-export function markStoryPmChat(sessionKey: string, storyPath: string): void {
-  pmChatStories.set(sessionKey, storyPath);
-}
-
-/**
- * The story definition path a live PM chat session is about, or null for any
- * other runner session (engineer keys, task PM chats, board chats). Lets the
- * runner's `agent.exited` event clear exactly the indicator it raised.
- */
-export function storyPmChatPath(sessionKey: string): string | null {
-  return pmChatStories.get(sessionKey) ?? null;
-}
+/** Live story PM chat sessions live in `story-definition-files.ts`. */
 
 export interface StoryPmRun {
   /** The placeholder definition's repo-relative path. */

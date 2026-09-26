@@ -15,15 +15,33 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Agent, RepoOSConfig } from "../../core/types";
-import { writeStoryDefinition } from "../../core/story-definition-files";
+import {
+  clearStoryPmChat,
+  isStoryPmWorking,
+  markStoryPmChat,
+  setStoryPmWorking,
+  writeStoryDefinition,
+} from "../../core/story-definition-files";
 import { storyPmSessionId } from "../../core/stories";
-import { markStoryPmChat, storyPmChatPath } from "../../server/story-pm";
 import { getStoryPmOutput, pmStoryInterrupt, pmStoryMessage } from "../../server/routes/stories";
 import type { RouteContext } from "../../server/routes/types";
 
 const dirs: string[] = [];
+/** Every session key the lifecycle tests below use, for draining. */
+const SESSIONS = [
+  "pm-story-v1:0001",
+  "pm-story-v1:0001::a@example.com",
+  "pm-story-v1:0001::b@example.com",
+  "pm-story-v1:0002",
+  "0001",
+];
+
 afterEach(() => {
   for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
+  // The PM registry is process-global by design, so reset it between tests
+  // rather than letting one test's live session explain another's failure.
+  for (const session of SESSIONS) clearStoryPmChat(session);
+  setStoryPmWorking("stories/alpha-slice.md", false);
 });
 
 function setup(storiesEnabled = true): { config: RepoOSConfig; storyPath: string } {
@@ -177,7 +195,9 @@ describe("story PM chat message route (#0515)", () => {
     expect(calls[0]!.context).toContain(storyPath);
     expect(calls[0]!.context).toContain("#0001 · ready · Wire the list");
     // …and the registry lets the agent.exited hook clear the indicator again.
-    expect(storyPmChatPath(calls[0]!.sessionId)).toBe(storyPath);
+    expect(isStoryPmWorking(storyPath)).toBe(true);
+    expect(clearStoryPmChat(calls[0]!.sessionId)).toBe(storyPath);
+    expect(isStoryPmWorking(storyPath)).toBe(false);
   });
 
   it("resumes an existing conversation instead of starting a second one", async () => {
@@ -273,15 +293,52 @@ describe("story PM chat output and interrupt routes (#0515)", () => {
   });
 });
 
-describe("story PM chat registry (#0515)", () => {
-  it("tracks the chat by session key so two users don't clear each other", () => {
+describe("story PM chat lifecycle (#0515)", () => {
+  it("clears one session and reports the story it was about", () => {
+    markStoryPmChat("pm-story-v1:0001::a@example.com", "stories/alpha-slice.md");
+    expect(isStoryPmWorking("stories/alpha-slice.md")).toBe(true);
+
+    // The exit hook clears unconditionally — the entry is per session, so this
+    // cannot disturb a concurrent one — and gets the path back to re-evaluate.
+    expect(clearStoryPmChat("pm-story-v1:0001::a@example.com")).toBe("stories/alpha-slice.md");
+    expect(isStoryPmWorking("stories/alpha-slice.md")).toBe(false);
+    // Idempotent, and unknown sessions are simply not ours.
+    expect(clearStoryPmChat("pm-story-v1:0001::a@example.com")).toBeNull();
+    expect(clearStoryPmChat("0001")).toBeNull();
+    expect(clearStoryPmChat("pm-task-v2:0001")).toBeNull();
+  });
+
+  it("does not leak: the map holds exactly the live sessions", () => {
+    markStoryPmChat("pm-story-v1:0001::a@example.com", "stories/alpha-slice.md");
+    markStoryPmChat("pm-story-v1:0001::b@example.com", "stories/alpha-slice.md");
+    clearStoryPmChat("pm-story-v1:0001::a@example.com");
+    // The surviving session is still tracked, and clearing it empties the map —
+    // the regression this guards: a never-cleared map grew one entry per
+    // story/user session for the process lifetime.
+    expect(clearStoryPmChat("pm-story-v1:0001::b@example.com")).toBe("stories/alpha-slice.md");
+    expect(isStoryPmWorking("stories/alpha-slice.md")).toBe(false);
+  });
+
+  it("keeps the indicator up while another session is still running", () => {
+    // This is the bug: one user exiting must not hide another user's turn.
     markStoryPmChat("pm-story-v1:0001::a@example.com", "stories/alpha-slice.md");
     markStoryPmChat("pm-story-v1:0001::b@example.com", "stories/alpha-slice.md");
 
-    expect(storyPmChatPath("pm-story-v1:0001::a@example.com")).toBe("stories/alpha-slice.md");
-    // Any other runner session (engineer, task PM chat, board chat) has no
-    // story, so the exit hook leaves it alone.
-    expect(storyPmChatPath("0001")).toBeNull();
-    expect(storyPmChatPath("pm-task-v2:0001")).toBeNull();
+    clearStoryPmChat("pm-story-v1:0001::a@example.com");
+    expect(isStoryPmWorking("stories/alpha-slice.md")).toBe(true);
+
+    clearStoryPmChat("pm-story-v1:0001::b@example.com");
+    expect(isStoryPmWorking("stories/alpha-slice.md")).toBe(false);
+  });
+
+  it("does not let a chat clear a concurrent flesh-out's indicator", () => {
+    // The two activities share one visible flag, so they must not share one
+    // bit of state either.
+    setStoryPmWorking("stories/alpha-slice.md", true);
+    markStoryPmChat("pm-story-v1:0001", "stories/alpha-slice.md");
+
+    clearStoryPmChat("pm-story-v1:0001");
+    // The chat is gone, but the flesh-out is still live.
+    expect(isStoryPmWorking("stories/alpha-slice.md")).toBe(true);
   });
 });

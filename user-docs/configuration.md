@@ -684,6 +684,8 @@ does `?story=new` to open the New story form.
 A story that exists **only** as a task tag — tagged on a task, with no file
 under `stories/` — has no number and no link. There is no file to hold a stable
 one, so there is nothing to point a link at. Register the story to get both.
+Registering one later gives it a number, which also starts a fresh PM
+conversation for it.
 
 ### The story PM tab
 
