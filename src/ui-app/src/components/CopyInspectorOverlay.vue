@@ -216,6 +216,24 @@ function onKeydown(e: KeyboardEvent): void {
     closePopup();
     return;
   }
+  // Popup shortcuts: Enter = Open in editor, C = Copy path. Plain keys only
+  // (Cmd/Ctrl+C must keep copying selected text), never while typing, and a
+  // keyboard-focused popup button keeps its own native Enter.
+  if (popup.value) {
+    if (e.ctrlKey || e.metaKey || e.altKey || isEditableFocus()) return;
+    const focused = document.activeElement;
+    const onPaneButton = focused instanceof HTMLElement && !!paneRef.value?.contains(focused);
+    if (e.key === "Enter" && !onPaneButton) {
+      e.preventDefault();
+      e.stopPropagation();
+      void openInEditor();
+    } else if (e.key === "c" || e.key === "C") {
+      e.preventDefault();
+      e.stopPropagation();
+      void copyPath();
+    }
+    return;
+  }
   // Enter does what clicking the visible pill does — for when the pill is
   // off the outlined element and awkward to hit. Never steals Enter from a
   // text field the user is typing in.
@@ -296,7 +314,9 @@ onUnmounted(() => {
           {{ formatInspectorPath(popup) }}
         </p>
         <div class="copy-inspector-actions btn-row">
-          <Button variant="default" size="sm" @click="copyPath">Copy path</Button>
+          <Button variant="default" size="sm" @click="copyPath">
+            Copy path <kbd class="copy-inspector-key" aria-hidden="true">C</kbd>
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -304,9 +324,11 @@ onUnmounted(() => {
             :title="editorConfigured ? undefined : EDITOR_HINT"
             @click="openInEditor"
           >
-            Open in editor
+            Open in editor <kbd class="copy-inspector-key" aria-hidden="true">↵</kbd>
           </Button>
-          <Button variant="ghost" size="sm" @click="closePopup">Close</Button>
+          <Button variant="ghost" size="sm" @click="closePopup">
+            Close <kbd class="copy-inspector-key" aria-hidden="true">Esc</kbd>
+          </Button>
         </div>
         <p v-if="!editorConfigured" class="copy-inspector-msg">{{ EDITOR_HINT }}</p>
         <p v-if="popupMsg" class="copy-inspector-msg">{{ popupMsg }}</p>
@@ -350,6 +372,16 @@ onUnmounted(() => {
   border: 2px dashed #f97316;
   border-radius: 4px;
   background: rgba(249, 115, 22, 0.14);
+}
+
+.copy-inspector-key {
+  margin-left: 6px;
+  padding: 0 5px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 11px;
+  opacity: 0.6;
 }
 
 .copy-inspector-kbd {
