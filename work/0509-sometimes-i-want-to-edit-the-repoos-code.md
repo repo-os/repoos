@@ -20,8 +20,10 @@ Sometimes I want to edit the repoos code myself, particularly with simple copy c
 ## Screenshots
 
 ![Screenshot-2026-09-26-at-11.08.12](/api/tasks/0509/attachments/screenshot-1.png)
+![Screenshot-2026-09-26-at-11.04.08](/api/tasks/0509/attachments/screenshot-2.png)
 
 ## Activity
 
 - 2026-09-26T03:12:15Z · created · hello@repoos.org
+- 2026-09-26T03:12:16Z · screenshots
 - 2026-09-26T03:12:16Z · screenshots
