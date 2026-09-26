@@ -139,8 +139,17 @@ export class CTOMonitor {
       }
 
       const engineer = resolveAgentForTask(this.config, task);
+      // #0507: this nudge used to say "commit and hand off to review", which
+      // engineers reasonably read as `repoos mv <id> review` — a bare
+      // frontmatter write that skipped the checks and, because it moved the
+      // task out of `active`, got the asking agent killed and booked as a dev
+      // error (#0505, #0499). Name the command that actually records a handoff,
+      // and say plainly that it does not move the task.
       const message =
-        "CTO check-in: this task has been idle for five minutes. Please finish the current step, run the relevant verification, then commit and hand off to review — or clearly report the blocker.";
+        "CTO check-in: this task has been idle for five minutes. Please finish the current step, " +
+        "run the relevant verification, then hand off — either run `repoos mv <this task's id> review` " +
+        "or finish your reply with the `::repoos-handoff-ready::` signal. Both ask RepoOS to run the " +
+        "checks and move the task; neither sets the status yourself. Or clearly report the blocker.";
       if (!this.cto.sendTaskMessage(task.id, message, engineer)) continue;
 
       // The write emits an SSE task.corrected event for the human. Apply it

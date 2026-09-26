@@ -57,7 +57,6 @@ import {
   ensureHotfix,
   agentTouchedFiles,
 } from "../../core/git.js";
-import { guardReviewTransition } from "../review-guard.js";
 import { checkGenericStatusPatch } from "../task-transitions.js";
 import { readFileSync, existsSync, statSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
@@ -605,7 +604,12 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
   if (!existing) {
     return json(res, 404, { error: `Task #${id} not found` });
   }
-  const body = (await readBody(req)) as TaskPatch;
+  const body = (await readBody(req)) as TaskPatch & {
+    /** #0507: skip `repoos check`, keep the commit gate. Humans only. */
+    skipChecks?: unknown;
+    /** #0507: which UI affordance asked, for the activity/progress record. */
+    origin?: unknown;
+  };
   const prevStatus = existing.status;
   if (body.status === "done" && prevStatus !== "done") {
     if (reviews.isRunning(existing.id)) {
@@ -634,16 +638,34 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
   }
 
   if (body.status === "review" && prevStatus !== "review") {
-    // #0210: any transition into `review` must pass the same commit+validate
-    // gate the trusted handoff path enforces — never silently leave an
-    // uncommitted worktree, and never allow a vacuous (zero source changes)
-    // transition unless the task opts out via no_source_change.
-    const gate = await guardReviewTransition(config, existing);
-    if (!gate.ok) {
-      return json(res, 400, {
-        error: `Cannot move task #${existing.id} to review: ${gate.detail}`,
+    // #0507: a move into `review` is a REQUEST, not a write. It runs the same
+    // scoped `repoos check` → commit/vacuity gate → `review` finalization the
+    // agent's handoff signal runs, so no route can reach `review` on the
+    // commit gate alone. That check can take minutes, so the finalization is
+    // fire-and-forget and this route answers immediately with the task
+    // unchanged: it stays `active` with a "running checks…" state until the
+    // finalization succeeds, and stays `active` with the failure shown if it
+    // does not. Anything that wrote `status: review` here would be exactly the
+    // unchecked route this task closed.
+    const skipChecks = body.skipChecks === true;
+    const result = ctx.startUnifiedHandoff(existing, {
+      origin: body.origin === "board-drag" ? "board-drag" : "ui-review",
+      skipChecks,
+      actor: getCurrentUser(req, config)?.email ?? "human",
+    });
+    if (!result.started) {
+      return json(res, 409, {
+        error: `Cannot move task #${existing.id} to review: ${result.reason}`,
       });
     }
+    // Everything else in the body still applies (title, priority, assignee…),
+    // minus the status itself, which the finalization owns.
+    const { status: _status, skipChecks: _skip, origin: _origin, ...rest } = body;
+    const updated = Object.keys(rest).length
+      ? patchTaskFile(config, existing.absPath, rest, { onStatusChange: onServerStatusChange })
+      : existing;
+    index.applyFileChange(updated.absPath, { guarded: true });
+    return json(res, 202, { ...index.getTask(updated.id), pendingHandoff: true });
   }
 
   const updated = patchTaskFile(config, existing.absPath, body, {
