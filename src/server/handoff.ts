@@ -27,7 +27,6 @@ import {
   currentBranch,
   branchChangesSinceBase,
 } from "../core/git.js";
-import { CLOSEOUT_CHECK_ARGS } from "../core/check-plan.js";
 import { parseTask } from "../core/task.js";
 import { parseDocument, serializeDocument } from "../core/frontmatter.js";
 import type { AgentHandoffRequest, AgentRunner } from "./agents.js";
@@ -40,6 +39,7 @@ import {
   remotePreReviewEnabled,
   runRemotePreReviewGate,
   checkEnvAfterRemoteGate,
+  spawnedRepoosCheckArgs,
   type RemotePreReviewOutcome,
 } from "./pre-review-remote-gate.js";
 
@@ -145,16 +145,18 @@ async function runCheck(
   config: RepoOSConfig,
   onChunk?: (text: string) => void,
   extraEnv?: NodeJS.ProcessEnv,
+  remoteGateOutcome: RemotePreReviewOutcome | { kind: "skip" } = { kind: "skip" },
 ): Promise<RunResult> {
+  const checkArgs = spawnedRepoosCheckArgs(config, remoteGateOutcome);
   // Prefer the assigned worktree's compiled CLI. A globally linked `repoos`
   // resolves build freshness relative to its own package checkout, which can
   // falsely pass or fail when finalizing a different linked worktree.
   const localCli = join(worktree, "dist", "cli", "index.js");
   const candidates: ReadonlyArray<readonly [string, ...string[]]> = existsSync(localCli)
-    ? [[process.execPath, localCli, "check", ...CLOSEOUT_CHECK_ARGS]]
+    ? [[process.execPath, localCli, "check", ...checkArgs]]
     : [
-        ["repoos", "check", ...CLOSEOUT_CHECK_ARGS],
-        ["bun", "run", "repoos", "check", ...CLOSEOUT_CHECK_ARGS],
+        ["repoos", "check", ...checkArgs],
+        ["bun", "run", "repoos", "check", ...checkArgs],
       ];
   // Scope the test step to what this branch actually changed since its
   // merge-base with main (see changedTestRef in commands/check.ts): this is
@@ -364,6 +366,7 @@ async function runHandoffFinalization(
       config,
       checkHandle?.chunk,
       checkEnvAfterRemoteGate(remoteOutcome),
+      remoteOutcome,
     );
     checkHandle?.done(check.status);
     if (check.status !== 0) {

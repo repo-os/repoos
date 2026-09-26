@@ -8,10 +8,13 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { join, relative, resolve } from "node:path";
 import type { ReleaseConfig, RepoOSConfig } from "../core/types.js";
-import { CLOSEOUT_CHECK_ARGS } from "../core/check-plan.js";
 import { captureOutput } from "./done.js";
 import type { RemoteValidator } from "./remote-validation.js";
-import { checkEnvAfterRemoteGate, runRemotePreReviewGate } from "./pre-review-remote-gate.js";
+import {
+  checkEnvAfterRemoteGate,
+  runRemotePreReviewGate,
+  spawnedRepoosCheckArgs,
+} from "./pre-review-remote-gate.js";
 
 export interface ReleaseStatus {
   enabled: boolean;
@@ -488,9 +491,10 @@ export async function cutNewRelease(
     // build" step skips itself — no private skip env flag needed.
     ...checkEnvAfterRemoteGate(remoteGateOutcome),
   };
+  const checkArgs = spawnedRepoosCheckArgs(config, remoteGateOutcome);
   const check = await exec(
     process.execPath,
-    [join(config.root, "dist", "cli", "index.js"), "check", ...CLOSEOUT_CHECK_ARGS],
+    [join(config.root, "dist", "cli", "index.js"), "check", ...checkArgs],
     config.root,
     600_000,
     checkEnv,

@@ -35,11 +35,15 @@ UI smoke test) stay local — they are fast and not the resource problem.
 local `repoos check` after a remote pass so its Tests step is skipped.
 `REPOOS_REMOTE_VALIDATION_DONE=1` is set when a parent already ran the remote
 gate (including `fallbackToLocal` fallback) so a spawned `repoos check` does not
-run it again. With `remoteValidation.enabled`, standalone `repoos check` runs the
-remote half first unless you pass `--local-tests` or either env var is already
-set. The remote half always runs the **full** install + build + test suite on the
-runner — `repoos check --changed` only narrows the **local** plan. Repos with
-remote validation off behave as before.
+run it again. Server-spawned checks also pass `--local-tests` when remote is
+enabled but that path opted out (e.g. release with `useForReleases = false`,
+close-out without a build step). With `remoteValidation.enabled`, standalone
+`repoos check` runs the remote half first unless you pass `--local-tests`, use
+`--changed` / `REPOOS_CHECK_CHANGED` (fast local pre-review only), or either env
+var is already set. The remote bundle is **`git bundle create … HEAD`** — commit
+before handoff; uncommitted work is not sent to the runner and local tests are
+skipped after a green remote pass. Repos with remote validation off behave as
+before.
 
 ## Hook points
 
