@@ -35,6 +35,9 @@ const idle = computed(() => snapshot.value === null || snapshot.value.empty);
 const active = computed(() => snapshot.value?.active ?? null);
 const queue = computed(() => snapshot.value?.queue ?? []);
 
+/** Queue row/segment — hidden on failure (idle/failed copy unchanged per spec). */
+const showQueue = computed(() => queue.value.length > 0 && !active.value?.failed);
+
 // ── Stage hover pane (#0460) ───────────────────────────────────────────────
 // The bar's stage explanations used to be native `title` tooltips, which are
 // plain-text and unstyled. They now render in a themed pane teleported to
@@ -278,12 +281,13 @@ async function onStageClick(stage: string): Promise<void> {
 const stripTooltip = computed(() => {
   let t = "Integration pipeline — ";
   if (idle.value) return t + "idle";
+  const queueSuffix = showQueue.value
+    ? " · Queue: " + queue.value.map((id) => "#" + id).join(" ")
+    : "";
   if (active.value) {
-    t += "#" + active.value.taskId + " " + (active.value.stage ?? "…");
-    if (queue.value.length) t += " · Queue: " + queue.value.map((id) => "#" + id).join(" ");
-    return t;
+    return t + "#" + active.value.taskId + " " + (active.value.stage ?? "…") + queueSuffix;
   }
-  return t + "integrating";
+  return t + "integrating" + queueSuffix;
 });
 
 function stageClass(s: string, i: number): string {
@@ -331,7 +335,7 @@ function stageClass(s: string, i: number): string {
         </template>
         <template v-else>Integrating…</template>
       </span>
-      <span v-if="!idle && queue.length" class="strip-queue">
+      <span v-if="showQueue" class="strip-queue">
         <span class="strip-queue-ellipsis">
           <span class="strip-queue-label">Queue:</span>
           <span v-for="q in queue" :key="q" class="ibar-chip mono" :title="'#' + q + ' queued'"
@@ -426,7 +430,7 @@ function stageClass(s: string, i: number): string {
         </template>
       </div>
 
-      <div v-if="queue.length" class="ibar-queue" aria-label="Queued tasks">
+      <div v-if="showQueue" class="ibar-queue">
         <span class="queue-label">Queue:</span>
         <span v-for="q in queue" :key="q" class="ibar-chip mono" :title="'#' + q + ' queued'"
           >#{{ q }}</span
@@ -718,9 +722,9 @@ function stageClass(s: string, i: number): string {
   font-size: 12px;
 }
 
-/* Queue segment yields space first; label keeps the active task + timer readable. */
+/* Queue segment yields space first (higher flex-shrink); label can still ellipsize. */
 .strip-queue {
-  flex: 0 1 auto;
+  flex: 0 4 auto;
   min-width: 0;
   max-width: 45%;
   overflow: hidden;
@@ -736,6 +740,7 @@ function stageClass(s: string, i: number): string {
 .strip-queue-label {
   color: var(--txt-faint);
   font-size: 12px;
+  margin-right: 4px;
 }
 
 .strip-queue-ellipsis .ibar-chip {
@@ -744,16 +749,13 @@ function stageClass(s: string, i: number): string {
   margin-left: 6px;
 }
 
-.strip-queue-ellipsis .ibar-chip:first-of-type {
-  margin-left: 4px;
-}
-
 /* Collapsed thin strip */
 .ibar-strip {
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
+  min-width: 0;
   background: var(--panel-solid);
   border-top: 1px solid var(--border);
   box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
@@ -786,8 +788,7 @@ function stageClass(s: string, i: number): string {
 }
 
 .strip-label {
-  flex: 1 1 auto;
-  flex-shrink: 0;
+  flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;

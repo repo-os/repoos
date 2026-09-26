@@ -303,6 +303,10 @@ describe("IntegrationStatusBar", () => {
     expect(stripChip.exists()).toBe(true);
     expect(stripChip.text()).toBe("3m 07s");
     expect(stripChip.classes().sort()).toEqual(expandedChip.classes().sort());
+    const expandedStyle = getComputedStyle(expandedChip.element);
+    const stripStyle = getComputedStyle(stripChip.element);
+    expect(stripStyle.borderRadius).toBe(expandedStyle.borderRadius);
+    expect(stripStyle.backgroundColor).toBe(expandedStyle.backgroundColor);
     expect(expanded.find(".strip-elapsed").exists()).toBe(false);
   });
 
@@ -360,5 +364,37 @@ describe("IntegrationStatusBar", () => {
     await nextTick();
 
     expect(wrapper.find(".strip-queue").exists()).toBe(false);
+  });
+
+  it("hides queue UI when integration failed (#0522)", async () => {
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    repo.integration = {
+      ...activeSnapshot({ failed: true, stage: "check" }),
+      queue: ["0455"],
+    };
+    ui.setIntegrationBarCollapsed(true);
+    const wrapper = render();
+    await nextTick();
+
+    expect(wrapper.find(".strip-queue").exists()).toBe(false);
+    expect(wrapper.get(".ibar-strip").attributes("title")).not.toContain("Queue:");
+  });
+
+  it("includes queued ids in the minimised strip tooltip without an active job (#0522)", async () => {
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    repo.integration = {
+      empty: false,
+      active: null,
+      queue: ["0455", "0456"],
+      at: new Date().toISOString(),
+    };
+    ui.setIntegrationBarCollapsed(true);
+    const wrapper = render();
+    await nextTick();
+
+    expect(wrapper.get(".ibar-strip").attributes("title")).toContain("Queue: #0455 #0456");
+    expect(wrapper.find(".strip-queue").exists()).toBe(true);
   });
 });
