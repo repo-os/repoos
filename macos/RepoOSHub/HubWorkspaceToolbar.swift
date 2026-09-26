@@ -32,6 +32,20 @@ struct HubWorkspaceToolbar: ToolbarContent {
             .disabled(!appState.workspaceNavigation.canReload)
             .accessibilityLabel("Reload web workspace")
         }
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                HubSettingsOpener.open()
+            } label: {
+                Image(systemName: "ellipsis")
+                    .rotationEffect(.degrees(90))
+                    .font(.system(size: 15, weight: .semibold))
+                    .frame(width: 28, height: 28)
+                    .contentShape(Rectangle())
+            }
+            .help("RepoOS Hub settings")
+            .accessibilityLabel("RepoOS Hub settings")
+            .focusable()
+        }
     }
 
     private var backHelp: String {
