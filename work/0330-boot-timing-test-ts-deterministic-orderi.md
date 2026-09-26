@@ -2,7 +2,7 @@
 id: "0330"
 title: "boot-timing.test.ts: deterministic ordering check (index-build-delay injection or listen()-first restructure)"
 type: feature
-status: active
+status: review
 priority: p3
 area: server
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: opencode-go/space-bunny-free
 review_cli_override: cursor
 review_model_override: cursor-grok-4.6-medium
 created_at: "2026-09-05T05:50:51Z"
-updated_at: "2026-09-26T09:30:56Z"
+updated_at: "2026-09-26T10:03:27Z"
 ---
 `boot-timing.test.ts` (#0271 regression guard) can no longer reliably prove
 "listener binds before the index-populated promise resolves" at its current
@@ -80,3 +80,4 @@ runtime-speed race in the process.
 - 2026-09-26T09:30:48Z · review_model_override
 - 2026-09-26T09:30:52Z · status inbox→ready
 - 2026-09-26T09:30:56Z · status ready→active, branch
+- 2026-09-26T10:03:27Z · status active→review
