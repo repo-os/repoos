@@ -572,7 +572,7 @@ function parseColor(v: string): RGB | null {
     }
     return null;
   }
-  const m = s.match(/^rgba?\(([\d.]+),([\d.]+),([\d.]+)(?:,([\d.]+))?\)$/);
+  const m = s.match(/^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)$/);
   if (m) {
     return {
       r: parseInt(m[1], 10),
@@ -619,7 +619,8 @@ function colorCandidates(
   const resolved = resolveVar(raw, map);
   const out: { r: number; g: number; b: number }[] = [];
   if (resolved.includes("gradient(")) {
-    const re = /#[0-9a-fA-F]{3,8}|rgba?\([^)]*\)|transparent/g;
+    const re =
+      /#[0-9a-fA-F]{3,8}|rgba?\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+(?:\s*,\s*[\d.]+)?\s*\)|transparent/g;
     let m: RegExpExecArray | null;
     while ((m = re.exec(resolved))) {
       const c = parseColor(m[0]);

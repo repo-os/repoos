@@ -109,6 +109,21 @@ describe("themeContrastOffenders — driven by configured scopes/tokens", () => 
     expect(offenders.some((o) => o.includes("--txt"))).toBe(true);
   });
 
+  it("evaluates contrast pairs whose background is a spaced rgba() literal", () => {
+    const css = `:root {
+  --bg: #ffffff;
+  --panel: rgba(255, 255, 255, 1);
+  --txt: #fefefe;
+}`;
+    const offenders = themeContrastOffenders(css, {
+      scopes: [{ selector: ":root", name: "light" }],
+      pairs: [{ fg: "--txt", bg: "--panel" }],
+      gradientTokens: [],
+      backdropToken: "--bg",
+    });
+    expect(offenders.some((o) => o.includes("light") && o.includes("--txt"))).toBe(true);
+  });
+
   it("uses the configured backdrop token when compositing", () => {
     const css = `:root {\n  --bg: #ffffff;\n  --panel: transparent;\n  --txt: #ffffff;\n}`;
     const scopes = [{ selector: ":root", name: "light" }];
