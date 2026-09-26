@@ -217,8 +217,11 @@ describe("GET /api/agents/detect", () => {
       const root = tmpDir();
       const binDir = join(root, "node_modules", ".bin");
       makeBin(binDir, "codex", "#!/bin/sh\necho 'codex v0.155.0'\n");
-      const server = await startServer({ root, host: "127.0.0.1", port: 0 });
       const oldPath = process.env.PATH;
+      // PATH and fetch must be in place before startServer: detection can run
+      // on boot and cache whatever `codex` is on the machine PATH, which then
+      // reports `manual` instead of an npm update (handoff gate flake).
+      process.env.PATH = binDir;
       const nativeFetch = globalThis.fetch;
       const fetchMock = vi.fn(async (url: string | URL, init?: RequestInit) => {
         if (String(url).includes("registry.npmjs.org")) {
@@ -227,8 +230,9 @@ describe("GET /api/agents/detect", () => {
         return nativeFetch(url, init);
       });
       vi.stubGlobal("fetch", fetchMock);
+      let server: Awaited<ReturnType<typeof startServer>> | undefined;
       try {
-        process.env.PATH = binDir;
+        server = await startServer({ root, host: "127.0.0.1", port: 0 });
         await fetch(`${server.url}/api/agents/detect`);
         expect(
           fetchMock.mock.calls.filter(([url]) => String(url).includes("registry.npmjs.org")),
@@ -246,7 +250,7 @@ describe("GET /api/agents/detect", () => {
         ).toHaveLength(1);
       } finally {
         process.env.PATH = oldPath;
-        await server.close();
+        await server?.close();
       }
     });
   });
