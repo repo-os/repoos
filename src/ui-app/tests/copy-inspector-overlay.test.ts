@@ -199,4 +199,39 @@ describe("CopyInspectorOverlay affordance", () => {
     expect(document.body.querySelector(".copy-inspector-pane")).toBeNull();
     wrapper.unmount();
   });
+
+  it("keeps the popup inside the viewport near the edges and lays buttons out in one row", async () => {
+    const labeled = document.createElement("p");
+    labeled.setAttribute("data-repoos-file", "src/ui-app/Foo.vue");
+    labeled.setAttribute("data-repoos-line", "12");
+    labeled.textContent = "Hello inspector";
+    document.body.appendChild(labeled);
+    document.elementFromPoint = vi.fn(() => labeled) as typeof document.elementFromPoint;
+    const wrapper = mount(CopyInspectorOverlay, { attachTo: document.body });
+    await nextTick();
+
+    for (const [x, y] of [
+      [2, window.innerHeight - 4],
+      [window.innerWidth - 2, 3],
+    ]) {
+      window.dispatchEvent(
+        new PointerEvent("pointermove", { bubbles: true, clientX: x, clientY: y, altKey: true }),
+      );
+      await flushAffordanceRaf();
+      await nextTick();
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      await nextTick();
+      const pane = document.body.querySelector(".copy-inspector-pane") as HTMLElement;
+      const left = Number.parseFloat(pane.style.left);
+      const top = Number.parseFloat(pane.style.top);
+      const width = Number.parseFloat(pane.style.width);
+      expect(left).toBeGreaterThanOrEqual(12);
+      expect(left + width).toBeLessThanOrEqual(window.innerWidth - 12);
+      expect(top).toBeGreaterThanOrEqual(12);
+      expect(top).toBeLessThan(window.innerHeight - 12);
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      await nextTick();
+    }
+    wrapper.unmount();
+  });
 });
