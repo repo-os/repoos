@@ -12,14 +12,15 @@ import { getCurrentUser } from "./auth.js";
 import { commitTaskFile } from "../../core/git.js";
 import { normalizeStoryName, storyPmSessionId } from "../../core/stories.js";
 import { mergeStoriesForDisplay, type MergedStoryGroup } from "../../core/story-display.js";
+import { fallbackStoryName } from "../../core/story-definition-files.js";
+import { dropPmImages, queuePmImages, type IncomingPmImage } from "../pm-attachments.js";
+import { fleshOutStory } from "../story-pm.js";
 import {
-  fallbackStoryName,
   listStoryDefinitions,
+  markStoryPmChat,
   setStoryPmWorking,
   writeStoryDefinition,
 } from "../../core/story-definition-files.js";
-import { dropPmImages, queuePmImages, type IncomingPmImage } from "../pm-attachments.js";
-import { fleshOutStory, markStoryPmChat } from "../story-pm.js";
 
 function pmWithOverrides(base: Agent, body: Record<string, unknown>): Agent {
   const cli =
@@ -207,11 +208,11 @@ export const pmStoryMessage: RouteHandler = async (ctx, req, res, params) => {
   }
 
   // The runner accepted the turn (running now, or queued behind
-  // maxConcurrentAgents) — raise the same "PM is working" indicator the
-  // flesh-out uses, so the story card and panel header show it too. Cleared by
-  // the `agent.exited` hook in server.ts via `storyPmChatPath`.
-  markStoryPmChat(sessionId, story.path ?? story.key);
-  if (story.path) setStoryPmWorking(story.path, true);
+  // maxConcurrentAgents) — raise the "PM is working" indicator so the story
+  // card and panel header show it. Registered under the *session key*, so two
+  // users chatting about one story each hold their own entry. Cleared by the
+  // `agent.exited` hook in server.ts via `clearStoryPmChat`.
+  if (story.path) markStoryPmChat(sessionId, story.path);
   emitEvent({ type: "story.definitionsChanged", at: new Date().toISOString() });
 
   return json(res, 200, { ok: true, spawn: { ok: true, pid: result.pid } });

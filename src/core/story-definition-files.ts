@@ -5,7 +5,7 @@
  * counterpart to a task's `id` and an input's `number` — so the board can show
  * `#0007` in the same upper-left chip position those two use and deep-link to
  * the story with a number that survives a rename. The rules are identical to
- * `ensureInputNumbers`: assigned once, never renumbered, never reused.
+ * `ensureInputNumbers`: assigned once, never renumbered while the story exists.
  */
 import {
   existsSync,
@@ -40,14 +40,30 @@ function normalizeStoryNumber(v: unknown): string {
 
 /**
  * Set a frontmatter key in a story file's raw content, adding it to the block
- * if it isn't there yet. Assumes the content's frontmatter is the first `---`
- * block (true for every story file `writeStoryDefinition` writes, and for the
- * hand-authored ones a human adds to `stories/`).
+ * if it isn't there yet.
+ *
+ * Scoped to the leading `---` block on purpose. A naive `^key:` with the `m`
+ * flag matches anywhere in the file, so a story whose *body* happens to open a
+ * line with `number:` would have that prose rewritten instead of gaining the
+ * field. The delimiters are matched with `\r?\n` so CRLF frontmatter is
+ * handled too — otherwise the insert silently no-ops while the caller still
+ * believes the write succeeded.
+ *
+ * Returns the content unchanged when there is no parseable frontmatter, so the
+ * caller can detect the no-op and leave the file for the next run.
  */
 function setStoryField(content: string, key: string, value: string): string {
+  const open = /^---[ \t]*\r?\n/.exec(content);
+  if (!open) return content;
+  const start = open[0].length;
+  // The first `\n---` after the opening delimiter closes the block.
+  const close = content.indexOf("\n---", start);
+  if (close === -1) return content;
+  const block = content.slice(start, close);
   const line = `${key}: "${value}"`;
   const re = new RegExp(`^${key}:.*$`, "m");
-  return re.test(content) ? content.replace(re, line) : content.replace("---\n", `---\n${line}\n`);
+  const next = re.test(block) ? block.replace(re, line) : `${line}\n${block}`;
+  return content.slice(0, start) + next + content.slice(close);
 }
 
 export function fallbackStoryName(text: string): string {
@@ -75,19 +91,57 @@ function isStoryFile(name: string): boolean {
 }
 
 /**
- * Story files the PM agent is fleshing out right now (by repo-relative path).
- * In-memory on purpose: a server reload drops the run, and the indicator must
- * clear with it rather than stick. Written by `src/server/story-pm.ts`.
+ * Two independent kinds of PM activity show as the same "PM is working"
+ * indicator on a story, so they get two registries rather than one shared bit:
+ *
+ *   - The freeform flesh-out (`fleshOutStory`) — a fire-and-forget closure that
+ *     never enters the AgentRunner, tracked here by definition path. It sets and
+ *     clears its own flag on every exit path.
+ *   - The story PM chat (#0515) — an AgentRunner session keyed
+ *     `pm-story-v1:<number>`. Tracked by *session key* → path, so two users
+ *     chatting about one story each hold their own entry and one exiting never
+ *     drops the other's indicator.
+ *
+ * In-memory on purpose in both cases (like `reviews.isRunning`): a server
+ * restart kills the runs along with the registry, so a stale "working" flag
+ * cannot outlive the process. Story-file frontmatter would be the wrong home.
  */
-const pmWorking = new Set<string>();
+const pmFleshOutWorking = new Set<string>();
+const pmChatWorking = new Map<string, string>();
 
+/** Mark/unmark a story's background flesh-out. */
 export function setStoryPmWorking(path: string, on: boolean): void {
-  if (on) pmWorking.add(path);
-  else pmWorking.delete(path);
+  if (on) pmFleshOutWorking.add(path);
+  else pmFleshOutWorking.delete(path);
 }
 
+/**
+ * Mark a PM chat session as live for a story. Keyed by session key rather than
+ * path so concurrent chats about one story don't overwrite each other.
+ */
+export function markStoryPmChat(sessionKey: string, path: string): void {
+  pmChatWorking.set(sessionKey, path);
+}
+
+/**
+ * Clear one PM chat session and return the story it was about, or null for any
+ * other runner session (engineer, task PM chat, board chat). The runner's
+ * `agent.exited` hook calls this on every exit path, so the indicator can never
+ * get stuck and the map never grows without bound.
+ */
+export function clearStoryPmChat(sessionKey: string): string | null {
+  const path = pmChatWorking.get(sessionKey);
+  pmChatWorking.delete(sessionKey);
+  return path ?? null;
+}
+
+/** True while the PM is doing anything at all to this story. */
 export function isStoryPmWorking(path: string): boolean {
-  return pmWorking.has(path);
+  if (pmFleshOutWorking.has(path)) return true;
+  for (const chatPath of pmChatWorking.values()) {
+    if (chatPath === path) return true;
+  }
+  return false;
 }
 
 export function storySlug(name: string): string {
@@ -174,13 +228,22 @@ function nextStoryNumber(config: RepoOSConfig): string {
 /**
  * Retroactively assign a stable number to every story definition that lacks
  * one, in place. The direct counterpart of `ensureInputNumbers` for `stories/`
- * (#0515), with the same guarantees: idempotent (numbers already present are
- * never touched, renumbered, or reused, so a restart or a repeated call is a
- * no-op), and existing definitions numbered oldest-first (by `created_at`, then
- * path) so the assignment is deterministic. Returns the definitions that
- * changed, for callers that want to commit them; an empty array means every
- * story already had a number. See AGENTS.md — this touches the repo's own
- * `stories/*.md` data.
+ * (#0515), with the same guarantees and the same limits:
+ *
+ *   - Idempotent. A number already on disk is never touched or renumbered, so a
+ *     repeated call is a no-op.
+ *   - Deterministic. Existing definitions are numbered oldest-first (by
+ *     `created_at`, then path), skipping any number already in use.
+ *   - A *surviving* story never has its number reassigned. Deleting the
+ *     highest-numbered story does free that number for the next one, exactly as
+ *     it does for inputs — the guarantee is stability for the stories that
+ *     remain, not a permanent ledger. Making it monotonic would need a
+ *     high-water mark persisted outside the story files, which is a different
+ *     design from the input numbering this deliberately mirrors.
+ *
+ * A file whose frontmatter can't be patched is left alone and NOT reported as
+ * changed, so it stays eligible for the next run instead of being silently
+ * skipped forever. See AGENTS.md — this touches the repo's own `stories/*.md`.
  */
 export function ensureStoryNumbers(config: RepoOSConfig): StoryDefinition[] {
   const items = listStoryDefinitions(config);
@@ -201,7 +264,10 @@ export function ensureStoryNumbers(config: RepoOSConfig): StoryDefinition[] {
     used.add(number);
     max = parseInt(number, 10);
     const file = join(config.root, item.path);
-    writeFileSync(file, setStoryField(readFileSync(file, "utf8"), "number", number), "utf8");
+    const before = readFileSync(file, "utf8");
+    const after = setStoryField(before, "number", number);
+    if (after === before) continue;
+    writeFileSync(file, after, "utf8");
     changed.push({ ...item, number });
   }
   return changed;

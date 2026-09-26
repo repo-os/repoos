@@ -31,7 +31,7 @@ afterEach(() => {
 });
 
 /** Write a story file by hand to simulate one captured before numbering existed. */
-function rawStory(name: string, createdAt: string, extra = ""): string {
+function rawStory(name: string, createdAt: string, extra = "", body = "Scope for later."): string {
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   const path = join(root, "stories", `${slug}.md`);
   mkdirSync(join(root, "stories"), { recursive: true });
@@ -45,7 +45,7 @@ function rawStory(name: string, createdAt: string, extra = ""): string {
       'created_by: "human"',
       "---",
       "",
-      "Scope for later.",
+      body,
       "",
     ].join("\n"),
   );
@@ -108,14 +108,36 @@ describe("story numbering (#0515)", () => {
     expect(byName.get("Unnumbered")).toBe("0043");
   });
 
-  it("does not reuse a retired number after a story is deleted", () => {
+  it("keeps a surviving story's number after another is deleted", () => {
     const config = createRepoOS(root).config;
     const first = writeStoryDefinition(config, { name: "First slice", body: "One." });
     writeStoryDefinition(config, { name: "Second slice", body: "Two." });
     rmSync(join(root, first.path));
 
+    // #0002 is still the highest number present, so the next one is #0003 —
+    // the deleted #0001 is not handed out again while #0002 survives.
     const next = writeStoryDefinition(config, { name: "Third slice", body: "Three." });
     expect(next.number).toBe("0003");
+    expect(listStoryDefinitions(config).find((d) => d.name === "Second slice")!.number).toBe(
+      "0002",
+    );
+  });
+
+  it("reuses the highest number once that story is deleted, as inputs do", () => {
+    const config = createRepoOS(root).config;
+    const first = writeStoryDefinition(config, { name: "First slice", body: "One." });
+    const second = writeStoryDefinition(config, { name: "Second slice", body: "Two." });
+    expect(second.number).toBe("0002");
+
+    // Documented limit, asserted so it can't change silently: the number is
+    // derived from the highest one *present*, so deleting the top story frees
+    // its number. Stability is promised for the stories that remain, not a
+    // permanent ledger — matching `ensureInputNumbers` exactly.
+    rmSync(join(root, second.path));
+    expect(ensureStoryNumbers(config)).toEqual([]); // #0001 is untouched
+    const next = writeStoryDefinition(config, { name: "Third slice", body: "Three." });
+    expect(next.number).toBe("0002");
+    expect(readFileSync(join(root, first.path), "utf8")).toMatch(/^number: "0001"$/m);
   });
 
   it("keeps the number when the PM agent renames the story and its file", () => {
@@ -133,6 +155,50 @@ describe("story numbering (#0515)", () => {
     expect(definition.name).toBe("Project updates email");
     expect(previousPath).toBe(original.path);
     expect(readFileSync(join(root, definition.path), "utf8")).toMatch(/^number: "0001"$/m);
+  });
+
+  it("adds the field to frontmatter without touching a matching body line", () => {
+    const config = createRepoOS(root).config;
+    // The body opens a line with `number:` — a naive `^number:` regex with the
+    // `m` flag would rewrite that prose instead of adding the field.
+    rawStory(
+      "Tricky body",
+      "2026-01-01T00:00:00Z",
+      "",
+      "number: 42 is the answer, and this prose must survive the backfill",
+    );
+
+    expect(ensureStoryNumbers(config)).toHaveLength(1);
+
+    const content = readFileSync(join(root, "stories/tricky-body.md"), "utf8");
+    expect(content).toMatch(/^number: "0001"$/m);
+    expect(content).toContain("number: 42 is the answer, and this prose must survive");
+  });
+
+  it("leaves an unparseable file for the next run instead of claiming success", () => {
+    const config = createRepoOS(root).config;
+    mkdirSync(join(root, "stories"), { recursive: true });
+    // No frontmatter at all: there is nowhere to put the field.
+    writeFileSync(join(root, "stories/broken.md"), "Just prose, no frontmatter.\n");
+
+    // Reported as unchanged, so the next boot retries rather than skipping it
+    // forever, and nothing is written.
+    expect(ensureStoryNumbers(config)).toEqual([]);
+    expect(readFileSync(join(root, "stories/broken.md"), "utf8")).toBe(
+      "Just prose, no frontmatter.\n",
+    );
+  });
+
+  it("backfills CRLF frontmatter", () => {
+    const config = createRepoOS(root).config;
+    mkdirSync(join(root, "stories"), { recursive: true });
+    writeFileSync(
+      join(root, "stories", "crlf.md"),
+      '---\r\nname: CRLF slice\r\ncreated_at: "2026-01-01T00:00:00Z"\r\n---\r\n\r\nScope.\r\n',
+    );
+
+    expect(ensureStoryNumbers(config)).toHaveLength(1);
+    expect(readFileSync(join(root, "stories/crlf.md"), "utf8")).toMatch(/^number: "0001"\r?$/m);
   });
 
   it("normalizes an unpadded or non-numeric frontmatter number", () => {

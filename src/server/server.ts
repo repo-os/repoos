@@ -125,8 +125,7 @@ import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
 import { FreeformRunManager } from "./freeform-runs.js";
 import { pmChatSessionTaskId, clearPmChatSession, isPmWorking } from "./pm-runs.js";
 import { attachPendingPmImages } from "./pm-attachments.js";
-import { storyPmChatPath } from "./story-pm.js";
-import { setStoryPmWorking } from "../core/story-definition-files.js";
+import { clearStoryPmChat, isStoryPmWorking } from "../core/story-definition-files.js";
 import { completeTask, type DoneStep, type CloseOutLock } from "./done.js";
 import { createJobCoordinator, type JobCoordinator } from "./integration-job.js";
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
@@ -1337,11 +1336,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       }
       // #0515: the same contract for a story PM chat — clear the "PM is
       // working" flag its route raised, on every exit path. Re-emitting
-      // `story.definitionsChanged` is all the board needs to pick it up,
-      // because that flag already rides on the story definition record.
-      const storyPath = storyPmChatPath(e.id);
-      if (storyPath) {
-        setStoryPmWorking(storyPath, false);
+      // `story.definitionsChanged` is all the board needs to pick it up, because
+      // that flag already rides on the story definition record. The chat is
+      // cleared unconditionally (the map entry is per session, so this can
+      // never touch a concurrent one); the re-emit is gated on no *other* PM
+      // activity being live for the story, or one user exiting would hide
+      // another user's still-running turn.
+      const storyChatPath = clearStoryPmChat(e.id);
+      if (storyChatPath && !isStoryPmWorking(storyChatPath)) {
         emitEvent({ type: "story.definitionsChanged", at: new Date().toISOString() });
       }
       if (pendingReview.delete(e.id)) {

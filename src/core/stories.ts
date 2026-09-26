@@ -70,10 +70,19 @@ export function storyKey(raw: string): string {
  * The part of a story PM session id that identifies *which* story (#0515).
  *
  * A registered story uses its stable number — the same shape a task PM chat
- * uses (`pm-task-v2:0042`), so the two read alike in `.repoos/sessions/`. A
- * story that exists only as a task tag has no definition file and therefore no
- * number, so it falls back to a slug of its key. The result is always
- * filename-safe (`[a-z0-9-]`), which is what the runner's session file requires.
+ * uses (`pm-task-v2:0042`), so the two read alike in `.repoos/sessions/`, and it
+ * survives the PM agent renaming the story. A story that exists only as a task
+ * tag has no definition file and therefore no number, so it falls back to a
+ * slug of its key.
+ *
+ * The one consequence worth knowing: registering a story that already had a PM
+ * conversation changes its session id (slug → number), so that earlier thread
+ * reads as a fresh conversation. The alternative — keying on the name — would
+ * break the far more common rename instead, so the number stays the identity and
+ * this is the accepted trade.
+ *
+ * The result is always filename-safe (`[a-z0-9-]`), which is what the runner's
+ * session file requires.
  */
 export function storyPmSessionSlug(key: string, number?: string | null): string {
   if (number) return number;
