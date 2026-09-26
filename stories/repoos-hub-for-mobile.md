@@ -1,4 +1,5 @@
 ---
+number: "0001"
 name: RepoOS Hub for Mobile
 created_at: "2026-09-23T06:53:10.837Z"
 created_by: hello@repoos.org
