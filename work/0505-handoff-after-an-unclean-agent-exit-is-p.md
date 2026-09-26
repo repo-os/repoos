@@ -2,7 +2,10 @@
 id: "0505"
 title: Handoff after an unclean agent exit is parked until a server restart that never comes
 type: bug
-status: active
+status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "Skill routing: code-review, diagnose-repoos-close-out-validation-failures, frontend-testing"
 priority: p1
 area: server
 assigned_to: ai
@@ -10,7 +13,8 @@ created_by: ""
 branch: feat/handoff-after-an-unclean-agent-exit-is-p
 review_model_override: opencode-go/space-bunny-free
 created_at: "2026-09-26T00:57:06Z"
-updated_at: "2026-09-26T01:54:38Z"
+updated_at: "2026-09-26T01:56:28Z"
+dev_error_count: 1
 ---
 ## Problem
 
@@ -81,3 +85,5 @@ indefinitely.
 - 2026-09-26T01:02:46Z · status inbox→ready
 - 2026-09-26T01:02:53Z · status ready→active, branch
 - 2026-09-26T01:54:38Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-09-26T01:56:28Z · status active→review
+- 2026-09-26T01:56:28Z · agent exited with an error (cursor) · Skill routing: code-review, diagnose-repoos-close-out-validation-failures, frontend-testing
