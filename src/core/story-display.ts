@@ -8,6 +8,12 @@ import { STATUSES, type Status } from "./types.js";
 export interface StoryDefinition {
   key: string;
   name: string;
+  /**
+   * Stable zero-padded 4-digit number (`"0001"`), the story's counterpart to a
+   * task's `id` and an input's `number` (#0515). Empty string only for a story
+   * file written before the field existed and not yet backfilled.
+   */
+  number: string;
   path: string;
   body: string;
   createdAt: string;
@@ -28,9 +34,11 @@ export interface MergedStoryGroup<T extends StoryTaskLike = StoryTaskLike> exten
    * Definition metadata, null for a story that exists only as a task tag. The
    * side panel's Details tab reads these so it can show where a story is
    * defined and who wrote it without the view having to join the definitions
-   * back on by key a second time.
+   * back on by key a second time. `number` is null for a tag-only story too:
+   * there is no file to hold a stable number, so it has none to show (#0515).
    */
   path: string | null;
+  number: string | null;
   createdAt: string | null;
   createdBy: string | null;
 }
@@ -63,6 +71,7 @@ export function mergeStoriesForDisplay<T extends StoryTaskLike>(
       body: def?.body ?? "",
       registered: !!def,
       path: def?.path ?? null,
+      number: def?.number || null,
       createdAt: def?.createdAt ?? null,
       createdBy: def?.createdBy ?? null,
     });
@@ -87,6 +96,7 @@ export function mergeStoriesForDisplay<T extends StoryTaskLike>(
       body: def.body,
       registered: true,
       path: def.path,
+      number: def.number || null,
       createdAt: def.createdAt,
       createdBy: def.createdBy,
     });
