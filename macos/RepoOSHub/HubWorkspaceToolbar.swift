@@ -34,7 +34,7 @@ struct HubWorkspaceToolbar: ToolbarContent {
         }
         ToolbarItem(placement: .primaryAction) {
             Button {
-                HubSettingsOpener.open()
+                HubSettingsOpener.open(appState: appState)
             } label: {
                 Image(systemName: "ellipsis")
                     .rotationEffect(.degrees(90))

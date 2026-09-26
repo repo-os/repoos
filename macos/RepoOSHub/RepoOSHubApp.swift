@@ -32,6 +32,12 @@ struct RepoOSHubApp: App {
                 }
         }
         .commands {
+            CommandGroup(replacing: .appSettings) {
+                Button("Settings…") {
+                    HubSettingsOpener.open(appState: appState)
+                }
+                .keyboardShortcut(",", modifiers: .command)
+            }
             CommandGroup(after: .newItem) {
                 Button("Add Server…") {
                     appState.presentAddServer()
@@ -63,10 +69,6 @@ struct RepoOSHubApp: App {
                 }
                 .keyboardShortcut("r", modifiers: .command)
             }
-        }
-        Settings {
-            HubSettingsView()
-                .environmentObject(appState)
         }
     }
 }
