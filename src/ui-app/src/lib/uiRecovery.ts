@@ -201,7 +201,14 @@ export async function checkUiBuild(): Promise<void> {
         state.message = "";
       }
     } catch (err) {
-      if (err instanceof Error && /timed out|can't reach/i.test(err.message))
+      // Only show the banner on first failure — showOffline already guards
+      // against duplicates, but skipping the call while already offline avoids
+      // repeated event dispatch from concurrent health-check polls.
+      if (
+        state.kind !== "offline" &&
+        err instanceof Error &&
+        /timed out|can't reach/i.test(err.message)
+      )
         showOffline(err.message);
     } finally {
       healthCheckInFlight = null;
