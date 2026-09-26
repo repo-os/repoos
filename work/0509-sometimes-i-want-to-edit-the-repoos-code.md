@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "[object Object]"
 id: "0509"
 title: Add a dev-only click-to-locate inspector for UI copy
 type: feature
@@ -187,3 +189,4 @@ Sometimes I want to edit the repoos code myself, particularly with simple copy c
 - 2026-09-26T11:44:12Z · status active→review
 - 2026-09-26T11:45:59Z · status review→active
 - 2026-09-26T11:50:24Z · needs_input dismissed by hello@repoos.org
+
