@@ -101,6 +101,13 @@ final class HubUpdateCheckTests: XCTestCase {
         XCTFail("expected couldNotCheck, got \(result)")
     }
 
+    func testFailuresAreNotCached() async {
+        let checker = HubUpdateChecker(fetcher: FailingFetcher())
+        _ = await checker.check(currentVersion: "1.0.0")
+        let cached = await checker.cachedResult()
+        XCTAssertNil(cached)
+    }
+
     func testFailedCheckNeverReportsUpdate() async {
         let checker = HubUpdateChecker(fetcher: HTMLFetcher())
         let result = await checker.check(currentVersion: "1.0.0")
