@@ -1569,7 +1569,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: true,
       description:
-        "Dev/local only. Hover visible UI text for a locate control; click to copy or open the source file path.",
+        "Dev/local only. Hold Alt (Option on macOS) over visible UI text to reveal a locate control; click it to copy or open the source file path.",
     },
     {
       key: "dev.inspector.editorCommand",

@@ -79,13 +79,16 @@ function setTab(id: TabId): void {
   void router.replace({ name: "settings", query: { ...route.query, tab: id } });
 }
 
+/** Dev-inspector settings only exist as a control when the build supports them. */
+function isFieldVisible(key: string): boolean {
+  if (key === "dev.inspector.enabled" || key === "dev.inspector.editorCommand") {
+    return repo.health?.copyInspectorAvailable === true;
+  }
+  return true;
+}
+
 const advancedGuardedFields = computed(() =>
-  config.guardedFields.filter((f) => {
-    if (f.key === "dev.inspector.enabled" || f.key === "dev.inspector.editorCommand") {
-      return repo.health?.copyInspectorAvailable === true;
-    }
-    return true;
-  }),
+  config.guardedFields.filter((f) => isFieldVisible(f.key)),
 );
 
 // Keyboard navigation across tabs (arrow keys, Home, End)
@@ -602,6 +605,9 @@ watch(
 function buildBody(): Record<string, unknown> {
   const body: Record<string, unknown> = {};
   for (const f of config.schema) {
+    // Hidden controls must not be persisted: an unrelated save would otherwise
+    // write their defaults into this repo's repoos.toml.
+    if (!isFieldVisible(f.key)) continue;
     let val = form[f.key];
     if (f.key.startsWith("board.columns.")) {
       const trimmed = typeof val === "string" ? val.trim() : String(val ?? "").trim();

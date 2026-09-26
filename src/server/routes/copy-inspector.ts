@@ -7,15 +7,16 @@ import {
   formatCopyInspectorPath,
   resolveCopyInspectorTarget,
 } from "../../core/copy-inspector.js";
-import { isDevBuild } from "../reload.js";
 
 /**
- * Copy-inspector API gate (#0509): server's `isDevBuild()` plus a dev UI bundle
- * on the managed repo. Release installs never pass `isDevBuild()` even when the
- * repo checkout still has a dev `dist/`.
+ * Copy-inspector API gate (#0509): the managed repo must have RepoOS UI sources
+ * and a dev UI bundle (`devUi` in `dist/.build-info.json`, i.e. built without
+ * `REPOOS_SHIP=1`). That is the real "not for released installs" boundary:
+ * npm/curl/brew builds ship without `data-repoos-*` annotations and without
+ * `src/`. Deliberately not tied to running from `src/` — the dogfood server
+ * and task previews run the compiled `dist/cli/index.js`.
  */
 export function copyInspectorApiEnabled(root: string): boolean {
-  if (!isDevBuild()) return false;
   return copyInspectorUiBuildReady(root);
 }
 
