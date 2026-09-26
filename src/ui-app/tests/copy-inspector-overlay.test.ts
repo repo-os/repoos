@@ -115,4 +115,37 @@ describe("CopyInspectorOverlay affordance", () => {
     expect(openBtn.disabled).toBe(true);
     wrapper.unmount();
   });
+
+  it("opens the popup on Enter while the pill is showing, but not from a text field", async () => {
+    const labeled = document.createElement("p");
+    labeled.setAttribute("data-repoos-file", "src/ui-app/Foo.vue");
+    labeled.setAttribute("data-repoos-line", "12");
+    labeled.textContent = "Hello inspector";
+    document.body.appendChild(labeled);
+    const field = document.createElement("input");
+    document.body.appendChild(field);
+    document.elementFromPoint = vi.fn(() => labeled) as typeof document.elementFromPoint;
+
+    const wrapper = mount(CopyInspectorOverlay, { attachTo: document.body });
+    await nextTick();
+    window.dispatchEvent(
+      new PointerEvent("pointermove", { bubbles: true, clientX: 40, clientY: 40, altKey: true }),
+    );
+    await flushAffordanceRaf();
+    await nextTick();
+    expect(document.body.querySelector(".copy-inspector-affordance")).not.toBeNull();
+
+    // Typing Enter in a focused input must be left alone.
+    field.focus();
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    await nextTick();
+    expect(document.body.querySelector(".copy-inspector-pane")).toBeNull();
+
+    field.blur();
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    await nextTick();
+    const pane = document.body.querySelector(".copy-inspector-pane") as HTMLElement;
+    expect(pane.textContent).toContain("src/ui-app/Foo.vue:12");
+    wrapper.unmount();
+  });
 });

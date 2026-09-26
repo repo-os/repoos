@@ -154,14 +154,30 @@ function onPointerMove(e: PointerEvent): void {
   });
 }
 
+function openPopupAt(x: number, y: number): void {
+  if (!hoverTarget.value) return;
+  popup.value = hoverTarget.value;
+  popupPos.value = { x, y: y + 12 };
+  popupMsg.value = "";
+  hideAffordance();
+}
+
 function openFromAffordance(e: PointerEvent): void {
   if (!hoverTarget.value) return;
   e.preventDefault();
   e.stopPropagation();
-  popup.value = hoverTarget.value;
-  popupPos.value = { x: e.clientX, y: e.clientY + 12 };
-  popupMsg.value = "";
-  hideAffordance();
+  openPopupAt(e.clientX, e.clientY);
+}
+
+function isEditableFocus(): boolean {
+  const el = document.activeElement;
+  if (!(el instanceof HTMLElement)) return false;
+  return (
+    el.isContentEditable ||
+    el.tagName === "INPUT" ||
+    el.tagName === "TEXTAREA" ||
+    el.tagName === "SELECT"
+  );
 }
 
 function closePopup(): void {
@@ -196,7 +212,21 @@ async function openInEditor(): Promise<void> {
 }
 
 function onKeydown(e: KeyboardEvent): void {
-  if (e.key === "Escape") closePopup();
+  if (e.key === "Escape") {
+    closePopup();
+    return;
+  }
+  // Enter does what clicking the visible pill does — for when the pill is
+  // off the outlined element and awkward to hit. Never steals Enter from a
+  // text field the user is typing in.
+  if (e.key === "Enter" && affordanceVisible.value && hoverTarget.value && !popup.value) {
+    if (isEditableFocus()) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const x = lastMove?.clientX ?? window.innerWidth / 2;
+    const y = lastMove?.clientY ?? window.innerHeight / 2;
+    openPopupAt(x, y);
+  }
 }
 
 function onPointerDownOutside(e: PointerEvent): void {
@@ -209,13 +239,13 @@ function onPointerDownOutside(e: PointerEvent): void {
 onMounted(() => {
   window.addEventListener("pointermove", onPointerMove, { passive: true });
   window.addEventListener("pointerdown", onPointerDownOutside, true);
-  window.addEventListener("keydown", onKeydown);
+  window.addEventListener("keydown", onKeydown, true);
 });
 
 onUnmounted(() => {
   window.removeEventListener("pointermove", onPointerMove);
   window.removeEventListener("pointerdown", onPointerDownOutside, true);
-  window.removeEventListener("keydown", onKeydown);
+  window.removeEventListener("keydown", onKeydown, true);
   if (moveRaf) cancelAnimationFrame(moveRaf);
 });
 </script>
@@ -229,7 +259,7 @@ onUnmounted(() => {
         type="button"
         class="copy-inspector-affordance"
         :style="affordanceStyle"
-        title="Open the source location for the outlined element"
+        title="Open the source location for the outlined element (click or press Enter)"
         @pointerdown.stop.prevent="openFromAffordance"
       >
         <svg
@@ -247,6 +277,7 @@ onUnmounted(() => {
           <path d="M8 1v3M8 12v3M1 8h3M12 8h3" />
         </svg>
         <span>{{ hoverTarget ? formatInspectorShortPath(hoverTarget) : "Locate source" }}</span>
+        <kbd class="copy-inspector-kbd" aria-hidden="true">↵</kbd>
       </button>
       <div
         v-if="highlightStyle && (affordanceVisible || popup)"
@@ -319,6 +350,16 @@ onUnmounted(() => {
   border: 2px dashed #f97316;
   border-radius: 4px;
   background: rgba(249, 115, 22, 0.14);
+}
+
+.copy-inspector-kbd {
+  flex: none;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  font: inherit;
+  font-size: 11px;
+  color: #e5e7eb;
 }
 
 .copy-inspector-affordance-icon {
