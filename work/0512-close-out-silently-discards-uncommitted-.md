@@ -8,8 +8,10 @@ area: server
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: opencode
+model_override: default
 created_at: "2026-09-26T03:50:30Z"
-updated_at: "2026-09-26T16:26:16Z"
+updated_at: "2026-09-26T16:30:26Z"
 ---
 ## Problem
 
@@ -123,3 +125,4 @@ not depend on knowing who it was.
 - 2026-09-26T03:50:30Z · created · unknown
 - 2026-09-26T09:41:27Z · status inbox→ready
 - 2026-09-26T16:26:16Z · body
+- 2026-09-26T16:30:26Z · cli_override, model_override
