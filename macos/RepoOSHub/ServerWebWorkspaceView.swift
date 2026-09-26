@@ -22,13 +22,11 @@ struct ServerWebWorkspaceView: View {
             if entry.originURL != nil {
                 Color.black
                     .ignoresSafeArea()
-                // The Hub shell theme never reaches server content: this reset
-                // keeps the embedded web UI on the system theme (and its own
-                // web settings) no matter which Hub appearance is chosen.
-                // No theme is injected, forced, or bridged into the web view.
+                // Theme isolation lives in ServerWebView (pinned to the
+                // system appearance): the Hub shell override above never
+                // reaches server content.
                 ServerWebView(model: webModel, appState: appState)
                     .id(entry.id)
-                    .preferredColorScheme(nil)
             } else {
                 invalidOriginState
             }

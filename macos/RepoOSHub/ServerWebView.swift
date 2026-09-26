@@ -74,6 +74,13 @@ struct ServerWebView: NSViewRepresentable {
         context.coordinator.webView = webView
         context.coordinator.loadInitialPage()
         context.coordinator.observeHubCommands()
+        // The Hub shell theme must never reach server content: pin the web
+        // view to the system appearance (not the Hub override) so a page
+        // honouring prefers-color-scheme follows the system, and the
+        // server's own web theme setting stays authoritative. No theme is
+        // injected, forced, or bridged into the web view.
+        context.coordinator.pinWebViewToSystemAppearance()
+        context.coordinator.observeSystemAppearance()
         return webView
     }
 
@@ -99,6 +106,7 @@ struct ServerWebView: NSViewRepresentable {
         weak var webView: WKWebView?
         var loadedOriginKey: String?
         private var commandObservers: [NSObjectProtocol] = []
+        private var systemAppearanceObserver: NSKeyValueObservation?
 
         init(model: ServerWebViewModel, appState: HubAppState) {
             self.model = model
@@ -185,6 +193,25 @@ struct ServerWebView: NSViewRepresentable {
                 load(path: pending.path)
             } else {
                 load(path: "/")
+            }
+        }
+
+        /// Pins this web view to the system appearance. SwiftUI's
+        /// preferredColorScheme only styles the native shell, but the web
+        /// view lives in that hierarchy — without this pin a forced Hub
+        /// scheme would leak into the page via NSAppearance. NSApp itself is
+        /// never overridden, so its effectiveAppearance stays the system one.
+        func pinWebViewToSystemAppearance() {
+            let isDark = NSApp?.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+            webView?.appearance = NSAppearance(named: isDark ? .darkAqua : .aqua)
+        }
+
+        func observeSystemAppearance() {
+            guard systemAppearanceObserver == nil, let app = NSApp else { return }
+            systemAppearanceObserver = app.observe(\.effectiveAppearance, options: .new) { [weak self] _, _ in
+                Task { @MainActor in
+                    self?.pinWebViewToSystemAppearance()
+                }
             }
         }
 

@@ -24,6 +24,19 @@ final class HubAppAppearanceTests: XCTestCase {
         XCTAssertFalse(decoded.dockBadgeEnabled)
     }
 
+    func testUnknownAppearanceValueDefaultsToSystemInsteadOfThrowing() throws {
+        // Written by a future build, read by this one: must not throw (which
+        // would wipe the registry in reloadFromDisk's catch) and must keep
+        // the other preferences intact.
+        let json = """
+        {"notificationsEnabled":false,"dockBadgeEnabled":true,"appearance":"holographic"}
+        """.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(HubGlobalPreferences.self, from: json)
+        XCTAssertEqual(decoded.appearance, .system)
+        XCTAssertFalse(decoded.notificationsEnabled)
+        XCTAssertTrue(decoded.dockBadgeEnabled)
+    }
+
     func testAppearanceRoundTripsThroughRegistryDocument() throws {
         var document = ServerRegistryDocument()
         document.hubGlobalPreferences.appearance = .dark

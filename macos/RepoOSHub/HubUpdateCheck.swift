@@ -7,7 +7,6 @@ import Foundation
 /// for six hours (matching `UPDATE_CACHE_TTL_MS` in `src/core/agent-updates.ts`).
 enum HubUpdateCheck {
     static let releasesURL = URL(string: "https://github.com/repo-os/repoos/releases")!
-    static let dmgDownloadURL = URL(string: "https://github.com/repo-os/repoos/releases/latest/download/RepoOSHub.dmg")!
     static let latestReleaseAPIURL = URL(string: "https://api.github.com/repos/repo-os/repoos/releases/latest")!
     static let cacheTTL: TimeInterval = 6 * 60 * 60
 
@@ -46,7 +45,7 @@ enum HubUpdateCheck {
 
     /// Pure evaluation used by the UI and unit tests. A failed or
     /// unparseable check never reports an update.
-    static func evaluate(tag: String?, prerelease: Bool?, currentVersion: String?) -> HubUpdateResult {
+    static func evaluate(tag: String?, prerelease: Bool?, currentVersion: String?, dmgDownloadURL: URL? = nil) -> HubUpdateResult {
         guard let current = currentVersion?.trimmingCharacters(in: .whitespacesAndNewlines),
               !current.isEmpty,
               let tag,
@@ -59,7 +58,7 @@ enum HubUpdateCheck {
             return .couldNotCheck(reason: "Could not compare Hub versions.")
         }
         if comparison > 0 {
-            return .available(current: current, latest: latest)
+            return .available(current: current, latest: latest, downloadURL: dmgDownloadURL)
         }
         return .upToDate(current: current, latest: latest)
     }
@@ -69,7 +68,7 @@ enum HubUpdateResult: Equatable, Sendable {
     case notChecked
     case checking
     case upToDate(current: String, latest: String)
-    case available(current: String, latest: String)
+    case available(current: String, latest: String, downloadURL: URL?)
     case couldNotCheck(reason: String)
 
     var statusText: String {
@@ -80,17 +79,26 @@ enum HubUpdateResult: Equatable, Sendable {
             return "Checking for updates…"
         case .upToDate(let current, _):
             return "You\u{2019}re up to date (version \(current))."
-        case .available(_, let latest):
+        case .available(_, let latest, _):
             return "Version \(latest) is available."
         case .couldNotCheck:
             return "Could not check for updates."
         }
+    }
+
+    /// The direct DMG download, when the latest release actually ships one.
+    /// Nil means offer the releases page instead of a download button.
+    var downloadURL: URL? {
+        if case .available(_, _, let url) = self { return url }
+        return nil
     }
 }
 
 struct HubLatestReleasePayload {
     var tag: String?
     var prerelease: Bool?
+    /// Direct download for the `RepoOSHub.dmg` asset, if the release ships one.
+    var dmgDownloadURL: URL?
 }
 
 enum HubUpdatePayloadParsing {
@@ -100,7 +108,20 @@ enum HubUpdatePayloadParsing {
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
         let tag = json["tag_name"] as? String
         let prerelease = json["prerelease"] as? Bool
-        return HubLatestReleasePayload(tag: tag, prerelease: prerelease)
+        return HubLatestReleasePayload(tag: tag, prerelease: prerelease, dmgDownloadURL: dmgAssetURL(json["assets"]))
+    }
+
+    private static func dmgAssetURL(_ assets: Any?) -> URL? {
+        guard let assets = assets as? [[String: Any]] else { return nil }
+        for asset in assets {
+            guard (asset["name"] as? String) == "RepoOSHub.dmg",
+                  let raw = asset["browser_download_url"] as? String,
+                  let url = URL(string: raw),
+                  url.scheme?.hasPrefix("http") == true
+            else { continue }
+            return url
+        }
+        return nil
     }
 }
 
@@ -128,30 +149,32 @@ struct HubURLSessionUpdateFetcher: HubUpdateFetching {
 
 /// On-demand checker with a six-hour in-memory cache. There is no launch,
 /// window-open, or timer fetch — the UI calls `check(force:)` explicitly.
-final class HubUpdateChecker: Sendable {
-    private let lock = NSLock()
+/// An actor: all access is serialized without locks.
+actor HubUpdateChecker {
     private var cached: (result: HubUpdateResult, at: Date)?
     private let fetcher: any HubUpdateFetching
     private let now: @Sendable () -> Date
 
-    init(fetcher: any HubUpdateFetching = HubURLSessionUpdateFetcher(), now: @escaping @Sendable () -> Date = Date.init) {
+    init(fetcher: any HubUpdateFetching = HubURLSessionUpdateFetcher(), now: @Sendable @escaping () -> Date = { Date() }) {
         self.fetcher = fetcher
         self.now = now
     }
 
     func check(currentVersion: String?, force: Bool = false) async -> HubUpdateResult {
         let currentNow = now()
-        lock.lock()
-        let existing = cached
-        lock.unlock()
-        if !force, let existing, currentNow.timeIntervalSince(existing.at) < HubUpdateCheck.cacheTTL {
+        if !force, let existing = cached, currentNow.timeIntervalSince(existing.at) < HubUpdateCheck.cacheTTL {
             return existing.result
         }
         let result = await performCheck(currentVersion: currentVersion)
-        lock.lock()
         cached = (result, currentNow)
-        lock.unlock()
         return result
+    }
+
+    /// The last fresh result without any network. Lets the settings window
+    /// show a recent outcome on open while staying on-demand only.
+    func cachedResult() -> HubUpdateResult? {
+        guard let cached, now().timeIntervalSince(cached.at) < HubUpdateCheck.cacheTTL else { return nil }
+        return cached.result
     }
 
     private func performCheck(currentVersion: String?) async -> HubUpdateResult {
@@ -164,7 +187,12 @@ final class HubUpdateChecker: Sendable {
             }
             return .couldNotCheck(reason: "Could not reach the releases service. Check your connection and try again.")
         }
-        let evaluated = HubUpdateCheck.evaluate(tag: payload.tag, prerelease: payload.prerelease, currentVersion: currentVersion)
+        let evaluated = HubUpdateCheck.evaluate(
+            tag: payload.tag,
+            prerelease: payload.prerelease,
+            currentVersion: currentVersion,
+            dmgDownloadURL: payload.dmgDownloadURL
+        )
         // A failed evaluation never reports an update.
         return evaluated
     }

@@ -111,8 +111,9 @@ is cached for about six hours; pressing the button again re-checks.
 
 The check is advisory only: it never downloads or installs anything and adds
 no updater dependency. When an update exists, the window links out to the
-[releases page](https://github.com/repo-os/repoos/releases) and the
-`RepoOSHub.dmg` download, which opens in your default browser. To install,
+[releases page](https://github.com/repo-os/repoos/releases), plus a direct
+download button when that release actually ships the `RepoOSHub.dmg` asset
+— both open in your default browser. To install,
 download the latest `.dmg` and repeat the install steps below — the DMG is
 ad-hoc signed and not notarized (see
 [Distribution status](#distribution-status)), so an in-app replace would hit a
