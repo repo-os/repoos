@@ -21,7 +21,10 @@ show_pathbar = False
 show_sidebar = False
 arrange_by = None
 icon_size = 96
-text_size = 13
+# Finder does not persist a per-volume icon-label color. The dark installer
+# artwork supplies its own white labels, so hide Finder's black labels rather
+# than leaving inaccessible duplicate text over the background.
+text_size = 0
 label_pos = "bottom"
 icon_locations = {
     "RepoOS Hub.app": (172, 245),

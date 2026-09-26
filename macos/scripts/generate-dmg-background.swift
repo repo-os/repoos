@@ -33,6 +33,16 @@ func draw(_ text: String, at point: NSPoint, font: NSFont, color: NSColor) {
   )
 }
 
+func drawCentered(_ text: String, in rect: NSRect, font: NSFont, color: NSColor) {
+  let attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: color]
+  let size = (text as NSString).size(withAttributes: attributes)
+  let point = NSPoint(
+    x: rect.midX - size.width / 2,
+    y: rect.midY - size.height / 2
+  )
+  (text as NSString).draw(at: point, withAttributes: attributes)
+}
+
 let cyan = NSColor(srgbRed: 0.22, green: 0.88, blue: 1, alpha: 1)
 let violet = NSColor(srgbRed: 0.62, green: 0.48, blue: 1, alpha: 1)
 let eyebrow = NSBezierPath(roundedRect: NSRect(x: 54, y: 372, width: 116, height: 25), xRadius: 12, yRadius: 12)
@@ -59,6 +69,8 @@ head.lineJoinStyle = .round
 violet.setStroke()
 head.stroke()
 draw("Drag to install", at: NSPoint(x: 310, y: 136), font: .systemFont(ofSize: 13, weight: .medium), color: NSColor(white: 0.68, alpha: 1))
+drawCentered("RepoOS Hub", in: NSRect(x: 112, y: 54, width: 120, height: 22), font: .systemFont(ofSize: 13, weight: .medium), color: .white)
+drawCentered("Applications", in: NSRect(x: 488, y: 54, width: 120, height: 22), font: .systemFont(ofSize: 13, weight: .medium), color: .white)
 image.unlockFocus()
 
 guard let rep = NSBitmapImageRep(

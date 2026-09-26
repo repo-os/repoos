@@ -29,11 +29,12 @@ extension NSColor {
   }
 }
 
-func drawIcon(size: Int, theme: Theme) -> NSImage {
+func drawIcon(size: Int, theme: Theme, edgeToEdge: Bool = false) -> NSImage {
   let s = CGFloat(size)
-  // applicationIconImage is rendered directly by the Dock, so reserve the
-  // visual padding normally provided by an app icon's canvas.
-  let canvasInset = s * 3 / 30
+  // Dock artwork is rendered directly and benefits from a little breathing
+  // room. Finder already gives application icons their own optical spacing,
+  // so the packaged AppIcon must let its gradient ring reach the canvas edge.
+  let canvasInset = edgeToEdge ? 0 : s * 3 / 30
   let iconSize = s - canvasInset * 2
   let outerRadius = iconSize * 9 / 30
   let inset = iconSize * 3 / 30
@@ -163,7 +164,7 @@ func writeContents(_ contents: [String: Any], to url: URL) throws {
 var appIconImages: [[String: Any]] = []
 for (size, scale) in [(512, "1x"), (1024, "2x")] {
   let file = appIconDir.appendingPathComponent("AppIcon-\(size).png")
-  try writePNG(drawIcon(size: size, theme: themes["light"]!), size: size, to: file)
+  try writePNG(drawIcon(size: size, theme: themes["light"]!, edgeToEdge: true), size: size, to: file)
   fputs("wrote \(file.lastPathComponent)\n", stderr)
   appIconImages.append([
     "filename": file.lastPathComponent,

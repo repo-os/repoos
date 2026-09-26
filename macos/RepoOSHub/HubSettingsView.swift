@@ -1,17 +1,44 @@
 import AppKit
 import SwiftUI
 
-/// Opens the Hub's single app-level settings window. Uses selector strings
-/// so the same path works on the macOS 13 deployment target without
-/// touching macOS 14-only APIs such as SettingsLink or openSettings.
+/// Opens the Hub's single app-level settings window without depending on
+/// SwiftUI's responder-chain settings actions, which are not installed for
+/// this app on macOS 13.
 enum HubSettingsOpener {
-    static func open() {
-        guard let app = NSApp else { return }
-        if app.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil) { return }
-        if app.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil) { return }
-        // Both selectors unhandled: the entry point would silently do
-        // nothing. Log so a future macOS/SwiftUI change is diagnosable.
-        NSLog("RepoOS Hub: could not open the settings window (showSettingsWindow:/showPreferencesWindow: unhandled)")
+    static func open(appState: HubAppState) {
+        HubSettingsWindowController.shared.show(appState: appState)
+    }
+}
+
+/// A persistent native window gives both the toolbar and Command-, a reliable
+/// macOS 13-compatible target. It deliberately hosts the same view and shared
+/// application state as the main window, so it is the only app-level settings
+/// surface rather than a duplicate preferences store.
+final class HubSettingsWindowController: NSWindowController {
+    static let shared = HubSettingsWindowController()
+
+    private init() {
+        super.init(window: nil)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("HubSettingsWindowController does not support storyboard initialization")
+    }
+
+    func show(appState: HubAppState) {
+        if window == nil {
+            let content = HubSettingsView().environmentObject(appState)
+            let window = NSWindow(contentViewController: NSHostingController(rootView: content))
+            window.title = "RepoOS Hub Settings"
+            window.styleMask = [.titled, .closable, .miniaturizable]
+            window.isReleasedWhenClosed = false
+            window.setContentSize(NSSize(width: 520, height: 540))
+            window.center()
+            self.window = window
+        }
+
+        window?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
 }
 
