@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/handoff-after-an-unclean-agent-exit-is-p
 review_model_override: opencode-go/space-bunny-free
 created_at: "2026-09-26T00:57:06Z"
-updated_at: "2026-09-26T01:02:53Z"
+updated_at: "2026-09-26T01:54:38Z"
 ---
 ## Problem
 
@@ -80,3 +80,4 @@ indefinitely.
 - 2026-09-26T01:02:43Z · review_model_override
 - 2026-09-26T01:02:46Z · status inbox→ready
 - 2026-09-26T01:02:53Z · status ready→active, branch
+- 2026-09-26T01:54:38Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
