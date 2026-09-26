@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: ""
 branch: ""
+model_override: cursor-grok-4.6-medium
 created_at: "2026-09-26T05:57:03Z"
-updated_at: "2026-09-26T05:58:12Z"
+updated_at: "2026-09-26T06:07:22Z"
 ---
 ## Goal
 
@@ -76,3 +77,4 @@ Rejected: **Checks** (about gating pass/fail; a log there blurs its purpose, but
 
 - 2026-09-26T05:57:03Z · created · unknown
 - 2026-09-26T05:58:12Z · status inbox→ready
+- 2026-09-26T06:07:22Z · model_override
