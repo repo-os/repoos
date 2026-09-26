@@ -142,3 +142,43 @@ describe("freeform submit acknowledgment (0311)", () => {
     expect(wrapper.find(".ff-done").exists()).toBe(false);
   });
 });
+
+describe("new task screenshot draft persistence (0510)", () => {
+  const sampleShot = {
+    name: "keep.png",
+    mime: "image/png",
+    dataUrl: "data:image/png;base64,QUJD",
+    size: 3,
+  };
+
+  it("keeps pending screenshots across close and reopen", async () => {
+    const { ui } = await mountNewTask();
+    ui.pendingScreenshots.push({ ...sampleShot });
+    await flush();
+
+    ui.close();
+    await flush();
+    expect(ui.pendingScreenshots.length).toBe(1);
+
+    ui.openNewTask();
+    await flush();
+    expect(ui.pendingScreenshots.length).toBe(1);
+  });
+
+  it("Clear discards freeform text and pending screenshots together", async () => {
+    const { wrapper, ui } = await mountNewTask();
+    await wrapper.find("#nt-freeform").setValue("Draft text");
+    ui.pendingScreenshots.push({ ...sampleShot });
+    await flush();
+
+    const clearBtn = wrapper
+      .findAll("button")
+      .find((b) => b.attributes("aria-label") === "Clear draft");
+    expect(clearBtn).toBeTruthy();
+    await clearBtn!.trigger("click");
+    await flush();
+
+    expect((wrapper.find("#nt-freeform").element as HTMLTextAreaElement).value).toBe("");
+    expect(ui.pendingScreenshots.length).toBe(0);
+  });
+});

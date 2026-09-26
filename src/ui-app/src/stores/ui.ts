@@ -203,7 +203,10 @@ export const useUiStore = defineStore("ui", () => {
     nt.priority = "p2";
     nt.type = "feature";
     nt.assignedTo = assignedTo;
-    clearScreenshots();
+    // Deliberately keep pendingScreenshots: the draft survives closing and
+    // reopening the panel within a session (0510), same as freeformText.
+    // Cleared only after a successful create, "Create another task", or
+    // clearFreeformDraft() in TaskDrawer.
   }
 
   function openNewDoc(): void {

@@ -279,4 +279,16 @@ describe("new input draft persistence (0498)", () => {
     expect(ui.inputScreenshots.length).toBe(1);
     expect(ui.pendingScreenshots.length).toBe(0);
   });
+
+  it("lists the screenshot control above the text field with the new-task dropzone copy", async () => {
+    const { wrapper } = await mountPanel();
+    const shotField = wrapper.find(".shot-dropzone");
+    const textarea = wrapper.find("#new-input-text");
+    expect(shotField.exists()).toBe(true);
+    expect(
+      shotField.element.compareDocumentPosition(textarea.element) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(shotField.text()).toContain("Click to add screenshots");
+  });
 });
