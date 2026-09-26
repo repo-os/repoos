@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-26T12:26:06Z"
+review_passes: 4
 id: "0509"
 title: Add a dev-only click-to-locate inspector for UI copy
 type: feature
@@ -9,8 +11,6 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-a-dev-only-click-to-locate-inspector
 created_at: "2026-09-26T03:12:15Z"
-updated_at: "2026-09-26T12:18:24Z"
-review_passes: 3
 last_check_failure: "[object Object]"
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -189,3 +189,4 @@ Sometimes I want to edit the repoos code myself, particularly with simple copy c
 - 2026-09-26T11:50:24Z · needs_input dismissed by hello@repoos.org
 - 2026-09-26T12:06:05Z · status active→review
 - 2026-09-26T12:18:24Z · review_model_override
+
