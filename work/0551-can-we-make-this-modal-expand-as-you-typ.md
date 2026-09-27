@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-27T15:54:43Z"
+review_passes: 2
 id: "0551"
 title: Let long prompts auto-grow the composer textarea
 type: feature
@@ -11,10 +13,8 @@ branch: feat/let-long-prompts-auto-grow-the-composer-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-27T14:05:52Z"
-updated_at: "2026-09-27T15:54:24Z"
 last_check_failure: "[object Object]"
 review_rounds: 1
-review_passes: 1
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -257,4 +257,5 @@ Turn off this advice by setting config variable advice.detachedHead to false
 failed to connect to the docker API at unix:///var/run/docker.sock; check if the path is correct and if the daemon is running: dial unix /var/run/docker.sock: connect: no such file or directory
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-09-27T15:51:56Z · status active→review
+
 
