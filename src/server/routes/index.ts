@@ -18,6 +18,7 @@ export * from "./transcribe.js";
 export * from "./auth.js";
 export * from "./telegram-identity.js";
 export * from "./hub.js";
+export * from "./telegram.js";
 export * from "./skill-registry.js";
 export * from "./service.js";
 export * from "./copy-inspector.js";
