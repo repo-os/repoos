@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-27T10:21:34Z"
+review_passes: 1
 id: "0545"
 title: Align integration panel expand and minimise buttons to the right
 type: chore
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/align-integration-panel-expand-and-minim
 created_at: "2026-09-27T10:11:24Z"
-updated_at: "2026-09-27T10:17:20Z"
 ---
 ## Problem
 
@@ -84,3 +85,4 @@ The expand and minimise buttons are on different sides of the integration ui. I 
 - 2026-09-27T10:11:45Z · status inbox→ready
 - 2026-09-27T10:11:52Z · status ready→active, branch
 - 2026-09-27T10:17:20Z · status active→review
+
