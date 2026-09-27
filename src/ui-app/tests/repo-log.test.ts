@@ -156,7 +156,7 @@ describe("listRepoLog pagination (#0514)", () => {
     const root = initRepo();
     dirs.push(root);
     for (let i = 0; i < 5; i++) {
-      commitFile(root, "f.txt", `n${i}\n`, `docs(0514): commit ${i}`);
+      commitFile(root, "f.txt", `n${i}\n`, `feat(0514): commit ${i}`);
     }
     const first = await listRepoLog(root, { branch: "main", limit: 2 });
     expect(first.ok).toBe(true);
@@ -201,6 +201,60 @@ describe("listRepoLog pagination (#0514)", () => {
   });
 });
 
+describe("listRepoLog docs filter (#0528)", () => {
+  it("excludes docs(NNNN): subjects by default and includes them when opted in", async () => {
+    const root = initRepo();
+    dirs.push(root);
+    commitFile(root, "a.txt", "a\n", "docs(0528): bookkeeping");
+    const featSha = commitFile(root, "b.txt", "b\n", "feat(0528): real work");
+    commitFile(root, "c.txt", "c\n", "docs(0528): more bookkeeping");
+
+    const hidden = await listRepoLog(root, { branch: "main", limit: 10 });
+    expect(hidden.ok).toBe(true);
+    if (!hidden.ok) return;
+    expect(hidden.commits.map((c) => c.sha)).toEqual([featSha]);
+    expect(hidden.commits.every((c) => !c.subject.startsWith("docs("))).toBe(true);
+
+    const shown = await listRepoLog(root, { branch: "main", limit: 10, includeDocs: true });
+    expect(shown.ok).toBe(true);
+    if (!shown.ok) return;
+    expect(shown.commits.map((c) => c.subject)).toEqual([
+      "docs(0528): more bookkeeping",
+      "feat(0528): real work",
+      "docs(0528): bookkeeping",
+    ]);
+  });
+
+  it("returns a full page and nextCursor when docs commits sit between visible ones", async () => {
+    const root = initRepo();
+    dirs.push(root);
+    commitFile(root, "0.txt", "0\n", "feat(0528): four");
+    commitFile(root, "d1.txt", "d\n", "docs(0528): noise");
+    commitFile(root, "1.txt", "1\n", "feat(0528): three");
+    commitFile(root, "d2.txt", "d\n", "docs(0528): noise");
+    commitFile(root, "2.txt", "2\n", "feat(0528): two");
+    commitFile(root, "3.txt", "3\n", "feat(0528): one");
+
+    const first = await listRepoLog(root, { branch: "main", limit: 2 });
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    expect(first.commits).toHaveLength(2);
+    expect(first.commits.every((c) => c.subject.startsWith("feat("))).toBe(true);
+    expect(first.nextCursor).toBeTruthy();
+
+    const second = await listRepoLog(root, {
+      branch: "main",
+      limit: 2,
+      before: first.nextCursor!,
+    });
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    expect(second.commits).toHaveLength(2);
+    expect(second.commits.every((c) => c.subject.startsWith("feat("))).toBe(true);
+    expect(second.commits.map((c) => c.sha)).not.toContain(first.commits[0]?.sha);
+  });
+});
+
 describe("GET /api/repo/log (#0514)", () => {
   it("lists commits from a real repo and refuses a metacharacter branch", async () => {
     const root = initRepo();
@@ -209,11 +263,16 @@ describe("GET /api/repo/log (#0514)", () => {
     const ctx = makeCtx(root);
 
     const ok = makeRes();
-    await getRepoLog(ctx, makeReq("/api/repo/log?limit=10"), ok.res, {});
+    await getRepoLog(ctx, makeReq("/api/repo/log?limit=10&includeDocs=1"), ok.res, {});
     expect(ok.fake.status).toBe(200);
     expect(ok.fake.payload.ok).toBe(true);
     expect(ok.fake.payload.commits[0].taskId).toBe("0514");
     expect(ok.fake.payload.commits[0].subject).toContain("seed");
+
+    const filtered = makeRes();
+    await getRepoLog(ctx, makeReq("/api/repo/log?limit=10"), filtered.res, {});
+    expect(filtered.fake.status).toBe(200);
+    expect(filtered.fake.payload.commits).toHaveLength(0);
 
     const bad = makeRes();
     await getRepoLog(ctx, makeReq("/api/repo/log?branch=main%3Brm"), bad.res, {});
