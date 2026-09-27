@@ -27,6 +27,7 @@ import type { ReviewState, Task, AgentOutputEntry, SessionUsage, DetectedAgent }
 import {
   COLUMNS,
   columnsWithLabels,
+  PM_FLESH_OUT_CANNED_MESSAGE,
   pmCannedMessagesFor,
   statusColor,
   useRepoStore,
@@ -2156,6 +2157,20 @@ async function runNeedsInputPrimaryAction(): Promise<void> {
     await reviewAgain();
     return;
   }
+  if (action.kind === "send-pm") {
+    if (!pmAgentEnabled.value) {
+      repo.onError(new Error("PM agent is not configured — enable it on the Agents page"));
+      return;
+    }
+    if (pmBusy.value) {
+      repo.onError(new Error("PM is busy — wait for the current run to finish"));
+      return;
+    }
+    ui.activeTab = "pm";
+    pmDraft.value = PM_FLESH_OUT_CANNED_MESSAGE;
+    await pmSend();
+    return;
+  }
   if (ui.active.questions?.length) {
     openPmWithNeedsInputQuestions();
     return;
@@ -3350,7 +3365,9 @@ watch(
                     startingWork ||
                     reviewBusy ||
                     review?.running ||
-                    dismissNeedsInputBusy
+                    dismissNeedsInputBusy ||
+                    (needsInputPrimary.kind === 'send-pm' &&
+                      (!pmAgentEnabled || pmBusy || pmSubmitting))
                   "
                   @click="runNeedsInputPrimaryAction"
                 >

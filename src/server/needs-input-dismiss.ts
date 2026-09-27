@@ -31,7 +31,8 @@ export function dismissNeedsInputOnTask(
   current.needsInputDetail = undefined;
   // Mirror patchTaskFile: clearing needsInput also clears any pending questions.
   current.questions = undefined;
-  recordChange(current, `needs_input dismissed by ${dismissedBy}`);
+  const reasonNote = current.needsInputReason ? ` (${current.needsInputReason})` : "";
+  recordChange(current, `needs_input${reasonNote} dismissed by ${dismissedBy}`);
   writeFileSync(absPath, serializeTask(current));
   commitTaskFile(config.root, absPath, `docs(${current.id}): update task`);
   return parseTask({
