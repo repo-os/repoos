@@ -11,7 +11,7 @@ branch: feat/let-long-prompts-auto-grow-the-composer-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-27T14:05:52Z"
-updated_at: "2026-09-27T15:33:05Z"
+updated_at: "2026-09-27T15:33:12Z"
 check_retry_count: 2
 last_check_failure: "[object Object]"
 review_rounds: 1
@@ -225,3 +225,17 @@ error: script "build" exited with code 137
 [validate] gate exit 137 — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally
 - 2026-09-27T15:33:05Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-09-27T15:33:05Z · status review→active
+- 2026-09-27T15:33:12Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) — [validate] cloning bundle /Users/peckjachowski/.repoos-0551-4b0d198f.bundle
+Note: switching to 'aa5f4d7bd7331354e2171e03c193ce8bbbdb97ea'.
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by switching back to a branch.
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -c with the switch command. Example:
+  git switch -c <new-branch-name>
+Or undo this operation with:
+  git switch -
+Turn off this advice by setting config variable advice.detachedHead to false
+failed to connect to the docker API at unix:///var/run/docker.sock; check if the path is correct and if the daemon is running: dial unix /var/run/docker.sock: connect: no such file or directory
+[validate] HEAD verified at aa5f4d7bd7331354e2171e03c193ce8bbbdb97ea
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate

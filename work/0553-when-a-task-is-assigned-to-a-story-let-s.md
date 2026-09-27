@@ -1,4 +1,6 @@
 ---
+check_retry_count: 2
+last_check_failure: "[object Object]"
 id: "0553"
 title: Add a go-to-story link arrow on tasks and make sure every story has a unique number
 type: feature
@@ -146,3 +148,5 @@ When a task is assigned to a story let's add a link arrow button for the user to
 - 2026-09-27T15:08:52Z · status draft→inbox, title, area, body
 - 2026-09-27T15:11:03Z · status inbox→ready
 - 2026-09-27T15:11:08Z · status ready→active, branch
+
+
