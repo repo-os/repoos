@@ -6,13 +6,25 @@ import {
   type MergedStoryGroup,
   type StoryDefinition,
 } from "../../../core/story-display.js";
-import { useRepoStore, statusColor } from "../stores/repo";
+import { sortStoryGroupsForPage } from "../../../core/stories.js";
+import {
+  STORIES_PAGE_SORT_ORDER_OPTIONS,
+  useRepoStore,
+  statusColor,
+  type StoryListSortOrder,
+} from "../stores/repo";
 import { useConfigStore } from "../stores/config";
 import { useUiStore } from "../stores/ui";
 import { relTime } from "../lib/time";
 import NewStoryPanel from "../components/NewStoryPanel.vue";
 import StoryPanel from "../components/StoryPanel.vue";
 import Button from "../components/ui/button.vue";
+import Select from "../components/ui/select/root.vue";
+import SelectContent from "../components/ui/select/content.vue";
+import SelectItem from "../components/ui/select/item.vue";
+import SelectTrigger from "../components/ui/select/trigger.vue";
+import SelectValue from "../components/ui/select/value.vue";
+import SelectViewport from "../components/ui/select/viewport.vue";
 import ActivityIndicator from "../components/ActivityIndicator.vue";
 import CopyableNumber from "../components/CopyableNumber.vue";
 import type { Status, Task } from "../types";
@@ -42,7 +54,11 @@ const definitions = computed((): StoryDefinition[] =>
   })),
 );
 
-const stories = computed(() => mergeStoriesForDisplay(repo.tasks, definitions.value));
+const mergedStories = computed(() => mergeStoriesForDisplay(repo.tasks, definitions.value));
+
+const stories = computed(() =>
+  sortStoryGroupsForPage(mergedStories.value, repo.storiesPageSortOrder, (g) => g.number),
+);
 
 /** Stories the PM agent is still fleshing out after a New story submit. */
 const pmWorkingKeys = computed(
@@ -215,7 +231,25 @@ function lastActivity(story: { lastActivity: string | null }): string {
           done.
         </div>
       </div>
-      <div v-if="enabled" class="page-header-actions">
+      <div v-if="enabled" style="display: flex; align-items: center; gap: 10px; flex-shrink: 0">
+        <Select
+          :model-value="repo.storiesPageSortOrder"
+          @update:model-value="(v) => repo.setStoriesPageSortOrder(v as StoryListSortOrder)"
+        >
+          <SelectTrigger class="h-[34px] w-[210px] rounded-[9px] px-[11px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent position="popper">
+            <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+              <SelectItem
+                v-for="o in STORIES_PAGE_SORT_ORDER_OPTIONS"
+                :key="o.value"
+                :value="o.value"
+                >{{ o.label }}</SelectItem
+              >
+            </SelectViewport>
+          </SelectContent>
+        </Select>
         <Button variant="accent" class="new-btn" @click="ui.openNewStory()"
           ><span class="plus">+</span> New story</Button
         >
