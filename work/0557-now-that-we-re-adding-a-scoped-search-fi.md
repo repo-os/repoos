@@ -1,17 +1,17 @@
 ---
-updated_at: "2026-09-27T17:50:57Z"
-review_passes: 2
 id: "0557"
 title: Add a context-scoped search and real refresh feedback to the Context page
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-a-context-scoped-search-and-real-ref
 created_at: "2026-09-27T16:21:15Z"
-review_rounds: 1
+updated_at: "2026-09-27T17:50:57Z"
+review_rounds: 2
+review_passes: 2
 ---
 ## Problem
 
@@ -103,4 +103,4 @@ Now that we're adding a scoped search field in settings page we should also add 
 - 2026-09-27T17:31:57Z · status active→review
 - 2026-09-27T17:35:33Z · status review→active
 - 2026-09-27T17:47:09Z · status active→review
-
+- 2026-09-27T17:50:57Z · status review→active
