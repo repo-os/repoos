@@ -40,7 +40,10 @@ function setOpen(v: boolean): void {
   if (!v) ui.close();
 }
 watch(open, (v) => {
-  if (v) submitted.value = false;
+  if (!v) return;
+  submitted.value = false;
+  // The panel reuses the draft, so size its remounted textarea immediately.
+  void nextTick(adjustInputHeight);
 });
 function files(e: Event): void {
   const input = e.target as HTMLInputElement;
@@ -69,11 +72,7 @@ const inputTextarea = ref<HTMLTextAreaElement | null>(null);
 function adjustInputHeight(): void {
   autoGrowTextarea(inputTextarea.value, 420);
 }
-watch(
-  () => ui.inputText,
-  () => nextTick(adjustInputHeight),
-  { flush: "post" },
-);
+watch(() => ui.inputText, adjustInputHeight, { flush: "post" });
 /** Hand the capture to the repo store and acknowledge immediately — the input
  *  and its attachments are created in the background (0325). */
 function submit(): void {
@@ -212,7 +211,6 @@ function done(): void {
               v-model="ui.inputText"
               class="ff-textarea ff-textarea-autogrow"
               rows="12"
-              @input="adjustInputHeight"
               placeholder="Share an idea, question, bug, observation, or feedback…"
             ></textarea>
           </div>

@@ -116,7 +116,7 @@ function adjustDescriptionHeight(): void {
   autoGrowTextarea(descriptionTextarea.value, 420);
 }
 
-watch(description, () => nextTick(adjustDescriptionHeight), { flush: "post" });
+watch(description, adjustDescriptionHeight, { flush: "post" });
 
 function onDescriptionTranscribed(text: string): void {
   if (descriptionTextarea.value) {
@@ -260,7 +260,6 @@ function onOpenAutoFocus(e: Event): void {
               v-model="description"
               class="ff-textarea ff-textarea-autogrow"
               rows="10"
-              @input="adjustDescriptionHeight"
               placeholder="Describe the outcome, areas involved, and constraints — the PM agent will flesh this out."
               :disabled="freeformRunning"
             ></textarea>
