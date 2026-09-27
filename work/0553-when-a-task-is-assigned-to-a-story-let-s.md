@@ -2,15 +2,14 @@
 id: "0553"
 title: Add a go-to-story link arrow on tasks and make sure every story has a unique number
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-a-go-to-story-link-arrow-on-tasks-an
 created_at: "2026-09-27T15:06:45Z"
-updated_at: "2026-09-27T15:51:14Z"
-check_retry_count: 2
+updated_at: "2026-09-27T16:01:46Z"
 last_check_failure: "[object Object]"
 ---
 ## Problem
@@ -162,3 +161,4 @@ Turn off this advice by setting config variable advice.detachedHead to false
 [validate] HEAD verified at 1360693c831d5b04bdb97b02efda97a626ea3959
 failed to connect to the docker API at unix:///var/run/docker.sock; check if the path is correct and if the daemon is running: dial unix /var/run/docker.sock: connect: no such file or directory
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-09-27T16:01:46Z · status active→review
