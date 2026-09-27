@@ -336,6 +336,25 @@ describe("agent review before human sign-off (#0101)", () => {
     });
   }, 90_000);
 
+  it("reviews again after a human returns a task to engineering, even when HEAD has not changed", async () => {
+    const fx = makeFixture(printReport);
+    await withServer(fx, async (server) => {
+      const task = await taskWithWorktree(server, fx, "Review each handoff");
+      await requestReview(server, task.id, task.absPath);
+      await waitForReviewRunning(server, task.id, false);
+      expect(readFileSync(task.absPath, "utf8")).toMatch(/^review_passes: 1$/m);
+
+      const returned = await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "active" });
+      expect(returned.status).toBe(200);
+      await requestReview(server, task.id, task.absPath);
+      await waitFor(
+        () => /^review_passes: 2$/m.test(readFileSync(task.absPath, "utf8")),
+        "the second automatic review completes",
+      );
+      expect(spawns(fx).filter((s) => s.args.includes("--auto"))).toHaveLength(2);
+    });
+  }, 90_000);
+
   it("runs no review when the review agent is disabled on the Agents page", async () => {
     const fx = makeFixture(printReport);
     writeFileSync(

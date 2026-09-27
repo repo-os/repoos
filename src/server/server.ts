@@ -101,7 +101,6 @@ import {
   syncBranchWithMain,
   worktreePathForBranch,
   tuneRepoForScale,
-  headCommitISO,
   runGit,
 } from "../core/git.js";
 import { sweepAndWarn } from "../core/worktree-gc.js";
@@ -1999,19 +1998,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       return;
     }
     pendingReview.delete(task.id);
-    // Skip if a fresh report already exists for this branch HEAD — avoids
-    // unnecessary re-reviews when a task bounces through `review` due to a
-    // server restart or the MTD race described in AGENTS.md (2026-09-20).
-    if (task.branch) {
-      const workdir = worktreePathForBranch(config.root, task.branch);
-      if (workdir) {
-        const report = reviews.read(task.id);
-        const headAt = headCommitISO(workdir);
-        const fresh =
-          report?.at != null && headAt != null && Date.parse(report.at) >= Date.parse(headAt);
-        if (fresh) return;
-      }
-    }
+    // A transition back from engineering needs a new assessment even when the
+    // branch HEAD has not changed since the last report. The previous report
+    // may be newer than HEAD because the engineer's change is still being
+    // committed, or because the task needed a non-source fix. The index emits
+    // this transition once; ReviewManager rejects an already-running review.
     void reviews.run(task);
   };
 
