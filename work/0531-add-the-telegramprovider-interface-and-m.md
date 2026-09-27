@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-09-27T23:00:38Z"
-review_passes: 3
+updated_at: "2026-09-27T23:07:09Z"
+review_passes: 4
 id: "0531"
 title: Add the local Telegram adapter and Bring Your Own Bot Token support
 type: feature
@@ -76,4 +76,5 @@ Not in scope: the manager-bot service, its Neon/Cloudflare deployment, hosted me
 - 2026-09-27T22:59:49Z · review_cli_override, review_model_override
 - 2026-09-27T22:59:51Z · review_model_override
 - 2026-09-27T23:00:38Z · needs_input
+
 
