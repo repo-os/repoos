@@ -2,14 +2,14 @@
 id: "0552"
 title: Add a gruvbox theme switcher to the user-docs site and carry it over from the landing page
 type: feature
-status: review
+status: active
 priority: p2
 area: docs
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-a-gruvbox-theme-switcher-to-the-user
 created_at: "2026-09-27T14:36:30Z"
-updated_at: "2026-09-27T15:43:17Z"
+updated_at: "2026-09-27T15:51:02Z"
 check_retry_count: 2
 last_check_failure: "[object Object]"
 ---
@@ -294,3 +294,24 @@ error: script "build" exited with code 137
 - 2026-09-27T15:38:05Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-09-27T15:38:05Z · status review→active
 - 2026-09-27T15:43:17Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-09-27T15:43:17Z · status review→active
+- 2026-09-27T15:45:44Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 125) —  ✓ tests/agents-view-cards.test.ts (1 test) 113ms
+ ✓ tests/sw-precache.test.ts (4 tests) 3ms
+ ✓ tests/dotenv.test.ts (6 tests) 3ms
+ ✓ tests/serve-port.test.ts (9 tests) 5ms
+ ✓ tests/clipboard.test.ts (4 tests) 17ms
+ ✓ tests/toml-highlight.test.ts (4 tests) 2ms
+ ✓ tests/time.test.ts (10 tests) 2ms
+ ✓ tests/uninstall.test.ts (3 tests) 4ms
+ ✓ tests/stories-nav.test.ts (5 tests) 4ms
+ ✓ tests/reap-fixtures.test.ts (3 tests) 3ms
+ ✓ tests/check-results-store.test.ts (3 tests) 3ms
+ ✓ tests/needs-input-ui.test.ts (5 tests) 2ms
+ ✓ tests/auth-from-header.test.ts (3 tests) 2ms
+ ✓ tests/ui-recovery-banner.test.ts (2 tests) 33ms
+ ✓ tests/stories-config.test.ts (5 tests) 5ms
+ ✓ tests/repo-sort-order.test.ts (1 test) 5ms
+ ✓ tests/diff-snapshot.test.ts (2 tests) 3ms
+ ✓ tests/built-in-run-notice.test.ts (5 tests) 2ms
+time="2026-09-27T23:45:44+08:00" level=error msg="Error waiting for container: Canceled: grpc: the client connection is closing: context canceled"
+[validate] gate exit 125 — fix it in the feature branch and re-run the gate
