@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-27T16:17:51Z"
+review_passes: 2
 id: "0552"
 title: Add a gruvbox theme switcher to the user-docs site and carry it over from the landing page
 type: feature
@@ -9,9 +11,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-a-gruvbox-theme-switcher-to-the-user
 created_at: "2026-09-27T14:36:30Z"
-updated_at: "2026-09-27T16:12:51Z"
 review_rounds: 1
-review_passes: 1
 last_check_failure: "[object Object]"
 ---
 ## Problem
@@ -449,3 +449,4 @@ time="2026-09-27T23:45:44+08:00" level=error msg="Error waiting for container: C
 - 2026-09-27T16:09:13Z · body
 - 2026-09-27T16:09:21Z · note: Human review of the preview (2026-09-28): the sun/moon appearance button is approved — keep it, it matches the landing page and the app. Two navbar defects ride along on this branch, spec'd in full under "Review feedback — navbar polish" in the body: (1) the design-theme control is glued to the GitHub icon — VitePress renders nav-bar-content-after AFTER the social links, and .VPNavBarSocialLinks' margin-right:-8px meets a control with no left margin, so the visible gap is 0px; give the bar variant a deliberate 12-24px gap. (2) the navbar is two-tone — only .content-body paints --vp-nav-bg-color while the title/logo column is transparent and shows --vp-c-bg, and classic light pairs #f6f8fc with rgba(255,255,255,0.85) (pre-existing on main; gruvbox pairs #fbf1c7 with #f2e5bc and #282828 with #32302f). Dark classic is already self-consistent, which is why it only reads in light. Three accepted fixes are listed; pick one, comment the choice, and eyeball all four combinations. The PM verified this by reading VitePress 1.6.4's component CSS, not by rendering a page — so if "the coloration to the right" turns out to be something else, fix what you actually see and say so in the handoff note. Land this together with the reviewer's two findings (768-1279px gap, mount-time URL sync), which are already in flight.
 - 2026-09-27T16:12:51Z · status active→review
+
