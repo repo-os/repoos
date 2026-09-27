@@ -74,7 +74,7 @@ describe("ScreenshotViewer", () => {
     document.body.innerHTML = "";
   });
 
-  it("renders every shot at natural size with a filename caption", () => {
+  it("renders every shot with a filename caption and fit-width copy", () => {
     const wrapper = mount(ScreenshotViewer, {
       props: { open: true, shots },
       global: { stubs: dialogStubs },
@@ -89,6 +89,8 @@ describe("ScreenshotViewer", () => {
     expect(wrapper.find(".shot-viewer-close").attributes("aria-label")).toBe(
       "Close screenshot viewer",
     );
+    expect(wrapper.text()).not.toMatch(/original size/i);
+    expect(wrapper.text()).toMatch(/scale down to fit/i);
   });
 
   it("closes from the viewer [x], distinct from a remove control", async () => {
@@ -184,6 +186,15 @@ describe("screenshot viewer wiring contract", () => {
     expect(viewer).toContain("<DialogOverlay");
     expect(css).toMatch(/\.shot-viewer\.drawer-wrap\.drawer\s*\{/);
     expect(css).toMatch(/\.shot-viewer-overlay\.overlay\s*\{[^}]*z-index:\s*140/);
+  });
+
+  it("fits wide screenshots to the viewer width without horizontal scroll", () => {
+    expect(css).toMatch(/\.shot-viewer-scroll\s*\{[^}]*overflow-x:\s*hidden/);
+    expect(css).toMatch(/\.shot-viewer-scroll\s*\{[^}]*overflow-y:\s*auto/);
+    expect(css).toMatch(/\.shot-viewer-print img\s*\{[^}]*max-width:\s*100%/);
+    expect(css).toMatch(/\.shot-viewer-print img\s*\{[^}]*width:\s*auto/);
+    expect(css).toMatch(/\.shot-viewer-print img\s*\{[^}]*height:\s*auto/);
+    expect(viewer).not.toMatch(/original size/i);
   });
 
   it("is used by every screenshot surface, including both TaskDrawer groups", () => {

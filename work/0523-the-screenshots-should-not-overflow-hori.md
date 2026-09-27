@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-27T02:48:50Z"
-review_passes: 1
 id: "0523"
 title: Fit screenshots to viewer width without horizontal scroll
 type: bug
@@ -11,6 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fit-screenshots-to-viewer-width-without-
 created_at: "2026-09-27T00:57:39Z"
+updated_at: "2026-09-27T02:47:26Z"
 ---
 ## Problem
 
@@ -125,4 +124,3 @@ The screenshots should not overflow horizontally and require the horizontal scro
 - 2026-09-27T00:58:19Z · status inbox→ready
 - 2026-09-27T02:45:56Z · status ready→active, branch
 - 2026-09-27T02:47:26Z · status active→review
-
