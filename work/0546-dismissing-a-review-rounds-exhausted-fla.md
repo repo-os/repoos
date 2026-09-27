@@ -2,7 +2,7 @@
 id: "0546"
 title: "The needs-input banner gives misleading/no feedback: Dismiss can be silently undone, Review again looks like a no-op"
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-27T10:25:52Z"
-updated_at: "2026-09-27T13:35:18Z"
+updated_at: "2026-09-27T13:35:22Z"
 ---
 id: "0546"
 title: Dismissing a review-rounds-exhausted flag can be silently undone by an in-flight review
@@ -147,3 +147,4 @@ nothing.
 - 2026-09-27T13:16:02Z · title, body
 - 2026-09-27T13:35:06Z · cli_override, model_override
 - 2026-09-27T13:35:18Z · model_override
+- 2026-09-27T13:35:22Z · status inbox→ready
