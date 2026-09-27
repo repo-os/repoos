@@ -1,4 +1,8 @@
-/** Landing theme resolution (design theme + appearance). Boot: `theme-boot.ts`. */
+/**
+ * Docs-site theme resolution (design theme + appearance).
+ * Mirrors landing/src/theme-resolve.ts — keep parsing rules in sync; cite that file when changing.
+ * Appearance uses VitePress's `dark` class on <html>, not `data-theme`.
+ */
 
 export type Appearance = "dark" | "light";
 
@@ -16,6 +20,9 @@ export const URL_APPEARANCE_ALIASES = ["mode"] as const;
 /** Picker-only themes today; URL may set any valid design id for forward compatibility. */
 export const PICKER_DESIGN_THEMES = ["classic", "gruvbox"] as const;
 export type PickerDesignTheme = (typeof PICKER_DESIGN_THEMES)[number];
+
+/** Design ids with CSS on this site; unknown ids resolve to Classic. */
+export const IMPLEMENTED_DESIGN_THEMES = new Set<string>(["classic", "gruvbox"]);
 
 const THEME_COLOR: Record<string, string> = {
   "classic-dark": "#070a12",
@@ -81,8 +88,12 @@ function readStoredDesign(): DesignThemeId | null {
   }
 }
 
-function systemAppearance(): Appearance {
-  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+/** Docs default matches config.mts `appearance: "dark"` (dark-first, not OS auto). */
+const DEFAULT_APPEARANCE: Appearance = "dark";
+
+export function effectiveDesignTheme(design: DesignThemeId): DesignThemeId {
+  if (design === "classic") return "classic";
+  return IMPLEMENTED_DESIGN_THEMES.has(design) ? design : "classic";
 }
 
 export type ResolvedThemes = {
@@ -100,14 +111,16 @@ export function resolveThemes(search = window.location.search): ResolvedThemes {
   if (appearance) {
     fromUrlHit = true;
   } else {
-    appearance = readStoredAppearance() ?? systemAppearance();
+    appearance = readStoredAppearance() ?? DEFAULT_APPEARANCE;
   }
 
   let design = fromUrl.design;
   if (design) {
     fromUrlHit = true;
+    design = effectiveDesignTheme(design);
   } else {
-    design = readStoredDesign() ?? "classic";
+    const stored = readStoredDesign();
+    design = stored ? effectiveDesignTheme(stored) : "classic";
   }
 
   return { design, appearance, fromUrl: fromUrlHit };
@@ -118,15 +131,16 @@ export function themeColorFor(design: DesignThemeId, appearance: Appearance): st
 }
 
 export function applyDesignThemeToDocument(design: DesignThemeId): void {
-  if (design === "classic") {
+  const effective = effectiveDesignTheme(design);
+  if (effective === "classic") {
     document.documentElement.removeAttribute("data-ui-theme");
   } else {
-    document.documentElement.setAttribute("data-ui-theme", design);
+    document.documentElement.setAttribute("data-ui-theme", effective);
   }
 }
 
 export function applyAppearanceToDocument(appearance: Appearance): void {
-  document.documentElement.setAttribute("data-theme", appearance);
+  document.documentElement.classList.toggle("dark", appearance === "dark");
 }
 
 export function applyResolvedThemes(resolved: ResolvedThemes): void {
@@ -137,14 +151,14 @@ export function applyResolvedThemes(resolved: ResolvedThemes): void {
 export function persistThemes(design: DesignThemeId, appearance: Appearance): void {
   try {
     localStorage.setItem(APPEARANCE_KEY, appearance);
-    localStorage.setItem(DESIGN_KEY, design);
+    localStorage.setItem(DESIGN_KEY, effectiveDesignTheme(design));
   } catch {
     // blocked storage
   }
 }
 
 export function syncThemeColorMeta(design: DesignThemeId, appearance: Appearance): void {
-  const content = themeColorFor(design, appearance);
+  const content = themeColorFor(effectiveDesignTheme(design), appearance);
   let meta = document.querySelector('meta[name="theme-color"]');
   if (!meta) {
     meta = document.createElement("meta");
@@ -157,39 +171,21 @@ export function syncThemeColorMeta(design: DesignThemeId, appearance: Appearance
 export function readDesignFromDocument(): DesignThemeId {
   const attr = document.documentElement.getAttribute("data-ui-theme");
   if (!attr) return "classic";
-  return normalizeDesignThemeId(attr) ?? "classic";
+  return effectiveDesignTheme(normalizeDesignThemeId(attr) ?? "classic");
 }
 
 export function readAppearanceFromDocument(): Appearance {
-  return document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
-}
-
-/** Append theme query params to an absolute URL (cross-site hand-off). */
-export function appendThemeToUrl(
-  url: string,
-  design: DesignThemeId,
-  appearance: Appearance,
-): string {
-  const u = new URL(url);
-  if (design === "classic") {
-    u.searchParams.delete(URL_THEME_PARAM);
-  } else {
-    u.searchParams.set(URL_THEME_PARAM, design);
-  }
-  u.searchParams.set(URL_APPEARANCE_PARAM, appearance);
-  for (const alias of URL_APPEARANCE_ALIASES) {
-    u.searchParams.delete(alias);
-  }
-  return u.toString();
+  return document.documentElement.classList.contains("dark") ? "dark" : "light";
 }
 
 /** Update the query string to match the current axes (no navigation). */
 export function syncThemeToUrl(design: DesignThemeId, appearance: Appearance): void {
   const params = new URLSearchParams(window.location.search);
-  if (design === "classic") {
+  const effective = effectiveDesignTheme(design);
+  if (effective === "classic") {
     params.delete(URL_THEME_PARAM);
   } else {
-    params.set(URL_THEME_PARAM, design);
+    params.set(URL_THEME_PARAM, effective);
   }
   params.set(URL_APPEARANCE_PARAM, appearance);
   for (const alias of URL_APPEARANCE_ALIASES) {
@@ -202,6 +198,34 @@ export function syncThemeToUrl(design: DesignThemeId, appearance: Appearance): v
   window.history.replaceState(null, "", next);
 }
 
+/** Append theme query params to an absolute URL (cross-site hand-off). */
+export function appendThemeToUrl(
+  url: string,
+  design: DesignThemeId,
+  appearance: Appearance,
+): string {
+  const u = new URL(url);
+  const effective = effectiveDesignTheme(design);
+  if (effective === "classic") {
+    u.searchParams.delete(URL_THEME_PARAM);
+  } else {
+    u.searchParams.set(URL_THEME_PARAM, effective);
+  }
+  u.searchParams.set(URL_APPEARANCE_PARAM, appearance);
+  for (const alias of URL_APPEARANCE_ALIASES) {
+    u.searchParams.delete(alias);
+  }
+  return u.toString();
+}
+
+export function syncRepoOrgNavLinks(design: DesignThemeId, appearance: Appearance): void {
+  for (const a of document.querySelectorAll<HTMLAnchorElement>('a[href^="https://repoos.org"]')) {
+    const href = a.getAttribute("href");
+    if (!href) continue;
+    a.href = appendThemeToUrl(href, design, appearance);
+  }
+}
+
 export function pickerLabelForDesign(design: DesignThemeId): string {
   if (design === "classic") return "Classic";
   if (design === "gruvbox") return "Gruvbox";
@@ -210,4 +234,11 @@ export function pickerLabelForDesign(design: DesignThemeId): string {
 
 export function isPickerDesignTheme(design: DesignThemeId): design is PickerDesignTheme {
   return (PICKER_DESIGN_THEMES as readonly string[]).includes(design);
+}
+
+export function commitThemeChange(design: DesignThemeId, appearance: Appearance): void {
+  persistThemes(design, appearance);
+  syncThemeColorMeta(design, appearance);
+  syncThemeToUrl(design, appearance);
+  syncRepoOrgNavLinks(design, appearance);
 }
