@@ -31,6 +31,7 @@ import type {
   Status,
   Assignee,
   StoriesConfig,
+  TelegramConfig,
   Theme,
   UiTheme,
   WhisperConfig,
@@ -186,6 +187,10 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   whisper: {
     provider: "none",
     apiKey: "",
+  },
+  telegram: {
+    enabled: false,
+    provisioningUrl: "",
   },
   auth: {
     enabled: false,
@@ -1056,6 +1061,21 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       }
     }
 
+    // [telegram] section (#0531) — the Telegram bot integration feature
+    // switch and provisioning service pointer. The bot credential NEVER lives
+    // here or in .env: it arrives through the admin API and is stored
+    // encrypted via the secret store (src/server/telegram/). Connection state
+    // (transport, profile) is runtime state, likewise outside this file, so
+    // toggles apply live instead of needing a restart.
+    const telegramEnabled = parsed["telegram.enabled"];
+    if (typeof telegramEnabled === "boolean") {
+      cfg.telegram = { ...cfg.telegram, enabled: telegramEnabled };
+    }
+    const telegramProvisioningUrl = parsed["telegram.provisioningUrl"];
+    if (typeof telegramProvisioningUrl === "string" && telegramProvisioningUrl.trim()) {
+      cfg.telegram = { ...cfg.telegram, provisioningUrl: telegramProvisioningUrl.trim() };
+    }
+
     // [watchdog] section (0180) — the task watchdog over active tasks.
     const watchdogEnabled = parsed["watchdog.enabled"];
     if (typeof watchdogEnabled === "boolean") {
@@ -1293,6 +1313,18 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: DEFAULT_CONFIG.ntfyBaseUrl,
       description: "Self-hosted ntfy server base URL (NTFY_BASE_URL env var overrides)",
+    },
+    {
+      key: "telegram.enabled",
+      label: "Telegram bot",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.telegram?.enabled ?? false,
+      description:
+        "Enable the Telegram integration. The bot itself is connected through the admin API " +
+        "(Bring Your Own Bot Token, or managed provisioning) — the token never lives here and " +
+        "never reaches the browser. See user-docs/telegram.md.",
     },
     {
       key: "defaultStatus",
@@ -1738,6 +1770,12 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "ntfyEnabled",
   "ntfyTopic",
   "ntfyBaseUrl",
+  // Telegram (#0531) — feature switch. telegram.provisioningUrl is a
+  // TOML-only advanced setting (managed-provisioning service base URL, empty
+  // until #0559's service is deployed); documented deliberate exception to
+  // the "every key needs a Settings control" rule.
+  "telegram.enabled",
+  "telegram.provisioningUrl",
   // Tunnels
   "tunnel.enabled",
   "tunnel.provider",

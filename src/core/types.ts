@@ -400,6 +400,8 @@ export interface RepoOSConfig {
   watchdog?: WatchdogConfig;
   /** Voice transcription configuration for vibe-coding feature. */
   whisper?: WhisperConfig;
+  /** Telegram bot integration (feature switch; credentials live elsewhere). */
+  telegram?: TelegramConfig;
   /** Authentication configuration. */
   auth?: AuthConfig;
   /** Model-provider API keys (0327) — env-only, never a repoos.toml key. */
@@ -1003,6 +1005,29 @@ export interface WorktreesConfig {
 export interface WhisperConfig {
   provider?: "groq" | "openai" | "none";
   apiKey?: string;
+}
+
+/**
+ * Telegram bot integration configuration (#0531).
+ *
+ * Only non-secret settings live here. The bot token itself is delivered
+ * server-side through the admin API and stored solely via the encrypted
+ * secret store (`src/core/secret-store.ts`) — it never appears in
+ * `repoos.toml`, in `.env`, or in any browser response. Connection state
+ * (transport mode, webhook URL, profile) also lives outside config, in
+ * `<root>/.repoos/telegram-bot.json`, so a change applies live without a
+ * restart; see src/server/telegram/store.ts and docs/telegram-adapter.md.
+ */
+export interface TelegramConfig {
+  /** Master switch for Telegram surfaces in this instance. Default false. */
+  enabled?: boolean;
+  /**
+   * Base URL of the managed-provisioning service (#0559). TOML-only
+   * (advanced/internal, documented deliberate exception — a dedicated UI
+   * control would be misleading until the service is deployed): empty means
+   * managed provisioning reports "not configured" and BYO keeps working.
+   */
+  provisioningUrl?: string;
 }
 
 /** How often a built-in agent runs: Daily, Weekly, or only when manually triggered. */

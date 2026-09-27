@@ -299,6 +299,15 @@ import {
   getAgentLogs,
   // Notifications
   testNotification,
+  // Telegram adapter (#0531)
+  telegramStatus,
+  telegramConnect,
+  telegramDisconnect,
+  telegramProfile,
+  telegramTransport,
+  telegramProvisionBegin,
+  telegramProvisionStatus,
+  telegramProvisionRedeem,
   // Transcription
   transcribe,
   // UI routes
@@ -2547,6 +2556,19 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Notification routes
   router.register("POST", "/api/ntfy/test", testNotification);
+
+  // Telegram routes (#0531) — admin-gated connection management (BYO token,
+  // status, profile, transport, managed provisioning). The inbound webhook
+  // route is #0532's: it must authenticate Telegram's secret-token header and
+  // then call the adapter's own update intake.
+  router.register("GET", "/api/telegram/status", telegramStatus);
+  router.register("POST", "/api/telegram/connect", telegramConnect);
+  router.register("POST", "/api/telegram/disconnect", telegramDisconnect);
+  router.register("POST", "/api/telegram/profile", telegramProfile);
+  router.register("POST", "/api/telegram/transport", telegramTransport);
+  router.register("POST", "/api/telegram/provision", telegramProvisionBegin);
+  router.register("GET", /^\/api\/telegram\/provision\/([^/]+)$/, telegramProvisionStatus);
+  router.register("POST", /^\/api\/telegram\/provision\/([^/]+)\/redeem$/, telegramProvisionRedeem);
 
   // Transcription routes
   router.register("POST", "/api/transcribe", transcribe);
