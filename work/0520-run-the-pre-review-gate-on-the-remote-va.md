@@ -1,16 +1,16 @@
 ---
-updated_at: "2026-09-26T12:43:47Z"
-review_passes: 3
 id: "0520"
 title: Run the pre-review gate on the remote validation runner
 type: feature
-status: review
+status: active
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/run-the-pre-review-gate-on-the-remote-va
 created_at: "2026-09-26T11:49:00Z"
+updated_at: "2026-09-27T01:11:33Z"
+review_passes: 3
 review_rounds: 2
 ---
 ## Problem
@@ -69,4 +69,5 @@ runner hosts (separate task).
 - 2026-09-26T12:32:04Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
 - 2026-09-26T12:36:17Z · status review→active
 - 2026-09-26T12:41:07Z · status active→review
-
+- 2026-09-27T01:11:33Z · status review→active
+- 2026-09-27T01:11:33Z · note: Merged main (#0512); remote gate tests committed tree, dirty CLI check runs locally, dispose awaited, remote failures recorded; check green with worktree CLI
