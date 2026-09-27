@@ -2,14 +2,14 @@
 id: "0552"
 title: Add a gruvbox theme switcher to the user-docs site and carry it over from the landing page
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: docs
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-27T14:36:30Z"
-updated_at: "2026-09-27T14:38:06Z"
+updated_at: "2026-09-27T14:39:27Z"
 ---
 ## Problem
 
@@ -220,3 +220,4 @@ Now that we know themes (e.g. gruvbox) works on the landing page let's do the sa
 
 - 2026-09-27T14:36:30Z · created · hello@repoos.org
 - 2026-09-27T14:38:06Z · status draft→inbox, title, area, body
+- 2026-09-27T14:39:27Z · status inbox→ready
