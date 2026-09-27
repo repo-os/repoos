@@ -40,10 +40,22 @@ enabled but that path opted out (e.g. release with `useForReleases = false`,
 close-out without a build step). With `remoteValidation.enabled`, standalone
 `repoos check` runs the remote half first unless you pass `--local-tests`, use
 `--changed` / `REPOOS_CHECK_CHANGED` (fast local pre-review only), or either env
-var is already set. The remote bundle is **`git bundle create … HEAD`** — commit
-before handoff; uncommitted work is not sent to the runner and local tests are
-skipped after a green remote pass. Repos with remote validation off behave as
-before.
+var is already set. The remote bundle is **`git bundle create … HEAD`**, so only
+committed work reaches the runner, and local tests are skipped after a green
+remote pass. What is tested must be what is committed (#0512), which the two
+entry points guarantee differently:
+
+- **Handoff** commits the worktree first (the commit gate runs before the check),
+  so the sha the runner tests already contains everything the agent wrote.
+- **Standalone `repoos check`** on a tree with uncommitted work does not use the
+  remote gate: it prints which files are uncommitted and runs the full local gate
+  on the working tree instead. An unreadable git status counts as dirty.
+
+`REPOOS_SKIP_TESTS=1` counts as "remote already ran" on purpose: close-out and
+release set it after their own remote pass, and a user who exports it has asked
+for the test suite to be skipped. A failed handoff remote gate is recorded as a
+check run (Debug tab), and a failed CLI run awaits runner teardown before exiting
+so it cannot leak a warm VM. Repos with remote validation off behave as before.
 
 ## Hook points
 

@@ -54,6 +54,7 @@ import { Logger } from "../core/logger.js";
 import { createRemoteValidator } from "../server/remote-validation.js";
 import {
   runRemotePreReviewGate,
+  uncommittedFilesBlockingRemoteGate,
   shouldRunCliRemotePreReviewGate,
 } from "../server/pre-review-remote-gate.js";
 
@@ -1578,7 +1579,24 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     );
   }
 
-  if (shouldRunCliRemotePreReviewGate(cfg, { ...opts, changedRef }, process.env)) {
+  let runRemoteGate = shouldRunCliRemotePreReviewGate(cfg, { ...opts, changedRef }, process.env);
+  if (runRemoteGate) {
+    // The runner tests a bundle of HEAD. Uncommitted work would be skipped by it
+    // and then unverified locally (tests are skipped after a remote pass), so
+    // test the working tree locally instead and say why.
+    const uncommitted = await uncommittedFilesBlockingRemoteGate(repoRoot, cfg);
+    if (uncommitted.length > 0) {
+      runRemoteGate = false;
+      const shown = uncommitted.slice(0, 5).join(", ");
+      console.log(
+        c.yellow(
+          `  ⚠ uncommitted changes (${shown}${uncommitted.length > 5 ? ", …" : ""}) — the remote ` +
+            "gate tests committed HEAD only, so running the full local gate on the working tree instead\n",
+        ),
+      );
+    }
+  }
+  if (runRemoteGate) {
     heading("Remote validation");
     const logger = new Logger({ root: repoRoot });
     let remoteValidator;
@@ -1601,7 +1619,10 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
         taskId,
         onChunk: (chunk) => process.stdout.write(chunk),
       });
-      void remoteValidator.dispose().catch(() => {});
+      // Await the teardown: the failure path below exits the process, and an
+      // un-awaited async runner delete would be cut off mid-request, leaking a
+      // warm VM that no idle timer survives the exit to reap.
+      await remoteValidator.dispose().catch(() => {});
       if (gate.kind === "fail") {
         console.log(c.red(`\n  ✗ ${gate.detail}\n`));
         process.exit(1);

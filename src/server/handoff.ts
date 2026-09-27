@@ -435,6 +435,12 @@ async function runHandoffFinalization(
     // Remote half first (#0520). It bundles the worktree's HEAD, which after the
     // commit gate above IS the tree the gate is about to prove — so the remote
     // suite and the committed tree are the same object (#0512).
+    // One Debug-tab record covers the remote and local halves, so a remote
+    // failure is recorded too instead of vanishing from the board.
+    const checkHandle =
+      opts.taskChecks && opts.onTaskCheckEvent
+        ? opts.taskChecks.start(task.id, "handoff-finalize", opts.onTaskCheckEvent)
+        : undefined;
     let remoteOutcome: RemotePreReviewOutcome | { kind: "skip" } = { kind: "skip" };
     if (opts.remoteValidator && remotePreReviewEnabled(config)) {
       remoteOutcome = await runRemotePreReviewGate({
@@ -442,9 +448,10 @@ async function runHandoffFinalization(
         remoteValidator: opts.remoteValidator,
         worktreePath: workdir,
         taskId: task.id,
-        onChunk: undefined,
+        onChunk: checkHandle?.chunk,
       });
       if (remoteOutcome.kind === "fail") {
+        checkHandle?.done(1);
         return {
           ok: false,
           step: "check",
@@ -453,10 +460,6 @@ async function runHandoffFinalization(
         };
       }
     }
-    const checkHandle =
-      opts.taskChecks && opts.onTaskCheckEvent
-        ? opts.taskChecks.start(task.id, "handoff-finalize", opts.onTaskCheckEvent)
-        : undefined;
     const check = await runCheck(
       workdir,
       config,

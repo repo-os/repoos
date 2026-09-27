@@ -9,7 +9,7 @@
 
 import { CLOSEOUT_CHECK_ARGS } from "../core/check-plan.js";
 import type { RepoOSConfig } from "../core/types.js";
-import { runGit } from "../core/git.js";
+import { runGit, uncommittedWorkFiles, workFileFilter } from "../core/git.js";
 import type { RemoteValidator } from "./remote-validation.js";
 
 /** Set on a spawned `repoos check` when a parent already ran the remote gate (#0520). */
@@ -19,7 +19,33 @@ export function remotePreReviewEnabled(config: RepoOSConfig): boolean {
   return config.remoteValidation?.enabled === true;
 }
 
-/** True when a parent gate (handoff, close-out, release) already ran remote validation. */
+/**
+ * Uncommitted task work in `worktreePath` that the remote gate would NOT test.
+ * The runner receives a `git bundle` of `HEAD`, so edits still on disk never
+ * reach it: a green remote run would describe the committed tree while the
+ * local one differs (#0512's invariant — what is tested is what is committed).
+ * Handoff commits first, so it never has any; a standalone `repoos check` on a
+ * dirty tree can, and should test the working tree locally instead.
+ *
+ * Unknown is not clean: an unreadable git status is reported as blocking.
+ */
+export async function uncommittedFilesBlockingRemoteGate(
+  worktreePath: string,
+  config: RepoOSConfig,
+): Promise<string[]> {
+  try {
+    return await uncommittedWorkFiles(worktreePath, workFileFilter(config));
+  } catch {
+    return ["(git status could not be read)"];
+  }
+}
+
+/**
+ * True when a parent gate (handoff, close-out, release) already ran remote
+ * validation. `REPOOS_SKIP_TESTS=1` counts on purpose: close-out and release set
+ * it after their own remote pass, and a user who exports it has asked for the
+ * test suite to be skipped, which the remote run would contradict.
+ */
 export function remoteValidationAlreadyAttempted(env: NodeJS.ProcessEnv): boolean {
   return env.REPOOS_SKIP_TESTS === "1" || env[REPOOS_REMOTE_VALIDATION_DONE] === "1";
 }

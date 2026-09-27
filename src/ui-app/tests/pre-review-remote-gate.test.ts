@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { execFileSync } from "node:child_process";
@@ -12,6 +12,7 @@ import {
   runRemotePreReviewGate,
   shouldRunCliRemotePreReviewGate,
   spawnedRepoosCheckArgs,
+  uncommittedFilesBlockingRemoteGate,
 } from "../../server/pre-review-remote-gate.js";
 import { CLOSEOUT_CHECK_ARGS } from "../../core/check-plan.js";
 import type { RemoteValidator } from "../../server/remote-validation.js";
@@ -254,5 +255,55 @@ describe("scheduleCheckFailureRetry", () => {
     );
     expect(scheduled).toBe(false);
     expect(persist).toHaveBeenCalled();
+  });
+});
+
+describe("uncommittedFilesBlockingRemoteGate (#0520 / #0512)", () => {
+  function repoWithCommit(): string {
+    const root = mkdtempSync(join(tmpdir(), "repoos-remote-dirty-"));
+    git(root, ["init", "-q"]);
+    git(root, ["config", "user.email", "t@example.com"]);
+    git(root, ["config", "user.name", "T"]);
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src", "a.ts"), "export const a = 1;\n");
+    git(root, ["add", "."]);
+    git(root, ["commit", "-q", "-m", "init"]);
+    return root;
+  }
+  const relConfig = (root: string): RepoOSConfig => ({
+    ...makeConfig(root, { enabled: true }),
+    cacheDir: ".repoos",
+    workDir: "work",
+  });
+
+  it("is empty for a clean tree, so the remote gate tests exactly what is committed", async () => {
+    const root = repoWithCommit();
+    expect(await uncommittedFilesBlockingRemoteGate(root, relConfig(root))).toEqual([]);
+  });
+
+  it("names uncommitted source edits, which a bundle of HEAD would silently skip", async () => {
+    const root = repoWithCommit();
+    writeFileSync(join(root, "src", "a.ts"), "export const a = 2;\n");
+    writeFileSync(join(root, "src", "new.ts"), "export const b = 1;\n");
+    const files = await uncommittedFilesBlockingRemoteGate(root, relConfig(root));
+    expect(files).toContain("src/a.ts");
+    expect(files).toContain("src/new.ts");
+  });
+
+  it("ignores the gate's own churn: dist/, the cache dir and the task dir", async () => {
+    const root = repoWithCommit();
+    for (const dir of ["dist", ".repoos", "work"]) mkdirSync(join(root, dir), { recursive: true });
+    writeFileSync(join(root, "dist", "out.js"), "x");
+    writeFileSync(join(root, ".repoos", "lock"), "x");
+    writeFileSync(join(root, "work", "0001-x.md"), "x");
+    expect(await uncommittedFilesBlockingRemoteGate(root, relConfig(root))).toEqual([]);
+  });
+
+  it("treats an unreadable checkout as blocking, never as clean", async () => {
+    const files = await uncommittedFilesBlockingRemoteGate(
+      join(tmpdir(), "repoos-definitely-not-a-repo-xyz"),
+      relConfig(tmpdir()),
+    );
+    expect(files.length).toBeGreaterThan(0);
   });
 });
