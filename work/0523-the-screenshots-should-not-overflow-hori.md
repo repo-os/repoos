@@ -2,14 +2,14 @@
 id: "0523"
 title: Fit screenshots to viewer width without horizontal scroll
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-27T00:57:39Z"
-updated_at: "2026-09-27T00:58:11Z"
+updated_at: "2026-09-27T00:58:19Z"
 ---
 ## Problem
 
@@ -121,3 +121,4 @@ The screenshots should not overflow horizontally and require the horizontal scro
 - 2026-09-27T00:57:39Z · created · hello@repoos.org
 - 2026-09-27T00:57:40Z · screenshots
 - 2026-09-27T00:58:11Z · status draft→inbox, title, area, type, body
+- 2026-09-27T00:58:19Z · status inbox→ready
