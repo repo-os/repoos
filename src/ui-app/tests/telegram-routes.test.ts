@@ -18,7 +18,10 @@ import { SESSION_COOKIE_NAME } from "../../core/auth.js";
 import { TelegramApiClient } from "../../server/telegram/api.js";
 import { TelegramCredentialStore, telegramConnectionPath } from "../../server/telegram/store.js";
 import { LocalTelegramProvider } from "../../server/telegram/provider.js";
-import { createManagedProvisioningClient } from "../../server/telegram/provisioning.js";
+import {
+  createManagedProvisioningClient,
+  ManagedProvisioningUnavailableError,
+} from "../../server/telegram/provisioning.js";
 import type { ManagedProvisioningClient } from "../../server/telegram/types.js";
 import {
   telegramConnect,
@@ -339,6 +342,18 @@ describe("BYO connect", () => {
   });
 });
 
+describe("resetTelegramProviders is non-destructive (review round 2)", () => {
+  it("stops loops and drops singletons without deleting the stored credential", async () => {
+    const h = harness({ apiHandlers: { getMe: botMe(), deleteWebhook: true } });
+    await telegramConnect(ctx(h.config), makeReq({ token: TOKEN }), makeRes().res, {});
+    expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(true);
+    // The teardown helper must never become a data-deletion path.
+    resetTelegramProviders();
+    expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(true);
+    expect(new TelegramCredentialStore(tmpRoot).readToken()).toBe(TOKEN);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Profile & transport
 // ---------------------------------------------------------------------------
@@ -407,6 +422,81 @@ describe("profile and transport routes", () => {
 });
 
 // ---------------------------------------------------------------------------
+// The [telegram] enabled master switch (review round 2)
+// ---------------------------------------------------------------------------
+
+describe("the enabled gate", () => {
+  /** A harness variant whose live config says the integration is off. */
+  function disabledHarness(options: { apiHandlers?: Record<string, unknown> } = {}): Harness {
+    const api = fakeApi(options.apiHandlers ?? {});
+    const config = {
+      root: tmpRoot,
+      telegram: { enabled: false, provisioningUrl: "" },
+    } as unknown as RepoOSConfig;
+    const provider = new LocalTelegramProvider({
+      // The provider's own view is disabled too: this is the honest default.
+      resolveConfig: () => ({ enabled: false, provisioningUrl: "" }),
+      root: tmpRoot,
+      repositoryName: "repoos",
+      store: new TelegramCredentialStore(tmpRoot),
+      createApi: (token) => new TelegramApiClient(token, { fetcher: api.fetcher }),
+      now: () => new Date("2026-09-28T00:00:00Z"),
+    });
+    setTelegramProvider(tmpRoot, provider);
+    providers.push(provider);
+    return { config, provider, calls: api.calls, cookie: null };
+  }
+
+  it("refuses connect/transport/profile/provisioning while disabled", async () => {
+    const h = disabledHarness();
+    const body = JSON.stringify({ token: TOKEN });
+
+    const connect = makeRes();
+    await telegramConnect(ctx(h.config), makeReq({ token: TOKEN }), connect.res, {});
+    expect(connect.fake.status).toBe(400);
+    expect((connect.fake.payload as { error: string }).error).toMatch(/integration is disabled/);
+    expect(connect.fake.raw).not.toContain(TOKEN);
+
+    const profile = makeRes();
+    await telegramProfile(ctx(h.config), makeReq({ description: "d" }), profile.res, {});
+    expect(profile.fake.status).toBe(400);
+
+    const transport = makeRes();
+    await telegramTransport(ctx(h.config), makeReq({ mode: "polling" }), transport.res, {});
+    expect(transport.fake.status).toBe(400);
+
+    const provision = makeRes();
+    await telegramProvisionBegin(ctx(h.config), makeReq({}), provision.res, {});
+    expect(provision.fake.status).toBe(400);
+    expect(provision.fake.raw).not.toContain(body);
+
+    // Nothing stored, nothing sent: the switch is a real gate.
+    expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(false);
+    expect(h.calls).toHaveLength(0);
+  });
+
+  it("still answers status while disabled so Settings can render the switch", async () => {
+    const h = disabledHarness();
+    const { res, fake } = makeRes();
+    await telegramStatus(ctx(h.config), makeReq(), res, {});
+    expect(fake.status).toBe(200);
+    const payload = fake.payload as { enabled: boolean; connected: boolean };
+    expect(payload.enabled).toBe(false);
+    expect(payload.connected).toBe(false);
+  });
+
+  it("disconnect stays available so a credential never outlives intent", async () => {
+    const h = disabledHarness({ apiHandlers: { getMe: botMe(), deleteWebhook: true } });
+    // Seed a stored connection directly at the provider level.
+    await h.provider.connectByBotToken(TOKEN);
+    const disconnect = makeRes();
+    await telegramDisconnect(ctx(h.config), makeReq(), disconnect.res, {});
+    expect(disconnect.fake.status).toBe(200);
+    expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Managed provisioning routes (#0559 contract boundary)
 // ---------------------------------------------------------------------------
 
@@ -424,6 +514,56 @@ describe("managed provisioning routes", () => {
     expect(payload.error).toMatch(/not configured/);
     expect(payload.byoAvailable).toBe(true);
     expect(payload.managedProvisioning.configured).toBe(false);
+  });
+
+  it("a configured service failing answers 502 even when the text says 'not configured'", async () => {
+    // The 501/502 split rides on the error class, never the message text
+    // (review round 2): a service refusal that happens to contain the phrase
+    // must keep reporting a *configured* service.
+    const h = harness({
+      provisioningService: {
+        isConfigured: () => true,
+        begin: async () => {
+          throw new ManagedProvisioningUnavailableError(
+            "service could not verify this instance: not configured",
+          );
+        },
+        getStatus: async () => {
+          throw new ManagedProvisioningUnavailableError("status failed");
+        },
+        redeem: async () => {
+          throw new ManagedProvisioningUnavailableError("redeem failed");
+        },
+      } as unknown as ManagedProvisioningClient,
+    });
+    const begin = makeRes();
+    await telegramProvisionBegin(ctx(h.config), makeReq({}), begin.res, {});
+    expect(begin.fake.status).toBe(502);
+    expect(
+      (begin.fake.payload as { managedProvisioning: { configured: boolean } }).managedProvisioning
+        .configured,
+    ).toBe(true);
+  });
+
+  it("a failed post-redeem validation returns 502 with the recovery guidance", async () => {
+    // redeem succeeds (single-use credential delivered), but getMe fails —
+    // the route must say how to recover instead of losing the credential.
+    const service = fakeProvisioningService({ redeem: { token: TOKEN2 } });
+    const h = harness({
+      apiHandlers: {}, // no getMe fake → validation fails
+      provisioningService: createManagedProvisioningClient({
+        baseUrl: "https://provision.example.com",
+        fetcher: service.fetcher,
+      }),
+    });
+    const redeemRes = makeRes();
+    await telegramProvisionRedeem(ctx(h.config), makeReq(), redeemRes.res, { param1: "req-x" });
+    expect(redeemRes.fake.status).toBe(502);
+    const error = (redeemRes.fake.payload as { error: string }).error;
+    expect(error).toMatch(/arrived but could not be validated/);
+    expect(error).toMatch(/grace window/);
+    expect(String(redeemRes.fake.raw)).not.toContain(TOKEN2);
+    expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(false);
   });
 
   it("status/redeem through an unreachable configured service report 502", async () => {

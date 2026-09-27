@@ -5,7 +5,7 @@
  * managed-provisioning boundary exercised against a fake service.
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -17,11 +17,16 @@ import { normalizeUpdate } from "../../server/telegram/normalize.js";
 import { TelegramPolling } from "../../server/telegram/polling.js";
 import {
   createManagedProvisioningClient,
+  ManagedProvisioningNotConfiguredError,
   ManagedProvisioningUnavailableError,
   PROVISIONING_NOT_CONFIGURED_MESSAGE,
 } from "../../server/telegram/provisioning.js";
 import { makeTokenRedactor, redactTokenText } from "../../server/telegram/redact.js";
-import { TelegramCredentialStore, telegramConnectionPath } from "../../server/telegram/store.js";
+import {
+  TelegramCredentialStore,
+  TelegramStoreCorruptError,
+  telegramConnectionPath,
+} from "../../server/telegram/store.js";
 import {
   LocalTelegramProvider,
   TelegramNotConnectedError,
@@ -905,3 +910,339 @@ describe("provider plumbing", () => {
     await expect(provider.handleUpdate("junk")).resolves.toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Review round 2 regressions: polling pointer, prompt stop, live enabled gate,
+// reconnect semantics, boot resume, redemption recovery
+// ---------------------------------------------------------------------------
+
+/** A raw update used as a polling batch fixture. */
+const pollingUpdate = () => ({
+  update_id: 31,
+  message: {
+    message_id: 6,
+    date: 1700000010,
+    chat: { id: 77, type: "private" },
+    from: { id: 444, is_bot: false, first_name: "N" },
+    text: "/help",
+  },
+});
+
+describe("polling pointer safety (review round 2)", () => {
+  it("advances the pointer only after the awaited delivery settles", async () => {
+    let resolveDelivery!: (value: unknown) => void;
+    const delivered = new Promise((resolve) => {
+      resolveDelivery = resolve;
+    });
+    const writes: number[] = [];
+    const polling = new TelegramPolling({
+      api: new TelegramApiClient(TOKEN, {
+        fetcher: fakeApi({ getUpdates: () => [pollingUpdate()] }).fetcher,
+      }),
+      // A handler that has not settled must hold the pointer back.
+      onRaw: () => delivered.then(() => undefined),
+      readPointer: () => null,
+      writePointer: (id) => writes.push(id),
+    });
+    const started = polling.pollOnce();
+    // The fake fetch resolves immediately; give pollOnce a tick to reach the
+    // awaiting delivery, then prove the pointer is still held back.
+    await new Promise((r) => setTimeout(r, 10));
+    expect(writes).toEqual([]);
+    resolveDelivery(undefined);
+    await started;
+    expect(writes).toEqual([31]);
+  });
+
+  it("keeps the pointer when a delivery rejects, so Telegram redelivers", async () => {
+    const writes: number[] = [];
+    const polling = new TelegramPolling({
+      api: new TelegramApiClient(TOKEN, {
+        fetcher: fakeApi({ getUpdates: () => [pollingUpdate()] }).fetcher,
+      }),
+      onRaw: () => Promise.reject(new Error("intake crash")),
+      readPointer: () => null,
+      writePointer: (id) => writes.push(id),
+    });
+    await expect(polling.pollOnce()).rejects.toThrow("intake crash");
+    expect(writes).toEqual([]);
+  });
+
+  it("stop() aborts an in-flight getUpdates instead of waiting it out", async () => {
+    // A stand-in for a hung 25s long poll: the fetch never resolves on its
+    // own; it rejects only when the polling loop's AbortSignal fires.
+    const polling = new TelegramPolling({
+      api: new TelegramApiClient(TOKEN, {
+        fetcher: (async (input: unknown, init?: RequestInit) => {
+          const method = String(input).split("/").pop();
+          if (method === "getWebhookInfo") {
+            return new Response(JSON.stringify({ ok: true, result: { url: "" } }), {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            });
+          }
+          return new Promise<Response>((_resolve, reject) => {
+            const signal = init?.signal;
+            if (signal) {
+              signal.addEventListener(
+                "abort",
+                () => reject(new Error("AbortError: this operation was aborted")),
+                { once: true },
+              );
+            }
+          });
+        }) as unknown as typeof fetch,
+      }),
+      onRaw: () => undefined,
+      readPointer: () => null,
+      writePointer: () => undefined,
+      pollTimeoutSeconds: 25,
+    });
+    polling.start();
+    await sleepTick(20); // the loop enters its in-flight getUpdates
+    const startedAt = Date.now();
+    await polling.stop();
+    // Without the abort this would wait out the 25s request.
+    expect(Date.now() - startedAt).toBeLessThan(2000);
+    expect(polling.isRunning()).toBe(false);
+  });
+});
+
+describe("live [telegram] enabled gate on the polling loop", () => {
+  it("pauses without calling getUpdates while disabled and resumes live", async () => {
+    const batch = pollingUpdate();
+    const api = fakeApi({
+      getWebhookInfo: () => ({ url: "" }),
+      getUpdates: () => [batch],
+    });
+    const { provider } = makeProvider({
+      getMe: repoBot(),
+      getUpdates: () => [batch],
+      getWebhookInfo: () => ({ url: "" }),
+      deleteWebhook: () => true,
+    });
+    await provider.connectByBotToken(TOKEN);
+    const seen: unknown[] = [];
+    provider.onUpdate((update) => {
+      seen.push(update);
+    });
+    let enabledNow = false;
+    const polling = new TelegramPolling({
+      api: new TelegramApiClient(TOKEN, { fetcher: api.fetcher }),
+      onRaw: (raw) => provider.handleUpdate(raw),
+      // Advance once with the delivery, like the real pointer: a re-poll of
+      // the same batch must not re-deliver at full speed.
+      readPointer: () => (seen.length ? 31 : null),
+      writePointer: () => undefined,
+      enabled: () => enabledNow,
+      pausedCheckMs: 10,
+    });
+    polling.start();
+    await sleepTick(40);
+    expect(seen).toHaveLength(0); // paused: no Telegram calls while disabled
+    enabledNow = true;
+    await sleepTick(80);
+    expect(seen.length).toBeGreaterThan(0);
+    await polling.stop();
+    expect(api.calls.some((c) => c.method === "getUpdates")).toBe(true);
+  });
+});
+
+describe("reconnect semantics (review round 2)", () => {
+  /** Scripted Bot API keyed by token: two distinct bot identities in one fake. */
+  function twoBotApi(calls: { method: string; body: Record<string, unknown> }[]) {
+    const byToken: Record<string, Record<string, unknown>> = {
+      [TOKEN]: repoBot(),
+      [TOKEN2]: {
+        id: 1111222233,
+        is_bot: true,
+        first_name: "Other Bot",
+        username: "other_bot",
+      },
+    };
+    return (async (input: unknown) => {
+      const url = String(input);
+      const method = url.split("/").pop() ?? "";
+      calls.push({ method, body: {} });
+      const token = url.split("/bot")[1]?.split("/")[0] ?? "";
+      const me = byToken[token] ?? repoBot();
+      if (method === "getUpdates") {
+        // Honor the offset like the real API: nothing new on re-polls, so the
+        // polling loop makes progress and never hot-spins in tests.
+        return new Response(JSON.stringify({ ok: true, result: [] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ ok: true, result: method === "getMe" ? me : true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }) as unknown as typeof fetch;
+  }
+
+  function twoBotProvider(calls: { method: string; body: Record<string, unknown> }[]): {
+    provider: LocalTelegramProvider;
+    store: TelegramCredentialStore;
+  } {
+    const store = new TelegramCredentialStore(tmpRoot);
+    const provider = new LocalTelegramProvider({
+      resolveConfig: () => ({ enabled: true, provisioningUrl: "" }),
+      root: tmpRoot,
+      repositoryName: "repoos",
+      store,
+      createApi: (token) => new TelegramApiClient(token, { fetcher: twoBotApi(calls) }),
+      now: () => new Date("2026-09-28T00:00:00Z"),
+    });
+    liveProviders.push(provider);
+    return { provider, store };
+  }
+
+  it("a different bot resets transport, webhook secret, profile, and pointer", async () => {
+    const { provider, store } = twoBotProvider([]);
+    await provider.connectByBotToken(TOKEN);
+    await provider.setTransport({ mode: "webhook", webhookUrl: "https://repo.example.com/h" });
+    expect(provider.transport().mode).toBe("webhook");
+    // Reconnect with a DIFFERENT bot: its transport state must not inherit
+    // the old bot's mode/secret/pointer.
+    const bot = await provider.connectByBotToken(TOKEN2);
+    expect(bot.username).toBe("other_bot");
+    expect(provider.transport().mode).toBe("off");
+    expect(store.readWebhookSecret()).toBeNull();
+    expect(provider.status().profile?.commands ?? []).toEqual([]);
+    expect(store.readToken()).toBe(TOKEN2);
+    expect(provider.status().bot?.id).toBe(1111222233);
+  });
+
+  it("the same bot reconnect keeps transport state and keeps polling armed", async () => {
+    const { provider, store } = twoBotProvider([]);
+    await provider.connectByBotToken(TOKEN);
+    await provider.setTransport({ mode: "polling" });
+    expect(provider.isPolling()).toBe(true);
+    // Same bot identity, re-pasted token: transport stays armed and the loop
+    // is (re)started on the fresh credential.
+    const bot = await provider.connectByBotToken(TOKEN);
+    expect(bot.source).toBe("byo-token");
+    expect(provider.transport().mode).toBe("polling");
+    expect(provider.isPolling()).toBe(true);
+    expect(store.readToken()).toBe(TOKEN);
+    await provider.stopPolling();
+  });
+});
+
+describe("boot transport resume (review round 2)", () => {
+  it("re-arms polling from the stored record; an unreadable credential explains why", async () => {
+    const { provider } = makeProvider({
+      getMe: repoBot(),
+      getWebhookInfo: () => ({ url: "" }),
+      deleteWebhook: () => true,
+      getUpdates: () => [pollingUpdate()],
+    });
+    await provider.connectByBotToken(TOKEN);
+    await provider.setTransport({ mode: "polling" });
+    expect(provider.isPolling()).toBe(true);
+    await provider.stopPolling(); // a restart dropped the loop; the record stays
+    expect(provider.isPolling()).toBe(false);
+    expect(provider.transport().mode).toBe("polling");
+
+    const resumed = await provider.resumeTransport();
+    expect(resumed.resumed).toBe(true);
+    expect(provider.isPolling()).toBe(true);
+    await provider.stopPolling();
+
+    // An unreadable credential arms nothing and says why.
+    process.env.REPOOS_SECRET_STORE_KEY = Buffer.alloc(32, 9).toString("hex");
+    const blocked = await provider.resumeTransport();
+    expect(blocked.resumed).toBe(false);
+    expect(blocked.detail).toMatch(/cannot be decrypted/);
+    expect(provider.isPolling()).toBe(false);
+  });
+
+  it("does nothing without a record or with a non-polling transport", async () => {
+    const { provider } = makeProvider({
+      getMe: repoBot(),
+      setWebhook: () => true,
+      getWebhookInfo: () => ({ url: "" }),
+    });
+    expect(await provider.resumeTransport()).toMatchObject({ resumed: false });
+    await provider.connectByBotToken(TOKEN);
+    expect(await provider.resumeTransport()).toMatchObject({ resumed: false }); // mode off
+    await provider.setTransport({ mode: "webhook", webhookUrl: "https://r.example/h" });
+    expect(await provider.resumeTransport()).toMatchObject({ resumed: false }); // webhook: #0532's route
+  });
+});
+
+describe("managed redemption recovery (review round 2)", () => {
+  it("a failed post-redeem validation explains the single-use/grace recovery", async () => {
+    const service = fakeProvisioningService({ redeem: { token: TOKEN2 } });
+    // getMe has no fake → the credential arrives but cannot be validated.
+    const { provider } = makeProvider(
+      {},
+      {
+        provisioningUrl: "https://provision.example.com",
+        provisioningClient: createManagedProvisioningClient({
+          baseUrl: "https://provision.example.com",
+          fetcher: service.fetcher,
+        }),
+      },
+    );
+    const err = await provider.redeemManagedCredential("req-1").catch((e: unknown) => e);
+    expect((err as Error).message).toMatch(/arrived but could not be validated/);
+    expect((err as Error).message).toMatch(/grace window/);
+    // Nothing was stored — recovery runs through the service's grace-window
+    // replay, so the credential is not silently lost.
+    expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(false);
+  });
+});
+
+describe("not-configured vs unavailable (review round 2)", () => {
+  it("the unconfigured client throws the distinct 501-mapped class", async () => {
+    const client = createManagedProvisioningClient();
+    const err = await client
+      .begin({ repository: "r", instanceId: "i", adminEmail: "a@example.com" })
+      .catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ManagedProvisioningNotConfiguredError);
+    expect(err).toBeInstanceOf(ManagedProvisioningUnavailableError); // subclass of the 502 class
+    expect((err as Error).message).toBe(PROVISIONING_NOT_CONFIGURED_MESSAGE);
+  });
+
+  it("a configured service error mentioning 'not configured' is not the NotConfigured class", async () => {
+    // The 501/502 split is decided by the class, never the message text — a
+    // service refusal that happens to contain the phrase must stay 502.
+    const client = createManagedProvisioningClient({
+      baseUrl: "https://provision.example.com",
+      fetcher: (async () =>
+        new Response(JSON.stringify({ error: "your instance is not configured correctly" }), {
+          status: 400,
+        })) as unknown as typeof fetch,
+    });
+    const err = await client
+      .begin({ repository: "r", instanceId: "i", adminEmail: "a@example.com" })
+      .catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ManagedProvisioningUnavailableError);
+    expect(err).not.toBeInstanceOf(ManagedProvisioningNotConfiguredError);
+  });
+});
+
+describe("store error path (review round 2)", () => {
+  it("the corrupt-store error reports the real file path, not a re-joined one", () => {
+    mkdirSync(join(tmpRoot, ".repoos"), { recursive: true });
+    writeFileSync(telegramConnectionPath(tmpRoot), "{not json", "utf8");
+    const store = new TelegramCredentialStore(tmpRoot);
+    let thrown: Error | null = null;
+    try {
+      store.load();
+    } catch (e) {
+      thrown = e as Error;
+    }
+    expect(thrown).toBeInstanceOf(TelegramStoreCorruptError);
+    expect(thrown?.message).toContain(telegramConnectionPath(tmpRoot));
+    // The round-1 bug: the file path re-joined with the root, producing
+    // `<root>/.repoos/telegram-bot.json/.repoos/telegram-bot.json`.
+    expect(thrown?.message).not.toContain("telegram-bot.json/.repoos");
+  });
+});
+
+function sleepTick(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}

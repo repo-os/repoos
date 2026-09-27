@@ -51,6 +51,12 @@ export interface ApiCallOptions {
    * value; everything else uses the client default.
    */
   timeoutMs?: number;
+  /**
+   * Caller abort signal, combined with the timeout (whichever fires first
+   * rejects the request). Long polling uses this so stop() does not have to
+   * wait out a 25s request.
+   */
+  signal?: AbortSignal;
 }
 
 /** Minimal fetch signature this client needs (Node 18+ / Bun global). */
@@ -132,12 +138,15 @@ export class TelegramApiClient {
     options?: ApiCallOptions,
   ): Promise<T> {
     let response: Response;
+    const signal = options?.signal;
     try {
       response = await this.fetcher(this.urlFor(method), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(params ?? {}),
-        signal: AbortSignal.timeout(options?.timeoutMs ?? this.timeoutMs),
+        signal: signal
+          ? AbortSignal.any([signal, AbortSignal.timeout(options?.timeoutMs ?? this.timeoutMs)])
+          : AbortSignal.timeout(options?.timeoutMs ?? this.timeoutMs),
       });
     } catch (e) {
       // Timeouts surface as TimeoutError/AbortError; network failures as
@@ -245,11 +254,14 @@ export class TelegramApiClient {
    * One long-poll batch. The HTTP timeout must exceed the poll timeout or
    * every idle poll would look like a network error.
    */
-  async getUpdates(input: {
-    offset?: number;
-    timeoutSeconds: number;
-    allowedUpdates?: string[];
-  }): Promise<TelegramUpdate[]> {
+  async getUpdates(
+    input: {
+      offset?: number;
+      timeoutSeconds: number;
+      allowedUpdates?: string[];
+    },
+    signal?: AbortSignal,
+  ): Promise<TelegramUpdate[]> {
     const params: Record<string, unknown> = {
       timeout: input.timeoutSeconds,
       limit: 100,
@@ -258,6 +270,7 @@ export class TelegramApiClient {
     if (typeof input.offset === "number" && input.offset > 0) params.offset = input.offset;
     const raw = await this.call<unknown[]>("getUpdates", params, {
       timeoutMs: input.timeoutSeconds * 1000 + 15_000,
+      ...(signal ? { signal } : {}),
     });
     return (raw ?? []) as TelegramUpdate[];
   }

@@ -15,6 +15,16 @@ Repositories that set `worktrees.inheritEnv = true` expose this key to their
 task worktrees along with the rest of `.env`; use `false` when worktree agents
 must not be able to decrypt repository credentials.
 
+### The `telegram.enabled` master switch
+
+`[telegram] enabled` (Settings → **Telegram bot**) gates every active
+Telegram surface; Settings flips it live — no restart needed. While it is
+off, connection-management calls are refused ("the Telegram integration is
+disabled"), and any polling loop that already exists goes quiet: it makes no
+Telegram calls and resumes on its own when the switch returns. A stored
+connection and its encrypted credential are untouched by the switch, so
+re-enabling restores the previous transport state.
+
 ## Connect a repository
 
 An administrator connects Telegram from that repository's RepoOS Settings.
@@ -48,8 +58,10 @@ RepoOS can receive updates two ways, and switching between them requires no
 code change above the adapter:
 
 - **Long polling** — the instance pulls updates from Telegram at run time.
-  Works anywhere, including machines with no public inbound network; the
-  default when you connect by token.
+  Works anywhere, including machines with no public inbound network, and is
+  the recommended default. A connection starts with the transport **off** —
+  the bot receives nothing until you switch polling (or webhook) on; the
+  choice persists and is re-applied automatically when the server restarts.
 - **Webhook** — Telegram POSTs updates to your instance's `webhookUrl`. The
   public Bot API accepts HTTPS URLs on ports 443, 80, 88, and 8443 only; a
   Cloudflare Tunnel in front of your instance satisfies this. Telegram validates

@@ -43,6 +43,32 @@ export class ManagedProvisioningUnavailableError extends Error {
   }
 }
 
+/**
+ * Distinguishes "no service configured" (a deliberate local state — 501 at
+ * the route) from a configured service failing (502): the two must never be
+ * told apart by matching error text.
+ */
+export class ManagedProvisioningNotConfiguredError extends ManagedProvisioningUnavailableError {
+  constructor(message: string) {
+    super(message);
+    this.name = "ManagedProvisioningNotConfiguredError";
+  }
+}
+
+/**
+ * The redeem call succeeded — a single-use credential was delivered — but the
+ * follow-up (validate with `getMe`, store encrypted) failed. The token is
+ * already consumed, so the honest answer names the service's grace-window
+ * replay as the recovery instead of pretending nothing happened. Routes map
+ * this to 502 with `byoAvailable: true`.
+ */
+export class ManagedRedemptionFollowUpError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ManagedRedemptionFollowUpError";
+  }
+}
+
 /** The failure text when no service is configured. Says exactly what to do. */
 export const PROVISIONING_NOT_CONFIGURED_MESSAGE =
   "Managed provisioning is not configured for this repository — set [telegram] provisioningUrl in " +
@@ -260,7 +286,7 @@ class UnconfiguredProvisioningClient implements ManagedProvisioningClient {
   }
 
   private fail(): never {
-    throw new ManagedProvisioningUnavailableError(PROVISIONING_NOT_CONFIGURED_MESSAGE);
+    throw new ManagedProvisioningNotConfiguredError(PROVISIONING_NOT_CONFIGURED_MESSAGE);
   }
 
   async begin(): Promise<{ id: string; deepLink: string; expiresAt: string }> {
