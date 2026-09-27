@@ -132,6 +132,50 @@ describe("remoteValidation.tailscaleHosts schema entry (#0521)", () => {
     expect(hosts).toEqual([{ host: "bee" }, { host: "mac1", os: "macos", labels: ["apple"] }]);
     await cleanup();
   });
+
+  it("writes a rows-only pool through rows alone — no duplicate flat key (#0521 review)", async () => {
+    // No pre-existing flat `tailscaleHosts = [...]` line — only rows, the
+    // form the docs tell users to move to once a host needs per-host attrs.
+    const root = repo(
+      "[[remoteValidation.tailscaleHosts]]\n" +
+        'host = "mac1"\nos = "macos"\nlabels = ["apple"]\n\n' +
+        "[[remoteValidation.tailscaleHosts]]\n" +
+        'host = "bee"\nos = "linux"\n',
+    );
+    const res = await patch(root, {
+      "remoteValidation.containerImage": "repoos-ci",
+      "remoteValidation.tailscaleHosts": ["mac1", "bee"],
+    });
+    expect(res.status).toBe(200);
+    const raw = readFileSync(join(root, "repoos.toml"), "utf8");
+    // The bug (#0521 review): writing both a flat `tailscaleHosts = [...]`
+    // line AND rewriting the [[…]] blocks for the same key in one patch —
+    // parseFlatToml's lenient merge hides it from repoos itself, but it's
+    // invalid TOML.
+    expect(raw).not.toMatch(/^remoteValidation\.tailscaleHosts\s*=\s*\[/m);
+    const hosts = resolveRemoteHosts(loadConfig(root).remoteValidation);
+    expect(hosts).toEqual([
+      { host: "mac1", os: "macos", labels: ["apple"] },
+      { host: "bee", os: "linux" },
+    ]);
+    await cleanup();
+  });
+
+  it("adds a brand-new host to a rows-only pool without dropping it (#0521 review)", async () => {
+    // Untested path the review called out: a rows-only pool that keeps an
+    // existing row while adding a host that has no row of its own yet.
+    const root = repo("[[remoteValidation.tailscaleHosts]]\n" + 'host = "mac1"\nos = "macos"\n');
+    const res = await patch(root, {
+      "remoteValidation.containerImage": "repoos-ci",
+      "remoteValidation.tailscaleHosts": ["mac1", "linux2"],
+    });
+    expect(res.status).toBe(200);
+    const hosts = resolveRemoteHosts(loadConfig(root).remoteValidation);
+    // linux2 is present (not silently dropped) even though it has no prior
+    // row and mac1's attrs survive.
+    expect(hosts).toEqual([{ host: "mac1", os: "macos" }, { host: "linux2" }]);
+    await cleanup();
+  });
 });
 
 /**

@@ -797,10 +797,15 @@ export function stepMatchesChanged(step: CheckStep, changedPaths: string[]): boo
 
 /**
  * The host capabilities a remote run of this plan needs (#0521): the union of
- * `runsOn` across every declared step. Deliberately conservative — profile and
- * changed-path selection are not applied, because the remote runner executes
- * the whole plan in one go and must not be sent to a host that cannot run one
- * of its steps. Empty means "any host".
+ * `runsOn` across every declared step. Deliberately conservative — profile
+ * and changed-path selection are not applied. This is NOT because the remote
+ * host runs every step: it only runs `validate.sh` (build + test) inside its
+ * container; every other step, including any `runsOn`-gated one, still runs
+ * locally as part of `repoos check` (#0521 review). It's conservative
+ * because host selection happens once, up front, before any per-step
+ * filtering has run — so a host must satisfy every capability the plan could
+ * possibly need, not just the ones this particular invocation will exercise.
+ * Empty means "any host".
  */
 export function planJobCapabilities(plan: CheckPlan): string[] {
   const caps = new Set<string>();
