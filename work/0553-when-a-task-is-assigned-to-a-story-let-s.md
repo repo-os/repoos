@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-a-go-to-story-link-arrow-on-tasks-an
 created_at: "2026-09-27T15:06:45Z"
-updated_at: "2026-09-27T16:21:38Z"
+updated_at: "2026-09-27T16:29:22Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "[object Object]"
@@ -166,3 +166,4 @@ failed to connect to the docker API at unix:///var/run/docker.sock; check if the
 - 2026-09-27T16:01:46Z · status active→review
 - 2026-09-27T16:06:29Z · status review→active
 - 2026-09-27T16:19:05Z · status active→review
+- 2026-09-27T16:29:22Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
