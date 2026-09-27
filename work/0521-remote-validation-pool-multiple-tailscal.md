@@ -12,10 +12,10 @@ assigned_to: ai
 created_by: ""
 branch: feat/remote-validation-pool-multiple-tailscal
 model_override: cursor-grok-4.6-medium
-review_cli_override: cursor
-review_model_override: cursor-grok-4.6-medium
+review_cli_override: claude code
+review_model_override: default
 created_at: "2026-09-26T11:49:01Z"
-updated_at: "2026-09-27T19:10:09Z"
+updated_at: "2026-09-27T19:10:19Z"
 review_passes: 13
 review_rounds: 2
 dev_error_count: 2
@@ -140,3 +140,4 @@ Autoscaling, and pooling Hetzner VMs.
 - 2026-09-27T19:09:24Z · needs_input
 - 2026-09-27T19:10:07Z · cli_override, model_override
 - 2026-09-27T19:10:09Z · model_override
+- 2026-09-27T19:10:19Z · review_cli_override, review_model_override
