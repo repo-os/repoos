@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-27T23:08:14Z"
-review_passes: 2
 id: "0536"
 title: Add sort-by dropdown to stories page
 type: feature
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-sort-by-dropdown-to-stories-page
 created_at: "2026-09-27T07:32:53Z"
+updated_at: "2026-09-27T23:08:59Z"
+review_passes: 2
 ---
 ## Problem
 
