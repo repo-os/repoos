@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import { X, Paperclip, ImagePlus } from "lucide-vue-next";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
@@ -14,6 +14,7 @@ import DialogTitle from "./ui/dialog/title.vue";
 import ScreenshotViewer from "./ScreenshotViewer.vue";
 import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
 import { isImageMime, pendingToShots, shotIndex } from "../lib/screenshot-viewer";
+import { autoGrowTextarea } from "../utils/textarea-autogrow";
 const ui = useUiStore(),
   repo = useRepoStore(),
   fileInput = ref<HTMLInputElement | null>(null),
@@ -39,7 +40,10 @@ function setOpen(v: boolean): void {
   if (!v) ui.close();
 }
 watch(open, (v) => {
-  if (v) submitted.value = false;
+  if (!v) return;
+  submitted.value = false;
+  // The panel reuses the draft, so size its remounted textarea immediately.
+  void nextTick(adjustInputHeight);
 });
 function files(e: Event): void {
   const input = e.target as HTMLInputElement;
@@ -63,6 +67,12 @@ function onDrop(e: DragEvent): void {
 function clearDraft(): void {
   ui.clearInputDraft();
 }
+
+const inputTextarea = ref<HTMLTextAreaElement | null>(null);
+function adjustInputHeight(): void {
+  autoGrowTextarea(inputTextarea.value, 420);
+}
+watch(() => ui.inputText, adjustInputHeight, { flush: "post" });
 /** Hand the capture to the repo store and acknowledge immediately — the input
  *  and its attachments are created in the background (0325). */
 function submit(): void {
@@ -197,8 +207,9 @@ function done(): void {
             </div>
             <textarea
               id="new-input-text"
+              ref="inputTextarea"
               v-model="ui.inputText"
-              class="ff-textarea"
+              class="ff-textarea ff-textarea-autogrow"
               rows="12"
               placeholder="Share an idea, question, bug, observation, or feedback…"
             ></textarea>
