@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/run-the-pre-review-gate-on-the-remote-va
 created_at: "2026-09-26T11:49:00Z"
-updated_at: "2026-09-27T02:19:20Z"
+updated_at: "2026-09-27T02:19:27Z"
 review_passes: 7
 review_rounds: 2
 ---
@@ -97,3 +97,5 @@ runner hosts (separate task).
 - 2026-09-27T01:45:47Z · needs_input
 - 2026-09-27T02:19:20Z · status review→active
 - 2026-09-27T02:19:20Z · note: Queue remote runs (maxConcurrent default 1), per-run bundle/artifact paths, docs+Settings+tests; check green
+- 2026-09-27T02:19:26Z · status active→review
+- 2026-09-27T02:19:27Z · status review→active
