@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/run-the-pre-review-gate-on-the-remote-va
 created_at: "2026-09-26T11:49:00Z"
-updated_at: "2026-09-27T01:11:33Z"
+updated_at: "2026-09-27T01:11:39Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -71,3 +71,5 @@ runner hosts (separate task).
 - 2026-09-26T12:41:07Z · status active→review
 - 2026-09-27T01:11:33Z · status review→active
 - 2026-09-27T01:11:33Z · note: Merged main (#0512); remote gate tests committed tree, dirty CLI check runs locally, dispose awaited, remote failures recorded; check green with worktree CLI
+- 2026-09-27T01:11:39Z · status active→review
+- 2026-09-27T01:11:39Z · status review→active
