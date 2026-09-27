@@ -5,11 +5,11 @@ type: bug
 status: inbox
 priority: p1
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T10:25:52Z"
-updated_at: "2026-09-27T10:25:52Z"
+updated_at: "2026-09-27T12:28:39Z"
 ---
 ## Problem
 
@@ -68,12 +68,34 @@ Seen live on #0521 (2026-09-27): the "review-rounds-exhausted" banner offered
 both "Review again (clears this)" and "Dismiss" side by side; dismissing
 while unaware a review was already in flight is exactly the trap above.
 
+## Also: the "2 review rounds" wording is ambiguous — fold in a copy fix
+
+The same banner's text ("Auto-bounce stopped: reached maximum of
+`MAX_AUTO_REVIEW_ROUNDS` (2) review rounds") reads as if only 2 reviews ran
+total. In fact `review_rounds` counts auto-*bounces* (times sent back to the
+engineer), not total review passes:
+
+review #1 (original impl, non-good) → bounce #1 (`review_rounds` → 1) →
+review #2 (non-good) → bounce #2 (`review_rounds` → 2) → review #3
+(non-good) → `review_rounds (2) >= MAX (2)`, no bounce #3, flags exhausted.
+
+So **3 reviews and 3 engineering passes** actually happened by the time a
+human sees this banner, not 2 — confirmed confusing live on #0521
+(2026-09-27) reading it as "only 2 rounds ran". Reword the banner text
+(`NEEDS_INPUT_BANNER_LABELS`/detail string in
+`src/ui-app/src/lib/needs-input-ui.ts` and the `note` string in
+`src/server/review.ts`'s `autoBounce()`) to be unambiguous, e.g. "the
+reviewer sent this back to the engineer twice and still isn't satisfied —
+human review needed" rather than leading with a bare round count.
+
 ## Out of scope (already fixed separately, not part of this task)
 
 The native browser `confirm()` popup that used to double-confirm the Dismiss
 click was removed in commit c69b369c (2026-09-27) — that part is done, this
-task is only about the flag reappearing.
+task is only about the flag reappearing (and now also the round-count wording
+above).
 
 ## Activity
 
 - 2026-09-27T10:25:52Z · created · unknown
+- 2026-09-27T12:28:39Z · body
