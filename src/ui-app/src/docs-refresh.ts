@@ -6,7 +6,7 @@ export interface DocRefreshCounts {
   removed: number;
 }
 
-/** Compare doc listings before and after a refresh (uses server mtimeMs). */
+/** Compare doc listings before and after a refresh (uses server mtimeMs only — same mtime with edited content counts as unchanged). */
 export function countDocRefresh(before: Map<string, number>, after: DocMeta[]): DocRefreshCounts {
   const afterMap = new Map(after.map((d) => [d.path, d.mtimeMs ?? 0]));
   let added = 0;

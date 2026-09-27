@@ -10,6 +10,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
+import { reactive } from "vue";
 import * as apiMod from "../src/api";
 import { useRepoStore } from "../src/stores/repo";
 import { useUiStore } from "../src/stores/ui";
@@ -27,11 +28,19 @@ import DialogTitle from "../src/components/ui/dialog/title.vue";
 
 const api = vi.spyOn(apiMod, "api");
 
-let currentQuery: Record<string, string | string[]> = {};
+const routeQuery = reactive<Record<string, string | string[]>>({});
+
+function setRouteQuery(next: Record<string, string | string[]>): void {
+  for (const key of Object.keys(routeQuery)) {
+    delete routeQuery[key];
+  }
+  Object.assign(routeQuery, next);
+}
+
 const replaceSpy = vi.fn(async () => {});
 
 vi.mock("vue-router", () => ({
-  useRoute: () => ({ query: currentQuery }),
+  useRoute: () => ({ query: routeQuery }),
   useRouter: () => ({ replace: replaceSpy, push: vi.fn() }),
 }));
 
@@ -113,7 +122,7 @@ const WORK_STUBS = { BoardColumn: true, IntegrationStatusBar: true } as const;
 
 beforeEach(() => {
   setActivePinia(createPinia());
-  currentQuery = {};
+  setRouteQuery({});
   replaceSpy.mockClear();
   vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: false }));
   vi.stubGlobal(
@@ -134,7 +143,7 @@ afterEach(() => {
 describe("work ?task= deep-link (#0345)", () => {
   it("?task=<id> opens that task's drawer and clears the param", async () => {
     useRepoStore().tasks = [makeTask("0340"), makeTask("0341", "active")];
-    currentQuery = { task: "0340" };
+    setRouteQuery({ task: "0340" });
     api.mockResolvedValue(makeTask("0340")); // drawer background refresh
     const wrapper = mount(WorkView, { global: { stubs: WORK_STUBS } });
     await flushPromises();
@@ -149,7 +158,7 @@ describe("work ?task= deep-link (#0345)", () => {
 
   it("?task=new opens the new-task panel and clears the param", async () => {
     useRepoStore().tasks = [];
-    currentQuery = { task: "new" };
+    setRouteQuery({ task: "new" });
     const wrapper = mount(WorkView, { global: { stubs: WORK_STUBS } });
     await flushPromises();
 
@@ -162,7 +171,7 @@ describe("work ?task= deep-link (#0345)", () => {
 
   it("an id missing from the board index is fetched directly and still opens", async () => {
     useRepoStore().tasks = [makeTask("0341")];
-    currentQuery = { task: "0999" };
+    setRouteQuery({ task: "0999" });
     api.mockResolvedValue(makeTask("0999"));
     const wrapper = mount(WorkView, { global: { stubs: WORK_STUBS } });
     await flushPromises();
@@ -175,7 +184,7 @@ describe("work ?task= deep-link (#0345)", () => {
 
   it("an unknown id (404) leaves the drawer closed and the param untouched", async () => {
     useRepoStore().tasks = [];
-    currentQuery = { task: "9999" };
+    setRouteQuery({ task: "9999" });
     api.mockRejectedValue(new Error("404"));
     const wrapper = mount(WorkView, { global: { stubs: WORK_STUBS } });
     await flushPromises();
@@ -187,7 +196,7 @@ describe("work ?task= deep-link (#0345)", () => {
 
   it("a '#'-prefixed id still opens the task", async () => {
     useRepoStore().tasks = [makeTask("0340")];
-    currentQuery = { task: "#0340" };
+    setRouteQuery({ task: "#0340" });
     api.mockResolvedValue(makeTask("0340"));
     const wrapper = mount(WorkView, { global: { stubs: WORK_STUBS } });
     await flushPromises();
@@ -198,7 +207,7 @@ describe("work ?task= deep-link (#0345)", () => {
 
   it("clearing the param preserves other query keys (e.g. ?status=)", async () => {
     useRepoStore().tasks = [makeTask("0340", "active")];
-    currentQuery = { status: "active", task: "0340" };
+    setRouteQuery({ status: "active", task: "0340" });
     api.mockResolvedValue(makeTask("0340"));
     const wrapper = mount(WorkView, { global: { stubs: WORK_STUBS } });
     await flushPromises();
@@ -211,7 +220,7 @@ describe("work ?task= deep-link (#0345)", () => {
 describe("inputs ?input= deep-link (#0345)", () => {
   it("?input=<id> opens that input's drawer once the list loads, then clears the param", async () => {
     api.mockResolvedValue([makeInput("idea-1")]);
-    currentQuery = { input: "idea-1" };
+    setRouteQuery({ input: "idea-1" });
     const wrapper = mount(InputsView, { attachTo: document.body });
     await flushPromises();
     // The list loads after mount; the retry lands within ~100ms.
@@ -225,7 +234,7 @@ describe("inputs ?input= deep-link (#0345)", () => {
 
   it("?input=new opens the new-input panel and clears the param", async () => {
     api.mockResolvedValue([]);
-    currentQuery = { input: "new" };
+    setRouteQuery({ input: "new" });
     const wrapper = mount(InputsView, { attachTo: document.body });
     await flushPromises();
 
@@ -238,7 +247,7 @@ describe("inputs ?input= deep-link (#0345)", () => {
 
   it("a deep-linked input opens even when its status is filtered out", async () => {
     api.mockResolvedValue([makeInput("idea-2"), { ...makeInput("idea-3"), status: "processed" }]);
-    currentQuery = { input: "idea-3" };
+    setRouteQuery({ input: "idea-3" });
     const wrapper = mount(InputsView, { attachTo: document.body });
     await flushPromises();
     await new Promise((r) => setTimeout(r, 200));
@@ -251,7 +260,7 @@ describe("inputs ?input= deep-link (#0345)", () => {
 
   it("?input=<number> opens the input with that stable number", async () => {
     api.mockResolvedValue([makeInput("idea-9", "0001"), makeInput("idea-10", "0002")]);
-    currentQuery = { input: "0001" };
+    setRouteQuery({ input: "0001" });
     const wrapper = mount(InputsView, { attachTo: document.body });
     await flushPromises();
     await new Promise((r) => setTimeout(r, 200));
@@ -263,7 +272,7 @@ describe("inputs ?input= deep-link (#0345)", () => {
 
   it("a bare numeric param (and a leading '#') still matches the padded number", async () => {
     api.mockResolvedValue([makeInput("idea-9", "0007")]);
-    currentQuery = { input: "#7" };
+    setRouteQuery({ input: "#7" });
     const wrapper = mount(InputsView, { attachTo: document.body });
     await flushPromises();
     await new Promise((r) => setTimeout(r, 200));
@@ -274,7 +283,7 @@ describe("inputs ?input= deep-link (#0345)", () => {
 
   it("an unknown numeric param degrades gracefully (no drawer, no crash)", async () => {
     api.mockResolvedValue([makeInput("idea-9", "0001")]);
-    currentQuery = { input: "9999" };
+    setRouteQuery({ input: "9999" });
     const wrapper = mount(InputsView, { attachTo: document.body });
     await flushPromises();
     await new Promise((r) => setTimeout(r, 200));
@@ -333,7 +342,7 @@ describe("stories ?story= deep-link (#0515)", () => {
   it("?story=<number> opens that story's panel, then clears the param", async () => {
     openStories();
     useRepoStore().storyDefinitions = [storyDef("Alpha slice", "0007")];
-    currentQuery = { story: "0007" };
+    setRouteQuery({ story: "0007" });
     const wrapper = mount(StoriesView, { attachTo: document.body });
     await flushPromises();
 
@@ -345,7 +354,7 @@ describe("stories ?story= deep-link (#0515)", () => {
   it("a bare numeric param (and a leading '#') still matches the padded number", async () => {
     openStories();
     useRepoStore().storyDefinitions = [storyDef("Alpha slice", "0007")];
-    currentQuery = { story: "#7" };
+    setRouteQuery({ story: "#7" });
     const wrapper = mount(StoriesView, { attachTo: document.body });
     await flushPromises();
 
@@ -356,7 +365,7 @@ describe("stories ?story= deep-link (#0515)", () => {
   it("?story=<key> opens a story whose file predates numbering", async () => {
     openStories();
     useRepoStore().storyDefinitions = [storyDef("Alpha slice", "")];
-    currentQuery = { story: "alpha slice" };
+    setRouteQuery({ story: "alpha slice" });
     const wrapper = mount(StoriesView, { attachTo: document.body });
     await flushPromises();
 
@@ -367,7 +376,7 @@ describe("stories ?story= deep-link (#0515)", () => {
   it("preserves sibling query keys when clearing the param", async () => {
     openStories();
     useRepoStore().storyDefinitions = [storyDef("Alpha slice", "0007")];
-    currentQuery = { story: "0007", from: "digest" };
+    setRouteQuery({ story: "0007", from: "digest" });
     const wrapper = mount(StoriesView, { attachTo: document.body });
     await flushPromises();
 
@@ -378,7 +387,7 @@ describe("stories ?story= deep-link (#0515)", () => {
   it("?story=new still opens the new-story panel, not a story lookup", async () => {
     openStories();
     useRepoStore().storyDefinitions = [storyDef("Alpha slice", "0007")];
-    currentQuery = { story: "new" };
+    setRouteQuery({ story: "new" });
     const wrapper = mount(StoriesView, { attachTo: document.body });
     await flushPromises();
 
@@ -397,7 +406,7 @@ describe("stories ?story= deep-link (#0515)", () => {
     useConfigStore().data = {};
     useRepoStore().tasks = [makeTask("0001")];
     useRepoStore().storyDefinitions = [storyDef("Alpha slice", "0007")];
-    currentQuery = { story: "0007" };
+    setRouteQuery({ story: "0007" });
     const wrapper = mount(StoriesView, { attachTo: document.body });
     await flushPromises();
     expect(storyPanel()).toBeNull();
@@ -414,7 +423,7 @@ describe("stories ?story= deep-link (#0515)", () => {
   it("an unknown param degrades gracefully (no panel, param left intact)", async () => {
     openStories();
     useRepoStore().storyDefinitions = [storyDef("Alpha slice", "0007")];
-    currentQuery = { story: "9999" };
+    setRouteQuery({ story: "9999" });
     const wrapper = mount(StoriesView, { attachTo: document.body });
     await flushPromises();
     // Give the retry loop a chance to give up before asserting nothing opened.
@@ -429,7 +438,7 @@ describe("stories ?story= deep-link (#0515)", () => {
 describe("settings ?setting= deep-link (#0345)", () => {
   it("?setting=<key> scrolls to and focuses that row, then clears the param", async () => {
     await loadConfig();
-    currentQuery = { setting: "maxActiveTasks" };
+    setRouteQuery({ setting: "maxActiveTasks" });
     // attachTo: the deep-link lookup is document.getElementById, which only
     // sees elements attached to the document (a detached VTU root is invisible).
     const wrapper = mount(SettingsView, { attachTo: document.body });
@@ -448,7 +457,7 @@ describe("settings ?setting= deep-link (#0345)", () => {
 
   it("the existing ?focus= behavior is unchanged", async () => {
     await loadConfig();
-    currentQuery = { focus: "maxActiveTasks" };
+    setRouteQuery({ focus: "maxActiveTasks" });
     const wrapper = mount(SettingsView, { attachTo: document.body });
     await flushPromises();
     await new Promise((r) => setTimeout(r, 200));
@@ -464,7 +473,7 @@ describe("settings ?setting= deep-link (#0345)", () => {
 
   it("?setting= wins when both params are present", async () => {
     await loadConfig();
-    currentQuery = { setting: "maxActiveTasks", focus: "bogus-key" };
+    setRouteQuery({ setting: "maxActiveTasks", focus: "bogus-key" });
     const wrapper = mount(SettingsView, { attachTo: document.body });
     await flushPromises();
     await new Promise((r) => setTimeout(r, 200));
@@ -486,12 +495,12 @@ describe("context ?doc= deep-link (#0557)", () => {
 
   beforeEach(() => {
     setActivePinia(createPinia());
-    currentQuery = {};
+    setRouteQuery({});
     replaceSpy.mockClear();
   });
 
   it("opens the Docs tab and loads the doc named in ?doc=", async () => {
-    currentQuery = { doc: "docs/guide.md" };
+    setRouteQuery({ doc: "docs/guide.md" });
     const docs = useDocsStore();
     docs.docs = [{ path: "docs/guide.md", title: "Guide", mtimeMs: 1 }];
     const loadDoc = vi.spyOn(docs, "loadDoc").mockResolvedValue(undefined);
@@ -505,8 +514,42 @@ describe("context ?doc= deep-link (#0557)", () => {
   });
 
   it("?tab=skills lands on the Skills tab", async () => {
-    currentQuery = { tab: "skills" };
+    setRouteQuery({ tab: "skills" });
     const wrapper = mount(ContextView, { global: { stubs: ctxStubs } });
+    await flushPromises();
+
+    expect(wrapper.find(".ctx-tab.on").text()).toBe("Skills");
+    wrapper.unmount();
+  });
+
+  it("loads a new ?doc= while already on /repo (same mount, no docList churn)", async () => {
+    setRouteQuery({ doc: "docs/a.md" });
+    const docs = useDocsStore();
+    docs.docs = [
+      { path: "docs/a.md", title: "A", mtimeMs: 1 },
+      { path: "docs/b.md", title: "B", mtimeMs: 2 },
+    ];
+    const loadDoc = vi.spyOn(docs, "loadDoc").mockResolvedValue(undefined);
+
+    const wrapper = mount(ContextView, { global: { stubs: ctxStubs } });
+    await flushPromises();
+    expect(loadDoc).toHaveBeenCalledWith("docs/a.md");
+    loadDoc.mockClear();
+
+    routeQuery.doc = "docs/b.md";
+    await flushPromises();
+
+    expect(loadDoc).toHaveBeenCalledWith("docs/b.md");
+    wrapper.unmount();
+  });
+
+  it("switches tab when ?tab= changes without remounting", async () => {
+    setRouteQuery({});
+    const wrapper = mount(ContextView, { global: { stubs: ctxStubs } });
+    await flushPromises();
+    expect(wrapper.find(".ctx-tab.on").text()).toBe("Docs");
+
+    routeQuery.tab = "skills";
     await flushPromises();
 
     expect(wrapper.find(".ctx-tab.on").text()).toBe("Skills");

@@ -232,14 +232,25 @@ async function refreshDocs(): Promise<void> {
 
 // Preselect a doc from the URL (?doc=docs/foo.md) — e.g. the Agents page's
 // "Model pricing & use cases" link opens /repo?doc=docs/opencode-models.md.
+function applyDocDeepLink(): void {
+  const target = typeof route.query.doc === "string" ? route.query.doc : null;
+  if (!target || !docList.value.some((d) => d.path === target)) return;
+  if (tab.value !== "docs") tab.value = "docs";
+  if (selDoc.value !== target) void docs.loadDoc(target);
+}
+
 watch(
-  docList,
-  (list) => {
-    const target = typeof route.query.doc === "string" ? route.query.doc : null;
-    if (target && list.some((d) => d.path === target)) {
-      if (tab.value !== "docs") setTab("docs");
-      if (selDoc.value !== target) void docs.loadDoc(target);
-    }
+  () => route.query.doc,
+  () => applyDocDeepLink(),
+  { immediate: true },
+);
+watch(docList, () => applyDocDeepLink());
+
+watch(
+  () => route.query.tab,
+  (raw) => {
+    const next = tabFromQuery(raw);
+    if (tab.value !== next) tab.value = next;
   },
   { immediate: true },
 );
