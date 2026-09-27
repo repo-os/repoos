@@ -12,11 +12,11 @@ assigned_to: ai
 created_by: ""
 branch: feat/remote-validation-pool-multiple-tailscal
 cli_override: codex
-model_override: default
+model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-09-26T11:49:01Z"
-updated_at: "2026-09-27T22:57:04Z"
+updated_at: "2026-09-27T22:57:24Z"
 review_passes: 14
 review_rounds: 2
 dev_error_count: 2
@@ -150,3 +150,4 @@ Autoscaling, and pooling Hetzner VMs.
 - 2026-09-27T19:35:20Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
 - 2026-09-27T19:36:53Z · needs_input
 - 2026-09-27T22:57:04Z · cli_override, model_override
+- 2026-09-27T22:57:24Z · model_override
