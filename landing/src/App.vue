@@ -2,72 +2,49 @@
 import { onBeforeUnmount, onMounted, ref } from "vue";
 import InstallBox from "./components/InstallBox.vue";
 import SiteLogo from "./components/SiteLogo.vue";
-
-type Appearance = "dark" | "light";
-type DesignTheme = "classic" | "gruvbox";
-
-const APPEARANCE_KEY = "repoos-theme";
-const DESIGN_KEY = "repoos-ui-theme";
+import {
+  type Appearance,
+  type DesignThemeId,
+  type PickerDesignTheme,
+  applyAppearanceToDocument,
+  applyDesignThemeToDocument,
+  persistThemes,
+  pickerLabelForDesign,
+  resolveThemes,
+  syncThemeColorMeta,
+  syncThemeToUrl,
+} from "./theme-resolve";
 
 const appearance = ref<Appearance>("dark");
-const designTheme = ref<DesignTheme>("classic");
+const designTheme = ref<DesignThemeId>("classic");
 const pickerOpen = ref(false);
 
-const DESIGN_OPTIONS: { id: DesignTheme; label: string }[] = [
+const DESIGN_OPTIONS: { id: PickerDesignTheme; label: string }[] = [
   { id: "classic", label: "Classic" },
   { id: "gruvbox", label: "Gruvbox" },
 ];
 
-const THEME_COLORS: Record<`${DesignTheme}-${Appearance}`, string> = {
-  "classic-dark": "#070a12",
-  "classic-light": "#f6f8fc",
-  "gruvbox-dark": "#282828",
-  "gruvbox-light": "#fbf1c7",
-};
-
-function syncThemeColorMeta(): void {
-  const key = `${designTheme.value}-${appearance.value}` as `${DesignTheme}-${Appearance}`;
-  const content = THEME_COLORS[key];
-  let meta = document.querySelector('meta[name="theme-color"]');
-  if (!meta) {
-    meta = document.createElement("meta");
-    meta.setAttribute("name", "theme-color");
-    document.head.appendChild(meta);
-  }
-  meta.setAttribute("content", content);
-}
-
 function applyAppearance(next: Appearance): void {
   appearance.value = next;
-  document.documentElement.setAttribute("data-theme", next);
-  try {
-    localStorage.setItem(APPEARANCE_KEY, next);
-  } catch {
-    // Private mode / blocked storage: the toggle still works for this visit.
-  }
-  syncThemeColorMeta();
+  applyAppearanceToDocument(next);
+  persistThemes(designTheme.value, next);
+  syncThemeColorMeta(designTheme.value, next);
+  syncThemeToUrl(designTheme.value, next);
 }
 
-function applyDesignTheme(next: DesignTheme): void {
+function applyDesignTheme(next: PickerDesignTheme): void {
   designTheme.value = next;
-  if (next === "gruvbox") {
-    document.documentElement.setAttribute("data-ui-theme", "gruvbox");
-  } else {
-    document.documentElement.removeAttribute("data-ui-theme");
-  }
-  try {
-    localStorage.setItem(DESIGN_KEY, next);
-  } catch {
-    // blocked storage
-  }
-  syncThemeColorMeta();
+  applyDesignThemeToDocument(next);
+  persistThemes(next, appearance.value);
+  syncThemeColorMeta(next, appearance.value);
+  syncThemeToUrl(next, appearance.value);
 }
 
 function toggleAppearance(): void {
   applyAppearance(appearance.value === "dark" ? "light" : "dark");
 }
 
-function selectDesignTheme(next: DesignTheme): void {
+function selectDesignTheme(next: PickerDesignTheme): void {
   applyDesignTheme(next);
   pickerOpen.value = false;
 }
@@ -104,12 +81,9 @@ function onKeydown(e: KeyboardEvent): void {
 let desktopQuery: MediaQueryList | undefined;
 
 onMounted(() => {
-  // index.html resolves both axes before first paint. Read them back so controls
-  // match what's on screen without a flash.
-  appearance.value =
-    document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
-  designTheme.value =
-    document.documentElement.getAttribute("data-ui-theme") === "gruvbox" ? "gruvbox" : "classic";
+  const resolved = resolveThemes();
+  appearance.value = resolved.appearance;
+  designTheme.value = resolved.design;
 
   desktopQuery = window.matchMedia(DESKTOP_NAV);
   desktopQuery.addEventListener("change", closeMenu);
@@ -123,8 +97,11 @@ onBeforeUnmount(() => {
   document.removeEventListener("click", onDocumentClick);
 });
 
-const activeDesignLabel = () =>
-  DESIGN_OPTIONS.find((o) => o.id === designTheme.value)?.label ?? "Classic";
+const activeDesignLabel = () => {
+  const known = DESIGN_OPTIONS.find((o) => o.id === designTheme.value);
+  if (known) return known.label;
+  return pickerLabelForDesign(designTheme.value);
+};
 
 const steps = [
   {

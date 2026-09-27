@@ -40,6 +40,11 @@ with taste rather than a brochure.
   light.
 - Keyboard reachable, labelled for screen readers, usable in the collapsed
   mobile nav.
+- Shareable links: `?theme=` and `?appearance=` (alias `?mode=`) set the design
+  theme and light/dark on first load — e.g. `repoos.org/?theme=gruvbox&appearance=light`.
+  Valid design ids include `classic`, `gruvbox`, and any future theme id once its
+  CSS exists (`catppuccin`, `ayu`, …). URL params beat `localStorage` for that
+  load, then persist so a reload without the query keeps the choice.
 
 ## Acceptance criteria
 
@@ -79,6 +84,11 @@ with taste rather than a brochure.
       app's theme-contrast guard, which must still pass unchanged for the app's
       own themes.
 - [ ] `landing/README.md` documents the switcher and the two-axis model.
+- [ ] Query params `theme` and `appearance` (`mode` alias) resolve in the
+      pre-paint script with the same rules as `landing/src/theme-resolve.ts`
+      (keep both in sync). Invalid values are ignored per axis. Using the nav
+      switcher updates the query string via `history.replaceState` so the
+      address bar reflects a shareable link.
 
 ## Notes for AI
 
@@ -93,6 +103,8 @@ Files to touch:
   `toggleTheme` becomes the switcher; persist and restore.
 - `landing/index.html` — the pre-paint resolver and the `theme-color` content
   per combination.
+- `landing/src/theme-resolve.ts` — shared parse/apply/persist/URL helpers used
+  by the Vue app; boot script in `index.html` mirrors this file.
 
 Constraints:
 
@@ -135,7 +147,8 @@ Assumptions (the prompt did not specify these):
 ## Scope
 
 In: the gruvbox design theme for the landing page in both appearances, the
-switcher control, persistence, and the pre-paint / `theme-color` handling.
+switcher control, persistence, pre-paint / `theme-color` handling, and shareable
+`?theme=` / `?appearance=` URLs (forward-compatible with future design themes).
 
 Deferred:
 
