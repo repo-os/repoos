@@ -14,12 +14,7 @@
  *    without a network.
  */
 import { TELEGRAM_API_BASE, makeTokenRedactor, redactTokenText } from "./redact.js";
-import type {
-  ProvisionedBot,
-  TelegramBotCommand,
-  TelegramSentMessage,
-  TelegramUpdate,
-} from "./types.js";
+import type { ProvisionedBot, TelegramBotCommand, TelegramSentMessage } from "./types.js";
 
 /** Bot API `User` object (superset of the fields this adapter consumes). */
 export interface BotApiUser {
@@ -44,6 +39,18 @@ export interface WebhookInfo {
 
 /** Bot API `Message`, narrowed to what normalization consumes. */
 export type BotApiMessage = Record<string, unknown>;
+
+/**
+ * A raw Bot API update as Telegram serializes it: snake_case (`update_id`),
+ * one optional payload field, none of the adapter's normalized shape. This is
+ * what `getUpdates` hands to the polling loop and what #0532 will receive in
+ * a webhook body — normalization into `TelegramUpdate` happens exactly once,
+ * in `normalize.ts`. Do not consume these fields directly above the adapter.
+ */
+export interface BotApiUpdate {
+  update_id: number;
+  [key: string]: unknown;
+}
 
 export interface ApiCallOptions {
   /**
@@ -261,7 +268,7 @@ export class TelegramApiClient {
       allowedUpdates?: string[];
     },
     signal?: AbortSignal,
-  ): Promise<TelegramUpdate[]> {
+  ): Promise<BotApiUpdate[]> {
     const params: Record<string, unknown> = {
       timeout: input.timeoutSeconds,
       limit: 100,
@@ -272,7 +279,7 @@ export class TelegramApiClient {
       timeoutMs: input.timeoutSeconds * 1000 + 15_000,
       ...(signal ? { signal } : {}),
     });
-    return (raw ?? []) as TelegramUpdate[];
+    return (raw ?? []) as BotApiUpdate[];
   }
 
   // ── Messaging ─────────────────────────────────────────────────────────────

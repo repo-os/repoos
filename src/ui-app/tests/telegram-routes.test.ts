@@ -179,6 +179,30 @@ function harness(options: {
   return { config, provider, calls: api.calls, cookie };
 }
 
+/**
+ * A harness variant whose live config says the integration is disabled —
+ * shared by the enabled-gate tests and the off-while-disabled exemption.
+ */
+function disabledHarness(options: { apiHandlers?: Record<string, unknown> } = {}): Harness {
+  const api = fakeApi(options.apiHandlers ?? {});
+  const config = {
+    root: tmpRoot,
+    telegram: { enabled: false, provisioningUrl: "" },
+  } as unknown as RepoOSConfig;
+  const provider = new LocalTelegramProvider({
+    // The provider's own view is disabled too: this is the honest default.
+    resolveConfig: () => ({ enabled: false, provisioningUrl: "" }),
+    root: tmpRoot,
+    repositoryName: "repoos",
+    store: new TelegramCredentialStore(tmpRoot),
+    createApi: (token) => new TelegramApiClient(token, { fetcher: api.fetcher }),
+    now: () => new Date("2026-09-28T00:00:00Z"),
+  });
+  setTelegramProvider(tmpRoot, provider);
+  providers.push(provider);
+  return { config, provider, calls: api.calls, cookie: null };
+}
+
 /** Install `email` with `role` and mint a session cookie. */
 function sessionCookie(email: string, role: "admin" | "member"): string {
   resetAuthStoreInstance();
@@ -426,27 +450,6 @@ describe("profile and transport routes", () => {
 // ---------------------------------------------------------------------------
 
 describe("the enabled gate", () => {
-  /** A harness variant whose live config says the integration is off. */
-  function disabledHarness(options: { apiHandlers?: Record<string, unknown> } = {}): Harness {
-    const api = fakeApi(options.apiHandlers ?? {});
-    const config = {
-      root: tmpRoot,
-      telegram: { enabled: false, provisioningUrl: "" },
-    } as unknown as RepoOSConfig;
-    const provider = new LocalTelegramProvider({
-      // The provider's own view is disabled too: this is the honest default.
-      resolveConfig: () => ({ enabled: false, provisioningUrl: "" }),
-      root: tmpRoot,
-      repositoryName: "repoos",
-      store: new TelegramCredentialStore(tmpRoot),
-      createApi: (token) => new TelegramApiClient(token, { fetcher: api.fetcher }),
-      now: () => new Date("2026-09-28T00:00:00Z"),
-    });
-    setTelegramProvider(tmpRoot, provider);
-    providers.push(provider);
-    return { config, provider, calls: api.calls, cookie: null };
-  }
-
   it("refuses connect/transport/profile/provisioning while disabled", async () => {
     const h = disabledHarness();
     const body = JSON.stringify({ token: TOKEN });
@@ -493,6 +496,66 @@ describe("the enabled gate", () => {
     await telegramDisconnect(ctx(h.config), makeReq(), disconnect.res, {});
     expect(disconnect.fake.status).toBe(200);
     expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Reconnect preserves the operator's profile; off stays available (round 3)
+// ---------------------------------------------------------------------------
+
+describe("reconnect profile preservation", () => {
+  it("connecting twice keeps an operator-configured command list", async () => {
+    const h = harness({
+      apiHandlers: {
+        getMe: botMe(),
+        setMyCommands: true,
+        setMyName: true,
+        setMyDescription: true,
+        setMyShortDescription: true,
+      },
+    });
+    // First connect: defaults apply once.
+    const first = makeRes();
+    await telegramConnect(ctx(h.config), makeReq({ token: TOKEN }), first.res, {});
+    expect(first.fake.status).toBe(200);
+
+    // The operator replaces the command list with their own.
+    const custom = makeRes();
+    await telegramProfile(
+      ctx(h.config),
+      makeReq({ commands: [{ command: "custom", description: "Operator's own" }] }),
+      custom.res,
+      {},
+    );
+    expect(custom.fake.status).toBe(200);
+
+    // Same bot, token re-pasted: the round-2 bug re-applied defaults here.
+    const second = makeRes();
+    await telegramConnect(ctx(h.config), makeReq({ token: TOKEN }), second.res, {});
+    expect(second.fake.status).toBe(200);
+    expect((second.fake.payload as { warnings: string[] }).warnings).toEqual([]);
+
+    const statusRes = makeRes();
+    await telegramStatus(ctx(h.config), makeReq(), statusRes.res, {});
+    const profile = (statusRes.fake.payload as { profile?: { commands: { command: string }[] } })
+      .profile;
+    expect(profile?.commands).toEqual([{ command: "custom", description: "Operator's own" }]);
+  });
+});
+
+describe("transport off stays available while disabled (round 3)", () => {
+  it("mode off is not refused by the enabled gate", async () => {
+    const h = disabledHarness({ apiHandlers: { getMe: botMe(), deleteWebhook: true } });
+    await h.provider.connectByBotToken(TOKEN);
+    const off = makeRes();
+    await telegramTransport(ctx(h.config), makeReq({ mode: "off" }), off.res, {});
+    expect(off.fake.status).toBe(200);
+    expect((off.fake.payload as { transport: { mode: string } }).transport.mode).toBe("off");
+    // Arming a transport stays gated.
+    const arm = makeRes();
+    await telegramTransport(ctx(h.config), makeReq({ mode: "polling" }), arm.res, {});
+    expect(arm.fake.status).toBe(400);
+    expect((arm.fake.payload as { error: string }).error).toMatch(/integration is disabled/);
   });
 });
 

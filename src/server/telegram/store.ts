@@ -67,6 +67,43 @@ export function telegramConnectionPath(root: string): string {
   return join(root, ".repoos", "telegram-bot.json");
 }
 
+const TRANSPORT_MODES: readonly TelegramTransportMode[] = ["off", "polling", "webhook"];
+
+/**
+ * Every field later code dereferences without guarding: `status()` reads
+ * `transport`/`profile`, `connectByBotToken` merges them, the polling pointer
+ * writes `polling.lastUpdateId`. A record missing any of these previously
+ * passed `load()` and then blew up downstream with a 500 on status — and
+ * blocked re-connecting. Validate the whole shape here and say what is wrong.
+ * Returns null for a well-shaped record, else the first problem found.
+ */
+function recordShapeProblem(rec: unknown): string | null {
+  if (!rec || typeof rec !== "object" || Array.isArray(rec)) return "not an object";
+  const r = rec as Partial<TelegramConnectionRecord> & Record<string, unknown>;
+  if (r.version !== 1) return `unsupported version ${JSON.stringify(r.version)}`;
+  if (typeof r.bot !== "object" || r.bot === null) return "missing bot";
+  if (typeof r.credential !== "object" || r.credential === null) return "missing credential";
+  if (typeof r.createdAt !== "string") return "missing createdAt";
+  if (typeof r.updatedAt !== "string") return "missing updatedAt";
+  if (typeof r.transport !== "object" || r.transport === null) return "missing transport";
+  if (!TRANSPORT_MODES.includes((r.transport as { mode?: unknown }).mode as never)) {
+    return `unknown transport mode ${JSON.stringify((r.transport as { mode?: unknown }).mode)}`;
+  }
+  if (typeof r.profile !== "object" || r.profile === null) return "missing profile";
+  if (typeof r.polling !== "object" || r.polling === null) return "missing polling";
+  const pointer = (r.polling as { lastUpdateId?: unknown }).lastUpdateId;
+  if (pointer !== null && typeof pointer !== "number") {
+    return `invalid polling pointer ${JSON.stringify(pointer)}`;
+  }
+  if (
+    r.webhookSecret !== null &&
+    (typeof r.webhookSecret !== "object" || r.webhookSecret === null)
+  ) {
+    return "webhookSecret must be null or an encrypted envelope";
+  }
+  return null;
+}
+
 export class TelegramCredentialStore {
   private readonly path: string;
 
@@ -92,20 +129,30 @@ export class TelegramCredentialStore {
       );
     }
     const rec = parsed as Partial<TelegramConnectionRecord> | null;
-    if (
-      !rec ||
-      rec.version !== 1 ||
-      typeof rec.bot !== "object" ||
-      rec.bot === null ||
-      typeof rec.credential !== "object" ||
-      rec.credential === null ||
-      typeof (rec as { createdAt?: unknown }).createdAt !== "string"
-    ) {
+    const problem = recordShapeProblem(rec);
+    if (problem) {
       throw new TelegramStoreCorruptError(
-        `stored Telegram connection state has an unrecognized shape (${this.path})`,
+        `stored Telegram connection state has an unrecognized shape (${this.path}: ${problem}). ` +
+          "Recover by disconnecting (clears it) or reconnecting (replaces it) — no need to " +
+          "delete the file by hand.",
       );
     }
     return parsed as TelegramConnectionRecord;
+  }
+
+  /**
+   * `load()`, with a corrupt/unreadable record reported as `null` instead of
+   * thrown. For paths whose whole purpose is to *replace* or *forget* stored
+   * state (connect, disconnect, default-profile decisions): a corrupt record
+   * must not block recovery, and `status()` is the loud reporter. Never use
+   * this to silently continue reading a record you did not just write.
+   */
+  loadOrNull(): TelegramConnectionRecord | null {
+    try {
+      return this.load();
+    } catch {
+      return null;
+    }
   }
 
   save(record: TelegramConnectionRecord): void {

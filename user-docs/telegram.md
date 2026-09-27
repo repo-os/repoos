@@ -19,9 +19,12 @@ must not be able to decrypt repository credentials.
 
 `[telegram] enabled` (Settings → **Telegram bot**) gates every active
 Telegram surface; Settings flips it live — no restart needed. While it is
-off, connection-management calls are refused ("the Telegram integration is
-disabled"), and any polling loop that already exists goes quiet: it makes no
-Telegram calls and resumes on its own when the switch returns. A stored
+off, connection-management calls that arm or change the integration are
+refused ("the Telegram integration is disabled"), and any polling loop that
+already exists goes quiet: it makes no Telegram calls and resumes on its own
+when the switch returns. Two safe-direction calls stay available while off —
+`transport {mode: "off"}` and `disconnect` — so stopping delivery or
+forgetting the credential never requires re-enabling anything. A stored
 connection and its encrypted credential are untouched by the switch, so
 re-enabling restores the previous transport state.
 

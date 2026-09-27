@@ -242,11 +242,21 @@ class HttpProvisioningClient implements ManagedProvisioningClient {
     )) as unknown as RedeemResponse;
     const token = typeof payload?.token === "string" && payload.token ? payload.token : null;
     if (!token) {
-      throw new ManagedProvisioningUnavailableError(
-        "managed provisioning service did not return a credential — nothing was stored",
+      // The service answered 200 without a credential: the request may
+      // already be consumed server-side, so the honest error is the
+      // redemption follow-up one (grace-window replay), not a bare refusal.
+      throw new ManagedRedemptionFollowUpError(
+        "managed provisioning service did not return a credential — nothing was stored. " +
+          "The request may already be consumed: redeem the same request again within the " +
+          "service's grace window to retry, or ask the service admin to reset it.",
       );
     }
-    await requireServiceBot(payload as unknown as ServiceRequestResponse);
+    // The response's bot summary is OPTIONAL and informational: the provider
+    // re-derives the authoritative ProvisionedBot from `getMe` with the
+    // delivered token. A malformed summary must never discard an
+    // already-delivered single-use credential (review round 2) — it is
+    // ignored here, and `getStatus` keeps the strict validation for the view
+    // the browser renders.
     return { token };
   }
 }

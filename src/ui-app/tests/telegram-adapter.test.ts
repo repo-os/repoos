@@ -19,6 +19,7 @@ import {
   createManagedProvisioningClient,
   ManagedProvisioningNotConfiguredError,
   ManagedProvisioningUnavailableError,
+  ManagedRedemptionFollowUpError,
   PROVISIONING_NOT_CONFIGURED_MESSAGE,
 } from "../../server/telegram/provisioning.js";
 import { makeTokenRedactor, redactTokenText } from "../../server/telegram/redact.js";
@@ -1246,3 +1247,169 @@ describe("store error path (review round 2)", () => {
 function sleepTick(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+// ---------------------------------------------------------------------------
+// Review round 3: default-profile preservation, store shape validation,
+// redeem leniency, redactor scope, deterministic receivedAt
+// ---------------------------------------------------------------------------
+
+describe("default profile applied once (review round 3)", () => {
+  it("needsDefaultProfile is true for a fresh connect and false once applied", async () => {
+    const { provider } = makeProvider({
+      getMe: repoBot(),
+      setMyCommands: () => true,
+      setMyDescription: () => true,
+      setMyShortDescription: () => true,
+    });
+    await provider.connectByBotToken(TOKEN);
+    expect(provider.needsDefaultProfile()).toBe(true);
+    await provider.applyDefaultProfile();
+    expect(provider.needsDefaultProfile()).toBe(false);
+    // A same-bot reconnect keeps the answer false — the route must not
+    // re-apply defaults over whatever is configured now.
+    await provider.connectByBotToken(TOKEN);
+    expect(provider.needsDefaultProfile()).toBe(false);
+  });
+
+  it("an operator-configured profile alone also suppresses the defaults", async () => {
+    const { provider } = makeProvider({
+      getMe: repoBot(),
+      setMyCommands: () => true,
+    });
+    await provider.connectByBotToken(TOKEN);
+    await provider.configureProfile({
+      commands: [{ command: "custom", description: "Operator's own" }],
+    });
+    expect(provider.needsDefaultProfile()).toBe(false);
+  });
+
+  it("handleUpdate stamps receivedAt from the injectable now()", async () => {
+    const { provider } = makeProvider({ getMe: repoBot() });
+    const update = await provider.handleUpdate({
+      update_id: 1,
+      message: {
+        message_id: 1,
+        date: 1,
+        chat: { id: 2, type: "private" },
+        from: { id: 3, is_bot: false, first_name: "N" },
+        text: "hi",
+      },
+    });
+    expect(update?.receivedAt).toBe("2026-09-28T00:00:00.000Z");
+  });
+});
+
+describe("connection-record shape validation (review round 3)", () => {
+  /** Write a record shaped like `overrides` over a valid baseline. */
+  function writeRecord(overrides: Record<string, unknown>): void {
+    const base: Record<string, unknown> = {
+      version: 1,
+      source: "byo-token",
+      bot: { id: 1, username: "b", displayName: "B", source: "byo-token", connectedAt: "x" },
+      credential: { iv: "i", tag: "t", ciphertext: "c", version: 1, algorithm: "aes-256-gcm" },
+      transport: { mode: "off" },
+      profile: {},
+      webhookSecret: null,
+      polling: { lastUpdateId: null },
+      createdAt: "x",
+      updatedAt: "x",
+    };
+    writeFileSync(
+      telegramConnectionPath(tmpRoot),
+      JSON.stringify({ ...base, ...overrides }),
+      "utf8",
+    );
+  }
+
+  it("a record missing profile/polling fails load() with an actionable message", () => {
+    mkdirSync(join(tmpRoot, ".repoos"), { recursive: true });
+    for (const overrides of [
+      { profile: undefined },
+      { polling: undefined },
+      { transport: { mode: "carrier-pigeon" } },
+      { polling: { lastUpdateId: "seven" } },
+    ]) {
+      writeRecord(overrides);
+      const store = new TelegramCredentialStore(tmpRoot);
+      let thrown: Error | null = null;
+      try {
+        store.load();
+      } catch (e) {
+        thrown = e as Error;
+      }
+      expect(thrown).toBeInstanceOf(TelegramStoreCorruptError);
+      expect(thrown?.message).toContain(telegramConnectionPath(tmpRoot));
+      expect(thrown?.message).toMatch(/Recover by disconnecting|reconnecting/);
+    }
+  });
+
+  it("a well-shaped record still loads", () => {
+    writeRecord({});
+    expect(new TelegramCredentialStore(tmpRoot).load()).not.toBeNull();
+  });
+
+  it("a corrupt record does not block reconnecting or disconnecting", async () => {
+    mkdirSync(join(tmpRoot, ".repoos"), { recursive: true });
+    writeFileSync(telegramConnectionPath(tmpRoot), '{"version":1,"bot":', "utf8");
+    const { provider } = makeProvider({ getMe: repoBot(), deleteWebhook: () => true });
+    // status() reports the corruption loudly...
+    expect(provider.status().lastError).toMatch(/unreadable/);
+    // ...but connect replaces the state and disconnect clears it.
+    const bot = await provider.connectByBotToken(TOKEN);
+    expect(bot.username).toBe("repoos_project_bot");
+    expect(provider.status().connected).toBe(true);
+    await provider.disconnect();
+    expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(false);
+  });
+});
+
+describe("redeem response leniency (review round 3)", () => {
+  it("a malformed optional bot summary does not discard the delivered token", async () => {
+    const service = fakeProvisioningService({
+      redeem: { token: TOKEN2, bot: { username: "missing-numeric-id" } },
+    });
+    const { provider } = makeProvider(
+      { getMe: repoBot() },
+      {
+        provisioningUrl: "https://provision.example.com",
+        provisioningClient: createManagedProvisioningClient({
+          baseUrl: "https://provision.example.com",
+          fetcher: service.fetcher,
+        }),
+      },
+    );
+    // The provider re-derives the bot via getMe; the summary is informational.
+    const bot = await provider.redeemManagedCredential("req-1");
+    expect(bot).toMatchObject({ id: 9876543210, source: "managed" });
+    expect(new TelegramCredentialStore(tmpRoot).readToken()).toBe(TOKEN2);
+  });
+
+  it("a 200 without a token is a follow-up failure carrying the grace-window hint", async () => {
+    const service = fakeProvisioningService({ redeem: {} });
+    const { provider } = makeProvider(
+      { getMe: repoBot() },
+      {
+        provisioningUrl: "https://provision.example.com",
+        provisioningClient: createManagedProvisioningClient({
+          baseUrl: "https://provision.example.com",
+          fetcher: service.fetcher,
+        }),
+      },
+    );
+    const err = await provider.redeemManagedCredential("req-1").catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ManagedRedemptionFollowUpError);
+    expect((err as Error).message).toMatch(/did not return a credential/);
+    expect((err as Error).message).toMatch(/grace window/);
+  });
+});
+
+describe("redactor scope (review round 3)", () => {
+  it("an empty api base skips the /bot URL rule instead of mangling text", () => {
+    const authKey = "svc-bearer-key-9182";
+    const redact = makeTokenRedactor(authKey, "");
+    const input = "service error: invalid /bot endpoint reference for chat 5";
+    const out = redact(input);
+    expect(out).toBe(input); // untouched apart from the key itself
+    expect(redact(`denied: key ${authKey}`)).not.toContain(authKey);
+  });
+});
