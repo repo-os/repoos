@@ -9,6 +9,7 @@ import { useUiStore } from "../stores/ui";
 import { searchAll, searchSettings, searchContext, type SearchResult } from "../search";
 import type { SettingsTabId } from "../settings-location";
 import { useRecentSearches, type RecentSearchScope } from "../composables/use-recent-searches";
+import { useSearchBodyCache } from "../composables/use-search-body-cache";
 
 export type SearchScope = RecentSearchScope;
 
@@ -37,12 +38,12 @@ const { tasks } = storeToRefs(repo);
 const { docs: docList, skills: skillList } = storeToRefs(docs);
 const { searchableFields } = storeToRefs(config);
 const { recentSearches, addRecentSearch } = useRecentSearches(props.scope);
+const { contentByPath, ensurePaths } = useSearchBodyCache();
 
 const query = ref("");
 const highlight = ref(0);
 const inputEl = ref<HTMLInputElement | null>(null);
 const overlayEl = ref<HTMLElement | null>(null);
-const docsWithContent = ref<Map<string, string>>(new Map());
 
 const settingLocation = computed(() => ({
   inspectorAvailable: repo.health?.copyInspectorAvailable === true,
@@ -52,7 +53,7 @@ const searchSource = computed(() => ({
   tasks: tasks.value,
   docs: docList.value.map((d) => ({
     ...d,
-    content: docsWithContent.value.get(d.path),
+    content: contentByPath.value.get(d.path),
   })),
   fields: searchableFields.value,
   settingLocation: settingLocation.value,
@@ -61,11 +62,11 @@ const searchSource = computed(() => ({
 const contextSearchSource = computed(() => ({
   docs: docList.value.map((d) => ({
     ...d,
-    content: docsWithContent.value.get(d.path),
+    content: contentByPath.value.get(d.path),
   })),
   skills: skillList.value.map((s) => ({
     ...s,
-    content: docsWithContent.value.get(s.path),
+    content: contentByPath.value.get(s.path),
   })),
 }));
 
@@ -91,10 +92,6 @@ const contextTruncated = computed(
     props.scope === "context" &&
     !showRecent.value &&
     contextSearchOutput.value.totalMatches > contextSearchOutput.value.results.length,
-);
-
-const contextTruncatedCount = computed(() =>
-  Math.max(0, contextSearchOutput.value.totalMatches - contextSearchOutput.value.results.length),
 );
 
 const displayItems = computed(() => {
@@ -139,10 +136,10 @@ interface Group {
 }
 
 const groups = computed<Group[]>(() => {
-  if ((props.scope === "settings" || props.scope === "context") && !showRecent.value) {
+  if (props.scope === "settings" && !showRecent.value) {
     return [
       {
-        kind: props.scope === "settings" ? "setting" : "doc",
+        kind: "setting",
         label: "",
         items: displayItems.value.map((r, idx) => ({ r: r as SearchResult, idx })),
       },
@@ -153,6 +150,7 @@ const groups = computed<Group[]>(() => {
   const labelOf: Record<string, string> = {
     task: "Tasks",
     doc: "Context docs",
+    skill: "Skills",
     setting: "Settings",
     recent: "Recent",
     hint: "",
@@ -200,6 +198,7 @@ watch(
       query.value = "";
       highlight.value = 0;
       setTimeout(() => inputEl.value?.focus(), 0);
+      void loadSearchBodies();
     }
   },
 );
@@ -240,6 +239,7 @@ function openResult(r: SearchResult): void {
     addRecentSearch(query.value);
     if (props.scope === "context") {
       void router.push({ name: "repo", query: { doc: r.path } });
+      void docs.loadDoc(r.path);
     } else {
       void docs.loadDoc(r.path);
       void router.push({ name: "repo" });
@@ -322,34 +322,18 @@ function handleBackdropClick(e: MouseEvent): void {
   }
 }
 
-async function loadDocContents(): Promise<void> {
-  if (props.scope === "settings") return;
+async function loadSearchBodies(): Promise<void> {
+  if (props.scope === "settings" || !props.open) return;
   const paths =
     props.scope === "context"
       ? [...docList.value.map((d) => d.path), ...skillList.value.map((s) => s.path)]
       : docList.value.map((d) => d.path);
-  for (const path of paths) {
-    if (!docsWithContent.value.has(path)) {
-      try {
-        const r = await fetch(path);
-        if (r.ok) {
-          const text = await r.text();
-          docsWithContent.value.set(path, text);
-        }
-      } catch {
-        /* search degrades to title/path only */
-      }
-    }
-  }
+  await ensurePaths(paths);
 }
 
-watch(
-  [docList, skillList],
-  () => {
-    void loadDocContents();
-  },
-  { immediate: true },
-);
+watch([docList, skillList], () => {
+  if (props.open) void loadSearchBodies();
+});
 </script>
 
 <template>
@@ -406,7 +390,7 @@ watch(
           </button>
         </div>
 
-        <div class="search-overlay-body">
+        <div class="search-overlay-body" role="listbox" :aria-label="ariaLabel">
           <template v-if="displayItems.length">
             <div v-for="g in groups" :key="g.kind" class="search-group">
               <div v-if="g.label" class="search-group-label">{{ g.label }}</div>
@@ -414,6 +398,9 @@ watch(
                 v-for="item in g.items"
                 :key="(g.kind === 'recent' ? 'recent-' : g.kind + '-') + item.r.title"
                 class="search-row"
+                role="option"
+                :aria-selected="item.idx === highlight"
+                tabindex="-1"
                 :class="{
                   hi: item.idx === highlight,
                   'search-row-hint': (item.r as { kind?: string }).kind === 'hint',
@@ -452,7 +439,8 @@ watch(
           </template>
           <div v-else-if="emptyMessage" class="search-empty">{{ emptyMessage }}</div>
           <div v-if="contextTruncated" class="search-truncated">
-            and {{ contextTruncatedCount }} more — narrow your search
+            {{ contextSearchOutput.totalMatches }} matches — showing
+            {{ contextSearchOutput.results.length }}. Narrow your search to see fewer results.
           </div>
         </div>
       </div>

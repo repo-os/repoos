@@ -11,7 +11,7 @@ function openOverlay(): void {
 }
 
 function onGlobalKey(e: KeyboardEvent): void {
-  if (route.name === "settings" || route.name === "repo") return;
+  if (route.name === "repo") return;
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
     e.preventDefault();
     openOverlay();
