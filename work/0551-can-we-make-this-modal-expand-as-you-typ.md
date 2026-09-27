@@ -2,7 +2,7 @@
 id: "0551"
 title: Let long prompts auto-grow the composer textarea
 type: feature
-status: active
+status: ready
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/let-long-prompts-auto-grow-the-composer-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-27T14:05:52Z"
-updated_at: "2026-09-27T15:09:27Z"
+updated_at: "2026-09-27T16:23:11Z"
 check_retry_count: 2
 last_check_failure: "[object Object]"
 review_rounds: 1
@@ -137,3 +137,4 @@ error: script "build" exited with code 137
 - 2026-09-27T15:08:55Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-09-27T15:09:26Z · status active→review
 - 2026-09-27T15:09:27Z · status review→active
+- 2026-09-27T16:23:11Z · watchdog: auto-surfaced stuck task · status active→ready · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
