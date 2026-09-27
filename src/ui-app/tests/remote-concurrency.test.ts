@@ -11,6 +11,7 @@ import type { RepoOSConfig } from "../../core/types.js";
 import { loadConfig } from "../../core/config.js";
 import {
   ConcurrencyGate,
+  PREREQ_OK_TOKEN,
   TailscaleRunner,
   remoteConcurrencyLimit,
   remoteRunPaths,
@@ -150,6 +151,7 @@ describe("TailscaleRunner queueing and isolation", () => {
     let inFlight = 0;
     let peak = 0;
     const gates: Array<() => void> = [];
+    let probes = 0;
     const exec: RemoteExecDeps = {
       bundleRepo: vi.fn(async () => ({ ok: true })),
       uploadFile: vi.fn(async (_h, _l, remote: string) => {
@@ -160,6 +162,12 @@ describe("TailscaleRunner queueing and isolation", () => {
         downloads.push(remoteGlob);
       }),
       runRemote: vi.fn(async (_h, cmd: string): Promise<RemoteExecResult> => {
+        // The per-host prerequisite probe (#0521) runs before the first job —
+        // answer it without counting it as a validation run.
+        if (cmd.includes(PREREQ_OK_TOKEN)) {
+          probes++;
+          return { code: 0, output: `ok ${PREREQ_OK_TOKEN}`, timedOut: false };
+        }
         cmds.push(cmd);
         inFlight++;
         peak = Math.max(peak, inFlight);
@@ -175,6 +183,7 @@ describe("TailscaleRunner queueing and isolation", () => {
       downloads,
       uploads,
       gates,
+      probes: () => probes,
       peak: () => peak,
     };
   }

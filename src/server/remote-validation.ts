@@ -43,7 +43,15 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import type { RepoOSConfig } from "../core/types.js";
+import type { RepoOSConfig, RemoteValidationConfig, RemoteValidationHost } from "../core/types.js";
+import {
+  describeCapabilities,
+  hostSatisfies,
+  positiveLimit,
+  remoteHostLimit,
+  remoteHostUser,
+  resolveRemoteHosts,
+} from "../core/remote-hosts.js";
 import type { Logger } from "../core/logger.js";
 import type { CheckSummary } from "./done.js";
 import { redactSecrets, stripAnsi } from "./done.js";
@@ -105,8 +113,7 @@ export class ConcurrencyGate {
 
 /** Limit from config: a positive integer, default 1 (one run at a time). */
 export function remoteConcurrencyLimit(config: RepoOSConfig): number {
-  const n = config.remoteValidation?.maxConcurrent;
-  return typeof n === "number" && Number.isInteger(n) && n >= 1 ? n : 1;
+  return positiveLimit(config.remoteValidation?.maxConcurrent, 1);
 }
 
 /** Per-run remote paths, so overlapping runs never share a bundle or artifacts dir. */
@@ -185,6 +192,41 @@ export interface ValidateOptions {
   candidateSha: string;
   /** Live output sink (SSE, status bar). The per-task log file is always written. */
   onChunk?: (chunk: string) => void;
+  /**
+   * Host capabilities this job needs (#0521) — the `runsOn` union of the check
+   * plan. The pool only considers hosts providing every one of them; a job with
+   * no requirement runs anywhere. Absent means "any host".
+   */
+  capabilities?: string[];
+  /**
+   * Epoch ms after which the caller no longer wants this job (#0521): a run
+   * still QUEUED at the deadline is cancelled and its slot released instead of
+   * outliving the caller that gave up on it (the handoff's 10-minute cap).
+   * A run already executing is not interrupted.
+   */
+  deadlineAt?: number;
+}
+
+/** One host's live state, surfaced by `/api/remote-validation/status` (#0521). */
+export interface RemoteHostStatus {
+  host: string;
+  user: string;
+  os?: string;
+  labels: string[];
+  /** Effective per-host in-flight cap (per-host → global → 1). */
+  maxConcurrent: number;
+  /** Runs this server process currently has in flight on the host. */
+  inFlight: number;
+  /** Queued runs currently waiting for this host. */
+  queued: number;
+  /** Whether the prerequisite check (docker/toolchain + validate.sh) ran. */
+  probed: boolean;
+  /** Result of that check. Only meaningful when `probed`. */
+  healthy: boolean;
+  /** Why the host is unusable (prereq failure / unreachable), when it is. */
+  detail?: string;
+  /** Most recent run dispatched here, for the drawer's per-host state. */
+  lastRun?: { taskId: string; ok: boolean; at: string };
 }
 
 export interface RemoteValidator {
@@ -195,6 +237,9 @@ export interface RemoteValidator {
   dispose(): Promise<void>;
   /** Absolute path of the per-task log file (may not exist yet). */
   logPath(taskId: string): string;
+  /** Per-host pool state for the status endpoint (#0521). Optional: the
+   *  Hetzner runner is a single server-owned VM with no pool to report. */
+  hostStatus?(): RemoteHostStatus[];
 }
 
 interface RunnerState {
@@ -211,6 +256,10 @@ export interface RunnerTimings {
   sshWaitTimeoutMs: number;
   /** Outer cap on the remote build+test run. Vitest's own testTimeout fails a real hang faster. */
   remoteRunTimeoutMs: number;
+  /** Cap on one host's prerequisite probe (a single ssh round trip). */
+  probeTimeoutMs: number;
+  /** Cooldown before an unreachable/misconfigured host is probed again (#0521). */
+  healthRetryMs: number;
 }
 
 const DEFAULT_TIMINGS: RunnerTimings = {
@@ -219,6 +268,8 @@ const DEFAULT_TIMINGS: RunnerTimings = {
   sshProbeIntervalMs: 3_000,
   sshWaitTimeoutMs: 120_000,
   remoteRunTimeoutMs: 25 * 60_000,
+  probeTimeoutMs: 20_000,
+  healthRetryMs: 30_000,
 };
 
 /** Contention-shaped failure text — matches runDoneStep's heuristic in done.ts. */
@@ -237,6 +288,105 @@ function tail(output: string, lines = 20, maxChars = 1200): string {
   let out = cleaned.slice(-lines).join("\n");
   if (out.length > maxChars) out = `…${out.slice(out.length - maxChars)}`;
   return out || "no output";
+}
+
+// ── host prerequisites + the cross-process host lock (#0521) ────────────────
+
+/** The gate script every host must carry, and the token a passing probe prints. */
+export const VALIDATE_SCRIPT = "/opt/repoos/validate.sh";
+export const PREREQ_OK_TOKEN = "REPOOS_PREREQ_OK";
+/** Exit code a host-lock timeout uses — never a test suite's own exit. */
+export const HOST_LOCK_TIMEOUT_EXIT = 75;
+/** Default a run waits inside the host lock before giving up (15 min). */
+export const DEFAULT_HOST_LOCK_WAIT_SECS = 900;
+/** A lock dir untouched for this long belongs to a killed run; break it. */
+export const HOST_LOCK_STALE_MINUTES = 40;
+
+/**
+ * Per-host prerequisite check (#0521) run over ssh before a host's first job,
+ * so a misconfigured host is REPORTED (health + detail in the status endpoint)
+ * instead of failing jobs with an opaque error mid-run. Checks the toolchain
+ * the host's `validate.sh` needs and that the script is an up-to-date copy
+ * accepting the per-run artifacts dir as its third argument (#0520).
+ */
+export function prereqProbeCommand(os?: string): string {
+  const mac = (os ?? "").trim().toLowerCase() === "macos";
+  const lines = mac
+    ? [
+        'command -v git >/dev/null 2>&1 || { echo "git not found on PATH"; exit 1; }',
+        "(command -v bun >/dev/null 2>&1 || [ -x /opt/homebrew/bin/bun ]) || " +
+          '{ echo "bun not found (install it, e.g. brew install bun)"; exit 1; }',
+      ]
+    : [
+        'command -v docker >/dev/null 2>&1 || { echo "docker not found on PATH"; exit 1; }',
+        'docker info >/dev/null 2>&1 || { echo "docker daemon not reachable (is docker running?)"; exit 1; }',
+      ];
+  lines.push(
+    `[ -f ${VALIDATE_SCRIPT} ] || ` +
+      `{ echo "missing ${VALIDATE_SCRIPT} — run the per-host install (docs/remote-validation.md)"; exit 1; }`,
+    // Single-quoted '${3' is a fixed-string grep for the artifacts argument the
+    // #0520 validate.sh reads; older copies lack it.
+    "grep -qF '${3' " +
+      `${VALIDATE_SCRIPT} || ` +
+      `{ echo "outdated ${VALIDATE_SCRIPT}: it must accept the artifacts dir as its third argument — re-run the per-host install"; exit 1; }`,
+    `echo ${PREREQ_OK_TOKEN}`,
+  );
+  return lines.join(" &&\n");
+}
+
+/**
+ * Host-side slot lock (#0521): a portable `mkdir`-based counting semaphore
+ * wrapped around `validate.sh`, so a standalone `repoos check` (its own
+ * process, its own in-memory gate) and the server's runner can never put two
+ * full suites on one host beyond its per-host limit. `mkdir` is atomic
+ * everywhere, unlike `flock(1)` which macOS doesn't ship; stale dirs left by a
+ * killed run are broken after HOST_LOCK_STALE_MINUTES. The lock waits (with a
+ * clear streamed line) and exits HOST_LOCK_TIMEOUT_EXIT when it runs out of
+ * patience — the runner reports that as a transient "another check is running"
+ * infra failure, never as a red gate.
+ */
+export function hostLockShell(opts: {
+  slots: number;
+  waitSecs: number;
+  /** Lock root on the host. Defaults to the shared /tmp path (one machine = one limit). */
+  lockRoot?: string;
+  inner: string;
+}): string {
+  const root = (opts.lockRoot ?? "/tmp/repoos-validate-locks").replace(/'/g, "");
+  const slots = Math.max(1, Math.floor(opts.slots));
+  const wait = Math.max(0, Math.floor(opts.waitSecs));
+  const script = [
+    `LOCKROOT='${root}'`,
+    `SLOTS=${slots}`,
+    `WAIT=${wait}`,
+    'mkdir -p "$LOCKROOT" 2>/dev/null || true',
+    '_rvslot=""',
+    "_rvwaited=0",
+    'while [ -z "$_rvslot" ]; do',
+    "  _i=0",
+    '  while [ "$_i" -lt "$SLOTS" ]; do',
+    '    if mkdir "$LOCKROOT/$_i" 2>/dev/null; then _rvslot="$_i"; break; fi',
+    "    _i=$((_i+1))",
+    "  done",
+    '  [ -n "$_rvslot" ] && break',
+    '  if [ "$_rvwaited" -ge "$WAIT" ]; then',
+    '    echo "[lock] timed out after ${WAIT}s waiting for a free slot on this host — another repoos check is still running"',
+    `    exit ${HOST_LOCK_TIMEOUT_EXIT}`,
+    "  fi",
+    '  [ "$_rvwaited" -eq 0 ] && echo "[lock] waiting for a free slot on this host (up to ${WAIT}s)"',
+    `  find "$LOCKROOT" -mindepth 1 -maxdepth 1 -type d -mmin +${HOST_LOCK_STALE_MINUTES} -exec rm -rf {} + 2>/dev/null || true`,
+    "  sleep 5",
+    "  _rvwaited=$((_rvwaited+5))",
+    "done",
+    'echo "[lock] slot $_rvslot acquired after ${_rvwaited}s"',
+    '_rvcleanup() { _rc=$?; rmdir "$LOCKROOT/$_rvslot" 2>/dev/null; exit $_rc; }',
+    "trap _rvcleanup EXIT",
+    "trap 'exit 129' HUP",
+    "trap 'exit 130' INT",
+    "trap 'exit 143' TERM",
+    opts.inner,
+  ];
+  return script.join("\n");
 }
 
 // ── default IO implementation ────────────────────────────────────────────────
@@ -480,6 +630,17 @@ export class RemoteValidationRunner implements RemoteValidator {
   }
 
   async validate(opts: ValidateOptions): Promise<CheckSummary> {
+    // Routing (#0521): the Hetzner runner is always one Linux/docker VM. A job
+    // requiring anything else must fail here, clearly, not run in the wrong OS.
+    const unmet = (opts.capabilities ?? [])
+      .map((c) => c.trim())
+      .filter((c) => c && c.toLowerCase() !== "linux");
+    if (unmet.length > 0) {
+      return this.infraFail(
+        `the Hetzner runner provides only "linux" — cannot satisfy ${unmet.join(", ")}; ` +
+          "configure a [[remoteValidation.tailscaleHosts]] host that provides it (docs/remote-validation.md)",
+      );
+    }
     const release = await this.gate.acquire((ahead) => {
       const note =
         `[queued behind ${ahead} other remote run(s) — remoteValidation.maxConcurrent = ` +
@@ -775,18 +936,358 @@ export class RemoteValidationRunner implements RemoteValidator {
 
 // ── Tailscale runner ─────────────────────────────────────────────────────────
 
+/** No configured host provides a required capability (or none are configured). */
+export class NoEligibleHostError extends Error {}
+/** Every eligible host failed its prerequisite/reachability probe. */
+export class HostsUnavailableError extends Error {}
+/** The caller's deadline passed while the job was still queued (#0521). */
+export class QueueDeadlineError extends Error {}
+
+/** A leased host slot: release() hands it to the next compatible waiter. */
+export interface HostSlot {
+  host: RemoteValidationHost;
+  ssh: RemoteHost;
+  /** Effective per-host cap in THIS process (the host lock enforces it across processes). */
+  limit: number;
+  release(): void;
+}
+
+interface PoolHostState {
+  spec: RemoteValidationHost;
+  ssh: RemoteHost;
+  limit: number;
+  active: number;
+  probed: boolean;
+  healthy: boolean;
+  detail?: string;
+  /** Earliest time a probe retry may run. */
+  retryAt: number;
+  /** Consecutive probe failures, capped so retries can't loop forever. */
+  healthFails: number;
+  probing?: Promise<void>;
+  retryTimer?: ReturnType<typeof setTimeout>;
+  lastRun?: { taskId: string; ok: boolean; at: string };
+}
+
+interface PoolWaiter {
+  capabilities: string[];
+  resolve: (slot: HostSlot) => void;
+  reject: (err: Error) => void;
+  onQueue?: (ahead: number) => void;
+  timer?: ReturnType<typeof setTimeout>;
+}
+
+/** How long an unhealthy host waits before a probe may retry it. */
+const HEALTH_RETRY_MS = 30_000;
+/** Consecutive failed probes before retries stop (waiters still drain on release). */
+const MAX_HEALTH_RETRIES = 10;
+
 /**
- * Runs the validation gate on a persistent machine reachable via Tailscale.
- * No VM provisioning — the host is always there. Each job runs inside a fresh
- * Docker/Podman container (`docker run --rm`) so the environment is clean, with
- * a persistent bun-cache volume mounted for speed. The same `validate.sh` and
- * `repoos-ci` image used by the Hetzner runner work here without modification.
+ * Dispatches remote validation jobs across a pool of tailnet hosts (#0521).
+ *
+ * - Each host carries its own FIFO cap (`maxConcurrent` per host → global → 1),
+ *   so two jobs run on two hosts while a third queues.
+ * - A job only ever goes to a host providing its capabilities (`runsOn`); if
+ *   none does it fails immediately with the mismatch spelled out.
+ * - Every host is probed once before its first job (docker/toolchain +
+ *   an up-to-date `validate.sh`); a failing host is skipped and re-probed later,
+ *   so one dead box doesn't fail jobs while others are idle.
+ * - Queue waits honour the caller's deadline: a job that can't start in time
+ *   is cancelled and its slot released.
+ *
+ * The in-process cap covers one server process; the host-side lock inside the
+ * remote command (`hostLockShell`) enforces the same cap across processes.
+ */
+export class TailscaleHostPool {
+  private readonly hosts: PoolHostState[] = [];
+  private readonly waiters: PoolWaiter[] = [];
+  private readonly exec: RemoteExecDeps;
+  private readonly probeTimeoutMs: number;
+  private readonly healthRetryMs: number;
+  private readonly keyPath?: string;
+  private readonly logger?: Logger;
+
+  constructor(rv: RemoteValidationConfig | undefined, opts: HostPoolOptions) {
+    this.exec = opts.exec;
+    this.logger = opts.logger;
+    this.probeTimeoutMs = opts.probeTimeoutMs ?? 20_000;
+    this.healthRetryMs = opts.healthRetryMs ?? HEALTH_RETRY_MS;
+    const key = opts.keyPath ?? "";
+    this.keyPath = key && existsSync(key) ? key : undefined;
+    for (const spec of resolveRemoteHosts(rv)) {
+      this.hosts.push({
+        spec,
+        ssh: { ip: spec.host, user: rv ? remoteHostUser(rv, spec) : "root", keyPath: this.keyPath },
+        limit: rv ? remoteHostLimit(rv, spec) : 1,
+        active: 0,
+        probed: false,
+        healthy: false,
+        retryAt: 0,
+        healthFails: 0,
+      });
+    }
+  }
+
+  get size(): number {
+    return this.hosts.length;
+  }
+
+  /** Queued runs, for the status endpoint. */
+  get queuedCount(): number {
+    return this.waiters.length;
+  }
+
+  /**
+   * Lease a host providing every capability. Throws {@link NoEligibleHostError}
+   * (nobody provides them / no hosts configured), {@link HostsUnavailableError}
+   * (all eligible hosts failed their probe), or {@link QueueDeadlineError}
+   * (still queued when `deadlineAt` passed).
+   */
+  async acquire(
+    capabilities: string[],
+    opts: { onQueue?: (ahead: number) => void; deadlineAt?: number } = {},
+  ): Promise<HostSlot> {
+    if (this.hosts.length === 0) {
+      throw new NoEligibleHostError("remoteValidation.tailscaleHost is not configured");
+    }
+    const candidates = this.hosts.filter((s) => hostSatisfies(s.spec, capabilities));
+    if (candidates.length === 0) {
+      throw new NoEligibleHostError(
+        `no remote host provides ${describeCapabilities(capabilities)} ` +
+          `(configured: ${this.hosts.map((s) => this.describe(s)).join(", ")}) — ` +
+          "add a [[remoteValidation.tailscaleHosts]] row whose `os` or `labels` provide it",
+      );
+    }
+
+    // First contact probes; a previously-failed host is re-probed once its
+    // cooldown elapsed, so an unreachable host recovers without a restart.
+    await Promise.all(
+      candidates.map((s) =>
+        !s.probed || (!s.healthy && Date.now() >= s.retryAt) ? this.probe(s) : undefined,
+      ),
+    );
+
+    const healthy = candidates.filter((s) => s.healthy);
+    if (healthy.length === 0) {
+      throw new HostsUnavailableError(
+        `no usable remote host for ${describeCapabilities(capabilities)} — ` +
+          candidates.map((s) => `${s.spec.host}: ${s.detail ?? "unreachable"}`).join("; "),
+      );
+    }
+    const free = healthy.filter((s) => s.active < s.limit);
+    if (free.length > 0) {
+      return this.assign(free.sort((a, b) => a.active - b.active)[0]!);
+    }
+
+    // Every eligible host is at its cap — queue, FIFO, and only until one of
+    // THEM frees (a later-arriving compatible job never jumps the queue).
+    return new Promise<HostSlot>((resolve, reject) => {
+      const waiter: PoolWaiter = { capabilities, resolve, reject, onQueue: opts.onQueue };
+      this.waiters.push(waiter);
+      if (opts.deadlineAt !== undefined) {
+        const ms = opts.deadlineAt - Date.now();
+        if (ms <= 0) {
+          this.waiters.pop();
+          reject(new QueueDeadlineError("the caller's deadline passed before a host slot freed"));
+          return;
+        }
+        waiter.timer = setTimeout(() => {
+          if (!this.settle(waiter)) return;
+          reject(
+            new QueueDeadlineError(
+              `still queued after ${Math.round(ms / 1000)}s — the caller's deadline passed, ` +
+                "so the run was cancelled and its slot released (retry once a host is free)",
+            ),
+          );
+        }, ms);
+        waiter.timer.unref?.();
+      }
+      const ahead = candidates.reduce((n, s) => n + s.active, 0) + (this.waiters.length - 1);
+      waiter.onQueue?.(ahead);
+      // Opportunistic recovery while queued: re-probe dead candidates so the
+      // job can move to one the moment it comes back.
+      for (const s of candidates) if (!s.healthy) this.armHealthRetry(s);
+    });
+  }
+
+  /** Mark a host unreachable/misconfigured after a mid-run failure (#0521). */
+  markUnhealthy(host: string, detail: string): void {
+    const s = this.hosts.find((c) => c.spec.host === host);
+    if (!s) return;
+    s.probed = true;
+    s.healthy = false;
+    s.detail = detail;
+    s.retryAt = Date.now() + this.healthRetryMs;
+    s.healthFails = Math.min(s.healthFails + 1, MAX_HEALTH_RETRIES);
+    this.logger?.system("warn", `remote validation host ${host} marked unavailable: ${detail}`);
+    if (this.waiters.length) this.armHealthRetry(s);
+  }
+
+  /** Record which host ran a job, for the status endpoint (#0521). */
+  recordRun(host: string, taskId: string, ok: boolean): void {
+    const s = this.hosts.find((c) => c.spec.host === host);
+    if (s) s.lastRun = { taskId, ok, at: new Date().toISOString() };
+  }
+
+  /** Per-host state for `/api/remote-validation/status`. */
+  status(): RemoteHostStatus[] {
+    return this.hosts.map((s) => ({
+      host: s.spec.host,
+      user: s.ssh.user,
+      os: s.spec.os,
+      labels: s.spec.labels ?? [],
+      maxConcurrent: s.limit,
+      inFlight: s.active,
+      queued: this.waiters.filter((w) => hostSatisfies(s.spec, w.capabilities)).length,
+      probed: s.probed,
+      healthy: s.healthy,
+      detail: s.detail,
+      lastRun: s.lastRun,
+    }));
+  }
+
+  /** Cancel every queue timer. Call on server shutdown. */
+  dispose(): void {
+    for (const s of this.hosts) if (s.retryTimer) clearTimeout(s.retryTimer);
+    for (const w of this.waiters) if (w.timer) clearTimeout(w.timer);
+    this.waiters.length = 0;
+  }
+
+  private describe(s: PoolHostState): string {
+    const caps = [s.spec.os, ...(s.spec.labels ?? [])].filter(Boolean);
+    return `${s.spec.host}${caps.length ? ` [${caps.join(", ")}]` : ""}`;
+  }
+
+  /** Remove a waiter (timer included); false when it already settled. */
+  private settle(w: PoolWaiter): boolean {
+    const i = this.waiters.indexOf(w);
+    if (i === -1) return false;
+    this.waiters.splice(i, 1);
+    if (w.timer) clearTimeout(w.timer);
+    return true;
+  }
+
+  private assign(s: PoolHostState): HostSlot {
+    s.active++;
+    let released = false;
+    return {
+      host: s.spec,
+      ssh: s.ssh,
+      limit: s.limit,
+      release: () => {
+        if (released) return;
+        released = true;
+        s.active = Math.max(0, s.active - 1);
+        this.dispatch();
+      },
+    };
+  }
+
+  /** Hand freed slots to the earliest compatible waiter (FIFO, skipping none
+   *  that cannot run yet — a macos-only waiter never blocks a linux job). */
+  private dispatch(): void {
+    for (let i = 0; i < this.waiters.length;) {
+      const w = this.waiters[i]!;
+      const free = this.hosts
+        .filter((s) => s.healthy && s.active < s.limit && hostSatisfies(s.spec, w.capabilities))
+        .sort((a, b) => a.active - b.active)[0];
+      if (!free) {
+        i++;
+        continue;
+      }
+      this.settle(w);
+      w.resolve(this.assign(free));
+    }
+  }
+
+  /** Single-flight prerequisite probe; sets health + detail on the host. */
+  private async probe(s: PoolHostState): Promise<void> {
+    if (s.probing) return s.probing;
+    s.probing = this.doProbe(s).finally(() => {
+      s.probing = undefined;
+    });
+    return s.probing;
+  }
+
+  private async doProbe(s: PoolHostState): Promise<void> {
+    let ok = false;
+    let detail = "";
+    try {
+      const res = await this.exec.runRemote(
+        s.ssh,
+        prereqProbeCommand(s.spec.os),
+        () => {},
+        this.probeTimeoutMs,
+      );
+      ok = res.code === 0 && res.output.includes(PREREQ_OK_TOKEN);
+      if (!ok) {
+        const why = tail(res.output, 5, 600);
+        detail = `prerequisite check failed (exit ${res.code ?? "signal"}): ${why}`;
+      }
+    } catch (e) {
+      detail = `prerequisite check failed: ${(e as Error).message}`;
+    }
+    s.probed = true;
+    if (ok) {
+      s.healthy = true;
+      s.detail = undefined;
+      s.healthFails = 0;
+      s.retryAt = 0;
+      this.logger?.system("info", `remote validation host ${s.spec.host} is ready`);
+    } else {
+      s.healthy = false;
+      s.detail = detail;
+      s.healthFails++;
+      s.retryAt = Date.now() + this.healthRetryMs;
+      this.logger?.system("warn", `remote validation host ${s.spec.host}: ${detail}`);
+    }
+  }
+
+  /** One more probe for a dead host while somebody is waiting on it. */
+  private armHealthRetry(s: PoolHostState): void {
+    if (s.healthy || s.healthFails >= MAX_HEALTH_RETRIES || s.retryTimer) return;
+    const delay = Math.max(0, s.retryAt - Date.now());
+    s.retryTimer = setTimeout(() => {
+      s.retryTimer = undefined;
+      if (s.healthy || this.waiters.length === 0) return;
+      void this.probe(s).then(() => {
+        if (s.healthy) this.dispatch();
+        else this.armHealthRetry(s);
+      });
+    }, delay);
+    s.retryTimer.unref?.();
+  }
+}
+
+/** Knobs the pool takes from the runner (tests shrink these). */
+export interface HostPoolOptions {
+  exec: RemoteExecDeps;
+  logger?: Logger;
+  /** SSH key path; omitted → SSH default resolution (agent, ~/.ssh/config). */
+  keyPath?: string;
+  probeTimeoutMs?: number;
+  healthRetryMs?: number;
+}
+
+/**
+ * Runs the validation gate on one or more persistent machines reachable via
+ * Tailscale (#0521). No VM provisioning — the hosts are always there. Each job
+ * runs inside a fresh Docker/Podman container (`docker run --rm`, Linux) or
+ * natively (macOS `validate.sh`), with a persistent bun-cache for speed.
+ *
+ * Dispatch goes through {@link TailscaleHostPool}: every eligible host gets its
+ * own cap, jobs queue only when all of them are busy, an unreachable or
+ * misconfigured host is skipped (and re-probed later) instead of failing jobs,
+ * and a job's `runsOn` capabilities decide which hosts may take it. The
+ * host-side lock in the remote command enforces the same cap across processes
+ * (standalone `repoos check` vs the server), and a queued job cancels itself
+ * at the caller's deadline rather than holding its slot.
  */
 export class TailscaleRunner implements RemoteValidator {
   private readonly exec: RemoteExecDeps;
   private readonly timings: RunnerTimings;
   private readonly keyPath: string;
-  private readonly gate: ConcurrencyGate;
+  private readonly pool: TailscaleHostPool;
 
   constructor(
     private readonly config: RepoOSConfig,
@@ -796,7 +1297,13 @@ export class TailscaleRunner implements RemoteValidator {
     this.exec = deps?.exec ?? defaultRemoteExec();
     this.timings = { ...DEFAULT_TIMINGS, ...deps?.timings };
     this.keyPath = process.env.REPOOS_REMOTE_SSH_KEY ?? "";
-    this.gate = new ConcurrencyGate(remoteConcurrencyLimit(config));
+    this.pool = new TailscaleHostPool(config.remoteValidation, {
+      exec: this.exec,
+      logger,
+      keyPath: this.keyPath,
+      probeTimeoutMs: this.timings.probeTimeoutMs,
+      healthRetryMs: this.timings.healthRetryMs,
+    });
   }
 
   logPath(taskId: string): string {
@@ -825,35 +1332,61 @@ export class TailscaleRunner implements RemoteValidator {
     };
   }
 
-  private host(): RemoteHost | null {
-    const rv = this.config.remoteValidation ?? {};
-    const ip = rv.tailscaleHost;
-    if (!ip) return null;
-    const keyPath = this.keyPath && existsSync(this.keyPath) ? this.keyPath : undefined;
-    return { ip, user: rv.tailscaleUser ?? "root", keyPath };
+  /** Per-host pool state for the status endpoint (#0521). */
+  hostStatus(): RemoteHostStatus[] {
+    return this.pool.status();
+  }
+
+  /** The queue line a waiting job streams: what it needs and why it waits. */
+  private queueNote(ahead: number, capabilities: string[]): string {
+    const need = capabilities.length
+      ? `waiting for a host with ${describeCapabilities(capabilities)} — `
+      : "";
+    return (
+      `[queued behind ${ahead} other remote run(s) — ${need}every eligible host is at ` +
+      "its per-host limit; starts when a slot frees]\n"
+    );
   }
 
   async validate(opts: ValidateOptions): Promise<CheckSummary> {
-    const release = await this.gate.acquire((ahead) => {
-      const note =
-        `[queued behind ${ahead} other remote run(s) — remoteValidation.maxConcurrent = ` +
-        `${this.gate.limit}; starts when a slot frees]\n`;
-      this.appendLog(opts.taskId, note);
-      opts.onChunk?.(note);
-    });
+    const rv = this.config.remoteValidation ?? {};
+    if (!rv.enabled) return this.infraFail("remote validation is disabled");
+    const capabilities = (opts.capabilities ?? []).map((c) => c.trim()).filter(Boolean);
+    const emit = (s: string): void => {
+      this.appendLog(opts.taskId, s);
+      opts.onChunk?.(s);
+    };
+
+    // Dispatch: an idle eligible host, or a FIFO queue that respects the
+    // caller's deadline. Failures here are pool-level (no host, host dead,
+    // deadline passed) — never a red gate.
+    let slot: HostSlot;
     try {
-      return await this.runValidation(opts, remoteRunPaths(opts.taskId));
+      slot = await this.pool.acquire(capabilities, {
+        deadlineAt: opts.deadlineAt,
+        onQueue: (ahead) => emit(this.queueNote(ahead, capabilities)),
+      });
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e);
+      emit(`[remote validation not started: ${detail}]\n`);
+      return this.infraFail(detail);
+    }
+
+    try {
+      return await this.runValidation(opts, slot, capabilities);
     } finally {
-      release();
+      slot.release();
     }
   }
 
-  private async runValidation(opts: ValidateOptions, paths: RemoteRunPaths): Promise<CheckSummary> {
+  private async runValidation(
+    opts: ValidateOptions,
+    slot: HostSlot,
+    capabilities: string[],
+  ): Promise<CheckSummary> {
     const rv = this.config.remoteValidation ?? {};
-    if (!rv.enabled) return this.infraFail("remote validation is disabled");
-    const host = this.host();
-    if (!host) return this.infraFail("remoteValidation.tailscaleHost is not configured");
-
+    const host = slot.ssh;
+    const paths = remoteRunPaths(opts.taskId);
     const startedAt = Date.now();
     const emit = (s: string): void => {
       this.appendLog(opts.taskId, s);
@@ -862,7 +1395,11 @@ export class TailscaleRunner implements RemoteValidator {
     emit(
       `\n── remote validation (tailscale) for #${opts.taskId} @ ${opts.candidateSha.slice(0, 12)} ──\n`,
     );
-    emit(`[runner ${host.ip} (tailscale)]\n`);
+    // Which host ran this job — the record the per-task log keeps (#0521).
+    emit(
+      `[runner ${host.user}@${host.ip}${slot.host.os ? ` (${slot.host.os})` : ""}]` +
+        `${capabilities.length ? ` [requires ${describeCapabilities(capabilities)}]` : ""}\n`,
+    );
 
     let tmp: string | null = null;
     try {
@@ -878,12 +1415,17 @@ export class TailscaleRunner implements RemoteValidator {
       if (!up.ok)
         return this.infraFail(`scp of candidate bundle failed: ${up.detail ?? "unknown"}`);
 
-      // 3. run build + test via validate.sh on the host (which calls docker run internally)
+      // 3. run build + test via validate.sh on the host (which calls docker run
+      //    itself), wrapped in the host-side slot lock so this process's gate
+      //    and every other repoos process share ONE per-host limit (#0521).
       const image = rv.containerImage ?? "repoos-ci";
-      emit(`[running build + test in ${image} container on ${host.ip}]\n`);
-      // validate.sh lives on the host at /opt/repoos/validate.sh and calls docker run
-      // itself — same script used by the Hetzner runner VM.
-      const cmd = `REPOOS_CI_IMAGE=${image} /opt/repoos/validate.sh ${remoteBundle} ${opts.candidateSha} ${paths.artifacts}`;
+      emit(`[running build + test in ${image} on ${host.ip}]\n`);
+      const inner = `REPOOS_CI_IMAGE=${image} ${VALIDATE_SCRIPT} ${remoteBundle} ${opts.candidateSha} ${paths.artifacts}`;
+      const waitSecs =
+        opts.deadlineAt !== undefined
+          ? Math.max(10, Math.ceil((opts.deadlineAt - Date.now()) / 1000))
+          : DEFAULT_HOST_LOCK_WAIT_SECS;
+      const cmd = hostLockShell({ slots: slot.limit, waitSecs, inner });
       const run = await this.exec.runRemote(host, cmd, emit, this.timings.remoteRunTimeoutMs);
 
       // 4. pull artifacts (best effort)
@@ -903,6 +1445,7 @@ export class TailscaleRunner implements RemoteValidator {
           "warn",
           `remote validation timed out after ${elapsed}s`,
         );
+        this.pool.recordRun(host.ip, opts.taskId, false);
         return {
           ok: false,
           stage: "check",
@@ -912,25 +1455,40 @@ export class TailscaleRunner implements RemoteValidator {
           detail: `remote validation timed out after ${elapsed}s — retrying resumes from the check step`,
         };
       }
+      if (run.code === HOST_LOCK_TIMEOUT_EXIT && run.output.includes("[lock]")) {
+        // Another repoos process held the host past our wait — the cap did its
+        // job; this run gives its slot back and retries later.
+        emit(`\n[host busy — another repoos check held ${host.ip}]\n`);
+        this.pool.recordRun(host.ip, opts.taskId, false);
+        return this.infraFail(
+          `another repoos check is already running on ${host.ip} — waited ${elapsed}s for a free host slot ` +
+            "(the per-host limit is shared by the server and standalone `repoos check`)",
+        );
+      }
       if (run.code === 0) {
-        emit(`\n[remote validation PASSED in ${elapsed}s]\n`);
+        emit(`\n[remote validation PASSED in ${elapsed}s on ${host.ip}]\n`);
         this.logger?.integration(opts.taskId, "info", `remote validation passed in ${elapsed}s`);
+        this.pool.recordRun(host.ip, opts.taskId, true);
         return { ok: true, stage: "check" };
       }
 
+      // Non-zero: the ssh transport itself could have dropped (code 255) — treat
+      // that as infra, not a real test failure, and remember the host is sick.
       if (
         run.code === 255 &&
         /(?:Connection|ssh:|closed by remote host|Broken pipe)/i.test(run.output)
       ) {
-        return this.infraFail(
-          `ssh connection to the tailscale runner dropped mid-run: ${tail(run.output)}`,
-        );
+        const detail = `ssh connection to ${host.ip} dropped mid-run: ${tail(run.output)}`;
+        this.pool.markUnhealthy(host.ip, detail);
+        this.pool.recordRun(host.ip, opts.taskId, false);
+        return this.infraFail(detail);
       }
       const transient = looksTransient(run.output);
-      emit(`\n[remote validation FAILED (exit ${run.code}) in ${elapsed}s]\n`);
+      emit(`\n[remote validation FAILED (exit ${run.code}) in ${elapsed}s on ${host.ip}]\n`);
       this.logger?.integration(opts.taskId, "warn", `remote validation failed (exit ${run.code})`, {
         transient,
       });
+      this.pool.recordRun(host.ip, opts.taskId, false);
       return {
         ok: false,
         stage: "check",
@@ -946,9 +1504,11 @@ export class TailscaleRunner implements RemoteValidator {
     }
   }
 
-  // The tailscale runner has no VMs to reconcile or dispose.
+  // The tailscale runner has no VMs to reconcile; dispose clears queue timers.
   async reconcile(): Promise<void> {}
-  async dispose(): Promise<void> {}
+  async dispose(): Promise<void> {
+    this.pool.dispose();
+  }
 }
 
 // ── factory ──────────────────────────────────────────────────────────────────

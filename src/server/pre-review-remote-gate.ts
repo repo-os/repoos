@@ -7,7 +7,7 @@
  * docs/remote-validation.md.
  */
 
-import { CLOSEOUT_CHECK_ARGS } from "../core/check-plan.js";
+import { CLOSEOUT_CHECK_ARGS, planJobCapabilities, resolveCheckPlan } from "../core/check-plan.js";
 import type { RepoOSConfig } from "../core/types.js";
 import { runGit, uncommittedWorkFiles, workFileFilter } from "../core/git.js";
 import type { RemoteValidator } from "./remote-validation.js";
@@ -128,6 +128,12 @@ export async function runRemotePreReviewGate(params: {
   worktreePath: string;
   taskId: string;
   onChunk?: (chunk: string) => void;
+  /**
+   * Epoch ms after which the caller has given up (#0521) — passed through so a
+   * queued remote run cancels itself instead of outliving the caller that
+   * abandoned it (the handoff's 10-minute deadline).
+   */
+  deadlineAt?: number;
 }): Promise<RemotePreReviewOutcome> {
   const rv = params.config.remoteValidation;
   if (!rv?.enabled) return { kind: "skip" };
@@ -141,11 +147,17 @@ export async function runRemotePreReviewGate(params: {
     };
   }
   const candidateSha = headRes.stdout.trim();
+  // Which host may run this job (#0521): the `runsOn` union of the whole plan,
+  // deliberately not profile-filtered — the remote run executes the entire
+  // plan in one go, so it must never land on a host missing one of its steps.
+  const capabilities = planJobCapabilities(resolveCheckPlan({ check: params.config.check }));
   const remote = await params.remoteValidator.validate({
     taskId: params.taskId,
     worktreePath: params.worktreePath,
     candidateSha,
     onChunk: params.onChunk,
+    ...(capabilities.length ? { capabilities } : {}),
+    ...(params.deadlineAt !== undefined ? { deadlineAt: params.deadlineAt } : {}),
   });
   if (remote.ok) {
     return { kind: "local-only", skipTests: true };

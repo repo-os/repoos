@@ -685,11 +685,24 @@ export interface RemoteValidationConfig {
   /**
    * Tailscale hostname or IP of the persistent runner machine
    * (e.g. "mybox.tail1234.ts.net" or "100.x.x.x").
-   * Required when provider is "tailscale".
+   * Required when provider is "tailscale" unless `tailscaleHosts` is set —
+   * the single-host shorthand for the #0521 host pool.
    */
   tailscaleHost?: string;
   /**
-   * SSH user on the tailscale runner. Default "root".
+   * The tailnet host pool (#0521): every machine jobs may be dispatched to.
+   * `loadConfig` normalises all three authoring forms into host objects —
+   * the flat string list (`tailscaleHosts = ["bee", "mac1"]`), the rich rows
+   * (`[[remoteValidation.tailscaleHosts]]` with per-host `user`/`os`/`labels`/
+   * `maxConcurrent`), and the `tailscaleHost` shorthand above (folded in as
+   * the first host). Each entry's attrs are resolved at parse time; runtime
+   * defaults (user → `tailscaleUser` → "root", limit → `maxConcurrent` → 1)
+   * are applied by the runner.
+   */
+  tailscaleHosts?: RemoteValidationHost[];
+  /**
+   * SSH user on the tailscale runner. Default "root". Applies to hosts that
+   * don't set their own `user`.
    */
   tailscaleUser?: string;
   /**
@@ -724,6 +737,29 @@ export interface RemoteValidationConfig {
    * an explicit opt-in rather than inheriting the close-out flag.
    */
   useForReleases?: boolean;
+}
+
+/**
+ * One machine in the tailnet validation pool (#0521). Produced by `loadConfig`
+ * from `tailscaleHosts` (flat strings or `[[remoteValidation.tailscaleHosts]]`
+ * rows) plus the `tailscaleHost` shorthand; runtime defaults (SSH user, per-
+ * host limit) are applied by the runner, not here.
+ */
+export interface RemoteValidationHost {
+  /** Tailscale hostname or 100.x.x.x IP. Unique within the pool. */
+  host: string;
+  /** SSH user for this host. Falls back to `tailscaleUser`, then "root". */
+  user?: string;
+  /**
+   * Host OS capability ("linux" or "macos") — what this host provides and what
+   * a job can require via `[[check.steps]] runsOn`. Automatically counts as one
+   * of the host's capabilities.
+   */
+  os?: string;
+  /** Extra capability labels a job can require (`runsOn`). */
+  labels?: string[];
+  /** Per-host in-flight cap. Falls back to `maxConcurrent`, then 1. */
+  maxConcurrent?: number;
 }
 
 /**
@@ -875,6 +911,15 @@ export interface CheckStepConfig {
    * failure — never as a silent pass.
    */
   requires?: string[];
+  /**
+   * Host capabilities this step needs when the gate runs remotely (#0521),
+   * e.g. `runsOn = ["macos"]`. The remote runner routes the whole job to a
+   * host whose `os`/`labels` satisfy every capability; a job whose plan
+   * declares no `runsOn` goes to any host. Local runs ignore it — a
+   * capability with no matching remote host fails the remote gate clearly
+   * rather than silently running in the wrong place.
+   */
+  runsOn?: string[];
   /**
    * Names of earlier steps this one depends on. If any of them failed, this
    * step is skipped as "blocked" (the gate is already failing on the real

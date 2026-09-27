@@ -37,6 +37,7 @@ import type {
 } from "./types.js";
 import { STATUSES } from "./types.js";
 import { parseCheckPlanConfig } from "./check-plan.js";
+import { parseTailscaleHosts } from "./remote-hosts.js";
 import { stripTomlComment, unquoteTomlString } from "./toml-line.js";
 
 /** Default display labels for board columns, keyed by canonical status ID. */
@@ -1165,6 +1166,14 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof rvTailscaleUser === "string" && rvTailscaleUser) {
       cfg.remoteValidation = { ...cfg.remoteValidation, tailscaleUser: rvTailscaleUser };
     }
+    // The host pool (#0521): folds `tailscaleHost` (shorthand), the flat
+    // `tailscaleHosts` list and `[[remoteValidation.tailscaleHosts]]` rows into
+    // one normalised list. Undefined when no host is configured, so the runner
+    // keeps reporting the missing-host error itself.
+    const rvHosts = parseTailscaleHosts(parsed);
+    if (rvHosts) {
+      cfg.remoteValidation = { ...cfg.remoteValidation, tailscaleHosts: rvHosts };
+    }
     const rvContainerImage = parsed["remoteValidation.containerImage"];
     if (typeof rvContainerImage === "string" && rvContainerImage) {
       cfg.remoteValidation = { ...cfg.remoteValidation, containerImage: rvContainerImage };
@@ -1532,7 +1541,20 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: true,
       default: "",
       description:
-        "Tailscale hostname (e.g. 'bee') or 100.x.x.x IP of the persistent runner machine. Required when provider is 'tailscale'.",
+        "Tailscale hostname (e.g. 'bee') or 100.x.x.x IP of the persistent runner machine. Required when provider is 'tailscale' (single-host shorthand for the host pool).",
+    },
+    {
+      key: "remoteValidation.tailscaleHosts",
+      label: "Remote validation: host pool",
+      type: "array",
+      tier: "restart",
+      restartRequired: true,
+      default: [],
+      description:
+        "Tailnet hosts validation jobs may run on, comma-separated (hostname or 100.x.x.x each). " +
+        "Jobs dispatch to an idle eligible host and queue only when every one is at its per-host limit. " +
+        "For a per-host SSH user, OS, labels or concurrency, declare [[remoteValidation.tailscaleHosts]] " +
+        "rows in repoos.toml instead — see docs/remote-validation.md.",
     },
     {
       key: "remoteValidation.tailscaleUser",
@@ -1749,6 +1771,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "remoteValidation.enabled",
   "remoteValidation.provider",
   "remoteValidation.tailscaleHost",
+  "remoteValidation.tailscaleHosts",
   "remoteValidation.tailscaleUser",
   "remoteValidation.containerImage",
   "remoteValidation.serverType",
