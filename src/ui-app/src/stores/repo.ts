@@ -250,6 +250,7 @@ export const SORT_ORDER_OPTIONS: { value: SortOrder; label: string }[] = [
 ];
 
 const SORT_ORDER_KEY = "repoos.board.sortOrder";
+const STORY_SORT_ORDER_KEY = "repoos.storyPanel.sortOrder";
 const NEW_VERSION_KEY = "repoos.newVersion";
 
 /**
@@ -327,9 +328,9 @@ function writeIdSet(key: string, ids: Set<string>): void {
   }
 }
 
-function readSortOrder(): SortOrder {
+function readSortOrderFromKey(key: string): SortOrder {
   try {
-    const raw = localStorage.getItem(SORT_ORDER_KEY);
+    const raw = localStorage.getItem(key);
     if (raw === null) return "recent";
     const v = JSON.parse(raw);
     return v === "recent" || v === "current" || v === "taskNumberNewest" || v === "taskNumberOldest"
@@ -340,11 +341,63 @@ function readSortOrder(): SortOrder {
   }
 }
 
+function readSortOrder(): SortOrder {
+  return readSortOrderFromKey(SORT_ORDER_KEY);
+}
+
+function readStorySortOrder(): SortOrder {
+  return readSortOrderFromKey(STORY_SORT_ORDER_KEY);
+}
+
 function taskNumberValue(task: Pick<Task, "id">): number {
   const raw = task.id.trim();
   if (!/^\d+$/.test(raw)) return Number.NEGATIVE_INFINITY;
   const value = Number.parseInt(raw, 10);
   return Number.isFinite(value) ? value : Number.NEGATIVE_INFINITY;
+}
+
+const TASK_PRIORITY_RANK: Record<string, number> = { p0: 0, p1: 1, p2: 2, p3: 3 };
+
+/** Sort a task list by the given mode. Used by the story panel; the work board's
+ *  "Priority level" mode keeps backend order per column and only uses the other
+ *  modes here via `byStatus()`. */
+export function sortTasks(tasks: Task[], order: SortOrder): Task[] {
+  const copy = [...tasks];
+  switch (order) {
+    case "recent":
+      return copy.sort((a, b) => {
+        if (!a.updated_at) return b.updated_at ? 1 : 0;
+        if (!b.updated_at) return -1;
+        return b.updated_at.localeCompare(a.updated_at);
+      });
+    case "taskNumberNewest":
+      return copy.sort((a, b) => {
+        const na = taskNumberValue(a);
+        const nb = taskNumberValue(b);
+        if (na === nb) return 0;
+        if (!Number.isFinite(na)) return 1;
+        if (!Number.isFinite(nb)) return -1;
+        return nb - na;
+      });
+    case "taskNumberOldest":
+      return copy.sort((a, b) => {
+        const na = taskNumberValue(a);
+        const nb = taskNumberValue(b);
+        if (na === nb) return 0;
+        if (!Number.isFinite(na)) return 1;
+        if (!Number.isFinite(nb)) return -1;
+        return na - nb;
+      });
+    case "current":
+      return copy.sort((a, b) => {
+        const pa = TASK_PRIORITY_RANK[a.priority] ?? 99;
+        const pb = TASK_PRIORITY_RANK[b.priority] ?? 99;
+        if (pa !== pb) return pa - pb;
+        return 0;
+      });
+    default:
+      return copy;
+  }
 }
 
 /** The persisted "new version available" notice, or null. */
@@ -504,6 +557,7 @@ export const useRepoStore = defineStore("repo", () => {
   /** Per-task log entries (Debug tab, 0310), hydrated via API when the tab opens. */
   const taskLogs = ref<Record<string, TaskLogEntry[]>>({});
   const sortOrder = ref<SortOrder>(readSortOrder());
+  const storySortOrder = ref<SortOrder>(readStorySortOrder());
   /** Done-task ids the human has acknowledged (0278). Persisted; a task whose
    *  id is here stays un-highlighted across reloads. */
   const doneAcked = ref<Set<string>>(readDoneAcked());
@@ -558,7 +612,7 @@ export const useRepoStore = defineStore("repo", () => {
   );
 
   /** Priority rank for the needs-you sort: p0 first, then p1/p2/p3. */
-  const PRIORITY_RANK: Record<string, number> = { p0: 0, p1: 1, p2: 2, p3: 3 };
+  const PRIORITY_RANK = TASK_PRIORITY_RANK;
   /** Tasks a human must act on (0125), deduped, priority-first then newest. */
   const humanNeeds = computed<HumanNeedsItem[]>(() => {
     const items: HumanNeedsItem[] = [];
@@ -583,42 +637,23 @@ export const useRepoStore = defineStore("repo", () => {
 
   const byStatus = (s: string): Task[] => {
     const filtered = tasks.value.filter((t) => t.status === s);
-
-    switch (sortOrder.value) {
-      case "recent":
-        return [...filtered].sort((a, b) => {
-          if (!a.updated_at) return b.updated_at ? 1 : 0;
-          if (!b.updated_at) return -1;
-          return b.updated_at.localeCompare(a.updated_at);
-        });
-      case "taskNumberNewest":
-        return [...filtered].sort((a, b) => {
-          const na = taskNumberValue(a);
-          const nb = taskNumberValue(b);
-          if (na === nb) return 0;
-          if (!Number.isFinite(na)) return 1;
-          if (!Number.isFinite(nb)) return -1;
-          return nb - na;
-        });
-      case "taskNumberOldest":
-        return [...filtered].sort((a, b) => {
-          const na = taskNumberValue(a);
-          const nb = taskNumberValue(b);
-          if (na === nb) return 0;
-          if (!Number.isFinite(na)) return 1;
-          if (!Number.isFinite(nb)) return -1;
-          return na - nb;
-        });
-      case "current":
-      default:
-        return filtered;
-    }
+    if (sortOrder.value === "current") return filtered;
+    return sortTasks(filtered, sortOrder.value);
   };
 
   function setSortOrder(order: SortOrder): void {
     sortOrder.value = order;
     try {
       localStorage.setItem(SORT_ORDER_KEY, JSON.stringify(order));
+    } catch {
+      /* ignore quota / privacy-mode failures */
+    }
+  }
+
+  function setStorySortOrder(order: SortOrder): void {
+    storySortOrder.value = order;
+    try {
+      localStorage.setItem(STORY_SORT_ORDER_KEY, JSON.stringify(order));
     } catch {
       /* ignore quota / privacy-mode failures */
     }
@@ -2597,6 +2632,7 @@ export const useRepoStore = defineStore("repo", () => {
     clearDirtyCheckout,
     reviews,
     sortOrder,
+    storySortOrder,
     doneAcked,
     doneAckCount,
     needsAck,
@@ -2627,6 +2663,7 @@ export const useRepoStore = defineStore("repo", () => {
     pushToast,
     removeToast,
     setSortOrder,
+    setStorySortOrder,
     restartServer,
     clearNewVersion,
     repoName,
