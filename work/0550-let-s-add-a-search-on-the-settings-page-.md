@@ -3,9 +3,6 @@ id: "0550"
 title: Add a settings-scoped search that jumps to the right tab
 type: feature
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "Auto-bounce stopped: reached maximum of 2 review rounds. Human review needed."
 priority: p2
 area: web
 assigned_to: ai
@@ -113,3 +110,4 @@ Let's add a search on the settings page since we have so many settings now and I
 - 2026-09-27T14:11:48Z · status active→review
 - 2026-09-27T14:22:11Z · needs_input
 - 2026-09-27T18:32:37Z · status review→active
+- 2026-09-27T18:32:37Z · needs_input
