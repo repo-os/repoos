@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/run-the-pre-review-gate-on-the-remote-va
 created_at: "2026-09-26T11:49:00Z"
-updated_at: "2026-09-27T01:23:45Z"
+updated_at: "2026-09-27T01:23:52Z"
 review_passes: 4
 review_rounds: 2
 ---
@@ -80,3 +80,5 @@ runner hosts (separate task).
 - 2026-09-27T01:20:38Z · needs_input
 - 2026-09-27T01:23:45Z · status review→active
 - 2026-09-27T01:23:45Z · note: Recorded CLI remote failures; corrected hook-points docs (+release); check green
+- 2026-09-27T01:23:51Z · status active→review
+- 2026-09-27T01:23:52Z · status review→active
