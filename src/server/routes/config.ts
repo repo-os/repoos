@@ -26,7 +26,8 @@ import { listSkills } from "./helpers.js";
  * crosses the HTTP boundary. Auth secrets (sessionSecret, emailProvider.apiKey,
  * google.clientSecret) are also stripped.
  */
-function safeConfigForBrowser(config: Record<string, unknown>): Record<string, unknown> {
+/** Exported for tests: the credential-free browser config contract. */
+export function safeConfigForBrowser(config: Record<string, unknown>): Record<string, unknown> {
   const whisper = (config.whisper ?? { provider: "none", apiKey: "" }) as {
     provider?: string;
     apiKey?: string;

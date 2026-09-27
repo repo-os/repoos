@@ -82,7 +82,9 @@ export function getCurrentUser(
   return { email: session.email, role: session.role };
 }
 
-function requireAdmin(
+/** Admin gate shared by user-management routes and the Telegram connection
+ * routes. Returns null and writes the 401/403 itself on failure. */
+export function requireAdmin(
   req: IncomingMessage,
   config: RepoOSConfig,
   res: ServerResponse,

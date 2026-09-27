@@ -731,6 +731,26 @@ ntfyBaseUrl = "https://ntfy.sh"
 | `ntfyTopic` | string | `""` | yes | Topic name. Empty means nothing is published. |
 | `ntfyBaseUrl` | string | `https://ntfy.sh` | yes | Base URL for a self-hosted ntfy server. The `NTFY_BASE_URL` environment variable overrides it. |
 
+## Telegram
+
+```toml
+[telegram]
+enabled = false
+provisioningUrl = ""
+```
+
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `telegram.enabled` | boolean | `false` | yes | Master switch for the Telegram integration (connection surfaces, notifications, commands). The bot itself is connected from the Settings connection panel by an administrator — a project bot token pasted server-side (Bring Your Own Bot Token) or, once deployed, managed provisioning. The token is stored encrypted on this machine; it never appears in this file or in any browser response. See [Telegram](/telegram). |
+| `telegram.provisioningUrl` | string | `""` | yes | Base URL of the official managed-provisioning service (#0559). Empty means managed provisioning is "not configured" and is reported as such; Bring Your Own Bot Token works without it. This key is deliberately TOML-only (no Settings control) — see the exception note below. |
+
+**Deliberate exception:** `telegram.provisioningUrl` is advanced/internal
+configuration and gets no Settings control. A URL for a service that a repo
+operator will deploy separately (#0559) sits next to a
+`REPOOS_TELEGRAM_PROVISIONING_KEY` environment key, not a toggle, and a
+misconfigured URL would make a half-configured hosted dependency look like a
+settled feature. BYO needs nothing here.
+
 ## Tunnels
 
 ```toml
