@@ -33,6 +33,14 @@ Query parameters override stored choices on first load (then persist to
 
 Examples: `https://repoos.org/?theme=gruvbox`, `https://repoos.org/?theme=classic&appearance=dark`.
 
+**Docs hand-off:** every link to `docs.repoos.org` in `src/App.vue` appends the
+current `theme` / `appearance` query params (via `appendThemeToUrl` in
+`theme-resolve.ts`), so a visitor on e.g.
+`https://repoos.org/?appearance=dark&theme=gruvbox` lands in gruvbox/dark on the
+docs site. The docs navbar link back to `repoos.org` does the same in the other
+direction. Cross-origin storage does not share keys; the query string is the
+hand-off.
+
 Resolution order per axis: **URL → `localStorage` → default** (Classic design;
 appearance from OS `prefers-color-scheme` when nothing is stored). Using the nav switcher updates the URL with `history.replaceState` (no reload);
 a plain visit without query params keeps a clean address bar until then. Parsing and validation live in `src/theme-resolve.ts`. The pre-paint boot
