@@ -32,13 +32,14 @@ export const getRepoLog: RouteHandler = async (ctx, req, res) => {
   const branch = q.get("branch") || undefined;
   const path = q.get("path") || undefined;
   const before = q.get("before") || undefined;
+  const includeDocs = q.get("includeDocs") === "1";
   const limitRaw = q.get("limit");
   const limit = limitRaw ? Number(limitRaw) : undefined;
   if (limitRaw && (!Number.isFinite(limit) || (limit ?? 0) < 1 || (limit ?? 0) > MAX_LOG_LIMIT)) {
     return json(res, 400, { ok: false, error: "limit must be 1–100" });
   }
 
-  const page = await listRepoLog(ctx.config.root, { branch, path, limit, before });
+  const page = await listRepoLog(ctx.config.root, { branch, path, limit, before, includeDocs });
   if (!page.ok) return json(res, errorStatus(page.code), page);
 
   const lastRun = readCheckRun(ctx.config.root, ctx.config.cacheDir);
