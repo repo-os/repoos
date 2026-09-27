@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-27T13:40:17Z"
-review_passes: 2
 id: "0550"
 title: Add a settings-scoped search that jumps to the right tab
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -12,7 +10,9 @@ created_by: hello@repoos.org
 branch: feat/add-a-settings-scoped-search-that-jumps-
 review_model_override: opencode/muse-spark-1.3-contributor-free
 created_at: "2026-09-27T13:23:12Z"
-review_rounds: 1
+updated_at: "2026-09-27T13:40:17Z"
+review_rounds: 2
+review_passes: 2
 ---
 ## Problem
 
@@ -102,4 +102,4 @@ Let's add a search on the settings page since we have so many settings now and I
 - 2026-09-27T13:33:44Z · status active→review
 - 2026-09-27T13:34:50Z · status review→active
 - 2026-09-27T13:39:09Z · status active→review
-
+- 2026-09-27T13:40:17Z · status review→active
