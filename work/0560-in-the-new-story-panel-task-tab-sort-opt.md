@@ -2,17 +2,17 @@
 id: "0560"
 title: Add status sort and status colors to the story panel task tab
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/add-status-sort-and-status-colors-to-the
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 review_model_override: opencode-go/hy3
 created_at: "2026-09-27T17:51:49Z"
-updated_at: "2026-09-27T18:47:08Z"
+updated_at: "2026-09-27T18:47:09Z"
 ---
 ## Problem
 
@@ -155,3 +155,4 @@ In the new Story panel task tab sort options add a sort by task status, and whil
 - 2026-09-27T18:47:04Z · model_override
 - 2026-09-27T18:47:08Z · review_model_override
 - 2026-09-27T18:47:08Z · status inbox→ready
+- 2026-09-27T18:47:09Z · status ready→active, branch
