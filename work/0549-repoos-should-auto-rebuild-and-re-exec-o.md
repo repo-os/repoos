@@ -2,7 +2,7 @@
 id: "0549"
 title: "repoos should auto-rebuild-and-re-exec on stale dist/, not just warn"
 type: feature
-status: active
+status: review
 priority: p2
 area: cli
 assigned_to: ai
@@ -11,7 +11,8 @@ branch: feat/repoos-should-auto-rebuild-and-re-exec-o
 cli_override: codex
 model_override: gpt-6-sol
 created_at: "2026-09-27T13:20:14Z"
-updated_at: "2026-09-27T13:31:58Z"
+updated_at: "2026-09-27T13:55:57Z"
+handoff_signal_retry_count: 2
 ---
 ## Problem
 
@@ -108,3 +109,4 @@ Apply the identical shape to build staleness, in the CLI entrypoint
 - 2026-09-27T13:31:55Z · model_override
 - 2026-09-27T13:31:57Z · status inbox→ready
 - 2026-09-27T13:31:58Z · status ready→active, branch
+- 2026-09-27T13:55:57Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
