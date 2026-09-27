@@ -2,17 +2,17 @@
 id: "0530"
 title: Add encrypted-at-rest storage for Telegram bot tokens
 type: feature
-status: ready
+status: active
 priority: p1
 area: core
 story: RepoOS Telegram Bot
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/add-encrypted-at-rest-storage-for-telegr
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-27T07:32:02Z"
-updated_at: "2026-09-27T15:16:09Z"
+updated_at: "2026-09-27T16:21:51Z"
 ---
 ## Problem
 
@@ -52,3 +52,4 @@ An authenticated-encryption secret store, generic enough that the next credentia
 - 2026-09-27T15:14:59Z · cli_override, model_override
 - 2026-09-27T15:15:59Z · cli_override, model_override
 - 2026-09-27T15:16:09Z · model_override
+- 2026-09-27T16:21:51Z · status ready→active, branch
