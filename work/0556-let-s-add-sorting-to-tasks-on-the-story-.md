@@ -2,14 +2,14 @@
 id: "0556"
 title: Add task sorting to the Story panel Tasks tab
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-27T15:56:03Z"
-updated_at: "2026-09-27T15:56:41Z"
+updated_at: "2026-09-27T16:11:46Z"
 ---
 ## Problem
 
@@ -88,3 +88,4 @@ Let's add sorting to tasks on the Story panel Tasks tab. Use the same sorting dr
 - 2026-09-27T15:56:03Z · created · hello@repoos.org
 - 2026-09-27T15:56:04Z · screenshots
 - 2026-09-27T15:56:41Z · status draft→inbox, title, area, body
+- 2026-09-27T16:11:46Z · status inbox→ready
