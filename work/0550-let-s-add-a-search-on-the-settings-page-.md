@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-27T14:22:11Z"
-review_passes: 4
 id: "0550"
 title: Add a settings-scoped search that jumps to the right tab
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "Auto-bounce stopped: reached maximum of 2 review rounds. Human review needed."
@@ -15,6 +13,8 @@ created_by: hello@repoos.org
 branch: feat/add-a-settings-scoped-search-that-jumps-
 review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-27T13:23:12Z"
+updated_at: "2026-09-27T18:32:37Z"
+review_passes: 4
 review_rounds: 2
 ---
 ## Problem
@@ -112,4 +112,4 @@ Let's add a search on the settings page since we have so many settings now and I
 - 2026-09-27T14:04:53Z · note: FYI this isn't good to go even though the reviewer wrongly said it was. When I clicked on a search result it didn't scroll to the write place to be able to see it (e.g. Remote Validation Runner) also when I searched for tailscale it didn't return valid results like the Remote Validation Runner setting it only returned the repoos.toml (which is also a valid search result). So in short: make sure to scroll to where the thing is on the page (navigate to the right page, tab first of course) and make sure the settings search results are more complete. Also the current highlighting is a bit boxy, can you make it more rounded as appropriate for the theme??
 - 2026-09-27T14:11:48Z · status active→review
 - 2026-09-27T14:22:11Z · needs_input
-
+- 2026-09-27T18:32:37Z · status review→active
