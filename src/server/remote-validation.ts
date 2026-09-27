@@ -341,6 +341,11 @@ function tail(output: string, lines = 20, maxChars = 1200): string {
 /** The gate script every host must carry, and the token a passing probe prints. */
 export const VALIDATE_SCRIPT = "/opt/repoos/validate.sh";
 export const PREREQ_OK_TOKEN = "REPOOS_PREREQ_OK";
+/** The named Docker volume validate.sh caches bun installs in — must match
+ *  `CACHE_VOLUME` in scripts/remote-runner/validate.sh exactly (#0521 review,
+ *  third round: a named volume, not a host bind-mount — see that script's
+ *  own comment for why). */
+export const CACHE_VOLUME_NAME = "repoos-bun-cache";
 /** Exit code a host-lock timeout uses — never a test suite's own exit. */
 export const HOST_LOCK_TIMEOUT_EXIT = 75;
 /** Default a run waits inside the host lock before giving up (15 min). */
@@ -410,18 +415,42 @@ export function prereqProbeCommand(
             `{ echo "image '${image}' not found — build it (just setup-<host>) or fix remoteValidation.containerImage"; exit 1; }`,
         ];
   lines.push(
-    // A host that can run Docker/bun+git and has validate.sh but whose bun
-    // cache directory can't actually be created or written to (bad
-    // permissions, a stray file sitting where the dir should be, a full or
-    // read-only volume) used to be reported healthy and fail its first real
-    // job on `bun install` — this probe never touched that path at all
-    // (#0521 review, criterion 6). Same path validate.sh/validate-macos.sh
-    // both use; write-then-remove a marker file, don't just mkdir (mkdir can
-    // succeed on a directory that already exists read-only for new files).
-    '_rvcache="$HOME/.cache/repoos-bun" && ' +
-      'mkdir -p "$_rvcache" 2>/dev/null && ' +
-      'touch "$_rvcache/.repoos-probe" 2>/dev/null && rm -f "$_rvcache/.repoos-probe" 2>/dev/null || ' +
-      '{ echo "bun cache dir $_rvcache is not writable"; exit 1; }',
+    ...(runner === "native"
+      ? [
+          // Native: bun runs directly as this SSH user, no container/uid
+          // involved, so a plain write-then-remove of the real cache path
+          // is an accurate test. A host that can run bun+git but whose cache
+          // dir can't actually be created/written (bad permissions, a stray
+          // file, a full/read-only volume) used to be reported healthy and
+          // fail its first real job on `bun install` — this probe never
+          // touched that path at all (#0521 review, criterion 6).
+          '_rvcache="$HOME/.cache/repoos-bun" && ' +
+            'mkdir -p "$_rvcache" 2>/dev/null && ' +
+            'touch "$_rvcache/.repoos-probe" 2>/dev/null && rm -f "$_rvcache/.repoos-probe" 2>/dev/null || ' +
+            '{ echo "bun cache dir $_rvcache is not writable"; exit 1; }',
+        ]
+      : [
+          // Docker: the cache is a named volume validate.sh chowns to uid
+          // 1000 (the bun base image's user) before every real run — NOT a
+          // host bind-mount. An earlier version of this check tested a host
+          // directory's writability instead; on a real host that failed in
+          // two different ways in two different review rounds (checking the
+          // SSH user's own — trivially true — access, then confirmed live
+          // that even a permissive host chmod is invisible to the container
+          // on macOS/Colima, which maps a bind-mounted dir to root:root
+          // 0755 inside the VM regardless of the real host-side
+          // permissions). A named volume sidesteps that whole class of
+          // host-filesystem-mapping problem, so probe the EXACT sequence
+          // validate.sh runs — chown as root, then write as uid 1000 — for
+          // ground truth instead of approximating it (#0521 review, third
+          // round).
+          `docker volume create ${CACHE_VOLUME_NAME} >/dev/null 2>&1 && ` +
+            `docker run --rm -v ${CACHE_VOLUME_NAME}:/bun-cache -u 0 '${image}' ` +
+            `"chown 1000:1000 /bun-cache" >/dev/null 2>&1 && ` +
+            `docker run --rm -v ${CACHE_VOLUME_NAME}:/bun-cache -u 1000 '${image}' ` +
+            `"touch /bun-cache/.repoos-probe && rm -f /bun-cache/.repoos-probe" >/dev/null 2>&1 || ` +
+            `{ echo "bun cache volume ${CACHE_VOLUME_NAME} is not writable by the container even after chown as root"; exit 1; }`,
+        ]),
     `[ -f ${VALIDATE_SCRIPT} ] || ` +
       `{ echo "missing ${VALIDATE_SCRIPT} — run the per-host install (docs/remote-validation.md)"; exit 1; }`,
     // Single-quoted '${3' is a fixed-string grep for the artifacts argument the

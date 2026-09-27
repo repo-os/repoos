@@ -22,6 +22,7 @@ import { loadConfig } from "../../core/config.js";
 import { resolveRemoteHosts, remoteHostUser, hostRunner } from "../../core/remote-hosts.js";
 import { planJobCapabilities, resolveCheckPlan } from "../../core/check-plan.js";
 import {
+  CACHE_VOLUME_NAME,
   DEFAULT_HOST_LOCK_WAIT_SECS,
   HOST_LOCK_HEARTBEAT_SECS,
   HOST_LOCK_STALE_MINUTES,
@@ -1034,16 +1035,34 @@ describe("per-host prerequisite probe", () => {
     expect(cmd).toContain(PREREQ_OK_TOKEN);
   });
 
-  it("checks the bun cache directory is actually writable, on both runners (#0521 review)", () => {
-    // A host that passes every other check but whose bun cache dir can't be
-    // created/written (bad permissions, a stray file, a full/read-only
-    // volume) used to be reported healthy and fail its first real job on
-    // `bun install` — this probe never touched that path at all.
-    for (const runner of ["docker", "native"] as const) {
-      const cmd = prereqProbeCommand(runner);
-      expect(cmd).toContain("$HOME/.cache/repoos-bun");
-      expect(cmd).toContain("is not writable");
-    }
+  it("checks the bun cache dir is writable on a native host", () => {
+    // Native: bun runs directly as the SSH user, no container/uid involved,
+    // so a plain host-path write-then-remove is an accurate test.
+    const cmd = prereqProbeCommand("native");
+    expect(cmd).toContain("$HOME/.cache/repoos-bun");
+    expect(cmd).toContain("is not writable");
+  });
+
+  it("checks the bun cache VOLUME is writable by the container, on docker (#0521 review, third round)", () => {
+    // Docker: the cache is a named volume, not a host bind-mount (see
+    // validate.sh's own comment for why — a permissive host chmod turned
+    // out to be invisible to the container on macOS/Colima, which maps a
+    // bind-mounted dir to root:root 0755 inside the VM regardless of the
+    // real host-side permissions, confirmed live). Probe the exact sequence
+    // validate.sh runs: chown the volume as root, then write as uid 1000.
+    const cmd = prereqProbeCommand("docker", "repoos-ci");
+    expect(cmd).toContain(`docker volume create ${CACHE_VOLUME_NAME}`);
+    expect(cmd).toContain(`-v ${CACHE_VOLUME_NAME}:/bun-cache -u 0`);
+    expect(cmd).toContain("chown 1000:1000 /bun-cache");
+    expect(cmd).toContain(`-v ${CACHE_VOLUME_NAME}:/bun-cache -u 1000`);
+    expect(cmd).toContain("is not writable by the container even after chown as root");
+    // Never a host path for docker — that was the earlier, broken approach.
+    expect(cmd).not.toContain("$HOME/.cache/repoos-bun");
+  });
+
+  it("never checks the cache volume on a native host", () => {
+    const cmd = prereqProbeCommand("native");
+    expect(cmd).not.toContain("docker volume create");
   });
 });
 
