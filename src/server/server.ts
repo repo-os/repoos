@@ -962,8 +962,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // One-time, idempotent backfill (#0515): give every existing story
   // definition a stable number (its counterpart to a task's `id` and an input's
   // `number`) before anything serves reads, so the stories board can show and
-  // deep-link `#0001` from the first paint. Same guarantees as the input
-  // migration above — never renumbers, never reuses.
+  // deep-link `#0001` from the first paint. Existing unique numbers stay stable;
+  // duplicate claimants receive new numbers in deterministic age/path order.
   try {
     const numbered = ensureStoryNumbers(config);
     if (numbered.length) {

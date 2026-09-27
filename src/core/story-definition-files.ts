@@ -4,8 +4,9 @@
  * Definitions carry a stable zero-padded `number` (#0515) — the story's
  * counterpart to a task's `id` and an input's `number` — so the board can show
  * `#0007` in the same upper-left chip position those two use and deep-link to
- * the story with a number that survives a rename. The rules are identical to
- * `ensureInputNumbers`: assigned once, never renumbered while the story exists.
+ * the story with a number that survives a rename. Like `ensureInputNumbers`,
+ * existing unique numbers stay stable; duplicate numbers are resolved by
+ * keeping the oldest claimant and assigning new numbers to the others.
  */
 import {
   existsSync,
