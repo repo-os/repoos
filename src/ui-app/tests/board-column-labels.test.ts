@@ -8,6 +8,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount, DOMWrapper } from "@vue/test-utils";
+import { reactive } from "vue";
 import { createPinia, setActivePinia } from "pinia";
 import * as apiMod from "../src/api";
 import { useConfigStore } from "../src/stores/config";
@@ -19,11 +20,13 @@ import SettingsView from "../src/views/SettingsView.vue";
 
 const api = vi.spyOn(apiMod, "api");
 
-let currentQuery: Record<string, string | string[]> = {};
-const replaceSpy = vi.fn(async () => {});
+const routeState = reactive<{ query: Record<string, string | string[]> }>({ query: {} });
+const replaceSpy = vi.fn(
+  async (_to?: { query?: Record<string, string | string[]>; name?: string }) => {},
+);
 
 vi.mock("vue-router", () => ({
-  useRoute: () => ({ query: currentQuery }),
+  useRoute: () => routeState,
   useRouter: () => ({ replace: replaceSpy, push: vi.fn() }),
 }));
 
@@ -125,8 +128,13 @@ const DASH_STUBS = {
 
 beforeEach(() => {
   setActivePinia(createPinia());
-  currentQuery = {};
-  replaceSpy.mockClear();
+  routeState.query = {};
+  replaceSpy.mockReset();
+  replaceSpy.mockImplementation(async (to?: { query?: Record<string, string | string[]> }) => {
+    if (to?.query !== undefined) {
+      routeState.query = { ...to.query };
+    }
+  });
   vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: false }));
   vi.stubGlobal(
     "fetch",
@@ -269,7 +277,7 @@ async function loadSettingsConfig(boardOverrides?: Record<string, string>): Prom
 }
 
 async function mountSettings(tab: "general" | "advanced" = "general") {
-  currentQuery = { tab };
+  routeState.query = { tab };
   const wrapper = mount(SettingsView, { attachTo: document.body });
   await flushPromises();
   return wrapper;
@@ -395,7 +403,7 @@ describe("SettingsView board column labels (#0499)", () => {
 
   it("?focus=board.columns.draft opens Advanced and focuses the row", async () => {
     await loadSettingsConfig();
-    currentQuery = { focus: "board.columns.draft" };
+    routeState.query = { focus: "board.columns.draft" };
     const scroll = Element.prototype.scrollIntoView as unknown as ReturnType<typeof vi.fn>;
     const wrapper = mount(SettingsView, { attachTo: document.body });
     await flushPromises();
