@@ -29,7 +29,6 @@ import {
   uncommittedWorkFiles,
   workFileFilter,
 } from "../core/git.js";
-import { CLOSEOUT_CHECK_ARGS } from "../core/check-plan.js";
 import { parseTask } from "../core/task.js";
 import { parseDocument, serializeDocument } from "../core/frontmatter.js";
 import type { AgentHandoffRequest, AgentRunner } from "./agents.js";
@@ -37,6 +36,14 @@ import { resolveAgentForTask } from "./agents.js";
 import { patchTaskFile } from "./write.js";
 import { guardReviewTransition } from "./review-guard.js";
 import type { TaskCheckManager, TaskCheckListener } from "./task-check.js";
+import type { RemoteValidator } from "./remote-validation.js";
+import {
+  remotePreReviewEnabled,
+  runRemotePreReviewGate,
+  checkEnvAfterRemoteGate,
+  spawnedRepoosCheckArgs,
+  type RemotePreReviewOutcome,
+} from "./pre-review-remote-gate.js";
 
 export type HandoffStep = "validate" | "check" | "commit" | "review" | "main" | "done";
 
@@ -44,6 +51,8 @@ export interface HandoffResult {
   ok: boolean;
   detail?: string;
   step: HandoffStep;
+  /** When false at the check step, the server must not auto-retry the engineer. */
+  checkRetryable?: boolean;
 }
 
 interface RunResult {
@@ -137,16 +146,19 @@ async function runCheck(
   worktree: string,
   config: RepoOSConfig,
   onChunk?: (text: string) => void,
+  extraEnv?: NodeJS.ProcessEnv,
+  remoteGateOutcome: RemotePreReviewOutcome | { kind: "skip" } = { kind: "skip" },
 ): Promise<RunResult> {
+  const checkArgs = spawnedRepoosCheckArgs(config, remoteGateOutcome);
   // Prefer the assigned worktree's compiled CLI. A globally linked `repoos`
   // resolves build freshness relative to its own package checkout, which can
   // falsely pass or fail when finalizing a different linked worktree.
   const localCli = join(worktree, "dist", "cli", "index.js");
   const candidates: ReadonlyArray<readonly [string, ...string[]]> = existsSync(localCli)
-    ? [[process.execPath, localCli, "check", ...CLOSEOUT_CHECK_ARGS]]
+    ? [[process.execPath, localCli, "check", ...checkArgs]]
     : [
-        ["repoos", "check", ...CLOSEOUT_CHECK_ARGS],
-        ["bun", "run", "repoos", "check", ...CLOSEOUT_CHECK_ARGS],
+        ["repoos", "check", ...checkArgs],
+        ["bun", "run", "repoos", "check", ...checkArgs],
       ];
   // Scope the test step to what this branch actually changed since its
   // merge-base with main (see changedTestRef in commands/check.ts): this is
@@ -156,7 +168,10 @@ async function runCheck(
   // to an unscoped (full) run when the merge-base can't be resolved.
   const baseBranch = currentBranch(config.root) ?? "main";
   const { base } = branchChangesSinceBase(worktree, baseBranch);
-  const env = base ? { ...process.env, REPOOS_CHECK_CHANGED: base } : process.env;
+  const env = {
+    ...(base ? { ...process.env, REPOOS_CHECK_CHANGED: base } : process.env),
+    ...extraEnv,
+  };
   let last: RunResult = { status: null, stdout: "", stderr: "check command unavailable" };
   for (const candidate of candidates) {
     last = await run(candidate[0], [...candidate.slice(1)], worktree, 240_000, env, onChunk);
@@ -185,6 +200,8 @@ export interface HandoffSink {
   /** Records this finalization's `repoos check` run for the Debug tab (0310). */
   taskChecks?: TaskCheckManager;
   onTaskCheckEvent?: TaskCheckListener;
+  /** When set and remote validation is enabled, tests run on the runner first (#0520). */
+  remoteValidator?: RemoteValidator;
 }
 
 /** Options for the non-capability entry point (`finalizeReviewHandoff`). */
@@ -415,11 +432,41 @@ async function runHandoffFinalization(
     }
 
     onProgress?.("check");
+    // Remote half first (#0520). It bundles the worktree's HEAD, which after the
+    // commit gate above IS the tree the gate is about to prove — so the remote
+    // suite and the committed tree are the same object (#0512).
+    // One Debug-tab record covers the remote and local halves, so a remote
+    // failure is recorded too instead of vanishing from the board.
     const checkHandle =
       opts.taskChecks && opts.onTaskCheckEvent
         ? opts.taskChecks.start(task.id, "handoff-finalize", opts.onTaskCheckEvent)
         : undefined;
-    const check = await runCheck(workdir, config, checkHandle?.chunk);
+    let remoteOutcome: RemotePreReviewOutcome | { kind: "skip" } = { kind: "skip" };
+    if (opts.remoteValidator && remotePreReviewEnabled(config)) {
+      remoteOutcome = await runRemotePreReviewGate({
+        config,
+        remoteValidator: opts.remoteValidator,
+        worktreePath: workdir,
+        taskId: task.id,
+        onChunk: checkHandle?.chunk,
+      });
+      if (remoteOutcome.kind === "fail") {
+        checkHandle?.done(1);
+        return {
+          ok: false,
+          step: "check",
+          detail: remoteOutcome.detail,
+          checkRetryable: remoteOutcome.retryable,
+        };
+      }
+    }
+    const check = await runCheck(
+      workdir,
+      config,
+      checkHandle?.chunk,
+      checkEnvAfterRemoteGate(remoteOutcome),
+      remoteOutcome,
+    );
     checkHandle?.done(check.status);
     if (check.status !== 0) {
       return fail("check", `repoos check failed: ${concise(check)}`);
@@ -558,6 +605,7 @@ export async function handoffTask(
   onStatusChange?: (task: Task, prev: Status, next: Status) => void,
   taskChecks?: TaskCheckManager,
   onTaskCheckEvent?: TaskCheckListener,
+  remoteValidator?: RemoteValidator,
 ): Promise<HandoffResult> {
   return withHandoffDeadline(async (markSettled) => {
     try {
@@ -575,6 +623,7 @@ export async function handoffTask(
         onStatusChange,
         taskChecks,
         onTaskCheckEvent,
+        remoteValidator,
       });
     } catch (err) {
       markSettled();
@@ -648,6 +697,14 @@ export function scheduleCheckFailureRetry(
   onFileChange?: (absPath: string) => void,
 ): boolean {
   if (result.step !== "check") return false;
+  if (result.checkRetryable === false) {
+    runner.persistHandoffFailure(
+      task.id,
+      task,
+      result.detail ?? "pre-review gate failed (non-retryable)",
+    );
+    return false;
+  }
   let retries = task.extra?.check_retry_count as number | undefined;
   if (typeof retries !== "number") retries = 0;
   const detail = result.detail ?? "repoos check failed";

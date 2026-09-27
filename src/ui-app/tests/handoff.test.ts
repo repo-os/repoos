@@ -6,6 +6,8 @@ import { join } from "node:path";
 import type { RepoOSConfig, Task } from "../../core/types";
 import { parseTask } from "../../core/task";
 import { handoffTask } from "../../server/handoff";
+import { TaskCheckManager } from "../../server/task-check";
+import type { RemoteValidator } from "../../server/remote-validation";
 
 interface Fixture {
   root: string;
@@ -441,5 +443,87 @@ describe("trusted server-side handoff", () => {
       process.env.PATH = oldPath;
       fx.clean();
     }
+  });
+
+  describe("remote pre-review gate (#0520)", () => {
+    function remoteFixture(): Fixture {
+      const fx = makeFixture();
+      fx.config.remoteValidation = { enabled: true };
+      return fx;
+    }
+    function fakeRemote(result: { ok: boolean; transient?: boolean; detail?: string }): {
+      validator: RemoteValidator;
+      shas: string[];
+    } {
+      const shas: string[] = [];
+      const validator = {
+        validate: async (opts: { candidateSha: string; onChunk?: (c: string) => void }) => {
+          shas.push(opts.candidateSha);
+          opts.onChunk?.("remote gate output\n");
+          return { ok: result.ok, transient: result.transient ?? false, detail: result.detail };
+        },
+        dispose: async () => {},
+        reconcile: async () => {},
+        logPath: () => "",
+      } as unknown as RemoteValidator;
+      return { validator, shas };
+    }
+
+    it("sends the runner the COMMITTED tree, including edits that were uncommitted at handoff", async () => {
+      const fx = remoteFixture();
+      const oldPath = process.env.PATH ?? "";
+      process.env.PATH = `${fx.bin}:${oldPath}`;
+      try {
+        const { validator, shas } = fakeRemote({ ok: true });
+        const result = await handoffTask(
+          fx.config,
+          readTask(fx),
+          request(fx),
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          validator,
+        );
+        expect(result).toMatchObject({ ok: true, step: "done" });
+        expect(shas).toHaveLength(1);
+        // The edit was only on disk when the handoff began (makeFixture). Because
+        // the commit gate runs first, the sha the runner tested contains it.
+        expect(git(fx.worktree, ["show", `${shas[0]}:source.txt`])).toBe("implemented");
+      } finally {
+        process.env.PATH = oldPath;
+        fx.clean();
+      }
+    });
+
+    it("keeps the task active and records the failure for the Debug tab when the remote gate is red", async () => {
+      const fx = remoteFixture();
+      const oldPath = process.env.PATH ?? "";
+      process.env.PATH = `${fx.bin}:${oldPath}`;
+      try {
+        const { validator } = fakeRemote({ ok: false, transient: false, detail: "suite failed" });
+        const taskChecks = new TaskCheckManager();
+        const result = await handoffTask(
+          fx.config,
+          readTask(fx),
+          request(fx),
+          undefined,
+          undefined,
+          taskChecks,
+          () => {},
+          validator,
+        );
+        expect(result).toMatchObject({ ok: false, step: "check" });
+        expect(String(result.detail)).toContain("remote validation failed");
+        expect(readTask(fx).status).toBe("active");
+        const runs = taskChecks.getRuns("0001");
+        expect(runs).toHaveLength(1);
+        expect(runs[0]).toMatchObject({ running: false, passed: false });
+        expect(runs[0]!.output).toContain("remote gate output");
+      } finally {
+        process.env.PATH = oldPath;
+        fx.clean();
+      }
+    });
   });
 });
