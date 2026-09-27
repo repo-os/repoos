@@ -2,14 +2,14 @@
 id: "0536"
 title: Add sort-by dropdown to stories page
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-27T07:32:53Z"
-updated_at: "2026-09-27T07:33:05Z"
+updated_at: "2026-09-27T19:16:10Z"
 ---
 ## Problem
 
@@ -92,3 +92,4 @@ Let's add a sort by dropdown to the stories page, do it in the same style as the
 - 2026-09-27T07:32:53Z · created · hello@repoos.org
 - 2026-09-27T07:32:54Z · screenshots
 - 2026-09-27T07:33:05Z · status draft→inbox, title, area, body
+- 2026-09-27T19:16:10Z · status inbox→ready
