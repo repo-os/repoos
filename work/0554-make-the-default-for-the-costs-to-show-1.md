@@ -2,14 +2,14 @@
 id: "0554"
 title: Default the cost panel to 1 week and remember the selected range
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/default-the-cost-panel-to-1-week-and-rem
 created_at: "2026-09-27T15:39:34Z"
-updated_at: "2026-09-27T23:00:49Z"
+updated_at: "2026-09-27T23:05:08Z"
 ---
 ## Problem
 
@@ -137,3 +137,4 @@ Make the default for the costs to show '1 week' rather than 'All time', but also
 - 2026-09-27T15:40:32Z · status draft→inbox, title, area, body
 - 2026-09-27T19:15:12Z · status inbox→ready
 - 2026-09-27T23:00:49Z · status ready→active, branch
+- 2026-09-27T23:05:08Z · status active→review
