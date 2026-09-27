@@ -2,12 +2,11 @@
 /**
  * Story side panel (#0502): the expanded, read-only view of one story.
  *
- * Deliberately built from the same pieces as the task and input panels, so a
- * user moving between the three sees one continuous surface:
- *   - `ui/dialog/*` (radix-vue) for the frame — that also gives us the Escape
- *     key, focus-on-open, focus restore on close, and the body-teleported
- *     `position: fixed` the panel needs (AGENTS.md: any fixed overlay must be
- *     teleported, and DialogContent already portals).
+ * Built from the same pieces as the task and input panels, so a user moving
+ * between the three sees one continuous surface:
+ *   - `ui/dialog/*` (radix-vue) for the frame — Escape, focus-on-open, focus
+ *     restore on close, the standard scrim (`DialogOverlay` / `.overlay`), and
+ *     the body-teleported `position: fixed` the panel needs (AGENTS.md).
  *   - `ui.drawerWidth` + `ui.startResize` for the same draggable edge.
  *   - the global `.drawer-head` / `.drawer-tabs` / `.tab-btn` / `.drawer-body` /
  *     `.md-rendered` classes from `style.css` — the tab strip is the same one
@@ -15,30 +14,10 @@
  *     near-duplicate, and the body tab is the same `renderMarkdown()` output the
  *     task panel's Task tab renders.
  *
- * The one deliberate departure from the task/input panels: this dialog is
- * NON-MODAL and renders no scrim. The spec requires that selecting a different
- * story row "swaps the panel contents in place, without closing and reopening",
- * and a full-screen overlay makes that literally unreachable — the list behind
- * it cannot be clicked. radix-vue's non-modal content drops both the focus trap
- * and the outside-pointer-events lock (DialogContentNonModal in radix-vue
- * 1.9), and suppresses DialogOverlay entirely, so the stories list stays live.
- * The visual treatment is otherwise byte-identical: same `.drawer` sheet, same
- * slide-in, same border and shadow; the `.drawer-wrap` z-index (100) already
- * sits above the page chrome.
- *
- * Non-modal is not on its own enough. radix's DismissableLayer still emits
- * `dismiss` on an outside pointerdown AND when focus moves outside — both are
- * checked against `event.defaultPrevented`, and both fire *before* the click
- * that selects a story row. Left alone, clicking the second row would therefore
- * close the panel on pointerdown and immediately re-open it on click: a
- * flicker, not a swap. Preventing both is what actually makes the in-place
- * swap work. The cost is that a click on empty page chrome no longer closes
- * the panel, which is the right trade for a side panel: × and Escape both
- * still close it, and losing the panel to a stray click is exactly the
- * complaint a non-modal panel exists to fix.
- *
- * Focus still moves into the panel on open and returns to the row that opened
- * it on close (radix's own open/close auto-focus, untouched here).
+ * Selecting a different story while the panel is open (deep link, programmatic
+ * selection, story → task hand-off) swaps the same dialog in place; the panel
+ * resets its tab and scroll. Clicking the scrim, ×, or Escape closes it, like
+ * every other right-hand sheet (#0544).
  *
  * Story → task navigation reuses `ui.openTask`, the exact call the story list's
  * live-task rows already make. The panel closes first so the two surfaces never
@@ -56,6 +35,7 @@ import { relTime } from "../lib/time";
 import Dialog from "./ui/dialog/root.vue";
 import DialogClose from "./ui/dialog/close.vue";
 import DialogContent from "./ui/dialog/content.vue";
+import DialogOverlay from "./ui/dialog/overlay.vue";
 import DialogDescription from "./ui/dialog/description.vue";
 import DialogTitle from "./ui/dialog/title.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
@@ -184,37 +164,19 @@ function openTask(task: Task): void {
   emit("close");
   void ui.openTask(task);
 }
-
-/**
- * Stop radix from dismissing on an outside pointerdown or on focus leaving.
- * Both paths run before the click that selects a story row, so without this the
- * panel closes and instantly re-opens instead of swapping in place. Escape and
- * the × close button are untouched — they go through `dismiss` directly.
- */
-function keepOpenOnOutsideInteraction(e: Event): void {
-  e.preventDefault();
-}
 </script>
 
 <template>
   <Dialog
     :open="open"
-    :modal="false"
     @update:open="
       (v) => {
         if (!v) emit('close');
       }
     "
   >
-    <!-- Deliberately no overlay: this panel is non-modal so the stories list
-         stays clickable and selecting another row swaps the contents in place
-         (see the header comment). radix-vue suppresses the overlay entirely
-         when `modal` is false, so there is no scrim here to disable. -->
-    <DialogContent
-      :style="{ width: ui.drawerWidth + 'px', 'max-width': '100vw' }"
-      @pointer-down-outside="keepOpenOnOutsideInteraction"
-      @focus-outside="keepOpenOnOutsideInteraction"
-    >
+    <DialogOverlay />
+    <DialogContent :style="{ width: ui.drawerWidth + 'px', 'max-width': '100vw' }">
       <div class="drawer-resize" @mousedown.prevent="ui.startResize"></div>
       <div class="drawer-head">
         <div class="drawer-head-title">
