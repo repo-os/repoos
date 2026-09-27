@@ -91,12 +91,12 @@ describe("remote run paths and limit", () => {
     const b = remoteRunPaths("0520");
     expect(a.bundle).not.toBe(b.bundle);
     expect(a.artifacts).not.toBe(b.artifacts);
-    expect(a.artifacts.startsWith("/tmp/repoos-artifacts/0520-")).toBe(true);
+    expect(a.artifacts.startsWith("/var/tmp/repoos-artifacts/0520-")).toBe(true);
   });
 
   it("keeps paths shell-safe for synthetic task ids", () => {
     const p = remoteRunPaths("weird id; rm -rf /", "abc");
-    expect(p.bundle).toBe("/tmp/repoos-weird_id__rm_-rf__-abc.bundle");
+    expect(p.bundle).toBe("/var/tmp/repoos-weird_id__rm_-rf__-abc.bundle");
     expect(p.artifacts).not.toMatch(/[\s;]/);
   });
 
@@ -229,7 +229,8 @@ describe("TailscaleRunner queueing and isolation", () => {
 
     const artifacts = f.cmds.map((c) => c.trim().split(/\s+/).pop()!);
     expect(new Set(artifacts).size).toBe(2);
-    for (const dir of artifacts) expect(dir.startsWith("/tmp/repoos-artifacts/0001-")).toBe(true);
+    for (const dir of artifacts)
+      expect(dir.startsWith("/var/tmp/repoos-artifacts/0001-")).toBe(true);
     // Each download targets exactly that run's directory.
     expect(f.downloads.sort()).toEqual(artifacts.map((d) => `${d}/*`).sort());
     expect(new Set(f.uploads).size).toBe(2);

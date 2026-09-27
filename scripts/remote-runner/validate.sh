@@ -16,15 +16,20 @@ BUNDLE="${1:?usage: validate.sh <bundle-path> <expected-sha>}"
 SHA="${2:?usage: validate.sh <bundle-path> <expected-sha>}"
 # Per-run artifacts dir (#0520): RepoOS passes a unique one so overlapping runs
 # never wipe each other's logs. Without it, fall back to the shared default.
-ART="${3:-/tmp/repoos-artifacts}"
+# /var/tmp, not /tmp: on Linux, /tmp is commonly a RAM-backed tmpfs with a
+# per-user quota shared with whatever else that user runs on the box (e.g. a
+# desktop session) — this runner's own bundle/artifacts churn can hit "disk
+# quota exceeded" for reasons that have nothing to do with the run. /var/tmp
+# is real disk on every host this runs on and isn't quota-capped.
+ART="${3:-/var/tmp/repoos-artifacts}"
 
-WORK="$(mktemp -d /tmp/repoos-validate.XXXXXX)"
+WORK="$(mktemp -d /var/tmp/repoos-validate.XXXXXX)"
 CACHE="/var/cache/repoos/bun"
 IMAGE="${REPOOS_CI_IMAGE:-repoos-ci}"
 mkdir -p "$CACHE"
 rm -rf "$ART" && mkdir -p "$ART"
 # Per-run dirs live under the shared parent; prune ones nobody collected.
-find /tmp/repoos-artifacts -mindepth 1 -maxdepth 1 -type d -mtime +1 -exec rm -rf {} + 2>/dev/null || true
+find /var/tmp/repoos-artifacts -mindepth 1 -maxdepth 1 -type d -mtime +1 -exec rm -rf {} + 2>/dev/null || true
 trap 'rm -rf "$WORK" "$BUNDLE"' EXIT
 
 echo "[validate] cloning bundle $BUNDLE"
