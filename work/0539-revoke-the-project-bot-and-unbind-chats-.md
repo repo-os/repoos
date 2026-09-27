@@ -2,7 +2,7 @@
 id: "0539"
 title: Revoke the project bot and unbind chats on disconnect
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: server
 story: RepoOS Telegram Bot
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:33:20Z"
-updated_at: "2026-09-27T15:52:46Z"
+updated_at: "2026-09-27T23:54:32Z"
 ---
 ## Problem
 
@@ -50,3 +50,4 @@ One operation, in a deliberate order, that is **complete or loudly incomplete**:
 - 2026-09-27T15:42:37Z · body
 - 2026-09-27T15:51:54Z · body
 - 2026-09-27T15:52:46Z · body
+- 2026-09-27T23:54:32Z · status inbox→ready
