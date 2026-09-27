@@ -5,11 +5,13 @@ type: feature
 status: inbox
 priority: p2
 area: cli
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: codex
+model_override: default
 created_at: "2026-09-27T13:20:14Z"
-updated_at: "2026-09-27T13:20:14Z"
+updated_at: "2026-09-27T13:30:15Z"
 ---
 ## Problem
 
@@ -102,3 +104,4 @@ Apply the identical shape to build staleness, in the CLI entrypoint
 ## Activity
 
 - 2026-09-27T13:20:14Z · created · unknown
+- 2026-09-27T13:30:15Z · cli_override, model_override
