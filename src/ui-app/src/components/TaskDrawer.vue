@@ -292,8 +292,7 @@ const reviewDraftMsgTextarea = ref<HTMLTextAreaElement | null>(null);
 
 function onFreeformTranscribed(text: string): void {
   if (freeformTextarea.value) {
-    // The freeform compose box keeps its fixed min-height + resize:vertical
-    // (a large drafting area, not a one-line chat input), so it is not auto-grown.
+    // insertTextAtCursor dispatches input, which refits the auto-growing field.
     insertTextAtCursor(freeformTextarea.value, text);
   }
 }
@@ -302,7 +301,7 @@ function adjustFreeformHeight(): void {
   autoGrowTextarea(freeformTextarea.value, 420);
 }
 
-watch(freeformText, () => nextTick(adjustFreeformHeight), { flush: "post" });
+watch(freeformText, adjustFreeformHeight, { flush: "post" });
 
 function clearFreeformDraft(): void {
   freeformText.value = "";
@@ -349,6 +348,8 @@ watch(
     freeformRunId.value = null;
     freeformRunning.value = false;
     initFreeformOverrides();
+    // The textarea remounts with the preserved draft when the drawer reopens.
+    void nextTick(adjustFreeformHeight);
   },
 );
 
@@ -2766,7 +2767,6 @@ watch(
                     v-model="freeformText"
                     class="ff-textarea ff-textarea-autogrow"
                     rows="10"
-                    @input="adjustFreeformHeight"
                     placeholder="Type the task however it comes out — like explaining it to a person. The PM agent writes the structured task file."
                   ></textarea>
                   <VoiceDictate @transcribed="onFreeformTranscribed" style="margin-bottom: 14px" />
