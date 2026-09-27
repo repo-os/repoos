@@ -110,6 +110,27 @@ describe("TaskCard review-passed hint reflects the actual verdict", () => {
     expect(wrapper.find(".task-card").classes()).not.toContain("review-ready");
   });
 
+  it("labels a previous-round verdict as awaiting review and withholds Move to done", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    const task = makeTask({
+      body: "## Activity\n\n- 2026-09-27T23:08:22Z · status active→review\n- 2026-09-27T23:20:31Z · status review→active\n- 2026-09-27T23:36:46Z · status active→review\n",
+    });
+    repo.reviews = {
+      "0001": {
+        running: false,
+        enabled: true,
+        lines: [],
+        report: { ...report("## Verdict\nneeds some work."), at: "2026-09-27T23:18:30Z" },
+      },
+    };
+
+    const wrapper = mountCard(task);
+    expect(wrapper.find(".tc-hint").text()).toContain("awaiting fresh review");
+    expect(wrapper.text()).not.toContain("Move to done");
+  });
+
   it("shows a red rejection, and drops the glow, for 'back to the drawing board'", () => {
     const pinia = createPinia();
     setActivePinia(pinia);

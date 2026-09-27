@@ -91,6 +91,7 @@ import AgentModelControl from "./AgentModelControl.vue";
 import { useModelMemory } from "../composables/useModelMemory";
 import { GENERIC_PATCH_TARGETS } from "../lib/taskTransitions";
 import { parseReviewVerdict } from "../lib/reviewVerdict";
+import { reportPredatesLatestHandoff } from "../lib/reviewFreshness";
 import { autoRepairHint, retryCountFrom } from "../lib/retryHints";
 import { uiRecoveryState } from "../lib/uiRecovery";
 import CopyableNumber from "./CopyableNumber.vue";
@@ -200,7 +201,9 @@ const selectableStatuses = computed(() => {
  * the drawer keeps saying "active" while this is true, and a naive read of it
  * would otherwise invite a second, concurrent request.
  */
-const handoffBusy = computed(() => (ui.active ? repo.handoffInFlight(ui.active.id) : false));
+const handoffBusy = computed(() =>
+  ui.active?.status === "active" ? repo.handoffInFlight(ui.active.id) : false,
+);
 
 /** #0507: the last handoff finalization failure, shown while the task is still active. */
 const handoffError = computed(() => (ui.active ? repo.handoffErrorFor(ui.active.id) : null));
@@ -1356,6 +1359,22 @@ const review = computed<ReviewState | null>(() =>
   ui.active ? (repo.reviews[ui.active.id] ?? null) : null,
 );
 
+/** An older verdict must not be presented as the result of a newer handoff. */
+const previousReview = computed(() => {
+  const task = ui.active;
+  const report = review.value?.report;
+  return Boolean(task && report && reportPredatesLatestHandoff(task, report.at));
+});
+const awaitingFreshReview = computed(
+  () =>
+    ui.active?.status === "review" &&
+    ui.active.needsInputReason !== "review-failed" &&
+    previousReview.value &&
+    !review.value?.running &&
+    !repo.isRunning(ui.active.id) &&
+    !inPipeline.value,
+);
+
 /**
  * The skill-suggestion task auto-created from this task's session (#0405), if
  * one was. The server records the created task's id in the origin task's
@@ -1398,6 +1417,7 @@ const needsInputHeaderChip = computed<{ label: string; cls: string } | null>(() 
 const reviewSubstate = computed<{ label: string; cls: string } | null>(() => {
   if (!ui.active || ui.active.status !== "review") return null;
   if (review.value?.running) return { label: "reviewing", cls: "rs-reviewing" };
+  if (awaitingFreshReview.value) return { label: "awaiting fresh review", cls: "rs-reviewing" };
   if (repo.isRunning(ui.active.id)) {
     // A running agent on an already-review task, outside auto-review, means
     // the server silently resumed the engineer to fix a post-handoff
@@ -1483,7 +1503,9 @@ const reviewHtml = computed(() =>
  *  it describes an earlier worktree state and will be replaced as soon as the
  *  fresh run writes its report (RepoOS preserves the prior report until then).
  */
-const reviewStale = computed(() => Boolean(review.value?.running && review.value.report));
+const reviewStale = computed(() =>
+  Boolean(review.value?.report && (review.value.running || previousReview.value)),
+);
 
 // ---- agent review tab (0110) ----
 
@@ -1586,8 +1608,7 @@ const engineerNoteReport = ref<ReviewState["report"]>(null);
 async function sendToEngineer(): Promise<void> {
   const task = ui.active;
   const report = review.value?.report ?? null;
-  if (!task || !report || review.value?.running || reviewBusy.value || sendingToEngineer.value)
-    return;
+  if (!task || !report || reviewStale.value || reviewBusy.value || sendingToEngineer.value) return;
   engineerNoteTask.value = task;
   engineerNoteReport.value = report;
   engineerNoteOpen.value = true;
@@ -3113,6 +3134,20 @@ watch(
               This task stays <strong>active</strong> until the checks pass.
             </span>
           </div>
+          <div
+            v-else-if="awaitingFreshReview"
+            class="ff-notice drawer-handoff-banner"
+            role="status"
+          >
+            <span
+              ><strong>Awaiting a new review.</strong> The report below is from before the latest
+              engineering handoff.</span
+            >
+            <span class="drawer-handoff-sub"
+              >RepoOS should start the reviewer automatically. If it does not, use
+              <strong>Review again</strong> in the Review tab.</span
+            >
+          </div>
           <div v-else-if="handoffError" class="ff-error drawer-handoff-banner">
             <span>
               <strong>Not moved to review.</strong> The handoff finalization stopped:
@@ -3224,15 +3259,23 @@ watch(
             <Button
               v-if="ui.active.status === 'review'"
               variant="default"
-              :disabled="ui.saving || review?.running || repo.isRunning(ui.active.id) || inPipeline"
+              :disabled="
+                ui.saving ||
+                review?.running ||
+                awaitingFreshReview ||
+                repo.isRunning(ui.active.id) ||
+                inPipeline
+              "
               :title="
                 inPipeline
                   ? 'Already in the integration pipeline — merging, building, and checking. See the pipeline bar for live progress.'
                   : review?.running
                     ? 'Waiting for automatic review to finish.'
-                    : repo.isRunning(ui.active.id)
-                      ? 'The engineer is still coding; Move to done becomes available when the turn ends.'
-                      : undefined
+                    : awaitingFreshReview
+                      ? 'Waiting for a fresh review of the latest engineering handoff.'
+                      : repo.isRunning(ui.active.id)
+                        ? 'The engineer is still coding; Move to done becomes available when the turn ends.'
+                        : undefined
               "
               @click="moveToDone"
             >
@@ -3427,7 +3470,10 @@ watch(
         <!-- Critical status lives above the tabs so it is visible no matter
              which tab is open — a "needs input" / "reviewer crashed" message
              buried in one tab is a message the human never sees. -->
-        <div v-if="ui.active && ui.active.needsInput" class="drawer-critical">
+        <div
+          v-if="ui.active && ui.active.needsInput && !handoffBusy && !awaitingFreshReview"
+          class="drawer-critical"
+        >
           <div class="agent-waiting" :class="{ 'agent-waiting-static': staleNeedsInputOnReview }">
             <span v-if="!staleNeedsInputOnReview" class="agent-waiting-dot"></span>
             <div>
@@ -3999,7 +4045,7 @@ watch(
               v-if="ui.active.status === 'review'"
               variant="outline"
               size="sm"
-              :disabled="ui.saving || reviewBusy || review?.running"
+              :disabled="ui.saving || reviewBusy || review?.running || handoffBusy"
               :title="
                 review?.running
                   ? 'Waiting for the current review run to finish.'
@@ -4016,12 +4062,14 @@ watch(
               variant="accent"
               size="sm"
               :disabled="
-                ui.saving || sendingToEngineer || reviewBusy || review?.running || !review?.report
+                ui.saving || sendingToEngineer || reviewBusy || reviewStale || !review?.report
               "
               :title="
                 !review?.report
                   ? 'Wait for a completed review before sending this task back to the engineer.'
-                  : 'Return this task to active and resume the engineer with the reviewer findings'
+                  : reviewStale
+                    ? 'Wait for the new review before sending findings to the engineer.'
+                    : 'Return this task to active and resume the engineer with the reviewer findings'
               "
               @click="sendToEngineer"
             >
@@ -4047,10 +4095,14 @@ watch(
           >
             <div v-if="reviewStale" class="review-stale" role="status">
               <div class="review-stale-body">
-                <span class="review-stale-title">This report is stale</span>
-                <span class="review-stale-sub"
-                  >A new review is running and will replace it shortly.</span
-                >
+                <span class="review-stale-title">Previous review</span>
+                <span class="review-stale-sub">{{
+                  review?.running
+                    ? "A new review is running and will replace this report."
+                    : awaitingFreshReview
+                      ? "The latest engineering handoff is awaiting a new review. Use Review again if it does not start."
+                      : "This report predates the latest engineering work."
+                }}</span>
               </div>
             </div>
             <div v-if="review.report.state === 'failed'" class="review-failed">
