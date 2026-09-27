@@ -26,8 +26,9 @@ email takes effect on your next Telegram message. Removing you from a Telegram
 group does not change your RepoOS account, and being in a bound group does not
 grant one.
 
-Unknown, unlinked, or no-longer-allowlisted senders receive no reply. This
-avoids announcing the bot's presence or flooding a group with access errors.
+Unknown, unlinked, or no-longer-allowlisted senders receive no reply in any
+chat. This avoids confirming the bot is active and flooding groups with access
+errors.
 
 For how RepoOS login, the email allowlist, and admin/member roles work, read
 [Native authentication](/native-auth). The implementation decision is recorded
