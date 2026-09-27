@@ -6,6 +6,7 @@ export type UiRecoveryKind = "stale" | "offline" | null;
 
 export interface UiRecoveryState {
   kind: UiRecoveryKind;
+  reloading: boolean;
   message: string;
   attemptedRoute: string | null;
   currentBuild: string | null;
@@ -16,6 +17,7 @@ export interface UiRecoveryState {
 const INTENT_KEY = "repoos.route-intent";
 const state = reactive<UiRecoveryState>({
   kind: null,
+  reloading: false,
   message: "",
   attemptedRoute: null,
   currentBuild: null,
@@ -147,6 +149,7 @@ export function dismissRecovery(): void {
   // can suppress re-shows for the same build but re-enable for a newer one.
   if (state.kind === "stale") dismissedAtHash = state.newBuild ?? clientBuild();
   state.kind = null;
+  state.reloading = false;
   state.message = "";
   state.attemptedRoute = null;
   state.currentBuild = null;
@@ -166,7 +169,29 @@ export function isstaleDismissed(serverHash?: string | null): boolean {
   return true;
 }
 
-export function reloadNow(): void {
+export async function reloadNow(): Promise<void> {
+  if (state.reloading) return;
+  state.reloading = true;
+  const wasOffline = state.kind === "offline";
+  if (wasOffline) {
+    state.message = "Waiting for the RepoOS server… this can take up to 30 seconds.";
+    const deadline = Date.now() + 30_000;
+    while (Date.now() < deadline) {
+      try {
+        await api<Health>("/api/health", { timeoutMs: 3_000 });
+        break;
+      } catch {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+    }
+    if (Date.now() >= deadline) {
+      state.reloading = false;
+      state.message = "The server is still unavailable. Try again when it is ready.";
+      return;
+    }
+  } else {
+    state.message = "Reloading RepoOS… please wait a moment.";
+  }
   const intent = consumeRouteIntent() ?? state.attemptedRoute;
   if (intent) rememberIntent(intent);
   if (typeof window === "undefined") return;

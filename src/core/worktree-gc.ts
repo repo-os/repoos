@@ -145,13 +145,24 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
     (w) => !w.isMain && !w.isBare && isInside(wtDir, w.path),
   );
 
-  const remove = (branch: string, path: string, forceBranch: boolean): void => {
+  // `forceWorktree` is only ever true where this sweep has ALREADY decided the
+  // tree's contents may be discarded: a throwaway `repoos/integrate/<id>`
+  // candidate, or a feature worktree established to be merged into main AND
+  // clean just below. Everything else keeps the non-forced default of
+  // `removeWorktree`, which refuses a dirty worktree rather than deleting it
+  // (#0512) — the same invariant the close-out path now holds.
+  const remove = (
+    branch: string,
+    path: string,
+    forceBranch: boolean,
+    forceWorktree: boolean,
+  ): void => {
     if (report.dryRun) {
       report.removedWorktrees.push({ branch, path });
       if (branch) report.removedBranches.push(branch);
       return;
     }
-    if (!removeWorktree(root, branch || path)) {
+    if (!removeWorktree(root, branch || path, { force: forceWorktree })) {
       report.errors.push(`could not remove worktree for ${branch || path}`);
       return;
     }
@@ -173,7 +184,7 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
         report.keptDirty.push({ branch, path: w.path, reason: "close-out job still active" });
         continue;
       }
-      remove(branch, w.path, /* forceBranch */ true);
+      remove(branch, w.path, /* forceBranch */ true, /* forceWorktree */ true);
       continue;
     }
 
@@ -201,7 +212,7 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
     const merged = isAncestor(root, branch, mainBranch) === true;
     const clean = worktreeClean(w.path);
     if (merged && clean) {
-      remove(branch, w.path, /* forceBranch */ false);
+      remove(branch, w.path, /* forceBranch */ false, /* forceWorktree */ true);
     } else {
       report.keptDirty.push({
         branch,

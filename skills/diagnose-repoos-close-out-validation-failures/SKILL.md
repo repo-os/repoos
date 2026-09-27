@@ -46,6 +46,8 @@ The CLI guard blocks `done` if the branch still exists locally and is not an anc
 
   If fast-forward fails with `fatal: Not possible to fast-forward`, rebase onto current `main` and retry; never use a `--no-ff` merge to hide divergence.
 
+   If `git worktree remove` refuses with *contains modified or untracked files*, that is the guard working (#0512), not a broken worktree: there is uncommitted work inside it. Commit it on the task branch (then re-merge), or `--force` deliberately knowing you are discarding it — never reflexively. The same refusal is why a close-out sometimes leaves a worktree behind with `needs_input` naming the files.
+
 2. **Check for task file drift before merging.** Run `git diff main...HEAD --name-only | grep '^work/'` in the worktree. Any `work/` file other than the task's own `.md` is drift — restore it from `main` before merging:
 
   ```sh

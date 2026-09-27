@@ -43,9 +43,13 @@ export const AI_CHAT_SURFACES: readonly AiChatSurface[] = [
     logClass: "playground-log",
   },
   {
-    name: "Task PM chat",
-    file: "TaskDrawer.vue",
-    chatId: "pm:<task id>",
+    // #0515: the PM chat, shared by the task panel's PM tab and the story
+    // panel's. Registered once because it is rendered once — both hosts pass
+    // data in and handle events, so conformance here is structural rather than
+    // something each call site has to remember.
+    name: "PM chat",
+    file: "PmChatSurface.vue",
+    chatId: "pm:<task id> · pm-story-v1:<story number>",
     logClass: "pm-log-wrap",
   },
 ] as const;

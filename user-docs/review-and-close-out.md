@@ -140,6 +140,32 @@ can't leave your working tree dirty.
 5. **cleanup → done** — removes the candidate and the task's own worktree and
    branch, and marks the task `done`.
 
+### Uncommitted files pause the close-out
+
+Close-out only ever carries a branch's **commits**, so uncommitted changes are
+never part of what it tested. Before starting, RepoOS checks both checkouts and,
+if either has uncommitted files, stops with a dialog listing them:
+
+- **Your primary checkout** — the merge would refuse to run over them.
+- **The task's worktree** — the close-out would delete them along with the
+  worktree. This is usually a fix applied after the last handoff commit (a
+  reviewer's change, a late edit), and it has not been through any check.
+
+**Commit & continue** commits them — in the worktree's case on the task branch,
+through the same commit path a handoff uses, so the close-out's own build and
+check then validate the result. **Cancel** changes nothing: the task stays in
+`review` with every file exactly where it was.
+
+RepoOS never deletes a worktree that has uncommitted work on its own. If one is
+left over (for example a close-out that raced a new edit), it is kept, named in
+the task's `needs_input` detail, and reported by `repoos gc` until you deal with
+it.
+
+The same rule covers **Restart → Start clean**, the one place a worktree *is*
+discarded on purpose: the confirmation lists the uncommitted files it is about
+to throw away, so you can commit them first (or resume the worktree) instead of
+discovering later that they were gone.
+
 A **docs-only fast path** skips the build and check when the merged diff touches
 nothing but documentation: every changed path under your configured docs directory,
 or ending in `.md`. There is no "mostly docs" scoring; any other path runs the

@@ -66,6 +66,71 @@ export function storyKey(raw: string): string {
   return normalizeStoryName(raw).toLowerCase();
 }
 
+/**
+ * The part of a story PM session id that identifies *which* story (#0515).
+ *
+ * A registered story uses its stable number — the same shape a task PM chat
+ * uses (`pm-task-v2:0042`), so the two read alike in `.repoos/sessions/`, and it
+ * survives the PM agent renaming the story. A story that exists only as a task
+ * tag has no definition file and therefore no number, so it falls back to a
+ * slug of its key.
+ *
+ * The one consequence worth knowing: registering a story that already had a PM
+ * conversation changes its session id (slug → number), so that earlier thread
+ * reads as a fresh conversation. The alternative — keying on the name — would
+ * break the far more common rename instead, so the number stays the identity and
+ * this is the accepted trade.
+ *
+ * The result is always filename-safe (`[a-z0-9-]`), which is what the runner's
+ * session file requires.
+ */
+/**
+ * Short, stable, filename-safe hash of a string (djb2, base36). Dependency-free
+ * because `stories.ts` is shared with the UI bundle. Only ever used to
+ * disambiguate, never for anything security-relevant.
+ */
+function shortHash(value: string): string {
+  let h = 5381;
+  for (let i = 0; i < value.length; i++) h = ((h << 5) + h + value.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
+
+/** Cap on the slug part of a session id, mirroring `storySlug`'s file-name cap. */
+const SESSION_SLUG_MAX = 55;
+
+export function storyPmSessionSlug(key: string, number?: string | null): string {
+  if (number) return number;
+  const slug = key
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  if (!slug) return "story";
+  // Truncation alone would let two long, similarly-prefixed story names share
+  // one PM conversation — silently merging two users' threads. Appending a hash
+  // of the full key keeps them distinct; the budget shrinks to fit.
+  if (slug.length <= SESSION_SLUG_MAX) return slug;
+  const suffix = `-${shortHash(key)}`;
+  return slug.slice(0, SESSION_SLUG_MAX - suffix.length) + suffix;
+}
+
+/**
+ * Runner session key for the PM conversation about one story (#0515). Per-user
+ * when auth is on, exactly like the task PM chat (0248), so teammates sharing
+ * one instance each get their own conversation per story.
+ *
+ * `pm-story-v1:` is deliberately not a `pm-task-v2:` prefix — a story is not a
+ * task, and `resolveSessionTaskId` must not attribute a story chat's tokens to
+ * a phantom task (see that function's prefix guard).
+ */
+export function storyPmSessionId(
+  key: string,
+  number: string | null | undefined,
+  email?: string | null,
+): string {
+  const base = `pm-story-v1:${storyPmSessionSlug(key, number)}`;
+  return email ? `${base}::${email}` : base;
+}
+
 /** Pick the stable display name from every exact spelling seen for one key. */
 function pickDisplayName(spellings: Map<string, number>): string {
   let best = "";

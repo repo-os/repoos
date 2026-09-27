@@ -104,7 +104,7 @@ function request(fx: Fixture, overrides: Record<string, string> = {}) {
 }
 
 describe("trusted server-side handoff", () => {
-  it("checks, commits, moves both task copies to review, and is idempotent", async () => {
+  it("commits, checks, moves both task copies to review, and is idempotent", async () => {
     const fx = makeFixture();
     const oldPath = process.env.PATH ?? "";
     process.env.PATH = `${fx.bin}:${oldPath}`;
@@ -114,7 +114,9 @@ describe("trusted server-side handoff", () => {
         steps.push(step),
       );
       expect(first).toMatchObject({ ok: true, step: "done" });
-      expect(steps).toEqual(["validate", "check", "commit", "review", "main", "done"]);
+      // #0512: the commit gate runs BEFORE the check, so the tree the check
+      // tested is the tree that got committed — the whole point of the order.
+      expect(steps).toEqual(["validate", "commit", "check", "review", "main", "done"]);
       expect(readTask(fx).status).toBe("review");
       expect(readFileSync(join(fx.worktree, "work", "0001-handoff.md"), "utf8")).toContain(
         "status: review",
@@ -175,10 +177,18 @@ describe("trusted server-side handoff", () => {
     const oldPath = process.env.PATH ?? "";
     process.env.PATH = `${fx.bin}:${oldPath}`;
     try {
+      const base = git(fx.worktree, ["rev-parse", "HEAD"]);
       const result = await handoffTask(fx.config, readTask(fx), request(fx));
       expect(result).toMatchObject({ ok: false, step: "check" });
       expect(readTask(fx).status).toBe("active");
-      expect(git(fx.worktree, ["status", "--porcelain"])).toContain("source.txt");
+      // #0512: the implementation is committed BEFORE the check runs, so a
+      // failing gate no longer leaves the worktree holding the only copy of
+      // the work — the task can be retried, and a crash between here and the
+      // retry cannot lose it.
+      expect(git(fx.worktree, ["diff", "--name-only", `${base}..HEAD`]).split("\n")).toContain(
+        "source.txt",
+      );
+      expect(git(fx.worktree, ["status", "--porcelain"])).toBe("");
     } finally {
       process.env.PATH = oldPath;
       fx.clean();
@@ -193,6 +203,112 @@ describe("trusted server-side handoff", () => {
       installLocalCheck(fx, 0);
       writeFileSync(join(fx.bin, "repoos"), "#!/bin/sh\nexit 23\n", { mode: 0o755 });
       const result = await handoffTask(fx.config, readTask(fx), request(fx));
+      expect(result).toMatchObject({ ok: true, step: "done" });
+    } finally {
+      process.env.PATH = oldPath;
+      fx.clean();
+    }
+  });
+
+  it("leaves the engineer's uncommitted edit byte-for-byte intact and commits it (#0512)", async () => {
+    // The check runs in the worktree AFTER the implement commit, on the tree it
+    // just committed. A green result must therefore describe exactly the bytes
+    // that end up on the branch — not a version of them that only ever existed
+    // in the working tree. #0506 is the incident: a source file was rewritten
+    // during the checks and the handoff commit captured a stale copy of it.
+    const fx = makeFixture(0);
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${oldPath}`;
+    try {
+      const base = git(fx.worktree, ["rev-parse", "HEAD"]);
+
+      const result = await handoffTask(fx.config, readTask(fx), request(fx));
+
+      expect(result).toMatchObject({ ok: true, step: "done" });
+      // The edit is untouched on disk...
+      expect(readFileSync(join(fx.worktree, "source.txt"), "utf8")).toBe("implemented\n");
+      // ...and it is in the commit, not stranded in the working tree.
+      expect(git(fx.worktree, ["status", "--porcelain"])).toBe("");
+      expect(git(fx.worktree, ["show", "HEAD:source.txt"])).toBe("implemented");
+      expect(git(fx.worktree, ["diff", "--name-only", `${base}..HEAD`]).split("\n")).toContain(
+        "source.txt",
+      );
+    } finally {
+      process.env.PATH = oldPath;
+      fx.clean();
+    }
+  });
+
+  it("fails loudly when the worktree changes during the check (#0512)", async () => {
+    // Deterministic stand-in for the #0506 writer: a check that rewrites a
+    // source file. A green result then describes a tree that no longer exists,
+    // so the handoff must refuse instead of moving the task to review.
+    const fx = makeFixture(0);
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${oldPath}`;
+    try {
+      writeFileSync(
+        join(fx.bin, "repoos"),
+        "#!/bin/sh\nprintf 'rewritten\\n' > source.txt\nexit 0\n",
+        {
+          mode: 0o755,
+        },
+      );
+
+      const result = await handoffTask(fx.config, readTask(fx), request(fx));
+
+      expect(result).toMatchObject({ ok: false, step: "check" });
+      expect(result.detail).toMatch(/changed while the gate was running/);
+      expect(result.detail).toContain("source.txt");
+      expect(readTask(fx).status).toBe("active");
+      // The rewrite is still on disk — the guard refuses, it never reverts.
+      expect(readFileSync(join(fx.worktree, "source.txt"), "utf8")).toBe("rewritten\n");
+    } finally {
+      process.env.PATH = oldPath;
+      fx.clean();
+    }
+  });
+
+  it("fails loudly when a commit lands during the check (#0512)", async () => {
+    const fx = makeFixture(0);
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${oldPath}`;
+    try {
+      writeFileSync(
+        join(fx.bin, "repoos"),
+        "#!/bin/sh\nprintf 'late\\n' > late.txt\ngit add late.txt\ngit commit -qm 'late commit'\nexit 0\n",
+        { mode: 0o755 },
+      );
+
+      const result = await handoffTask(fx.config, readTask(fx), request(fx));
+
+      expect(result).toMatchObject({ ok: false, step: "check" });
+      expect(result.detail).toMatch(/HEAD moved from/);
+      expect(readTask(fx).status).toBe("active");
+      // Whatever landed is still there, committed on the branch.
+      expect(git(fx.worktree, ["show", "HEAD:late.txt"])).toBe("late");
+    } finally {
+      process.env.PATH = oldPath;
+      fx.clean();
+    }
+  });
+
+  it("tolerates a check that only writes generated output", async () => {
+    // `repoos check` builds in the worktree, so `dist/` and the runtime cache
+    // are expected to move. Only real work files count as drift, or every
+    // handoff would trip its own gate.
+    const fx = makeFixture(0);
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${oldPath}`;
+    try {
+      writeFileSync(
+        join(fx.bin, "repoos"),
+        "#!/bin/sh\nprintf 'rebuilt\\n' > dist/app.js\nmkdir -p .repoos\nprintf 'x\\n' > .repoos/log\nexit 0\n",
+        { mode: 0o755 },
+      );
+
+      const result = await handoffTask(fx.config, readTask(fx), request(fx));
+
       expect(result).toMatchObject({ ok: true, step: "done" });
     } finally {
       process.env.PATH = oldPath;
@@ -317,7 +433,10 @@ describe("trusted server-side handoff", () => {
         detail: expect.stringContaining("repoos check failed"),
       });
       expect(readTask(fx).status).toBe("active");
-      expect(git(fx.worktree, ["status", "--porcelain"])).toContain("source.txt");
+      // #0512: committed before the gate, so the failing run leaves the work
+      // on the branch rather than sitting uncommitted in the worktree.
+      expect(git(fx.worktree, ["status", "--porcelain"])).toBe("");
+      expect(git(fx.worktree, ["log", "-1", "--format=%s"])).toContain("implement");
     } finally {
       process.env.PATH = oldPath;
       fx.clean();

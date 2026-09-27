@@ -26,6 +26,8 @@ import {
   worktreePathForBranch,
   currentBranch,
   branchChangesSinceBase,
+  uncommittedWorkFiles,
+  workFileFilter,
 } from "../core/git.js";
 import { parseTask } from "../core/task.js";
 import { parseDocument, serializeDocument } from "../core/frontmatter.js";
@@ -229,6 +231,58 @@ function fail(step: HandoffStep, detail: string): HandoffResult {
   return { ok: false, step, detail };
 }
 
+/** What the gate is about to test: the committed `HEAD` plus the working-tree
+ *  changes still sitting on top of it (a task's own uncommitted work). */
+interface WorktreeState {
+  head: string;
+  files: string[];
+}
+
+/**
+ * Snapshot the worktree's `HEAD` and its uncommitted task work, for the
+ * "nothing changed underneath the gate" comparison (#0512). `dist/` and the
+ * cache/task dirs are excluded because the gate itself writes there — they are
+ * not evidence that anything changed.
+ *
+ * Throws when the state cannot be read: an unknown state is never reported as
+ * an unchanged one.
+ */
+async function worktreeState(workdir: string, config: RepoOSConfig): Promise<WorktreeState> {
+  const head = await runGit(workdir, ["rev-parse", "HEAD"], 10_000);
+  if (head.status !== 0) {
+    throw new Error(`could not resolve HEAD (${concise(head)})`);
+  }
+  return {
+    head: head.stdout.trim(),
+    files: await uncommittedWorkFiles(workdir, workFileFilter(config)),
+  };
+}
+
+/**
+ * Describe how the worktree's state moved between two snapshots, or `null`
+ * when it did not. A moving `HEAD` means a commit landed during the gate; a
+ * changed file list means the working tree was written to (the #0506
+ * `style.css` flip, where the edit vanished for the commit and came back
+ * afterwards, leaving the gate's result describing a tree that no longer
+ * existed).
+ */
+function describeStateDrift(before: WorktreeState, after: WorktreeState): string | null {
+  const parts: string[] = [];
+  if (before.head !== after.head) {
+    parts.push(`HEAD moved from ${before.head.slice(0, 8)} to ${after.head.slice(0, 8)}`);
+  }
+  const added = after.files.filter((f) => !before.files.includes(f));
+  const removed = before.files.filter((f) => !after.files.includes(f));
+  if (added.length > 0) parts.push(`appeared: ${added.join(", ")}`);
+  if (removed.length > 0) parts.push(`disappeared: ${removed.join(", ")}`);
+  if (parts.length === 0) return null;
+  return (
+    `the worktree changed while the gate was running (${parts.join("; ")}) — the check result no ` +
+    "longer describes what is committed, so the handoff was refused. Nothing was lost: the change " +
+    "is still in the worktree. Re-run the handoff once the worktree is stable."
+  );
+}
+
 /**
  * Resolve the task's registered worktree and its own copy of the task file,
  * refusing anything RepoOS state does not vouch for. Shared by both entry
@@ -315,7 +369,13 @@ async function resolveWorktree(
 
 /**
  * The ONE finalization body every route into `review` runs: validate →
- * (check) → commit/vacuity gate → worktree copy → canonical board copy.
+ * commit/vacuity gate → (check, then confirm the worktree did not move under
+ * it) → worktree copy → canonical board copy.
+ *
+ * The commit gate runs BEFORE the check on purpose (#0512): the gate's verdict
+ * is only meaningful for the tree that gets committed, and the close-out later
+ * merges that commit — so the order is "commit, then prove the commit", not
+ * "prove something, then commit whatever else has appeared since".
  *
  * It never moves the task anywhere on its own initiative: every early return
  * leaves the task in the status it arrived in. The caller's job is to keep the
@@ -337,8 +397,44 @@ async function runHandoffFinalization(
     return { ok: true, step: "done", detail: "handoff was already finalized" };
   }
 
+  onProgress?.("commit");
+  // COMMIT FIRST, THEN GATE (#0512). The order used to be check → commit,
+  // which meant the gate tested a working tree the handoff had not yet
+  // captured: anything the agent wrote after the check started was folded into
+  // the implement commit afterwards and ran through NEITHER the local suite
+  // nor (once #0520 lands) the remote one. Committing first makes the tested
+  // tree and the committed tree the same object.
+  //
+  // The gate resolves the worktree from `task.branch`, so it must be given the
+  // CANONICAL branch, not the worktree copy's. A worktree's own copy of the
+  // task file legitimately lags main's frontmatter — `patchTaskFile` commits
+  // status changes to main only, so a worktree created before a branch was
+  // recorded still carries no `branch:` at all. Tolerated two lines up in
+  // `resolveWorktree` (an empty worktree branch is a lag, not a mismatch),
+  // but fatal here, and the mismatch was invisible until #0507 started routing
+  // file edits through this path.
+  const gate = await guardReviewTransition(config, { ...worktreeTask, branch: task.branch });
+  if (!gate.ok) {
+    return fail("commit", gate.detail ?? "the commit/vacuity gate rejected the transition");
+  }
+
   if (!opts.skipChecks) {
+    // The state the gate is about to test, captured BEFORE it runs so the
+    // comparison afterwards is against what was committed (#0512).
+    let before: WorktreeState;
+    try {
+      before = await worktreeState(workdir, config);
+    } catch (error) {
+      return fail(
+        "commit",
+        `could not snapshot the worktree before the gate (${(error as Error).message})`,
+      );
+    }
+
     onProgress?.("check");
+    // Remote half first (#0520). It bundles the worktree's HEAD, which after the
+    // commit gate above IS the tree the gate is about to prove — so the remote
+    // suite and the committed tree are the same object (#0512).
     let remoteOutcome: RemotePreReviewOutcome | { kind: "skip" } = { kind: "skip" };
     if (opts.remoteValidator && remotePreReviewEnabled(config)) {
       remoteOutcome = await runRemotePreReviewGate({
@@ -373,24 +469,27 @@ async function runHandoffFinalization(
       return fail("check", `repoos check failed: ${concise(check)}`);
     }
     clearCheckRetryCount(task.absPath);
+
+    // Nothing may change underneath the gate (#0512). The gate's verdict is
+    // about one exact tree; a file rewritten while it ran — the #0506
+    // `style.css` flip — would make a green check describe code that is no
+    // longer what HEAD holds. Fail loudly instead of moving to `review` on a
+    // result that no longer describes anything.
+    let after: WorktreeState;
+    try {
+      after = await worktreeState(workdir, config);
+    } catch (error) {
+      return fail(
+        "check",
+        `the gate passed but the worktree's state could not be re-checked (${(error as Error).message}) — refusing to hand off a result that cannot be tied to a tree`,
+      );
+    }
+    const drift = describeStateDrift(before, after);
+    if (drift) return fail("check", drift);
   } else {
     // Keep the step sequence honest for a UI that renders "Running checks…":
     // the commit gate is still real work, so report it as the step in flight.
     onProgress?.("check");
-  }
-
-  onProgress?.("commit");
-  // The gate resolves the worktree from `task.branch`, so it must be given the
-  // CANONICAL branch, not the worktree copy's. A worktree's own copy of the
-  // task file legitimately lags main's frontmatter — `patchTaskFile` commits
-  // status changes to main only, so a worktree created before a branch was
-  // recorded still carries no `branch:` at all. Tolerated two lines up in
-  // `resolveWorktree` (an empty worktree branch is a lag, not a mismatch),
-  // but fatal here, and the mismatch was invisible until #0507 started routing
-  // file edits through this path.
-  const gate = await guardReviewTransition(config, { ...worktreeTask, branch: task.branch });
-  if (!gate.ok) {
-    return fail("commit", gate.detail ?? "the commit/vacuity gate rejected the transition");
   }
 
   onProgress?.("review");

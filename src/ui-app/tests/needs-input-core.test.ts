@@ -36,4 +36,13 @@ describe("needs-input core helpers", () => {
       }),
     ).toBe(false);
   });
+
+  it("clears review-rounds-exhausted when a fresh review run completes", () => {
+    expect(
+      needsInputClearsOnSuccessfulReview({
+        status: "review",
+        needsInputReason: "review-rounds-exhausted",
+      }),
+    ).toBe(true);
+  });
 });

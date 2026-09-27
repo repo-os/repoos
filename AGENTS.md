@@ -479,6 +479,32 @@ Task-runner agents: for "does it serve?", still prefer the server-side probe
 (`::repoos-preview-request::`, no login at all); reach for this dev login only
 when the human explicitly wants the logged-in UI clicked through.
 
+### Auth-less dev server (interactive sessions: skip login entirely)
+
+Logging in on every session is annoying, and the backdoor puts a real session on
+the human's server. `repoos.toml` already has a preview-only override
+(`[preview.auth] enabled = false`, #0464); to get the same thing on demand:
+
+```bash
+just serve-noauth [port]      # default 7272; http://127.0.0.1:<port>, no login
+```
+
+It runs `REPOOS_PREVIEW_CHILD=1 bun dist/cli/index.js serve --preview-overrides
+--port <port>` after a staleness-aware build. It binds 127.0.0.1 only, never
+reaps the real server, and the real one on :7171 keeps requiring login. Stop it
+with `pkill -f "serve --preview-overrides --port <port>"` when done. Use it for
+browser-tool verification instead of the OTP backdoor.
+
+**Run it from a task worktree or a scratch worktree — never from the checkout the
+real `repoos serve` is serving.** Two servers on one root both watch the same
+`work/` files, so a task entering `review` spawns *two* reviewers, and the second
+server's watchdog (`runner.isRunning` is per-process) sees every active task as
+dead and flags it. The recipe refuses when a non-preview server is already
+serving the current directory. Check the directory first: a failed `cd` silently
+leaves you in the main checkout, and the server then runs against it (this
+happened on 2026-09-27, briefly, with no lasting effect). Confirm with the
+server's startup log line (`root` and `mode: "preview"`).
+
 ## Debugging: search the error, then check the versions
 
 When an error is *weird* — it makes no sense given the code, or the same code

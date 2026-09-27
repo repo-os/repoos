@@ -70,6 +70,26 @@ describe("parseBoardColumns", () => {
     expect(result).toEqual({ draft: label });
   });
 
+  it("does not warn when a label equals the column's own default", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const result = parseBoardColumns({
+      "board.columns.inbox": "Inbox",
+      "board.columns.ready": "ready",
+      "board.columns.done": "Done",
+    });
+    expect(result).toBeUndefined();
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it("still flags a label that collides with ANOTHER column's default", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const result = parseBoardColumns({ "board.columns.ready": "Done" });
+    expect(result).toBeUndefined();
+    expect(warn).toHaveBeenCalledTimes(1);
+    warn.mockRestore();
+  });
+
   it("falls back to default for duplicate labels (case-insensitive)", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const result = parseBoardColumns({

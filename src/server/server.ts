@@ -49,6 +49,11 @@
  *   POST /api/tasks/:id/attachments   -> attach a screenshot { name, mime, data(base64) };
  *                                        records a `## Screenshots` section in the task body
  *   GET  /api/tasks/:id/attachments/:file -> serve a stored screenshot image
+ *   GET  /api/stories          -> the registered story definitions under `stories/`
+ *   POST /api/stories/freeform -> create a story from a freeform description (PM fleshes it out)
+ *   POST /api/stories/:key/pm/message   -> send a message to the PM agent about this story (0515)
+ *   POST /api/stories/:key/pm/interrupt -> stop the in-flight PM turn about this story
+ *   GET  /api/stories/:key/pm/output    -> { lines, stats } the story PM transcript + live run stats
  *   GET  /api/agents/running   -> [{ id, pid, startedAt }] running agents
  *   GET  /api/agents/queued    -> [{ id, queuedAt }] agents waiting for a free maxConcurrentAgents slot
  *   GET  /api/agents/detect        -> { agents, cachedAt } — cached results, instant
@@ -72,6 +77,7 @@ import { STATUSES } from "../core/types.js";
 import { readBuildMeta } from "../core/build.js";
 import { createRepoOS } from "../core/repoos.js";
 import { ensureInputNumbers } from "../core/input.js";
+import { ensureStoryNumbers } from "../core/story-definition-files.js";
 import { detectAgents, type DetectedAgent } from "../core/detect.js";
 import { listModelSources, type ModelSourceResult } from "../core/models.js";
 import { createLogger, type Logger } from "../core/logger.js";
@@ -123,6 +129,7 @@ import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
 import { FreeformRunManager } from "./freeform-runs.js";
 import { pmChatSessionTaskId, clearPmChatSession, isPmWorking } from "./pm-runs.js";
 import { attachPendingPmImages } from "./pm-attachments.js";
+import { clearStoryPmChat, isStoryPmWorking } from "../core/story-definition-files.js";
 import { completeTask, type DoneStep, type CloseOutLock } from "./done.js";
 import { createJobCoordinator, type JobCoordinator } from "./integration-job.js";
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
@@ -227,6 +234,9 @@ import {
   getInputAttachment,
   getStoryDefinitions,
   createFreeformStory,
+  getStoryPmOutput,
+  pmStoryMessage,
+  pmStoryInterrupt,
   // Tasks routes
   getTasks,
   createTask,
@@ -244,6 +254,7 @@ import {
   getDailyTotals,
   getDiffStatsForTask,
   getDiffForTask,
+  getWorktreeDirtyForTask,
   getTaskFile,
   taskAction,
   getIntegrationJob,
@@ -331,6 +342,7 @@ import {
   createSupportBundle,
   revealSupportBundle,
   generateBugReport,
+  postCopyInspectorOpen,
 } from "./routes/index.js";
 
 function findCloudflared(): string | null {
@@ -947,6 +959,29 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     logger.system("warn", `input numbering migration failed: ${(e as Error).message}`);
   }
 
+  // One-time, idempotent backfill (#0515): give every existing story
+  // definition a stable number (its counterpart to a task's `id` and an input's
+  // `number`) before anything serves reads, so the stories board can show and
+  // deep-link `#0001` from the first paint. Same guarantees as the input
+  // migration above — never renumbers, never reuses.
+  try {
+    const numbered = ensureStoryNumbers(config);
+    if (numbered.length) {
+      logger.system("info", `story numbering migration: assigned ${numbered.length} number(s)`);
+      if (isControlPlane) {
+        for (const story of numbered) {
+          commitTaskFile(
+            config.root,
+            join(config.root, story.path),
+            `stories(#${story.number}): assign number`,
+          );
+        }
+      }
+    }
+  } catch (e) {
+    logger.system("warn", `story numbering migration failed: ${(e as Error).message}`);
+  }
+
   // ---- Fail-closed auth validation at startup (0246) ----
   // When auth is enabled, the server must have a usable login method and a
   // bootstrap admin path — otherwise enable auth silently locks everyone out.
@@ -1323,6 +1358,18 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             at: new Date().toISOString(),
           });
         }
+      }
+      // #0515: the same contract for a story PM chat — clear the "PM is
+      // working" flag its route raised, on every exit path. Re-emitting
+      // `story.definitionsChanged` is all the board needs to pick it up, because
+      // that flag already rides on the story definition record. The chat is
+      // cleared unconditionally (the map entry is per session, so this can
+      // never touch a concurrent one); the re-emit is gated on no *other* PM
+      // activity being live for the story, or one user exiting would hide
+      // another user's still-running turn.
+      const storyChatPath = clearStoryPmChat(e.id);
+      if (storyChatPath && !isStoryPmWorking(storyChatPath)) {
+        emitEvent({ type: "story.definitionsChanged", at: new Date().toISOString() });
       }
       if (pendingReview.delete(e.id)) {
         const task = index.getTask(e.id);
@@ -2115,6 +2162,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/skills/freeform", createFreeformSkillRoute);
   router.register("GET", "/api/stories", getStoryDefinitions);
   router.register("POST", "/api/stories/freeform", createFreeformStory);
+  // The story panel's PM chat (#0515) — the story counterparts of the task
+  // panel's three PM routes, keyed by the story key the panel already holds.
+  router.register("GET", /^\/api\/stories\/([^/]+)\/pm\/output$/, getStoryPmOutput);
+  router.register("POST", /^\/api\/stories\/([^/]+)\/pm\/message$/, pmStoryMessage);
+  router.register("POST", /^\/api\/stories\/([^/]+)\/pm\/interrupt$/, pmStoryInterrupt);
   router.register("GET", "/api/system", getSystem);
   router.register("GET", "/api/system/logs", getSystemLogs);
   router.register("GET", "/api/support/bundle", getSupportBundlePreview);
@@ -2277,6 +2329,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", /^\/api\/tasks\/([^/]+)\/stats$/, getTaskStats);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/diff-stats$/, getDiffStatsForTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/diff$/, getDiffForTask);
+  // Uncommitted files in a task's worktree — fetched by the restart dialog so
+  // "Start clean" can name what it would discard (#0512).
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/worktree-dirty$/, getWorktreeDirtyForTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/file$/, getTaskFile);
   router.register("GET", "/api/remote-validation/status", (_ctx, _req, res) => {
     const rv = config.remoteValidation ?? {};
@@ -2413,6 +2468,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("PATCH", "/api/config", patchConfig);
   router.register("GET", "/api/config/raw", readRawConfig);
   router.register("PUT", "/api/config/raw", writeRawConfig);
+  router.register("POST", "/api/dev/copy-inspector/open", postCopyInspectorOpen);
 
   // Model routes
   router.register("GET", "/api/models", listModels);

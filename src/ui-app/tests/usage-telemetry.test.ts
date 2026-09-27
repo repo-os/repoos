@@ -80,6 +80,15 @@ describe("resolveSessionTaskId — role-to-task attribution (0230)", () => {
     expect(resolveSessionTaskId(undefined)).toBeNull();
     expect(resolveSessionTaskId("")).toBeNull();
   });
+
+  it("returns null for a story PM chat (0515) rather than inventing a task", () => {
+    // The generic `pm:` alternative would otherwise capture these and
+    // attribute a story's cost/tokens to a phantom task named after the story.
+    expect(resolveSessionTaskId("pm-story-v1:0007")).toBeNull();
+    expect(resolveSessionTaskId("pm-story-v1:0007::alice@example.com")).toBeNull();
+    // …and the board still sees the spend: it just carries no taskId.
+    expect(resolveSessionTaskId("debugger:0001")).toBeNull();
+  });
 });
 
 describe("extractUsage / foldUsage — authoritative usage, zero/unknown safety", () => {

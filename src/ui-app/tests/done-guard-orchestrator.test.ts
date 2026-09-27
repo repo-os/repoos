@@ -8,9 +8,10 @@
  */
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { rmFixture } from "./helpers";
 import { ensureWorktree, listWorktrees } from "../../core/git.js";
 import { createJobCoordinator } from "../../server/integration-job.js";
 import { createRepositoryLock, createRootLock } from "../../server/repo-lock.js";
@@ -39,7 +40,7 @@ function makeRepo(): { root: string; clean: () => void } {
   git(root, ["add", "README.md", ".gitignore"]);
   git(root, ["commit", "-m", "init"]);
   git(root, ["branch", "-M", "main"]);
-  return { root, clean: () => rmSync(root, { recursive: true, force: true }) };
+  return { root, clean: () => rmFixture(root) };
 }
 
 describe("publish-time dirty-main guard (#0211)", () => {
@@ -263,6 +264,110 @@ describe("publish-time dirty-main guard (#0211)", () => {
       expect(result.ok).toBe(false);
       expect(result.reason).toMatch(/uncommitted file/i);
       expect(git(root, ["rev-parse", "main"])).toBe(mainSha);
+    } finally {
+      clean();
+    }
+  });
+});
+
+describe("close-out cleanup keeps a dirty feature worktree (#0512)", () => {
+  // The close-out merge carries the branch's COMMITS. Anything the branch had
+  // not committed was deleted along with the worktree, silently and untested.
+  // Cleanup now refuses, keeps the worktree, and asks a human.
+  const taskFile = (root: string, id: string): string => {
+    const path = join(root, "work", `${id}-cleanup.md`);
+    mkdirSync(join(root, "work"), { recursive: true });
+    writeFileSync(
+      path,
+      `---\nid: "${id}"\ntitle: Cleanup fixture\ntype: bug\nstatus: review\npriority: p1\n` +
+        `area: server\nassigned_to: ai\nbranch: feat/${id}\n---\n## Problem\n\nFixture body.\n`,
+    );
+    git(root, ["add", `work/${id}-cleanup.md`]);
+    git(root, ["commit", "-m", `docs(${id}): add task`]);
+    return path;
+  };
+
+  it("keeps the worktree and its uncommitted file, skips the branch delete, and flags needs_input", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const id = "0512";
+      const branch = `feat/${id}`;
+      const path = taskFile(root, id);
+      const wt = ensureWorktree(root, branch);
+      expect(wt.ok).toBe(true);
+      // The task's implementation, committed (this is what the merge carries).
+      writeFileSync(join(wt.path, "feature.txt"), "implemented\n");
+      git(wt.path, ["add", "feature.txt"]);
+      git(wt.path, ["commit", "-m", "the work"]);
+      // ...and a review-time fix that was never committed and never tested.
+      writeFileSync(join(wt.path, "feature.txt"), "implemented\n// review fix\n");
+
+      const coordinator = createJobCoordinator(root);
+      coordinator.enqueue({ id, branch } as any);
+      coordinator.updateJob(id, { phase: "cleanup", startedAt: new Date().toISOString() });
+
+      const orchestrator = new CloseOutOrchestrator(
+        { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
+        coordinator,
+        createRepositoryLock(root),
+        createRootLock(root),
+      );
+
+      const result = await orchestrator.processNext();
+
+      // The close-out itself succeeded; the leftover is a question, not a failure.
+      expect(result.ok).toBe(true);
+      // Nothing was deleted.
+      expect(listWorktrees(root).map((w) => w.branch)).toContain(branch);
+      expect(existsSync(join(wt.path, "feature.txt"))).toBe(true);
+      expect(readFileSync(join(wt.path, "feature.txt"), "utf8")).toContain("review fix");
+      expect(git(root, ["branch", "--list", branch])).toContain(branch);
+      // And a human is told, by name.
+      const content = readFileSync(path, "utf8");
+      expect(content).toMatch(/needs_input: true/);
+      expect(content).toContain("feature.txt");
+      expect(content).toMatch(/status: done/);
+    } finally {
+      clean();
+    }
+  });
+
+  it("removes a CLEAN feature worktree and its branch as before", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const id = "0513";
+      const branch = `feat/${id}`;
+      taskFile(root, id);
+      const wt = ensureWorktree(root, branch);
+      expect(wt.ok).toBe(true);
+      writeFileSync(join(wt.path, "feature.txt"), "implemented\n");
+      git(wt.path, ["add", "feature.txt"]);
+      git(wt.path, ["commit", "-m", "the work"]);
+      // The real cleanup runs after the publish merge, which is what makes the
+      // branch deletable with `git branch -d`; the test jumps straight to the
+      // cleanup phase, so stand that merge up here.
+      git(root, ["merge", "--ff-only", branch]);
+
+      const coordinator = createJobCoordinator(root);
+      coordinator.enqueue({ id, branch } as any);
+      coordinator.updateJob(id, { phase: "cleanup", startedAt: new Date().toISOString() });
+
+      const orchestrator = new CloseOutOrchestrator(
+        { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
+        coordinator,
+        createRepositoryLock(root),
+        createRootLock(root),
+      );
+
+      const result = await orchestrator.processNext();
+
+      expect(result.ok).toBe(true);
+      expect(existsSync(wt.path)).toBe(false);
+      expect(listWorktrees(root).map((w) => w.branch)).not.toContain(branch);
+      expect(git(root, ["branch", "--list", branch])).toBe("");
+      expect(readFileSync(join(root, "work", `${id}-cleanup.md`), "utf8")).not.toMatch(
+        /needs_input: true/,
+      );
     } finally {
       clean();
     }
