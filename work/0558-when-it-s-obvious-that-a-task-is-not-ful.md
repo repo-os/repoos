@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/flag-under-specified-tasks-as-needing-in
 created_at: "2026-09-27T17:27:54Z"
-updated_at: "2026-09-27T18:10:50Z"
+updated_at: "2026-09-27T18:16:41Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -184,3 +184,4 @@ When it's obvious that a task is not fully fleshed out (usually because the PM A
 - 2026-09-27T17:44:38Z · status active→review
 - 2026-09-27T17:48:54Z · status review→active
 - 2026-09-27T18:08:15Z · status active→review
+- 2026-09-27T18:16:41Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
