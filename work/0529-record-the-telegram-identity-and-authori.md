@@ -2,7 +2,7 @@
 id: "0529"
 title: Record the Telegram identity and authorization model
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: check-failed-after-retries
 priority: p1
@@ -14,7 +14,7 @@ branch: feat/record-the-telegram-identity-and-authori
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-27T07:31:53Z"
-updated_at: "2026-09-27T15:40:59Z"
+updated_at: "2026-09-27T15:43:44Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "[object Object]"
@@ -82,3 +82,4 @@ error: script "build" exited with code 137
 - 2026-09-27T15:36:04Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-09-27T15:39:20Z · status active→review
 - 2026-09-27T15:40:59Z · status review→active
+- 2026-09-27T15:43:44Z · status active→review
