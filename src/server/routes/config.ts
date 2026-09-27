@@ -324,13 +324,19 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
           ? Number(val)
           : val;
     } else if (field.type === "array") {
-      if (field.key === "remoteValidation.tailscaleHosts" && Array.isArray(val)) {
+      if (
+        field.key === "remoteValidation.tailscaleHosts" &&
+        (Array.isArray(val) || typeof val === "string")
+      ) {
         // The host pool (#0521) round-trips through the Settings form as host
-        // names. An empty list means "nothing to change" (the file may still
-        // carry the tailscaleHost shorthand or [[…]] rows), and a list that
-        // matches what config already resolves to is a no-op — never
-        // materialise the folded shorthand into a written key.
-        const list = (val as unknown[]).map((s) => (typeof s === "string" ? s.trim() : ""));
+        // names (a comma-separated string is tolerated for hand callers). An
+        // empty list means "nothing to change" (the file may still carry the
+        // tailscaleHost shorthand or [[…]] rows), and a list that matches what
+        // config already resolves to is a no-op — never materialise the folded
+        // shorthand into a written key.
+        const list = (Array.isArray(val) ? val : String(val).split(",")).map((s) =>
+          typeof s === "string" ? s.trim() : "",
+        );
         if (list.some((s) => !s)) {
           return json(res, 400, { error: `${field.label} entries must be non-empty strings` });
         }

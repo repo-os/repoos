@@ -27,7 +27,7 @@ export function positiveLimit(value: unknown, fallback: number): number {
 }
 
 function asStringList(value: unknown): string[] {
-  const raw = Array.isArray(value) ? value : typeof value === "string" ? [value] : [];
+  const raw = Array.isArray(value) ? value : typeof value === "string" ? value.split(",") : [];
   return raw
     .filter((v): v is string => typeof v === "string")
     .map((v) => v.trim())
@@ -67,8 +67,10 @@ export function parseTailscaleHosts(
       : "";
   const raw = parsed["remoteValidation.tailscaleHosts"];
   const entries: unknown[] = [];
+  // Tolerate a hand-written string form (`tailscaleHosts = "bee,mac1"`): split
+  // it like the array it was meant to be instead of one host named "bee,mac1".
   if (Array.isArray(raw)) entries.push(...raw);
-  else if (typeof raw === "string" && raw.trim()) entries.push(raw);
+  else if (typeof raw === "string" && raw.trim()) entries.push(...raw.split(","));
 
   const pool: RemoteValidationHost[] = [];
   if (shorthand) pool.push({ host: shorthand });
