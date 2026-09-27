@@ -40,14 +40,19 @@ members. For every incoming message, resolve its sender's Telegram ID to the
 linked email, then look up that email's current role in `auth_users` and
 authorize against that live result. Never cache a role on the Telegram link
 row. A role change takes effect on the next message; deleting the allowlist
-row makes the Telegram link inert immediately, without a revocation sweep.
+row makes the Telegram link inert while the row is absent, without a
+revocation sweep. If the same email is later re-added, the existing link works
+again automatically and uses the re-added user's current role; no stale role
+or special relinking step is involved.
 This keeps `auth_users` the single source of truth and Telegram a second
 transport onto existing identities, not a parallel permission system. The
 enforcement task is [#0534](../../work/0534-authorize-every-telegram-message-against.md).
 
-Unbound or unauthorized senders produce a silent no-op. In a group, an
-"access denied" response would reveal that the bot and integration are active
-and would clutter the channel; silence avoids both disclosures and spam.
+Unbound or unauthorized senders never receive an "access denied" response. In
+a group, they produce a silent no-op: an error would reveal that the bot and
+integration are active and clutter the channel. In a private chat, one short,
+neutral reply is acceptable; it must not reveal whether the bot is connected,
+whether an account is linked, or which authorization check failed.
 
 No `auth_audit_log` schema change is needed. Telegram actions have a bound,
 allowlisted email for `actorEmail`, which is already email-typed. System-
