@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-27T13:24:29Z"
-review_passes: 4
 id: "0547"
 title: Add a gruvbox theme switcher to the landing page
 type: feature
@@ -10,9 +8,8 @@ area: landing
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-a-gruvbox-theme-switcher-to-the-land
-review_model_override: opencode-go/hy3
 created_at: "2026-09-27T11:55:28Z"
-review_rounds: 2
+updated_at: "2026-09-27T12:16:54Z"
 ---
 ## Problem
 
@@ -179,10 +176,3 @@ Let's add a theme switcher for the landing page and the first additional theme s
 - 2026-09-27T11:59:05Z · status inbox→ready
 - 2026-09-27T12:12:14Z · status ready→active, branch
 - 2026-09-27T12:16:54Z · status active→review
-- 2026-09-27T12:19:03Z · status review→active
-- 2026-09-27T12:22:34Z · status active→review
-- 2026-09-27T12:42:03Z · body
-- 2026-09-27T13:10:22Z · review_model_override
-- 2026-09-27T13:13:48Z · status review→active
-- 2026-09-27T13:20:09Z · status active→review
-
