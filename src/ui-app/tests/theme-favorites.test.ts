@@ -4,15 +4,21 @@
  * the Settings theme list and the sidebar quick switcher render from.
  *
  * Covers the cap (4th star rejected with inline feedback, nothing silently
- * dropped), star-order display, the empty-favorites fallback to the full
- * catalog, reload persistence, and that starring never changes the applied
+ * dropped), star-order display, the empty-favorites fallback to the first
+ * MAX_VISIBLE_THEMES catalog entries, reload persistence, and that starring
+ * never changes the applied
  * uiTheme.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { nextTick } from "vue";
-import { useConfigStore, MAX_FAVORITE_THEMES, DESIGN_THEMES } from "../src/stores/config";
+import {
+  useConfigStore,
+  MAX_FAVORITE_THEMES,
+  MAX_VISIBLE_THEMES,
+  DESIGN_THEMES,
+} from "../src/stores/config";
 import * as apiMod from "../src/api";
 import type { ConfigField } from "../src/types";
 import Sidebar from "../src/components/Sidebar.vue";
@@ -82,17 +88,12 @@ afterEach(() => {
 });
 
 describe("config store favorites (#0255)", () => {
-  it("defaults to no favorites, so sidebarThemes falls back to the full catalog in order", async () => {
+  it("defaults to no favorites, so sidebarThemes falls back to the first catalog entries", async () => {
     const store = useConfigStore();
     expect(store.favoriteThemes).toEqual([]);
-    expect(store.sidebarThemes.map((t) => t.id)).toEqual([
-      "classic",
-      "clear",
-      "gen z",
-      "jelly",
-      "gruvbox",
-      "catppuccin",
-    ]);
+    expect(store.sidebarThemes.map((t) => t.id)).toEqual(
+      DESIGN_THEMES.slice(0, MAX_VISIBLE_THEMES).map((t) => t.id),
+    );
   });
 
   it("starring adds themes in star order and persists to localStorage", async () => {
@@ -176,7 +177,7 @@ describe("config store favorites (#0255)", () => {
     localStorage.setItem("repoos.favoriteThemes", "not json");
     const store = useConfigStore();
     expect(store.favoriteThemes).toEqual([]);
-    expect(store.sidebarThemes).toHaveLength(DESIGN_THEMES.length);
+    expect(store.sidebarThemes).toHaveLength(MAX_VISIBLE_THEMES);
   });
 
   it("drops unknown ids, duplicates, and over-cap entries when loading", () => {
@@ -197,13 +198,12 @@ describe("config store favorites (#0255)", () => {
 });
 
 describe("sidebar quick switcher (#0255)", () => {
-  it("shows every catalogued theme when nothing is starred (fallback)", async () => {
+  it("shows the first catalog themes when nothing is starred (fallback)", async () => {
     useConfigStore();
     const wrapper = await mountSidebar();
     const labels = wrapper.findAll(".theme-switch button").map((b) => b.text());
-    // Derived from the catalog so adding a theme (#0516 catppuccin) doesn't
-    // require editing a hardcoded list here.
-    expect(labels).toEqual(DESIGN_THEMES.map((t) => t.label));
+    expect(labels).toEqual(DESIGN_THEMES.slice(0, MAX_VISIBLE_THEMES).map((t) => t.label));
+    expect(labels).toHaveLength(MAX_VISIBLE_THEMES);
   });
 
   it("shows only the starred themes in star order", async () => {
@@ -215,12 +215,12 @@ describe("sidebar quick switcher (#0255)", () => {
     expect(labels).toEqual(["Gen Z", "Classic"]);
   });
 
-  it("falls back to all themes once every favorite is un-starred", async () => {
+  it("falls back to the first catalog themes once every favorite is un-starred", async () => {
     const store = useConfigStore();
     store.toggleThemeFavorite("jelly");
     store.toggleThemeFavorite("jelly"); // un-star
     const wrapper = await mountSidebar();
-    expect(wrapper.findAll(".theme-switch button")).toHaveLength(DESIGN_THEMES.length);
+    expect(wrapper.findAll(".theme-switch button")).toHaveLength(MAX_VISIBLE_THEMES);
   });
 
   it("switching to a starred theme works and marks it active", async () => {
@@ -287,6 +287,18 @@ describe("settings theme list (#0255)", () => {
     ]);
   });
 
+  it("renders the themes section before other general preferences", async () => {
+    await loadConfig();
+    const wrapper = await mountSettings();
+    const sectionLabels = wrapper
+      .findAll(".sec-label")
+      .map((el) => el.text().replace(/\s+/g, " ").trim());
+    const themesIdx = sectionLabels.indexOf("Themes");
+    const generalIdx = sectionLabels.indexOf("General");
+    expect(themesIdx).toBeGreaterThanOrEqual(0);
+    expect(generalIdx).toBeGreaterThan(themesIdx);
+  });
+
   it("clicking a theme row applies it and moves the active badge", async () => {
     const store = await loadConfig();
     const wrapper = await mountSettings();
@@ -303,8 +315,8 @@ describe("settings theme list (#0255)", () => {
     const sidebar = await mountSidebar();
     const settings = await mountSettings();
 
-    // Nothing starred yet, so the switcher is still showing the whole catalog.
-    expect(sidebar.findAll(".theme-switch button")).toHaveLength(DESIGN_THEMES.length);
+    // Nothing starred yet, so the switcher shows the first catalog themes.
+    expect(sidebar.findAll(".theme-switch button")).toHaveLength(MAX_VISIBLE_THEMES);
 
     for (const i of [0, 1, 2]) await settings.findAll(".theme-star")[i].trigger("click");
     await nextTick();
