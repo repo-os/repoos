@@ -3,6 +3,9 @@ id: "0520"
 title: Run the pre-review gate on the remote validation runner
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "Auto-bounce stopped: reached maximum of 2 review rounds. Human review needed."
 priority: p2
 area: core
 assigned_to: ai
@@ -80,4 +83,5 @@ runner hosts (separate task).
 - 2026-09-27T01:23:51Z · status active→review
 - 2026-09-27T01:23:52Z · status review→active
 - 2026-09-27T01:25:38Z · status active→review
+- 2026-09-27T01:26:43Z · needs_input
 - 2026-09-27T01:26:43Z · needs_input
