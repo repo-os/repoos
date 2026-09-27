@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:33:47Z"
-updated_at: "2026-09-27T07:33:47Z"
+updated_at: "2026-09-27T15:42:40Z"
 ---
 ## Problem
 
@@ -41,6 +41,11 @@ Task transitions driven from Telegram must record the real actor. Existing calle
 - A task id from another repository is indistinguishable from a nonexistent one.
 - Every Telegram-driven transition records the bound email as actor, never `"human"`, and the turn is recorded for token usage.
 
+## Decision reference
+
+Follow [ADR 0007 — Telegram identity and authorization](../docs/adr/0007-telegram-identity-and-authorization.md) for the shared identity, role-resolution, chat-binding, and sender-response policy. This task implements its specific flow.
+
 ## Activity
 
 - 2026-09-27T07:33:47Z · created · unknown
+- 2026-09-27T15:42:40Z · body
