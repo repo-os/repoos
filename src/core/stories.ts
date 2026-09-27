@@ -210,6 +210,62 @@ function storyRank(group: StoryGroup): number {
   return 2;
 }
 
+/** User-chosen ordering on the Stories page (#0536). No priority — stories have none. */
+export type StoryListSortOrder = "recent" | "taskNumberNewest" | "taskNumberOldest";
+
+function storyNumberValue(number: string | null | undefined): number {
+  const raw = (number ?? "").trim();
+  if (!/^\d+$/.test(raw)) return Number.NEGATIVE_INFINITY;
+  const value = Number.parseInt(raw, 10);
+  return Number.isFinite(value) ? value : Number.NEGATIVE_INFINITY;
+}
+
+/**
+ * Sort merged story groups for the Stories page list (#0536). Purely client-side
+ * over already-derived roll-ups — uses `lastActivity` for recency and the
+ * registered story `number` for numeric ordering (tag-only stories last).
+ */
+export function sortStoryGroupsForPage<T extends StoryTaskLike>(
+  groups: StoryGroup<T>[],
+  order: StoryListSortOrder,
+  numberFor: (group: StoryGroup<T>) => string | null | undefined = (g) =>
+    (g as { number?: string | null }).number ?? null,
+): StoryGroup<T>[] {
+  const copy = [...groups];
+  switch (order) {
+    case "recent":
+      return copy.sort((a, b) => {
+        const at = a.lastActivity ?? "";
+        const bt = b.lastActivity ?? "";
+        if (!at) return bt ? 1 : 0;
+        if (!bt) return -1;
+        const cmp = bt.localeCompare(at);
+        if (cmp !== 0) return cmp;
+        return a.name.localeCompare(b.name);
+      });
+    case "taskNumberNewest":
+      return copy.sort((a, b) => {
+        const na = storyNumberValue(numberFor(a));
+        const nb = storyNumberValue(numberFor(b));
+        if (na === nb) return a.name.localeCompare(b.name);
+        if (!Number.isFinite(na)) return 1;
+        if (!Number.isFinite(nb)) return -1;
+        return nb - na;
+      });
+    case "taskNumberOldest":
+      return copy.sort((a, b) => {
+        const na = storyNumberValue(numberFor(a));
+        const nb = storyNumberValue(numberFor(b));
+        if (na === nb) return a.name.localeCompare(b.name);
+        if (!Number.isFinite(na)) return 1;
+        if (!Number.isFinite(nb)) return -1;
+        return na - nb;
+      });
+    default:
+      return copy;
+  }
+}
+
 /**
  * Sort stories for display: attention-needed/active work first, then by most
  * recent activity (nulls last), then by name for a stable tie-break. Completed
