@@ -2,14 +2,14 @@
 id: "0557"
 title: Add a context-scoped search and real refresh feedback to the Context page
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-27T16:21:15Z"
-updated_at: "2026-09-27T16:23:57Z"
+updated_at: "2026-09-27T16:24:02Z"
 ---
 ## Problem
 
@@ -96,3 +96,4 @@ Now that we're adding a scoped search field in settings page we should also add 
 
 - 2026-09-27T16:21:15Z · created · hello@repoos.org
 - 2026-09-27T16:23:57Z · status draft→inbox, title, area, body
+- 2026-09-27T16:24:02Z · status inbox→ready
