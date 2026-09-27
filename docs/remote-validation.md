@@ -23,13 +23,13 @@ UI smoke test) stay local — they are fast and not the resource problem.
 
 ## What runs where
 
-| Step | Pre-review (handoff / `repoos check`) | Close-out (MTD) |
-| --- | --- | --- |
-| merge candidate ← feature branch | — (not merged yet) | local (`integration-orchestrator.ts`) |
-| `bun run build` (conflict-free tree + fresh `dist/`) | — | local |
-| `bun install` + `bun run build` + `bun run test` | **remote runner** (worktree `HEAD`) | **remote runner** (merged candidate `HEAD`) |
-| build staleness / lockfile / CSS / theme / bare-require guards | local (`repoos check` with `REPOOS_SKIP_TESTS=1`) | same |
-| UI smoke test (Playwright/webkit) | local | local |
+| Step | Pre-review (handoff / `repoos check`) | Close-out (MTD) | Release |
+| --- | --- | --- | --- |
+| merge candidate ← feature branch | — (not merged yet) | local (`integration-orchestrator.ts`) | — |
+| `bun run build` (conflict-free tree + fresh `dist/`) | — | local | local |
+| `bun install` + `bun run build` + `bun run test` | **remote runner** (worktree `HEAD`) | **remote runner** (merged candidate `HEAD`) | **remote runner** only when `remoteValidation.useForReleases = true`, else local |
+| build staleness / lockfile / CSS / theme / bare-require guards | local (`repoos check` with `REPOOS_SKIP_TESTS=1`) | same | same |
+| UI smoke test (Playwright/webkit) | local | local | local |
 
 `REPOOS_SKIP_TESTS=1` (see `src/commands/check.ts`) is what both paths set on the
 local `repoos check` after a remote pass so its Tests step is skipped.
@@ -59,7 +59,7 @@ so it cannot leak a warm VM. Repos with remote validation off behave as before.
 
 ## Hook points
 
-All three gates share `runRemotePreReviewGate` (`src/server/pre-review-remote-gate.ts`):
+The pre-review, close-out and release gates share `runRemotePreReviewGate` (`src/server/pre-review-remote-gate.ts`); the legacy single-shot path does not:
 
 - **Pre-review** — engineer handoff finalization (`src/server/handoff.ts`) and
   `repoos check` when `remoteValidation.enabled` (task #0520). Bundles the task
@@ -70,6 +70,11 @@ All three gates share `runRemotePreReviewGate` (`src/server/pre-review-remote-ga
 - **Close-out** — **`src/server/integration-orchestrator.ts` `validateCandidate`**
   (since #0118). After the local `bun run build` on the merged candidate, same
   remote + local-guards sequence as pre-review.
+- **Release** — `src/server/release.ts`. Same remote + local-guards sequence, but
+  only when `remoteValidation.useForReleases = true` (off by default: a release is
+  watched live and the provisioning delay reads as a regression). Otherwise the
+  release runs the full local gate and passes `--local-tests` so the CLI does not
+  auto-run remote.
 - **`src/server/done.ts` `completeTask`** — legacy single-shot path (dead code,
   tests only). Not wired to the runner; if revived, inject remote validation the
   same way.

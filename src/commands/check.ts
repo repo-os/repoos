@@ -1612,12 +1612,17 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     }
     if (remoteValidator) {
       const taskId = process.env.REPOOS_TASK_ID?.trim() || "pre-review";
+      const remoteStartedAt = new Date();
+      let remoteOutput = "";
       const gate = await runRemotePreReviewGate({
         config: cfg,
         remoteValidator,
         worktreePath: repoRoot,
         taskId,
-        onChunk: (chunk) => process.stdout.write(chunk),
+        onChunk: (chunk) => {
+          remoteOutput += chunk;
+          process.stdout.write(chunk);
+        },
       });
       // Await the teardown: the failure path below exits the process, and an
       // un-awaited async runner delete would be cut off mid-request, leaking a
@@ -1625,6 +1630,33 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
       await remoteValidator.dispose().catch(() => {});
       if (gate.kind === "fail") {
         console.log(c.red(`\n  ✗ ${gate.detail}\n`));
+        // The plan never ran, so the normal end-of-run record below is never
+        // written: persist the remote failure for the Checks surface too, like
+        // a local failure and like the handoff path (fail-soft).
+        const finishedAt = new Date();
+        writeCheckRun(
+          repoRoot,
+          {
+            profile,
+            source: plan.source,
+            changedRef,
+            startedAt: remoteStartedAt.toISOString(),
+            finishedAt: finishedAt.toISOString(),
+            durationMs: finishedAt.getTime() - remoteStartedAt.getTime(),
+            passed: false,
+            results: [
+              {
+                name: "remote-validation",
+                status: "failed",
+                durationMs: finishedAt.getTime() - remoteStartedAt.getTime(),
+                output: remoteOutput || undefined,
+                detail: gate.detail,
+                required: true,
+              },
+            ],
+          },
+          cfg.cacheDir,
+        );
         process.exit(1);
       }
       if (gate.kind === "local-only" && gate.skipTests) {
