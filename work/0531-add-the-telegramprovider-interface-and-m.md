@@ -14,9 +14,10 @@ created_by: ""
 branch: feat/add-the-local-telegram-adapter-and-bring
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
-review_model_override: opencode-go/space-bunny-free
+review_cli_override: cursor
+review_model_override: default
 created_at: "2026-09-27T07:32:10Z"
-updated_at: "2026-09-27T22:28:25Z"
+updated_at: "2026-09-27T22:59:49Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 1
@@ -75,3 +76,4 @@ Not in scope: the manager-bot service, its Neon/Cloudflare deployment, hosted me
 - 2026-09-27T22:01:45Z · status review→active
 - 2026-09-27T22:13:25Z · status active→review
 - 2026-09-27T22:28:25Z · needs_input
+- 2026-09-27T22:59:49Z · review_cli_override, review_model_override
