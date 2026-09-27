@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-27T01:20:38Z"
-review_passes: 4
 id: "0520"
 title: Run the pre-review gate on the remote validation runner
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "Auto-bounce stopped: reached maximum of 2 review rounds. Human review needed."
@@ -14,6 +12,8 @@ assigned_to: ai
 created_by: ""
 branch: feat/run-the-pre-review-gate-on-the-remote-va
 created_at: "2026-09-26T11:49:00Z"
+updated_at: "2026-09-27T01:23:45Z"
+review_passes: 4
 review_rounds: 2
 ---
 ## Problem
@@ -78,4 +78,5 @@ runner hosts (separate task).
 - 2026-09-27T01:11:39Z · status review→active
 - 2026-09-27T01:13:26Z · status active→review
 - 2026-09-27T01:20:38Z · needs_input
-
+- 2026-09-27T01:23:45Z · status review→active
+- 2026-09-27T01:23:45Z · note: Recorded CLI remote failures; corrected hook-points docs (+release); check green
