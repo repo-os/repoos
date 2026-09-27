@@ -13,10 +13,10 @@ assigned_to: ai
 created_by: ""
 branch: feat/add-the-local-telegram-adapter-and-bring
 cli_override: opencode
-model_override: openrouter/z-ai/glm-5.3-flash
+model_override: opencode-go/glm-5.3-flash
 review_model_override: opencode-go/space-bunny-free
 created_at: "2026-09-27T07:32:10Z"
-updated_at: "2026-09-27T18:39:31Z"
+updated_at: "2026-09-27T18:39:45Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -65,3 +65,4 @@ Not in scope: the manager-bot service, its Neon/Cloudflare deployment, hosted me
 - 2026-09-27T18:37:00Z · status ready→active, branch
 - 2026-09-27T18:38:40Z · agent exited with an error (opencode) · error: Rate limit exceeded. Please try again later.
 - 2026-09-27T18:39:31Z · model_override
+- 2026-09-27T18:39:45Z · model_override
