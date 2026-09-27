@@ -110,6 +110,12 @@ and `<ChatToolCallRow>` is the only thing that draws one:
   already marks where the batch ended.
 - Adjacent assistant text parts merge into one message, so a multi-part reply
   is one block rather than several.
+- **Whitespace is clamped at the display boundary** (#0527): rows whose text is
+  only whitespace (including zero-width characters) are not drawn; merged
+  assistant text and `renderMarkdown()` collapse runs of three or more blank
+  lines to at most one, strip trailing blank lines, and trim trailing blank
+  lines inside fenced code blocks without touching interior spacing. The stored
+  transcript is unchanged.
 - Expansion is per row, collapsible, and defaults to collapsed. It is native
   `<details>`, which is also why the row is keyboard-activatable and keeps its
   open state while a live run streams more calls into it.

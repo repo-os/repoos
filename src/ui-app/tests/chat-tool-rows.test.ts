@@ -122,6 +122,49 @@ describe("toDisplayRows — run splitting", () => {
     expect(messages(rows)[0].text).toBe("Real content.");
   });
 
+  it("drops whitespace-only text isolated between tool runs", () => {
+    const entries: AgentOutputEntry[] = [
+      text("All done."),
+      tool("bash", "completed", AT_0),
+      text("\n\n\n"),
+    ];
+    const rows = toDisplayRows(entries);
+    expect(rows.map((row) => row.kind)).toEqual(["text", "tools"]);
+    expect(entries).toHaveLength(3);
+  });
+
+  it("drops whitespace-only text between two tool runs", () => {
+    const rows = toDisplayRows([
+      text("Working...", AT_0),
+      tool("bash", "completed", AT_0),
+      text("\n\n", AT_1),
+      tool("read", "completed", AT_2),
+      text("Finished.", AT_2),
+    ]);
+    expect(rows.map((row) => row.kind)).toEqual(["text", "tools", "tools", "text"]);
+  });
+
+  it("absorbs whitespace-only text when the next part merges", () => {
+    const rows = toDisplayRows([
+      text("Working...", AT_0),
+      tool("bash", "completed", AT_0),
+      text("\n\n", AT_1),
+      text("Finished.", AT_2),
+    ]);
+    expect(rows.map((row) => row.kind)).toEqual(["text", "tools", "text"]);
+    expect(messages(rows)[1].text).toBe("Finished.");
+  });
+
+  it("drops whitespace-only sys and legacy line entries", () => {
+    const rows = toDisplayRows([
+      { type: "sys", d: "\n\n" },
+      { s: "out", d: "\n" },
+      text("ok", AT_0),
+    ]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].kind).toBe("text");
+  });
+
   it("strips ANSI escapes from row text and tool input", () => {
     const rows = toDisplayRows([
       text("[31mred[0m text", AT_0),
