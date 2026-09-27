@@ -2,7 +2,7 @@
 id: "0521"
 title: "Remote validation: pool multiple tailscale hosts"
 type: feature
-status: active
+status: review
 priority: p3
 area: core
 assigned_to: ai
@@ -12,7 +12,7 @@ model_override: cursor-grok-4.6-medium
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-09-26T11:49:01Z"
-updated_at: "2026-09-27T22:32:43Z"
+updated_at: "2026-09-27T22:40:42Z"
 review_passes: 13
 review_rounds: 2
 dev_error_count: 2
@@ -144,3 +144,24 @@ Autoscaling, and pooling Hetzner VMs.
 - 2026-09-27T19:10:31Z · needs_input
 - 2026-09-27T22:32:42Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
 - 2026-09-27T22:32:43Z · status review→active
+- 2026-09-27T22:35:27Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/system-resources.test.ts:88:43
+     86|       // availableMem counts reclaimable memory (free + inactive + cac…
+     87|       // is always >= raw freeMem and never exceeds total.
+     88|       expect(result.machine.availableMem).toBeGreaterThanOrEqual(resul…
+       |                                           ^
+     89|       expect(result.machine.availableMem).toBeLessThanOrEqual(result.m…
+     90|       expect(result.serverPid).toBe(process.pid);
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 272 passed (273)
+      Tests  1 failed | 3191 passed | 12 skipped (3204)
+   Start at  22:33:08
+   Duration  135.80s (transform 3.73s, setup 1.15s, import 16.31s, tests 124.11s, environment 117.47s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 257ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  22:35:24
+   Duration  1.38s (transform 574ms, setup 8ms, import 669ms, tests 257ms, environment 387ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-09-27T22:40:42Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/system-resources.test.ts:88:43 · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
