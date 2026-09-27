@@ -2,7 +2,7 @@
 id: "0560"
 title: Add status sort and status colors to the story panel task tab
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
@@ -154,3 +154,4 @@ In the new Story panel task tab sort options add a sort by task status, and whil
 - 2026-09-27T18:47:01Z · cli_override, model_override
 - 2026-09-27T18:47:04Z · model_override
 - 2026-09-27T18:47:08Z · review_model_override
+- 2026-09-27T18:47:08Z · status inbox→ready
