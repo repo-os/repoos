@@ -4,6 +4,17 @@ Telegram connects a bot to an existing RepoOS repository. It is a second way
 for allowlisted users to reach RepoOS; it does not create new RepoOS accounts
 or grant access based on group membership.
 
+Bot credentials must be stored through RepoOS's authenticated secret store. Set
+`REPOOS_SECRET_STORE_KEY` in the server process environment to a 32-byte key
+encoded as 64 hexadecimal characters or base64. RepoOS refuses to encrypt or
+decrypt secrets when the key is absent or invalid; it never stores them in
+plaintext. Keep the key outside `repoos.toml` and out of task worktrees. Losing
+the key makes existing encrypted credentials unrecoverable; changing it
+requires rewrapping existing records with the old key still available.
+Repositories that set `worktrees.inheritEnv = true` expose this key to their
+task worktrees along with the rest of `.env`; use `false` when worktree agents
+must not be able to decrypt repository credentials.
+
 ## Connect a repository
 
 An administrator connects Telegram from that repository's RepoOS Settings.
