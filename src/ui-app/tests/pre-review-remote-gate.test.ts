@@ -11,6 +11,7 @@ import {
   remoteValidationAlreadyAttempted,
   runRemotePreReviewGate,
   shouldRunCliRemotePreReviewGate,
+  standaloneCliCanUseRemote,
   spawnedRepoosCheckArgs,
   uncommittedFilesBlockingRemoteGate,
 } from "../../server/pre-review-remote-gate.js";
@@ -185,7 +186,7 @@ describe("checkEnvAfterRemoteGate", () => {
 });
 
 describe("shouldRunCliRemotePreReviewGate", () => {
-  const enabled = makeConfig("/tmp", { enabled: true });
+  const enabled = makeConfig("/tmp", { enabled: true, provider: "tailscale" });
 
   it("is false when remote validation is disabled", () => {
     const disabled = makeConfig("/tmp", { enabled: false });
@@ -209,6 +210,15 @@ describe("shouldRunCliRemotePreReviewGate", () => {
 
   it("is false in changed-path mode", () => {
     expect(shouldRunCliRemotePreReviewGate(enabled, { changedRef: "main" }, {})).toBe(false);
+  });
+
+  it("is false for the Hetzner provider: its VM lifecycle belongs to the server", () => {
+    for (const provider of ["hetzner", undefined] as const) {
+      const cfg = makeConfig("/tmp", { enabled: true, provider });
+      expect(standaloneCliCanUseRemote(cfg)).toBe(false);
+      expect(shouldRunCliRemotePreReviewGate(cfg, {}, {})).toBe(false);
+    }
+    expect(standaloneCliCanUseRemote(enabled)).toBe(true);
   });
 });
 

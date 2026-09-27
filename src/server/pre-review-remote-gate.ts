@@ -66,8 +66,23 @@ export function checkEnvAfterRemoteGate(
 }
 
 /**
+ * Whether a standalone `repoos check` may use the configured runner at all.
+ * Only the Tailscale provider: its host is a stateless machine, so a CLI run is
+ * just one more job. Hetzner runs a single warm VM whose lifecycle (provision,
+ * idle teardown, leak reconciliation) is owned by the server process and tracked
+ * in the server's `.repoos/remote-runner.json`. A CLI in a task worktree has a
+ * different root, so it loads no state, and its `deleteLeaked()` would delete the
+ * server's VM mid-run. Until the CLI can hand a run to the server, it tests
+ * locally when the provider is Hetzner.
+ */
+export function standaloneCliCanUseRemote(config: RepoOSConfig): boolean {
+  return config.remoteValidation?.provider === "tailscale";
+}
+
+/**
  * Whether standalone `repoos check` should run the remote half (not when a parent
- * already did, not for changed-path fast pre-review, not with `--local-tests`).
+ * already did, not for changed-path fast pre-review, not with `--local-tests`,
+ * not for a provider whose runner the server owns).
  */
 export function shouldRunCliRemotePreReviewGate(
   config: RepoOSConfig,
@@ -76,7 +91,10 @@ export function shouldRunCliRemotePreReviewGate(
 ): boolean {
   if (opts.changedRef?.trim()) return false;
   return (
-    remotePreReviewEnabled(config) && !opts.localTestsOnly && !remoteValidationAlreadyAttempted(env)
+    remotePreReviewEnabled(config) &&
+    standaloneCliCanUseRemote(config) &&
+    !opts.localTestsOnly &&
+    !remoteValidationAlreadyAttempted(env)
   );
 }
 

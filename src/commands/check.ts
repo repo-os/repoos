@@ -54,6 +54,8 @@ import { Logger } from "../core/logger.js";
 import { createRemoteValidator } from "../server/remote-validation.js";
 import {
   runRemotePreReviewGate,
+  standaloneCliCanUseRemote,
+  remoteValidationAlreadyAttempted,
   uncommittedFilesBlockingRemoteGate,
   shouldRunCliRemotePreReviewGate,
 } from "../server/pre-review-remote-gate.js";
@@ -1579,6 +1581,20 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     );
   }
 
+  if (
+    cfg.remoteValidation?.enabled &&
+    !standaloneCliCanUseRemote(cfg) &&
+    !changedRef &&
+    !opts.localTestsOnly &&
+    !remoteValidationAlreadyAttempted(process.env)
+  ) {
+    console.log(
+      c.dim(
+        "  · remote validation: the Hetzner runner is owned by the server, so a standalone " +
+          "`repoos check` runs the full local gate (handoff and close-out still use the runner)",
+      ),
+    );
+  }
   let runRemoteGate = shouldRunCliRemotePreReviewGate(cfg, { ...opts, changedRef }, process.env);
   if (runRemoteGate) {
     // The runner tests a bundle of HEAD. Uncommitted work would be skipped by it
