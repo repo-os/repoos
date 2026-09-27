@@ -2,14 +2,14 @@
 id: "0552"
 title: Add a gruvbox theme switcher to the user-docs site and carry it over from the landing page
 type: feature
-status: review
+status: active
 priority: p2
 area: docs
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-a-gruvbox-theme-switcher-to-the-user
 created_at: "2026-09-27T14:36:30Z"
-updated_at: "2026-09-27T15:30:05Z"
+updated_at: "2026-09-27T15:30:06Z"
 check_retry_count: 2
 last_check_failure: "[object Object]"
 ---
@@ -289,3 +289,4 @@ error: script "build:raw" exited with code 137
 error: script "build" exited with code 137
 [validate] gate exit 137 — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally
 - 2026-09-27T15:30:05Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-09-27T15:30:06Z · status review→active
