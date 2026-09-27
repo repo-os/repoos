@@ -231,7 +231,7 @@ function lastActivity(story: { lastActivity: string | null }): string {
           done.
         </div>
       </div>
-      <div v-if="enabled" class="page-header-actions">
+      <div v-if="enabled" style="display: flex; align-items: center; gap: 10px; flex-shrink: 0">
         <Select
           :model-value="repo.storiesPageSortOrder"
           @update:model-value="(v) => repo.setStoriesPageSortOrder(v as StoryListSortOrder)"
