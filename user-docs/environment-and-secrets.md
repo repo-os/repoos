@@ -102,6 +102,16 @@ prefix is internal (see below).
 These belong in `.env`, never in committed config — the Settings API refuses to
 write them to `repoos.toml`. See [Authentication](/authentication).
 
+### Encrypted credential storage
+
+| Variable | Purpose |
+| --- | --- |
+| `REPOOS_SECRET_STORE_KEY` | 32-byte key encoded as 64 hexadecimal characters or base64, used to encrypt and decrypt recoverable credentials. Missing or invalid keys fail closed; there is no plaintext fallback. |
+
+Keep this key in the server environment and out of task worktrees. Changing it
+requires rewrapping existing records while the old key is still available;
+losing it makes those credentials unrecoverable. See [Telegram](/telegram).
+
 ### Model providers and voice transcription
 
 | Variable | Purpose |
@@ -191,6 +201,11 @@ REPOOS_RESEND_API_KEY=re_...
 REPOOS_GOOGLE_CLIENT_SECRET=...
 REPOOS_AUTH_SESSION_SECRET=...
 REPOOS_AUTH_DEV_BACKDOOR_CODE=your-local-code
+
+# Encrypted credential storage (Telegram bot tokens and other recoverable secrets)
+# Required to store/read secrets: 32 bytes encoded as 64 hex characters or base64.
+# Missing or invalid keys fail closed; there is no plaintext fallback.
+# REPOOS_SECRET_STORE_KEY=<32-byte-key-as-hex-or-base64>
 
 # Model providers / voice transcription
 REPOOS_OPENROUTER_API_KEY=...
