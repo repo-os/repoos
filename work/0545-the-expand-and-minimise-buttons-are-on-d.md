@@ -20,8 +20,10 @@ The expand and minimise buttons are on different sides of the integration ui. I 
 ## Screenshots
 
 ![Screenshot-2026-09-27-at-18.10.25](/api/tasks/0545/attachments/screenshot-1.png)
+![Screenshot-2026-09-27-at-18.10.09](/api/tasks/0545/attachments/screenshot-2.png)
 
 ## Activity
 
 - 2026-09-27T10:11:24Z · created · hello@repoos.org
+- 2026-09-27T10:11:25Z · screenshots
 - 2026-09-27T10:11:25Z · screenshots
