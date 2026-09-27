@@ -13,6 +13,94 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
+/** Characters that count as empty for a whole message row (incl. zero-width). */
+const DISPLAY_EMPTY_RE = /^[\s\u200b\ufeff\u00ad]*$/u;
+
+/** True when a row's text would render no visible content. */
+export function isDisplayEmptyText(text: string): boolean {
+  return DISPLAY_EMPTY_RE.test(text);
+}
+
+/** A source line that is blank for layout (whitespace or invisible-only). */
+function isBlankDisplayLine(line: string): boolean {
+  return DISPLAY_EMPTY_RE.test(line);
+}
+
+function trimTrailingBlankCodeLines(lines: string[]): string[] {
+  const out = [...lines];
+  while (out.length > 0 && isBlankDisplayLine(out[out.length - 1]!)) {
+    out.pop();
+  }
+  return out;
+}
+
+/**
+ * Collapse 3+ blank lines to one and drop trailing blank lines in prose.
+ * Fenced blocks keep interior spacing; only their trailing blank run is trimmed.
+ */
+export function clampMarkdownForDisplay(src: string): string {
+  const lines = src.replace(/\r\n?/g, "\n").split("\n");
+  const out: string[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i]!;
+    const fence = line.match(/^(`{3,}|~{3,})([\w-]*)\s*$/);
+    if (fence) {
+      const marker = fence[1]!;
+      out.push(line);
+      i++;
+      const body: string[] = [];
+      const close = new RegExp(`^${marker[0]}{${marker.length},}\\s*$`);
+      while (i < lines.length && !close.test(lines[i]!)) {
+        body.push(lines[i]!);
+        i++;
+      }
+      out.push(...trimTrailingBlankCodeLines(body));
+      if (i < lines.length) {
+        out.push(lines[i]!);
+        i++;
+      }
+      continue;
+    }
+
+    if (isBlankDisplayLine(line)) {
+      let j = i;
+      while (j < lines.length && isBlankDisplayLine(lines[j]!)) j++;
+      if (j < lines.length) out.push("");
+      i = j;
+      continue;
+    }
+
+    out.push(line);
+    i++;
+  }
+
+  return out.join("\n");
+}
+
+/** Prose-only clamp for plain `<span>` bubbles (human / status lines). */
+export function clampPlainDisplayText(src: string): string {
+  const lines = src.replace(/\r\n?/g, "\n").split("\n");
+  const out: string[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i]!;
+    if (isBlankDisplayLine(line)) {
+      let j = i;
+      while (j < lines.length && isBlankDisplayLine(lines[j]!)) j++;
+      if (j < lines.length) out.push("");
+      i = j;
+      continue;
+    }
+    out.push(line);
+    i++;
+  }
+
+  return out.join("\n");
+}
+
 /** Inline transforms on already-escaped text. */
 function inline(s: string): string {
   // Code spans must be extracted into opaque placeholders BEFORE the other
@@ -93,7 +181,7 @@ function parseBlocks(src: string): Block[] {
     const line = lines[i]!;
 
     // blank → skip (paragraphs absorb their own blanks)
-    if (/^\s*$/.test(line)) {
+    if (isBlankDisplayLine(line)) {
       i++;
       continue;
     }
@@ -112,10 +200,11 @@ function parseBlocks(src: string): Block[] {
         i++;
       }
       if (i < lines.length) i++; // closing fence
+      const trimmedBody = trimTrailingBlankCodeLines(body);
       if (lang.toLowerCase() === "mermaid") {
-        blocks.push({ kind: "mermaid", lines: body });
+        blocks.push({ kind: "mermaid", lines: trimmedBody });
       } else {
-        blocks.push({ kind: "code", lang, lines: body });
+        blocks.push({ kind: "code", lang, lines: trimmedBody });
       }
       continue;
     }
@@ -202,7 +291,7 @@ function parseBlocks(src: string): Block[] {
     const p: string[] = [];
     while (i < lines.length) {
       const L = lines[i]!;
-      if (/^\s*$/.test(L)) break;
+      if (isBlankDisplayLine(L)) break;
       if (/^(?:`{3,}|~{3,})[\w-]*\s*$/.test(L)) break;
       if (/^#{1,6}\s+/.test(L)) break;
       if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(L)) break;
@@ -275,6 +364,7 @@ function renderBlock(b: Block): string {
 
 /** Convert Markdown source to a safe HTML string for v-html. */
 export function renderMarkdown(src: string): string {
-  if (!src || !src.trim()) return "";
-  return parseBlocks(src).map(renderBlock).join("");
+  const clamped = clampMarkdownForDisplay(src);
+  if (!clamped || !clamped.replace(DISPLAY_EMPTY_RE, "")) return "";
+  return parseBlocks(clamped).map(renderBlock).join("");
 }
