@@ -8,8 +8,9 @@ area: core
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: opencode
 created_at: "2026-09-26T11:49:01Z"
-updated_at: "2026-09-27T02:46:03Z"
+updated_at: "2026-09-27T03:10:47Z"
 ---
 ## Problem
 
@@ -85,3 +86,4 @@ Autoscaling, and pooling Hetzner VMs.
 - 2026-09-26T11:49:01Z · created · unknown
 - 2026-09-26T13:05:31Z · status inbox→ready
 - 2026-09-27T02:46:03Z · body
+- 2026-09-27T03:10:47Z · cli_override
