@@ -111,6 +111,23 @@ describe("parseJsonEvent", () => {
     });
   });
 
+  it("turns a top-level provider.transport error into a labeled sys line (#0521)", () => {
+    // Real opencode shape: the message sits directly on `error.message`, not
+    // nested under `error.data.message` — the DNS/network failure that used
+    // to fall through to `err.name` (empty here) and get dropped, leaving the
+    // raw JSON line to render unparsed in the transcript.
+    const line =
+      '{"type":"error","timestamp":1790487276789,"sessionID":"ses_f1f27bb01ffeS4NapAyAiCEN9k",' +
+      '"error":{"type":"provider.transport","message":"getaddrinfo ENOTFOUND opencode.ai"}}';
+    expect(parseJsonEvent(line)).toEqual({
+      entry: {
+        type: "sys",
+        d: "network problem reaching the model provider, not a code issue: getaddrinfo ENOTFOUND opencode.ai",
+      },
+      sessionID: "ses_f1f27bb01ffeS4NapAyAiCEN9k",
+    });
+  });
+
   it("surfaces an old-style file-update event", () => {
     expect(
       parseJsonEvent('{"type":"file-update","sessionID":"ses_abc","path":"src/a.ts"}'),

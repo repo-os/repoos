@@ -984,7 +984,7 @@ interface OpenCodeEvent {
     path?: unknown;
     state?: { status?: unknown; input?: unknown; output?: unknown; error?: unknown };
   };
-  error?: { name?: unknown; data?: { message?: unknown } };
+  error?: { name?: unknown; type?: unknown; message?: unknown; data?: { message?: unknown } };
 }
 
 /**
@@ -1090,14 +1090,27 @@ export function parseJsonEvent(
     case "error": {
       const err = ev.error ?? {};
       const data = err.data ?? {};
+      // Newer opencode puts the message straight on `error.message`; older
+      // builds nested it under `error.data.message`. Accept both rather than
+      // falling through to `err.name` (a bare error class like
+      // "provider.transport") and losing the actual text.
       const msg =
         typeof data.message === "string" && data.message
           ? data.message
-          : typeof err.name === "string" && err.name
-            ? err.name
-            : "";
+          : typeof err.message === "string" && err.message
+            ? err.message
+            : typeof err.name === "string" && err.name
+              ? err.name
+              : "";
       if (!msg) return null;
-      return { entry: { type: "sys", d: `error: ${msg}` }, sessionID };
+      // `provider.transport` is opencode's class for a network/DNS failure
+      // reaching the model provider — not a bug in the task or its code, so
+      // say that plainly instead of the bare "error:" prefix.
+      const prefix =
+        err.type === "provider.transport"
+          ? "network problem reaching the model provider, not a code issue"
+          : "error";
+      return { entry: { type: "sys", d: `${prefix}: ${msg}` }, sessionID };
     }
     case "file-update": {
       // Older opencode emitted file-write events directly; surface the path.
