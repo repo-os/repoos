@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 cli_override: opencode
-model_override: default
+model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-27T15:54:28Z"
-updated_at: "2026-09-27T17:32:54Z"
+updated_at: "2026-09-27T17:32:57Z"
 ---
 ## Problem
 
@@ -123,3 +123,4 @@ We should add a "New Task" button to the Stories Tasks tab (at the top right). I
 - 2026-09-27T17:28:41Z · title, area, body
 - 2026-09-27T17:28:47Z · status draft→inbox
 - 2026-09-27T17:32:54Z · cli_override, model_override
+- 2026-09-27T17:32:57Z · model_override
