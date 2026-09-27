@@ -42,6 +42,10 @@ import type { LiveIndex, RepoEvent } from "../live-index.js";
 import type { Logger } from "../../core/logger.js";
 import { getCurrentUser } from "./auth.js";
 import { withOriginalPromptSection } from "../../core/repoos.js";
+import {
+  flagUnderspecifiedIfNeeded,
+  needsInputClearsOnPmMessage,
+} from "../task-underspecified-flag.js";
 import { listInputs } from "../../core/input.js";
 import {
   commitTaskFile,
@@ -251,6 +255,11 @@ export function finalizeFreeformRun(
         reason: failureReason,
         at: new Date().toISOString(),
       });
+      const afterFailure = index.getTask(taskId);
+      if (afterFailure) {
+        const flagged = flagUnderspecifiedIfNeeded(config, afterFailure);
+        if (flagged) index.applyFileChange(flagged.absPath);
+      }
       return;
     }
 
@@ -265,7 +274,12 @@ export function finalizeFreeformRun(
         type: fields.type,
         priority: fields.priority,
         area: fields.area,
-        story: fields.story,
+        // #0555: a story preset at creation (the New task hand-off) is the
+        // human's choice and outranks whatever the PM agent's rewrite declared.
+        // Untagged drafts have `story === ""` (or undefined), so this falls
+        // through to `fields.story` — `undefined` still means "leave it alone" —
+        // and every create without a preset behaves exactly as it did before.
+        story: task.story || fields.story,
         assignedTo: fields.assignedTo,
         body: finalBody,
         status: config.defaultStatus,
@@ -273,6 +287,11 @@ export function finalizeFreeformRun(
       { onStatusChange: deps.onServerStatusChange },
     );
     index.applyFileChange(updated.absPath);
+    const afterPromote = index.getTask(taskId);
+    if (afterPromote) {
+      const flagged = flagUnderspecifiedIfNeeded(config, afterPromote);
+      if (flagged) index.applyFileChange(flagged.absPath);
+    }
     logger.task(taskId, "info", "PM agent fleshed out draft task", {
       title: updated.title,
     });
@@ -338,6 +357,12 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
   // already contains them (via `## Screenshots` in the draft body), and
   // PROTECTED_SECTIONS preserves the section across the rewrite.
   const sourceInputId = typeof body?.inputId === "string" && body.inputId ? body.inputId : null;
+  // #0555: a story hand-off from the Story panel's New task button. Absent or
+  // blank means "untagged", exactly as before; `createTask` normalizes it with
+  // `normalizeStoryName` on write, so a messy name can't create a near-duplicate
+  // story. Set on the draft up front so the tag is on the file the PM agent
+  // rewrites rather than being reconstructed from that rewrite afterwards.
+  const story = typeof body?.story === "string" && body.story.trim() ? body.story : undefined;
 
   // Parse the freeform pane's PM picker overrides. "default" is the sentinel
   // for "use the configured pm agent's own model" — not a real pin (same bug
@@ -386,6 +411,7 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
     body: explanation,
     originalPrompt: explanation,
     status: "draft",
+    story,
     createdBy: getCurrentUser(req, config)?.email,
     pmAgentOverride,
     pmCliOverride,
@@ -685,6 +711,14 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
 
   // Guarded: the #0210 gate already ran above for transitions into review.
   index.applyFileChange(updated.absPath, { guarded: true });
+
+  if (prevStatus === "draft" && updated.status !== "draft") {
+    const current = index.getTask(updated.id);
+    if (current) {
+      const flagged = flagUnderspecifiedIfNeeded(config, current);
+      if (flagged) index.applyFileChange(flagged.absPath, { guarded: true });
+    }
+  }
 
   if (
     prevStatus !== "review" &&
@@ -1728,6 +1762,13 @@ ${existing.body || "(no description)"}`;
     return json(res, 400, {
       error: result.reason ?? "could not send message to PM",
     });
+  }
+
+  if (existing.needsInput && needsInputClearsOnPmMessage(existing.needsInputReason)) {
+    const cleared = patchTaskFile(config, existing.absPath, {
+      needsInput: false,
+    });
+    index.applyFileChange(cleared.absPath);
   }
 
   // 0381: the runner accepted the turn (running now, or queued behind

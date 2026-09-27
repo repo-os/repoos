@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-27T23:00:38Z"
+review_passes: 3
 id: "0531"
 title: Add the local Telegram adapter and Bring Your Own Bot Token support
 type: feature
@@ -10,10 +12,12 @@ assigned_to: ai
 created_by: ""
 branch: feat/add-the-local-telegram-adapter-and-bring
 cli_override: opencode
-model_override: opencode/big-pickle
-review_model_override: opencode-go/space-bunny-free
+model_override: opencode-go/glm-5.3-flash
+review_cli_override: cursor
+review_model_override: composer-2.5
 created_at: "2026-09-27T07:32:10Z"
-updated_at: "2026-09-27T20:35:25Z"
+review_rounds: 2
+dev_error_count: 1
 ---
 ## Problem
 
@@ -59,4 +63,17 @@ Not in scope: the manager-bot service, its Neon/Cloudflare deployment, hosted me
 - 2026-09-27T18:36:48Z · model_override
 - 2026-09-27T18:36:58Z · review_model_override
 - 2026-09-27T18:37:00Z · status ready→active, branch
+- 2026-09-27T18:38:40Z · agent exited with an error (opencode) · error: Rate limit exceeded. Please try again later.
+- 2026-09-27T18:39:31Z · model_override
+- 2026-09-27T18:39:45Z · model_override
+- 2026-09-27T18:39:49Z · needs_input
 - 2026-09-27T20:35:25Z · status active→review
+- 2026-09-27T20:37:24Z · status review→active
+- 2026-09-27T21:58:58Z · status active→review
+- 2026-09-27T22:01:45Z · status review→active
+- 2026-09-27T22:13:25Z · status active→review
+- 2026-09-27T22:28:25Z · needs_input
+- 2026-09-27T22:59:49Z · review_cli_override, review_model_override
+- 2026-09-27T22:59:51Z · review_model_override
+- 2026-09-27T23:00:38Z · needs_input
+

@@ -211,6 +211,36 @@ const MIGRATIONS: Migration[] = [
       CREATE UNIQUE INDEX IF NOT EXISTS idx_usage_events_dedupe ON session_usage_events(dedupeKey);
     `,
   },
+  {
+    // Telegram user bindings + signed, single-use link invites (#0533).
+    // Duplicated in auth-store AUTH_MIGRATION so AuthStore can open first.
+    version: 6,
+    up: `
+      CREATE TABLE IF NOT EXISTS telegram_user_links (
+        telegram_user_id INTEGER PRIMARY KEY,
+        email TEXT NOT NULL,
+        telegram_username TEXT,
+        bound_at TEXT NOT NULL,
+        bound_by TEXT,
+        last_seen_at TEXT,
+        revoked_at TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_telegram_user_links_email ON telegram_user_links(email);
+
+      CREATE TABLE IF NOT EXISTS telegram_link_invites (
+        nonce_hash TEXT PRIMARY KEY,
+        email TEXT NOT NULL,
+        repo_identity TEXT NOT NULL,
+        instance_identity TEXT NOT NULL,
+        mac TEXT NOT NULL,
+        created_by TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        redeemed_at TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_telegram_link_invites_email ON telegram_link_invites(email);
+    `,
+  },
 ];
 
 /** Singleton database instance. */

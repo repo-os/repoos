@@ -10,6 +10,7 @@ import { nextTick } from "vue";
 import TaskCard from "../src/components/TaskCard.vue";
 import TaskDrawer from "../src/components/TaskDrawer.vue";
 import { useRepoStore } from "../src/stores/repo";
+import { useConfigStore } from "../src/stores/config";
 import { useUiStore } from "../src/stores/ui";
 import type { Task } from "../src/types";
 import { NEEDS_INPUT_STATUS_LABELS } from "../src/lib/needs-input-ui";
@@ -263,5 +264,98 @@ describe("needs_input status labels in the task drawer (#0511)", () => {
     expect(chip.classes()).toContain("rs-reviewing");
     expect(chip.text()).toContain("reviewing");
     expect(wrapper.find(".rs-needs-input").exists()).toBe(false);
+  });
+});
+
+describe("underspecified needs_input Send to PM (#0558)", () => {
+  it("sends the flesh-out canned message when the banner primary action is clicked", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const sent: string[] = [];
+    vi.stubGlobal("EventSource", FakeEventSource);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        const u = String(url);
+        if (u.includes("/api/health"))
+          return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+        if (u.includes("/api/index"))
+          return json({ tasks: [], counts: { ...EMPTY_COUNTS, inbox: 1 }, taskCount: 1 });
+        if (u.includes("/api/agents/running")) return json({ tasks: [] });
+        if (u.includes("/review"))
+          return json({ ok: true, running: false, enabled: true, review: null, lines: [] });
+        if (u.includes("/output")) return json({ ok: true, lines: [], stats: {} });
+        if (u.includes("/pm/message")) {
+          const body = JSON.parse(String((init?.body as string) ?? "{}"));
+          sent.push(body.text ?? "");
+          return json({ ok: true, spawn: { ok: true, pid: 1 } });
+        }
+        throw new Error("unexpected fetch: " + u);
+      }),
+    );
+
+    const task = makeTask({
+      status: "inbox",
+      needsInput: true,
+      needsInputReason: "underspecified",
+    });
+    const ui = useUiStore();
+    ui.open(task);
+    const router = createRouter({ history: createMemoryHistory(), routes: [] });
+    await router.push("/");
+    await router.isReady();
+    const wrapper = mount(TaskDrawer, {
+      global: { plugins: [pinia, router], stubs: { teleport: true, Transition: true } },
+    });
+    await flush();
+
+    const primary = wrapper
+      .findAll("button")
+      .find((b) => b.text().includes("Send to PM (fleshes this out)"));
+    expect(primary).toBeDefined();
+    await primary!.trigger("click");
+    await flush();
+
+    expect(sent).toEqual(["Can you flesh this out?"]);
+    expect(ui.activeTab).toBe("pm");
+  });
+
+  it("disables Send to PM when the PM agent is not configured", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const task = makeTask({
+      status: "inbox",
+      needsInput: true,
+      needsInputReason: "underspecified",
+    });
+    stubDrawerApi(task);
+    const config = useConfigStore();
+    config.loaded = true;
+    config.agents = [{ name: "pm", cli: "opencode", model: "default", enabled: false }];
+    const wrapper = await mountDrawer(pinia, task);
+    const primary = wrapper
+      .findAll("button")
+      .find((b) => b.text().includes("Send to PM (fleshes this out)"));
+    expect(primary).toBeDefined();
+    expect((primary!.element as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("disables Send to PM while a PM turn is already running", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const task = makeTask({
+      status: "inbox",
+      needsInput: true,
+      needsInputReason: "underspecified",
+    });
+    stubDrawerApi(task);
+    const repo = useRepoStore();
+    repo.runningIds = [`pm-task-v2:${task.id}`];
+    const wrapper = await mountDrawer(pinia, task);
+    const primary = wrapper
+      .findAll("button")
+      .find((b) => b.text().includes("Send to PM (fleshes this out)"));
+    expect(primary).toBeDefined();
+    expect((primary!.element as HTMLButtonElement).disabled).toBe(true);
   });
 });

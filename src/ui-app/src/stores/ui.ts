@@ -1,6 +1,7 @@
 import { reactive, ref } from "vue";
 import { defineStore } from "pinia";
 import { api } from "../api";
+import { normalizeStoryName } from "../../../core/stories.js";
 import type { Task, TaskCheckKind } from "../types";
 
 export interface NewTaskForm {
@@ -10,6 +11,12 @@ export interface NewTaskForm {
   priority: string;
   area: string;
   assignedTo: string;
+  /**
+   * Story the new task belongs to (#0555). Per-open context, not a draft: it
+   * is reset on every open like the rest of the form, and preset only by the
+   * story panel's hand-off — never inherited from the previous new task.
+   */
+  story: string;
 }
 
 export interface NewDocForm {
@@ -180,6 +187,7 @@ export const useUiStore = defineStore("ui", () => {
     priority: "p2",
     area: "web",
     assignedTo: "",
+    story: "",
   });
 
   const nd = reactive<NewDocForm>({
@@ -211,8 +219,14 @@ export const useUiStore = defineStore("ui", () => {
    */
   const pmScreenshots = reactive<PendingScreenshot[]>([]);
 
-  /** Open the new-task drawer. `assignedTo` presets the assignee (e.g. "human"). */
-  function openNewTask(assignedTo = ""): void {
+  /**
+   * Open the new-task drawer. `assignedTo` presets the assignee (e.g. "human");
+   * `story` (#0555) presets the story this task is being created for — the story
+   * panel's hand-off, so the value lands in the panel's visible Story control
+   * rather than being applied invisibly. Both are per-open context: every field
+   * is reset here, so a plain New task never inherits the previous one's story.
+   */
+  function openNewTask(assignedTo = "", story = ""): void {
     isNew.value = true;
     active.value = null;
     isNewDoc.value = false;
@@ -225,6 +239,7 @@ export const useUiStore = defineStore("ui", () => {
     nt.priority = "p2";
     nt.type = "feature";
     nt.assignedTo = assignedTo;
+    nt.story = normalizeStoryName(story);
     // Deliberately keep pendingScreenshots: the draft survives closing and
     // reopening the panel within a session (0510), same as freeformText.
     // Cleared only after a successful create, "Create another task", or

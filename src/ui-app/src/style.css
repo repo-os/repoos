@@ -772,6 +772,23 @@
   gap: 10px;
   flex-wrap: wrap;
 }
+.ctx-header-actions .ctx-search-trigger {
+  min-width: 0;
+}
+.search-row-hint {
+  cursor: default;
+  opacity: 0.85;
+}
+.search-row-hint .search-row-title {
+  font-weight: 500;
+  color: var(--txt-dim);
+}
+.search-truncated {
+  padding: 10px 16px 14px;
+  color: var(--txt-dim);
+  font-size: 12px;
+  border-top: 1px solid var(--border);
+}
 .page-help-link {
   appearance: none;
   border: 0;
@@ -2909,6 +2926,13 @@
   color: var(--red);
   font-size: 12px;
 }
+.ctx-refresh-summary {
+  margin-left: auto;
+  padding: 0 4px;
+  color: var(--txt-dim);
+  font-size: 12px;
+  white-space: nowrap;
+}
 .ctx-detail-copy {
   margin-top: 18px;
   color: var(--txt-dim);
@@ -3107,9 +3131,17 @@
   flex-direction: column;
   gap: 10px;
 }
+/* #0555: the sort Select sits at the left of the row, the New task button at
+   the right. `margin-left: auto` rather than `justify-content: space-between`
+   on the row, so the button stays pinned right when the Select is absent —
+   a story with nothing to sort still gets its New task button on the right. */
 .story-panel-tasks-toolbar {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+}
+.story-panel-tasks-new {
+  margin-left: auto;
 }
 .story-panel-tasks {
   display: flex;

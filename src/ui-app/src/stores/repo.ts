@@ -175,9 +175,12 @@ export const statusColor = (s: string): string => STATUS_COLORS[s] ?? "#566081";
  * PM chat "canned questions" offered above the compose box, keyed by task
  * status. Only statuses with a defined set show chips; others show none.
  */
+/** Canned PM prompt for stub tasks — shared by the PM tab chips and needs-input banner. */
+export const PM_FLESH_OUT_CANNED_MESSAGE = "Can you flesh this out?";
+
 export const PM_CANNED_MESSAGES: Partial<Record<Status, string[]>> = {
-  draft: ["Can you flesh this out?", "Suggest how to turn this stub into a complete task."],
-  inbox: ["Can you flesh this out?", "Suggest how to turn this stub into a complete task."],
+  draft: [PM_FLESH_OUT_CANNED_MESSAGE, "Suggest how to turn this stub into a complete task."],
+  inbox: [PM_FLESH_OUT_CANNED_MESSAGE, "Suggest how to turn this stub into a complete task."],
   active: ["What's going on with this task?", "What's wrong?", "What should I do next?"],
   review: ["What's blocking this from being done?", "Is this actually ready?"],
 };
@@ -239,15 +242,34 @@ export function draftColumnWithLabel(labels: Record<string, string>): Column {
 /** Sort modes for work-page task columns. "recent" sorts by updated_at desc,
  * "current" keeps the backend's status/priority/id order, and the task-number
  * modes compare the numeric task id (e.g. 0468) rather than its string form.
+ * "status" (#0560, story panel only) orders by pipeline stage — see
+ * `STATUS_PIPELINE`.
  */
-export type SortOrder = "recent" | "current" | "taskNumberNewest" | "taskNumberOldest";
+export type SortOrder = "recent" | "current" | "taskNumberNewest" | "taskNumberOldest" | "status";
 
 export const SORT_ORDER_OPTIONS: { value: SortOrder; label: string }[] = [
   { value: "recent", label: "Most recently updated" },
   { value: "current", label: "Priority level" },
   { value: "taskNumberNewest", label: "Task number newest" },
   { value: "taskNumberOldest", label: "Task number oldest" },
+  { value: "status", label: "Status" },
 ];
+
+/**
+ * Dropdown options for the *work board* (#0560). The board shares
+ * `SORT_ORDER_OPTIONS` with the story panel except for the `status` mode,
+ * which the story panel Tasks tab introduced — the board is grouped by status
+ * columns already, so a status sort there would be meaningless. Board
+ * behavior stays exactly as it was before that mode existed.
+ */
+export const BOARD_SORT_ORDER_OPTIONS = SORT_ORDER_OPTIONS.filter((o) => o.value !== "status");
+
+/**
+ * Pipeline order used by the `status` sort mode (#0560), from first to final
+ * stage. This is the same order `STATUS_ORDER` renders in on the story panel
+ * and work page; it lives here beside the sort that consumes it.
+ */
+const STATUS_PIPELINE: Status[] = ["draft", "inbox", "ready", "active", "review", "done"];
 
 const SORT_ORDER_KEY = "repoos.board.sortOrder";
 const STORY_SORT_ORDER_KEY = "repoos.storyPanel.sortOrder";
@@ -333,7 +355,11 @@ function readSortOrderFromKey(key: string): SortOrder {
     const raw = localStorage.getItem(key);
     if (raw === null) return "recent";
     const v = JSON.parse(raw);
-    return v === "recent" || v === "current" || v === "taskNumberNewest" || v === "taskNumberOldest"
+    return v === "recent" ||
+      v === "current" ||
+      v === "taskNumberNewest" ||
+      v === "taskNumberOldest" ||
+      v === "status"
       ? v
       : "recent";
   } catch {
@@ -395,9 +421,23 @@ export function sortTasks(tasks: Task[], order: SortOrder): Task[] {
         if (pa !== pb) return pa - pb;
         return 0;
       });
+    case "status":
+      return copy.sort((a, b) => statusRank(a.status) - statusRank(b.status));
     default:
       return copy;
   }
+}
+
+/**
+ * Pipeline-stage rank of a status for the `status` sort mode (#0560). Equal
+ * ranks return 0, which with the stable `Array.prototype.sort` keeps each
+ * status group in its existing order. A status outside the pipeline (unknown
+ * or added later without updating `STATUS_PIPELINE`) sorts after all known
+ * stages rather than throwing.
+ */
+function statusRank(status: string): number {
+  const rank = STATUS_PIPELINE.indexOf(status as Status);
+  return rank === -1 ? STATUS_PIPELINE.length : rank;
 }
 
 /** The persisted "new version available" notice, or null. */
@@ -2303,6 +2343,8 @@ export const useRepoStore = defineStore("repo", () => {
     assignedTo: string;
     status?: Status;
     body?: string;
+    /** Story tag (#0555) — the server normalizes it with `normalizeStoryName`. */
+    story?: string;
   }): Promise<Task> {
     return api<Task>("/api/tasks", JSON_OPTS("POST", form));
   }
@@ -2327,12 +2369,16 @@ export const useRepoStore = defineStore("repo", () => {
    * task so a freeform task created from a resolved input is self-contained
    * (sits in its own `## Screenshots` and isn't affected by later input
    * deletion).
+   * `story` (optional, #0555) tags the new task with the story it is being
+   * created from — sent as `story` so the draft carries the tag from the start
+   * and the PM agent's later flesh-out cannot drop it.
    */
   async function createFreeformTask(
     explanation: string,
     runId?: string,
     overrides?: { agent?: string; cli?: string; model?: string },
     inputId?: string,
+    story?: string,
   ): Promise<{
     ok: boolean;
     fallback?: boolean;
@@ -2346,6 +2392,7 @@ export const useRepoStore = defineStore("repo", () => {
     if (overrides?.cli) body.cliOverride = overrides.cli;
     if (overrides?.model) body.modelOverride = overrides.model;
     if (inputId) body.inputId = inputId;
+    if (story) body.story = story;
     const r = await api<{
       ok: boolean;
       fallback?: boolean;

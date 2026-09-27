@@ -47,6 +47,7 @@ export const NEEDS_INPUT_REASONS = [
   "check-failed-after-retries",
   "watchdog-stuck",
   "cto-escalation",
+  "underspecified",
 ] as const;
 export type NeedsInputReason = (typeof NEEDS_INPUT_REASONS)[number];
 

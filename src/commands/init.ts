@@ -183,42 +183,47 @@ repo itself is the source of truth. This file tells AI agents how to operate.
 
 ## Operating loop
 
-1. Read this file and any relevant docs under \`${docsDir}/\`.
-2. Pick a task from \`${workDir}/\` whose \`status: ready\`.
-3. Set its \`status: active\` (edit the frontmatter; do not move the file).
-4. Create a worktree on the branch named in the task's \`branch:\` field, or set one.
-5. Run \`repoos check\` and confirm it passes, then implement → test → if the repo
-   has a git remote, open an MR/PR against main.
-6. When ready for human sign-off, run \`repoos mv <id> review\` and stop. **That
-   records a handoff request; it does not set the status.** RepoOS re-runs the
-   check, commits the branch and moves the task to \`review\`. The task stays
-   \`active\` until then, and stays \`active\` with the failure shown if the check
-   fails. **Leave the worktree open; do NOT merge its branch.**
+For a RepoOS-managed task runner:
+
+1. Read this file, your assigned task under \`${workDir}/\`, and relevant
+   project docs under \`${docsDir}/\`.
+2. Work in the task branch and dedicated worktree RepoOS assigned. The server
+   owns activation and worktree setup; do not claim another task or edit its
+   frontmatter directly.
+3. Implement the task, update directly affected docs, and run
+   \`repoos check --changed main\`. It must pass before handoff.
+4. Request handoff with \`repoos mv <id> review\` or finish your reply with
+   \`::repoos-handoff-ready::\`, then end your turn. In your own runner session,
+   both record a request without changing status. RepoOS commits the branch,
+   runs checks, verifies the tested tree stayed unchanged, and then moves the
+   task to \`review\`. Failure leaves it \`active\` with the reason shown.
+5. Leave the worktree open and stop. Do not merge the branch or mark it done.
+   Requested fixes continue on the same worktree with another checked handoff.
+
+Interactive agents helping on a task use its same branch/worktree and the
+same review/close-out workflow. Coordinate with any live engineer/reviewer
+before editing. Outside a managed runner, \`repoos mv <id> review\` writes
+metadata that the server intercepts asynchronously; wait for finalization,
+not just the CLI command's return. Runner-only signals do not apply there.
 
 ## Review and sign-off
 
-A \`review\` task stays in its open worktree until a human (or another AI) signs
-off; the implementer never merges to \`main\` at \`review\` time.
+RepoOS owns review and close-out whether or not this repo has a Git remote.
+Do not open a PR, push a task branch, or substitute GitHub approval/merge
+unless the human explicitly requests that separate workflow.
 
-Every route into \`review\` — the Review button, a board drag, a
-\`PATCH status: review\`, \`repoos mv\`, or an agent's handoff signal — runs the
-same finalization: scoped \`repoos check\`, then the commit guard, then
-\`review\`. Nothing reaches \`review\` on the commit guard alone.
+The reviewer agent, when enabled, writes an advisory report in the task drawer.
+It does not edit code or replace human approval. After the human approves,
+use **Move to done** in RepoOS or \`POST /api/tasks/:id/done\`. The server
+merges the task into a separate candidate worktree, validates the combined
+result, rechecks the primary branch under a publication lock, publishes,
+cleans up, and records completion. \`repoos mv <id> done\` only changes metadata;
+it does not run close-out or merge code.
 
-- No git remote: on approval, the reviewer says **"move task <id> to done"**. The
-  implementer then sets \`status: done\` (commit \`docs(<id>): set status done\`),
-  fast-forward merges the branch to \`main\`, removes the worktree, and deletes
-  the branch.
-- With a git remote: an MR/PR is opened against \`main\` at \`review\` time. On
-  approval it is merged by the reviewer (or by the implementer only on "move task
-  <id> to done"), then remote + local branches are deleted and \`status\` is set
-  to \`done\`.
-- Requested changes are fixed on the same worktree, tests re-run, and the task
-  handed off again.
-- If the \`reviewer\` agent is enabled on the Agents page, RepoOS reviews the
-  task automatically when it lands in \`review\` and shows a short report (bugs,
-  edge cases, suggestions) in the task drawer. It is advisory: the human still
-  reviews and is the only one who moves a task to \`done\`.
+A direct commit on the primary branch is an exception requiring explicit
+human authorization. If that already-landed work has a branchless task record,
+the \`/done\` endpoint can check the primary checkout and record release without
+a candidate merge. Do not erase a task's branch metadata to force this path.
 
 ## Rules
 
@@ -273,8 +278,9 @@ export const REPOOS_AGENTS_SECTION = (workDir: string) => `${REPOOS_AGENTS_SECTI
 RepoOS keeps tasks as Markdown under \`${workDir}/\` and runs task work in dedicated
 Git worktrees. Use the RepoOS UI or \`repoos\` commands to create and update
 tasks; do not hand-edit task files. Read the relevant project docs before
-starting work, run \`repoos check\` before handoff, and let the reviewer decide
-what merges.
+starting work, run \`repoos check\` before handoff, and await human approval
+through RepoOS's **Move to done**. The reviewer is advisory. A Git remote does
+not require a PR; close-out validates and merges through RepoOS.
 `;
 
 /**

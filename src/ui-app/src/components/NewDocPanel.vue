@@ -104,8 +104,10 @@ async function createFreeform(): Promise<void> {
     ui.close();
     freeformText.value = "";
     await repo.refresh();
-    await docs.loadDocs();
-    if (res.path) await docs.loadDoc(res.path);
+    if (res.path) {
+      await docs.syncDocAfterCreate(res.path);
+      await docs.loadDoc(res.path);
+    }
   } catch (err) {
     freeformError.value = err instanceof Error ? err.message : String(err);
   } finally {
@@ -125,7 +127,7 @@ async function createDoc(): Promise<void> {
     ui.nd.path = "";
     ui.nd.content = "";
     await repo.refresh();
-    await docs.loadDocs();
+    await docs.syncDocAfterCreate(path);
     await docs.loadDoc(path);
   } catch (err) {
     repo.onError(err);
@@ -160,7 +162,7 @@ async function uploadDoc(): Promise<void> {
     uploadFile.value = null;
     uploadPath.value = "";
     await repo.refresh();
-    await docs.loadDocs();
+    await docs.syncDocAfterCreate(path);
     // Only open it in the editor if it's a text doc — binary would render as garbage.
     if (/\.(md|markdown|txt|svg)$/i.test(path)) await docs.loadDoc(path);
   } catch (err) {

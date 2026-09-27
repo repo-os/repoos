@@ -21,7 +21,8 @@
  *
  * Story → task navigation reuses `ui.openTask`, the exact call the story list's
  * live-task rows already make. The panel closes first so the two surfaces never
- * fight over focus.
+ * fight over focus. Story → *new* task (#0555) hands off the same way, to
+ * `ui.openNewTask`, carrying this story as the new task's preset.
  */
 import { computed, nextTick, ref, useId, watch, type Component } from "vue";
 import { FileText, Info, ListChecks, MessageSquare, X } from "lucide-vue-next";
@@ -42,6 +43,7 @@ import SelectItem from "./ui/select/item.vue";
 import SelectTrigger from "./ui/select/trigger.vue";
 import SelectValue from "./ui/select/value.vue";
 import SelectViewport from "./ui/select/viewport.vue";
+import Button from "./ui/button.vue";
 import { renderMarkdown } from "../lib/markdown";
 import { relTime } from "../lib/time";
 import Dialog from "./ui/dialog/root.vue";
@@ -167,6 +169,22 @@ const sortedStoryTasks = computed(() => {
 });
 
 /**
+ * #0560: the status pill wears the task's status color — the same
+ * `statusColor()` value the work board's columns read, and the same value the
+ * 7px dot on this row already uses, so dot and label can never diverge. The
+ * border is a color-mix tint of that same color rather than a hard-coded
+ * rgba, so it tracks the color; a status `statusColor` falls back for renders
+ * the fallback color without throwing.
+ */
+function taskStatusStyle(task: Task): Record<string, string> {
+  const color = statusColor(task.status);
+  return {
+    color,
+    borderColor: `color-mix(in srgb, ${color} 40%, transparent)`,
+  };
+}
+
+/**
  * The copyable deeplink for this story (#0515) — the same `CopyableNumber`
  * chip tasks and inputs lead their cards and panels with, in the same upper
  * left position, pointing at the same kind of `?param=` route. A registered
@@ -183,6 +201,18 @@ const numberPath = computed(() =>
 function openTask(task: Task): void {
   emit("close");
   void ui.openTask(task);
+}
+
+/**
+ * Create a task *from* this story (#0555): close the story panel first — the
+ * same hand-off `openTask` makes, so the two surfaces never fight over focus —
+ * then open the existing New task panel with the story preset. The preset is
+ * per-open form context, so it shows up in the panel's own Story control and
+ * is carried by both create modes.
+ */
+function startNewTask(): void {
+  emit("close");
+  ui.openNewTask("", props.story?.name ?? "");
 }
 </script>
 
@@ -280,45 +310,57 @@ function openTask(task: Task): void {
           </div>
         </div>
 
-        <!-- Tasks: every related task, clickable straight into the task panel. -->
-        <div v-else-if="tab === 'tasks'">
-          <div v-if="story && story.tasks.length" class="story-panel-tasks-wrap">
-            <div class="story-panel-tasks-toolbar">
-              <Select
-                :model-value="repo.storySortOrder"
-                @update:model-value="(v) => repo.setStorySortOrder(v as SortOrder)"
-              >
-                <SelectTrigger class="h-[34px] w-[210px] rounded-[9px] px-[11px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent position="popper">
-                  <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                    <SelectItem v-for="o in SORT_ORDER_OPTIONS" :key="o.value" :value="o.value">{{
-                      o.label
-                    }}</SelectItem>
-                  </SelectViewport>
-                </SelectContent>
-              </Select>
-            </div>
-            <div class="story-panel-tasks">
-              <button
-                v-for="task in sortedStoryTasks"
-                :key="task.id"
-                type="button"
-                class="story-panel-task"
-                @click="openTask(task)"
-              >
-                <span
-                  class="story-panel-task-dot"
-                  :style="{ background: statusColor(task.status) }"
-                ></span>
-                <span class="story-panel-task-id">#{{ task.id }}</span>
-                <span class="story-panel-task-title">{{ task.title }}</span>
-                <span class="story-panel-task-status">{{
-                  config.columnLabels[task.status] ?? task.status
-                }}</span>
-              </button>
-            </div>
+        <!-- Tasks: every related task, clickable straight into the task panel.
+             The toolbar is hoisted out of the task list's own `v-if` (#0555):
+             it holds the New task button a story with NO tasks needs most, so
+             it renders in the empty state too — with the sort Select dropped,
+             since there is then nothing to sort. -->
+        <div v-else-if="tab === 'tasks'" class="story-panel-tasks-wrap">
+          <div class="story-panel-tasks-toolbar">
+            <Select
+              v-if="story && story.tasks.length"
+              :model-value="repo.storySortOrder"
+              @update:model-value="(v) => repo.setStorySortOrder(v as SortOrder)"
+            >
+              <SelectTrigger class="h-[34px] w-[210px] rounded-[9px] px-[11px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent position="popper">
+                <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                  <SelectItem v-for="o in SORT_ORDER_OPTIONS" :key="o.value" :value="o.value">{{
+                    o.label
+                  }}</SelectItem>
+                </SelectViewport>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="accent"
+              size="sm"
+              class="story-panel-tasks-new"
+              aria-label="New task in this story"
+              @click="startNewTask"
+            >
+              <span class="plus">+</span> New task
+            </Button>
+          </div>
+          <div v-if="story && story.tasks.length" class="story-panel-tasks">
+            <button
+              v-for="task in sortedStoryTasks"
+              :key="task.id"
+              type="button"
+              class="story-panel-task"
+              @click="openTask(task)"
+            >
+              <span
+                class="story-panel-task-dot"
+                :style="{ background: statusColor(task.status) }"
+              ></span>
+              <span class="story-panel-task-id">#{{ task.id }}</span>
+              <span class="story-panel-task-title">{{ task.title }}</span>
+              <span class="story-panel-task-status" :style="taskStatusStyle(task)">{{
+                config.columnLabels[task.status] ?? task.status
+              }}</span>
+            </button>
           </div>
           <div v-else class="story-panel-empty">
             <div class="story-panel-empty-title">No related tasks</div>
