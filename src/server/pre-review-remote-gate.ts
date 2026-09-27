@@ -182,12 +182,18 @@ export async function runRemotePreReviewGate(params: {
     };
   }
   if (!remote.transient) {
+    // A red remote run is the branch's fault; a CONFIG error (no host
+    // provides a required capability) is not — it must not fall back locally
+    // either, or macOS-bound work would run on the wrong machine (#0521
+    // review), so the detail points at the config instead of the branch.
     return {
       kind: "fail",
       retryable: false,
-      detail:
-        `remote validation failed: ${remote.detail ?? "build or test suite failed on the runner"} — ` +
-        `fix it in the feature branch and re-run the gate`,
+      detail: remote.configError
+        ? `${remote.detail ?? "remote validation cannot run"} — fix the ` +
+          `remoteValidation host configuration (docs/remote-validation.md) and re-run the gate`
+        : `remote validation failed: ${remote.detail ?? "build or test suite failed on the runner"} — ` +
+          `fix it in the feature branch and re-run the gate`,
     };
   }
   return {

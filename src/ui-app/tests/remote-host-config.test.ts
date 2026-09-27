@@ -204,4 +204,31 @@ describe("patchConfig against section-scoped repoos.toml files", () => {
     expect(text.match(/containerImage\s*=/g)).toHaveLength(1);
     await cleanup();
   });
+
+  it("never touches a same-named leaf under an UNRELATED section (#0521 review blast-radius)", async () => {
+    // The section-aware rewrite/dedup path applies to every dotted key, so
+    // lock down that it only ever matches lines resolving to the key being
+    // patched — a leaf with the same name in another table is a different key.
+    const root = repo(
+      '[release]\ncontainerImage = "keep-me"\n\n' +
+        '[remoteValidation]\nenabled = true\ncontainerImage = "old"\n',
+    );
+    const res = await patch(root, { "remoteValidation.containerImage": "repoos-ci" });
+    expect(res.status).toBe(200);
+    expect(loadConfig(root).remoteValidation?.containerImage).toBe("repoos-ci");
+    const text = readFileSync(join(root, "repoos.toml"), "utf8");
+    expect(text).toContain('containerImage = "keep-me"');
+    expect(text.match(/containerImage\s*=/g)).toHaveLength(2);
+    await cleanup();
+  });
+
+  it("still rewrites a root-scoped line in place for a key with no section yet", async () => {
+    const root = repo('ntfyTopic = "old"\n\n[remoteValidation]\nenabled = true\n');
+    const res = await patch(root, { ntfyTopic: "repoos_new" });
+    expect(res.status).toBe(200);
+    const text = readFileSync(join(root, "repoos.toml"), "utf8");
+    expect(text).toContain('ntfyTopic = "repoos_new"');
+    expect(text.match(/ntfyTopic\s*=/g)).toHaveLength(1);
+    await cleanup();
+  });
 });

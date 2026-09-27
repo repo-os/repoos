@@ -59,6 +59,14 @@ export interface CheckSummary {
   detail?: string;
   /** True when a timeout suggests machine contention, not a test assertion. */
   transient?: boolean;
+  /**
+   * True when the failure is a configuration/routing problem (e.g. no remote
+   * host provides a capability the job's `runsOn` requires) rather than a
+   * build/test or infra failure (#0521 review): not retryable, not the
+   * branch's fault, and never something `fallbackToLocal` may paper over by
+   * running the gate on the wrong machine.
+   */
+  configError?: boolean;
 }
 
 export interface CompleteResult {

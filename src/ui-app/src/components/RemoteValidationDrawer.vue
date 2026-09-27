@@ -195,8 +195,8 @@ const tailscaleSteps: { label: string; body: string; cmd?: string }[] = [
   },
   {
     label: "2 · Build the repoos-ci image on the runner (one-time)",
-    body: "The image is built from the Dockerfile in this repo — it is not on a public registry. Run this on the runner machine (clones the repo, builds, then cleans up):",
-    cmd: `ssh bee 'git clone git@github.com:repo-os/repoos.git /tmp/repoos-build && docker build -f /tmp/repoos-build/scripts/remote-runner/Dockerfile.ci -t repoos-ci /tmp/repoos-build && sudo install -Dm755 /tmp/repoos-build/scripts/remote-runner/validate.sh /opt/repoos/validate.sh && sudo mkdir -p /var/cache/repoos/bun && rm -rf /tmp/repoos-build && echo done'`,
+    body: "The image is built from the Dockerfile in this repo — it is not on a public registry. Run this on the runner machine (clones the repo under $HOME — never /tmp or /var/tmp, which Docker Desktop won't share — builds, then cleans up):",
+    cmd: `ssh bee 'git clone git@github.com:repo-os/repoos.git ~/.repoos-build && docker build -f ~/.repoos-build/scripts/remote-runner/Dockerfile.ci -t repoos-ci ~/.repoos-build && sudo install -Dm755 ~/.repoos-build/scripts/remote-runner/validate.sh /opt/repoos/validate.sh && rm -rf ~/.repoos-build && echo done'`,
   },
   {
     label: "3 · Configure repoos.toml",
@@ -442,9 +442,10 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
           <p class="tunnel-help">
             <template v-if="provider === 'tailscale'">
               SSHes into every configured host and runs the per-host prerequisite check: SSH
-              reachability, Docker on Linux hosts (bun toolchain on macOS), and an up-to-date
-              <code>validate.sh</code> that accepts the per-run artifacts dir. Runs before a host's
-              first job, so a misconfigured host is reported here instead of failing jobs later.
+              reachability, Docker (the setup recipes are Docker-based on Linux and macOS alike),
+              and an up-to-date <code>validate.sh</code> that accepts the per-run artifacts dir.
+              Runs before a host's first job, so a misconfigured host is reported here instead of
+              failing jobs later.
             </template>
             <template v-else>
               Verifies the Hetzner API token is valid and can list servers.
