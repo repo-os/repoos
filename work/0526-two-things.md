@@ -2,14 +2,14 @@
 id: "0526"
 title: Cap theme switcher at 3 and move themes to top of General settings
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-27T00:58:08Z"
-updated_at: "2026-09-27T00:58:19Z"
+updated_at: "2026-09-27T00:58:40Z"
 ---
 ## Problem
 
@@ -103,3 +103,4 @@ Two things:
 - 2026-09-27T00:58:09Z · screenshots
 - 2026-09-27T00:58:09Z · screenshots
 - 2026-09-27T00:58:19Z · status draft→inbox, title, area, body
+- 2026-09-27T00:58:40Z · status inbox→ready
