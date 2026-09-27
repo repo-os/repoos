@@ -38,7 +38,7 @@ import {
   worktreePathForBranch,
 } from "../core/git.js";
 import { MAX_AUTO_REVIEW_ROUNDS, needsInputClearsOnSuccessfulReview } from "../core/needs-input.js";
-import { parseTask, utcTimestamp } from "../core/task.js";
+import { parseTask, recordChange, serializeTask, utcTimestamp } from "../core/task.js";
 import {
   parseReviewVerdict as parseVerdictLabel,
   parseReviewRelevance,
@@ -1341,13 +1341,44 @@ export class ReviewManager {
           console.log(
             `[repoos] exhausted review flag dismissed during review for #${task.id}; leaving it cleared`,
           );
+          // Visible on the task itself, not just the server log (#0546
+          // review suggestion) — the dismiss's own activity line already
+          // says a human acted; this says why the flag didn't come right
+          // back, which is the whole point of the suppression.
+          try {
+            const recorded = parseTask({
+              content: readFileSync(task.absPath, "utf8"),
+              absPath: task.absPath,
+              root: this.config.root,
+              defaultStatus: this.config.defaultStatus,
+              defaultAssignee: this.config.defaultAssignee,
+            });
+            recordChange(
+              recorded,
+              "exhausted-review flag left cleared: dismissed during this review",
+            );
+            writeFileSync(task.absPath, serializeTask(recorded));
+            commitTaskFile(this.config.root, task.absPath, `docs(${task.id}): update task`);
+          } catch (err) {
+            console.error(
+              `[repoos] could not record suppression note for #${task.id}: ${(err as Error).message}`,
+            );
+          }
           return;
         }
       } catch (err) {
         console.error(
           `[repoos] could not check dismissal before flagging #${task.id}: ${(err as Error).message}`,
         );
-        return;
+        // Fail SAFE, not silent (#0546 review): a parse/read error on the
+        // dismissal check must not quietly drop the whole escalation — fall
+        // through and flag from the pre-run `task` snapshot, exactly what
+        // the code always did before this suppression existed. Worst case
+        // this re-raises a flag a human just dismissed — the ORIGINAL bug
+        // this task exists to fix, not a new one — which is far better than
+        // an exhausted-rounds task silently sitting in review with no
+        // signal at all because a transient read glitch hit this catch.
+        current = task;
       }
       // Nothing is running or retrying from here on, so say so on the task
       // instead of leaving it silently parked in review. Preserve any current
