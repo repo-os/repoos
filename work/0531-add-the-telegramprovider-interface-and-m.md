@@ -2,7 +2,7 @@
 id: "0531"
 title: Add the local Telegram adapter and Bring Your Own Bot Token support
 type: feature
-status: active
+status: review
 priority: p1
 area: server
 story: RepoOS Telegram Bot
@@ -13,7 +13,7 @@ cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 review_model_override: opencode-go/space-bunny-free
 created_at: "2026-09-27T07:32:10Z"
-updated_at: "2026-09-27T22:01:45Z"
+updated_at: "2026-09-27T22:13:25Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 1
@@ -70,3 +70,4 @@ Not in scope: the manager-bot service, its Neon/Cloudflare deployment, hosted me
 - 2026-09-27T20:37:24Z · status review→active
 - 2026-09-27T21:58:58Z · status active→review
 - 2026-09-27T22:01:45Z · status review→active
+- 2026-09-27T22:13:25Z · status active→review
