@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from "vue";
 import InstallBox from "./components/InstallBox.vue";
+import SiteLogo from "./components/SiteLogo.vue";
 
 type Appearance = "dark" | "light";
 type DesignTheme = "classic" | "gruvbox";
@@ -197,22 +198,22 @@ const year = new Date().getFullYear();
   <header class="site-nav">
     <div class="wrap flex h-[58px] items-center justify-between">
       <a href="#top" class="flex items-center gap-2.5">
-        <img src="./assets/logo.svg" alt="" class="h-7 w-7" width="28" height="28" />
+        <SiteLogo class="h-7 w-7" :size="28" />
         <span class="text-[15px] font-bold tracking-tight">RepoOS</span>
       </a>
-      <nav class="flex items-center gap-6">
+      <nav class="flex min-w-0 shrink items-center gap-3 md:gap-6">
         <a href="#why" class="nav-link hidden md:block">The problem</a>
         <a href="#how" class="nav-link hidden md:block">How it works</a>
         <a href="#team" class="nav-link hidden md:block">The team</a>
         <a href="#principles" class="nav-link hidden md:block">Design</a>
         <a href="https://docs.repoos.org" class="nav-link hidden md:block">Docs</a>
-        <div class="theme-controls">
+        <div class="theme-controls hidden md:inline-flex">
           <div class="theme-picker">
             <button
               type="button"
               class="theme-picker-trigger"
               :aria-expanded="pickerOpen"
-              aria-haspopup="listbox"
+              aria-haspopup="menu"
               aria-label="Design theme"
               :title="`Design theme: ${activeDesignLabel()}`"
               @click="togglePicker"
@@ -231,19 +232,14 @@ const year = new Date().getFullYear();
                 <path d="M6 9l6 6 6-6" />
               </svg>
             </button>
-            <div
-              v-if="pickerOpen"
-              class="theme-picker-menu"
-              role="listbox"
-              aria-label="Design theme"
-            >
+            <div v-if="pickerOpen" class="theme-picker-menu" role="menu" aria-label="Design theme">
               <button
                 v-for="opt in DESIGN_OPTIONS"
                 :key="opt.id"
                 type="button"
-                role="option"
+                role="menuitemradio"
                 class="theme-picker-option"
-                :aria-current="designTheme === opt.id ? 'true' : undefined"
+                :aria-checked="designTheme === opt.id ? 'true' : 'false'"
                 :aria-label="`Use ${opt.label} design theme`"
                 :title="`Use ${opt.label} design theme`"
                 @click="selectDesignTheme(opt.id)"
@@ -349,8 +345,9 @@ const year = new Date().getFullYear();
               type="button"
               class="theme-picker-trigger"
               :aria-expanded="pickerOpen"
-              aria-haspopup="listbox"
+              aria-haspopup="menu"
               aria-label="Design theme"
+              :title="`Design theme: ${activeDesignLabel()}`"
               @click="togglePicker"
             >
               <span>{{ activeDesignLabel() }}</span>
@@ -367,20 +364,16 @@ const year = new Date().getFullYear();
                 <path d="M6 9l6 6 6-6" />
               </svg>
             </button>
-            <div
-              v-if="pickerOpen"
-              class="theme-picker-menu"
-              role="listbox"
-              aria-label="Design theme"
-            >
+            <div v-if="pickerOpen" class="theme-picker-menu" role="menu" aria-label="Design theme">
               <button
                 v-for="opt in DESIGN_OPTIONS"
                 :key="`m-${opt.id}`"
                 type="button"
-                role="option"
+                role="menuitemradio"
                 class="theme-picker-option"
-                :aria-current="designTheme === opt.id ? 'true' : undefined"
+                :aria-checked="designTheme === opt.id ? 'true' : 'false'"
                 :aria-label="`Use ${opt.label} design theme`"
+                :title="`Use ${opt.label} design theme`"
                 @click="selectDesignTheme(opt.id)"
               >
                 <span>{{ opt.label }}</span>
@@ -394,6 +387,9 @@ const year = new Date().getFullYear();
             type="button"
             class="theme-toggle"
             :aria-label="
+              appearance === 'dark' ? 'Switch to light appearance' : 'Switch to dark appearance'
+            "
+            :title="
               appearance === 'dark' ? 'Switch to light appearance' : 'Switch to dark appearance'
             "
             @click="toggleAppearance"
@@ -860,7 +856,7 @@ const year = new Date().getFullYear();
   <footer class="foot">
     <div class="wrap flex flex-col items-center justify-between gap-4 py-8 sm:flex-row">
       <div class="flex items-center gap-2.5">
-        <img src="./assets/logo.svg" alt="" class="h-5 w-5" width="20" height="20" />
+        <SiteLogo class="h-5 w-5" :size="20" />
         <span class="text-[13.5px] font-semibold">RepoOS</span>
         <span class="text-[13px] text-[var(--txt-faint)]"
           >&mdash; the repo is the operating system</span
