@@ -2,7 +2,7 @@
 id: "0551"
 title: Let long prompts auto-grow the composer textarea
 type: feature
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/let-long-prompts-auto-grow-the-composer-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-27T14:05:52Z"
-updated_at: "2026-09-27T15:50:58Z"
+updated_at: "2026-09-27T15:51:56Z"
 check_retry_count: 2
 last_check_failure: "[object Object]"
 review_rounds: 1
@@ -257,3 +257,4 @@ Turn off this advice by setting config variable advice.detachedHead to false
 [validate] HEAD verified at aa5f4d7bd7331354e2171e03c193ce8bbbdb97ea
 failed to connect to the docker API at unix:///var/run/docker.sock; check if the path is correct and if the daemon is running: dial unix /var/run/docker.sock: connect: no such file or directory
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-09-27T15:51:56Z · status active→review
