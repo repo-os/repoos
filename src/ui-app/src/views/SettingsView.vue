@@ -747,51 +747,6 @@ onUnmounted(() => {
         <Card style="padding: 0 18px 6px; margin-bottom: 16px">
           <div class="setting-group">
             <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
-              <span class="live-dot"></span>General
-            </div>
-            <div
-              v-for="f in generalFields"
-              :key="f.key"
-              :id="`setting-${f.key}`"
-              class="setting-row"
-            >
-              <div class="setting-info">
-                <div class="setting-label">{{ f.label }}</div>
-                <div class="setting-desc">{{ f.description }}</div>
-              </div>
-              <div class="setting-input">
-                <Select
-                  v-if="f.type === 'select'"
-                  :model-value="String(form[f.key])"
-                  :disabled="config.saving"
-                  @update:model-value="(v) => (form[f.key] = v)"
-                >
-                  <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                      <SelectItem v-for="o in f.options" :key="o.value" :value="o.value">{{
-                        o.label
-                      }}</SelectItem>
-                    </SelectViewport>
-                  </SelectContent>
-                </Select>
-                <Switch
-                  v-else-if="f.type === 'boolean'"
-                  :checked="!!form[f.key]"
-                  :disabled="config.saving"
-                  @update:checked="(v: boolean) => (form[f.key] = v)"
-                />
-              </div>
-              <span v-if="f.restartRequired" class="restart-badge">restart required</span>
-            </div>
-          </div>
-        </Card>
-
-        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
-          <div class="setting-group">
-            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
               <span class="live-dot"></span>Themes
             </div>
             <div class="theme-list">
@@ -847,6 +802,51 @@ onUnmounted(() => {
             <div class="setting-desc" style="padding: 4px 0 10px">
               Star up to 3 favorites — starred themes appear in the sidebar quick switcher. Click a
               theme to apply it.
+            </div>
+          </div>
+        </Card>
+
+        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+          <div class="setting-group">
+            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+              <span class="live-dot"></span>General
+            </div>
+            <div
+              v-for="f in generalFields"
+              :key="f.key"
+              :id="`setting-${f.key}`"
+              class="setting-row"
+            >
+              <div class="setting-info">
+                <div class="setting-label">{{ f.label }}</div>
+                <div class="setting-desc">{{ f.description }}</div>
+              </div>
+              <div class="setting-input">
+                <Select
+                  v-if="f.type === 'select'"
+                  :model-value="String(form[f.key])"
+                  :disabled="config.saving"
+                  @update:model-value="(v) => (form[f.key] = v)"
+                >
+                  <SelectTrigger class="h-[34px] w-[200px] rounded-[9px] px-[11px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                      <SelectItem v-for="o in f.options" :key="o.value" :value="o.value">{{
+                        o.label
+                      }}</SelectItem>
+                    </SelectViewport>
+                  </SelectContent>
+                </Select>
+                <Switch
+                  v-else-if="f.type === 'boolean'"
+                  :checked="!!form[f.key]"
+                  :disabled="config.saving"
+                  @update:checked="(v: boolean) => (form[f.key] = v)"
+                />
+              </div>
+              <span v-if="f.restartRequired" class="restart-badge">restart required</span>
             </div>
           </div>
         </Card>
