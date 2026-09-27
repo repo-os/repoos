@@ -177,13 +177,18 @@ Waiting counts against the caller's own deadline (handoff has 10 minutes), so a
 long queue can time a handoff out.
 
 Each run also gets its **own bundle and artifacts path** on the host
-(`/tmp/repoos-<task>-<id>.bundle`, `/tmp/repoos-artifacts/<task>-<id>/`, passed to
-`validate.sh` as its third argument) so overlapping runs never delete each other's
-logs; artifact dirs older than a day are pruned. The scripts on the host are
-copies: after updating RepoOS run `just setup-<host>` again, otherwise an old
-`validate.sh` ignores the third argument, keeps using the shared
-`/tmp/repoos-artifacts`, and the per-run log download finds nothing (the verdict
-is unaffected).
+(`/var/tmp/repoos-<task>-<id>.bundle`, `/var/tmp/repoos-artifacts/<task>-<id>/`,
+passed to `validate.sh` as its third argument) so overlapping runs never delete
+each other's logs; artifact dirs older than a day are pruned. `/var/tmp` is
+deliberate, not `/tmp`: on Linux, `/tmp` is commonly a RAM-backed tmpfs with a
+per-user quota shared with whatever else that user runs on the box (e.g. a
+desktop session on a runner that's also someone's daily machine), and a run
+can hit "disk quota exceeded" for reasons that have nothing to do with the
+task. `/var/tmp` is real disk on every host this runs on. The scripts on the
+host are copies: after updating RepoOS run `just setup-<host>` again,
+otherwise an old `validate.sh` ignores the third argument, keeps using the
+shared `/var/tmp/repoos-artifacts`, and the per-run log download finds
+nothing (the verdict is unaffected).
 
 ### Hetzner provider (original)
 

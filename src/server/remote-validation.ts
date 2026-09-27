@@ -128,8 +128,14 @@ export function remoteRunPaths(
 ): RemoteRunPaths {
   const safe = taskId.replace(/[^A-Za-z0-9_.-]/g, "_") || "run";
   return {
-    bundle: `/tmp/repoos-${safe}-${runId}.bundle`,
-    artifacts: `/tmp/repoos-artifacts/${safe}-${runId}`,
+    // Real disk, not /tmp: on a host whose /tmp is a RAM-backed tmpfs (e.g. a
+    // Linux box with a per-user tmpfs quota shared with the desktop session
+    // running on it), repoos's own bundle/artifacts churn competes with
+    // whatever else that user is doing and can hit "disk quota exceeded"
+    // mid-run for no reason related to the task. /var/tmp is real disk on
+    // every host this runs on (Linux and macOS) and isn't quota-capped.
+    bundle: `/var/tmp/repoos-${safe}-${runId}.bundle`,
+    artifacts: `/var/tmp/repoos-artifacts/${safe}-${runId}`,
   };
 }
 
