@@ -165,7 +165,9 @@ standard TOML (you cannot define a key as both a plain value and
 it — the two forms below are separately valid files, not one combined file:
 
 **Plain list** — hosts with no per-host attrs to set. Also editable in
-Settings → Remote validation ("Host pool"):
+Settings → Remote validation ("Host pool"). Saving the list updates the
+running dispatcher immediately (no restart); in-flight jobs on a removed
+host finish there, and new jobs use the saved pool.
 
 ```toml
 [remoteValidation]

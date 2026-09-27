@@ -286,6 +286,12 @@ export interface RemoteValidator {
   /** Per-host pool state for the status endpoint (#0521). Optional: the
    *  Hetzner runner is a single server-owned VM with no pool to report. */
   hostStatus?(): RemoteHostStatus[];
+  /**
+   * Rebuild dispatch state from the live config after a Settings / raw-TOML
+   * save. Without this the pool keeps the boot-time host list until restart
+   * (#0521 review). Optional: Hetzner has no pool to rebuild.
+   */
+  applyConfig?(): void;
 }
 
 interface RunnerState {
@@ -1262,6 +1268,8 @@ interface PoolHostState {
   ssh: RemoteHost;
   limit: number;
   active: number;
+  /** Dropped from config; kept only until in-flight slots release. */
+  removed?: boolean;
   probed: boolean;
   healthy: boolean;
   detail?: string;
@@ -1321,7 +1329,7 @@ export class TailscaleHostPool {
   private readonly keyPath?: string;
   private readonly logger?: Logger;
   /** The image every host's Docker prerequisite probe must find (#0521 review). */
-  private readonly containerImage: string;
+  private containerImage: string;
 
   constructor(rv: RemoteValidationConfig | undefined, opts: HostPoolOptions) {
     this.exec = opts.exec;
@@ -1345,8 +1353,82 @@ export class TailscaleHostPool {
     }
   }
 
+  /**
+   * Apply a live `[remoteValidation]` change without replacing the pool
+   * object (in-flight `HostSlot.release()` closures stay valid). Hosts still
+   * in the list keep in-flight / health / last-run; new hosts are added
+   * unprobed; removed hosts stop receiving work and drop once idle.
+   */
+  sync(rv: RemoteValidationConfig | undefined): void {
+    this.containerImage = rv?.containerImage ?? "repoos-ci";
+    const wanted = resolveRemoteHosts(rv);
+    const wantedByHost = new Map(wanted.map((h) => [h.host, h]));
+
+    for (const spec of wanted) {
+      const existing = this.hosts.find((s) => s.spec.host === spec.host);
+      if (!existing) {
+        this.hosts.push({
+          spec,
+          ssh: {
+            ip: spec.host,
+            user: rv ? remoteHostUser(rv, spec) : "root",
+            keyPath: this.keyPath,
+          },
+          limit: rv ? remoteHostLimit(rv, spec) : 1,
+          active: 0,
+          probed: false,
+          healthy: false,
+          retryAt: 0,
+          healthFails: 0,
+        });
+        continue;
+      }
+      const nextUser = rv ? remoteHostUser(rv, spec) : "root";
+      const reprobe =
+        hostRunner(existing.spec) !== hostRunner(spec) || existing.ssh.user !== nextUser;
+      existing.removed = undefined;
+      existing.spec = spec;
+      existing.ssh = { ip: spec.host, user: nextUser, keyPath: this.keyPath };
+      existing.limit = rv ? remoteHostLimit(rv, spec) : 1;
+      if (reprobe) {
+        existing.probed = false;
+        existing.healthy = false;
+        existing.healthFails = 0;
+        existing.detail = undefined;
+        existing.retryAt = 0;
+        if (existing.retryTimer) {
+          clearTimeout(existing.retryTimer);
+          existing.retryTimer = undefined;
+        }
+      }
+    }
+
+    for (let i = this.hosts.length - 1; i >= 0; i--) {
+      const s = this.hosts[i]!;
+      if (wantedByHost.has(s.spec.host)) continue;
+      s.removed = true;
+      if (s.active > 0) continue;
+      if (s.retryTimer) {
+        clearTimeout(s.retryTimer);
+        s.retryTimer = undefined;
+      }
+      this.hosts.splice(i, 1);
+    }
+
+    this.settleIneligibleWaiters();
+    if (this.waiters.length) {
+      for (const s of this.hosts) {
+        if (s.removed || s.probed) continue;
+        void this.probe(s).then(() => {
+          if (s.healthy) this.dispatch();
+        });
+      }
+    }
+    this.dispatch();
+  }
+
   get size(): number {
-    return this.hosts.length;
+    return this.hosts.filter((s) => !s.removed).length;
   }
 
   /** Queued runs, for the status endpoint. */
@@ -1364,14 +1446,15 @@ export class TailscaleHostPool {
     capabilities: string[],
     opts: { onQueue?: (ahead: number) => void; deadlineAt?: number } = {},
   ): Promise<HostSlot> {
-    if (this.hosts.length === 0) {
+    const live = this.liveHosts();
+    if (live.length === 0) {
       throw new NoEligibleHostError("remoteValidation.tailscaleHost is not configured");
     }
-    const candidates = this.hosts.filter((s) => hostSatisfies(s.spec, capabilities));
+    const candidates = live.filter((s) => hostSatisfies(s.spec, capabilities));
     if (candidates.length === 0) {
       throw new NoEligibleHostError(
         `no remote host provides ${describeCapabilities(capabilities)} ` +
-          `(configured: ${this.hosts.map((s) => this.describe(s)).join(", ")}) — ` +
+          `(configured: ${live.map((s) => this.describe(s)).join(", ")}) — ` +
           "add a [[remoteValidation.tailscaleHosts]] row whose `os` or `labels` provide it",
       );
     }
@@ -1495,7 +1578,7 @@ export class TailscaleHostPool {
     // counting one waiter once per compatible host (#0521 review).
     const queuedOn = new Map<PoolHostState, number>();
     for (const w of this.waiters) {
-      const next = this.hosts
+      const next = this.liveHosts()
         .filter((s) => hostSatisfies(s.spec, w.capabilities))
         .sort((a, b) => Number(b.healthy) - Number(a.healthy) || a.active - b.active)[0];
       if (next) queuedOn.set(next, (queuedOn.get(next) ?? 0) + 1);
@@ -1534,6 +1617,21 @@ export class TailscaleHostPool {
     }
   }
 
+  private liveHosts(): PoolHostState[] {
+    return this.hosts.filter((s) => !s.removed);
+  }
+
+  private dropIfIdle(s: PoolHostState): void {
+    if (!s.removed || s.active > 0) return;
+    const i = this.hosts.indexOf(s);
+    if (i === -1) return;
+    if (s.retryTimer) {
+      clearTimeout(s.retryTimer);
+      s.retryTimer = undefined;
+    }
+    this.hosts.splice(i, 1);
+  }
+
   private describe(s: PoolHostState): string {
     const caps = [s.spec.os, ...(s.spec.labels ?? [])].filter(Boolean);
     return `${s.spec.host}${caps.length ? ` [${caps.join(", ")}]` : ""}`;
@@ -1559,6 +1657,7 @@ export class TailscaleHostPool {
         if (released) return;
         released = true;
         s.active = Math.max(0, s.active - 1);
+        this.dropIfIdle(s);
         this.dispatch();
       },
     };
@@ -1569,7 +1668,7 @@ export class TailscaleHostPool {
   private dispatch(): void {
     for (let i = 0; i < this.waiters.length;) {
       const w = this.waiters[i]!;
-      const free = this.hosts
+      const free = this.liveHosts()
         .filter((s) => s.healthy && s.active < s.limit && hostSatisfies(s.spec, w.capabilities))
         .sort((a, b) => a.active - b.active)[0];
       if (!free) {
@@ -1667,7 +1766,7 @@ export class TailscaleHostPool {
    */
   private settleHopelessWaiters(): void {
     for (const w of [...this.waiters]) {
-      const eligible = this.hosts.filter((s) => hostSatisfies(s.spec, w.capabilities));
+      const eligible = this.liveHosts().filter((s) => hostSatisfies(s.spec, w.capabilities));
       const hopeless =
         eligible.length > 0 &&
         eligible.every((s) => !s.healthy && !s.probing && s.healthFails >= MAX_HEALTH_RETRIES);
@@ -1684,6 +1783,30 @@ export class TailscaleHostPool {
           `no usable remote host for ${describeCapabilities(w.capabilities)} — ` +
             `${eligible.map((s) => `${s.spec.host}: ${s.detail ?? "unreachable"}`).join("; ")} ` +
             `(gave up after ${MAX_HEALTH_RETRIES} failed probes — retry once a host is back)`,
+        ),
+      );
+    }
+  }
+
+  /**
+   * After a live host-list change, fail waiters that no remaining host can
+   * satisfy (same non-retryable error as acquire-time mismatch).
+   */
+  private settleIneligibleWaiters(): void {
+    for (const w of [...this.waiters]) {
+      const live = this.liveHosts();
+      if (live.length === 0) {
+        if (!this.settle(w)) continue;
+        w.reject(new NoEligibleHostError("remoteValidation.tailscaleHost is not configured"));
+        continue;
+      }
+      if (live.some((s) => hostSatisfies(s.spec, w.capabilities))) continue;
+      if (!this.settle(w)) continue;
+      w.reject(
+        new NoEligibleHostError(
+          `no remote host provides ${describeCapabilities(w.capabilities)} ` +
+            `(configured: ${live.map((s) => this.describe(s)).join(", ")}) — ` +
+            "add a [[remoteValidation.tailscaleHosts]] row whose `os` or `labels` provide it",
         ),
       );
     }
@@ -1786,6 +1909,14 @@ export class TailscaleRunner implements RemoteValidator {
   /** Per-host pool state for the status endpoint (#0521). */
   hostStatus(): RemoteHostStatus[] {
     return this.pool.status();
+  }
+
+  /**
+   * Rebuild the dispatch pool from the (already mutated) config object so a
+   * Settings save takes effect without restarting the server (#0521 review).
+   */
+  applyConfig(): void {
+    this.pool.sync(this.config.remoteValidation);
   }
 
   /** The queue line a waiting job streams: what it needs and why it waits. */
@@ -1994,7 +2125,9 @@ export class TailscaleRunner implements RemoteValidator {
 
 /**
  * Returns the right RemoteValidator for the configured provider, or undefined
- * if remote validation is disabled. Called once at server boot.
+ * if remote validation is disabled. Constructed at server boot; a later
+ * Settings save calls {@link TailscaleRunner.applyConfig} on the same instance
+ * so the live host pool matches the saved list without a restart.
  */
 export function createRemoteValidator(
   config: RepoOSConfig,

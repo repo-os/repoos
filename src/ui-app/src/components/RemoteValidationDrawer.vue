@@ -122,11 +122,15 @@ async function saveHosts(): Promise<void> {
     // to (a section-scoped line the patcher could not replace would silently
     // keep the old pool — #0521 review) and say so if it differs.
     const resolved: string[] = status.value?.tailscaleHosts ?? [];
+    const live: string[] = (status.value?.hosts ?? []).map((h: { host: string }) => h.host);
     const same = resolved.length === list.length && list.every((h) => resolved.includes(h));
-    hostsMsg.value = same
-      ? "Saved — restart the server to apply the new pool."
-      : `Saved, but the pool resolves to [${resolved.join(", ") || "none"}] — ` +
-        "check repoos.toml; a stale line there may be overriding the save.";
+    const sameLive = live.length === list.length && list.every((h) => live.includes(h));
+    hostsMsg.value =
+      same && sameLive
+        ? "Saved — new jobs will use this pool."
+        : `Saved, but the live dispatcher has [${live.join(", ") || "none"}] ` +
+          `(config: [${resolved.join(", ") || "none"}]) — check repoos.toml; ` +
+          "a stale line there may be overriding the save.";
   } catch (e) {
     hostsMsg.value = (e as Error).message;
   } finally {

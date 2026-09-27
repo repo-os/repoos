@@ -451,6 +451,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
   }
 
   Object.assign(repoos.config, loadConfig(config.root));
+  ctx.remoteValidator?.applyConfig?.();
 
   if (patch.workDir || patch.cacheDir || patch.taskExtensions) {
     index.refreshAll();
@@ -557,6 +558,7 @@ export const writeRawConfig: RouteHandler = async (ctx, req, res) => {
   // in-memory config and reconcile the index (the raw file can change
   // workDir/cacheDir/taskExtensions, which a curated save would also refresh).
   Object.assign(repoos.config, loadConfig(config.root));
+  ctx.remoteValidator?.applyConfig?.();
   index.refreshAll();
 
   return json(res, 200, {
