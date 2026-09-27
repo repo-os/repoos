@@ -273,7 +273,30 @@ const STATUS_PIPELINE: Status[] = ["draft", "inbox", "ready", "active", "review"
 
 const SORT_ORDER_KEY = "repoos.board.sortOrder";
 const STORY_SORT_ORDER_KEY = "repoos.storyPanel.sortOrder";
+const BOARD_USAGE_RANGE_KEY = "repoos.board.usageRange";
 const NEW_VERSION_KEY = "repoos.newVersion";
+
+const DEFAULT_BOARD_USAGE_RANGE: UsageRange = "7d";
+
+function readBoardUsageRange(): UsageRange {
+  try {
+    const raw = localStorage.getItem(BOARD_USAGE_RANGE_KEY);
+    if (raw === null) return DEFAULT_BOARD_USAGE_RANGE;
+    return raw === "1d" || raw === "7d" || raw === "30d" || raw === "all"
+      ? raw
+      : DEFAULT_BOARD_USAGE_RANGE;
+  } catch {
+    return DEFAULT_BOARD_USAGE_RANGE;
+  }
+}
+
+function writeBoardUsageRange(range: UsageRange): void {
+  try {
+    localStorage.setItem(BOARD_USAGE_RANGE_KEY, range);
+  } catch {
+    /* ignore quota / privacy-mode failures */
+  }
+}
 
 /**
  * Done-task acknowledgement (0278). A task that just landed in `done` keeps a
@@ -572,9 +595,9 @@ export const useRepoStore = defineStore("repo", () => {
    * explicit so a failed optional request is not mistaken for invisible UI. */
   const boardUsageLoading = ref(false);
   const boardUsageError = ref<string | null>(null);
-  /** The usage window currently displayed (0334). "all" is the default and
-   * matches the pre-range behavior, so it doubles as the initial selection. */
-  const boardUsageRange = ref<UsageRange>("all");
+  /** The usage window currently displayed (0334). Restored from localStorage on
+   * load; first visit defaults to one week (#0554). */
+  const boardUsageRange = ref<UsageRange>(readBoardUsageRange());
   /** Live system resource stats from the SSE stream. */
   const systemStats = ref<SystemStats | null>(null);
   /** Live integration-pipeline snapshot for the pinned status bar (0207). */
@@ -2173,7 +2196,9 @@ export const useRepoStore = defineStore("repo", () => {
    */
   async function loadBoardUsage(range?: UsageRange): Promise<void> {
     const requested = range ?? boardUsageRange.value;
+    const prev = boardUsageRange.value;
     boardUsageRange.value = requested;
+    if (requested !== prev) writeBoardUsageRange(requested);
     boardUsageLoading.value = true;
     boardUsageError.value = null;
     try {
