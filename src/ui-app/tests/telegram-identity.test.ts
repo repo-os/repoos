@@ -2,7 +2,7 @@
  * Telegram user binding (#0533): allowlisted email, expiry, replay,
  * silent-rebind refusal, live role resolution, username never authorizes.
  */
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -187,6 +187,27 @@ describe("redeemTelegramInvite", () => {
     expect(stillBob).toEqual({ ok: true, email: "bob@test.com", role: "member" });
   });
 
+  it("rolls back invite redemption if the link write fails", () => {
+    allow("alice@test.com");
+    const created = createTelegramInvite(store, ctx, {
+      email: "alice@test.com",
+      createdBy: "admin@test.com",
+    });
+    if ("error" in created) throw new Error("invite");
+    const spy = vi.spyOn(store, "upsertTelegramLink").mockReturnValue(false);
+    expect(redeemTelegramInvite(store, ctx, { nonce: created.nonce, telegramUserId: 51 })).toEqual({
+      ok: false,
+      reason: "invalid",
+    });
+    spy.mockRestore();
+    expect(store.getTelegramInviteByNonceHash(hashOtp(created.nonce))?.redeemedAt).toBeNull();
+    expect(redeemTelegramInvite(store, ctx, { nonce: created.nonce, telegramUserId: 51 })).toEqual({
+      ok: true,
+      email: "alice@test.com",
+      role: "member",
+    });
+  });
+
   it("rejects a tampered invite row whose email no longer matches the MAC", () => {
     allow("alice@test.com");
     allow("mallory@test.com");
@@ -286,6 +307,27 @@ describe("unbind and reassign", () => {
     expect(resolveTelegramSender(store, 12)?.email).toBe("bob@test.com");
     const audit = store.getAuditLog(10).find((e) => e.action === TELEGRAM_AUDIT.userReassigned);
     expect(audit?.details).toContain("alice@test.com");
+  });
+
+  it("does not revive a revoked link via reassign", () => {
+    allow("alice@test.com");
+    allow("bob@test.com");
+    const created = createTelegramInvite(store, ctx, {
+      email: "alice@test.com",
+      createdBy: "admin@test.com",
+    });
+    if ("error" in created) throw new Error("invite");
+    redeemTelegramInvite(store, ctx, { nonce: created.nonce, telegramUserId: 12 });
+    unbindTelegramUser(store, 12, "admin@test.com");
+    expect(
+      reassignTelegramUser(store, {
+        telegramUserId: 12,
+        email: "bob@test.com",
+        actorEmail: "admin@test.com",
+      }),
+    ).toEqual({ error: "not_found" });
+    expect(resolveTelegramSender(store, 12)).toBeNull();
+    expect(store.getTelegramLink(12)?.revokedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 });
 

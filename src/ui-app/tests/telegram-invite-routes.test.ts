@@ -11,6 +11,7 @@ import type { RouteContext } from "../../server/routes/types";
 import {
   createTelegramInviteRoute,
   listTelegramLinksRoute,
+  reassignTelegramLinkRoute,
   unbindTelegramLinkRoute,
 } from "../../server/routes/telegram-identity";
 import { SESSION_COOKIE_NAME } from "../../core/auth";
@@ -190,5 +191,66 @@ describe("telegram invite routes", () => {
     );
     expect(unbound.fake.status).toBe(200);
     expect(store.getAuditLog(20).some((e) => e.action === TELEGRAM_AUDIT.userUnbound)).toBe(true);
+  });
+
+  it("lets an admin reassign an active link and 404s after unbind", async () => {
+    const store = getAuthStore(root)!;
+    store.upsertUser("admin@example.com", "admin", null);
+    store.upsertUser("member@example.com", "member", "admin@example.com");
+    store.upsertUser("other@example.com", "member", "admin@example.com");
+    const token = store.createSession("admin@example.com", "admin", 3600);
+    const secret = "route-test-session-secret";
+    const ctx = {
+      secret,
+      repoIdentity: repositoryIdentity(root),
+      instanceIdentity: instanceIdentity(root),
+    };
+    const created = createTelegramInvite(store, ctx, {
+      email: "member@example.com",
+      createdBy: "admin@example.com",
+    });
+    if ("error" in created) throw new Error("invite");
+    redeemTelegramInvite(store, ctx, { nonce: created.nonce, telegramUserId: 42 });
+
+    const reassigned = makeRes();
+    await reassignTelegramLinkRoute(
+      makeCtx(root),
+      makeReq(
+        `${SESSION_COOKIE_NAME}=${token}`,
+        "/api/auth/telegram/links/42/reassign",
+        JSON.stringify({ email: "other@example.com" }),
+      ),
+      reassigned.res,
+      {},
+    );
+    expect(reassigned.fake.status).toBe(200);
+    expect(reassigned.fake.payload).toEqual({ ok: true, email: "other@example.com" });
+    expect(store.getAuditLog(20).some((e) => e.action === TELEGRAM_AUDIT.userReassigned)).toBe(
+      true,
+    );
+
+    const unbound = makeRes();
+    unbindTelegramLinkRoute(
+      makeCtx(root),
+      makeReq(`${SESSION_COOKIE_NAME}=${token}`, "/api/auth/telegram/links/42"),
+      unbound.res,
+      {},
+    );
+    expect(unbound.fake.status).toBe(200);
+
+    const afterUnbind = makeRes();
+    await reassignTelegramLinkRoute(
+      makeCtx(root),
+      makeReq(
+        `${SESSION_COOKIE_NAME}=${token}`,
+        "/api/auth/telegram/links/42/reassign",
+        JSON.stringify({ email: "member@example.com" }),
+      ),
+      afterUnbind.res,
+      {},
+    );
+    expect(afterUnbind.fake.status).toBe(404);
+    expect(store.getTelegramLink(42)?.email).toBe("other@example.com");
+    expect(store.getTelegramLink(42)?.revokedAt).not.toBeNull();
   });
 });

@@ -140,6 +140,7 @@ export function createTelegramInvite(
 ): CreatedTelegramInvite | { error: "not_allowlisted" | "invalid_email" | "store" } {
   const email = input.email.trim().toLowerCase();
   if (!isValidEmail(email)) return { error: "invalid_email" };
+  if (!store.isAvailable()) return { error: "store" };
   if (!store.getUser(email)) return { error: "not_allowlisted" };
 
   const now = ctx.now ?? new Date();
@@ -200,6 +201,8 @@ export function redeemTelegramInvite(
   }
 
   const now = ctx.now ?? new Date();
+  // Must not run inside another SQLite transaction (withImmediateTransaction
+  // cannot nest). Call this from the /start handler, not from a wrapping txn.
   try {
     return store.withImmediateTransaction(() => {
       const invite = store.getTelegramInviteByNonceHash(hashOtp(nonce));
@@ -232,20 +235,25 @@ export function redeemTelegramInvite(
         return { ok: false, reason: "already_bound" } as const;
       }
 
-      if (!store.markTelegramInviteRedeemed(invite.nonceHash)) {
+      const boundAt = now.toISOString();
+      if (!store.markTelegramInviteRedeemed(invite.nonceHash, boundAt)) {
         return { ok: false, reason: "replay" } as const;
       }
 
-      const boundAt = now.toISOString();
-      store.upsertTelegramLink({
-        telegramUserId: input.telegramUserId,
-        email: invite.email,
-        telegramUsername: normalizeUsername(input.telegramUsername),
-        boundAt,
-        boundBy: invite.createdBy,
-        lastSeenAt: boundAt,
-        revokedAt: null,
-      });
+      if (
+        !store.upsertTelegramLink({
+          telegramUserId: input.telegramUserId,
+          email: invite.email,
+          telegramUsername: normalizeUsername(input.telegramUsername),
+          boundAt,
+          boundBy: invite.createdBy,
+          lastSeenAt: boundAt,
+          revokedAt: null,
+        })
+      ) {
+        // Roll the invite redemption back with the transaction.
+        throw new Error("telegram link write failed");
+      }
       store.logAudit(
         TELEGRAM_AUDIT.userBound,
         invite.email,
@@ -272,7 +280,7 @@ export function resolveTelegramSender(
   if (!link || link.revokedAt) return null;
   const user = store.getUser(link.email);
   if (!user) return null;
-  store.touchTelegramLinkSeen(telegramUserId);
+  store.touchTelegramLinkSeen(telegramUserId, new Date().toISOString());
   return { email: user.email, role: user.role };
 }
 
@@ -283,35 +291,43 @@ export function unbindTelegramUser(
 ): TelegramUserLink | null {
   const existing = store.getTelegramLink(telegramUserId);
   if (!existing || existing.revokedAt) return null;
-  if (!store.revokeTelegramLink(telegramUserId)) return null;
+  const revokedAt = new Date().toISOString();
+  if (!store.revokeTelegramLink(telegramUserId, revokedAt)) return null;
   store.logAudit(
     TELEGRAM_AUDIT.userUnbound,
     existing.email,
     actorEmail,
     JSON.stringify({ telegramUserId }),
   );
-  return { ...existing, revokedAt: new Date().toISOString() };
+  return { ...existing, revokedAt };
 }
 
 export function reassignTelegramUser(
   store: AuthStore,
   input: { telegramUserId: number; email: string; actorEmail: string },
-): { ok: true; email: string } | { error: "not_found" | "not_allowlisted" | "invalid_email" } {
+):
+  | { ok: true; email: string }
+  | { error: "not_found" | "not_allowlisted" | "invalid_email" | "store" } {
   const email = input.email.trim().toLowerCase();
   if (!isValidEmail(email)) return { error: "invalid_email" };
+  if (!store.isAvailable()) return { error: "store" };
   if (!store.getUser(email)) return { error: "not_allowlisted" };
   const existing = store.getTelegramLink(input.telegramUserId);
-  if (!existing) return { error: "not_found" };
+  if (!existing || existing.revokedAt) return { error: "not_found" };
 
   const now = new Date().toISOString();
-  store.upsertTelegramLink({
-    ...existing,
-    email,
-    boundAt: now,
-    boundBy: input.actorEmail,
-    lastSeenAt: now,
-    revokedAt: null,
-  });
+  if (
+    !store.upsertTelegramLink({
+      ...existing,
+      email,
+      boundAt: now,
+      boundBy: input.actorEmail,
+      lastSeenAt: now,
+      revokedAt: null,
+    })
+  ) {
+    return { error: "store" };
+  }
   store.logAudit(
     TELEGRAM_AUDIT.userReassigned,
     email,

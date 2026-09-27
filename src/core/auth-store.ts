@@ -720,29 +720,29 @@ export class AuthStore {
     }
   }
 
-  touchTelegramLinkSeen(telegramUserId: number): void {
+  touchTelegramLinkSeen(telegramUserId: number, seenAt: string): void {
     if (!this.available) return;
     try {
       this.db
         .prepare(
-          `UPDATE telegram_user_links SET last_seen_at = datetime('now')
+          `UPDATE telegram_user_links SET last_seen_at = ?
            WHERE telegram_user_id = ? AND revoked_at IS NULL`,
         )
-        .run(telegramUserId);
+        .run(seenAt, telegramUserId);
     } catch {
       /* ignore */
     }
   }
 
-  revokeTelegramLink(telegramUserId: number): boolean {
+  revokeTelegramLink(telegramUserId: number, revokedAt: string): boolean {
     if (!this.available) return false;
     try {
       const result = this.db
         .prepare(
-          `UPDATE telegram_user_links SET revoked_at = datetime('now')
+          `UPDATE telegram_user_links SET revoked_at = ?
            WHERE telegram_user_id = ? AND revoked_at IS NULL`,
         )
-        .run(telegramUserId);
+        .run(revokedAt, telegramUserId);
       return (result.changes ?? 0) > 0;
     } catch {
       return false;
@@ -791,15 +791,15 @@ export class AuthStore {
    * Mark an unused invite redeemed. Returns false if the row is missing,
    * already redeemed, or the write fails — callers treat all as replay.
    */
-  markTelegramInviteRedeemed(nonceHash: string): boolean {
+  markTelegramInviteRedeemed(nonceHash: string, redeemedAt: string): boolean {
     if (!this.available) return false;
     try {
       const result = this.db
         .prepare(
-          `UPDATE telegram_link_invites SET redeemed_at = datetime('now')
+          `UPDATE telegram_link_invites SET redeemed_at = ?
            WHERE nonce_hash = ? AND redeemed_at IS NULL`,
         )
-        .run(nonceHash);
+        .run(redeemedAt, nonceHash);
       return (result.changes ?? 0) > 0;
     } catch {
       return false;
@@ -824,7 +824,9 @@ export class AuthStore {
 
   /**
    * Run `fn` inside BEGIN IMMEDIATE so invite redeem cannot race a second
-   * /start into a double bind. Nested calls are not supported.
+   * /start into a double bind. Nested calls are not supported — later
+   * Telegram intake (#0532/#0534) must not wrap redeemTelegramInvite in
+   * another transaction.
    */
   withImmediateTransaction<T>(fn: () => T): T {
     if (!this.available) throw new Error("Auth store unavailable");
