@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 cli_override: codex
-model_override: default
+model_override: gpt-6-sol
 created_at: "2026-09-27T13:20:14Z"
-updated_at: "2026-09-27T13:30:15Z"
+updated_at: "2026-09-27T13:31:55Z"
 ---
 ## Problem
 
@@ -105,3 +105,4 @@ Apply the identical shape to build staleness, in the CLI entrypoint
 
 - 2026-09-27T13:20:14Z · created · unknown
 - 2026-09-27T13:30:15Z · cli_override, model_override
+- 2026-09-27T13:31:55Z · model_override
