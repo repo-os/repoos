@@ -3,9 +3,6 @@ id: "0529"
 title: Record the Telegram identity and authorization model
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p1
 area: docs
 story: RepoOS Telegram Bot
@@ -16,7 +13,7 @@ cli_override: codex
 model_override: gpt-6-luna
 review_model_override: opencode-go/hy3
 created_at: "2026-09-27T07:31:53Z"
-updated_at: "2026-09-27T16:10:59Z"
+updated_at: "2026-09-27T16:11:45Z"
 review_passes: 3
 review_rounds: 2
 last_check_failure: "[object Object]"
@@ -108,3 +105,4 @@ failed to connect to the docker API at unix:///var/run/docker.sock; check if the
 - 2026-09-27T16:04:14Z · status active→review
 - 2026-09-27T16:05:19Z · needs_input
 - 2026-09-27T16:10:59Z · review_model_override
+- 2026-09-27T16:11:45Z · needs_input
