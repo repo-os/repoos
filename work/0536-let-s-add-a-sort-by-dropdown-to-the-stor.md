@@ -2,17 +2,14 @@
 id: "0536"
 title: Add sort-by dropdown to stories page
 type: feature
-status: review
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-sort-by-dropdown-to-stories-page
 created_at: "2026-09-27T07:32:53Z"
-updated_at: "2026-09-27T23:17:45Z"
+updated_at: "2026-09-27T23:20:57Z"
 merge_conflict_retry_count: 1
 review_passes: 2
 dev_error_count: 1
@@ -105,3 +102,4 @@ Let's add a sort by dropdown to the stories page, do it in the same style as the
 - 2026-09-27T22:56:38Z · note: Put them side-by-side (same as how it looks on the work page) not on different lines.
 - 2026-09-27T23:06:15Z · status active→review
 - 2026-09-27T23:17:45Z · agent exited with an error (cursor) · the agent process exited with an error — open the task to see the full output
+- 2026-09-27T23:20:57Z · status review→done, release:success
