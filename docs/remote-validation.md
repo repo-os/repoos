@@ -249,7 +249,12 @@ its `runner` says to expect — Docker, the configured `containerImage`
 actually present (not just the daemon reachable — a daemon up with the
 image never built/pulled used to report healthy, then fail every job it
 got, #0521 review), or bun/git for a native host — see "Docker vs. native"
-above — and an **up-to-date `validate.sh` that accepts the artifacts dir as
+above — **the bun cache directory (`~/.cache/repoos-bun`) is actually
+writable** (create-then-remove a marker file, not just `mkdir` — a directory
+that already exists read-only for new files would otherwise pass a bare
+`mkdir -p`; bad permissions or a full/read-only volume here used to report
+healthy and only fail on the first real `bun install`, #0521 review) — and
+an **up-to-date `validate.sh` that accepts the artifacts dir as
 its third argument**. A host that fails is reported instead
 of failing jobs — its state and reason show in Settings → Remote validation
 (Hosts) and in `GET /api/remote-validation/status` (`hosts[]` with `probed`,
@@ -340,10 +345,22 @@ that point cancels itself, releases its slot and fails retryably with
 `… the caller's deadline passed, so the run was cancelled and its slot
 released`. A run that reaches its host **after** the deadline (its dispatch won
 the race with that cancellation timer, or the deadline passed while it bundled
-and uploaded) cancels the same way instead of starting, and its host-lock wait
-budget is the caller's deadline rounded down to the lock's 5-second check step
-(`deadlineLockWaitSecs`) — a late run can never enter the lock past its
-deadline. The Hetzner runner honours `deadlineAt` the same way on its own
+and uploaded) cancels the same way instead of starting.
+
+The host lock is given the caller's deadline as an **absolute** timestamp
+(`hostLockShell`'s `deadlineAtEpochSecs`), not just a relative wait budget
+computed locally (`deadlineLockWaitSecs`, still passed too, for the
+human-readable "waiting… (up to Ns)" message and as the sole budget when
+there is no deadline at all). A purely relative budget is fixed before SSH
+even connects; the remote script has no visibility into how long that
+handshake took, so it could otherwise start well past the real deadline —
+and a `0`-second budget alone did not stop it grabbing a slot that happened
+to be free on the very first check (#0521 review). With the absolute
+deadline, the remote script self-clocks against its own `date +%s`: it
+refuses to even attempt the first acquisition once already past it, and its
+wait loop checks the same absolute value on every 5-second poll instead of
+counting elapsed sleeps from zero — both immune to however long it took to
+get there. The Hetzner runner honours `deadlineAt` the same way on its own
 in-process queue: a run still queued at the deadline is cancelled without ever
 holding a slot, and provisioning that overruns it never starts a suite. A run
 already executing is never interrupted mid-suite.

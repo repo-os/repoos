@@ -863,6 +863,67 @@ describe("host-side lock (server + standalone CLI share one limit)", () => {
     expect(cmd).not.toContain("/tmp/repoos-validate-locks");
   });
 
+  it("refuses to acquire a FREE slot once already past an absolute deadline (#0521 review)", async () => {
+    // waitSecs alone is a relative budget fixed on the local side before SSH
+    // even connects — a slow handshake could let a run start after the
+    // caller's real deadline with a merely relative wait. Passing the
+    // absolute deadline makes the remote script self-clock instead, and it
+    // must refuse the FIRST acquisition attempt outright, not just time out
+    // after failing to grab an already-occupied slot.
+    const root = tmpRoot();
+    const lockRoot = join(root, "locks");
+    const past = Math.floor(Date.now() / 1000) - 10;
+    const res = await sh(
+      hostLockShell({
+        slots: 1,
+        waitSecs: 30,
+        lockRoot,
+        deadlineAtEpochSecs: past,
+        inner: "echo SHOULD_NOT_RUN",
+      }),
+    );
+    expect(res.code).toBe(HOST_LOCK_TIMEOUT_EXIT);
+    expect(res.out).toContain("deadline had already passed");
+    expect(res.out).not.toContain("SHOULD_NOT_RUN");
+  });
+
+  it("self-clocks a waiting run against the absolute deadline, not the local relative counter", async () => {
+    const root = tmpRoot();
+    const lockRoot = join(root, "locks");
+    const marks = join(root, "marks.log");
+    const holder = hostLockShell({
+      slots: 1,
+      waitSecs: 30,
+      lockRoot,
+      inner: `echo start >> "${marks}" && sleep 6 && echo end >> "${marks}"`,
+    });
+    const held = sh(holder);
+    const grabDeadline = Date.now() + 5_000;
+    while (Date.now() < grabDeadline) {
+      if (existsSync(marks) && readFileSync(marks, "utf8").includes("start")) break;
+      await tick(20);
+    }
+    expect(readFileSync(marks, "utf8")).toContain("start");
+
+    // A deadline 2s away, but waitSecs is still 30 — without the fix this
+    // would wait the full 30s (or until the holder frees the slot).
+    const near = Math.floor(Date.now() / 1000) + 2;
+    const t0 = Date.now();
+    const waiter = await sh(
+      hostLockShell({
+        slots: 1,
+        waitSecs: 30,
+        lockRoot,
+        deadlineAtEpochSecs: near,
+        inner: "echo WAITER_RAN",
+      }),
+    );
+    expect(waiter.code).toBe(HOST_LOCK_TIMEOUT_EXIT);
+    expect(Date.now() - t0).toBeLessThan(15_000); // well under waitSecs' 30s
+    expect(waiter.out).not.toContain("WAITER_RAN");
+    expect((await held).code).toBe(0);
+  }, 30_000);
+
   it("breaks an orphaned lock dir within the wait budget instead of timing out on it (#0521 review)", async () => {
     // The shape a SIGKILLed run leaves behind: the slot dir exists but nobody
     // heartbeats it any more. The old 40-minute threshold was longer than the
@@ -971,6 +1032,18 @@ describe("per-host prerequisite probe", () => {
     expect(cmd).toContain("git not found");
     expect(cmd).not.toContain("docker info");
     expect(cmd).toContain(PREREQ_OK_TOKEN);
+  });
+
+  it("checks the bun cache directory is actually writable, on both runners (#0521 review)", () => {
+    // A host that passes every other check but whose bun cache dir can't be
+    // created/written (bad permissions, a stray file, a full/read-only
+    // volume) used to be reported healthy and fail its first real job on
+    // `bun install` — this probe never touched that path at all.
+    for (const runner of ["docker", "native"] as const) {
+      const cmd = prereqProbeCommand(runner);
+      expect(cmd).toContain("$HOME/.cache/repoos-bun");
+      expect(cmd).toContain("is not writable");
+    }
   });
 });
 

@@ -410,6 +410,18 @@ export function prereqProbeCommand(
             `{ echo "image '${image}' not found — build it (just setup-<host>) or fix remoteValidation.containerImage"; exit 1; }`,
         ];
   lines.push(
+    // A host that can run Docker/bun+git and has validate.sh but whose bun
+    // cache directory can't actually be created or written to (bad
+    // permissions, a stray file sitting where the dir should be, a full or
+    // read-only volume) used to be reported healthy and fail its first real
+    // job on `bun install` — this probe never touched that path at all
+    // (#0521 review, criterion 6). Same path validate.sh/validate-macos.sh
+    // both use; write-then-remove a marker file, don't just mkdir (mkdir can
+    // succeed on a directory that already exists read-only for new files).
+    '_rvcache="$HOME/.cache/repoos-bun" && ' +
+      'mkdir -p "$_rvcache" 2>/dev/null && ' +
+      'touch "$_rvcache/.repoos-probe" 2>/dev/null && rm -f "$_rvcache/.repoos-probe" 2>/dev/null || ' +
+      '{ echo "bun cache dir $_rvcache is not writable"; exit 1; }',
     `[ -f ${VALIDATE_SCRIPT} ] || ` +
       `{ echo "missing ${VALIDATE_SCRIPT} — run the per-host install (docs/remote-validation.md)"; exit 1; }`,
     // Single-quoted '${3' is a fixed-string grep for the artifacts argument the
@@ -476,6 +488,23 @@ export function hostLockShell(opts: {
   heartbeatSecs?: number;
   /** Heartbeat tick cap (tests shrink this). */
   heartbeatTicks?: number;
+  /**
+   * The caller's ABSOLUTE deadline (unix epoch seconds), when it has one.
+   * `waitSecs` alone is a budget computed and fixed on the LOCAL side before
+   * this command is even sent over SSH — connection time then silently eats
+   * into it with the remote shell none the wiser, so a slow SSH handshake
+   * could let a run start well past the caller's real deadline (#0521
+   * review). When set, the remote script self-clocks against its OWN
+   * `date +%s` compared to this absolute value instead of counting elapsed
+   * sleeps from zero, which is immune to however long it took to get here —
+   * and it refuses to even attempt the FIRST acquisition once already past
+   * it, rather than opportunistically grabbing a slot that happens to be
+   * free the instant it starts (`waitSecs: 0` alone did not prevent that:
+   * the acquire attempt ran before the wait-loop's own timeout check).
+   * Absent: falls back to today's `waitSecs`-only relative counting (a
+   * caller with no deadline, e.g. a standalone `repoos check`).
+   */
+  deadlineAtEpochSecs?: number;
   inner: string;
 }): string {
   // `~` would NOT expand inside the single-quoted LOCKROOT assignment below,
@@ -487,6 +516,8 @@ export function hostLockShell(opts: {
     : `LOCKROOT='${raw}'`;
   const slots = Math.max(1, Math.floor(opts.slots));
   const wait = Math.max(0, Math.floor(opts.waitSecs));
+  const deadline =
+    opts.deadlineAtEpochSecs !== undefined ? Math.floor(opts.deadlineAtEpochSecs) : undefined;
   // Floor of 1: `-mmin +0` would break even a fresh dir the moment it ages
   // past one truncated minute, which a live holder only notices too late.
   const stale = Math.max(1, Math.floor(opts.staleMinutes ?? HOST_LOCK_STALE_MINUTES));
@@ -496,7 +527,17 @@ export function hostLockShell(opts: {
     lockLine,
     `SLOTS=${slots}`,
     `WAIT=${wait}`,
+    `DEADLINE=${deadline !== undefined ? deadline : ""}`,
     'mkdir -p "$LOCKROOT" 2>/dev/null || true',
+    // Refuse to even ATTEMPT the first acquisition once already past the
+    // caller's absolute deadline — self-clocked on this host's own `date`,
+    // so however long SSH took to get here is already accounted for. A
+    // free slot happening to be available right now must not be grabbed for
+    // a caller that has already given up (#0521 review).
+    '[ -n "$DEADLINE" ] && [ "$(date +%s)" -ge "$DEADLINE" ] && {',
+    '  echo "[lock] the deadline had already passed before this host could attempt to acquire a slot"',
+    `  exit ${HOST_LOCK_TIMEOUT_EXIT}`,
+    "}",
     '_rvslot=""',
     "_rvwaited=0",
     'while [ -z "$_rvslot" ]; do',
@@ -506,8 +547,11 @@ export function hostLockShell(opts: {
     "    _i=$((_i+1))",
     "  done",
     '  [ -n "$_rvslot" ] && break',
-    '  if [ "$_rvwaited" -ge "$WAIT" ]; then',
-    '    echo "[lock] timed out after ${WAIT}s waiting for a free slot on this host — another repoos check is still running"',
+    // Self-clocked against the absolute deadline when there is one (immune
+    // to setup delay); otherwise the original relative-elapsed counter.
+    '  if { [ -n "$DEADLINE" ] && [ "$(date +%s)" -ge "$DEADLINE" ]; } || ' +
+      '{ [ -z "$DEADLINE" ] && [ "$_rvwaited" -ge "$WAIT" ]; }; then',
+    '    echo "[lock] timed out after ${_rvwaited}s waiting for a free slot on this host — another repoos check is still running"',
     `    exit ${HOST_LOCK_TIMEOUT_EXIT}`,
     "  fi",
     '  [ "$_rvwaited" -eq 0 ] && echo "[lock] waiting for a free slot on this host (up to ${WAIT}s)"',
@@ -1806,7 +1850,14 @@ export class TailscaleRunner implements RemoteValidator {
         opts.deadlineAt !== undefined
           ? deadlineLockWaitSecs(opts.deadlineAt)
           : DEFAULT_HOST_LOCK_WAIT_SECS;
-      const cmd = hostLockShell({ slots: slot.limit, waitSecs, inner });
+      // Pass the ABSOLUTE deadline too (#0521 review), not just the relative
+      // `waitSecs` budget computed here — SSH connection time (which the
+      // remote script has no visibility into) happens after this point and
+      // before the script starts self-clocking, so a relative budget alone
+      // can let a run start well past the caller's real deadline.
+      const deadlineAtEpochSecs =
+        opts.deadlineAt !== undefined ? Math.floor(opts.deadlineAt / 1000) : undefined;
+      const cmd = hostLockShell({ slots: slot.limit, waitSecs, deadlineAtEpochSecs, inner });
       const run = await this.exec.runRemote(host, cmd, emit, this.timings.remoteRunTimeoutMs);
 
       // 4. pull artifacts (best effort)
