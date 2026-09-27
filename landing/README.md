@@ -16,10 +16,28 @@ Visitors pick two independent axes from the nav:
 | **Appearance** | `data-theme` on `<html>` | `repoos-theme` (unchanged) | `dark`, `light` |
 
 `index.html` runs a synchronous inline script before first paint to apply both
-axes (stored choice, else OS `prefers-color-scheme` for appearance only) and to
-set `<meta name="theme-color">` for all four combinations. Gruvbox tokens are
-copied from `src/ui-app/src/style.css` into `src/style.css` — the landing does
-not import app code.
+axes and to set `<meta name="theme-color">` for all four combinations. Gruvbox
+tokens are copied from `src/ui-app/src/style.css` into `src/style.css` — the
+landing does not import app code.
+
+### Shareable URLs
+
+Query parameters override stored choices on first load (then persist to
+`localStorage` so a reload without the query keeps the same look):
+
+| Param | Values | Example |
+| --- | --- | --- |
+| `theme` | `classic`, `gruvbox`, or any future design id (`catppuccin`, `ayu`, …) | `?theme=gruvbox` |
+| `appearance` | `dark`, `light` | `?appearance=light` |
+| `mode` | alias for `appearance` | `?theme=gruvbox&mode=light` |
+
+Examples: `https://repoos.org/?theme=gruvbox`, `https://repoos.org/?theme=classic&appearance=dark`.
+
+Resolution order per axis: **URL → `localStorage` → default** (Classic design;
+appearance from OS `prefers-color-scheme` when nothing is stored). Using the nav switcher updates the URL with `history.replaceState` (no reload);
+a plain visit without query params keeps a clean address bar until then. Parsing and validation live in `src/theme-resolve.ts`. The pre-paint boot
+script is bundled from `src/theme-boot.ts` into `index.html` at dev/build time
+(`vite-plugin-theme-boot.ts`) so there is a single source of truth.
 
 ## Repo layout
 

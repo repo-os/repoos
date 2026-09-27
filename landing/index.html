@@ -4,44 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark light" />
-    <!--
-      Resolve the theme before first paint: a stored choice wins, otherwise the
-      OS preference. Inline and synchronous on purpose — deferring this to the
-      Vue app would flash the wrong theme on every load.
-    -->
-    <script>
-      (function () {
-        var appearance = "dark";
-        var design = "classic";
-        try {
-          var savedAppearance = localStorage.getItem("repoos-theme");
-          appearance =
-            savedAppearance === "light" || savedAppearance === "dark"
-              ? savedAppearance
-              : window.matchMedia("(prefers-color-scheme: light)").matches
-                ? "light"
-                : "dark";
-          var savedDesign = localStorage.getItem("repoos-ui-theme");
-          if (savedDesign === "gruvbox") design = "gruvbox";
-        } catch (e) {
-          /* blocked storage: fall through to classic + dark */
-        }
-        document.documentElement.setAttribute("data-theme", appearance);
-        if (design === "gruvbox") {
-          document.documentElement.setAttribute("data-ui-theme", "gruvbox");
-        }
-        var themeColor = {
-          "classic-dark": "#070a12",
-          "classic-light": "#f6f8fc",
-          "gruvbox-dark": "#282828",
-          "gruvbox-light": "#fbf1c7",
-        }[design + "-" + appearance];
-        var meta = document.createElement("meta");
-        meta.name = "theme-color";
-        meta.content = themeColor;
-        document.head.appendChild(meta);
-      })();
-    </script>
+    <!-- repoos-theme-boot -->
     <title>RepoOS — the repo is the operating system</title>
     <meta
       name="description"
