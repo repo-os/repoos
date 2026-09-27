@@ -1,4 +1,5 @@
 ---
+merge_conflict_retry_count: 1
 updated_at: "2026-09-27T23:00:38Z"
 review_passes: 3
 id: "0531"
@@ -76,4 +77,5 @@ Not in scope: the manager-bot service, its Neon/Cloudflare deployment, hosted me
 - 2026-09-27T22:59:49Z · review_cli_override, review_model_override
 - 2026-09-27T22:59:51Z · review_model_override
 - 2026-09-27T23:00:38Z · needs_input
+
 
