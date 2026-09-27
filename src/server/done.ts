@@ -22,7 +22,7 @@
  * step rather than treating the branch as a new conflicting merge.
  */
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, rmSync } from "node:fs";
 import { join, relative } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import {
@@ -461,6 +461,32 @@ export interface CloseOutLock {
 }
 
 /**
+ * Delete a task worktree's `dist/` when — and only when — git reports it as
+ * untracked there. Used by the close-out below to undo its own side effect:
+ * `git rm --cached dist/` (which keeps hashed Vite asset names from conflicting
+ * with main) leaves the directory behind as untracked output, and an untracked
+ * file is what makes the non-forced `git worktree remove` refuse (#0512).
+ *
+ * Never touches a `dist/` git still tracks in that worktree, and never touches
+ * anything outside the directory. Fail-soft.
+ */
+async function removeUntrackedGeneratedDist(
+  root: string,
+  branch: string | undefined,
+): Promise<void> {
+  if (!branch) return;
+  const wt = worktreePathForBranch(root, branch);
+  if (!wt || !existsSync(join(wt, "dist"))) return;
+  const tracked = await runGit(wt, ["ls-files", "dist/"], 5000);
+  if (tracked.status !== 0 || tracked.stdout.trim() !== "") return; // tracked (or unknown) → keep
+  try {
+    rmSync(join(wt, "dist"), { recursive: true, force: true });
+  } catch {
+    /* best-effort: a leftover dist/ only costs one forced removal later */
+  }
+}
+
+/**
  * Not the live close-out path (0187 review — flagged as unlogged; noting why
  * it stays that way rather than adding logging nothing will ever read).
  * `server.ts` imports this but never calls it — since #0118 the merge-queue
@@ -633,9 +659,26 @@ async function completeTaskLocked(
   // Both are fail-soft, so an already-cleaned retry is a no-op here.
   // Hotfix tasks: never delete a worktree that doesn't exist, and never delete
   // main. For branch-mode hotfixes, switch back to main after closing.
+  //
+  // The worktree removal is not forced (#0512): a worktree with uncommitted
+  // changes is KEPT rather than deleted, and `deleteBranch` is skipped with it
+  // (git refuses anyway), so the bytes survive for a human to look at. This is
+  // the same rule the live orchestrator path applies in its `cleanup()`.
   if (!task.hotfix) {
-    removeWorktree(root, task.branch);
-    deleteBranch(root, task.branch);
+    // The `git rm --cached dist/` above (which stops hashed asset names from
+    // conflicting) leaves `dist/` untracked in the worktree, and an untracked
+    // file is exactly what makes a non-forced `git worktree remove` refuse.
+    // Undo our own side effect now that the merge is done and main has been
+    // rebuilt: only ever deletes a `dist/` git reports as untracked there, and
+    // only the generated output it just untracked.
+    await removeUntrackedGeneratedDist(root, task.branch);
+    if (removeWorktree(root, task.branch)) {
+      deleteBranch(root, task.branch);
+    } else {
+      console.warn(
+        `Close-out for ${task.id}: kept the worktree for ${task.branch} — it still has uncommitted changes`,
+      );
+    }
   } else {
     if (task.hotfixTarget !== "main" && task.branch) {
       deleteBranch(root, task.branch);

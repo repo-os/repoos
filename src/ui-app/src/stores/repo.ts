@@ -68,21 +68,39 @@ export interface DoneResult {
 }
 
 /**
- * Marker rethrown by `completeTask` when the server reports dirty files on
- * `main` blocking the close-out (0204). The caller renders a confirmation
- * modal offering "Commit & continue" / "Cancel"; until the user chooses, the
- * task stays in review. Carries the dirty file list so the modal can show it.
+ * Which checkout a move-to-done is blocked on: the main checkout, whose dirty
+ * files would abort the merge (0204), or the task's own worktree, whose dirty
+ * files close-out would delete (0512).
  */
-export class DirtyMainError extends Error {
+export type DirtyScope = "main" | "worktree";
+
+/** The uncommitted files blocking a move-to-done, and where they live. */
+export interface DirtyCheckout {
+  files: string[];
+  scope: DirtyScope;
+}
+
+/**
+ * Marker rethrown by `completeTask` when the server reports uncommitted files
+ * blocking the close-out (0204 on `main`, 0512 in the task worktree). The
+ * caller renders a confirmation modal offering "Commit & continue" / "Cancel";
+ * until the user chooses, the task stays in review. Carries the dirty file list
+ * and which checkout it is, so the modal can show and word them.
+ */
+export class DirtyCheckoutError extends Error {
   readonly taskId: string;
   readonly dirtyFiles: string[];
-  constructor(taskId: string, dirtyFiles: string[]) {
+  readonly scope: DirtyScope;
+  constructor(taskId: string, dirtyFiles: string[], scope: DirtyScope = "main") {
     super(
-      `main has ${dirtyFiles.length} uncommitted file${dirtyFiles.length === 1 ? "" : "s"} blocking close-out`,
+      scope === "worktree"
+        ? `the task worktree has ${dirtyFiles.length} uncommitted file${dirtyFiles.length === 1 ? "" : "s"} that close-out would delete`
+        : `main has ${dirtyFiles.length} uncommitted file${dirtyFiles.length === 1 ? "" : "s"} blocking close-out`,
     );
-    this.name = "DirtyMainError";
+    this.name = "DirtyCheckoutError";
     this.taskId = taskId;
     this.dirtyFiles = dirtyFiles;
+    this.scope = scope;
   }
 }
 
@@ -438,11 +456,11 @@ export const useRepoStore = defineStore("repo", () => {
   const handoffSteps = ref<Record<string, string>>({});
   /** Why a handoff finalization failed, per task id. Cleared on the next ask. */
   const handoffErrors = ref<Record<string, string>>({});
-  /** Dirty files on `main` blocking a move-to-done per task id (0204). Empty
-   * when no confirmation is pending. The modal reads this and the caller
-   * clears it via `clearDirtyMain` on Cancel (or it is overwritten by the
-   * next run). */
-  const dirtyMain = ref<Record<string, string[]>>({});
+  /** Uncommitted files blocking a move-to-done, per task id (0204, extended to
+   * the task worktree by #0512). Empty when no confirmation is pending. The
+   * modal reads this and the caller clears it via `clearDirtyCheckout` on
+   * Cancel (or it is overwritten by the next run). */
+  const dirtyCheckouts = ref<Record<string, DirtyCheckout>>({});
   /** The review agent's report per task, hydrated on demand + via SSE. */
   const reviews = ref<Record<string, ReviewState>>({});
   /** The CTO board monitor (0174): live state hydrated from `/api/cto` + SSE. */
@@ -834,14 +852,18 @@ export const useRepoStore = defineStore("repo", () => {
     return step !== "done" && step !== "failed";
   }
 
-  /** Dirty files on `main` pending a move-to-done decision (0204), or [] when the modal is not needed. */
-  const dirtyMainFor = (id: string): string[] => dirtyMain.value[id] ?? [];
+  /** Uncommitted files pending a move-to-done decision (0204/#0512), or [] when the modal is not needed. */
+  const dirtyFilesFor = (id: string): string[] => dirtyCheckouts.value[id]?.files ?? [];
 
-  /** Clear the pending dirty-main confirmation for a task (user chose Cancel). */
-  function clearDirtyMain(id: string): void {
-    const next = { ...dirtyMain.value };
+  /** Which checkout the pending uncommitted files are in — `main` (0204) or the
+   *  task's worktree (#0512). The modal words itself from this. */
+  const dirtyScopeFor = (id: string): DirtyScope => dirtyCheckouts.value[id]?.scope ?? "main";
+
+  /** Clear the pending uncommitted-changes confirmation for a task (user chose Cancel). */
+  function clearDirtyCheckout(id: string): void {
+    const next = { ...dirtyCheckouts.value };
     delete next[id];
-    dirtyMain.value = next;
+    dirtyCheckouts.value = next;
   }
 
   /**
@@ -1879,10 +1901,11 @@ export const useRepoStore = defineStore("repo", () => {
    * caller renders it inline below the button) and no global toast is shown;
    * on success any previous inline error is cleared.
    *
-   * Dirty-main guard (0204): when the server reports uncommitted files on
-   * `main` blocking the merge (and the caller has not opted in via
-   * `commitDirty`), the dirty file list is stored per task and a
-   * `DirtyMainError` is thrown so the caller can show the confirmation modal.
+   * Dirty-checkout guard (0204, 0512): when the server reports uncommitted
+   * files blocking the close-out — on `main` they would abort the merge, in the
+   * task worktree they would be deleted with it — and the caller has not opted
+   * in via `commitDirty`, the file list is stored per task and a
+   * `DirtyCheckoutError` is thrown so the caller can show the confirmation modal.
    */
   async function completeTask(t: Task, opts: { commitDirty?: boolean } = {}): Promise<DoneResult> {
     const raw = await fetch(`/api/tasks/${t.id}/done`, {
@@ -1897,19 +1920,22 @@ export const useRepoStore = defineStore("repo", () => {
     let body: Partial<DoneResult> & {
       needsCommit?: boolean;
       dirtyFiles?: string[];
+      dirtyScope?: DirtyScope;
       dirtyCheckFailed?: boolean;
     } = {};
     try {
       body = (await raw.json()) as Partial<DoneResult> & {
         needsCommit?: boolean;
         dirtyFiles?: string[];
+        dirtyScope?: DirtyScope;
         dirtyCheckFailed?: boolean;
       };
     } catch {
       body = {};
     }
-    // Dirty-main guard (0204): the server returns 409 + needsCommit when main
-    // has uncommitted files and the user has not opted in via commitDirty.
+    // Dirty-checkout guard (0204/#0512): the server returns 409 + needsCommit
+    // when a checkout has uncommitted files and the user has not opted in via
+    // commitDirty.
     if (raw.status === 409 && body.needsCommit && Array.isArray(body.dirtyFiles)) {
       // #0211: when the dirty check itself failed (error/timeout) the file list
       // is unknown, so "Commit & continue" would be guessing. Surface the plain
@@ -1924,8 +1950,12 @@ export const useRepoStore = defineStore("repo", () => {
         });
         throw new MoveToDoneError(t.id, message);
       }
-      dirtyMain.value = { ...dirtyMain.value, [t.id]: body.dirtyFiles };
-      throw new DirtyMainError(t.id, body.dirtyFiles);
+      const scope: DirtyScope = body.dirtyScope === "worktree" ? "worktree" : "main";
+      dirtyCheckouts.value = {
+        ...dirtyCheckouts.value,
+        [t.id]: { files: body.dirtyFiles, scope },
+      };
+      throw new DirtyCheckoutError(t.id, body.dirtyFiles, scope);
     }
     const r = body as DoneResult;
     if (!raw.ok || !r.ok) {
@@ -1940,7 +1970,7 @@ export const useRepoStore = defineStore("repo", () => {
     }
     acknowledgeHumanTaskAction(t.id);
     setDoneError(t.id, null);
-    dirtyMain.value = { ...dirtyMain.value, [t.id]: [] };
+    dirtyCheckouts.value = { ...dirtyCheckouts.value, [t.id]: { files: [], scope: "main" } };
     return r;
   }
 
@@ -2506,8 +2536,9 @@ export const useRepoStore = defineStore("repo", () => {
     pushFeed(`<span style="color:var(--red)">error: ${message}</span>`, "#ff6b7d", "error");
     // A failed move-to-done is surfaced inline on the task; a toast for it
     // would duplicate the visible error and detach it from the action. A
-    // dirty-main guard (0204) is surfaced by the confirmation modal instead.
-    if (err instanceof MoveToDoneError || err instanceof DirtyMainError) return;
+    // dirty-checkout guard (0204/#0512) is surfaced by the confirmation modal
+    // instead.
+    if (err instanceof MoveToDoneError || err instanceof DirtyCheckoutError) return;
     pushToast(message, "error");
   }
 
@@ -2561,9 +2592,9 @@ export const useRepoStore = defineStore("repo", () => {
     handoffInFlight,
     setHandoffError,
     requestReview,
-    dirtyMain,
-    dirtyMainFor,
-    clearDirtyMain,
+    dirtyFilesFor,
+    dirtyScopeFor,
+    clearDirtyCheckout,
     reviews,
     sortOrder,
     doneAcked,

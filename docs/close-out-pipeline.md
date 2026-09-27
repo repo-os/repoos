@@ -250,6 +250,46 @@ worktree/branch, and marks the task `done`.
 If a job fails here (rare — validation already passed), main was NOT touched; the repo
 lock guarantees that. Safe to just retry.
 
+#### The worktree-cleanup invariant (#0512)
+
+> **What is tested is what is committed, and nothing uncommitted is ever deleted.**
+
+The merge above carries the feature branch's **commits**. Anything the branch had not
+committed was never part of what the `validating` gate tested, and deleting it with the
+worktree made it unrecoverable. Cleanup therefore obeys three rules:
+
+1. **`removeWorktree` is not forced** (`src/core/git.ts`). Plain `git worktree remove`
+   — no `--force` — removes a worktree holding only ignored files (`dist/`,
+   `node_modules/`, the cache dir) but *refuses* one with modified or untracked files.
+   The only callers that pass `{ force: true }` have decided the work may be lost: a
+   restart/reset, a throwaway `repoos/integrate/<id>` candidate (derived entirely from
+   branches that still exist), and GC of a worktree it has already established is
+   merged *and* clean. The restart case is the one force a *human* chose, so the
+   confirmation names what it destroys: `GET /api/tasks/:id/worktree-dirty` returns the
+   worktree's uncommitted files on demand (never on the index — the boot-time
+   per-worktree `git status` fan-out is a known cost) and the restart dialog lists
+   them above the "Start clean" button, saying so plainly if the list cannot be read.
+2. **Cleanup keeps a dirty feature worktree.** On refusal the orchestrator logs the
+   file list, skips the branch delete (git refuses it anyway, and skipping is what
+   keeps the worktree attached to its branch), and sets `needs_input` on the task with
+   a detail naming the files. The close-out itself is still `done` — the merge landed;
+   the leftover is a decision for a human, not a failure to retry.
+3. **Close-out asks first.** `POST /api/tasks/:id/done` checks the task worktree before
+   enqueueing and returns the same `409 + needsCommit` shape the dirty-`main` guard has
+   always returned, with `dirtyScope: "worktree"`. "Commit & continue" commits through
+   the *same* path a handoff uses (`guardReviewTransition`: no `dist/`, no the task's
+   own file, no other task's `work/*.md` drift), so the merge gate then validates the
+   commit rather than the raw working tree. Cancel changes nothing.
+
+The pre-review gate follows the same rule from the other side
+(`src/server/handoff.ts`): the commit/vacuity gate runs **before** `repoos check`, so
+the tree the check tested is the tree that got committed, and after the check the
+worktree's `HEAD` and uncommitted work must be byte-identical to what it was before —
+a file rewritten while the check ran (#0506) fails the handoff loudly instead of
+landing a green result that describes a tree which no longer exists. `dist/`, the
+cache dir and the task dir are excluded from that comparison, because the check itself
+writes there.
+
 ## The reload-churn interaction (SIGNIFICANTLY MITIGATED as of #0271, 2026-08-25 — read this before troubleshooting flakiness)
 
 Every `validating` phase's `bun run build` builds `dist/` on the **candidate**
@@ -466,6 +506,18 @@ deliberately conservative default:
 
 The conservatism is deliberate: it is what keeps a `salvage/*` situation (class
 #1) recoverable rather than garbage-collected.
+
+**Leaked ≠ dirty (#0512).** Being kept is not a leak, and the two are now
+different mechanisms: GC decides *whether a worktree may be removed* (merged AND
+clean, from `git worktree status --porcelain` excluding `dist/`), while
+`removeWorktree`'s non-forced default enforces *whether it may be deleted*. A
+worktree the close-out kept because it had uncommitted work (see "The
+worktree-cleanup invariant" above) will therefore keep being reported by
+`repoos gc` until a human commits or discards it — that is the intended
+behaviour, not a regression. Fixing such a task means dealing with the files
+named in its `needs_input` detail, then `git worktree remove <path>` (or
+"Start clean" from the restart dialog, which force-discards and lists what it
+is about to throw away).
 
 ### 4. Per-repo serve identity
 

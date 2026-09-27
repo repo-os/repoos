@@ -144,14 +144,26 @@ export function describeCloseOutFailure(
         hint: "The build or check gate failed on the merged branch. Fix the failure in the feature branch's worktree, commit, and retry the close-out.",
       };
     }
-    case "dirty":
+    case "dirty": {
+      // #0512: the same class now also covers the TASK WORKTREE's uncommitted
+      // files — which the merge would not carry and close-out would delete
+      // with the worktree — so the hint has to name the right checkout, and
+      // the step with it.
+      const inWorktree = /worktree/i.test(clean);
       return {
-        message: clean ? headline(clean) : "Main's working tree has uncommitted changes.",
+        message: clean
+          ? headline(clean)
+          : inWorktree
+            ? "The task worktree has uncommitted changes."
+            : "Main's working tree has uncommitted changes.",
         conflicts: [],
-        step: "publish",
+        step: inWorktree ? "cleanup" : "publish",
         detail: clean || undefined,
-        hint: "Main's working tree has uncommitted changes that the merge would overwrite. Commit or stash them on main, then retry.",
+        hint: inWorktree
+          ? "The task's worktree has uncommitted changes the merge would not carry, and close-out deletes the worktree with them. Commit them on the task branch, then retry."
+          : "Main's working tree has uncommitted changes that the merge would overwrite. Commit or stash them on main, then retry.",
       };
+    }
     case "syncing":
       return {
         message: clean

@@ -227,7 +227,9 @@ describe("end-to-end flow: version-bump task", () => {
         steps.push(step),
       );
       expect(handoffResult).toMatchObject({ ok: true, step: "done" });
-      expect(steps).toEqual(["validate", "check", "commit", "review", "main", "done"]);
+      // #0512: the commit gate runs before the check, so the tree the check
+      // tested is the tree that got committed.
+      expect(steps).toEqual(["validate", "commit", "check", "review", "main", "done"]);
 
       // Verify: task is now "review" in BOTH main and worktree copies
       const afterHandoff = readTask(fx);
@@ -283,13 +285,17 @@ describe("end-to-end flow: version-bump task", () => {
       // Verify: branch is gone (merged and deleted)
       const branches = git(fx.root, ["branch"])
         .split("\n")
-        .map((b) => b.trim().replace(/^\*/, "").trim());
+        .map((b) => b.trim().replace(/^\*/, "").trim().replace(/^\+/, "").trim());
       expect(branches).not.toContain("feat/bump-version");
+      // …and so is the worktree: a clean one is removed, not kept (#0512).
+      expect(git(fx.root, ["worktree", "list"])).not.toContain(fx.worktree);
     } finally {
       process.env.PATH = oldPath;
       fx.clean();
     }
-  });
+    // A full handoff + close-out over real git worktrees: several seconds of
+    // spawns, so the 5s default is a coin flip, not a signal about this code.
+  }, 60_000);
 
   it("rejects handoff when repoos check fails in the worktree", async () => {
     const fx = makeFlowFixture();
