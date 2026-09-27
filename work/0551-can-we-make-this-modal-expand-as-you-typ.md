@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 cli_override: codex
-model_override: default
+model_override: gpt-6-luna
 created_at: "2026-09-27T14:05:52Z"
-updated_at: "2026-09-27T14:11:14Z"
+updated_at: "2026-09-27T14:11:17Z"
 ---
 ## Problem
 
@@ -100,3 +100,4 @@ Can we make this modal expand as you type text larger than the text area? or if 
 - 2026-09-27T14:05:53Z · screenshots
 - 2026-09-27T14:06:13Z · status draft→inbox, title, priority, area, body
 - 2026-09-27T14:11:14Z · cli_override, model_override
+- 2026-09-27T14:11:17Z · model_override
