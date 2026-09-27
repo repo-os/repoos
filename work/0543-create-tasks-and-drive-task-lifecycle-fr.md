@@ -10,8 +10,12 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:33:58Z"
-updated_at: "2026-09-27T15:42:41Z"
+updated_at: "2026-09-27T15:51:58Z"
 ---
+## Governing decision
+
+Follow [ADR 0007 — Telegram identity and authorization](../docs/adr/0007-telegram-identity-and-authorization.md) for user binding, chat binding, live role resolution, and unauthorized-sender behavior. This task implements or relies on that model; do not define a separate policy here.
+
 ## Problem
 
 Story #0003 Phase 4: create tasks from free-form messages, start/pause/review tasks, file and screenshot attachments, optional group/topic routing.
@@ -47,11 +51,8 @@ Optional, and genuinely optional. Topic routing is worth supporting for a projec
 - A merge-affecting transition cannot happen from a single unconfirmed tap.
 - Tasks created from Telegram are byte-identical in structure to tasks created in the UI, and no attachment is ever tracked in git.
 
-## Decision reference
-
-Follow [ADR 0007 — Telegram identity and authorization](../docs/adr/0007-telegram-identity-and-authorization.md) for the shared identity, role-resolution, chat-binding, and sender-response policy. This task implements its specific flow.
-
 ## Activity
 
 - 2026-09-27T07:33:58Z · created · unknown
 - 2026-09-27T15:42:41Z · body
+- 2026-09-27T15:51:58Z · body
