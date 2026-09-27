@@ -76,3 +76,8 @@ export function splitTaskSubject(subject: string): SubjectParts {
   if (!m) return { type: null, taskId: null, rest: subject, raw: subject };
   return { type: m[1]!, taskId: m[2]!, rest: m[3] ?? "", raw: subject };
 }
+
+/** True when the subject uses RepoOS's `docs(NNNN):` bookkeeping convention. */
+export function isDocsBookkeepingSubject(subject: string): boolean {
+  return splitTaskSubject(subject).type === "docs";
+}

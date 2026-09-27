@@ -7,7 +7,12 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import ContextView from "../src/views/ContextView.vue";
 import RepoHistoryPanel from "../src/components/RepoHistoryPanel.vue";
-import { authorInitials, groupCommitsByDay, splitTaskSubject } from "../src/lib/repo-history";
+import {
+  authorInitials,
+  groupCommitsByDay,
+  isDocsBookkeepingSubject,
+  splitTaskSubject,
+} from "../src/lib/repo-history";
 import type { HistoryCommit } from "../src/lib/repo-history";
 import * as apiMod from "../src/api";
 import { makeTask } from "./component-test-helpers";
@@ -79,6 +84,8 @@ describe("repo history grouping (#0514)", () => {
     });
     expect(splitTaskSubject("chore: tidy")).toMatchObject({ taskId: null });
     expect(authorInitials("Ada Lovelace")).toBe("AL");
+    expect(isDocsBookkeepingSubject("docs(0528): status")).toBe(true);
+    expect(isDocsBookkeepingSubject("feat(0528): ship")).toBe(false);
   });
 });
 
@@ -109,17 +116,25 @@ describe("RepoHistoryPanel (#0514)", () => {
   });
 
   it("renders day-grouped commits and a task id link", async () => {
+    const logCalls: string[] = [];
     api.mockImplementation(async (path: string) => {
       if (path.startsWith("/api/repo/branches")) {
         return { ok: true, defaultBranch: "main", branches: ["main"] };
       }
       if (path.startsWith("/api/repo/log")) {
-        return { ok: true, commits: [commit()], nextCursor: null, branch: "main" };
+        logCalls.push(path);
+        return {
+          ok: true,
+          commits: [commit({ subject: "feat(0514): seed", taskId: "0514" })],
+          nextCursor: null,
+          branch: "main",
+        };
       }
       throw new Error(`unexpected ${path}`);
     });
     const wrapper = mount(RepoHistoryPanel, { global: { stubs } });
     await flushPromises();
+    expect(logCalls[0]).not.toContain("includeDocs");
     expect(wrapper.text()).toContain("seed");
     expect(wrapper.text()).toContain("0514");
     expect(wrapper.text()).toContain("aaaaaaa");
@@ -181,5 +196,37 @@ describe("RepoHistoryPanel (#0514)", () => {
     const logCall = calls.filter((c) => c.startsWith("/api/repo/log")).at(-1) ?? "";
     expect(logCall).toContain("path=src%2Fui-app");
     expect(logCall).not.toContain("ui-app%2F");
+  });
+
+  it("refetches with includeDocs when Show docs commits is toggled on (#0528)", async () => {
+    const calls: string[] = [];
+    api.mockImplementation(async (path: string) => {
+      calls.push(path);
+      if (path.startsWith("/api/repo/branches")) {
+        return { ok: true, defaultBranch: "main", branches: ["main"] };
+      }
+      if (path.startsWith("/api/repo/log")) {
+        const showDocs = path.includes("includeDocs=1");
+        return {
+          ok: true,
+          commits: showDocs
+            ? [commit({ subject: "docs(0528): hidden by default" })]
+            : [commit({ subject: "feat(0528): visible", taskId: "0528" })],
+          nextCursor: null,
+        };
+      }
+      throw new Error(`unexpected ${path}`);
+    });
+    const wrapper = mount(RepoHistoryPanel, { global: { stubs } });
+    await flushPromises();
+    expect(wrapper.text()).toContain("visible");
+    expect(wrapper.text()).not.toContain("hidden by default");
+    expect(calls.some((c) => c.includes("includeDocs=1"))).toBe(false);
+
+    await wrapper.get('[aria-label="Show docs commits"]').trigger("click");
+    await flushPromises();
+    expect(calls.filter((c) => c.includes("includeDocs=1")).length).toBeGreaterThanOrEqual(1);
+    expect(wrapper.text()).toContain("hidden by default");
+    expect(useUiStore().historyShowDocsCommits).toBe(true);
   });
 });
