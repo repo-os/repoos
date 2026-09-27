@@ -1,5 +1,17 @@
 ---
 id: "0546"
+title: "The needs-input banner gives misleading/no feedback: Dismiss can be silently undone, Review again looks like a no-op"
+type: bug
+status: inbox
+priority: p1
+area: web
+assigned_to: ai
+created_by: ""
+branch: ""
+created_at: "2026-09-27T10:25:52Z"
+updated_at: "2026-09-27T13:16:02Z"
+---
+id: "0546"
 title: Dismissing a review-rounds-exhausted flag can be silently undone by an in-flight review
 type: bug
 status: inbox
@@ -95,7 +107,39 @@ click was removed in commit c69b369c (2026-09-27) — that part is done, this
 task is only about the flag reappearing (and now also the round-count wording
 above).
 
+## Second, DIFFERENT-cause finding on the same banner: "Review again" also
+## looks like a no-op
+
+Live on #0521 (2026-09-27): clicking **Review again** on this same banner
+also appeared to do nothing — the banner stayed byte-for-byte identical.
+Unlike the Dismiss case above, this is NOT the flag being cleared and then
+re-raised. Confirmed via `ps`: the review genuinely started and kept running
+in the background (`opencode run ... Review the task's implementation`) for
+about two minutes total. The button just gives no feedback that it's
+running.
+
+Root cause (`src/ui-app/src/components/TaskDrawer.vue`):
+
+- `reviewAgain()` (~line 1458) sets `reviewBusy = true` only for the
+  duration of `await repo.reviewAgain(id)` — the HTTP call that *starts* the
+  review job server-side — then sets it back to `false` once that POST
+  resolves, typically well under a second. It does not track the review
+  agent process itself, which keeps running for roughly a minute afterward.
+- This banner's button (~line 3324) is disabled only on
+  `ui.saving || startingWork || reviewBusy || dismissNeedsInputBusy` — no
+  `review?.running`.
+- The app already has and uses a proper `review.running` reactive flag
+  elsewhere for the exact same situation: the Review tab's own "Review
+  again" button (~line 3824) disables on `review?.running` and shows a
+  "Starting…" label. This banner's button just never wires into it.
+
+Fix: add `review?.running` to this button's `:disabled` condition (matching
+the Review tab's own button) and show a busy/"reviewing…" state on it too,
+so a genuinely-in-progress review is visibly different from a click that did
+nothing.
+
 ## Activity
 
 - 2026-09-27T10:25:52Z · created · unknown
 - 2026-09-27T12:28:39Z · body
+- 2026-09-27T13:16:02Z · title, body
