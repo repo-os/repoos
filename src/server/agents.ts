@@ -2268,16 +2268,14 @@ export function resolveRepoGuide(config: RepoOSConfig): Agent | null {
  *   a human. Without it every non-read-only command (`bun`, `repoos check`,
  *   writes) is denied instantly, the agent stalls explaining it needs
  *   approval, and the task is left stuck in `active` with no changes. Same
- *   intent as codex's `--sandbox workspace-write` below; the blast radius is
- *   the task's own git worktree.
+ *   intent as Codex's engineering permission bypass below. The working directory
+ *   is the task's git worktree, not an OS-enforced security boundary.
  * - qwen code: `qwen -p <prompt> --output-format stream-json` — stream-json
  *   emits one JSON event per line, which streams live and carries a
  *   `session_id` RepoOS can resume.
- * - codex: `codex exec <prompt> --json --sandbox workspace-write -c
- *   sandbox_workspace_write.network_access=true` — `--json` streams
- *   newline-delimited events; `--sandbox workspace-write` lets the agent edit
- *   files inside the worktree (the default is read-only). See
- *   CODEX_SANDBOX_ARGS for why network is on.
+ * - codex: `codex exec <prompt> --json --dangerously-bypass-approvals-and-sandbox`
+ *   streams newline-delimited events and runs unattended without an OS sandbox.
+ *   See CODEX_ENGINEERING_ARGS for the security tradeoff.
  * - opencode: `opencode run --format json --auto <prompt>` —
  *   `--auto` ("auto-approve permissions that are not explicitly denied") is
  *   REQUIRED for the same reason claude's flag is: stdin is ignored, so a
@@ -2319,21 +2317,14 @@ function ensureDrivableCli(cli: string): void {
 }
 
 /**
- * Codex is the only driver RepoOS runs inside an OS sandbox (Seatbelt on
- * macOS). `workspace-write` blocks ALL network by default — including binding
- * 127.0.0.1 — so `repoos check`'s server/UI-smoke tests fail with EPERM inside
- * it, the agent can never truthfully reach a green gate, and it never emits
- * the handoff signal (#0406 lost three rounds to this). Codex has no
- * localhost-only switch, so network is on in full: parity with every other
- * driver, which already runs unsandboxed. Writes stay confined to the worktree.
- * Placed before `resume`: exec-level options aren't accepted after it.
+ * Managed Codex engineering turns run without an OS sandbox or approval prompts,
+ * matching the other unattended drivers. macOS WebKit aborts during application
+ * registration inside the workspace-write sandbox, even with networking enabled.
+ * This grants commands the user's normal access; a worktree is not a security
+ * boundary. Advisory/read-only roles retain their existing permission settings.
+ * Exec-level options must precede the resume subcommand.
  */
-const CODEX_SANDBOX_ARGS = [
-  "--sandbox",
-  "workspace-write",
-  "-c",
-  "sandbox_workspace_write.network_access=true",
-];
+const CODEX_ENGINEERING_ARGS = ["--dangerously-bypass-approvals-and-sandbox"];
 
 /**
  * Copilot's non-interactive `-p` mode has nobody to answer its tool-approval
@@ -2423,8 +2414,7 @@ export const ENGINEER_REQUIRED_COMMANDS = ["repoos", "bun", "bunx", "git"] as co
  * - opencode: --auto (#0069 hung ~2h on an unanswerable prompt without it).
  * - kiro: --trust-all-tools. cursor: --force.
  * - qwen code: --yolo (headless qwen denies every approval-gated tool).
- * - codex: workspace-write sandbox WITH network, or localhost binds fail with
- *   EPERM and `repoos check` can never pass (#0406).
+ * - codex: --dangerously-bypass-approvals-and-sandbox for unattended browser checks.
  * - github copilot: --allow-all-tools under --no-ask-user. GitHub documents
  *   it as required for non-interactive mode; unlike --allow-all/--yolo, it
  *   does not disable Copilot's path or URL verification.
@@ -2445,6 +2435,7 @@ export function engineerPermissionGaps(cli: string, args: readonly string[]): st
     case "qwen code":
       return needFlag("--yolo");
     case "codex": {
+      if (args.includes("--dangerously-bypass-approvals-and-sandbox")) return [];
       const i = args.indexOf("--sandbox");
       const mode = i >= 0 ? args[i + 1] : undefined;
       if (mode === "danger-full-access") return [];
@@ -2543,7 +2534,7 @@ function cliCommand(
   if (cli === "codex") {
     return {
       cmd: "codex",
-      args: ["exec", mission, ...modelArgs(cli, model), "--json", ...CODEX_SANDBOX_ARGS],
+      args: ["exec", mission, ...modelArgs(cli, model), "--json", ...CODEX_ENGINEERING_ARGS],
     };
   }
   if (cli === "github copilot") {
@@ -2654,7 +2645,7 @@ function resumeCommand(
       cmd: "codex",
       args: [
         "exec",
-        ...CODEX_SANDBOX_ARGS,
+        ...CODEX_ENGINEERING_ARGS,
         "resume",
         ...modelArgs(cli, model),
         "--json",

@@ -151,8 +151,9 @@ function spawns(fx: Fixture): SpawnRecord[] {
 function expectCodexExecOptionsBeforeResume(args: string[]): void {
   const resumeIndex = args.indexOf("resume");
   expect(resumeIndex).toBeGreaterThan(0);
-  expect(args.indexOf("--sandbox")).toBeLessThan(resumeIndex);
-  expect(args.indexOf("-c")).toBeLessThan(resumeIndex);
+  const permissionIndex = args.indexOf("--dangerously-bypass-approvals-and-sandbox");
+  expect(permissionIndex).toBeGreaterThan(0);
+  expect(permissionIndex).toBeLessThan(resumeIndex);
 }
 
 afterEach(() => {
@@ -310,12 +311,10 @@ describe("codex driver", () => {
       const [run] = spawns(fx);
       expect(run.args[0]).toBe("exec");
       expect(run.args[1]).toContain("Task #0001");
-      expect(run.args).toEqual(expect.arrayContaining(["--json", "--sandbox", "workspace-write"]));
-      // Network on, or `repoos check`'s localhost-binding tests fail with EPERM
-      // inside the Seatbelt sandbox (#0406).
       expect(run.args).toEqual(
-        expect.arrayContaining(["-c", "sandbox_workspace_write.network_access=true"]),
+        expect.arrayContaining(["--json", "--dangerously-bypass-approvals-and-sandbox"]),
       );
+      expect(run.args).not.toContain("--sandbox");
 
       await waitFor(() => !runner.isRunning("0001"), "first turn exit");
       runner.send("0001", "continue the work", { ...agent("codex"), model: "gpt-5.6" });
@@ -325,10 +324,7 @@ describe("codex driver", () => {
       const [, resume] = spawns(fx);
       expect(resume.args).toEqual([
         "exec",
-        "--sandbox",
-        "workspace-write",
-        "-c",
-        "sandbox_workspace_write.network_access=true",
+        "--dangerously-bypass-approvals-and-sandbox",
         "resume",
         "--model",
         "gpt-5.6",
@@ -365,10 +361,7 @@ describe("codex driver", () => {
       const [, resume] = spawns(fx);
       expect(resume.args).toEqual([
         "exec",
-        "--sandbox",
-        "workspace-write",
-        "-c",
-        "sandbox_workspace_write.network_access=true",
+        "--dangerously-bypass-approvals-and-sandbox",
         "resume",
         "--json",
         "--last",
