@@ -234,27 +234,15 @@ RepoOS manages its own roadmap. This means a few things are true that you
 cannot tell from the code alone:
 
 - The `repoos` command is very likely a `bun link` dev build pointing at THIS
-  repo's `dist/`. It runs compiled JS, not the TypeScript source. **`repoos`
-  warns automatically when the build is stale** (compares a hash of `src/`
-  against the build marker in `dist/.build-info.json`). If you see a staleness
-  warning, run `bun run build` before trusting any `repoos` output or the UI.
-  This is the #1 way to waste time in this repo — the guardrail catches it.
-  **Be proactive, not reactive: run `bun run build` (or `bun run build:ui`
-  for a UI-only change) right after you finish editing, before your next
-  `repoos` invocation** — don't wait to trip the guardrail and have to
-  re-run. `repoos check`'s own `staleness` step runs before that same
-  invocation's `build` step (`repoos.toml`'s check plan — see Definition of
-  done below), so a check run immediately after an edit fails once on
-  staleness alone, even though the very same run's `build` step would have
-  fixed it a few steps later — you then have to burn an entire second full
-  check invocation just to see it pass clean. This is deliberate, not a bug
-  to route around by reordering those steps or building automatically
-  mid-run: the *currently executing* `repoos` process is itself running the
-  old compiled code the moment it starts, and a `build` step run as a
-  subprocess partway through cannot retroactively refresh the logic already
-  loaded into that process for the rest of its own run — only a fresh
-  process invoked *after* the rebuild actually runs new code. Build first,
-  then check, and you never pay for this twice.
+  repo's `dist/`. It runs compiled JS, not the TypeScript source. On startup,
+  it compares a hash of `src/` with `dist/.build-info.json`. When a marked
+  build is stale, it runs `bun run build` and re-execs the same command so the
+  command uses fresh compiled code. This applies to `repoos check` and `serve`
+  too. The re-exec is attempted once; a failed build or still-stale marker
+  falls through to the existing warning or `check` staleness failure. A
+  manual `bun run build` is still useful before using the compiled CLI after
+  changing build scripts or package metadata, which the `src/` hash does not
+  cover. `bun run build:ui` is available for UI-only changes.
 - **`dist/` is gitignored (as of 2026-08-15) — never `git add` it, and never
   `commit` it.** It used to be tracked, and that alone was the #1 source of
   merge conflicts and dirty-`main` failures in this repo — see
