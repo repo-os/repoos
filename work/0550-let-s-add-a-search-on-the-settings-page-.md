@@ -1,4 +1,5 @@
 ---
+merge_conflict_retry_count: 1
 updated_at: "2026-09-27T18:54:39Z"
 review_passes: 5
 id: "0550"
@@ -113,4 +114,5 @@ Let's add a search on the settings page since we have so many settings now and I
 - 2026-09-27T18:32:37Z · needs_input
 - 2026-09-27T18:34:41Z · status active→review
 - 2026-09-27T18:43:41Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
+
 
