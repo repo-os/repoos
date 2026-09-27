@@ -11,7 +11,7 @@ branch: feat/remote-validation-pool-multiple-tailscal
 cli_override: opencode
 model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-26T11:49:01Z"
-updated_at: "2026-09-27T04:55:45Z"
+updated_at: "2026-09-27T05:01:42Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -95,3 +95,4 @@ Autoscaling, and pooling Hetzner VMs.
 - 2026-09-27T04:25:07Z · status active→review
 - 2026-09-27T04:33:08Z · status review→active
 - 2026-09-27T04:53:25Z · status active→review
+- 2026-09-27T05:01:42Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
