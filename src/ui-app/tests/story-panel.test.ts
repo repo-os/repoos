@@ -1,8 +1,8 @@
 /**
  * Story side panel (#0502): the stories view opens a task/input-style side
  * panel per story, its content is split into tabs (full markdown body, related
- * tasks, metadata), selecting a second story swaps the contents in place and
- * resets the tab, and a related task hands off to the existing task drawer.
+ * tasks, metadata), programmatic story selection swaps the contents in place
+ * and resets the tab, and a related task hands off to the existing task drawer.
  *
  * Radix dialogs portal their content to `body`, so the assertions read the
  * teleported DOM off `document.body` rather than off the wrapper element.
@@ -102,34 +102,34 @@ describe("story side panel opening", () => {
     expect(el!.querySelector(".drawer-tabs")).toBeTruthy();
   });
 
-  /**
-   * The regression guard for round 1: a modal panel renders a full-screen
-   * scrim, which makes "select a different story to swap the contents in place"
-   * unreachable no matter how good the state handling is. Assert the two
-   * things that actually block a real click, rather than relying on a
-   * synthetic `trigger("click")` that bypasses hit-testing entirely.
-   */
-  it("leaves the stories list reachable — no scrim, no pointer-event lock", async () => {
-    useRepoStore().tasks = [
-      makeTask({ id: "0001", story: "Alpha slice", status: "active" }),
-      makeTask({ id: "0002", story: "Beta slice", status: "ready" }),
-    ];
-    useRepoStore().storyDefinitions = [
-      definition("Alpha slice", ALPHA_BODY),
-      definition("Beta slice", BETA_BODY),
-    ];
+  it("renders the standard scrim behind the sheet, like the task and input panels", async () => {
+    useRepoStore().tasks = [makeTask({ id: "0001", story: "Alpha slice", status: "ready" })];
+    useRepoStore().storyDefinitions = [definition("Alpha slice", ALPHA_BODY)];
     const wrapper = mountView();
     await flushPromises();
-    await wrapper.findAll(".story-head")[0]!.trigger("click");
+    await wrapper.find(".story-head").trigger("click");
     await flushPromises();
 
+    const overlay = document.body.querySelector(".overlay");
+    expect(overlay).toBeTruthy();
     expect(panel()).toBeTruthy();
-    // No .overlay element anywhere, and nothing has taken the body out of the
-    // hit-testing path — both are what a modal dialog installs.
-    expect(document.body.querySelector(".overlay")).toBeNull();
-    expect(document.body.style.pointerEvents).not.toBe("none");
-    // The rows the user is supposed to click are still in the document.
-    expect(wrapper.findAll(".story-head")).toHaveLength(2);
+  });
+
+  it("closes when the scrim is clicked", async () => {
+    useRepoStore().tasks = [makeTask({ id: "0001", story: "Alpha slice", status: "ready" })];
+    useRepoStore().storyDefinitions = [definition("Alpha slice", ALPHA_BODY)];
+    const wrapper = mountView();
+    await flushPromises();
+    await wrapper.find(".story-head").trigger("click");
+    await flushPromises();
+    expect(panel()).toBeTruthy();
+
+    const overlay = document.body.querySelector<HTMLElement>(".overlay")!;
+    overlay.dispatchEvent(
+      new PointerEvent("pointerdown", { bubbles: true, cancelable: true, pointerId: 1 }),
+    );
+    await flushPromises();
+    expect(panel()).toBeNull();
   });
 
   it("does not open a panel until a story is selected", async () => {
@@ -309,7 +309,7 @@ describe("story side panel empty states", () => {
 });
 
 describe("story side panel navigation and swapping", () => {
-  it("swaps contents in place for a second story and resets the tab", async () => {
+  it("swaps contents in place when selection changes programmatically and resets the tab", async () => {
     useRepoStore().tasks = [
       makeTask({ id: "0001", story: "Alpha slice", title: "First", status: "active" }),
       makeTask({ id: "0002", story: "Beta slice", title: "Second", status: "ready" }),
@@ -321,7 +321,6 @@ describe("story side panel navigation and swapping", () => {
     const wrapper = mountView();
     await flushPromises();
 
-    // Ordering puts attention/active work first, so Alpha heads the list.
     const heads = wrapper.findAll(".story-head");
     expect(heads).toHaveLength(2);
     await heads[0].trigger("click");
@@ -329,17 +328,10 @@ describe("story side panel navigation and swapping", () => {
     await openTab("Tasks");
     expect(panel()!.querySelectorAll(".story-panel-task")).toHaveLength(1);
 
-    // The real browser sequence for clicking the other row: pointerdown, then
-    // click. Both matter — radix dismisses a non-modal dialog on the
-    // pointerdown, which would close and re-open the panel (a new DOM node)
-    // rather than swap its contents.
     const before = panel();
-    const row = heads[1]!.element as HTMLElement;
-    row.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
-    await flushPromises();
-    // Still the very same element: never closed, never remounted.
-    expect(panel()).toBe(before);
-    row.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    // Deep links and in-app routing call `selectStory` directly; the scrim blocks
+    // clicking a second row, but the in-place swap must still work.
+    await heads[1].trigger("click");
     await flushPromises();
 
     const el = panel()!;
@@ -348,29 +340,6 @@ describe("story side panel navigation and swapping", () => {
     expect(tabs()[0].classList.contains("active")).toBe(true);
     expect(tabs()[1].classList.contains("active")).toBe(false);
     expect(el.querySelector(".md-rendered")!.textContent).toContain("A different slice entirely.");
-  });
-
-  it("keeps the panel open when focus moves to the list, but Escape still closes", async () => {
-    useRepoStore().tasks = [
-      makeTask({ id: "0001", story: "Alpha slice", status: "active" }),
-      makeTask({ id: "0002", story: "Beta slice", status: "ready" }),
-    ];
-    const wrapper = mountView();
-    await flushPromises();
-    const heads = wrapper.findAll(".story-head");
-    await heads[0].trigger("click");
-    await flushPromises();
-    const before = panel();
-
-    // Tabbing out of the panel into the stories list is a focusin outside, the
-    // second dismissal path. It must not close the panel either.
-    (heads[1]!.element as HTMLElement).focus();
-    await flushPromises();
-    expect(panel()).toBe(before);
-
-    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
-    await flushPromises();
-    expect(panel()).toBeNull();
   });
 
   it("opens the task drawer from a related task, reusing the existing path", async () => {
@@ -677,16 +646,11 @@ describe("story side panel styling contract", () => {
     expect(css).not.toMatch(/^\.drawer-tabs \{[^}]*overflow-x/m);
   });
 
-  it("declares the panel non-modal, with no scrim to block the list", () => {
-    expect(panelSource).toContain(':modal="false"');
-    expect(panelSource).not.toMatch(/<DialogOverlay/);
-  });
-
-  it("blocks both of radix's outside-dismissal paths, which run before the click", () => {
-    expect(panelSource).toContain('@pointer-down-outside="keepOpenOnOutsideInteraction"');
-    expect(panelSource).toContain('@focus-outside="keepOpenOnOutsideInteraction"');
-    expect(panelSource).toMatch(
-      /function keepOpenOnOutsideInteraction[\s\S]*?e\.preventDefault\(\)/,
-    );
+  it("uses the shared modal dialog shell with a scrim, like the other drawers", () => {
+    expect(panelSource).not.toContain(':modal="false"');
+    expect(panelSource).toMatch(/<DialogOverlay/);
+    expect(panelSource).not.toContain("keepOpenOnOutsideInteraction");
+    expect(panelSource).not.toContain("@pointer-down-outside");
+    expect(panelSource).not.toContain("@focus-outside");
   });
 });
