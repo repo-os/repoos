@@ -305,6 +305,14 @@ export class RemoteValidationRunner implements RemoteValidator {
   private readonly keyPath: string;
   private readonly sshUser = "root";
   private state: RunnerState | null = null;
+  /**
+   * Server id this process adopted from the shared state file at construction,
+   * i.e. a VM ANOTHER process (the server) provisioned. `dispose()` must not
+   * delete it: a short-lived `repoos check` adopting the server's warm VM would
+   * otherwise kill a close-out that is validating on it, or force the next one
+   * to pay a fresh provisioning delay.
+   */
+  private adoptedServerId: number | null = null;
   /** In-flight provisioning, so concurrent validate() calls share one VM. */
   private provisioning: Promise<RemoteHost> | null = null;
   private idleTimer: ReturnType<typeof setTimeout> | null = null;
@@ -336,7 +344,10 @@ export class RemoteValidationRunner implements RemoteValidator {
     try {
       const raw = readFileSync(this.stateFile(), "utf8");
       const parsed = JSON.parse(raw) as RunnerState;
-      if (parsed && typeof parsed.serverId === "number") this.state = parsed;
+      if (parsed && typeof parsed.serverId === "number") {
+        this.state = parsed;
+        this.adoptedServerId = parsed.serverId;
+      }
     } catch {
       this.state = null;
     }
@@ -613,6 +624,8 @@ export class RemoteValidationRunner implements RemoteValidator {
   async dispose(): Promise<void> {
     this.clearIdleTimer();
     if (this.lifetimeTimer) clearTimeout(this.lifetimeTimer);
+    // An adopted VM belongs to whoever provisioned it; only clear our timers.
+    if (this.state && this.state.serverId === this.adoptedServerId) return;
     if (this.state) {
       await this.hetzner.deleteServer(this.state.serverId).catch(() => undefined);
       this.state = null;
