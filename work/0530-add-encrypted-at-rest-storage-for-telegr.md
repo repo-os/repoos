@@ -2,7 +2,7 @@
 id: "0530"
 title: Add encrypted-at-rest storage for Telegram bot tokens
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: core
 story: RepoOS Telegram Bot
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:32:02Z"
-updated_at: "2026-09-27T07:32:02Z"
+updated_at: "2026-09-27T07:34:10Z"
 ---
 ## Problem
 
@@ -44,3 +44,4 @@ An authenticated-encryption secret store, generic enough that the next credentia
 ## Activity
 
 - 2026-09-27T07:32:02Z · created · unknown
+- 2026-09-27T07:34:10Z · status inbox→ready
