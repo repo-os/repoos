@@ -1997,8 +1997,15 @@ export class TailscaleRunner implements RemoteValidator {
       // 2. upload
       const remoteBundle = paths.bundle;
       const up = await this.exec.uploadFile(host, bundlePath, remoteBundle);
-      if (!up.ok)
-        return this.infraFail(`scp of candidate bundle failed: ${up.detail ?? "unknown"}`);
+      if (!up.ok) {
+        const detail = `ssh upload of candidate bundle to ${host.ip} failed: ${up.detail ?? "unknown"}`;
+        // Upload uses the SSH transport too. A failed transfer means this host
+        // may have gone away since its prerequisite probe; keep queued work
+        // from immediately selecting it again until the health retry probe.
+        this.pool.markUnhealthy(host.ip, detail);
+        this.pool.recordRun(host.ip, opts.taskId, false);
+        return this.infraFail(detail);
+      }
 
       // 3. run build + test via validate.sh on the host (which calls docker run
       //    itself), wrapped in the host-side slot lock so this process's gate

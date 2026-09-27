@@ -233,6 +233,7 @@ describe("runsOn → job capabilities", () => {
 
 interface Fixture {
   runner: TailscaleRunner;
+  exec: RemoteExecDeps;
   root: string;
   config: RepoOSConfig;
   /** Host → validation commands run on it (probe excluded). */
@@ -325,6 +326,7 @@ function poolFixture(opts: {
   });
   return {
     runner,
+    exec,
     root,
     config,
     cmds,
@@ -348,6 +350,26 @@ const opts = (taskId: string, extra: Record<string, unknown> = {}) => ({
 });
 
 describe("TailscaleRunner pool dispatch (#0521)", () => {
+  it("skips a host after its SSH bundle upload fails", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }, { host: "b" }] });
+    vi.mocked(f.exec.uploadFile).mockImplementation(async (host) =>
+      host.ip === "a" ? { ok: false, detail: "ssh: Connection timed out" } : { ok: true },
+    );
+
+    const failed = await f.runner.validate(opts("0001"));
+    expect(failed).toMatchObject({ ok: false, transient: true });
+    expect(f.runner.hostStatus()?.find((host) => host.host === "a")).toMatchObject({
+      healthy: false,
+      detail: expect.stringContaining("Connection timed out"),
+    });
+
+    const next = f.runner.validate(opts("0002"));
+    await tick();
+    expect(f.pending()).toEqual(["b"]);
+    f.release("b");
+    expect(await next).toEqual({ ok: true, stage: "check" });
+  });
+
   it("runs two jobs on two hosts and queues a third until one frees", async () => {
     const f = poolFixture({ hosts: [{ host: "a" }, { host: "b" }] });
     const chunks3: string[] = [];
