@@ -24,8 +24,10 @@ Two things:
 ## Screenshots
 
 ![Screenshot-2026-09-27-at-00.35.47](/api/tasks/0526/attachments/screenshot-1.png)
+![Screenshot-2026-09-27-at-00.35.32](/api/tasks/0526/attachments/screenshot-2.png)
 
 ## Activity
 
 - 2026-09-27T00:58:08Z · created · hello@repoos.org
+- 2026-09-27T00:58:09Z · screenshots
 - 2026-09-27T00:58:09Z · screenshots
