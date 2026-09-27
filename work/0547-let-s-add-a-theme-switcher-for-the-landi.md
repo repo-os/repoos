@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-27T13:24:29Z"
-review_passes: 4
 id: "0547"
 title: Add a gruvbox theme switcher to the landing page
 type: feature
@@ -12,6 +10,8 @@ created_by: hello@repoos.org
 branch: feat/add-a-gruvbox-theme-switcher-to-the-land
 review_model_override: opencode-go/hy3
 created_at: "2026-09-27T11:55:28Z"
+updated_at: "2026-09-27T13:58:08Z"
+review_passes: 4
 review_rounds: 2
 ---
 ## Problem
@@ -185,4 +185,4 @@ Let's add a theme switcher for the landing page and the first additional theme s
 - 2026-09-27T13:10:22Z · review_model_override
 - 2026-09-27T13:13:48Z · status review→active
 - 2026-09-27T13:20:09Z · status active→review
-
+- 2026-09-27T13:58:08Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
