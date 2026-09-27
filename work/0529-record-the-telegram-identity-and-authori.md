@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-27T16:05:19Z"
+review_passes: 3
 id: "0529"
 title: Record the Telegram identity and authorization model
 type: feature
@@ -15,9 +17,7 @@ branch: feat/record-the-telegram-identity-and-authori
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-27T07:31:53Z"
-updated_at: "2026-09-27T16:05:19Z"
 review_rounds: 2
-review_passes: 2
 last_check_failure: "[object Object]"
 ---
 ## Problem
@@ -106,3 +106,4 @@ failed to connect to the docker API at unix:///var/run/docker.sock; check if the
 - 2026-09-27T15:58:27Z · status review→active
 - 2026-09-27T16:04:14Z · status active→review
 - 2026-09-27T16:05:19Z · needs_input
+
