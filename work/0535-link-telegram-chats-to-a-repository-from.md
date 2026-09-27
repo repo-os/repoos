@@ -2,7 +2,7 @@
 id: "0535"
 title: Link Telegram chats to a repository from an authenticated admin
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: server
 story: RepoOS Telegram Bot
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:32:50Z"
-updated_at: "2026-09-27T07:32:50Z"
+updated_at: "2026-09-27T07:34:16Z"
 ---
 ## Problem
 
@@ -47,3 +47,4 @@ In a group, act only when the message is addressed to the bot. Story #0003 requi
 ## Activity
 
 - 2026-09-27T07:32:50Z · created · unknown
+- 2026-09-27T07:34:16Z · status inbox→ready
