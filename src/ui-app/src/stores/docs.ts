@@ -1,6 +1,7 @@
 import { ref } from "vue";
 import { defineStore } from "pinia";
 import { api } from "../api";
+import { useSearchBodyCache } from "../composables/use-search-body-cache";
 import type { DocMeta, SkillMeta } from "../types";
 
 export const useDocsStore = defineStore("docs", () => {
@@ -22,6 +23,30 @@ export const useDocsStore = defineStore("docs", () => {
     } catch {
       return false;
     }
+  }
+
+  /**
+   * After creating a doc, reload the listing and ensure the new path is indexed
+   * for search even if the API listing is briefly stale.
+   */
+  async function syncDocAfterCreate(path: string): Promise<void> {
+    await loadDocs();
+    if (docs.value.some((d) => d.path === path)) return;
+    let title = path;
+    try {
+      const r = await fetch(path);
+      if (r.ok) {
+        const text = await r.text();
+        const m = text.match(/^\s*#\s+(.+)$/m);
+        if (m) title = m[1].trim();
+      }
+    } catch {
+      /* title falls back to path */
+    }
+    docs.value = [...docs.value, { path, title, mtimeMs: Date.now() }].sort((a, b) =>
+      a.path.localeCompare(b.path),
+    );
+    useSearchBodyCache().prefetchPath(path);
   }
 
   async function loadDoc(path: string): Promise<void> {
@@ -70,6 +95,7 @@ export const useDocsStore = defineStore("docs", () => {
     skillName,
     skillDesc,
     loadDocs,
+    syncDocAfterCreate,
     loadDoc,
     loadSkills,
     loadSkill,

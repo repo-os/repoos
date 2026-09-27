@@ -56,7 +56,6 @@ const searchSource = computed(() => ({
     content: contentByPath.value.get(d.path),
   })),
   fields: searchableFields.value,
-  settingLocation: settingLocation.value,
 }));
 
 const contextSearchSource = computed(() => ({
@@ -145,6 +144,19 @@ const groups = computed<Group[]>(() => {
       },
     ];
   }
+  if (props.scope === "context" && !showRecent.value) {
+    const items = displayItems.value as SearchResult[];
+    const kinds = new Set(items.map((r) => r.kind));
+    if (kinds.size <= 1) {
+      return [
+        {
+          kind: items[0]?.kind ?? "doc",
+          label: "",
+          items: items.map((r, idx) => ({ r, idx })),
+        },
+      ];
+    }
+  }
   const out: Group[] = [];
   const byKind = new Map<string, Group>();
   const labelOf: Record<string, string> = {
@@ -191,6 +203,23 @@ const ariaLabel = computed(() => {
   return "Search tasks, docs, and settings";
 });
 
+async function loadSearchBodies(): Promise<void> {
+  if (props.scope === "settings" || !props.open) return;
+  const paths =
+    props.scope === "context"
+      ? [...docList.value.map((d) => d.path), ...skillList.value.map((s) => s.path)]
+      : docList.value.map((d) => d.path);
+  await ensurePaths(paths);
+}
+
+let bodyLoadTimer: ReturnType<typeof setTimeout> | undefined;
+function scheduleLoadSearchBodies(): void {
+  clearTimeout(bodyLoadTimer);
+  bodyLoadTimer = setTimeout(() => {
+    void loadSearchBodies();
+  }, 200);
+}
+
 watch(
   () => props.open,
   (isOpen) => {
@@ -198,7 +227,7 @@ watch(
       query.value = "";
       highlight.value = 0;
       setTimeout(() => inputEl.value?.focus(), 0);
-      void loadSearchBodies();
+      scheduleLoadSearchBodies();
     }
   },
 );
@@ -250,7 +279,11 @@ function openResult(r: SearchResult): void {
     void docs.loadSkill(r.path);
   } else if (r.kind === "setting") {
     addRecentSearch(query.value);
-    void navigateToSetting(r.tab, r.key, r.tomlOnly);
+    if (props.scope === "settings" && r.tab) {
+      void navigateToSetting(r.tab, r.key, r.tomlOnly === true);
+    } else {
+      void router.push({ name: "settings", query: { focus: r.key } });
+    }
   }
   closeOverlay();
 }
@@ -322,17 +355,8 @@ function handleBackdropClick(e: MouseEvent): void {
   }
 }
 
-async function loadSearchBodies(): Promise<void> {
-  if (props.scope === "settings" || !props.open) return;
-  const paths =
-    props.scope === "context"
-      ? [...docList.value.map((d) => d.path), ...skillList.value.map((s) => s.path)]
-      : docList.value.map((d) => d.path);
-  await ensurePaths(paths);
-}
-
 watch([docList, skillList], () => {
-  if (props.open) void loadSearchBodies();
+  if (props.open) scheduleLoadSearchBodies();
 });
 </script>
 

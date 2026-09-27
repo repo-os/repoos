@@ -17,7 +17,7 @@
  *   GET  /api/index            -> full RepoIndex snapshot
  *   GET  /api/stats/board      -> { ok, stats } board-level summary stats
  *   GET  /api/stats/by-type    -> { ok, stats } session stats grouped by type
- *   GET  /api/docs             -> [{ path, title }]  (context docs listing)
+ *   GET  /api/docs             -> [{ path, title, mtimeMs }]  (context docs listing)
  *   GET  /api/repo/log         -> git log page { commits, nextCursor, branch } (?branch=&path=&limit=&before=&includeDocs=1)
  *   GET  /api/repo/branches    -> { defaultBranch, branches } local heads, default first
  *   GET  /api/repo/commits/:sha -> one commit + changed files + patch
