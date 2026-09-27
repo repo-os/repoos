@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from "pinia";
 import {
   BOARD_SORT_ORDER_OPTIONS,
   SORT_ORDER_OPTIONS,
+  STORIES_PAGE_SORT_ORDER_OPTIONS,
   sortTasks,
   useRepoStore,
 } from "../src/stores/repo";
@@ -108,6 +109,30 @@ describe("repo sort order", () => {
     expect(BOARD_SORT_ORDER_OPTIONS).toEqual(
       SORT_ORDER_OPTIONS.filter((o) => o.value !== "status"),
     );
+  });
+
+  it("defaults the stories page to most recently updated and persists separately (#0536)", () => {
+    const repo = useRepoStore();
+    expect(repo.storiesPageSortOrder).toBe("recent");
+    repo.setStoriesPageSortOrder("taskNumberOldest");
+    expect(localStorage.getItem("repoos.storiesPage.sortOrder")).toBe(
+      JSON.stringify("taskNumberOldest"),
+    );
+    expect(localStorage.getItem("repoos.board.sortOrder")).toBeNull();
+
+    setActivePinia(createPinia());
+    const reloaded = useRepoStore();
+    expect(reloaded.storiesPageSortOrder).toBe("taskNumberOldest");
+  });
+
+  it("offers three stories-page options without priority (#0536)", () => {
+    expect(STORIES_PAGE_SORT_ORDER_OPTIONS).toHaveLength(3);
+    expect(STORIES_PAGE_SORT_ORDER_OPTIONS.some((o) => o.label === "Priority level")).toBe(false);
+    expect(STORIES_PAGE_SORT_ORDER_OPTIONS.map((o) => o.value)).toEqual([
+      "recent",
+      "taskNumberNewest",
+      "taskNumberOldest",
+    ]);
   });
 });
 
