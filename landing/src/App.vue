@@ -2,22 +2,85 @@
 import { onBeforeUnmount, onMounted, ref } from "vue";
 import InstallBox from "./components/InstallBox.vue";
 
-type Theme = "dark" | "light";
-const THEME_KEY = "repoos-theme";
-const theme = ref<Theme>("dark");
+type Appearance = "dark" | "light";
+type DesignTheme = "classic" | "gruvbox";
 
-function applyTheme(next: Theme): void {
-  theme.value = next;
+const APPEARANCE_KEY = "repoos-theme";
+const DESIGN_KEY = "repoos-ui-theme";
+
+const appearance = ref<Appearance>("dark");
+const designTheme = ref<DesignTheme>("classic");
+const pickerOpen = ref(false);
+
+const DESIGN_OPTIONS: { id: DesignTheme; label: string }[] = [
+  { id: "classic", label: "Classic" },
+  { id: "gruvbox", label: "Gruvbox" },
+];
+
+const THEME_COLORS: Record<`${DesignTheme}-${Appearance}`, string> = {
+  "classic-dark": "#070a12",
+  "classic-light": "#f6f8fc",
+  "gruvbox-dark": "#282828",
+  "gruvbox-light": "#fbf1c7",
+};
+
+function syncThemeColorMeta(): void {
+  const key = `${designTheme.value}-${appearance.value}` as `${DesignTheme}-${Appearance}`;
+  const content = THEME_COLORS[key];
+  let meta = document.querySelector('meta[name="theme-color"]');
+  if (!meta) {
+    meta = document.createElement("meta");
+    meta.setAttribute("name", "theme-color");
+    document.head.appendChild(meta);
+  }
+  meta.setAttribute("content", content);
+}
+
+function applyAppearance(next: Appearance): void {
+  appearance.value = next;
   document.documentElement.setAttribute("data-theme", next);
   try {
-    localStorage.setItem(THEME_KEY, next);
+    localStorage.setItem(APPEARANCE_KEY, next);
   } catch {
     // Private mode / blocked storage: the toggle still works for this visit.
   }
+  syncThemeColorMeta();
 }
 
-function toggleTheme(): void {
-  applyTheme(theme.value === "dark" ? "light" : "dark");
+function applyDesignTheme(next: DesignTheme): void {
+  designTheme.value = next;
+  if (next === "gruvbox") {
+    document.documentElement.setAttribute("data-ui-theme", "gruvbox");
+  } else {
+    document.documentElement.removeAttribute("data-ui-theme");
+  }
+  try {
+    localStorage.setItem(DESIGN_KEY, next);
+  } catch {
+    // blocked storage
+  }
+  syncThemeColorMeta();
+}
+
+function toggleAppearance(): void {
+  applyAppearance(appearance.value === "dark" ? "light" : "dark");
+}
+
+function selectDesignTheme(next: DesignTheme): void {
+  applyDesignTheme(next);
+  pickerOpen.value = false;
+}
+
+function togglePicker(): void {
+  pickerOpen.value = !pickerOpen.value;
+}
+
+function onDocumentClick(e: MouseEvent): void {
+  const target = e.target;
+  if (!(target instanceof Element)) return;
+  if (!target.closest(".theme-picker")) {
+    pickerOpen.value = false;
+  }
 }
 
 // Mobile nav. The inline links need ~686px to fit beside the logo, so they're
@@ -27,31 +90,40 @@ const DESKTOP_NAV = "(min-width: 768px)";
 
 function closeMenu(): void {
   menuOpen.value = false;
+  pickerOpen.value = false;
 }
 
 function onKeydown(e: KeyboardEvent): void {
-  if (e.key === "Escape") closeMenu();
+  if (e.key === "Escape") {
+    pickerOpen.value = false;
+    closeMenu();
+  }
 }
 
 let desktopQuery: MediaQueryList | undefined;
 
 onMounted(() => {
-  // index.html resolves the theme (stored choice, else prefers-color-scheme)
-  // and applies it before first paint to avoid a flash. Read it back so the
-  // toggle's initial state matches what's actually on screen.
-  theme.value = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+  // index.html resolves both axes before first paint. Read them back so controls
+  // match what's on screen without a flash.
+  appearance.value =
+    document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+  designTheme.value =
+    document.documentElement.getAttribute("data-ui-theme") === "gruvbox" ? "gruvbox" : "classic";
 
-  // An open menu must not survive a resize past the breakpoint, or it lingers
-  // as a stray panel under a nav that already shows every link inline.
   desktopQuery = window.matchMedia(DESKTOP_NAV);
   desktopQuery.addEventListener("change", closeMenu);
   window.addEventListener("keydown", onKeydown);
+  document.addEventListener("click", onDocumentClick);
 });
 
 onBeforeUnmount(() => {
   desktopQuery?.removeEventListener("change", closeMenu);
   window.removeEventListener("keydown", onKeydown);
+  document.removeEventListener("click", onDocumentClick);
 });
+
+const activeDesignLabel = () =>
+  DESIGN_OPTIONS.find((o) => o.id === designTheme.value)?.label ?? "Classic";
 
 const steps = [
   {
@@ -134,46 +206,97 @@ const year = new Date().getFullYear();
         <a href="#team" class="nav-link hidden md:block">The team</a>
         <a href="#principles" class="nav-link hidden md:block">Design</a>
         <a href="https://docs.repoos.org" class="nav-link hidden md:block">Docs</a>
-        <button
-          type="button"
-          class="theme-toggle"
-          :aria-label="theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"
-          :title="theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"
-          @click="toggleTheme"
-        >
-          <svg
-            v-if="theme === 'dark'"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-            class="h-4 w-4"
-            aria-hidden="true"
+        <div class="theme-controls">
+          <div class="theme-picker">
+            <button
+              type="button"
+              class="theme-picker-trigger"
+              :aria-expanded="pickerOpen"
+              aria-haspopup="listbox"
+              aria-label="Design theme"
+              :title="`Design theme: ${activeDesignLabel()}`"
+              @click="togglePicker"
+            >
+              <span>{{ activeDesignLabel() }}</span>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                class="theme-picker-chevron"
+                :class="{ open: pickerOpen }"
+                aria-hidden="true"
+              >
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+            <div
+              v-if="pickerOpen"
+              class="theme-picker-menu"
+              role="listbox"
+              aria-label="Design theme"
+            >
+              <button
+                v-for="opt in DESIGN_OPTIONS"
+                :key="opt.id"
+                type="button"
+                role="option"
+                class="theme-picker-option"
+                :aria-current="designTheme === opt.id ? 'true' : undefined"
+                :aria-label="`Use ${opt.label} design theme`"
+                :title="`Use ${opt.label} design theme`"
+                @click="selectDesignTheme(opt.id)"
+              >
+                <span>{{ opt.label }}</span>
+                <span v-if="designTheme === opt.id" class="theme-picker-check" aria-hidden="true"
+                  >✓</span
+                >
+              </button>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="theme-toggle"
+            :aria-label="
+              appearance === 'dark' ? 'Switch to light appearance' : 'Switch to dark appearance'
+            "
+            :title="
+              appearance === 'dark' ? 'Switch to light appearance' : 'Switch to dark appearance'
+            "
+            @click="toggleAppearance"
           >
-            <circle cx="12" cy="12" r="4" />
-            <path
-              d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
-            />
-          </svg>
-          <svg
-            v-else
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="h-4 w-4"
-            aria-hidden="true"
-          >
-            <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" />
-          </svg>
-        </button>
-        <a
-          href="https://github.com/repo-os/repoos"
-          class="hidden items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 py-1.5 text-[13px] text-[var(--txt-dim)] transition-colors hover:border-[rgba(57,224,255,0.4)] hover:text-[var(--txt)] md:flex"
-        >
+            <svg
+              v-if="appearance === 'dark'"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              class="h-4 w-4"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="4" />
+              <path
+                d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
+              />
+            </svg>
+            <svg
+              v-else
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="h-4 w-4"
+              aria-hidden="true"
+            >
+              <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" />
+            </svg>
+          </button>
+        </div>
+        <a href="https://github.com/repo-os/repoos" class="nav-github">
           <svg viewBox="0 0 16 16" fill="currentColor" class="h-3.5 w-3.5" aria-hidden="true">
             <path
               d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.42 7.42 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
@@ -219,6 +342,92 @@ const year = new Date().getFullYear();
         <a href="https://github.com/repo-os/repoos" class="nav-menu-link" @click="closeMenu"
           >GitHub</a
         >
+        <div class="theme-menu-row">
+          <span class="theme-menu-label">Design theme</span>
+          <div class="theme-picker">
+            <button
+              type="button"
+              class="theme-picker-trigger"
+              :aria-expanded="pickerOpen"
+              aria-haspopup="listbox"
+              aria-label="Design theme"
+              @click="togglePicker"
+            >
+              <span>{{ activeDesignLabel() }}</span>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                class="theme-picker-chevron"
+                :class="{ open: pickerOpen }"
+                aria-hidden="true"
+              >
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+            <div
+              v-if="pickerOpen"
+              class="theme-picker-menu"
+              role="listbox"
+              aria-label="Design theme"
+            >
+              <button
+                v-for="opt in DESIGN_OPTIONS"
+                :key="`m-${opt.id}`"
+                type="button"
+                role="option"
+                class="theme-picker-option"
+                :aria-current="designTheme === opt.id ? 'true' : undefined"
+                :aria-label="`Use ${opt.label} design theme`"
+                @click="selectDesignTheme(opt.id)"
+              >
+                <span>{{ opt.label }}</span>
+                <span v-if="designTheme === opt.id" class="theme-picker-check" aria-hidden="true"
+                  >✓</span
+                >
+              </button>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="theme-toggle"
+            :aria-label="
+              appearance === 'dark' ? 'Switch to light appearance' : 'Switch to dark appearance'
+            "
+            @click="toggleAppearance"
+          >
+            <svg
+              v-if="appearance === 'dark'"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              class="h-4 w-4"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="4" />
+              <path
+                d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
+              />
+            </svg>
+            <svg
+              v-else
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="h-4 w-4"
+              aria-hidden="true"
+            >
+              <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   </header>
@@ -264,9 +473,9 @@ const year = new Date().getFullYear();
         <figure class="min-w-0">
           <div class="shot-frame">
             <div class="term-bar">
-              <span class="term-dot" style="background: #ff6b7d"></span>
-              <span class="term-dot" style="background: #ffb454"></span>
-              <span class="term-dot" style="background: #4ef0a8"></span>
+              <span class="term-dot term-dot-red"></span>
+              <span class="term-dot term-dot-amber"></span>
+              <span class="term-dot term-dot-green"></span>
               <span class="term-title">RepoOS &mdash; work board</span>
             </div>
             <img
@@ -277,9 +486,7 @@ const year = new Date().getFullYear();
               fetchpriority="high"
             />
           </div>
-          <figcaption
-            class="mt-4 border-l-2 border-[rgba(157,123,255,0.4)] pl-3.5 text-[13px] leading-relaxed text-[var(--txt-dim)]"
-          >
+          <figcaption class="shot-caption">
             This is the board from this repository, captured while
             <span class="text-[var(--violet)]">#0338</span> — the task that built this page — was
             active.

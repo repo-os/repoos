@@ -86,9 +86,9 @@
  * palette for everything nested in them, including the Tailwind arbitrary
  * values used inline in the template, with no per-element overrides.
  */
-[data-theme="light"] .term,
-[data-theme="light"] .file-card,
-[data-theme="light"] .install-box {
+[data-theme="light"]:not([data-ui-theme="gruvbox"]) .term,
+[data-theme="light"]:not([data-ui-theme="gruvbox"]) .file-card,
+[data-theme="light"]:not([data-ui-theme="gruvbox"]) .install-box {
   --txt: #e7ecf7;
   --txt-dim: #8a96b4;
   --txt-faint: #566081;
@@ -100,6 +100,114 @@
   --border: rgba(120, 140, 200, 0.16);
   --border-bright: rgba(120, 160, 255, 0.35);
   --chip-bg: rgba(120, 140, 200, 0.1);
+}
+
+/*
+ * Gruvbox design theme — palette lifted from src/ui-app/src/style.css
+ * (:root[data-ui-theme="gruvbox"] and :root[data-ui-theme="gruvbox"][data-theme="light"]).
+ * Landing-only tokens (--glow-*, --nav-bg, --code-bg, …) stay flat: no neon, no glass.
+ */
+[data-ui-theme="gruvbox"] {
+  --bg: #282828;
+  --bg-2: #32302f;
+  --panel: rgba(60, 56, 54, 0.62);
+  --panel-solid: #3c3836;
+  --border: rgba(146, 131, 116, 0.28);
+  --border-bright: rgba(146, 131, 116, 0.55);
+  --txt: #ebdbb2;
+  --txt-dim: #bdae93;
+  --txt-faint: #928374;
+  --cyan: #8ec07c;
+  --cyan-dim: rgba(142, 192, 124, 0.16);
+  --violet: #d3869b;
+  --violet-dim: rgba(211, 134, 155, 0.16);
+  --green: #b8bb26;
+  --amber: #fabd2f;
+  --red: #fb4934;
+  --bevel-hi: rgba(251, 241, 199, 0.07);
+  --bevel-lo: rgba(29, 32, 33, 0.4);
+  --glow-1: rgba(250, 189, 47, 0.07);
+  --glow-2: rgba(211, 134, 155, 0.08);
+  --code-bg: #1d2021;
+  --code-bar-bg: #32302f;
+  --chip-bg: rgba(146, 131, 116, 0.14);
+  --nav-bg: linear-gradient(180deg, #32302f, #282828);
+  --foot-bg: linear-gradient(180deg, #282828, #32302f);
+  --shot-shadow: 0 0 0 1px rgba(146, 131, 116, 0.22), 0 4px 14px -8px rgba(0, 0, 0, 0.55);
+  --glow-ring: 0 0 0 1px rgba(146, 131, 116, 0.22), 0 4px 14px -8px rgba(0, 0, 0, 0.55);
+  --selection-bg: rgba(250, 189, 47, 0.28);
+  --selection-txt: #282828;
+}
+
+[data-ui-theme="gruvbox"][data-theme="light"] {
+  --bg: #fbf1c7;
+  --bg-2: #f2e5bc;
+  --panel: rgba(235, 219, 178, 0.62);
+  --panel-solid: #ebdbb2;
+  --border: rgba(60, 56, 54, 0.16);
+  --border-bright: rgba(60, 56, 54, 0.34);
+  --txt: #3c3836;
+  --txt-dim: #665c54;
+  --txt-faint: #928374;
+  --cyan: #427b58;
+  --cyan-dim: rgba(66, 123, 88, 0.1);
+  --violet: #8f3f71;
+  --violet-dim: rgba(143, 63, 113, 0.1);
+  --green: #79740e;
+  --amber: #b57614;
+  --red: #9d0006;
+  --bevel-hi: rgba(255, 249, 228, 0.55);
+  --bevel-lo: rgba(60, 56, 54, 0.14);
+  --glow-1: rgba(181, 118, 20, 0.07);
+  --glow-2: rgba(143, 63, 113, 0.06);
+  --code-bg: #1d2021;
+  --code-bar-bg: #32302f;
+  --chip-bg: rgba(60, 56, 54, 0.08);
+  --nav-bg: linear-gradient(180deg, #f2e5bc, #fbf1c7);
+  --foot-bg: linear-gradient(180deg, #fbf1c7, #f2e5bc);
+  --shot-shadow: 0 0 0 1px rgba(60, 56, 54, 0.1), 0 4px 14px -9px rgba(60, 56, 54, 0.22);
+  --glow-ring: 0 0 0 1px rgba(60, 56, 54, 0.1), 0 4px 14px -9px rgba(60, 56, 54, 0.22);
+  --selection-bg: rgba(181, 118, 20, 0.22);
+  --selection-txt: #3c3836;
+}
+
+[data-ui-theme="gruvbox"][data-theme="light"] .term,
+[data-ui-theme="gruvbox"][data-theme="light"] .file-card,
+[data-ui-theme="gruvbox"][data-theme="light"] .install-box {
+  --txt: #ebdbb2;
+  --txt-dim: #bdae93;
+  --txt-faint: #928374;
+  --cyan: #8ec07c;
+  --violet: #d3869b;
+  --green: #b8bb26;
+  --amber: #fabd2f;
+  --red: #fb4934;
+  --border: rgba(146, 131, 116, 0.28);
+  --border-bright: rgba(146, 131, 116, 0.55);
+  --chip-bg: rgba(146, 131, 116, 0.14);
+}
+
+[data-ui-theme="gruvbox"] .panel {
+  border-radius: 8px;
+  backdrop-filter: blur(3px) saturate(1.05);
+  box-shadow:
+    inset 0 1px 0 var(--bevel-hi),
+    inset 0 -1px 0 var(--bevel-lo);
+}
+[data-ui-theme="gruvbox"] .shot-frame,
+[data-ui-theme="gruvbox"] .term,
+[data-ui-theme="gruvbox"] .file-card {
+  border-radius: 8px;
+}
+[data-ui-theme="gruvbox"] .install-box {
+  border-radius: 8px;
+  border-top-left-radius: 4px;
+}
+[data-ui-theme="gruvbox"] .step-num {
+  border-radius: 4px;
+}
+[data-ui-theme="gruvbox"] :focus-visible {
+  outline-color: var(--amber);
 }
 
 html {
@@ -284,11 +392,11 @@ body {
 }
 .copy-btn:hover {
   color: var(--cyan);
-  border-color: rgba(57, 224, 255, 0.4);
+  border-color: color-mix(in srgb, var(--cyan) 40%, transparent);
 }
 .copy-btn.copied {
   color: var(--green);
-  border-color: rgba(78, 240, 168, 0.4);
+  border-color: color-mix(in srgb, var(--green) 40%, transparent);
 }
 
 /* stat terminal */
@@ -442,9 +550,146 @@ body {
     border-color 0.15s ease;
 }
 .theme-toggle:hover,
-.nav-burger:hover {
+.nav-burger:hover,
+.theme-picker-trigger:hover {
   color: var(--cyan);
   border-color: color-mix(in srgb, var(--cyan) 40%, transparent);
+}
+
+.theme-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.theme-picker {
+  position: relative;
+}
+.theme-picker-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 10px;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--txt-dim);
+  background: var(--chip-bg);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+.theme-picker-chevron {
+  width: 14px;
+  height: 14px;
+  opacity: 0.7;
+  transition: transform 0.15s ease;
+}
+.theme-picker-chevron.open {
+  transform: rotate(180deg);
+}
+.theme-picker-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 60;
+  min-width: 148px;
+  padding: 4px;
+  background: var(--panel-solid);
+  border: 1px solid var(--border-bright);
+  border-radius: 8px;
+  box-shadow: var(--shot-shadow);
+}
+[data-ui-theme="gruvbox"] .theme-picker-menu {
+  box-shadow:
+    inset 0 1px 0 var(--bevel-hi),
+    inset 0 -1px 0 var(--bevel-lo),
+    0 8px 24px -8px rgba(0, 0, 0, 0.45);
+}
+.theme-picker-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 13px;
+  text-align: left;
+  color: var(--txt-dim);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+.theme-picker-option:hover {
+  color: var(--txt);
+  background: var(--chip-bg);
+}
+.theme-picker-option[aria-current="true"] {
+  color: var(--cyan);
+  background: var(--cyan-dim);
+}
+.theme-picker-check {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--cyan);
+}
+.nav-github {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--txt-dim);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+@media (min-width: 768px) {
+  .nav-github {
+    display: inline-flex;
+  }
+}
+.nav-github:hover {
+  color: var(--txt);
+  border-color: color-mix(in srgb, var(--cyan) 40%, transparent);
+}
+.term-dot-red {
+  background: var(--red);
+}
+.term-dot-amber {
+  background: var(--amber);
+}
+.term-dot-green {
+  background: var(--green);
+}
+.shot-caption {
+  margin-top: 1rem;
+  padding-left: 0.875rem;
+  font-size: 13px;
+  line-height: 1.625;
+  color: var(--txt-dim);
+  border-left: 2px solid color-mix(in srgb, var(--violet) 40%, transparent);
+}
+.theme-menu-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.theme-menu-label {
+  flex: 1;
+  font-size: 14px;
+  color: var(--txt-dim);
 }
 
 /*
