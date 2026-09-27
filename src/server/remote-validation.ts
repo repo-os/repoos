@@ -1061,22 +1061,59 @@ export class TailscaleHostPool {
 
     // First contact probes; a previously-failed host is re-probed once its
     // cooldown elapsed, so an unreachable host recovers without a restart.
+    // Captured first: a candidate STILL inside its cooldown was not probed
+    // again below, and its pending retry is what a queued run is waiting on.
+    const inCooldown = candidates.some((s) => s.probed && !s.healthy && Date.now() < s.retryAt);
     await Promise.all(
       candidates.map((s) =>
         !s.probed || (!s.healthy && Date.now() >= s.retryAt) ? this.probe(s) : undefined,
       ),
     );
 
-    const healthy = candidates.filter((s) => s.healthy);
+    let healthy = candidates.filter((s) => s.healthy);
+    if (healthy.length === 0 && inCooldown && this.waiters.length > 0) {
+      // Another run is already queued waiting on these hosts' recovery (its
+      // armed health retry is what is pending). Join that wait — wait-vs-fail
+      // must not depend on arrival order (#0521 review): sleep out the same
+      // cooldown, re-probe, then decide. Bounded by the caller's deadline.
+      const cooldown = Math.max(0, Math.min(...candidates.map((s) => s.retryAt)) - Date.now());
+      const budget =
+        opts.deadlineAt !== undefined ? opts.deadlineAt - Date.now() : Number.POSITIVE_INFINITY;
+      if (cooldown > 0) {
+        if (budget <= 0) {
+          throw new QueueDeadlineError("the caller's deadline passed before any host recovered");
+        }
+        await new Promise<void>((resolve) => {
+          const t = setTimeout(resolve, Math.min(cooldown, budget));
+          t.unref?.();
+        });
+      }
+      if (opts.deadlineAt !== undefined && Date.now() >= opts.deadlineAt) {
+        throw new QueueDeadlineError(
+          "no usable host when the caller's deadline passed — the run was cancelled",
+        );
+      }
+      await Promise.all(
+        candidates.map((s) => (!s.healthy && Date.now() >= s.retryAt ? this.probe(s) : undefined)),
+      );
+      healthy = candidates.filter((s) => s.healthy);
+    }
     if (healthy.length === 0) {
       throw new HostsUnavailableError(
         `no usable remote host for ${describeCapabilities(capabilities)} — ` +
           candidates.map((s) => `${s.spec.host}: ${s.detail ?? "unreachable"}`).join("; "),
       );
     }
-    const free = healthy.filter((s) => s.active < s.limit);
+    const free = healthy.filter((s) => s.healthy && s.active < s.limit);
     if (free.length > 0) {
-      return this.assign(free.sort((a, b) => a.active - b.active)[0]!);
+      // Somebody already queued may be ahead of this arrival for that slot
+      // (#0521 review: e.g. a host recovering while a waiter holds the queue).
+      // Dispatch first, then re-check — a late arrival never jumps the queue.
+      if (this.waiters.length > 0) this.dispatch();
+      const nowFree = healthy
+        .filter((s) => s.healthy && s.active < s.limit)
+        .sort((a, b) => a.active - b.active);
+      if (nowFree.length > 0) return this.assign(nowFree[0]!);
     }
 
     // Every eligible host is at its cap — queue, FIFO, and only until one of
@@ -1146,11 +1183,23 @@ export class TailscaleHostPool {
     }));
   }
 
-  /** Cancel every queue timer. Call on server shutdown. */
+  /**
+   * Shut the pool down: clear timers AND reject every queued waiter (#0521
+   * review) — a `validate()` awaiting a slot must fail promptly with a
+   * transient infra summary, not hang forever after a restart/dispose.
+   */
   dispose(): void {
-    for (const s of this.hosts) if (s.retryTimer) clearTimeout(s.retryTimer);
-    for (const w of this.waiters) if (w.timer) clearTimeout(w.timer);
-    this.waiters.length = 0;
+    for (const s of this.hosts) {
+      if (s.retryTimer) {
+        clearTimeout(s.retryTimer);
+        s.retryTimer = undefined;
+      }
+    }
+    const waiting = this.waiters.splice(0, this.waiters.length);
+    for (const w of waiting) {
+      if (w.timer) clearTimeout(w.timer);
+      w.reject(new Error("the remote validation pool shut down while this run was queued"));
+    }
   }
 
   private describe(s: PoolHostState): string {

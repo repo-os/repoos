@@ -23,7 +23,10 @@ import {
   type RemoteExecDeps,
   type RemoteExecResult,
 } from "../../server/remote-validation.js";
-import { runRemotePreReviewGate } from "../../server/pre-review-remote-gate.js";
+import {
+  runRemotePreReviewGate,
+  remoteJobCapabilities,
+} from "../../server/pre-review-remote-gate.js";
 
 const dirs: string[] = [];
 afterEach(() => {
@@ -92,6 +95,15 @@ describe("host pool config parsing", () => {
       { host: "bee" },
     ]);
   });
+
+  it('reads a hand-written string pool `tailscaleHosts = "bee, mac1"` as two hosts', () => {
+    const root = tmpRoot();
+    writeFileSync(join(root, "repoos.toml"), 'remoteValidation.tailscaleHosts = "bee, mac1"\n');
+    expect(resolveRemoteHosts(loadConfig(root).remoteValidation)).toEqual([
+      { host: "bee" },
+      { host: "mac1" },
+    ]);
+  });
 });
 
 // ── capability derivation from the check plan ────────────────────────────────
@@ -114,6 +126,17 @@ describe("runsOn → job capabilities", () => {
   it("is empty for a plan with no runsOn", () => {
     const plan = resolveCheckPlan({ check: { steps: [{ name: "noop", command: "true" }] } });
     expect(planJobCapabilities(plan)).toEqual([]);
+  });
+
+  it("remoteJobCapabilities is the one router every remote caller shares", () => {
+    // server.ts's "Run test suite" endpoint and runRemotePreReviewGate both go
+    // through this — a plan needing macos must reach a mac host either way.
+    expect(
+      remoteJobCapabilities({
+        check: { steps: [{ name: "native", command: "xcodebuild", runsOn: ["macos"] }] },
+      } as unknown as RepoOSConfig),
+    ).toEqual(["macos"]);
+    expect(remoteJobCapabilities({} as RepoOSConfig)).toEqual([]);
   });
 
   it("hands the capabilities to the runner via runRemotePreReviewGate", async () => {
@@ -178,6 +201,8 @@ function poolFixture(opts: {
   }>;
   maxConcurrent?: number;
   unreachable?: string[];
+  /** First validation run on this host drops its ssh connection (mid-run failure). */
+  dropFirstRunOn?: string;
   healthRetryMs?: number;
 }): Fixture {
   const root = tmpRoot();
@@ -200,6 +225,7 @@ function poolFixture(opts: {
 
   const cmds: Record<string, string[]> = {};
   const pending: Array<{ host: string; resolve: () => void }> = [];
+  const dropped = new Set<string>();
   let inFlight = 0;
   let peak = 0;
   const exec: RemoteExecDeps = {
@@ -216,6 +242,17 @@ function poolFixture(opts: {
           };
         }
         return { code: 0, output: `prereq ok ${PREREQ_OK_TOKEN}`, timedOut: false };
+      }
+      if (opts.dropFirstRunOn === host.ip && !dropped.has(host.ip)) {
+        // Mark the run as one that WILL drop its ssh connection when released
+        // (a mid-run failure, not an instant one), so jobs can queue behind it.
+        dropped.add(host.ip);
+        (cmds[host.ip] ??= []).push(cmd);
+        inFlight++;
+        peak = Math.max(peak, inFlight);
+        await new Promise<void>((resolve) => pending.push({ host: host.ip, resolve }));
+        inFlight--;
+        return { code: 255, output: "ssh: Connection reset by peer", timedOut: false };
       }
       (cmds[host.ip] ??= []).push(cmd);
       inFlight++;
@@ -356,6 +393,23 @@ describe("TailscaleRunner pool dispatch (#0521)", () => {
     f.release();
     expect(await job).toEqual({ ok: true, stage: "check" });
   });
+
+  it("fails a queued run promptly when the pool is disposed (#0521 review)", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }] });
+    const first = f.runner.validate(opts("0001"));
+    await tick();
+    expect(f.pending()).toEqual(["a"]);
+    const queued = f.runner.validate(opts("0002"));
+    await tick();
+    await f.runner.dispose();
+    // Must resolve (transient failure), not hang forever awaiting a slot.
+    const summary = await queued;
+    expect(summary.ok).toBe(false);
+    expect(summary.transient).toBe(true);
+    expect(summary.detail).toContain("shut down");
+    f.release();
+    expect((await first).ok).toBe(true);
+  });
 });
 
 // ── OS / label routing ───────────────────────────────────────────────────────
@@ -433,6 +487,59 @@ describe("capability routing (runsOn)", () => {
 });
 
 // ── deadlines ────────────────────────────────────────────────────────────────
+
+describe("health-cooldown arrivals and recovery (#0521 review)", () => {
+  it("an arrival during a cooldown waits for the armed retry instead of failing, then stays FIFO", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "flaky" }],
+      dropFirstRunOn: "flaky",
+      healthRetryMs: 300,
+    });
+    const jobA = f.runner.validate(opts("0001"));
+    await tick();
+    expect(f.pending()).toEqual(["flaky"]);
+
+    // C queues behind the still-running A.
+    const jobC = f.runner.validate(opts("0002"));
+    await tick();
+    expect(f.pending()).toEqual(["flaky"]);
+
+    // A's run drops its ssh connection → the host is marked unhealthy while C
+    // (and its armed health retry) is queued.
+    f.release("flaky");
+    const resA = await jobA;
+    expect(resA.ok).toBe(false);
+    expect(resA.transient).toBe(true);
+    expect(f.runner.hostStatus()![0]).toMatchObject({ probed: true, healthy: false });
+    expect(f.runner.hostStatus()![0]!.detail).toContain("Connection reset");
+
+    // D arrives while the host is inside its 30 s (here: 300 ms) cooldown. It
+    // must WAIT for the pending recovery — not fail the way a bare arrival
+    // would have while an earlier run's retry is armed.
+    let dSettled = false;
+    const jobD = f.runner.validate(opts("0003")).then((r) => {
+      dSettled = true;
+      return r;
+    });
+    await tick(50);
+    expect(dSettled).toBe(false);
+
+    // Cooldown elapses → re-probe succeeds → the slot goes to C (queued first);
+    // D waits its turn instead of jumping the recovered slot.
+    await tick(500);
+    expect(dSettled).toBe(false);
+    expect(f.pending()).toEqual(["flaky"]);
+    f.release("flaky");
+    await tick();
+    expect(f.pending()).toEqual(["flaky"]);
+    f.release("flaky");
+
+    const [resC, resD] = await Promise.all([jobC, jobD]);
+    expect(resC.ok).toBe(true);
+    expect(resD.ok).toBe(true);
+    expect(f.peak()).toBe(1); // the recovered slot never ran two suites at once
+  }, 15_000);
+});
 
 describe("queue deadlines (#0521)", () => {
   it("cancels a queued run at the caller's deadline and frees its slot", async () => {

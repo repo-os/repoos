@@ -133,3 +133,75 @@ describe("remoteValidation.tailscaleHosts schema entry (#0521)", () => {
     await cleanup();
   });
 });
+
+/**
+ * Section-scoped writes (#0521 review): `patchTomlConfig` used to match only
+ * the full dotted key, so a line written the way the docs show it — under
+ * `[remoteValidation]` — was invisible to the patch: a duplicate root line was
+ * inserted instead and the in-section line (parsed later) overrode it, making
+ * the Settings save a silent no-op.
+ */
+describe("patchConfig against section-scoped repoos.toml files", () => {
+  it("saves the pool from a `[remoteValidation]` section config (the documented block)", async () => {
+    const root = repo(
+      '[remoteValidation]\nprovider = "tailscale"\ntailscaleHosts = ["bee", "mac1"]\n',
+    );
+    const res = await patch(root, {
+      "remoteValidation.containerImage": "repoos-ci",
+      "remoteValidation.tailscaleHosts": ["bee", "mac1", "linux2"],
+    });
+    expect(res.status).toBe(200);
+    expect(resolveRemoteHosts(loadConfig(root).remoteValidation).map((h) => h.host)).toEqual([
+      "bee",
+      "mac1",
+      "linux2",
+    ]);
+    const text = readFileSync(join(root, "repoos.toml"), "utf8");
+    // One definition, replaced in place — no root duplicate to override it.
+    expect(text.match(/tailscaleHosts\s*=/g)).toHaveLength(1);
+    expect(text).toContain('tailscaleHosts = ["bee", "mac1", "linux2"]');
+    await cleanup();
+  });
+
+  it("repoints an in-section `tailscaleHost` shorthand when that host is removed", async () => {
+    const root = repo('[remoteValidation]\nprovider = "tailscale"\ntailscaleHost = "bee"\n');
+    const res = await patch(root, {
+      "remoteValidation.containerImage": "repoos-ci",
+      "remoteValidation.tailscaleHosts": ["mac1"],
+    });
+    expect(res.status).toBe(200);
+    expect(resolveRemoteHosts(loadConfig(root).remoteValidation).map((h) => h.host)).toEqual([
+      "mac1",
+    ]);
+    const text = readFileSync(join(root, "repoos.toml"), "utf8");
+    expect(text).toContain('tailscaleHost = "mac1"');
+    expect(text.match(/tailscaleHost\s*=/g)).toHaveLength(1);
+    await cleanup();
+  });
+
+  it("inserts a missing dotted key into its existing section, not duplicated at root", async () => {
+    const root = repo("[remoteValidation]\nenabled = true\n");
+    const res = await patch(root, { "remoteValidation.fallbackToLocal": true });
+    expect(res.status).toBe(200);
+    expect(loadConfig(root).remoteValidation?.fallbackToLocal).toBe(true);
+    const text = readFileSync(join(root, "repoos.toml"), "utf8");
+    expect(text).toContain("fallbackToLocal = true");
+    expect(text).not.toContain("remoteValidation.fallbackToLocal");
+    await cleanup();
+  });
+
+  it("collapses a duplicated key (root + section) down to the patched value", async () => {
+    // The shape the old bug produced: a root line and an in-section line both
+    // resolving to the same key, with the later one silently winning.
+    const root = repo(
+      'remoteValidation.containerImage = "old"\n\n[remoteValidation]\ncontainerImage = "stale"\n',
+    );
+    expect(loadConfig(root).remoteValidation?.containerImage).toBe("stale");
+    const res = await patch(root, { "remoteValidation.containerImage": "repoos-ci" });
+    expect(res.status).toBe(200);
+    expect(loadConfig(root).remoteValidation?.containerImage).toBe("repoos-ci");
+    const text = readFileSync(join(root, "repoos.toml"), "utf8");
+    expect(text.match(/containerImage\s*=/g)).toHaveLength(1);
+    await cleanup();
+  });
+});

@@ -105,6 +105,7 @@ import {
   runGit,
 } from "../core/git.js";
 import { sweepAndWarn } from "../core/worktree-gc.js";
+import { remoteJobCapabilities } from "./pre-review-remote-gate.js";
 import { remoteHostLimit, remoteHostUser, resolveRemoteHosts } from "../core/remote-hosts.js";
 import { runBuiltInAgent, isDueForScheduledRun, builtInAgentLabel } from "./built-in-agents.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
@@ -2277,10 +2278,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           emitDone(null);
           return;
         }
+        // Route like every other remote caller (#0521): a plan step with
+        // `runsOn = ["macos"]` must not send this run to a Linux host.
         const result = await remoteValidator.validate({
           taskId: "checks-test-suite",
           worktreePath: config.root,
           candidateSha,
+          capabilities: remoteJobCapabilities(config),
           onChunk: (chunk) => {
             testRuns.appendOutput(chunk);
             emitChunk(chunk);

@@ -117,6 +117,16 @@ export function spawnedRepoosCheckArgs(
   return CLOSEOUT_CHECK_ARGS;
 }
 
+/**
+ * The host capabilities a remote run of THIS repo's plan needs (#0521): the
+ * `runsOn` union of every declared step. Shared by `runRemotePreReviewGate`
+ * and any other route that dispatches `validate()` directly (the Checks
+ * "Test suite" endpoint), so no caller can forget to route.
+ */
+export function remoteJobCapabilities(config: RepoOSConfig): string[] {
+  return planJobCapabilities(resolveCheckPlan({ check: config.check }));
+}
+
 export type RemotePreReviewOutcome =
   | { kind: "skip" }
   | { kind: "local-only"; skipTests: boolean; detail?: string }
@@ -150,7 +160,7 @@ export async function runRemotePreReviewGate(params: {
   // Which host may run this job (#0521): the `runsOn` union of the whole plan,
   // deliberately not profile-filtered — the remote run executes the entire
   // plan in one go, so it must never land on a host missing one of its steps.
-  const capabilities = planJobCapabilities(resolveCheckPlan({ check: params.config.check }));
+  const capabilities = remoteJobCapabilities(params.config);
   const remote = await params.remoteValidator.validate({
     taskId: params.taskId,
     worktreePath: params.worktreePath,

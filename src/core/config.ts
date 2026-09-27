@@ -1902,43 +1902,90 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
     }
   }
 
-  // Scalars and plain arrays: in-place line-preserving patch.
+  // Scalars and plain arrays: in-place line-preserving patch. A dotted key is
+  // matched BOTH as its full name at root scope (`remoteValidation.enabled = …`
+  // with no section header) and as its leaf name inside the section that gives
+  // it that full name (`enabled = …` under `[remoteValidation]`) — those are one
+  // and the same key to parseFlatToml. Matching only the full name (the old
+  // behaviour) made a section-scoped line invisible: a duplicate root line was
+  // inserted instead, and the in-section line — parsed later — silently
+  // overrode it, so a Settings write claimed success while the file never
+  // changed (#0521 review: the host pool editor on the `[remoteValidation]`
+  // block the docs tell users to paste; same latent bug for every dotted key).
   for (const [key, rawVal] of Object.entries(patch)) {
     if (isTableArray(rawVal)) continue;
     if (key.startsWith("board.columns.")) continue; // handled above
     const serialized = serializeTomlVal(rawVal);
-    let found = false;
+    const dot = key.lastIndexOf(".");
+    const sectionPath = dot === -1 ? "" : key.slice(0, dot);
+    const leaf = dot === -1 ? key : key.slice(dot + 1);
 
+    // Every existing line that resolves to this key, with the scope it sat in.
+    const matches: Array<{ line: number; inSection: boolean }> = [];
+    let section = "";
     for (let i = 0; i < result.length; i++) {
       const stripped = stripTomlComment(result[i]).trim();
-      if (!stripped || stripped.startsWith("[")) continue;
-
+      const header = stripped.match(/^\[\[([^\]]+)\]\]/) ?? stripped.match(/^\[([^\]]+)\]/);
+      if (header) {
+        section = header[1].trim();
+        continue;
+      }
+      if (!stripped) continue;
       const kv = stripped.match(/^([A-Za-z0-9_.-]+)\s*=\s*/);
-      if (kv && kv[1] === key) {
-        const indent = result[i].match(/^\s*/)?.[0] || "";
-        result[i] = `${indent}${key} = ${serialized}`;
-        modified = true;
-        found = true;
-        break;
-      }
+      if (!kv) continue;
+      const full = section ? `${section}.${kv[1]}` : kv[1]!;
+      if (full === key) matches.push({ line: i, inSection: section !== "" });
     }
 
-    if (!found) {
-      // A brand-new scalar must land at root scope. Appending at the very end
-      // of the file is only safe when nothing after it is a `[section]` or
-      // `[[array-of-tables]]` block — otherwise the line reads back as a
-      // member of that table instead of the root config (the reader has no
-      // way to know the table "ended" without a following header). Insert
-      // before the first header line instead, so newly-saved keys are always
-      // unambiguously root-level regardless of what tables follow.
-      const firstHeaderIndex = result.findIndex((l) => stripTomlComment(l).trim().startsWith("["));
-      if (firstHeaderIndex === -1) {
-        result.push(`${key} = ${serialized}`);
-      } else {
-        result.splice(firstHeaderIndex, 0, `${key} = ${serialized}`);
-      }
+    if (matches.length > 0) {
+      // Rewrite the first match in place — leaf name inside its section, full
+      // dotted name at root — and drop any duplicates: two lines resolving to
+      // one key is exactly how the old bug hid itself (the later line won).
+      const first = matches[0]!;
+      const indent = result[first.line].match(/^\s*/)?.[0] || "";
+      result[first.line] = `${indent}${first.inSection ? leaf : key} = ${serialized}`;
+      for (let m = matches.length - 1; m >= 1; m--) result.splice(matches[m]!.line, 1);
       modified = true;
+      continue;
     }
+
+    // Not present yet: put it where a reader expects it — at the end of its
+    // own section when that section exists (same key on parse, no duplicate),
+    // else at root scope before the first header (appending at the very end is
+    // only safe when no `[section]`/`[[array]]` follows, so a root key must
+    // land before the first header to stay unambiguous).
+    if (sectionPath) {
+      const headerIndex = result.findIndex(
+        (l) => stripTomlComment(l).trim() === `[${sectionPath}]`,
+      );
+      if (headerIndex !== -1) {
+        let end = result.length;
+        for (let i = headerIndex + 1; i < result.length; i++) {
+          if (stripTomlComment(result[i]).trim().startsWith("[")) {
+            end = i;
+            break;
+          }
+        }
+        let indent = "";
+        for (let i = headerIndex + 1; i < end; i++) {
+          const m = result[i]?.match(/^(\s+)\S/);
+          if (m) {
+            indent = m[1]!;
+            break;
+          }
+        }
+        result.splice(end, 0, `${indent}${leaf} = ${serialized}`);
+        modified = true;
+        continue;
+      }
+    }
+    const firstHeaderIndex = result.findIndex((l) => stripTomlComment(l).trim().startsWith("["));
+    if (firstHeaderIndex === -1) {
+      result.push(`${key} = ${serialized}`);
+    } else {
+      result.splice(firstHeaderIndex, 0, `${key} = ${serialized}`);
+    }
+    modified = true;
   }
 
   if (modified) {
