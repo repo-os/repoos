@@ -3102,6 +3102,15 @@
   color: var(--txt-dim);
   margin-bottom: 5px;
 }
+.story-panel-tasks-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.story-panel-tasks-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
 .story-panel-tasks {
   display: flex;
   flex-direction: column;
