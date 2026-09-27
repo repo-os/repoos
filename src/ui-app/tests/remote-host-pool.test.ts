@@ -934,6 +934,30 @@ describe("per-host prerequisite probe", () => {
     expect(cmd).not.toContain("git not found");
   });
 
+  it("checks the configured image exists, not just that the daemon runs (#0521 review)", () => {
+    // A reachable Docker daemon with the image never built/pulled used to be
+    // reported healthy anyway, then fail every job it received.
+    const cmd = prereqProbeCommand("docker", "repoos-ci");
+    expect(cmd).toContain("docker image inspect 'repoos-ci'");
+    // Default image name when unset, matching every other call site's fallback.
+    expect(prereqProbeCommand("docker")).toContain("docker image inspect 'repoos-ci'");
+  });
+
+  it("uses a project's configured containerImage, not the default", () => {
+    const cmd = prereqProbeCommand("docker", "my-org/custom-ci:v2");
+    expect(cmd).toContain("docker image inspect 'my-org/custom-ci:v2'");
+  });
+
+  it("never checks for an image on a native host", () => {
+    const cmd = prereqProbeCommand("native", "repoos-ci");
+    expect(cmd).not.toContain("docker image inspect");
+  });
+
+  it("strips a single quote from a hand-edited image name rather than breaking the probe", () => {
+    const cmd = prereqProbeCommand("docker", "weird'name");
+    expect(cmd).toContain("docker image inspect 'weirdname'");
+  });
+
   it('checks bun/git, not docker, when runner is "native" (#0521 review, both directions)', () => {
     // Two prior versions of this got the SAME field wrong in opposite
     // directions by branching on `os` instead of a dedicated `runner`: one

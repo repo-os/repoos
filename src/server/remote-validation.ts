@@ -384,8 +384,18 @@ export const HOST_LOCK_HEARTBEAT_TICKS = 30;
  * which toolchain THIS host actually uses (default "docker" — the
  * maintained `just setup-<host>` path; "native" opts in via
  * `just setup-<host>-native`, macOS only today), independent of its `os`.
+ *
+ * For `runner: "docker"` (the default), also checks the CONFIGURED image
+ * (`remoteValidation.containerImage`, default "repoos-ci") actually exists
+ * on the host — a reachable Docker daemon with the daemon itself healthy but
+ * the image never built/pulled used to be reported healthy anyway, then
+ * fail every job it received (#0521 review).
  */
-export function prereqProbeCommand(runner?: "docker" | "native"): string {
+export function prereqProbeCommand(
+  runner?: "docker" | "native",
+  containerImage = "repoos-ci",
+): string {
+  const image = containerImage.trim().replace(/'/g, "") || "repoos-ci";
   const lines =
     runner === "native"
       ? [
@@ -396,6 +406,8 @@ export function prereqProbeCommand(runner?: "docker" | "native"): string {
       : [
           'command -v docker >/dev/null 2>&1 || { echo "docker not found on PATH"; exit 1; }',
           'docker info >/dev/null 2>&1 || { echo "docker daemon not reachable (is docker running?)"; exit 1; }',
+          `docker image inspect '${image}' >/dev/null 2>&1 || ` +
+            `{ echo "image '${image}' not found — build it (just setup-<host>) or fix remoteValidation.containerImage"; exit 1; }`,
         ];
   lines.push(
     `[ -f ${VALIDATE_SCRIPT} ] || ` +
@@ -440,6 +452,22 @@ export function hostLockShell(opts: {
    * runner-scratch fixes), not per-repo: the cap exists because of machine
    * load, so two different repos validated on the same host share its slots —
    * one machine = one suite, whoever asked for it (#0521 review).
+   *
+   * KNOWN LIMIT, not fixed here (#0521 review, second round): two different
+   * SSH users on the same host get separate `$HOME`s, hence separate lock
+   * namespaces, so the "one machine, one shared cap" intent only holds
+   * within one SSH user. Moving the lock root to a genuinely shared path
+   * like `/var/tmp` would restore that, but it isn't a safe swap: unlike the
+   * validate WORK dir (large, one-shot, never touched by another user),
+   * this lock's stale-slot cleanup removes directories a DIFFERENT user's
+   * run may have created — `/tmp`/`/var/tmp`'s sticky bit (mode 1777) blocks
+   * exactly that unless the cleanup runs as that directory's owner or root.
+   * Fixing this for real needs either a shared, non-sticky lock directory
+   * provisioned once during host setup (owned by a group both SSH users
+   * belong to) or accepting per-user caps as the documented behavior.
+   * Left as a real, open limitation for a single-SSH-user host pool (the
+   * only configuration this repo's own `just setup-<host>` recipes ever
+   * produce) rather than guessed at here.
    */
   lockRoot?: string;
   /** Stale threshold in minutes (tests shrink this). */
@@ -1213,12 +1241,15 @@ export class TailscaleHostPool {
   private readonly healthRetryMs: number;
   private readonly keyPath?: string;
   private readonly logger?: Logger;
+  /** The image every host's Docker prerequisite probe must find (#0521 review). */
+  private readonly containerImage: string;
 
   constructor(rv: RemoteValidationConfig | undefined, opts: HostPoolOptions) {
     this.exec = opts.exec;
     this.logger = opts.logger;
     this.probeTimeoutMs = opts.probeTimeoutMs ?? 20_000;
     this.healthRetryMs = opts.healthRetryMs ?? HEALTH_RETRY_MS;
+    this.containerImage = rv?.containerImage ?? "repoos-ci";
     const key = opts.keyPath ?? "";
     this.keyPath = key && existsSync(key) ? key : undefined;
     for (const spec of resolveRemoteHosts(rv)) {
@@ -1491,7 +1522,7 @@ export class TailscaleHostPool {
     try {
       const res = await this.exec.runRemote(
         s.ssh,
-        prereqProbeCommand(hostRunner(s.spec)),
+        prereqProbeCommand(hostRunner(s.spec), this.containerImage),
         () => {},
         this.probeTimeoutMs,
       );
