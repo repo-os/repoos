@@ -10,12 +10,8 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:32:50Z"
-updated_at: "2026-09-27T15:51:52Z"
+updated_at: "2026-09-27T15:52:43Z"
 ---
-## Governing decision
-
-Follow [ADR 0007 — Telegram identity and authorization](../docs/adr/0007-telegram-identity-and-authorization.md) for user binding, chat binding, live role resolution, and unauthorized-sender behavior. This task implements or relies on that model; do not define a separate policy here.
-
 ## Problem
 
 Story #0003 steps 10-12 say: "RepoOS displays an *Add this bot to your project group* action. The administrator adds the bot to a group or starts a private chat with it. RepoOS verifies the chat and completes the link."
@@ -55,3 +51,4 @@ In a group, act only when the message is addressed to the bot. Story #0003 requi
 - 2026-09-27T15:15:30Z · body
 - 2026-09-27T15:42:32Z · body
 - 2026-09-27T15:51:52Z · body
+- 2026-09-27T15:52:43Z · body
