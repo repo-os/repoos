@@ -245,9 +245,12 @@ the caller's output, and the log records which host ran each job
 (`[runner user@host (os)]`).
 
 Before a host's first job it is probed over SSH: reachability, the toolchain
-its `runner` says to expect (Docker, or bun/git for a native host — see
-"Docker vs. native" above), and an **up-to-date `validate.sh` that accepts
-the artifacts dir as its third argument**. A host that fails is reported instead
+its `runner` says to expect — Docker, the configured `containerImage`
+actually present (not just the daemon reachable — a daemon up with the
+image never built/pulled used to report healthy, then fail every job it
+got, #0521 review), or bun/git for a native host — see "Docker vs. native"
+above — and an **up-to-date `validate.sh` that accepts the artifacts dir as
+its third argument**. A host that fails is reported instead
 of failing jobs — its state and reason show in Settings → Remote validation
 (Hosts) and in `GET /api/remote-validation/status` (`hosts[]` with `probed`,
 `healthy`, `detail`, `inFlight`, `queued` — each waiting run counted against the
@@ -308,7 +311,16 @@ in `src/server/remote-validation.ts`) with the same slot count:
 server and CLI can never put more than the limit on one machine. That lock root
 is deliberately **host-global, not per-repo** — the cap exists because of
 machine load, so two different repos validated on the same host share its
-slots (one machine = one suite, whoever asked for it). A waiter
+slots (one machine = one suite, whoever asked for it). **Known limit:** this
+only holds within one SSH user — living under `$HOME` means two different
+SSH users on the same host get separate `$HOME`s and therefore separate lock
+namespaces, so the shared cap doesn't actually span users (#0521 review). Not
+fixed: a genuinely shared location (`/tmp`/`/var/tmp`) would restore it but
+introduces a real permission problem instead (the sticky bit blocks one
+user's stale-lock cleanup from removing another user's slot directory). Every
+`just setup-<host>` recipe this repo ships only ever configures one SSH user
+per host, so this is a documented limit for a multi-user host pool, not
+something the maintained setup path can hit. A waiter
 streams `[lock] waiting for a free slot …` while it waits and gives up after
 its wait budget (the caller's deadline, else 15 min) with exit code 75, which
 the runner reports as a transient "another repoos check is already running"

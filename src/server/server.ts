@@ -2428,7 +2428,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           let probeOutput = "";
           const probeRes = await exec.runRemote(
             { ip: h.host, user: remoteHostUser(rv, h), keyPath },
-            prereqProbeCommand(hostRunner(h)),
+            prereqProbeCommand(hostRunner(h), rv.containerImage ?? "repoos-ci"),
             (chunk) => {
               probeOutput += chunk;
             },
