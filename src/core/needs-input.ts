@@ -1,5 +1,8 @@
 import type { Task } from "./types.js";
 
+/** Automatic reviewer send-backs allowed before human review is required. */
+export const MAX_AUTO_REVIEW_ROUNDS = 2;
+
 /**
  * Stale `dev-error` on a `review` task: the engineer reached review but a
  * handoff-signal glitch left the flag set (see TaskDrawer banner note).

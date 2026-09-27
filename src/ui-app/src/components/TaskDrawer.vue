@@ -3295,7 +3295,9 @@ watch(
                 {{
                   staleNeedsInputOnReview
                     ? STALE_REVIEW_DEV_ERROR_BANNER
-                    : needsInputBannerText(ui.active.needsInputReason, activeNeedsInputQuestions)
+                    : ui.active.needsInputReason === "review-rounds-exhausted" && review?.running
+                      ? "A fresh review is running. Its result will determine whether this still needs your attention."
+                      : needsInputBannerText(ui.active.needsInputReason, activeNeedsInputQuestions)
                 }}
               </div>
               <!-- needsInputDetail for dev-error is internal skill-routing
@@ -3322,7 +3324,13 @@ watch(
                   v-if="needsInputPrimary && !staleNeedsInputOnReview"
                   variant="outline"
                   size="sm"
-                  :disabled="ui.saving || startingWork || reviewBusy || dismissNeedsInputBusy"
+                  :disabled="
+                    ui.saving ||
+                    startingWork ||
+                    reviewBusy ||
+                    review?.running ||
+                    dismissNeedsInputBusy
+                  "
                   @click="runNeedsInputPrimaryAction"
                 >
                   <Play
@@ -3332,10 +3340,17 @@ watch(
                   <ActivityIndicator
                     v-else-if="needsInputPrimary.kind === 'restart' && startingWork"
                   />
+                  <ActivityIndicator
+                    v-else-if="
+                      needsInputPrimary.kind === 'review' && (reviewBusy || review?.running)
+                    "
+                  />
                   {{
                     needsInputPrimary.kind === "restart" && startingWork
                       ? "Starting work…"
-                      : needsInputPrimary.label
+                      : needsInputPrimary.kind === "review" && (reviewBusy || review?.running)
+                        ? "Reviewing…"
+                        : needsInputPrimary.label
                   }}
                 </Button>
                 <Button
