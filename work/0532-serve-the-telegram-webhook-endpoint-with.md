@@ -3,6 +3,9 @@ id: "0532"
 title: Serve the Telegram webhook endpoint with secret validation
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p1
 area: server
 story: RepoOS Telegram Bot
@@ -11,7 +14,8 @@ created_by: ""
 branch: feat/serve-the-telegram-webhook-endpoint-with
 review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-27T07:32:19Z"
-updated_at: "2026-09-27T23:18:18Z"
+updated_at: "2026-09-27T23:49:03Z"
+dev_error_count: 1
 ---
 ## Problem
 
@@ -46,3 +50,5 @@ So the webhook must be added to `PUBLIC_PREFIXES` — **but the middleware has n
 - 2026-09-27T07:34:12Z · status inbox→ready
 - 2026-09-27T23:18:17Z · review_model_override
 - 2026-09-27T23:18:18Z · status ready→active, branch
+- 2026-09-27T23:34:20Z · agent exited with an error (cursor) · the agent process exited with an error — open the task to see the full output
+- 2026-09-27T23:49:03Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
