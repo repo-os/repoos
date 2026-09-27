@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 cli_override: codex
-model_override: default
+model_override: gpt-6-luna
 created_at: "2026-09-27T10:25:52Z"
-updated_at: "2026-09-27T13:35:06Z"
+updated_at: "2026-09-27T13:35:18Z"
 ---
 id: "0546"
 title: Dismissing a review-rounds-exhausted flag can be silently undone by an in-flight review
@@ -146,3 +146,4 @@ nothing.
 - 2026-09-27T12:28:39Z · body
 - 2026-09-27T13:16:02Z · title, body
 - 2026-09-27T13:35:06Z · cli_override, model_override
+- 2026-09-27T13:35:18Z · model_override
