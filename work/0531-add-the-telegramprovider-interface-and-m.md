@@ -2,7 +2,7 @@
 id: "0531"
 title: Add the TelegramProvider interface and manager-bot project bot provisioning
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: server
 story: RepoOS Telegram Bot
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:32:10Z"
-updated_at: "2026-09-27T07:32:10Z"
+updated_at: "2026-09-27T07:34:11Z"
 ---
 ## Problem
 
@@ -52,3 +52,4 @@ The story's design decision also requires a manual path for self-hosted/enterpri
 ## Activity
 
 - 2026-09-27T07:32:10Z · created · unknown
+- 2026-09-27T07:34:11Z · status inbox→ready
