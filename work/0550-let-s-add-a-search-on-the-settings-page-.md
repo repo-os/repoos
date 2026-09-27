@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/add-a-settings-scoped-search-that-jumps-
 review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-27T13:23:12Z"
-updated_at: "2026-09-27T18:38:17Z"
+updated_at: "2026-09-27T18:43:41Z"
 review_passes: 4
 review_rounds: 2
 ---
@@ -112,3 +112,4 @@ Let's add a search on the settings page since we have so many settings now and I
 - 2026-09-27T18:32:37Z · status review→active
 - 2026-09-27T18:32:37Z · needs_input
 - 2026-09-27T18:34:41Z · status active→review
+- 2026-09-27T18:43:41Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
