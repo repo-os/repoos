@@ -2,7 +2,7 @@
 id: "0520"
 title: Run the pre-review gate on the remote validation runner
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "Auto-bounce stopped: reached maximum of 2 review rounds. Human review needed."
@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/run-the-pre-review-gate-on-the-remote-va
 created_at: "2026-09-26T11:49:00Z"
-updated_at: "2026-09-27T02:30:06Z"
+updated_at: "2026-09-27T02:31:55Z"
 review_passes: 8
 review_rounds: 2
 ---
@@ -108,3 +108,4 @@ runner hosts (separate task).
 - 2026-09-27T02:30:00Z · note: Standalone CLI remote gate only for Tailscale (Hetzner VM is server-owned); check green
 - 2026-09-27T02:30:06Z · status active→review
 - 2026-09-27T02:30:06Z · status review→active
+- 2026-09-27T02:31:55Z · status active→review
