@@ -2,7 +2,7 @@
 id: "0531"
 title: Add the local Telegram adapter and Bring Your Own Bot Token support
 type: feature
-status: active
+status: review
 priority: p1
 area: server
 story: RepoOS Telegram Bot
@@ -13,7 +13,7 @@ cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 review_model_override: opencode-go/space-bunny-free
 created_at: "2026-09-27T07:32:10Z"
-updated_at: "2026-09-27T18:39:49Z"
+updated_at: "2026-09-27T22:32:42Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -64,3 +64,4 @@ Not in scope: the manager-bot service, its Neon/Cloudflare deployment, hosted me
 - 2026-09-27T18:39:31Z · model_override
 - 2026-09-27T18:39:45Z · model_override
 - 2026-09-27T18:39:49Z · needs_input
+- 2026-09-27T22:32:42Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
