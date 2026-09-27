@@ -522,7 +522,9 @@ html[data-ui-theme="gruvbox"] .release-notice {
   display: none;
 }
 
-@media (min-width: 1280px) {
+/* VitePress hides VPNavScreen (and the screen theme row) from 768px up; match
+   VPNavBarExtra / menu visibility so tablets still get the bar variant. */
+@media (min-width: 768px) {
   .docs-theme-controls--bar {
     display: inline-flex;
   }
@@ -538,7 +540,7 @@ html[data-ui-theme="gruvbox"] .release-notice {
   border-top: 1px solid var(--vp-c-divider);
 }
 
-@media (min-width: 1280px) {
+@media (min-width: 768px) {
   .docs-theme-controls--screen {
     display: none;
   }
