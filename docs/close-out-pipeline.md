@@ -177,16 +177,18 @@ since `dist/.build-info.json` was written. The candidate is built immediately be
 `repoos check`, so check's own "Full build" step now detects the fresh marker and skips
 itself — exactly one build per close-out — with no private env flag. (Before #0377 that
 skip was the `REPOOS_SKIP_BUILD=1` opt-in; it was removed once the build became smart on
-its own, so the decision lives in one place instead of three.) Standalone `repoos check`
-is unchanged: its staleness step still reports a genuinely stale build first, then the
-build step repairs it within the same invocation.
+its own, so the decision lives in one place instead of three.)
 
 **Measured win (#0377):** a no-op `bun run build` on an unchanged tree returns in
 staleness-check time (~0.05–0.1s) instead of a full rebuild (~5–9s). The close-out's
 second ("Full build") invocation is now that no-op; the first real build still runs.
-The earlier #0213 instrumentation (a `bun` shim counting `run build` invocations: 0
-inside the skip-build check subprocess vs 1 standalone) measured the same saved step —
-the mechanism changed, the saving did not.
+For an interactive `repoos check` on a stale linked build, CLI startup now builds
+and re-execs before the check plan runs (#0549). Its staleness step therefore
+checks the fresh process, while a failed rebuild or still-stale marker retains
+the existing failure. The earlier #0213 instrumentation (a `bun` shim counting
+`run build` invocations: 0 inside the skip-build check subprocess vs 1
+standalone) measured the same saved step — the mechanism changed, the saving
+did not.
 
 **Browser/server dedup (#0213, scoped down):** the UI smoke test `repoos check` runs
 RepoOS's own `smoke` script since #0348. Its ephemeral server and headless WebKit

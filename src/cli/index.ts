@@ -28,7 +28,7 @@ import { cmdSupport } from "../commands/support.js";
 import { cmdService } from "../commands/service.js";
 import { checkBuild } from "../core/build.js";
 import { loadConfig } from "../core/config.js";
-import { reexecUnderBunIfRequested } from "../core/runtime.js";
+import { reexecAfterStaleBuild, reexecUnderBunIfRequested } from "../core/runtime.js";
 import { c } from "./colors.js";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -204,6 +204,9 @@ function main(): void {
   // with the spawn fallback the Node parent stays only to relay signals. Done
   // first, so nothing (prompts, the staleness warning) runs twice.
   if (reexecUnderBunIfRequested()) {
+    return;
+  }
+  if (reexecAfterStaleBuild()) {
     return;
   }
 
