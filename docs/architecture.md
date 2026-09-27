@@ -152,8 +152,12 @@ Adds liveness over the one-shot core. No new business logic.
   bypass is documented as a security tradeoff in `user-docs/agents.md`.
 - `freeform.ts` — parses freeform task description output from the PM agent
   into structured task frontmatter + body.
-- `done.ts` — review-to-done close-out: merges the task branch into main,
-  removes the worktree, and cleans up.
+- `integration-orchestrator.ts` — the live Move-to-done pipeline: merges into
+  a candidate worktree, validates, publishes to main, and cleans up.
+- `done.ts` — shared release/check helpers and the legacy close-out
+  implementation; its `completeTask` path is not the live branch-merge route.
+- `branchless-release.ts` — checks main and records release for already-landed
+  work with no task branch; it does not merge anything.
 - `review.ts` — the review agent: when a task lands in `review` (by any route),
   it runs the enabled `reviewer` agent read-only over the task's worktree and
   writes a short report to `<cacheDir>/reviews/<id>.md` for the human signing

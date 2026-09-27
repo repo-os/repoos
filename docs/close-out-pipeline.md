@@ -70,6 +70,20 @@ undoes it) to stop them from re-launching and colliding with `just serve`/`just 
 Root cause of the launchd-specific crash loop is still unknown — investigate before
 re-enabling Option A.
 
+## Workflow ownership
+
+The normal branched-task workflow is owned by RepoOS, with or without a Git
+remote: engineer handoff → RepoOS review → human approval via Move to done or
+`POST /api/tasks/:id/done` → the close-out job below. A GitHub remote does not
+select a PR-based approval/merge path. External agents helping on a task use
+the same workflow; `repoos mv <id> done` changes metadata, never merges code.
+
+A separate `/done` path exists for branchless tasks whose work already landed
+on main (for example, an explicitly authorized direct-to-main hotfix). For a
+task with no branch that is neither `review` nor `done`, `releaseBranchless`
+checks main and records release without enqueueing a merge job. This exception
+does not authorize skipping review for a task with an unmerged branch.
+
 ## The two state machines
 
 There are two separate, nested state machines. Confusing them is the #1 cause of
@@ -472,7 +486,8 @@ real pollution of another task's record.
   every foreign work file the candidate changed, `git rm`s ones the branch newly
   added, and commits — catching drift already committed in an earlier round.
 
-**If you are hand-landing a stale branch,** do this check yourself; the guards
+**Only if the human explicitly authorizes manual recovery outside the normal
+pipeline:** when hand-landing a stale branch, do this check yourself; the guards
 only run inside the pipeline:
 
 ```bash
