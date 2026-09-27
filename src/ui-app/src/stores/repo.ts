@@ -7,6 +7,7 @@ import { useNotificationsStore, type NotificationType } from "./notifications";
 import { describeCloseOutFailure } from "../lib/closeOutFailure";
 import { builtInRunNotice } from "../lib/builtInRunNotice";
 import { retryCountFrom } from "../lib/retryHints";
+import type { StoryListSortOrder } from "../../../core/stories.js";
 import type {
   AgentOutputEntry,
   AgentSessionStats,
@@ -264,6 +265,15 @@ export const SORT_ORDER_OPTIONS: { value: SortOrder; label: string }[] = [
  */
 export const BOARD_SORT_ORDER_OPTIONS = SORT_ORDER_OPTIONS.filter((o) => o.value !== "status");
 
+/** Stories page list (#0536): work-board options minus priority. */
+export type { StoryListSortOrder };
+
+export const STORIES_PAGE_SORT_ORDER_OPTIONS: { value: StoryListSortOrder; label: string }[] =
+  BOARD_SORT_ORDER_OPTIONS.filter((o) => o.value !== "current") as {
+    value: StoryListSortOrder;
+    label: string;
+  }[];
+
 /**
  * Pipeline order used by the `status` sort mode (#0560), from first to final
  * stage. This is the same order `STATUS_ORDER` renders in on the story panel
@@ -273,6 +283,7 @@ const STATUS_PIPELINE: Status[] = ["draft", "inbox", "ready", "active", "review"
 
 const SORT_ORDER_KEY = "repoos.board.sortOrder";
 const STORY_SORT_ORDER_KEY = "repoos.storyPanel.sortOrder";
+const STORIES_PAGE_SORT_ORDER_KEY = "repoos.storiesPage.sortOrder";
 const BOARD_USAGE_RANGE_KEY = "repoos.board.usageRange";
 const NEW_VERSION_KEY = "repoos.newVersion";
 
@@ -396,6 +407,17 @@ function readSortOrder(): SortOrder {
 
 function readStorySortOrder(): SortOrder {
   return readSortOrderFromKey(STORY_SORT_ORDER_KEY);
+}
+
+function readStoriesPageSortOrder(): StoryListSortOrder {
+  try {
+    const raw = localStorage.getItem(STORIES_PAGE_SORT_ORDER_KEY);
+    if (raw === null) return "recent";
+    const v = JSON.parse(raw);
+    return v === "recent" || v === "taskNumberNewest" || v === "taskNumberOldest" ? v : "recent";
+  } catch {
+    return "recent";
+  }
 }
 
 function taskNumberValue(task: Pick<Task, "id">): number {
@@ -621,6 +643,7 @@ export const useRepoStore = defineStore("repo", () => {
   const taskLogs = ref<Record<string, TaskLogEntry[]>>({});
   const sortOrder = ref<SortOrder>(readSortOrder());
   const storySortOrder = ref<SortOrder>(readStorySortOrder());
+  const storiesPageSortOrder = ref<StoryListSortOrder>(readStoriesPageSortOrder());
   /** Done-task ids the human has acknowledged (0278). Persisted; a task whose
    *  id is here stays un-highlighted across reloads. */
   const doneAcked = ref<Set<string>>(readDoneAcked());
@@ -717,6 +740,15 @@ export const useRepoStore = defineStore("repo", () => {
     storySortOrder.value = order;
     try {
       localStorage.setItem(STORY_SORT_ORDER_KEY, JSON.stringify(order));
+    } catch {
+      /* ignore quota / privacy-mode failures */
+    }
+  }
+
+  function setStoriesPageSortOrder(order: StoryListSortOrder): void {
+    storiesPageSortOrder.value = order;
+    try {
+      localStorage.setItem(STORIES_PAGE_SORT_ORDER_KEY, JSON.stringify(order));
     } catch {
       /* ignore quota / privacy-mode failures */
     }
@@ -2705,6 +2737,7 @@ export const useRepoStore = defineStore("repo", () => {
     reviews,
     sortOrder,
     storySortOrder,
+    storiesPageSortOrder,
     doneAcked,
     doneAckCount,
     needsAck,
@@ -2736,6 +2769,7 @@ export const useRepoStore = defineStore("repo", () => {
     removeToast,
     setSortOrder,
     setStorySortOrder,
+    setStoriesPageSortOrder,
     restartServer,
     clearNewVersion,
     repoName,
