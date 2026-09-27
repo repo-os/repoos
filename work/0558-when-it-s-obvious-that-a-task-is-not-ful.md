@@ -2,14 +2,14 @@
 id: "0558"
 title: "Flag under-specified tasks as needing input, with a Send to PM action"
 type: feature
-status: ready
+status: active
 priority: p2
 area: server + ui
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/flag-under-specified-tasks-as-needing-in
 created_at: "2026-09-27T17:27:54Z"
-updated_at: "2026-09-27T17:32:37Z"
+updated_at: "2026-09-27T17:32:38Z"
 ---
 ## Problem
 
@@ -178,3 +178,4 @@ When it's obvious that a task is not fully fleshed out (usually because the PM A
 - 2026-09-27T17:27:54Z · screenshots
 - 2026-09-27T17:29:45Z · status draft→inbox, title, area, body
 - 2026-09-27T17:32:37Z · status inbox→ready
+- 2026-09-27T17:32:38Z · status ready→active, branch
