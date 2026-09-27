@@ -166,13 +166,13 @@ against a fetch-stubbed fake service (`fakeProvisioningService` in
 
 ## Update intake invariant
 
-Until #0533–#0535 register a handler via `provider.onUpdate(...)`, every
-incoming update is normalized and dropped: nothing replies, nothing triggers,
-nothing writes beyond the polling pointer. This is the ADR 0007 posture for
-unbound senders, and the simplest proof that no update can disclose repository
-data. When wiring handlers later, remember: authorization is per-message, live
-from `auth_users`; a handler failure is logged redacted, never allowed to kill
-the transport loop.
+The intake handler (`src/server/telegram/intake.ts`) is registered at boot via
+`bootstrapTelegramAtBoot`. Every update passes through live authorization
+(`resolveTelegramSender`), per-user and per-chat rate limits (in-memory,
+per-process — not coordinated across multiple RepoOS processes), and audit
+logging for privileged intake. Unbound or unauthorized senders are dropped
+silently with no outbound Telegram traffic (ADR 0007). A handler failure is
+logged redacted, never allowed to kill the transport loop.
 
 ## The `[telegram] enabled` gate
 

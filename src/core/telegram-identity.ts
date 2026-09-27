@@ -20,6 +20,10 @@ export const TELEGRAM_AUDIT = {
   userBound: "telegram_user_bound",
   userUnbound: "telegram_user_unbound",
   userReassigned: "telegram_user_reassigned",
+  /** Authorized slash command after live role check (not /start invite redeem). */
+  commandInvoked: "telegram_command_invoked",
+  /** Plain-text message on the agent path (pre-LLM intake; #0541 consumes this). */
+  agentMessage: "telegram_agent_message",
 } as const;
 
 /** Telegram Bot API start-parameter limit. Hex nonce is 32 chars. */
