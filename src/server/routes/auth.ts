@@ -15,6 +15,10 @@
  * PATCH  /api/auth/users/:email  – Change role
  * GET    /api/auth/audit         – Audit log
  * POST   /api/auth/users/:email/invite – (Re)send an invite email
+ * POST   /api/auth/telegram/invites – Create a Telegram bind invite (admin)
+ * GET    /api/auth/telegram/links – List Telegram user bindings (admin)
+ * DELETE /api/auth/telegram/links/:id – Unbind a Telegram user (admin)
+ * POST   /api/auth/telegram/links/:id/reassign – Rebind to another allowlisted email
  */
 
 import type { IncomingMessage, ServerResponse } from "node:http";
