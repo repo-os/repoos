@@ -2,7 +2,7 @@
 id: "0551"
 title: Let long prompts auto-grow the composer textarea
 type: feature
-status: ready
+status: active
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/let-long-prompts-auto-grow-the-composer-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-27T14:05:52Z"
-updated_at: "2026-09-27T14:23:56Z"
+updated_at: "2026-09-27T14:40:07Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -105,3 +105,4 @@ Can we make this modal expand as you type text larger than the text area? or if 
 - 2026-09-27T14:11:19Z · status inbox→ready
 - 2026-09-27T14:11:20Z · status ready→active, branch
 - 2026-09-27T14:23:56Z · status active→ready
+- 2026-09-27T14:40:07Z · status ready→active
