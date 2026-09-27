@@ -398,6 +398,14 @@ cannot tell from the code alone:
   Node-based npx binary, which is fine for most single-file runs but defeats
   the point for a *latency*-sensitive suite like this one). Extra args
   (`--changed <ref>`) forward to both passes.
+  Coverage is deliberately opt-in so routine checks do not pay its extra cost.
+  Run `bun run test:coverage` weekly, before releases, or on demand; it runs the
+  full wrapped suite with V8 coverage and enforces the baseline thresholds in
+  `src/ui-app/vite.config.ts`. Changed-path runs skip coverage because a partial
+  report would be misleading. Text summary and HTML/JSON reports go under the
+  ignored `coverage/` directory. The initial global floors are a measured
+  baseline, not a quality target; ratchet them upward as critical paths gain
+  behavior-focused tests.
 - Language: TypeScript, NodeNext modules — imports use `.js` extensions even
   for `.ts` source (this is correct, not a bug).
 - Build: `bun run build` (runs `tsc` then copies UI assets into `dist/ui/`).

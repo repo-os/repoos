@@ -89,6 +89,27 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     include: ["tests/**/*.test.ts"],
+    coverage: {
+      provider: "v8",
+      include: [
+        "../core/**/*.{ts,js}",
+        "../server/**/*.{ts,js}",
+        "../commands/**/*.{ts,js}",
+        "../cli/**/*.{ts,js}",
+        "src/**/*.{ts,vue,js}",
+      ],
+      exclude: ["**/*.d.ts", "**/*.test.ts", "**/tests/**"],
+      reportsDirectory: "../../coverage",
+      reporter: ["text-summary", "html", "json-summary"],
+      thresholds: {
+        // Baseline floors from the 2026-09-27 full suite. Ratchet upward as
+        // uncovered production paths gain behavior-focused tests.
+        statements: 58.42,
+        branches: 50.75,
+        functions: 53.31,
+        lines: 60.27,
+      },
+    },
     // Node >= 25 occupies globalThis.localStorage with an accessor that yields
     // undefined, which makes jsdom skip installing its own Storage. Without
     // this shim the suite passes under Node 24 and fails under Node 26 — and
