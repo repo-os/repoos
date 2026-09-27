@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { searchAll, searchSettings, RESULT_CAP } from "../src/search";
+import {
+  searchAll,
+  searchSettings,
+  searchContext,
+  RESULT_CAP,
+  CONTEXT_RESULT_DISPLAY_CAP,
+} from "../src/search";
+import { countDocRefresh, formatDocRefreshMessage } from "../src/docs-refresh";
 import type { Task, ConfigField, DocMeta } from "../src/types";
 
 function makeTask(over: Partial<Task>): Task {
@@ -45,8 +52,8 @@ const tasks: Task[] = [
 ];
 
 const docs: DocMeta[] = [
-  { path: "AGENTS.md", title: "Agent instructions" },
-  { path: "docs/architecture.md", title: "Architecture" },
+  { path: "AGENTS.md", title: "Agent instructions", mtimeMs: 0 },
+  { path: "docs/architecture.md", title: "Architecture", mtimeMs: 0 },
 ];
 
 const fields: ConfigField[] = [
@@ -116,11 +123,13 @@ describe("searchAll", () => {
       {
         path: "AGENTS.md",
         title: "Agent instructions",
+        mtimeMs: 0,
         content: "This document contains important agent rules and instructions for deployment.",
       },
       {
         path: "docs/architecture.md",
         title: "Architecture",
+        mtimeMs: 0,
         content: "The system uses a modular architecture with components.",
       },
     ];
@@ -157,7 +166,7 @@ describe("searchAll", () => {
   it("groups results tasks → docs → settings", () => {
     const src = {
       tasks: [makeTask({ title: "theme", body: "" })],
-      docs: [{ path: "theme.md", title: "theme doc" }],
+      docs: [{ path: "theme.md", title: "theme doc", mtimeMs: 0 }],
       fields,
     };
     const kinds = searchAll("theme", src).map((r) => r.kind);
@@ -261,6 +270,78 @@ describe("searchAll", () => {
   });
 });
 
+describe("searchContext", () => {
+  const skills = [
+    {
+      path: "skills/deploy/SKILL.md",
+      name: "deploy",
+      description: "Deploy the app to production",
+    },
+  ];
+
+  it("returns only docs and skills", () => {
+    const out = searchContext("architecture", {
+      docs,
+      skills,
+    });
+    expect(out.results.every((r) => r.kind === "doc" || r.kind === "skill")).toBe(true);
+    expect(out.results.some((r) => r.kind === "doc")).toBe(true);
+  });
+
+  it("excludes tasks and settings even when they would match the query", () => {
+    const out = searchContext("theme", {
+      docs: [{ path: "theme.md", title: "theme doc", mtimeMs: 0 }],
+      skills: [],
+    });
+    expect(out.results.every((r) => r.kind === "doc" || r.kind === "skill")).toBe(true);
+    expect(out.results.some((r) => r.kind === "setting")).toBe(false);
+    expect(
+      searchAll("theme", {
+        tasks: [makeTask({ title: "theme", body: "" })],
+        docs: [],
+        fields,
+      }).some((r) => r.kind === "task"),
+    ).toBe(true);
+  });
+
+  it("matches skills by name and description", () => {
+    const out = searchContext("production", { docs: [], skills });
+    expect(out.results).toHaveLength(1);
+    expect(out.results[0]?.kind).toBe("skill");
+  });
+
+  it("reports total when results exceed the display cap", () => {
+    const manyDocs = Array.from({ length: CONTEXT_RESULT_DISPLAY_CAP + 3 }, (_, i) => ({
+      path: `docs/file-${i}.md`,
+      title: `shared keyword ${i}`,
+      mtimeMs: i,
+    }));
+    const out = searchContext("shared keyword", { docs: manyDocs, skills: [] });
+    expect(out.results).toHaveLength(CONTEXT_RESULT_DISPLAY_CAP);
+    expect(out.totalMatches).toBe(CONTEXT_RESULT_DISPLAY_CAP + 3);
+  });
+});
+
+describe("doc refresh summary", () => {
+  it("counts added, changed, and removed files", () => {
+    const before = new Map([
+      ["a.md", 1],
+      ["b.md", 2],
+      ["gone.md", 3],
+    ]);
+    const after = [
+      { path: "a.md", title: "A", mtimeMs: 1 },
+      { path: "b.md", title: "B", mtimeMs: 99 },
+      { path: "new.md", title: "N", mtimeMs: 4 },
+    ];
+    expect(countDocRefresh(before, after)).toEqual({ added: 1, changed: 1, removed: 1 });
+    expect(formatDocRefreshMessage({ added: 1, changed: 1, removed: 1 })).toBe(
+      "1 added, 1 changed, 1 removed",
+    );
+    expect(formatDocRefreshMessage({ added: 0, changed: 0, removed: 0 })).toBe("No changes");
+  });
+});
+
 function htmlToText(html: string): string {
   return html
     .replace(/<mark>/g, "")
@@ -275,7 +356,7 @@ function htmlToText(html: string): string {
 function docSnippet(query: string, content: string): string | undefined {
   const hits = searchAll(query, {
     tasks: [],
-    docs: [{ path: "test.md", title: "Test", content }],
+    docs: [{ path: "test.md", title: "Test", content, mtimeMs: 0 }],
     fields: [],
   });
   const doc = hits.find((r) => r.kind === "doc" && r.path === "test.md");

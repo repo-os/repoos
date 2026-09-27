@@ -34,6 +34,12 @@ describe("engineer launch permissions", () => {
     expect(engineerPermissionGaps("github copilot", ["--allow-all-tools"])).toEqual([]);
   });
 
+  it("accepts Codex's unattended sandbox and approval bypass", () => {
+    expect(engineerPermissionGaps("codex", ["--dangerously-bypass-approvals-and-sandbox"])).toEqual(
+      [],
+    );
+  });
+
   it("flags a Codex sandbox without network", () => {
     expect(engineerPermissionGaps("codex", ["exec", "--sandbox", "workspace-write"])).toEqual([
       expect.stringContaining("network is off"),

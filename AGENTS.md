@@ -15,22 +15,23 @@ Two kinds of agent read this file, and some rules apply to only one:
 
 - **RepoOS task-runner agents** — spawned by the RepoOS server to work a
   specific task. You have a task id, a dedicated worktree, and a task
-  transcript. The operating loop below, the `status:` frontmatter moves, the
-  handoff request, the `::repoos-preview-request::` signal, and "never run
-  `repoos serve` yourself" are all yours — the server enforces them and rejects
+  transcript. The managed operating loop below, the handoff request, the
+  `::repoos-preview-request::` signal, and "never run `repoos serve` yourself"
+  are all yours — the server enforces them and rejects
   direct serve attempts from your process. **You never move your own task out of
   `active`.** Run the scoped check, then hand off with
   `repoos mv <your task id> review` (or by finishing your reply with the
   `::repoos-handoff-ready::` signal) and end your turn: both record a *request*,
-  and RepoOS runs the checks, commits the branch and moves the status itself.
-  Writing `status: review` yourself is a different path — it still goes through
-  the same checks, but it does not wait for your turn to end, so it can cut the
-  turn short.
+  and RepoOS commits the branch, runs the checks and moves the status itself.
+  Do not write `status: review` directly: the watcher can intercept that write
+  and finalize it before your turn ends, cutting the turn short. Task metadata
+  must go through RepoOS commands or APIs.
 - **Interactive / external agent sessions** — a human is driving you directly
   (Claude Code, Codex CLI, Cursor, …) in an ordinary checkout. You have no
-  task id and no managed preview. Skip the task-lifecycle mechanics; when a
-  rule says "emit the signal line" or "read your task transcript," that is not
-  you. To run or verify the app, use your own harness's tooling (e.g. Claude
+  runner task id and no managed preview. Runner-only signals and transcripts
+  do not apply. If you work on a RepoOS task, its branch/worktree, review and
+  close-out rules still apply; see the interactive-session section below.
+  To run or verify the app, use your own harness's tooling (e.g. Claude
   Code's preview/browser tools, which may launch the dev server defined in
   `.claude/launch.json`) and get past the login screen with the **Dev login**
   below.
@@ -70,114 +71,86 @@ as the system of record — and prefer writing to the repo first.
 `docs/` holds build context for the project it lives in. In this repo that is
 RepoOS's own; in a managed repo it is that project's. See `docs/README.md`.
 
-## Operating loop
+## Operating loop (managed task-runner agents)
 
-1. Read this file first and any relevant docs under `docs/`. Then run `repoos list` to see current tasks.
-2. Pick a task from `work/` whose `status: ready`.
-3. Set its `status: active` (edit the frontmatter; do not move the file).
-4. Create a worktree on the branch named in the task's `branch:` field, or set one.
-5. Run `repoos check` and confirm it passes (the check plan declared in `repoos.toml`: build, typecheck, tests, UI smoke test). Then implement → if the repo has a git remote, open an MR/PR against `main`.
-6. When ready for human sign-off, and only after a green `repoos check`, run `repoos mv <id> review` (or finish your reply with the `::repoos-handoff-ready::` signal) and stop. **That records a handoff request; it does not set the status.** RepoOS re-runs the check, commits the branch and moves the task to `review` when your turn ends. The task stays `active` with a "running checks…" state until then, and stays `active` with the failure shown if the check fails. **Leave the worktree open and do not merge its branch yourself** — see "Review and sign-off" below.
+1. Read this file, the assigned task in your worktree, and relevant `docs/`.
+   Run `repoos list` for board context; do not claim another task.
+2. Work in the dedicated worktree and branch RepoOS assigned. The server has
+   already activated the task and created or reused its worktree. Do not edit
+   task frontmatter or create a second worktree for it.
+3. Implement the task and update docs directly affected by the change. Run
+   `bun run fmt`, rebuild after UI changes, and run
+   `repoos check --changed main` for the scoped pre-review check. It must pass.
+4. Request handoff with `repoos mv <id> review` or finish your reply with
+   `::repoos-handoff-ready::`, then end your turn. In your own runner session,
+   both record a request without changing status. RepoOS commits the branch,
+   runs validation, verifies that the tested tree stayed unchanged, and only
+   then moves the task to `review`. Failure leaves it `active` with the reason.
+5. Leave the worktree open and stop. Do not merge the branch or mark it done.
+   Resume fixes on this same worktree if review sends it back.
 
 ## Review and sign-off (review → done)
 
-A task in `review` is done with implementation; the worktree stays open and the
-implementing agent stops. A human (or another AI) reviews it. The implementing
-agent NEVER merges to `main` at `review` time — that happens only when the task
-is moved to `done`.
+**RepoOS owns this workflow whether or not the repo has a Git remote.** A
+GitHub remote does not authorize opening a PR, pushing a task branch, or using
+GitHub approval/merge instead of RepoOS. Only do those if the human explicitly
+requests that separate workflow.
 
-When the `reviewer` agent is enabled on the Agents page, RepoOS runs it
-automatically the moment a task lands in `review`: it reads the branch's diff
-in the task's worktree and writes a short report (bugs, edge cases,
-suggestions) shown in the task drawer next to "Move to done". The report is
-advisory — it informs the human's sign-off and never replaces it. The review
-agent changes nothing, and if it ever moves a task to `done`, RepoOS puts it
-straight back into `review`.
+A task in `review` awaits human sign-off; its branch has not landed. When
+configured, the reviewer agent reads the diff in the task worktree and writes
+an advisory report shown beside **Move to done**. It does not edit code,
+approve its own work, or move the task to `done`. Findings can send the task
+back to the engineer for fixes and another handoff.
 
-**No git remote (the common RepoOS case):**
+When the human approves, use **Move to done** in RepoOS or
+`POST /api/tasks/:id/done`. An explicit instruction to complete a normal task
+means invoke that pipeline, not merge it by hand. RepoOS creates a candidate
+worktree from current main, merges the feature branch there, validates the
+combined result, rechecks main under a publication lock, publishes, cleans up,
+and records completion. Dirty work is preserved, and failures remain visible
+for repair/retry. See `docs/close-out-pipeline.md` and
+`user-docs/review-and-close-out.md`.
 
-- Implementer: hand off (`repoos mv <id> review` or the signal), leave the
-  worktree open, stop. Do not merge its branch.
-- Reviewer: review the diff, run `repoos check`. If changes are needed, request
-  them; the implementer fixes them on the SAME worktree, re-runs `repoos check`, and
-  hands off again (still not merged).
-- Approval: the reviewer says **"move task <id> to done"**. Only then the
-  implementer:
-  1. sets `status: done` + activity entry and commits `docs(<id>): set status done`;
-  2. fast-forward merges the branch to `main`;
-  3. removes the worktree and deletes the branch (`git branch -d <branch>`).
-  This is the only path to `done`, and only on explicit instruction.
+`repoos mv <id> done` is **not** this pipeline: it only changes task metadata.
+Never use it as a substitute for landing a branch through Move to done.
 
-**With a git remote:**
+## Interactive / external sessions working on RepoOS tasks
 
-- Implementer: same as above, but at `review` time also open an MR/PR against
-  `main`. Never merge or self-approve your own MR.
-- Reviewer: approve/reject via the MR; request changes on the same worktree as
-  needed (the MR is updated in place, never force-pushed).
-- Approval: the MR is merged — by the reviewer, or by the implementer ONLY on an
-  explicit "move task <id> to done". Then delete the remote + local branches and
-  set `status: done` with an activity entry (commit `docs(<id>): set status done`).
+Being outside a managed runner changes how you coordinate with RepoOS, not
+who owns approval and merging:
 
-## Interactive agents driving the board directly (not through `repoos start`)
+- Use RepoOS commands or HTTP APIs for task creation and metadata changes.
+  For an existing task, use its recorded branch and existing worktree. Check
+  for a live engineer or reviewer before editing; avoid concurrent writers.
+- If explicitly taking over a newly created task, claim it through RepoOS
+  directly as `active`, without leaving it in `ready` for auto-dispatch to grab.
+  Managed starts should use RepoOS's Start action, which owns worktree setup.
+- Request review through the UI/API or `repoos mv <id> review`. Outside the
+  task's runner, the CLI writes metadata that the server intercepts
+  asynchronously and routes through handoff validation. Wait for actual
+  completion; a successful CLI return is not proof that checks/review finished.
+- A status write is not a synchronous cancellation of a background process.
+  Use the supported pause/stop action and verify the run has ended before
+  taking over. Wait for an active reviewer before requesting close-out.
+- After explicit human approval, invoke Move to done/the `/done` endpoint.
+  Do not bypass review with `active` → `done` or repair a stuck task by merely
+  reissuing `repoos mv <id> done`. Inspect the review/check/integration state.
+  If the control-plane server is unavailable, report it rather than emulate
+  its lifecycle with task-file edits or manual merges.
 
-This is for the **interactive/external session** case from "Who this file is
-for" above, specifically when it creates and drives tasks itself — via
-`repoos new`/`repoos mv`/`repoos update` or the HTTP API — rather than leaving
-them for `repoos start`'s managed task-runner lifecycle. A `repoos mv <id>
-<status>` call is **not** a synchronous "and now the system has settled"
-operation the way it feels from the CLI. It's a file write; the running
-`repoos serve` discovers it asynchronously via its file watcher, and whatever
-background machinery that discovery triggers — spawning the reviewer agent,
-push notifications, auto-dispatch — runs on its own clock, entirely outside
-anything the external caller can see or block on. Firing several
-status-changing commands back-to-back on the assumption each one is fully
-"done" before the next starts is the mistake this section exists to prevent.
+**Explicit direct-to-main hotfixes are a separate exception.** If the human
+specifically asks for a direct commit on main (as opposed to completing a
+branched task), follow that scope and the main-commit checks below. This does
+not authorize hand-landing other task branches. If such already-landed work
+has a branchless task record, `/done` has a separate checked release path for
+it: it checks main and records release without a candidate merge. Do not erase
+a task's branch metadata to force that path.
 
-**Worked example (2026-09-16).** An interactive session moved a
-self-implemented task from `active` through `review` to `done` via two
-separate `repoos mv` calls a few minutes apart. The `active`→`review`
-transition correctly triggered the server's normal automatic reviewer spawn
-(`startReview` in `src/server/server.ts`). The later `review`→`done`
-transition should have cancelled that run — `reviews.cancel()`
-(`src/server/review.ts`) fires on exactly `prev === "review" && next !==
-"review"` — but the spawned OS process (confirmed via `ps`) kept running for
-**six more minutes** regardless, wrote its report, and on finishing tripped
-`enforceStillInReview`'s guard: the task file said `done` while a review was
-ending, so — per that guard's own documented assumption, "every human route
-out of `review` cancels the run first" — it assumed the reviewer had moved the
-task there itself and reverted it back to `review`. That assumption holds for
-the UI's synchronous PATCH request; it does not hold for an external
-CLI/file-write transition the server only learns about later, after the
-reviewer is already running. Two sibling tasks in the same session that went
-straight `active`→`done` (no `review` hop) landed cleanly with no such
-issue — confirming the mechanism: skipping `review` avoids spawning a
-reviewer to race against in the first place. If this happens to you, it's not
-data loss — the review already ran and produced its report; just re-issue
-`repoos mv <id> done` once you've confirmed no live review process remains.
-
-Rules that follow from this, in rough priority order:
-
-1. **To land something yourself without a human/reviewer in the loop, skip
-   `review` entirely** — `active` → `done` directly. No reviewer gets
-   spawned, so there is nothing to race or get reverted by.
-2. **If you deliberately want the reviewer's advisory opinion first (worth it
-   for anything nontrivial), enter `review` and WAIT for it to actually
-   finish** before touching status again — confirm `.repoos/reviews/<id>.md`
-   exists (or that the `review:<id>.out.log` process has exited), not just
-   that some time has passed.
-3. **Never assume a CLI status change synchronously cancels a running
-   background job.** Treat any spawned reviewer/agent process as something
-   that will run to completion regardless of what you do to the task file
-   next.
-4. **Claim a freshly created task by moving straight to `active` (skip
-   `ready`)** so the auto-engineering dispatch pass never sees it sitting in
-   the queue to grab concurrently — a different race with the same root
-   cause (asynchronous discovery of a file-level status change).
-5. **Re-check the task file against `main` immediately before merging, not
-   just once early.** Other machinery — a reviewer writing its report, an
-   auto-dispatched task, another concurrent close-out — can commit to `main`
-   at any point between when you start and when you finish; the hand-landing
-   check under Rules below is a special case of this same general fact.
+**Historical caution (2026-09-16):** external CLI status writes raced a live
+reviewer, which later reverted a task from `done` to `review`. The old advice
+to avoid that race by skipping review or reissuing `mv done` is not the current
+workflow. The lesson is to coordinate through server actions, wait for actual
+completion, and keep merging and status changes in the close-out pipeline.
 
 ## Definition of done
 
@@ -221,10 +194,12 @@ they are not substitutes for each other:
 - **Periodic, broad, separate** — nothing in a single task's context is
   positioned to notice a doc describing a feature nobody's touched in
   months, or an `AGENTS.md` rule that quietly stopped being true. That needs
-  a sweep with the whole repo in view, on its own schedule, filing findings
-  as tasks rather than editing docs ad hoc mid-sweep (same task-creation path
-  as everything else — see "Never write directly to `work/*.md` files" under
-  Rules). This is intentionally a separate, narrowly-scoped agent concern
+  a sweep with the whole repo in view, on its own schedule. Compare docs and
+  agent instructions with each other and with the current implementation;
+  distinguish historical incident accounts and explicit exceptions from
+  current operating rules. File findings as tasks unless the human explicitly
+  authorizes fixes in that sweep. Use the same task-creation path as everything
+  else — see "Never write directly to `work/*.md` files" under Rules. This is intentionally a separate, narrowly-scoped agent concern
   from general tech-debt/code-quality review — conflating the two produces a
   vague mandate and noisy, low-signal findings.
 
@@ -234,27 +209,15 @@ RepoOS manages its own roadmap. This means a few things are true that you
 cannot tell from the code alone:
 
 - The `repoos` command is very likely a `bun link` dev build pointing at THIS
-  repo's `dist/`. It runs compiled JS, not the TypeScript source. **`repoos`
-  warns automatically when the build is stale** (compares a hash of `src/`
-  against the build marker in `dist/.build-info.json`). If you see a staleness
-  warning, run `bun run build` before trusting any `repoos` output or the UI.
-  This is the #1 way to waste time in this repo — the guardrail catches it.
-  **Be proactive, not reactive: run `bun run build` (or `bun run build:ui`
-  for a UI-only change) right after you finish editing, before your next
-  `repoos` invocation** — don't wait to trip the guardrail and have to
-  re-run. `repoos check`'s own `staleness` step runs before that same
-  invocation's `build` step (`repoos.toml`'s check plan — see Definition of
-  done below), so a check run immediately after an edit fails once on
-  staleness alone, even though the very same run's `build` step would have
-  fixed it a few steps later — you then have to burn an entire second full
-  check invocation just to see it pass clean. This is deliberate, not a bug
-  to route around by reordering those steps or building automatically
-  mid-run: the *currently executing* `repoos` process is itself running the
-  old compiled code the moment it starts, and a `build` step run as a
-  subprocess partway through cannot retroactively refresh the logic already
-  loaded into that process for the rest of its own run — only a fresh
-  process invoked *after* the rebuild actually runs new code. Build first,
-  then check, and you never pay for this twice.
+  repo's `dist/`. It runs compiled JS, not the TypeScript source. On startup,
+  it compares a hash of `src/` with `dist/.build-info.json`. When a marked
+  build is stale, it runs `bun run build` and re-execs the same command so the
+  command uses fresh compiled code. This applies to `repoos check` and `serve`
+  too. The re-exec is attempted once; a failed build or still-stale marker
+  falls through to the existing warning or `check` staleness failure. A
+  manual `bun run build` is still useful before using the compiled CLI after
+  changing build scripts or package metadata, which the `src/` hash does not
+  cover. `bun run build:ui` is available for UI-only changes.
 - **`dist/` is gitignored (as of 2026-08-15) — never `git add` it, and never
   `commit` it.** It used to be tracked, and that alone was the #1 source of
   merge conflicts and dirty-`main` failures in this repo — see
@@ -298,12 +261,10 @@ cannot tell from the code alone:
   (`src/commands/tasks.ts`) now refuses to move to `done` when the task's
   recorded `branch` still exists locally and is not an ancestor of `main`,
   unless `--force-not-merged` is passed — but that guard is a backstop, not a
-  substitute for doing this correctly: if you are an interactive/external
-  agent landing a task yourself (no server, or skipping review per the
-  section below), **merge the branch into `main` yourself BEFORE** running
-  `repoos mv <id> done`, exactly as this file's own workflow steps say. Never
-  assume the status flag flipping means the code landed — verify with
-  `git show main:<a file the task added>` if in doubt.
+  substitute for doing this correctly. For normal branched tasks, use the
+  server-owned Move-to-done pipeline even from an interactive session. A bare
+  `mv done` is at most a metadata repair after separately verified landing and
+  explicit human authorization; it is never a merge or approval mechanism.
 - Keep frontmatter tidy; `repoos` normalizes key order on write.
 - One task = one focused worktree.
 - **Never `git add` binaries under `work/` or `inputs/`.** Task and input
@@ -356,7 +317,8 @@ cannot tell from the code alone:
   the formatter collapsed the now-short elements to one line, the hook didn't
   fire, and MTD failed twice on `oxfmt --check` before the formatting commit was
   added.
-- **Hand-landing a stale branch?** Check for other tasks' files first —
+- **Explicitly authorized manual recovery only:** if the human directs you to
+  hand-land a stale branch outside the normal pipeline, check other tasks' files —
   `git diff main...HEAD --name-only | grep '^work/'` — and
   `git checkout main -- <them>` before merging. Anything but the task's own
   file is drift that will pollute another task's record. Background:
@@ -635,11 +597,12 @@ never created and all work landed on `main`. Lessons:
 - Do NOT `git pull` when branching from local `main` — there may be no tracking
   branch, and you don't need it. Branch from local: `git checkout main` then
   `git checkout -b <branch>`.
-- Before your FIRST commit, verify you are on the intended branch, not `main`
-  (`git branch --show-current`). If you're on `main`, stop and create the branch
-  first (stash, branch, re-apply if needed).
-- Once `repoos start` exists, worktree creation is RepoOS's job, not yours —
-  don't hand-roll git setup for a task.
+- Before your FIRST commit, verify you are on the intended branch
+  (`git branch --show-current`). For normal task work, do not commit on `main`.
+  An explicitly requested direct-to-main hotfix is the exception; confirm that
+  authorization and stage only its intended files.
+- Managed task worktree creation is RepoOS's job — use the Start action and
+  do not hand-roll a second worktree for a task.
 
 ## Stuck-active incident (#0151): worktree missing its own task file
 

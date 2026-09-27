@@ -70,6 +70,20 @@ undoes it) to stop them from re-launching and colliding with `just serve`/`just 
 Root cause of the launchd-specific crash loop is still unknown — investigate before
 re-enabling Option A.
 
+## Workflow ownership
+
+The normal branched-task workflow is owned by RepoOS, with or without a Git
+remote: engineer handoff → RepoOS review → human approval via Move to done or
+`POST /api/tasks/:id/done` → the close-out job below. A GitHub remote does not
+select a PR-based approval/merge path. External agents helping on a task use
+the same workflow; `repoos mv <id> done` changes metadata, never merges code.
+
+A separate `/done` path exists for branchless tasks whose work already landed
+on main (for example, an explicitly authorized direct-to-main hotfix). For a
+task with no branch that is neither `review` nor `done`, `releaseBranchless`
+checks main and records release without enqueueing a merge job. This exception
+does not authorize skipping review for a task with an unmerged branch.
+
 ## The two state machines
 
 There are two separate, nested state machines. Confusing them is the #1 cause of
@@ -177,16 +191,18 @@ since `dist/.build-info.json` was written. The candidate is built immediately be
 `repoos check`, so check's own "Full build" step now detects the fresh marker and skips
 itself — exactly one build per close-out — with no private env flag. (Before #0377 that
 skip was the `REPOOS_SKIP_BUILD=1` opt-in; it was removed once the build became smart on
-its own, so the decision lives in one place instead of three.) Standalone `repoos check`
-is unchanged: its staleness step still reports a genuinely stale build first, then the
-build step repairs it within the same invocation.
+its own, so the decision lives in one place instead of three.)
 
 **Measured win (#0377):** a no-op `bun run build` on an unchanged tree returns in
 staleness-check time (~0.05–0.1s) instead of a full rebuild (~5–9s). The close-out's
 second ("Full build") invocation is now that no-op; the first real build still runs.
-The earlier #0213 instrumentation (a `bun` shim counting `run build` invocations: 0
-inside the skip-build check subprocess vs 1 standalone) measured the same saved step —
-the mechanism changed, the saving did not.
+For an interactive `repoos check` on a stale linked build, CLI startup now builds
+and re-execs before the check plan runs (#0549). Its staleness step therefore
+checks the fresh process, while a failed rebuild or still-stale marker retains
+the existing failure. The earlier #0213 instrumentation (a `bun` shim counting
+`run build` invocations: 0 inside the skip-build check subprocess vs 1
+standalone) measured the same saved step — the mechanism changed, the saving
+did not.
 
 **Browser/server dedup (#0213, scoped down):** the UI smoke test `repoos check` runs
 RepoOS's own `smoke` script since #0348. Its ephemeral server and headless WebKit
@@ -470,7 +486,8 @@ real pollution of another task's record.
   every foreign work file the candidate changed, `git rm`s ones the branch newly
   added, and commits — catching drift already committed in an earlier round.
 
-**If you are hand-landing a stale branch,** do this check yourself; the guards
+**Only if the human explicitly authorizes manual recovery outside the normal
+pipeline:** when hand-landing a stale branch, do this check yourself; the guards
 only run inside the pipeline:
 
 ```bash

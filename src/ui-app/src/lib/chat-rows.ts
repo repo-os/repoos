@@ -227,6 +227,20 @@ export function toDisplayRows(entries: readonly AgentOutputEntry[]): DisplayRow[
     const text = isAssistantText ? rawText : displayPlainText(rawText);
 
     const last = rows[rows.length - 1];
+    // stderr arrives one line at a time. Keep a diagnostic together, but split
+    // timestamped log records so distinct failures do not become one giant card.
+    if (
+      !("type" in entry) &&
+      entry.s === "err" &&
+      last?.kind === "line" &&
+      last.s === "err" &&
+      !/^\d{4}-\d{2}-\d{2}T\S+\s+(?:ERROR|WARN|INFO|DEBUG)\b/.test(text)
+    ) {
+      last.text += "\n" + rawText;
+      last.entries.push(entry);
+      last.at = latestAt(last.entries) ?? last.at;
+      continue;
+    }
     // Consecutive assistant text parts are one message. opencode streams a
     // reply part by part; without this they render as several stacked bubbles.
     if (last && last.kind === "text" && isAssistantText) {

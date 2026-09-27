@@ -15,6 +15,7 @@
 import { describe, expect, it } from "vitest";
 import { mount } from "@vue/test-utils";
 import { defineComponent, h, nextTick, ref } from "vue";
+import ChatDiagnosticRow from "../src/components/ChatDiagnosticRow.vue";
 import ChatToolCallRow from "../src/components/ChatToolCallRow.vue";
 import {
   bubbleRole,
@@ -822,5 +823,60 @@ describe("grouping is identical for every agent", () => {
         cli,
       ).toBe(false);
     }
+  });
+});
+
+describe("CLI diagnostic presentation", () => {
+  it("groups multiline stderr without changing source entries or tool outcomes", () => {
+    const entries: AgentOutputEntry[] = [
+      tool("apply_patch", "failed", AT_0),
+      {
+        s: "err",
+        d: "2026-09-27T14:19:40Z ERROR codex_core::tools::router: apply_patch verification failed: Failed to find expected lines in review.ts:",
+        at: AT_0,
+      },
+      { s: "err", d: "    const dismissedDuringRun =", at: AT_1 },
+      { s: "err", d: "      task.needsInput;", at: AT_2 },
+      text("I will read the current source and retry."),
+    ];
+    const original = JSON.stringify(entries);
+    const rows = toDisplayRows(entries);
+    expect(rows.map((row) => row.kind)).toEqual(["tools", "line", "text"]);
+    expect(groups(rows)[0].failed).toBe(1);
+    const diagnostic = messages(rows)[0];
+    expect(diagnostic.text).toContain("\n    const dismissedDuringRun =\n      task.needsInput;");
+    expect(diagnostic.at).toBe(AT_2);
+    expect(JSON.stringify(entries)).toBe(original);
+  });
+
+  it("keeps independent timestamped errors and intervening messages separate", () => {
+    const rows = toDisplayRows([
+      { s: "err", d: "2026-09-27T14:19:40Z ERROR router: first failure" },
+      { s: "err", d: "details" },
+      { s: "err", d: "2026-09-27T14:21:42Z ERROR router: second failure" },
+      { s: "out", d: "retrying" },
+      { s: "err", d: "third failure" },
+    ]);
+    expect(rows).toHaveLength(4);
+    expect(messages(rows)[0].text).toContain("first failure\ndetails");
+    expect(messages(rows)[1].text).toContain("second failure");
+  });
+
+  it("starts collapsed with a readable patch summary and preserves selectable details", () => {
+    const raw =
+      "2026-09-27T14:19:40Z ERROR codex_core::tools::router: apply_patch verification failed: Failed to find expected lines in review.ts:\n    const value = 1;";
+    const wrapper = mount(ChatDiagnosticRow, { props: { text: raw, at: AT_0 } });
+    expect(wrapper.find("details").attributes("open")).toBeUndefined();
+    expect(wrapper.find("summary").text()).toContain("Patch could not be applied");
+    expect(wrapper.find("summary").text()).not.toContain("codex_core");
+    expect(wrapper.find(".agent-diagnostic-label.error").exists()).toBe(true);
+    expect(wrapper.find("pre").text()).toBe(raw);
+    expect(wrapper.find("time").exists()).toBe(true);
+  });
+
+  it("does not label ordinary stderr notices as errors", () => {
+    const wrapper = mount(ChatDiagnosticRow, { props: { text: "Downloading browser…" } });
+    expect(wrapper.find(".agent-diagnostic-label").text()).toBe("Diagnostic");
+    expect(wrapper.find(".agent-diagnostic-label.error").exists()).toBe(false);
   });
 });

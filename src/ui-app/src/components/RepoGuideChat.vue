@@ -10,6 +10,7 @@ import type { Agent, AgentOutputEntry, AgentSessionStats } from "../types";
 import FloatingHeadPanel from "./FloatingHeadPanel.vue";
 import VoiceDictate from "./VoiceDictate.vue";
 import AiChatThinking from "./AiChatThinking.vue";
+import ChatDiagnosticRow from "./ChatDiagnosticRow.vue";
 import ChatToolCallRow from "./ChatToolCallRow.vue";
 import { useChatScroll } from "../composables/useChatScroll";
 import { bubbleRole, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
@@ -203,7 +204,12 @@ watch(
           </div>
         </div>
         <template v-for="row in rows" :key="row.key">
-          <ChatToolCallRow v-if="row.kind === 'tools'" :calls="row.calls" :at="row.at" />
+          <ChatDiagnosticRow
+            v-if="row.kind === 'line' && row.s === 'err'"
+            :text="row.text"
+            :at="row.at"
+          />
+          <ChatToolCallRow v-else-if="row.kind === 'tools'" :calls="row.calls" :at="row.at" />
           <div v-else class="guide-row" :class="`guide-row-${bubbleRole(row)}`">
             <div v-if="bubbleRole(row) === 'assistant'" class="guide-mini-avatar">
               <img src="/assets/repoos-ross-from-friends-square.webp" alt="R" />

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { MAX_AUTO_REVIEW_ROUNDS } from "../../core/needs-input.js";
 import {
   needsInputPrimaryAction,
+  needsInputBannerText,
   needsInputStatusLabel,
   needsInputSuggestionText,
 } from "../src/lib/needs-input-ui";
@@ -48,8 +50,27 @@ describe("needsInputPrimaryAction (#0511)", () => {
     ).toBe("restart");
   });
 
+  it("offers Send to PM for underspecified tasks", () => {
+    expect(needsInputStatusLabel("underspecified")).toBe("Doesn't look fully fleshed out");
+    expect(needsInputBannerText("underspecified")).toContain("doesn't look fully fleshed out");
+    expect(needsInputSuggestionText("underspecified")).toContain("PM agent");
+    expect(
+      needsInputPrimaryAction("underspecified", false, {
+        status: "inbox",
+        agentRunning: false,
+      }),
+    ).toEqual({
+      kind: "send-pm",
+      label: "Send to PM (fleshes this out)",
+    });
+  });
+
   it("names review-rounds-exhausted and offers Review again on a review task", () => {
     expect(needsInputStatusLabel("review-rounds-exhausted")).toBe("Review still finding issues");
+    expect(needsInputBannerText("review-rounds-exhausted")).toContain("sent this back");
+    expect(needsInputBannerText("review-rounds-exhausted")).toContain(
+      `${MAX_AUTO_REVIEW_ROUNDS} times`,
+    );
     expect(needsInputSuggestionText("review-rounds-exhausted")).toContain("send it back");
     expect(
       needsInputPrimaryAction("review-rounds-exhausted", false, {

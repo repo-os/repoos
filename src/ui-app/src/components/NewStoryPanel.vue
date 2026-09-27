@@ -15,6 +15,7 @@ import DialogContent from "./ui/dialog/content.vue";
 import DialogDescription from "./ui/dialog/description.vue";
 import DialogOverlay from "./ui/dialog/overlay.vue";
 import DialogTitle from "./ui/dialog/title.vue";
+import { autoGrowTextarea } from "../utils/textarea-autogrow";
 
 const ui = useUiStore();
 const repo = useRepoStore();
@@ -110,6 +111,12 @@ watch(freeformLines, () => {
 });
 
 const descriptionTextarea = ref<HTMLTextAreaElement | null>(null);
+
+function adjustDescriptionHeight(): void {
+  autoGrowTextarea(descriptionTextarea.value, 420);
+}
+
+watch(description, adjustDescriptionHeight, { flush: "post" });
 
 function onDescriptionTranscribed(text: string): void {
   if (descriptionTextarea.value) {
@@ -251,7 +258,7 @@ function onOpenAutoFocus(e: Event): void {
               id="ns-story-desc"
               ref="descriptionTextarea"
               v-model="description"
-              class="ff-textarea"
+              class="ff-textarea ff-textarea-autogrow"
               rows="10"
               placeholder="Describe the outcome, areas involved, and constraints — the PM agent will flesh this out."
               :disabled="freeformRunning"

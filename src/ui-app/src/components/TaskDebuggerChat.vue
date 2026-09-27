@@ -12,6 +12,7 @@ import { insertTextAtCursor } from "../utils/text-insertion";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
 import SendToEngineerDialog from "./SendToEngineerDialog.vue";
 import AiChatThinking from "./AiChatThinking.vue";
+import ChatDiagnosticRow from "./ChatDiagnosticRow.vue";
 import ChatToolCallRow from "./ChatToolCallRow.vue";
 import { ArrowDown } from "lucide-vue-next";
 import { useChatScroll } from "../composables/useChatScroll";
@@ -231,7 +232,12 @@ watch(
             </div>
           </div>
           <template v-for="row in rows" :key="row.key">
-            <ChatToolCallRow v-if="row.kind === 'tools'" :calls="row.calls" :at="row.at" />
+            <ChatDiagnosticRow
+              v-if="row.kind === 'line' && row.s === 'err'"
+              :text="row.text"
+              :at="row.at"
+            />
+            <ChatToolCallRow v-else-if="row.kind === 'tools'" :calls="row.calls" :at="row.at" />
             <div v-else class="td-row" :class="`td-row-${bubbleRole(row)}`">
               <div v-if="bubbleRole(row) === 'assistant'" class="td-mini-avatar">
                 <img :src="DEBUGGER_AVATAR" alt="D" />

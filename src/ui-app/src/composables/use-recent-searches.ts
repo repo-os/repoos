@@ -3,7 +3,7 @@ import { ref, type Ref } from "vue";
 /** One list shared by the global bar and the settings-scoped overlay (per spec). */
 const recentSearches = ref<string[]>([]);
 
-export type RecentSearchScope = "all" | "settings";
+export type RecentSearchScope = "all" | "settings" | "context";
 
 export function useRecentSearches(_scope: RecentSearchScope): {
   recentSearches: Ref<string[]>;
