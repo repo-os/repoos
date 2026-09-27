@@ -94,52 +94,189 @@ private struct SidebarEmptyHint: View {
     }
 }
 
+private struct ServerSidebarRowWidthKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
+enum ServerSidebarRowLayoutForm: Equatable {
+    case standard
+    case compact
+}
+
+enum ServerSidebarRowLayout {
+    static let columnSpacing: CGFloat = 10
+    static let iconColumnWidth: CGFloat = 34
+    static let minimumNameWidthStandard: CGFloat = 40
+    /// Slack around the standard-layout width threshold so badge digit changes do not flip the form.
+    static let decisionHysteresis: CGFloat = 12
+
+    static func leadingChromeWidth() -> CGFloat {
+        iconColumnWidth + columnSpacing
+    }
+
+    static func standardLayoutMinimumWidth(badgesWidth: CGFloat) -> CGFloat {
+        leadingChromeWidth() + minimumNameWidthStandard + columnSpacing + badgesWidth
+    }
+
+    static func layoutForm(
+        availableWidth: CGFloat,
+        badgesWidth: CGFloat,
+        previousForm: ServerSidebarRowLayoutForm? = nil
+    ) -> ServerSidebarRowLayoutForm {
+        let minimum = standardLayoutMinimumWidth(badgesWidth: badgesWidth)
+        if let previous = previousForm {
+            switch previous {
+            case .standard:
+                return availableWidth < minimum - decisionHysteresis ? .compact : .standard
+            case .compact:
+                return availableWidth >= minimum + decisionHysteresis ? .standard : .compact
+            }
+        }
+        return availableWidth >= minimum ? .standard : .compact
+    }
+
+    static func badgesWidth(snapshot: ServerAttentionSnapshot?) -> CGFloat {
+        guard let counts = snapshot?.counts, snapshot?.freshness != .unavailable else {
+            return infoAffordanceWidth
+        }
+        var width: CGFloat = 0
+        var badgeCount = 0
+        let values = [counts.reviewReadyTasks, counts.needsInputTasks, counts.activeAgents]
+        for value in values where value > 0 {
+            if badgeCount > 0 { width += badgeSpacing }
+            width += singleBadgeWidth(count: value)
+            badgeCount += 1
+        }
+        return badgeCount > 0 ? width : infoAffordanceWidth
+    }
+
+    private static let badgeSpacing: CGFloat = 4
+    private static let infoAffordanceWidth: CGFloat = 14
+
+    private static func singleBadgeWidth(count: Int) -> CGFloat {
+        let textWidth: CGFloat = count > 9 ? 14 : 9
+        return 10 + textWidth
+    }
+}
+
 struct ServerSidebarRow: View {
     @EnvironmentObject private var appState: HubAppState
     let entry: ServerEntry
     @State private var isShowingDetails = false
+    @State private var layoutForm: ServerSidebarRowLayoutForm = .standard
+    @State private var measuredRowWidth: CGFloat = 0
+
+    private var attentionSnapshot: ServerAttentionSnapshot? {
+        appState.attentionSnapshot(for: entry.id)
+    }
+
+    private var badgesWidthForLayout: CGFloat {
+        ServerSidebarRowLayout.badgesWidth(snapshot: attentionSnapshot)
+    }
 
     var body: some View {
-        HStack(spacing: 10) {
-            if let accentColor = ServerAccentColor.color(from: entry.accentColorHex) {
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(accentColor)
-                    .frame(width: 4, height: 30)
-                    .accessibilityHidden(true)
+        rowContent
+            .overlay(alignment: .leading) {
+                if let accentColor = ServerAccentColor.color(from: entry.accentColorHex) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(accentColor)
+                        .frame(width: 4)
+                        .frame(maxHeight: .infinity)
+                        .offset(x: -(4 + ServerSidebarRowLayout.columnSpacing))
+                        .accessibilityHidden(true)
+                }
             }
+            .background {
+                GeometryReader { geometry in
+                    Color.clear.preference(key: ServerSidebarRowWidthKey.self, value: geometry.size.width)
+                }
+            }
+            .onPreferenceChange(ServerSidebarRowWidthKey.self) { width in
+                measuredRowWidth = width
+                updateLayoutForm(for: width)
+            }
+            .onChange(of: badgesWidthForLayout) { _ in
+                updateLayoutForm(for: measuredRowWidth)
+            }
+            .contentShape(Rectangle())
+            .contextMenu {
+                ServerActionsMenu(entry: entry)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(entry.name), \(entry.lastHealth.displayTitle)")
+            .accessibilityHint(ServerSidebarStatus.tooltip(for: entry))
+            .popover(
+                isPresented: $isShowingDetails,
+                attachmentAnchor: .rect(.bounds),
+                arrowEdge: .leading
+            ) {
+                ServerDetailsPopover(
+                    entry: entry,
+                    runtimeInfo: appState.runtimeInfo(for: entry.id),
+                    attention: attentionSnapshot
+                )
+            }
+    }
+
+    @ViewBuilder
+    private var rowContent: some View {
+        HStack(spacing: ServerSidebarRowLayout.columnSpacing) {
             ServerIconActionButton(entry: entry)
-            VStack(alignment: .leading, spacing: 2) {
+            switch layoutForm {
+            case .standard:
+                standardTextColumn
+            case .compact:
+                compactTextColumn
+            }
+        }
+    }
+
+    private var standardTextColumn: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: ServerSidebarRowLayout.columnSpacing) {
                 Text(entry.name)
                     .lineLimit(1)
-                Text(sidebarSubtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                badgesTrigger
+                    .fixedSize()
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            InfoOrBadgesTrigger(
-                snapshot: appState.attentionSnapshot(for: entry.id),
-                isShowingDetails: $isShowingDetails
-            )
-            .fixedSize()
+            Text(sidebarSubtitle)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
         }
-        .contentShape(Rectangle())
-        .contextMenu {
-            ServerActionsMenu(entry: entry)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var compactTextColumn: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(entry.name)
+                .lineLimit(1)
+            badgesTrigger
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(entry.name), \(entry.lastHealth.displayTitle)")
-        .accessibilityHint(ServerSidebarStatus.tooltip(for: entry))
-        .popover(
-            isPresented: $isShowingDetails,
-            attachmentAnchor: .rect(.bounds),
-            arrowEdge: .leading
-        ) {
-            ServerDetailsPopover(
-                entry: entry,
-                runtimeInfo: appState.runtimeInfo(for: entry.id),
-                attention: appState.attentionSnapshot(for: entry.id)
-            )
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var badgesTrigger: some View {
+        InfoOrBadgesTrigger(
+            snapshot: attentionSnapshot,
+            isShowingDetails: $isShowingDetails
+        )
+    }
+
+    private func updateLayoutForm(for availableWidth: CGFloat) {
+        guard availableWidth > 0 else { return }
+        let badgesWidth = badgesWidthForLayout
+        let next = ServerSidebarRowLayout.layoutForm(
+            availableWidth: availableWidth,
+            badgesWidth: badgesWidth,
+            previousForm: layoutForm
+        )
+        if next != layoutForm {
+            layoutForm = next
         }
     }
 
