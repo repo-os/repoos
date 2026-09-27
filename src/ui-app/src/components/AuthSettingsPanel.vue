@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { api, JSON_OPTS } from "../api";
 import { useAuthStore } from "../stores/auth";
@@ -7,7 +7,12 @@ import { useDocsStore } from "../stores/docs";
 import Button from "./ui/button.vue";
 import Card from "./ui/card.vue";
 import Input from "./ui/input.vue";
-import Switch from "./ui/switch.vue";
+import Select from "./ui/select/root.vue";
+import SelectContent from "./ui/select/content.vue";
+import SelectItem from "./ui/select/item.vue";
+import SelectTrigger from "./ui/select/trigger.vue";
+import SelectValue from "./ui/select/value.vue";
+import SelectViewport from "./ui/select/viewport.vue";
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -37,6 +42,24 @@ interface AuditEntry {
   createdAt: string;
 }
 
+interface TelegramLink {
+  telegramUserId: number;
+  email: string;
+  telegramUsername: string | null;
+  boundAt: string;
+  boundBy: string | null;
+  lastSeenAt: string | null;
+  role: "admin" | "member" | null;
+  allowlisted: boolean;
+}
+
+interface TelegramInvite {
+  email: string;
+  startPayload: string;
+  expiresAt: string;
+  deepLink: string | null;
+}
+
 const users = ref<AuthUser[]>([]);
 const auditLog = ref<AuditEntry[]>([]);
 const loadingUsers = ref(false);
@@ -46,9 +69,13 @@ const newRole = ref<"admin" | "member">("member");
 const adding = ref(false);
 const errorMsg = ref("");
 const successMsg = ref("");
-const authEnabled = ref(false);
 const showAudit = ref(false);
 const invitingEmail = ref<string | null>(null);
+const linkingEmail = ref<string | null>(null);
+const telegramLinks = ref<TelegramLink[]>([]);
+const loadingLinks = ref(false);
+const pendingInvite = ref<TelegramInvite | null>(null);
+const reassignEmail = ref<Record<number, string>>({});
 
 async function loadUsers(): Promise<void> {
   loadingUsers.value = true;
@@ -59,6 +86,21 @@ async function loadUsers(): Promise<void> {
     /* ignore */
   } finally {
     loadingUsers.value = false;
+  }
+}
+
+async function loadTelegramLinks(): Promise<void> {
+  loadingLinks.value = true;
+  try {
+    const data = await api<{ links: TelegramLink[] }>("/api/auth/telegram/links");
+    telegramLinks.value = data.links;
+    const next: Record<number, string> = {};
+    for (const link of data.links) next[link.telegramUserId] = link.email;
+    reassignEmail.value = next;
+  } catch {
+    /* ignore */
+  } finally {
+    loadingLinks.value = false;
   }
 }
 
@@ -116,6 +158,70 @@ async function sendInvite(email: string): Promise<void> {
   }
 }
 
+async function createTelegramInvite(email: string): Promise<void> {
+  linkingEmail.value = email;
+  errorMsg.value = "";
+  successMsg.value = "";
+  try {
+    const created = await api<TelegramInvite>(
+      "/api/auth/telegram/invites",
+      JSON_OPTS("POST", { email }),
+    );
+    pendingInvite.value = created;
+    successMsg.value = `Telegram invite ready for ${email}`;
+  } catch (err) {
+    errorMsg.value = err instanceof Error ? err.message : "Failed to create Telegram invite";
+  } finally {
+    linkingEmail.value = null;
+  }
+}
+
+async function copyStartPayload(): Promise<void> {
+  const invite = pendingInvite.value;
+  if (!invite) return;
+  const text = invite.deepLink ?? `/start ${invite.startPayload}`;
+  try {
+    await navigator.clipboard.writeText(text);
+    successMsg.value = "Copied Telegram start link";
+  } catch {
+    errorMsg.value = "Could not copy to clipboard";
+  }
+}
+
+async function unbindTelegram(link: TelegramLink): Promise<void> {
+  if (
+    !confirm(
+      `Unbind Telegram ${link.telegramUsername ? `@${link.telegramUsername}` : link.telegramUserId} from ${link.email}?`,
+    )
+  ) {
+    return;
+  }
+  errorMsg.value = "";
+  try {
+    await api(`/api/auth/telegram/links/${link.telegramUserId}`, { method: "DELETE" });
+    await loadTelegramLinks();
+  } catch (err) {
+    errorMsg.value = err instanceof Error ? err.message : "Failed to unbind Telegram user";
+  }
+}
+
+async function reassignTelegram(link: TelegramLink): Promise<void> {
+  const email = reassignEmail.value[link.telegramUserId] ?? "";
+  if (!email || email === link.email) return;
+  if (!confirm(`Reassign this Telegram account from ${link.email} to ${email}?`)) return;
+  errorMsg.value = "";
+  try {
+    await api(
+      `/api/auth/telegram/links/${link.telegramUserId}/reassign`,
+      JSON_OPTS("POST", { email }),
+    );
+    await loadTelegramLinks();
+    successMsg.value = `Reassigned Telegram account to ${email}`;
+  } catch (err) {
+    errorMsg.value = err instanceof Error ? err.message : "Failed to reassign Telegram user";
+  }
+}
+
 async function removeUser(email: string): Promise<void> {
   if (!confirm(`Remove ${email}? Their sessions will be revoked.`)) return;
   errorMsg.value = "";
@@ -154,7 +260,10 @@ watch(showAudit, (show) => {
 });
 
 onMounted(() => {
-  if (auth.authEnabled) void loadUsers();
+  if (auth.authEnabled) {
+    void loadUsers();
+    void loadTelegramLinks();
+  }
 });
 
 function formatDate(iso: string): string {
@@ -218,10 +327,76 @@ function formatDate(iso: string): string {
             >
               {{ invitingEmail === user.email ? "Sending..." : "Invite" }}
             </button>
+            <button
+              class="auth-action"
+              :disabled="linkingEmail === user.email"
+              @click="createTelegramInvite(user.email)"
+            >
+              {{ linkingEmail === user.email ? "Creating..." : "Telegram" }}
+            </button>
             <button class="auth-action" @click="toggleRole(user)">
               {{ user.role === "admin" ? "Demote" : "Promote" }}
             </button>
             <button class="auth-action danger" @click="removeUser(user.email)">Remove</button>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="pendingInvite" class="tg-invite">
+        <div class="tg-invite-label">Telegram bind invite for {{ pendingInvite.email }}</div>
+        <p class="tg-invite-help">
+          The person opens the project bot with this start payload. The numeric Telegram user ID is
+          what binds; a username is only a label.
+        </p>
+        <code class="tg-invite-code">{{
+          pendingInvite.deepLink ?? `/start ${pendingInvite.startPayload}`
+        }}</code>
+        <div class="tg-invite-meta">Expires {{ formatDate(pendingInvite.expiresAt) }}</div>
+        <button class="auth-action" @click="copyStartPayload">Copy</button>
+      </div>
+
+      <div class="sec-label tg-links-label">Telegram accounts</div>
+      <p class="auth-desc tg-links-desc">
+        Each Telegram account must be bound to an allowlisted email before it can act. Reassigning
+        an already-bound account is an explicit admin action.
+      </p>
+      <div v-if="loadingLinks" class="auth-loading">Loading Telegram links...</div>
+      <div v-else-if="telegramLinks.length === 0" class="auth-empty">
+        No Telegram accounts bound yet.
+      </div>
+      <div v-else class="tg-link-list">
+        <div v-for="link in telegramLinks" :key="link.telegramUserId" class="tg-link-row">
+          <div class="tg-link-info">
+            <span class="tg-handle">{{
+              link.telegramUsername ? `@${link.telegramUsername}` : `id ${link.telegramUserId}`
+            }}</span>
+            <span class="tg-email">{{ link.email }}</span>
+            <span v-if="!link.allowlisted" class="tg-inert">not on allowlist</span>
+          </div>
+          <div class="auth-user-actions tg-link-actions">
+            <Select
+              :model-value="reassignEmail[link.telegramUserId] ?? link.email"
+              @update:model-value="(v) => (reassignEmail[link.telegramUserId] = String(v))"
+            >
+              <SelectTrigger class="h-[28px] w-[200px] rounded-[9px] px-[11px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent position="popper">
+                <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                  <SelectItem v-for="user in users" :key="user.email" :value="user.email">{{
+                    user.email
+                  }}</SelectItem>
+                </SelectViewport>
+              </SelectContent>
+            </Select>
+            <button
+              class="auth-action"
+              :disabled="(reassignEmail[link.telegramUserId] ?? link.email) === link.email"
+              @click="reassignTelegram(link)"
+            >
+              Reassign
+            </button>
+            <button class="auth-action danger" @click="unbindTelegram(link)">Unbind</button>
           </div>
         </div>
       </div>
@@ -381,5 +556,68 @@ function formatDate(iso: string): string {
 .auth-audit-time {
   color: var(--txt-dim);
   font-size: 11px;
+}
+.tg-invite {
+  margin: 8px 0 16px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.tg-invite-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--txt);
+}
+.tg-invite-help,
+.tg-invite-meta,
+.tg-links-desc {
+  font-size: 12px;
+  color: var(--txt-dim);
+  margin: 6px 0;
+}
+.tg-invite-code {
+  display: block;
+  font-size: 12px;
+  word-break: break-all;
+  color: var(--txt);
+  margin: 8px 0;
+}
+.tg-links-label {
+  padding-top: 16px;
+  margin-bottom: 0;
+}
+.tg-link-list {
+  padding: 8px 0 12px;
+}
+.tg-link-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.tg-link-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.tg-handle {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--txt);
+}
+.tg-email {
+  font-size: 12px;
+  color: var(--txt-dim);
+}
+.tg-inert {
+  font-size: 11px;
+  color: var(--red);
+}
+.tg-link-actions {
+  align-items: center;
 }
 </style>
