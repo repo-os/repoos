@@ -10,8 +10,12 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:32:39Z"
-updated_at: "2026-09-27T15:43:17Z"
+updated_at: "2026-09-27T15:51:51Z"
 ---
+## Governing decision
+
+Follow [ADR 0007 — Telegram identity and authorization](../docs/adr/0007-telegram-identity-and-authorization.md) for user binding, chat binding, live role resolution, and unauthorized-sender behavior. This task implements or relies on that model; do not define a separate policy here.
+
 ## Problem
 
 Story #0003 lists "permission checks and audit logging" under Phase 2 and "rate-limit Telegram commands and agent messages" under security requirements. Both belong in Phase 1: **no message can be authorized before senders can be authorized**, and the very first notification RepoOS sends is already an act of disclosure about a repository. This task is the enforcement point every later Telegram task depends on.
@@ -41,15 +45,11 @@ Note `action` is a free-text string with no enum or registry — 13 hand-written
 
 ## Denial behavior
 
-An unbound or unauthorized sender gets no access-denied response. In a group, the bot silently ignores the message: an error would confirm the bot and integration are active and would spam the channel. In a private chat, one short, neutral reply is acceptable if it does not reveal whether an account is linked or which authorization check failed.
+An unbound or unauthorized sender gets a **silent no-op, not an error reply.** In a group, "access denied" confirms the bot exists, confirms the repository has a Telegram integration, and spams the channel on every message from a stranger. In a private chat, one short neutral reply is acceptable; in a group, say nothing.
 
 ## Rate limiting
 
 Reuse the exported `RateLimiter` class (`src/server/routes/auth.ts`, already used per-endpoint in `src/server/routes/hub.ts:29`) with limits per Telegram user **and** per chat, applied before authorization does any expensive work. Agent messages are the expensive path and get the tighter limit. The existing limiters are in-memory and per-process — note that as a documented limitation for multi-process deployments rather than implying a distributed guarantee.
-
-## Decision reference
-
-Follow [ADR 0007 — Telegram identity and authorization](../docs/adr/0007-telegram-identity-and-authorization.md) for the shared identity, role-resolution, chat-binding, and sender-response policy. This task implements its specific flow.
 
 ## Activity
 
@@ -58,3 +58,4 @@ Follow [ADR 0007 — Telegram identity and authorization](../docs/adr/0007-teleg
 - 2026-09-27T15:15:29Z · body
 - 2026-09-27T15:42:31Z · body
 - 2026-09-27T15:43:17Z · body
+- 2026-09-27T15:51:51Z · body
