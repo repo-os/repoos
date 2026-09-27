@@ -1547,12 +1547,13 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       key: "remoteValidation.tailscaleHosts",
       label: "Remote validation: host pool",
       type: "array",
-      tier: "restart",
-      restartRequired: true,
+      tier: "live",
+      restartRequired: false,
       default: [],
       description:
         "Tailnet hosts validation jobs may run on, comma-separated (hostname or 100.x.x.x each). " +
         "Jobs dispatch to an idle eligible host and queue only when every one is at its per-host limit. " +
+        "A Settings save updates the live dispatcher immediately (no restart). " +
         "For a per-host SSH user, OS, labels or concurrency, declare [[remoteValidation.tailscaleHosts]] " +
         "rows in repoos.toml instead — see docs/remote-validation.md.",
     },

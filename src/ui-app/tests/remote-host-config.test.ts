@@ -61,6 +61,7 @@ describe("remoteValidation.tailscaleHosts schema entry (#0521)", () => {
     const field = getConfigSchema().find((f) => f.key === "remoteValidation.tailscaleHosts");
     expect(field).toBeDefined();
     expect(field!.type).toBe("array");
+    expect(field!.restartRequired).toBe(false);
     expect(field!.description).toContain("[[remoteValidation.tailscaleHosts]]");
     // The docs gate (config-docs.test.ts) covers documentation of every key.
   });
@@ -309,17 +310,20 @@ describe("patchConfig against section-scoped repoos.toml files", () => {
  * Real HTTP round-trip (#0521 review): a second review reported that the
  * status endpoint reads the server's startup config after a Settings save,
  * so the drawer's post-save refresh sees stale data and reports the save
- * "may have failed". Verified here, not just reasoned about: `startServer`'s
- * status route and `patchConfig` share the exact same `repoos.config` object
- * (mutated in place via `Object.assign`, never reassigned) — so this test
- * checks whether that holds under a real save + real HTTP GET, for the
- * mixed flat+rows shape the first bug fix targets.
+ * "may have failed". A later review: PATCH updated `tailscaleHosts` but the
+ * live dispatcher (`hosts` / `validate`) kept the boot-time pool. Verified
+ * here: `startServer`'s status route, `patchConfig`, and `TailscaleRunner`
+ * share the same `repoos.config` object (mutated in place via `Object.assign`)
+ * and `applyConfig` rebuilds the pool from it.
  */
 describe("GET /api/remote-validation/status reflects a same-process save immediately", () => {
   it("shows the shortened pool right after saving it, not the pre-save one", async () => {
     const root = repo(
-      'remoteValidation.tailscaleHost = "bee"\n' +
-        'remoteValidation.tailscaleHosts = ["bee", "mac1", "other"]\n\n' +
+      "[remoteValidation]\n" +
+        "enabled = true\n" +
+        'provider = "tailscale"\n' +
+        'tailscaleHost = "bee"\n' +
+        'tailscaleHosts = ["bee", "mac1", "other"]\n\n' +
         "[[remoteValidation.tailscaleHosts]]\n" +
         'host = "mac1"\nos = "macos"\n',
     );
@@ -337,8 +341,14 @@ describe("GET /api/remote-validation/status reflects a same-process save immedia
 
       const statusRes = await fetch(`${server.url}/api/remote-validation/status`);
       expect(statusRes.status).toBe(200);
-      const status = (await statusRes.json()) as { tailscaleHosts: string[] };
+      const status = (await statusRes.json()) as {
+        tailscaleHosts: string[];
+        hosts: Array<{ host: string }>;
+        running: boolean;
+      };
+      expect(status.running).toBe(true);
       expect(status.tailscaleHosts.sort()).toEqual(["bee", "mac1"]);
+      expect(status.hosts.map((h) => h.host).sort()).toEqual(["bee", "mac1"]);
     } finally {
       await server.close();
     }

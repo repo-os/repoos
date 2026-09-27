@@ -234,6 +234,7 @@ describe("runsOn → job capabilities", () => {
 interface Fixture {
   runner: TailscaleRunner;
   root: string;
+  config: RepoOSConfig;
   /** Host → validation commands run on it (probe excluded). */
   cmds: Record<string, string[]>;
   /** Unblock the i-th pending run (in arrival order), optionally on a host. */
@@ -325,6 +326,7 @@ function poolFixture(opts: {
   return {
     runner,
     root,
+    config,
     cmds,
     pending: () => pending.map((p) => p.host),
     peak: () => peak,
@@ -373,6 +375,50 @@ describe("TailscaleRunner pool dispatch (#0521)", () => {
       { ok: true, stage: "check" },
     ]);
     expect(f.peak()).toBe(2); // never more than the two configured hosts
+  });
+
+  it("dispatches to a host added via applyConfig without reconstructing the runner (#0521 review)", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }] });
+    const job1 = f.runner.validate(opts("0001"));
+    await tick();
+    expect(f.pending()).toEqual(["a"]);
+    expect(f.runner.hostStatus()!.map((h) => h.host)).toEqual(["a"]);
+
+    f.config.remoteValidation!.tailscaleHosts = [{ host: "a" }, { host: "b" }];
+    f.runner.applyConfig();
+    expect(f.runner.hostStatus()!.map((h) => h.host)).toEqual(["a", "b"]);
+
+    const job2 = f.runner.validate(opts("0002"));
+    await tick();
+    expect(f.pending().sort()).toEqual(["a", "b"]);
+    expect(f.peak()).toBe(2);
+    f.release();
+    f.release();
+    expect(await Promise.all([job1, job2])).toEqual([
+      { ok: true, stage: "check" },
+      { ok: true, stage: "check" },
+    ]);
+  });
+
+  it("stops sending new jobs to a host removed from the live config", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }, { host: "b" }] });
+    const job1 = f.runner.validate(opts("0001"));
+    await tick();
+    expect(f.pending()).toEqual(["a"]);
+
+    f.config.remoteValidation!.tailscaleHosts = [{ host: "a" }];
+    f.runner.applyConfig();
+    expect(f.runner.hostStatus()!.map((h) => h.host)).toEqual(["a"]);
+
+    const job2 = f.runner.validate(opts("0002"));
+    await tick();
+    expect(f.pending()).toEqual(["a"]);
+    expect(f.cmds.b).toBeUndefined();
+    f.release();
+    await tick();
+    expect(f.pending()).toEqual(["a"]);
+    f.release();
+    await Promise.all([job1, job2]);
   });
 
   it("records which host ran each job in its log, and wraps the run in the host lock", async () => {

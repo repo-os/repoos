@@ -2363,9 +2363,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       /* no warm runner */
     }
     const sshKeyEnv = process.env.REPOOS_REMOTE_SSH_KEY;
-    // Per-host pool state (#0521): live from the runner when it exists,
-    // otherwise the configured list (probed:false) so the drawer shows hosts
-    // before the first run — and after a config-only change pre-restart.
+    // Per-host pool state (#0521): live from the runner when it exists
+    // (`applyConfig` keeps this list in sync with Settings saves). Otherwise
+    // the configured list (probed:false) so the drawer still shows hosts when
+    // the runner wasn't constructed at boot.
     const hosts = remoteValidator?.hostStatus?.() ?? [
       ...resolveRemoteHosts(rv).map((h) => ({
         host: h.host,
