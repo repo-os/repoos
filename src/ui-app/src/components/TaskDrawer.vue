@@ -980,6 +980,23 @@ watch(
   { immediate: true },
 );
 
+/** Radix Select reserves `""` for placeholders; map cleared story to this sentinel. */
+const STORY_NONE_SELECT = "__none__";
+
+const storySelectValue = computed(() => {
+  const name = draft.story.replace(/\s+/g, " ").trim();
+  return name ? name : STORY_NONE_SELECT;
+});
+
+const storySelectLabel = computed(() => {
+  const name = draft.story.replace(/\s+/g, " ").trim();
+  return name || "No story";
+});
+
+function onStorySelectUpdate(v: string | null): void {
+  draft.story = !v || v === STORY_NONE_SELECT ? "" : v;
+}
+
 const transitioned = computed(() => !!(ui.active && repo.transitionState?.id === ui.active.id));
 
 /** Title and branch are frozen once a task leaves the planning stages. */
@@ -3462,7 +3479,27 @@ watch(
               <label for="et-area">Area</label>
               <Input id="et-area" v-model="draft.area" placeholder="web" />
             </div>
-            <div class="field">
+            <div v-if="storiesEnabled" class="field">
+              <label for="et-story">Story</label>
+              <Select :model-value="storySelectValue" @update:model-value="onStorySelectUpdate">
+                <SelectTrigger id="et-story">
+                  <SelectValue placeholder="No story">
+                    {{ storySelectLabel }}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectViewport
+                    class="h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
+                  >
+                    <SelectItem :value="STORY_NONE_SELECT">No story</SelectItem>
+                    <SelectItem v-for="name in storyOptions" :key="name" :value="name">
+                      {{ name }}
+                    </SelectItem>
+                  </SelectViewport>
+                </SelectContent>
+              </Select>
+            </div>
+            <div v-else class="field">
               <label for="et-assignee">Assigned to</label>
               <Input
                 id="et-assignee"
@@ -3475,18 +3512,6 @@ watch(
                 <option value="human"></option>
               </datalist>
             </div>
-          </div>
-          <div v-if="storiesEnabled" class="field" style="margin-top: 12px">
-            <label for="et-story">Story</label>
-            <Input
-              id="et-story"
-              v-model="draft.story"
-              list="story-options"
-              placeholder="Cross-area delivery slice"
-            />
-            <datalist id="story-options">
-              <option v-for="name in storyOptions" :key="name" :value="name"></option>
-            </datalist>
           </div>
           <div
             v-if="ui.active?.needsInput && ui.active.questions?.length"
