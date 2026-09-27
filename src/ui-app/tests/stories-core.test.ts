@@ -9,6 +9,7 @@ import {
   groupTasksByStory,
   normalizeStoryName,
   sortStories,
+  sortStoryGroupsForPage,
   storyKey,
   type StoryTaskLike,
 } from "../../core/stories";
@@ -125,6 +126,36 @@ describe("groupTasksByStory", () => {
     expect(group.attention).toBe(1);
     expect(group.review).toBe(1);
     expect(group.lastActivity).toBe("2026-09-03T00:00:00Z");
+  });
+});
+
+describe("sortStoryGroupsForPage (#0536)", () => {
+  function group(name: string, over: Partial<StoryTaskLike> = {}) {
+    const [g] = groupTasksByStory([task({ story: name, ...over })]);
+    return g;
+  }
+
+  it("orders by last activity descending by default mode", () => {
+    const groups = [
+      group("Older", { updated_at: "2026-09-01T00:00:00Z" }),
+      group("Newer", { updated_at: "2026-09-09T00:00:00Z" }),
+    ];
+    expect(sortStoryGroupsForPage(groups, "recent").map((g) => g.name)).toEqual(["Newer", "Older"]);
+  });
+
+  it("orders by story number newest and oldest", () => {
+    const groups = [group("Low"), group("High"), group("Tag only")];
+    const numberFor = (name: string) => (name === "Low" ? "0001" : name === "High" ? "0100" : null);
+    expect(
+      sortStoryGroupsForPage(groups, "taskNumberNewest", (g) => numberFor(g.name)).map(
+        (g) => g.name,
+      ),
+    ).toEqual(["High", "Low", "Tag only"]);
+    expect(
+      sortStoryGroupsForPage(groups, "taskNumberOldest", (g) => numberFor(g.name)).map(
+        (g) => g.name,
+      ),
+    ).toEqual(["Low", "High", "Tag only"]);
   });
 });
 

@@ -10,7 +10,7 @@ import { join, resolve } from "node:path";
 import { createPinia, setActivePinia } from "pinia";
 import StoriesView from "../src/views/StoriesView.vue";
 import { useConfigStore } from "../src/stores/config";
-import { useRepoStore } from "../src/stores/repo";
+import { STORIES_PAGE_SORT_ORDER_OPTIONS, useRepoStore } from "../src/stores/repo";
 import { useUiStore } from "../src/stores/ui";
 import { makeTask } from "./component-test-helpers";
 
@@ -57,7 +57,10 @@ function setTasks(tasks: ReturnType<typeof makeTask>[]): void {
 }
 
 describe("StoriesView disabled gate", () => {
-  beforeEach(() => setActivePinia(createPinia()));
+  beforeEach(() => {
+    localStorage.clear();
+    setActivePinia(createPinia());
+  });
 
   it("shows the opt-in empty state and no stories when disabled", () => {
     const config = useConfigStore();
@@ -79,6 +82,7 @@ describe("StoriesView disabled gate", () => {
 
 describe("StoriesView grouping and roll-up", () => {
   beforeEach(() => {
+    localStorage.clear();
     setActivePinia(createPinia());
     useConfigStore().data = { stories: { enabled: true } };
   });
@@ -128,7 +132,7 @@ describe("StoriesView grouping and roll-up", () => {
     expect(shipped.text()).toContain("complete");
   });
 
-  it("orders attention-needed work first and completed stories last", () => {
+  it("defaults to most recently updated first", () => {
     setTasks([
       makeTask({
         id: "0001",
@@ -154,7 +158,7 @@ describe("StoriesView grouping and roll-up", () => {
     const names = mountView()
       .findAll(".story-name")
       .map((n) => n.text());
-    expect(names).toEqual(["Attention", "Active", "Quiet", "Complete"]);
+    expect(names).toEqual(["Complete", "Quiet", "Active", "Attention"]);
   });
 
   it("shows New story in the header when enabled", () => {
@@ -187,8 +191,68 @@ describe("StoriesView grouping and roll-up", () => {
   });
 });
 
+describe("StoriesView sort dropdown (#0536)", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    setActivePinia(createPinia());
+    useConfigStore().data = { stories: { enabled: true } };
+  });
+
+  it("renders the sort control and excludes priority from its option set", () => {
+    setTasks([makeTask({ id: "0001", story: "Slice", status: "ready" })]);
+    const wrapper = mountView();
+    expect(wrapper.find('[role="combobox"]').exists()).toBe(true);
+    expect(STORIES_PAGE_SORT_ORDER_OPTIONS).toHaveLength(3);
+    expect(STORIES_PAGE_SORT_ORDER_OPTIONS.some((o) => o.label === "Priority level")).toBe(false);
+  });
+
+  it("places the sort control beside New story in the header toolbar", () => {
+    setTasks([]);
+    const wrapper = mountView();
+    const combobox = wrapper.find('[role="combobox"]');
+    const newBtn = wrapper.find(".new-btn");
+    expect(combobox.exists()).toBe(true);
+    expect(newBtn.exists()).toBe(true);
+    expect(combobox.element.parentElement).toBe(newBtn.element.parentElement);
+  });
+
+  it("re-orders the list when story number sort is selected", async () => {
+    setTasks([
+      makeTask({ id: "0001", story: "Alpha", status: "ready", updated_at: "2026-09-09T00:00:00Z" }),
+      makeTask({ id: "0002", story: "Beta", status: "ready", updated_at: "2026-09-01T00:00:00Z" }),
+    ]);
+    useRepoStore().storyDefinitions = [
+      {
+        key: "alpha",
+        name: "Alpha",
+        number: "0001",
+        path: "stories/alpha.md",
+        body: "",
+        createdAt: "2026-09-01T00:00:00Z",
+        createdBy: "hello@repoos.org",
+      },
+      {
+        key: "beta",
+        name: "Beta",
+        number: "0099",
+        path: "stories/beta.md",
+        body: "",
+        createdAt: "2026-09-01T00:00:00Z",
+        createdBy: "hello@repoos.org",
+      },
+    ];
+    const repo = useRepoStore();
+    repo.setStoriesPageSortOrder("taskNumberNewest");
+    const wrapper = mountView();
+    await wrapper.vm.$nextTick();
+    const names = wrapper.findAll(".story-name").map((n) => n.text());
+    expect(names).toEqual(["Beta", "Alpha"]);
+  });
+});
+
 describe("StoriesView copy-link number (#0515)", () => {
   beforeEach(() => {
+    localStorage.clear();
     setActivePinia(createPinia());
     useConfigStore().data = { stories: { enabled: true } };
   });
@@ -242,6 +306,7 @@ describe("StoriesView copy-link number (#0515)", () => {
 
 describe("StoriesView side panel selection", () => {
   beforeEach(() => {
+    localStorage.clear();
     setActivePinia(createPinia());
     useConfigStore().data = { stories: { enabled: true } };
   });
@@ -268,8 +333,18 @@ describe("StoriesView side panel selection", () => {
 
   it("swaps the panel's story when a second row is selected", async () => {
     setTasks([
-      makeTask({ id: "0001", story: "Slice", status: "active" }),
-      makeTask({ id: "0002", story: "Other", status: "ready" }),
+      makeTask({
+        id: "0001",
+        story: "Slice",
+        status: "active",
+        updated_at: "2026-09-09T00:00:00Z",
+      }),
+      makeTask({
+        id: "0002",
+        story: "Other",
+        status: "ready",
+        updated_at: "2026-09-01T00:00:00Z",
+      }),
     ]);
     const wrapper = mountView();
     const heads = wrapper.findAll(".story-head");
