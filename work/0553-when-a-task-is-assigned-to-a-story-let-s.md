@@ -1,6 +1,4 @@
 ---
-check_retry_count: 2
-last_check_failure: "[object Object]"
 id: "0553"
 title: Add a go-to-story link arrow on tasks and make sure every story has a unique number
 type: feature
@@ -11,7 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-a-go-to-story-link-arrow-on-tasks-an
 created_at: "2026-09-27T15:06:45Z"
-updated_at: "2026-09-27T15:11:08Z"
+updated_at: "2026-09-27T15:51:14Z"
+check_retry_count: 2
+last_check_failure: "[object Object]"
 ---
 ## Problem
 
@@ -148,5 +148,17 @@ When a task is assigned to a story let's add a link arrow button for the user to
 - 2026-09-27T15:08:52Z · status draft→inbox, title, area, body
 - 2026-09-27T15:11:03Z · status inbox→ready
 - 2026-09-27T15:11:08Z · status ready→active, branch
-
-
+- 2026-09-27T15:45:54Z · handoff failed · remote validation failed: remote validation failed (exit 1) — [validate] cloning bundle /Users/peckjachowski/.repoos-0553-abf399bf.bundle
+Note: switching to '1360693c831d5b04bdb97b02efda97a626ea3959'.
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by switching back to a branch.
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -c with the switch command. Example:
+  git switch -c <new-branch-name>
+Or undo this operation with:
+  git switch -
+Turn off this advice by setting config variable advice.detachedHead to false
+[validate] HEAD verified at 1360693c831d5b04bdb97b02efda97a626ea3959
+failed to connect to the docker API at unix:///var/run/docker.sock; check if the path is correct and if the daemon is running: dial unix /var/run/docker.sock: connect: no such file or directory
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
