@@ -2,14 +2,14 @@
 id: "0553"
 title: Add a go-to-story link arrow on tasks and make sure every story has a unique number
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/add-a-go-to-story-link-arrow-on-tasks-an
 created_at: "2026-09-27T15:06:45Z"
-updated_at: "2026-09-27T15:11:03Z"
+updated_at: "2026-09-27T15:11:08Z"
 ---
 ## Problem
 
@@ -145,3 +145,4 @@ When a task is assigned to a story let's add a link arrow button for the user to
 - 2026-09-27T15:06:46Z · screenshots
 - 2026-09-27T15:08:52Z · status draft→inbox, title, area, body
 - 2026-09-27T15:11:03Z · status inbox→ready
+- 2026-09-27T15:11:08Z · status ready→active, branch
