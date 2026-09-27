@@ -37,7 +37,11 @@ The only place the parser accepts both `[check]` and `[checks]` spellings is the
 The Settings UI edits the most common fields directly, and its raw
 `repoos.toml` editor can edit the whole file — including `[preview]`, `[check]`,
 `[release]`, `[stories]`, `[[deployments]]`, `[[distribution]]`, `[worktrees]`,
-`[tunnel]`, and anything the tabs don't surface.
+`[tunnel]`, and anything the tabs don't surface. On the Settings page, use
+**Search settings** in the page header (or press ⌘K / Ctrl+K while on Settings)
+to jump to a control by name or config key; keys that only exist in the raw file
+open the **repoos.toml** tab. The global top-bar search (⌘K elsewhere) still
+searches tasks, docs, and settings together.
 
 ## Annotated starter `repoos.toml`
 
