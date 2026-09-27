@@ -199,6 +199,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     idleShutdownMinutes: 8,
     maxServerLifetimeMinutes: 120,
     fallbackToLocal: false,
+    maxConcurrent: 1,
   },
 };
 
@@ -1192,6 +1193,14 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof rvMaxLife === "number" && rvMaxLife >= 10) {
       cfg.remoteValidation = { ...cfg.remoteValidation, maxServerLifetimeMinutes: rvMaxLife };
     }
+    const rvMaxConcurrent = parsed["remoteValidation.maxConcurrent"];
+    if (
+      typeof rvMaxConcurrent === "number" &&
+      Number.isInteger(rvMaxConcurrent) &&
+      rvMaxConcurrent >= 1
+    ) {
+      cfg.remoteValidation = { ...cfg.remoteValidation, maxConcurrent: rvMaxConcurrent };
+    }
     const rvFallback = parsed["remoteValidation.fallbackToLocal"];
     if (typeof rvFallback === "boolean") {
       cfg.remoteValidation = { ...cfg.remoteValidation, fallbackToLocal: rvFallback };
@@ -1545,6 +1554,20 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "Docker/Podman image to run the gate in on the tailscale runner. Default 'repoos-ci'.",
     },
     {
+      key: "remoteValidation.maxConcurrent",
+      label: "Remote validation: concurrent runs",
+      type: "select",
+      tier: "restart",
+      restartRequired: true,
+      default: "1",
+      options: Array.from({ length: 8 }, (_, i) => ({
+        value: String(i + 1),
+        label: String(i + 1),
+      })),
+      description:
+        "How many remote validation runs may execute at once. Extra runs wait in a queue. Default 1: two full test suites on one machine cause load-induced timeouts that show up as a failed gate.",
+    },
+    {
       key: "remoteValidation.fallbackToLocal",
       label: "Remote validation: fall back to local",
       type: "boolean",
@@ -1734,6 +1757,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "remoteValidation.sshKeyName",
   "remoteValidation.idleShutdownMinutes",
   "remoteValidation.maxServerLifetimeMinutes",
+  "remoteValidation.maxConcurrent",
   "remoteValidation.fallbackToLocal",
   "remoteValidation.useForReleases",
 ];

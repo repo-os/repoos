@@ -3,7 +3,7 @@
 # Native macOS remote validation runner (no Docker).
 # Invoked by RepoOS over ssh as:
 #
-#   /opt/repoos/validate.sh <bundle-path> <expected-sha>
+#   /opt/repoos/validate.sh <bundle-path> <expected-sha> [artifacts-dir]
 #
 # Restores the candidate tree from a git bundle, hard-verifies it is exactly
 # the SHA RepoOS asked for, then runs bun install + build + test natively.
@@ -13,12 +13,16 @@ set -euo pipefail
 
 BUNDLE="${1:?usage: validate.sh <bundle-path> <expected-sha>}"
 SHA="${2:?usage: validate.sh <bundle-path> <expected-sha>}"
+# Per-run artifacts dir (#0520): RepoOS passes a unique one so overlapping runs
+# never wipe each other's logs. Without it, fall back to the shared default.
+ART="${3:-/tmp/repoos-artifacts}"
 
 WORK="$(mktemp -d /tmp/repoos-validate.XXXXXX)"
-ART="/tmp/repoos-artifacts"
 CACHE="/tmp/repoos-bun-cache"
 mkdir -p "$CACHE" "$ART"
 rm -rf "$ART" && mkdir -p "$ART"
+# Per-run dirs live under the shared parent; prune ones nobody collected.
+find /tmp/repoos-artifacts -mindepth 1 -maxdepth 1 -type d -mtime +1 -exec rm -rf {} + 2>/dev/null || true
 trap 'rm -rf "$WORK" "$BUNDLE"' EXIT
 
 echo "[validate] cloning bundle $BUNDLE"

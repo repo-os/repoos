@@ -327,6 +327,7 @@ export function summarizeConfigShape(
     remoteValidation: {
       enabled: Boolean(config.remoteValidation?.enabled),
       fallbackToLocal: Boolean(config.remoteValidation?.fallbackToLocal),
+      maxConcurrent: config.remoteValidation?.maxConcurrent ?? 1,
     },
     modelProviders: {
       openrouterConfigured: Boolean(config.modelProviders?.openrouterApiKey),

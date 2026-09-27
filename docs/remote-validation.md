@@ -157,8 +157,27 @@ docker pull repoos-ci
 docker volume create repoos-bun-cache   # or mkdir -p /var/cache/repoos/bun
 ```
 
-Concurrent close-outs queue on a single tailnet machine (no autoscaling). That
-is usually fine for solo/small-team use.
+Runs are limited by `remoteValidation.maxConcurrent` (default **1**, Settings →
+Remote validation). The limit is a FIFO queue inside the server's single runner
+instance, so **every server-side caller shares it** — engineer handoff,
+close-out and release. A run that has to wait logs `[queued behind N other remote
+run(s) …]` in its remote-validation log and starts when a slot frees. Why one:
+two full suites on one machine cause load-induced timeouts and timing-sensitive
+test failures, and a remote failure is reported as a red gate ("fix it in the
+branch"), so contention would blame a branch that is fine. Raise it only for a
+host with headroom. A standalone `repoos check` is its own process and is **not**
+counted against the server's queue; multiple hosts are a separate problem (#0521).
+Waiting counts against the caller's own deadline (handoff has 10 minutes), so a
+long queue can time a handoff out.
+
+Each run also gets its **own bundle and artifacts path** on the host
+(`/tmp/repoos-<task>-<id>.bundle`, `/tmp/repoos-artifacts/<task>-<id>/`, passed to
+`validate.sh` as its third argument) so overlapping runs never delete each other's
+logs; artifact dirs older than a day are pruned. The scripts on the host are
+copies: after updating RepoOS run `just setup-<host>` again, otherwise an old
+`validate.sh` ignores the third argument, keeps using the shared
+`/tmp/repoos-artifacts`, and the per-run log download finds nothing (the verdict
+is unaffected).
 
 ### Hetzner provider (original)
 
