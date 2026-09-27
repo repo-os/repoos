@@ -153,6 +153,9 @@ export const reassignTelegramLinkRoute: RouteHandler = async (ctx, req, res) => 
     if (result.error === "not_allowlisted") {
       return json(res, 404, { error: "User not found" });
     }
+    if (result.error === "store") {
+      return json(res, 500, { error: "Auth store unavailable" });
+    }
     return json(res, 404, { error: "Link not found" });
   }
   return json(res, 200, { ok: true, email: result.email });
