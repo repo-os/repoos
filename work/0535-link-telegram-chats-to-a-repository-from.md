@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:32:50Z"
-updated_at: "2026-09-27T15:52:43Z"
+updated_at: "2026-09-27T15:59:56Z"
 ---
 ## Problem
 
@@ -19,6 +19,8 @@ Story #0003 steps 10-12 say: "RepoOS displays an *Add this bot to your project g
 **"Verifies the chat" is doing too much work, and as written it is a vulnerability.** Nothing in that flow proves the person who added the bot was an authorized admin. Anyone can add a bot to a Telegram group or open a private chat with it. If chat binding triggers on mere bot presence, an attacker adds the project bot to a chat they control, the integration binds it, and the repository's task notifications — titles, ids, statuses, links — start arriving in a channel the project never approved. That is an unauthenticated information disclosure, and it is exactly the failure mode the story's own security requirements ("verify that every incoming chat is linked to the expected repository") are meant to prevent.
 
 ## The rule: a chat binding is an admin action, never an observation
+
+See [ADR 0007 — Telegram identity and authorization](../docs/adr/0007-telegram-identity-and-authorization.md), accepted in [task #0529](0529-record-the-telegram-identity-and-authori.md), for the shared binding and authorization decision. This task implements its specific flow.
 
 - **Chat binding is not authorization.** It records *where* the bot may talk. Who may talk there is decided per message, per sender, by the live-role lookup — a bound group confers nothing on its members. This is the separation that makes "all users in the group are the RepoOS allowlist" work without that assumption being enforced by anything.
 - Binding a chat requires an **authenticated RepoOS admin** action: either from web Settings, or by an admin generating a short-lived chat-binding code and posting it in the group. Bot presence alone is never sufficient, and neither is a `/start` from an unlinked chat.
@@ -52,3 +54,4 @@ In a group, act only when the message is addressed to the bot. Story #0003 requi
 - 2026-09-27T15:42:32Z · body
 - 2026-09-27T15:51:52Z · body
 - 2026-09-27T15:52:43Z · body
+- 2026-09-27T15:59:56Z · body
