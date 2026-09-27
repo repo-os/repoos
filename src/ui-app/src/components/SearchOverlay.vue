@@ -7,9 +7,9 @@ import { useDocsStore } from "../stores/docs";
 import { useConfigStore } from "../stores/config";
 import { useUiStore } from "../stores/ui";
 import { searchAll, searchSettings, type SearchResult } from "../search";
-import { useRecentSearches } from "../composables/use-recent-searches";
+import { useRecentSearches, type RecentSearchScope } from "../composables/use-recent-searches";
 
-export type SearchScope = "all" | "settings";
+export type SearchScope = RecentSearchScope;
 
 const props = withDefaults(
   defineProps<{
@@ -35,11 +35,12 @@ const ui = useUiStore();
 const { tasks } = storeToRefs(repo);
 const { docs: docList } = storeToRefs(docs);
 const { searchableFields } = storeToRefs(config);
-const { recentSearches, addRecentSearch } = useRecentSearches();
+const { recentSearches, addRecentSearch } = useRecentSearches(props.scope);
 
 const query = ref("");
 const highlight = ref(0);
 const inputEl = ref<HTMLInputElement | null>(null);
+const overlayEl = ref<HTMLElement | null>(null);
 const docsWithContent = ref<Map<string, string>>(new Map());
 
 const settingLocation = computed(() => ({
@@ -209,7 +210,36 @@ function handleRowClick(item: { kind: string; title: string }): void {
   }
 }
 
+function focusablesInOverlay(): HTMLElement[] {
+  const root = overlayEl.value;
+  if (!root) return [];
+  return Array.from(
+    root.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), input:not([disabled]), [href], select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ),
+  ).filter((el) => !el.hasAttribute("disabled") && el.tabIndex !== -1);
+}
+
+function trapTab(e: KeyboardEvent): void {
+  const els = focusablesInOverlay();
+  if (els.length === 0) return;
+  e.preventDefault();
+  const active = document.activeElement as HTMLElement | null;
+  const idx = active ? els.indexOf(active) : -1;
+  if (e.shiftKey) {
+    const next = idx <= 0 ? els.length - 1 : idx - 1;
+    els[next].focus();
+  } else {
+    const next = idx === -1 || idx >= els.length - 1 ? 0 : idx + 1;
+    els[next].focus();
+  }
+}
+
 function onKey(e: KeyboardEvent): void {
+  if (e.key === "Tab") {
+    trapTab(e);
+    return;
+  }
   const n = displayItems.value.length;
   if (e.key === "ArrowDown" && n) {
     e.preventDefault();
@@ -267,11 +297,13 @@ watch(
       @click="handleBackdropClick"
     >
       <div
+        ref="overlayEl"
         class="search-overlay"
         role="dialog"
         aria-modal="true"
         :aria-label="ariaLabel"
         @click.stop
+        @keydown="onKey"
       >
         <div class="search-overlay-header">
           <svg class="search-ico" width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -290,8 +322,8 @@ watch(
             autocomplete="off"
             spellcheck="false"
             :placeholder="placeholder"
+            :aria-label="ariaLabel"
             class="search-overlay-input"
-            @keydown="onKey"
           />
           <button
             class="search-overlay-close"

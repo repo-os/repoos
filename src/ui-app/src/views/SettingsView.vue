@@ -51,6 +51,7 @@ const TABS = SETTINGS_TABS;
 
 const settingsSearchOpen = ref(false);
 const settingsSearchBtn = ref<HTMLButtonElement | null>(null);
+const tomlFocusNotice = ref("");
 
 function openSettingsSearch(): void {
   settingsSearchOpen.value = true;
@@ -82,6 +83,7 @@ const activeTab = computed<TabId>(() => {
 });
 
 function setTab(id: TabId): void {
+  tomlFocusNotice.value = "";
   void router.replace({ name: "settings", query: { ...route.query, tab: id } });
 }
 
@@ -545,7 +547,6 @@ function toggleThemeFavorite(id: string): void {
 // focus=<key>) is unchanged.
 // When a focus key targets a setting on a specific tab, switch to that tab first.
 const focusKey = computed(() => (route.query.setting ?? route.query.focus) as string | undefined);
-const tomlFocusNotice = ref("");
 
 watch(
   focusKey,
