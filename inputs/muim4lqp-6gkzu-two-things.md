@@ -1,13 +1,15 @@
 ---
+resolved_task: "0526"
+resolution: "task"
 area: "settings / appearance"
 id: "muim4lqp-6gkzu"
 number: "0032"
 title: "Cap theme switcher at 3 themes; move themes to top of General settings"
-status: new
+status: "processed"
 type: "improvement"
 created_by: "hello@repoos.org"
 created_at: "2026-09-26T16:37:17.713Z"
-updated_at: "2026-09-26T16:37:21.932Z"
+updated_at: "2026-09-27T00:58:09.358Z"
 ---
 
 Two things:
