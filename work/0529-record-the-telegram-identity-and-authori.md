@@ -2,7 +2,7 @@
 id: "0529"
 title: Record the Telegram identity and authorization model
 type: feature
-status: active
+status: review
 priority: p1
 area: docs
 story: RepoOS Telegram Bot
@@ -12,7 +12,7 @@ branch: feat/record-the-telegram-identity-and-authori
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-27T07:31:53Z"
-updated_at: "2026-09-27T15:13:51Z"
+updated_at: "2026-09-27T15:39:20Z"
 ---
 ## Problem
 
@@ -53,3 +53,4 @@ Consequences to write down explicitly, because each is a security decision:
 - 2026-09-27T15:13:43Z · cli_override
 - 2026-09-27T15:13:46Z · model_override
 - 2026-09-27T15:13:51Z · status ready→active, branch
+- 2026-09-27T15:39:20Z · status active→review
