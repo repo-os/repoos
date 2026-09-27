@@ -204,6 +204,48 @@ describe("story numbering (#0515)", () => {
     expect(content).not.toMatch(/(?<!\r)\n/);
   });
 
+  it("resolves duplicates and backfills numberless stories in one pass", () => {
+    const config = createRepoOS(root).config;
+    rawStory("Older twin", "2026-01-01T00:00:00Z", 'number: "0001"');
+    rawStory("Newer twin", "2026-01-02T00:00:00Z", 'number: "0001"');
+    rawStory("Never numbered", "2026-01-03T00:00:00Z");
+
+    expect(ensureStoryNumbers(config)).toHaveLength(2);
+
+    const byName = new Map(listStoryDefinitions(config).map((d) => [d.name, d.number]));
+    expect(byName.get("Older twin")).toBe("0001");
+    expect(byName.get("Newer twin")).toBe("0002");
+    expect(byName.get("Never numbered")).toBe("0003");
+    expect(ensureStoryNumbers(config)).toEqual([]);
+  });
+
+  it("resolves duplicate numbers so the oldest story keeps the shared one", () => {
+    const config = createRepoOS(root).config;
+    rawStory("Older twin", "2026-01-01T00:00:00Z", 'number: "0001"');
+    rawStory("Newer twin", "2026-01-02T00:00:00Z", 'number: "0001"');
+
+    expect(ensureStoryNumbers(config)).toHaveLength(1);
+
+    const byName = new Map(listStoryDefinitions(config).map((d) => [d.name, d.number]));
+    expect(byName.get("Older twin")).toBe("0001");
+    expect(byName.get("Newer twin")).toBe("0002");
+    expect(ensureStoryNumbers(config)).toEqual([]);
+  });
+
+  it("does not hand a new story a duplicate of a surviving story after a duplicate is deleted", () => {
+    const config = createRepoOS(root).config;
+    rawStory("Older twin", "2026-01-01T00:00:00Z", 'number: "0001"');
+    rawStory("Newer twin", "2026-01-02T00:00:00Z", 'number: "0001"');
+    ensureStoryNumbers(config);
+    rmSync(join(root, "stories/newer-twin.md"));
+
+    const next = writeStoryDefinition(config, { name: "Replacement", body: "Fresh." });
+    const numbers = listStoryDefinitions(config).map((d) => d.number);
+    expect(new Set(numbers).size).toBe(numbers.length);
+    expect(listStoryDefinitions(config).find((d) => d.name === "Older twin")!.number).toBe("0001");
+    expect(next.number).not.toBe("0001");
+  });
+
   it("normalizes an unpadded or non-numeric frontmatter number", () => {
     const config = createRepoOS(root).config;
     rawStory("Padded", "2026-01-01T00:00:00Z", 'number: "7"');

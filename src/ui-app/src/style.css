@@ -3672,7 +3672,7 @@
   gap: 8px;
   margin-bottom: 6px;
 }
-.field-header label {
+.field .field-header label {
   margin-bottom: 0;
 }
 .field label {
