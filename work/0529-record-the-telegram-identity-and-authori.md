@@ -2,7 +2,7 @@
 id: "0529"
 title: Record the Telegram identity and authorization model
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: docs
 story: RepoOS Telegram Bot
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:31:53Z"
-updated_at: "2026-09-27T07:31:53Z"
+updated_at: "2026-09-27T07:34:09Z"
 ---
 ## Problem
 
@@ -47,3 +47,4 @@ Consequences to write down explicitly, because each is a security decision:
 ## Activity
 
 - 2026-09-27T07:31:53Z · created · unknown
+- 2026-09-27T07:34:09Z · status inbox→ready
