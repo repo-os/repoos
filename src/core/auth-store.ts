@@ -95,6 +95,28 @@ export interface AuditLogEntry {
   createdAt: string;
 }
 
+export interface TelegramUserLink {
+  telegramUserId: number;
+  email: string;
+  telegramUsername: string | null;
+  boundAt: string;
+  boundBy: string | null;
+  lastSeenAt: string | null;
+  revokedAt: string | null;
+}
+
+export interface TelegramLinkInvite {
+  nonceHash: string;
+  email: string;
+  repoIdentity: string;
+  instanceIdentity: string;
+  mac: string;
+  createdBy: string;
+  createdAt: string;
+  expiresAt: string;
+  redeemedAt: string | null;
+}
+
 interface HubCapabilityRow {
   id: string;
   label: string;
@@ -178,6 +200,34 @@ const AUTH_MIGRATION = `
   );
   CREATE INDEX IF NOT EXISTS idx_auth_hub_capabilities_owner ON auth_hub_capabilities(owner_email);
   CREATE INDEX IF NOT EXISTS idx_auth_hub_capabilities_token ON auth_hub_capabilities(token_hash);
+
+  -- Telegram numeric user IDs bound to allowlisted emails. No FK to
+  -- auth_users: deleting an allowlist row must leave the link inert, not
+  -- cascade-delete it (ADR 0007). Enforce presence of the email at bind time
+  -- in application code. telegram_username is display-only.
+  CREATE TABLE IF NOT EXISTS telegram_user_links (
+    telegram_user_id INTEGER PRIMARY KEY,
+    email TEXT NOT NULL,
+    telegram_username TEXT,
+    bound_at TEXT NOT NULL,
+    bound_by TEXT,
+    last_seen_at TEXT,
+    revoked_at TEXT
+  );
+  CREATE INDEX IF NOT EXISTS idx_telegram_user_links_email ON telegram_user_links(email);
+
+  CREATE TABLE IF NOT EXISTS telegram_link_invites (
+    nonce_hash TEXT PRIMARY KEY,
+    email TEXT NOT NULL,
+    repo_identity TEXT NOT NULL,
+    instance_identity TEXT NOT NULL,
+    mac TEXT NOT NULL,
+    created_by TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    redeemed_at TEXT
+  );
+  CREATE INDEX IF NOT EXISTS idx_telegram_link_invites_email ON telegram_link_invites(email);
 `;
 
 // ---------------------------------------------------------------------------
@@ -611,6 +661,188 @@ export class AuthStore {
     }
   }
 
+  // ---- Telegram user links + invites ----
+
+  getTelegramLink(telegramUserId: number): TelegramUserLink | null {
+    if (!this.available) return null;
+    try {
+      const rows = this.db
+        .prepare("SELECT * FROM telegram_user_links WHERE telegram_user_id = ?")
+        .all(telegramUserId);
+      return rows.length > 0 ? this.toTelegramLink(rows[0]) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  listTelegramLinks(): TelegramUserLink[] {
+    if (!this.available) return [];
+    try {
+      return this.db
+        .prepare(
+          "SELECT * FROM telegram_user_links WHERE revoked_at IS NULL ORDER BY bound_at DESC",
+        )
+        .all()
+        .map((row: Record<string, unknown>) => this.toTelegramLink(row));
+    } catch {
+      return [];
+    }
+  }
+
+  upsertTelegramLink(link: TelegramUserLink): boolean {
+    if (!this.available) return false;
+    try {
+      this.db
+        .prepare(`
+        INSERT INTO telegram_user_links (
+          telegram_user_id, email, telegram_username, bound_at, bound_by, last_seen_at, revoked_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(telegram_user_id) DO UPDATE SET
+          email = excluded.email,
+          telegram_username = excluded.telegram_username,
+          bound_at = excluded.bound_at,
+          bound_by = excluded.bound_by,
+          last_seen_at = excluded.last_seen_at,
+          revoked_at = excluded.revoked_at
+      `)
+        .run(
+          link.telegramUserId,
+          link.email,
+          link.telegramUsername,
+          link.boundAt,
+          link.boundBy,
+          link.lastSeenAt,
+          link.revokedAt,
+        );
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  touchTelegramLinkSeen(telegramUserId: number): void {
+    if (!this.available) return;
+    try {
+      this.db
+        .prepare(
+          `UPDATE telegram_user_links SET last_seen_at = datetime('now')
+           WHERE telegram_user_id = ? AND revoked_at IS NULL`,
+        )
+        .run(telegramUserId);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  revokeTelegramLink(telegramUserId: number): boolean {
+    if (!this.available) return false;
+    try {
+      const result = this.db
+        .prepare(
+          `UPDATE telegram_user_links SET revoked_at = datetime('now')
+           WHERE telegram_user_id = ? AND revoked_at IS NULL`,
+        )
+        .run(telegramUserId);
+      return (result.changes ?? 0) > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  insertTelegramInvite(invite: TelegramLinkInvite): boolean {
+    if (!this.available) return false;
+    try {
+      this.db
+        .prepare(`
+        INSERT INTO telegram_link_invites (
+          nonce_hash, email, repo_identity, instance_identity, mac,
+          created_by, created_at, expires_at, redeemed_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL)
+      `)
+        .run(
+          invite.nonceHash,
+          invite.email,
+          invite.repoIdentity,
+          invite.instanceIdentity,
+          invite.mac,
+          invite.createdBy,
+          invite.createdAt,
+          invite.expiresAt,
+        );
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  getTelegramInviteByNonceHash(nonceHash: string): TelegramLinkInvite | null {
+    if (!this.available) return null;
+    try {
+      const rows = this.db
+        .prepare("SELECT * FROM telegram_link_invites WHERE nonce_hash = ?")
+        .all(nonceHash);
+      return rows.length > 0 ? this.toTelegramInvite(rows[0]) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Mark an unused invite redeemed. Returns false if the row is missing,
+   * already redeemed, or the write fails — callers treat all as replay.
+   */
+  markTelegramInviteRedeemed(nonceHash: string): boolean {
+    if (!this.available) return false;
+    try {
+      const result = this.db
+        .prepare(
+          `UPDATE telegram_link_invites SET redeemed_at = datetime('now')
+           WHERE nonce_hash = ? AND redeemed_at IS NULL`,
+        )
+        .run(nonceHash);
+      return (result.changes ?? 0) > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  cleanupExpiredTelegramInvites(): number {
+    if (!this.available) return 0;
+    try {
+      const now = new Date().toISOString();
+      const result = this.db
+        .prepare(
+          `DELETE FROM telegram_link_invites
+           WHERE expires_at < ? AND redeemed_at IS NULL`,
+        )
+        .run(now);
+      return result.changes ?? 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  /**
+   * Run `fn` inside BEGIN IMMEDIATE so invite redeem cannot race a second
+   * /start into a double bind. Nested calls are not supported.
+   */
+  withImmediateTransaction<T>(fn: () => T): T {
+    if (!this.available) throw new Error("Auth store unavailable");
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const result = fn();
+      this.db.exec("COMMIT");
+      return result;
+    } catch (err) {
+      try {
+        this.db.exec("ROLLBACK");
+      } catch {
+        /* ignore */
+      }
+      throw err;
+    }
+  }
+
   private toHubCapability(row: HubCapabilityRow): HubCapability {
     return {
       id: row.id,
@@ -677,6 +909,32 @@ export class AuthStore {
     };
   }
 
+  private toTelegramLink(row: any): TelegramUserLink {
+    return {
+      telegramUserId: Number(row.telegram_user_id),
+      email: row.email,
+      telegramUsername: row.telegram_username ?? null,
+      boundAt: row.bound_at,
+      boundBy: row.bound_by ?? null,
+      lastSeenAt: row.last_seen_at ?? null,
+      revokedAt: row.revoked_at ?? null,
+    };
+  }
+
+  private toTelegramInvite(row: any): TelegramLinkInvite {
+    return {
+      nonceHash: row.nonce_hash,
+      email: row.email,
+      repoIdentity: row.repo_identity,
+      instanceIdentity: row.instance_identity,
+      mac: row.mac,
+      createdBy: row.created_by,
+      createdAt: row.created_at,
+      expiresAt: row.expires_at,
+      redeemedAt: row.redeemed_at ?? null,
+    };
+  }
+
   close(): void {
     if (this.db) {
       try {
@@ -707,6 +965,7 @@ export function getAuthStore(repoRoot: string): AuthStore | null {
       if (authStoreInstance?.isAvailable()) {
         authStoreInstance.cleanupExpiredSessions();
         authStoreInstance.cleanupExpiredOtps();
+        authStoreInstance.cleanupExpiredTelegramInvites();
       }
     }, CLEANUP_INTERVAL_MS);
     // Allow the process to exit even if the timer is running
