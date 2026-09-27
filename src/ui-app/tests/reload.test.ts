@@ -12,6 +12,7 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ReloadManager, readBuildHash, type ReloadManagerOptions } from "../../server/reload";
+import { closeOutPending } from "../../server/integration-job";
 import { startServer } from "../../server/server";
 import { reapStaleFixtures } from "./helpers";
 
@@ -529,6 +530,42 @@ describe("ReloadManager", () => {
       expect(spawns(fx)).toHaveLength(1);
     } finally {
       await killReplacement(fx);
+      manager.stop();
+      fx.clean();
+    }
+  });
+
+  it("#0518: does not reload in the gap between two close-out jobs while the next is still queued", async () => {
+    const fx = await makeFixture();
+    process.env.REPOOS_RELOAD_FAKE_LOG = fx.log;
+    // The lock is FREE (the finished job released it, the next has not acquired
+    // it yet) but a job is queued. Before the fix this let the poll spawn a
+    // replacement that "resumed" the job the old process was about to run.
+    let queued: { taskId: string } | null = { taskId: "0518" };
+    let available: string | null = null;
+    const { manager, calls } = makeManager(fx, {
+      closingOut: () =>
+        closeOutPending({ closingOut: () => false }, { peekNext: () => queued as never }),
+      onBuildAvailable: (hash) => {
+        available = hash;
+      },
+    });
+    try {
+      manager.start();
+      writeFileSync(
+        join(fx.repo, "dist", ".build-info.json"),
+        JSON.stringify({ hash: "hash-between-jobs" }),
+      );
+      await waitFor(() => available === "hash-between-jobs", "build parked, not reloaded");
+      await sleep(300);
+      expect(spawns(fx)).toHaveLength(0);
+      expect(calls.confirmed).toBe(0);
+
+      // Once the queue drains the parked build still waits for the user.
+      queued = null;
+      await sleep(300);
+      expect(spawns(fx)).toHaveLength(0);
+    } finally {
       manager.stop();
       fx.clean();
     }

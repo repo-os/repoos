@@ -131,7 +131,7 @@ import { pmChatSessionTaskId, clearPmChatSession, isPmWorking } from "./pm-runs.
 import { attachPendingPmImages } from "./pm-attachments.js";
 import { clearStoryPmChat, isStoryPmWorking } from "../core/story-definition-files.js";
 import { completeTask, type DoneStep, type CloseOutLock } from "./done.js";
-import { createJobCoordinator, type JobCoordinator } from "./integration-job.js";
+import { closeOutPending, createJobCoordinator, type JobCoordinator } from "./integration-job.js";
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
 import { createRemoteValidator, type RemoteValidator } from "./remote-validation.js";
 import { buildIntegrationSnapshot } from "./integration-status.js";
@@ -3066,8 +3066,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         isBusy: () => runner.running().length + reviews.runningCount(),
         // A close-out holds this lock for its whole pipeline (0143): no
         // auto-reload may fire under it, and any build it produces is parked
-        // for the user to apply on their own schedule.
-        closingOut: closeOutLock.closingOut,
+        // for the user to apply on their own schedule. A job still queued
+        // counts too: the lock is released between two jobs, and a reload
+        // decided in that gap gets a replacement that "resumes" the next job
+        // the old process is already running (#0518).
+        closingOut: () => closeOutPending(closeOutLock, jobCoordinator),
         // A close-out build landed on disk: surface a persistent "New version
         // available" notice so the user can reload when they choose.
         onBuildAvailable: (hash) => {
