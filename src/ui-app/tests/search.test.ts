@@ -224,6 +224,34 @@ describe("searchAll", () => {
     expect(row && row.kind === "setting" && row.subtitle).toContain("repoos.toml");
   });
 
+  it("finds the remote validation runner UI row when searching tailscale", () => {
+    const rvEnabled = {
+      key: "remoteValidation.enabled",
+      label: "Remote validation runner",
+      type: "boolean" as const,
+      tier: "restart" as const,
+      restartRequired: true,
+      default: false,
+      description: "Run the close-out build on a remote machine.",
+    };
+    const tailscaleHost = {
+      key: "remoteValidation.tailscaleHost",
+      label: "Remote validation: tailscale host",
+      type: "string" as const,
+      tier: "restart" as const,
+      restartRequired: true,
+      default: "",
+      description: "Tailscale hostname of the persistent runner.",
+    };
+    const hits = searchSettings("tailscale", {
+      fields: [...fields, rvEnabled, tailscaleHost],
+      location: { inspectorAvailable: false },
+    });
+    const runner = hits.find((r) => r.kind === "setting" && r.key === "remoteValidation.enabled");
+    expect(runner && runner.kind === "setting" && runner.tomlOnly).toBe(false);
+    expect(runner && runner.kind === "setting" && runner.tab).toBe("general");
+  });
+
   it("ranks a rare term above a common one across matching tasks", () => {
     const common = makeTask({ id: "0300", title: "Update task list", body: "" });
     const rare = makeTask({ id: "0301", title: "Fix port stealing race", body: "" });

@@ -9,6 +9,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
+import { reactive } from "vue";
 import { createPinia, setActivePinia } from "pinia";
 import * as apiMod from "../src/api";
 import { useRepoStore } from "../src/stores/repo";
@@ -25,11 +26,13 @@ import DialogTitle from "../src/components/ui/dialog/title.vue";
 
 const api = vi.spyOn(apiMod, "api");
 
-let currentQuery: Record<string, string | string[]> = {};
-const replaceSpy = vi.fn(async () => {});
+const routeState = reactive<{ query: Record<string, string | string[]> }>({ query: {} });
+const replaceSpy = vi.fn(
+  async (_to?: { query?: Record<string, string | string[]>; name?: string }) => {},
+);
 
 vi.mock("vue-router", () => ({
-  useRoute: () => ({ query: currentQuery }),
+  useRoute: () => routeState,
   useRouter: () => ({ replace: replaceSpy, push: vi.fn() }),
 }));
 
@@ -111,8 +114,13 @@ const WORK_STUBS = { BoardColumn: true, IntegrationStatusBar: true } as const;
 
 beforeEach(() => {
   setActivePinia(createPinia());
-  currentQuery = {};
-  replaceSpy.mockClear();
+  routeState.query = {};
+  replaceSpy.mockReset();
+  replaceSpy.mockImplementation(async (to?: { query?: Record<string, string | string[]> }) => {
+    if (to?.query !== undefined) {
+      routeState.query = { ...to.query };
+    }
+  });
   vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: false }));
   vi.stubGlobal(
     "fetch",
@@ -132,7 +140,7 @@ afterEach(() => {
 describe("work ?task= deep-link (#0345)", () => {
   it("?task=<id> opens that task's drawer and clears the param", async () => {
     useRepoStore().tasks = [makeTask("0340"), makeTask("0341", "active")];
-    currentQuery = { task: "0340" };
+    routeState.query = { task: "0340" };
     api.mockResolvedValue(makeTask("0340")); // drawer background refresh
     const wrapper = mount(WorkView, { global: { stubs: WORK_STUBS } });
     await flushPromises();
@@ -147,7 +155,7 @@ describe("work ?task= deep-link (#0345)", () => {
 
   it("?task=new opens the new-task panel and clears the param", async () => {
     useRepoStore().tasks = [];
-    currentQuery = { task: "new" };
+    routeState.query = { task: "new" };
     const wrapper = mount(WorkView, { global: { stubs: WORK_STUBS } });
     await flushPromises();
 
@@ -160,7 +168,7 @@ describe("work ?task= deep-link (#0345)", () => {
 
   it("an id missing from the board index is fetched directly and still opens", async () => {
     useRepoStore().tasks = [makeTask("0341")];
-    currentQuery = { task: "0999" };
+    routeState.query = { task: "0999" };
     api.mockResolvedValue(makeTask("0999"));
     const wrapper = mount(WorkView, { global: { stubs: WORK_STUBS } });
     await flushPromises();
@@ -173,7 +181,7 @@ describe("work ?task= deep-link (#0345)", () => {
 
   it("an unknown id (404) leaves the drawer closed and the param untouched", async () => {
     useRepoStore().tasks = [];
-    currentQuery = { task: "9999" };
+    routeState.query = { task: "9999" };
     api.mockRejectedValue(new Error("404"));
     const wrapper = mount(WorkView, { global: { stubs: WORK_STUBS } });
     await flushPromises();
@@ -185,7 +193,7 @@ describe("work ?task= deep-link (#0345)", () => {
 
   it("a '#'-prefixed id still opens the task", async () => {
     useRepoStore().tasks = [makeTask("0340")];
-    currentQuery = { task: "#0340" };
+    routeState.query = { task: "#0340" };
     api.mockResolvedValue(makeTask("0340"));
     const wrapper = mount(WorkView, { global: { stubs: WORK_STUBS } });
     await flushPromises();
@@ -196,7 +204,7 @@ describe("work ?task= deep-link (#0345)", () => {
 
   it("clearing the param preserves other query keys (e.g. ?status=)", async () => {
     useRepoStore().tasks = [makeTask("0340", "active")];
-    currentQuery = { status: "active", task: "0340" };
+    routeState.query = { status: "active", task: "0340" };
     api.mockResolvedValue(makeTask("0340"));
     const wrapper = mount(WorkView, { global: { stubs: WORK_STUBS } });
     await flushPromises();
@@ -209,7 +217,7 @@ describe("work ?task= deep-link (#0345)", () => {
 describe("inputs ?input= deep-link (#0345)", () => {
   it("?input=<id> opens that input's drawer once the list loads, then clears the param", async () => {
     api.mockResolvedValue([makeInput("idea-1")]);
-    currentQuery = { input: "idea-1" };
+    routeState.query = { input: "idea-1" };
     const wrapper = mount(InputsView, { attachTo: document.body });
     await flushPromises();
     // The list loads after mount; the retry lands within ~100ms.
@@ -223,7 +231,7 @@ describe("inputs ?input= deep-link (#0345)", () => {
 
   it("?input=new opens the new-input panel and clears the param", async () => {
     api.mockResolvedValue([]);
-    currentQuery = { input: "new" };
+    routeState.query = { input: "new" };
     const wrapper = mount(InputsView, { attachTo: document.body });
     await flushPromises();
 
@@ -236,7 +244,7 @@ describe("inputs ?input= deep-link (#0345)", () => {
 
   it("a deep-linked input opens even when its status is filtered out", async () => {
     api.mockResolvedValue([makeInput("idea-2"), { ...makeInput("idea-3"), status: "processed" }]);
-    currentQuery = { input: "idea-3" };
+    routeState.query = { input: "idea-3" };
     const wrapper = mount(InputsView, { attachTo: document.body });
     await flushPromises();
     await new Promise((r) => setTimeout(r, 200));
@@ -249,7 +257,7 @@ describe("inputs ?input= deep-link (#0345)", () => {
 
   it("?input=<number> opens the input with that stable number", async () => {
     api.mockResolvedValue([makeInput("idea-9", "0001"), makeInput("idea-10", "0002")]);
-    currentQuery = { input: "0001" };
+    routeState.query = { input: "0001" };
     const wrapper = mount(InputsView, { attachTo: document.body });
     await flushPromises();
     await new Promise((r) => setTimeout(r, 200));
@@ -261,7 +269,7 @@ describe("inputs ?input= deep-link (#0345)", () => {
 
   it("a bare numeric param (and a leading '#') still matches the padded number", async () => {
     api.mockResolvedValue([makeInput("idea-9", "0007")]);
-    currentQuery = { input: "#7" };
+    routeState.query = { input: "#7" };
     const wrapper = mount(InputsView, { attachTo: document.body });
     await flushPromises();
     await new Promise((r) => setTimeout(r, 200));
@@ -272,7 +280,7 @@ describe("inputs ?input= deep-link (#0345)", () => {
 
   it("an unknown numeric param degrades gracefully (no drawer, no crash)", async () => {
     api.mockResolvedValue([makeInput("idea-9", "0001")]);
-    currentQuery = { input: "9999" };
+    routeState.query = { input: "9999" };
     const wrapper = mount(InputsView, { attachTo: document.body });
     await flushPromises();
     await new Promise((r) => setTimeout(r, 200));
@@ -331,7 +339,7 @@ describe("stories ?story= deep-link (#0515)", () => {
   it("?story=<number> opens that story's panel, then clears the param", async () => {
     openStories();
     useRepoStore().storyDefinitions = [storyDef("Alpha slice", "0007")];
-    currentQuery = { story: "0007" };
+    routeState.query = { story: "0007" };
     const wrapper = mount(StoriesView, { attachTo: document.body });
     await flushPromises();
 
@@ -343,7 +351,7 @@ describe("stories ?story= deep-link (#0515)", () => {
   it("a bare numeric param (and a leading '#') still matches the padded number", async () => {
     openStories();
     useRepoStore().storyDefinitions = [storyDef("Alpha slice", "0007")];
-    currentQuery = { story: "#7" };
+    routeState.query = { story: "#7" };
     const wrapper = mount(StoriesView, { attachTo: document.body });
     await flushPromises();
 
@@ -354,7 +362,7 @@ describe("stories ?story= deep-link (#0515)", () => {
   it("?story=<key> opens a story whose file predates numbering", async () => {
     openStories();
     useRepoStore().storyDefinitions = [storyDef("Alpha slice", "")];
-    currentQuery = { story: "alpha slice" };
+    routeState.query = { story: "alpha slice" };
     const wrapper = mount(StoriesView, { attachTo: document.body });
     await flushPromises();
 
@@ -365,7 +373,7 @@ describe("stories ?story= deep-link (#0515)", () => {
   it("preserves sibling query keys when clearing the param", async () => {
     openStories();
     useRepoStore().storyDefinitions = [storyDef("Alpha slice", "0007")];
-    currentQuery = { story: "0007", from: "digest" };
+    routeState.query = { story: "0007", from: "digest" };
     const wrapper = mount(StoriesView, { attachTo: document.body });
     await flushPromises();
 
@@ -376,7 +384,7 @@ describe("stories ?story= deep-link (#0515)", () => {
   it("?story=new still opens the new-story panel, not a story lookup", async () => {
     openStories();
     useRepoStore().storyDefinitions = [storyDef("Alpha slice", "0007")];
-    currentQuery = { story: "new" };
+    routeState.query = { story: "new" };
     const wrapper = mount(StoriesView, { attachTo: document.body });
     await flushPromises();
 
@@ -395,7 +403,7 @@ describe("stories ?story= deep-link (#0515)", () => {
     useConfigStore().data = {};
     useRepoStore().tasks = [makeTask("0001")];
     useRepoStore().storyDefinitions = [storyDef("Alpha slice", "0007")];
-    currentQuery = { story: "0007" };
+    routeState.query = { story: "0007" };
     const wrapper = mount(StoriesView, { attachTo: document.body });
     await flushPromises();
     expect(storyPanel()).toBeNull();
@@ -412,7 +420,7 @@ describe("stories ?story= deep-link (#0515)", () => {
   it("an unknown param degrades gracefully (no panel, param left intact)", async () => {
     openStories();
     useRepoStore().storyDefinitions = [storyDef("Alpha slice", "0007")];
-    currentQuery = { story: "9999" };
+    routeState.query = { story: "9999" };
     const wrapper = mount(StoriesView, { attachTo: document.body });
     await flushPromises();
     // Give the retry loop a chance to give up before asserting nothing opened.
@@ -427,13 +435,13 @@ describe("stories ?story= deep-link (#0515)", () => {
 describe("settings ?setting= deep-link (#0345)", () => {
   it("?setting=<key> scrolls to and focuses that row, then clears the param", async () => {
     await loadConfig();
-    currentQuery = { setting: "maxActiveTasks" };
+    routeState.query = { setting: "maxActiveTasks" };
     // attachTo: the deep-link lookup is document.getElementById, which only
     // sees elements attached to the document (a detached VTU root is invisible).
     const wrapper = mount(SettingsView, { attachTo: document.body });
     await flushPromises();
     // The row must exist in the document before the retry focuses it.
-    await new Promise((r) => setTimeout(r, 200));
+    await new Promise((r) => setTimeout(r, 400));
 
     const scroll = Element.prototype.scrollIntoView as unknown as ReturnType<typeof vi.fn>;
     expect(scroll).toHaveBeenCalledTimes(1);
@@ -442,14 +450,15 @@ describe("settings ?setting= deep-link (#0345)", () => {
     // so the active tab survives the replace (#0402).
     expect(replaceSpy).toHaveBeenCalledWith({ name: "settings", query: { tab: "general" } });
     wrapper.unmount();
+    await new Promise((r) => setTimeout(r, 100));
   });
 
   it("the existing ?focus= behavior is unchanged", async () => {
     await loadConfig();
-    currentQuery = { focus: "maxActiveTasks" };
+    routeState.query = { focus: "maxActiveTasks" };
     const wrapper = mount(SettingsView, { attachTo: document.body });
     await flushPromises();
-    await new Promise((r) => setTimeout(r, 200));
+    await new Promise((r) => setTimeout(r, 400));
 
     const scroll = Element.prototype.scrollIntoView as unknown as ReturnType<typeof vi.fn>;
     expect(scroll).toHaveBeenCalledTimes(1);
@@ -458,11 +467,12 @@ describe("settings ?setting= deep-link (#0345)", () => {
     // so the active tab survives the replace (#0402).
     expect(replaceSpy).toHaveBeenCalledWith({ name: "settings", query: { tab: "general" } });
     wrapper.unmount();
+    await new Promise((r) => setTimeout(r, 100));
   });
 
   it("?focus= with an unknown key does not redirect to the toml tab", async () => {
     await loadConfig();
-    currentQuery = { focus: "bogus-key", tab: "general" };
+    routeState.query = { focus: "bogus-key", tab: "general" };
     const wrapper = mount(SettingsView, { attachTo: document.body });
     await flushPromises();
     await new Promise((r) => setTimeout(r, 250));
@@ -470,6 +480,24 @@ describe("settings ?setting= deep-link (#0345)", () => {
     expect(replaceSpy).not.toHaveBeenCalledWith({ name: "settings", query: { tab: "toml" } });
     expect(wrapper.text()).not.toContain("only in repoos.toml");
     wrapper.unmount();
+  });
+
+  it("?focus= on remote validation runner scrolls from another tab", async () => {
+    await loadConfig();
+    routeState.query = { tab: "advanced", focus: "remoteValidation.enabled" };
+    const wrapper = mount(SettingsView, { attachTo: document.body });
+    await flushPromises();
+    await new Promise((r) => setTimeout(r, 400));
+
+    const scroll = Element.prototype.scrollIntoView as unknown as ReturnType<typeof vi.fn>;
+    expect(scroll).toHaveBeenCalled();
+    expect((scroll.mock.contexts[0] as HTMLElement).id).toBe("setting-remoteValidation.enabled");
+    expect(replaceSpy).toHaveBeenCalledWith({
+      name: "settings",
+      query: { tab: "general" },
+    });
+    wrapper.unmount();
+    await new Promise((r) => setTimeout(r, 100));
   });
 
   it("?focus= on a toml-only key opens the repoos.toml tab instead of dead-ending", async () => {
@@ -487,7 +515,7 @@ describe("settings ?setting= deep-link (#0345)", () => {
       ],
     });
     await useConfigStore().load();
-    currentQuery = { focus: "remoteValidation.tailscaleHost" };
+    routeState.query = { focus: "remoteValidation.tailscaleHost" };
     const wrapper = mount(SettingsView, { attachTo: document.body });
     await flushPromises();
     await new Promise((r) => setTimeout(r, 250));
@@ -499,14 +527,15 @@ describe("settings ?setting= deep-link (#0345)", () => {
 
   it("?setting= wins when both params are present", async () => {
     await loadConfig();
-    currentQuery = { setting: "maxActiveTasks", focus: "bogus-key" };
+    routeState.query = { setting: "maxActiveTasks", focus: "bogus-key" };
     const wrapper = mount(SettingsView, { attachTo: document.body });
     await flushPromises();
-    await new Promise((r) => setTimeout(r, 200));
+    await new Promise((r) => setTimeout(r, 400));
 
     const scroll = Element.prototype.scrollIntoView as unknown as ReturnType<typeof vi.fn>;
     expect(scroll).toHaveBeenCalledTimes(1);
     expect((scroll.mock.contexts[0] as HTMLElement).id).toBe("setting-maxActiveTasks");
     wrapper.unmount();
+    await new Promise((r) => setTimeout(r, 100));
   });
 });

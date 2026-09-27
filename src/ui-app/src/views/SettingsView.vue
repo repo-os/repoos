@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useConfigStore, DESIGN_THEMES } from "../stores/config";
 import { useUiStore } from "../stores/ui";
@@ -507,14 +507,52 @@ const sessionMaxAgeDays = computed<number>({
   },
 });
 
+function settingRowVisible(el: HTMLElement): boolean {
+  const panel = el.closest<HTMLElement>("[role='tabpanel']");
+  if (!panel) return getComputedStyle(el).display !== "none";
+  return getComputedStyle(panel).display !== "none";
+}
+
+function scrollSettingRowIntoView(el: HTMLElement): void {
+  const main = el.closest<HTMLElement>(".main");
+  if (main) {
+    const elRect = el.getBoundingClientRect();
+    const mainRect = main.getBoundingClientRect();
+    const targetTop =
+      main.scrollTop + (elRect.top - mainRect.top) - mainRect.height / 2 + elRect.height / 2;
+    main.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
+    return;
+  }
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
 function focusSetting(key: string): void {
   const el = document.getElementById(`setting-${key}`);
   if (!el) return;
-  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  scrollSettingRowIntoView(el);
   el.classList.add("flash");
   window.setTimeout(() => el.classList.remove("flash"), 2000);
-  const input = el.querySelector<HTMLElement>("input, select, [role='combobox']");
-  if (input) input.focus();
+  const input = el.querySelector<HTMLElement>(
+    "input, select, textarea, [role='combobox'], button:not([disabled])",
+  );
+  if (input) input.focus({ preventScroll: true });
+}
+
+async function waitForSettingRow(
+  key: string,
+  tab: TabId,
+  attempts = 30,
+): Promise<HTMLElement | null> {
+  for (let i = 0; i < attempts; i++) {
+    await nextTick();
+    if (activeTab.value === tab && config.loaded) {
+      const el = document.getElementById(`setting-${key}`);
+      if (el && settingRowVisible(el)) return el;
+    }
+    await new Promise<void>((r) => window.setTimeout(r, 50));
+  }
+  const el = document.getElementById(`setting-${key}`);
+  return el && settingRowVisible(el) ? el : null;
 }
 
 // ---- Design themes (#0255) ----
@@ -548,70 +586,76 @@ function toggleThemeFavorite(id: string): void {
 // When a focus key targets a setting on a specific tab, switch to that tab first.
 const focusKey = computed(() => (route.query.setting ?? route.query.focus) as string | undefined);
 
+let focusNavigationRun = 0;
+
 watch(
   focusKey,
   (key) => {
     if (!key) return;
-    const field = config.schema.find((f) => f.key === key);
-    const loc = resolveSettingLocation(key, field, settingLocationContext());
-    tomlFocusNotice.value = "";
+    const run = ++focusNavigationRun;
+    void (async () => {
+      const field = config.schema.find((f) => f.key === key);
+      const loc = resolveSettingLocation(key, field, settingLocationContext());
+      tomlFocusNotice.value = "";
 
-    const tryFocusUnknown = (attempt = 0): void => {
-      if (config.loaded && document.getElementById(`setting-${key}`)) {
-        focusSetting(key);
+      const tryFocusUnknown = async (): Promise<void> => {
+        const el = await waitForSettingRow(key, activeTab.value);
+        if (run !== focusNavigationRun) return;
+        if (el) {
+          focusSetting(key);
+          void router.replace({
+            name: "settings",
+            query: { tab: activeTab.value },
+          });
+        }
+      };
+
+      if (!loc) {
+        await tryFocusUnknown();
+        return;
+      }
+
+      const targetTab: TabId = loc.hasUiRow ? loc.tab : "toml";
+      if (activeTab.value !== targetTab) {
+        await router.replace({
+          name: "settings",
+          query: { ...route.query, tab: targetTab },
+        });
+      }
+      if (run !== focusNavigationRun) return;
+
+      const finishTomlOnly = (): void => {
+        tomlFocusNotice.value = `“${field?.label ?? key}” is only in repoos.toml — edit the raw file below.`;
         void router.replace({
           name: "settings",
-          query: { tab: activeTab.value },
+          query: { tab: "toml" },
         });
-      } else if (attempt < 20) {
-        window.setTimeout(() => tryFocusUnknown(attempt + 1), 100);
-      }
-    };
+      };
 
-    if (!loc) {
-      tryFocusUnknown();
-      return;
-    }
-
-    const targetTab: TabId = loc.hasUiRow ? loc.tab : "toml";
-    const resolvedTab: TabId = targetTab;
-    if (activeTab.value !== targetTab) {
-      void router.replace({
-        name: "settings",
-        query: { ...route.query, tab: targetTab },
-      });
-    }
-    const finishTomlOnly = (): void => {
-      tomlFocusNotice.value = `“${field?.label ?? key}” is only in repoos.toml — edit the raw file below.`;
-      void router.replace({
-        name: "settings",
-        query: { tab: "toml" },
-      });
-    };
-    const tryFocus = (attempt = 0): void => {
       if (!loc.hasUiRow) {
         if (config.loaded) {
           finishTomlOnly();
-        } else if (attempt < 20) {
-          window.setTimeout(() => tryFocus(attempt + 1), 100);
         } else {
+          for (let attempt = 0; attempt < 20 && !config.loaded; attempt++) {
+            await new Promise<void>((r) => window.setTimeout(r, 100));
+          }
           finishTomlOnly();
         }
         return;
       }
-      if (config.loaded && document.getElementById(`setting-${key}`)) {
+
+      const el = await waitForSettingRow(key, targetTab);
+      if (run !== focusNavigationRun) return;
+      if (el) {
         focusSetting(key);
         void router.replace({
           name: "settings",
-          query: { tab: resolvedTab },
+          query: { tab: targetTab },
         });
-      } else if (attempt < 20) {
-        window.setTimeout(() => tryFocus(attempt + 1), 100);
       } else if (field) {
         finishTomlOnly();
       }
-    };
-    tryFocus();
+    })();
   },
   { immediate: true },
 );
@@ -722,6 +766,7 @@ watch(
 );
 
 onUnmounted(() => {
+  focusNavigationRun++;
   window.removeEventListener("keydown", onSettingsSearchKey);
   clearTimeout(autoSaveTimer);
   clearTimeout(testStateTimer);
