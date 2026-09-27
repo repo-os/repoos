@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:33:20Z"
-updated_at: "2026-09-27T07:33:20Z"
+updated_at: "2026-09-27T15:42:37Z"
 ---
 ## Problem
 
@@ -44,6 +44,11 @@ One operation, in a deliberate order, that is **complete or loudly incomplete**:
 - A simulated Telegram outage produces a visible, retryable failure and no false success.
 - Two repositories with Telegram both connected can disconnect one with no effect on the other, proven by test.
 
+## Decision reference
+
+Follow [ADR 0007 — Telegram identity and authorization](../docs/adr/0007-telegram-identity-and-authorization.md) for the shared identity, role-resolution, chat-binding, and sender-response policy. This task implements its specific flow.
+
 ## Activity
 
 - 2026-09-27T07:33:20Z · created · unknown
+- 2026-09-27T15:42:37Z · body
