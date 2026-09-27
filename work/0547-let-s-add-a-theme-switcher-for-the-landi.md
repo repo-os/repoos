@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-27T12:24:46Z"
+review_passes: 2
 id: "0547"
 title: Add a gruvbox theme switcher to the landing page
 type: feature
@@ -9,9 +11,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-a-gruvbox-theme-switcher-to-the-land
 created_at: "2026-09-27T11:55:28Z"
-updated_at: "2026-09-27T12:22:34Z"
 review_rounds: 1
-review_passes: 1
 ---
 ## Problem
 
@@ -167,3 +167,4 @@ Let's add a theme switcher for the landing page and the first additional theme s
 - 2026-09-27T12:16:54Z · status active→review
 - 2026-09-27T12:19:03Z · status review→active
 - 2026-09-27T12:22:34Z · status active→review
+
