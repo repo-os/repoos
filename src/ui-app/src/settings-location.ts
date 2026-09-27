@@ -105,3 +105,17 @@ export function resolveSettingLocation(
 export function settingTabLabel(tab: SettingsTabId): string {
   return SETTINGS_TAB_LABELS[tab];
 }
+
+/**
+ * Extra searchable text for settings that have a dedicated UI row but weak
+ * label/key recall (e.g. tailscale → remote validation runner on General).
+ */
+const SETTING_SEARCH_ALIASES: Record<string, string> = {
+  "remoteValidation.enabled":
+    "tailscale hetzner remote validation runner configure disposable vm cloud",
+  tunnelEnabled: "cloudflare tunnel publish publishing hostname public",
+};
+
+export function settingSearchAliases(key: string): string {
+  return SETTING_SEARCH_ALIASES[key] ?? "";
+}

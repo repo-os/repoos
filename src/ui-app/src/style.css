@@ -651,12 +651,13 @@
 }
 .setting-row.flash {
   animation: setting-flash 2.2s ease;
+  border-radius: var(--radius-md);
 }
 @keyframes setting-flash {
   0%,
   55% {
-    box-shadow: inset 0 0 0 1px var(--cyan);
-    background: var(--cyan-dim);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cyan) 55%, transparent);
+    background: color-mix(in srgb, var(--cyan-dim) 85%, transparent);
   }
 }
 

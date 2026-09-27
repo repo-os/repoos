@@ -1,6 +1,7 @@
 import type { Task, ConfigField, DocMeta } from "./types";
 import {
   resolveSettingLocation,
+  settingSearchAliases,
   settingTabLabel,
   type SettingLocationContext,
   type SettingsTabId,
@@ -279,6 +280,26 @@ function settingSearchResult(
   };
 }
 
+function settingSearchCorpus(f: ConfigField): string {
+  const optionText = (f.options ?? []).map((o) => `${o.label} ${o.value}`).join(" ");
+  const aliases = settingSearchAliases(f.key);
+  return `${f.label} ${f.key} ${f.description ?? ""} ${optionText} ${aliases}`.trim();
+}
+
+function settingFieldMatches(f: ConfigField, q: string): boolean {
+  const corpus = settingSearchCorpus(f);
+  return (
+    includes(f.label, q) ||
+    includes(f.key, q) ||
+    includes(f.description, q) ||
+    includes(corpus, q) ||
+    fuzzyMatch(f.label, q) ||
+    fuzzyMatch(f.key, q) ||
+    fuzzyMatch(f.description, q) ||
+    fuzzyMatch(corpus, q)
+  );
+}
+
 function scoreSettingFields(
   q: string,
   terms: string[],
@@ -286,24 +307,22 @@ function scoreSettingFields(
   locationCtx?: SettingLocationContext,
 ): SearchResult[] {
   const settingIdf = buildIdf(
-    fields.map((f) => `${f.label} ${f.key}`.toLowerCase()),
+    fields.map((f) => settingSearchCorpus(f).toLowerCase()),
     terms,
   );
   const scoredSettings: { result: SearchResult; score: number }[] = [];
   for (const f of fields) {
-    if (
-      includes(f.label, q) ||
-      includes(f.key, q) ||
-      fuzzyMatch(f.label, q) ||
-      fuzzyMatch(f.key, q)
-    ) {
-      const score =
-        fieldScore(f.label, 3, terms, settingIdf, q) + fieldScore(f.key, 2, terms, settingIdf, q);
-      scoredSettings.push({
-        result: settingSearchResult(f, locationCtx),
-        score,
-      });
-    }
+    if (!settingFieldMatches(f, q)) continue;
+    const corpus = settingSearchCorpus(f);
+    const score =
+      fieldScore(f.label, 3, terms, settingIdf, q) +
+      fieldScore(f.key, 2, terms, settingIdf, q) +
+      fieldScore(f.description, 1, terms, settingIdf, q) +
+      fieldScore(corpus, 1, terms, settingIdf, q);
+    scoredSettings.push({
+      result: settingSearchResult(f, locationCtx),
+      score,
+    });
   }
   return topByScore(scoredSettings);
 }
