@@ -10,8 +10,12 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:33:20Z"
-updated_at: "2026-09-27T15:42:37Z"
+updated_at: "2026-09-27T15:51:54Z"
 ---
+## Governing decision
+
+Follow [ADR 0007 — Telegram identity and authorization](../docs/adr/0007-telegram-identity-and-authorization.md) for user binding, chat binding, live role resolution, and unauthorized-sender behavior. This task implements or relies on that model; do not define a separate policy here.
+
 ## Problem
 
 Story #0003 acceptance criterion: "Disconnecting Telegram revokes the project bot token and removes all chat bindings." Its security requirements add: "Revoke the project bot token when Telegram integration is disconnected."
@@ -44,11 +48,8 @@ One operation, in a deliberate order, that is **complete or loudly incomplete**:
 - A simulated Telegram outage produces a visible, retryable failure and no false success.
 - Two repositories with Telegram both connected can disconnect one with no effect on the other, proven by test.
 
-## Decision reference
-
-Follow [ADR 0007 — Telegram identity and authorization](../docs/adr/0007-telegram-identity-and-authorization.md) for the shared identity, role-resolution, chat-binding, and sender-response policy. This task implements its specific flow.
-
 ## Activity
 
 - 2026-09-27T07:33:20Z · created · unknown
 - 2026-09-27T15:42:37Z · body
+- 2026-09-27T15:51:54Z · body
