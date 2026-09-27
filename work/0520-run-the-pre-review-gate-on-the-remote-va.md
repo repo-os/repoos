@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/run-the-pre-review-gate-on-the-remote-va
 created_at: "2026-09-26T11:49:00Z"
-updated_at: "2026-09-27T01:40:34Z"
+updated_at: "2026-09-27T01:40:40Z"
 review_passes: 6
 review_rounds: 2
 ---
@@ -94,3 +94,5 @@ runner hosts (separate task).
 - 2026-09-27T01:37:17Z · needs_input
 - 2026-09-27T01:40:34Z · status review→active
 - 2026-09-27T01:40:34Z · note: Runner never deletes an adopted VM (+test); check green
+- 2026-09-27T01:40:40Z · status active→review
+- 2026-09-27T01:40:40Z · status review→active
