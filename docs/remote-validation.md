@@ -177,18 +177,23 @@ Waiting counts against the caller's own deadline (handoff has 10 minutes), so a
 long queue can time a handoff out.
 
 Each run also gets its **own bundle and artifacts path** on the host
-(`/var/tmp/repoos-<task>-<id>.bundle`, `/var/tmp/repoos-artifacts/<task>-<id>/`,
-passed to `validate.sh` as its third argument) so overlapping runs never delete
-each other's logs; artifact dirs older than a day are pruned. `/var/tmp` is
-deliberate, not `/tmp`: on Linux, `/tmp` is commonly a RAM-backed tmpfs with a
-per-user quota shared with whatever else that user runs on the box (e.g. a
-desktop session on a runner that's also someone's daily machine), and a run
-can hit "disk quota exceeded" for reasons that have nothing to do with the
-task. `/var/tmp` is real disk on every host this runs on. The scripts on the
-host are copies: after updating RepoOS run `just setup-<host>` again,
-otherwise an old `validate.sh` ignores the third argument, keeps using the
-shared `/var/tmp/repoos-artifacts`, and the per-run log download finds
-nothing (the verdict is unaffected).
+(`~/.repoos-<task>-<id>.bundle`, `~/.repoos-artifacts/<task>-<id>/`, passed to
+`validate.sh` as its third argument) so overlapping runs never delete each
+other's logs; artifact dirs older than a day are pruned. This lives under the
+remote user's home directory deliberately, not `/tmp` or `/var/tmp`: on
+Linux, `/tmp` is commonly a RAM-backed tmpfs with a per-user quota shared
+with whatever else that user runs on the box (e.g. a desktop session on a
+runner that's also someone's daily machine), so a run can hit "disk quota
+exceeded" for reasons unrelated to the task — but on a macOS host running
+Docker Desktop, `/var/tmp` (and `/tmp`) are *not* shared into containers by
+its bind-mount file sharing by default, only paths under `$HOME` are, so a
+WORK dir there mounts as an empty directory inside the container ("bun could
+not find a package.json"). `$HOME` is real disk everywhere and satisfies
+Docker Desktop's default share list, so it's the only location safe on both.
+The scripts on the host are copies: after updating RepoOS run
+`just setup-<host>` again, otherwise an old `validate.sh` ignores the third
+argument, keeps using its own shared default artifacts dir, and the per-run
+log download finds nothing (the verdict is unaffected).
 
 ### Hetzner provider (original)
 

@@ -128,14 +128,20 @@ export function remoteRunPaths(
 ): RemoteRunPaths {
   const safe = taskId.replace(/[^A-Za-z0-9_.-]/g, "_") || "run";
   return {
-    // Real disk, not /tmp: on a host whose /tmp is a RAM-backed tmpfs (e.g. a
-    // Linux box with a per-user tmpfs quota shared with the desktop session
-    // running on it), repoos's own bundle/artifacts churn competes with
-    // whatever else that user is doing and can hit "disk quota exceeded"
-    // mid-run for no reason related to the task. /var/tmp is real disk on
-    // every host this runs on (Linux and macOS) and isn't quota-capped.
-    bundle: `/var/tmp/repoos-${safe}-${runId}.bundle`,
-    artifacts: `/var/tmp/repoos-artifacts/${safe}-${runId}`,
+    // Under the remote user's home, not /tmp or /var/tmp (#0512 follow-up,
+    // corrected same-day): a Linux host's /tmp is commonly a RAM-backed
+    // tmpfs with a per-user quota shared with the desktop session running on
+    // it — repoos's own churn there can hit "disk quota exceeded" for
+    // reasons unrelated to the task. /var/tmp dodges that but broke
+    // validation on a macOS host running Docker Desktop: its bind-mount
+    // file sharing does NOT include /tmp or /var/tmp by default (verified
+    // live — a bind-mounted /var/tmp dir showed empty inside the container,
+    // "bun could not find a package.json"), only paths under $HOME. `~/` is
+    // real disk on Linux too (not the quota-capped tmpfs), so it satisfies
+    // both constraints. Resolved remotely (ssh/scp expand `~` server-side),
+    // not here — this process doesn't know the remote user's home path.
+    bundle: `~/.repoos-${safe}-${runId}.bundle`,
+    artifacts: `~/.repoos-artifacts/${safe}-${runId}`,
   };
 }
 

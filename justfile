@@ -108,13 +108,17 @@ _setup-runner host os:
     HOST="{{host}}"
     OS="{{os}}"
 
-    # /var/tmp, not /tmp: on Linux /tmp is commonly a RAM-backed tmpfs with a
-    # per-user quota shared with the rest of that user's session on the box,
-    # so this upload can hit "disk quota exceeded" for reasons unrelated to
-    # this setup. /var/tmp is real disk and isn't quota-capped.
+    # Under $HOME, not /tmp or /var/tmp: on Linux /tmp is commonly a RAM-backed
+    # tmpfs with a per-user quota shared with the rest of that user's session
+    # on the box, so this upload can hit "disk quota exceeded" for reasons
+    # unrelated to this setup. On a macOS host running Docker Desktop, /tmp
+    # and /var/tmp are BOTH excluded from its bind-mount file sharing by
+    # default (verified live — only paths under $HOME are shared), so a build
+    # context there would silently show up empty to `docker build`. $HOME
+    # dodges both.
     echo "==> copying Dockerfile and validate.sh to $HOST"
-    ssh "$HOST" 'mkdir -p /var/tmp/repoos-build'
-    scp scripts/remote-runner/Dockerfile.ci scripts/remote-runner/validate.sh "$HOST:/var/tmp/repoos-build/"
+    ssh "$HOST" 'mkdir -p ~/.repoos-build'
+    scp scripts/remote-runner/Dockerfile.ci scripts/remote-runner/validate.sh "$HOST:~/.repoos-build/"
 
     if [ "$OS" = "arch" ]; then
         echo "==> installing Docker on $HOST (Arch)"
@@ -134,13 +138,13 @@ _setup-runner host os:
     fi
 
     echo "==> building repoos-ci image on $HOST"
-    ssh "$HOST" "docker build -f /var/tmp/repoos-build/Dockerfile.ci -t repoos-ci /var/tmp/repoos-build"
+    ssh "$HOST" "docker build -f ~/.repoos-build/Dockerfile.ci -t repoos-ci ~/.repoos-build"
 
-    echo "==> installing validate.sh and creating cache dir on $HOST"
+    echo "==> installing validate.sh on $HOST"
     ssh -t "$HOST" "
-        sudo mkdir -p /opt/repoos /var/cache/repoos/bun &&
-        sudo install -m 755 /var/tmp/repoos-build/validate.sh /opt/repoos/validate.sh &&
-        rm -rf /var/tmp/repoos-build &&
+        sudo mkdir -p /opt/repoos &&
+        sudo install -m 755 ~/.repoos-build/validate.sh /opt/repoos/validate.sh &&
+        rm -rf ~/.repoos-build &&
         echo done
     "
 
