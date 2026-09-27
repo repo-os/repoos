@@ -1,0 +1,51 @@
+---
+id: "0541"
+title: Chat with the repository guide agent from Telegram
+type: feature
+status: inbox
+priority: p2
+area: server
+story: RepoOS Telegram Bot
+assigned_to: ai
+created_by: ""
+branch: ""
+created_at: "2026-09-27T07:33:38Z"
+updated_at: "2026-09-27T07:33:38Z"
+---
+## Problem
+
+Story #0003 acceptance criterion: "Telegram users can chat with the repository guide agent." The story is explicit that these messages "map to existing RepoOS chat and agent APIs rather than introducing a separate agent runtime" — so this is a new front end onto `AgentRunner`, not a new agent.
+
+This is the first feature where a Telegram message becomes an **LLM call with a real cost**, which brings two repo rules into play.
+
+## The usage-recording rule
+
+`AGENTS.md`: every LLM call site must record its usage in the `sessions` table. The `AgentRunner` path self-records, but **any one-shot call using `runPrompt` must call `recordOneShotSession(repoRoot, agent, result, { sessionType, taskId })` from `src/server/agents.ts` immediately after the await.** Several callers discarded their `PromptResult` before this rule existed, which silently under-reported the Tokens tab. Telegram-originated turns are AI spend like any other and must appear — otherwise a whole channel of agent usage vanishes from the board summary.
+
+If a repository guide conversation is task-scoped, pass the `taskId`; if it is repository-level, `taskId: null`, which is the established shape for work not tied to a task. Pick a `sessionType` that keeps the by-role breakdown legible, and do not pass `pm`.
+
+## Conversation state
+
+A private chat is a natural 1:1 conversation. A group is not — several authorized users can talk to the bot in the same chat, and one shared transcript would interleave unrelated conversations and leak one user's context to another. Decide the model explicitly:
+
+- Keep conversation state **per Telegram user**, not per chat, so two members of a group do not share context.
+- If state is per chat, a group conversation must be visibly labeled as shared, and history should not cross user boundaries.
+
+Per-user state is the safer default and is consistent with the whole auth design: identity is per user, and so is context.
+
+Also decide how a conversation is **closed or expired** so context does not accumulate indefinitely, and what a user sees when a stale conversation is resumed.
+
+## Cost and rate controls
+
+Agent turns are the most expensive thing Telegram can trigger, and a group makes it trivially easy to burn a budget — several members, each firing off turns, all metered against the repository. This is why the authorization task's per-user **and** per-chat rate limits matter most here: enforce the tighter agent-specific limit before starting a run, and return a clear message when it applies rather than silently dropping.
+
+## Done when
+
+- A linked user can hold a conversation with the repository guide agent from both a private chat and a group.
+- Two users in one group do not see each other's conversation state.
+- Every turn appears in the Tokens tab with correct `taskId` and `sessionType`, asserted by test.
+- The rate limit is enforced before any LLM call is made.
+
+## Activity
+
+- 2026-09-27T07:33:38Z · created · unknown
