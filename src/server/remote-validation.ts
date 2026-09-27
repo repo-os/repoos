@@ -409,6 +409,12 @@ export function prereqProbeCommand(
             '{ echo "bun not found (install it, e.g. brew install bun)"; exit 1; }',
         ]
       : [
+          // git runs on the HOST for every runner, not just native — the
+          // clone/checkout step in validate.sh happens before `docker run`
+          // is ever invoked, so a Docker host missing git was previously
+          // reported healthy and failed at the very first step of every job
+          // (#0521 review).
+          'command -v git >/dev/null 2>&1 || { echo "git not found on PATH"; exit 1; }',
           'command -v docker >/dev/null 2>&1 || { echo "docker not found on PATH"; exit 1; }',
           'docker info >/dev/null 2>&1 || { echo "docker daemon not reachable (is docker running?)"; exit 1; }',
           `docker image inspect '${image}' >/dev/null 2>&1 || ` +
@@ -1887,7 +1893,18 @@ export class TailscaleRunner implements RemoteValidator {
       const deadlineAtEpochSecs =
         opts.deadlineAt !== undefined ? Math.floor(opts.deadlineAt / 1000) : undefined;
       const cmd = hostLockShell({ slots: slot.limit, waitSecs, deadlineAtEpochSecs, inner });
-      const run = await this.exec.runRemote(host, cmd, emit, this.timings.remoteRunTimeoutMs);
+      // The outer SSH timeout must cover the lock wait AND the actual run —
+      // it wraps BOTH phases as one process, but was a fixed remoteRunTimeoutMs
+      // regardless of how long waitSecs allowed the lock to wait first
+      // (#0521 review). A run that legitimately waited most of its lock
+      // budget (queued behind other jobs, not stuck) then had only
+      // remoteRunTimeoutMs minus that wait left for build+test — a healthy
+      // suite could be SIGKILLed and reported as an infra failure purely
+      // because of how long it queued, not because anything was actually
+      // wrong. Add the wait budget on top so the full remoteRunTimeoutMs is
+      // always available for the run itself once it actually starts.
+      const outerTimeoutMs = this.timings.remoteRunTimeoutMs + waitSecs * 1000;
+      const run = await this.exec.runRemote(host, cmd, emit, outerTimeoutMs);
 
       // 4. pull artifacts (best effort)
       await this.exec.downloadDir(
@@ -1898,9 +1915,7 @@ export class TailscaleRunner implements RemoteValidator {
 
       const elapsed = Math.round((Date.now() - startedAt) / 1000);
       if (run.timedOut) {
-        emit(
-          `\n[remote run SIGKILLed after ${Math.round(this.timings.remoteRunTimeoutMs / 60000)}m]\n`,
-        );
+        emit(`\n[remote run SIGKILLed after ${Math.round(outerTimeoutMs / 60000)}m]\n`);
         this.logger?.integration(
           opts.taskId,
           "warn",

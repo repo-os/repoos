@@ -155,13 +155,29 @@ tailscaleUser = "root"                     # default SSH user (per-host user win
 containerImage = "repoos-ci"               # Linux hosts' Docker image
 fallbackToLocal = false
 maxConcurrent = 1                          # global per-host limit (see below)
+```
 
-# The host pool (#0521): every machine jobs may be dispatched to.
-# Plain list — also editable in Settings → Remote validation ("Host pool"):
+The host pool (#0521) — every machine jobs may be dispatched to — can be
+written two ways. **Pick one per host**; showing both together for the same
+host in one example, as an earlier version of this doc did, is not valid
+standard TOML (you cannot define a key as both a plain value and
+`[[table-array]]` blocks) even though RepoOS's own tolerant parser accepts
+it — the two forms below are separately valid files, not one combined file:
+
+**Plain list** — hosts with no per-host attrs to set. Also editable in
+Settings → Remote validation ("Host pool"):
+
+```toml
+[remoteValidation]
 tailscaleHosts = ["bee", "mac1"]
+```
 
-# Rich form: one row per host with its own settings (merged with the list —
-# a host may appear in either place, never twice).
+**Rich rows** — one `[[remoteValidation.tailscaleHosts]]` block per host that
+needs its own settings (a host may still appear in the plain list too, for
+others with no attrs — the two merge, just never redefine the *same* host in
+both):
+
+```toml
 [[remoteValidation.tailscaleHosts]]
 host = "mac1"
 user = "nick"          # SSH user for this host (default tailscaleUser, else root)
