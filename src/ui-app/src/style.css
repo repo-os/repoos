@@ -10815,3 +10815,45 @@
 [data-ui-theme="catppuccin"][data-theme="light"] .diff-tok {
   color: var(--shiki-catppuccin-light, var(--txt));
 }
+
+/* Raw CLI diagnostics share one expandable card across chat surfaces. */
+.agent-diagnostic {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  color: var(--txt-dim);
+  background: var(--md-body-bg);
+}
+.agent-diagnostic > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.agent-diagnostic > summary::before {
+  content: "▸";
+}
+.agent-diagnostic[open] > summary::before {
+  content: "▾";
+}
+.agent-diagnostic-label {
+  font-weight: 600;
+  flex: none;
+}
+.agent-diagnostic-label.error {
+  color: var(--red);
+}
+.agent-diagnostic-summary {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agent-diagnostic > .agent-tool-out {
+  margin: 0;
+  border-top: 1px solid var(--border);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

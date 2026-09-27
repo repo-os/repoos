@@ -53,6 +53,7 @@ import ActivityIndicator from "./ActivityIndicator.vue";
 import VoiceDictate from "./VoiceDictate.vue";
 import AiChatThinking from "./AiChatThinking.vue";
 import ChatJumpToLatest from "./ChatJumpToLatest.vue";
+import ChatDiagnosticRow from "./ChatDiagnosticRow.vue";
 import ChatToolCallRow from "./ChatToolCallRow.vue";
 import { useChatScroll } from "../composables/useChatScroll";
 import { bubbleRole, stripAnsi, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
@@ -3680,7 +3681,12 @@ watch(
               </template>
               <div v-for="row in displayEntries" :key="row.key" class="agent-entry">
                 <!-- legacy plain line (claude / qwen / codex / pre-JSON sessions) -->
-                <div v-if="row.kind === 'line'" class="agent-line" :class="row.s">
+                <ChatDiagnosticRow
+                  v-if="row.kind === 'line' && row.s === 'err'"
+                  :text="row.text"
+                  :at="row.at"
+                />
+                <div v-else-if="row.kind === 'line'" class="agent-line" :class="row.s">
                   <span class="agent-pfx" :class="row.s">{{
                     row.s === "err" ? "✕" : row.s === "sys" ? "·" : "›"
                   }}</span>
@@ -3930,7 +3936,12 @@ watch(
                   </div>
                 </template>
                 <div v-for="row in reviewEntries" :key="row.key" class="agent-entry">
-                  <div v-if="row.kind === 'line'" class="agent-line" :class="row.s">
+                  <ChatDiagnosticRow
+                    v-if="row.kind === 'line' && row.s === 'err'"
+                    :text="row.text"
+                    :at="row.at"
+                  />
+                  <div v-else-if="row.kind === 'line'" class="agent-line" :class="row.s">
                     <span class="agent-pfx" :class="row.s">{{
                       row.s === "err" ? "✕" : row.s === "sys" ? "·" : "›"
                     }}</span>
