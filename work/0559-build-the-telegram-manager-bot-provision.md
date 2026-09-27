@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T17:32:41Z"
-updated_at: "2026-09-27T17:45:19Z"
+updated_at: "2026-09-27T17:45:21Z"
 ---
 ## Problem
 
@@ -56,3 +56,4 @@ Depends on #0530 (done) and the local adapter/client contract from #0531 (still 
 
 - 2026-09-27T17:32:41Z · created · unknown
 - 2026-09-27T17:45:19Z · needs_input, body
+- 2026-09-27T17:45:21Z · note: Human decision 2026-09-28: hosting settled as Neon Functions + Neon Postgres (Cloudflare Workers ruled out); needs_input cleared. Still held in inbox pending #0531's client contract.
