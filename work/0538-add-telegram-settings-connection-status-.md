@@ -10,8 +10,12 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:33:10Z"
-updated_at: "2026-09-27T15:42:34Z"
+updated_at: "2026-09-27T15:51:54Z"
 ---
+## Governing decision
+
+Follow [ADR 0007 — Telegram identity and authorization](../docs/adr/0007-telegram-identity-and-authorization.md) for user binding, chat binding, live role resolution, and unauthorized-sender behavior. This task implements or relies on that model; do not define a separate policy here.
+
 ## Problem
 
 The story's Phase 1 ends with "Add connection status and test-message controls," and its first provisioning step is "An administrator opens RepoOS Settings and selects *Connect Telegram*." Without this, an administrator has no way to start provisioning or confirm it worked.
@@ -42,12 +46,9 @@ Use the shared dialog components (`ui/dialog/*`, body-teleported) and the global
 - No token is reachable from the browser in any state, asserted by test.
 - A new `repoos.toml` key without a schema entry, a control, and docs fails the gate.
 
-## Decision reference
-
-Follow [ADR 0007 — Telegram identity and authorization](../docs/adr/0007-telegram-identity-and-authorization.md) for the shared identity, role-resolution, chat-binding, and sender-response policy. This task implements its specific flow.
-
 ## Activity
 
 - 2026-09-27T07:33:10Z · created · unknown
 - 2026-09-27T07:34:18Z · status inbox→ready
 - 2026-09-27T15:42:34Z · body
+- 2026-09-27T15:51:54Z · body
