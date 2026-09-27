@@ -1,5 +1,5 @@
 ---
-updated_at: "2026-09-27T23:05:58Z"
+updated_at: "2026-09-27T23:07:10Z"
 review_passes: 1
 id: "0554"
 title: Default the cost panel to 1 week and remember the selected range
