@@ -35,6 +35,7 @@
     "fmt:check": "oxfmt --check",
     "test": "node scripts/run-tests.mjs",
     "test:vitest": "vitest run --config src/ui-app/vite.config.ts",
+    "test:coverage": "bun scripts/run-tests.mjs --coverage",
     "smoke": "bun scripts/ui-smoke.mjs",
     "prepublishOnly": "REPOOS_SHIP=1 bun run build"
   },
@@ -68,6 +69,7 @@
     "@types/jsdom": "^30.0.0",
     "@types/node": "^26.2.0",
     "@vitejs/plugin-vue": "^6.0.8",
+    "@vitest/coverage-v8": "4.1.10",
     "@vue/test-utils": "^2.4.11",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

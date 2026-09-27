@@ -89,6 +89,11 @@ const ISOLATED = ["boot-timing.test.ts"];
 // `bun run test -- <args>` / `npm test -- <args>` can leak the bare `--`.
 const passthrough = process.argv.slice(2).filter((a) => a !== "--");
 const scoped = passthrough.includes("--changed");
+const coverageRequested = passthrough.includes("--coverage");
+const vitestArgs = passthrough.filter((a) => a !== "--coverage");
+// Coverage is opt-in so routine full test runs keep their normal cost. Never
+// report coverage for a changed-path subset; it would be misleading.
+const coverageArgs = coverageRequested && !scoped ? ["--coverage"] : [];
 
 const vitest = (args, env) => {
   const r = spawnSync(process.execPath, [VITEST, "run", "--config", CONFIG, ...args], {
@@ -103,7 +108,8 @@ const vitest = (args, env) => {
 // `--passWithNoTests` only when scoped: a full run that finds nothing is a real
 // failure.
 const bulk = vitest([
-  ...passthrough,
+  ...vitestArgs,
+  ...coverageArgs,
   ...(scoped ? ["--passWithNoTests"] : []),
   ...ISOLATED.flatMap((f) => ["--exclude", `**/${f}`]),
 ]);
@@ -111,7 +117,7 @@ const bulk = vitest([
 // Pass 2 — the latency-sensitive suites with the machine to themselves. The
 // basenames are positional name filters (substring-matched against the path).
 // `--passWithNoTests` because a `--changed` run may touch none of them.
-const isolated = vitest([...passthrough, "--passWithNoTests", "--retry", "2", ...ISOLATED], {
+const isolated = vitest([...vitestArgs, "--passWithNoTests", "--retry", "2", ...ISOLATED], {
   REPOOS_TEST_WORKERS: "1",
   REPOOS_STRICT_TIMING: "1",
 });

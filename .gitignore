@@ -1,6 +1,7 @@
 # RepoOS derived index cache
 .repoos/
 node_modules/
+coverage/
 
 # user docs site (docs.repoos.org) build cache — .vitepress/dist is covered by dist/
 user-docs/.vitepress/cache/
