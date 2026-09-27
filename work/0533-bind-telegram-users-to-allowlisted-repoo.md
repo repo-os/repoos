@@ -2,7 +2,7 @@
 id: "0533"
 title: Bind Telegram users to allowlisted RepoOS identities
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: server
 story: RepoOS Telegram Bot
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:32:28Z"
-updated_at: "2026-09-27T07:32:28Z"
+updated_at: "2026-09-27T07:34:13Z"
 ---
 ## Problem
 
@@ -53,3 +53,4 @@ This is deliberately **the same answer for both of the user's use cases**: an in
 ## Activity
 
 - 2026-09-27T07:32:28Z · created · unknown
+- 2026-09-27T07:34:13Z · status inbox→ready
