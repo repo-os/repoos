@@ -70,8 +70,8 @@ through the same handoff finalization the UI uses — commit the branch, run
 the command itself still exits 0. See
 [Review and close-out](/review-and-close-out).
 
-Run from inside a RepoOS-managed agent session for that same task, `repoos mv
-<id> review` records a **handoff request** instead of moving anything: the
+Run from inside a RepoOS-managed agent session for that same task,
+`repoos mv <id> review` records a **handoff request** instead of moving anything: the
 runner picks it up when the turn ends and finalizes then. That is deliberate —
 an agent moving its own task out of `active` would have its turn killed
 mid-flight.

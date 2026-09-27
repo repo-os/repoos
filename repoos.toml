@@ -176,6 +176,20 @@ kind = "ui-smoke"
 dependsOn = ["check-fmt:check", "check-lint", "build"]
 
 [[check.steps]]
+name = "user-docs-build"
+command = "bun install --frozen-lockfile && bun run build"
+cwd = "user-docs"
+requires = ["bun"]
+whenChanged = ["user-docs/**"]
+
+[[check.steps]]
+name = "landing-build"
+command = "bun install --frozen-lockfile && bun run build"
+cwd = "landing"
+requires = ["bun"]
+whenChanged = ["landing/**"]
+
+[[check.steps]]
 name = "macos-hub-icon-transparency"
 command = "bash macos/scripts/verify-dock-icon-transparency.sh"
 whenChanged = ["macos/RepoOSHub/Assets.xcassets/**", "macos/scripts/generate-app-icons.swift", "macos/scripts/verify-dock-icon-transparency.swift", "macos/scripts/verify-dock-icon-transparency.sh"]
