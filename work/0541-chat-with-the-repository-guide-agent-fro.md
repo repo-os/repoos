@@ -10,12 +10,8 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:33:38Z"
-updated_at: "2026-09-27T15:51:56Z"
+updated_at: "2026-09-27T15:52:48Z"
 ---
-## Governing decision
-
-Follow [ADR 0007 — Telegram identity and authorization](../docs/adr/0007-telegram-identity-and-authorization.md) for user binding, chat binding, live role resolution, and unauthorized-sender behavior. This task implements or relies on that model; do not define a separate policy here.
-
 ## Problem
 
 Story #0003 acceptance criterion: "Telegram users can chat with the repository guide agent." The story is explicit that these messages "map to existing RepoOS chat and agent APIs rather than introducing a separate agent runtime" — so this is a new front end onto `AgentRunner`, not a new agent.
@@ -55,3 +51,4 @@ Agent turns are the most expensive thing Telegram can trigger, and a group makes
 - 2026-09-27T07:33:38Z · created · unknown
 - 2026-09-27T15:42:39Z · body
 - 2026-09-27T15:51:56Z · body
+- 2026-09-27T15:52:48Z · body
