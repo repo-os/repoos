@@ -1365,7 +1365,9 @@ export class TailscaleHostPool {
    * unprobed; removed hosts stop receiving work and drop once idle.
    */
   sync(rv: RemoteValidationConfig | undefined): void {
-    this.containerImage = rv?.containerImage ?? "repoos-ci";
+    const nextContainerImage = rv?.containerImage ?? "repoos-ci";
+    const imageChanged = this.containerImage !== nextContainerImage;
+    this.containerImage = nextContainerImage;
     const wanted = resolveRemoteHosts(rv);
     const wantedByHost = new Map(wanted.map((h) => [h.host, h]));
 
@@ -1390,7 +1392,9 @@ export class TailscaleHostPool {
       }
       const nextUser = rv ? remoteHostUser(rv, spec) : "root";
       const reprobe =
-        hostRunner(existing.spec) !== hostRunner(spec) || existing.ssh.user !== nextUser;
+        imageChanged ||
+        hostRunner(existing.spec) !== hostRunner(spec) ||
+        existing.ssh.user !== nextUser;
       existing.removed = undefined;
       existing.spec = spec;
       existing.ssh = { ip: spec.host, user: nextUser, keyPath: this.keyPath };
