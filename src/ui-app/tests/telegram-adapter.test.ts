@@ -413,6 +413,8 @@ describe("BYO connect and encrypted storage", () => {
   it("validates identity with getMe and stores only an encrypted envelope", async () => {
     const { provider, store, calls } = makeProvider({ getMe: repoBot() });
     const bot = await provider.connectByBotToken(TOKEN);
+    // Group privacy mode stays enabled (BotFather default); adapter only reports it.
+    expect(bot.canReadAllGroupMessages).toBe(false);
     expect(bot).toEqual({
       id: 9876543210,
       username: "repoos_project_bot",

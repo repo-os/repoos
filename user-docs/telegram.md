@@ -51,9 +51,9 @@ webhook.
 
 The same connection procedure registers the bot's supported profile with
 Telegram: its command list (starting with `/help`), and name/description text
-that mentions the repository. Command *behavior* ships with the intake tasks
-that follow this adapter; until then nothing replies — unknown or unbound
-senders get silence, by design.
+that mentions the repository. Command *behavior* beyond authorization and
+account binding ships with later intake tasks; unauthorized senders get
+silence, by design.
 
 ### Update transport
 
@@ -71,9 +71,12 @@ code change above the adapter:
   each delivery with a secret token RepoOS generates and stores encrypted.
 
 Incoming updates are normalized identically under both transports and
-delivered to the intake/authorization pipeline. Until the identity-linking and
-authorization tasks land, updates are processed **no further**: nothing replies
-on the bot's behalf and no repository data can leave through them.
+delivered to the intake/authorization pipeline. The intake handler
+(`src/server/telegram/intake.ts`) resolves each sender against the allowlist
+on every message, rate-limits per user and per chat (in-memory, per-process),
+audits privileged intake, and silently drops unauthorized traffic per ADR 0007.
+Later tasks register work on the authorized callback; until then nothing
+replies on the bot's behalf beyond binding via `/start`.
 
 ### The bot's Telegram settings are the operator's to set
 
@@ -90,6 +93,21 @@ nor claims them:
 - **Profile photo** — upload it in BotFather; the Bot API method here accepts
   file uploads, which the connection flow does not perform.
 - **Inline mode** — leave off unless a later task opts in.
+
+## Bind a chat
+
+Notifications and commands only flow through chats an administrator explicitly
+binds. Adding the bot to a group — or opening a private chat — does **not**
+bind that chat.
+
+From **Settings → Telegram**, an administrator can:
+
+- Generate a short-lived **bind code** and post `/bind <code>` in the group (or
+  private chat) so that chat becomes an approved destination.
+- Bind a chat directly by `telegram_chat_id` when the id is already known.
+
+When a user completes account linking in a private chat (`/start <invite>`),
+that 1:1 chat is bound automatically as a side effect of their own link.
 
 ## Link your account
 
