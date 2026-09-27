@@ -66,14 +66,23 @@ function onKeydown(e: KeyboardEvent): void {
   if (e.key === "Escape") pickerOpen.value = false;
 }
 
+/** Read axes from the DOM (boot script already applied them). No URL rewrite — landing keeps a clean bar until the user uses the switcher. */
 function syncFromDocument(): void {
   appearance.value = readAppearanceFromDocument();
   designTheme.value = readDesignFromDocument();
-  commitThemeChange(designTheme.value, appearance.value);
 }
 
+/** Patch cross-site nav links only (e.g. repoos.org in the mobile screen). */
+function patchCrossSiteNavLinks(): void {
+  syncRepoOrgNavLinks(designTheme.value, appearance.value);
+}
+
+// Bar + screen instances both mount; listeners are duplicated but harmless. The
+// screen picker is torn down when the menu closes, so its mount re-patches
+// repoos.org links inside VPNavScreen after the bar instance already ran once.
 onMounted(() => {
   syncFromDocument();
+  patchCrossSiteNavLinks();
   document.addEventListener("click", onDocumentClick);
   window.addEventListener("keydown", onKeydown);
 });

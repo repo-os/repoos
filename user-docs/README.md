@@ -67,7 +67,9 @@ the navbar (desktop) and mobile nav screen.
 
 Resolution order per axis: **URL → `localStorage` → default** (Classic design;
 appearance defaults to **dark**, matching the previous `appearance: "dark"`
-config). Using the switcher updates the URL with `history.replaceState`.
+config). Using the switcher updates the URL with `history.replaceState`; a plain
+visit without query params keeps a clean address bar until then (same as the
+landing page).
 
 **Landing → docs:** `repoos.org` and `docs.repoos.org` are different origins, so
 `localStorage` does not cross between them. Docs links from the landing page append
