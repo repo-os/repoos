@@ -9,8 +9,9 @@ story: RepoOS Telegram Bot
 assigned_to: ai
 created_by: ""
 branch: ""
+model_override: cursor-grok-4.6-medium
 created_at: "2026-09-27T07:32:28Z"
-updated_at: "2026-09-27T15:59:54Z"
+updated_at: "2026-09-27T19:00:57Z"
 ---
 ## Problem
 
@@ -61,3 +62,4 @@ This is deliberately **the same answer for both of the user's use cases**: an in
 - 2026-09-27T15:51:50Z · body
 - 2026-09-27T15:52:41Z · body
 - 2026-09-27T15:59:54Z · body
+- 2026-09-27T19:00:57Z · model_override
