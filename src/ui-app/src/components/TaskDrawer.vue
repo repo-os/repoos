@@ -298,6 +298,12 @@ function onFreeformTranscribed(text: string): void {
   }
 }
 
+function adjustFreeformHeight(): void {
+  autoGrowTextarea(freeformTextarea.value, 420);
+}
+
+watch(freeformText, () => nextTick(adjustFreeformHeight), { flush: "post" });
+
 function clearFreeformDraft(): void {
   freeformText.value = "";
   ui.clearScreenshots();
@@ -2758,8 +2764,9 @@ watch(
                     id="nt-freeform"
                     ref="freeformTextarea"
                     v-model="freeformText"
-                    class="ff-textarea"
+                    class="ff-textarea ff-textarea-autogrow"
                     rows="10"
+                    @input="adjustFreeformHeight"
                     placeholder="Type the task however it comes out — like explaining it to a person. The PM agent writes the structured task file."
                   ></textarea>
                   <VoiceDictate @transcribed="onFreeformTranscribed" style="margin-bottom: 14px" />

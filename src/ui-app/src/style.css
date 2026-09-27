@@ -5232,6 +5232,11 @@
   outline: none;
   border-color: var(--border-bright);
 }
+.ff-textarea-autogrow {
+  max-height: min(420px, 45vh);
+  overflow-y: auto;
+  resize: none;
+}
 .ff-agent-bar {
   display: flex;
   flex-direction: column;
