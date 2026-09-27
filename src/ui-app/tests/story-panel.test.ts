@@ -622,6 +622,71 @@ describe("story panel → New task hand-off (#0555)", () => {
   });
 });
 
+describe("story panel Tasks tab sort and status colors (#0560)", () => {
+  beforeEach(() => {
+    useRepoStore().tasks = [
+      makeTask({ id: "0001", story: "Alpha slice", title: "First", status: "review" }),
+      makeTask({ id: "0002", story: "Alpha slice", title: "Second", status: "draft" }),
+      makeTask({ id: "0003", story: "Alpha slice", title: "Third", status: "active" }),
+    ];
+    useRepoStore().storyDefinitions = [definition("Alpha slice", ALPHA_BODY)];
+  });
+
+  async function openTasksTab(): Promise<void> {
+    const wrapper = mountView();
+    await flushPromises();
+    await wrapper.find(".story-head").trigger("click");
+    await flushPromises();
+    await openTab("Tasks");
+  }
+
+  function rows(): HTMLElement[] {
+    return Array.from(panel()!.querySelectorAll<HTMLElement>(".story-panel-task"));
+  }
+
+  function titles(): string[] {
+    return rows().map((r) =>
+      (r.querySelector(".story-panel-task-title")?.textContent ?? "").trim(),
+    );
+  }
+
+  it("colors the status pill with the same status color the dot gets", async () => {
+    await openTasksTab();
+    const pills = Array.from(panel()!.querySelectorAll<HTMLElement>(".story-panel-task-status"));
+    expect(pills).toHaveLength(3);
+    const { statusColor } = await import("../src/stores/repo");
+    // jsdom serializes the inline color as rgb(); compare that form.
+    const rgb = (hex: string): string => {
+      const n = hex.startsWith("#") ? hex.slice(1) : hex;
+      const parts = [0, 2, 4].map((i) => Number.parseInt(n.slice(i, i + 2), 16));
+      return `rgb(${parts.join(", ")})`;
+    };
+    for (const [i, row] of rows().entries()) {
+      const status = ["review", "draft", "active"][i];
+      expect(pills[i]!.style.color).toBe(rgb(statusColor(status)));
+      expect(pills[i]!.style.borderColor).toBe(
+        `color-mix(in srgb, ${rgb(statusColor(status))} 40%, transparent)`,
+      );
+      // The dot keeps the single source of truth, so pill and dot can't diverge.
+      const dot = row.querySelector<HTMLElement>(".story-panel-task-dot")!;
+      expect(dot.style.background).toBe(rgb(statusColor(status)));
+    }
+  });
+
+  it("reorders the rows by pipeline stage as soon as Status sort is chosen", async () => {
+    await openTasksTab();
+    // "Most recently updated" was the default; every updated_at is null, so the
+    // row order is the input order.
+    expect(titles()).toEqual(["First", "Second", "Third"]);
+
+    useRepoStore().setStorySortOrder("status");
+    await flushPromises();
+
+    // draft → active → review: Second, Third, First.
+    expect(titles()).toEqual(["Second", "Third", "First"]);
+  });
+});
+
 describe("story side panel styling contract", () => {
   const panelSource = readFileSync(
     join(resolve(__dirname, ".."), "src/components/StoryPanel.vue"),

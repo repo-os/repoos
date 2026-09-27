@@ -242,15 +242,34 @@ export function draftColumnWithLabel(labels: Record<string, string>): Column {
 /** Sort modes for work-page task columns. "recent" sorts by updated_at desc,
  * "current" keeps the backend's status/priority/id order, and the task-number
  * modes compare the numeric task id (e.g. 0468) rather than its string form.
+ * "status" (#0560, story panel only) orders by pipeline stage — see
+ * `STATUS_PIPELINE`.
  */
-export type SortOrder = "recent" | "current" | "taskNumberNewest" | "taskNumberOldest";
+export type SortOrder = "recent" | "current" | "taskNumberNewest" | "taskNumberOldest" | "status";
 
 export const SORT_ORDER_OPTIONS: { value: SortOrder; label: string }[] = [
   { value: "recent", label: "Most recently updated" },
   { value: "current", label: "Priority level" },
   { value: "taskNumberNewest", label: "Task number newest" },
   { value: "taskNumberOldest", label: "Task number oldest" },
+  { value: "status", label: "Status" },
 ];
+
+/**
+ * Dropdown options for the *work board* (#0560). The board shares
+ * `SORT_ORDER_OPTIONS` with the story panel except for the `status` mode,
+ * which the story panel Tasks tab introduced — the board is grouped by status
+ * columns already, so a status sort there would be meaningless. Board
+ * behavior stays exactly as it was before that mode existed.
+ */
+export const BOARD_SORT_ORDER_OPTIONS = SORT_ORDER_OPTIONS.filter((o) => o.value !== "status");
+
+/**
+ * Pipeline order used by the `status` sort mode (#0560), from first to final
+ * stage. This is the same order `STATUS_ORDER` renders in on the story panel
+ * and work page; it lives here beside the sort that consumes it.
+ */
+const STATUS_PIPELINE: Status[] = ["draft", "inbox", "ready", "active", "review", "done"];
 
 const SORT_ORDER_KEY = "repoos.board.sortOrder";
 const STORY_SORT_ORDER_KEY = "repoos.storyPanel.sortOrder";
@@ -336,7 +355,11 @@ function readSortOrderFromKey(key: string): SortOrder {
     const raw = localStorage.getItem(key);
     if (raw === null) return "recent";
     const v = JSON.parse(raw);
-    return v === "recent" || v === "current" || v === "taskNumberNewest" || v === "taskNumberOldest"
+    return v === "recent" ||
+      v === "current" ||
+      v === "taskNumberNewest" ||
+      v === "taskNumberOldest" ||
+      v === "status"
       ? v
       : "recent";
   } catch {
@@ -398,9 +421,23 @@ export function sortTasks(tasks: Task[], order: SortOrder): Task[] {
         if (pa !== pb) return pa - pb;
         return 0;
       });
+    case "status":
+      return copy.sort((a, b) => statusRank(a.status) - statusRank(b.status));
     default:
       return copy;
   }
+}
+
+/**
+ * Pipeline-stage rank of a status for the `status` sort mode (#0560). Equal
+ * ranks return 0, which with the stable `Array.prototype.sort` keeps each
+ * status group in its existing order. A status outside the pipeline (unknown
+ * or added later without updating `STATUS_PIPELINE`) sorts after all known
+ * stages rather than throwing.
+ */
+function statusRank(status: string): number {
+  const rank = STATUS_PIPELINE.indexOf(status as Status);
+  return rank === -1 ? STATUS_PIPELINE.length : rank;
 }
 
 /** The persisted "new version available" notice, or null. */
