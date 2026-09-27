@@ -2,16 +2,16 @@
 id: "0532"
 title: Serve the Telegram webhook endpoint with secret validation
 type: feature
-status: ready
+status: active
 priority: p1
 area: server
 story: RepoOS Telegram Bot
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/serve-the-telegram-webhook-endpoint-with
 review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-27T07:32:19Z"
-updated_at: "2026-09-27T23:18:17Z"
+updated_at: "2026-09-27T23:18:18Z"
 ---
 ## Problem
 
@@ -45,3 +45,4 @@ So the webhook must be added to `PUBLIC_PREFIXES` — **but the middleware has n
 - 2026-09-27T07:32:19Z · created · unknown
 - 2026-09-27T07:34:12Z · status inbox→ready
 - 2026-09-27T23:18:17Z · review_model_override
+- 2026-09-27T23:18:18Z · status ready→active, branch
