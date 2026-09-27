@@ -772,6 +772,17 @@
   gap: 10px;
   flex-wrap: wrap;
 }
+.settings-header-actions .settings-search-trigger {
+  min-width: 0;
+}
+.search-row-hint {
+  cursor: default;
+  opacity: 0.85;
+}
+.search-row-hint .search-row-title {
+  font-weight: 500;
+  color: var(--txt-dim);
+}
 .page-help-link {
   appearance: none;
   border: 0;
