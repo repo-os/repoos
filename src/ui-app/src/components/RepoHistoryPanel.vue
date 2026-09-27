@@ -357,13 +357,15 @@ function openDiff(sha: string, file?: string): void {
   flex-direction: column;
   min-height: 0;
   height: 100%;
+  --hist-inset: 12px;
+  padding-inline: var(--hist-inset);
 }
 .hist-toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: 12px 16px;
   align-items: flex-end;
-  padding: 4px 4px 14px;
+  padding: var(--hist-inset) 4px 14px 0;
   border-bottom: 1px solid var(--border);
 }
 .hist-field {
@@ -394,7 +396,7 @@ function openDiff(sha: string, file?: string): void {
   margin-bottom: 1px;
 }
 .hist-state {
-  padding: 28px 12px;
+  padding: 28px 0;
   color: var(--txt-muted);
   font-size: 13px;
 }
@@ -409,10 +411,13 @@ function openDiff(sha: string, file?: string): void {
   margin: 8px;
   padding: 10px 12px;
 }
+.hist-rail .hist-error {
+  margin-inline: 0;
+}
 .hist-rail {
   flex: 1;
   overflow: auto;
-  padding: 0 8px 24px 4px;
+  padding: 0 8px 24px 0;
 }
 .hist-day {
   position: relative;
