@@ -249,12 +249,13 @@ function nextStoryNumber(config: RepoOSConfig): string {
  *     in which case the oldest claimant keeps it and the rest are reassigned.
  *   - Deterministic. Existing definitions are numbered oldest-first (by
  *     `created_at`, then path), skipping any number already in use.
- *   - A *surviving* story never has its number reassigned. Deleting the
- *     highest-numbered story does free that number for the next one, exactly as
- *     it does for inputs — the guarantee is stability for the stories that
- *     remain, not a permanent ledger. Making it monotonic would need a
- *     high-water mark persisted outside the story files, which is a different
- *     design from the input numbering this deliberately mirrors.
+ *   - Aside from duplicate resolution, a story that already holds a unique
+ *     number keeps it across restarts. Deleting the highest-numbered story does
+ *     free that number for the next one, exactly as it does for inputs — the
+ *     guarantee is stability for the stories that remain, not a permanent
+ *     ledger. Making it monotonic would need a high-water mark persisted outside
+ *     the story files, which is a different design from the input numbering this
+ *     deliberately mirrors.
  *
  * A file whose frontmatter can't be patched is left alone and NOT reported as
  * changed, so it stays eligible for the next run instead of being silently
