@@ -215,4 +215,43 @@ describe("reviewer thinking state in the task panel (#0209)", () => {
     expect(wrapper.find(".review-card").exists()).toBe(true);
     expect(wrapper.text()).toContain("good to go");
   });
+
+  it("labels a previous-round report and withholds sign-off while a new review is pending", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    vi.stubGlobal("EventSource", FakeEventSource);
+    const task = makeTask({
+      body: "## Activity\n\n- 2026-08-15T00:10:00Z · status active→review\n",
+      automaticReview: { running: false, enabled: true },
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/health"))
+          return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+        if (url.includes("/api/index"))
+          return json({ tasks: [task], counts: { ...EMPTY_COUNTS, review: 1 }, taskCount: 1 });
+        if (url.includes("/api/agents/running")) return json({ tasks: [] });
+        if (url.includes("/review"))
+          return json({ ok: true, running: false, enabled: true, review: REPORT, lines: [] });
+        if (url.includes("/output")) return json({ ok: true, lines: [], stats: {} });
+        throw new Error("unexpected fetch: " + url);
+      }),
+    );
+    const repo = useRepoStore();
+    await repo.init();
+
+    const wrapper = await mountDrawer(pinia, task);
+    const ui = useUiStore();
+    ui.activeTab = "review";
+    await flush();
+
+    expect(wrapper.text()).toContain("Awaiting a new review");
+    expect(wrapper.find(".review-stale").text()).toContain("Previous review");
+    const button = (label: string) =>
+      wrapper.findAll("button").find((b) => b.text().includes(label));
+    expect(button("Move to done")?.attributes("disabled")).toBeDefined();
+    expect(button("Send engineer")?.attributes("disabled")).toBeDefined();
+    expect(button("Review again")?.attributes("disabled")).toBeUndefined();
+  });
 });

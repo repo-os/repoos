@@ -6,6 +6,7 @@ import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
 import { recordOrigin, takeOrigin } from "../lib/flip";
 import { parseReviewVerdict } from "../lib/reviewVerdict";
+import { reportPredatesLatestHandoff } from "../lib/reviewFreshness";
 import {
   autoRepairHint,
   formatActivity,
@@ -391,6 +392,17 @@ function needsInputHint(task: Task): CardHint {
 const reviewVerdict = computed(() =>
   parseReviewVerdict(repo.reviewFor(props.task.id)?.report?.markdown),
 );
+const awaitingFreshReview = computed(() => {
+  const report = repo.reviewFor(props.task.id)?.report;
+  return (
+    props.task.status === "review" &&
+    props.task.needsInputReason !== "review-failed" &&
+    !inPipeline.value &&
+    !repo.isRunning(props.task.id) &&
+    !!report &&
+    reportPredatesLatestHandoff(props.task, report.at)
+  );
+});
 
 /** The three review substates: reviewing / coding / waiting for human. */
 const hint = computed<CardHint | null>(() => {
@@ -420,6 +432,14 @@ const hint = computed<CardHint | null>(() => {
     }
     if (repo.reviewFor(t.id)?.running) {
       return { label: "Reviewing…", title: "automatic review in progress", cls: "tc-reviewing" };
+    }
+    if (awaitingFreshReview.value) {
+      return {
+        label: "awaiting fresh review",
+        title:
+          "The visible report is from before the latest engineering handoff. Open the task to follow the new review or start it again if needed.",
+        cls: "tc-reviewing",
+      };
     }
     if (repo.isQueued(t.id)) return QUEUED_HINT;
     if (repo.isRunning(t.id)) {
@@ -552,6 +572,7 @@ const IN_PIPELINE: CardAction = {
 const action = computed<CardAction | null>(() => {
   const t = props.task;
   if (t.status === "review" && inPipeline.value) return IN_PIPELINE;
+  if (awaitingFreshReview.value) return null;
   // A failed Move to done leaves its error banner + Fix button on the card
   // (below) — showing "Move to done" here too just invites clicking straight
   // back into the same failure. The task drawer keeps its own Move to done
@@ -578,6 +599,7 @@ const reviewReady = computed(() => {
     !inPipeline.value &&
     !repo.reviewFor(props.task.id)?.running &&
     !repo.isRunning(props.task.id) &&
+    !awaitingFreshReview.value &&
     report?.state !== "incomplete" &&
     reviewVerdict.value?.tone === "green"
   );
@@ -751,6 +773,7 @@ async function openDebuggerFromError(): Promise<void> {
       'waiting-for-human':
         task.status === 'review' &&
         !inPipeline &&
+        !awaitingFreshReview &&
         !repo.reviewFor(task.id)?.running &&
         !repo.isRunning(task.id),
       'review-ready': reviewReady,
