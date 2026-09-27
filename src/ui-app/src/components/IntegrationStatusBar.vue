@@ -349,15 +349,6 @@ function stageClass(s: string, i: number): string {
     <!-- Expanded bar -->
     <div v-else ref="barEl" class="ibar">
       <div class="ibar-top">
-        <button
-          type="button"
-          class="ibar-toggle"
-          :title="'Collapse integration pipeline'"
-          @click="collapsed = true"
-        >
-          <ChevronDown class="bar-chev" aria-hidden="true" />
-        </button>
-
         <template v-if="idle">
           <span class="ibar-title">
             <span class="bar-dot idle"></span>
@@ -428,6 +419,15 @@ function stageClass(s: string, i: number): string {
             <button type="button" class="bar-btn" @click="retry">Retry</button>
           </div>
         </template>
+
+        <button
+          type="button"
+          class="ibar-toggle"
+          :title="'Collapse integration pipeline'"
+          @click="collapsed = true"
+        >
+          <ChevronDown class="bar-chev" aria-hidden="true" />
+        </button>
       </div>
 
       <div v-if="showQueue" class="ibar-queue">
@@ -493,6 +493,8 @@ function stageClass(s: string, i: number): string {
   width: 22px;
   height: 22px;
   flex-shrink: 0;
+  margin-left: auto;
+  align-self: flex-start;
   border: none;
   background: none;
   color: var(--txt-faint);
