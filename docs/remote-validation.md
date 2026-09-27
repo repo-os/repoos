@@ -249,12 +249,19 @@ its `runner` says to expect — Docker, the configured `containerImage`
 actually present (not just the daemon reachable — a daemon up with the
 image never built/pulled used to report healthy, then fail every job it
 got, #0521 review), or bun/git for a native host — see "Docker vs. native"
-above — **the bun cache directory (`~/.cache/repoos-bun`) is actually
-writable** (create-then-remove a marker file, not just `mkdir` — a directory
-that already exists read-only for new files would otherwise pass a bare
-`mkdir -p`; bad permissions or a full/read-only volume here used to report
-healthy and only fail on the first real `bun install`, #0521 review) — and
-an **up-to-date `validate.sh` that accepts the artifacts dir as
+above — **the bun cache is actually writable by whoever will write to it**
+(native: a plain host-path write-then-remove, since bun runs as the SSH
+user directly; Docker: the exact sequence `validate.sh` runs against the
+named `repoos-bun-cache` volume — chown it to the container's uid as root,
+then write as that uid — proved live against a real macOS/Colima host
+rather than approximated, after two earlier, narrower versions of this
+check both turned out insufficient in successive review rounds: first it
+tested only the SSH user's own — trivially true — access to a *host
+directory*; second it added a host-side `chmod`, which is invisible to the
+container on macOS/Colima, whose bind-mount view maps a host directory to
+root:root 0755 inside the VM regardless of the real host-side permissions.
+A named volume sidesteps that host-filesystem-mapping problem entirely) —
+and an **up-to-date `validate.sh` that accepts the artifacts dir as
 its third argument**. A host that fails is reported instead
 of failing jobs — its state and reason show in Settings → Remote validation
 (Hosts) and in `GET /api/remote-validation/status` (`hosts[]` with `probed`,
