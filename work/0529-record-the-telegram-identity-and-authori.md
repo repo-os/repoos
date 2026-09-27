@@ -2,7 +2,7 @@
 id: "0529"
 title: Record the Telegram identity and authorization model
 type: feature
-status: review
+status: active
 priority: p1
 area: docs
 story: RepoOS Telegram Bot
@@ -12,7 +12,7 @@ branch: feat/record-the-telegram-identity-and-authori
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-27T07:31:53Z"
-updated_at: "2026-09-27T15:48:35Z"
+updated_at: "2026-09-27T15:50:27Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "[object Object]"
@@ -96,3 +96,4 @@ Turn off this advice by setting config variable advice.detachedHead to false
 failed to connect to the docker API at unix:///var/run/docker.sock; check if the path is correct and if the daemon is running: dial unix /var/run/docker.sock: connect: no such file or directory
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-09-27T15:48:35Z · needs_input dismissed by hello@repoos.org
+- 2026-09-27T15:50:27Z · status review→active
