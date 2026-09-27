@@ -2,7 +2,7 @@
 id: "0551"
 title: Let long prompts auto-grow the composer textarea
 type: feature
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
@@ -224,3 +224,4 @@ error: script "build:raw" exited with code 137
 error: script "build" exited with code 137
 [validate] gate exit 137 — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally
 - 2026-09-27T15:33:05Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-09-27T15:33:05Z · status review→active
