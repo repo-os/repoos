@@ -253,13 +253,20 @@ describe("new task panel story (#0555)", () => {
         if (u.includes("/api/health"))
           return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
         if (u.includes("/api/index") || u.includes("/api/board"))
-          return json({ tasks: [], counts: { ...EMPTY_COUNTS }, taskCount: 0 });
+          return json({
+            tasks: [],
+            counts: { ...EMPTY_COUNTS },
+            taskCount: 0,
+            storyDefinitions: [ALPHA_DEF],
+          });
         if (u.includes("/api/agents/running")) return json({ tasks: [] });
         if (u.includes("/api/tasks/freeform"))
           return json({
             ok: true,
             fallback: false,
-            task: makeTask({ id: "0555", path: "work/0555-test.md" }),
+            // The server marks the run in flight before responding, so the
+            // response task carries pmWorking (the optimistic local flag).
+            task: makeTask({ id: "0555", path: "work/0555-test.md", pmWorking: true }),
           });
         if (u.includes("/api/tasks")) return json(makeTask({ id: "0555" }));
         return json({ ok: true, tasks: [], agents: [] });
@@ -312,6 +319,25 @@ describe("new task panel story (#0555)", () => {
     const create = wrapper!.findAll("button").find((b) => b.text().trim() === "Create");
     expect(create, "manual Create button missing").toBeTruthy();
     await create!.trigger("click");
+    await flush();
+  }
+
+  /** Type a description and submit the Freeform form — the default mode. */
+  async function submitFreeform(): Promise<void> {
+    expect(wrapper!.find("#nt-freeform").exists()).toBe(true);
+    await wrapper!.find("#nt-freeform").setValue("Add a company dashboard");
+    const create = wrapper!.findAll("button").find((b) => b.text().trim() === "Create task");
+    expect(create, "freeform Create task button missing").toBeTruthy();
+    await create!.trigger("click");
+    await flush();
+  }
+
+  /** Click a control by exact label on the acknowledgment panel. */
+  async function clickAckButton(label: string): Promise<void> {
+    expect(wrapper!.find(".ff-done").exists(), "acknowledgment panel not showing").toBe(true);
+    const btn = wrapper!.findAll("button").find((b) => b.text().trim() === label);
+    expect(btn, `no "${label}" button on the acknowledgment panel`).toBeTruthy();
+    await btn!.trigger("click");
     await flush();
   }
 
@@ -427,17 +453,53 @@ describe("new task panel story (#0555)", () => {
 
   it("sends the story on the freeform (default) create, then resets it", async () => {
     await mountNewTask({ story: "Alpha slice" });
-    expect(wrapper!.find("#nt-freeform").exists()).toBe(true); // Freeform is the default
-
-    await wrapper!.find("#nt-freeform").setValue("Add a company dashboard");
-    const create = wrapper!.findAll("button").find((b) => b.text().trim() === "Create task");
-    expect(create, "freeform Create task button missing").toBeTruthy();
-    await create!.trigger("click");
-    await flush();
+    await submitFreeform();
 
     expect(postBody("/api/tasks/freeform", true).story).toBe("Alpha slice");
     // Per-open context: the tag went with the create, not into the next one.
     expect(useUiStore().nt.story).toBe("");
+    // …but the acknowledgment panel still knows it, for the way out.
+    expect(wrapper!.find(".ff-done").exists()).toBe(true);
+  });
+
+  it("lands back on the story when the acknowledgment is dismissed with Done", async () => {
+    await mountNewTask({ story: "Alpha slice" });
+    await submitFreeform();
+    // `nt.story` was already cleared at submit — the panel must not read it back.
+    expect(useUiStore().nt.story).toBe("");
+
+    await clickAckButton("Done");
+
+    expect(push).toHaveBeenCalledWith({ name: "stories", query: { story: "0001" } });
+    expect(useUiStore().isNew).toBe(false);
+    expect(useUiStore().active).toBeNull();
+  });
+
+  it("keeps Done's navigation-free dismissal when the create carried no story", async () => {
+    await mountNewTask();
+    await submitFreeform();
+
+    await clickAckButton("Done");
+
+    expect(push).not.toHaveBeenCalled();
+    expect(useUiStore().isNew).toBe(false);
+  });
+
+  it("lands back on the story when the PM finishes while the acknowledgment is up", async () => {
+    await mountNewTask({ story: "Alpha slice" });
+    await submitFreeform();
+
+    const repo = useRepoStore();
+    // Set optimistically from the freeform response — the run is live.
+    expect(repo.pmWorkingFor("0555")).toBe(true);
+    // The run's exit reconciles the flag exactly as `task.pmFinished` does, so
+    // the drawer's auto-open watcher fires while the acknowledgment is showing.
+    await repo.refresh();
+    await flush();
+
+    expect(push).toHaveBeenCalledWith({ name: "stories", query: { story: "0001" } });
+    expect(useUiStore().isNew).toBe(false);
+    expect(wrapper!.find(".ff-done").exists()).toBe(false);
   });
 
   it("sends the story on the manual create and lands back on that story", async () => {
