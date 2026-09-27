@@ -27,6 +27,7 @@ import type { ReviewState, Task, AgentOutputEntry, SessionUsage, DetectedAgent }
 import {
   COLUMNS,
   columnsWithLabels,
+  PM_FLESH_OUT_CANNED_MESSAGE,
   pmCannedMessagesFor,
   statusColor,
   useRepoStore,
@@ -71,6 +72,7 @@ import DebugPanel from "./DebugPanel.vue";
 import StopWorkConfirmModal from "./StopWorkConfirmModal.vue";
 import DeleteTaskDialog from "./DeleteTaskDialog.vue";
 import { storyDeepLinkRef, storyOpenLabel } from "../lib/story-deep-link";
+import { normalizeStoryName } from "../../../core/stories.js";
 import { insertTextAtCursor } from "../utils/text-insertion";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
 import Dialog from "./ui/dialog/root.vue";
@@ -287,6 +289,14 @@ const freeformRunId = ref<string | null>(null);
 const freeformSubmitted = ref(false);
 /** The draft the user just created, referenced by the acknowledgment panel. */
 const submittedTask = ref<Task | null>(null);
+/**
+ * The story the task on the acknowledgment panel was created with (#0555).
+ * Captured here rather than read back from `ui.nt.story`, which is cleared the
+ * moment the create succeeds — the form has to start clean for the next task,
+ * but **Done** and the PM-finished auto-open still need to find their way back
+ * to the story this create belonged to.
+ */
+const freeformStory = ref("");
 
 const freeformTextarea = ref<HTMLTextAreaElement | null>(null);
 const draftMsgTextarea = ref<HTMLTextAreaElement | null>(null);
@@ -341,6 +351,7 @@ watch(
     draftSaved.value = null;
     freeformSubmitted.value = false;
     submittedTask.value = null;
+    freeformStory.value = "";
     // Unlike freeformText, a leftover freeformRunId is NOT something to keep:
     // it only gets set once the user actually clicks "Create task" (not just by
     // typing), and closing the drawer before that run's stream finishes left it
@@ -370,7 +381,16 @@ async function createFreeform(): Promise<void> {
     const overrides = freeformIsCustom.value
       ? { agent: freeformOverride.agent, cli: freeformOverride.cli, model: freeformOverride.model }
       : undefined;
-    const res = await repo.createFreeformTask(text, freeformRunId.value, overrides);
+    // #0555: Freeform is the default mode, so this is the path most story
+    // hand-offs take — the tag rides in the POST body and lands on the draft
+    // before the PM agent ever sees it.
+    const res = await repo.createFreeformTask(
+      text,
+      freeformRunId.value,
+      overrides,
+      undefined,
+      ui.nt.story,
+    );
     // Agent error: keep the explanation in the textarea, show the error, and
     // point at the draft that preserved the capture.
     if (res.fallback && res.fallbackReason === "agent-failed") {
@@ -389,8 +409,15 @@ async function createFreeform(): Promise<void> {
     await uploadPendingScreenshots(res.task.id);
     submittedTask.value = res.task;
     freeformSubmitted.value = true;
+    // Capture the story BEFORE clearing it: `nt.story` is per-open context and
+    // must not leak into the next task queued from this panel, but the ack's
+    // dismissal paths still navigate by it (#0555).
+    freeformStory.value = ui.nt.story;
     // Clear the input so a "Create another task" tap starts from a clean form.
     freeformText.value = "";
+    // The story went with this create (#0555); per-open context, so the next
+    // task queued from this acknowledgment panel starts untagged.
+    ui.nt.story = "";
   } catch (err) {
     freeformError.value = err instanceof Error ? err.message : String(err);
   } finally {
@@ -414,11 +441,17 @@ function createAnotherTask(): void {
 
 /** Acknowledge the in-flight creation and leave the new-task pane. */
 function doneFreeform(): void {
+  const story = freeformStory.value;
   freeformSubmitted.value = false;
   submittedTask.value = null;
   if (freeformRunId.value) repo.clearOutput(freeformRunId.value);
   freeformRunId.value = null;
   ui.close();
+  // #0555: a freeform create that carried a story ends on that story — the
+  // same destination the manual path takes, and the same "close this surface,
+  // then navigate" hand-off the story panel makes. With no story the
+  // acknowledgment keeps the navigation-free dismissal it has always had.
+  if (story) routeAfterCreate(story);
 }
 
 // The user reported staying stuck on the "Creating your task" acknowledgment
@@ -434,10 +467,22 @@ watch(
     if (!wasWorking || working) return;
     if (!freeformSubmitted.value || !submittedTask.value || !ui.isNew) return;
     const task = submittedTask.value;
+    const story = freeformStory.value;
     freeformSubmitted.value = false;
     submittedTask.value = null;
     if (freeformRunId.value) repo.clearOutput(freeformRunId.value);
     freeformRunId.value = null;
+    if (story) {
+      // #0555: this create came from a story, so the wait ends on that story
+      // rather than on /work — the same destination Done takes above. Opening
+      // the task drawer as well would put the story panel and the task drawer
+      // on screen at once; the finished task is one click away in the story's
+      // Tasks tab, which is what #0311 wanted the user to see: creation
+      // happened, and here it is.
+      ui.close();
+      routeAfterCreate(story);
+      return;
+    }
     void ui.openTask(task);
     router.push("/work");
   },
@@ -468,6 +513,22 @@ function draftTitle(text: string): string {
   return flat.length <= 60 ? flat || "Untitled task" : `${flat.slice(0, 57).trimEnd()}…`;
 }
 
+/**
+ * Where a create takes the user (#0555): back to the story the task was
+ * created from — the `?story=` resolver takes a registered story's number or
+ * a tag-only story's key, which is exactly what `storyDeepLinkRef` produces —
+ * and to the board when it carries no story, i.e. the unconditional `/work`
+ * push every create made before this.
+ */
+function routeAfterCreate(story: string): void {
+  const ref = storyDeepLinkRef(story, repo.storyDefinitions);
+  if (ref) {
+    router.push({ name: "stories", query: { story: ref } });
+    return;
+  }
+  router.push("/work");
+}
+
 /** Save the raw freeform text as a draft task, bypassing the PM agent. */
 async function createDraft(): Promise<void> {
   const text = freeformText.value.trim();
@@ -475,6 +536,9 @@ async function createDraft(): Promise<void> {
   ui.saving = true;
   freeformError.value = "";
   draftSaved.value = null;
+  // Captured before the close: the draft carries `ui.nt.story`, so it lands
+  // back on the story it belongs to rather than on a board that shows none.
+  const story = ui.nt.story;
   try {
     await repo.createTask({
       ...ui.nt,
@@ -484,7 +548,7 @@ async function createDraft(): Promise<void> {
     });
     ui.close();
     freeformText.value = "";
-    router.push("/work");
+    routeAfterCreate(story);
   } catch (err) {
     repo.onError(err);
   } finally {
@@ -495,6 +559,9 @@ async function createDraft(): Promise<void> {
 async function createTask(): Promise<void> {
   if (!ui.nt.title) return;
   ui.saving = true;
+  // Captured before the reset below — this is where "created from a story"
+  // would otherwise be lost.
+  const story = ui.nt.story;
   try {
     const created = await repo.createTask({ ...ui.nt });
     await uploadPendingScreenshots(created.id);
@@ -505,7 +572,9 @@ async function createTask(): Promise<void> {
     ui.nt.priority = "p2";
     ui.nt.type = "feature";
     ui.nt.assignedTo = "";
-    router.push("/work");
+    // Per-open context, not a draft: the next New task starts untagged.
+    ui.nt.story = "";
+    routeAfterCreate(story);
   } catch (err) {
     repo.onError(err);
   } finally {
@@ -1007,6 +1076,20 @@ function onStorySelectUpdate(v: string | null): void {
 }
 
 const assignedStoryName = computed(() => draft.story.replace(/\s+/g, " ").trim());
+
+/**
+ * The New task panel's own story control (#0555): same options, same "none"
+ * sentinel, same label as the details form's — but bound to `ui.nt`, the
+ * new-task form. The two never render at once (`ui.isNew` vs `ui.active`), and
+ * sharing the state object between the create form and the edit form would let
+ * one leak into the other.
+ */
+const ntStorySelectValue = computed(() => normalizeStoryName(ui.nt.story) || STORY_NONE_SELECT);
+const ntStorySelectLabel = computed(() => normalizeStoryName(ui.nt.story) || "No story");
+
+function onNtStorySelectUpdate(v: string | null): void {
+  ui.nt.story = normalizeStoryName(!v || v === STORY_NONE_SELECT ? "" : v);
+}
 
 const showStoryOpenLink = computed(() => storiesEnabled.value && Boolean(assignedStoryName.value));
 
@@ -2156,6 +2239,20 @@ async function runNeedsInputPrimaryAction(): Promise<void> {
     await reviewAgain();
     return;
   }
+  if (action.kind === "send-pm") {
+    if (!pmAgentEnabled.value) {
+      repo.onError(new Error("PM agent is not configured — enable it on the Agents page"));
+      return;
+    }
+    if (pmBusy.value) {
+      repo.onError(new Error("PM is busy — wait for the current run to finish"));
+      return;
+    }
+    ui.activeTab = "pm";
+    pmDraft.value = PM_FLESH_OUT_CANNED_MESSAGE;
+    await pmSend();
+    return;
+  }
   if (ui.active.questions?.length) {
     openPmWithNeedsInputQuestions();
     return;
@@ -2725,6 +2822,31 @@ watch(
             <p class="shot-hint" v-else>
               PNG, JPEG, GIF, WebP, AVIF or BMP — attached to the new task when you create it.
             </p>
+          </div>
+          <!-- #0555: story, shared by both modes so Freeform (the default)
+               can't silently drop the tag. It sits with the other mode-
+               independent field (Screenshots) rather than inside the Manual
+               grid, and it is gated on the same `storiesEnabled` check the
+               details form's control uses. -->
+          <div v-if="storiesEnabled" class="field">
+            <label for="nt-story">Story</label>
+            <Select :model-value="ntStorySelectValue" @update:model-value="onNtStorySelectUpdate">
+              <SelectTrigger id="nt-story">
+                <SelectValue placeholder="No story">
+                  {{ ntStorySelectLabel }}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent position="popper">
+                <SelectViewport
+                  class="h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
+                >
+                  <SelectItem :value="STORY_NONE_SELECT">No story</SelectItem>
+                  <SelectItem v-for="name in storyOptions" :key="name" :value="name">
+                    {{ name }}
+                  </SelectItem>
+                </SelectViewport>
+              </SelectContent>
+            </Select>
           </div>
           <template v-if="newMode === 'freeform'">
             <div v-if="freeformSubmitted" class="ff-done">
@@ -3350,7 +3472,9 @@ watch(
                     startingWork ||
                     reviewBusy ||
                     review?.running ||
-                    dismissNeedsInputBusy
+                    dismissNeedsInputBusy ||
+                    (needsInputPrimary.kind === 'send-pm' &&
+                      (!pmAgentEnabled || pmBusy || pmSubmitting))
                   "
                   @click="runNeedsInputPrimaryAction"
                 >

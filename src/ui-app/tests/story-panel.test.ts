@@ -543,6 +543,150 @@ describe("story panel PM tab (#0515)", () => {
   });
 });
 
+describe("story panel → New task hand-off (#0555)", () => {
+  async function openTasksTab(): Promise<VueWrapper> {
+    const wrapper = mountView();
+    await flushPromises();
+    await wrapper.find(".story-head").trigger("click");
+    await flushPromises();
+    await openTab("Tasks");
+    return wrapper;
+  }
+
+  function newTaskButton(): HTMLElement | null {
+    return panel()!.querySelector<HTMLElement>(".story-panel-tasks-new");
+  }
+
+  it("offers New task at the right of the Tasks toolbar, beside the sort select", async () => {
+    useRepoStore().tasks = [makeTask({ id: "0001", story: "Alpha slice", status: "ready" })];
+    useRepoStore().storyDefinitions = [definition("Alpha slice", ALPHA_BODY)];
+    await openTasksTab();
+
+    const toolbar = panel()!.querySelector(".story-panel-tasks-toolbar")!;
+    expect(toolbar).toBeTruthy();
+    const button = newTaskButton();
+    expect(button, "New task button missing from the toolbar").toBeTruthy();
+    expect(button!.textContent).toContain("New task");
+    expect(button!.textContent).toContain("+");
+    // The sort select stays in the same row, at the left; the button is last.
+    expect(toolbar.querySelector('[role="combobox"]')).toBeTruthy();
+    expect(toolbar.lastElementChild).toBe(button);
+  });
+
+  it("keeps the button in the empty state, where there is nothing to sort", async () => {
+    const repo = useRepoStore();
+    // A registered story nothing is tagged with yet — the case that needs it.
+    repo.tasks = [makeTask({ id: "0009" })];
+    repo.storyDefinitions = [definition("Other slice", "Body text.")];
+    await openTasksTab();
+
+    const toolbar = panel()!.querySelector(".story-panel-tasks-toolbar")!;
+    expect(newTaskButton(), "the empty state must still offer New task").toBeTruthy();
+    // No tasks → no sort dropdown, but the empty copy is untouched.
+    expect(toolbar.querySelector('[role="combobox"]')).toBeNull();
+    expect(panel()!.querySelector(".story-panel-empty")!.textContent).toContain("No related tasks");
+  });
+
+  it("closes the story panel and opens the New task panel with the story preset", async () => {
+    useRepoStore().tasks = [makeTask({ id: "0001", story: "Alpha slice", status: "ready" })];
+    useRepoStore().storyDefinitions = [definition("Alpha slice", ALPHA_BODY)];
+    await openTasksTab();
+    const ui = useUiStore();
+
+    newTaskButton()!.click();
+    await flushPromises();
+
+    // Out of the way first — the same hand-off the task rows make — then the
+    // EXISTING new-task mode of the task drawer, not a story-specific dialog.
+    expect(panel()).toBeNull();
+    expect(ui.isNew).toBe(true);
+    expect(ui.active).toBeNull();
+    expect(ui.nt.story).toBe("Alpha slice");
+    expect(ui.nt.assignedTo).toBe("");
+  });
+
+  it("presets a messy story name the way the rest of the product normalizes it", async () => {
+    useRepoStore().tasks = [makeTask({ id: "0001", story: "Tag   only", status: "ready" })];
+    useRepoStore().storyDefinitions = [];
+    const wrapper = mountView();
+    await flushPromises();
+    await wrapper.find(".story-head").trigger("click");
+    await flushPromises();
+    await openTab("Tasks");
+
+    newTaskButton()!.click();
+    await flushPromises();
+
+    // normalizeStoryName: one whitespace-normalized name, never a near-duplicate.
+    expect(useUiStore().nt.story).toBe("Tag only");
+  });
+});
+
+describe("story panel Tasks tab sort and status colors (#0560)", () => {
+  beforeEach(() => {
+    useRepoStore().tasks = [
+      makeTask({ id: "0001", story: "Alpha slice", title: "First", status: "review" }),
+      makeTask({ id: "0002", story: "Alpha slice", title: "Second", status: "draft" }),
+      makeTask({ id: "0003", story: "Alpha slice", title: "Third", status: "active" }),
+    ];
+    useRepoStore().storyDefinitions = [definition("Alpha slice", ALPHA_BODY)];
+  });
+
+  async function openTasksTab(): Promise<void> {
+    const wrapper = mountView();
+    await flushPromises();
+    await wrapper.find(".story-head").trigger("click");
+    await flushPromises();
+    await openTab("Tasks");
+  }
+
+  function rows(): HTMLElement[] {
+    return Array.from(panel()!.querySelectorAll<HTMLElement>(".story-panel-task"));
+  }
+
+  function titles(): string[] {
+    return rows().map((r) =>
+      (r.querySelector(".story-panel-task-title")?.textContent ?? "").trim(),
+    );
+  }
+
+  it("colors the status pill with the same status color the dot gets", async () => {
+    await openTasksTab();
+    const pills = Array.from(panel()!.querySelectorAll<HTMLElement>(".story-panel-task-status"));
+    expect(pills).toHaveLength(3);
+    const { statusColor } = await import("../src/stores/repo");
+    // jsdom serializes the inline color as rgb(); compare that form.
+    const rgb = (hex: string): string => {
+      const n = hex.startsWith("#") ? hex.slice(1) : hex;
+      const parts = [0, 2, 4].map((i) => Number.parseInt(n.slice(i, i + 2), 16));
+      return `rgb(${parts.join(", ")})`;
+    };
+    for (const [i, row] of rows().entries()) {
+      const status = ["review", "draft", "active"][i];
+      expect(pills[i]!.style.color).toBe(rgb(statusColor(status)));
+      expect(pills[i]!.style.borderColor).toBe(
+        `color-mix(in srgb, ${rgb(statusColor(status))} 40%, transparent)`,
+      );
+      // The dot keeps the single source of truth, so pill and dot can't diverge.
+      const dot = row.querySelector<HTMLElement>(".story-panel-task-dot")!;
+      expect(dot.style.background).toBe(rgb(statusColor(status)));
+    }
+  });
+
+  it("reorders the rows by pipeline stage as soon as Status sort is chosen", async () => {
+    await openTasksTab();
+    // "Most recently updated" was the default; every updated_at is null, so the
+    // row order is the input order.
+    expect(titles()).toEqual(["First", "Second", "Third"]);
+
+    useRepoStore().setStorySortOrder("status");
+    await flushPromises();
+
+    // draft → active → review: Second, Third, First.
+    expect(titles()).toEqual(["Second", "Third", "First"]);
+  });
+});
+
 describe("story side panel styling contract", () => {
   const panelSource = readFileSync(
     join(resolve(__dirname, ".."), "src/components/StoryPanel.vue"),

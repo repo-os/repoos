@@ -93,11 +93,12 @@ nor claims them:
 
 ## Link your account
 
-An administrator creates a Telegram link for an email already on the
-repository's **Authentication & Users** allowlist. Open the resulting bot link
-in Telegram to bind your Telegram account to that email. Your Telegram numeric
-user ID is the identity key; your Telegram username is only a display hint and
-does not prove who you are.
+An administrator creates a Telegram link from **Settings → Authentication &
+Users** for an email already on the repository's allowlist. Open the resulting
+bot start payload (or `https://t.me/<projectBot>?start=<payload>` when the
+project bot username is known) in Telegram to bind your Telegram account to
+that email. Your Telegram numeric user ID is the identity key; your Telegram
+username is only a display hint and does not prove who you are.
 
 The link uses your current RepoOS role. RepoOS checks the role from the
 allowlist on each message, so an admin changing your role or removing your

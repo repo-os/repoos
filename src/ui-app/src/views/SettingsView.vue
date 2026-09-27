@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useConfigStore, DESIGN_THEMES } from "../stores/config";
 import { useUiStore } from "../stores/ui";
@@ -27,6 +27,13 @@ import SelectItem from "../components/ui/select/item.vue";
 import SelectTrigger from "../components/ui/select/trigger.vue";
 import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
+import SearchOverlay from "../components/SearchOverlay.vue";
+import {
+  isGeneralSchemaFieldKey,
+  resolveSettingLocation,
+  SETTINGS_TABS,
+  type SettingsTabId,
+} from "../settings-location";
 
 const config = useConfigStore();
 const ui = useUiStore();
@@ -38,32 +45,28 @@ const router = useRouter();
 
 // ---- Tab navigation ----
 
-type TabId = "general" | "notifications" | "security" | "advanced" | "support" | "toml";
+type TabId = SettingsTabId;
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: "general", label: "General" },
-  { id: "notifications", label: "Notifications" },
-  { id: "security", label: "Security" },
-  { id: "advanced", label: "Advanced" },
-  { id: "support", label: "Support" },
-  { id: "toml", label: "repoos.toml" },
-];
+const TABS = SETTINGS_TABS;
 
-/** Which settings fields live on which tab (for ?focus= routing) */
-const FIELD_TAB: Record<string, TabId> = {
-  // General tab
-  tunnelEnabled: "general",
-  "remoteValidation.enabled": "general",
-  // Notifications tab
-  ntfyEnabled: "notifications",
-  ntfyTopic: "notifications",
-  "telegram.enabled": "notifications",
-  // Security tab
-  "auth.enabled": "security",
-  "auth.sessionMaxAge": "security",
-  "dev.inspector.enabled": "advanced",
-  "dev.inspector.editorCommand": "advanced",
-};
+const settingsSearchOpen = ref(false);
+const settingsSearchBtn = ref<HTMLButtonElement | null>(null);
+const tomlFocusNotice = ref("");
+
+function openSettingsSearch(): void {
+  settingsSearchOpen.value = true;
+}
+
+function onSettingsSearchKey(e: KeyboardEvent): void {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+    e.preventDefault();
+    openSettingsSearch();
+  }
+}
+
+function settingLocationContext(): { inspectorAvailable: boolean } {
+  return { inspectorAvailable: repo.health?.copyInspectorAvailable === true };
+}
 
 const activeTab = computed<TabId>(() => {
   const q = route.query.tab;
@@ -80,13 +83,19 @@ const activeTab = computed<TabId>(() => {
 });
 
 function setTab(id: TabId): void {
+  tomlFocusNotice.value = "";
   void router.replace({ name: "settings", query: { ...route.query, tab: id } });
 }
 
 /** Dev-inspector settings only exist as a control when the build supports them. */
 function isFieldVisible(key: string): boolean {
+  const loc = resolveSettingLocation(
+    key,
+    config.schema.find((f) => f.key === key),
+    settingLocationContext(),
+  );
   if (key === "dev.inspector.enabled" || key === "dev.inspector.editorCommand") {
-    return repo.health?.copyInspectorAvailable === true;
+    return loc?.hasUiRow ?? false;
   }
   return true;
 }
@@ -371,6 +380,7 @@ const bugReportGitHubUrl = computed(() => {
 });
 
 onMounted(async () => {
+  window.addEventListener("keydown", onSettingsSearchKey);
   notifications.refreshAvailability();
   try {
     tunnelReadiness.value = await api("/api/tunnel/readiness?port=7171");
@@ -430,17 +440,7 @@ async function sendTestNotification(): Promise<void> {
 }
 
 const generalFields = computed(() =>
-  config.visibleFields.filter(
-    (field) =>
-      field.key !== "tunnelEnabled" &&
-      field.key !== "ntfyEnabled" &&
-      field.key !== "ntfyTopic" &&
-      field.key !== "telegram.enabled" &&
-      field.key !== "auth.enabled" &&
-      field.key !== "auth.sessionMaxAge" &&
-      !field.key.startsWith("remoteValidation.") &&
-      !field.key.startsWith("board.columns."),
-  ),
+  config.visibleFields.filter((field) => isGeneralSchemaFieldKey(field.key)),
 );
 
 const BOARD_COLUMN_STATUSES = ["draft", "inbox", "ready", "active", "review", "done"] as const;
@@ -507,14 +507,52 @@ const sessionMaxAgeDays = computed<number>({
   },
 });
 
+function settingRowVisible(el: HTMLElement): boolean {
+  const panel = el.closest<HTMLElement>("[role='tabpanel']");
+  if (!panel) return getComputedStyle(el).display !== "none";
+  return getComputedStyle(panel).display !== "none";
+}
+
+function scrollSettingRowIntoView(el: HTMLElement): void {
+  const main = el.closest<HTMLElement>(".main");
+  if (main) {
+    const elRect = el.getBoundingClientRect();
+    const mainRect = main.getBoundingClientRect();
+    const targetTop =
+      main.scrollTop + (elRect.top - mainRect.top) - mainRect.height / 2 + elRect.height / 2;
+    main.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
+    return;
+  }
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
 function focusSetting(key: string): void {
   const el = document.getElementById(`setting-${key}`);
   if (!el) return;
-  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  scrollSettingRowIntoView(el);
   el.classList.add("flash");
   window.setTimeout(() => el.classList.remove("flash"), 2000);
-  const input = el.querySelector<HTMLElement>("input, select, [role='combobox']");
-  if (input) input.focus();
+  const input = el.querySelector<HTMLElement>(
+    "input, select, textarea, [role='combobox'], button:not([disabled])",
+  );
+  if (input) input.focus({ preventScroll: true });
+}
+
+async function waitForSettingRow(
+  key: string,
+  tab: TabId,
+  attempts = 30,
+): Promise<HTMLElement | null> {
+  for (let i = 0; i < attempts; i++) {
+    await nextTick();
+    if (activeTab.value === tab && config.loaded) {
+      const el = document.getElementById(`setting-${key}`);
+      if (el && settingRowVisible(el)) return el;
+    }
+    await new Promise<void>((r) => window.setTimeout(r, 50));
+  }
+  const el = document.getElementById(`setting-${key}`);
+  return el && settingRowVisible(el) ? el : null;
 }
 
 // ---- Design themes (#0255) ----
@@ -547,38 +585,80 @@ function toggleThemeFavorite(id: string): void {
 // focus=<key>) is unchanged.
 // When a focus key targets a setting on a specific tab, switch to that tab first.
 const focusKey = computed(() => (route.query.setting ?? route.query.focus) as string | undefined);
+
+let focusNavigationRun = 0;
+
+async function waitForConfigLoaded(maxMs = 3000): Promise<void> {
+  if (config.loaded) return;
+  const deadline = Date.now() + maxMs;
+  while (!config.loaded && Date.now() < deadline) {
+    await new Promise<void>((r) => window.setTimeout(r, 50));
+  }
+}
+
 watch(
-  focusKey,
-  (key) => {
+  [focusKey, () => config.loaded],
+  ([key]) => {
     if (!key) return;
-    // Switch to the tab that owns this setting key, if known.
-    // Capture the resolved tab now so the async cleanup replace below uses
-    // the *target* tab, not the stale activeTab.value (router.replace is
-    // async; activeTab won't reflect the new tab until the navigation settles).
-    const targetTab = key
-      ? (FIELD_TAB[key] ?? (key.startsWith("board.columns.") ? "advanced" : undefined))
-      : undefined;
-    const resolvedTab: TabId = targetTab ?? activeTab.value;
-    if (targetTab && activeTab.value !== targetTab) {
-      void router.replace({
-        name: "settings",
-        query: { ...route.query, tab: targetTab },
-      });
-    }
-    const tryFocus = (attempt = 0): void => {
-      if (config.loaded && document.getElementById(`setting-${key}`)) {
-        focusSetting(key);
-        // Strip the focus/setting query param; use resolvedTab (not activeTab.value)
-        // to avoid undoing the tab switch above before the navigation has settled.
+    const run = ++focusNavigationRun;
+    void (async () => {
+      tomlFocusNotice.value = "";
+      await waitForConfigLoaded();
+
+      if (run !== focusNavigationRun) return;
+
+      const field = config.schema.find((f) => f.key === key);
+      const loc = resolveSettingLocation(key, field, settingLocationContext());
+
+      const tryFocusOnCurrentTab = async (): Promise<void> => {
+        const el = await waitForSettingRow(key, activeTab.value);
+        if (run !== focusNavigationRun) return;
+        if (el) {
+          focusSetting(key);
+          void router.replace({
+            name: "settings",
+            query: { tab: activeTab.value },
+          });
+        }
+      };
+
+      if (!loc) {
+        await tryFocusOnCurrentTab();
+        return;
+      }
+
+      const finishTomlOnly = (): void => {
+        tomlFocusNotice.value = `“${field?.label ?? key}” is only in repoos.toml — edit the raw file below.`;
         void router.replace({
           name: "settings",
-          query: { tab: resolvedTab },
+          query: { tab: "toml" },
         });
-      } else if (attempt < 20) {
-        window.setTimeout(() => tryFocus(attempt + 1), 100);
+      };
+
+      if (!loc.hasUiRow) {
+        finishTomlOnly();
+        return;
       }
-    };
-    tryFocus();
+
+      const targetTab: TabId = loc.tab;
+      if (activeTab.value !== targetTab) {
+        await router.replace({
+          name: "settings",
+          query: { ...route.query, tab: targetTab },
+        });
+      }
+      if (run !== focusNavigationRun) return;
+
+      const el = await waitForSettingRow(key, targetTab);
+      if (run !== focusNavigationRun) return;
+      if (el) {
+        focusSetting(key);
+        void router.replace({
+          name: "settings",
+          query: { tab: targetTab },
+        });
+      }
+    })();
   },
   { immediate: true },
 );
@@ -689,6 +769,8 @@ watch(
 );
 
 onUnmounted(() => {
+  focusNavigationRun++;
+  window.removeEventListener("keydown", onSettingsSearchKey);
   clearTimeout(autoSaveTimer);
   clearTimeout(testStateTimer);
 });
@@ -706,7 +788,26 @@ onUnmounted(() => {
           <span v-else-if="config.msg" class="save-msg ok"> · {{ config.msg }}</span>
         </div>
       </div>
-      <div class="page-header-actions">
+      <div class="page-header-actions settings-header-actions">
+        <button
+          ref="settingsSearchBtn"
+          type="button"
+          class="settings-search-trigger search-input"
+          aria-label="Search settings"
+          @click="openSettingsSearch"
+        >
+          <svg class="search-ico" width="13" height="13" viewBox="0 0 24 24" fill="none">
+            <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
+            <path
+              d="M20 20l-3.5-3.5"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+          </svg>
+          <span class="search-placeholder hidden sm:inline">Search settings…</span>
+          <kbd>⌘K</kbd>
+        </button>
         <a
           class="page-help-link"
           href="https://docs.repoos.org/configuration"
@@ -716,6 +817,12 @@ onUnmounted(() => {
         >
       </div>
     </header>
+
+    <SearchOverlay
+      v-model:open="settingsSearchOpen"
+      scope="settings"
+      :return-focus-el="settingsSearchBtn"
+    />
 
     <!-- Tab strip -->
     <div ref="tablistRef" class="settings-tabs" role="tablist" aria-label="Settings sections">
@@ -1728,6 +1835,9 @@ onUnmounted(() => {
       >
         <Card class="toml-card">
           <div class="toml-raw">
+            <div v-if="tomlFocusNotice" class="ff-notice toml-focus-notice" role="status">
+              {{ tomlFocusNotice }}
+            </div>
             <div class="toml-raw-head">
               <div class="setting-desc" style="margin: 0">
                 The whole file, including sections the other tabs don't cover —

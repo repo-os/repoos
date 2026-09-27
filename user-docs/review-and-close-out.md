@@ -1,7 +1,7 @@
 # Review and close-out
 
-A task only reaches `done` through review. This page covers the two halves of
-that: the **review process** — what happens while a task sits in `review` — and the
+A task with a feature branch reaches `done` through review. This page covers
+the two halves of that: the **review process** — what happens while a task sits in `review` — and the
 **close-out pipeline** that runs when you move it to `done`.
 
 ## Why an agent can't merge itself
@@ -13,9 +13,8 @@ what merges.
 
 ## Getting a task into `review`
 
-Moving a task to `review` is a **request**, not a status flip. RepoOS commits
-the branch, runs `repoos check`, passes the commit guard, and only then moves
-the task. Every route into `review` goes through that same finalization — the
+Moving a task to `review` is a **request**, not a status flip. RepoOS passes the commit guard and commits the branch, runs `repoos check`,
+verifies that the tested tree stayed unchanged, and only then moves the task. Every route into `review` goes through that same finalization — the
 **Review** button in the task drawer, dragging a card into the review column, a
 `repoos mv <id> review` from a terminal, or an agent's own handoff. Nothing
 reaches `review` on the commit guard alone.
@@ -112,6 +111,17 @@ spend appears in the task's Tokens tab like any other role.
 When you're happy, move the task to `done` — from the board, the task drawer,
 or `POST /api/tasks/:id/done`. That's what starts the close-out pipeline. Until
 then the worktree stays open and nothing has merged.
+
+This workflow is the same with or without a Git remote. A remote does not
+require a GitHub pull request: RepoOS owns review and close-out unless you
+explicitly choose a separate external workflow. `repoos mv <id> done` only
+changes task metadata; it does not start close-out or merge code.
+
+An explicitly authorized hotfix already committed on the primary branch is a
+separate case. If it has a task record with no branch and is not in `review` or
+already `done`, the same `/done` endpoint checks the primary checkout and
+records release without a candidate merge. This is not a shortcut for an
+unmerged feature branch; do not clear its branch metadata to use this path.
 
 ## The Move-to-done pipeline
 

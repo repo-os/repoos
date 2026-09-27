@@ -17,7 +17,7 @@
  *   GET  /api/index            -> full RepoIndex snapshot
  *   GET  /api/stats/board      -> { ok, stats } board-level summary stats
  *   GET  /api/stats/by-type    -> { ok, stats } session stats grouped by type
- *   GET  /api/docs             -> [{ path, title }]  (context docs listing)
+ *   GET  /api/docs             -> [{ path, title, mtimeMs }]  (context docs listing)
  *   GET  /api/repo/log         -> git log page { commits, nextCursor, branch } (?branch=&path=&limit=&before=&includeDocs=1)
  *   GET  /api/repo/branches    -> { defaultBranch, branches } local heads, default first
  *   GET  /api/repo/commits/:sha -> one commit + changed files + patch
@@ -330,6 +330,10 @@ import {
   deleteUser,
   updateUserRole,
   getAuditLog,
+  createTelegramInviteRoute,
+  listTelegramLinksRoute,
+  unbindTelegramLinkRoute,
+  reassignTelegramLinkRoute,
   createHubCapability,
   listHubCapabilities,
   revokeHubCapability,
@@ -621,20 +625,22 @@ async function readBody(req: IncomingMessage): Promise<unknown> {
 }
 
 /** List context docs (markdown under docsDir + root-level AGENTS/CLAUDE). */
-function listDocs(config: RepoOSConfig): { path: string; title: string }[] {
-  const out: { path: string; title: string }[] = [];
+function listDocs(config: RepoOSConfig): { path: string; title: string; mtimeMs: number }[] {
+  const out: { path: string; title: string; mtimeMs: number }[] = [];
   const seen = new Set<string>();
   const add = (abs: string, rel: string) => {
     if (seen.has(rel) || !existsSync(abs)) return;
     seen.add(rel);
     let title = rel;
+    let mtimeMs = 0;
     try {
+      mtimeMs = statSync(abs).mtimeMs;
       const m = readFileSync(abs, "utf8").match(/^\s*#\s+(.+)$/m);
       if (m) title = m[1].trim();
     } catch {
       /* ignore */
     }
-    out.push({ path: rel, title });
+    out.push({ path: rel, title, mtimeMs });
   };
   for (const name of ["AGENTS.md", "CLAUDE.md", "README.md"]) {
     add(join(config.root, name), name);
@@ -2589,6 +2595,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("DELETE", /^\/api\/auth\/users\/([^/]+)$/, deleteUser);
   router.register("PATCH", /^\/api\/auth\/users\/([^/]+)$/, updateUserRole);
   router.register("GET", "/api/auth/audit", getAuditLog);
+  router.register("POST", "/api/auth/telegram/invites", createTelegramInviteRoute);
+  router.register("GET", "/api/auth/telegram/links", listTelegramLinksRoute);
+  router.register("DELETE", /^\/api\/auth\/telegram\/links\/([^/]+)$/, unbindTelegramLinkRoute);
+  router.register(
+    "POST",
+    /^\/api\/auth\/telegram\/links\/([^/]+)\/reassign$/,
+    reassignTelegramLinkRoute,
+  );
   router.register("POST", "/api/auth/hub-capabilities", createHubCapability);
   router.register("GET", "/api/auth/hub-capabilities", listHubCapabilities);
   router.register("DELETE", /^\/api\/auth\/hub-capabilities\/([^/]+)$/, revokeHubCapability);

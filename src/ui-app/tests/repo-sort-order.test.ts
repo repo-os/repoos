@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
-import { sortTasks, useRepoStore } from "../src/stores/repo";
+import {
+  BOARD_SORT_ORDER_OPTIONS,
+  SORT_ORDER_OPTIONS,
+  sortTasks,
+  useRepoStore,
+} from "../src/stores/repo";
 import type { Task } from "../src/types";
 
 function makeTask(
@@ -86,6 +91,24 @@ describe("repo sort order", () => {
     expect(reloaded.sortOrder).toBe("taskNumberNewest");
     expect(reloaded.storySortOrder).toBe("taskNumberOldest");
   });
+
+  it("persists the story panel's Status sort choice across a reload (#0560)", () => {
+    const repo = useRepoStore();
+    repo.setStorySortOrder("status");
+    expect(localStorage.getItem("repoos.storyPanel.sortOrder")).toBe(JSON.stringify("status"));
+
+    setActivePinia(createPinia());
+    const reloaded = useRepoStore();
+    expect(reloaded.storySortOrder).toBe("status");
+  });
+
+  it("offers Status on the story panel side but keeps it off the work board (#0560)", () => {
+    expect(SORT_ORDER_OPTIONS.some((o) => o.value === "status")).toBe(true);
+    expect(BOARD_SORT_ORDER_OPTIONS.some((o) => o.value === "status")).toBe(false);
+    expect(BOARD_SORT_ORDER_OPTIONS).toEqual(
+      SORT_ORDER_OPTIONS.filter((o) => o.value !== "status"),
+    );
+  });
 });
 
 describe("sortTasks", () => {
@@ -129,5 +152,52 @@ describe("sortTasks", () => {
   it("sorts #100 above #99 numerically", () => {
     const tasks = [makeTask("0099"), makeTask("0100")];
     expect(sortTasks(tasks, "taskNumberNewest").map((t) => t.id)).toEqual(["0100", "0099"]);
+  });
+});
+
+describe("sortTasks status mode (#0560)", () => {
+  it("groups tasks by pipeline stage draft, inbox, ready, active, review, done", () => {
+    const tasks = [
+      makeTask("0001", { status: "review" }),
+      makeTask("0002", { status: "draft" }),
+      makeTask("0003", { status: "done" }),
+      makeTask("0004", { status: "inbox" }),
+      makeTask("0005", { status: "active" }),
+      makeTask("0006", { status: "ready" }),
+    ];
+    expect(sortTasks(tasks, "status").map((t) => t.id)).toEqual([
+      "0002",
+      "0004",
+      "0006",
+      "0005",
+      "0001",
+      "0003",
+    ]);
+  });
+
+  it("keeps the input order stable within a status group", () => {
+    const tasks = [
+      makeTask("0001", { status: "active" }),
+      makeTask("0002", { status: "draft" }),
+      makeTask("0003", { status: "active" }),
+      makeTask("0004", { status: "draft" }),
+    ];
+    expect(sortTasks(tasks, "status").map((t) => t.id)).toEqual(["0002", "0004", "0001", "0003"]);
+  });
+
+  it("does not mutate the array it is given", () => {
+    const tasks = [makeTask("0001", { status: "review" }), makeTask("0002", { status: "draft" })];
+    const before = tasks.map((t) => t.id);
+    sortTasks(tasks, "status");
+    expect(tasks.map((t) => t.id)).toEqual(before);
+  });
+
+  it("sorts statuses the whitelist does not know after all known stages, without throwing", () => {
+    const tasks = [
+      makeTask("0001", { status: "mystery" as Task["status"] }),
+      makeTask("0002", { status: "done" }),
+      makeTask("0003", { status: "mystery" as Task["status"] }),
+    ];
+    expect(sortTasks(tasks, "status").map((t) => t.id)).toEqual(["0002", "0001", "0003"]);
   });
 });

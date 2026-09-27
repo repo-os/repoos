@@ -5,7 +5,7 @@ import { storeToRefs } from "pinia";
 import { api } from "../api";
 import {
   COLUMNS,
-  SORT_ORDER_OPTIONS,
+  BOARD_SORT_ORDER_OPTIONS,
   useRepoStore,
   columnsWithLabels,
   draftColumnWithLabel,
@@ -229,7 +229,7 @@ watch(countsSnapshot, (now, prev) => {
           </SelectTrigger>
           <SelectContent position="popper">
             <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-              <SelectItem v-for="o in SORT_ORDER_OPTIONS" :key="o.value" :value="o.value">{{
+              <SelectItem v-for="o in BOARD_SORT_ORDER_OPTIONS" :key="o.value" :value="o.value">{{
                 o.label
               }}</SelectItem>
             </SelectViewport>
