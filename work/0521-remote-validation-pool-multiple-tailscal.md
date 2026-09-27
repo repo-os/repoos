@@ -3,6 +3,9 @@ id: "0521"
 title: "Remote validation: pool multiple tailscale hosts"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "Auto-bounce stopped: reached maximum of 2 review rounds. Human review needed."
 priority: p3
 area: core
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/remote-validation-pool-multiple-tailscal
 cli_override: opencode
 model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-26T11:49:01Z"
-updated_at: "2026-09-27T07:27:24Z"
+updated_at: "2026-09-27T07:34:43Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 2
@@ -107,3 +110,4 @@ Autoscaling, and pooling Hetzner VMs.
 - 2026-09-27T06:55:03Z · status review→active
 - 2026-09-27T07:19:51Z · status active→review
 - 2026-09-27T07:27:24Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
+- 2026-09-27T07:34:43Z · needs_input
