@@ -10,12 +10,8 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:33:58Z"
-updated_at: "2026-09-27T15:51:58Z"
+updated_at: "2026-09-27T15:52:49Z"
 ---
-## Governing decision
-
-Follow [ADR 0007 — Telegram identity and authorization](../docs/adr/0007-telegram-identity-and-authorization.md) for user binding, chat binding, live role resolution, and unauthorized-sender behavior. This task implements or relies on that model; do not define a separate policy here.
-
 ## Problem
 
 Story #0003 Phase 4: create tasks from free-form messages, start/pause/review tasks, file and screenshot attachments, optional group/topic routing.
@@ -56,3 +52,4 @@ Optional, and genuinely optional. Topic routing is worth supporting for a projec
 - 2026-09-27T07:33:58Z · created · unknown
 - 2026-09-27T15:42:41Z · body
 - 2026-09-27T15:51:58Z · body
+- 2026-09-27T15:52:49Z · body
