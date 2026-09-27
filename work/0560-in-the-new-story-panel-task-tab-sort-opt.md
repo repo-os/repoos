@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+cli_override: opencode
+model_override: default
 created_at: "2026-09-27T17:51:49Z"
-updated_at: "2026-09-27T17:52:55Z"
+updated_at: "2026-09-27T18:47:01Z"
 ---
 ## Problem
 
@@ -148,3 +150,4 @@ In the new Story panel task tab sort options add a sort by task status, and whil
 - 2026-09-27T17:51:49Z · created · hello@repoos.org
 - 2026-09-27T17:51:50Z · screenshots
 - 2026-09-27T17:52:55Z · status draft→inbox, title, area, body
+- 2026-09-27T18:47:01Z · cli_override, model_override
