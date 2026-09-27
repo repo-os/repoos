@@ -164,7 +164,10 @@ export class LocalTelegramProvider implements TelegramProvider {
       );
     }
     const connectedAt = bot.connectedAt;
-    const existing = this.store.load();
+    // A corrupt/unreadable pre-existing record must not block re-connecting:
+    // a fresh connect replaces the state wholesale, so treat unreadable as
+    // "nothing stored" (status() is the loud reporter for the corruption).
+    const existing = this.store.loadOrNull();
     const botChanged = existing !== null && existing.bot.id !== bot.id;
     // A new bot identity invalidates everything keyed to the old one: its
     // transport mode, webhook secret, profile overrides, and polling pointer
@@ -200,8 +203,10 @@ export class LocalTelegramProvider implements TelegramProvider {
   async disconnect(): Promise<void> {
     await this.stopPollingLoop();
     // Best-effort webhook removal; clearing the record proceeds even if
-    // Telegram is unreachable (the credential must never outlive intent).
-    const record = this.store.load();
+    // Telegram is unreachable (the credential must never outlive intent) —
+    // and even if the stored record is corrupt, which must not turn the one
+    // recovery affordance into a 500.
+    const record = this.store.loadOrNull();
     if (record) {
       try {
         const token = this.store.readToken(record);
@@ -368,6 +373,20 @@ export class LocalTelegramProvider implements TelegramProvider {
   }
 
   /**
+   * Whether the just-connected bot still needs the default profile applied.
+   * True when the stored record has never had any profile applied
+   * (`appliedAt` unset): a brand-new connection, or a reconnect whose
+   * defaults never landed. False once anything was applied — including an
+   * operator's custom configuration — so re-pasting the same bot's token
+   * never silently reverts the operator's command list or description to the
+   * defaults (review round 2: applyDefaultProfile on every connect did).
+   */
+  needsDefaultProfile(): boolean {
+    const record = this.store.loadOrNull();
+    return record !== null && !record.profile.appliedAt;
+  }
+
+  /**
    * The default profile new BYO/managed connections apply once: a `/help`
    * command plus a description naming this repository. Kept deliberately
    * small — commands arrive with the intake tasks, and #0538 exposes edits.
@@ -428,7 +447,10 @@ export class LocalTelegramProvider implements TelegramProvider {
   }
 
   async handleUpdate(raw: unknown): Promise<TelegramUpdate | null> {
-    const update = normalizeUpdate(raw);
+    // The injectable now() reaches normalization so receivedAt is
+    // deterministic under tests and honest ("when this instance normalized
+    // the update") in production.
+    const update = normalizeUpdate(raw, this.now().toISOString());
     if (!update) {
       // Unrecognizable payload: surface nothing, let transport-level
       // acknowledgement (#0532 / polling pointer) decide redelivery.

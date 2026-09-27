@@ -219,8 +219,9 @@ export class TelegramPolling {
       // Delivery awaits the provider's normalization + handler so the pointer
       // never publishes what the consumer has not yet settled.
       await this.onRaw(raw);
-      const id = (raw as { update_id?: unknown } | null)?.update_id;
-      if (typeof id === "number" && Number.isFinite(id)) consumed.push(id);
+      if (typeof raw.update_id === "number" && Number.isFinite(raw.update_id)) {
+        consumed.push(raw.update_id);
+      }
     }
     const maxId = consumed.length ? Math.max(...consumed) : null;
     if (maxId !== null) {

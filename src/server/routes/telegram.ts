@@ -145,10 +145,15 @@ export const telegramConnect: RouteHandler = async (ctx, req, res) => {
     const provider = getTelegramProvider(ctx.config);
     const bot = await provider.connectByBotToken(token);
     const warnings: string[] = [];
-    try {
-      await provider.applyDefaultProfile();
-    } catch (e) {
-      warnings.push(`bot profile setup failed: ${e instanceof Error ? e.message : String(e)}`);
+    // Defaults land once per connection: a brand-new bot, or a reconnect
+    // whose defaults never applied. A same-bot reconnect (token rotation)
+    // must never silently revert an operator's custom profile to defaults.
+    if (provider.needsDefaultProfile()) {
+      try {
+        await provider.applyDefaultProfile();
+      } catch (e) {
+        warnings.push(`bot profile setup failed: ${e instanceof Error ? e.message : String(e)}`);
+      }
     }
     return json(res, 200, { ok: true, bot, warnings });
   } catch (e) {
@@ -229,12 +234,16 @@ export const telegramProfile: RouteHandler = async (ctx, req, res) => {
 export const telegramTransport: RouteHandler = async (ctx, req, res) => {
   const admin = requireTelegramAdmin(req, ctx.config, res);
   if (!admin) return;
-  if (!requireTelegramEnabled(ctx, res)) return;
   const body = (await readBody(req)) as Record<string, unknown>;
   const mode = body.mode as TelegramTransportMode | undefined;
   if (mode !== "off" && mode !== "polling" && mode !== "webhook") {
     return json(res, 400, { error: 'mode must be "off", "polling", or "webhook"' });
   }
+  // `off` is exempt from the enabled gate, like disconnect: it is the
+  // state-destroying, safe direction, and an operator who flipped the switch
+  // off must still be able to stop delivery at the transport level (review
+  // round 2). Arming polling/webhook or reconfiguring stays gated.
+  if (mode !== "off" && !requireTelegramEnabled(ctx, res)) return;
   let webhookUrl: string | undefined;
   if (body.webhookUrl !== undefined) {
     if (typeof body.webhookUrl !== "string" || !/^https?:\/\//i.test(body.webhookUrl.trim())) {
@@ -306,7 +315,17 @@ export const telegramProvisionRedeem: RouteHandler = async (ctx, req, res, param
     const provider = getTelegramProvider(ctx.config);
     const bot: ProvisionedBot = await provider.redeemManagedCredential(id);
     // Same shape as BYO connect — provisioning paths converge here (#0531).
-    return json(res, 200, { ok: true, bot });
+    // Defaults apply once, same rule as the connect route: a fresh bot gets
+    // the /help command list; a reconnect never reverts operator config.
+    const warnings: string[] = [];
+    if (provider.needsDefaultProfile()) {
+      try {
+        await provider.applyDefaultProfile();
+      } catch (e) {
+        warnings.push(`bot profile setup failed: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }
+    return json(res, 200, { ok: true, bot, warnings });
   } catch (e) {
     return provisioningError(res, e);
   }

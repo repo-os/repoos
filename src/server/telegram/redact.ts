@@ -33,6 +33,10 @@ const TELEGRAM_TOKEN_SHAPE = /\b\d{6,}:[A-Za-z0-9_-]{20,}\b/g;
  * `/bot<token>` request-URL fragment, and (belt and braces) any string that
  * merely *looks* like a Telegram token. Repeated substrings merely get
  * redacted twice — re-scanning already-redacted content is stable.
+ *
+ * An empty `apiBase` skips the URL-fragment rule entirely (a bearer key for
+ * a non-Telegram service has no `/bot<token>` URL shape, and an unanchored
+ * `/bot…` pattern would mangle unrelated error text).
  */
 export function makeTokenRedactor(
   token: string,
@@ -42,8 +46,10 @@ export function makeTokenRedactor(
   return (text: string): string => {
     let out = String(text ?? "");
     // URL fragment first: <base>/bot<token>/<method>
-    const urlRe = new RegExp(`${escapeRegExp(apiBase)}/bot[^/\\s"',)]+`, "gi");
-    out = out.replace(urlRe, `${apiBase}/bot${REDACTED}`);
+    if (apiBase) {
+      const urlRe = new RegExp(`${escapeRegExp(apiBase)}/bot[^/\\s"',)]+`, "gi");
+      out = out.replace(urlRe, `${apiBase}/bot${REDACTED}`);
+    }
     // The bare token, wherever else it leaked.
     if (safeToken) out = out.replace(new RegExp(escapeRegExp(safeToken), "g"), REDACTED);
     out = out.replace(TELEGRAM_TOKEN_SHAPE, REDACTED);

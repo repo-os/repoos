@@ -147,8 +147,14 @@ or a missing/non-HTTP(S) base URL → `ManagedProvisioningNotConfiguredError`
 ("not configured" error mentioning BYO — a distinct class, so routes can
 answer 501 while a configured service failing answers 502 without matching
 message text); auth failures name `REPOOS_TELEGRAM_PROVISIONING_KEY` and
-never echo the key; a response without a token redeems nothing and stores
-nothing. The service sees repository/instance/admin identity only. The
+never echo the key; a 200 redeem response without a token is a
+`ManagedRedemptionFollowUpError` — the request may already be consumed
+server-side, so the error carries the grace-window replay hint; and the
+response's optional `bot` summary is ignored in `redeem` (the provider
+re-derives the authoritative bot from `getMe`), so a malformed summary can
+never discard an already-delivered single-use credential — `getStatus` keeps
+the strict validation for the browser-rendered view. The service sees
+repository/instance/admin identity only. The
 provider funnels the redeemed token through the **same** `connectByBotToken`
 path as BYO, so both provisioning sources produce one `ProvisionedBot`
 shape. If validation or storage fails *after* a successful redeem (the
@@ -171,10 +177,22 @@ the transport loop.
 ## The `[telegram] enabled` gate
 
 `requireTelegramEnabled` (`src/server/routes/telegram.ts`) enforces the
-master switch on every mutating connection route (connect, disconnect,
-profile, transport, provision begin/status/redeem) with an honest 400; only
+master switch on the mutating connection routes (connect, profile, transport
+arm, provision begin/status/redeem) with an honest 400; only
 `GET /api/telegram/status` stays readable while disabled so the Settings
-panel can render the switch and state. The enforcement is duplicated where
-the traffic actually is: the polling loop pauses (no Telegram calls) while
-`enabled` is false and resumes live when it flips back. Tests pin both
-layers.
+panel can render the switch and state. Two safe-direction calls are
+deliberately exempt: `transport {mode: "off"}` and `disconnect` — stopping
+delivery or forgetting a credential must never require re-enabling the
+integration. The enforcement is duplicated where the traffic actually is:
+the polling loop pauses (no Telegram calls) while `enabled` is false and
+resumes live when it flips back. Tests pin both layers.
+
+## Recovery from a corrupt connection record
+
+`TelegramCredentialStore.load()` validates the full record shape (version,
+bot, credential, transport, profile, polling pointer, webhook secret) and
+fails loudly with the file path and what is wrong — `status()` surfaces it as
+a 500-class error with an actionable message. Recovery never requires hand-
+deleting the file: `disconnect` clears it and `connect` replaces it
+wholesale, and both tolerate the unreadable record (`loadOrNull`) instead of
+failing on it.
