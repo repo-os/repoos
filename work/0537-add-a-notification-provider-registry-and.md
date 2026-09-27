@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:33:00Z"
-updated_at: "2026-09-27T07:34:17Z"
+updated_at: "2026-09-27T15:52:44Z"
 ---
 ## Problem
 
@@ -45,3 +45,6 @@ Two properties of the existing code must survive the refactor:
 
 - 2026-09-27T07:33:00Z · created · unknown
 - 2026-09-27T07:34:17Z · status inbox→ready
+- 2026-09-27T15:42:33Z · body
+- 2026-09-27T15:51:53Z · body
+- 2026-09-27T15:52:44Z · body

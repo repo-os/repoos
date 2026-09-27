@@ -37,8 +37,8 @@ import {
   headCommitISO,
   worktreePathForBranch,
 } from "../core/git.js";
-import { needsInputClearsOnSuccessfulReview } from "../core/needs-input.js";
-import { parseTask, utcTimestamp } from "../core/task.js";
+import { MAX_AUTO_REVIEW_ROUNDS, needsInputClearsOnSuccessfulReview } from "../core/needs-input.js";
+import { parseTask, recordChange, serializeTask, utcTimestamp } from "../core/task.js";
 import {
   parseReviewVerdict as parseVerdictLabel,
   parseReviewRelevance,
@@ -128,9 +128,6 @@ function reviewUsage(
 
 /** Frontmatter key order for the stored report file. */
 const REPORT_KEYS = ["task", "at", "agent", "cli", "model", "branch", "state"];
-
-/** Max number of automatic review/fix rounds before requiring human intervention. */
-const MAX_AUTO_REVIEW_ROUNDS = 2;
 
 /**
  * The mission handed to the review agent. Deliberately narrow: what to look
@@ -830,6 +827,7 @@ export class ReviewManager {
       outputTokens?: number;
       tokens?: number;
       costUsd?: number;
+      createdAt?: string;
     } | null,
     timedOut: boolean,
   ): void {
@@ -940,7 +938,7 @@ export class ReviewManager {
     // Fire-and-forget (don't await) so the review completion isn't delayed
     if (state === "ok" && verdict) {
       if (verdict !== "good to go") {
-        this.autoBounce(task, report, verdict).catch((err) => {
+        this.autoBounce(task, report, verdict, session?.createdAt).catch((err) => {
           console.error(
             `[repoos] uncaught error in auto-bounce for #${task.id}: ${(err as Error).message}`,
           );
@@ -1262,7 +1260,12 @@ export class ReviewManager {
    * drawing board" and we haven't exceeded the max rounds, send the findings
    * back to the engineer session and increment the review_rounds counter.
    */
-  private async autoBounce(task: Task, report: ReviewReport, verdict: string): Promise<void> {
+  private async autoBounce(
+    task: Task,
+    report: ReviewReport,
+    verdict: string,
+    reviewStartedAt?: string,
+  ): Promise<void> {
     if (!this.runner || verdict === "good to go") {
       return;
     }
@@ -1309,13 +1312,78 @@ export class ReviewManager {
 
     // Check if we've exceeded the max rounds
     if (reviewRounds >= MAX_AUTO_REVIEW_ROUNDS) {
-      const note = `Auto-bounce stopped: reached maximum of ${MAX_AUTO_REVIEW_ROUNDS} review rounds. Human review needed.`;
+      const note = `The reviewer sent this back to the engineer ${MAX_AUTO_REVIEW_ROUNDS} times and still found issues. Human review needed.`;
+      // The indexed task passed into autoBounce is refreshed after dismissal.
+      // Compare the live activity log with this durable review session's start
+      // time so only a dismissal during this review suppresses the escalation.
+      // Keep this read and the patch below synchronous so a same-process HTTP
+      // dismissal cannot interleave between the check and write.
+      let current: Task;
+      try {
+        current = parseTask({
+          content: readFileSync(task.absPath, "utf8"),
+          absPath: task.absPath,
+          root: this.config.root,
+          defaultStatus: this.config.defaultStatus,
+          defaultAssignee: this.config.defaultAssignee,
+        });
+        const startedAtMs = reviewStartedAt ? Date.parse(reviewStartedAt) : Number.NaN;
+        // Task activity timestamps have one-second precision; round the
+        // session timestamp down to the same precision before comparing.
+        const dismissalCutoffMs = Math.floor(startedAtMs / 1000) * 1000;
+        const dismissedDuringRun =
+          Number.isFinite(startedAtMs) &&
+          current.body.split("\n").some((line) => {
+            const match = line.match(/^- (\S+) · needs_input dismissed by /);
+            return Boolean(match && Date.parse(match[1]) >= dismissalCutoffMs);
+          });
+        if (dismissedDuringRun) {
+          console.log(
+            `[repoos] exhausted review flag dismissed during review for #${task.id}; leaving it cleared`,
+          );
+          // Visible on the task itself, not just the server log (#0546
+          // review suggestion) — the dismiss's own activity line already
+          // says a human acted; this says why the flag didn't come right
+          // back, which is the whole point of the suppression.
+          try {
+            const recorded = parseTask({
+              content: readFileSync(task.absPath, "utf8"),
+              absPath: task.absPath,
+              root: this.config.root,
+              defaultStatus: this.config.defaultStatus,
+              defaultAssignee: this.config.defaultAssignee,
+            });
+            recordChange(
+              recorded,
+              "exhausted-review flag left cleared: dismissed during this review",
+            );
+            writeFileSync(task.absPath, serializeTask(recorded));
+            commitTaskFile(this.config.root, task.absPath, `docs(${task.id}): update task`);
+          } catch (err) {
+            console.error(
+              `[repoos] could not record suppression note for #${task.id}: ${(err as Error).message}`,
+            );
+          }
+          return;
+        }
+      } catch (err) {
+        console.error(
+          `[repoos] could not check dismissal before flagging #${task.id}: ${(err as Error).message}`,
+        );
+        // Fail SAFE, not silent (#0546 review): a parse/read error on the
+        // dismissal check must not quietly drop the whole escalation — fall
+        // through and flag from the pre-run `task` snapshot, exactly what
+        // the code always did before this suppression existed. Worst case
+        // this re-raises a flag a human just dismissed — the ORIGINAL bug
+        // this task exists to fix, not a new one — which is far better than
+        // an exhausted-rounds task silently sitting in review with no
+        // signal at all because a transient read glitch hit this catch.
+        current = task;
+      }
       // Nothing is running or retrying from here on, so say so on the task
-      // instead of leaving it silently parked in review. Never overwrite an
-      // existing, different needs_input reason. `task` is the snapshot from
-      // before this run: a flag a clean-ish run just cleared (reviewer-episode
-      // reasons, including this one) counts as unset.
-      if (!task.needsInput || needsInputClearsOnSuccessfulReview(task)) {
+      // instead of leaving it silently parked in review. Preserve any current
+      // needs_input flag with a different cause.
+      if (!current.needsInput || needsInputClearsOnSuccessfulReview(current)) {
         try {
           patchTaskFile(this.config, task.absPath, {
             needsInput: true,

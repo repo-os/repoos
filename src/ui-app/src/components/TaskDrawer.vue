@@ -294,11 +294,16 @@ const reviewDraftMsgTextarea = ref<HTMLTextAreaElement | null>(null);
 
 function onFreeformTranscribed(text: string): void {
   if (freeformTextarea.value) {
-    // The freeform compose box keeps its fixed min-height + resize:vertical
-    // (a large drafting area, not a one-line chat input), so it is not auto-grown.
+    // insertTextAtCursor dispatches input, which refits the auto-growing field.
     insertTextAtCursor(freeformTextarea.value, text);
   }
 }
+
+function adjustFreeformHeight(): void {
+  autoGrowTextarea(freeformTextarea.value, 420);
+}
+
+watch(freeformText, adjustFreeformHeight, { flush: "post" });
 
 function clearFreeformDraft(): void {
   freeformText.value = "";
@@ -345,6 +350,8 @@ watch(
     freeformRunId.value = null;
     freeformRunning.value = false;
     initFreeformOverrides();
+    // The textarea remounts with the preserved draft when the drawer reopens.
+    void nextTick(adjustFreeformHeight);
   },
 );
 
@@ -2773,7 +2780,7 @@ watch(
                     id="nt-freeform"
                     ref="freeformTextarea"
                     v-model="freeformText"
-                    class="ff-textarea"
+                    class="ff-textarea ff-textarea-autogrow"
                     rows="10"
                     placeholder="Type the task however it comes out — like explaining it to a person. The PM agent writes the structured task file."
                   ></textarea>
@@ -3309,7 +3316,9 @@ watch(
                 {{
                   staleNeedsInputOnReview
                     ? STALE_REVIEW_DEV_ERROR_BANNER
-                    : needsInputBannerText(ui.active.needsInputReason, activeNeedsInputQuestions)
+                    : ui.active.needsInputReason === "review-rounds-exhausted" && review?.running
+                      ? "A fresh review is running. Its result will determine whether this still needs your attention."
+                      : needsInputBannerText(ui.active.needsInputReason, activeNeedsInputQuestions)
                 }}
               </div>
               <!-- needsInputDetail for dev-error is internal skill-routing
@@ -3336,7 +3345,13 @@ watch(
                   v-if="needsInputPrimary && !staleNeedsInputOnReview"
                   variant="outline"
                   size="sm"
-                  :disabled="ui.saving || startingWork || reviewBusy || dismissNeedsInputBusy"
+                  :disabled="
+                    ui.saving ||
+                    startingWork ||
+                    reviewBusy ||
+                    review?.running ||
+                    dismissNeedsInputBusy
+                  "
                   @click="runNeedsInputPrimaryAction"
                 >
                   <Play
@@ -3346,10 +3361,17 @@ watch(
                   <ActivityIndicator
                     v-else-if="needsInputPrimary.kind === 'restart' && startingWork"
                   />
+                  <ActivityIndicator
+                    v-else-if="
+                      needsInputPrimary.kind === 'review' && (reviewBusy || review?.running)
+                    "
+                  />
                   {{
                     needsInputPrimary.kind === "restart" && startingWork
                       ? "Starting work…"
-                      : needsInputPrimary.label
+                      : needsInputPrimary.kind === "review" && (reviewBusy || review?.running)
+                        ? "Reviewing…"
+                        : needsInputPrimary.label
                   }}
                 </Button>
                 <Button

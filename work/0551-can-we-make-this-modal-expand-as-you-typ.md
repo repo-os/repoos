@@ -2,7 +2,7 @@
 id: "0551"
 title: Let long prompts auto-grow the composer textarea
 type: feature
-status: ready
+status: done
 priority: p3
 area: web
 assigned_to: ai
@@ -11,12 +11,7 @@ branch: feat/let-long-prompts-auto-grow-the-composer-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-27T14:05:52Z"
-updated_at: "2026-09-27T16:23:11Z"
-check_retry_count: 2
-last_check_failure: "[object Object]"
-review_rounds: 1
-review_passes: 1
-handoff_signal_retry_count: 1
+updated_at: "2026-09-27T16:09:05Z"
 ---
 ## Problem
 
@@ -108,33 +103,5 @@ Can we make this modal expand as you type text larger than the text area? or if 
 - 2026-09-27T14:11:17Z · model_override
 - 2026-09-27T14:11:19Z · status inbox→ready
 - 2026-09-27T14:11:20Z · status ready→active, branch
-- 2026-09-27T14:23:56Z · status active→ready
-- 2026-09-27T14:40:07Z · status ready→active
-- 2026-09-27T14:41:30Z · note: Implemented bounded auto-grow for the task, story, and input freeform composer textareas; empty height stays at the existing 230px minimum and growth caps at 45vh/420px.
 - 2026-09-27T14:44:15Z · status active→review
-- 2026-09-27T14:46:37Z · status review→active
-- 2026-09-27T14:51:57Z · handoff failed · handoff recovery attempted · finalization failed
-- 2026-09-27T15:03:42Z · handoff failed · check failed after 2 automatic retries · remote validation failed (exit 137) — + pinia@4.0.2
-+ radix-vue@1.9.17
-+ shiki@4.4.3
-+ tailwind-merge@3.6.0
-+ tailwindcss@4.3.3
-+ typescript@5.9.3
-+ vite@8.2.0
-+ vitest@4.1.10
-+ vue@3.5.40
-+ vue-router@5.2.0
-+ vue-tsc@3.3.9
-422 packages installed [5.69s]
-$ bun scripts/build.mjs
-$ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs
-$ vue-tsc --noEmit -p src/ui-app/tsconfig.json && vite build --config src/ui-app/vite.config.ts
-/usr/bin/bash: line 1:    40 Killed                  vue-tsc --noEmit -p src/ui-app/tsconfig.json
-error: script "build:ui" exited with code 137
-error: script "build:raw" exited with code 137
-error: script "build" exited with code 137
-[validate] gate exit 137 — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally
-- 2026-09-27T15:08:55Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-09-27T15:09:26Z · status active→review
-- 2026-09-27T15:09:27Z · status review→active
-- 2026-09-27T16:23:11Z · watchdog: auto-surfaced stuck task · status active→ready · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-09-27T16:09:05Z · status review→done, release:success

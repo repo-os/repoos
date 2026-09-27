@@ -10,13 +10,28 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:32:39Z"
-updated_at: "2026-09-27T07:34:15Z"
+updated_at: "2026-09-27T16:08:28Z"
+---
+id: "0534"
+title: Authorize every Telegram message against a live role and audit it
+type: feature
+status: ready
+priority: p1
+area: server
+story: RepoOS Telegram Bot
+assigned_to: ai
+created_by: ""
+branch: ""
+created_at: "2026-09-27T07:32:39Z"
+updated_at: "2026-09-27T15:59:55Z"
 ---
 ## Problem
 
 Story #0003 lists "permission checks and audit logging" under Phase 2 and "rate-limit Telegram commands and agent messages" under security requirements. Both belong in Phase 1: **no message can be authorized before senders can be authorized**, and the very first notification RepoOS sends is already an act of disclosure about a repository. This task is the enforcement point every later Telegram task depends on.
 
 Identity binding alone is not enough. A binding created while someone was an `admin` must stop granting admin powers the moment they are demoted, and must stop granting anything at all the moment they are removed from the allowlist.
+
+See [ADR 0007 — Telegram identity and authorization](../docs/adr/0007-telegram-identity-and-authorization.md), accepted in [task #0529](0529-record-the-telegram-identity-and-authori.md), for the shared binding and authorization decision. This task implements its specific flow.
 
 ## The core rule: resolve the role live, never cache it
 
@@ -41,7 +56,7 @@ Note `action` is a free-text string with no enum or registry — 13 hand-written
 
 ## Denial behavior
 
-An unbound or unauthorized sender gets a **silent no-op, not an error reply.** In a group, "access denied" confirms the bot exists, confirms the repository has a Telegram integration, and spams the channel on every message from a stranger. In a private chat, one short neutral reply is acceptable; in a group, say nothing.
+An unbound or unauthorized sender gets a silent no-op **in every chat, group or private** — never an access-denied response, and never any other reply, matching ADR 0007 exactly (not a group-only rule with a private-chat exception, which #0529's review caught as a real divergence: even a neutral private-chat reply confirms the bot is active and reachable, which authorization failure must not disclose). Authorization behavior must not reveal whether the bot is connected, whether an account is linked, or which check failed — in any chat type.
 
 ## Rate limiting
 
@@ -51,3 +66,10 @@ Reuse the exported `RateLimiter` class (`src/server/routes/auth.ts`, already use
 
 - 2026-09-27T07:32:39Z · created · unknown
 - 2026-09-27T07:34:15Z · status inbox→ready
+- 2026-09-27T15:15:29Z · body
+- 2026-09-27T15:42:31Z · body
+- 2026-09-27T15:43:17Z · body
+- 2026-09-27T15:51:51Z · body
+- 2026-09-27T15:52:42Z · body
+- 2026-09-27T15:59:55Z · body
+- 2026-09-27T16:08:28Z · body
