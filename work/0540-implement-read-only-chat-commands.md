@@ -10,8 +10,12 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:33:29Z"
-updated_at: "2026-09-27T15:42:38Z"
+updated_at: "2026-09-27T15:51:55Z"
 ---
+## Governing decision
+
+Follow [ADR 0007 — Telegram identity and authorization](../docs/adr/0007-telegram-identity-and-authorization.md) for user binding, chat binding, live role resolution, and unauthorized-sender behavior. This task implements or relies on that model; do not define a separate policy here.
+
 ## Problem
 
 Story #0003 Phase 2: "Implement `/status`, `/tasks`, `/agents`, and `/help`." These are the first commands a linked user can run, and the first place the auth model becomes user-visible — so they are also the first place it can be wrong.
@@ -44,11 +48,8 @@ In a bound group these commands work for any authorized sender, but keep the tri
 - An unbound sender, and a bound sender whose `auth_users` row was deleted mid-session, both get nothing.
 - Oversized output paginates rather than truncating silently.
 
-## Decision reference
-
-Follow [ADR 0007 — Telegram identity and authorization](../docs/adr/0007-telegram-identity-and-authorization.md) for the shared identity, role-resolution, chat-binding, and sender-response policy. This task implements its specific flow.
-
 ## Activity
 
 - 2026-09-27T07:33:29Z · created · unknown
 - 2026-09-27T15:42:38Z · body
+- 2026-09-27T15:51:55Z · body
