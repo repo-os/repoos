@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-27T01:26:44Z"
+review_passes: 5
 id: "0520"
 title: Run the pre-review gate on the remote validation runner
 type: feature
@@ -12,8 +14,6 @@ assigned_to: ai
 created_by: ""
 branch: feat/run-the-pre-review-gate-on-the-remote-va
 created_at: "2026-09-26T11:49:00Z"
-updated_at: "2026-09-27T01:26:43Z"
-review_passes: 4
 review_rounds: 2
 ---
 ## Problem
@@ -85,3 +85,4 @@ runner hosts (separate task).
 - 2026-09-27T01:25:38Z · status active→review
 - 2026-09-27T01:26:43Z · needs_input
 - 2026-09-27T01:26:43Z · needs_input
+
