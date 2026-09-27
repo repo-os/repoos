@@ -31,6 +31,7 @@
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { checkBuild, checkBuildForRoot, findPackageRoot } from "./build.js";
 
 /** True when this process is Bun rather than Node. */
 export function isBun(): boolean {
@@ -174,5 +175,68 @@ export function reexecUnderBunIfRequested(): boolean {
 
   // The live child handle and signal listeners keep this parent alive; it
   // does nothing else until the child exits.
+  return true;
+}
+
+/** Rebuild a stale linked CLI before dispatch, then load the new code in a fresh process. */
+export function reexecAfterStaleBuild(root?: string): boolean {
+  const alreadyAttempted = process.env.REPOOS_STALENESS_REEXEC === "1";
+  // The guard belongs to this hop, not to commands this CLI later launches.
+  if (alreadyAttempted) delete process.env.REPOOS_STALENESS_REEXEC;
+  if (alreadyAttempted || (root === undefined && checkBuild().code === "dev-mode")) {
+    return false;
+  }
+
+  const packageRoot = root ?? findPackageRoot();
+  if (!packageRoot) return false;
+  const build = checkBuildForRoot(packageRoot);
+  if (!build.stale || !build.applicable) return false;
+
+  const bun = resolveBun();
+  const script = process.argv[1];
+  if (!bun || !script) return false;
+
+  process.stderr.write("[repoos] Build is stale; running `bun run build` before continuing.\n");
+  const built = spawnSync(bun, ["run", "build"], { cwd: packageRoot, stdio: "inherit" });
+  if (built.status !== 0) return false; // Preserve the existing warning/check failure.
+
+  const argv = [script, ...process.argv.slice(2)];
+  const env: NodeJS.ProcessEnv = { ...process.env, REPOOS_STALENESS_REEXEC: "1" };
+  const execve = (
+    process as { execve?: (f: string, a: readonly string[], e: NodeJS.ProcessEnv) => never }
+  ).execve;
+  if (typeof execve === "function") {
+    try {
+      execve(process.execPath, [process.execPath, ...argv], env);
+    } catch (err) {
+      process.stderr.write(
+        `[repoos] execve after build failed (${(err as Error).message}); using a child process\n`,
+      );
+    }
+  }
+
+  // Bun/older Node: keep the original process only to relay signals and exit.
+  let child: ChildProcess;
+  try {
+    child = spawn(process.execPath, argv, { stdio: "inherit", env });
+  } catch (err) {
+    process.stderr.write(`[repoos] could not restart after build: ${(err as Error).message}\n`);
+    return false;
+  }
+  const forward = (sig: NodeJS.Signals): void => {
+    try {
+      child.kill(sig);
+    } catch {
+      /* child already gone */
+    }
+  };
+  for (const sig of ["SIGINT", "SIGTERM", "SIGHUP", "SIGQUIT"] as NodeJS.Signals[]) {
+    process.on(sig, () => forward(sig));
+  }
+  child.on("error", (err) => {
+    process.stderr.write(`[repoos] restart after build failed: ${err.message}\n`);
+    process.exit(1);
+  });
+  child.on("exit", (code, signal) => process.exit(signal ? 1 : (code ?? 0)));
   return true;
 }

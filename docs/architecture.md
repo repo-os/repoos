@@ -381,6 +381,14 @@ switch instead of inheriting the flag and staying on Node. Everything the
 server spawns via `process.execPath` (reload replacements, preview children,
 `repoos check`) inherits the same runtime.
 
+After the runtime switch, the CLI checks its linked build marker against
+`src/` (#0549). If stale, it runs `bun run build` in the package root and
+re-execs the original command with the same arguments. `REPOOS_STALENESS_REEXEC=1`
+limits this to one attempt and is cleared in the restarted process so it does
+not affect commands launched later. A failed build or unchanged stale marker
+still reaches the normal staleness warning or `repoos check` failure. Published
+packages and source-mode runs skip this bootstrap.
+
 The switch used to be `serve`-only, on the theory that short commands would
 pay for a second process start for no benefit. Measured on 2026-09-15 (Node
 24.21, Bun 1.3.14), that was backwards: `repoos list` takes ~656 ms on Node,
