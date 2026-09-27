@@ -2,14 +2,14 @@
 id: "0526"
 title: Cap theme switcher at 3 and move themes to top of General settings
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/cap-theme-switcher-at-3-and-move-themes-
 created_at: "2026-09-27T00:58:08Z"
-updated_at: "2026-09-27T01:09:35Z"
+updated_at: "2026-09-27T02:40:36Z"
 ---
 ## Problem
 
@@ -106,3 +106,4 @@ Two things:
 - 2026-09-27T00:58:40Z · status inbox→ready
 - 2026-09-27T01:07:30Z · status ready→active, branch
 - 2026-09-27T01:09:35Z · status active→review
+- 2026-09-27T02:40:36Z · status review→done, release:success
