@@ -57,7 +57,7 @@ import ChatToolCallRow from "./ChatToolCallRow.vue";
 import { useChatScroll } from "../composables/useChatScroll";
 import { bubbleRole, stripAnsi, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
-import DirtyMainDialog from "./DirtyMainDialog.vue";
+import DirtyCheckoutDialog from "./DirtyCheckoutDialog.vue";
 import HotfixConfirmDialog from "./HotfixConfirmDialog.vue";
 import ReviewConfirmDialog from "./ReviewConfirmDialog.vue";
 import SendToEngineerDialog from "./SendToEngineerDialog.vue";
@@ -842,9 +842,10 @@ async function moveToDone(): Promise<void> {
     ui.close();
     ui.expandIntegrationBar();
   } catch (err) {
-    // Dirty-main guard (0204): pause and show the confirmation modal instead
-    // of an inline failure — the task stays in review until the user decides.
-    if (err instanceof Error && err.name === "DirtyMainError") {
+    // Dirty-checkout guard (0204/#0512): pause and show the confirmation modal
+    // instead of an inline failure — the task stays in review until the user
+    // decides what happens to the uncommitted files.
+    if (err instanceof Error && err.name === "DirtyCheckoutError") {
       dirtyTask.value = ui.active;
       return;
     }
@@ -879,15 +880,18 @@ async function stopMtd(): Promise<void> {
   }
 }
 
-/** Dirty-main confirmation (0204): the task whose close-out is paused on
- *  `main` having uncommitted files. `null` hides the modal. */
+/** Uncommitted-changes confirmation (0204/#0512): the task whose close-out is
+ *  paused on a dirty checkout — `main` (the merge would abort) or the task's own
+ *  worktree (close-out would delete the changes). `null` hides the modal. */
 const dirtyTask = ref<Task | null>(null);
 
-const dirtyFiles = computed(() => (dirtyTask.value ? repo.dirtyMainFor(dirtyTask.value.id) : []));
+const dirtyFiles = computed(() => (dirtyTask.value ? repo.dirtyFilesFor(dirtyTask.value.id) : []));
+const dirtyScope = computed(() =>
+  dirtyTask.value ? repo.dirtyScopeFor(dirtyTask.value.id) : ("main" as const),
+);
 
 async function confirmCommitDirty(): Promise<void> {
   const t = dirtyTask.value;
-  const files = dirtyFiles.value;
   dirtyTask.value = null;
   if (!t) return;
   ui.saving = true;
@@ -899,7 +903,7 @@ async function confirmCommitDirty(): Promise<void> {
     ui.expandIntegrationBar();
   } catch (err) {
     // Still dirty after commiting (e.g. a new file appeared) — keep asking.
-    if (err instanceof Error && err.name === "DirtyMainError") {
+    if (err instanceof Error && err.name === "DirtyCheckoutError") {
       dirtyTask.value = t;
       return;
     }
@@ -915,7 +919,7 @@ function cancelDirty(): void {
   // Use the captured task, not ui.active — the body-teleported dialog dismissed
   // the drawer's modal, so ui.active may already be null here.
   const id = dirtyTask.value?.id ?? ui.active?.id;
-  if (id) repo.clearDirtyMain(id);
+  if (id) repo.clearDirtyCheckout(id);
   dirtyTask.value = null;
 }
 
@@ -1454,7 +1458,7 @@ const engineerNoteOpen = ref(false);
 // SendToEngineerDialog is a body-teleported layer, so opening it (or moving
 // focus into it) trips the drawer's modal dismiss-on-outside and nulls
 // `ui.active` before the confirm handler runs. Snapshot the task and its report
-// when the dialog opens — same pattern as RestartTaskDialog / DirtyMainDialog.
+// when the dialog opens — same pattern as RestartTaskDialog / DirtyCheckoutDialog.
 const engineerNoteTask = ref<Task | null>(null);
 const engineerNoteReport = ref<ReviewState["report"]>(null);
 async function sendToEngineer(): Promise<void> {
@@ -4418,9 +4422,10 @@ watch(
     @started="ui.activeTab = 'agent'"
   />
 
-  <DirtyMainDialog
+  <DirtyCheckoutDialog
     :task="dirtyTask"
     :files="dirtyFiles"
+    :scope="dirtyScope"
     @commit="confirmCommitDirty"
     @cancel="cancelDirty"
   />

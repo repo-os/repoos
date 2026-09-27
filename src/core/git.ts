@@ -839,6 +839,12 @@ export async function resolveWorktreeStatuses(
  * re-creates both from the main checkout's HEAD — a clean restart. The main
  * checkout itself is never touched. Fail-soft: false when git is missing,
  * the branch is the main checkout, or a removal step failed.
+ *
+ * This is the ONE caller that discards uncommitted work on purpose, so it
+ * forces the worktree removal (#0512). "Start clean" is an explicit human
+ * choice — the UI's restart dialog says what will be lost and lists the
+ * uncommitted files — which is the bar every other `removeWorktree` caller
+ * now has to clear.
  */
 export function resetWorktree(root: string, branch: string): boolean {
   const path = worktreePaths(root).get(branch);
@@ -856,7 +862,7 @@ export function resetWorktree(root: string, branch: string): boolean {
       /* keep the reported path */
     }
     if (realPath === realRoot) return false;
-    if (!removeWorktree(root, branch)) return false;
+    if (!removeWorktree(root, branch, { force: true })) return false;
   }
   if (localBranches(root).has(branch)) {
     // Force: the branch may carry commits a clean restart is meant to discard.
@@ -1309,6 +1315,62 @@ export async function commitDirtyFiles(root: string, message: string): Promise<s
   return commit.status === 0 ? files : [];
 }
 
+/** Which repo-relative paths count as a task's own work rather than churn. */
+export interface WorkFileFilter {
+  /** Task dir (`config.workDir`). Its `.md` files are board bookkeeping. */
+  workDir?: string;
+  /** Runtime cache dir (`config.cacheDir`) — locks, logs, local database. */
+  cacheDir?: string;
+}
+
+const withTrailingSlash = (dir: string): string => `${dir.replace(/\/+$/, "")}/`;
+
+/**
+ * `loadConfig` always fills `workDir`/`cacheDir`, but a hand-built config (a
+ * test fixture, a partial object threaded through a route) may not — and
+ * silently losing the exclusions would make every task file in a worktree look
+ * like uncommitted work. These are the documented defaults.
+ */
+export function workFileFilter(config: { workDir?: string; cacheDir?: string }): WorkFileFilter {
+  return { workDir: config.workDir ?? "work", cacheDir: config.cacheDir ?? ".repoos" };
+}
+
+/**
+ * True for a repo-relative path that is RepoOS's own churn rather than a
+ * task's implementation: generated `dist/` output, the runtime cache dir, and
+ * the task dir. The same three classes every close-out guard has learned to
+ * discount — `repoos check` runs inside a task worktree and writes into
+ * `dist/` and the cache dir, so a guard that counted them would fire on its own
+ * gate. `dist` is excluded from the review diff for the same reason
+ * (`DIFF_SOURCE_PATHS`).
+ */
+export function isGeneratedOrRuntimePath(path: string, filter: WorkFileFilter = {}): boolean {
+  if (path === "dist" || path.startsWith("dist/")) return true;
+  if (filter.cacheDir && path.startsWith(withTrailingSlash(filter.cacheDir))) return true;
+  if (filter.workDir && path.startsWith(withTrailingSlash(filter.workDir))) return true;
+  return false;
+}
+
+/**
+ * The uncommitted files in a checkout that represent a task's OWN work —
+ * `dirtyFiles` minus {@link isGeneratedOrRuntimePath}. Used for the task
+ * worktree, where the question is "is there untested work a close-out would
+ * silently delete" rather than "will git abort this merge" (the main checkout
+ * needs that stricter, whole-tree answer, which is why it stays on
+ * `dirtyFiles`).
+ *
+ * Fails closed exactly like `dirtyFiles`: an unreadable status throws
+ * `GitDirtyCheckError` rather than reporting an empty list, so a caller cannot
+ * treat "could not tell" as "nothing to lose".
+ */
+export async function uncommittedWorkFiles(
+  root: string,
+  filter: WorkFileFilter = {},
+): Promise<string[]> {
+  const files = await dirtyFiles(root);
+  return files.filter((p) => !isGeneratedOrRuntimePath(p, filter));
+}
+
 /**
  * The tab-indented paths git lists when a merge aborts because a dirty or
  * untracked working-tree file would be overwritten, e.g.:
@@ -1643,22 +1705,44 @@ export function pruneWorktrees(root: string): void {
   git(root, ["worktree", "prune"]);
 }
 
+/** `git worktree remove`'s refusal text for a tree with uncommitted work. */
+const DIRTY_WORKTREE_REFUSAL = /contains modified or untracked files/i;
+
+export interface RemoveWorktreeOptions {
+  /**
+   * Discard a worktree that has uncommitted work. OFF by default (#0512):
+   * plain `git worktree remove` (no `--force`) removes a worktree holding only
+   * ignored files — `dist/`, `node_modules/` — but refuses one with modified
+   * or untracked files, so not forcing is the guard and costs normal cleanup
+   * nothing. Close-out used to force unconditionally and so deleted work no
+   * gate had ever tested. Only a caller that has decided the work may be lost
+   * passes this: a restart/reset, a throwaway `repoos/integrate/<id>`
+   * candidate, or GC of a tree it has already established is merged and clean.
+   */
+  force?: boolean;
+}
+
 /**
  * Remove the linked worktree for `branch` and make sure it is really gone.
- * Forced when dirty — close-out content is preserved in the merged main, so
- * nothing is lost.
+ * Not forced by default: a worktree with uncommitted work is KEPT and the call
+ * returns false (see {@link RemoveWorktreeOptions.force}).
  *
  * Handles the two states a leak actually shows up in:
- *  - directory + metadata present   -> `git worktree remove --force`
+ *  - directory + metadata present   -> `git worktree remove`
  *  - directory gone, metadata stale -> `remove` fails ("is not a working
  *    tree"), so fall back to `git worktree prune`, then `rm -rf` any leftover
  *    directory and prune once more.
  *
- * Returns false (without forcing anything) when `branch` is checked out in a
- * DIFFERENT worktree than expected, or is the main checkout — the caller asked
- * to remove the wrong thing.
+ * Returns false (without removing anything) when `branch` is checked out in a
+ * DIFFERENT worktree than expected, is the main checkout — the caller asked to
+ * remove the wrong thing — or, unless forced, holds uncommitted work.
  */
-export function removeWorktree(root: string, branch: string): boolean {
+export function removeWorktree(
+  root: string,
+  branch: string,
+  opts: RemoveWorktreeOptions = {},
+): boolean {
+  const force = opts.force === true;
   const path = worktreePaths(root).get(branch);
   if (!path) return true;
   let realRoot = root;
@@ -1673,16 +1757,29 @@ export function removeWorktree(root: string, branch: string): boolean {
     /* dir gone — safe to continue */
   }
 
-  const first = gitCapture(root, ["worktree", "remove", "--force", path]);
+  const removeArgs = (): string[] =>
+    force ? ["worktree", "remove", "--force", path] : ["worktree", "remove", path];
+
+  const first = gitCapture(root, removeArgs());
   if (first.status === 0) return true;
   if (/is a main working tree|checked out at/i.test(first.stderr)) return false;
+  // Uncommitted work: keep the worktree AND its directory. Every fallback
+  // below (prune, --force, `rm -rf`) exists for stale metadata and would
+  // destroy exactly the work this refusal is protecting (#0512).
+  if (!force && DIRTY_WORKTREE_REFUSAL.test(first.stderr)) return false;
 
   pruneWorktrees(root);
-  const second = gitCapture(root, ["worktree", "remove", "--force", path]);
+  const second = gitCapture(root, removeArgs());
   if (second.status === 0) return true;
+  if (!force && DIRTY_WORKTREE_REFUSAL.test(second.stderr)) return false;
 
   // Last resort: the registration is stale AND a directory is in the way.
   if (existsSync(path)) {
+    // A non-forced removal only gets here when git refused for some reason
+    // OTHER than uncommitted work, so the directory is (in principle) junk.
+    // Ask git rather than trust that: a checkout we cannot read is not ours
+    // to delete.
+    if (!force && !worktreeHasNoUncommittedWork(path)) return false;
     try {
       rmSync(path, { recursive: true, force: true });
     } catch {
@@ -1692,6 +1789,19 @@ export function removeWorktree(root: string, branch: string): boolean {
   pruneWorktrees(root);
   // Success == the branch no longer resolves to any registered worktree.
   return !worktreePaths(root).has(branch);
+}
+
+/**
+ * Whether `path` is a checkout git reports as clean, used only to decide
+ * whether a stale worktree registration's directory is safe to `rm -rf`.
+ * Conservative in both directions: a missing directory and a clean one are
+ * both "nothing to lose", an unreadable or dirty one is not.
+ */
+function worktreeHasNoUncommittedWork(path: string): boolean {
+  if (!existsSync(path)) return true;
+  const status = gitCapture(path, ["status", "--porcelain"]);
+  // A non-zero exit means we could not tell — never delete on "unknown".
+  return status.status === 0 && status.stdout.trim() === "";
 }
 
 export interface EnsureHotfixResult {

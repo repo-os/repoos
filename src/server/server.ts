@@ -254,6 +254,7 @@ import {
   getDailyTotals,
   getDiffStatsForTask,
   getDiffForTask,
+  getWorktreeDirtyForTask,
   getTaskFile,
   taskAction,
   getIntegrationJob,
@@ -2326,6 +2327,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", /^\/api\/tasks\/([^/]+)\/stats$/, getTaskStats);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/diff-stats$/, getDiffStatsForTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/diff$/, getDiffForTask);
+  // Uncommitted files in a task's worktree — fetched by the restart dialog so
+  // "Start clean" can name what it would discard (#0512).
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/worktree-dirty$/, getWorktreeDirtyForTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/file$/, getTaskFile);
   router.register("GET", "/api/remote-validation/status", (_ctx, _req, res) => {
     const rv = config.remoteValidation ?? {};

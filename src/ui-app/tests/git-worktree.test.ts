@@ -489,6 +489,98 @@ describe("removeWorktree", () => {
       clean();
     }
   });
+
+  it("refuses a worktree with a modified tracked file and keeps it on disk (#0512)", () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wt = ensureWorktree(root, "feat/one");
+      writeFileSync(join(root, "seed.txt"), "v1\n");
+      git(root, ["add", "seed.txt"]);
+      git(root, ["commit", "-m", "seed"]);
+      git(wt.path, ["merge", "--ff-only", "main"]);
+      writeFileSync(join(wt.path, "seed.txt"), "uncommitted edit\n");
+
+      expect(removeWorktree(root, "feat/one")).toBe(false);
+
+      // Nothing was deleted — not the directory, not the file, not the branch.
+      expect(existsSync(join(wt.path, "seed.txt"))).toBe(true);
+      expect(readFileSync(join(wt.path, "seed.txt"), "utf8")).toBe("uncommitted edit\n");
+      expect(listWorktrees(root).some((w) => w.branch === "feat/one")).toBe(true);
+      expect(git(root, ["branch", "--list", "feat/one"])).toContain("feat/one");
+    } finally {
+      clean();
+    }
+  });
+
+  it("refuses a worktree with an untracked file and keeps it (#0512)", () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wt = ensureWorktree(root, "feat/one");
+      writeFileSync(join(wt.path, "scratch.txt"), "untracked\n");
+
+      expect(removeWorktree(root, "feat/one")).toBe(false);
+
+      expect(existsSync(join(wt.path, "scratch.txt"))).toBe(true);
+      expect(listWorktrees(root).some((w) => w.branch === "feat/one")).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("removes a worktree holding only ignored files, unforced (#0512)", () => {
+    // The normal case: a task worktree carries `dist/` and `node_modules/`,
+    // both gitignored. Not forcing must not make ordinary cleanup fail.
+    const { root, clean } = makeRepo();
+    try {
+      const wt = ensureWorktree(root, "feat/one");
+      writeFileSync(join(wt.path, ".gitignore"), "dist/\nnode_modules/\n");
+      git(wt.path, ["add", ".gitignore"]);
+      git(wt.path, ["commit", "-m", "ignore build output"]);
+      mkdirSync(join(wt.path, "dist"));
+      mkdirSync(join(wt.path, "node_modules"));
+      writeFileSync(join(wt.path, "dist", "app.js"), "built\n");
+      writeFileSync(join(wt.path, "node_modules", "dep.js"), "vendored\n");
+
+      expect(removeWorktree(root, "feat/one")).toBe(true);
+
+      expect(existsSync(wt.path)).toBe(false);
+      expect(listWorktrees(root).some((w) => w.branch === "feat/one")).toBe(false);
+    } finally {
+      clean();
+    }
+  });
+
+  it("removes a dirty worktree only with force: true (#0512)", () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wt = ensureWorktree(root, "feat/one");
+      writeFileSync(join(wt.path, "scratch.txt"), "untracked\n");
+
+      expect(removeWorktree(root, "feat/one", { force: true })).toBe(true);
+
+      expect(existsSync(wt.path)).toBe(false);
+      expect(listWorktrees(root).some((w) => w.branch === "feat/one")).toBe(false);
+    } finally {
+      clean();
+    }
+  });
+
+  it("keeps a half-deleted worktree's leftovers when a non-forced removal cannot tell it is clean", () => {
+    // Stale registration + a directory git cannot read a status from: the
+    // `rm -rf` fallback is skipped, because "unknown" is not "nothing to lose".
+    const { root, clean } = makeRepo();
+    try {
+      const wt = ensureWorktree(root, "feat/one");
+      rmSync(join(wt.path, ".git"), { recursive: true, force: true });
+      writeFileSync(join(wt.path, "leftover.txt"), "unreadable checkout\n");
+
+      expect(removeWorktree(root, "feat/one")).toBe(false);
+
+      expect(existsSync(join(wt.path, "leftover.txt"))).toBe(true);
+    } finally {
+      clean();
+    }
+  });
 });
 
 describe("dirtyFiles / commitDirtyFiles (0204)", () => {

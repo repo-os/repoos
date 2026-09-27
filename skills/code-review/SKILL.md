@@ -39,3 +39,7 @@ this is how that review is performed.
   sign off without it.
 - The implementing agent never merges or self-approves its own MR.
 - Only `done` goes to `main`; `review` means the worktree stays open.
+- Close-out never deletes uncommitted work: if a task is left with
+  `needs_input` naming files in its worktree (a review-time fix that was never
+  committed), deal with those files before removing the worktree —
+  `git worktree remove` refuses while they are there, by design (#0512).

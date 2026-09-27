@@ -37,6 +37,8 @@ import {
   commitDirtyFiles,
   mergeBranch,
   dirtyFiles,
+  uncommittedWorkFiles,
+  workFileFilter,
   getDiff,
   getDiffStats,
   getChangedFilePaths,
@@ -47,7 +49,7 @@ import { sweepAndWarn } from "../core/worktree-gc.js";
 import type { DoneStep } from "./done.js";
 import { redactSecrets, stripAnsi } from "./done.js";
 import type { RemoteValidator } from "./remote-validation.js";
-import { markTaskReleased } from "./write.js";
+import { markTaskReleased, patchTaskFile } from "./write.js";
 import { saveDiffSnapshot } from "./diff-snapshot.js";
 import { parseTask } from "../core/task.js";
 import { CLOSEOUT_CHECK_ARGS, resolveCheckPlan } from "../core/check-plan.js";
@@ -653,7 +655,10 @@ export class CloseOutOrchestrator {
    * Tear down the `repoos/integrate/<id>` candidate worktree + branch. Safe to
    * call whether or not the candidate exists. The candidate is a throwaway
    * scratch area rebuilt from scratch on the next run, so its branch is
-   * force-deleted (git will not see it as merged after a failed job).
+   * force-deleted (git will not see it as merged after a failed job) and its
+   * worktree removal is forced too — everything in a candidate is derived from
+   * branches that still exist, so nothing human-authored is lost (#0512: a
+   * candidate is the one place a forced removal is safe).
    *
    * Runs on EVERY terminal job outcome — success (`cleanup`), genuine failure,
    * and moot/reconciled — so a candidate never outlives its job. Without this,
@@ -663,7 +668,7 @@ export class CloseOutOrchestrator {
   private removeCandidate(taskId: string): void {
     const root = this.config.root;
     const branch = candidateBranchName(taskId);
-    removeWorktree(root, branch);
+    removeWorktree(root, branch, { force: true });
     deleteBranch(root, branch, { force: true });
     pruneWorktrees(root);
   }
@@ -1198,7 +1203,7 @@ export class CloseOutOrchestrator {
             "to land; retry Move-to-done once main quiets down.",
         };
       }
-      removeWorktree(root, branch);
+      removeWorktree(root, branch, { force: true }); // throwaway candidate, rebuilt below
       this.coordinator.updateJob(job.taskId, {
         phase: "syncing",
         baseMainSha: null,
@@ -1748,7 +1753,7 @@ export class CloseOutOrchestrator {
                 "to land; retry Move-to-done once main quiets down.",
             };
           }
-          removeWorktree(root, branch);
+          removeWorktree(root, branch, { force: true }); // throwaway candidate, rebuilt below
           this.coordinator.updateJob(job.taskId, {
             phase: "syncing",
             baseMainSha: null,
@@ -1985,17 +1990,48 @@ export class CloseOutOrchestrator {
     // Task's feature worktree + branch. The branch was just merged into main, so
     // `-d` is correct; a false return means the worktree is still registered
     // (leak) — log the path so a human/gc can see which one.
-    if (!removeWorktree(root, featureBranch)) {
-      const stuck = worktreePathForBranch(root, featureBranch);
-      this.logger?.integration(job.taskId, "warn", "feature worktree not removed at close-out", {
-        branch: featureBranch,
-        path: stuck ?? "unknown",
-      });
+    //
+    // `removeWorktree` is NOT forced (#0512): it used to be `git worktree
+    // remove --force`, which deleted whatever the branch had not committed —
+    // work no gate had ever tested, in a task whose last handoff commit may be
+    // several review-time fixes old. The merge above only ever carried the
+    // branch's COMMITS, so a refusal here means real bytes on disk that the
+    // merge did not deliver. Keep the worktree, name the files, and ask a
+    // human instead of deleting them silently.
+    const removed = removeWorktree(root, featureBranch);
+    const stuck = removed ? null : worktreePathForBranch(root, featureBranch);
+    let keptDirtyFiles: string[] = [];
+    if (stuck) {
+      try {
+        keptDirtyFiles = await uncommittedWorkFiles(stuck, workFileFilter(this.config));
+      } catch (err) {
+        // Unknown ≠ clean. Keep the worktree anyway and say we could not read
+        // it, rather than deleting it or pretending it was empty.
+        this.logger?.integration(
+          job.taskId,
+          "warn",
+          "could not read the feature worktree's dirty state at close-out — keeping it",
+          { branch: featureBranch, reason: (err as Error).message },
+        );
+      }
+      const files = keptDirtyFiles.join(", ");
+      this.logger?.integration(
+        job.taskId,
+        "warn",
+        keptDirtyFiles.length > 0
+          ? "feature worktree kept — it has uncommitted files the merge did not carry"
+          : "feature worktree not removed at close-out",
+        { branch: featureBranch, path: stuck, files },
+      );
       console.warn(
-        `Close-out for ${job.taskId}: feature worktree for ${featureBranch} still registered (${stuck ?? "unknown"})`,
+        keptDirtyFiles.length > 0
+          ? `Close-out for ${job.taskId}: feature worktree ${stuck} kept — uncommitted files the merge did not carry: ${files}`
+          : `Close-out for ${job.taskId}: feature worktree for ${featureBranch} still registered (${stuck})`,
       );
     }
-    deleteBranch(root, featureBranch);
+    // git refuses to delete a branch that is still checked out, so skipping this
+    // is what keeps the kept worktree attached to its branch and recoverable.
+    if (!stuck) deleteBranch(root, featureBranch);
     pruneWorktrees(root);
 
     // Mark the task as done in the main checkout.
@@ -2014,6 +2050,22 @@ export class CloseOutOrchestrator {
         findTaskFileById(root, this.config.workDir, job.taskId);
       if (absPath) {
         markTaskReleased(this.config, absPath);
+        // A worktree kept above holds uncommitted work the merge did NOT carry
+        // (#0512). The close-out itself succeeded, so this is not a failure to
+        // retry — it is a decision for a human, and the flag is how the board
+        // surfaces it. Written after `markTaskReleased` so the status write
+        // cannot clear it.
+        if (keptDirtyFiles.length > 0) {
+          const shown = keptDirtyFiles.slice(0, 8);
+          patchTaskFile(this.config, absPath, {
+            needsInput: true,
+            needsInputReason: "closeout-worktree-dirty",
+            needsInputDetail:
+              `the worktree for ${featureBranch} was kept because it had uncommitted changes the ` +
+              `merge did not carry: ${shown.join(", ")}${keptDirtyFiles.length > shown.length ? ", …" : ""}`,
+            note: "close-out kept a worktree with uncommitted changes",
+          });
+        }
       } else {
         console.error(
           `Could not locate task ${job.taskId} on disk to mark it released — publish succeeded but release marking was skipped`,
