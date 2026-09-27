@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-a-go-to-story-link-arrow-on-tasks-an
 created_at: "2026-09-27T15:06:45Z"
-updated_at: "2026-09-27T16:19:05Z"
+updated_at: "2026-09-27T16:21:38Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "[object Object]"
