@@ -5,8 +5,9 @@ Written 2026-08-28. Updated 2026-09-22 to add the Tailscale provider, and
 Runs the expensive half of the close-out gate on a remote machine instead of
 the developer's machine. Two providers are supported: **hetzner** (disposable
 cloud VM, the original) and **tailscale** (one or more persistent machines on
-your tailnet — Linux hosts run the gate in a fresh Docker container, macOS
-hosts natively).
+your tailnet, each running the gate in a fresh Docker container — including a
+macOS host, via Docker Desktop; a native, no-Docker macOS setup exists as a
+documented exception below, not the default).
 
 ## Why
 

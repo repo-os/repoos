@@ -345,14 +345,6 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
         const current = resolveRemoteHosts(onDisk.remoteValidation).map((h) => h.host);
         const unchanged = current.length === list.length && current.every((h, i) => h === list[i]);
         if (unchanged) continue;
-        patch[field.key] = list;
-        // A removed shorthand host would otherwise be re-added by its own line:
-        // repoint `tailscaleHost` at the first surviving host (parse folds it
-        // back in). Absent shorthand is left absent — no key is invented.
-        const shorthand = onDisk.remoteValidation?.tailscaleHost;
-        if (shorthand && !list.includes(shorthand)) {
-          patch["remoteValidation.tailscaleHost"] = list[0]!;
-        }
         // Rewrite the [[…]] rows too: keep a surviving host's per-host attrs
         // (user/os/labels/maxConcurrent), drop rows for hosts the user removed
         // — otherwise a row would silently re-add a deleted host on reload.
@@ -364,17 +356,43 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
           (r): r is Record<string, unknown> =>
             typeof r === "object" && r !== null && !Array.isArray(r),
         );
-        const keptRows = rows.filter(
-          (r) => typeof r.host === "string" && list.includes(r.host.trim()),
+        // Map every host in the new `list` (order preserved) to its existing
+        // row when there is one — carrying its attrs forward — or a fresh
+        // bare `{ host }` when there isn't (just added, or no rows existed
+        // at all). Filtering existing rows down to `list` alone would
+        // silently drop a newly-added host once the flat-array write is
+        // skipped below for a rows-based pool.
+        const rowByHost = new Map(
+          rows
+            .filter((r) => typeof r.host === "string")
+            .map((r) => [(r.host as string).trim(), r] as const),
         );
-        if (keptRows.length) {
-          patchRows = keptRows;
-        } else if (rows.length) {
-          // Every row's host was removed — delete the [[…]] blocks outright
-          // (patchTomlConfig only rewrites a table array it is *given*, and an
-          // empty value would serialise as a bogus `key = []` line). Applied
-          // with the rest of the patch below, never mid-validation.
-          dropRows = true;
+        const mappedRows = list.map((h) => rowByHost.get(h) ?? { host: h });
+        // Only keep the pool in [[…]] row form when at least one entry
+        // actually carries an attr beyond `host` — otherwise every host is
+        // now a bare name and the clean flat-array form is strictly better
+        // (no per-host attrs to lose). A pool that used to need rows but no
+        // longer does collapses back to flat and the stale [[…]] blocks are
+        // dropped, not left behind as bogus attr-less rows.
+        const needsRowForm = mappedRows.some((r) => Object.keys(r).length > 1);
+        if (needsRowForm) {
+          // Also writing patch[field.key] here would additionally emit a
+          // flat `tailscaleHosts = [...]` line for the same key: two writes,
+          // two TOML forms, one key — patchTomlConfig applies both in
+          // sequence and the file ends up with duplicate keys (#0521 review).
+          patchRows = mappedRows;
+        } else {
+          patch[field.key] = list;
+          if (rows.length) dropRows = true;
+        }
+        // A removed shorthand host would otherwise be re-added by its own
+        // line: repoint `tailscaleHost` at the first surviving host (parse
+        // folds it back in). Absent shorthand is left absent — no key is
+        // invented. Independent of the rows/flat choice above — shorthand is
+        // its own key either way.
+        const shorthand = onDisk.remoteValidation?.tailscaleHost;
+        if (shorthand && !list.includes(shorthand)) {
+          patch["remoteValidation.tailscaleHost"] = list[0]!;
         }
         continue;
       }
