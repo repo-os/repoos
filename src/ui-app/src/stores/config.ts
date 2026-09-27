@@ -52,6 +52,9 @@ export const DESIGN_THEMES: DesignTheme[] = [
 /** How many themes a user may star as favorites (#0255). */
 export const MAX_FAVORITE_THEMES = 3;
 
+/** How many themes the bottom-left quick switcher shows (#0526). */
+export const MAX_VISIBLE_THEMES = 3;
+
 const FAVORITE_THEMES_KEY = "repoos.favoriteThemes";
 
 /**
@@ -254,14 +257,17 @@ export const useConfigStore = defineStore("config", () => {
   }
 
   /**
-   * The themes the sidebar quick switcher shows: starred themes in star
-   * order, falling back to the full catalog when nothing is starred.
+   * The themes the sidebar quick switcher shows: up to MAX_VISIBLE_THEMES
+   * starred themes in star order, or the first MAX_VISIBLE_THEMES catalog
+   * entries when nothing is starred.
    */
   const sidebarThemes = computed<DesignTheme[]>(() => {
     const starred = favoriteThemes.value
       .map((id) => DESIGN_THEMES.find((t) => t.id === id))
-      .filter((t): t is DesignTheme => !!t);
-    return starred.length > 0 ? starred : DESIGN_THEMES;
+      .filter((t): t is DesignTheme => !!t)
+      .slice(0, MAX_VISIBLE_THEMES);
+    if (starred.length > 0) return starred;
+    return DESIGN_THEMES.slice(0, MAX_VISIBLE_THEMES);
   });
 
   /** Default column labels — must match DEFAULT_COLUMN_LABELS in core/config.ts. */
