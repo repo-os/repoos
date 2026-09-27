@@ -2,7 +2,7 @@
 id: "0521"
 title: "Remote validation: pool multiple tailscale hosts"
 type: feature
-status: review
+status: active
 priority: p3
 area: core
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-09-26T11:49:01Z"
-updated_at: "2026-09-27T22:57:33Z"
+updated_at: "2026-09-27T22:58:36Z"
 review_passes: 14
 review_rounds: 2
 dev_error_count: 2
@@ -149,3 +149,5 @@ Autoscaling, and pooling Hetzner VMs.
 - 2026-09-27T22:57:04Z · cli_override, model_override
 - 2026-09-27T22:57:24Z · model_override
 - 2026-09-27T22:57:33Z · needs_input (review-rounds-exhausted) dismissed by hello@repoos.org
+- 2026-09-27T22:58:36Z · status review→active
+- 2026-09-27T22:58:36Z · note: This has been through many rounds of dev and review already, please make the minimal changes necessary to try to get it to a green review.
