@@ -9,8 +9,9 @@ story: RepoOS Telegram Bot
 assigned_to: ai
 created_by: ""
 branch: ""
+review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-27T07:32:19Z"
-updated_at: "2026-09-27T07:34:12Z"
+updated_at: "2026-09-27T23:18:17Z"
 ---
 ## Problem
 
@@ -43,3 +44,4 @@ So the webhook must be added to `PUBLIC_PREFIXES` — **but the middleware has n
 
 - 2026-09-27T07:32:19Z · created · unknown
 - 2026-09-27T07:34:12Z · status inbox→ready
+- 2026-09-27T23:18:17Z · review_model_override
