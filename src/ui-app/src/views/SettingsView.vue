@@ -1134,6 +1134,33 @@ onUnmounted(() => {
         <Card style="padding: 0 18px 6px; margin-bottom: 16px">
           <div class="setting-group">
             <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
+              <span class="live-dot"></span>Telegram
+            </div>
+            <div id="setting-telegram.enabled" class="setting-row">
+              <div class="setting-info">
+                <div class="setting-label">Telegram bot</div>
+                <div class="setting-desc">
+                  Enable the Telegram integration for this repository. An administrator connects the
+                  project bot over the admin API — a bot token pasted server-side (Bring Your Own
+                  Bot Token) or, after the provisioning service ships, managed provisioning. The
+                  token is stored encrypted on this machine and never reaches the browser; the
+                  connection panel comes with its follow-up task.
+                </div>
+              </div>
+              <div class="setting-input">
+                <Switch
+                  :checked="!!form['telegram.enabled']"
+                  :disabled="config.saving"
+                  @update:checked="(v: boolean) => (form['telegram.enabled'] = v)"
+                />
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+          <div class="setting-group">
+            <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
               <span class="live-dot"></span>Attention Notifications
             </div>
             <div class="setting-row">

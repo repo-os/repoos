@@ -107,6 +107,7 @@ write them to `repoos.toml`. See [Authentication](/authentication).
 | Variable | Purpose |
 | --- | --- |
 | `REPOOS_SECRET_STORE_KEY` | 32-byte key encoded as 64 hexadecimal characters or base64, used to encrypt and decrypt recoverable credentials. Missing or invalid keys fail closed; there is no plaintext fallback. |
+| `REPOOS_TELEGRAM_PROVISIONING_KEY` | Key the repo instance presents to the official Telegram provisioning service (#0559) when starting/redeeming a managed provisioning request. Leave unset until the service is deployed; Bring Your Own Bot Token never uses it, and a bot token itself is never set through the environment. |
 
 Keep this key in the server environment and out of task worktrees. Changing it
 requires rewrapping existing records while the old key is still available;
@@ -206,6 +207,11 @@ REPOOS_AUTH_DEV_BACKDOOR_CODE=your-local-code
 # Required to store/read secrets: 32 bytes encoded as 64 hex characters or base64.
 # Missing or invalid keys fail closed; there is no plaintext fallback.
 # REPOOS_SECRET_STORE_KEY=<32-byte-key-as-hex-or-base64>
+
+# Telegram managed provisioning (#0559 service) — key the instance presents to
+# the official provisioning service when redeeming a project bot credential.
+# Leave unset until the service is deployed; BYO bot tokens never live here.
+# REPOOS_TELEGRAM_PROVISIONING_KEY=...
 
 # Model providers / voice transcription
 REPOOS_OPENROUTER_API_KEY=...

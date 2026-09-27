@@ -38,6 +38,9 @@ const GENERAL_EXCLUDED_KEYS = new Set([
   "tunnelEnabled",
   "ntfyEnabled",
   "ntfyTopic",
+  // Telegram's toggle is a dedicated hand-rendered card on Notifications
+  // (#0531), never an auto-rendered General row.
+  "telegram.enabled",
   "auth.enabled",
   "auth.sessionMaxAge",
 ]);
@@ -75,6 +78,10 @@ export function resolveSettingLocation(
     return { tab: "toml", hasUiRow: false };
   }
   if (key === "ntfyEnabled" || key === "ntfyTopic") {
+    return { tab: "notifications", hasUiRow: true };
+  }
+  if (key === "telegram.enabled") {
+    // Dedicated hand-rendered card on Notifications (#0531).
     return { tab: "notifications", hasUiRow: true };
   }
   if (key === "auth.enabled" || key === "auth.sessionMaxAge") {
