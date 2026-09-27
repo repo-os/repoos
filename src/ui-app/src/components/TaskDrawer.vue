@@ -3294,7 +3294,9 @@ watch(
                 {{
                   staleNeedsInputOnReview
                     ? STALE_REVIEW_DEV_ERROR_BANNER
-                    : needsInputBannerText(ui.active.needsInputReason, activeNeedsInputQuestions)
+                    : ui.active.needsInputReason === "review-rounds-exhausted" && review?.running
+                      ? "A fresh review is running. Its result will determine whether this still needs your attention."
+                      : needsInputBannerText(ui.active.needsInputReason, activeNeedsInputQuestions)
                 }}
               </div>
               <!-- needsInputDetail for dev-error is internal skill-routing

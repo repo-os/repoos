@@ -505,7 +505,8 @@ ${printReport}`,
       expect(readFileSync(task.absPath, "utf8")).toMatch(/^status: review$/m);
 
       await waitForReviewRunning(server, task.id, false);
-      expect((await getReview(server, task.id)).review?.state).toBe("ok");
+      const completedReview = await getReview(server, task.id);
+      expect(completedReview.review?.state, JSON.stringify(completedReview.review)).toBe("ok");
     });
   }, 90_000);
 
@@ -698,6 +699,65 @@ else process.stdout.write(${JSON.stringify(needsWorkReport)} + "\\n");
       expect(spawns(fx).some((s) => s.args.join(" ").includes("automated review found"))).toBe(
         false,
       );
+    });
+  }, 90_000);
+
+  it("does not re-raise an exhausted-rounds flag dismissed during the review", async () => {
+    const needsWorkReport = [
+      "## Verdict",
+      "`needs some work` — one defect remains.",
+      "",
+      "## Bugs",
+      "- A real defect.",
+      "",
+      "## Edge cases",
+      "- none found",
+      "",
+      "## Suggestions",
+      "- none found",
+    ].join("\n");
+    const fx = makeFixture(
+      `setTimeout(() => process.stdout.write(${JSON.stringify(needsWorkReport)} + "\\n"), 700);`,
+    );
+    await withServer(fx, async (server) => {
+      const task = await taskWithWorktree(server, fx, "Dismiss during exhausted review");
+      const started = await api(server, "POST", `/api/tasks/${task.id}/start`);
+      expect(started.status).toBe(200);
+      await waitForAsync(async () => {
+        const output = await api(server, "GET", `/api/tasks/${task.id}/output`);
+        return Array.isArray(output.body.lines) && output.body.lines.length > 0;
+      }, "an engineer session is available to resume");
+      await waitForAsync(async () => {
+        const response = await fetch(`${server.url}/api/agents/running`);
+        const running = (await response.json()) as { tasks: Array<{ id: string }> };
+        return !running.tasks.some((entry) => entry.id === task.id);
+      }, "the initial engineer turn exits");
+
+      const before = readFileSync(task.absPath, "utf8");
+      writeFileSync(
+        task.absPath,
+        before.replace(
+          /^---\n/,
+          "---\nreview_rounds: 2\nneeds_input: true\nneeds_input_reason: review-rounds-exhausted\n",
+        ),
+      );
+      await requestReview(server, task.id, task.absPath);
+      await waitForReviewRunning(server, task.id, true);
+
+      const dismissed = await api(server, "POST", `/api/tasks/${task.id}/needs-input/dismiss`);
+      expect(dismissed.status).toBe(200);
+      await waitForReviewRunning(server, task.id, false);
+      await waitForAsync(
+        async () => getReview(server, task.id).then((review) => review.review !== null),
+        "the in-flight review report to be written",
+      );
+      const completedReview = await getReview(server, task.id);
+      expect(completedReview.review?.state, JSON.stringify(completedReview.review)).toBe("ok");
+
+      const taskFile = readFileSync(task.absPath, "utf8");
+      expect(taskFile).not.toMatch(/^needs_input: true$/m);
+      expect(taskFile).not.toMatch(/^needs_input_reason: review-rounds-exhausted$/m);
+      expect(taskFile).toContain("needs_input dismissed by");
     });
   }, 90_000);
 

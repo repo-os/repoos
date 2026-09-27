@@ -37,7 +37,7 @@ import {
   headCommitISO,
   worktreePathForBranch,
 } from "../core/git.js";
-import { needsInputClearsOnSuccessfulReview } from "../core/needs-input.js";
+import { MAX_AUTO_REVIEW_ROUNDS, needsInputClearsOnSuccessfulReview } from "../core/needs-input.js";
 import { parseTask, utcTimestamp } from "../core/task.js";
 import {
   parseReviewVerdict as parseVerdictLabel,
@@ -128,9 +128,6 @@ function reviewUsage(
 
 /** Frontmatter key order for the stored report file. */
 const REPORT_KEYS = ["task", "at", "agent", "cli", "model", "branch", "state"];
-
-/** Max number of automatic review/fix rounds before requiring human intervention. */
-const MAX_AUTO_REVIEW_ROUNDS = 2;
 
 /**
  * The mission handed to the review agent. Deliberately narrow: what to look
@@ -830,6 +827,7 @@ export class ReviewManager {
       outputTokens?: number;
       tokens?: number;
       costUsd?: number;
+      createdAt?: string;
     } | null,
     timedOut: boolean,
   ): void {
@@ -940,7 +938,7 @@ export class ReviewManager {
     // Fire-and-forget (don't await) so the review completion isn't delayed
     if (state === "ok" && verdict) {
       if (verdict !== "good to go") {
-        this.autoBounce(task, report, verdict).catch((err) => {
+        this.autoBounce(task, report, verdict, session?.createdAt).catch((err) => {
           console.error(
             `[repoos] uncaught error in auto-bounce for #${task.id}: ${(err as Error).message}`,
           );
@@ -1262,7 +1260,12 @@ export class ReviewManager {
    * drawing board" and we haven't exceeded the max rounds, send the findings
    * back to the engineer session and increment the review_rounds counter.
    */
-  private async autoBounce(task: Task, report: ReviewReport, verdict: string): Promise<void> {
+  private async autoBounce(
+    task: Task,
+    report: ReviewReport,
+    verdict: string,
+    reviewStartedAt?: string,
+  ): Promise<void> {
     if (!this.runner || verdict === "good to go") {
       return;
     }
@@ -1310,26 +1313,30 @@ export class ReviewManager {
     // Check if we've exceeded the max rounds
     if (reviewRounds >= MAX_AUTO_REVIEW_ROUNDS) {
       const note = `The reviewer sent this back to the engineer ${MAX_AUTO_REVIEW_ROUNDS} times and still found issues. Human review needed.`;
-      // `task` is the snapshot captured when this review started. If a human
-      // dismissed the exhausted-rounds flag while the review was running, do
-      // not silently recreate it when this stale run completes. A dismissal
-      // already present in the snapshot belongs to an earlier run and does
-      // not suppress a new escalation.
+      // The indexed task passed into autoBounce is refreshed after dismissal.
+      // Compare the live activity log with this durable review session's start
+      // time so only a dismissal during this review suppresses the escalation.
+      // Keep this read and the patch below synchronous so a same-process HTTP
+      // dismissal cannot interleave between the check and write.
+      let current: Task;
       try {
-        const current = parseTask({
+        current = parseTask({
           content: readFileSync(task.absPath, "utf8"),
           absPath: task.absPath,
           root: this.config.root,
           defaultStatus: this.config.defaultStatus,
           defaultAssignee: this.config.defaultAssignee,
         });
+        const startedAtMs = reviewStartedAt ? Date.parse(reviewStartedAt) : Number.NaN;
+        // Task activity timestamps have one-second precision; round the
+        // session timestamp down to the same precision before comparing.
+        const dismissalCutoffMs = Math.floor(startedAtMs / 1000) * 1000;
         const dismissedDuringRun =
-          task.needsInput &&
-          task.needsInputReason === "review-rounds-exhausted" &&
-          !current.needsInput &&
-          current.body
-            .split("\n")
-            .some((line) => line.includes("needs_input dismissed by") && !task.body.includes(line));
+          Number.isFinite(startedAtMs) &&
+          current.body.split("\n").some((line) => {
+            const match = line.match(/^- (\S+) · needs_input dismissed by /);
+            return Boolean(match && Date.parse(match[1]) >= dismissalCutoffMs);
+          });
         if (dismissedDuringRun) {
           console.log(
             `[repoos] exhausted review flag dismissed during review for #${task.id}; leaving it cleared`,
@@ -1340,13 +1347,12 @@ export class ReviewManager {
         console.error(
           `[repoos] could not check dismissal before flagging #${task.id}: ${(err as Error).message}`,
         );
+        return;
       }
       // Nothing is running or retrying from here on, so say so on the task
-      // instead of leaving it silently parked in review. Never overwrite an
-      // existing, different needs_input reason. `task` is the snapshot from
-      // before this run: a flag a clean-ish run just cleared (reviewer-episode
-      // reasons, including this one) counts as unset.
-      if (!task.needsInput || needsInputClearsOnSuccessfulReview(task)) {
+      // instead of leaving it silently parked in review. Preserve any current
+      // needs_input flag with a different cause.
+      if (!current.needsInput || needsInputClearsOnSuccessfulReview(current)) {
         try {
           patchTaskFile(this.config, task.absPath, {
             needsInput: true,
