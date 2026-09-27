@@ -154,4 +154,34 @@ describe("renderMarkdown", () => {
     const bad = renderMarkdown("![x](javascript:alert(1))");
     expect(bad).not.toContain("javascript:");
   });
+
+  it("collapses runs of three or more blank lines to a single paragraph break", () => {
+    const html = renderMarkdown("step one\n\n\n\n\n\nstep two");
+    expect(html).toBe("<p>step one</p><p>step two</p>");
+  });
+
+  it("strips trailing blank lines from the message", () => {
+    expect(renderMarkdown("Hello\n\n\n")).toBe("<p>Hello</p>");
+  });
+
+  it("trims trailing blank lines inside fenced code but keeps interior blanks", () => {
+    const trimmed = renderMarkdown("```sh\nnpm test\n\n\n\n```");
+    expect(trimmed).toBe('<pre><code class="language-sh">npm test</code></pre>');
+
+    const interior = renderMarkdown("```sh\nnpm test\n\ncd dist\n\nnpm run build\n```");
+    expect(interior).toContain("npm test\n\ncd dist\n\nnpm run build");
+  });
+
+  it("renders an unterminated fence as code with no trailing blank lines", () => {
+    const html = renderMarkdown("Here is the diff:\n\n```ts\nconst a = 1;\n\n\n");
+    expect(html).toContain("<p>Here is the diff:</p>");
+    expect(html).toBe(
+      '<p>Here is the diff:</p><pre><code class="language-ts">const a = 1;</code></pre>',
+    );
+  });
+
+  it("treats invisible-only lines as blank", () => {
+    const html = renderMarkdown("Done.\n\u200b\n\u200b\nBye.");
+    expect(html).toBe("<p>Done.</p><p>Bye.</p>");
+  });
 });

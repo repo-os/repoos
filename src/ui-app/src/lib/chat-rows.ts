@@ -13,7 +13,8 @@
  *  - `step` markers are dropped entirely — a step boundary renders no row of
  *    its own, because the tool-call row it used to punctuate now carries the
  *    same information (and a real timestamp) itself;
- *  - empty text entries are dropped, so a row always has content.
+ *  - whitespace-only text entries (incl. zero-width) are dropped, so a row
+ *    always has content;
  *
  * This is a **view-layer** transform. It never touches what is stored, streamed
  * over SSE as `agent.output`, or exported: the debugger endpoints, report
@@ -27,6 +28,7 @@
  * agent produced the entries.
  */
 
+import { clampPlainDisplayText, isDisplayEmptyText } from "./markdown.js";
 import type { AgentOutputEntry } from "../types";
 
 /** Strip ANSI escape sequences so no `[0m`-style codes ever reach the DOM. */
@@ -145,6 +147,20 @@ function rowText(entry: AgentOutputEntry): string {
   return stripAnsi(entry.d);
 }
 
+/** Plain (non-markdown) bubbles: clamp runs and trailing whitespace for display. */
+function displayPlainText(text: string): string {
+  return clampPlainDisplayText(text);
+}
+
+/** Join consecutive assistant text parts without amplifying surrounding newlines. */
+function mergeAssistantText(existing: string, addition: string): string {
+  const left = existing.replace(/\s+$/u, "");
+  const right = addition.replace(/^\s+/u, "");
+  if (!right) return left;
+  if (!left) return right;
+  return `${left}\n\n${right}`;
+}
+
 function toolCall(entry: ToolEntry): ToolCallRow {
   return {
     tool: entry.tool,
@@ -203,15 +219,18 @@ export function toDisplayRows(entries: readonly AgentOutputEntry[]): DisplayRow[
 
     flushRun();
 
-    const text = rowText(entry);
-    // Nothing to show — no row, rather than an empty bubble.
-    if ("type" in entry && entry.type === "text" && !text) continue;
+    const rawText = rowText(entry);
+    // Nothing to show — no row, rather than an empty bubble (incl. whitespace-only).
+    if (isDisplayEmptyText(rawText)) continue;
+
+    const isAssistantText = "type" in entry && entry.type === "text";
+    const text = isAssistantText ? rawText : displayPlainText(rawText);
 
     const last = rows[rows.length - 1];
     // Consecutive assistant text parts are one message. opencode streams a
     // reply part by part; without this they render as several stacked bubbles.
-    if (last && last.kind === "text" && "type" in entry && entry.type === "text") {
-      last.text = `${last.text}\n\n${text}`;
+    if (last && last.kind === "text" && isAssistantText) {
+      last.text = mergeAssistantText(last.text, text);
       last.entries.push(entry);
       last.at = latestAt(last.entries) ?? last.at;
       continue;
