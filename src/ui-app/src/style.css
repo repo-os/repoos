@@ -4951,7 +4951,9 @@
 .shot-viewer-scroll {
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding: 16px 20px 24px;
   display: flex;
   flex-direction: column;
@@ -4959,17 +4961,17 @@
 }
 .shot-viewer-print {
   margin: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
 }
 .shot-viewer-print img {
   display: block;
   width: auto;
   height: auto;
-  max-width: none;
-  object-fit: none;
+  max-width: 100%;
   background:
     repeating-conic-gradient(var(--md-body-bg) 0% 25%, transparent 0% 50%) 0 0 / 16px 16px,
     var(--panel-solid);

@@ -48,10 +48,11 @@ watch(open, async (isOpen) => {
           <DialogDescription id="shot-viewer-desc" class="shot-viewer-desc">
             {{
               shots.length === 1
-                ? "1 image at its original size."
-                : `${shots.length} images at their original size, in order.`
+                ? "1 image."
+                : `${shots.length} images in order. Scroll to see each one.`
             }}
-            Scroll to see each one. Press Escape or click outside to close.
+            Wider images scale down to fit the viewer; smaller ones stay at their natural size.
+            Press Escape or click outside to close.
           </DialogDescription>
         </div>
         <DialogClose
