@@ -9,8 +9,10 @@ story: RepoOS Telegram Bot
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: opencode
+model_override: default
 created_at: "2026-09-27T07:32:10Z"
-updated_at: "2026-09-27T17:33:19Z"
+updated_at: "2026-09-27T18:36:45Z"
 ---
 ## Problem
 
@@ -52,3 +54,4 @@ Not in scope: the manager-bot service, its Neon/Cloudflare deployment, hosted me
 - 2026-09-27T07:32:10Z · created · unknown
 - 2026-09-27T07:34:11Z · status inbox→ready
 - 2026-09-27T17:33:19Z · title, body
+- 2026-09-27T18:36:45Z · cli_override, model_override
