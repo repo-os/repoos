@@ -13,6 +13,7 @@ import {
   resolveThemes,
   syncThemeColorMeta,
   syncThemeToUrl,
+  appendThemeToUrl,
 } from "./theme-resolve";
 
 const appearance = ref<Appearance>("dark");
@@ -103,6 +104,10 @@ const activeDesignLabel = () => {
   return pickerLabelForDesign(designTheme.value);
 };
 
+function docsLink(path = ""): string {
+  return appendThemeToUrl(`https://docs.repoos.org${path}`, designTheme.value, appearance.value);
+}
+
 const steps = [
   {
     title: "Write the task",
@@ -183,7 +188,7 @@ const year = new Date().getFullYear();
         <a href="#how" class="nav-link hidden md:block">How it works</a>
         <a href="#team" class="nav-link hidden md:block">The team</a>
         <a href="#principles" class="nav-link hidden md:block">Design</a>
-        <a href="https://docs.repoos.org" class="nav-link hidden md:block">Docs</a>
+        <a :href="docsLink()" class="nav-link hidden md:block">Docs</a>
         <div class="theme-controls hidden md:inline-flex">
           <div class="theme-picker">
             <button
@@ -311,7 +316,7 @@ const year = new Date().getFullYear();
         <a href="#how" class="nav-menu-link" @click="closeMenu">How it works</a>
         <a href="#team" class="nav-menu-link" @click="closeMenu">The team</a>
         <a href="#principles" class="nav-menu-link" @click="closeMenu">Design</a>
-        <a href="https://docs.repoos.org" class="nav-menu-link" @click="closeMenu">Docs</a>
+        <a :href="docsLink()" class="nav-menu-link" @click="closeMenu">Docs</a>
         <a href="https://github.com/repo-os/repoos" class="nav-menu-link" @click="closeMenu"
           >GitHub</a
         >
@@ -490,7 +495,7 @@ const year = new Date().getFullYear();
                 class="text-[var(--cyan)] hover:underline"
                 >Download for Mac &rarr;</a
               >
-              <a href="https://docs.repoos.org/macos-hub" class="text-[var(--cyan)] hover:underline"
+              <a :href="docsLink('/macos-hub')" class="text-[var(--cyan)] hover:underline"
                 >Read the guide &rarr;</a
               >
             </p>
@@ -822,7 +827,7 @@ const year = new Date().getFullYear();
           <InstallBox />
         </div>
         <a
-          href="https://docs.repoos.org"
+          :href="docsLink()"
           class="mt-5 inline-block text-[13px] text-[var(--cyan)] hover:underline"
           >Read the docs &rarr;</a
         >
