@@ -1309,7 +1309,38 @@ export class ReviewManager {
 
     // Check if we've exceeded the max rounds
     if (reviewRounds >= MAX_AUTO_REVIEW_ROUNDS) {
-      const note = `Auto-bounce stopped: reached maximum of ${MAX_AUTO_REVIEW_ROUNDS} review rounds. Human review needed.`;
+      const note = `The reviewer sent this back to the engineer ${MAX_AUTO_REVIEW_ROUNDS} times and still found issues. Human review needed.`;
+      // `task` is the snapshot captured when this review started. If a human
+      // dismissed the exhausted-rounds flag while the review was running, do
+      // not silently recreate it when this stale run completes. A dismissal
+      // already present in the snapshot belongs to an earlier run and does
+      // not suppress a new escalation.
+      try {
+        const current = parseTask({
+          content: readFileSync(task.absPath, "utf8"),
+          absPath: task.absPath,
+          root: this.config.root,
+          defaultStatus: this.config.defaultStatus,
+          defaultAssignee: this.config.defaultAssignee,
+        });
+        const dismissedDuringRun =
+          task.needsInput &&
+          task.needsInputReason === "review-rounds-exhausted" &&
+          !current.needsInput &&
+          current.body
+            .split("\n")
+            .some((line) => line.includes("needs_input dismissed by") && !task.body.includes(line));
+        if (dismissedDuringRun) {
+          console.log(
+            `[repoos] exhausted review flag dismissed during review for #${task.id}; leaving it cleared`,
+          );
+          return;
+        }
+      } catch (err) {
+        console.error(
+          `[repoos] could not check dismissal before flagging #${task.id}: ${(err as Error).message}`,
+        );
+      }
       // Nothing is running or retrying from here on, so say so on the task
       // instead of leaving it silently parked in review. Never overwrite an
       // existing, different needs_input reason. `task` is the snapshot from

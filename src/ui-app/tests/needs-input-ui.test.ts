@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   needsInputPrimaryAction,
+  needsInputBannerText,
   needsInputStatusLabel,
   needsInputSuggestionText,
 } from "../src/lib/needs-input-ui";
@@ -50,6 +51,8 @@ describe("needsInputPrimaryAction (#0511)", () => {
 
   it("names review-rounds-exhausted and offers Review again on a review task", () => {
     expect(needsInputStatusLabel("review-rounds-exhausted")).toBe("Review still finding issues");
+    expect(needsInputBannerText("review-rounds-exhausted")).toContain("sent this back");
+    expect(needsInputBannerText("review-rounds-exhausted")).toContain("twice");
     expect(needsInputSuggestionText("review-rounds-exhausted")).toContain("send it back");
     expect(
       needsInputPrimaryAction("review-rounds-exhausted", false, {
