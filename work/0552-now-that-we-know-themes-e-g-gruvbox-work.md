@@ -1,16 +1,17 @@
 ---
-updated_at: "2026-09-27T16:04:17Z"
-review_passes: 1
 id: "0552"
 title: Add a gruvbox theme switcher to the user-docs site and carry it over from the landing page
 type: feature
-status: review
+status: active
 priority: p2
 area: docs
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-a-gruvbox-theme-switcher-to-the-user
 created_at: "2026-09-27T14:36:30Z"
+updated_at: "2026-09-27T16:04:17Z"
+review_rounds: 1
+review_passes: 1
 last_check_failure: "[object Object]"
 ---
 ## Problem
@@ -316,4 +317,4 @@ error: script "build" exited with code 137
 time="2026-09-27T23:45:44+08:00" level=error msg="Error waiting for container: Canceled: grpc: the client connection is closing: context canceled"
 [validate] gate exit 125 — fix it in the feature branch and re-run the gate
 - 2026-09-27T15:59:29Z · status active→review
-
+- 2026-09-27T16:04:17Z · status review→active
