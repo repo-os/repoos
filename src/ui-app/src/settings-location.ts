@@ -1,0 +1,104 @@
+import type { ConfigField } from "./types";
+
+/** Settings page tab ids — keep in sync with SettingsView tab panels. */
+export type SettingsTabId =
+  | "general"
+  | "notifications"
+  | "security"
+  | "advanced"
+  | "support"
+  | "toml";
+
+export const SETTINGS_TABS: { id: SettingsTabId; label: string }[] = [
+  { id: "general", label: "General" },
+  { id: "notifications", label: "Notifications" },
+  { id: "security", label: "Security" },
+  { id: "advanced", label: "Advanced" },
+  { id: "support", label: "Support" },
+  { id: "toml", label: "repoos.toml" },
+];
+
+export const SETTINGS_TAB_LABELS: Record<SettingsTabId, string> = Object.fromEntries(
+  SETTINGS_TABS.map((t) => [t.id, t.label]),
+) as Record<SettingsTabId, string>;
+
+export interface SettingLocationContext {
+  /** When false, dev.inspector.* rows are not rendered on Advanced. */
+  inspectorAvailable: boolean;
+}
+
+export interface SettingLocation {
+  /** Tab to open when navigating to this key. */
+  tab: SettingsTabId;
+  /** Whether `#setting-<key>` exists on the settings page. */
+  hasUiRow: boolean;
+}
+
+const GENERAL_EXCLUDED_KEYS = new Set([
+  "tunnelEnabled",
+  "ntfyEnabled",
+  "ntfyTopic",
+  "auth.enabled",
+  "auth.sessionMaxAge",
+]);
+
+/** Mirrors `isFieldVisible` in SettingsView.vue */
+function isInspectorFieldVisible(key: string, ctx: SettingLocationContext): boolean {
+  if (key === "dev.inspector.enabled" || key === "dev.inspector.editorCommand") {
+    return ctx.inspectorAvailable;
+  }
+  return true;
+}
+
+/** Mirrors `generalFields` in SettingsView.vue — schema keys rendered in the General group. */
+export function isGeneralSchemaFieldKey(key: string): boolean {
+  if (GENERAL_EXCLUDED_KEYS.has(key)) return false;
+  if (key.startsWith("remoteValidation.")) return false;
+  if (key.startsWith("board.columns.")) return false;
+  return true;
+}
+
+/**
+ * Single source of truth for which tab owns a config key and whether the settings
+ * page renders a focusable `#setting-<key>` row for it.
+ */
+export function resolveSettingLocation(
+  key: string,
+  field: Pick<ConfigField, "tier" | "group"> | undefined,
+  ctx: SettingLocationContext,
+): SettingLocation {
+  if (key === "tunnelEnabled" || key === "remoteValidation.enabled") {
+    return { tab: "general", hasUiRow: true };
+  }
+  if (key.startsWith("remoteValidation.")) {
+    return { tab: "toml", hasUiRow: false };
+  }
+  if (key === "ntfyEnabled" || key === "ntfyTopic") {
+    return { tab: "notifications", hasUiRow: true };
+  }
+  if (key === "auth.enabled" || key === "auth.sessionMaxAge") {
+    return { tab: "security", hasUiRow: true };
+  }
+  if (field?.group === "voice") {
+    return { tab: "security", hasUiRow: true };
+  }
+  if (key.startsWith("board.columns.")) {
+    return { tab: "advanced", hasUiRow: true };
+  }
+  if (key === "dev.inspector.enabled" || key === "dev.inspector.editorCommand") {
+    const visible = isInspectorFieldVisible(key, ctx);
+    return { tab: visible ? "advanced" : "toml", hasUiRow: visible };
+  }
+  if (field?.tier === "guarded") {
+    const visible = isInspectorFieldVisible(key, ctx);
+    return { tab: visible ? "advanced" : "toml", hasUiRow: visible };
+  }
+  if (field && isGeneralSchemaFieldKey(key)) {
+    return { tab: "general", hasUiRow: true };
+  }
+  return { tab: "toml", hasUiRow: false };
+}
+
+export function settingTabLabel(tab: SettingsTabId): string {
+  return SETTINGS_TAB_LABELS[tab];
+}

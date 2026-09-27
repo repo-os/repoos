@@ -460,6 +460,31 @@ describe("settings ?setting= deep-link (#0345)", () => {
     wrapper.unmount();
   });
 
+  it("?focus= on a toml-only key opens the repoos.toml tab instead of dead-ending", async () => {
+    api.mockResolvedValue({
+      config: { maxActiveTasks: 3 },
+      schema: [
+        schemaField("maxActiveTasks"),
+        {
+          ...schemaField("remoteValidation.tailscaleHost"),
+          key: "remoteValidation.tailscaleHost",
+          label: "Tailscale host",
+          type: "string",
+          tier: "live",
+        },
+      ],
+    });
+    await useConfigStore().load();
+    currentQuery = { focus: "remoteValidation.tailscaleHost" };
+    const wrapper = mount(SettingsView, { attachTo: document.body });
+    await flushPromises();
+    await new Promise((r) => setTimeout(r, 250));
+
+    expect(replaceSpy).toHaveBeenCalledWith({ name: "settings", query: { tab: "toml" } });
+    expect(wrapper.text()).toContain("only in repoos.toml");
+    wrapper.unmount();
+  });
+
   it("?setting= wins when both params are present", async () => {
     await loadConfig();
     currentQuery = { setting: "maxActiveTasks", focus: "bogus-key" };

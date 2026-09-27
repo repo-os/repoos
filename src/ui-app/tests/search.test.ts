@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { searchAll, RESULT_CAP } from "../src/search";
+import { searchAll, searchSettings, RESULT_CAP } from "../src/search";
 import type { Task, ConfigField, DocMeta } from "../src/types";
 
 function makeTask(over: Partial<Task>): Task {
@@ -189,6 +189,39 @@ describe("searchAll", () => {
     const hits = searchAll("auth", { tasks: [...filler, titleMatch], docs: [], fields: [] });
     const taskTitles = hits.filter((r) => r.kind === "task").map((r) => r.title);
     expect(taskTitles[0]).toBe("Fix auth token race");
+  });
+
+  it("searchSettings returns only setting hits with tab metadata", () => {
+    const hits = searchSettings("cache", {
+      fields,
+      location: { inspectorAvailable: false },
+    });
+    expect(hits.length).toBeGreaterThan(0);
+    expect(hits.every((r) => r.kind === "setting")).toBe(true);
+    const cache = hits.find((r) => r.kind === "setting" && r.key === "cacheDir");
+    expect(cache && cache.kind === "setting" && cache.tab).toBe("general");
+    expect(cache && cache.kind === "setting" && cache.tomlOnly).toBe(false);
+  });
+
+  it("marks toml-only settings in subtitles", () => {
+    const tailscale = {
+      key: "remoteValidation.tailscaleHost",
+      label: "Tailscale host",
+      type: "string" as const,
+      tier: "live" as const,
+      restartRequired: true,
+      default: "",
+      description: "Runner host",
+    };
+    const hits = searchSettings("tailscale", {
+      fields: [...fields, tailscale],
+      location: { inspectorAvailable: false },
+    });
+    const row = hits.find(
+      (r) => r.kind === "setting" && r.key === "remoteValidation.tailscaleHost",
+    );
+    expect(row && row.kind === "setting" && row.tomlOnly).toBe(true);
+    expect(row && row.kind === "setting" && row.subtitle).toContain("repoos.toml");
   });
 
   it("ranks a rare term above a common one across matching tasks", () => {

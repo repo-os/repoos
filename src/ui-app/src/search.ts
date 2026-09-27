@@ -1,4 +1,10 @@
 import type { Task, ConfigField, DocMeta } from "./types";
+import {
+  resolveSettingLocation,
+  settingTabLabel,
+  type SettingLocationContext,
+  type SettingsTabId,
+} from "./settings-location.js";
 
 export interface HighlightedSnippet {
   html: string;
@@ -13,12 +19,22 @@ export type SearchResult =
       path: string;
       snippet?: string | HighlightedSnippet;
     }
-  | { kind: "setting"; title: string; subtitle: string; key: string };
+  | {
+      kind: "setting";
+      title: string;
+      subtitle: string;
+      key: string;
+      tab: SettingsTabId;
+      tabLabel: string;
+      /** No `#setting-<key>` row — navigation opens repoos.toml. */
+      tomlOnly: boolean;
+    };
 
 export interface SearchSource {
   tasks: Task[];
   docs: (DocMeta & { content?: string })[];
   fields: ConfigField[];
+  settingLocation?: SettingLocationContext;
 }
 
 /** Per-kind cap so the dropdown stays bounded on large repos. */
@@ -235,12 +251,43 @@ export function searchAll(query: string, src: SearchSource): SearchResult[] {
   }
   const docHits = topByScore(scoredDocs);
 
+  const settingHits = scoreSettingFields(q, terms, src.fields, src.settingLocation);
+
+  return [...taskHits, ...docHits, ...settingHits];
+}
+
+function settingSearchResult(
+  f: ConfigField,
+  ctx: SettingLocationContext | undefined,
+): SearchResult {
+  const loc = resolveSettingLocation(f.key, f, ctx ?? { inspectorAvailable: false });
+  const tabLabel = settingTabLabel(loc.tab);
+  const subtitle = loc.hasUiRow
+    ? `${tabLabel} · ${f.key}`
+    : `${tabLabel} · ${f.key} · edit in repoos.toml`;
+  return {
+    kind: "setting",
+    title: f.label,
+    subtitle,
+    key: f.key,
+    tab: loc.tab,
+    tabLabel,
+    tomlOnly: !loc.hasUiRow,
+  };
+}
+
+function scoreSettingFields(
+  q: string,
+  terms: string[],
+  fields: ConfigField[],
+  locationCtx?: SettingLocationContext,
+): SearchResult[] {
   const settingIdf = buildIdf(
-    src.fields.map((f) => `${f.label} ${f.key}`.toLowerCase()),
+    fields.map((f) => `${f.label} ${f.key}`.toLowerCase()),
     terms,
   );
   const scoredSettings: { result: SearchResult; score: number }[] = [];
-  for (const f of src.fields) {
+  for (const f of fields) {
     if (
       includes(f.label, q) ||
       includes(f.key, q) ||
@@ -250,12 +297,23 @@ export function searchAll(query: string, src: SearchSource): SearchResult[] {
       const score =
         fieldScore(f.label, 3, terms, settingIdf, q) + fieldScore(f.key, 2, terms, settingIdf, q);
       scoredSettings.push({
-        result: { kind: "setting", title: f.label, subtitle: f.key, key: f.key },
+        result: settingSearchResult(f, locationCtx),
         score,
       });
     }
   }
-  const settingHits = topByScore(scoredSettings);
+  return topByScore(scoredSettings);
+}
 
-  return [...taskHits, ...docHits, ...settingHits];
+export interface SettingsSearchSource {
+  fields: ConfigField[];
+  location: SettingLocationContext;
+}
+
+/** Settings-only search (same matcher and cap as the global bar). */
+export function searchSettings(query: string, src: SettingsSearchSource): SearchResult[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const terms = tokenizeQuery(q);
+  return scoreSettingFields(q, terms, src.fields, src.location);
 }
