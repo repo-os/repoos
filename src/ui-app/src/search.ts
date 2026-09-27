@@ -260,7 +260,10 @@ function settingSearchResult(
   f: ConfigField,
   ctx: SettingLocationContext | undefined,
 ): SearchResult {
-  const loc = resolveSettingLocation(f.key, f, ctx ?? { inspectorAvailable: false });
+  const loc = resolveSettingLocation(f.key, f, ctx ?? { inspectorAvailable: false }) ?? {
+    tab: "toml" as const,
+    hasUiRow: false,
+  };
   const tabLabel = settingTabLabel(loc.tab);
   const subtitle = loc.hasUiRow
     ? `${tabLabel} · ${f.key}`

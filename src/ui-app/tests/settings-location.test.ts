@@ -58,6 +58,11 @@ describe("resolveSettingLocation", () => {
     expect(loc).toEqual({ tab: "toml", hasUiRow: false });
   });
 
+  it("returns null for unknown keys not in the schema", () => {
+    expect(resolveSettingLocation("bogus-key", undefined, ctx)).toBeNull();
+    expect(resolveSettingLocation("remoteValidation.notInSchema", undefined, ctx)).toBeNull();
+  });
+
   it("mirrors generalFields exclusions via isGeneralSchemaFieldKey", () => {
     expect(isGeneralSchemaFieldKey("maxActiveTasks")).toBe(true);
     expect(isGeneralSchemaFieldKey("remoteValidation.tailscaleHost")).toBe(false);

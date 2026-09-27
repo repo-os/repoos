@@ -7,6 +7,7 @@ import { useDocsStore } from "../stores/docs";
 import { useConfigStore } from "../stores/config";
 import { useUiStore } from "../stores/ui";
 import { searchAll, searchSettings, type SearchResult } from "../search";
+import type { SettingsTabId } from "../settings-location";
 import { useRecentSearches, type RecentSearchScope } from "../composables/use-recent-searches";
 
 export type SearchScope = RecentSearchScope;
@@ -164,6 +165,21 @@ watch(query, () => {
   highlight.value = 0;
 });
 
+async function navigateToSetting(
+  tab: SettingsTabId,
+  key: string,
+  tomlOnly: boolean,
+): Promise<void> {
+  const query = tomlOnly ? { tab: "toml" as const, focus: key } : { tab, focus: key };
+  const cur = router.currentRoute.value;
+  const curTab = typeof cur.query.tab === "string" ? cur.query.tab : "general";
+  const curFocus = (cur.query.focus ?? cur.query.setting) as string | undefined;
+  if (cur.name === "settings" && curFocus === key && curTab === query.tab) {
+    await router.replace({ name: "settings", query: { tab: query.tab } });
+  }
+  await router.push({ name: "settings", query });
+}
+
 function closeOverlay(): void {
   emit("update:open", false);
   query.value = "";
@@ -183,14 +199,7 @@ function openResult(r: SearchResult): void {
     void router.push({ name: "repo" });
   } else if (r.kind === "setting") {
     addRecentSearch(query.value);
-    if (r.tomlOnly) {
-      void router.push({ name: "settings", query: { tab: "toml", focus: r.key } });
-    } else {
-      void router.push({
-        name: "settings",
-        query: { tab: r.tab, focus: r.key },
-      });
-    }
+    void navigateToSetting(r.tab, r.key, r.tomlOnly);
   }
   closeOverlay();
 }
