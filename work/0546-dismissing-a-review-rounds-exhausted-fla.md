@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-27T14:49:46Z"
+review_passes: 2
 id: "0546"
 title: "The needs-input banner gives misleading/no feedback: Dismiss can be silently undone, Review again looks like a no-op"
 type: bug
@@ -11,9 +13,7 @@ branch: feat/the-needs-input-banner-gives-misleading-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-27T10:25:52Z"
-updated_at: "2026-09-27T14:42:24Z"
 review_rounds: 1
-review_passes: 1
 handoff_signal_retry_count: 2
 ---
 id: "0546"
@@ -160,3 +160,4 @@ nothing.
 - 2026-09-27T14:28:31Z · status active→ready
 - 2026-09-27T14:40:34Z · status ready→active
 - 2026-09-27T14:42:24Z · status active→review
+
