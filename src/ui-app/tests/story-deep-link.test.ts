@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { storyDeepLinkRef, storyOpenLabel } from "../src/lib/story-deep-link";
 import type { StoryDefinitionRecord } from "../src/types";
 
-const alphaDef: StoryDefinitionRecordRecord = {
+const alphaDef: StoryDefinitionRecord = {
   key: "alpha slice",
   name: "Alpha slice",
   number: "0001",
