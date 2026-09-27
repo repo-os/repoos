@@ -1,11 +1,8 @@
 ---
-merge_conflict_retry_count: 1
-updated_at: "2026-09-27T18:54:39Z"
-review_passes: 5
 id: "0550"
 title: Add a settings-scoped search that jumps to the right tab
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
@@ -13,6 +10,9 @@ created_by: hello@repoos.org
 branch: feat/add-a-settings-scoped-search-that-jumps-
 review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-27T13:23:12Z"
+updated_at: "2026-09-27T19:12:18Z"
+merge_conflict_retry_count: 1
+review_passes: 5
 review_rounds: 2
 ---
 ## Problem
@@ -114,5 +114,4 @@ Let's add a search on the settings page since we have so many settings now and I
 - 2026-09-27T18:32:37Z · needs_input
 - 2026-09-27T18:34:41Z · status active→review
 - 2026-09-27T18:43:41Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
-
-
+- 2026-09-27T19:12:18Z · status review→done, release:success
