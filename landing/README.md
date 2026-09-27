@@ -3,8 +3,49 @@
 The RepoOS marketing/landing site. A standalone static site — own
 `package.json`, own lockfile, own build/deploy pipeline, no bun workspaces
 (same pattern as `mobile/`). Independent of `src/ui-app` and of the docs site
-(`docs/`, #0339); shares only the dark visual identity (palette, Sora +
-JetBrains Mono).
+(`docs/`, #0339); shares the Classic visual identity (palette, Sora +
+JetBrains Mono) and optional Gruvbox design theme lifted from the app.
+
+## Theme switcher
+
+Visitors pick two independent axes from the nav:
+
+| Axis | DOM | Storage key | Values |
+| --- | --- | --- | --- |
+| **Design theme** | `data-ui-theme` on `<html>` (omitted for Classic) | `repoos-ui-theme` | `classic`, `gruvbox` |
+| **Appearance** | `data-theme` on `<html>` | `repoos-theme` (unchanged) | `dark`, `light` |
+
+`index.html` runs a synchronous inline script before first paint to apply both
+axes and to set `<meta name="theme-color">` for all four combinations. Gruvbox
+tokens are copied from `src/ui-app/src/style.css` into `src/style.css` — the
+landing does not import app code.
+
+### Shareable URLs
+
+Query parameters override stored choices on first load (then persist to
+`localStorage` so a reload without the query keeps the same look):
+
+| Param | Values | Example |
+| --- | --- | --- |
+| `theme` | `classic`, `gruvbox`, or any future design id (`catppuccin`, `ayu`, …) | `?theme=gruvbox` |
+| `appearance` | `dark`, `light` | `?appearance=light` |
+| `mode` | alias for `appearance` | `?theme=gruvbox&mode=light` |
+
+Examples: `https://repoos.org/?theme=gruvbox`, `https://repoos.org/?theme=classic&appearance=dark`.
+
+**Docs hand-off:** every link to `docs.repoos.org` in `src/App.vue` appends the
+current `theme` / `appearance` query params (via `appendThemeToUrl` in
+`theme-resolve.ts`), so a visitor on e.g.
+`https://repoos.org/?appearance=dark&theme=gruvbox` lands in gruvbox/dark on the
+docs site. The docs navbar link back to `repoos.org` does the same in the other
+direction. Cross-origin storage does not share keys; the query string is the
+hand-off.
+
+Resolution order per axis: **URL → `localStorage` → default** (Classic design;
+appearance from OS `prefers-color-scheme` when nothing is stored). Using the nav switcher updates the URL with `history.replaceState` (no reload);
+a plain visit without query params keeps a clean address bar until then. Parsing and validation live in `src/theme-resolve.ts`. The pre-paint boot
+script is bundled from `src/theme-boot.ts` into `index.html` at dev/build time
+(`vite-plugin-theme-boot.ts`) so there is a single source of truth.
 
 ## Repo layout
 

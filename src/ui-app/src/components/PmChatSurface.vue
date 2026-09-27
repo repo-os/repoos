@@ -30,6 +30,7 @@ import { useChatScroll } from "../composables/useChatScroll";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
 import AiChatThinking from "./AiChatThinking.vue";
 import ChatJumpToLatest from "./ChatJumpToLatest.vue";
+import ChatDiagnosticRow from "./ChatDiagnosticRow.vue";
 import ChatToolCallRow from "./ChatToolCallRow.vue";
 import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
 
@@ -173,7 +174,12 @@ defineExpose({ focusDraft });
       <template v-else>
         <template v-for="row in entries" :key="row.key">
           <!-- one row per run of adjacent tool calls (#0506) -->
-          <ChatToolCallRow v-if="row.kind === 'tools'" :calls="row.calls" :at="row.at" />
+          <ChatDiagnosticRow
+            v-if="row.kind === 'line' && row.s === 'err'"
+            :text="row.text"
+            :at="row.at"
+          />
+          <ChatToolCallRow v-else-if="row.kind === 'tools'" :calls="row.calls" :at="row.at" />
           <div v-else-if="bubbleRole(row)" class="pm-row" :class="`pm-row-${bubbleRole(row)}`">
             <div v-if="bubbleRole(row) === 'assistant'" class="pm-mini-avatar">PM</div>
             <div class="pm-bubble" :class="`pm-bubble-${bubbleRole(row)}`">

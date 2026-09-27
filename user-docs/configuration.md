@@ -652,12 +652,17 @@ Stories are an optional grouping over tasks: a delivery slice that spans several
 technical areas and owners. You can **register a story up front** with a markdown
 file under `stories/` (from the Stories page **New story** flow, or by adding a
 file in git), and/or tag tasks with a matching `story:` value in frontmatter —
-from the task drawer's Story field, or with `repoos new "…" --story "Project
-updates email"` / `repoos update <id> --story "Project updates email"`. Task
-tags drive counts, progress, and completion; definition files add name and
-description before any task exists. A story has no worktree, agent, branch, or
-status of its own. The Stories page merges registered definitions with tagged
-tasks.
+from the **Story** field in the task drawer or in the New task panel, or with
+`repoos new "…" --story "Project updates email"` / `repoos update <id> --story
+"Project updates email"`. Task tags drive counts, progress, and completion;
+definition files add name and description before any task exists. A story has no
+worktree, agent, branch, or status of its own. The Stories page merges registered
+definitions with tagged tasks.
+
+**New task** in a story panel's **Tasks** tab opens the normal New task panel
+with that story already selected — and shown, so you can change or clear it —
+and lands you back on the story once the task exists. The button is there even
+when the story has no tasks yet.
 
 **New story** saves and commits the story file as soon as you submit, so you
 can leave the pane and `stories/` never leaves `main` with uncommitted changes.

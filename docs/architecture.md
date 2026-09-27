@@ -152,8 +152,12 @@ Adds liveness over the one-shot core. No new business logic.
   bypass is documented as a security tradeoff in `user-docs/agents.md`.
 - `freeform.ts` — parses freeform task description output from the PM agent
   into structured task frontmatter + body.
-- `done.ts` — review-to-done close-out: merges the task branch into main,
-  removes the worktree, and cleans up.
+- `integration-orchestrator.ts` — the live Move-to-done pipeline: merges into
+  a candidate worktree, validates, publishes to main, and cleans up.
+- `done.ts` — shared release/check helpers and the legacy close-out
+  implementation; its `completeTask` path is not the live branch-merge route.
+- `branchless-release.ts` — checks main and records release for already-landed
+  work with no task branch; it does not merge anything.
 - `review.ts` — the review agent: when a task lands in `review` (by any route),
   it runs the enabled `reviewer` agent read-only over the task's worktree and
   writes a short report to `<cacheDir>/reviews/<id>.md` for the human signing
@@ -233,6 +237,15 @@ check`, never emits the handoff signal, and the task stalls with an error that
 looks unrelated. This happened three times on 2026-09-18: Codex's sandbox
 blocked localhost binds (#0406), Copilot's narrow allowlist omitted commands
 needed by the task (#0412), and Qwen was launched without approvals turned off.
+
+Managed Codex engineering turns now bypass approvals and the OS sandbox, like
+the other unattended drivers. This also avoids macOS WebKit aborting during app
+registration inside workspace-write. The worktree is a Git isolation mechanism,
+not a security boundary; commands have the user's normal host access. Advisory
+Codex roles retain their existing permissions. This is an explicit exception to
+ADR-0005: normal agent-driven browser testing needs host application services,
+and the current runner has no narrow server-owned browser-check request. See
+`user-docs/agents.md` for the permission tradeoff.
 
 Two guards now exist, both in `src/server/agents.ts`:
 
@@ -371,6 +384,14 @@ so a `repoos` command an agent runs from inside the server still makes its own
 switch instead of inheriting the flag and staying on Node. Everything the
 server spawns via `process.execPath` (reload replacements, preview children,
 `repoos check`) inherits the same runtime.
+
+After the runtime switch, the CLI checks its linked build marker against
+`src/` (#0549). If stale, it runs `bun run build` in the package root and
+re-execs the original command with the same arguments. `REPOOS_STALENESS_REEXEC=1`
+limits this to one attempt and is cleared in the restarted process so it does
+not affect commands launched later. A failed build or unchanged stale marker
+still reaches the normal staleness warning or `repoos check` failure. Published
+packages and source-mode runs skip this bootstrap.
 
 The switch used to be `serve`-only, on the theory that short commands would
 pay for a second process start for no benefit. Measured on 2026-09-15 (Node

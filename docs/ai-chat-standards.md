@@ -174,3 +174,13 @@ the transcript (dispatch buttons, repair actions, model sidebar). What they
 have in common is *behaviour*, not markup — so the shared pieces are the
 behaviour (scroll, jump, working state, row grouping) and the rhythm, and each
 surface keeps its own bubbles.
+
+### CLI diagnostics
+
+Adjacent stderr lines are grouped for display and shown with the shared
+`ChatDiagnosticRow` component. Timestamped log records start separate cards.
+Cards are collapsed by default, with a readable summary and timestamp; expanding
+shows the full diagnostic in neutral monospace text. Only the error label uses
+red. This applies to stored transcripts too and leaves their raw entries and
+tool-call outcome counts unchanged. A failed patch attempt is a tool failure,
+not by itself evidence that the agent's task failed.

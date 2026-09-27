@@ -8,6 +8,7 @@ import { autoGrowTextarea } from "../utils/textarea-autogrow";
 import { useRepoStore } from "../stores/repo";
 import FloatingHeadPanel from "./FloatingHeadPanel.vue";
 import AiChatThinking from "./AiChatThinking.vue";
+import ChatDiagnosticRow from "./ChatDiagnosticRow.vue";
 import ChatToolCallRow from "./ChatToolCallRow.vue";
 import { useChatScroll } from "../composables/useChatScroll";
 import { bubbleRole, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
@@ -140,7 +141,12 @@ watch(
         </div>
 
         <template v-for="row in rows" :key="row.key">
-          <ChatToolCallRow v-if="row.kind === 'tools'" :calls="row.calls" :at="row.at" />
+          <ChatDiagnosticRow
+            v-if="row.kind === 'line' && row.s === 'err'"
+            :text="row.text"
+            :at="row.at"
+          />
+          <ChatToolCallRow v-else-if="row.kind === 'tools'" :calls="row.calls" :at="row.at" />
           <div v-else :class="`cto-line ${bubbleRole(row)}`">
             {{ row.text }}
             <!-- Every row carries its last-updated time (#0506), system rows

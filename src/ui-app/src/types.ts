@@ -950,6 +950,8 @@ export type ModelProviderUsage = OpenRouterUsage | OpenCodeGoUsage;
 export interface DocMeta {
   path: string;
   title: string;
+  /** File mtime from the server listing (ms since epoch). */
+  mtimeMs: number;
 }
 
 export interface SkillMeta {

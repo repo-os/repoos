@@ -207,6 +207,76 @@ describe("finalizeFreeformRun — durable failure trace (#0403)", () => {
     expect(emitted).toContain("task.aiCreateFailed");
   });
 
+  /**
+   * #0555: the New task panel can preset a story on a freeform create. The tag
+   * is on the draft before the PM agent runs, and the flesh-out — which
+   * rewrites title, body AND may declare its own frontmatter story — must not
+   * move it.
+   */
+  it("keeps a story preset at creation through the PM flesh-out", () => {
+    const root = tempRoot();
+    const repoos = createRepoOS(root);
+    const created = repoos.createTask({
+      title: "Rough idea",
+      body: "rough idea",
+      originalPrompt: "rough idea",
+      status: "draft",
+      story: "Delivery slice",
+    });
+    const deps = finalizeDepsFor(root);
+    const record: FreeformRunRecord = {
+      runId: "run-story",
+      taskId: created.id,
+      pid: 1,
+      cwd: root,
+      explanation: "rough idea",
+      agent: PM,
+      startedAt: new Date().toISOString(),
+    };
+
+    finalizeFreeformRun(deps, record, {
+      ok: true,
+      output:
+        "---\ntitle: Fleshed out\nstory: Something the agent invented\n---\n\n## Problem\nbody\n",
+      elapsedMs: 10,
+    });
+
+    // The rewrite still lands — title, status, body — only the story is held.
+    const task: Task | null = deps.index.getTask(created.id);
+    expect(task?.title).toBe("Fleshed out");
+    expect(task?.story).toBe("Delivery slice");
+  });
+
+  it("still lets the PM agent's story through on an untagged create", () => {
+    const root = tempRoot();
+    const repoos = createRepoOS(root);
+    const created = repoos.createTask({
+      title: "Rough idea",
+      body: "rough idea",
+      originalPrompt: "rough idea",
+      status: "draft",
+    });
+    const deps = finalizeDepsFor(root);
+    const record: FreeformRunRecord = {
+      runId: "run-story-free",
+      taskId: created.id,
+      pid: 1,
+      cwd: root,
+      explanation: "rough idea",
+      agent: PM,
+      startedAt: new Date().toISOString(),
+    };
+
+    finalizeFreeformRun(deps, record, {
+      ok: true,
+      output: "---\ntitle: Fleshed out\nstory: From the PM\n---\n\n## Problem\nbody\n",
+      elapsedMs: 10,
+    });
+
+    const task: Task | null = deps.index.getTask(created.id);
+    expect(task?.story).toBe("From the PM");
+  });
+
   it("does not overwrite a draft that was already promoted by a racing finalize", () => {
     const root = tempRoot();
     const repoos = createRepoOS(root);
@@ -352,5 +422,25 @@ describe("createFreeformTask — durable run integration (#0403)", () => {
     expect(capture.body.fallback).toBe(true);
     expect(capture.body.fallbackReason).toBe("agent-failed");
     expect(freeformFailureForRun(ctx.config, "run-nospawn")?.reason).toBe("spawn ENOENT");
+  });
+
+  it("tags the draft with the request's story, and stays untagged without one (#0555)", async () => {
+    const root = tempRoot();
+    const { ctx } = makeCtx(root);
+
+    const tagged = makeReqRes({
+      explanation: "add the company dashboard",
+      runId: "run-story",
+      story: "  Delivery   slice ",
+    });
+    await createFreeformTask(ctx, tagged.req, tagged.res, {});
+    expect(tagged.capture.status).toBe(201);
+    // normalizeStoryName on write: a messy hand-off cannot fork a
+    // near-duplicate story next to a tidy one.
+    expect((tagged.capture.body.task as Task).story).toBe("Delivery slice");
+
+    const untagged = makeReqRes({ explanation: "add the sidebar", runId: "run-nostory" });
+    await createFreeformTask(ctx, untagged.req, untagged.res, {});
+    expect((untagged.capture.body.task as Task).story ?? "").toBe("");
   });
 });

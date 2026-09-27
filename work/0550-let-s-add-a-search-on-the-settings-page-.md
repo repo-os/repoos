@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-09-27T13:58:40Z"
-review_passes: 1
+updated_at: "2026-09-27T18:54:39Z"
+review_passes: 5
 id: "0550"
 title: Add a settings-scoped search that jumps to the right tab
 type: feature
@@ -10,8 +10,9 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-a-settings-scoped-search-that-jumps-
-review_model_override: opencode/muse-spark-1.3-contributor-free
+review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-27T13:23:12Z"
+review_rounds: 2
 ---
 ## Problem
 
@@ -99,4 +100,17 @@ Let's add a search on the settings page since we have so many settings now and I
 - 2026-09-27T13:27:19Z · status inbox→ready
 - 2026-09-27T13:27:20Z · status ready→active, branch
 - 2026-09-27T13:33:44Z · status active→review
+- 2026-09-27T13:34:50Z · status review→active
+- 2026-09-27T13:39:09Z · status active→review
+- 2026-09-27T13:40:17Z · status review→active
+- 2026-09-27T13:44:12Z · status active→review
+- 2026-09-27T14:01:24Z · review_model_override
+- 2026-09-27T14:04:53Z · status review→active
+- 2026-09-27T14:04:53Z · note: FYI this isn't good to go even though the reviewer wrongly said it was. When I clicked on a search result it didn't scroll to the write place to be able to see it (e.g. Remote Validation Runner) also when I searched for tailscale it didn't return valid results like the Remote Validation Runner setting it only returned the repoos.toml (which is also a valid search result). So in short: make sure to scroll to where the thing is on the page (navigate to the right page, tab first of course) and make sure the settings search results are more complete. Also the current highlighting is a bit boxy, can you make it more rounded as appropriate for the theme??
+- 2026-09-27T14:11:48Z · status active→review
+- 2026-09-27T14:22:11Z · needs_input
+- 2026-09-27T18:32:37Z · status review→active
+- 2026-09-27T18:32:37Z · needs_input
+- 2026-09-27T18:34:41Z · status active→review
+- 2026-09-27T18:43:41Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
 

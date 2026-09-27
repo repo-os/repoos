@@ -1,4 +1,7 @@
 import { defineConfig } from "vitepress";
+import { themeBootPlugin, themeBootScriptContent } from "./vite-plugin-theme-boot";
+
+const themeBootInline = themeBootScriptContent();
 
 // docs.repoos.org — documentation for PEOPLE USING RepoOS.
 // Deploy target: Cloudflare Pages (main branch → dev env, prod branch → prod).
@@ -16,21 +19,23 @@ export default defineConfig({
   description:
     "AI dev teams for CTOs and builders. Bring your own agents and models. RepoOS manages the whole development lifecycle — all in your Git repo.",
   cleanUrls: true,
-  // "dark" = default dark but togglable (VitePress's built-in appearance
-  // switcher renders in the navbar). Identity stays dark-first to match
-  // ui-app and the landing page's own default.
-  appearance: "dark",
+  // RepoOS owns appearance (dark/light) and design theme (Classic/Gruvbox).
+  // `false` disables VitePress's built-in toggle and its `check-dark-mode`
+  // script — that script reads `vitepress-theme-appearance`, which would fight
+  // our `repoos-theme` key. Pre-paint boot (`theme-boot.ts` via
+  // vite-plugin-theme-boot) applies both axes before first paint instead.
+  appearance: false,
   lastUpdated: true,
   // README.md here is the build/deploy runbook for this directory, not a page.
   srcExclude: ["README.md"],
   // Links reaching outside the site (../docs/, ../src/) are repo-relative by
   // design; they resolve on a checkout, not on the published site.
   ignoreDeadLinks: [/^\.{1,2}\//],
+  vite: {
+    plugins: [themeBootPlugin()],
+  },
   head: [
-    // (VitePress injects its own pre-paint `check-dark-mode` script when
-    // appearance is enabled — it resolves the stored preference (defaulting
-    // to dark, see appearance above) before first paint. No manual class
-    // script here: it would fight the toggle and flash on light mode.)
+    ["script", { id: "repoos-theme-boot" }, themeBootInline],
     ["link", { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" }],
     ["link", { rel: "preconnect", href: "https://fonts.googleapis.com" }],
     ["link", { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: "" }],
@@ -90,6 +95,8 @@ export default defineConfig({
           { text: "Configuration", link: "/configuration" },
           { text: "Environment and secrets", link: "/environment-and-secrets" },
           { text: "Authentication", link: "/authentication" },
+          { text: "Native authentication", link: "/native-auth" },
+          { text: "Telegram", link: "/telegram" },
           { text: "Deployments and releases", link: "/deployments-and-releases" },
           { text: "Changelog", link: "/changelog" },
         ],

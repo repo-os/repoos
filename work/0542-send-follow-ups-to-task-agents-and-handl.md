@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:33:47Z"
-updated_at: "2026-09-27T07:33:47Z"
+updated_at: "2026-09-27T15:52:49Z"
 ---
 ## Problem
 
@@ -44,3 +44,6 @@ Task transitions driven from Telegram must record the real actor. Existing calle
 ## Activity
 
 - 2026-09-27T07:33:47Z · created · unknown
+- 2026-09-27T15:42:40Z · body
+- 2026-09-27T15:51:57Z · body
+- 2026-09-27T15:52:49Z · body
