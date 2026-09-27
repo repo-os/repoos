@@ -1830,7 +1830,16 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
   let modified = false;
 
   // Array-of-tables keys ([[agents]]): drop the existing blocks and append the
-  // freshly serialized ones at the end of the file.
+  // freshly serialized ones at the end of the file. Also drop any pre-existing
+  // FLAT scalar/array line for the same key (root- or section-scoped) — TOML
+  // cannot validly have both a `key = [...]` line and `[[key]]` blocks for one
+  // key, and leaving a stale flat line untouched here resurrects whatever it
+  // said on the next parse even though this patch never wrote to it (#0521
+  // review: shortening a pool that has both forms rewrote the rows but left
+  // the old flat list, so a removed host came back on reload). Scoped to only
+  // remove a *stray* flat line, not one this same patch is also setting —
+  // callers that intentionally want both never happen; this just guards
+  // against ONE of them going stale after the other form is chosen.
   for (const [key, rawVal] of Object.entries(patch)) {
     if (!isTableArray(rawVal)) continue;
     const blocks = serializeTableArray(key, rawVal);
@@ -1849,9 +1858,30 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
       kept.push(result[i]);
       i++;
     }
-    while (kept.length && kept[kept.length - 1].trim() === "") kept.pop();
-    kept.push(blocks);
-    result = kept;
+    // Second pass: strip a stray flat line for the same key, root- or
+    // section-scoped — same full-name resolution as the scalar/array patch
+    // loop below (a root-scoped line's own identifier IS the full dotted
+    // key, e.g. `remoteValidation.tailscaleHosts = […]`; a section-scoped
+    // line's leaf combines with its `[section]` header to the same name).
+    let section = "";
+    const withoutFlat: string[] = [];
+    for (const line of kept) {
+      const stripped = stripTomlComment(line).trim();
+      const header = stripped.match(/^\[\[([^\]]+)\]\]/) ?? stripped.match(/^\[([^\]]+)\]/);
+      if (header) {
+        section = header[1]!.trim();
+        withoutFlat.push(line);
+        continue;
+      }
+      const kv = stripped.match(/^([A-Za-z0-9_.-]+)\s*=\s*/);
+      const full = kv ? (section ? `${section}.${kv[1]}` : kv[1]!) : null;
+      if (full === key) continue; // drop the stray flat line for this key
+      withoutFlat.push(line);
+    }
+    let finalKept = withoutFlat;
+    while (finalKept.length && finalKept[finalKept.length - 1].trim() === "") finalKept.pop();
+    finalKept.push(blocks);
+    result = finalKept;
     modified = true;
   }
 

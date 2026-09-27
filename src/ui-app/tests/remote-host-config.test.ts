@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { getConfigSchema, loadConfig } from "../../core/config.js";
 import { resolveRemoteHosts } from "../../core/remote-hosts.js";
+import { startServer } from "../../server/server.js";
 import { patchConfig } from "../../server/routes/config.js";
 
 const roots: string[] = [];
@@ -129,6 +130,33 @@ describe("remoteValidation.tailscaleHosts schema entry (#0521)", () => {
     expect(res.status).toBe(200);
     const hosts = resolveRemoteHosts(loadConfig(root).remoteValidation);
     // Order stays parse-stable (shorthand first) and mac1 keeps its row attrs.
+    expect(hosts).toEqual([{ host: "bee" }, { host: "mac1", os: "macos", labels: ["apple"] }]);
+    await cleanup();
+  });
+
+  it("a removed host does not come back from a stale flat list after shortening a mixed pool (#0521 review)", async () => {
+    // A mixed config: a flat list AND a rich row for mac1 (the shape the
+    // drawer's own example produces). Shortening the pool to just
+    // ["bee", "mac1"] must fully retire the flat list — it used to only
+    // rewrite the [[…]] rows and leave the stale flat line behind, which
+    // resurrected "other" on the very next reload.
+    const root = repo(
+      'remoteValidation.tailscaleHost = "bee"\n' +
+        'remoteValidation.tailscaleHosts = ["bee", "mac1", "other"]\n\n' +
+        "[[remoteValidation.tailscaleHosts]]\n" +
+        'host = "mac1"\nos = "macos"\nlabels = ["apple"]\n',
+    );
+    const res = await patch(root, {
+      "remoteValidation.containerImage": "repoos-ci",
+      "remoteValidation.tailscaleHosts": ["bee", "mac1"],
+    });
+    expect(res.status).toBe(200);
+    const raw = readFileSync(join(root, "repoos.toml"), "utf8");
+    // No stray flat line survives once rows form is in use for this key.
+    expect(raw).not.toMatch(/^remoteValidation\.tailscaleHosts\s*=\s*\[/m);
+    // Reloading from disk — not just the in-memory patch result — proves
+    // "other" is genuinely gone, not just hidden by in-memory precedence.
+    const hosts = resolveRemoteHosts(loadConfig(root).remoteValidation);
     expect(hosts).toEqual([{ host: "bee" }, { host: "mac1", os: "macos", labels: ["apple"] }]);
     await cleanup();
   });
@@ -273,6 +301,47 @@ describe("patchConfig against section-scoped repoos.toml files", () => {
     const text = readFileSync(join(root, "repoos.toml"), "utf8");
     expect(text).toContain('ntfyTopic = "repoos_new"');
     expect(text.match(/ntfyTopic\s*=/g)).toHaveLength(1);
+    await cleanup();
+  });
+});
+
+/**
+ * Real HTTP round-trip (#0521 review): a second review reported that the
+ * status endpoint reads the server's startup config after a Settings save,
+ * so the drawer's post-save refresh sees stale data and reports the save
+ * "may have failed". Verified here, not just reasoned about: `startServer`'s
+ * status route and `patchConfig` share the exact same `repoos.config` object
+ * (mutated in place via `Object.assign`, never reassigned) — so this test
+ * checks whether that holds under a real save + real HTTP GET, for the
+ * mixed flat+rows shape the first bug fix targets.
+ */
+describe("GET /api/remote-validation/status reflects a same-process save immediately", () => {
+  it("shows the shortened pool right after saving it, not the pre-save one", async () => {
+    const root = repo(
+      'remoteValidation.tailscaleHost = "bee"\n' +
+        'remoteValidation.tailscaleHosts = ["bee", "mac1", "other"]\n\n' +
+        "[[remoteValidation.tailscaleHosts]]\n" +
+        'host = "mac1"\nos = "macos"\n',
+    );
+    const server = await startServer({ root, host: "127.0.0.1", port: 0 });
+    try {
+      const patchRes = await fetch(`${server.url}/api/config`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          "remoteValidation.containerImage": "repoos-ci",
+          "remoteValidation.tailscaleHosts": ["bee", "mac1"],
+        }),
+      });
+      expect(patchRes.status).toBe(200);
+
+      const statusRes = await fetch(`${server.url}/api/remote-validation/status`);
+      expect(statusRes.status).toBe(200);
+      const status = (await statusRes.json()) as { tailscaleHosts: string[] };
+      expect(status.tailscaleHosts.sort()).toEqual(["bee", "mac1"]);
+    } finally {
+      await server.close();
+    }
     await cleanup();
   });
 });
