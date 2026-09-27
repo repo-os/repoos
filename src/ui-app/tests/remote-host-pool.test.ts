@@ -725,6 +725,53 @@ describe("health-cooldown arrivals and recovery (#0521 review)", () => {
   }, 15_000);
 });
 
+describe("outer SSH timeout covers the lock wait, not just the run (#0521 review)", () => {
+  // The outer SSH-level timeout wraps BOTH phases as one process (waiting
+  // for a free host slot, then the actual build+test). A fixed
+  // remoteRunTimeoutMs regardless of how long the lock was allowed to wait
+  // first meant a run that legitimately queued for most of its wait budget
+  // then had only the remainder left for a normally-healthy suite — it
+  // could be SIGKILLed and reported as an infra failure purely because of
+  // how long it queued, never because anything was actually wrong.
+  it("adds the lock wait budget on top of remoteRunTimeoutMs when there is no deadline", async () => {
+    const root = tmpRoot();
+    const runRemote = vi.fn(
+      async (_host: unknown, cmd: string, _onChunk?: unknown, _timeoutMs?: number) => {
+        if (cmd.includes(PREREQ_OK_TOKEN))
+          return { code: 0, output: PREREQ_OK_TOKEN, timedOut: false };
+        return { code: 0, output: "ok", timedOut: false };
+      },
+    );
+    const exec: RemoteExecDeps = {
+      bundleRepo: vi.fn(async () => ({ ok: true })),
+      uploadFile: vi.fn(async () => ({ ok: true })),
+      downloadDir: vi.fn(async () => {}),
+      runRemote,
+      probeTcp: vi.fn(async () => true),
+    };
+    const config = {
+      root,
+      workDir: "work",
+      docsDir: "docs",
+      skillsDir: "skills",
+      taskExtensions: [".md"],
+      defaultStatus: "inbox",
+      defaultAssignee: "ai",
+      cacheDir: ".repoos",
+      remoteValidation: { enabled: true, provider: "tailscale", tailscaleHosts: [{ host: "a" }] },
+    } as unknown as RepoOSConfig;
+    const remoteRunTimeoutMs = 60_000; // small, test-friendly stand-in
+    const runner = new TailscaleRunner(config, undefined, {
+      exec,
+      timings: { healthRetryMs: 40, probeTimeoutMs: 1_000, remoteRunTimeoutMs },
+    });
+    await runner.validate(opts("0001"));
+    // No deadline passed → the wait budget is DEFAULT_HOST_LOCK_WAIT_SECS.
+    const runCall = runRemote.mock.calls.find((c) => !String(c[1]).includes(PREREQ_OK_TOKEN));
+    expect(runCall?.[3]).toBe(remoteRunTimeoutMs + DEFAULT_HOST_LOCK_WAIT_SECS * 1000);
+  });
+});
+
 describe("queue deadlines (#0521)", () => {
   it("cancels a queued run at the caller's deadline and frees its slot", async () => {
     const f = poolFixture({ hosts: [{ host: "a" }] });
@@ -993,7 +1040,8 @@ describe("per-host prerequisite probe", () => {
     const cmd = prereqProbeCommand("docker");
     expect(cmd).toContain("docker info");
     expect(cmd).not.toContain("bun not found");
-    expect(cmd).not.toContain("git not found");
+    // git DOES run on the host for docker too — checked separately below
+    // (#0521 review: validate.sh's git clone happens before docker run).
   });
 
   it("checks the configured image exists, not just that the daemon runs (#0521 review)", () => {
@@ -1063,6 +1111,14 @@ describe("per-host prerequisite probe", () => {
   it("never checks the cache volume on a native host", () => {
     const cmd = prereqProbeCommand("native");
     expect(cmd).not.toContain("docker volume create");
+  });
+
+  it("checks git on Docker hosts too — validate.sh clones on the HOST regardless of runner (#0521 review)", () => {
+    // git clone/checkout happens before docker run is ever invoked, for
+    // every runner — a Docker host missing git used to be reported healthy
+    // and fail at the very first step of every job.
+    const cmd = prereqProbeCommand("docker");
+    expect(cmd).toContain('command -v git >/dev/null 2>&1 || { echo "git not found on PATH"');
   });
 });
 
