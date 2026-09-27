@@ -640,6 +640,10 @@ enabled = false
 | --- | --- | --- | --- | --- |
 | `stories.enabled` | boolean | `false` | yes | Turns the Stories page, its navigation item (between Work and Checks), and the task drawer's Story field on. |
 
+With stories enabled, the task drawer shows **Story** next to **Area** on the top
+row of the details form instead of **Assigned to**; assignee stays in task
+frontmatter and remains writable from the CLI (`repoos update <id> --assigned-to`).
+
 Stories are an optional grouping over tasks: a delivery slice that spans several
 technical areas and owners. You can **register a story up front** with a markdown
 file under `stories/` (from the Stories page **New story** flow, or by adding a
