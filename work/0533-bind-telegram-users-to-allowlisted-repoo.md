@@ -10,12 +10,8 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:32:28Z"
-updated_at: "2026-09-27T15:51:50Z"
+updated_at: "2026-09-27T15:52:41Z"
 ---
-## Governing decision
-
-Follow [ADR 0007 — Telegram identity and authorization](../docs/adr/0007-telegram-identity-and-authorization.md) for user binding, chat binding, live role resolution, and unauthorized-sender behavior. This task implements or relies on that model; do not define a separate policy here.
-
 ## Problem
 
 This is the core of the auth model, and the piece story #0003 never specifies. **Telegram has no email address.** A Telegram account is a numeric `user_id` with a changeable, spoofable `@username` — it carries no verifiable relationship to an `auth_users` row. Something has to bridge that gap, and if the bridge is wrong, the allowlist is bypassed entirely.
@@ -61,3 +57,4 @@ This is deliberately **the same answer for both of the user's use cases**: an in
 - 2026-09-27T15:15:28Z · body
 - 2026-09-27T15:42:30Z · body
 - 2026-09-27T15:51:50Z · body
+- 2026-09-27T15:52:41Z · body
