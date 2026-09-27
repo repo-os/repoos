@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { RotateCcw, WifiOff } from "lucide-vue-next";
+import { LoaderCircle, RotateCcw, WifiOff } from "lucide-vue-next";
 import { dismissRecovery, reloadNow, uiRecoveryState } from "../lib/uiRecovery";
 import Button from "./ui/button.vue";
 
@@ -9,6 +9,7 @@ const title = computed(() =>
   recovery.kind === "stale" ? "New RepoOS build available" : "Server connection issue",
 );
 const detail = computed(() => {
+  if (recovery.reloading) return recovery.message;
   if (recovery.kind !== "stale") return recovery.message;
 
   const build = recovery.newBuild ? recovery.newBuild.slice(0, 12) : "New build";
@@ -22,15 +23,22 @@ const detail = computed(() => {
 <template>
   <Teleport to="body">
     <div v-if="recovery.kind" class="ui-recovery-banner" role="alert">
-      <WifiOff v-if="recovery.kind === 'offline'" class="ui-recovery-icon" />
+      <LoaderCircle v-if="recovery.reloading" class="ui-recovery-icon ui-recovery-spinner" />
+      <WifiOff v-else-if="recovery.kind === 'offline'" class="ui-recovery-icon" />
       <RotateCcw v-else class="ui-recovery-icon" />
       <div class="ui-recovery-copy">
         <strong>{{ title }}</strong>
         <small>{{ detail }}</small>
       </div>
       <div class="ui-recovery-actions">
-        <Button variant="accent" size="sm" @click="reloadNow">
-          {{ recovery.kind === "stale" ? "Reload" : "Retry / reload" }}
+        <Button variant="accent" size="sm" :disabled="recovery.reloading" @click="void reloadNow()">
+          {{
+            recovery.reloading
+              ? "Please wait…"
+              : recovery.kind === "stale"
+                ? "Reload"
+                : "Retry / reload"
+          }}
         </Button>
         <Button variant="ghost" size="sm" @click="dismissRecovery">Dismiss</Button>
       </div>
@@ -47,7 +55,7 @@ const detail = computed(() => {
   width: min(560px, calc(100vw - 32px));
   transform: translateX(-50%);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   padding: 13px 16px;
   border: 1px solid var(--orange, #f0a35b);
@@ -69,17 +77,27 @@ const detail = computed(() => {
 }
 .ui-recovery-copy strong,
 .ui-recovery-copy small {
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .ui-recovery-copy small {
   color: var(--txt-muted, #b7bdd1);
   font-size: 12px;
+  line-height: 1.35;
 }
 .ui-recovery-actions {
   display: flex;
   flex: none;
   align-items: center;
   gap: 4px;
+}
+.ui-recovery-spinner {
+  animation: ui-recovery-spin 0.9s linear infinite;
+}
+@keyframes ui-recovery-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 @media (max-width: 560px) {
   .ui-recovery-banner {
