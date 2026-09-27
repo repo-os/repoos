@@ -3515,37 +3515,36 @@ watch(
               <Input id="et-area" v-model="draft.area" placeholder="web" />
             </div>
             <div v-if="storiesEnabled" class="field">
-              <label for="et-story">Story</label>
-              <div class="field-story-control">
-                <Select :model-value="storySelectValue" @update:model-value="onStorySelectUpdate">
-                  <SelectTrigger id="et-story">
-                    <SelectValue placeholder="No story">
-                      {{ storySelectLabel }}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectViewport
-                      class="h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
-                    >
-                      <SelectItem :value="STORY_NONE_SELECT">No story</SelectItem>
-                      <SelectItem v-for="name in storyOptions" :key="name" :value="name">
-                        {{ name }}
-                      </SelectItem>
-                    </SelectViewport>
-                  </SelectContent>
-                </Select>
-                <Button
+              <div class="field-header">
+                <label for="et-story">Story</label>
+                <button
                   v-if="showStoryOpenLink"
                   type="button"
-                  variant="outline"
-                  size="icon"
+                  class="page-help-link"
                   :title="storyOpenAccessibleLabel"
                   :aria-label="storyOpenAccessibleLabel"
                   @click="openAssignedStory"
                 >
-                  <ArrowRight class="size-3.5" aria-hidden="true" />
-                </Button>
+                  go to story ↗
+                </button>
               </div>
+              <Select :model-value="storySelectValue" @update:model-value="onStorySelectUpdate">
+                <SelectTrigger id="et-story">
+                  <SelectValue placeholder="No story">
+                    {{ storySelectLabel }}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectViewport
+                    class="h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
+                  >
+                    <SelectItem :value="STORY_NONE_SELECT">No story</SelectItem>
+                    <SelectItem v-for="name in storyOptions" :key="name" :value="name">
+                      {{ name }}
+                    </SelectItem>
+                  </SelectViewport>
+                </SelectContent>
+              </Select>
             </div>
             <div v-else class="field">
               <label for="et-assignee">Assigned to</label>

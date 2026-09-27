@@ -3663,7 +3663,7 @@
   gap: 8px;
   margin-bottom: 6px;
 }
-.field-header label {
+.field .field-header label {
   margin-bottom: 0;
 }
 .field label {
@@ -3695,15 +3695,6 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-}
-.field-story-control {
-  display: flex;
-  gap: 6px;
-  align-items: stretch;
-}
-.field-story-control > :first-child {
-  flex: 1;
-  min-width: 0;
 }
 .btn {
   padding: 11px 16px;
