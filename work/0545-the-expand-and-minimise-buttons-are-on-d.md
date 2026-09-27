@@ -2,14 +2,14 @@
 id: "0545"
 title: Align integration panel expand and minimise buttons to the right
 type: chore
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-27T10:11:24Z"
-updated_at: "2026-09-27T10:11:35Z"
+updated_at: "2026-09-27T10:11:45Z"
 ---
 ## Problem
 
@@ -81,3 +81,4 @@ The expand and minimise buttons are on different sides of the integration ui. I 
 - 2026-09-27T10:11:25Z · screenshots
 - 2026-09-27T10:11:25Z · screenshots
 - 2026-09-27T10:11:35Z · status draft→inbox, title, area, type, body
+- 2026-09-27T10:11:45Z · status inbox→ready
