@@ -1411,9 +1411,12 @@ export class TailscaleHostPool {
           "no usable host when the caller's deadline passed — the run was cancelled",
         );
       }
-      await Promise.all(
-        candidates.map((s) => (!s.healthy && Date.now() >= s.retryAt ? this.probe(s) : undefined)),
-      );
+      // After sleeping for the cooldown we already waited past `retryAt`, so
+      // probe every unhealthy candidate regardless of the exact timestamp —
+      // skipping the `Date.now() >= s.retryAt` guard here avoids a 1–2 ms
+      // timer-resolution race where the setTimeout fires fractionally early and
+      // the guard falsely bails, leaving healthy=[]) → HostsUnavailableError.
+      await Promise.all(candidates.map((s) => (!s.healthy ? this.probe(s) : undefined)));
       healthy = candidates.filter((s) => s.healthy);
     }
     if (healthy.length === 0) {
