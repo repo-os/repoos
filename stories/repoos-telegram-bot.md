@@ -207,8 +207,13 @@ Telegram explicitly warns that anyone with a bot token has full control of that 
 
 ## Suggested implementation phases
 
-### Phase 1: Notifications
+The binding and authorization policy is decided in [ADR 0007](../docs/adr/0007-telegram-identity-and-authorization.md); implementation tasks should reference it rather than define parallel variants.
 
+### Phase 1: Identity, authorization, and notifications
+
+- Bind Telegram numeric user IDs to existing allowlisted RepoOS emails; never authorize by Telegram username.
+- Bind chats to a repository only through an authenticated RepoOS admin. Chat membership does not grant access.
+- Resolve each sender's current role from `auth_users` and audit authorized actions before enabling any inbound or outbound Telegram feature.
 - Add Telegram configuration and secure token storage.
 - Add project bot provisioning.
 - Add chat linking.
@@ -219,7 +224,6 @@ Telegram explicitly warns that anyone with a bot token has full control of that 
 
 - Implement `/status`, `/tasks`, `/agents`, and `/help`.
 - Add repository-guide chat.
-- Add permission checks and audit logging.
 
 ### Phase 3: Agent interaction
 
