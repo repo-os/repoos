@@ -122,6 +122,28 @@ export const useUiStore = defineStore("ui", () => {
     }
   }
 
+  const HISTORY_SHOW_DOCS_KEY = "repoos.context.historyShowDocs";
+  /** Context History tab: include `docs(NNNN):` bookkeeping commits. Off by
+   *  default so feature work stays visible (#0528). Client-local preference. */
+  const historyShowDocsCommits = ref<boolean>(
+    (() => {
+      try {
+        return localStorage.getItem(HISTORY_SHOW_DOCS_KEY) === "1";
+      } catch {
+        return false;
+      }
+    })(),
+  );
+
+  function setHistoryShowDocsCommits(value: boolean): void {
+    historyShowDocsCommits.value = value;
+    try {
+      localStorage.setItem(HISTORY_SHOW_DOCS_KEY, value ? "1" : "0");
+    } catch {
+      /* ignore quota / privacy-mode failures */
+    }
+  }
+
   const INTEGRATION_BAR_PERSIST_KEY = "repoos.integrationBar.collapsed";
   /** True when the bottom integration bar is folded to a thin strip
    *  (persisted across reloads). Shared state — the task drawer expands it
@@ -508,5 +530,7 @@ export const useUiStore = defineStore("ui", () => {
     setGlideAnimations,
     keyboardNavEnabled,
     setKeyboardNavEnabled,
+    historyShowDocsCommits,
+    setHistoryShowDocsCommits,
   };
 });
