@@ -106,7 +106,12 @@ import {
 } from "../core/git.js";
 import { sweepAndWarn } from "../core/worktree-gc.js";
 import { remoteJobCapabilities } from "./pre-review-remote-gate.js";
-import { remoteHostLimit, remoteHostUser, resolveRemoteHosts } from "../core/remote-hosts.js";
+import {
+  hostRunner,
+  remoteHostLimit,
+  remoteHostUser,
+  resolveRemoteHosts,
+} from "../core/remote-hosts.js";
 import { runBuiltInAgent, isDueForScheduledRun, builtInAgentLabel } from "./built-in-agents.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
@@ -2423,7 +2428,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           let probeOutput = "";
           const probeRes = await exec.runRemote(
             { ip: h.host, user: remoteHostUser(rv, h), keyPath },
-            prereqProbeCommand(h.os),
+            prereqProbeCommand(hostRunner(h)),
             (chunk) => {
               probeOutput += chunk;
             },

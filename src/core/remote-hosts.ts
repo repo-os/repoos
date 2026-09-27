@@ -50,6 +50,10 @@ function hostRow(raw: unknown): RemoteValidationHost | null {
   if (labels.length) out.labels = labels;
   const max = r.maxConcurrent;
   if (typeof max === "number" && Number.isInteger(max) && max >= 1) out.maxConcurrent = max;
+  // Unrecognized values fall back to the default (docker) rather than
+  // rejecting the row — a typo here shouldn't take a whole host offline.
+  if (r.runner === "native") out.runner = "native";
+  else if (r.runner === "docker") out.runner = "docker";
   return out;
 }
 
@@ -117,6 +121,13 @@ export function remoteHostUser(rv: RemoteValidationConfig, host: RemoteValidatio
 /** In-flight cap for a host: per-host → `maxConcurrent` → 1. */
 export function remoteHostLimit(rv: RemoteValidationConfig, host: RemoteValidationHost): number {
   return positiveLimit(host.maxConcurrent, positiveLimit(rv.maxConcurrent, 1));
+}
+
+/** Effective runner for a host: explicit `runner`, else "docker" (the default,
+ *  maintained path — see the field's doc comment in types.ts for why this is
+ *  kept separate from `os` rather than a job-requestable capability). */
+export function hostRunner(host: RemoteValidationHost): "docker" | "native" {
+  return host.runner === "native" ? "native" : "docker";
 }
 
 /** Every capability a host provides: its `os` plus its `labels`, lowercased. */

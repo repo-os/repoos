@@ -760,6 +760,20 @@ export interface RemoteValidationHost {
   labels?: string[];
   /** Per-host in-flight cap. Falls back to `maxConcurrent`, then 1. */
   maxConcurrent?: number;
+  /**
+   * How `validate.sh` actually runs on this host — Docker (the maintained,
+   * default path, `just setup-<host>`) or "native" (macOS only today: bun +
+   * git directly on the host, no Docker, `validate-macos.sh` /
+   * `just setup-<host>-native`). This is a host implementation detail, not a
+   * job requirement: a job requests capabilities via `os`/`labels`
+   * (`runsOn`), never `runner` — either runner variant satisfies the same
+   * `os` capability, since the result (a green build+test) is identical.
+   * Absent means "docker". Kept separate from `os` on purpose (#0521
+   * review): folding this into `os` (e.g. a "macos-native" pseudo-OS) would
+   * make `runsOn: ["macos"]` fail to match a real macOS host depending on
+   * its runner, which is exactly the capability-matching bug this avoids.
+   */
+  runner?: "docker" | "native";
 }
 
 /**

@@ -797,19 +797,31 @@ export function stepMatchesChanged(step: CheckStep, changedPaths: string[]): boo
 
 /**
  * The host capabilities a remote run of this plan needs (#0521): the union of
- * `runsOn` across every declared step. Deliberately conservative — profile
- * and changed-path selection are not applied. This is NOT because the remote
- * host runs every step: it only runs `validate.sh` (build + test) inside its
- * container; every other step, including any `runsOn`-gated one, still runs
- * locally as part of `repoos check` (#0521 review). It's conservative
+ * `runsOn` across only the steps that actually run remotely. The remote host
+ * never executes the check plan step-by-step — `validate.sh` runs the fixed
+ * sequence `bun install && bun run build && bun run test` inside its
+ * container, which is exactly the work `kind: "build"` and `kind: "tests"`
+ * steps represent. Every other step — `staleness`, `lint`, `ui-smoke`,
+ * `macos-hub-icon-transparency`, a raw custom `command` step, etc. — always
+ * runs locally as part of `repoos check`, regardless of its own `runsOn`, so
+ * its capability requirement is irrelevant to which remote host this job
+ * needs. Unioning ALL steps' `runsOn` (a prior version of this function) was
+ * a real bug, not just conservative: a project with a macOS-only local-only
+ * step (say, an Xcode-dependent gate) and only Linux remote hosts would
+ * config-error the ENTIRE remote build+test job over a capability the
+ * remote portion never needed (#0521 review).
+ *
+ * Still deliberately conservative WITHIN that scope — profile and
+ * changed-path selection are not applied to build/tests steps either,
  * because host selection happens once, up front, before any per-step
- * filtering has run — so a host must satisfy every capability the plan could
- * possibly need, not just the ones this particular invocation will exercise.
- * Empty means "any host".
+ * filtering has run. Empty means "any host".
  */
 export function planJobCapabilities(plan: CheckPlan): string[] {
   const caps = new Set<string>();
-  for (const step of plan.steps) for (const cap of step.runsOn) caps.add(cap.trim());
+  for (const step of plan.steps) {
+    if (step.kind !== "build" && step.kind !== "tests") continue;
+    for (const cap of step.runsOn) caps.add(cap.trim());
+  }
   return [...caps].filter(Boolean);
 }
 

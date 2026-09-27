@@ -19,7 +19,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RepoOSConfig } from "../../core/types.js";
 import { loadConfig } from "../../core/config.js";
-import { resolveRemoteHosts, remoteHostUser } from "../../core/remote-hosts.js";
+import { resolveRemoteHosts, remoteHostUser, hostRunner } from "../../core/remote-hosts.js";
 import { planJobCapabilities, resolveCheckPlan } from "../../core/check-plan.js";
 import {
   DEFAULT_HOST_LOCK_WAIT_SECS,
@@ -83,15 +83,34 @@ describe("host pool config parsing", () => {
         'tailscaleHost = "bee"\n' +
         'tailscaleHosts = ["bee", "linux2"]\n\n' +
         "[[remoteValidation.tailscaleHosts]]\n" +
-        'host = "mac1"\nuser = "nick"\nos = "macos"\n' +
+        'host = "mac1"\nuser = "nick"\nos = "macos"\nrunner = "native"\n' +
         'labels = ["apple-silicon"]\nmaxConcurrent = 2\n',
     );
     const cfg = loadConfig(root);
     expect(resolveRemoteHosts(cfg.remoteValidation)).toEqual([
       { host: "bee" },
       { host: "linux2" },
-      { host: "mac1", user: "nick", os: "macos", labels: ["apple-silicon"], maxConcurrent: 2 },
+      {
+        host: "mac1",
+        user: "nick",
+        os: "macos",
+        runner: "native",
+        labels: ["apple-silicon"],
+        maxConcurrent: 2,
+      },
     ]);
+  });
+
+  it("ignores an unrecognized `runner` value rather than dropping the row", () => {
+    const root = tmpRoot();
+    writeFileSync(
+      join(root, "repoos.toml"),
+      "[[remoteValidation.tailscaleHosts]]\n" + 'host = "bee"\nrunner = "podman"\n',
+    );
+    const cfg = loadConfig(root);
+    // Falls back to the default (docker) rather than rejecting the whole row
+    // over a typo'd runner value.
+    expect(resolveRemoteHosts(cfg.remoteValidation)).toEqual([{ host: "bee" }]);
   });
 
   it("merges a rich row onto a host already listed flat (attrs win, no duplicate)", () => {
@@ -121,18 +140,37 @@ describe("host pool config parsing", () => {
 // ── capability derivation from the check plan ────────────────────────────────
 
 describe("runsOn → job capabilities", () => {
-  it("unions runsOn across the plan, ignoring profile scoping", () => {
+  it("unions runsOn across build/tests steps only, ignoring profile scoping", () => {
     const plan = resolveCheckPlan({
       check: {
         steps: [
-          { name: "build", command: "bun run build" },
-          { name: "native", command: "xcodebuild", runsOn: ["macos"] },
-          { name: "contract", command: "./ci.sh", runsOn: ["macos", "apple-silicon"] },
+          { name: "build", kind: "build", runsOn: ["macos"] },
+          { name: "tests", kind: "tests", runsOn: ["macos", "apple-silicon"] },
         ],
       },
     });
     expect(plan.warnings).toEqual([]);
     expect(planJobCapabilities(plan)).toEqual(["macos", "apple-silicon"]);
+  });
+
+  it("ignores runsOn on a step the remote host never runs (#0521 review)", () => {
+    // validate.sh only ever runs `bun install && bun run build && bun run
+    // test` — a custom command step (or any non-build/tests kind) never
+    // executes remotely regardless of its own runsOn, so it must not force
+    // an unrelated capability onto the remote job. A project with a
+    // macOS-only LOCAL gate (say, an Xcode step) and only Linux remote hosts
+    // must still be able to remote-validate its build+test.
+    const plan = resolveCheckPlan({
+      check: {
+        steps: [
+          { name: "build", kind: "build" },
+          { name: "tests", kind: "tests" },
+          { name: "xcode-gate", command: "xcodebuild", runsOn: ["macos"] },
+        ],
+      },
+    });
+    expect(plan.warnings).toEqual([]);
+    expect(planJobCapabilities(plan)).toEqual([]);
   });
 
   it("is empty for a plan with no runsOn", () => {
@@ -145,7 +183,7 @@ describe("runsOn → job capabilities", () => {
     // through this — a plan needing macos must reach a mac host either way.
     expect(
       remoteJobCapabilities({
-        check: { steps: [{ name: "native", command: "xcodebuild", runsOn: ["macos"] }] },
+        check: { steps: [{ name: "build", kind: "build", runsOn: ["macos"] }] },
       } as unknown as RepoOSConfig),
     ).toEqual(["macos"]);
     expect(remoteJobCapabilities({} as RepoOSConfig)).toEqual([]);
@@ -172,7 +210,7 @@ describe("runsOn → job capabilities", () => {
         defaultStatus: "inbox",
         defaultAssignee: "ai",
         remoteValidation: { enabled: true, provider: "tailscale", tailscaleHost: "bee" },
-        check: { steps: [{ name: "native", command: "xcodebuild", runsOn: ["macos"] }] },
+        check: { steps: [{ name: "build", kind: "build", runsOn: ["macos"] }] },
       } as unknown as RepoOSConfig,
       remoteValidator: {
         validate,
@@ -880,8 +918,8 @@ describe("host-side lock (server + standalone CLI share one limit)", () => {
 // ── prerequisite command shape ───────────────────────────────────────────────
 
 describe("per-host prerequisite probe", () => {
-  it("checks docker + the artifacts-aware validate.sh on Linux hosts", () => {
-    const cmd = prereqProbeCommand("linux");
+  it("checks docker + the artifacts-aware validate.sh when runner is unset (default)", () => {
+    const cmd = prereqProbeCommand(undefined);
     expect(cmd).toContain("docker info");
     expect(cmd).toContain("/opt/repoos/validate.sh");
     expect(cmd).toContain("grep -qF '${3'");
@@ -889,14 +927,36 @@ describe("per-host prerequisite probe", () => {
     expect(cmd).not.toContain("bun not found");
   });
 
-  it("checks docker on macOS hosts too — just setup-mini is Docker-based, not native (#0521 review)", () => {
-    // A macOS host set up via `just setup-mini` gets the same Docker-based
-    // validate.sh as a Linux one (requires Docker Desktop); there is no
-    // wired-up native bun/git runner path, so probing for bun/git there
-    // fails a correctly-provisioned host and never checks what it runs.
-    const cmd = prereqProbeCommand("macos");
+  it('checks docker when runner is explicitly "docker"', () => {
+    const cmd = prereqProbeCommand("docker");
     expect(cmd).toContain("docker info");
     expect(cmd).not.toContain("bun not found");
     expect(cmd).not.toContain("git not found");
+  });
+
+  it('checks bun/git, not docker, when runner is "native" (#0521 review, both directions)', () => {
+    // Two prior versions of this got the SAME field wrong in opposite
+    // directions by branching on `os` instead of a dedicated `runner`: one
+    // checked bun/git unconditionally on macOS (fails a real Docker-based
+    // macOS host, like mini), the other checked Docker unconditionally
+    // everywhere (fails a real native macOS host, installed via
+    // `just setup-<host>-native` / validate-macos.sh). `runner` says
+    // explicitly which one a given host actually uses, independent of `os`.
+    const cmd = prereqProbeCommand("native");
+    expect(cmd).toContain("bun not found");
+    expect(cmd).toContain("git not found");
+    expect(cmd).not.toContain("docker info");
+    expect(cmd).toContain(PREREQ_OK_TOKEN);
+  });
+});
+
+describe("hostRunner", () => {
+  it('defaults to "docker" when unset', () => {
+    expect(hostRunner({ host: "bee" })).toBe("docker");
+  });
+
+  it('is "native" only when the row explicitly says so', () => {
+    expect(hostRunner({ host: "mini", runner: "native" })).toBe("native");
+    expect(hostRunner({ host: "mini", runner: "docker" })).toBe("docker");
   });
 });

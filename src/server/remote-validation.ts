@@ -50,6 +50,7 @@ import { tmpdir } from "node:os";
 import type { RepoOSConfig, RemoteValidationConfig, RemoteValidationHost } from "../core/types.js";
 import {
   describeCapabilities,
+  hostRunner,
   hostSatisfies,
   positiveLimit,
   remoteHostLimit,
@@ -373,21 +374,29 @@ export const HOST_LOCK_HEARTBEAT_TICKS = 30;
  * the host's `validate.sh` needs and that the script is an up-to-date copy
  * accepting the per-run artifacts dir as its third argument (#0520).
  *
- * `os` is accepted (and still used elsewhere for `runsOn` capability
- * routing) but does NOT change which toolchain gets probed: `just
- * setup-<host>` / `_setup-runner` installs the same Docker-based
- * `validate.sh` on every host regardless of OS — including macOS
- * (`just setup-mini` requires Docker Desktop; see the justfile) — there is
- * no wired-up native bun/git runner path. A prior version of this probe
- * checked for `bun`/`git` on a macOS host, which fails a correctly
- * Docker-provisioned macOS host and never actually verifies the toolchain
- * that host runs (#0521 review).
+ * Branches on `runner`, NOT `os` (#0521 review, twice over): `os` is a job
+ * capability ("does this host provide macos/linux for `runsOn`"), entirely
+ * orthogonal to HOW a host executes `validate.sh`. Two prior versions of
+ * this got it wrong in opposite directions — checking bun/git unconditionally
+ * on macOS (fails a real Docker-based macOS host) and checking Docker
+ * unconditionally everywhere (fails a real native macOS host) — because both
+ * conflated the two concerns into one `os` switch. `runner` says explicitly
+ * which toolchain THIS host actually uses (default "docker" — the
+ * maintained `just setup-<host>` path; "native" opts in via
+ * `just setup-<host>-native`, macOS only today), independent of its `os`.
  */
-export function prereqProbeCommand(_os?: string): string {
-  const lines = [
-    'command -v docker >/dev/null 2>&1 || { echo "docker not found on PATH"; exit 1; }',
-    'docker info >/dev/null 2>&1 || { echo "docker daemon not reachable (is docker running?)"; exit 1; }',
-  ];
+export function prereqProbeCommand(runner?: "docker" | "native"): string {
+  const lines =
+    runner === "native"
+      ? [
+          'command -v git >/dev/null 2>&1 || { echo "git not found on PATH"; exit 1; }',
+          "(command -v bun >/dev/null 2>&1 || [ -x /opt/homebrew/bin/bun ]) || " +
+            '{ echo "bun not found (install it, e.g. brew install bun)"; exit 1; }',
+        ]
+      : [
+          'command -v docker >/dev/null 2>&1 || { echo "docker not found on PATH"; exit 1; }',
+          'docker info >/dev/null 2>&1 || { echo "docker daemon not reachable (is docker running?)"; exit 1; }',
+        ];
   lines.push(
     `[ -f ${VALIDATE_SCRIPT} ] || ` +
       `{ echo "missing ${VALIDATE_SCRIPT} — run the per-host install (docs/remote-validation.md)"; exit 1; }`,
@@ -1482,7 +1491,7 @@ export class TailscaleHostPool {
     try {
       const res = await this.exec.runRemote(
         s.ssh,
-        prereqProbeCommand(s.spec.os),
+        prereqProbeCommand(hostRunner(s.spec)),
         () => {},
         this.probeTimeoutMs,
       );
