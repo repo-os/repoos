@@ -11,8 +11,9 @@ created_by: ""
 branch: ""
 cli_override: opencode
 model_override: opencode/big-pickle
+review_model_override: opencode-go/space-bunny-free
 created_at: "2026-09-27T07:32:10Z"
-updated_at: "2026-09-27T18:36:48Z"
+updated_at: "2026-09-27T18:36:58Z"
 ---
 ## Problem
 
@@ -56,3 +57,4 @@ Not in scope: the manager-bot service, its Neon/Cloudflare deployment, hosted me
 - 2026-09-27T17:33:19Z · title, body
 - 2026-09-27T18:36:45Z · cli_override, model_override
 - 2026-09-27T18:36:48Z · model_override
+- 2026-09-27T18:36:58Z · review_model_override
