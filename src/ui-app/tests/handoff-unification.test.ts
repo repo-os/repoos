@@ -412,10 +412,12 @@ describe("a failed handoff leaves the task active (#0507)", () => {
       expect(result.ok).toBe(false);
       expect(result.step).toBe("check");
       expect(result.detail).toMatch(/repoos check failed/);
-      // The task never reaches review, and the work is untouched: nothing is
-      // committed and the status is exactly where it started.
+      // The task never reaches review, and the status is exactly where it
+      // started. The work itself is already committed on the branch (#0512:
+      // the commit gate runs before the check), so a retry — or a crash before
+      // one — cannot lose it.
       expect(readStatus(fx)).toBe("active");
-      expect(gitStatus(fx.worktree)).toContain("source.txt");
+      expect(gitStatus(fx.worktree)).toBe("");
     } finally {
       process.env.PATH = oldPath;
     }

@@ -19,7 +19,7 @@ import {
   needsInputSurfaces,
 } from "../lib/needs-input-ui";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
-import DirtyMainDialog from "./DirtyMainDialog.vue";
+import DirtyCheckoutDialog from "./DirtyCheckoutDialog.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
 import CopyableNumber from "./CopyableNumber.vue";
@@ -660,9 +660,10 @@ async function runAction(): Promise<void> {
         break;
     }
   } catch (err) {
-    // A dirty-main guard (0204) pauses here: the confirmation modal is shown
-    // (files live in the store) and `busy` is reset so the card is usable.
-    if (err instanceof Error && err.name === "DirtyMainError") {
+    // A dirty-checkout guard (0204/#0512) pauses here: the confirmation modal
+    // is shown (files live in the store) and `busy` is reset so the card is
+    // usable.
+    if (err instanceof Error && err.name === "DirtyCheckoutError") {
       dirtyTask.value = props.task;
       return;
     }
@@ -672,22 +673,25 @@ async function runAction(): Promise<void> {
   }
 }
 
-/** Dirty-main confirmation (0204): the task whose close-out needs the user to
- *  decide whether to commit `main`'s dirty files before merging. */
+/** Uncommitted-changes confirmation (0204/#0512): the task whose close-out
+ *  needs the user to decide whether to commit a dirty `main` (it would abort
+ *  the merge) or a dirty task worktree (close-out would delete it) first. */
 const dirtyTask = ref<Task | null>(null);
 
-const dirtyFiles = computed(() => (dirtyTask.value ? repo.dirtyMainFor(dirtyTask.value.id) : []));
+const dirtyFiles = computed(() => (dirtyTask.value ? repo.dirtyFilesFor(dirtyTask.value.id) : []));
+const dirtyScope = computed(() =>
+  dirtyTask.value ? repo.dirtyScopeFor(dirtyTask.value.id) : ("main" as const),
+);
 
 async function confirmCommitDirty(): Promise<void> {
   const t = dirtyTask.value;
-  const files = dirtyFiles.value;
   dirtyTask.value = null;
   if (!t) return;
   busy.value = true;
   try {
     await repo.completeTask(t, { commitDirty: true });
   } catch (err) {
-    if (err instanceof Error && err.name === "DirtyMainError") {
+    if (err instanceof Error && err.name === "DirtyCheckoutError") {
       dirtyTask.value = t;
       return;
     }
@@ -698,7 +702,7 @@ async function confirmCommitDirty(): Promise<void> {
 }
 
 function cancelDirty(): void {
-  if (dirtyTask.value) repo.clearDirtyMain(dirtyTask.value.id);
+  if (dirtyTask.value) repo.clearDirtyCheckout(dirtyTask.value.id);
   dirtyTask.value = null;
 }
 
@@ -1004,9 +1008,10 @@ async function openDebuggerFromError(): Promise<void> {
   </article>
 
   <RestartTaskDialog :task="restartTask" @close="restartTask = null" />
-  <DirtyMainDialog
+  <DirtyCheckoutDialog
     :task="dirtyTask"
     :files="dirtyFiles"
+    :scope="dirtyScope"
     @commit="confirmCommitDirty"
     @cancel="cancelDirty"
   />

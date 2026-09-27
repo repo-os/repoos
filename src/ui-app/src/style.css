@@ -2448,6 +2448,28 @@
   color: var(--cyan);
   word-break: break-all;
 }
+/* What "Start clean" would discard (#0512): named, not abstract. Mirrors the
+   dirty-close-out file list so the two confirmations read the same. */
+.restart-lost {
+  margin: 0 0 10px;
+}
+.restart-lost .restart-body {
+  margin-bottom: 6px;
+}
+.restart-lost-list {
+  margin: 0;
+  padding: 8px 10px 8px 26px;
+  list-style: none;
+  max-height: 132px;
+  overflow-y: auto;
+  font-size: 11px;
+  line-height: 1.75;
+  color: var(--txt-dim);
+  background: var(--md-body-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  word-break: break-all;
+}
 .restart-actions {
   display: flex;
   gap: 8px;
