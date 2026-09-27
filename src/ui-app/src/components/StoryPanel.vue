@@ -169,6 +169,22 @@ const sortedStoryTasks = computed(() => {
 });
 
 /**
+ * #0560: the status pill wears the task's status color — the same
+ * `statusColor()` value the work board's columns read, and the same value the
+ * 7px dot on this row already uses, so dot and label can never diverge. The
+ * border is a color-mix tint of that same color rather than a hard-coded
+ * rgba, so it tracks the color; a status `statusColor` falls back for renders
+ * the fallback color without throwing.
+ */
+function taskStatusStyle(task: Task): Record<string, string> {
+  const color = statusColor(task.status);
+  return {
+    color,
+    borderColor: `color-mix(in srgb, ${color} 40%, transparent)`,
+  };
+}
+
+/**
  * The copyable deeplink for this story (#0515) — the same `CopyableNumber`
  * chip tasks and inputs lead their cards and panels with, in the same upper
  * left position, pointing at the same kind of `?param=` route. A registered
@@ -341,7 +357,7 @@ function startNewTask(): void {
               ></span>
               <span class="story-panel-task-id">#{{ task.id }}</span>
               <span class="story-panel-task-title">{{ task.title }}</span>
-              <span class="story-panel-task-status">{{
+              <span class="story-panel-task-status" :style="taskStatusStyle(task)">{{
                 config.columnLabels[task.status] ?? task.status
               }}</span>
             </button>
