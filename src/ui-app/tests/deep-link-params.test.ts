@@ -446,6 +446,9 @@ describe("settings ?setting= deep-link (#0345)", () => {
     const scroll = Element.prototype.scrollIntoView as unknown as ReturnType<typeof vi.fn>;
     expect(scroll).toHaveBeenCalledTimes(1);
     expect((scroll.mock.contexts[0] as HTMLElement).id).toBe("setting-maxActiveTasks");
+    expect(document.getElementById("setting-maxActiveTasks")?.classList.contains("flash")).toBe(
+      true,
+    );
     // After focusing, the ?setting= param is cleared but the ?tab= query is kept
     // so the active tab survives the replace (#0402).
     expect(replaceSpy).toHaveBeenCalledWith({ name: "settings", query: { tab: "general" } });
@@ -535,6 +538,29 @@ describe("settings ?setting= deep-link (#0345)", () => {
     const scroll = Element.prototype.scrollIntoView as unknown as ReturnType<typeof vi.fn>;
     expect(scroll).toHaveBeenCalledTimes(1);
     expect((scroll.mock.contexts[0] as HTMLElement).id).toBe("setting-maxActiveTasks");
+    wrapper.unmount();
+    await new Promise((r) => setTimeout(r, 100));
+  });
+
+  it("?focus= resolves after config loads when schema was empty on mount", async () => {
+    routeState.query = { focus: "maxActiveTasks" };
+    const wrapper = mount(SettingsView, { attachTo: document.body });
+    await flushPromises();
+    await new Promise((r) => setTimeout(r, 200));
+
+    const scrollBefore = (Element.prototype.scrollIntoView as unknown as ReturnType<typeof vi.fn>)
+      .mock.calls.length;
+    expect(scrollBefore).toBe(0);
+
+    await loadConfig();
+    await flushPromises();
+    await new Promise((r) => setTimeout(r, 400));
+
+    const scroll = Element.prototype.scrollIntoView as unknown as ReturnType<typeof vi.fn>;
+    expect(scroll.mock.calls.length).toBeGreaterThan(scrollBefore);
+    expect((scroll.mock.contexts[scroll.mock.calls.length - 1] as HTMLElement).id).toBe(
+      "setting-maxActiveTasks",
+    );
     wrapper.unmount();
     await new Promise((r) => setTimeout(r, 100));
   });
