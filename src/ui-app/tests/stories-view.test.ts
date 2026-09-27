@@ -206,6 +206,16 @@ describe("StoriesView sort dropdown (#0536)", () => {
     expect(STORIES_PAGE_SORT_ORDER_OPTIONS.some((o) => o.label === "Priority level")).toBe(false);
   });
 
+  it("places the sort control beside New story in the header toolbar", () => {
+    setTasks([]);
+    const wrapper = mountView();
+    const combobox = wrapper.find('[role="combobox"]');
+    const newBtn = wrapper.find(".new-btn");
+    expect(combobox.exists()).toBe(true);
+    expect(newBtn.exists()).toBe(true);
+    expect(combobox.element.parentElement).toBe(newBtn.element.parentElement);
+  });
+
   it("re-orders the list when story number sort is selected", async () => {
     setTasks([
       makeTask({ id: "0001", story: "Alpha", status: "ready", updated_at: "2026-09-09T00:00:00Z" }),

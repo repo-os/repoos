@@ -225,12 +225,12 @@ function storyNumberValue(number: string | null | undefined): number {
  * over already-derived roll-ups — uses `lastActivity` for recency and the
  * registered story `number` for numeric ordering (tag-only stories last).
  */
-export function sortStoryGroupsForPage<T extends StoryTaskLike>(
-  groups: StoryGroup<T>[],
+export function sortStoryGroupsForPage<G extends StoryGroup<StoryTaskLike>>(
+  groups: G[],
   order: StoryListSortOrder,
-  numberFor: (group: StoryGroup<T>) => string | null | undefined = (g) =>
+  numberFor: (group: G) => string | null | undefined = (g) =>
     (g as { number?: string | null }).number ?? null,
-): StoryGroup<T>[] {
+): G[] {
   const copy = [...groups];
   switch (order) {
     case "recent":

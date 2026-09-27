@@ -7,6 +7,7 @@ import { useNotificationsStore, type NotificationType } from "./notifications";
 import { describeCloseOutFailure } from "../lib/closeOutFailure";
 import { builtInRunNotice } from "../lib/builtInRunNotice";
 import { retryCountFrom } from "../lib/retryHints";
+import type { StoryListSortOrder } from "../../../core/stories.js";
 import type {
   AgentOutputEntry,
   AgentSessionStats,
@@ -265,7 +266,7 @@ export const SORT_ORDER_OPTIONS: { value: SortOrder; label: string }[] = [
 export const BOARD_SORT_ORDER_OPTIONS = SORT_ORDER_OPTIONS.filter((o) => o.value !== "status");
 
 /** Stories page list (#0536): work-board options minus priority. */
-export type StoryListSortOrder = "recent" | "taskNumberNewest" | "taskNumberOldest";
+export type { StoryListSortOrder };
 
 export const STORIES_PAGE_SORT_ORDER_OPTIONS: { value: StoryListSortOrder; label: string }[] =
   BOARD_SORT_ORDER_OPTIONS.filter((o) => o.value !== "current") as {
