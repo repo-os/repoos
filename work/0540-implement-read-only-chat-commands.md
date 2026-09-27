@@ -2,7 +2,7 @@
 id: "0540"
 title: Implement read-only chat commands
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: server
 story: RepoOS Telegram Bot
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:33:29Z"
-updated_at: "2026-09-27T15:52:47Z"
+updated_at: "2026-09-27T23:54:38Z"
 ---
 ## Problem
 
@@ -50,3 +50,4 @@ In a bound group these commands work for any authorized sender, but keep the tri
 - 2026-09-27T15:42:38Z · body
 - 2026-09-27T15:51:55Z · body
 - 2026-09-27T15:52:47Z · body
+- 2026-09-27T23:54:38Z · status inbox→ready
