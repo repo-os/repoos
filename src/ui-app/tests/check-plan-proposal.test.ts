@@ -103,6 +103,7 @@ describe("formatPlanProposalToml", () => {
             profiles: [],
             whenChanged: [],
             requires: ["go"],
+            runsOn: [],
             dependsOn: [],
           },
         ],

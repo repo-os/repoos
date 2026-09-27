@@ -108,6 +108,12 @@ export interface CheckStep {
   /** Empty means "always run", including in changed-path mode. */
   whenChanged: string[];
   requires: string[];
+  /**
+   * Host capabilities the remote runner needs to execute this step (#0521).
+   * Empty means "any remote host". The union across a plan is what routes a
+   * remote job to a host whose `os`/`labels` satisfy it.
+   */
+  runsOn: string[];
   dependsOn: string[];
 }
 
@@ -187,6 +193,8 @@ function parseStepRow(raw: unknown): CheckStepConfig | null {
   if (whenChanged) step.whenChanged = whenChanged;
   const requires = strList(r.requires);
   if (requires) step.requires = requires;
+  const runsOn = strList(r.runsOn ?? r.runs_on);
+  if (runsOn) step.runsOn = runsOn;
   const dependsOn = strList(r.dependsOn ?? r.depends_on);
   if (dependsOn) step.dependsOn = dependsOn;
   return step;
@@ -267,6 +275,7 @@ function resolveStep(row: CheckStepConfig, index: number, warnings: string[]): C
     profiles: row.profiles ?? [],
     whenChanged: row.whenChanged ?? [],
     requires: row.requires ?? [],
+    runsOn: row.runsOn ?? [],
     dependsOn: row.dependsOn ?? [],
   };
 }
@@ -312,6 +321,7 @@ export function legacyPlan(bunRunner: boolean): CheckStep[] {
     profiles: [],
     whenChanged: [],
     requires: [runner],
+    runsOn: [],
     dependsOn: [],
   };
   const lint: CheckStep = { ...fmt, name: "check-lint", kind: "lint" };
@@ -328,6 +338,7 @@ export function legacyPlan(bunRunner: boolean): CheckStep[] {
     profiles: [],
     whenChanged: [],
     requires: [],
+    runsOn: [],
     dependsOn: [],
     ...extra,
   });
@@ -454,6 +465,7 @@ export function inferPlan(markers: RepoMarkers): CheckStep[] {
       profiles: [],
       whenChanged: [],
       requires,
+      runsOn: [],
       dependsOn: [],
       ...extra,
     });
@@ -467,6 +479,7 @@ export function inferPlan(markers: RepoMarkers): CheckStep[] {
       profiles: [],
       whenChanged: [],
       requires: [],
+      runsOn: [],
       dependsOn: [],
       ...extra,
     });
@@ -554,6 +567,7 @@ export function inferPlan(markers: RepoMarkers): CheckStep[] {
     profiles: [],
     whenChanged: [],
     requires: [],
+    runsOn: [],
     dependsOn: [],
   });
   if (markers.hasPackageJson && markers.hasBunLock) {
@@ -565,6 +579,7 @@ export function inferPlan(markers: RepoMarkers): CheckStep[] {
       profiles: [],
       whenChanged: [],
       requires: ["bun"],
+      runsOn: [],
       dependsOn: [],
     });
   }
@@ -576,6 +591,7 @@ export function inferPlan(markers: RepoMarkers): CheckStep[] {
     profiles: [],
     whenChanged: [],
     requires: [],
+    runsOn: [],
     dependsOn: [],
   });
 
@@ -780,6 +796,19 @@ export function stepMatchesChanged(step: CheckStep, changedPaths: string[]): boo
 }
 
 /**
+ * The host capabilities a remote run of this plan needs (#0521): the union of
+ * `runsOn` across every declared step. Deliberately conservative — profile and
+ * changed-path selection are not applied, because the remote runner executes
+ * the whole plan in one go and must not be sent to a host that cannot run one
+ * of its steps. Empty means "any host".
+ */
+export function planJobCapabilities(plan: CheckPlan): string[] {
+  const caps = new Set<string>();
+  for (const step of plan.steps) for (const cap of step.runsOn) caps.add(cap.trim());
+  return [...caps].filter(Boolean);
+}
+
+/**
  * Names of `step.dependsOn` entries that already failed. A blocked step is
  * SKIPPED, not passed: the gate is already failing on the real cause, and
  * building or testing on top of it would only obscure that.
@@ -869,6 +898,7 @@ export function formatPlanToml(plan: CheckPlan, check?: CheckConfig): string {
     if (s.profiles.length) lines.push(`profiles = ${tomlList(s.profiles)}`);
     if (s.whenChanged.length) lines.push(`whenChanged = ${tomlList(s.whenChanged)}`);
     if (s.requires.length) lines.push(`requires = ${tomlList(s.requires)}`);
+    if (s.runsOn.length) lines.push(`runsOn = ${tomlList(s.runsOn)}`);
     if (s.dependsOn.length) lines.push(`dependsOn = ${tomlList(s.dependsOn)}`);
   }
 

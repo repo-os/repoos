@@ -1,10 +1,12 @@
 # Remote Validation Runner
 
-Written 2026-08-28. Updated 2026-09-22 to add the Tailscale provider.
+Written 2026-08-28. Updated 2026-09-22 to add the Tailscale provider, and
+2026-09-27 to pool multiple Tailscale hosts (#0521).
 Runs the expensive half of the close-out gate on a remote machine instead of
 the developer's machine. Two providers are supported: **hetzner** (disposable
-cloud VM, the original) and **tailscale** (persistent machine on your tailnet,
-runs the gate in a fresh Docker container).
+cloud VM, the original) and **tailscale** (one or more persistent machines on
+your tailnet — Linux hosts run the gate in a fresh Docker container, macOS
+hosts natively).
 
 ## Why
 
@@ -140,10 +142,24 @@ the full local test suite runs instead.
 [remoteValidation]
 enabled = true
 provider = "tailscale"
-tailscaleHost = "mybox.tail1234.ts.net"   # or 100.x.x.x
-tailscaleUser = "root"                     # default "root"
-containerImage = "repoos-ci"               # default "repoos-ci"
+tailscaleHost = "mybox.tail1234.ts.net"   # single-host shorthand (or 100.x.x.x)
+tailscaleUser = "root"                     # default SSH user (per-host user wins)
+containerImage = "repoos-ci"               # Linux hosts' Docker image
 fallbackToLocal = false
+maxConcurrent = 1                          # global per-host limit (see below)
+
+# The host pool (#0521): every machine jobs may be dispatched to.
+# Plain list — also editable in Settings → Remote validation ("Host pool"):
+tailscaleHosts = ["bee", "mac1"]
+
+# Rich form: one row per host with its own settings (merged with the list —
+# a host may appear in either place, never twice).
+[[remoteValidation.tailscaleHosts]]
+host = "mac1"
+user = "nick"          # SSH user for this host (default tailscaleUser, else root)
+os = "macos"           # capability: jobs with runsOn = ["macos"] land here
+labels = ["apple-silicon"]  # extra capabilities jobs can require
+maxConcurrent = 2      # this host's own in-flight cap (default maxConcurrent, else 1)
 ```
 
 `.env`:
@@ -152,29 +168,97 @@ fallbackToLocal = false
 REPOOS_REMOTE_SSH_KEY=/abs/path/to/private_key
 ```
 
-The key must be authorised on the tailscale host (in `~/.ssh/authorized_keys`
-for `tailscaleUser`). No Hetzner token is needed.
+The key must be authorised on every tailscale host (in `~/.ssh/authorized_keys`
+for that host's user). No Hetzner token is needed.
 
-**One-time setup on the tailnet host:** install Docker (or Podman aliased as
-`docker`), pull the `repoos-ci` image, and create the bun-cache volume:
+**One-time setup per host.** The `just` recipes are the maintained path —
+copy the scripts, install Docker (Linux) or check Docker Desktop (macOS), build
+the `repoos-ci` image, and install `validate.sh` at `/opt/repoos/validate.sh`:
 
 ```sh
-docker pull repoos-ci
-docker volume create repoos-bun-cache   # or mkdir -p /var/cache/repoos/bun
+just setup-bee                          # Linux (Arch) host
+just setup-mini                         # macOS host via Docker
+just _setup-runner <host> <arch|macos>  # any other host
 ```
 
-Runs are limited by `remoteValidation.maxConcurrent` (default **1**, Settings →
-Remote validation). The limit is a FIFO queue inside the server's single runner
-instance, so **every server-side caller shares it** — engineer handoff,
-close-out and release. A run that has to wait logs `[queued behind N other remote
-run(s) …]` in its remote-validation log and starts when a slot frees. Why one:
-two full suites on one machine cause load-induced timeouts and timing-sensitive
-test failures, and a remote failure is reported as a red gate ("fix it in the
-branch"), so contention would blame a branch that is fine. Raise it only for a
-host with headroom. A standalone `repoos check` is its own process and is **not**
-counted against the server's queue; multiple hosts are a separate problem (#0521).
-Waiting counts against the caller's own deadline (handoff has 10 minutes), so a
-long queue can time a handoff out.
+A **native** macOS host (no Docker at all) gets the native script instead, run
+on the host — it does `bun install` + `bun run build` + `bun run test` directly:
+
+```sh
+scp scripts/remote-runner/validate-macos.sh <host>:/tmp/validate.sh
+ssh <host> 'sudo mkdir -p /opt/repoos && sudo install -m 755 /tmp/validate.sh /opt/repoos/validate.sh'
+```
+
+The scripts on hosts are **copies**: after updating RepoOS re-run the setup
+above, otherwise an old `validate.sh` ignores the third (artifacts) argument —
+the per-host prerequisite check below reports exactly that.
+
+#### Dispatch, health and queueing (#0521)
+
+Each job goes to an **idle host that satisfies its requirements**; it queues
+only when *every* eligible host is at its per-host limit, in FIFO order, and a
+macOS-only waiter never blocks a Linux job. Limits are per host
+(`maxConcurrent` per host → `remoteValidation.maxConcurrent` → 1), so two jobs
+run on two hosts while a third waits. A run that has to wait logs
+`[queued behind N other remote run(s) …]` in its remote-validation log and in
+the caller's output, and the log records which host ran each job
+(`[runner user@host (os)]`).
+
+Before a host's first job it is probed over SSH: reachability, Docker (Linux)
+or the bun/git toolchain (macOS), and an **up-to-date `validate.sh` that accepts
+the artifacts dir as its third argument**. A host that fails is reported instead
+of failing jobs — its state and reason show in Settings → Remote validation
+(Hosts) and in `GET /api/remote-validation/status` (`hosts[]` with `probed`,
+`healthy`, `detail`, `inFlight`, `queued`, `lastRun`) — it is skipped while
+other hosts are healthy, and re-probed later (30 s cooldown, capped retries) so
+it rejoins the pool when it comes back. If *no* eligible host is usable the job
+fails retryably with each host's reason.
+
+#### Capability routing (`runsOn`)
+
+A `[[check.steps]]` row can declare `runsOn = ["macos"]` (any capability
+string; a host provides its `os` plus its `labels`, case-insensitive). The
+union across the whole plan is the job's requirement — deliberately not
+profile-filtered, because the remote run executes the entire plan in one go.
+A job whose requirement no host provides **never** runs in the wrong place: it
+fails immediately with `no remote host provides …` naming the configured
+hosts, or waits (with the capability in its queue line) while a capable host is
+busy. The Hetzner runner is always one Linux VM and rejects non-Linux
+capabilities the same way. Today nothing declares `runsOn` — native
+Swift/Xcode steps don't exist in the gate yet; keep them local until they do.
+
+#### Cross-process limit (the host lock)
+
+The per-host cap above lives in one server process. A standalone `repoos check`
+is another process, so the remote command itself is wrapped in a portable
+`mkdir`-based slot lock on the host (`/tmp/repoos-validate-locks/<slot>`,
+`hostLockShell` in `src/server/remote-validation.ts`) with the same slot count:
+server and CLI can never put more than the limit on one machine. A waiter
+streams `[lock] waiting for a free slot …` while it waits and gives up after
+its wait budget (the caller's deadline, else 15 min) with exit code 75, which
+the runner reports as a transient "another repoos check is already running"
+infra failure — never a red gate. Lock dirs left by a killed run are broken
+after 40 minutes (longer than any run's 25-minute timeout).
+
+#### Deadlines
+
+Waiting counts against the caller's own deadline: handoff passes its
+10-minute finalization deadline (`deadlineAt`), and a run still **queued** at
+that point cancels itself, releases its slot and fails retryably with
+`… the caller's deadline passed, so the run was cancelled and its slot
+released`. A run already executing is never interrupted mid-suite.
+
+#### Concurrency
+
+Runs are limited per host by `remoteValidation.maxConcurrent` (default **1**,
+Settings → Remote validation) with optional per-host overrides. The limit is a
+FIFO queue inside the server's single runner instance, so **every server-side
+caller shares it** — engineer handoff, close-out and release — and the host
+lock extends it across processes (above). Why one by default: two full suites
+on one machine cause load-induced timeouts and timing-sensitive test failures,
+and a remote failure is reported as a red gate ("fix it in the branch"), so
+contention would blame a branch that is fine. Raise it only for a host with
+headroom.
 
 Each run also gets its **own bundle and artifacts path** on the host
 (`~/.repoos-<task>-<id>.bundle`, `~/.repoos-artifacts/<task>-<id>/`, passed to
@@ -253,6 +337,7 @@ See `scripts/remote-runner/build-snapshot.md`. Rebuild whenever
 
 ## Future (not in the MVP)
 
-Abstract job/provider model, a worker pool, per-task autoscaling, and live log
-streaming into the browser SSE feed (today logs are a file + the failure tail,
-matching how the pipeline surfaces gate output).
+Abstract job/provider model (beyond the tailscale host pool), per-task
+autoscaling, Hetzner VM pooling (out of scope for #0521 by design), and live
+log streaming into the browser SSE feed (today logs are a file + the failure
+tail, matching how the pipeline surfaces gate output).
