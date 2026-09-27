@@ -10,13 +10,15 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:32:39Z"
-updated_at: "2026-09-27T15:52:42Z"
+updated_at: "2026-09-27T15:59:55Z"
 ---
 ## Problem
 
 Story #0003 lists "permission checks and audit logging" under Phase 2 and "rate-limit Telegram commands and agent messages" under security requirements. Both belong in Phase 1: **no message can be authorized before senders can be authorized**, and the very first notification RepoOS sends is already an act of disclosure about a repository. This task is the enforcement point every later Telegram task depends on.
 
 Identity binding alone is not enough. A binding created while someone was an `admin` must stop granting admin powers the moment they are demoted, and must stop granting anything at all the moment they are removed from the allowlist.
+
+See [ADR 0007 — Telegram identity and authorization](../docs/adr/0007-telegram-identity-and-authorization.md), accepted in [task #0529](0529-record-the-telegram-identity-and-authori.md), for the shared binding and authorization decision. This task implements its specific flow.
 
 ## The core rule: resolve the role live, never cache it
 
@@ -41,7 +43,7 @@ Note `action` is a free-text string with no enum or registry — 13 hand-written
 
 ## Denial behavior
 
-An unbound or unauthorized sender gets a **silent no-op, not an error reply.** In a group, "access denied" confirms the bot exists, confirms the repository has a Telegram integration, and spams the channel on every message from a stranger. In a private chat, one short neutral reply is acceptable; in a group, say nothing.
+An unbound or unauthorized sender gets no access-denied response. In a group, the bot silently ignores the message: an error would confirm the bot and integration are active and would spam the channel. In a private chat, one short, neutral reply is acceptable if it does not reveal whether an account is linked or which authorization check failed.
 
 ## Rate limiting
 
@@ -56,3 +58,4 @@ Reuse the exported `RateLimiter` class (`src/server/routes/auth.ts`, already use
 - 2026-09-27T15:43:17Z · body
 - 2026-09-27T15:51:51Z · body
 - 2026-09-27T15:52:42Z · body
+- 2026-09-27T15:59:55Z · body
