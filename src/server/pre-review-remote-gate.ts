@@ -1,0 +1,176 @@
+/**
+ * Remote path for the engineer pre-review gate (task #0520).
+ *
+ * When `remoteValidation.enabled`, install + build + tests run on the runner
+ * against the worktree HEAD (same git-bundle transport as close-out); the local
+ * `repoos check` then runs with `REPOOS_SKIP_TESTS=1`. See
+ * docs/remote-validation.md.
+ */
+
+import { CLOSEOUT_CHECK_ARGS } from "../core/check-plan.js";
+import type { RepoOSConfig } from "../core/types.js";
+import { runGit, uncommittedWorkFiles, workFileFilter } from "../core/git.js";
+import type { RemoteValidator } from "./remote-validation.js";
+
+/** Set on a spawned `repoos check` when a parent already ran the remote gate (#0520). */
+export const REPOOS_REMOTE_VALIDATION_DONE = "REPOOS_REMOTE_VALIDATION_DONE";
+
+export function remotePreReviewEnabled(config: RepoOSConfig): boolean {
+  return config.remoteValidation?.enabled === true;
+}
+
+/**
+ * Uncommitted task work in `worktreePath` that the remote gate would NOT test.
+ * The runner receives a `git bundle` of `HEAD`, so edits still on disk never
+ * reach it: a green remote run would describe the committed tree while the
+ * local one differs (#0512's invariant — what is tested is what is committed).
+ * Handoff commits first, so it never has any; a standalone `repoos check` on a
+ * dirty tree can, and should test the working tree locally instead.
+ *
+ * Unknown is not clean: an unreadable git status is reported as blocking.
+ */
+export async function uncommittedFilesBlockingRemoteGate(
+  worktreePath: string,
+  config: RepoOSConfig,
+): Promise<string[]> {
+  try {
+    return await uncommittedWorkFiles(worktreePath, workFileFilter(config));
+  } catch {
+    return ["(git status could not be read)"];
+  }
+}
+
+/**
+ * True when a parent gate (handoff, close-out, release) already ran remote
+ * validation. `REPOOS_SKIP_TESTS=1` counts on purpose: close-out and release set
+ * it after their own remote pass, and a user who exports it has asked for the
+ * test suite to be skipped, which the remote run would contradict.
+ */
+export function remoteValidationAlreadyAttempted(env: NodeJS.ProcessEnv): boolean {
+  return env.REPOOS_SKIP_TESTS === "1" || env[REPOOS_REMOTE_VALIDATION_DONE] === "1";
+}
+
+/**
+ * Extra env for a child `repoos check` after `runRemotePreReviewGate` ran in the
+ * parent. Prevents a second remote run; optionally skips local tests.
+ */
+export function checkEnvAfterRemoteGate(
+  outcome: RemotePreReviewOutcome | { kind: "skip" },
+): NodeJS.ProcessEnv {
+  if (outcome.kind === "skip") return {};
+  const env: NodeJS.ProcessEnv = { [REPOOS_REMOTE_VALIDATION_DONE]: "1" };
+  if (outcome.kind === "local-only" && outcome.skipTests) {
+    env.REPOOS_SKIP_TESTS = "1";
+  }
+  return env;
+}
+
+/**
+ * Whether a standalone `repoos check` may use the configured runner at all.
+ * Only the Tailscale provider: its host is a stateless machine, so a CLI run is
+ * just one more job. Hetzner runs a single warm VM whose lifecycle (provision,
+ * idle teardown, leak reconciliation) is owned by the server process and tracked
+ * in the server's `.repoos/remote-runner.json`. A CLI in a task worktree has a
+ * different root, so it loads no state, and its `deleteLeaked()` would delete the
+ * server's VM mid-run. Until the CLI can hand a run to the server, it tests
+ * locally when the provider is Hetzner.
+ */
+export function standaloneCliCanUseRemote(config: RepoOSConfig): boolean {
+  return config.remoteValidation?.provider === "tailscale";
+}
+
+/**
+ * Whether standalone `repoos check` should run the remote half (not when a parent
+ * already did, not for changed-path fast pre-review, not with `--local-tests`,
+ * not for a provider whose runner the server owns).
+ */
+export function shouldRunCliRemotePreReviewGate(
+  config: RepoOSConfig,
+  opts: { localTestsOnly?: boolean; changedRef?: string },
+  env: NodeJS.ProcessEnv,
+): boolean {
+  if (opts.changedRef?.trim()) return false;
+  return (
+    remotePreReviewEnabled(config) &&
+    standaloneCliCanUseRemote(config) &&
+    !opts.localTestsOnly &&
+    !remoteValidationAlreadyAttempted(env)
+  );
+}
+
+/**
+ * `repoos check` argv for a child process spawned by handoff, close-out, release,
+ * etc. When remote validation is enabled but the parent did not run it (release
+ * with `useForReleases = false`, close-out without a build step, …), pass
+ * `--local-tests` so the CLI does not auto-run remote again.
+ */
+export function spawnedRepoosCheckArgs(
+  config: RepoOSConfig,
+  remoteGateOutcome: RemotePreReviewOutcome | { kind: "skip" },
+): readonly string[] {
+  if (remoteGateOutcome.kind !== "skip") {
+    return CLOSEOUT_CHECK_ARGS;
+  }
+  if (remotePreReviewEnabled(config)) {
+    return ["--local-tests", ...CLOSEOUT_CHECK_ARGS];
+  }
+  return CLOSEOUT_CHECK_ARGS;
+}
+
+export type RemotePreReviewOutcome =
+  | { kind: "skip" }
+  | { kind: "local-only"; skipTests: boolean; detail?: string }
+  | { kind: "fail"; detail: string; retryable: boolean };
+
+export async function runRemotePreReviewGate(params: {
+  config: RepoOSConfig;
+  remoteValidator: RemoteValidator;
+  worktreePath: string;
+  taskId: string;
+  onChunk?: (chunk: string) => void;
+}): Promise<RemotePreReviewOutcome> {
+  const rv = params.config.remoteValidation;
+  if (!rv?.enabled) return { kind: "skip" };
+
+  const headRes = await runGit(params.worktreePath, ["rev-parse", "HEAD"], 10_000);
+  if (headRes.status !== 0) {
+    return {
+      kind: "fail",
+      retryable: true,
+      detail: "could not resolve worktree HEAD before remote validation",
+    };
+  }
+  const candidateSha = headRes.stdout.trim();
+  const remote = await params.remoteValidator.validate({
+    taskId: params.taskId,
+    worktreePath: params.worktreePath,
+    candidateSha,
+    onChunk: params.onChunk,
+  });
+  if (remote.ok) {
+    return { kind: "local-only", skipTests: true };
+  }
+  if (remote.transient && !rv.fallbackToLocal) {
+    return {
+      kind: "fail",
+      retryable: true,
+      detail:
+        `${remote.detail ?? "remote validation unavailable"} — retry once the runner is available, or set ` +
+        `remoteValidation.fallbackToLocal to run the full gate locally`,
+    };
+  }
+  if (!remote.transient) {
+    return {
+      kind: "fail",
+      retryable: false,
+      detail:
+        `remote validation failed: ${remote.detail ?? "build or test suite failed on the runner"} — ` +
+        `fix it in the feature branch and re-run the gate`,
+    };
+  }
+  return {
+    kind: "local-only",
+    skipTests: false,
+    detail: remote.detail,
+  };
+}
