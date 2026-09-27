@@ -21,9 +21,13 @@
  *
  * The result is shaped as a {@link CheckSummary} so it is a drop-in for
  * `runCloseOutCheck` in both close-out paths (done.ts, integration-
- * orchestrator.ts). Infra failures (provisioning, ssh) come back with
- * `transient: true` — the caller decides whether to fail retryably or fall
- * back to a local run (`remoteValidation.fallbackToLocal`).
+ * orchestrator.ts). Infra failures (provisioning, ssh, an unreachable host)
+ * come back with `transient: true` — the caller decides whether to fail
+ * retryably or fall back to a local run (`remoteValidation.fallbackToLocal`).
+ * A configuration/routing failure (no host provides a required capability)
+ * comes back with `transient: false, configError: true` instead: retrying
+ * cannot fix a missing host, and letting `fallbackToLocal` swallow it would
+ * run macOS-bound work on the wrong machine (#0521 review).
  *
  * Use {@link createRemoteValidator} (called by server.ts) to get the right
  * implementation for the configured provider.
@@ -64,11 +68,20 @@ const RUNNER_LABEL_KEY = "repoos-ci";
 const RUNNER_LABEL_SELECTOR = `${RUNNER_LABEL_KEY}=1`;
 const SSH_PORT = 22;
 
+/** The caller's deadline passed while the job was still queued (#0521). */
+export class QueueDeadlineError extends Error {}
+
 export interface RemoteHost {
   ip: string;
   user: string;
   /** Path to the private key. Omit to let SSH use its default resolution (agent, ~/.ssh/config). */
   keyPath?: string;
+}
+
+/** A queued acquire: its resolve, plus the deadline timer that may cancel it. */
+interface GateWaiter {
+  resolve: () => void;
+  timer?: ReturnType<typeof setTimeout>;
 }
 
 /**
@@ -81,10 +94,15 @@ export interface RemoteHost {
  *
  * A released slot is handed straight to the next waiter (the active count does
  * not dip), so a burst cannot overshoot the limit.
+ *
+ * A waiter may carry the caller's `deadlineAt` (#0521 spec item 5): when it
+ * expires the waiter is removed from the queue and rejected with
+ * {@link QueueDeadlineError} without ever holding a slot — a queued run never
+ * outlives the caller that gave up on it.
  */
 export class ConcurrencyGate {
   private active = 0;
-  private readonly waiters: Array<() => void> = [];
+  private readonly waiters: GateWaiter[] = [];
 
   constructor(readonly limit: number) {}
 
@@ -93,20 +111,47 @@ export class ConcurrencyGate {
     return this.active + this.waiters.length;
   }
 
-  async acquire(onQueued?: (ahead: number) => void): Promise<() => void> {
+  async acquire(
+    onQueued?: (ahead: number) => void,
+    opts: { deadlineAt?: number } = {},
+  ): Promise<() => void> {
     if (this.active < this.limit) {
       this.active++;
     } else {
       onQueued?.(this.pending);
-      await new Promise<void>((resolve) => this.waiters.push(resolve));
+      await new Promise<void>((resolve, reject) => {
+        if (opts.deadlineAt !== undefined && opts.deadlineAt <= Date.now()) {
+          reject(
+            new QueueDeadlineError("the caller's deadline passed before a remote slot was free"),
+          );
+          return;
+        }
+        const waiter: GateWaiter = { resolve };
+        if (opts.deadlineAt !== undefined) {
+          waiter.timer = setTimeout(() => {
+            const i = this.waiters.indexOf(waiter);
+            if (i === -1) return; // already handed a slot; the release path owns it
+            this.waiters.splice(i, 1);
+            reject(
+              new QueueDeadlineError(
+                "the caller's deadline passed while this run was queued — it was cancelled",
+              ),
+            );
+          }, opts.deadlineAt - Date.now());
+          waiter.timer.unref?.();
+        }
+        this.waiters.push(waiter);
+      });
     }
     let released = false;
     return () => {
       if (released) return;
       released = true;
       const next = this.waiters.shift();
-      if (next) next();
-      else this.active--;
+      if (next) {
+        if (next.timer) clearTimeout(next.timer);
+        next.resolve();
+      } else this.active--;
     };
   }
 }
@@ -299,8 +344,27 @@ export const PREREQ_OK_TOKEN = "REPOOS_PREREQ_OK";
 export const HOST_LOCK_TIMEOUT_EXIT = 75;
 /** Default a run waits inside the host lock before giving up (15 min). */
 export const DEFAULT_HOST_LOCK_WAIT_SECS = 900;
-/** A lock dir untouched for this long belongs to a killed run; break it. */
-export const HOST_LOCK_STALE_MINUTES = 40;
+/**
+ * A lock dir whose heartbeat stopped for this long belongs to a killed run;
+ * break it. Deliberately SHORTER than {@link DEFAULT_HOST_LOCK_WAIT_SECS}: a
+ * waiter only waits that long, so a threshold beyond the wait budget (the old
+ * 40 minutes vs a 15-minute wait) meant the next waiter timed out with a
+ * misleading "another repoos check is still running" before the orphan dir was
+ * even breakable — a wait budget can only ever recover a lock that goes stale
+ * inside it (#0521 review). What makes a short threshold safe is the
+ * heartbeat: a live holder refreshes its dir every HOST_LOCK_HEARTBEAT_SECS,
+ * so staleness now means "holder died", never "holder is merely running" —
+ * the run's 25-minute cap no longer has to fit under the stale window.
+ */
+export const HOST_LOCK_STALE_MINUTES = 10;
+/** How often a holder refreshes its lock dir while its suite runs. */
+export const HOST_LOCK_HEARTBEAT_SECS = 60;
+/**
+ * Heartbeat tick cap: an orphaned heartbeat (holder SIGKILLed, subshell
+ * survived) stops by itself after this many ticks — at the default 60 s, 30
+ * minutes, comfortably past the 25-minute run cap so no LIVE run goes quiet.
+ */
+export const HOST_LOCK_HEARTBEAT_TICKS = 30;
 
 /**
  * Per-host prerequisite check (#0521) run over ssh before a host's first job,
@@ -342,29 +406,57 @@ export function prereqProbeCommand(_os?: string): string {
  * wrapped around `validate.sh`, so a standalone `repoos check` (its own
  * process, its own in-memory gate) and the server's runner can never put two
  * full suites on one host beyond its per-host limit. `mkdir` is atomic
- * everywhere, unlike `flock(1)` which macOS doesn't ship; stale dirs left by a
- * killed run are broken after HOST_LOCK_STALE_MINUTES. The lock waits (with a
- * clear streamed line) and exits HOST_LOCK_TIMEOUT_EXIT when it runs out of
- * patience — the runner reports that as a transient "another check is running"
- * infra failure, never as a red gate.
+ * everywhere, unlike `flock(1)` which macOS doesn't ship.
+ *
+ * While the suite runs the holder HEARTBEATS its slot dir (touch every
+ * HOST_LOCK_HEARTBEAT_SECS), so a dir untouched for HOST_LOCK_STALE_MINUTES
+ * provably belongs to a killed run and is broken by the next waiter — the
+ * stale threshold can therefore sit comfortably inside the wait budget, which
+ * is what lets a waiter actually recover an orphan within one wait (#0521
+ * review: with a static 40-minute threshold and a 15-minute wait, the next
+ * waiter always gave up before the orphan was breakable).
+ *
+ * The lock waits (with a clear streamed line) and exits
+ * HOST_LOCK_TIMEOUT_EXIT when it runs out of patience — the runner reports
+ * that as a transient "another check is running" infra failure, never as a
+ * red gate.
  */
 export function hostLockShell(opts: {
   slots: number;
   waitSecs: number;
   /**
    * Lock root on the host. Deliberately HOST-GLOBAL (default
-   * `/tmp/repoos-validate-locks`), not per-repo: the cap exists because of
-   * machine load, so two different repos validated on the same host share its
-   * slots — one machine = one suite, whoever asked for it (#0521 review).
+   * `~/.repoos-validate-locks` — under the remote user's home like every
+   * other repoos scratch path, never `/tmp`/`/var/tmp`, per the #0528/#0544
+   * runner-scratch fixes), not per-repo: the cap exists because of machine
+   * load, so two different repos validated on the same host share its slots —
+   * one machine = one suite, whoever asked for it (#0521 review).
    */
   lockRoot?: string;
+  /** Stale threshold in minutes (tests shrink this). */
+  staleMinutes?: number;
+  /** Heartbeat interval in seconds (tests shrink this). */
+  heartbeatSecs?: number;
+  /** Heartbeat tick cap (tests shrink this). */
+  heartbeatTicks?: number;
   inner: string;
 }): string {
-  const root = (opts.lockRoot ?? "/tmp/repoos-validate-locks").replace(/'/g, "");
+  // `~` would NOT expand inside the single-quoted LOCKROOT assignment below,
+  // so the home-relative default is emitted as $HOME/… explicitly; any
+  // caller-provided absolute root stays single-quoted (and quote-stripped).
+  const raw = (opts.lockRoot ?? "~/.repoos-validate-locks").replace(/'/g, "");
+  const lockLine = raw.startsWith("~/")
+    ? `LOCKROOT="$HOME/${raw.slice(2).replace(/["\\$]/g, "")}"`
+    : `LOCKROOT='${raw}'`;
   const slots = Math.max(1, Math.floor(opts.slots));
   const wait = Math.max(0, Math.floor(opts.waitSecs));
+  // Floor of 1: `-mmin +0` would break even a fresh dir the moment it ages
+  // past one truncated minute, which a live holder only notices too late.
+  const stale = Math.max(1, Math.floor(opts.staleMinutes ?? HOST_LOCK_STALE_MINUTES));
+  const beat = Math.max(1, Math.floor(opts.heartbeatSecs ?? HOST_LOCK_HEARTBEAT_SECS));
+  const ticks = Math.max(1, Math.floor(opts.heartbeatTicks ?? HOST_LOCK_HEARTBEAT_TICKS));
   const script = [
-    `LOCKROOT='${root}'`,
+    lockLine,
     `SLOTS=${slots}`,
     `WAIT=${wait}`,
     'mkdir -p "$LOCKROOT" 2>/dev/null || true',
@@ -382,12 +474,37 @@ export function hostLockShell(opts: {
     `    exit ${HOST_LOCK_TIMEOUT_EXIT}`,
     "  fi",
     '  [ "$_rvwaited" -eq 0 ] && echo "[lock] waiting for a free slot on this host (up to ${WAIT}s)"',
-    `  find "$LOCKROOT" -mindepth 1 -maxdepth 1 -type d -mmin +${HOST_LOCK_STALE_MINUTES} -exec rm -rf {} + 2>/dev/null || true`,
+    // Orphan recovery: a dir (or stray file a crashed touch once left) with no
+    // heartbeat for ${stale} minutes belongs to a dead holder — break it.
+    `  find "$LOCKROOT" -mindepth 1 -maxdepth 1 -type d -mmin +${stale} -exec rm -rf {} + 2>/dev/null || true`,
+    `  find "$LOCKROOT" -mindepth 1 -maxdepth 1 -type f -mmin +${stale} -exec rm -f {} + 2>/dev/null || true`,
     "  sleep 5",
     "  _rvwaited=$((_rvwaited+5))",
     "done",
     'echo "[lock] slot $_rvslot acquired after ${_rvwaited}s"',
-    '_rvcleanup() { _rc=$?; rmdir "$LOCKROOT/$_rvslot" 2>/dev/null; exit $_rc; }',
+    // Heartbeat: refresh this slot's dir while we live, so staleness means
+    // "holder died", never "holder is slow". Stops at our pid's death (a
+    // waiter can then break the dir) or the tick cap (an orphaned heartbeat
+    // can't outlive a normal run's whole window). The `[ -d ]` guard keeps a
+    // heartbeat that lost the race with a stale-break from resurrecting the
+    // dir as a plain file that would jam `mkdir` forever.
+    "_rvpid=$$",
+    "_rvbeat() {",
+    "  _n=0",
+    `  while [ "$_n" -lt ${ticks} ] && kill -0 "$_rvpid" 2>/dev/null; do`,
+    `    sleep ${beat}`,
+    '    [ -d "$LOCKROOT/$_rvslot" ] || break',
+    '    touch "$LOCKROOT/$_rvslot" 2>/dev/null || break',
+    "    _n=$((_n+1))",
+    "  done",
+    "}",
+    // Redirect the heartbeat's own fds to /dev/null: cleanup kills the
+    // subshell mid-`sleep`, and that orphaned sleep must NOT inherit the
+    // command's stdout/stderr — doing so held the ssh (and test) pipe open
+    // for up to a full heartbeat interval after every run.
+    "_rvbeat >/dev/null 2>&1 &",
+    "_rvhb=$!",
+    '_rvcleanup() { _rc=$?; kill "$_rvhb" 2>/dev/null; rmdir "$LOCKROOT/$_rvslot" 2>/dev/null; exit $_rc; }',
     "trap _rvcleanup EXIT",
     "trap 'exit 129' HUP",
     "trap 'exit 130' INT",
@@ -651,26 +768,70 @@ export class RemoteValidationRunner implements RemoteValidator {
     };
   }
 
+  /**
+   * Configuration/routing failure → NON-retryable CheckSummary (#0521 review):
+   * no host provides a capability this job needs. Retrying without a config
+   * change cannot succeed, and letting `fallbackToLocal` swallow it would run
+   * e.g. macOS-bound work on the wrong machine instead of failing clearly.
+   */
+  private configFail(detail: string): CheckSummary {
+    this.logger?.system("error", `remote validation cannot run: ${detail}`);
+    return {
+      ok: false,
+      stage: "check",
+      transient: false,
+      configError: true,
+      detail: `remote validation cannot run: ${detail}`,
+    };
+  }
+
   async validate(opts: ValidateOptions): Promise<CheckSummary> {
     // Routing (#0521): the Hetzner runner is always one Linux/docker VM. A job
-    // requiring anything else must fail here, clearly, not run in the wrong OS.
+    // requiring anything else must fail here, clearly, not run in the wrong OS
+    // — and as a CONFIG error, never as transient infra a caller could retry
+    // away or paper over with `fallbackToLocal`.
     const unmet = (opts.capabilities ?? [])
       .map((c) => c.trim())
       .filter((c) => c && c.toLowerCase() !== "linux");
     if (unmet.length > 0) {
-      return this.infraFail(
+      return this.configFail(
         `the Hetzner runner provides only "linux" — cannot satisfy ${unmet.join(", ")}; ` +
           "configure a [[remoteValidation.tailscaleHosts]] host that provides it (docs/remote-validation.md)",
       );
     }
-    const release = await this.gate.acquire((ahead) => {
-      const note =
-        `[queued behind ${ahead} other remote run(s) — remoteValidation.maxConcurrent = ` +
-        `${this.gate.limit}; starts when a slot frees]\n`;
+    // Queue deadline (#0521 spec item 5): a run still queued when its caller
+    // gives up is cancelled and never holds a slot — the same promise the
+    // Tailscale pool's queue timer makes (this path used to ignore
+    // `deadlineAt` entirely, so a queued Hetzner run could outlive the
+    // handoff's 10-minute deadline).
+    let release: () => void;
+    try {
+      release = await this.gate.acquire(
+        (ahead) => {
+          const note =
+            `[queued behind ${ahead} other remote run(s) — remoteValidation.maxConcurrent = ` +
+            `${this.gate.limit}; starts when a slot frees]\n`;
+          this.appendLog(opts.taskId, note);
+          opts.onChunk?.(note);
+        },
+        { deadlineAt: opts.deadlineAt },
+      );
+    } catch (e) {
+      const detail = e instanceof QueueDeadlineError ? e.message : `remote slot wait failed: ${e}`;
+      const note = `[remote validation not started: ${detail}]\n`;
       this.appendLog(opts.taskId, note);
       opts.onChunk?.(note);
-    });
+      return this.infraFail(detail);
+    }
     try {
+      // Dispatch can hand over a free slot in the same tick the deadline
+      // passes — cancel here rather than start a suite nobody waits for.
+      if (opts.deadlineAt !== undefined && Date.now() >= opts.deadlineAt) {
+        return this.infraFail(
+          "the caller's deadline passed before the run could start on the Hetzner runner — " +
+            "the run was cancelled (retry once a slot is free)",
+        );
+      }
       return await this.runValidation(opts, remoteRunPaths(opts.taskId));
     } finally {
       release();
@@ -712,6 +873,14 @@ export class RemoteValidationRunner implements RemoteValidator {
       const up = await this.exec.uploadFile(host, bundlePath, remoteBundle);
       if (!up.ok)
         return this.infraFail(`scp of candidate bundle failed: ${up.detail ?? "unknown"}`);
+
+      // Provisioning + bundling can outlast the caller's deadline (#0521 spec
+      // item 5) — never start a suite for a caller that already gave up.
+      if (opts.deadlineAt !== undefined && Date.now() >= opts.deadlineAt) {
+        return this.infraFail(
+          `the caller's deadline passed before the run could start on ${host.ip} — the run was cancelled`,
+        );
+      }
 
       // 3. run build + test inside the container
       emit(`[running build + test on ${host.ip}]\n`);
@@ -962,8 +1131,6 @@ export class RemoteValidationRunner implements RemoteValidator {
 export class NoEligibleHostError extends Error {}
 /** Every eligible host failed its prerequisite/reachability probe. */
 export class HostsUnavailableError extends Error {}
-/** The caller's deadline passed while the job was still queued (#0521). */
-export class QueueDeadlineError extends Error {}
 
 /** A leased host slot: release() hands it to the next compatible waiter. */
 export interface HostSlot {
@@ -1474,6 +1641,26 @@ export class TailscaleRunner implements RemoteValidator {
     };
   }
 
+  /**
+   * Configuration/routing failure → NON-retryable CheckSummary (#0521 review).
+   * `NoEligibleHostError` means no configured host provides a capability the
+   * job requires — a misconfiguration, not transient infra: retrying cannot
+   * fix it, and with `fallbackToLocal = true` a transient summary made the
+   * pre-review gate silently run the FULL gate locally instead of failing
+   * clearly on the wrong machine. An UNREACHABLE host stays transient
+   * (`infraFail`): that genuinely can recover on its own.
+   */
+  private configFail(detail: string): CheckSummary {
+    this.logger?.system("error", `remote validation cannot run: ${detail}`);
+    return {
+      ok: false,
+      stage: "check",
+      transient: false,
+      configError: true,
+      detail: `remote validation cannot run: ${detail}`,
+    };
+  }
+
   /** Per-host pool state for the status endpoint (#0521). */
   hostStatus(): RemoteHostStatus[] {
     return this.pool.status();
@@ -1500,8 +1687,10 @@ export class TailscaleRunner implements RemoteValidator {
     };
 
     // Dispatch: an idle eligible host, or a FIFO queue that respects the
-    // caller's deadline. Failures here are pool-level (no host, host dead,
-    // deadline passed) — never a red gate.
+    // caller's deadline. Pool failures split two ways (#0521 review): a
+    // MISCONFIGURATION (no host provides what the job needs) is non-retryable
+    // so `fallbackToLocal` can't swallow it; a dead host or an expired deadline
+    // is transient infra — never a red gate.
     let slot: HostSlot;
     try {
       slot = await this.pool.acquire(capabilities, {
@@ -1511,6 +1700,7 @@ export class TailscaleRunner implements RemoteValidator {
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e);
       emit(`[remote validation not started: ${detail}]\n`);
+      if (e instanceof NoEligibleHostError) return this.configFail(detail);
       return this.infraFail(detail);
     }
 

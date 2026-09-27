@@ -12,6 +12,7 @@ import { loadConfig } from "../../core/config.js";
 import {
   ConcurrencyGate,
   PREREQ_OK_TOKEN,
+  QueueDeadlineError,
   TailscaleRunner,
   remoteConcurrencyLimit,
   remoteRunPaths,
@@ -83,6 +84,35 @@ describe("ConcurrencyGate", () => {
     expect(queuedBehind).toBe(1);
     other();
     (await next)();
+  });
+
+  it("cancels a queued acquire at its deadline and leaves the gate usable (#0521 spec 5)", async () => {
+    const gate = new ConcurrencyGate(1);
+    const first = await gate.acquire();
+    let rejected: unknown = null;
+    const queued = gate.acquire(undefined, { deadlineAt: Date.now() + 200 }).catch((e) => {
+      rejected = e;
+      return null;
+    });
+    expect(gate.pending).toBe(2);
+    expect(await queued).toBeNull();
+    expect(rejected).toBeInstanceOf(QueueDeadlineError);
+    // The cancelled waiter is GONE (never held a slot) and hands out normally.
+    expect(gate.pending).toBe(1);
+    first();
+    const next = await gate.acquire();
+    next();
+    expect(gate.pending).toBe(0);
+  });
+
+  it("rejects immediately when the deadline already passed, even while full", async () => {
+    const gate = new ConcurrencyGate(1);
+    const first = await gate.acquire();
+    await expect(gate.acquire(undefined, { deadlineAt: Date.now() - 1 })).rejects.toBeInstanceOf(
+      QueueDeadlineError,
+    );
+    expect(gate.pending).toBe(1);
+    first();
   });
 });
 

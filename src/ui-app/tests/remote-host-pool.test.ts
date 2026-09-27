@@ -6,7 +6,15 @@
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { execFileSync, spawn } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RepoOSConfig } from "../../core/types.js";
@@ -15,6 +23,8 @@ import { resolveRemoteHosts, remoteHostUser } from "../../core/remote-hosts.js";
 import { planJobCapabilities, resolveCheckPlan } from "../../core/check-plan.js";
 import {
   DEFAULT_HOST_LOCK_WAIT_SECS,
+  HOST_LOCK_HEARTBEAT_SECS,
+  HOST_LOCK_STALE_MINUTES,
   HOST_LOCK_TIMEOUT_EXIT,
   PREREQ_OK_TOKEN,
   RemoteValidationRunner,
@@ -340,7 +350,7 @@ describe("TailscaleRunner pool dispatch (#0521)", () => {
     const cmd = f.cmds["a"]![0]!;
     expect(cmd).toContain("LOCKROOT="); // cross-process host lock (#0521)
     expect(cmd).toContain("/opt/repoos/validate.sh");
-    expect(cmd).toContain("/tmp/repoos-artifacts/logtask-"); // per-run artifacts arg
+    expect(cmd).toContain("~/.repoos-artifacts/logtask-"); // per-run artifacts arg
   });
 
   it("skips an unreachable host (probe fails, detail recorded) and lands jobs on the others", async () => {
@@ -483,11 +493,16 @@ describe("capability routing (runsOn)", () => {
     expect(f.cmds.linux1).toBeUndefined();
   });
 
-  it("fails clearly when no configured host provides the capability", async () => {
+  it("fails clearly when no configured host provides the capability — as a CONFIG error, not transient infra", async () => {
     const f = poolFixture({ hosts: [{ host: "linux1" }, { host: "linux2" }] });
     const summary = await f.runner.validate(opts("0001", { capabilities: ["windows"] }));
     expect(summary.ok).toBe(false);
-    expect(summary.transient).toBe(true);
+    // Non-retryable (#0521 review): a misconfiguration must not be classified
+    // as transient, or `fallbackToLocal` would silently run the full gate on
+    // the wrong machine instead of failing clearly.
+    expect(summary.transient).toBeFalsy();
+    expect(summary.configError).toBe(true);
+    expect(summary.detail).toContain("remote validation cannot run");
     expect(summary.detail).toContain("no remote host provides windows");
     expect(summary.detail).toContain("linux1");
     expect(summary.detail).toContain("[[remoteValidation.tailscaleHosts]]");
@@ -505,7 +520,7 @@ describe("capability routing (runsOn)", () => {
     await job;
   });
 
-  it("rejects a non-linux job on the Hetzner runner with a routing hint", async () => {
+  it("rejects a non-linux job on the Hetzner runner as a CONFIG error, with a routing hint", async () => {
     const root = tmpRoot();
     const runner = new RemoteValidationRunner({
       root,
@@ -513,7 +528,11 @@ describe("capability routing (runsOn)", () => {
     } as unknown as RepoOSConfig);
     const summary = await runner.validate(opts("0001", { capabilities: ["macos"] }));
     expect(summary.ok).toBe(false);
-    expect(summary.transient).toBe(true);
+    // A routing mismatch is a misconfiguration, not transient infra (#0521
+    // review): retrying or falling back locally cannot put the job on the
+    // right OS.
+    expect(summary.transient).toBeFalsy();
+    expect(summary.configError).toBe(true);
     expect(summary.detail).toContain('provides only "linux"');
     expect(summary.detail).toContain("macos");
   });
@@ -787,6 +806,74 @@ describe("host-side lock (server + standalone CLI share one limit)", () => {
     );
     expect(again.code).toBe(0);
     expect(readFileSync(marks, "utf8").trim().split("\n")).toEqual(["start", "end", "again"]);
+  }, 30_000);
+
+  it("keeps the stale threshold inside the wait budget and well past the heartbeat (#0521 review)", () => {
+    // A waiter only ever waits DEFAULT_HOST_LOCK_WAIT_SECS, so a stale
+    // threshold beyond it (the old 40 minutes vs a 15-minute wait) meant the
+    // next waiter timed out with a misleading "another repoos check is still
+    // running" before the orphan dir was even breakable.
+    expect(HOST_LOCK_STALE_MINUTES * 60).toBeLessThan(DEFAULT_HOST_LOCK_WAIT_SECS);
+    // …and a live holder must refresh several times over within the stale
+    // window, so a merely loaded host is never mistaken for a dead one.
+    expect(HOST_LOCK_HEARTBEAT_SECS * 3).toBeLessThanOrEqual(HOST_LOCK_STALE_MINUTES * 60);
+  });
+
+  it("locks under $HOME, never /tmp (runner-scratch fixes #0528/#0544)", () => {
+    const cmd = hostLockShell({ slots: 1, waitSecs: 0, inner: "true" });
+    expect(cmd).toContain('LOCKROOT="$HOME/.repoos-validate-locks"');
+    expect(cmd).not.toContain("/tmp/repoos-validate-locks");
+  });
+
+  it("breaks an orphaned lock dir within the wait budget instead of timing out on it (#0521 review)", async () => {
+    // The shape a SIGKILLed run leaves behind: the slot dir exists but nobody
+    // heartbeats it any more. The old 40-minute threshold was longer than the
+    // 15-minute wait, so the next waiter always gave up before it could break
+    // the orphan — with the heartbeat-based threshold it recovers on its first
+    // stale sweep.
+    const root = tmpRoot();
+    const lockRoot = join(root, "locks");
+    const slot = join(lockRoot, "0");
+    mkdirSync(slot, { recursive: true });
+    execFileSync("touch", ["-t", "200001010000", slot]); // last heartbeat: 2000-01-01
+    const marks = join(root, "marks.log");
+    const res = await sh(
+      hostLockShell({
+        slots: 1,
+        waitSecs: 30,
+        lockRoot,
+        staleMinutes: 1,
+        inner: `echo ran >> "${marks}"`,
+      }),
+    );
+    expect(res.code).toBe(0);
+    expect(res.out).toContain("[lock] slot 0 acquired");
+    expect(readFileSync(marks, "utf8")).toContain("ran");
+  }, 30_000);
+
+  it("heartbeats the slot dir while the holder runs, so staleness means 'dead' not 'slow' (#0521 review)", async () => {
+    const root = tmpRoot();
+    const lockRoot = join(root, "locks");
+    const slot = join(lockRoot, "0");
+    const marks = join(root, "marks.log");
+    const run = sh(
+      hostLockShell({
+        slots: 1,
+        waitSecs: 0,
+        lockRoot,
+        heartbeatSecs: 1, // one tick per second so the test can observe it
+        inner: `echo start >> "${marks}" && sleep 5 && echo end >> "${marks}"`,
+      }),
+    );
+    const grabDeadline = Date.now() + 5_000;
+    while (Date.now() < grabDeadline && !existsSync(slot)) await tick(20);
+    expect(existsSync(slot)).toBe(true);
+    const first = statSync(slot).mtimeMs;
+    await tick(1_600); // ≥ one tick: the heartbeat must have touched the dir
+    expect(statSync(slot).mtimeMs).toBeGreaterThan(first);
+    expect((await run).code).toBe(0);
+    // Normal release still removes the dir (and kills the heartbeat).
+    expect(existsSync(slot)).toBe(false);
   }, 30_000);
 });
 

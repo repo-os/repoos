@@ -94,7 +94,12 @@ validation). When **false** (default), an unreachable runner fails **retryably**
 on handoff (the server may auto-resume the engineer) and fails `repoos check`
 with a non-zero exit. A **red** remote gate (build/test failed on the runner) is
 **non-retryable** — fix the branch and re-run. When **fallbackToLocal** is true,
-the full local test suite runs instead.
+the full local test suite runs instead. A **routing/config failure** (no host
+provides a capability the plan's `runsOn` requires) is also non-retryable, but
+its detail is `remote validation cannot run: …` pointing at the host
+configuration — and it never falls back locally even when `fallbackToLocal` is
+true, because running the job on the wrong machine is exactly the outcome
+capability routing exists to prevent.
 
 ### Result handling
 
@@ -104,6 +109,7 @@ the full local test suite runs instead.
 | --- | --- | --- | --- |
 | remote gate green | `true` | — | run local guards with `REPOOS_SKIP_TESTS=1`, then publish |
 | remote gate red (build/test failed) | `false` | `false` | **non-retryable** fail — fix in the feature branch and resubmit |
+| no host provides a required capability (`configError`) | `false` | `false` | **non-retryable** fail — `remote validation cannot run…`; fix the `remoteValidation` host config, never a local fallback |
 | runner unreachable / provisioning failed / ssh dropped / timed out | `false` | `true` | **retryable** fail (close-out: task stays in `review`; pre-review handoff: may auto-resume the engineer) — unless `remoteValidation.fallbackToLocal`, then run the full gate locally |
 
 ## VM lifecycle
@@ -240,16 +246,24 @@ profile-filtered, because the remote run executes the entire plan in one go.
 A job whose requirement no host provides **never** runs in the wrong place: it
 fails immediately with `no remote host provides …` naming the configured
 hosts, or waits (with the capability in its queue line) while a capable host is
-busy. The Hetzner runner is always one Linux VM and rejects non-Linux
-capabilities the same way. Today nothing declares `runsOn` — native
-Swift/Xcode steps don't exist in the gate yet; keep them local until they do.
+busy. That failure is **non-retryable and never falls back locally** — it is a
+configuration problem, so with `remoteValidation.fallbackToLocal = true` a
+transient classification would otherwise silently run macOS-bound work on the
+wrong machine; the gate reports it as `remote validation cannot run: …` and
+points at this config instead. (An *unreachable* eligible host is different:
+that stays transient and retryable.) The Hetzner runner is always one Linux VM
+and rejects non-Linux capabilities the same way. Today nothing declares
+`runsOn` — native Swift/Xcode steps don't exist in the gate yet; keep them
+local until they do.
 
 #### Cross-process limit (the host lock)
 
 The per-host cap above lives in one server process. A standalone `repoos check`
 is another process, so the remote command itself is wrapped in a portable
-`mkdir`-based slot lock on the host (`/tmp/repoos-validate-locks/<slot>`,
-`hostLockShell` in `src/server/remote-validation.ts`) with the same slot count:
+`mkdir`-based slot lock on the host (`~/.repoos-validate-locks/<slot>`, under
+the remote user's home like every other repoos scratch path — never
+`/tmp`/`/var/tmp`, per the #0528/#0544 runner-scratch fixes — `hostLockShell`
+in `src/server/remote-validation.ts`) with the same slot count:
 server and CLI can never put more than the limit on one machine. That lock root
 is deliberately **host-global, not per-repo** — the cap exists because of
 machine load, so two different repos validated on the same host share its
@@ -257,8 +271,13 @@ slots (one machine = one suite, whoever asked for it). A waiter
 streams `[lock] waiting for a free slot …` while it waits and gives up after
 its wait budget (the caller's deadline, else 15 min) with exit code 75, which
 the runner reports as a transient "another repoos check is already running"
-infra failure — never a red gate. Lock dirs left by a killed run are broken
-after 40 minutes (longer than any run's 25-minute timeout).
+infra failure — never a red gate. While its suite runs, a holder **heartbeats**
+its slot dir (a `touch` every minute), so a dir untouched for 10 minutes
+provably belongs to a killed run and the next waiter breaks it — the stale
+threshold sits deliberately *inside* the 15-minute wait budget so a waiter can
+actually recover an orphan within one wait (the earlier 40-minute threshold
+exceeded that budget and left waiters timing out with the misleading "another
+repoos check is still running" message before the dir was breakable).
 
 #### Deadlines
 
@@ -271,7 +290,10 @@ the race with that cancellation timer, or the deadline passed while it bundled
 and uploaded) cancels the same way instead of starting, and its host-lock wait
 budget is the caller's deadline rounded down to the lock's 5-second check step
 (`deadlineLockWaitSecs`) — a late run can never enter the lock past its
-deadline. A run already executing is never interrupted mid-suite.
+deadline. The Hetzner runner honours `deadlineAt` the same way on its own
+in-process queue: a run still queued at the deadline is cancelled without ever
+holding a slot, and provisioning that overruns it never starts a suite. A run
+already executing is never interrupted mid-suite.
 
 #### Concurrency
 
