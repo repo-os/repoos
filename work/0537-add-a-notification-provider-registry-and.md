@@ -10,12 +10,8 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:33:00Z"
-updated_at: "2026-09-27T15:51:53Z"
+updated_at: "2026-09-27T15:52:44Z"
 ---
-## Governing decision
-
-Follow [ADR 0007 — Telegram identity and authorization](../docs/adr/0007-telegram-identity-and-authorization.md) for user binding, chat binding, live role resolution, and unauthorized-sender behavior. This task implements or relies on that model; do not define a separate policy here.
-
 ## Problem
 
 Story #0003 says "Create a Telegram notification provider alongside the existing notification system." There is no existing system to sit alongside — **ntfy is a hardcoded set of free functions with no interface and no registry**, so Telegram has no seam to plug into and every call site would have to be rewritten by hand.
@@ -51,3 +47,4 @@ Two properties of the existing code must survive the refactor:
 - 2026-09-27T07:34:17Z · status inbox→ready
 - 2026-09-27T15:42:33Z · body
 - 2026-09-27T15:51:53Z · body
+- 2026-09-27T15:52:44Z · body
