@@ -2,7 +2,7 @@
 id: "0521"
 title: "Remote validation: pool multiple tailscale hosts"
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: the agent process exited with an error — open the task to see the full output
@@ -14,10 +14,10 @@ branch: feat/remote-validation-pool-multiple-tailscal
 cli_override: opencode
 model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-26T11:49:01Z"
-updated_at: "2026-09-27T05:30:41Z"
+updated_at: "2026-09-27T05:34:36Z"
 review_rounds: 2
 review_passes: 2
-dev_error_count: 1
+dev_error_count: 2
 ---
 ## Problem
 
@@ -103,3 +103,4 @@ Autoscaling, and pooling Hetzner VMs.
 - 2026-09-27T05:11:44Z · status review→active
 - 2026-09-27T05:24:34Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-09-27T05:30:41Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-09-27T05:34:36Z · status active→review
