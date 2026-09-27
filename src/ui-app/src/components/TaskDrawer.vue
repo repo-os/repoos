@@ -2105,14 +2105,12 @@ const needsInputPrimary = computed(() => {
 
 const dismissNeedsInputBusy = ref(false);
 
+// The "Dismiss" button itself is the confirmation — it's a deliberate,
+// clearly-labeled secondary action, never the default/primary one, so a
+// native browser confirm() on top of it was a redundant second prompt.
 async function dismissNeedsInputFlag(): Promise<void> {
   if (!ui.active || dismissNeedsInputBusy.value) return;
   const task = ui.active;
-  const idleActive = task.status === "active" && !repo.isRunning(task.id);
-  const message = idleActive
-    ? "Dismiss this alert? Clearing the flag will not restart work — use Restart work when you are ready."
-    : "Dismiss this alert? Only clear it if you handled this another way.";
-  if (!confirm(message)) return;
   dismissNeedsInputBusy.value = true;
   try {
     const updated = await repo.dismissNeedsInput(task.id);
