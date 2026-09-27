@@ -11,9 +11,9 @@ branch: ""
 cli_override: opencode
 model_override: opencode-go/mimo-v2.6-flash
 review_cli_override: cursor
-review_model_override: default
+review_model_override: composer-2.5
 created_at: "2026-09-27T15:54:28Z"
-updated_at: "2026-09-27T17:34:35Z"
+updated_at: "2026-09-27T17:34:37Z"
 ---
 ## Problem
 
@@ -128,3 +128,4 @@ We should add a "New Task" button to the Stories Tasks tab (at the top right). I
 - 2026-09-27T17:32:57Z · model_override
 - 2026-09-27T17:34:25Z · status inbox→ready
 - 2026-09-27T17:34:35Z · review_cli_override, review_model_override
+- 2026-09-27T17:34:37Z · review_model_override
