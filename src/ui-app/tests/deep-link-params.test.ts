@@ -20,6 +20,8 @@ import WorkView from "../src/views/WorkView.vue";
 import InputsView from "../src/views/InputsView.vue";
 import StoriesView from "../src/views/StoriesView.vue";
 import SettingsView from "../src/views/SettingsView.vue";
+import ContextView from "../src/views/ContextView.vue";
+import { useDocsStore } from "../src/stores/docs";
 import DialogContent from "../src/components/ui/dialog/content.vue";
 import DialogTitle from "../src/components/ui/dialog/title.vue";
 
@@ -470,6 +472,44 @@ describe("settings ?setting= deep-link (#0345)", () => {
     const scroll = Element.prototype.scrollIntoView as unknown as ReturnType<typeof vi.fn>;
     expect(scroll).toHaveBeenCalledTimes(1);
     expect((scroll.mock.contexts[0] as HTMLElement).id).toBe("setting-maxActiveTasks");
+    wrapper.unmount();
+  });
+});
+
+describe("context ?doc= deep-link (#0557)", () => {
+  const ctxStubs = {
+    NewDocPanel: { template: "<div />" },
+    NewSkillPanel: { template: "<div />" },
+    RepoHistoryPanel: { template: "<div />" },
+    SearchOverlay: { template: "<div />" },
+  };
+
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    currentQuery = {};
+    replaceSpy.mockClear();
+  });
+
+  it("opens the Docs tab and loads the doc named in ?doc=", async () => {
+    currentQuery = { doc: "docs/guide.md" };
+    const docs = useDocsStore();
+    docs.docs = [{ path: "docs/guide.md", title: "Guide", mtimeMs: 1 }];
+    const loadDoc = vi.spyOn(docs, "loadDoc").mockResolvedValue(undefined);
+
+    const wrapper = mount(ContextView, { global: { stubs: ctxStubs } });
+    await flushPromises();
+
+    expect(wrapper.find(".ctx-tab.on").text()).toBe("Docs");
+    expect(loadDoc).toHaveBeenCalledWith("docs/guide.md");
+    wrapper.unmount();
+  });
+
+  it("?tab=skills lands on the Skills tab", async () => {
+    currentQuery = { tab: "skills" };
+    const wrapper = mount(ContextView, { global: { stubs: ctxStubs } });
+    await flushPromises();
+
+    expect(wrapper.find(".ctx-tab.on").text()).toBe("Skills");
     wrapper.unmount();
   });
 });

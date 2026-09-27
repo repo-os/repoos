@@ -1,4 +1,11 @@
-import type { Task, ConfigField, DocMeta } from "./types";
+import type { Task, ConfigField, DocMeta, SkillMeta } from "./types";
+import {
+  resolveSettingLocation,
+  settingSearchAliases,
+  settingTabLabel,
+  type SettingLocationContext,
+  type SettingsTabId,
+} from "./settings-location.js";
 
 export interface HighlightedSnippet {
   html: string;
@@ -13,16 +20,36 @@ export type SearchResult =
       path: string;
       snippet?: string | HighlightedSnippet;
     }
-  | { kind: "setting"; title: string; subtitle: string; key: string };
+  | {
+      kind: "skill";
+      title: string;
+      subtitle: string;
+      path: string;
+      snippet?: string | HighlightedSnippet;
+    }
+  | {
+      kind: "setting";
+      title: string;
+      subtitle: string;
+      key: string;
+      tab: SettingsTabId;
+      tabLabel: string;
+      /** No `#setting-<key>` row — navigation opens repoos.toml. */
+      tomlOnly: boolean;
+    };
 
 export interface SearchSource {
   tasks: Task[];
   docs: (DocMeta & { content?: string })[];
   fields: ConfigField[];
+  settingLocation?: SettingLocationContext;
 }
 
 /** Per-kind cap so the dropdown stays bounded on large repos. */
 export const RESULT_CAP = 8;
+
+/** Context overlay shows this many rows before reporting additional matches. */
+export const CONTEXT_RESULT_DISPLAY_CAP = 200;
 
 function includes(haystack: string | null | undefined, needle: string): boolean {
   return (haystack ?? "").toLowerCase().includes(needle);
@@ -161,6 +188,89 @@ function topByScore<T>(scored: { result: T; score: number }[]): T[] {
     .map((s) => s.result);
 }
 
+function scoreDocMatches(
+  q: string,
+  terms: string[],
+  docs: (DocMeta & { content?: string })[],
+): { result: SearchResult; score: number }[] {
+  const docIdf = buildIdf(
+    docs.map((d) => `${d.title} ${d.path} ${d.content ?? ""}`.toLowerCase()),
+    terms,
+  );
+  const scoredDocs: { result: SearchResult; score: number }[] = [];
+  for (const d of docs) {
+    let match = false;
+    let snippet: HighlightedSnippet | undefined;
+    if (includes(d.title, q) || includes(d.path, q)) {
+      match = true;
+    } else if (fuzzyMatch(d.title, q) || fuzzyMatch(d.path, q)) {
+      match = true;
+    } else if (d.content && (includes(d.content, q) || fuzzyMatch(d.content, q))) {
+      match = true;
+      snippet = extractSnippet(d.content, q);
+    }
+    if (match) {
+      const score =
+        fieldScore(d.title, 4, terms, docIdf, q) +
+        fieldScore(d.path, 2, terms, docIdf, q) +
+        fieldScore(d.content, 1, terms, docIdf, q);
+      scoredDocs.push({
+        result: {
+          kind: "doc",
+          title: d.title || d.path,
+          subtitle: d.path,
+          path: d.path,
+          ...(snippet && { snippet }),
+        },
+        score,
+      });
+    }
+  }
+  return scoredDocs;
+}
+
+function scoreSkillMatches(
+  q: string,
+  terms: string[],
+  skills: (SkillMeta & { content?: string })[],
+): { result: SearchResult; score: number }[] {
+  const skillIdf = buildIdf(
+    skills.map((s) => `${s.name} ${s.description} ${s.path} ${s.content ?? ""}`.toLowerCase()),
+    terms,
+  );
+  const scored: { result: SearchResult; score: number }[] = [];
+  for (const s of skills) {
+    let match = false;
+    let snippet: HighlightedSnippet | undefined;
+    if (includes(s.name, q) || includes(s.description, q) || includes(s.path, q)) {
+      match = true;
+    } else if (fuzzyMatch(s.name, q) || fuzzyMatch(s.description, q) || fuzzyMatch(s.path, q)) {
+      match = true;
+    } else if (s.content && (includes(s.content, q) || fuzzyMatch(s.content, q))) {
+      match = true;
+      snippet = extractSnippet(s.content, q);
+    }
+    if (match) {
+      const score =
+        fieldScore(s.name, 4, terms, skillIdf, q) +
+        fieldScore(s.description, 3, terms, skillIdf, q) +
+        fieldScore(s.path, 2, terms, skillIdf, q) +
+        fieldScore(s.content, 1, terms, skillIdf, q);
+      scored.push({
+        result: {
+          kind: "skill",
+          title: s.name,
+          subtitle: s.description || s.path,
+          path: s.path,
+          ...(snippet && { snippet }),
+        },
+        score,
+      });
+    }
+  }
+  return scored;
+}
+
 export function searchAll(query: string, src: SearchSource): SearchResult[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];
@@ -200,62 +310,116 @@ export function searchAll(query: string, src: SearchSource): SearchResult[] {
   }
   const taskHits = topByScore(scoredTasks);
 
-  const docIdf = buildIdf(
-    src.docs.map((d) => `${d.title} ${d.path} ${d.content ?? ""}`.toLowerCase()),
-    terms,
-  );
-  const scoredDocs: { result: SearchResult; score: number }[] = [];
-  for (const d of src.docs) {
-    let match = false;
-    let snippet: HighlightedSnippet | undefined;
-    if (includes(d.title, q) || includes(d.path, q)) {
-      match = true;
-    } else if (fuzzyMatch(d.title, q) || fuzzyMatch(d.path, q)) {
-      match = true;
-    } else if (d.content && (includes(d.content, q) || fuzzyMatch(d.content, q))) {
-      match = true;
-      snippet = extractSnippet(d.content, q);
-    }
-    if (match) {
-      const score =
-        fieldScore(d.title, 4, terms, docIdf, q) +
-        fieldScore(d.path, 2, terms, docIdf, q) +
-        fieldScore(d.content, 1, terms, docIdf, q);
-      scoredDocs.push({
-        result: {
-          kind: "doc",
-          title: d.title || d.path,
-          subtitle: d.path,
-          path: d.path,
-          ...(snippet && { snippet }),
-        },
-        score,
-      });
-    }
-  }
-  const docHits = topByScore(scoredDocs);
+  const docHits = topByScore(scoreDocMatches(q, terms, src.docs));
 
+  const settingHits = scoreSettingFields(q, terms, src.fields, src.settingLocation);
+
+  return [...taskHits, ...docHits, ...settingHits];
+}
+
+function settingSearchResult(
+  f: ConfigField,
+  ctx: SettingLocationContext | undefined,
+): SearchResult {
+  const loc = resolveSettingLocation(f.key, f, ctx ?? { inspectorAvailable: false }) ?? {
+    tab: "toml" as const,
+    hasUiRow: false,
+  };
+  const tabLabel = settingTabLabel(loc.tab);
+  const subtitle = loc.hasUiRow
+    ? `${tabLabel} · ${f.key}`
+    : `${tabLabel} · ${f.key} · edit in repoos.toml`;
+  return {
+    kind: "setting",
+    title: f.label,
+    subtitle,
+    key: f.key,
+    tab: loc.tab,
+    tabLabel,
+    tomlOnly: !loc.hasUiRow,
+  };
+}
+
+function settingSearchCorpus(f: ConfigField): string {
+  const optionText = (f.options ?? []).map((o) => `${o.label} ${o.value}`).join(" ");
+  const aliases = settingSearchAliases(f.key);
+  return `${f.label} ${f.key} ${f.description ?? ""} ${optionText} ${aliases}`.trim();
+}
+
+function settingFieldMatches(f: ConfigField, q: string): boolean {
+  const corpus = settingSearchCorpus(f);
+  return (
+    includes(f.label, q) ||
+    includes(f.key, q) ||
+    includes(f.description, q) ||
+    includes(corpus, q) ||
+    fuzzyMatch(f.label, q) ||
+    fuzzyMatch(f.key, q) ||
+    fuzzyMatch(f.description, q) ||
+    fuzzyMatch(corpus, q)
+  );
+}
+
+function scoreSettingFields(
+  q: string,
+  terms: string[],
+  fields: ConfigField[],
+  locationCtx?: SettingLocationContext,
+): SearchResult[] {
   const settingIdf = buildIdf(
-    src.fields.map((f) => `${f.label} ${f.key}`.toLowerCase()),
+    fields.map((f) => settingSearchCorpus(f).toLowerCase()),
     terms,
   );
   const scoredSettings: { result: SearchResult; score: number }[] = [];
-  for (const f of src.fields) {
-    if (
-      includes(f.label, q) ||
-      includes(f.key, q) ||
-      fuzzyMatch(f.label, q) ||
-      fuzzyMatch(f.key, q)
-    ) {
-      const score =
-        fieldScore(f.label, 3, terms, settingIdf, q) + fieldScore(f.key, 2, terms, settingIdf, q);
-      scoredSettings.push({
-        result: { kind: "setting", title: f.label, subtitle: f.key, key: f.key },
-        score,
-      });
-    }
+  for (const f of fields) {
+    if (!settingFieldMatches(f, q)) continue;
+    const corpus = settingSearchCorpus(f);
+    const score =
+      fieldScore(f.label, 3, terms, settingIdf, q) +
+      fieldScore(f.key, 2, terms, settingIdf, q) +
+      fieldScore(f.description, 1, terms, settingIdf, q) +
+      fieldScore(corpus, 1, terms, settingIdf, q);
+    scoredSettings.push({
+      result: settingSearchResult(f, locationCtx),
+      score,
+    });
   }
-  const settingHits = topByScore(scoredSettings);
+  return topByScore(scoredSettings);
+}
 
-  return [...taskHits, ...docHits, ...settingHits];
+export interface SettingsSearchSource {
+  fields: ConfigField[];
+  location: SettingLocationContext;
+}
+
+/** Settings-only search (same matcher and cap as the global bar). */
+export function searchSettings(query: string, src: SettingsSearchSource): SearchResult[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const terms = tokenizeQuery(q);
+  return scoreSettingFields(q, terms, src.fields, src.location);
+}
+
+export interface ContextSearchSource {
+  docs: (DocMeta & { content?: string })[];
+  skills: (SkillMeta & { content?: string })[];
+}
+
+export interface ContextSearchOutput {
+  results: SearchResult[];
+  totalMatches: number;
+}
+
+/** Docs and installed skills only — uncapped up to CONTEXT_RESULT_DISPLAY_CAP. */
+export function searchContext(query: string, src: ContextSearchSource): ContextSearchOutput {
+  const q = query.trim().toLowerCase();
+  if (!q) return { results: [], totalMatches: 0 };
+  const terms = tokenizeQuery(q);
+  const scored = [
+    ...scoreDocMatches(q, terms, src.docs),
+    ...scoreSkillMatches(q, terms, src.skills),
+  ].sort((a, b) => b.score - a.score);
+  const totalMatches = scored.length;
+  const results = scored.slice(0, CONTEXT_RESULT_DISPLAY_CAP).map((s) => s.result);
+  return { results, totalMatches };
 }
