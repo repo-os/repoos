@@ -89,6 +89,21 @@ pick from live discovery rather than a hardcoded list. A model of `default`
 uses whatever the CLI itself defaults to, except for GitHub Copilot: it means
 **Auto · Efficiency**, the lowest-cost Auto tier.
 
+### Codex engineering permissions
+
+Managed Codex engineering runs and follow-ups use
+`--dangerously-bypass-approvals-and-sandbox`. This removes the OS sandbox and
+approval prompts so unattended builds and browser checks can run. In particular,
+macOS WebKit can abort during application registration in the workspace-write
+sandbox even when networking is enabled.
+
+Commands run with your user's normal access, including access outside the task
+worktree. A worktree separates Git changes; it is not a security boundary. Use
+this mode for trusted projects and task prompts, and review changes before
+landing them. Read-only/advisory Codex roles retain their existing permissions.
+Existing running turns keep their launch permissions; the change applies to new
+engineering turns and resumed follow-ups after the server loads the new build.
+
 ### GitHub Copilot CLI
 
 RepoOS offers Copilot's three Auto tiers: **Auto · Efficiency** (the default),

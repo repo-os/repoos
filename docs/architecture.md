@@ -234,6 +234,15 @@ looks unrelated. This happened three times on 2026-09-18: Codex's sandbox
 blocked localhost binds (#0406), Copilot's narrow allowlist omitted commands
 needed by the task (#0412), and Qwen was launched without approvals turned off.
 
+Managed Codex engineering turns now bypass approvals and the OS sandbox, like
+the other unattended drivers. This also avoids macOS WebKit aborting during app
+registration inside workspace-write. The worktree is a Git isolation mechanism,
+not a security boundary; commands have the user's normal host access. Advisory
+Codex roles retain their existing permissions. This is an explicit exception to
+ADR-0005: normal agent-driven browser testing needs host application services,
+and the current runner has no narrow server-owned browser-check request. See
+`user-docs/agents.md` for the permission tradeoff.
+
 Two guards now exist, both in `src/server/agents.ts`:
 
 - `engineerPermissionGaps(cli, args)` declares each driver's permission model
