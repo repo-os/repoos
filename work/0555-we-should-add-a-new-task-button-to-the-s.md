@@ -2,7 +2,7 @@
 id: "0555"
 title: Add a New task button to the Story panel Tasks tab that presets the story
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: ui
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 cli_override: opencode
 model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-27T15:54:28Z"
-updated_at: "2026-09-27T17:32:57Z"
+updated_at: "2026-09-27T17:34:25Z"
 ---
 ## Problem
 
@@ -124,3 +124,4 @@ We should add a "New Task" button to the Stories Tasks tab (at the top right). I
 - 2026-09-27T17:28:47Z · status draft→inbox
 - 2026-09-27T17:32:54Z · cli_override, model_override
 - 2026-09-27T17:32:57Z · model_override
+- 2026-09-27T17:34:25Z · status inbox→ready
