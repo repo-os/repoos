@@ -2,7 +2,7 @@
 id: "0534"
 title: Authorize every Telegram message against a live role and audit it
 type: feature
-status: active
+status: review
 priority: p1
 area: server
 story: RepoOS Telegram Bot
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/authorize-every-telegram-message-against
 created_at: "2026-09-27T07:32:39Z"
-updated_at: "2026-09-27T23:18:50Z"
+updated_at: "2026-09-27T23:45:04Z"
 ---
 id: "0534"
 title: Authorize every Telegram message against a live role and audit it
@@ -74,3 +74,4 @@ Reuse the exported `RateLimiter` class (`src/server/routes/auth.ts`, already use
 - 2026-09-27T15:59:55Z · body
 - 2026-09-27T16:08:28Z · body
 - 2026-09-27T23:18:50Z · status ready→active, branch
+- 2026-09-27T23:45:04Z · status active→review
