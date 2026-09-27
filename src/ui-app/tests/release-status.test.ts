@@ -22,6 +22,13 @@ vi.mock("../../server/agents.js", async () => {
 const roots: string[] = [];
 afterEach(() => roots.splice(0).forEach((root) => rmSync(root, { recursive: true, force: true })));
 
+function initGitRepo(root: string): void {
+  execFileSync("git", ["init", "-q"], { cwd: root });
+  execFileSync("git", ["config", "user.email", "test@example.com"], { cwd: root });
+  execFileSync("git", ["config", "user.name", "Test"], { cwd: root });
+  execFileSync("git", ["commit", "--allow-empty", "-qm", "init"], { cwd: root });
+}
+
 function config(): RepoOSConfig {
   const root = mkdtempSync(join(tmpdir(), "repoos-release-ui-"));
   roots.push(root);
@@ -195,12 +202,15 @@ describe("git-tag release status", () => {
       ...config(),
       remoteValidation: { enabled: true, useForReleases: true },
     };
+    initGitRepo(cfg.root);
     const calls: string[] = [];
     const runner: ReleaseCommandRunner = async (command, args, _cwd, _timeout, env) => {
       calls.push([command, ...args].join(" "));
       if (command !== "git") {
-        if (command === process.execPath && args.some((a) => a.endsWith("check")))
+        if (command === process.execPath && args.some((a) => a.endsWith("check"))) {
           expect(env?.["REPOOS_SKIP_TESTS"]).toBe("1");
+          expect(env?.["REPOOS_REMOTE_VALIDATION_DONE"]).toBe("1");
+        }
         return { code: 0, stdout: "check passed", stderr: "" };
       }
       if (["add", "commit", "push"].includes(args[0]) || (args[0] === "tag" && args[1] === "-a")) {
@@ -216,7 +226,6 @@ describe("git-tag release status", () => {
     };
     const result = await cutNewRelease(cfg, "1.2.4", "v1.2.4", runner, undefined, remoteValidator);
     expect(result.ok).toBe(true);
-    expect(calls.some((c) => c === "git rev-parse HEAD")).toBe(true);
   });
 
   it("does not call the remote runner when useForReleases is unset", async () => {
@@ -224,9 +233,15 @@ describe("git-tag release status", () => {
       ...config(),
       remoteValidation: { enabled: true, useForReleases: false },
     };
+    initGitRepo(cfg.root);
     let called = false;
     const runner: ReleaseCommandRunner = async (command, args) => {
-      if (command !== "git") return { code: 0, stdout: "check passed", stderr: "" };
+      if (command !== "git") {
+        if (command === process.execPath && args.some((a) => a.endsWith("check"))) {
+          expect(args).toContain("--local-tests");
+        }
+        return { code: 0, stdout: "check passed", stderr: "" };
+      }
       if (["add", "commit", "push"].includes(args[0]) || (args[0] === "tag" && args[1] === "-a")) {
         return { code: 0, stdout: "", stderr: "" };
       }
@@ -251,6 +266,7 @@ describe("git-tag release status", () => {
       ...config(),
       remoteValidation: { enabled: true, useForReleases: true },
     };
+    initGitRepo(cfg.root);
     const runner: ReleaseCommandRunner = async (command, args) => {
       if (command !== "git") return { code: 0, stdout: "check passed", stderr: "" };
       if (["add", "commit", "push"].includes(args[0]) || (args[0] === "tag" && args[1] === "-a")) {
@@ -279,12 +295,15 @@ describe("git-tag release status", () => {
       ...config(),
       remoteValidation: { enabled: true, useForReleases: true, fallbackToLocal: true },
     };
+    initGitRepo(cfg.root);
     const calls: string[] = [];
     const runner: ReleaseCommandRunner = async (command, args, _cwd, _timeout, env) => {
       calls.push([command, ...args].join(" "));
       if (command !== "git") {
-        if (command === process.execPath && args.some((a) => a.endsWith("check")))
+        if (command === process.execPath && args.some((a) => a.endsWith("check"))) {
           expect(env?.["REPOOS_SKIP_TESTS"]).toBeUndefined();
+          expect(env?.["REPOOS_REMOTE_VALIDATION_DONE"]).toBe("1");
+        }
         return { code: 0, stdout: "check passed", stderr: "" };
       }
       if (["add", "commit", "push"].includes(args[0]) || (args[0] === "tag" && args[1] === "-a")) {
@@ -305,7 +324,6 @@ describe("git-tag release status", () => {
     };
     const result = await cutNewRelease(cfg, "1.2.4", "v1.2.4", runner, undefined, remoteValidator);
     expect(result.ok).toBe(true);
-    expect(calls.some((c) => c === "git rev-parse HEAD")).toBe(true);
   });
 });
 

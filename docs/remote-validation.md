@@ -23,30 +23,76 @@ UI smoke test) stay local — they are fast and not the resource problem.
 
 ## What runs where
 
-| Step | MVP location |
-| --- | --- |
-| merge candidate ← feature branch | local (`integration-orchestrator.ts`) |
-| `bun run build` (conflict-free tree + fresh `dist/`) | local |
-| `bun install` + `bun run build` + `bun run test` | **remote VM** |
-| build staleness / lockfile / CSS / theme / bare-require guards | local (`repoos check` with `REPOOS_SKIP_TESTS=1`) |
-| UI smoke test (Playwright/webkit) | local |
+| Step | Pre-review (handoff / `repoos check`) | Close-out (MTD) | Release |
+| --- | --- | --- | --- |
+| merge candidate ← feature branch | — (not merged yet) | local (`integration-orchestrator.ts`) | — |
+| `bun run build` (conflict-free tree + fresh `dist/`) | — | local | local |
+| `bun install` + `bun run build` + `bun run test` | **remote runner** (worktree `HEAD`) | **remote runner** (merged candidate `HEAD`) | **remote runner** only when `remoteValidation.useForReleases = true`, else local |
+| build staleness / lockfile / CSS / theme / bare-require guards | local (`repoos check` with `REPOOS_SKIP_TESTS=1`) | same | same |
+| UI smoke test (Playwright/webkit) | local | local | local |
 
-`REPOOS_SKIP_TESTS=1` (see `src/commands/check.ts`) is what the close-out sets
-on the local `repoos check` after a remote pass so its Tests step is skipped.
-Standalone `repoos check` from the CLI never sets it — the CLI gate is unchanged.
+`REPOOS_SKIP_TESTS=1` (see `src/commands/check.ts`) is what both paths set on the
+local `repoos check` after a remote pass so its Tests step is skipped.
+`REPOOS_REMOTE_VALIDATION_DONE=1` is set when a parent already ran the remote
+gate (including `fallbackToLocal` fallback) so a spawned `repoos check` does not
+run it again. Server-spawned checks also pass `--local-tests` when remote is
+enabled but that path opted out (e.g. release with `useForReleases = false`,
+close-out without a build step). With `remoteValidation.enabled`, standalone
+`repoos check` runs the remote half first unless you pass `--local-tests`, use
+`--changed` / `REPOOS_CHECK_CHANGED` (fast local pre-review only), or either env
+var is already set. The remote bundle is **`git bundle create … HEAD`**, so only
+committed work reaches the runner, and local tests are skipped after a green
+remote pass. What is tested must be what is committed (#0512), which the two
+entry points guarantee differently:
 
-## The two hook points
+- **Handoff** commits the worktree first (the commit gate runs before the check),
+  so the sha the runner tests already contains everything the agent wrote.
+- **Standalone `repoos check`** uses the remote gate only with the **Tailscale**
+  provider. Hetzner's single warm VM is owned by the server process (its state
+  lives in the server's `.repoos/remote-runner.json`); a CLI in a task worktree
+  has a different root, so its leak reconciliation would delete the server's VM
+  mid-run. With Hetzner the CLI runs the full local gate and says so; handoff and
+  close-out still use the runner.
+- **Standalone `repoos check`** on a tree with uncommitted work does not use the
+  remote gate: it prints which files are uncommitted and runs the full local gate
+  on the working tree instead. An unreadable git status counts as dirty.
 
-Both close-out paths call the runner in place of the local test run:
+`REPOOS_SKIP_TESTS=1` counts as "remote already ran" on purpose: close-out and
+release set it after their own remote pass, and a user who exports it has asked
+for the test suite to be skipped. A failed handoff remote gate is recorded as a
+check run (Debug tab), and a failed CLI run awaits runner teardown before exiting
+so it cannot leak a warm VM. Repos with remote validation off behave as before.
 
-- **`src/server/integration-orchestrator.ts` `validateCandidate`** — the live
-  path (since #0118). After the local `bun run build`, if
-  `config.remoteValidation.enabled` and a `RemoteValidator` was injected, it
-  calls `remoteValidator.validate({ taskId, worktreePath, candidateSha })`, then
-  runs the local guards-only `check`.
-- **`src/server/done.ts` `completeTask`** — the legacy single-shot path (dead
-  code, tests only — see its header comment). Not wired to the runner; if it is
-  ever revived, inject a `steps.check` that calls `remoteValidator.validate`.
+## Hook points
+
+The pre-review, close-out and release gates share `runRemotePreReviewGate` (`src/server/pre-review-remote-gate.ts`); the legacy single-shot path does not:
+
+- **Pre-review** — engineer handoff finalization (`src/server/handoff.ts`) and
+  `repoos check` when `remoteValidation.enabled` (task #0520). Bundles the task
+  worktree at `HEAD`, runs install + build + test on the runner, then local
+  guards with `REPOOS_SKIP_TESTS=1`. Logs land in
+  `.repoos/logs/remote-validation/<taskId>.log` (task id, or `pre-review` for a
+  bare CLI run).
+- **Close-out** — **`src/server/integration-orchestrator.ts` `validateCandidate`**
+  (since #0118). After the local `bun run build` on the merged candidate, same
+  remote + local-guards sequence as pre-review.
+- **Release** — `src/server/release.ts`. Same remote + local-guards sequence, but
+  only when `remoteValidation.useForReleases = true` (off by default: a release is
+  watched live and the provisioning delay reads as a regression). Otherwise the
+  release runs the full local gate and passes `--local-tests` so the CLI does not
+  auto-run remote.
+- **`src/server/done.ts` `completeTask`** — legacy single-shot path (dead code,
+  tests only). Not wired to the runner; if revived, inject remote validation the
+  same way.
+
+### Pre-review unreachable-runner policy
+
+Same as close-out: `remoteValidation.fallbackToLocal` (Settings → Remote
+validation). When **false** (default), an unreachable runner fails **retryably**
+on handoff (the server may auto-resume the engineer) and fails `repoos check`
+with a non-zero exit. A **red** remote gate (build/test failed on the runner) is
+**non-retryable** — fix the branch and re-run. When **fallbackToLocal** is true,
+the full local test suite runs instead.
 
 ### Result handling
 
@@ -56,7 +102,7 @@ Both close-out paths call the runner in place of the local test run:
 | --- | --- | --- | --- |
 | remote gate green | `true` | — | run local guards with `REPOOS_SKIP_TESTS=1`, then publish |
 | remote gate red (build/test failed) | `false` | `false` | **non-retryable** fail — fix in the feature branch and resubmit |
-| runner unreachable / provisioning failed / ssh dropped / timed out | `false` | `true` | **retryable** fail, task stays in `review` (resume from the check step) — unless `remoteValidation.fallbackToLocal`, then run the full gate locally |
+| runner unreachable / provisioning failed / ssh dropped / timed out | `false` | `true` | **retryable** fail (close-out: task stays in `review`; pre-review handoff: may auto-resume the engineer) — unless `remoteValidation.fallbackToLocal`, then run the full gate locally |
 
 ## VM lifecycle
 
@@ -117,8 +163,27 @@ docker pull repoos-ci
 docker volume create repoos-bun-cache   # or mkdir -p /var/cache/repoos/bun
 ```
 
-Concurrent close-outs queue on a single tailnet machine (no autoscaling). That
-is usually fine for solo/small-team use.
+Runs are limited by `remoteValidation.maxConcurrent` (default **1**, Settings →
+Remote validation). The limit is a FIFO queue inside the server's single runner
+instance, so **every server-side caller shares it** — engineer handoff,
+close-out and release. A run that has to wait logs `[queued behind N other remote
+run(s) …]` in its remote-validation log and starts when a slot frees. Why one:
+two full suites on one machine cause load-induced timeouts and timing-sensitive
+test failures, and a remote failure is reported as a red gate ("fix it in the
+branch"), so contention would blame a branch that is fine. Raise it only for a
+host with headroom. A standalone `repoos check` is its own process and is **not**
+counted against the server's queue; multiple hosts are a separate problem (#0521).
+Waiting counts against the caller's own deadline (handoff has 10 minutes), so a
+long queue can time a handoff out.
+
+Each run also gets its **own bundle and artifacts path** on the host
+(`/tmp/repoos-<task>-<id>.bundle`, `/tmp/repoos-artifacts/<task>-<id>/`, passed to
+`validate.sh` as its third argument) so overlapping runs never delete each other's
+logs; artifact dirs older than a day are pruned. The scripts on the host are
+copies: after updating RepoOS run `just setup-<host>` again, otherwise an old
+`validate.sh` ignores the third argument, keeps using the shared
+`/tmp/repoos-artifacts`, and the per-run log download finds nothing (the verdict
+is unaffected).
 
 ### Hetzner provider (original)
 

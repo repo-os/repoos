@@ -194,8 +194,8 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
           <label style="display: flex; flex-direction: column; gap: 2px">
             Fall back to local on infra failure
             <span class="tunnel-help" style="margin: 0">
-              Off (recommended): if the runner is unreachable the task stays in review for retry.
-              On: run the full gate locally instead.
+              Off (recommended): unreachable runner fails retryably (close-out stays in review;
+              pre-review handoff may auto-resume the engineer). On: run the full local gate instead.
             </span>
           </label>
           <Switch

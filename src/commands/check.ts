@@ -50,6 +50,15 @@ import {
   type StepStatus,
 } from "../core/check-runner.js";
 import { writeCheckRun } from "../core/check-results-store.js";
+import { Logger } from "../core/logger.js";
+import { createRemoteValidator } from "../server/remote-validation.js";
+import {
+  runRemotePreReviewGate,
+  standaloneCliCanUseRemote,
+  remoteValidationAlreadyAttempted,
+  uncommittedFilesBlockingRemoteGate,
+  shouldRunCliRemotePreReviewGate,
+} from "../server/pre-review-remote-gate.js";
 
 /**
  * Split a CSS selector list on top-level commas (respecting parentheses,
@@ -743,13 +752,12 @@ export function themeContrastOffenders(css: string, config: ThemeContrastConfig)
  * actually be affected). Unset for a standalone `repoos check` — that path
  * is the full definition-of-done gate and must never narrow coverage.
  *
- * Only the two per-branch pre-merge checks set this: the engineer's own
- * self-check before requesting handoff, and the server's handoff-finalize
- * re-verification (both re-checking the SAME isolated branch, just diffed
- * against its own base). The close-out gate that validates the actual merge
- * onto main (integration-orchestrator.ts's validateCandidate) deliberately
- * never sets it — that check is about interaction with whatever else has
- * landed on main since, which a per-branch diff can't see.
+ * Set after a remote validation pass (close-out, pre-review handoff, or
+ * `repoos check` when `remoteValidation.enabled`) so the local gate skips only
+ * the Tests step. Per-branch pre-merge checks also set `REPOOS_CHECK_CHANGED`
+ * (engineer self-check and handoff re-verification). Close-out's merge-gate
+ * check deliberately never sets `REPOOS_CHECK_CHANGED` — that gate validates
+ * interaction with whatever else has landed on main since.
  */
 export function changedTestRef(env: NodeJS.ProcessEnv): string | undefined {
   const ref = env.REPOOS_CHECK_CHANGED;
@@ -828,6 +836,8 @@ export interface CheckOptions {
   changed?: string;
   /** Print the resolved plan as `[[check.steps]]` TOML and exit 0. */
   printPlan?: boolean;
+  /** Skip the remote runner even when `remoteValidation.enabled` (#0520). */
+  localTestsOnly?: boolean;
 }
 
 /** Parse `repoos check` flags. Unknown flags are ignored, never fatal. */
@@ -838,6 +848,7 @@ export function parseCheckArgs(argv: string[] = []): CheckOptions {
     if (a === "--profile" || a === "-p") opts.profile = argv[++i];
     else if (a === "--changed") opts.changed = argv[++i];
     else if (a === "--print-plan") opts.printPlan = true;
+    else if (a === "--local-tests") opts.localTestsOnly = true;
   }
   return opts;
 }
@@ -1568,6 +1579,114 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
           "(fast pre-review pass — close-out still runs the full plan)",
       ),
     );
+  }
+
+  if (
+    cfg.remoteValidation?.enabled &&
+    !standaloneCliCanUseRemote(cfg) &&
+    !changedRef &&
+    !opts.localTestsOnly &&
+    !remoteValidationAlreadyAttempted(process.env)
+  ) {
+    console.log(
+      c.dim(
+        "  · remote validation: the Hetzner runner is owned by the server, so a standalone " +
+          "`repoos check` runs the full local gate (handoff and close-out still use the runner)",
+      ),
+    );
+  }
+  let runRemoteGate = shouldRunCliRemotePreReviewGate(cfg, { ...opts, changedRef }, process.env);
+  if (runRemoteGate) {
+    // The runner tests a bundle of HEAD. Uncommitted work would be skipped by it
+    // and then unverified locally (tests are skipped after a remote pass), so
+    // test the working tree locally instead and say why.
+    const uncommitted = await uncommittedFilesBlockingRemoteGate(repoRoot, cfg);
+    if (uncommitted.length > 0) {
+      runRemoteGate = false;
+      const shown = uncommitted.slice(0, 5).join(", ");
+      console.log(
+        c.yellow(
+          `  ⚠ uncommitted changes (${shown}${uncommitted.length > 5 ? ", …" : ""}) — the remote ` +
+            "gate tests committed HEAD only, so running the full local gate on the working tree instead\n",
+        ),
+      );
+    }
+  }
+  // The plan never runs when the remote gate fails, so the normal end-of-run
+  // record is never written: persist the failure for the Checks surface too,
+  // like a local failure and like the handoff path (fail-soft).
+  const persistRemoteFailure = (detail: string, output: string, startedAt: Date): void => {
+    const finishedAt = new Date();
+    const durationMs = finishedAt.getTime() - startedAt.getTime();
+    writeCheckRun(
+      repoRoot,
+      {
+        profile,
+        source: plan.source,
+        changedRef,
+        startedAt: startedAt.toISOString(),
+        finishedAt: finishedAt.toISOString(),
+        durationMs,
+        passed: false,
+        results: [
+          {
+            name: "remote-validation",
+            status: "failed",
+            durationMs,
+            output: output || undefined,
+            detail,
+            required: true,
+          },
+        ],
+      },
+      cfg.cacheDir,
+    );
+  };
+  if (runRemoteGate) {
+    heading("Remote validation");
+    const logger = new Logger({ root: repoRoot });
+    let remoteValidator;
+    try {
+      remoteValidator = createRemoteValidator(cfg, logger);
+    } catch (e) {
+      const msg = `remote validation init failed: ${(e as Error).message}`;
+      if (!cfg.remoteValidation?.fallbackToLocal) {
+        console.log(c.red(`\n  ✗ ${msg}\n`));
+        persistRemoteFailure(msg, "", new Date());
+        process.exit(1);
+      }
+      console.log(c.yellow(`  ⚠ ${msg} — running the full local gate\n`));
+    }
+    if (remoteValidator) {
+      const taskId = process.env.REPOOS_TASK_ID?.trim() || "pre-review";
+      const remoteStartedAt = new Date();
+      let remoteOutput = "";
+      const gate = await runRemotePreReviewGate({
+        config: cfg,
+        remoteValidator,
+        worktreePath: repoRoot,
+        taskId,
+        onChunk: (chunk) => {
+          remoteOutput += chunk;
+          process.stdout.write(chunk);
+        },
+      });
+      // Await the teardown: the failure path below exits the process, and an
+      // un-awaited async runner delete would be cut off mid-request, leaking a
+      // warm VM that no idle timer survives the exit to reap.
+      await remoteValidator.dispose().catch(() => {});
+      if (gate.kind === "fail") {
+        console.log(c.red(`\n  ✗ ${gate.detail}\n`));
+        persistRemoteFailure(gate.detail, remoteOutput, remoteStartedAt);
+        process.exit(1);
+      }
+      if (gate.kind === "local-only" && gate.skipTests) {
+        process.env.REPOOS_SKIP_TESTS = "1";
+        console.log(c.green("  ✔ remote gate passed — running local guards only\n"));
+      } else if (gate.kind === "local-only") {
+        console.log(c.yellow("  ⚠ remote unavailable — running the full local gate\n"));
+      }
+    }
   }
 
   const runStartedAt = new Date();

@@ -793,6 +793,7 @@ machine. Enabling it sends repo contents to a third-party host.
 | `remoteValidation.sshKeyName` | string | unset | yes | Name of the SSH key registered in the Hetzner project. |
 | `remoteValidation.idleShutdownMinutes` | number | `8` | yes | How long a warm server stays alive after a job so queued jobs reuse it. |
 | `remoteValidation.maxServerLifetimeMinutes` | number | `120` | yes | Hard cost stop-loss: any runner older than this is force-deleted. Minimum `10`. |
+| `remoteValidation.maxConcurrent` | select (1–8) | `1` | yes | How many remote validation runs may execute at once; extra runs wait in a queue. Two full test suites on one machine cause load-induced timeouts that show up as a failed gate. Covers handoff, close-out and release in the server; a standalone `repoos check` is its own process. |
 | `remoteValidation.fallbackToLocal` | boolean | `false` | yes | When the runner is unreachable, run the full gate locally instead of keeping the task in review for retry. |
 | `remoteValidation.useForReleases` | boolean | `false` | yes | Also validate release cuts on the runner. Off by default because a release is watched live. |
 The `HETZNER_API_TOKEN` and `REPOOS_REMOTE_SSH_KEY` credentials are
