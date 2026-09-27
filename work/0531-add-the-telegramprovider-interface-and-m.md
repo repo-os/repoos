@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-27T20:37:24Z"
+review_passes: 1
 id: "0531"
 title: Add the local Telegram adapter and Bring Your Own Bot Token support
 type: feature
@@ -13,7 +15,6 @@ cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 review_model_override: opencode-go/space-bunny-free
 created_at: "2026-09-27T07:32:10Z"
-updated_at: "2026-09-27T20:35:25Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -65,3 +66,4 @@ Not in scope: the manager-bot service, its Neon/Cloudflare deployment, hosted me
 - 2026-09-27T18:39:45Z · model_override
 - 2026-09-27T18:39:49Z · needs_input
 - 2026-09-27T20:35:25Z · status active→review
+
