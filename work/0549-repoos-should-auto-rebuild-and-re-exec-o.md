@@ -2,7 +2,7 @@
 id: "0549"
 title: "repoos should auto-rebuild-and-re-exec on stale dist/, not just warn"
 type: feature
-status: active
+status: review
 priority: p2
 area: cli
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/repoos-should-auto-rebuild-and-re-exec-o
 cli_override: codex
 model_override: gpt-6-sol
 created_at: "2026-09-27T13:20:14Z"
-updated_at: "2026-09-27T13:31:58Z"
+updated_at: "2026-09-27T13:58:33Z"
 ---
 ## Problem
 
@@ -108,3 +108,4 @@ Apply the identical shape to build staleness, in the CLI entrypoint
 - 2026-09-27T13:31:55Z · model_override
 - 2026-09-27T13:31:57Z · status inbox→ready
 - 2026-09-27T13:31:58Z · status ready→active, branch
+- 2026-09-27T13:58:33Z · status active→review
