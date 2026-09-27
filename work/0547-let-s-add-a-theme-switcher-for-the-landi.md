@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-27T12:24:46Z"
-review_passes: 2
 id: "0547"
 title: Add a gruvbox theme switcher to the landing page
 type: feature
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-a-gruvbox-theme-switcher-to-the-land
 created_at: "2026-09-27T11:55:28Z"
+updated_at: "2026-09-27T12:42:03Z"
+review_passes: 2
 review_rounds: 1
 ---
 ## Problem
@@ -42,6 +42,11 @@ with taste rather than a brochure.
   light.
 - Keyboard reachable, labelled for screen readers, usable in the collapsed
   mobile nav.
+- Shareable links: `?theme=` and `?appearance=` (alias `?mode=`) set the design
+  theme and light/dark on first load — e.g. `repoos.org/?theme=gruvbox&appearance=light`.
+  Valid design ids include `classic`, `gruvbox`, and any future theme id once its
+  CSS exists (`catppuccin`, `ayu`, …). URL params beat `localStorage` for that
+  load, then persist so a reload without the query keeps the choice.
 
 ## Acceptance criteria
 
@@ -81,6 +86,11 @@ with taste rather than a brochure.
       app's theme-contrast guard, which must still pass unchanged for the app's
       own themes.
 - [ ] `landing/README.md` documents the switcher and the two-axis model.
+- [ ] Query params `theme` and `appearance` (`mode` alias) resolve in the
+      pre-paint script with the same rules as `landing/src/theme-resolve.ts`
+      (keep both in sync). Invalid values are ignored per axis. Using the nav
+      switcher updates the query string via `history.replaceState` so the
+      address bar reflects a shareable link.
 
 ## Notes for AI
 
@@ -95,6 +105,8 @@ Files to touch:
   `toggleTheme` becomes the switcher; persist and restore.
 - `landing/index.html` — the pre-paint resolver and the `theme-color` content
   per combination.
+- `landing/src/theme-resolve.ts` — shared parse/apply/persist/URL helpers used
+  by the Vue app; boot script in `index.html` mirrors this file.
 
 Constraints:
 
@@ -137,7 +149,8 @@ Assumptions (the prompt did not specify these):
 ## Scope
 
 In: the gruvbox design theme for the landing page in both appearances, the
-switcher control, persistence, and the pre-paint / `theme-color` handling.
+switcher control, persistence, pre-paint / `theme-color` handling, and shareable
+`?theme=` / `?appearance=` URLs (forward-compatible with future design themes).
 
 Deferred:
 
@@ -167,4 +180,4 @@ Let's add a theme switcher for the landing page and the first additional theme s
 - 2026-09-27T12:16:54Z · status active→review
 - 2026-09-27T12:19:03Z · status review→active
 - 2026-09-27T12:22:34Z · status active→review
-
+- 2026-09-27T12:42:03Z · body
