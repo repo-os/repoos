@@ -2,7 +2,7 @@
 id: "0529"
 title: Record the Telegram identity and authorization model
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: check-failed-after-retries
 priority: p1
@@ -14,8 +14,7 @@ branch: feat/record-the-telegram-identity-and-authori
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-27T07:31:53Z"
-updated_at: "2026-09-27T15:36:04Z"
-check_retry_count: 2
+updated_at: "2026-09-27T15:39:20Z"
 last_check_failure: "[object Object]"
 ---
 ## Problem
@@ -79,3 +78,4 @@ error: script "build" exited with code 137
 [validate] gate exit 137 — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally
 - 2026-09-27T15:29:05Z · watchdog: escalated to needs_input · check-failed-after-retries · check failed after 2 automatic retries · remote validation failed (exit 137) — + pinia@4.0.2 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
 - 2026-09-27T15:36:04Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-09-27T15:39:20Z · status active→review
