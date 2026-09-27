@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-27T14:17:31Z"
+review_passes: 1
 id: "0546"
 title: "The needs-input banner gives misleading/no feedback: Dismiss can be silently undone, Review again looks like a no-op"
 type: bug
@@ -11,7 +13,6 @@ branch: feat/the-needs-input-banner-gives-misleading-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-27T10:25:52Z"
-updated_at: "2026-09-27T14:12:33Z"
 handoff_signal_retry_count: 2
 ---
 id: "0546"
@@ -154,3 +155,4 @@ nothing.
 - 2026-09-27T14:09:57Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-09-27T14:09:57Z · status review→active
 - 2026-09-27T14:12:33Z · status active→review
+
