@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/add-a-settings-scoped-search-that-jumps-
 review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-27T13:23:12Z"
-updated_at: "2026-09-27T14:11:48Z"
+updated_at: "2026-09-27T14:15:11Z"
 review_passes: 3
 review_rounds: 2
 ---
