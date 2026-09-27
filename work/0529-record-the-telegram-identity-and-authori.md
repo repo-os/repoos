@@ -3,6 +3,8 @@ id: "0529"
 title: Record the Telegram identity and authorization model
 type: feature
 status: active
+needs_input: true
+needs_input_reason: check-failed-after-retries
 priority: p1
 area: docs
 story: RepoOS Telegram Bot
@@ -12,7 +14,9 @@ branch: feat/record-the-telegram-identity-and-authori
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-27T07:31:53Z"
-updated_at: "2026-09-27T15:13:51Z"
+updated_at: "2026-09-27T15:36:04Z"
+check_retry_count: 2
+last_check_failure: "[object Object]"
 ---
 ## Problem
 
@@ -53,3 +57,25 @@ Consequences to write down explicitly, because each is a security decision:
 - 2026-09-27T15:13:43Z · cli_override
 - 2026-09-27T15:13:46Z · model_override
 - 2026-09-27T15:13:51Z · status ready→active, branch
+- 2026-09-27T15:23:52Z · handoff failed · check failed after 2 automatic retries · remote validation failed (exit 137) — + pinia@4.0.2
++ radix-vue@1.9.17
++ shiki@4.4.3
++ tailwind-merge@3.6.0
++ tailwindcss@4.3.3
++ typescript@5.9.3
++ vite@8.2.0
++ vitest@4.1.10
++ vue@3.5.40
++ vue-router@5.2.0
++ vue-tsc@3.3.9
+422 packages installed [6.04s]
+$ bun scripts/build.mjs
+$ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs
+$ vue-tsc --noEmit -p src/ui-app/tsconfig.json && vite build --config src/ui-app/vite.config.ts
+/usr/bin/bash: line 1:    40 Killed                  vue-tsc --noEmit -p src/ui-app/tsconfig.json
+error: script "build:ui" exited with code 137
+error: script "build:raw" exited with code 137
+error: script "build" exited with code 137
+[validate] gate exit 137 — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally
+- 2026-09-27T15:29:05Z · watchdog: escalated to needs_input · check-failed-after-retries · check failed after 2 automatic retries · remote validation failed (exit 137) — + pinia@4.0.2 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-09-27T15:36:04Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
