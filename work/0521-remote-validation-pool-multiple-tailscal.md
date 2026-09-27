@@ -2,7 +2,7 @@
 id: "0521"
 title: "Remote validation: pool multiple tailscale hosts"
 type: feature
-status: active
+status: review
 priority: p3
 area: core
 assigned_to: ai
@@ -12,7 +12,7 @@ model_override: cursor-grok-4.6-medium
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-09-26T11:49:01Z"
-updated_at: "2026-09-27T22:40:43Z"
+updated_at: "2026-09-27T22:43:31Z"
 review_passes: 13
 review_rounds: 2
 dev_error_count: 2
@@ -166,3 +166,4 @@ error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-09-27T22:40:42Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) —  ❯ tests/system-resources.test.ts:88:43 · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
 - 2026-09-27T22:40:43Z · status review→active
+- 2026-09-27T22:43:31Z · status active→review
