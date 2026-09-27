@@ -188,8 +188,9 @@
 }
 
 [data-ui-theme="gruvbox"] .panel {
+  background: var(--panel-solid);
   border-radius: 8px;
-  backdrop-filter: blur(3px) saturate(1.05);
+  backdrop-filter: none;
   box-shadow:
     inset 0 1px 0 var(--bevel-hi),
     inset 0 -1px 0 var(--bevel-lo);
@@ -557,7 +558,6 @@ body {
 }
 
 .theme-controls {
-  display: inline-flex;
   align-items: center;
   gap: 6px;
 }
@@ -631,7 +631,7 @@ body {
   color: var(--txt);
   background: var(--chip-bg);
 }
-.theme-picker-option[aria-current="true"] {
+.theme-picker-option[aria-checked="true"] {
   color: var(--cyan);
   background: var(--cyan-dim);
 }
