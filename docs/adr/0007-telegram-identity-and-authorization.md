@@ -48,11 +48,12 @@ This keeps `auth_users` the single source of truth and Telegram a second
 transport onto existing identities, not a parallel permission system. The
 enforcement task is [#0534](../../work/0534-authorize-every-telegram-message-against.md).
 
-Unbound or unauthorized senders never receive an "access denied" response. In
-a group, they produce a silent no-op: an error would reveal that the bot and
-integration are active and clutter the channel. In a private chat, one short,
-neutral reply is acceptable; it must not reveal whether the bot is connected,
-whether an account is linked, or which authorization check failed.
+Unbound or unauthorized senders produce a silent no-op in every chat. They
+never receive an "access denied" response or any other reply: even a neutral
+private-chat response confirms that the bot is active, while group replies
+also clutter the channel. Authorization behavior therefore does not reveal
+whether the bot is connected, whether an account is linked, or which check
+failed.
 
 No `auth_audit_log` schema change is needed. Telegram actions have a bound,
 allowlisted email for `actorEmail`, which is already email-typed. System-
