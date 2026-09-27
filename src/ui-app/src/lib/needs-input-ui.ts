@@ -24,6 +24,7 @@ export const NEEDS_INPUT_STATUS_LABELS: Record<string, string> = {
   "check-failed-after-retries": "Checks failed after retries",
   "cto-escalation": "Agent asked a question",
   "watchdog-stuck": "No agent running",
+  underspecified: "Doesn't look fully fleshed out",
   questions: "Agent asked a question",
 };
 
@@ -34,6 +35,8 @@ export const NEEDS_INPUT_BANNER_LABELS: Record<string, string> = {
   "check-failed-after-retries": "Checks failed after automatic retries.",
   "cto-escalation": "The CTO agent flagged this for a human decision.",
   "watchdog-stuck": "The task went quiet with no agent running.",
+  underspecified:
+    "This task doesn't look fully fleshed out yet — probably the PM agent didn't finish writing it.",
   questions: "The agent is waiting on your answer before it can continue.",
 };
 
@@ -49,10 +52,12 @@ export const NEEDS_INPUT_SUGGESTION_LABELS: Record<string, string> = {
   "watchdog-stuck":
     "On a review task, use Review again. On an active task, restart work when no agent is running.",
   "cto-escalation": "Open the PM tab and send a reply — the flag clears when your message is sent.",
+  underspecified:
+    "Send it to the PM agent to flesh it out, or write the missing sections yourself.",
   questions: "Answer the questions below or reply in the PM tab so the agent can continue.",
 };
 
-export type NeedsInputPrimaryActionKind = "restart" | "review" | "answer";
+export type NeedsInputPrimaryActionKind = "restart" | "review" | "answer" | "send-pm";
 
 export interface NeedsInputPrimaryAction {
   kind: NeedsInputPrimaryActionKind;
@@ -78,6 +83,11 @@ const RESTART_ACTION: NeedsInputPrimaryAction = {
 const PM_REPLY_ACTION: NeedsInputPrimaryAction = {
   kind: "answer",
   label: "Reply in PM (clears when sent)",
+};
+
+const SEND_TO_PM_ACTION: NeedsInputPrimaryAction = {
+  kind: "send-pm",
+  label: "Send to PM (fleshes this out)",
 };
 
 function canRestartWork(ctx: NeedsInputActionContext): boolean {
@@ -139,6 +149,8 @@ export function needsInputPrimaryAction(
     case "cto-escalation":
     case "questions":
       return PM_REPLY_ACTION;
+    case "underspecified":
+      return SEND_TO_PM_ACTION;
     default:
       return null;
   }
