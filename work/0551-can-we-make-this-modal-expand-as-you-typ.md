@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-27T14:46:37Z"
+review_passes: 1
 id: "0551"
 title: Let long prompts auto-grow the composer textarea
 type: feature
@@ -11,7 +13,6 @@ branch: feat/let-long-prompts-auto-grow-the-composer-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-27T14:05:52Z"
-updated_at: "2026-09-27T14:44:15Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -108,3 +109,4 @@ Can we make this modal expand as you type text larger than the text area? or if 
 - 2026-09-27T14:40:07Z · status ready→active
 - 2026-09-27T14:41:30Z · note: Implemented bounded auto-grow for the task, story, and input freeform composer textareas; empty height stays at the existing 230px minimum and growth caps at 45vh/420px.
 - 2026-09-27T14:44:15Z · status active→review
+
