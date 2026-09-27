@@ -14,18 +14,29 @@
  * loop (the token was revoked) and surfaces the failure once. A update whose
  * payload cannot be normalized is acknowledged (offset advanced) and logged,
  * never re-tried forever — one malformed update must not poison the pointer.
+ *
+ * Live gating: the loop holds `enabled()` (the `[telegram] enabled` master
+ * switch, read live) and pauses — makes no Telegram calls — while it is
+ * false, resuming within a tick when the switch returns. A transport is
+ * therefore inert whenever the integration is disabled, including at boot
+ * (the boot resume starts the loop regardless and relies on this gate, so a
+ * later Settings flip needs no restart).
  */
 import { DEFAULT_ALLOWED_UPDATES, TelegramApiError, type TelegramApiClient } from "./api.js";
 
 export interface TelegramPollingOptions {
   api: TelegramApiClient;
-  /** Receives every raw update; the provider normalizes (shared with webhook). */
-  onRaw: (raw: unknown) => void;
+  /** Receives every raw update and resolves when delivery has settled. */
+  onRaw: (raw: unknown) => unknown | Promise<unknown>;
   /** Pointer persistence (kept across restarts in the connection record). */
   readPointer: () => number | null;
   writePointer: (lastUpdateId: number) => void;
   /** Seconds a single getUpdates call blocks for work (1–50; default 25). */
   pollTimeoutSeconds?: number;
+  /** Live integration gate; false pauses the loop without tearing it down. */
+  enabled?: () => boolean;
+  /** Override for the paused re-check interval (tests shrink it). */
+  pausedCheckMs?: number;
   /** Error callback: receives an already-redacted string. */
   onError?: (message: string) => void;
 }
@@ -39,17 +50,36 @@ const INITIAL_BACKOFF_MS = 1_000;
  * while staying responsive.
  */
 const IDLE_AFTER_BATCH_MS = 500;
+/** How often a paused loop re-checks the integration gate. */
+const PAUSED_CHECK_MS = 1_000;
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    if (signal?.aborted) {
+      resolve();
+      return;
+    }
+    const timer = setTimeout(finish, ms);
+    function finish(): void {
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }
+    function onAbort(): void {
+      finish();
+    }
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
 }
 
 export class TelegramPolling {
   private readonly api: TelegramApiClient;
-  private readonly onRaw: (raw: unknown) => void;
+  private readonly onRaw: (raw: unknown) => unknown | Promise<unknown>;
   private readonly readPointer: () => number | null;
   private readonly writePointer: (lastUpdateId: number) => void;
   private readonly pollTimeoutSeconds: number;
+  private readonly enabled: () => boolean;
+  private readonly pausedCheckMs: number;
   private readonly onError?: (message: string) => void;
 
   private running = false;
@@ -57,6 +87,8 @@ export class TelegramPolling {
   private loopPromise: Promise<void> | null = null;
   /** Serialized loop marker so start() after a race cannot double-run. */
   private starting = false;
+  /** Aborts the in-flight getUpdates + pauses promptly on stop(). */
+  private controller: AbortController | null = null;
 
   constructor(options: TelegramPollingOptions) {
     this.api = options.api;
@@ -64,6 +96,8 @@ export class TelegramPolling {
     this.readPointer = options.readPointer;
     this.writePointer = options.writePointer;
     this.pollTimeoutSeconds = Math.min(50, Math.max(1, options.pollTimeoutSeconds ?? 25));
+    this.enabled = options.enabled ?? (() => true);
+    this.pausedCheckMs = Math.max(1, options.pausedCheckMs ?? PAUSED_CHECK_MS);
     this.onError = options.onError;
   }
 
@@ -78,19 +112,39 @@ export class TelegramPolling {
     this.starting = true;
     this.stopped = false;
     this.running = true;
+    this.controller = new AbortController();
     this.loopPromise = this.run().finally(() => {
       this.starting = false;
       this.running = false;
+      this.controller = null;
       this.loopPromise = null;
     });
   }
 
-  /** Stop the loop and wait for the in-flight request to settle. */
-  async stop(): Promise<void> {
+  /**
+   * Stop the loop promptly: aborts an in-flight getUpdates (which would
+   * otherwise hold the stop for up to the full poll timeout) and wakes any
+   * backoff/pause sleep, so callers never wait out a 25s request.
+   */
+  stop(): Promise<void> {
     this.stopped = true;
     this.running = false;
-    if (this.loopPromise) await this.loopPromise.catch(() => undefined);
-    this.loopPromise = null;
+    const controller = this.controller;
+    if (controller && !controller.signal.aborted) {
+      try {
+        controller.abort();
+      } catch {
+        /* abort is local; nothing to handle */
+      }
+    }
+    if (this.loopPromise) return this.loopPromise.catch(() => undefined);
+    return Promise.resolve();
+  }
+
+  private paused(): boolean {
+    // A paused loop keeps running (and its pointer) — it just makes no
+    // Telegram calls until the integration gate returns true.
+    return !this.enabled();
   }
 
   private async run(): Promise<void> {
@@ -99,6 +153,7 @@ export class TelegramPolling {
       const info = await this.api.getWebhookInfo();
       if (info.url) await this.api.deleteWebhook(false);
     } catch (e) {
+      if (this.stopped || !this.running) return;
       // Non-fatal: maybe it was already cleared (url arrives empty), but a
       // 401 means the token is dead — stop the loop rather than spin.
       this.reportError(e, "polling start");
@@ -110,12 +165,22 @@ export class TelegramPolling {
 
     let backoffMs = 0;
     while (this.running) {
+      if (this.paused()) {
+        await sleep(this.pausedCheckMs, this.controller?.signal);
+        continue;
+      }
       try {
+        const pointerBefore = this.readPointer();
         const batched = await this.pollOnce();
         backoffMs = 0;
-        // Empty batch: brief idle before the next long-poll attempt.
-        if (batched.length === 0) {
-          await sleep(IDLE_AFTER_BATCH_MS);
+        // Idle between batches that make no pointer progress — an empty
+        // response, or one whose ids are all at/below the offset we already
+        // held (a non-advancing server must not turn this loop into a hot
+        // spin that delivers the same updates at full speed).
+        const maxId = batched.length ? Math.max(...batched) : null;
+        const madeProgress = maxId !== null && maxId > (pointerBefore ?? Number.NEGATIVE_INFINITY);
+        if (!madeProgress) {
+          await sleep(IDLE_AFTER_BATCH_MS, this.controller?.signal);
         }
       } catch (e) {
         if (this.stopped || !this.running) return;
@@ -124,7 +189,7 @@ export class TelegramPolling {
           return;
         }
         this.reportError(e, "polling");
-        await sleep(backoffMs || INITIAL_BACKOFF_MS);
+        await sleep(backoffMs || INITIAL_BACKOFF_MS, this.controller?.signal);
         backoffMs = Math.min(backoffMs ? backoffMs * 2 : INITIAL_BACKOFF_MS, MAX_BACKOFF_MS);
       }
     }
@@ -132,20 +197,28 @@ export class TelegramPolling {
 
   /**
    * One request → deliver raws through the provider → advance the pointer.
+   * The pointer moves only after every delivery in the batch has settled, so
+   * a crash mid-batch (or a delivery rejection) leaves the update for
+   * Telegram to redeliver — at-least-once intake, never a silent drop.
    * Also usable directly by tests and by anyone wanting single-step polling.
    * Returns the update ids consumed (empty when Telegram had nothing new).
    */
   async pollOnce(): Promise<number[]> {
     const offset = this.readPointer();
-    const raws = await this.api.getUpdates({
-      timeoutSeconds: this.pollTimeoutSeconds,
-      allowedUpdates: DEFAULT_ALLOWED_UPDATES,
-      ...(offset && offset > 0 ? { offset: offset + 1 } : {}),
-    });
+    const raws = await this.api.getUpdates(
+      {
+        timeoutSeconds: this.pollTimeoutSeconds,
+        allowedUpdates: DEFAULT_ALLOWED_UPDATES,
+        ...(offset && offset > 0 ? { offset: offset + 1 } : {}),
+      },
+      // stop() aborts the in-flight long poll instead of waiting it out.
+      this.controller?.signal ?? undefined,
+    );
     const consumed: number[] = [];
     for (const raw of raws ?? []) {
-      // Delivery goes through the provider so both transports share normalization.
-      this.onRaw(raw);
+      // Delivery awaits the provider's normalization + handler so the pointer
+      // never publishes what the consumer has not yet settled.
+      await this.onRaw(raw);
       const id = (raw as { update_id?: unknown } | null)?.update_id;
       if (typeof id === "number" && Number.isFinite(id)) consumed.push(id);
     }

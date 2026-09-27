@@ -741,7 +741,7 @@ provisioningUrl = ""
 
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
-| `telegram.enabled` | boolean | `false` | yes | Master switch for the Telegram integration (connection surfaces, notifications, commands). The bot itself is connected from the Settings connection panel by an administrator — a project bot token pasted server-side (Bring Your Own Bot Token) or, once deployed, managed provisioning. The token is stored encrypted on this machine; it never appears in this file or in any browser response. See [Telegram](/telegram). |
+| `telegram.enabled` | boolean | `false` | yes | Master switch for the Telegram integration (connection surfaces, notifications, commands). While off, connection-management API calls are refused and any armed polling loop pauses its Telegram traffic — no Telegram surface is active. The bot itself is connected from the Settings connection panel by an administrator — a project bot token pasted server-side (Bring Your Own Bot Token) or, once deployed, managed provisioning. The token is stored encrypted on this machine; it never appears in this file or in any browser response. See [Telegram](/telegram). |
 | `telegram.provisioningUrl` | string | `""` | yes | Base URL of the official managed-provisioning service (#0559). Empty means managed provisioning is "not configured" and is reported as such; Bring Your Own Bot Token works without it. This key is deliberately TOML-only (no Settings control) — see the exception note below. |
 
 **Deliberate exception:** `telegram.provisioningUrl` is advanced/internal

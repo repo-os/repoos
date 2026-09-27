@@ -67,7 +67,32 @@ cannot tell which transport delivered an update. `setTransport({mode})`
 switches live: `polling` clears any webhook then starts the loop (the loop
 also clears a stray webhook at start), `webhook` stops polling and calls
 `setWebhook` with a generated secret token, `off` stops polling and deletes
-the webhook.
+the webhook. A connection starts with transport `off` — nothing polls until
+an operator picks a transport.
+
+**Boot resume.** After the server binds, `resumeTelegramTransports(config)`
+(`src/server/telegram/index.ts`, called from `startServer`) re-arms the loop
+when the stored transport is `polling` and the credential is readable; a 401
+credential instead surfaces through `status()` without arming anything. The
+loop gates on the live `[telegram] enabled` switch: while disabled it makes
+no Telegram calls (paused at a 1s check interval) and resumes on its own when
+the switch returns, so the toggle applies without a restart in both
+directions. Webhook mode needs no boot action — Telegram delivers on its own
+once #0532's route exists.
+
+**Reconnect semantics.** `connectByBotToken` compares `getMe().id` with the
+stored bot. A different bot resets the connection record's transport, webhook
+secret, profile overrides, and polling pointer (update ids are per-bot); the
+same bot keeps them, and any running loop is restarted so it holds the fresh
+token's API client.
+
+### Polling intake is at-least-once
+
+`pollOnce` delivers the batch (awaited) *before* advancing the pointer, so a
+crash mid-delivery leaves the update with Telegram for redelivery. A mid-loop
+stop aborts the in-flight `getUpdates` instead of waiting out its 25s window.
+Until #0533–#0535 make handlers idempotent-capable, correctness is easy: no
+handler is registered, so redelivery is invisible.
 
 ### What #0532 must add: the webhook HTTP route
 
@@ -118,14 +143,20 @@ POST {base}/v1/provisioning/requests/{id}/redeem
 ```
 
 Rules the client enforces (see `provisioning.ts`): missing `provisioningUrl`
-or a missing/non-HTTP(S) base URL → "not configured" error mentioning BYO;
-auth failures name `REPOOS_TELEGRAM_PROVISIONING_KEY` and never echo the key;
-a response without a token redeems nothing and stores nothing. The service
-sees repository/instance/admin identity only. The provider funnels the
-redeemed token through the **same** `connectByBotToken` path as BYO, so both
-provisioning sources produce one `ProvisionedBot` shape. Tests exercise the
-whole contract against a fetch-stubbed fake service (`fakeProvisioningService`
-in `src/ui-app/tests/telegram-routes.test.ts`).
+or a missing/non-HTTP(S) base URL → `ManagedProvisioningNotConfiguredError`
+("not configured" error mentioning BYO — a distinct class, so routes can
+answer 501 while a configured service failing answers 502 without matching
+message text); auth failures name `REPOOS_TELEGRAM_PROVISIONING_KEY` and
+never echo the key; a response without a token redeems nothing and stores
+nothing. The service sees repository/instance/admin identity only. The
+provider funnels the redeemed token through the **same** `connectByBotToken`
+path as BYO, so both provisioning sources produce one `ProvisionedBot`
+shape. If validation or storage fails *after* a successful redeem (the
+credential is single-use), the error says to redeem again within the
+service's grace window — the contract replays the original result briefly
+rather than issuing a second token. Tests exercise the whole contract
+against a fetch-stubbed fake service (`fakeProvisioningService` in
+`src/ui-app/tests/telegram-routes.test.ts`).
 
 ## Update intake invariant
 
@@ -136,3 +167,14 @@ unbound senders, and the simplest proof that no update can disclose repository
 data. When wiring handlers later, remember: authorization is per-message, live
 from `auth_users`; a handler failure is logged redacted, never allowed to kill
 the transport loop.
+
+## The `[telegram] enabled` gate
+
+`requireTelegramEnabled` (`src/server/routes/telegram.ts`) enforces the
+master switch on every mutating connection route (connect, disconnect,
+profile, transport, provision begin/status/redeem) with an honest 400; only
+`GET /api/telegram/status` stays readable while disabled so the Settings
+panel can render the switch and state. The enforcement is duplicated where
+the traffic actually is: the polling loop pauses (no Telegram calls) while
+`enabled` is false and resumes live when it flips back. Tests pin both
+layers.

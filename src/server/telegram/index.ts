@@ -7,7 +7,9 @@
  * caller already holds (Settings saves mutate it in place).
  *
  * Tests reset the map with `resetTelegramProviders` or inject collaborators
- * through `setTelegramProvider`.
+ * through `setTelegramProvider`. Resetting only stops running transports —
+ * it deliberately never deletes a stored connection, so a test-only helper
+ * cannot become destructive if reused in production cleanup.
  */
 import type { RepoOSConfig } from "../../core/types.js";
 import { projectDisplayName } from "../../core/config.js";
@@ -59,10 +61,41 @@ export function setTelegramProvider(root: string, provider: LocalTelegramProvide
   providers.set(providerKey(root), provider);
 }
 
+/**
+ * Stop every provider's polling loop and drop the singletons, keeping stored
+ * connection state on disk. The server teardown/dispose path and tests both
+ * use this; deleting credentials was `disconnect()`'s job and stays there.
+ */
 export function resetTelegramProviders(): void {
   for (const provider of providers.values()) {
-    // Fire-and-forget cleanup; tests only need state to be disposable.
-    void provider.disconnect();
+    // Fire-and-forget cleanup; tests only need state to be disposable. The
+    // polling loop aborts its in-flight getUpdates promptly (see polling.ts).
+    void provider.stopPolling();
   }
   providers.clear();
+}
+
+/**
+ * Boot-time transport resume (#0531, review round 1): a restart used to leave
+ * the stored `transport.mode = "polling"` with no loop behind it — a silently
+ * dead transport. After the server binds, this reads the connection record
+ * and (re)starts the long-poll loop when the stored transport is polling and
+ * the credential is readable. The loop itself gates on the live
+ * `telegram.enabled` switch, so an integration that is currently disabled
+ * stays paused with no Telegram traffic and resumes live when it is enabled.
+ *
+ * Never throws; every outcome is reported for the server log and mirrored
+ * into `status().lastError` where it is an error.
+ */
+export async function resumeTelegramTransports(
+  config: Pick<RepoOSConfig, "root"> & { telegram?: RepoOSConfig["telegram"] },
+): Promise<{ resumed: boolean; detail?: string }> {
+  const provider = getTelegramProvider(config);
+  try {
+    return await provider.resumeTransport();
+  } catch (e) {
+    const detail =
+      e instanceof Error ? e.message : `telegram transport resume failed: ${String(e)}`;
+    return { resumed: false, detail };
+  }
 }

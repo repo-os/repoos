@@ -86,7 +86,7 @@ export class TelegramCredentialStore {
       parsed = JSON.parse(readFileSync(this.path, "utf8"));
     } catch (e) {
       throw new TelegramStoreCorruptError(
-        `stored Telegram connection state is unreadable (${telegramConnectionPath(this.path)}: ${
+        `stored Telegram connection state is unreadable (${this.path}: ${
           e instanceof Error ? e.message : String(e)
         })`,
       );

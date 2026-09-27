@@ -27,7 +27,11 @@ import type { RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
 import { requireAdmin } from "./auth.js";
 import { getTelegramProvider } from "../telegram/index.js";
-import { ManagedProvisioningUnavailableError } from "../telegram/provisioning.js";
+import {
+  ManagedProvisioningNotConfiguredError,
+  ManagedProvisioningUnavailableError,
+  ManagedRedemptionFollowUpError,
+} from "../telegram/provisioning.js";
 import { TelegramApiError, TelegramNetworkError } from "../telegram/api.js";
 import { TelegramCredentialDecryptError, TelegramStoreCorruptError } from "../telegram/store.js";
 import { TelegramNotConnectedError, TelegramValidationError } from "../telegram/provider.js";
@@ -37,6 +41,26 @@ import type {
   TelegramProfileInput,
   TelegramTransportMode,
 } from "../telegram/types.js";
+
+/**
+ * The `[telegram] enabled` master switch, enforced live (Settings flips it
+ * without a restart). While the integration is disabled, mutating connection
+ * surfaces refuse honestly: no credential is accepted or stored, no transport
+ * is armed, and managed provisioning is not exercised. Status stays readable
+ * so the Settings panel can report state and tell the operator what to
+ * enable; the polling pause lives where the loop runs (`polling.ts`), so a
+ * transport armed before the switch was turned off goes quiet live and
+ * resumes when the switch returns.
+ */
+function requireTelegramEnabled(ctx: { config: RepoOSConfig }, res: ServerResponse): boolean {
+  if (ctx.config.telegram?.enabled === true) return true;
+  json(res, 400, {
+    error:
+      "the Telegram integration is disabled — enable it in Settings (or set [telegram] " +
+      "enabled = true in repoos.toml); no Telegram surface is active while it is off",
+  });
+  return false;
+}
 
 /**
  * Admin gate for Telegram connection management. `requireAdmin` semantics
@@ -113,6 +137,7 @@ export const telegramStatus: RouteHandler = (ctx, req, res) => {
 export const telegramConnect: RouteHandler = async (ctx, req, res) => {
   const admin = requireTelegramAdmin(req, ctx.config, res);
   if (!admin) return;
+  if (!requireTelegramEnabled(ctx, res)) return;
   const body = (await readBody(req)) as Record<string, unknown>;
   const token = requireString(body, "token", res);
   if (!token) return;
@@ -135,6 +160,9 @@ export const telegramConnect: RouteHandler = async (ctx, req, res) => {
 export const telegramDisconnect: RouteHandler = async (ctx, req, res) => {
   const admin = requireTelegramAdmin(req, ctx.config, res);
   if (!admin) return;
+  // Deliberately NOT gated on `[telegram] enabled`: disconnecting is the
+  // state-destroying, safe direction, and a credential must never require
+  // re-enabling the integration to be forgotten.
   try {
     const provider = getTelegramProvider(ctx.config);
     await provider.disconnect();
@@ -148,6 +176,7 @@ export const telegramDisconnect: RouteHandler = async (ctx, req, res) => {
 export const telegramProfile: RouteHandler = async (ctx, req, res) => {
   const admin = requireTelegramAdmin(req, ctx.config, res);
   if (!admin) return;
+  if (!requireTelegramEnabled(ctx, res)) return;
   const body = (await readBody(req)) as Record<string, unknown>;
   const input: TelegramProfileInput = {};
   for (const key of ["name", "description", "shortDescription"] as const) {
@@ -200,6 +229,7 @@ export const telegramProfile: RouteHandler = async (ctx, req, res) => {
 export const telegramTransport: RouteHandler = async (ctx, req, res) => {
   const admin = requireTelegramAdmin(req, ctx.config, res);
   if (!admin) return;
+  if (!requireTelegramEnabled(ctx, res)) return;
   const body = (await readBody(req)) as Record<string, unknown>;
   const mode = body.mode as TelegramTransportMode | undefined;
   if (mode !== "off" && mode !== "polling" && mode !== "webhook") {
@@ -233,6 +263,7 @@ export const telegramTransport: RouteHandler = async (ctx, req, res) => {
 export const telegramProvisionBegin: RouteHandler = async (ctx, req, res) => {
   const admin = requireTelegramAdmin(req, ctx.config, res);
   if (!admin) return;
+  if (!requireTelegramEnabled(ctx, res)) return;
   const body = (await readBody(req)) as Record<string, unknown>;
   const botNameHint = typeof body.botNameHint === "string" ? body.botNameHint.trim() : undefined;
   try {
@@ -255,6 +286,7 @@ export const telegramProvisionBegin: RouteHandler = async (ctx, req, res) => {
 export const telegramProvisionStatus: RouteHandler = async (ctx, req, res, params) => {
   const admin = requireTelegramAdmin(req, ctx.config, res);
   if (!admin) return;
+  if (!requireTelegramEnabled(ctx, res)) return;
   const id = params.param1;
   try {
     const provider = getTelegramProvider(ctx.config);
@@ -268,6 +300,7 @@ export const telegramProvisionStatus: RouteHandler = async (ctx, req, res, param
 export const telegramProvisionRedeem: RouteHandler = async (ctx, req, res, params) => {
   const admin = requireTelegramAdmin(req, ctx.config, res);
   if (!admin) return;
+  if (!requireTelegramEnabled(ctx, res)) return;
   const id = params.param1;
   try {
     const provider = getTelegramProvider(ctx.config);
@@ -298,11 +331,31 @@ function requestViewOf(view: ProvisioningRequestView): ProvisioningRequestView {
 }
 
 function provisioningError(res: ServerResponse, e: unknown): void {
-  if (e instanceof ManagedProvisioningUnavailableError) {
-    const unavailable = e.message.includes("not configured");
-    json(res, unavailable ? 501 : 502, {
+  if (e instanceof ManagedProvisioningNotConfiguredError) {
+    // Deliberate local state (no [telegram].provisioningUrl): 501. A
+    // *configured* service failing stays 502 — the classes, not the message
+    // text, tell them apart.
+    json(res, 501, {
       error: e.message,
-      managedProvisioning: { configured: !unavailable },
+      managedProvisioning: { configured: false },
+      byoAvailable: true,
+    });
+    return;
+  }
+  if (e instanceof ManagedRedemptionFollowUpError) {
+    // The single-use credential was delivered but could not be validated or
+    // stored: 502 with the grace-window recovery in the message.
+    json(res, 502, {
+      error: e.message,
+      managedProvisioning: { configured: true },
+      byoAvailable: true,
+    });
+    return;
+  }
+  if (e instanceof ManagedProvisioningUnavailableError) {
+    json(res, 502, {
+      error: e.message,
+      managedProvisioning: { configured: true },
       byoAvailable: true,
     });
     return;

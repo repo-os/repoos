@@ -24,7 +24,7 @@ import { randomBytes } from "node:crypto";
 import { TelegramApiClient, toProvisionedBot, type BotApiUser } from "./api.js";
 import { normalizeUpdate } from "./normalize.js";
 import { TelegramPolling } from "./polling.js";
-import { createManagedProvisioningClient } from "./provisioning.js";
+import { createManagedProvisioningClient, ManagedRedemptionFollowUpError } from "./provisioning.js";
 import { encryptSecret } from "../../core/secret-store.js";
 import { makeTokenRedactor } from "./redact.js";
 import { TelegramCredentialStore, type TelegramConnectionRecord } from "./store.js";
@@ -165,24 +165,40 @@ export class LocalTelegramProvider implements TelegramProvider {
     }
     const connectedAt = bot.connectedAt;
     const existing = this.store.load();
+    const botChanged = existing !== null && existing.bot.id !== bot.id;
+    // A new bot identity invalidates everything keyed to the old one: its
+    // transport mode, webhook secret, profile overrides, and polling pointer
+    // (update ids are per-bot; carrying them across skips or mis-offsets the
+    // new bot's stream). A reconnect of the SAME bot keeps them valid.
+    if (botChanged) await this.stopPollingLoop();
     this.store.save({
       version: 1,
       source,
       bot,
       credential: encryptSecret(trimmed),
-      transport: existing?.transport ?? { mode: "off" },
-      profile: existing?.profile ?? {},
-      webhookSecret: existing?.webhookSecret ?? null,
-      polling: { lastUpdateId: existing?.polling.lastUpdateId ?? null },
+      transport: existing && !botChanged ? existing.transport : { mode: "off" },
+      profile: existing && !botChanged ? existing.profile : {},
+      webhookSecret: existing && !botChanged ? existing.webhookSecret : null,
+      polling: { lastUpdateId: existing && !botChanged ? existing.polling.lastUpdateId : null },
       createdAt: existing?.createdAt ?? connectedAt,
       updatedAt: connectedAt,
     });
     this.lastError = null;
+    // A same-bot reconnect (e.g. a rotated token) must not leave the running
+    // loop holding the previous token's API client — it would poll on a stale
+    // credential and die with a 401. Restart on the fresh token; a fresh-bot
+    // connect starts with no transport (the operator picks one; boot resume
+    // re-arms polling after restarts).
+    const mode = existing && !botChanged ? existing.transport.mode : "off";
+    if (mode === "polling" && this.resolveConfig().enabled) {
+      await this.stopPollingLoop();
+      this.startPollingLoop();
+    }
     return bot;
   }
 
   async disconnect(): Promise<void> {
-    this.stopPollingLoop();
+    await this.stopPollingLoop();
     // Best-effort webhook removal; clearing the record proceeds even if
     // Telegram is unreachable (the credential must never outlive intent).
     const record = this.store.load();
@@ -201,11 +217,26 @@ export class LocalTelegramProvider implements TelegramProvider {
   /**
    * Managed-redemption convenience: store the project credential a #0559
    * redemption just delivered. Same path, same ProvisionedBot as BYO.
+   *
+   * The service's credential is single-use: once `redeem` returns a token,
+   * re-delivery is only replayed briefly within the service's grace window,
+   * so a failure AFTER redemption must say exactly how to recover instead of
+   * pretending nothing happened.
    */
   async redeemManagedCredential(id: string): Promise<ProvisionedBot> {
-    // The unconfigured client throws ManagedProvisioningUnavailableError.
+    // The unconfigured client throws ManagedProvisioningNotConfiguredError;
+    // failures before this point consumed nothing.
     const { token } = await this.managed().redeem(id);
-    return this.connectByBotToken(token, "managed");
+    try {
+      return await this.connectByBotToken(token, "managed");
+    } catch (e) {
+      const reason = e instanceof Error ? e.message : String(e); // redacted by the adapter layers
+      throw new ManagedRedemptionFollowUpError(
+        `the managed-provisioning credential arrived but could not be validated or stored ` +
+          `(${reason}). The token is single-use: redeem the same request again within the ` +
+          "service's grace window to retry, or ask the service admin to reset the request.",
+      );
+    }
   }
 
   async beginManagedProvisioning(input: {
@@ -452,7 +483,10 @@ export class LocalTelegramProvider implements TelegramProvider {
       throw new TelegramValidationError("mode must be off, polling, or webhook");
     }
 
-    this.stopPollingLoop();
+    // Awaited: an in-flight getUpdates now aborts promptly, so a new loop
+    // can never poll concurrently with the dying one (Telegram forbids
+    // overlapping getUpdates with a 409).
+    await this.stopPollingLoop();
 
     if (mode === "webhook") {
       const url = webhookUrl ?? record.transport.webhookUrl;
@@ -502,15 +536,62 @@ export class LocalTelegramProvider implements TelegramProvider {
 
   /** Public for shutdown hygiene (tests, server teardown): stop the loop. */
   async stopPolling(): Promise<void> {
-    const polling = this.polling;
-    this.polling = null;
-    if (polling) await polling.stop();
+    await this.stopPollingLoop();
   }
 
-  private stopPollingLoop(): void {
+  /** Whether a long-poll loop is currently armed (test/boot observability). */
+  isPolling(): boolean {
+    return this.polling?.isRunning() ?? false;
+  }
+
+  /**
+   * Boot-time resume (called via `resumeTelegramTransports`, see index.ts).
+   * When the stored transport is polling, starts the loop against the stored
+   * credential so a restart does not leave a silently dead transport; the
+   * loop itself gates on the live `telegram.enabled` switch, so a disabled
+   * integration arms paused. Webhook mode has nothing to start here (the
+   * webhook route is #0532's); `mode: "off"` means nothing to resume.
+   * Idempotent and never throws.
+   */
+  async resumeTransport(): Promise<{ resumed: boolean; detail?: string }> {
+    let record: TelegramConnectionRecord | null = null;
+    try {
+      record = this.store.load();
+    } catch (e) {
+      // Already surfaced through status().lastError; keep boot non-fatal.
+      return {
+        resumed: false,
+        detail: `stored Telegram connection state is unreadable (${
+          e instanceof Error ? e.message : String(e)
+        })`,
+      };
+    }
+    if (!record) return { resumed: false, detail: "nothing connected" };
+    if (record.transport.mode !== "polling") return { resumed: false };
+    try {
+      // Prove the stored credential is usable before arming the loop;
+      // otherwise surface the failure instead of a loop that 401s forever.
+      this.store.readToken(record);
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e);
+      this.lastError = this.lastError ?? detail;
+      return { resumed: false, detail };
+    }
+    if (this.polling?.isRunning()) return { resumed: true };
+    this.startPollingLoop();
+    return {
+      resumed: true,
+      detail: this.resolveConfig().enabled
+        ? undefined
+        : "polling is paused while the Telegram integration is disabled",
+    };
+  }
+
+  /** Awaitable: aborts any in-flight getUpdates promptly (see polling.stop). */
+  private stopPollingLoop(): Promise<void> {
     const polling = this.polling;
     this.polling = null;
-    if (polling) void polling.stop();
+    return polling ? polling.stop() : Promise.resolve();
   }
 
   /** Start (or restart) long polling. Idempotent per provider instance. */
@@ -521,8 +602,10 @@ export class LocalTelegramProvider implements TelegramProvider {
     const polling = new TelegramPolling({
       api,
       onRaw: (raw) => {
-        // Both transports share this normalization path by construction.
-        void this.handleUpdate(raw);
+        // Both transports share this normalization path by construction; the
+        // loop awaits this promise before advancing its pointer, so a
+        // handler that has not settled keeps the update pending redelivery.
+        return this.handleUpdate(raw);
       },
       readPointer: () => this.store.load()?.polling.lastUpdateId ?? null,
       writePointer: (id) => {
@@ -532,6 +615,9 @@ export class LocalTelegramProvider implements TelegramProvider {
           /* pointer persistence is best-effort */
         }
       },
+      // Live master-switch gate: no Telegram calls while `[telegram] enabled`
+      // is false; the paused loop resumes live when the switch returns.
+      enabled: () => this.resolveConfig().enabled,
       onError: (message) => {
         this.lastError = redact(message);
       },
