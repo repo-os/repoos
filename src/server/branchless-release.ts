@@ -16,7 +16,8 @@ import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
-import { CLOSEOUT_CHECK_ARGS } from "../core/check-plan.js";
+import { loadConfig } from "../core/config.js";
+import { spawnedRepoosCheckArgs } from "./pre-review-remote-gate.js";
 import { markTaskReleased } from "./write.js";
 
 export interface CheckResult {
@@ -27,15 +28,17 @@ export interface CheckResult {
 
 /** Real check runner: prefers the local build's own CLI, same preference order as the close-out pipeline. */
 export function runCheckOnRoot(root: string): CheckResult {
+  const cfg = loadConfig(root);
+  const checkArgs = spawnedRepoosCheckArgs(cfg, { kind: "skip" });
   const localCli = join(root, "dist", "cli", "index.js");
   const candidates: string[][] = existsSync(localCli)
     ? [
-        [process.execPath, localCli, "check", ...CLOSEOUT_CHECK_ARGS],
-        ["repoos", "check", ...CLOSEOUT_CHECK_ARGS],
+        [process.execPath, localCli, "check", ...checkArgs],
+        ["repoos", "check", ...checkArgs],
       ]
     : [
-        ["repoos", "check", ...CLOSEOUT_CHECK_ARGS],
-        ["bun", "run", "repoos", "check", ...CLOSEOUT_CHECK_ARGS],
+        ["repoos", "check", ...checkArgs],
+        ["bun", "run", "repoos", "check", ...checkArgs],
       ];
   let last: ReturnType<typeof spawnSync> | null = null;
   for (const [cmd, ...args] of candidates) {

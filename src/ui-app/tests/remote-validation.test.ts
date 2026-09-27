@@ -161,6 +161,37 @@ describe("RemoteValidationRunner", () => {
     await r.dispose();
   });
 
+  it("dispose() leaves a VM another process provisioned alone, and deletes one it created itself", async () => {
+    // A warm VM recorded by the server process (shared state file).
+    mkdirSync(join(root, ".repoos"), { recursive: true });
+    const stateFile = join(root, ".repoos", "remote-runner.json");
+    writeFileSync(
+      stateFile,
+      JSON.stringify({ serverId: 7, ip: "203.0.113.7", createdAt: new Date().toISOString() }),
+    );
+    const h = fakeHetzner();
+    const adopter = new RemoteValidationRunner(config, undefined, {
+      hetzner: h.client,
+      exec: fakeExec(),
+      timings: FAST,
+    });
+    await adopter.dispose();
+    // Adopted, not ours: not deleted, and the server's state file survives.
+    expect(h.calls.filter((c) => c.startsWith("delete:"))).toEqual([]);
+    expect(existsSync(stateFile)).toBe(true);
+
+    // A runner that provisions its own VM still tears it down.
+    rmSync(stateFile, { force: true });
+    const owner = new RemoteValidationRunner(config, undefined, {
+      hetzner: h.client,
+      exec: fakeExec(),
+      timings: FAST,
+    });
+    await owner.validate(opts());
+    await owner.dispose();
+    expect(h.calls.filter((c) => c.startsWith("delete:")).length).toBe(1);
+  });
+
   it("a non-zero remote exit is a NON-transient failure (fix in the branch)", async () => {
     const h = fakeHetzner();
     const exec = fakeExec({

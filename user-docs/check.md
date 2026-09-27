@@ -163,6 +163,12 @@ globs; steps without it still run. This is a **fast pre-review pass** — an
 agent's self-check before handoff — never the final gate. Close-out runs the
 full plan.
 
+When `[remoteValidation] enabled = true`, a **full** `repoos check` (no
+`--changed`) runs install + build + tests on the remote runner first, then local
+guards only. Changed-path mode does **not** trigger the remote half — it stays a
+fast local pass. Pass `--local-tests` to force the full local suite even when
+remote validation is enabled.
+
 ### Cross-cutting steps
 
 A step with **no** `whenChanged` runs whatever changed. That is how you keep a
