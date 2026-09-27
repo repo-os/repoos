@@ -3,11 +3,11 @@
  * Registered stories link by number; tag-only stories link by key.
  */
 import { storyKey } from "../../../core/stories.js";
-import type { StoryDefinition } from "../../../core/story-display.js";
+import type { StoryDefinitionRecord } from "../types.js";
 
 export function storyDeepLinkRef(
   storyName: string,
-  definitions: readonly StoryDefinition[],
+  definitions: readonly StoryDefinitionRecord[],
 ): string {
   const name = storyName.replace(/\s+/g, " ").trim();
   if (!name) return "";
@@ -17,7 +17,10 @@ export function storyDeepLinkRef(
   return key;
 }
 
-export function storyOpenLabel(storyName: string, definitions: readonly StoryDefinition[]): string {
+export function storyOpenLabel(
+  storyName: string,
+  definitions: readonly StoryDefinitionRecord[],
+): string {
   const name = storyName.replace(/\s+/g, " ").trim();
   if (!name) return "";
   const key = storyKey(name);

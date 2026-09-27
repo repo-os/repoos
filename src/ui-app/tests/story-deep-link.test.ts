@@ -3,9 +3,9 @@
  */
 import { describe, expect, it } from "vitest";
 import { storyDeepLinkRef, storyOpenLabel } from "../src/lib/story-deep-link";
-import type { StoryDefinition } from "../../core/story-display";
+import type { StoryDefinitionRecord } from "../src/types";
 
-const alphaDef: StoryDefinition = {
+const alphaDef: StoryDefinitionRecordRecord = {
   key: "alpha slice",
   name: "Alpha slice",
   number: "0001",
@@ -26,9 +26,26 @@ describe("story deep link helpers (#0553)", () => {
     expect(storyOpenLabel("Tag only", [])).toBe('Open story "Tag only"');
   });
 
+  it("links definition records without a number by key", () => {
+    const { number: _number, ...numberless } = alphaDef;
+    expect(storyDeepLinkRef("  Alpha   slice  ", [numberless])).toBe("alpha slice");
+    expect(storyOpenLabel("Alpha slice", [numberless])).toBe('Open story "Alpha slice"');
+  });
+
   it("returns empty ref and label when no story is assigned", () => {
     expect(storyDeepLinkRef("", [alphaDef])).toBe("");
     expect(storyDeepLinkRef("   ", [alphaDef])).toBe("");
     expect(storyOpenLabel("", [alphaDef])).toBe("");
+  });
+
+  it("links by key when the definition record has no number yet", () => {
+    const pending: StoryDefinitionRecord = { ...alphaDef, number: undefined };
+    expect(storyDeepLinkRef("Alpha slice", [pending])).toBe("alpha slice");
+    expect(storyOpenLabel("Alpha slice", [pending])).toBe('Open story "Alpha slice"');
+  });
+
+  it("normalizes internal whitespace in tag-only keys", () => {
+    expect(storyDeepLinkRef("Tag   with   gaps", [])).toBe("tag with gaps");
+    expect(storyOpenLabel("Tag   with   gaps", [])).toBe('Open story "Tag with gaps"');
   });
 });
