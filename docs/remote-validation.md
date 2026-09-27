@@ -47,6 +47,12 @@ entry points guarantee differently:
 
 - **Handoff** commits the worktree first (the commit gate runs before the check),
   so the sha the runner tests already contains everything the agent wrote.
+- **Standalone `repoos check`** uses the remote gate only with the **Tailscale**
+  provider. Hetzner's single warm VM is owned by the server process (its state
+  lives in the server's `.repoos/remote-runner.json`); a CLI in a task worktree
+  has a different root, so its leak reconciliation would delete the server's VM
+  mid-run. With Hetzner the CLI runs the full local gate and says so; handoff and
+  close-out still use the runner.
 - **Standalone `repoos check`** on a tree with uncommitted work does not use the
   remote gate: it prints which files are uncommitted and runs the full local gate
   on the working tree instead. An unreadable git status counts as dirty.
