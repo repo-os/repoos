@@ -611,20 +611,22 @@ async function readBody(req: IncomingMessage): Promise<unknown> {
 }
 
 /** List context docs (markdown under docsDir + root-level AGENTS/CLAUDE). */
-function listDocs(config: RepoOSConfig): { path: string; title: string }[] {
-  const out: { path: string; title: string }[] = [];
+function listDocs(config: RepoOSConfig): { path: string; title: string; mtimeMs: number }[] {
+  const out: { path: string; title: string; mtimeMs: number }[] = [];
   const seen = new Set<string>();
   const add = (abs: string, rel: string) => {
     if (seen.has(rel) || !existsSync(abs)) return;
     seen.add(rel);
     let title = rel;
+    let mtimeMs = 0;
     try {
+      mtimeMs = statSync(abs).mtimeMs;
       const m = readFileSync(abs, "utf8").match(/^\s*#\s+(.+)$/m);
       if (m) title = m[1].trim();
     } catch {
       /* ignore */
     }
-    out.push({ path: rel, title });
+    out.push({ path: rel, title, mtimeMs });
   };
   for (const name of ["AGENTS.md", "CLAUDE.md", "README.md"]) {
     add(join(config.root, name), name);

@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { searchAll, RESULT_CAP } from "../src/search";
+import {
+  searchAll,
+  searchSettings,
+  searchContext,
+  RESULT_CAP,
+  CONTEXT_RESULT_DISPLAY_CAP,
+} from "../src/search";
+import { countDocRefresh, formatDocRefreshMessage } from "../src/docs-refresh";
 import type { Task, ConfigField, DocMeta } from "../src/types";
 
 function makeTask(over: Partial<Task>): Task {
@@ -45,8 +52,8 @@ const tasks: Task[] = [
 ];
 
 const docs: DocMeta[] = [
-  { path: "AGENTS.md", title: "Agent instructions" },
-  { path: "docs/architecture.md", title: "Architecture" },
+  { path: "AGENTS.md", title: "Agent instructions", mtimeMs: 0 },
+  { path: "docs/architecture.md", title: "Architecture", mtimeMs: 0 },
 ];
 
 const fields: ConfigField[] = [
@@ -116,11 +123,13 @@ describe("searchAll", () => {
       {
         path: "AGENTS.md",
         title: "Agent instructions",
+        mtimeMs: 0,
         content: "This document contains important agent rules and instructions for deployment.",
       },
       {
         path: "docs/architecture.md",
         title: "Architecture",
+        mtimeMs: 0,
         content: "The system uses a modular architecture with components.",
       },
     ];
@@ -157,7 +166,7 @@ describe("searchAll", () => {
   it("groups results tasks → docs → settings", () => {
     const src = {
       tasks: [makeTask({ title: "theme", body: "" })],
-      docs: [{ path: "theme.md", title: "theme doc" }],
+      docs: [{ path: "theme.md", title: "theme doc", mtimeMs: 0 }],
       fields,
     };
     const kinds = searchAll("theme", src).map((r) => r.kind);
@@ -191,12 +200,129 @@ describe("searchAll", () => {
     expect(taskTitles[0]).toBe("Fix auth token race");
   });
 
+  it("searchSettings returns only setting hits with tab metadata", () => {
+    const hits = searchSettings("cache", {
+      fields,
+      location: { inspectorAvailable: false },
+    });
+    expect(hits.length).toBeGreaterThan(0);
+    expect(hits.every((r) => r.kind === "setting")).toBe(true);
+    const cache = hits.find((r) => r.kind === "setting" && r.key === "cacheDir");
+    expect(cache && cache.kind === "setting" && cache.tab).toBe("general");
+    expect(cache && cache.kind === "setting" && cache.tomlOnly).toBe(false);
+  });
+
+  it("marks toml-only settings in subtitles", () => {
+    const tailscale = {
+      key: "remoteValidation.tailscaleHost",
+      label: "Tailscale host",
+      type: "string" as const,
+      tier: "live" as const,
+      restartRequired: true,
+      default: "",
+      description: "Runner host",
+    };
+    const hits = searchSettings("tailscale", {
+      fields: [...fields, tailscale],
+      location: { inspectorAvailable: false },
+    });
+    const row = hits.find(
+      (r) => r.kind === "setting" && r.key === "remoteValidation.tailscaleHost",
+    );
+    expect(row && row.kind === "setting" && row.tomlOnly).toBe(true);
+    expect(row && row.kind === "setting" && row.subtitle).toContain("repoos.toml");
+  });
+
+  it("finds the remote validation runner UI row when searching tailscale", () => {
+    const rvEnabled = {
+      key: "remoteValidation.enabled",
+      label: "Remote validation runner",
+      type: "boolean" as const,
+      tier: "restart" as const,
+      restartRequired: true,
+      default: false,
+      description: "Run the close-out build on a remote machine.",
+    };
+    const tailscaleHost = {
+      key: "remoteValidation.tailscaleHost",
+      label: "Remote validation: tailscale host",
+      type: "string" as const,
+      tier: "restart" as const,
+      restartRequired: true,
+      default: "",
+      description: "Tailscale hostname of the persistent runner.",
+    };
+    const hits = searchSettings("tailscale", {
+      fields: [...fields, rvEnabled, tailscaleHost],
+      location: { inspectorAvailable: false },
+    });
+    const runner = hits.find((r) => r.kind === "setting" && r.key === "remoteValidation.enabled");
+    expect(runner && runner.kind === "setting" && runner.tomlOnly).toBe(false);
+    expect(runner && runner.kind === "setting" && runner.tab).toBe("general");
+  });
+
   it("ranks a rare term above a common one across matching tasks", () => {
     const common = makeTask({ id: "0300", title: "Update task list", body: "" });
     const rare = makeTask({ id: "0301", title: "Fix port stealing race", body: "" });
     const hits = searchAll("port stealing", { tasks: [common, rare], docs: [], fields: [] });
     const taskTitles = hits.filter((r) => r.kind === "task").map((r) => r.title);
     expect(taskTitles[0]).toBe("Fix port stealing race");
+  });
+});
+
+describe("searchContext", () => {
+  const skills = [
+    {
+      path: "skills/deploy/SKILL.md",
+      name: "deploy",
+      description: "Deploy the app to production",
+    },
+  ];
+
+  it("returns only docs and skills", () => {
+    const out = searchContext("architecture", {
+      docs,
+      skills,
+    });
+    expect(out.results.every((r) => r.kind === "doc" || r.kind === "skill")).toBe(true);
+    expect(out.results.some((r) => r.kind === "doc")).toBe(true);
+  });
+
+  it("matches skills by name and description", () => {
+    const out = searchContext("production", { docs: [], skills });
+    expect(out.results).toHaveLength(1);
+    expect(out.results[0]?.kind).toBe("skill");
+  });
+
+  it("reports total when results exceed the display cap", () => {
+    const manyDocs = Array.from({ length: CONTEXT_RESULT_DISPLAY_CAP + 3 }, (_, i) => ({
+      path: `docs/file-${i}.md`,
+      title: `shared keyword ${i}`,
+      mtimeMs: i,
+    }));
+    const out = searchContext("shared keyword", { docs: manyDocs, skills: [] });
+    expect(out.results).toHaveLength(CONTEXT_RESULT_DISPLAY_CAP);
+    expect(out.totalMatches).toBe(CONTEXT_RESULT_DISPLAY_CAP + 3);
+  });
+});
+
+describe("doc refresh summary", () => {
+  it("counts added, changed, and removed files", () => {
+    const before = new Map([
+      ["a.md", 1],
+      ["b.md", 2],
+      ["gone.md", 3],
+    ]);
+    const after = [
+      { path: "a.md", title: "A", mtimeMs: 1 },
+      { path: "b.md", title: "B", mtimeMs: 99 },
+      { path: "new.md", title: "N", mtimeMs: 4 },
+    ];
+    expect(countDocRefresh(before, after)).toEqual({ added: 1, changed: 1, removed: 1 });
+    expect(formatDocRefreshMessage({ added: 1, changed: 1, removed: 1 })).toBe(
+      "1 added, 1 changed, 1 removed",
+    );
+    expect(formatDocRefreshMessage({ added: 0, changed: 0, removed: 0 })).toBe("No changes");
   });
 });
 
@@ -214,7 +340,7 @@ function htmlToText(html: string): string {
 function docSnippet(query: string, content: string): string | undefined {
   const hits = searchAll(query, {
     tasks: [],
-    docs: [{ path: "test.md", title: "Test", content }],
+    docs: [{ path: "test.md", title: "Test", content, mtimeMs: 0 }],
     fields: [],
   });
   const doc = hits.find((r) => r.kind === "doc" && r.path === "test.md");
