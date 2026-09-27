@@ -758,6 +758,12 @@ else process.stdout.write(${JSON.stringify(needsWorkReport)} + "\\n");
       expect(taskFile).not.toMatch(/^needs_input: true$/m);
       expect(taskFile).not.toMatch(/^needs_input_reason: review-rounds-exhausted$/m);
       expect(taskFile).toContain("needs_input dismissed by");
+      // The suppression itself is visible on the task, not just the server
+      // log (#0546 review suggestion) — otherwise "why didn't it come back"
+      // is unanswerable from the task's own history.
+      expect(taskFile).toContain(
+        "exhausted-review flag left cleared: dismissed during this review",
+      );
     });
   }, 90_000);
 
