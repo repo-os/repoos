@@ -115,6 +115,9 @@ describe("task drawer story select (#0525)", () => {
 
     const openBtn = wrapper.find('button[aria-label^="Open story"]');
     expect(openBtn.exists()).toBe(true);
+    expect(openBtn.text()).toBe("go to story ↗");
+    expect(openBtn.element.parentElement?.classList.contains("field-header")).toBe(true);
+    expect(storyTrigger.element.parentElement).toBe(openBtn.element.parentElement?.parentElement);
     expect(openBtn.attributes("aria-label")).toBe('Open story "Alpha slice" (#0001)');
   });
 
