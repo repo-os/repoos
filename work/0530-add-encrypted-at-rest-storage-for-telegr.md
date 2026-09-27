@@ -9,8 +9,10 @@ story: RepoOS Telegram Bot
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: codex
+model_override: default
 created_at: "2026-09-27T07:32:02Z"
-updated_at: "2026-09-27T07:34:10Z"
+updated_at: "2026-09-27T15:14:42Z"
 ---
 ## Problem
 
@@ -45,3 +47,4 @@ An authenticated-encryption secret store, generic enough that the next credentia
 
 - 2026-09-27T07:32:02Z · created · unknown
 - 2026-09-27T07:34:10Z · status inbox→ready
+- 2026-09-27T15:14:42Z · cli_override, model_override
