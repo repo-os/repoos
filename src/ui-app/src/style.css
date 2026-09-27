@@ -2989,6 +2989,14 @@
   animation: slideR 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
   box-shadow: var(--drawer-shadow);
 }
+/* The drawer/modal shell is a Radix dialog that takes focus itself. The
+   theme-wide `:focus-visible` ring would then outline the whole shell after any
+   keypress — visible only as an accent line down its left edge. It is a focus
+   sink, not a control: no ring, and keep the normal drawer shadow. */
+.drawer-wrap.drawer:focus-visible {
+  outline: none;
+  box-shadow: var(--drawer-shadow);
+}
 .drawer-resize {
   position: absolute;
   left: -3px;
