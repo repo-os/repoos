@@ -4333,43 +4333,10 @@ watch(
           <DebugPanel v-if="ui.active" :task="ui.active" v-model:view="ui.debugView" />
         </div>
         <template v-else-if="ui.activeTab === 'pm'">
-          <div v-if="ui.active" class="agent-override-bar">
-            <div class="agent-pick-grid">
-              <div class="agent-field" style="grid-column: 1 / -1">
-                <AgentModelControl
-                  :cli-options="cliOptionsFor(pmOverrideDraft.cli)"
-                  :model-options="pmModelOptions"
-                  :memory-key="'task:' + ui.active.id + ':pm'"
-                  v-model:cli="pmOverrideDraft.cli"
-                  v-model:model="pmOverrideDraft.model"
-                  :disabled="ui.saving"
-                />
-                <div
-                  v-if="isLegacyGeminiCli(pmOverrideDraft.cli)"
-                  class="agent-legacy-notice"
-                  role="status"
-                >
-                  <strong>Deprecated Gemini CLI</strong> — this saved PM override is preserved, but
-                  new runs should use
-                  <a :href="GEMINI_MIGRATION_URL" target="_blank" rel="noopener noreferrer"
-                    >Antigravity CLI (agy)</a
-                  >.
-                </div>
-              </div>
-              <div class="agent-field">
-                <div
-                  v-if="pmOverrideDirty"
-                  class="agent-override-actions"
-                  style="padding-top: 20px"
-                >
-                  <span class="agent-save-hint">saving…</span>
-                </div>
-              </div>
-            </div>
-          </div>
           <!-- #0515: the chat itself is the shared <PmChatSurface>, which the
                story panel's PM tab renders too. The per-task bits stay here —
-               the override bar above, and the store/buffer this feeds. -->
+               the override bar (passed in the `header` slot), and the
+               store/buffer this feeds. -->
           <PmChatSurface
             v-if="ui.active"
             ref="pmSurface"
@@ -4389,7 +4356,44 @@ watch(
             @attach="onPmShotFiles"
             @remove-shot="ui.removePmScreenshot"
             @open-shot="openPmViewer"
-          />
+          >
+            <template #header>
+              <div v-if="ui.active" class="agent-override-bar">
+                <div class="agent-pick-grid">
+                  <div class="agent-field" style="grid-column: 1 / -1">
+                    <AgentModelControl
+                      :cli-options="cliOptionsFor(pmOverrideDraft.cli)"
+                      :model-options="pmModelOptions"
+                      :memory-key="'task:' + ui.active.id + ':pm'"
+                      v-model:cli="pmOverrideDraft.cli"
+                      v-model:model="pmOverrideDraft.model"
+                      :disabled="ui.saving"
+                    />
+                    <div
+                      v-if="isLegacyGeminiCli(pmOverrideDraft.cli)"
+                      class="agent-legacy-notice"
+                      role="status"
+                    >
+                      <strong>Deprecated Gemini CLI</strong> — this saved PM override is preserved,
+                      but new runs should use
+                      <a :href="GEMINI_MIGRATION_URL" target="_blank" rel="noopener noreferrer"
+                        >Antigravity CLI (agy)</a
+                      >.
+                    </div>
+                  </div>
+                  <div class="agent-field">
+                    <div
+                      v-if="pmOverrideDirty"
+                      class="agent-override-actions"
+                      style="padding-top: 20px"
+                    >
+                      <span class="agent-save-hint">saving…</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </PmChatSurface>
         </template>
         <div v-if="dirty" class="save-bar">
           <div class="save-callout">

@@ -153,6 +153,10 @@ defineExpose({ focusDraft });
 
 <template>
   <div class="drawer-body drawer-session-body">
+    <!-- Host-supplied header (the agent + model selector). Rendered inside the
+         same padded body the Dev tab's selector sits in, so the task and story
+         PM tabs share one look by construction. -->
+    <slot name="header" />
     <div
       ref="log"
       class="agent-log-wrap pm-log-wrap ai-chat-log"

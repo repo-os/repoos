@@ -6,7 +6,12 @@ import type { RouteHandler } from "./types.js";
 import type { Agent } from "../../core/types.js";
 import { json, readBody } from "./utils.js";
 import { join } from "node:path";
-import { mergeAgentOverride, resolvePmAgent, storyPmPrompt } from "../agents.js";
+import {
+  isModelOverridePinned,
+  mergeAgentOverride,
+  resolvePmAgent,
+  storyPmPrompt,
+} from "../agents.js";
 import { agentsForConfig } from "../../core/config.js";
 import { getCurrentUser } from "./auth.js";
 import { commitTaskFile } from "../../core/git.js";
@@ -169,10 +174,33 @@ export const pmStoryMessage: RouteHandler = async (ctx, req, res, params) => {
     return json(res, 400, { error: "message text is required" });
   }
 
-  const pm = resolvePmAgent(config);
+  // One-shot agent/CLI/model override from the story PM tab's selector, applied
+  // the way the task PM route applies its overrides. "default" is the model
+  // dropdown's sentinel for "the configured pm agent's own model", not a pin.
+  const agentName =
+    typeof body?.agentOverride === "string" && body.agentOverride ? body.agentOverride : undefined;
+  const cliOverride =
+    typeof body?.cliOverride === "string" && body.cliOverride ? body.cliOverride : undefined;
+  const modelOverride =
+    typeof body?.modelOverride === "string" && body.modelOverride ? body.modelOverride : undefined;
+  let pm: Agent | null;
+  if (agentName || cliOverride || isModelOverridePinned(modelOverride)) {
+    const base =
+      agentsForConfig(config).find((a) => a.enabled && a.name === (agentName || "pm")) ?? null;
+    pm = base ? mergeAgentOverride(base, cliOverride, modelOverride) : null;
+  } else {
+    pm = resolvePmAgent(config);
+  }
   if (!pm) {
     return json(res, 400, {
       error: "PM agent is not configured — enable it on the Agents page",
+    });
+  }
+  // Antigravity runs inside a task worktree on every turn; a story has none, so
+  // refuse rather than fall back to the main checkout.
+  if (pm.cli === "antigravity") {
+    return json(res, 400, {
+      error: "Antigravity is not supported for story PM chats — pick another agent",
     });
   }
 

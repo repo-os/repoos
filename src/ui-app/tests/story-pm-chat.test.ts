@@ -200,6 +200,59 @@ describe("story PM chat message route (#0515)", () => {
     expect(isStoryPmWorking(storyPath)).toBe(false);
   });
 
+  it("applies the story PM tab's cli/model override to the agent that runs the turn", async () => {
+    const { config } = setup();
+    const calls: StartChatCall[] = [];
+    const { ctx, runner } = context(config, calls);
+    const { fake, out } = res();
+
+    await pmStoryMessage(
+      ctx,
+      req({
+        text: "Break this down.",
+        cliOverride: "opencode",
+        modelOverride: "opencode/big-pickle",
+      }),
+      fake,
+      { param1: KEY },
+    );
+
+    expect(out.status).toBe(200);
+    const agent = runner.startChat.mock.calls[0]![2] as unknown as Agent;
+    expect(agent.name).toBe("pm");
+    expect(agent.cli).toBe("opencode");
+    expect(agent.model).toBe("opencode/big-pickle");
+  });
+
+  it("ignores the 'default' model sentinel and keeps the configured pm agent's model", async () => {
+    const { config } = setup();
+    const calls: StartChatCall[] = [];
+    const { ctx, runner } = context(config, calls);
+    const { fake } = res();
+
+    await pmStoryMessage(ctx, req({ text: "Hi.", modelOverride: "default" }), fake, {
+      param1: KEY,
+    });
+
+    const agent = runner.startChat.mock.calls[0]![2] as unknown as Agent;
+    expect(agent.model).not.toBe("default");
+  });
+
+  it("refuses antigravity for a story chat (no worktree to run it in)", async () => {
+    const { config } = setup();
+    const calls: StartChatCall[] = [];
+    const { ctx, runner } = context(config, calls);
+    const { fake, out } = res();
+
+    await pmStoryMessage(ctx, req({ text: "Hi.", cliOverride: "antigravity" }), fake, {
+      param1: KEY,
+    });
+
+    expect(out.status).toBe(400);
+    expect(String(out.body.error)).toContain("Antigravity");
+    expect(runner.startChat).not.toHaveBeenCalled();
+  });
+
   it("resumes an existing conversation instead of starting a second one", async () => {
     const { config } = setup();
     const calls: StartChatCall[] = [];
