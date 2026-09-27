@@ -2,14 +2,14 @@
 id: "0527"
 title: "Clamp runaway whitespace in rendered agent output (empty bubbles, blank-line runs, code-block tails)"
 type: bug
-status: ready
+status: active
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/clamp-runaway-whitespace-in-rendered-age
 created_at: "2026-09-27T02:28:27Z"
-updated_at: "2026-09-27T04:32:22Z"
+updated_at: "2026-09-27T04:32:24Z"
 ---
 ## Problem
 
@@ -255,3 +255,4 @@ The cursor agent (and composer 2.5 model) add a bunch of white space below each 
 - 2026-09-27T04:07:32Z · title, area, type, body
 - 2026-09-27T04:07:35Z · status draft→inbox
 - 2026-09-27T04:32:22Z · status inbox→ready
+- 2026-09-27T04:32:24Z · status ready→active, branch
