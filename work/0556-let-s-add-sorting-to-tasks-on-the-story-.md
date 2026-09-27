@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-27T16:20:20Z"
+review_passes: 1
 id: "0556"
 title: Add task sorting to the Story panel Tasks tab
 type: feature
@@ -10,7 +12,6 @@ created_by: hello@repoos.org
 branch: feat/add-task-sorting-to-the-story-panel-task
 review_model_override: opencode-go/hy3
 created_at: "2026-09-27T15:56:03Z"
-updated_at: "2026-09-27T16:18:48Z"
 ---
 ## Problem
 
@@ -93,3 +94,4 @@ Let's add sorting to tasks on the Story panel Tasks tab. Use the same sorting dr
 - 2026-09-27T16:13:59Z · review_model_override
 - 2026-09-27T16:14:01Z · status ready→active, branch
 - 2026-09-27T16:18:48Z · status active→review
+
