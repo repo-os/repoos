@@ -52,7 +52,10 @@ async function mountDrawer(pinia: Pinia, task: Task, storiesEnabled: boolean): P
       createdBy: "hello@repoos.org",
     },
   ];
-  const router = createRouter({ history: createMemoryHistory(), routes: [] });
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [{ path: "/stories", name: "stories", component: { template: "<div />" } }],
+  });
   await router.push("/");
   await router.isReady();
   const wrapper = mount(TaskDrawer, {
@@ -109,6 +112,55 @@ describe("task drawer story select (#0525)", () => {
     expect(drawerSource).toContain(
       '<SelectItem v-for="name in storyOptions" :key="name" :value="name">',
     );
+
+    const openBtn = wrapper.find('button[aria-label^="Open story"]');
+    expect(openBtn.exists()).toBe(true);
+    expect(openBtn.attributes("aria-label")).toBe('Open story "Alpha slice" (#0001)');
+  });
+
+  it("hides the go-to-story button when the task has no story", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    FakeEventSource.instances = [];
+    const task = makeTask({ story: "", assignedTo: "ai" });
+    stubApi(task);
+    wrapper = await mountDrawer(pinia, task, true);
+
+    expect(wrapper.find('button[aria-label^="Open story"]').exists()).toBe(false);
+  });
+
+  it("closes the drawer and navigates to the story panel", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    FakeEventSource.instances = [];
+    const task = makeTask({ story: "Alpha slice", assignedTo: "ai" });
+    stubApi(task);
+    wrapper = await mountDrawer(pinia, task, true);
+    const ui = useUiStore();
+    const router = wrapper.vm.$router;
+    const push = vi.spyOn(router, "push");
+
+    await wrapper.find('button[aria-label^="Open story"]').trigger("click");
+    await flush();
+
+    expect(ui.active).toBeNull();
+    expect(push).toHaveBeenCalledWith({ name: "stories", query: { story: "0001" } });
+  });
+
+  it("navigates tag-only stories by key", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    FakeEventSource.instances = [];
+    const task = makeTask({ story: "Tag only", assignedTo: "ai" });
+    stubApi(task);
+    wrapper = await mountDrawer(pinia, task, true);
+    const router = wrapper.vm.$router;
+    const push = vi.spyOn(router, "push");
+
+    await wrapper.find('button[aria-label^="Open story"]').trigger("click");
+    await flush();
+
+    expect(push).toHaveBeenCalledWith({ name: "stories", query: { story: "tag only" } });
   });
 
   it("with stories disabled, keeps Assigned to and hides Story", async () => {
