@@ -11,7 +11,8 @@ branch: feat/the-needs-input-banner-gives-misleading-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-27T10:25:52Z"
-updated_at: "2026-09-27T13:35:23Z"
+updated_at: "2026-09-27T14:04:55Z"
+handoff_signal_retry_count: 2
 ---
 id: "0546"
 title: Dismissing a review-rounds-exhausted flag can be silently undone by an in-flight review
@@ -149,3 +150,4 @@ nothing.
 - 2026-09-27T13:35:18Z · model_override
 - 2026-09-27T13:35:22Z · status inbox→ready
 - 2026-09-27T13:35:23Z · status ready→active, branch
+- 2026-09-27T14:04:55Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
