@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
 import { useDocsStore } from "../stores/docs";
@@ -13,6 +13,8 @@ import Card from "../components/ui/card.vue";
 import NewDocPanel from "../components/NewDocPanel.vue";
 import NewSkillPanel from "../components/NewSkillPanel.vue";
 import RepoHistoryPanel from "../components/RepoHistoryPanel.vue";
+import SearchOverlay from "../components/SearchOverlay.vue";
+import { countDocRefresh, formatDocRefreshMessage } from "../docs-refresh";
 import { RotateCcw, ChevronDown, ChevronRight, File } from "lucide-vue-next";
 
 const docs = useDocsStore();
@@ -129,6 +131,30 @@ function openInstalledSkill(name: string): void {
 const expandedNodes = ref<Set<string>>(new Set());
 const refreshing = ref(false);
 const refreshError = ref("");
+const refreshMessage = ref("");
+let refreshMessageTimer: ReturnType<typeof setTimeout> | undefined;
+const contextSearchOpen = ref(false);
+const contextSearchBtn = ref<HTMLButtonElement | null>(null);
+
+function openContextSearch(): void {
+  contextSearchOpen.value = true;
+}
+
+function onContextSearchKey(e: KeyboardEvent): void {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+    e.preventDefault();
+    openContextSearch();
+  }
+}
+
+function showRefreshMessage(text: string): void {
+  refreshMessage.value = text;
+  clearTimeout(refreshMessageTimer);
+  refreshMessageTimer = setTimeout(() => {
+    refreshMessage.value = "";
+  }, 5000);
+}
+
 const markdownRoot = ref<HTMLElement | null>(null);
 
 /** Markdown files get the same rendered presentation as the tasks panel. */
@@ -143,7 +169,14 @@ async function renderCurrentDiagrams(): Promise<void> {
 }
 
 watch([docContent, skillContent, tab], () => void renderCurrentDiagrams(), { flush: "post" });
-onMounted(() => void renderCurrentDiagrams());
+onMounted(() => {
+  void renderCurrentDiagrams();
+  window.addEventListener("keydown", onContextSearchKey);
+});
+onUnmounted(() => {
+  window.removeEventListener("keydown", onContextSearchKey);
+  clearTimeout(refreshMessageTimer);
+});
 watch(tab, (next) => {
   if (next === "discover" && !registrySkills.value.length) void loadRegistry();
 });
@@ -174,17 +207,22 @@ function rowStyle(depth: number): { paddingLeft: string } {
 async function refreshDocs(): Promise<void> {
   refreshing.value = true;
   refreshError.value = "";
+  const before = new Map(docList.value.map((d) => [d.path, d.mtimeMs ?? 0]));
   try {
     const ok = await docs.loadDocs();
     if (!ok) {
       refreshError.value = "Could not refresh docs.";
-    } else if (selDoc.value && !docList.value.some((d) => d.path === selDoc.value)) {
-      // The selected doc vanished on refresh — fall back rather than showing stale content.
-      if (docList.value.length) {
-        void docs.loadDoc(docList.value[0].path);
-      } else {
-        selDoc.value = null;
-        docContent.value = "";
+    } else {
+      const counts = countDocRefresh(before, docList.value);
+      showRefreshMessage(formatDocRefreshMessage(counts));
+      if (selDoc.value && !docList.value.some((d) => d.path === selDoc.value)) {
+        // The selected doc vanished on refresh — fall back rather than showing stale content.
+        if (docList.value.length) {
+          void docs.loadDoc(docList.value[0].path);
+        } else {
+          selDoc.value = null;
+          docContent.value = "";
+        }
       }
     }
   } finally {
@@ -194,13 +232,25 @@ async function refreshDocs(): Promise<void> {
 
 // Preselect a doc from the URL (?doc=docs/foo.md) — e.g. the Agents page's
 // "Model pricing & use cases" link opens /repo?doc=docs/opencode-models.md.
+function applyDocDeepLink(): void {
+  const target = typeof route.query.doc === "string" ? route.query.doc : null;
+  if (!target || !docList.value.some((d) => d.path === target)) return;
+  if (tab.value !== "docs") setTab("docs");
+  if (selDoc.value !== target) void docs.loadDoc(target);
+}
+
 watch(
-  docList,
-  (list) => {
-    const target = typeof route.query.doc === "string" ? route.query.doc : null;
-    if (target && list.some((d) => d.path === target) && selDoc.value !== target) {
-      void docs.loadDoc(target);
-    }
+  () => route.query.doc,
+  () => applyDocDeepLink(),
+  { immediate: true },
+);
+watch(docList, () => applyDocDeepLink());
+
+watch(
+  () => route.query.tab,
+  (raw) => {
+    const next = tabFromQuery(raw);
+    if (tab.value !== next) tab.value = next;
   },
   { immediate: true },
 );
@@ -208,37 +258,55 @@ watch(
 
 <template>
   <div class="ctx-page">
-    <div
-      style="
-        display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-        margin-bottom: 20px;
-      "
-    >
+    <header class="page-header">
       <div>
         <div class="page-title">Repo Context</div>
-        <div class="page-desc" style="margin: 3px 0 0">
-          AI-readable docs · ADRs · skills · history
-        </div>
+        <div class="page-desc">AI-readable docs · ADRs · skills · history</div>
       </div>
-      <Button
-        v-if="tab === 'docs' || tab === 'skills'"
-        variant="accent"
-        class="new-btn"
-        @click="tab === 'docs' ? ui.openNewDoc() : ui.openNewSkill()"
-      >
-        <svg viewBox="0 0 24 24" fill="none">
-          <path
-            d="M12 5v14M5 12h14"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-          />
-        </svg>
-        {{ tab === "docs" ? "New doc" : "New skill" }}
-      </Button>
-    </div>
+      <div class="page-header-actions ctx-header-actions">
+        <button
+          ref="contextSearchBtn"
+          type="button"
+          class="ctx-search-trigger search-input"
+          aria-label="Search context docs and skills"
+          @click="openContextSearch"
+        >
+          <svg class="search-ico" width="13" height="13" viewBox="0 0 24 24" fill="none">
+            <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
+            <path
+              d="M20 20l-3.5-3.5"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+          </svg>
+          <span class="search-placeholder hidden sm:inline">Search docs and skills…</span>
+          <kbd>⌘K</kbd>
+        </button>
+        <Button
+          v-if="tab === 'docs' || tab === 'skills'"
+          variant="accent"
+          class="new-btn"
+          @click="tab === 'docs' ? ui.openNewDoc() : ui.openNewSkill()"
+        >
+          <svg viewBox="0 0 24 24" fill="none">
+            <path
+              d="M12 5v14M5 12h14"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+          </svg>
+          {{ tab === "docs" ? "New doc" : "New skill" }}
+        </Button>
+      </div>
+    </header>
+
+    <SearchOverlay
+      v-model:open="contextSearchOpen"
+      scope="context"
+      :return-focus-el="contextSearchBtn"
+    />
 
     <div class="ctx-tabs">
       <button class="ctx-tab" :class="{ on: tab === 'docs' }" @click="setTab('docs')">Docs</button>
@@ -262,6 +330,9 @@ watch(
       >
         <RotateCcw class="size-4" :class="{ refreshing: refreshing }" />
       </Button>
+      <span v-if="refreshMessage" class="ctx-refresh-summary" role="status">{{
+        refreshMessage
+      }}</span>
     </div>
 
     <div v-if="tab === 'history'" class="hist-wrap">

@@ -46,6 +46,7 @@ const stubs = {
   NewDocPanel: { template: "<div />" },
   NewSkillPanel: { template: "<div />" },
   RepoHistoryPanel: { template: '<div class="stub-hist">history-panel</div>' },
+  SearchOverlay: { template: "<div />" },
   Select: { template: "<div><slot /></div>" },
   SelectTrigger: { template: "<div><slot /></div>" },
   SelectValue: { template: "<div />" },
