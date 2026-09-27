@@ -3,8 +3,23 @@
 The RepoOS marketing/landing site. A standalone static site — own
 `package.json`, own lockfile, own build/deploy pipeline, no bun workspaces
 (same pattern as `mobile/`). Independent of `src/ui-app` and of the docs site
-(`docs/`, #0339); shares only the dark visual identity (palette, Sora +
-JetBrains Mono).
+(`docs/`, #0339); shares the Classic visual identity (palette, Sora +
+JetBrains Mono) and optional Gruvbox design theme lifted from the app.
+
+## Theme switcher
+
+Visitors pick two independent axes from the nav:
+
+| Axis | DOM | Storage key | Values |
+| --- | --- | --- | --- |
+| **Design theme** | `data-ui-theme` on `<html>` (omitted for Classic) | `repoos-ui-theme` | `classic`, `gruvbox` |
+| **Appearance** | `data-theme` on `<html>` | `repoos-theme` (unchanged) | `dark`, `light` |
+
+`index.html` runs a synchronous inline script before first paint to apply both
+axes (stored choice, else OS `prefers-color-scheme` for appearance only) and to
+set `<meta name="theme-color">` for all four combinations. Gruvbox tokens are
+copied from `src/ui-app/src/style.css` into `src/style.css` — the landing does
+not import app code.
 
 ## Repo layout
 

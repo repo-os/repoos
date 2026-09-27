@@ -11,22 +11,34 @@
     -->
     <script>
       (function () {
-        var t = "dark";
+        var appearance = "dark";
+        var design = "classic";
         try {
-          var saved = localStorage.getItem("repoos-theme");
-          t =
-            saved === "light" || saved === "dark"
-              ? saved
+          var savedAppearance = localStorage.getItem("repoos-theme");
+          appearance =
+            savedAppearance === "light" || savedAppearance === "dark"
+              ? savedAppearance
               : window.matchMedia("(prefers-color-scheme: light)").matches
                 ? "light"
                 : "dark";
+          var savedDesign = localStorage.getItem("repoos-ui-theme");
+          if (savedDesign === "gruvbox") design = "gruvbox";
         } catch (e) {
-          /* blocked storage: fall through to dark */
+          /* blocked storage: fall through to classic + dark */
         }
-        document.documentElement.setAttribute("data-theme", t);
+        document.documentElement.setAttribute("data-theme", appearance);
+        if (design === "gruvbox") {
+          document.documentElement.setAttribute("data-ui-theme", "gruvbox");
+        }
+        var themeColor = {
+          "classic-dark": "#070a12",
+          "classic-light": "#f6f8fc",
+          "gruvbox-dark": "#282828",
+          "gruvbox-light": "#fbf1c7",
+        }[design + "-" + appearance];
         var meta = document.createElement("meta");
         meta.name = "theme-color";
-        meta.content = t === "light" ? "#f6f8fc" : "#070a12";
+        meta.content = themeColor;
         document.head.appendChild(meta);
       })();
     </script>
