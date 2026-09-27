@@ -2,14 +2,14 @@
 id: "0555"
 title: Add a New task button to the Story panel Tasks tab that presets the story
 type: feature
-status: draft
+status: inbox
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-27T15:54:28Z"
-updated_at: "2026-09-27T17:28:41Z"
+updated_at: "2026-09-27T17:28:47Z"
 ---
 ## Problem
 
@@ -119,3 +119,4 @@ We should add a "New Task" button to the Stories Tasks tab (at the top right). I
 - 2026-09-27T15:54:28Z · created · hello@repoos.org
 - 2026-09-27T15:57:29Z · note: Freeform PM run failed: the opencode agent timed out after 180s
 - 2026-09-27T17:28:41Z · title, area, body
+- 2026-09-27T17:28:47Z · status draft→inbox
