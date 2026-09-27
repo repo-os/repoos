@@ -4,8 +4,9 @@
  * Definitions carry a stable zero-padded `number` (#0515) — the story's
  * counterpart to a task's `id` and an input's `number` — so the board can show
  * `#0007` in the same upper-left chip position those two use and deep-link to
- * the story with a number that survives a rename. The rules are identical to
- * `ensureInputNumbers`: assigned once, never renumbered while the story exists.
+ * the story with a number that survives a rename. Like `ensureInputNumbers`,
+ * existing unique numbers stay stable; duplicate numbers are resolved by
+ * keeping the oldest claimant and assigning new numbers to the others.
  */
 import {
   existsSync,
@@ -245,15 +246,17 @@ function nextStoryNumber(config: RepoOSConfig): string {
  * (#0515), with the same guarantees and the same limits:
  *
  *   - Idempotent. A number already on disk is never touched or renumbered, so a
- *     repeated call is a no-op.
+ *     repeated call is a no-op — except when two files share the same `number:`,
+ *     in which case the oldest claimant keeps it and the rest are reassigned.
  *   - Deterministic. Existing definitions are numbered oldest-first (by
  *     `created_at`, then path), skipping any number already in use.
- *   - A *surviving* story never has its number reassigned. Deleting the
- *     highest-numbered story does free that number for the next one, exactly as
- *     it does for inputs — the guarantee is stability for the stories that
- *     remain, not a permanent ledger. Making it monotonic would need a
- *     high-water mark persisted outside the story files, which is a different
- *     design from the input numbering this deliberately mirrors.
+ *   - Aside from duplicate resolution, a story that already holds a unique
+ *     number keeps it across restarts. Deleting the highest-numbered story does
+ *     free that number for the next one, exactly as it does for inputs — the
+ *     guarantee is stability for the stories that remain, not a permanent
+ *     ledger. Making it monotonic would need a high-water mark persisted outside
+ *     the story files, which is a different design from the input numbering this
+ *     deliberately mirrors.
  *
  * A file whose frontmatter can't be patched is left alone and NOT reported as
  * changed, so it stays eligible for the next run instead of being silently
@@ -261,18 +264,25 @@ function nextStoryNumber(config: RepoOSConfig): string {
  */
 export function ensureStoryNumbers(config: RepoOSConfig): StoryDefinition[] {
   const items = listStoryDefinitions(config);
-  const missing = items
-    .filter((d) => !d.number)
-    .sort(
-      (a, b) =>
-        (a.createdAt || "").localeCompare(b.createdAt || "") || a.path.localeCompare(b.path),
-    );
-  if (!missing.length) return [];
-  const used = new Set(items.map((d) => d.number).filter(Boolean));
+  const byAge = [...items].sort(
+    (a, b) => (a.createdAt || "").localeCompare(b.createdAt || "") || a.path.localeCompare(b.path),
+  );
+  const used = new Set<string>();
+  const needsNumber: StoryDefinition[] = [];
+  for (const item of byAge) {
+    const n = item.number;
+    if (!n) needsNumber.push(item);
+    else if (used.has(n)) needsNumber.push(item);
+    else used.add(n);
+  }
+  if (!needsNumber.length) return [];
+  needsNumber.sort(
+    (a, b) => (a.createdAt || "").localeCompare(b.createdAt || "") || a.path.localeCompare(b.path),
+  );
   let max = 0;
   for (const n of used) max = Math.max(max, parseInt(n, 10));
   const changed: StoryDefinition[] = [];
-  for (const item of missing) {
+  for (const item of needsNumber) {
     let number = String(max + 1).padStart(4, "0");
     while (used.has(number)) number = String(++max).padStart(4, "0");
     used.add(number);
