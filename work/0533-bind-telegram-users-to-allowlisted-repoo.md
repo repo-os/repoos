@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-27T19:30:26Z"
-review_passes: 2
 id: "0533"
 title: Bind Telegram users to allowlisted RepoOS identities
 type: feature
@@ -13,7 +11,7 @@ created_by: ""
 branch: feat/bind-telegram-users-to-allowlisted-repoo
 model_override: cursor-grok-4.6-medium
 created_at: "2026-09-27T07:32:28Z"
-review_rounds: 1
+updated_at: "2026-09-27T19:15:22Z"
 ---
 ## Problem
 
@@ -67,6 +65,3 @@ This is deliberately **the same answer for both of the user's use cases**: an in
 - 2026-09-27T19:00:57Z · model_override
 - 2026-09-27T19:01:00Z · status ready→active, branch
 - 2026-09-27T19:15:22Z · status active→review
-- 2026-09-27T19:19:05Z · status review→active
-- 2026-09-27T19:27:31Z · status active→review
-
