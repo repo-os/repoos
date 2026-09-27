@@ -5,7 +5,7 @@ type: feature
 status: draft
 priority: p2
 area: general
-assigned_to: ""
+assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-27T06:52:20Z"
@@ -17,6 +17,11 @@ Most of the git history are docs() -related. let's add a filter for these so tha
 
 Most of the git history are docs() -related. let's add a filter for these so that by default we don't show them on this page, but have a toggle so user can toggle them on/off if they want to see them. This way it will be easier for a user to immediately understand the important git events.
 
+## Screenshots
+
+![Screenshot-2026-09-27-at-14.48.21](/api/tasks/0528/attachments/screenshot-1.png)
+
 ## Activity
 
 - 2026-09-27T06:52:20Z · created · hello@repoos.org
+- 2026-09-27T06:52:20Z · screenshots
