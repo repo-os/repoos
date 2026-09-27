@@ -20,6 +20,7 @@ import type {
   BuiltInAgentSchedule,
   CheckContrastPair,
   CheckThemeScope,
+  DevInspectorConfig,
   DeploymentConfig,
   DistributionConfig,
   DistributionKind,
@@ -533,6 +534,9 @@ export function parseBoardColumns(
       continue;
     }
     const existing = usedLabels.get(label.toLowerCase());
+    // A label equal to this column's OWN default is not a collision (the Settings
+    // form writes every default into `[board.columns]`); it needs no override.
+    if (existing === status) continue;
     if (existing) {
       console.warn(
         `[board.columns] ${status}: duplicate label "${label}" (already used by ${existing}), using default`,
@@ -870,6 +874,15 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof storiesEnabled === "boolean") {
       const stories: StoriesConfig = { enabled: storiesEnabled };
       cfg.stories = stories;
+    }
+    const devInspectorEnabled = parsed["dev.inspector.enabled"];
+    const devInspectorEditor = parsed["dev.inspector.editorCommand"];
+    if (typeof devInspectorEnabled === "boolean" || typeof devInspectorEditor === "string") {
+      const inspector: DevInspectorConfig = {
+        enabled: typeof devInspectorEnabled === "boolean" ? devInspectorEnabled : true,
+        editorCommand: typeof devInspectorEditor === "string" ? devInspectorEditor.trim() : "",
+      };
+      cfg.dev = { inspector };
     }
     if (typeof get("ntfyEnabled") === "boolean") cfg.ntfyEnabled = get("ntfyEnabled") as boolean;
     if (typeof get("ntfyTopic") === "string") cfg.ntfyTopic = get("ntfyTopic") as string;
@@ -1551,6 +1564,26 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       description:
         "Cut releases on the same Hetzner runner as close-outs (off by default — a release is watched live, so the provision delay reads as a regression; opt in per repo). Only applies when the runner is enabled.",
     },
+    {
+      key: "dev.inspector.enabled",
+      label: "Copy inspector",
+      type: "boolean",
+      tier: "guarded",
+      restartRequired: false,
+      default: true,
+      description:
+        "Dev/local only. Hold Alt (Option on macOS) over visible UI text to reveal a locate control; click it to copy or open the source file path.",
+    },
+    {
+      key: "dev.inspector.editorCommand",
+      label: "Copy inspector: editor command",
+      type: "string",
+      tier: "guarded",
+      restartRequired: false,
+      default: "",
+      description:
+        "Optional editor launcher, e.g. `zed {file}:{line}`. Placeholders `{file}` and `{line}`; omit `{line}` to open without a line number.",
+    },
     // [board.columns] — display-only label overrides (#0396).
     ...STATUSES.map((status) => ({
       key: `board.columns.${status}`,
@@ -1592,6 +1625,8 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "autoEngineeringMode",
   "skillSuggestions",
   "worktreeWarnThreshold",
+  "dev.inspector.enabled",
+  "dev.inspector.editorCommand",
   "board.columns.draft",
   "board.columns.inbox",
   "board.columns.ready",

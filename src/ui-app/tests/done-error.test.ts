@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import {
   extractConflicts,
-  DirtyMainError,
+  DirtyCheckoutError,
   MoveToDoneError,
   useRepoStore,
 } from "../src/stores/repo";
@@ -322,8 +322,21 @@ const jsonNeedsCommit = async () => ({
   }),
 });
 
-describe("dirty-main guard (0204)", () => {
-  it("stores the dirty files and throws a DirtyMainError when main is dirty", async () => {
+/** #0512: the same 409 shape, but the dirt is in the task's own worktree. */
+const jsonNeedsWorktreeCommit = async () => ({
+  ok: false,
+  status: 409,
+  json: async () => ({
+    ok: false,
+    error: "the worktree for feat/0042 has 1 uncommitted file that close-out would delete",
+    needsCommit: true,
+    dirtyScope: "worktree",
+    dirtyFiles: ["src/ui-app/src/style.css"],
+  }),
+});
+
+describe("dirty-checkout guard (0204, 0512)", () => {
+  it("stores the dirty files and throws a DirtyCheckoutError when main is dirty", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async (url: string) => {
@@ -340,14 +353,41 @@ describe("dirty-main guard (0204)", () => {
     await repo.init();
     const task = makeTask({ id: "0042" });
 
-    await expect(repo.completeTask(task)).rejects.toBeInstanceOf(DirtyMainError);
-    expect(repo.dirtyMainFor("0042")).toEqual(["dist/.build-info.json"]);
+    await expect(repo.completeTask(task)).rejects.toBeInstanceOf(DirtyCheckoutError);
+    expect(repo.dirtyFilesFor("0042")).toEqual(["dist/.build-info.json"]);
+    expect(repo.dirtyScopeFor("0042")).toBe("main");
     // No inline move-to-done error: this isn't a failure of the close-out.
     expect(repo.doneErrorFor("0042")).toBeNull();
     expect(repo.toasts).toHaveLength(0);
   });
 
-  it("clears the pending confirmation via clearDirtyMain (Cancel)", async () => {
+  it("records the worktree scope so the modal says close-out would delete it (0512)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/health"))
+          return json({ ok: true, root: "/tmp/repo", taskCount: 0, workDir: "work" });
+        if (url.includes("/api/board") || url.includes("/api/index"))
+          return json({ tasks: [], counts: EMPTY_COUNTS, taskCount: 0 });
+        if (url.includes("/api/agents/running")) return json({ tasks: [] });
+        if (url.includes("/done")) return jsonNeedsWorktreeCommit();
+        throw new Error("unexpected fetch: " + url);
+      }),
+    );
+    const repo = useRepoStore();
+    await repo.init();
+    const task = makeTask({ id: "0042" });
+
+    const err = await repo.completeTask(task).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(DirtyCheckoutError);
+    expect((err as DirtyCheckoutError).scope).toBe("worktree");
+    expect((err as DirtyCheckoutError).message).toMatch(/would delete/i);
+    expect(repo.dirtyFilesFor("0042")).toEqual(["src/ui-app/src/style.css"]);
+    expect(repo.dirtyScopeFor("0042")).toBe("worktree");
+    expect(repo.doneErrorFor("0042")).toBeNull();
+  });
+
+  it("clears the pending confirmation via clearDirtyCheckout (Cancel)", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async (url: string) => {
@@ -365,9 +405,9 @@ describe("dirty-main guard (0204)", () => {
     const task = makeTask({ id: "0042" });
 
     await expect(repo.completeTask(task)).rejects.toThrow();
-    expect(repo.dirtyMainFor("0042").length).toBeGreaterThan(0);
-    repo.clearDirtyMain("0042");
-    expect(repo.dirtyMainFor("0042")).toEqual([]);
+    expect(repo.dirtyFilesFor("0042").length).toBeGreaterThan(0);
+    repo.clearDirtyCheckout("0042");
+    expect(repo.dirtyFilesFor("0042")).toEqual([]);
   });
 
   it("proceeds (no modal) when commitDirty is set and the server accepts", async () => {
@@ -393,14 +433,14 @@ describe("dirty-main guard (0204)", () => {
 
     const result = await repo.completeTask(task, { commitDirty: true });
     expect(result.ok).toBe(true);
-    expect(repo.dirtyMainFor("0042")).toEqual([]);
+    expect(repo.dirtyFilesFor("0042")).toEqual([]);
   });
 
-  it("does not toast a DirtyMainError via onError", async () => {
+  it("does not toast a DirtyCheckoutError via onError", async () => {
     vi.useFakeTimers();
     const repo = useRepoStore();
     await repo.init();
-    repo.onError(new DirtyMainError("0042", ["dist/.build-info.json"]));
+    repo.onError(new DirtyCheckoutError("0042", ["dist/.build-info.json"]));
     expect(repo.toasts).toHaveLength(0);
     expect(repo.feed.some((f) => f.kind === "error")).toBe(true);
   });

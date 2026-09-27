@@ -117,7 +117,10 @@ export function freeformLogPaths(
 /** Remove the temporary worktree reserved for a worktree-bound PM run. */
 export function cleanupFreeformWorktree(config: RepoOSConfig, branch: string | undefined): void {
   if (!branch) return;
-  if (removeWorktree(config.root, branch)) {
+  // Forced: a freeform run's worktree is scratch reserved for that run, and its
+  // branch is force-deleted immediately below anyway, so nothing committed on
+  // it can be recovered by keeping the directory (#0512).
+  if (removeWorktree(config.root, branch, { force: true })) {
     deleteBranch(config.root, branch, { force: true });
   }
 }

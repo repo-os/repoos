@@ -17,5 +17,8 @@ export function needsInputClearsOnSuccessfulReview(
   task: Pick<Task, "status" | "needsInputReason">,
 ): boolean {
   if (task.needsInputReason === "review-failed") return true;
+  // A fresh review run restarts the episode; if it still finds problems the
+  // auto-bounce cap re-raises this flag right after.
+  if (task.needsInputReason === "review-rounds-exhausted") return true;
   return task.needsInputReason === "watchdog-stuck" && task.status === "review";
 }

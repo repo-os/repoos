@@ -284,4 +284,117 @@ describe("IntegrationStatusBar", () => {
     expect(style).toContain("min-width: 400px");
     expect(style).toContain("max-width: 400px");
   });
+
+  it("renders elapsed time as a chip pill in expanded and minimised views (#0522)", async () => {
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    repo.integration = activeSnapshot();
+    ui.setIntegrationBarCollapsed(false);
+    const expanded = render();
+    await nextTick();
+
+    const expandedChip = expanded.find(".ibar .ibar-chip");
+    expect(expandedChip.exists()).toBe(true);
+    expect(expandedChip.text()).toBe("3m 07s");
+
+    ui.setIntegrationBarCollapsed(true);
+    await nextTick();
+    const stripChip = expanded.find(".ibar-strip .strip-label .ibar-chip");
+    expect(stripChip.exists()).toBe(true);
+    expect(stripChip.text()).toBe("3m 07s");
+    expect(stripChip.classes().sort()).toEqual(expandedChip.classes().sort());
+    const expandedStyle = getComputedStyle(expandedChip.element);
+    const stripStyle = getComputedStyle(stripChip.element);
+    expect(stripStyle.borderRadius).toBe(expandedStyle.borderRadius);
+    expect(stripStyle.backgroundColor).toBe(expandedStyle.backgroundColor);
+    expect(expanded.find(".strip-elapsed").exists()).toBe(false);
+  });
+
+  it("keeps the active-task label in the minimised strip when many tasks are queued (#0522)", async () => {
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    repo.integration = {
+      ...activeSnapshot(),
+      queue: ["0455", "0456", "0457", "0458"],
+    };
+    ui.setIntegrationBarCollapsed(true);
+    const wrapper = render();
+    await nextTick();
+
+    const label = wrapper.get(".strip-label");
+    expect(label.text()).toContain("#0042");
+    expect(label.text()).toContain("3m 07s");
+    wrapper.get(".strip-queue-ellipsis");
+    expect(wrapper.get(".ibar-strip").attributes("title")).toContain("Queue: #0455");
+  });
+
+  it("shows queued task ids as chips in expanded and minimised views (#0522)", async () => {
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    repo.integration = {
+      ...activeSnapshot(),
+      queue: ["0455", "0456"],
+    };
+    ui.setIntegrationBarCollapsed(false);
+    const wrapper = render();
+    await nextTick();
+
+    const expandedQueue = wrapper.find(".ibar-queue");
+    expect(expandedQueue.text()).toContain("Queue:");
+    expect(expandedQueue.text()).toContain("#0455");
+    expect(expandedQueue.text()).toContain("#0456");
+    expect(expandedQueue.text()).not.toContain("queueing");
+    expect(wrapper.find(".queue-count").exists()).toBe(false);
+    expect(expandedQueue.findAll(".ibar-chip")).toHaveLength(2);
+
+    ui.setIntegrationBarCollapsed(true);
+    await nextTick();
+    const stripQueue = wrapper.find(".strip-queue");
+    expect(stripQueue.exists()).toBe(true);
+    expect(stripQueue.text()).toBe("Queue:#0455#0456");
+    expect(stripQueue.findAll(".ibar-chip")).toHaveLength(2);
+  });
+
+  it("hides the minimised queue segment when nothing is queued (#0522)", async () => {
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    repo.integration = activeSnapshot();
+    ui.setIntegrationBarCollapsed(true);
+    const wrapper = render();
+    await nextTick();
+
+    expect(wrapper.find(".strip-queue").exists()).toBe(false);
+  });
+
+  it("hides queue UI when integration failed (#0522)", async () => {
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    repo.integration = {
+      ...activeSnapshot({ failed: true, stage: "check" }),
+      queue: ["0455"],
+    };
+    ui.setIntegrationBarCollapsed(true);
+    const wrapper = render();
+    await nextTick();
+
+    expect(wrapper.find(".strip-queue").exists()).toBe(false);
+    expect(wrapper.get(".ibar-strip").attributes("title")).not.toContain("Queue:");
+  });
+
+  it("includes queued ids in the minimised strip tooltip without an active job (#0522)", async () => {
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    repo.integration = {
+      empty: false,
+      active: null,
+      queue: ["0455", "0456"],
+      at: new Date().toISOString(),
+    };
+    ui.setIntegrationBarCollapsed(true);
+    const wrapper = render();
+    await nextTick();
+
+    expect(wrapper.get(".ibar-strip").attributes("title")).toContain("Queue: #0455 #0456");
+    expect(wrapper.find(".strip-queue").exists()).toBe(true);
+  });
 });

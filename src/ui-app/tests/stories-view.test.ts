@@ -187,6 +187,59 @@ describe("StoriesView grouping and roll-up", () => {
   });
 });
 
+describe("StoriesView copy-link number (#0515)", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    useConfigStore().data = { stories: { enabled: true } };
+  });
+
+  it("leads each registered story's card with the number, in the upper left", () => {
+    setTasks([makeTask({ id: "0001", story: "Slice", status: "ready" })]);
+    useRepoStore().storyDefinitions = [
+      {
+        key: "slice",
+        name: "Slice",
+        number: "0042",
+        path: "stories/slice.md",
+        body: "Scope.",
+        createdAt: "2026-09-01T00:00:00Z",
+        createdBy: "hello@repoos.org",
+      },
+    ];
+    const card = mountView().find(".story-card");
+    const number = card.find(".copyable-number");
+    expect(number.text()).toBe("#0042");
+    expect(number.attributes("aria-label")).toBe("Copy link to story 0042");
+    // Upper left: the chip row is the card's first child, above the head button
+    // that carries the name.
+    expect(card.element.firstElementChild!.classList.contains("story-number-row")).toBe(true);
+    expect(card.find(".story-number-row").find(".copyable-number").exists()).toBe(true);
+  });
+
+  it("keeps the copy button out of the card's own button, which is invalid markup", () => {
+    setTasks([makeTask({ id: "0001", story: "Slice", status: "ready" })]);
+    useRepoStore().storyDefinitions = [
+      {
+        key: "slice",
+        name: "Slice",
+        number: "0042",
+        path: "stories/slice.md",
+        body: "Scope.",
+        createdAt: "2026-09-01T00:00:00Z",
+        createdBy: "hello@repoos.org",
+      },
+    ];
+    const head = mountView().find(".story-head");
+    expect(head.find(".copyable-number").exists()).toBe(false);
+  });
+
+  it("leaves a tag-only story without a number, having nothing stable to show", () => {
+    setTasks([makeTask({ id: "0001", story: "Tag only", status: "ready" })]);
+    useRepoStore().storyDefinitions = [];
+    expect(mountView().find(".copyable-number").exists()).toBe(false);
+  });
+});
+
 describe("StoriesView side panel selection", () => {
   beforeEach(() => {
     setActivePinia(createPinia());

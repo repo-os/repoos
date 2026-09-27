@@ -42,6 +42,7 @@ export type TaskMode = "freeform" | "manual";
  */
 export const NEEDS_INPUT_REASONS = [
   "review-failed",
+  "review-rounds-exhausted",
   "dev-error",
   "check-failed-after-retries",
   "watchdog-stuck",
@@ -467,6 +468,11 @@ export interface RepoOSConfig {
    */
   servePort?: number;
   /**
+   * Dev/local tooling (#0509). Ignored on release builds (no dev UI bundle /
+   * RepoOS sources in the repo).
+   */
+  dev?: DevConfig;
+  /**
    * Display-only column label overrides for the six board columns (task
    * #0396). Keys are canonical status IDs (`draft`, `inbox`, `ready`, `active`,
    * `review`, `done`); values are display labels shown in the UI and CLI.
@@ -524,6 +530,16 @@ export interface DeploymentConfig {
 export interface StoriesConfig {
   /** Whether the Stories page and its navigation item are shown. Default false. */
   enabled?: boolean;
+}
+
+/** Dev-only UI copy inspector (#0509). */
+export interface DevInspectorConfig {
+  enabled?: boolean;
+  editorCommand?: string;
+}
+
+export interface DevConfig {
+  inspector?: DevInspectorConfig;
 }
 
 /**
@@ -1180,6 +1196,11 @@ export interface BoardIndex {
 export interface StoryDefinitionRecord {
   key: string;
   name: string;
+  /**
+   * Stable zero-padded 4-digit number, the story's counterpart to a task's
+   * `id` (#0515). Absent/empty only for a story file not yet backfilled.
+   */
+  number?: string;
   path: string;
   body: string;
   createdAt: string;

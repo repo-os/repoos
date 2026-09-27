@@ -20,7 +20,7 @@ jobs:
           bun-version: latest
 
       - run: bun install --frozen-lockfile
-      - run: bun run build
+      - run: REPOOS_SHIP=1 bun run build
 
       - name: Package dist
         run: tar -czf repoos-dist.tar.gz -C dist .

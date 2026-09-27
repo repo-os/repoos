@@ -45,7 +45,7 @@
  * fight over focus.
  */
 import { computed, nextTick, ref, useId, watch, type Component } from "vue";
-import { FileText, Info, ListChecks, X } from "lucide-vue-next";
+import { FileText, Info, ListChecks, MessageSquare, X } from "lucide-vue-next";
 import type { MergedStoryGroup } from "../../../core/story-display.js";
 import type { Status, Task } from "../types";
 import { useUiStore } from "../stores/ui";
@@ -59,20 +59,28 @@ import DialogContent from "./ui/dialog/content.vue";
 import DialogDescription from "./ui/dialog/description.vue";
 import DialogTitle from "./ui/dialog/title.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
+import CopyableNumber from "./CopyableNumber.vue";
+import StoryPmChat from "./StoryPmChat.vue";
 
-type StoryTab = "story" | "tasks" | "details";
+type StoryTab = "story" | "pm" | "tasks" | "details";
 
-/** Strip order — also the arrow-key order. "story" is the reset target. */
-const TABS: StoryTab[] = ["story", "tasks", "details"];
+/**
+ * Strip order — also the arrow-key order. "story" is the reset target. "pm"
+ * sits directly after it, matching the task panel's strip (Task · PM · Dev · …)
+ * so the two panels are read the same way (#0515).
+ */
+const TABS: StoryTab[] = ["story", "pm", "tasks", "details"];
 
 const TAB_LABELS: Record<StoryTab, string> = {
   story: "Story",
+  pm: "PM",
   tasks: "Tasks",
   details: "Details",
 };
 
 const TAB_ICONS: Record<StoryTab, Component> = {
   story: FileText,
+  pm: MessageSquare,
   tasks: ListChecks,
   details: Info,
 };
@@ -158,6 +166,19 @@ const summaryLine = computed(() => {
   return `${s.total} ${s.total === 1 ? "task" : "tasks"} · ${s.done} done`;
 });
 
+/**
+ * The copyable deeplink for this story (#0515) — the same `CopyableNumber`
+ * chip tasks and inputs lead their cards and panels with, in the same upper
+ * left position, pointing at the same kind of `?param=` route. A registered
+ * story has a stable `number`; a tag-only story has no file to hold one, so it
+ * has nothing to show, exactly as `inputLabel` falls back for an input written
+ * before numbering existed.
+ */
+const numberLabel = computed(() => (props.story?.number ? `#${props.story.number}` : ""));
+const numberPath = computed(() =>
+  props.story?.number ? `/stories?story=${encodeURIComponent(props.story.number)}` : "",
+);
+
 /** Hand the story over to the task drawer, then get out of its way. */
 function openTask(task: Task): void {
   emit("close");
@@ -197,6 +218,17 @@ function keepOpenOnOutsideInteraction(e: Event): void {
       <div class="drawer-resize" @mousedown.prevent="ui.startResize"></div>
       <div class="drawer-head">
         <div class="drawer-head-title">
+          <!-- #0515: the copy-link number leads the panel header, in the same
+               upper left slot and with the same component the task panel and
+               the input panel use, so a story reads like either of them. -->
+          <div v-if="numberLabel" class="story-panel-ids">
+            <CopyableNumber
+              :label="numberLabel"
+              :path="numberPath"
+              :aria-label="`Copy link to story ${story?.number}`"
+            />
+            <span v-if="story?.path" class="tc-id mono">{{ story.path }}</span>
+          </div>
           <DialogTitle>{{ story?.name }}</DialogTitle>
           <DialogDescription class="sr-only">Story details</DialogDescription>
           <div v-if="story" class="story-panel-sub">
@@ -230,7 +262,23 @@ function keepOpenOnOutsideInteraction(e: Event): void {
         </button>
       </div>
 
+      <!-- PM (#0515): the chat is the tab panel and brings its own
+           `drawer-body drawer-session-body`, exactly as the task panel's PM tab
+           does — only the transcript scrolls, leaving the compose box
+           reachable. Nesting it inside the scrolling `.drawer-body` below
+           would give the panel two scroll containers. Fall through to the
+           reading body when there is no story to talk about. -->
+      <StoryPmChat
+        v-if="tab === 'pm' && story"
+        :id="panelId('pm')"
+        role="tabpanel"
+        :aria-labelledby="tabId('pm')"
+        tabindex="0"
+        :story="story"
+      />
+
       <div
+        v-else
         :id="panelId(tab)"
         ref="bodyEl"
         class="drawer-body story-panel-body"

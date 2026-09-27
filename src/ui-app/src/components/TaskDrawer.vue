@@ -57,7 +57,7 @@ import ChatToolCallRow from "./ChatToolCallRow.vue";
 import { useChatScroll } from "../composables/useChatScroll";
 import { bubbleRole, stripAnsi, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
-import DirtyMainDialog from "./DirtyMainDialog.vue";
+import DirtyCheckoutDialog from "./DirtyCheckoutDialog.vue";
 import HotfixConfirmDialog from "./HotfixConfirmDialog.vue";
 import ReviewConfirmDialog from "./ReviewConfirmDialog.vue";
 import SendToEngineerDialog from "./SendToEngineerDialog.vue";
@@ -90,6 +90,7 @@ import { parseReviewVerdict } from "../lib/reviewVerdict";
 import { autoRepairHint, retryCountFrom } from "../lib/retryHints";
 import { uiRecoveryState } from "../lib/uiRecovery";
 import CopyableNumber from "./CopyableNumber.vue";
+import PmChatSurface from "./PmChatSurface.vue";
 
 const repo = useRepoStore();
 const ui = useUiStore();
@@ -841,9 +842,10 @@ async function moveToDone(): Promise<void> {
     ui.close();
     ui.expandIntegrationBar();
   } catch (err) {
-    // Dirty-main guard (0204): pause and show the confirmation modal instead
-    // of an inline failure — the task stays in review until the user decides.
-    if (err instanceof Error && err.name === "DirtyMainError") {
+    // Dirty-checkout guard (0204/#0512): pause and show the confirmation modal
+    // instead of an inline failure — the task stays in review until the user
+    // decides what happens to the uncommitted files.
+    if (err instanceof Error && err.name === "DirtyCheckoutError") {
       dirtyTask.value = ui.active;
       return;
     }
@@ -878,15 +880,18 @@ async function stopMtd(): Promise<void> {
   }
 }
 
-/** Dirty-main confirmation (0204): the task whose close-out is paused on
- *  `main` having uncommitted files. `null` hides the modal. */
+/** Uncommitted-changes confirmation (0204/#0512): the task whose close-out is
+ *  paused on a dirty checkout — `main` (the merge would abort) or the task's own
+ *  worktree (close-out would delete the changes). `null` hides the modal. */
 const dirtyTask = ref<Task | null>(null);
 
-const dirtyFiles = computed(() => (dirtyTask.value ? repo.dirtyMainFor(dirtyTask.value.id) : []));
+const dirtyFiles = computed(() => (dirtyTask.value ? repo.dirtyFilesFor(dirtyTask.value.id) : []));
+const dirtyScope = computed(() =>
+  dirtyTask.value ? repo.dirtyScopeFor(dirtyTask.value.id) : ("main" as const),
+);
 
 async function confirmCommitDirty(): Promise<void> {
   const t = dirtyTask.value;
-  const files = dirtyFiles.value;
   dirtyTask.value = null;
   if (!t) return;
   ui.saving = true;
@@ -898,7 +903,7 @@ async function confirmCommitDirty(): Promise<void> {
     ui.expandIntegrationBar();
   } catch (err) {
     // Still dirty after commiting (e.g. a new file appeared) — keep asking.
-    if (err instanceof Error && err.name === "DirtyMainError") {
+    if (err instanceof Error && err.name === "DirtyCheckoutError") {
       dirtyTask.value = t;
       return;
     }
@@ -914,7 +919,7 @@ function cancelDirty(): void {
   // Use the captured task, not ui.active — the body-teleported dialog dismissed
   // the drawer's modal, so ui.active may already be null here.
   const id = dirtyTask.value?.id ?? ui.active?.id;
-  if (id) repo.clearDirtyMain(id);
+  if (id) repo.clearDirtyCheckout(id);
   dirtyTask.value = null;
 }
 
@@ -1453,7 +1458,7 @@ const engineerNoteOpen = ref(false);
 // SendToEngineerDialog is a body-teleported layer, so opening it (or moving
 // focus into it) trips the drawer's modal dismiss-on-outside and nulls
 // `ui.active` before the confirm handler runs. Snapshot the task and its report
-// when the dialog opens — same pattern as RestartTaskDialog / DirtyMainDialog.
+// when the dialog opens — same pattern as RestartTaskDialog / DirtyCheckoutDialog.
 const engineerNoteTask = ref<Task | null>(null);
 const engineerNoteReport = ref<ReviewState["report"]>(null);
 async function sendToEngineer(): Promise<void> {
@@ -1532,11 +1537,13 @@ function pmSessionId(taskId: string): string {
 }
 
 const pmDraft = ref("");
-const pmDraftTextarea = ref<HTMLTextAreaElement | null>(null);
 const pmSubmitting = ref(false);
-const pmLog = ref<HTMLElement | null>(null);
-/** Hidden file input behind the PM compose box's attach button (0381). */
-const pmShotInput = ref<HTMLInputElement | null>(null);
+/** The shared PM chat surface, for the needs-input prefill's focus() call. */
+const pmSurface = ref<InstanceType<typeof PmChatSurface> | null>(null);
+
+// 0513: pending PM screenshots open the shared full-size viewer. Kept here, in
+// the host, because the host owns the shot list — the shared <PmChatSurface>
+// only reports which index was clicked.
 const pmViewerOpen = ref(false);
 const pmViewerStart = ref(0);
 const pmViewerShots = computed(() => pendingToShots(ui.pmScreenshots));
@@ -1545,10 +1552,9 @@ function openPmViewer(index: number): void {
   pmViewerOpen.value = true;
 }
 
-function onPmShotFiles(e: Event): void {
-  const input = e.target as HTMLInputElement;
-  if (input.files) ui.addPmScreenshots(Array.from(input.files));
-  input.value = "";
+/** Screenshots picked for the next PM message (0381), into the shared buffer. */
+function onPmShotFiles(files: File[]): void {
+  if (files.length) ui.addPmScreenshots(files);
 }
 
 /** Check if PM agent is enabled. */
@@ -1568,37 +1574,23 @@ const pmBusy = computed(
   () => pmSubmitting.value || (ui.active && repo.runningIds.includes(pmSessionId(ui.active.id))),
 );
 
-const pmHasConversation = computed(() => pmLines.value.length > 0);
-
-// Chat scroll standard (#0444): open on the newest message, remember the
-// reader's position per task, and offer a jump back down once they scroll away.
-const {
-  showJumpToLatest: pmShowJumpToLatest,
-  onScroll: pmOnScroll,
-  scrollToLatest: pmScrollToLatest,
-} = useChatScroll(pmLog, {
-  chatId: () => (ui.active ? pmSessionId(ui.active.id) : "pm:none"),
-  contentSize: () => pmLines.value.length,
-  active: () => ui.activeTab === "pm",
-});
+// The PM chat's scroll, transcript grouping, compose box, Enter-to-send,
+// auto-grow and canned-prompt behaviour all live in <PmChatSurface> (#0515) —
+// this drawer passes data in and handles events. It deliberately keeps no
+// `useChatScroll` of its own: a second instance here would hold a ref to a log
+// element that no longer exists in this component, and the drawer's other chats
+// (Dev, Review) have their own.
 
 /**
  * Canned messages shown above the PM compose box, keyed by task status.
  * Empty (no chips) for statuses without a defined set.
  */
+// The surface decides whether the canned prompts are visible and sends the
+// chosen one, so this only supplies the list.
 const pmCannedMessages = computed(() => {
   const t = ui.active;
   return t ? pmCannedMessagesFor(t.status) : [];
 });
-
-/** Whether to show the canned PM messages: any status with a defined set. */
-const showPmCanned = computed(() => pmCannedMessages.value.length > 0);
-
-/** Send the chosen canned message to the PM agent, just like a typed send. */
-function pmSendCanned(text: string): void {
-  pmDraft.value = text;
-  void pmSend();
-}
 
 function buildNeedsInputPmPrompt(questions: string[]): string {
   return [
@@ -1615,17 +1607,13 @@ function openPmWithNeedsInputQuestions(): void {
   if (!ui.active?.questions?.length) return;
   ui.activeTab = "pm";
   pmDraft.value = buildNeedsInputPmPrompt(ui.active.questions);
-  nextTick(() => {
-    pmDraftTextarea.value?.focus();
-    autoGrowTextarea(pmDraftTextarea.value);
-  });
+  // The composer lives inside <PmChatSurface> since #0515, so ask it to focus
+  // rather than reaching for an element this component no longer holds.
+  void nextTick(() => pmSurface.value?.focusDraft());
 }
 
-/** The PM conversation as shared display rows (#0506) — same grouping as every other chat. */
-const pmEntries = computed<DisplayRow[]>(() => toDisplayRows(pmLines.value));
-
-// Following new output (and restoring a remembered position when the PM tab
-// opens) is useChatScroll's job — see docs/ai-chat-standards.md (#0444).
+// Row grouping (#0506) and the scroll standard (#0444) are the surface's job now
+// — see the note above the PM section and docs/ai-chat-standards.md.
 
 async function pmSend(): Promise<void> {
   const text = pmDraft.value.trim();
@@ -1645,7 +1633,9 @@ async function pmSend(): Promise<void> {
     mime: s.mime,
     data: s.dataUrl.split(",")[1] ?? "",
   }));
-  pmScrollToLatest();
+  // No explicit scroll-to-latest: the optimistic line above grows the log, and
+  // the surface's `useChatScroll` follows it because the reader is at the
+  // bottom (they just typed). Same rule every other chat follows.
 
   try {
     await api(
@@ -1674,16 +1664,6 @@ async function pmSend(): Promise<void> {
   }
 }
 
-function pmOnKeydown(event: KeyboardEvent): void {
-  if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
-  event.preventDefault();
-  void pmSend();
-}
-
-function adjustPmHeight(): void {
-  autoGrowTextarea(pmDraftTextarea.value);
-}
-
 /**
  * Interrupt the PM's in-flight response. The server stops the running agent
  * turn and appends a "response interrupted" marker to the conversation.
@@ -1698,14 +1678,9 @@ async function pmInterrupt(): Promise<void> {
   }
 }
 
-watch(
-  () => ui.active?.id,
-  () => {
-    if (ui.active) {
-      pmScrollToLatest();
-    }
-  },
-);
+// Switching tasks changes the surface's `chatId`, and `useChatScroll` restores
+// that conversation's remembered position itself (or opens on the newest
+// message) — so there is no per-task scroll reset to do here.
 
 // ---- PM agent override (task detail) ----
 
@@ -2601,7 +2576,8 @@ watch(
   () => pmDraft.value,
   () => {
     updateChatDraftDirty();
-    nextTick(adjustPmHeight);
+    // No auto-grow call here: the surface grows its own textarea whenever the
+    // draft changes (#0515).
   },
   { immediate: true },
 );
@@ -4360,203 +4336,69 @@ watch(
         <div v-else-if="ui.activeTab === 'debug'" class="drawer-body">
           <DebugPanel v-if="ui.active" :task="ui.active" v-model:view="ui.debugView" />
         </div>
-        <div v-else-if="ui.activeTab === 'pm'" class="drawer-body drawer-session-body">
-          <div v-if="ui.active" class="agent-override-bar">
-            <div class="agent-pick-grid">
-              <div class="agent-field" style="grid-column: 1 / -1">
-                <AgentModelControl
-                  :cli-options="cliOptionsFor(pmOverrideDraft.cli)"
-                  :model-options="pmModelOptions"
-                  :memory-key="'task:' + ui.active.id + ':pm'"
-                  v-model:cli="pmOverrideDraft.cli"
-                  v-model:model="pmOverrideDraft.model"
-                  :disabled="ui.saving"
-                />
-                <div
-                  v-if="isLegacyGeminiCli(pmOverrideDraft.cli)"
-                  class="agent-legacy-notice"
-                  role="status"
-                >
-                  <strong>Deprecated Gemini CLI</strong> — this saved PM override is preserved, but
-                  new runs should use
-                  <a :href="GEMINI_MIGRATION_URL" target="_blank" rel="noopener noreferrer"
-                    >Antigravity CLI (agy)</a
-                  >.
-                </div>
-              </div>
-              <div class="agent-field">
-                <div
-                  v-if="pmOverrideDirty"
-                  class="agent-override-actions"
-                  style="padding-top: 20px"
-                >
-                  <span class="agent-save-hint">saving…</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div
-            ref="pmLog"
-            class="agent-log-wrap pm-log-wrap ai-chat-log"
-            role="log"
-            aria-live="polite"
-            @scroll="pmOnScroll"
+        <template v-else-if="ui.activeTab === 'pm'">
+          <!-- #0515: the chat itself is the shared <PmChatSurface>, which the
+               story panel's PM tab renders too. The per-task bits stay here —
+               the override bar (passed in the `header` slot), and the
+               store/buffer this feeds. -->
+          <PmChatSurface
+            v-if="ui.active"
+            ref="pmSurface"
+            v-model:draft="pmDraft"
+            :chat-id="pmSessionId(ui.active.id)"
+            :lines="pmLines"
+            :busy="pmBusy"
+            :disabled="!pmAgentEnabled"
+            placeholder="Ask PM to edit this task…"
+            welcome-title="Chat about this task"
+            welcome-body="Ask the PM to edit the task, suggest changes, or discuss progress."
+            log-label="Conversation with the PM about this task"
+            :canned="pmCannedMessages"
+            :shots="ui.pmScreenshots"
+            @send="pmSend"
+            @interrupt="pmInterrupt"
+            @attach="onPmShotFiles"
+            @remove-shot="ui.removePmScreenshot"
+            @open-shot="openPmViewer"
           >
-            <div v-if="!pmHasConversation" class="agent-empty pm-empty">
-              <div class="pm-welcome-icon">PM</div>
-              <strong>Chat about this task</strong>
-              <p>Ask the PM to edit the task, suggest changes, or discuss progress.</p>
-            </div>
-            <template v-else>
-              <template v-for="row in pmEntries" :key="row.key">
-                <!-- one row per run of adjacent tool calls (#0506) -->
-                <ChatToolCallRow v-if="row.kind === 'tools'" :calls="row.calls" :at="row.at" />
-                <div
-                  v-else-if="bubbleRole(row)"
-                  class="pm-row"
-                  :class="`pm-row-${bubbleRole(row)}`"
-                >
-                  <div v-if="bubbleRole(row) === 'assistant'" class="pm-mini-avatar">PM</div>
-                  <div class="pm-bubble" :class="`pm-bubble-${bubbleRole(row)}`">
+            <template #header>
+              <div v-if="ui.active" class="agent-override-bar">
+                <div class="agent-pick-grid">
+                  <div class="agent-field" style="grid-column: 1 / -1">
+                    <AgentModelControl
+                      :cli-options="cliOptionsFor(pmOverrideDraft.cli)"
+                      :model-options="pmModelOptions"
+                      :memory-key="'task:' + ui.active.id + ':pm'"
+                      v-model:cli="pmOverrideDraft.cli"
+                      v-model:model="pmOverrideDraft.model"
+                      :disabled="ui.saving"
+                    />
                     <div
-                      v-if="bubbleRole(row) === 'assistant'"
-                      class="pm-markdown"
-                      v-html="renderMarkdown(row.text)"
-                    ></div>
-                    <span v-else>{{ row.text }}</span>
-                    <span v-if="row.at" class="msg-time">{{ fmtTime(row.at) }}</span>
+                      v-if="isLegacyGeminiCli(pmOverrideDraft.cli)"
+                      class="agent-legacy-notice"
+                      role="status"
+                    >
+                      <strong>Deprecated Gemini CLI</strong> — this saved PM override is preserved,
+                      but new runs should use
+                      <a :href="GEMINI_MIGRATION_URL" target="_blank" rel="noopener noreferrer"
+                        >Antigravity CLI (agy)</a
+                      >.
+                    </div>
+                  </div>
+                  <div class="agent-field">
+                    <div
+                      v-if="pmOverrideDirty"
+                      class="agent-override-actions"
+                      style="padding-top: 20px"
+                    >
+                      <span class="agent-save-hint">saving…</span>
+                    </div>
                   </div>
                 </div>
-              </template>
-              <AiChatThinking
-                class="ai-chat-avatar-offset"
-                :active="pmBusy"
-                label="PM is thinking"
-              />
+              </div>
             </template>
-          </div>
-
-          <ChatJumpToLatest
-            :visible="pmShowJumpToLatest"
-            :anchor="pmLog"
-            @click="pmScrollToLatest()"
-          />
-
-          <div v-if="showPmCanned" class="pm-canned" role="list" aria-label="Suggested prompts">
-            <div
-              v-for="(msg, i) in pmCannedMessages"
-              :key="i"
-              class="pm-canned-item"
-              role="button"
-              tabindex="0"
-              @click="pmSendCanned(msg)"
-              @keydown.enter="pmSendCanned(msg)"
-            >
-              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                <path
-                  d="M8 4 3 10l5 6"
-                  stroke="currentColor"
-                  stroke-width="1.7"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-                <path
-                  d="M5 10h11"
-                  stroke="currentColor"
-                  stroke-width="1.7"
-                  stroke-linecap="round"
-                />
-              </svg>
-              <span>{{ msg }}</span>
-            </div>
-          </div>
-          <!-- 0381: screenshots picked for this message — attached to any
-               task the PM creates from it, on the server, once it exists. -->
-          <div v-if="ui.pmScreenshots.length" class="pm-shots" aria-label="Attached screenshots">
-            <div v-for="(s, i) in ui.pmScreenshots" :key="s.name + i" class="pm-shot">
-              <img :src="s.dataUrl" :alt="s.name" @click="openPmViewer(i)" />
-              <ScreenshotExpandButton :name="s.name" @click="openPmViewer(i)" />
-              <button
-                type="button"
-                class="pm-shot-remove"
-                :aria-label="`Remove ${s.name}`"
-                title="Remove screenshot"
-                @click.stop="ui.removePmScreenshot(i)"
-              >
-                <X class="size-3" />
-              </button>
-            </div>
-          </div>
-          <form class="pm-compose" @submit.prevent="pmSend">
-            <input
-              ref="pmShotInput"
-              type="file"
-              accept="image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp"
-              multiple
-              class="pm-shot-input"
-              aria-hidden="true"
-              tabindex="-1"
-              @change="onPmShotFiles"
-            />
-            <button
-              v-if="!pmBusy"
-              type="button"
-              class="pm-attach"
-              aria-label="Attach screenshots"
-              title="Attach screenshots — they're added to any task the PM creates from this message"
-              :disabled="!pmAgentEnabled"
-              @click="pmShotInput?.click()"
-            >
-              <ImagePlus />
-            </button>
-            <textarea
-              ref="pmDraftTextarea"
-              v-model="pmDraft"
-              rows="1"
-              :disabled="!pmAgentEnabled"
-              :placeholder="
-                pmAgentEnabled ? 'Ask PM to edit this task…' : 'Enable PM agent on Agents page'
-              "
-              aria-label="Message PM"
-              @keydown="pmOnKeydown"
-              @input="adjustPmHeight"
-            ></textarea>
-            <button
-              v-if="pmBusy"
-              type="button"
-              class="pm-stop"
-              aria-label="Stop PM response"
-              title="Stop response"
-              @click="pmInterrupt"
-            >
-              <svg viewBox="0 0 20 20" fill="none">
-                <rect x="5" y="5" width="10" height="10" rx="1.5" fill="currentColor" />
-              </svg>
-            </button>
-            <button
-              v-else
-              type="submit"
-              class="ai-chat-send"
-              :disabled="!pmDraft.trim() || pmBusy || !pmAgentEnabled"
-              aria-label="Send message"
-            >
-              <svg viewBox="0 0 20 20" fill="none">
-                <path
-                  d="m3 9 13-6-5.5 14-2-5.5L3 9Z"
-                  stroke="currentColor"
-                  stroke-width="1.7"
-                  stroke-linejoin="round"
-                />
-                <path
-                  d="m8.5 11.5 3-3"
-                  stroke="currentColor"
-                  stroke-width="1.7"
-                  stroke-linecap="round"
-                />
-              </svg>
-            </button>
-          </form>
-        </div>
+          </PmChatSurface>
+        </template>
         <div v-if="dirty" class="save-bar">
           <div class="save-callout">
             <span class="save-dot"></span>
@@ -4584,9 +4426,10 @@ watch(
     @started="ui.activeTab = 'agent'"
   />
 
-  <DirtyMainDialog
+  <DirtyCheckoutDialog
     :task="dirtyTask"
     :files="dirtyFiles"
+    :scope="dirtyScope"
     @commit="confirmCommitDirty"
     @cancel="cancelDirty"
   />
@@ -4653,331 +4496,12 @@ watch(
 </template>
 
 <style scoped>
-/* Vertical rhythm between messages comes from .ai-chat-log (style.css). */
-.pm-log-wrap {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-}
-
-.pm-empty {
-  margin: auto 0;
-  text-align: center;
-  padding: 22px 12px;
-  color: var(--txt-dim);
-}
-
-.pm-welcome-icon {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  margin: 0 auto 12px;
-  font-size: 16px;
-  font-weight: 800;
-  border-radius: 10px;
-  color: var(--violet);
-  background: var(--violet-dim);
-  border: 1px solid var(--border);
-}
-
-.pm-empty strong {
-  display: block;
-  color: var(--txt);
-  font-size: 14px;
-  margin-bottom: 6px;
-}
-
-.pm-empty p {
-  font-size: 11.5px;
-  line-height: 1.55;
-  max-width: 280px;
-  margin: 0 auto;
-}
-
-.pm-row {
-  display: flex;
-  align-items: flex-end;
-  gap: 7px;
-}
-
-.pm-row-human {
-  justify-content: flex-end;
-}
-
-.pm-mini-avatar {
-  width: 24px;
-  height: 24px;
-  flex: none;
-  border-radius: 8px;
-  font-size: 9px;
-  font-weight: 800;
-  display: grid;
-  place-items: center;
-  color: var(--violet);
-  background: var(--violet-dim);
-  border: 1px solid var(--border);
-}
-
-.pm-bubble {
-  max-width: 84%;
-  padding: 9px 11px;
-  border-radius: 13px;
-  font-size: 12px;
-  line-height: 1.55;
-  overflow-wrap: anywhere;
-}
-
-.pm-bubble-human {
-  color: var(--btn-primary-color);
-  background: var(--btn-primary-bg);
-  border: 1px solid var(--border-bright);
-  border-bottom-right-radius: 4px;
-}
-
-.pm-bubble-assistant {
-  color: var(--txt);
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-bottom-left-radius: 4px;
-}
-
-.msg-time {
-  display: block;
-  margin-top: 3px;
-  text-align: right;
-  color: var(--txt-faint);
-  font:
-    500 8.5px "JetBrains Mono",
-    monospace;
-  opacity: 0.8;
-}
-
-.pm-row-status {
-  justify-content: center;
-}
-
-.pm-bubble-status {
-  padding: 4px 8px;
-  background: transparent;
-  color: var(--txt-faint);
-  font:
-    500 9.5px "JetBrains Mono",
-    monospace;
-  text-align: center;
-}
-
-.pm-markdown :deep(p) {
-  margin: 0 0 7px;
-}
-
-.pm-markdown :deep(p:last-child) {
-  margin-bottom: 0;
-}
-
-.pm-markdown :deep(ul),
-.pm-markdown :deep(ol) {
-  padding-left: 17px;
-  margin: 5px 0;
-}
-
-.pm-markdown :deep(code) {
-  font:
-    10.5px "JetBrains Mono",
-    monospace;
-  background: var(--md-body-bg);
-  border-radius: 4px;
-  padding: 1px 4px;
-}
-
-.pm-markdown :deep(pre) {
-  overflow: auto;
-  margin: 7px 0;
-  padding: 8px;
-  background: var(--md-body-bg);
-  border-radius: 7px;
-}
-
-.pm-markdown :deep(pre code) {
-  padding: 0;
-  background: none;
-}
-
-.pm-markdown :deep(a) {
-  color: var(--cyan);
-}
-
-.pm-compose {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  margin: 0 12px 12px;
-  padding: 8px 9px 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 13px;
-  background: var(--panel-solid);
-}
-
-.pm-compose:focus-within {
-  border-color: var(--border-bright);
-  box-shadow: 0 0 0 3px var(--violet-dim);
-}
-
-.pm-compose textarea {
-  flex: 1;
-  min-height: 24px;
-  max-height: 120px;
-  overflow-y: auto;
-  resize: none;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--txt);
-  font: 12.5px / 1.55 var(--font-sans);
-}
-
-.pm-compose textarea::placeholder {
-  color: var(--txt-faint);
-}
-
-.pm-compose button {
-  /* Deliberately no `background`/`color`: this scoped rule out-specifies
-     the shared .ai-chat-send, so setting a fill here would silently win
-     and leave the send button looking transparent. The send button takes
-     .ai-chat-send; .pm-stop sets its own. */
-  width: 31px;
-  height: 31px;
-  display: grid;
-  place-items: center;
-  flex: none;
-  border: 0;
-  border-radius: 9px;
-  cursor: pointer;
-}
-
-.pm-compose button:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-.pm-compose button svg {
-  width: 18px;
-  height: 18px;
-}
-
-.pm-compose button.pm-stop {
-  background: color-mix(in srgb, var(--red, #ef5b5b) 16%, var(--btn-primary-bg));
-  color: var(--red, #ef5b5b);
-}
-
-/* 0381: compose-box attach — a muted sibling of the send button, plus the
-   thumbnail strip shown above the form while images are pending. */
-.pm-compose button.pm-attach {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--txt-dim);
-}
-
-.pm-compose button.pm-attach:hover:not(:disabled) {
-  border-color: var(--violet);
-  color: var(--violet);
-}
-
-.pm-compose button.pm-attach svg {
-  width: 16px;
-  height: 16px;
-}
-
-.pm-shot-input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.pm-shots {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 0 12px 8px;
-}
-
-.pm-shot {
-  position: relative;
-  width: 46px;
-  height: 46px;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  overflow: hidden;
-  background: var(--panel-solid);
-}
-
-.pm-shot img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.pm-shot-remove {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 16px;
-  height: 16px;
-  display: grid;
-  place-items: center;
-  border: 0;
-  border-radius: 5px;
-  background: color-mix(in srgb, var(--panel-solid) 80%, transparent);
-  color: var(--txt-dim);
-  cursor: pointer;
-}
-
-.pm-shot-remove:hover {
-  color: var(--red, #ef5b5b);
-}
-
-.pm-canned {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin: 0 12px 10px;
-}
-
-.pm-canned-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 11px;
-  border: 1px solid var(--border);
-  border-radius: 11px;
-  background: var(--panel-solid);
-  color: var(--txt);
-  font-size: 12.5px;
-  line-height: 1.4;
-  cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease;
-}
-
-.pm-canned-item svg {
-  width: 15px;
-  height: 15px;
-  flex: none;
-  color: var(--violet);
-}
-
-.pm-canned-item:hover,
-.pm-canned-item:focus-visible {
-  border-color: var(--violet);
-  background: var(--violet-dim);
-  outline: none;
-}
+/* The PM chat's own surface (bubbles, compose box, canned prompts, pending
+ * screenshots) lives in `style.css`, not here: #0515 gave the story panel a PM
+ * tab that must look and behave identically, and the shared classes can only
+ * be shared from a global sheet — dialog content is body-teleported, so a
+ * scoped rule here would never reach either panel. Nothing below styles the
+ * PM tab. */
 
 .diff-stats {
   display: grid;

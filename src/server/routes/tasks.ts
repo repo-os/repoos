@@ -47,6 +47,8 @@ import {
   commitTaskFile,
   commitDirtyFiles,
   dirtyFiles,
+  uncommittedWorkFiles,
+  workFileFilter,
   worktreePathForBranch,
   ensureWorktree,
   resetWorktree,
@@ -57,6 +59,7 @@ import {
   ensureHotfix,
   agentTouchedFiles,
 } from "../../core/git.js";
+import { guardReviewTransition } from "../review-guard.js";
 import { checkGenericStatusPatch } from "../task-transitions.js";
 import { readFileSync, existsSync, statSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
@@ -1033,8 +1036,64 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       return json(res, 409, {
         error: `main has ${dirty.length} uncommitted file${dirty.length === 1 ? "" : "s"} blocking close-out`,
         needsCommit: true,
+        dirtyScope: "main",
         dirtyFiles: dirty,
       });
+    }
+
+    // Dirty-WORKTREE guard (#0512). The merge above only carries the branch's
+    // COMMITS, and `cleanup()` ends by removing the task's worktree — which
+    // used to run `git worktree remove --force` and delete uncommitted work
+    // without a word. An edit made after the last handoff commit (a fix applied
+    // while the task sat in `review`, say) was never tested by the merge gate
+    // and never kept. Same shape as the dirty-main response so the UI can ask
+    // the human once, with the same modal, for either tree.
+    //
+    // Skipped for hotfix tasks: their "worktree" IS the main checkout, which the
+    // dirty-main guard above already covered (and already committed on
+    // "Commit & continue"), and its close-out removes no worktree at all.
+    const branch = taskStillExists.branch;
+    const worktree =
+      taskStillExists.hotfix === true ? null : worktreePathForBranch(config.root, branch);
+    let worktreeDirty: string[] = [];
+    if (worktree) {
+      try {
+        worktreeDirty = await uncommittedWorkFiles(worktree, workFileFilter(config));
+      } catch (err) {
+        if (err instanceof GitDirtyCheckError) {
+          return json(res, 409, {
+            error: `could not verify the task worktree is clean before close-out (${err.message}). Close-out aborted; nothing was merged.`,
+            needsCommit: true,
+            dirtyCheckFailed: true,
+            dirtyFiles: [],
+          });
+        }
+        throw err;
+      }
+    }
+    if (worktreeDirty.length > 0 && !commitDirty) {
+      return json(res, 409, {
+        error: `the worktree for ${branch} has ${worktreeDirty.length} uncommitted file${worktreeDirty.length === 1 ? "" : "s"} that close-out would delete`,
+        needsCommit: true,
+        dirtyScope: "worktree",
+        dirtyFiles: worktreeDirty,
+      });
+    }
+    if (worktreeDirty.length > 0 && commitDirty) {
+      // "Commit & continue" for the worktree commits through the SAME path the
+      // handoff uses, so a human-approved commit lands exactly what a handoff
+      // would have committed (no `dist/`, no the task's own file, no other
+      // task's `work/*.md` drift) — and the merge gate then validates the
+      // commit, not the raw working tree.
+      const gate = await guardReviewTransition(config, taskStillExists);
+      if (!gate.ok) {
+        return json(res, 500, {
+          error: `could not commit the worktree's uncommitted changes (${gate.detail ?? "the review guard rejected it"}); close-out aborted and nothing was merged.`,
+          needsCommit: true,
+          dirtyScope: "worktree",
+          dirtyFiles: worktreeDirty,
+        });
+      }
     }
     if (dirty.length > 0 && commitDirty) {
       let committed: string[];
@@ -1931,6 +1990,45 @@ export const getDiffStatsForTask: RouteHandler = async (ctx, _req, res, params) 
   // GET /api/tasks/:id a drawer-opening click was waiting behind.
   const stats = await getDiffStatsAsync(worktreePath, "main");
   return json(res, 200, { ok: true, stats });
+};
+
+// Uncommitted files in a task's worktree, on demand (#0512).
+//
+// Deliberately a request-time `git status` and not a field on the task index:
+// `dirty` already tells the UI that a restart needs a decision, and the boot
+// index's per-worktree git fan-out is a known cost (#0271) that this must not
+// grow. The restart dialog is opened by a human click, so one status call
+// there is the right place to spend it — and it is the call that can say WHICH
+// files "Start clean" would destroy.
+export const getWorktreeDirtyForTask: RouteHandler = async (ctx, _req, res, params) => {
+  const { index, config } = ctx;
+  const id = params.param1;
+  const task = index.getTask(id);
+  if (!task) {
+    return json(res, 404, { error: `Task #${id} not found` });
+  }
+  if (!task.branch) {
+    return json(res, 200, { ok: true, path: null, files: [] });
+  }
+  const path = worktreePathForBranch(config.root, task.branch);
+  if (!path) {
+    return json(res, 200, { ok: true, path: null, files: [] });
+  }
+  try {
+    const files = await uncommittedWorkFiles(path, workFileFilter(config));
+    return json(res, 200, { ok: true, path, files });
+  } catch (err) {
+    if (err instanceof GitDirtyCheckError) {
+      // Fails closed: "could not tell" must never read as "nothing to lose".
+      return json(res, 200, {
+        ok: false,
+        path,
+        files: [],
+        reason: `could not read the worktree's dirty state (${err.message})`,
+      });
+    }
+    throw err;
+  }
 };
 
 // Diff endpoint — full patch

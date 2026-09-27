@@ -321,6 +321,33 @@ describe("SettingsView board column labels (#0499)", () => {
     wrapper.unmount();
   });
 
+  it("auto-save omits hidden dev.inspector settings unless the build supports them (#0509)", async () => {
+    const resp = settingsConfigResponse();
+    resp.schema.push(
+      schemaField("dev.inspector.enabled", "true"),
+      schemaField("dev.inspector.editorCommand", ""),
+    );
+    api.mockResolvedValue(resp);
+    await useConfigStore().load();
+    const repo = useRepoStore();
+    const config = useConfigStore();
+    const saveSpy = vi.spyOn(config, "save").mockResolvedValue(undefined);
+
+    for (const available of [false, true]) {
+      saveSpy.mockClear();
+      repo.health = { ok: true, copyInspectorAvailable: available } as typeof repo.health;
+      const wrapper = await mountSettings("advanced");
+      await new DOMWrapper(boardColumnDraftInput()!).setValue(available ? "Ideas 2" : "Ideas");
+      await flushPromises();
+      await vi.waitFor(() => expect(saveSpy).toHaveBeenCalled(), { timeout: 3000 });
+      const body = saveSpy.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+      expect("dev.inspector.enabled" in body).toBe(available);
+      expect("dev.inspector.editorCommand" in body).toBe(available);
+      wrapper.unmount();
+    }
+    saveSpy.mockRestore();
+  });
+
   it("clearing a field submits the column default", async () => {
     await loadSettingsConfig({ draft: "Ideas" });
     const config = useConfigStore();

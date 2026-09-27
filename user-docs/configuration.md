@@ -666,6 +666,40 @@ Story names are whitespace-normalized and matched case-insensitively, so
 `Project updates email` and `project  updates  email` group together under one
 stable display name. Clearing the field removes the task from every story.
 
+### Numbers and links
+
+Every registered story gets a **number** — a zero-padded four-digit value like
+`#0007`, the story counterpart to a task's `#0042` and an input's `#0001`. It
+appears in the same place on both the Stories page and the story panel, and
+clicking it copies a link straight to that story, the same as clicking a task's
+or input's number.
+
+The number is stable for the life of the story: it is assigned once, is never
+changed, and survives the PM agent renaming the story and its file, so links
+keep working through a rename — which a name-based link would not. Deleting the
+highest-numbered story does free that number for the next one created.
+
+`/stories?story=0007` opens that story's panel. The story's name also works, as
+does `?story=new` to open the New story form.
+
+A story that exists **only** as a task tag — tagged on a task, with no file
+under `stories/` — has no number and no link. There is no file to hold a stable
+one, so there is nothing to point a link at. Register the story to get both.
+Registering one later gives it a number, which also starts a fresh PM
+conversation for it.
+
+### The story PM tab
+
+A story panel has a **PM** tab, right after the story body, exactly like a task
+panel's. Ask the PM to break the story down into tasks, retag or update one, or
+explain what is blocking it. It reads and writes the same tasks the story
+already holds, and the conversation is per story and per user.
+
+The PM tab is the agent's working surface for a story, not a read-only view: it
+uses the same `repoos` CLI commands the task panel's PM tab does, so the PM can
+create and update tasks tagged with this story. It is the same conversation
+component, so the two panels behave identically.
+
 ### A story is not an area
 
 `area` describes **where work lands** — the part of the product or codebase a
@@ -759,6 +793,21 @@ machine. Enabling it sends repo contents to a third-party host.
 | `remoteValidation.useForReleases` | boolean | `false` | yes | Also validate release cuts on the runner. Off by default because a release is watched live. |
 The `HETZNER_API_TOKEN` and `REPOOS_REMOTE_SSH_KEY` credentials are
 environment-only.
+
+## Dev copy inspector (RepoOS self-host only)
+
+These settings appear under **Settings → Advanced** when this checkout has `src/ui-app/` **and** the running build was compiled with the dev UI bundle (`devUi: true` in `dist/.build-info.json` — a normal local `bun run build`, not `REPOOS_SHIP=1` / release tarballs). They are inert on release installs and when previewing another project's app.
+
+| Key | Type | Default | Restart | Description |
+| --- | --- | --- | --- | --- |
+| `dev.inspector.enabled` | boolean | `true` | no | Hold Alt (Option on macOS) over visible UI text to reveal a `File.vue:line` pill with the located element outlined; click it or press Enter to see the source file. |
+| `dev.inspector.editorCommand` | string | `""` | no | Optional editor launcher, e.g. `zed {file}:{line}`. Placeholders `{file}` and `{line}`; omit `{line}` to open without a line number. Copy path works with no command configured. |
+
+Template copy is attributed at build time with `data-repoos-file` / `data-repoos-line`
+attributes (dev builds only). Line numbers point at the template element; strings
+composed in `<script setup>` lead you to the template line that renders them.
+
+See [Dev tooling](/dev-tooling) for how to verify the inspector locally.
 
 ## Summary
 

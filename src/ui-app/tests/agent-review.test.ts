@@ -655,6 +655,52 @@ else process.stdout.write(${JSON.stringify(needsWorkReport)} + "\\n");
     });
   }, 90_000);
 
+  it("flags needs_input instead of parking silently once auto-bounce rounds are used up", async () => {
+    const needsWorkReport = [
+      "## Verdict",
+      "`needs some work` — one defect remains.",
+      "",
+      "## Bugs",
+      "- A real defect.",
+      "",
+      "## Edge cases",
+      "- none found",
+      "",
+      "## Suggestions",
+      "- none found",
+    ].join("\n");
+    const fx = makeFixture(`process.stdout.write(${JSON.stringify(needsWorkReport)} + "\\n");`);
+    await withServer(fx, async (server) => {
+      const task = await taskWithWorktree(server, fx, "Rounds exhausted");
+      const started = await api(server, "POST", `/api/tasks/${task.id}/start`);
+      expect(started.status).toBe(200);
+      await waitForAsync(async () => {
+        const output = await api(server, "GET", `/api/tasks/${task.id}/output`);
+        return Array.isArray(output.body.lines) && output.body.lines.length > 0;
+      }, "an engineer session is available to resume");
+      await waitForAsync(async () => {
+        const response = await fetch(`${server.url}/api/agents/running`);
+        const running = (await response.json()) as { tasks: Array<{ id: string }> };
+        return !running.tasks.some((entry) => entry.id === task.id);
+      }, "the initial engineer turn exits");
+      // Fixture task file: pretend both automatic rounds were already spent.
+      const before = readFileSync(task.absPath, "utf8");
+      writeFileSync(task.absPath, before.replace(/^---\n/, "---\nreview_rounds: 2\n"));
+      await requestReview(server, task.id, task.absPath);
+      await waitFor(
+        () => /^needs_input: true$/m.test(readFileSync(task.absPath, "utf8")),
+        "needs_input is raised when the round cap is hit",
+      );
+      const taskFile = readFileSync(task.absPath, "utf8");
+      expect(taskFile).toMatch(/^needs_input_reason: review-rounds-exhausted$/m);
+      expect(taskFile).toMatch(/^status: review$/m);
+      // Still parked in review — no further automatic bounce.
+      expect(spawns(fx).some((s) => s.args.join(" ").includes("automated review found"))).toBe(
+        false,
+      );
+    });
+  }, 90_000);
+
   it("returns a task to active when the verdict is back to the drawing board", async () => {
     const rejectReport = [
       "## Verdict",
