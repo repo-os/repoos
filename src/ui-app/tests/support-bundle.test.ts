@@ -212,6 +212,13 @@ describe("redactText", () => {
     expect(out).toContain("[redacted]");
   });
 
+  it("redacts a Telegram bot token from a dotenv line", () => {
+    const token = "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi";
+    const redacted = redactText(`TELEGRAM_BOT_TOKEN=${token}`);
+    expect(redacted).toBe("TELEGRAM_BOT_TOKEN=[redacted]");
+    expect(scanSecrets(`TELEGRAM_BOT_TOKEN=${token}`)).toContain("dotenv-assignment");
+  });
+
   it("does not redact a benign sentence that merely mentions a word", () => {
     const out = redactText("the token budget is unlimited and the secret sauce is good");
     expect(out).toBe("the token budget is unlimited and the secret sauce is good");
