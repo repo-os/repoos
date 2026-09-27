@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, rmSync, writeFileSync, utimesSync } from "node:f
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { execSync } from "node:child_process";
-import { createJobCoordinator } from "../../server/integration-job.js";
+import { closeOutPending, createJobCoordinator } from "../../server/integration-job.js";
 import { createRepositoryLock } from "../../server/repo-lock.js";
 
 describe("integration jobs (0118)", () => {
@@ -459,6 +459,48 @@ describe("integration jobs (0118)", () => {
       } catch {
         /* ignore cleanup errors */
       }
+    }
+  });
+});
+
+describe("closeOutPending (#0518)", () => {
+  const job = { taskId: "0518", phase: "queued" } as never;
+
+  it("is true while the close-out lock is held, without touching the queue", () => {
+    const peek = () => {
+      throw new Error("must not read the queue when the lock is held");
+    };
+    expect(closeOutPending({ closingOut: () => true }, { peekNext: peek })).toBe(true);
+  });
+
+  it("is true in the gap between two jobs: lock free but a job is queued", () => {
+    expect(closeOutPending({ closingOut: () => false }, { peekNext: () => job })).toBe(true);
+  });
+
+  it("is false when the lock is free and nothing is queued", () => {
+    expect(closeOutPending({ closingOut: () => false }, { peekNext: () => null })).toBe(false);
+  });
+
+  it("falls back to lock-only behaviour when the queue cannot be read", () => {
+    const broken = () => {
+      throw new Error("EIO");
+    };
+    expect(closeOutPending({ closingOut: () => false }, { peekNext: broken })).toBe(false);
+  });
+
+  it("sees a real queued job on disk and forgets it once it is done", () => {
+    const root = join(tmpdir(), `repoos-closeout-pending-${Date.now()}`);
+    mkdirSync(root, { recursive: true });
+    try {
+      const coordinator = createJobCoordinator(root);
+      const lock = { closingOut: () => false };
+      expect(closeOutPending(lock, coordinator)).toBe(false);
+      coordinator.enqueue({ id: "0518", branch: "feat/x" } as never);
+      expect(closeOutPending(lock, coordinator)).toBe(true);
+      coordinator.updateJob("0518", { phase: "done" });
+      expect(closeOutPending(lock, coordinator)).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
     }
   });
 });

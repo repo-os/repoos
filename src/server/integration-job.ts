@@ -294,3 +294,32 @@ export function createJobCoordinator(root: string): JobCoordinator {
     },
   };
 }
+
+/**
+ * Whether auto-reload must stand down for the close-out pipeline: the lock is
+ * held (a job is being processed) OR a job is still queued/in flight on disk.
+ *
+ * The lock alone has a gap: it is released when one job finishes and re-acquired
+ * when the next starts. A reload decided in that gap (the finished job's own
+ * rebuild of `dist/` is what trips the poll) spawns a replacement that boots,
+ * finds the next job already past `queued`, and "resumes" it while the old
+ * process is still running it — two processes on one candidate worktree, whose
+ * failure cleanup removes the directory under the other (#0518, 2026-09-27:
+ * `Script not found "build"`, then `ENOENT posix_spawn 'git'`). A queued job is
+ * evidence the pipeline is not idle even when nothing holds the lock this
+ * instant.
+ *
+ * A disk read that fails is treated as "no pending job": that restores the
+ * lock-only behaviour rather than parking every build on a filesystem hiccup.
+ */
+export function closeOutPending(
+  lock: { closingOut: () => boolean },
+  coordinator: Pick<JobCoordinator, "peekNext">,
+): boolean {
+  if (lock.closingOut()) return true;
+  try {
+    return coordinator.peekNext() !== null;
+  } catch {
+    return false;
+  }
+}
