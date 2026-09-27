@@ -588,17 +588,29 @@ const focusKey = computed(() => (route.query.setting ?? route.query.focus) as st
 
 let focusNavigationRun = 0;
 
+async function waitForConfigLoaded(maxMs = 3000): Promise<void> {
+  if (config.loaded) return;
+  const deadline = Date.now() + maxMs;
+  while (!config.loaded && Date.now() < deadline) {
+    await new Promise<void>((r) => window.setTimeout(r, 50));
+  }
+}
+
 watch(
-  focusKey,
-  (key) => {
+  [focusKey, () => config.loaded],
+  ([key]) => {
     if (!key) return;
     const run = ++focusNavigationRun;
     void (async () => {
+      tomlFocusNotice.value = "";
+      await waitForConfigLoaded();
+
+      if (run !== focusNavigationRun) return;
+
       const field = config.schema.find((f) => f.key === key);
       const loc = resolveSettingLocation(key, field, settingLocationContext());
-      tomlFocusNotice.value = "";
 
-      const tryFocusUnknown = async (): Promise<void> => {
+      const tryFocusOnCurrentTab = async (): Promise<void> => {
         const el = await waitForSettingRow(key, activeTab.value);
         if (run !== focusNavigationRun) return;
         if (el) {
@@ -611,18 +623,9 @@ watch(
       };
 
       if (!loc) {
-        await tryFocusUnknown();
+        await tryFocusOnCurrentTab();
         return;
       }
-
-      const targetTab: TabId = loc.hasUiRow ? loc.tab : "toml";
-      if (activeTab.value !== targetTab) {
-        await router.replace({
-          name: "settings",
-          query: { ...route.query, tab: targetTab },
-        });
-      }
-      if (run !== focusNavigationRun) return;
 
       const finishTomlOnly = (): void => {
         tomlFocusNotice.value = `“${field?.label ?? key}” is only in repoos.toml — edit the raw file below.`;
@@ -633,16 +636,18 @@ watch(
       };
 
       if (!loc.hasUiRow) {
-        if (config.loaded) {
-          finishTomlOnly();
-        } else {
-          for (let attempt = 0; attempt < 20 && !config.loaded; attempt++) {
-            await new Promise<void>((r) => window.setTimeout(r, 100));
-          }
-          finishTomlOnly();
-        }
+        finishTomlOnly();
         return;
       }
+
+      const targetTab: TabId = loc.tab;
+      if (activeTab.value !== targetTab) {
+        await router.replace({
+          name: "settings",
+          query: { ...route.query, tab: targetTab },
+        });
+      }
+      if (run !== focusNavigationRun) return;
 
       const el = await waitForSettingRow(key, targetTab);
       if (run !== focusNavigationRun) return;
@@ -652,8 +657,6 @@ watch(
           name: "settings",
           query: { tab: targetTab },
         });
-      } else if (field) {
-        finishTomlOnly();
       }
     })();
   },

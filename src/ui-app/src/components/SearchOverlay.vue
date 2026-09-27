@@ -35,7 +35,7 @@ const config = useConfigStore();
 const ui = useUiStore();
 const { tasks } = storeToRefs(repo);
 const { docs: docList } = storeToRefs(docs);
-const { searchableFields } = storeToRefs(config);
+const { searchableFields, schema: configSchema } = storeToRefs(config);
 const { recentSearches, addRecentSearch } = useRecentSearches(props.scope);
 
 const query = ref("");
@@ -58,10 +58,14 @@ const searchSource = computed(() => ({
   settingLocation: settingLocation.value,
 }));
 
+const settingsSearchFields = computed(() =>
+  props.scope === "settings" ? configSchema.value : searchableFields.value,
+);
+
 const results = computed(() => {
   if (props.scope === "settings") {
     return searchSettings(query.value, {
-      fields: searchableFields.value,
+      fields: settingsSearchFields.value,
       location: settingLocation.value,
     });
   }
@@ -70,10 +74,21 @@ const results = computed(() => {
 
 const showRecent = computed(() => query.value.trim().length === 0);
 
+const settingsRecentQueries = computed(() =>
+  recentSearches.value.filter(
+    (s) =>
+      searchSettings(s, {
+        fields: settingsSearchFields.value,
+        location: settingLocation.value,
+      }).length > 0,
+  ),
+);
+
 const displayItems = computed(() => {
   if (showRecent.value) {
-    if (recentSearches.value.length) {
-      return recentSearches.value.map((s) => ({
+    const recents = props.scope === "settings" ? settingsRecentQueries.value : recentSearches.value;
+    if (recents.length) {
+      return recents.map((s) => ({
         kind: "recent" as const,
         title: s,
         subtitle: "Recent search",
@@ -88,7 +103,13 @@ const displayItems = computed(() => {
         },
       ];
     }
-    return [];
+    return [
+      {
+        kind: "hint" as const,
+        title: "Search tasks, docs, and settings",
+        subtitle: "↑↓ to browse · Enter to open · Esc to close",
+      },
+    ];
   }
   return results.value;
 });
@@ -154,6 +175,7 @@ watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
+      overlayClosing = false;
       query.value = "";
       highlight.value = 0;
       setTimeout(() => inputEl.value?.focus(), 0);
@@ -180,13 +202,19 @@ async function navigateToSetting(
   await router.push({ name: "settings", query });
 }
 
+let overlayClosing = false;
+
 function closeOverlay(): void {
+  overlayClosing = true;
   emit("update:open", false);
   query.value = "";
   const el = props.returnFocusEl;
   if (el) {
     setTimeout(() => el.focus(), 0);
   }
+  setTimeout(() => {
+    overlayClosing = false;
+  }, 0);
 }
 
 function openResult(r: SearchResult): void {
@@ -256,7 +284,9 @@ function onKey(e: KeyboardEvent): void {
   } else if (e.key === "ArrowUp" && n) {
     e.preventDefault();
     highlight.value = (highlight.value - 1 + n) % n;
-  } else if (e.key === "Enter" && n) {
+  } else if (e.key === "Enter" && n && !overlayClosing) {
+    const target = e.target as HTMLElement;
+    if (target.classList.contains("search-overlay-close")) return;
     const item = displayItems.value[highlight.value];
     if (item) handleRowClick(item as { kind: string; title: string });
   } else if (e.key === "Escape") {
@@ -338,6 +368,7 @@ watch(
             class="search-overlay-close"
             type="button"
             @click="closeOverlay"
+            @keydown.enter.prevent.stop
             aria-label="Close search"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
