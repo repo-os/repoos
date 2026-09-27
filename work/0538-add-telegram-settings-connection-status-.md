@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:33:10Z"
-updated_at: "2026-09-27T07:34:18Z"
+updated_at: "2026-09-27T15:52:45Z"
 ---
 ## Problem
 
@@ -46,3 +46,6 @@ Use the shared dialog components (`ui/dialog/*`, body-teleported) and the global
 
 - 2026-09-27T07:33:10Z · created · unknown
 - 2026-09-27T07:34:18Z · status inbox→ready
+- 2026-09-27T15:42:34Z · body
+- 2026-09-27T15:51:54Z · body
+- 2026-09-27T15:52:45Z · body

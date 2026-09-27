@@ -1,15 +1,18 @@
 ---
+updated_at: "2026-09-27T16:17:51Z"
+review_passes: 2
 id: "0552"
 title: Add a gruvbox theme switcher to the user-docs site and carry it over from the landing page
 type: feature
-status: active
+status: review
 priority: p2
 area: docs
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-a-gruvbox-theme-switcher-to-the-user
 created_at: "2026-09-27T14:36:30Z"
-updated_at: "2026-09-27T16:23:11Z"
+review_rounds: 1
+last_check_failure: "[object Object]"
 ---
 ## Problem
 
@@ -114,6 +117,134 @@ are shared, and `repoos check` treats the two trees as independent build steps.
 - [ ] `user-docs/README.md` documents the switcher, the two-axis model, and the
       shared `?theme=` / `?appearance=` contract; `landing/README.md` gains a line
       about the hand-off, since it already documents the switcher from #0547.
+- [ ] Plus the two navbar items the human raised on 2026-09-28 (GitHub-icon
+      spacing, two-tone navbar) under "Review feedback" below — the appearance
+      button itself is approved and stays as-is.
+
+## Review feedback — navbar polish (human, 2026-09-28, in scope for this task)
+
+The human reviewed the preview and gave one piece of praise and two defects, all
+in the navbar. Keep the praise: the sun/moon appearance **button** is the right
+control and it matches the landing page and the app, so it stays exactly as it
+is. Do not fold appearance back into the design-theme menu to "simplify" — the
+two are separate axes and the button is the reason the nav reads right.
+
+The two defects belong here rather than in a new task: they land in the same
+`custom.css` blocks this task is already re-expressing, in the same worktree,
+and shipping a second task for two CSS lines would cost a full extra round trip.
+The reviewer (`review_rounds: 1`) separately found the switcher vanished
+between 768px and 1279px, and that mount-time `syncThemeToUrl` rewrote the URL
+on a param-less visit; both are already in flight on this branch. Land all four
+together.
+
+### 1. Spacing against the GitHub icon — the switcher is glued to it
+
+Mechanism, read from `node_modules/vitepress/dist/client/theme-default/components/`
+(VitePress 1.6.4, the version `user-docs/package.json` pins):
+
+- `VPNavBar.vue` renders `nav-bar-content-after` **after**
+  `VPNavBarSocialLinks` and `VPNavBarExtra`, so the GitHub icon sits
+  immediately to the *left* of the new controls — the opposite order from the
+  landing page, where `.theme-controls` comes before `.nav-github` inside a
+  `gap-3 md:gap-6` flex nav, so the link gets 24px of air for free.
+- `VPNavBarSocialLinks` sets `margin-right: -8px`, and `.docs-theme-controls--bar`
+  sets no left margin of its own. The gap between the icon's 36px link box and
+  the "Classic" button is therefore **-8px**. The glyph is inset 8px inside
+  that box (`.VPSocialLink` is 36×36, its icon 20×20), so the *visible* gap
+  between the GitHub glyph and the button's left edge is 0px — they touch.
+- The icon's left-hand side is spaced correctly, because VitePress's own
+  separator (`.menu + .social-links::before` — a 1px rule with 8px margins)
+  still fires there. The nav reads lopsided: roomy against the menu, jammed
+  against the switcher.
+
+Fix: give `.docs-theme-controls--bar` a deliberate left margin that cancels
+VitePress's `-8px` and adds a real gap (12–24px; the landing uses 24px at
+≥768px). Decide the separator deliberately too — reproducing VitePress's 1px
+divider between the icon and the controls makes the nav read as three groups
+(menu │ GitHub │ theme) rather than two. Do not "fix" this by moving the
+controls into `nav-bar-content-before`: that slot renders *before* the menu.
+Keep `nav-bar-content-after`.
+
+### 2. The navbar is two-tone — the right-hand region is the wrong colour
+
+This one predates the task on `main` in light mode, which is why the human said
+so, and it is stronger in gruvbox. It is in scope now because this task
+re-expresses exactly these four token blocks.
+
+VitePress's stock palette hides it by construction: `--vp-c-bg: #ffffff` and
+`--vp-nav-bg-color: rgba(255,255,255,0.8)` composite to the same white, so the
+boundary cannot show. Our tokens break that invariant twice over — the nav
+background is a translucent tint of a *different* base colour than the page
+behind it, and at ≥960px only part of the navbar paints it:
+
+- `.VPNavBar:not(.home)` is `background-color: transparent`, and
+  `.VPNavBar.has-sidebar .title` (the logo / sidebar column) is explicitly
+  `background-color: transparent` — that region shows `--vp-c-bg` straight
+  through;
+- `.VPNavBar:not(.home.top) .content-body` (everything to the right of the
+  title) gets `background-color: var(--vp-nav-bg-color)`.
+
+So the right-hand region is a visibly different tint from the left, and it does
+not line up with the sidebar sitting directly beneath it. Current values:
+
+| block | `--vp-c-bg` (left region) | `--vp-nav-bg-color` (right region) | composite over the page | reads as |
+| --- | --- | --- | --- | --- |
+| `:root` — classic light (pre-existing on `main`) | `#f6f8fc` | `rgba(255,255,255,0.85)` | ≈ `#fdfdff` | ~3% too white — the visible seam |
+| `.dark` — classic dark | `#070a12` | `rgba(7,10,18,0.85)` | `#070a12` | identical, invisible |
+| gruvbox light | `#fbf1c7` | `#f2e5bc` | opaque | ~4–5% darker than the left |
+| gruvbox dark | `#282828` | `#32302f` | opaque | visibly raised |
+
+That asymmetry is exactly why this reads in light mode and not in dark: the dark
+pair is already self-consistent, the light pair is not.
+
+Accept any one of these — but say which, in the file's header comment, and
+eyeball all four combinations afterwards, because nothing here is
+machine-checked:
+
+- **A. Translucent of its own base** (what classic dark already does; keeps the
+  frosted-when-scrolled effect). Make every `--vp-nav-bg-color` a translucent
+  version of that same block's `--vp-c-bg`: classic light `rgba(246,248,252,0.85)`,
+  gruvbox light `rgba(251,241,199,0.85)`, gruvbox dark `rgba(40,40,40,0.85)`. The
+  seam disappears because the composite equals the page background. No new
+  selectors, smallest diff.
+- **B. Flat and opaque, one tone.** Set all four `--vp-nav-bg-color` to that
+  block's `--vp-c-bg`. Simplest and least likely to regress; gives up
+  translucency, and best matches gruvbox's flat / no-glass doctrine.
+- **C. Keep the raised nav tint deliberately.** Gruvbox currently shares one
+  tint across nav, sidebar and local search, which is a coherent look. If that
+  is worth keeping, paint it on the *whole* bar so the title region is not left
+  transparent. Only worth the extra selector if the raised nav is a look you
+  want to keep.
+
+Do not fix this on `.docs-theme-controls` or any other switcher-scoped selector:
+the seam is a property of the navbar's own background, and it is visible on
+pages with no theme controls at all — the home page once scrolled, and any doc
+page.
+
+### Added acceptance criteria
+
+- [ ] No visible seam or step between the left (logo / sidebar column) and
+      right (content) regions of the navbar, at any scroll position, in all four
+      theme × appearance combinations. The classic-light navbar is two-tone
+      today and that must not survive.
+- [ ] The GitHub social link and the design-theme control are separated by a
+      deliberate gap (≥12px) in the bar variant at every width where both are
+      visible, with a deliberate decision on VitePress's 1px separator. The
+      `-8px` from `.VPNavBarSocialLinks` is cancelled, not inherited.
+- [ ] `user-docs/README.md` gains a line about the navbar treatment if the fix
+      introduces a rule the next reader would otherwise "clean up".
+
+### How this was established, and what is *not* verified
+
+The two mechanisms above were read out of VitePress 1.6.4's own component CSS
+and this repo's token values — that part is arithmetic, not guesswork, and the
+reviewer should be able to reproduce both in two minutes. But the PM has no
+browser in its sandbox and **did not look at a rendered page**, so nobody has
+yet confirmed which element the human means by "the coloration to the right". If
+it turns out to be something else — a different region, a gruvbox-only value, a
+second seam — fix what is actually wrong, keep these two mechanisms in mind
+(they are the real defects visible in this region), and say plainly in the
+handoff note what was changed and why.
 
 ## Notes for AI
 
@@ -222,5 +353,100 @@ Now that we know themes (e.g. gruvbox) works on the landing page let's do the sa
 - 2026-09-27T14:38:06Z · status draft→inbox, title, area, body
 - 2026-09-27T14:39:27Z · status inbox→ready
 - 2026-09-27T14:39:31Z · status ready→active, branch
-- 2026-09-27T16:23:10Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
-- 2026-09-27T16:23:11Z · status review→active
+- 2026-09-27T14:51:31Z · handoff failed · handoff recovery attempted · finalization failed
+- 2026-09-27T15:08:06Z · handoff failed · check failed after 2 automatic retries · remote validation failed (exit 137) — + pinia@4.0.2
++ radix-vue@1.9.17
++ shiki@4.4.3
++ tailwind-merge@3.6.0
++ tailwindcss@4.3.3
++ typescript@5.9.3
++ vite@8.2.0
++ vitest@4.1.10
++ vue@3.5.40
++ vue-router@5.2.0
++ vue-tsc@3.3.9
+422 packages installed [5.91s]
+$ bun scripts/build.mjs
+$ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs
+$ vue-tsc --noEmit -p src/ui-app/tsconfig.json && vite build --config src/ui-app/vite.config.ts
+/usr/bin/bash: line 1:    40 Killed                  vue-tsc --noEmit -p src/ui-app/tsconfig.json
+error: script "build:ui" exited with code 137
+error: script "build:raw" exited with code 137
+error: script "build" exited with code 137
+[validate] gate exit 137 — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally
+- 2026-09-27T15:13:55Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-09-27T15:18:39Z · handoff failed · check failed after 2 automatic retries · remote validation failed (exit 137) — + pinia@4.0.2
++ radix-vue@1.9.17
++ shiki@4.4.3
++ tailwind-merge@3.6.0
++ tailwindcss@4.3.3
++ typescript@5.9.3
++ vite@8.2.0
++ vitest@4.1.10
++ vue@3.5.40
++ vue-router@5.2.0
++ vue-tsc@3.3.9
+422 packages installed [7.54s]
+$ bun scripts/build.mjs
+$ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs
+$ vue-tsc --noEmit -p src/ui-app/tsconfig.json && vite build --config src/ui-app/vite.config.ts
+/usr/bin/bash: line 1:    40 Killed                  vue-tsc --noEmit -p src/ui-app/tsconfig.json
+error: script "build:ui" exited with code 137
+error: script "build:raw" exited with code 137
+error: script "build" exited with code 137
+[validate] gate exit 137 — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally
+- 2026-09-27T15:24:05Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-09-27T15:24:05Z · status review→active
+- 2026-09-27T15:24:25Z · handoff failed · task-file handoff failed at check · remote validation failed (exit 137) — + radix-vue@1.9.17
++ shiki@4.4.3
++ tailwind-merge@3.6.0
++ tailwindcss@4.3.3
++ typescript@5.9.3
++ vite@8.2.0
++ vitest@4.1.10
++ vue@3.5.40
++ vue-router@5.2.0
++ vue-tsc@3.3.9
+422 packages installed [5.64s]
+$ git config core.hooksPath .githooks 2>/dev/null || true
+$ bun scripts/build.mjs
+$ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs
+$ vue-tsc --noEmit -p src/ui-app/tsconfig.json && vite build --config src/ui-app/vite.config.ts
+/usr/bin/bash: line 1:    39 Killed                  vue-tsc --noEmit -p src/ui-app/tsconfig.json
+error: script "build:ui" exited with code 137
+error: script "build:raw" exited with code 137
+error: script "build" exited with code 137
+[validate] gate exit 137 — retry once the runner is available, or set remoteValidation.fallbackToLocal to run the full gate locally
+- 2026-09-27T15:30:05Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-09-27T15:30:06Z · status review→active
+- 2026-09-27T15:33:04Z · handoff failed · task-file handoff failed at check · repoos check failed: rendering chunks... · computing gzip size... · dist/index.html                  3.95 kB │ gzip:  1.49 kB · dist/assets/index-DhkUtd-G.css  24.63 kB │ gzip:  6.10 kB · dist/assets/index-CrrfKnMP.js   93.97 kB │ gzip: 34.04 kB · ✓ built in 244ms · ⏭ macos-hub-icon-transparency  — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-icon-transparency.sh · 1 check(s) failed.
+- 2026-09-27T15:38:05Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-09-27T15:38:05Z · status review→active
+- 2026-09-27T15:43:17Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been emitted on its own line — the agent's final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for signal-line rendering bugs)
+- 2026-09-27T15:43:17Z · status review→active
+- 2026-09-27T15:45:44Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 125) —  ✓ tests/agents-view-cards.test.ts (1 test) 113ms
+ ✓ tests/sw-precache.test.ts (4 tests) 3ms
+ ✓ tests/dotenv.test.ts (6 tests) 3ms
+ ✓ tests/serve-port.test.ts (9 tests) 5ms
+ ✓ tests/clipboard.test.ts (4 tests) 17ms
+ ✓ tests/toml-highlight.test.ts (4 tests) 2ms
+ ✓ tests/time.test.ts (10 tests) 2ms
+ ✓ tests/uninstall.test.ts (3 tests) 4ms
+ ✓ tests/stories-nav.test.ts (5 tests) 4ms
+ ✓ tests/reap-fixtures.test.ts (3 tests) 3ms
+ ✓ tests/check-results-store.test.ts (3 tests) 3ms
+ ✓ tests/needs-input-ui.test.ts (5 tests) 2ms
+ ✓ tests/auth-from-header.test.ts (3 tests) 2ms
+ ✓ tests/ui-recovery-banner.test.ts (2 tests) 33ms
+ ✓ tests/stories-config.test.ts (5 tests) 5ms
+ ✓ tests/repo-sort-order.test.ts (1 test) 5ms
+ ✓ tests/diff-snapshot.test.ts (2 tests) 3ms
+ ✓ tests/built-in-run-notice.test.ts (5 tests) 2ms
+time="2026-09-27T23:45:44+08:00" level=error msg="Error waiting for container: Canceled: grpc: the client connection is closing: context canceled"
+[validate] gate exit 125 — fix it in the feature branch and re-run the gate
+- 2026-09-27T15:59:29Z · status active→review
+- 2026-09-27T16:04:17Z · status review→active
+- 2026-09-27T16:09:13Z · body
+- 2026-09-27T16:09:21Z · note: Human review of the preview (2026-09-28): the sun/moon appearance button is approved — keep it, it matches the landing page and the app. Two navbar defects ride along on this branch, spec'd in full under "Review feedback — navbar polish" in the body: (1) the design-theme control is glued to the GitHub icon — VitePress renders nav-bar-content-after AFTER the social links, and .VPNavBarSocialLinks' margin-right:-8px meets a control with no left margin, so the visible gap is 0px; give the bar variant a deliberate 12-24px gap. (2) the navbar is two-tone — only .content-body paints --vp-nav-bg-color while the title/logo column is transparent and shows --vp-c-bg, and classic light pairs #f6f8fc with rgba(255,255,255,0.85) (pre-existing on main; gruvbox pairs #fbf1c7 with #f2e5bc and #282828 with #32302f). Dark classic is already self-consistent, which is why it only reads in light. Three accepted fixes are listed; pick one, comment the choice, and eyeball all four combinations. The PM verified this by reading VitePress 1.6.4's component CSS, not by rendering a page — so if "the coloration to the right" turns out to be something else, fix what you actually see and say so in the handoff note. Land this together with the reviewer's two findings (768-1279px gap, mount-time URL sync), which are already in flight.
+- 2026-09-27T16:12:51Z · status active→review
+

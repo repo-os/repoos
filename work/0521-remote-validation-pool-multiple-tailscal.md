@@ -1,13 +1,13 @@
 ---
-updated_at: "2026-09-27T15:10:06Z"
-review_passes: 8
+updated_at: "2026-09-27T16:08:07Z"
+review_passes: 9
 id: "0521"
 title: "Remote validation: pool multiple tailscale hosts"
 type: feature
 status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
-needs_input_detail: "Auto-bounce stopped: reached maximum of 2 review rounds. Human review needed."
+needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p3
 area: core
 assigned_to: ai
@@ -127,4 +127,6 @@ Autoscaling, and pooling Hetzner VMs.
 - 2026-09-27T14:44:00Z · needs_input
 - 2026-09-27T15:10:05Z · needs_input
 - 2026-09-27T15:10:06Z · needs_input
+- 2026-09-27T15:58:51Z · needs_input dismissed by hello@repoos.org
+- 2026-09-27T16:08:07Z · needs_input
 

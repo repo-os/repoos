@@ -90,6 +90,8 @@ export default defineConfig({
           { text: "Configuration", link: "/configuration" },
           { text: "Environment and secrets", link: "/environment-and-secrets" },
           { text: "Authentication", link: "/authentication" },
+          { text: "Native authentication", link: "/native-auth" },
+          { text: "Telegram", link: "/telegram" },
           { text: "Deployments and releases", link: "/deployments-and-releases" },
           { text: "Changelog", link: "/changelog" },
         ],
