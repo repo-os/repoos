@@ -2303,6 +2303,8 @@ export const useRepoStore = defineStore("repo", () => {
     assignedTo: string;
     status?: Status;
     body?: string;
+    /** Story tag (#0555) — the server normalizes it with `normalizeStoryName`. */
+    story?: string;
   }): Promise<Task> {
     return api<Task>("/api/tasks", JSON_OPTS("POST", form));
   }
@@ -2327,12 +2329,16 @@ export const useRepoStore = defineStore("repo", () => {
    * task so a freeform task created from a resolved input is self-contained
    * (sits in its own `## Screenshots` and isn't affected by later input
    * deletion).
+   * `story` (optional, #0555) tags the new task with the story it is being
+   * created from — sent as `story` so the draft carries the tag from the start
+   * and the PM agent's later flesh-out cannot drop it.
    */
   async function createFreeformTask(
     explanation: string,
     runId?: string,
     overrides?: { agent?: string; cli?: string; model?: string },
     inputId?: string,
+    story?: string,
   ): Promise<{
     ok: boolean;
     fallback?: boolean;
@@ -2346,6 +2352,7 @@ export const useRepoStore = defineStore("repo", () => {
     if (overrides?.cli) body.cliOverride = overrides.cli;
     if (overrides?.model) body.modelOverride = overrides.model;
     if (inputId) body.inputId = inputId;
+    if (story) body.story = story;
     const r = await api<{
       ok: boolean;
       fallback?: boolean;
