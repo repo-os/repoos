@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-27T18:25:47Z"
-review_passes: 12
 id: "0521"
 title: "Remote validation: pool multiple tailscale hosts"
 type: feature
@@ -15,6 +13,8 @@ model_override: opencode-go/mimo-v2.6-flash
 review_cli_override: cursor
 review_model_override: cursor-grok-4.6-medium
 created_at: "2026-09-26T11:49:01Z"
+updated_at: "2026-09-27T19:04:58Z"
+review_passes: 12
 review_rounds: 2
 dev_error_count: 2
 ---
