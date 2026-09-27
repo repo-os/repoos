@@ -2,7 +2,7 @@
 id: "0550"
 title: Add a settings-scoped search that jumps to the right tab
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/add-a-settings-scoped-search-that-jumps-
 review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-27T13:23:12Z"
-updated_at: "2026-09-27T18:32:37Z"
+updated_at: "2026-09-27T18:34:41Z"
 review_passes: 4
 review_rounds: 2
 ---
@@ -111,3 +111,4 @@ Let's add a search on the settings page since we have so many settings now and I
 - 2026-09-27T14:22:11Z · needs_input
 - 2026-09-27T18:32:37Z · status review→active
 - 2026-09-27T18:32:37Z · needs_input
+- 2026-09-27T18:34:41Z · status active→review
