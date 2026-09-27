@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-27T19:36:19Z"
+review_passes: 1
 id: "0536"
 title: Add sort-by dropdown to stories page
 type: feature
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-sort-by-dropdown-to-stories-page
 created_at: "2026-09-27T07:32:53Z"
-updated_at: "2026-09-27T19:32:44Z"
 ---
 ## Problem
 
@@ -95,3 +96,4 @@ Let's add a sort by dropdown to the stories page, do it in the same style as the
 - 2026-09-27T19:16:10Z · status inbox→ready
 - 2026-09-27T19:16:46Z · status ready→active, branch
 - 2026-09-27T19:32:44Z · status active→review
+
