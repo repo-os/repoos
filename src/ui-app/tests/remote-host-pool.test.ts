@@ -424,6 +424,30 @@ describe("TailscaleRunner pool dispatch (#0521)", () => {
     ]);
   });
 
+  it("reprobes healthy hosts when the configured container image changes (#0521 review)", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }], containerImage: "repoos-ci:v1" });
+    const first = f.runner.validate(opts("0001"));
+    await tick();
+    f.release("a");
+    await first;
+
+    const calls = vi.mocked(f.exec.runRemote);
+    const probesBefore = calls.mock.calls.filter(([, command]) =>
+      command.includes(PREREQ_OK_TOKEN),
+    );
+    expect(probesBefore).toHaveLength(1);
+
+    f.config.remoteValidation!.containerImage = "repoos-ci:v2";
+    f.runner.applyConfig();
+    const second = f.runner.validate(opts("0002"));
+    await tick();
+    const probesAfter = calls.mock.calls.filter(([, command]) => command.includes(PREREQ_OK_TOKEN));
+    expect(probesAfter).toHaveLength(2);
+    expect(probesAfter[1]![1]).toContain("repoos-ci:v2");
+    f.release("a");
+    expect(await second).toEqual({ ok: true, stage: "check" });
+  });
+
   it("stops sending new jobs to a host removed from the live config", async () => {
     const f = poolFixture({ hosts: [{ host: "a" }, { host: "b" }] });
     const job1 = f.runner.validate(opts("0001"));
