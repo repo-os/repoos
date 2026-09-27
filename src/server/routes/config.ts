@@ -303,6 +303,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
       patch[field.key] =
         field.key === "maxActiveTasks" ||
         field.key === "maxConcurrentAgents" ||
+        field.key === "remoteValidation.maxConcurrent" ||
         field.key === "worktreeWarnThreshold"
           ? Number(val)
           : val;

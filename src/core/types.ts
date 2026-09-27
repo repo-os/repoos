@@ -708,6 +708,14 @@ export interface RemoteValidationConfig {
    */
   fallbackToLocal?: boolean;
   /**
+   * Max remote runs in flight at once. Default 1: runs queue (FIFO) instead of
+   * sharing one machine, because two full suites at once produce load-induced
+   * timeouts that read as a red gate. Applies to every caller in the server
+   * process (handoff, close-out, release); a standalone `repoos check` is its
+   * own process and is not counted.
+   */
+  maxConcurrent?: number;
+  /**
    * Opt a human-watched release cut into the remote runner. Default false.
    * Close-out uses the runner whenever `enabled` is true (it runs unattended,
    * so VM boot/provision latency is invisible); a release is something the

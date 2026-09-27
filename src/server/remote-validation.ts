@@ -30,6 +30,7 @@
  */
 
 import { spawn } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { createConnection } from "node:net";
 import {
   mkdtempSync,
@@ -60,6 +61,76 @@ export interface RemoteHost {
   user: string;
   /** Path to the private key. Omit to let SSH use its default resolution (agent, ~/.ssh/config). */
   keyPath?: string;
+}
+
+/**
+ * FIFO concurrency limiter for remote runs (#0520). Every caller in the server
+ * process (handoff, close-out, release) shares one runner instance, so a limit
+ * here serialises them: two full suites on one machine is exactly the memory
+ * and CPU contention the runner exists to avoid, and a run that times out or
+ * trips a timing-sensitive test under that load would be reported as a red gate
+ * ("fix it in the branch") when the branch is fine.
+ *
+ * A released slot is handed straight to the next waiter (the active count does
+ * not dip), so a burst cannot overshoot the limit.
+ */
+export class ConcurrencyGate {
+  private active = 0;
+  private readonly waiters: Array<() => void> = [];
+
+  constructor(readonly limit: number) {}
+
+  /** Runs in flight plus runs waiting — what a new arrival queues behind. */
+  get pending(): number {
+    return this.active + this.waiters.length;
+  }
+
+  async acquire(onQueued?: (ahead: number) => void): Promise<() => void> {
+    if (this.active < this.limit) {
+      this.active++;
+    } else {
+      onQueued?.(this.pending);
+      await new Promise<void>((resolve) => this.waiters.push(resolve));
+    }
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      const next = this.waiters.shift();
+      if (next) next();
+      else this.active--;
+    };
+  }
+}
+
+/** Limit from config: a positive integer, default 1 (one run at a time). */
+export function remoteConcurrencyLimit(config: RepoOSConfig): number {
+  const n = config.remoteValidation?.maxConcurrent;
+  return typeof n === "number" && Number.isInteger(n) && n >= 1 ? n : 1;
+}
+
+/** Per-run remote paths, so overlapping runs never share a bundle or artifacts dir. */
+export interface RemoteRunPaths {
+  bundle: string;
+  artifacts: string;
+}
+
+/**
+ * Unique per run: two runs for the same task (a retry starting while the last is
+ * still going) must not collide either, and the runner script used to `rm -rf` a
+ * single fixed artifacts dir at the start of every run, wiping a concurrent
+ * run's logs. Task ids come from routes and synthetic ids ("pre-review",
+ * "checks-test-suite"); keep the path shell-safe regardless.
+ */
+export function remoteRunPaths(
+  taskId: string,
+  runId = randomBytes(4).toString("hex"),
+): RemoteRunPaths {
+  const safe = taskId.replace(/[^A-Za-z0-9_.-]/g, "_") || "run";
+  return {
+    bundle: `/tmp/repoos-${safe}-${runId}.bundle`,
+    artifacts: `/tmp/repoos-artifacts/${safe}-${runId}`,
+  };
 }
 
 export interface RemoteExecResult {
@@ -303,6 +374,7 @@ export class RemoteValidationRunner implements RemoteValidator {
   private readonly exec: RemoteExecDeps;
   private readonly timings: RunnerTimings;
   private readonly keyPath: string;
+  private readonly gate: ConcurrencyGate;
   private readonly sshUser = "root";
   private state: RunnerState | null = null;
   /**
@@ -329,6 +401,7 @@ export class RemoteValidationRunner implements RemoteValidator {
     this.exec = deps?.exec ?? defaultRemoteExec();
     this.timings = { ...DEFAULT_TIMINGS, ...deps?.timings };
     this.keyPath = process.env.REPOOS_REMOTE_SSH_KEY ?? "";
+    this.gate = new ConcurrencyGate(remoteConcurrencyLimit(config));
     this.loadState();
   }
 
@@ -395,6 +468,21 @@ export class RemoteValidationRunner implements RemoteValidator {
   }
 
   async validate(opts: ValidateOptions): Promise<CheckSummary> {
+    const release = await this.gate.acquire((ahead) => {
+      const note =
+        `[queued behind ${ahead} other remote run(s) — remoteValidation.maxConcurrent = ` +
+        `${this.gate.limit}; starts when a slot frees]\n`;
+      this.appendLog(opts.taskId, note);
+      opts.onChunk?.(note);
+    });
+    try {
+      return await this.runValidation(opts, remoteRunPaths(opts.taskId));
+    } finally {
+      release();
+    }
+  }
+
+  private async runValidation(opts: ValidateOptions, paths: RemoteRunPaths): Promise<CheckSummary> {
     const rv = this.config.remoteValidation ?? {};
     if (!rv.enabled) return this.infraFail("remote validation is disabled");
     if (!process.env.HETZNER_API_TOKEN) return this.infraFail("HETZNER_API_TOKEN is not set");
@@ -425,20 +513,20 @@ export class RemoteValidationRunner implements RemoteValidator {
       if (!bundle.ok) return this.infraFail(`git bundle failed: ${bundle.detail ?? "unknown"}`);
 
       // 2. upload
-      const remoteBundle = `/tmp/repoos-${opts.taskId}.bundle`;
+      const remoteBundle = paths.bundle;
       const up = await this.exec.uploadFile(host, bundlePath, remoteBundle);
       if (!up.ok)
         return this.infraFail(`scp of candidate bundle failed: ${up.detail ?? "unknown"}`);
 
       // 3. run build + test inside the container
       emit(`[running build + test on ${host.ip}]\n`);
-      const cmd = `/opt/repoos/validate.sh ${remoteBundle} ${opts.candidateSha}`;
+      const cmd = `/opt/repoos/validate.sh ${remoteBundle} ${opts.candidateSha} ${paths.artifacts}`;
       const run = await this.exec.runRemote(host, cmd, emit, this.timings.remoteRunTimeoutMs);
 
       // 4. pull artifacts (best effort)
       await this.exec.downloadDir(
         host,
-        "/tmp/repoos-artifacts/*",
+        `${paths.artifacts}/*`,
         join(this.config.root, ".repoos", "logs", "remote-validation", opts.taskId),
       );
 
@@ -686,6 +774,7 @@ export class TailscaleRunner implements RemoteValidator {
   private readonly exec: RemoteExecDeps;
   private readonly timings: RunnerTimings;
   private readonly keyPath: string;
+  private readonly gate: ConcurrencyGate;
 
   constructor(
     private readonly config: RepoOSConfig,
@@ -695,6 +784,7 @@ export class TailscaleRunner implements RemoteValidator {
     this.exec = deps?.exec ?? defaultRemoteExec();
     this.timings = { ...DEFAULT_TIMINGS, ...deps?.timings };
     this.keyPath = process.env.REPOOS_REMOTE_SSH_KEY ?? "";
+    this.gate = new ConcurrencyGate(remoteConcurrencyLimit(config));
   }
 
   logPath(taskId: string): string {
@@ -732,6 +822,21 @@ export class TailscaleRunner implements RemoteValidator {
   }
 
   async validate(opts: ValidateOptions): Promise<CheckSummary> {
+    const release = await this.gate.acquire((ahead) => {
+      const note =
+        `[queued behind ${ahead} other remote run(s) — remoteValidation.maxConcurrent = ` +
+        `${this.gate.limit}; starts when a slot frees]\n`;
+      this.appendLog(opts.taskId, note);
+      opts.onChunk?.(note);
+    });
+    try {
+      return await this.runValidation(opts, remoteRunPaths(opts.taskId));
+    } finally {
+      release();
+    }
+  }
+
+  private async runValidation(opts: ValidateOptions, paths: RemoteRunPaths): Promise<CheckSummary> {
     const rv = this.config.remoteValidation ?? {};
     if (!rv.enabled) return this.infraFail("remote validation is disabled");
     const host = this.host();
@@ -756,7 +861,7 @@ export class TailscaleRunner implements RemoteValidator {
       if (!bundle.ok) return this.infraFail(`git bundle failed: ${bundle.detail ?? "unknown"}`);
 
       // 2. upload
-      const remoteBundle = `/tmp/repoos-${opts.taskId}.bundle`;
+      const remoteBundle = paths.bundle;
       const up = await this.exec.uploadFile(host, bundlePath, remoteBundle);
       if (!up.ok)
         return this.infraFail(`scp of candidate bundle failed: ${up.detail ?? "unknown"}`);
@@ -766,13 +871,13 @@ export class TailscaleRunner implements RemoteValidator {
       emit(`[running build + test in ${image} container on ${host.ip}]\n`);
       // validate.sh lives on the host at /opt/repoos/validate.sh and calls docker run
       // itself — same script used by the Hetzner runner VM.
-      const cmd = `REPOOS_CI_IMAGE=${image} /opt/repoos/validate.sh ${remoteBundle} ${opts.candidateSha}`;
+      const cmd = `REPOOS_CI_IMAGE=${image} /opt/repoos/validate.sh ${remoteBundle} ${opts.candidateSha} ${paths.artifacts}`;
       const run = await this.exec.runRemote(host, cmd, emit, this.timings.remoteRunTimeoutMs);
 
       // 4. pull artifacts (best effort)
       await this.exec.downloadDir(
         host,
-        "/tmp/repoos-artifacts/*",
+        `${paths.artifacts}/*`,
         join(this.config.root, ".repoos", "logs", "remote-validation", opts.taskId),
       );
 
