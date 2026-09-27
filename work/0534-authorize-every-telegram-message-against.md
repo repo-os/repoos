@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:32:39Z"
-updated_at: "2026-09-27T15:42:31Z"
+updated_at: "2026-09-27T15:43:17Z"
 ---
 ## Problem
 
@@ -41,7 +41,7 @@ Note `action` is a free-text string with no enum or registry — 13 hand-written
 
 ## Denial behavior
 
-An unbound or unauthorized sender gets a **silent no-op, not an error reply.** In a group, "access denied" confirms the bot exists, confirms the repository has a Telegram integration, and spams the channel on every message from a stranger. In a private chat, one short neutral reply is acceptable if it does not reveal whether an account is linked or which authorization check failed; in a group, say nothing.
+An unbound or unauthorized sender gets no access-denied response. In a group, the bot silently ignores the message: an error would confirm the bot and integration are active and would spam the channel. In a private chat, one short, neutral reply is acceptable if it does not reveal whether an account is linked or which authorization check failed.
 
 ## Rate limiting
 
@@ -57,3 +57,4 @@ Follow [ADR 0007 — Telegram identity and authorization](../docs/adr/0007-teleg
 - 2026-09-27T07:34:15Z · status inbox→ready
 - 2026-09-27T15:15:29Z · body
 - 2026-09-27T15:42:31Z · body
+- 2026-09-27T15:43:17Z · body
