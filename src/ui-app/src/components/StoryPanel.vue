@@ -29,7 +29,19 @@ import type { MergedStoryGroup } from "../../../core/story-display.js";
 import type { Status, Task } from "../types";
 import { useUiStore } from "../stores/ui";
 import { useConfigStore } from "../stores/config";
-import { statusColor } from "../stores/repo";
+import {
+  SORT_ORDER_OPTIONS,
+  sortTasks,
+  statusColor,
+  useRepoStore,
+  type SortOrder,
+} from "../stores/repo";
+import Select from "./ui/select/root.vue";
+import SelectContent from "./ui/select/content.vue";
+import SelectItem from "./ui/select/item.vue";
+import SelectTrigger from "./ui/select/trigger.vue";
+import SelectValue from "./ui/select/value.vue";
+import SelectViewport from "./ui/select/viewport.vue";
 import { renderMarkdown } from "../lib/markdown";
 import { relTime } from "../lib/time";
 import Dialog from "./ui/dialog/root.vue";
@@ -76,6 +88,7 @@ const emit = defineEmits<{ close: [] }>();
 
 const ui = useUiStore();
 const config = useConfigStore();
+const repo = useRepoStore();
 
 const open = computed(() => props.story !== null);
 
@@ -144,6 +157,13 @@ const summaryLine = computed(() => {
   const s = props.story;
   if (!s) return "";
   return `${s.total} ${s.total === 1 ? "task" : "tasks"} · ${s.done} done`;
+});
+
+/** Tasks tab list, sorted by the story-panel sort preference without mutating the prop. */
+const sortedStoryTasks = computed(() => {
+  const tasks = props.story?.tasks;
+  if (!tasks?.length) return [];
+  return sortTasks(tasks, repo.storySortOrder);
 });
 
 /**
@@ -262,24 +282,43 @@ function openTask(task: Task): void {
 
         <!-- Tasks: every related task, clickable straight into the task panel. -->
         <div v-else-if="tab === 'tasks'">
-          <div v-if="story && story.tasks.length" class="story-panel-tasks">
-            <button
-              v-for="task in story.tasks"
-              :key="task.id"
-              type="button"
-              class="story-panel-task"
-              @click="openTask(task)"
-            >
-              <span
-                class="story-panel-task-dot"
-                :style="{ background: statusColor(task.status) }"
-              ></span>
-              <span class="story-panel-task-id">#{{ task.id }}</span>
-              <span class="story-panel-task-title">{{ task.title }}</span>
-              <span class="story-panel-task-status">{{
-                config.columnLabels[task.status] ?? task.status
-              }}</span>
-            </button>
+          <div v-if="story && story.tasks.length" class="story-panel-tasks-wrap">
+            <div class="story-panel-tasks-toolbar">
+              <Select
+                :model-value="repo.storySortOrder"
+                @update:model-value="(v) => repo.setStorySortOrder(v as SortOrder)"
+              >
+                <SelectTrigger class="h-[34px] w-[210px] rounded-[9px] px-[11px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                    <SelectItem v-for="o in SORT_ORDER_OPTIONS" :key="o.value" :value="o.value">{{
+                      o.label
+                    }}</SelectItem>
+                  </SelectViewport>
+                </SelectContent>
+              </Select>
+            </div>
+            <div class="story-panel-tasks">
+              <button
+                v-for="task in sortedStoryTasks"
+                :key="task.id"
+                type="button"
+                class="story-panel-task"
+                @click="openTask(task)"
+              >
+                <span
+                  class="story-panel-task-dot"
+                  :style="{ background: statusColor(task.status) }"
+                ></span>
+                <span class="story-panel-task-id">#{{ task.id }}</span>
+                <span class="story-panel-task-title">{{ task.title }}</span>
+                <span class="story-panel-task-status">{{
+                  config.columnLabels[task.status] ?? task.status
+                }}</span>
+              </button>
+            </div>
           </div>
           <div v-else class="story-panel-empty">
             <div class="story-panel-empty-title">No related tasks</div>
