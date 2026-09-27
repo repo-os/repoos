@@ -32,17 +32,15 @@ export type SearchResult =
       title: string;
       subtitle: string;
       key: string;
-      tab: SettingsTabId;
-      tabLabel: string;
-      /** No `#setting-<key>` row — navigation opens repoos.toml. */
-      tomlOnly: boolean;
+      tab?: SettingsTabId;
+      tabLabel?: string;
+      tomlOnly?: boolean;
     };
 
 export interface SearchSource {
   tasks: Task[];
   docs: (DocMeta & { content?: string })[];
   fields: ConfigField[];
-  settingLocation?: SettingLocationContext;
 }
 
 /** Per-kind cap so the dropdown stays bounded on large repos. */
@@ -312,9 +310,34 @@ export function searchAll(query: string, src: SearchSource): SearchResult[] {
 
   const docHits = topByScore(scoreDocMatches(q, terms, src.docs));
 
-  const settingHits = scoreSettingFields(q, terms, src.fields, src.settingLocation);
+  const settingHits = scoreGlobalSettings(q, terms, src.fields);
 
   return [...taskHits, ...docHits, ...settingHits];
+}
+
+/** Global bar: label + key only — same matching/ranking as main. */
+function scoreGlobalSettings(q: string, terms: string[], fields: ConfigField[]): SearchResult[] {
+  const settingIdf = buildIdf(
+    fields.map((f) => `${f.label} ${f.key}`.toLowerCase()),
+    terms,
+  );
+  const scoredSettings: { result: SearchResult; score: number }[] = [];
+  for (const f of fields) {
+    if (
+      includes(f.label, q) ||
+      includes(f.key, q) ||
+      fuzzyMatch(f.label, q) ||
+      fuzzyMatch(f.key, q)
+    ) {
+      const score =
+        fieldScore(f.label, 3, terms, settingIdf, q) + fieldScore(f.key, 2, terms, settingIdf, q);
+      scoredSettings.push({
+        result: { kind: "setting", title: f.label, subtitle: f.key, key: f.key },
+        score,
+      });
+    }
+  }
+  return topByScore(scoredSettings);
 }
 
 function settingSearchResult(
@@ -337,7 +360,7 @@ function settingSearchResult(
     tab: loc.tab,
     tabLabel,
     tomlOnly: !loc.hasUiRow,
-  };
+  } satisfies SearchResult;
 }
 
 function settingSearchCorpus(f: ConfigField): string {

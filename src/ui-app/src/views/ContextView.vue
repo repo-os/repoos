@@ -235,7 +235,7 @@ async function refreshDocs(): Promise<void> {
 function applyDocDeepLink(): void {
   const target = typeof route.query.doc === "string" ? route.query.doc : null;
   if (!target || !docList.value.some((d) => d.path === target)) return;
-  if (tab.value !== "docs") tab.value = "docs";
+  if (tab.value !== "docs") setTab("docs");
   if (selDoc.value !== target) void docs.loadDoc(target);
 }
 

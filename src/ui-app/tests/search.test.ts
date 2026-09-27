@@ -288,6 +288,22 @@ describe("searchContext", () => {
     expect(out.results.some((r) => r.kind === "doc")).toBe(true);
   });
 
+  it("excludes tasks and settings even when they would match the query", () => {
+    const out = searchContext("theme", {
+      docs: [{ path: "theme.md", title: "theme doc", mtimeMs: 0 }],
+      skills: [],
+    });
+    expect(out.results.every((r) => r.kind === "doc" || r.kind === "skill")).toBe(true);
+    expect(out.results.some((r) => r.kind === "setting")).toBe(false);
+    expect(
+      searchAll("theme", {
+        tasks: [makeTask({ title: "theme", body: "" })],
+        docs: [],
+        fields,
+      }).some((r) => r.kind === "task"),
+    ).toBe(true);
+  });
+
   it("matches skills by name and description", () => {
     const out = searchContext("production", { docs: [], skills });
     expect(out.results).toHaveLength(1);
