@@ -2,7 +2,7 @@
 id: "0538"
 title: "Add Telegram settings, connection status, and test-message controls"
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: web
 story: RepoOS Telegram Bot
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:33:10Z"
-updated_at: "2026-09-27T07:33:10Z"
+updated_at: "2026-09-27T07:34:18Z"
 ---
 ## Problem
 
@@ -45,3 +45,4 @@ Use the shared dialog components (`ui/dialog/*`, body-teleported) and the global
 ## Activity
 
 - 2026-09-27T07:33:10Z · created · unknown
+- 2026-09-27T07:34:18Z · status inbox→ready
