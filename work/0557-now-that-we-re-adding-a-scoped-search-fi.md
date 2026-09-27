@@ -2,16 +2,20 @@
 id: "0557"
 title: Add a context-scoped search and real refresh feedback to the Context page
 type: feature
-status: active
+status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-a-context-scoped-search-and-real-ref
 created_at: "2026-09-27T16:21:15Z"
-updated_at: "2026-09-27T17:50:57Z"
+updated_at: "2026-09-27T18:08:50Z"
 review_rounds: 2
 review_passes: 2
+dev_error_count: 1
 ---
 ## Problem
 
@@ -104,3 +108,5 @@ Now that we're adding a scoped search field in settings page we should also add 
 - 2026-09-27T17:35:33Z · status review→active
 - 2026-09-27T17:47:09Z · status active→review
 - 2026-09-27T17:50:57Z · status review→active
+- 2026-09-27T18:08:50Z · agent exited with an error (cursor) · the agent process exited with an error — open the task to see the full output
+- 2026-09-27T18:08:50Z · status active→review
