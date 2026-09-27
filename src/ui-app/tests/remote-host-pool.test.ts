@@ -259,6 +259,7 @@ function poolFixture(opts: {
   /** Listed hosts stay unreachable after their drop: later probes keep failing. */
   stayDown?: string[];
   healthRetryMs?: number;
+  containerImage?: string;
 }): Fixture {
   const root = tmpRoot();
   const config = {
@@ -275,6 +276,7 @@ function poolFixture(opts: {
       provider: "tailscale",
       tailscaleHosts: opts.hosts,
       maxConcurrent: opts.maxConcurrent,
+      containerImage: opts.containerImage,
     },
   } as unknown as RepoOSConfig;
 
@@ -642,6 +644,22 @@ describe("capability routing (runsOn)", () => {
     expect(summary.configError).toBe(true);
     expect(summary.detail).toContain('provides only "linux"');
     expect(summary.detail).toContain("macos");
+  });
+});
+
+describe("remote command quoting", () => {
+  it("quotes containerImage as one shell assignment value", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "linux1" }],
+      containerImage: "safe; touch /tmp/pwned",
+    });
+    const job = f.runner.validate(opts("0001"));
+    await tick();
+    const runCommand = f.cmds.linux1?.[0];
+    expect(runCommand).toContain("REPOOS_CI_IMAGE='safe; touch /tmp/pwned'");
+    expect(runCommand).not.toContain("REPOOS_CI_IMAGE=safe; touch");
+    f.release("linux1");
+    await job;
   });
 });
 

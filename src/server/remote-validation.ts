@@ -636,6 +636,11 @@ export function hostLockShell(opts: {
   return script.join("\n");
 }
 
+/** Quote one value for a POSIX shell word (including embedded single quotes). */
+function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, `'\\''`)}'`;
+}
+
 /**
  * Lock wait budget for a run carrying the caller's deadline — never past it
  * (#0521 spec item 5). `hostLockShell` checks its budget in 5-second steps and
@@ -2021,7 +2026,7 @@ export class TailscaleRunner implements RemoteValidator {
         );
       }
       emit(`[running build + test in ${image} on ${host.ip}]\n`);
-      const inner = `REPOOS_CI_IMAGE=${image} ${VALIDATE_SCRIPT} ${remoteBundle} ${opts.candidateSha} ${paths.artifacts}`;
+      const inner = `REPOOS_CI_IMAGE=${shellQuote(image)} ${VALIDATE_SCRIPT} ${remoteBundle} ${opts.candidateSha} ${paths.artifacts}`;
       const waitSecs =
         opts.deadlineAt !== undefined
           ? deadlineLockWaitSecs(opts.deadlineAt)
