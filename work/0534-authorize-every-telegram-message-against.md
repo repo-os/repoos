@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-27T23:49:24Z"
+review_passes: 1
 id: "0534"
 title: Authorize every Telegram message against a live role and audit it
 type: feature
@@ -13,7 +15,6 @@ assigned_to: ai
 created_by: ""
 branch: feat/authorize-every-telegram-message-against
 created_at: "2026-09-27T07:32:39Z"
-updated_at: "2026-09-27T23:45:04Z"
 dev_error_count: 1
 ---
 id: "0534"
@@ -80,3 +81,4 @@ Reuse the exported `RateLimiter` class (`src/server/routes/auth.ts`, already use
 - 2026-09-27T23:18:50Z · status ready→active, branch
 - 2026-09-27T23:35:25Z · agent exited with an error (cursor) · the agent process exited with an error — open the task to see the full output
 - 2026-09-27T23:45:04Z · status active→review
+
