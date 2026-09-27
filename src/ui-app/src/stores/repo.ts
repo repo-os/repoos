@@ -175,9 +175,12 @@ export const statusColor = (s: string): string => STATUS_COLORS[s] ?? "#566081";
  * PM chat "canned questions" offered above the compose box, keyed by task
  * status. Only statuses with a defined set show chips; others show none.
  */
+/** Canned PM prompt for stub tasks — shared by the PM tab chips and needs-input banner. */
+export const PM_FLESH_OUT_CANNED_MESSAGE = "Can you flesh this out?";
+
 export const PM_CANNED_MESSAGES: Partial<Record<Status, string[]>> = {
-  draft: ["Can you flesh this out?", "Suggest how to turn this stub into a complete task."],
-  inbox: ["Can you flesh this out?", "Suggest how to turn this stub into a complete task."],
+  draft: [PM_FLESH_OUT_CANNED_MESSAGE, "Suggest how to turn this stub into a complete task."],
+  inbox: [PM_FLESH_OUT_CANNED_MESSAGE, "Suggest how to turn this stub into a complete task."],
   active: ["What's going on with this task?", "What's wrong?", "What should I do next?"],
   review: ["What's blocking this from being done?", "Is this actually ready?"],
 };

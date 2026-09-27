@@ -42,6 +42,10 @@ import type { LiveIndex, RepoEvent } from "../live-index.js";
 import type { Logger } from "../../core/logger.js";
 import { getCurrentUser } from "./auth.js";
 import { withOriginalPromptSection } from "../../core/repoos.js";
+import {
+  flagUnderspecifiedIfNeeded,
+  needsInputClearsOnPmMessage,
+} from "../task-underspecified-flag.js";
 import { listInputs } from "../../core/input.js";
 import {
   commitTaskFile,
@@ -251,6 +255,11 @@ export function finalizeFreeformRun(
         reason: failureReason,
         at: new Date().toISOString(),
       });
+      const afterFailure = index.getTask(taskId);
+      if (afterFailure) {
+        const flagged = flagUnderspecifiedIfNeeded(config, afterFailure);
+        if (flagged) index.applyFileChange(flagged.absPath);
+      }
       return;
     }
 
@@ -273,6 +282,11 @@ export function finalizeFreeformRun(
       { onStatusChange: deps.onServerStatusChange },
     );
     index.applyFileChange(updated.absPath);
+    const afterPromote = index.getTask(taskId);
+    if (afterPromote) {
+      const flagged = flagUnderspecifiedIfNeeded(config, afterPromote);
+      if (flagged) index.applyFileChange(flagged.absPath);
+    }
     logger.task(taskId, "info", "PM agent fleshed out draft task", {
       title: updated.title,
     });
@@ -685,6 +699,14 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
 
   // Guarded: the #0210 gate already ran above for transitions into review.
   index.applyFileChange(updated.absPath, { guarded: true });
+
+  if (prevStatus === "draft" && updated.status !== "draft") {
+    const current = index.getTask(updated.id);
+    if (current) {
+      const flagged = flagUnderspecifiedIfNeeded(config, current);
+      if (flagged) index.applyFileChange(flagged.absPath, { guarded: true });
+    }
+  }
 
   if (
     prevStatus !== "review" &&
@@ -1728,6 +1750,13 @@ ${existing.body || "(no description)"}`;
     return json(res, 400, {
       error: result.reason ?? "could not send message to PM",
     });
+  }
+
+  if (existing.needsInput && needsInputClearsOnPmMessage(existing.needsInputReason)) {
+    const cleared = patchTaskFile(config, existing.absPath, {
+      needsInput: false,
+    });
+    index.applyFileChange(cleared.absPath);
   }
 
   // 0381: the runner accepted the turn (running now, or queued behind
