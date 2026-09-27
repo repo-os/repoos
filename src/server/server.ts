@@ -320,6 +320,10 @@ import {
   deleteUser,
   updateUserRole,
   getAuditLog,
+  createTelegramInviteRoute,
+  listTelegramLinksRoute,
+  unbindTelegramLinkRoute,
+  reassignTelegramLinkRoute,
   createHubCapability,
   listHubCapabilities,
   revokeHubCapability,
@@ -2568,6 +2572,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("DELETE", /^\/api\/auth\/users\/([^/]+)$/, deleteUser);
   router.register("PATCH", /^\/api\/auth\/users\/([^/]+)$/, updateUserRole);
   router.register("GET", "/api/auth/audit", getAuditLog);
+  router.register("POST", "/api/auth/telegram/invites", createTelegramInviteRoute);
+  router.register("GET", "/api/auth/telegram/links", listTelegramLinksRoute);
+  router.register("DELETE", /^\/api\/auth\/telegram\/links\/([^/]+)$/, unbindTelegramLinkRoute);
+  router.register(
+    "POST",
+    /^\/api\/auth\/telegram\/links\/([^/]+)\/reassign$/,
+    reassignTelegramLinkRoute,
+  );
   router.register("POST", "/api/auth/hub-capabilities", createHubCapability);
   router.register("GET", "/api/auth/hub-capabilities", listHubCapabilities);
   router.register("DELETE", /^\/api\/auth\/hub-capabilities\/([^/]+)$/, revokeHubCapability);
