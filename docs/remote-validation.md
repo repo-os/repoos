@@ -189,6 +189,17 @@ scp scripts/remote-runner/validate-macos.sh <host>:/tmp/validate.sh
 ssh <host> 'sudo mkdir -p /opt/repoos && sudo install -m 755 /tmp/validate.sh /opt/repoos/validate.sh'
 ```
 
+The per-host prerequisite probe (below) cannot tell these two `os = "macos"`
+setups apart — both share the one label, since it's also used for `runsOn`
+capability routing — so it checks for the **Docker** toolchain unconditionally
+on a `macos` host, matching the maintained `just setup-<host>` path (#0521
+review: an earlier version probed for `bun`/`git` instead, which fails a
+correctly Docker-provisioned host — the actual, documented default — and
+never checked what that host runs). A host set up the native way instead will
+fail this probe and be reported unhealthy even though it works; that's a
+known gap in a path this doc calls out as the exception, not something to
+work around per-host today.
+
 The scripts on hosts are **copies**: after updating RepoOS re-run the setup
 above, otherwise an old `validate.sh` ignores the third (artifacts) argument —
 the per-host prerequisite check below reports exactly that.
@@ -204,15 +215,21 @@ run on two hosts while a third waits. A run that has to wait logs
 the caller's output, and the log records which host ran each job
 (`[runner user@host (os)]`).
 
-Before a host's first job it is probed over SSH: reachability, Docker (Linux)
-or the bun/git toolchain (macOS), and an **up-to-date `validate.sh` that accepts
-the artifacts dir as its third argument**. A host that fails is reported instead
+Before a host's first job it is probed over SSH: reachability, Docker (every
+host, including macOS — see the native-host caveat above), and an
+**up-to-date `validate.sh` that accepts the artifacts dir as its third
+argument**. A host that fails is reported instead
 of failing jobs — its state and reason show in Settings → Remote validation
 (Hosts) and in `GET /api/remote-validation/status` (`hosts[]` with `probed`,
-`healthy`, `detail`, `inFlight`, `queued`, `lastRun`) — it is skipped while
-other hosts are healthy, and re-probed later (30 s cooldown, capped retries) so
-it rejoins the pool when it comes back. If *no* eligible host is usable the job
-fails retryably with each host's reason.
+`healthy`, `detail`, `inFlight`, `queued` — each waiting run counted against the
+one host it would run on next, so the column totals sum to the real queue
+length — and `lastRun`) — it is skipped while
+other hosts are healthy, and re-probed later (30 s cooldown, capped at 10
+retries) so it rejoins the pool when it comes back. Once a host hits that cap
+its retries stop; a queued run whose eligible hosts have **all** hit it is
+cancelled and fails retryably rather than waiting forever (close-out and
+release pass no deadline of their own). A run whose every eligible host is
+unusable fails retryably with each host's reason.
 
 #### Capability routing (`runsOn`)
 
@@ -233,7 +250,10 @@ The per-host cap above lives in one server process. A standalone `repoos check`
 is another process, so the remote command itself is wrapped in a portable
 `mkdir`-based slot lock on the host (`/tmp/repoos-validate-locks/<slot>`,
 `hostLockShell` in `src/server/remote-validation.ts`) with the same slot count:
-server and CLI can never put more than the limit on one machine. A waiter
+server and CLI can never put more than the limit on one machine. That lock root
+is deliberately **host-global, not per-repo** — the cap exists because of
+machine load, so two different repos validated on the same host share its
+slots (one machine = one suite, whoever asked for it). A waiter
 streams `[lock] waiting for a free slot …` while it waits and gives up after
 its wait budget (the caller's deadline, else 15 min) with exit code 75, which
 the runner reports as a transient "another repoos check is already running"
@@ -246,7 +266,12 @@ Waiting counts against the caller's own deadline: handoff passes its
 10-minute finalization deadline (`deadlineAt`), and a run still **queued** at
 that point cancels itself, releases its slot and fails retryably with
 `… the caller's deadline passed, so the run was cancelled and its slot
-released`. A run already executing is never interrupted mid-suite.
+released`. A run that reaches its host **after** the deadline (its dispatch won
+the race with that cancellation timer, or the deadline passed while it bundled
+and uploaded) cancels the same way instead of starting, and its host-lock wait
+budget is the caller's deadline rounded down to the lock's 5-second check step
+(`deadlineLockWaitSecs`) — a late run can never enter the lock past its
+deadline. A run already executing is never interrupted mid-suite.
 
 #### Concurrency
 
