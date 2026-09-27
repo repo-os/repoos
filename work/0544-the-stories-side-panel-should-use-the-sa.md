@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-27T08:20:00Z"
+review_passes: 1
 id: "0544"
 title: Match the story side panel to the other side panels' scrim and size
 type: feature
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/match-the-story-side-panel-to-the-other-
 created_at: "2026-09-27T07:41:41Z"
-updated_at: "2026-09-27T08:17:49Z"
 ---
 ## Problem
 
@@ -187,3 +188,4 @@ The stories side panel should use the same styling as the other side panels (e.g
 - 2026-09-27T08:13:09Z · status inbox→ready
 - 2026-09-27T08:13:10Z · status ready→active, branch
 - 2026-09-27T08:17:49Z · status active→review
+
