@@ -2,7 +2,7 @@
 id: "0512"
 title: Close-out silently discards uncommitted task-worktree changes; handoff commit captured a stale style.css
 type: bug
-status: review
+status: done
 priority: p1
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/close-out-silently-discards-uncommitted-
 cli_override: opencode
 model_override: opencode-go/space-bunny-free
 created_at: "2026-09-26T03:50:30Z"
-updated_at: "2026-09-27T00:33:15Z"
+updated_at: "2026-09-27T00:55:28Z"
 ---
 ## Problem
 
@@ -129,3 +129,4 @@ not depend on knowing who it was.
 - 2026-09-26T16:30:52Z · model_override
 - 2026-09-26T16:31:45Z · status ready→active, branch
 - 2026-09-27T00:33:15Z · status active→review
+- 2026-09-27T00:55:28Z · status review→done, release:success
