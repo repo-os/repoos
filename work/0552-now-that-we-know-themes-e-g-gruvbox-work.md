@@ -2,14 +2,14 @@
 id: "0552"
 title: Add a gruvbox theme switcher to the user-docs site and carry it over from the landing page
 type: feature
-status: review
+status: active
 priority: p2
 area: docs
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-a-gruvbox-theme-switcher-to-the-user
 created_at: "2026-09-27T14:36:30Z"
-updated_at: "2026-09-27T16:23:10Z"
+updated_at: "2026-09-27T16:23:11Z"
 ---
 ## Problem
 
@@ -223,3 +223,4 @@ Now that we know themes (e.g. gruvbox) works on the landing page let's do the sa
 - 2026-09-27T14:39:27Z · status inbox→ready
 - 2026-09-27T14:39:31Z · status ready→active, branch
 - 2026-09-27T16:23:10Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-09-27T16:23:11Z · status review→active
