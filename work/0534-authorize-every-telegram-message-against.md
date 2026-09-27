@@ -10,6 +10,19 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:32:39Z"
+updated_at: "2026-09-27T16:08:28Z"
+---
+id: "0534"
+title: Authorize every Telegram message against a live role and audit it
+type: feature
+status: ready
+priority: p1
+area: server
+story: RepoOS Telegram Bot
+assigned_to: ai
+created_by: ""
+branch: ""
+created_at: "2026-09-27T07:32:39Z"
 updated_at: "2026-09-27T15:59:55Z"
 ---
 ## Problem
@@ -43,7 +56,7 @@ Note `action` is a free-text string with no enum or registry — 13 hand-written
 
 ## Denial behavior
 
-An unbound or unauthorized sender gets no access-denied response. In a group, the bot silently ignores the message: an error would confirm the bot and integration are active and would spam the channel. In a private chat, one short, neutral reply is acceptable if it does not reveal whether an account is linked or which authorization check failed.
+An unbound or unauthorized sender gets a silent no-op **in every chat, group or private** — never an access-denied response, and never any other reply, matching ADR 0007 exactly (not a group-only rule with a private-chat exception, which #0529's review caught as a real divergence: even a neutral private-chat reply confirms the bot is active and reachable, which authorization failure must not disclose). Authorization behavior must not reveal whether the bot is connected, whether an account is linked, or which check failed — in any chat type.
 
 ## Rate limiting
 
@@ -59,3 +72,4 @@ Reuse the exported `RateLimiter` class (`src/server/routes/auth.ts`, already use
 - 2026-09-27T15:51:51Z · body
 - 2026-09-27T15:52:42Z · body
 - 2026-09-27T15:59:55Z · body
+- 2026-09-27T16:08:28Z · body
