@@ -3321,7 +3321,13 @@ watch(
                   v-if="needsInputPrimary && !staleNeedsInputOnReview"
                   variant="outline"
                   size="sm"
-                  :disabled="ui.saving || startingWork || reviewBusy || dismissNeedsInputBusy"
+                  :disabled="
+                    ui.saving ||
+                    startingWork ||
+                    reviewBusy ||
+                    review?.running ||
+                    dismissNeedsInputBusy
+                  "
                   @click="runNeedsInputPrimaryAction"
                 >
                   <Play
@@ -3331,10 +3337,17 @@ watch(
                   <ActivityIndicator
                     v-else-if="needsInputPrimary.kind === 'restart' && startingWork"
                   />
+                  <ActivityIndicator
+                    v-else-if="
+                      needsInputPrimary.kind === 'review' && (reviewBusy || review?.running)
+                    "
+                  />
                   {{
                     needsInputPrimary.kind === "restart" && startingWork
                       ? "Starting work…"
-                      : needsInputPrimary.label
+                      : needsInputPrimary.kind === "review" && (reviewBusy || review?.running)
+                        ? "Reviewing…"
+                        : needsInputPrimary.label
                   }}
                 </Button>
                 <Button

@@ -30,7 +30,7 @@ export const NEEDS_INPUT_STATUS_LABELS: Record<string, string> = {
 export const NEEDS_INPUT_BANNER_LABELS: Record<string, string> = {
   "review-failed": "The reviewer crashed or timed out without producing a report.",
   "review-rounds-exhausted":
-    "Automatic review rounds are used up and the latest review still asks for changes. Nothing is running.",
+    "The reviewer has sent this back to the engineer twice and still found issues. No review is running now.",
   "dev-error": "The agent exited with an error.",
   "check-failed-after-retries": "Checks failed after automatic retries.",
   "cto-escalation": "The CTO agent flagged this for a human decision.",
