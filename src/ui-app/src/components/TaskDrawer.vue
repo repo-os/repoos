@@ -288,6 +288,14 @@ const freeformRunId = ref<string | null>(null);
 const freeformSubmitted = ref(false);
 /** The draft the user just created, referenced by the acknowledgment panel. */
 const submittedTask = ref<Task | null>(null);
+/**
+ * The story the task on the acknowledgment panel was created with (#0555).
+ * Captured here rather than read back from `ui.nt.story`, which is cleared the
+ * moment the create succeeds — the form has to start clean for the next task,
+ * but **Done** and the PM-finished auto-open still need to find their way back
+ * to the story this create belonged to.
+ */
+const freeformStory = ref("");
 
 const freeformTextarea = ref<HTMLTextAreaElement | null>(null);
 const draftMsgTextarea = ref<HTMLTextAreaElement | null>(null);
@@ -342,6 +350,7 @@ watch(
     draftSaved.value = null;
     freeformSubmitted.value = false;
     submittedTask.value = null;
+    freeformStory.value = "";
     // Unlike freeformText, a leftover freeformRunId is NOT something to keep:
     // it only gets set once the user actually clicks "Create task" (not just by
     // typing), and closing the drawer before that run's stream finishes left it
@@ -399,6 +408,10 @@ async function createFreeform(): Promise<void> {
     await uploadPendingScreenshots(res.task.id);
     submittedTask.value = res.task;
     freeformSubmitted.value = true;
+    // Capture the story BEFORE clearing it: `nt.story` is per-open context and
+    // must not leak into the next task queued from this panel, but the ack's
+    // dismissal paths still navigate by it (#0555).
+    freeformStory.value = ui.nt.story;
     // Clear the input so a "Create another task" tap starts from a clean form.
     freeformText.value = "";
     // The story went with this create (#0555); per-open context, so the next
@@ -427,11 +440,17 @@ function createAnotherTask(): void {
 
 /** Acknowledge the in-flight creation and leave the new-task pane. */
 function doneFreeform(): void {
+  const story = freeformStory.value;
   freeformSubmitted.value = false;
   submittedTask.value = null;
   if (freeformRunId.value) repo.clearOutput(freeformRunId.value);
   freeformRunId.value = null;
   ui.close();
+  // #0555: a freeform create that carried a story ends on that story — the
+  // same destination the manual path takes, and the same "close this surface,
+  // then navigate" hand-off the story panel makes. With no story the
+  // acknowledgment keeps the navigation-free dismissal it has always had.
+  if (story) routeAfterCreate(story);
 }
 
 // The user reported staying stuck on the "Creating your task" acknowledgment
@@ -447,10 +466,22 @@ watch(
     if (!wasWorking || working) return;
     if (!freeformSubmitted.value || !submittedTask.value || !ui.isNew) return;
     const task = submittedTask.value;
+    const story = freeformStory.value;
     freeformSubmitted.value = false;
     submittedTask.value = null;
     if (freeformRunId.value) repo.clearOutput(freeformRunId.value);
     freeformRunId.value = null;
+    if (story) {
+      // #0555: this create came from a story, so the wait ends on that story
+      // rather than on /work — the same destination Done takes above. Opening
+      // the task drawer as well would put the story panel and the task drawer
+      // on screen at once; the finished task is one click away in the story's
+      // Tasks tab, which is what #0311 wanted the user to see: creation
+      // happened, and here it is.
+      ui.close();
+      routeAfterCreate(story);
+      return;
+    }
     void ui.openTask(task);
     router.push("/work");
   },
