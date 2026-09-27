@@ -5,9 +5,10 @@ Written 2026-08-28. Updated 2026-09-22 to add the Tailscale provider, and
 Runs the expensive half of the close-out gate on a remote machine instead of
 the developer's machine. Two providers are supported: **hetzner** (disposable
 cloud VM, the original) and **tailscale** (one or more persistent machines on
-your tailnet, each running the gate in a fresh Docker container — including a
-macOS host, via Docker Desktop; a native, no-Docker macOS setup exists as a
-documented exception below, not the default).
+your tailnet). A tailscale host runs the gate one of two ways, set per host
+(default: Docker — see "Docker vs. native" below): in a fresh Docker
+container (Linux or macOS via Docker Desktop), or, on macOS only, natively
+with no Docker at all. Both are real, maintained setup paths.
 
 ## Why
 
@@ -165,9 +166,19 @@ tailscaleHosts = ["bee", "mac1"]
 host = "mac1"
 user = "nick"          # SSH user for this host (default tailscaleUser, else root)
 os = "macos"           # capability: jobs with runsOn = ["macos"] land here
+runner = "docker"      # HOW this host runs validate.sh: "docker" (default) or
+                        # "native" — see "Docker vs. native" below. Optional;
+                        # omit for the default (docker).
 labels = ["apple-silicon"]  # extra capabilities jobs can require
 maxConcurrent = 2      # this host's own in-flight cap (default maxConcurrent, else 1)
 ```
+
+`user`/`os`/`labels`/`maxConcurrent`/`runner` are TOML-only — there is no
+Settings UI for per-host rows (only the plain host-name list is editable
+there). This is a deliberate exception to the "every feature setting needs a
+Settings control" rule (AGENTS.md, Conventions): per-host attrs are advanced,
+infrequently-changed configuration where a dedicated UI would add real
+complexity for little benefit over editing the row directly.
 
 `.env`:
 
@@ -178,34 +189,45 @@ REPOOS_REMOTE_SSH_KEY=/abs/path/to/private_key
 The key must be authorised on every tailscale host (in `~/.ssh/authorized_keys`
 for that host's user). No Hetzner token is needed.
 
-**One-time setup per host.** The `just` recipes are the maintained path —
-copy the scripts, install Docker (Linux) or check Docker Desktop (macOS), build
-the `repoos-ci` image, and install `validate.sh` at `/opt/repoos/validate.sh`:
+### Docker vs. native — both are real, maintained options
+
+A host runs `validate.sh` one of two ways, set per-host via `runner` (default
+`"docker"` when omitted — this is the field that decides it, NOT `os`, which
+is a separate, purely capability-routing concept: `os` says what platform a
+host provides for `runsOn` matching; `runner` says how that host actually
+executes the gate, and either runner satisfies the same `os` capability
+since the result is identical either way):
+
+- **`runner = "docker"` (default).** Linux or macOS, in a fresh `repoos-ci`
+  container. Requires Docker (Docker Desktop on macOS).
+- **`runner = "native"` (macOS only today).** No Docker: `bun install` +
+  `bun run build` + `bun run test` directly on the host.
+
+**One-time setup per host.** The `just` recipes are the maintained path for
+both:
 
 ```sh
-just setup-bee                          # Linux (Arch) host
-just setup-mini                         # macOS host via Docker
-just _setup-runner <host> <arch|macos>  # any other host
+just setup-bee                          # Linux (Arch), Docker
+just setup-thinkpad                     # Linux (Arch), Docker
+just setup-mini                         # macOS, Docker (Docker Desktop)
+just setup-mini-native                  # macOS, native — no Docker
+just _setup-runner <host> <arch|macos>         # any other Docker host
+just _setup-runner-native <host>               # any other native macOS host
 ```
 
-A **native** macOS host (no Docker at all) gets the native script instead, run
-on the host — it does `bun install` + `bun run build` + `bun run test` directly:
+Each installs the matching `validate.sh` at `/opt/repoos/validate.sh` on the
+host. **Set `runner` on that host's config row to match what you installed**
+— the per-host prerequisite probe (below) checks the toolchain `runner` says
+to expect, so a mismatch (e.g. a native install left at the default
+`runner = "docker"`) reports the host unhealthy even though it works.
 
-```sh
-scp scripts/remote-runner/validate-macos.sh <host>:/tmp/validate.sh
-ssh <host> 'sudo mkdir -p /opt/repoos && sudo install -m 755 /tmp/validate.sh /opt/repoos/validate.sh'
-```
-
-The per-host prerequisite probe (below) cannot tell these two `os = "macos"`
-setups apart — both share the one label, since it's also used for `runsOn`
-capability routing — so it checks for the **Docker** toolchain unconditionally
-on a `macos` host, matching the maintained `just setup-<host>` path (#0521
-review: an earlier version probed for `bun`/`git` instead, which fails a
-correctly Docker-provisioned host — the actual, documented default — and
-never checked what that host runs). A host set up the native way instead will
-fail this probe and be reported unhealthy even though it works; that's a
-known gap in a path this doc calls out as the exception, not something to
-work around per-host today.
+Two prior versions of the probe got this wrong in opposite directions by
+branching on `os` instead of a dedicated `runner` field (#0521 review, twice
+over): checking bun/git unconditionally on macOS (fails a real
+Docker-provisioned macOS host) and checking Docker unconditionally
+everywhere (fails a real native macOS host). `runner` is what fixes this —
+it says explicitly which toolchain a given host uses, independent of its
+platform.
 
 The scripts on hosts are **copies**: after updating RepoOS re-run the setup
 above, otherwise an old `validate.sh` ignores the third (artifacts) argument —
@@ -222,10 +244,10 @@ run on two hosts while a third waits. A run that has to wait logs
 the caller's output, and the log records which host ran each job
 (`[runner user@host (os)]`).
 
-Before a host's first job it is probed over SSH: reachability, Docker (every
-host, including macOS — see the native-host caveat above), and an
-**up-to-date `validate.sh` that accepts the artifacts dir as its third
-argument**. A host that fails is reported instead
+Before a host's first job it is probed over SSH: reachability, the toolchain
+its `runner` says to expect (Docker, or bun/git for a native host — see
+"Docker vs. native" above), and an **up-to-date `validate.sh` that accepts
+the artifacts dir as its third argument**. A host that fails is reported instead
 of failing jobs — its state and reason show in Settings → Remote validation
 (Hosts) and in `GET /api/remote-validation/status` (`hosts[]` with `probed`,
 `healthy`, `detail`, `inFlight`, `queued` — each waiting run counted against the
@@ -242,9 +264,21 @@ unusable fails retryably with each host's reason.
 
 A `[[check.steps]]` row can declare `runsOn = ["macos"]` (any capability
 string; a host provides its `os` plus its `labels`, case-insensitive). The
-union across the whole plan is the job's requirement — deliberately not
-profile-filtered, because the remote run executes the entire plan in one go.
-A job whose requirement no host provides **never** runs in the wrong place: it
+job's requirement is the union of `runsOn` across only the plan's `build`-
+and `tests`-kind steps — NOT every step. The remote host never runs the
+check plan step-by-step; `validate.sh` runs the fixed sequence
+`bun install && bun run build && bun run test`, which is exactly the work
+those two kinds represent. A step of any other kind (or a raw custom
+`command` step), even one declaring its own `runsOn`, always runs locally as
+part of `repoos check` regardless — so its capability requirement must not
+constrain which remote host the job needs (a prior version unioned every
+step's `runsOn` here; that was a real bug, not just conservative — a project
+with a macOS-only *local* gate and only Linux remote hosts would
+config-error its entire remote build+test over a capability the remote
+portion never used, #0521 review). Deliberately still not profile- or
+changed-path-filtered even within build/tests, because host selection
+happens once, up front, before any per-step filtering runs. A job whose
+requirement no host provides **never** runs in the wrong place: it
 fails immediately with `no remote host provides …` naming the configured
 hosts, or waits (with the capability in its queue line) while a capable host is
 busy. That failure is **non-retryable and never falls back locally** — it is a
@@ -253,7 +287,13 @@ transient classification would otherwise silently run macOS-bound work on the
 wrong machine; the gate reports it as `remote validation cannot run: …` and
 points at this config instead. (An *unreachable* eligible host is different:
 that stays transient and retryable.) The Hetzner runner is always one Linux VM
-and rejects non-Linux capabilities the same way. Today nothing declares
+of a fixed, known type, so it implicitly satisfies a `"linux"` requirement
+without needing to declare it — a Tailscale host does not get the same
+free pass: its `os` reflects a real, arbitrary machine you configured, not
+a guaranteed-Linux VM, so a `runsOn: ["linux"]` job only routes to a
+Tailscale host that explicitly sets `os = "linux"` (#0521 review — this
+asymmetry is intentional, not a bug: assuming an unlabeled Tailscale host is
+Linux would be a guess this file can't verify). Today nothing declares
 `runsOn` — native Swift/Xcode steps don't exist in the gate yet; keep them
 local until they do.
 
