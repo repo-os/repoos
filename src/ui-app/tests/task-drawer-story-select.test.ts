@@ -175,5 +175,40 @@ describe("task drawer story select (#0525)", () => {
     expect(details.text()).toContain("Assigned to");
     expect(details.find("#et-story").exists()).toBe(false);
     expect(details.find("#et-assignee").exists()).toBe(true);
+    expect(wrapper.find('button[aria-label^="Open story"]').exists()).toBe(false);
+  });
+
+  it("with stories disabled, hides the go-to-story button even when the task has a story", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    FakeEventSource.instances = [];
+    const task = makeTask({ story: "Alpha slice", assignedTo: "ai" });
+    stubApi(task);
+    wrapper = await mountDrawer(pinia, task, false);
+
+    expect(wrapper.find("#et-story").exists()).toBe(false);
+    expect(wrapper.find('button[aria-label^="Open story"]').exists()).toBe(false);
+  });
+
+  it("navigates to the story without saving unsaved drawer edits", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    FakeEventSource.instances = [];
+    const task = makeTask({ story: "Alpha slice", title: "Original title", assignedTo: "ai" });
+    stubApi(task);
+    wrapper = await mountDrawer(pinia, task, true);
+    const ui = useUiStore();
+    const repo = useRepoStore();
+    const patchSpy = vi.spyOn(repo, "patchTask").mockResolvedValue(task);
+
+    const titleInput = wrapper.find("#et-title");
+    await titleInput.setValue("Edited title");
+    expect(wrapper.find(".save-bar").exists()).toBe(true);
+
+    await wrapper.find('button[aria-label^="Open story"]').trigger("click");
+    await flush();
+
+    expect(patchSpy).not.toHaveBeenCalled();
+    expect(ui.active).toBeNull();
   });
 });

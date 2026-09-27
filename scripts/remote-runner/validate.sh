@@ -53,7 +53,6 @@ chmod -R o+rw "$WORK/repo" "$ART"
 
 set +e
 docker run --rm \
-  --shm-size=1g \
   -v "$WORK/repo":/repo \
   -v "$CACHE":/bun-cache \
   -v "$ART":/artifacts \
