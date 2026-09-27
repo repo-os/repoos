@@ -358,7 +358,8 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
           <p v-else class="tunnel-help">Status unavailable.</p>
         </div>
 
-        <!-- per-host pool state (#0521) -->
+        <!-- per-host pool state (#0521) — a genuinely empty list has nothing
+             to show, so this stays gated on hosts existing. -->
         <div v-if="provider === 'tailscale' && (status?.hosts || []).length" class="rvr-hosts">
           <div class="tunnel-section-heading">
             <h3>Hosts</h3>
@@ -381,7 +382,13 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
             <code>runsOn</code> requires; a job queues only when every eligible host is at its
             limit, and an unavailable host is skipped and re-checked.
           </p>
+        </div>
 
+        <!-- Host pool editor (#0521 review): deliberately NOT gated on
+             status?.hosts having any entries — that condition used to wrap
+             this whole editor too, so an empty pool hid the only UI that
+             could add the first host, leaving raw TOML as the sole option. -->
+        <div v-if="provider === 'tailscale'" class="rvr-hosts">
           <div class="tunnel-section-heading" style="margin-top: 10px">
             <h3>Host pool</h3>
           </div>
