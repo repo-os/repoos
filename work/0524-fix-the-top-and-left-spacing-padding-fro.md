@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-27T01:09:59Z"
+review_passes: 1
 id: "0524"
 title: Fix History tab padding on top and left edges
 type: bug
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-history-tab-padding-on-top-and-left-
 created_at: "2026-09-27T00:57:51Z"
-updated_at: "2026-09-27T01:08:31Z"
 ---
 ## Problem
 
@@ -137,3 +138,4 @@ Fix the top and left spacing/padding from the sides of the new git history tab.
 - 2026-09-27T00:58:43Z · status inbox→ready
 - 2026-09-27T01:07:13Z · status ready→active, branch
 - 2026-09-27T01:08:31Z · status active→review
+
