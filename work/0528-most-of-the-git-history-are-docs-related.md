@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-27T07:04:19Z"
+review_passes: 1
 id: "0528"
 title: Hide docs-only commits from git history by default
 type: feature
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/hide-docs-only-commits-from-git-history-
 created_at: "2026-09-27T06:52:20Z"
-updated_at: "2026-09-27T07:01:21Z"
 ---
 ## Problem
 
@@ -148,3 +149,4 @@ Most of the git history are docs() -related. let's add a filter for these so tha
 - 2026-09-27T06:53:46Z · status inbox→ready
 - 2026-09-27T06:53:49Z · status ready→active, branch
 - 2026-09-27T07:01:21Z · status active→review
+
