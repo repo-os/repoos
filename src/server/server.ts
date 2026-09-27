@@ -184,6 +184,7 @@ import {
 } from "./ntfy.js";
 import { AgentSupervisor } from "./supervisor.js";
 import { TaskWatchdog } from "./task-watchdog.js";
+import { resumeTelegramTransports, resetTelegramProviders } from "./telegram/index.js";
 import { parseCookies, SESSION_COOKIE_NAME, randomHex } from "../core/auth.js";
 import { getAuthStore } from "../core/auth-store.js";
 import {
@@ -299,6 +300,15 @@ import {
   getAgentLogs,
   // Notifications
   testNotification,
+  // Telegram adapter (#0531)
+  telegramStatus,
+  telegramConnect,
+  telegramDisconnect,
+  telegramProfile,
+  telegramTransport,
+  telegramProvisionBegin,
+  telegramProvisionStatus,
+  telegramProvisionRedeem,
   // Transcription
   transcribe,
   // UI routes
@@ -2554,6 +2564,19 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Notification routes
   router.register("POST", "/api/ntfy/test", testNotification);
 
+  // Telegram routes (#0531) — admin-gated connection management (BYO token,
+  // status, profile, transport, managed provisioning). The inbound webhook
+  // route is #0532's: it must authenticate Telegram's secret-token header and
+  // then call the adapter's own update intake.
+  router.register("GET", "/api/telegram/status", telegramStatus);
+  router.register("POST", "/api/telegram/connect", telegramConnect);
+  router.register("POST", "/api/telegram/disconnect", telegramDisconnect);
+  router.register("POST", "/api/telegram/profile", telegramProfile);
+  router.register("POST", "/api/telegram/transport", telegramTransport);
+  router.register("POST", "/api/telegram/provision", telegramProvisionBegin);
+  router.register("GET", /^\/api\/telegram\/provision\/([^/]+)$/, telegramProvisionStatus);
+  router.register("POST", /^\/api\/telegram\/provision\/([^/]+)\/redeem$/, telegramProvisionRedeem);
+
   // Transcription routes
   router.register("POST", "/api/transcribe", transcribe);
 
@@ -2996,6 +3019,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           clearInterval(builtInTimer);
           ctoMonitor.stop();
           runner.dispose();
+          // Stop the Telegram polling transport (if armed) with the rest of
+          // the background services. Non-destructive by design: stored
+          // connection state survives; only the in-process loop ends.
+          resetTelegramProviders();
           // Delete any warm runner VM. On a reload the replacement process's
           // reconcile() would clean it anyway; doing it here keeps the window
           // with a paid-for idle VM as short as possible.
@@ -3152,7 +3179,23 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       );
       if (watchdogConfig.enabled !== false) watchdog.start();
 
+      // Telegram transport resume (#0531): a stored `transport.mode =
+      // "polling"` must survive a restart — re-arm the long-poll loop at
+      // boot. Safe and never-throwing (reports one log line); the loop
+      // gates on the live `telegram.enabled` switch itself, so a disabled
+      // integration arms paused with no Telegram traffic.
+      void resumeTelegramTransports(config).then((resumed) => {
+        if (resumed.detail) {
+          logger.system(resumed.resumed ? "info" : "warn", "Telegram transport resume", {
+            pid: process.pid,
+            detail: resumed.detail,
+            mode: resumed.resumed ? "polling" : "off",
+          });
+        }
+      });
+
       // The port is already bound and accepting connections above; this only
+
       // delays the resolved handle (and the CLI's own "watching N tasks"
       // banner, which reads handle.index.snapshot()) until the background
       // index build finishes, so it reports an accurate count instead of 0.
