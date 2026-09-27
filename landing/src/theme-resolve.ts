@@ -164,6 +164,25 @@ export function readAppearanceFromDocument(): Appearance {
   return document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
 }
 
+/** Append theme query params to an absolute URL (cross-site hand-off). */
+export function appendThemeToUrl(
+  url: string,
+  design: DesignThemeId,
+  appearance: Appearance,
+): string {
+  const u = new URL(url);
+  if (design === "classic") {
+    u.searchParams.delete(URL_THEME_PARAM);
+  } else {
+    u.searchParams.set(URL_THEME_PARAM, design);
+  }
+  u.searchParams.set(URL_APPEARANCE_PARAM, appearance);
+  for (const alias of URL_APPEARANCE_ALIASES) {
+    u.searchParams.delete(alias);
+  }
+  return u.toString();
+}
+
 /** Update the query string to match the current axes (no navigation). */
 export function syncThemeToUrl(design: DesignThemeId, appearance: Appearance): void {
   const params = new URLSearchParams(window.location.search);

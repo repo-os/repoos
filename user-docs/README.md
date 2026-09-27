@@ -43,6 +43,42 @@ bun run build    # static build to .vitepress/dist
 bun run preview  # serve the built site
 ```
 
+## Theme switcher
+
+The docs site uses the same two-axis model as [repoos.org](https://repoos.org):
+
+| Axis | DOM | Storage key | Values |
+| --- | --- | --- | --- |
+| **Design theme** | `data-ui-theme` on `<html>` (omitted for Classic) | `repoos-ui-theme` | `classic`, `gruvbox` |
+| **Appearance** | `dark` class on `<html>` (VitePress convention) | `repoos-theme` | `dark`, `light` |
+
+A synchronous boot script in every page's `<head>` applies both axes before first
+paint (see `.vitepress/theme/theme-boot.ts` and `vite-plugin-theme-boot.ts`).
+VitePress's built-in appearance toggle is disabled so there is a single control in
+the navbar (desktop) and mobile nav screen.
+
+### Shareable URLs and cross-site hand-off
+
+| Param | Values | Example |
+| --- | --- | --- |
+| `theme` | `classic`, `gruvbox`, or any future design id | `?theme=gruvbox` |
+| `appearance` | `dark`, `light` | `?appearance=light` |
+| `mode` | alias for `appearance` | `?theme=gruvbox&mode=light` |
+
+Resolution order per axis: **URL → `localStorage` → default** (Classic design;
+appearance defaults to **dark**, matching the previous `appearance: "dark"`
+config). Using the switcher updates the URL with `history.replaceState`.
+
+**Landing → docs:** `repoos.org` and `docs.repoos.org` are different origins, so
+`localStorage` does not cross between them. Docs links from the landing page append
+`?theme=` / `?appearance=` on click; that query string is what carries your choice
+across. The same keys are still written on each site so a return visit to either
+origin remembers your last pick there.
+
+Parsing rules mirror `landing/src/theme-resolve.ts` (duplicated in
+`.vitepress/theme/theme-resolve.ts` — keep them in sync). Unknown but valid-shaped
+`?theme=` values fall back to Classic until CSS exists for that id.
+
 ## Adding a page
 
 The sidebar is **hand-curated** in `.vitepress/config.mts` — VitePress does not
