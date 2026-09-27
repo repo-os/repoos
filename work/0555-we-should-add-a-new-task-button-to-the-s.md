@@ -2,7 +2,7 @@
 id: "0555"
 title: Add a New task button to the Story panel Tasks tab that presets the story
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: opencode-go/mimo-v2.6-flash
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-27T15:54:28Z"
-updated_at: "2026-09-27T18:16:49Z"
+updated_at: "2026-09-27T18:35:45Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -134,3 +134,4 @@ We should add a "New Task" button to the Stories Tasks tab (at the top right). I
 - 2026-09-27T17:34:38Z · status ready→active, branch
 - 2026-09-27T18:15:51Z · status active→review
 - 2026-09-27T18:16:49Z · status review→active
+- 2026-09-27T18:35:45Z · status active→review
