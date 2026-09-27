@@ -10,6 +10,7 @@ import { nextTick } from "vue";
 import TaskCard from "../src/components/TaskCard.vue";
 import TaskDrawer from "../src/components/TaskDrawer.vue";
 import { useRepoStore } from "../src/stores/repo";
+import { useConfigStore } from "../src/stores/config";
 import { useUiStore } from "../src/stores/ui";
 import type { Task } from "../src/types";
 import { NEEDS_INPUT_STATUS_LABELS } from "../src/lib/needs-input-ui";
@@ -317,5 +318,44 @@ describe("underspecified needs_input Send to PM (#0558)", () => {
 
     expect(sent).toEqual(["Can you flesh this out?"]);
     expect(ui.activeTab).toBe("pm");
+  });
+
+  it("disables Send to PM when the PM agent is not configured", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const task = makeTask({
+      status: "inbox",
+      needsInput: true,
+      needsInputReason: "underspecified",
+    });
+    stubDrawerApi(task);
+    const config = useConfigStore();
+    config.loaded = true;
+    config.agents = [{ name: "pm", cli: "opencode", model: "default", enabled: false }];
+    const wrapper = await mountDrawer(pinia, task);
+    const primary = wrapper
+      .findAll("button")
+      .find((b) => b.text().includes("Send to PM (fleshes this out)"));
+    expect(primary).toBeDefined();
+    expect((primary!.element as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("disables Send to PM while a PM turn is already running", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const task = makeTask({
+      status: "inbox",
+      needsInput: true,
+      needsInputReason: "underspecified",
+    });
+    stubDrawerApi(task);
+    const repo = useRepoStore();
+    repo.runningIds = [`pm-task-v2:${task.id}`];
+    const wrapper = await mountDrawer(pinia, task);
+    const primary = wrapper
+      .findAll("button")
+      .find((b) => b.text().includes("Send to PM (fleshes this out)"));
+    expect(primary).toBeDefined();
+    expect((primary!.element as HTMLButtonElement).disabled).toBe(true);
   });
 });

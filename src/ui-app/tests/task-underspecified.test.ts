@@ -110,7 +110,7 @@ describe("assessTaskUnderspecified", () => {
     const body = [
       "## Problem",
       "",
-      "TODO: write this",
+      "TODO",
       "",
       "## Desired UX",
       "",
@@ -127,6 +127,29 @@ describe("assessTaskUnderspecified", () => {
     const result = assessTaskUnderspecified(body);
     expect(result.underspecified).toBe(true);
     expect(result.detail).toContain("placeholder markers");
+  });
+
+  it("does not flag prose that merely mentions TODO or TBD", () => {
+    const body = [
+      "## Problem",
+      "",
+      SUBSTANTIVE.repeat(3),
+      "",
+      "## Desired UX",
+      "",
+      SUBSTANTIVE.repeat(3),
+      "",
+      "## Acceptance criteria",
+      "",
+      "- [ ] Unfilled placeholder markers (`TODO`, `TBD`, `<placeholder>`) trip the heuristic",
+      "- [ ] A well-formed task passes",
+      "",
+      "## Notes for AI",
+      "",
+      SUBSTANTIVE.repeat(2),
+    ].join("\n");
+    const result = assessTaskUnderspecified(body);
+    expect(result.detail).not.toContain("placeholder markers");
   });
 });
 

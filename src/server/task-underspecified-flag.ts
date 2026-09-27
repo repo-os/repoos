@@ -10,12 +10,14 @@ import { patchTaskFile } from "./write.js";
  * unrelated reason already set (dev-error, watchdog-stuck, …).
  */
 export function flagUnderspecifiedIfNeeded(config: RepoOSConfig, task: Task): Task | null {
-  if (
-    task.needsInput &&
-    task.needsInputReason &&
-    task.needsInputReason !== UNDERSPECIFIED_NEEDS_INPUT_REASON
-  ) {
-    return null;
+  if (task.needsInput) {
+    if (task.needsInputReason && task.needsInputReason !== UNDERSPECIFIED_NEEDS_INPUT_REASON) {
+      return null;
+    }
+    // Agent questions with no explicit reason still block the human — keep that presentation.
+    if ((task.questions?.length ?? 0) > 0 && !task.needsInputReason) {
+      return null;
+    }
   }
 
   const { underspecified, detail } = assessTaskUnderspecified(task.body);

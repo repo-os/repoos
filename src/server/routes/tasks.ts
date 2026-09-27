@@ -1731,13 +1731,6 @@ ${existing.body || "(no description)"}`;
 
   const fullContext = `${taskContext}${shotContext}`;
 
-  if (existing.needsInput && needsInputClearsOnPmMessage(existing.needsInputReason)) {
-    const cleared = patchTaskFile(config, existing.absPath, {
-      needsInput: false,
-    });
-    index.applyFileChange(cleared.absPath);
-  }
-
   const existing_session = runner.output(pmSessionId);
   const result = existing_session
     ? runner.send(pmSessionId, text, pm, {
@@ -1757,6 +1750,13 @@ ${existing.body || "(no description)"}`;
     return json(res, 400, {
       error: result.reason ?? "could not send message to PM",
     });
+  }
+
+  if (existing.needsInput && needsInputClearsOnPmMessage(existing.needsInputReason)) {
+    const cleared = patchTaskFile(config, existing.absPath, {
+      needsInput: false,
+    });
+    index.applyFileChange(cleared.absPath);
   }
 
   // 0381: the runner accepted the turn (running now, or queued behind

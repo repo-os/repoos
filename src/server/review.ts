@@ -53,6 +53,7 @@ import {
   type AgentRunner,
   type PromptResult,
 } from "./agents.js";
+import { NEEDS_INPUT_DISMISSED_LINE_RE } from "./needs-input-dismiss.js";
 import { patchTaskFile } from "./write.js";
 import { createLogger, type Logger } from "../core/logger.js";
 import { getRepoOSDb, type RepoOSDb } from "../core/db.js";
@@ -1334,7 +1335,7 @@ export class ReviewManager {
         const dismissedDuringRun =
           Number.isFinite(startedAtMs) &&
           current.body.split("\n").some((line) => {
-            const match = line.match(/^- (\S+) · needs_input dismissed by /);
+            const match = line.match(NEEDS_INPUT_DISMISSED_LINE_RE);
             return Boolean(match && Date.parse(match[1]) >= dismissalCutoffMs);
           });
         if (dismissedDuringRun) {

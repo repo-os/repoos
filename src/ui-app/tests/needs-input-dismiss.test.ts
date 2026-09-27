@@ -53,7 +53,7 @@ describe("dismissNeedsInputOnTask (#0511)", () => {
       expect(updated.needsInputReason).toBeUndefined();
       const onDisk = readFileSync(absPath, "utf8");
       expect(onDisk).not.toContain("needs_input: true");
-      expect(onDisk).toContain("needs_input dismissed by hello@repoos.org");
+      expect(onDisk).toContain("needs_input (review-failed) dismissed by hello@repoos.org");
       expect(onDisk).not.toContain("needs_input_reason:");
     } finally {
       rmSync(root, { recursive: true, force: true });

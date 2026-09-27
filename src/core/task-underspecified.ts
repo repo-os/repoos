@@ -19,7 +19,21 @@ export const TASK_SPEC_SECTION_HEADINGS = [
   "## Notes for AI",
 ] as const;
 
-const PLACEHOLDER_MARKERS = [/\bTODO\b/i, /\bTBD\b/i, /<placeholder>/i];
+/** Stub lines the PM scaffold leaves behind — not prose that mentions TODO/TBD. */
+function hasUnfilledPlaceholderMarkers(text: string): boolean {
+  const withoutInlineCode = text.replace(/`[^`]*`/g, "");
+  if (/<placeholder>/i.test(withoutInlineCode)) return true;
+  for (const line of withoutInlineCode.split("\n")) {
+    const t = line.trim();
+    if (/^TODO\s*[:.]?\s*$/i.test(t)) return true;
+    if (/^TBD\s*[:.]?\s*$/i.test(t)) return true;
+    if (/^[-*]\s+TODO\s*[:.]?\s*$/i.test(t)) return true;
+    if (/^[-*]\s+TBD\s*[:.]?\s*$/i.test(t)) return true;
+    if (/^- \[ \]\s+TODO\s*[:.]?\s*$/i.test(t)) return true;
+    if (/^- \[ \]\s+TBD\s*[:.]?\s*$/i.test(t)) return true;
+  }
+  return false;
+}
 
 function sectionContent(section: string): string {
   const lines = section.split("\n");
@@ -93,7 +107,7 @@ export function assessTaskUnderspecified(body: string): UnderspecifiedAssessment
   }
 
   const placeholderScan = bodyForLengthCheck(trimmed);
-  if (PLACEHOLDER_MARKERS.some((re) => re.test(placeholderScan))) {
+  if (hasUnfilledPlaceholderMarkers(placeholderScan)) {
     signals.push("unfilled placeholder markers (TODO, TBD, or <placeholder>)");
   }
 

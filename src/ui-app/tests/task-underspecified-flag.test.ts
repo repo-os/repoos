@@ -10,7 +10,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseTask } from "../../core/task.js";
 import type { RepoOSConfig } from "../../core/types.js";
-import { patchTask } from "../../server/routes/tasks.js";
+import { patchTask, pmMessage } from "../../server/routes/tasks.js";
+import { flagUnderspecifiedIfNeeded } from "../../server/task-underspecified-flag.js";
+import type { Agent } from "../../core/types.js";
 import type { RouteContext } from "../../server/routes/types.js";
 
 function git(cwd: string, args: string[]): string {
@@ -101,16 +103,32 @@ function makeRes(): { res: any; fake: { status: number; payload: unknown } } {
   };
 }
 
-function makeCtx(fx: ReturnType<typeof makeFixture>): RouteContext {
+const PM_AGENT: Agent = {
+  name: "pm",
+  cli: "opencode",
+  model: "default",
+  enabled: true,
+};
+
+function makeCtx(
+  fx: ReturnType<typeof makeFixture>,
+  runnerOverrides: Record<string, unknown> = {},
+): RouteContext {
   return {
-    config: fx.config,
+    config: { ...fx.config, agents: [PM_AGENT] },
     index: {
       getTask: () => readTaskFile(fx),
       applyFileChange: () => {},
     } as any,
     indexReady: Promise.resolve(),
     reviews: { isRunning: () => false, cancel: vi.fn() } as any,
-    runner: { isRunning: () => false, stop: vi.fn(() => ({ stopped: true })) } as any,
+    runner: {
+      isRunning: () => false,
+      stop: vi.fn(() => ({ stopped: true })),
+      output: () => null,
+      startChat: vi.fn(() => ({ ok: true, pid: 42 })),
+      ...runnerOverrides,
+    } as any,
     previews: { stop: vi.fn(async () => {}) } as any,
     cto: {} as any,
     freeformRuns: {} as any,
@@ -164,6 +182,56 @@ describe("underspecified flag on draft exit (#0558)", () => {
       const onDisk = readTaskFile(fx);
       expect(onDisk.status).toBe("inbox");
       expect(onDisk.needsInputReason).toBe("dev-error");
+    } finally {
+      fx.clean();
+    }
+  });
+});
+
+describe("flagUnderspecifiedIfNeeded guards (#0558)", () => {
+  it("does not replace needs_input that only has agent questions", () => {
+    const fx = makeFixture("draft");
+    try {
+      writeFileSync(
+        fx.taskPath,
+        taskText("draft", 'needs_input: true\nquestions:\n  - "Which API?"\n'),
+      );
+      const task = readTaskFile(fx);
+      expect(flagUnderspecifiedIfNeeded(fx.config, task)).toBeNull();
+    } finally {
+      fx.clean();
+    }
+  });
+});
+
+describe("pmMessage underspecified clear (#0558)", () => {
+  it("keeps needs_input when the PM runner rejects the send", async () => {
+    const fx = makeFixture("inbox", "needs_input: true\nneeds_input_reason: underspecified\n");
+    try {
+      const { res, fake } = makeRes();
+      const ctx = makeCtx(fx, {
+        startChat: vi.fn(() => ({ ok: false, busy: true, reason: "PM is busy" })),
+      });
+      await pmMessage(ctx, makeReq({ text: "Can you flesh this out?" }), res, { param1: "0558" });
+      expect(fake.status).toBe(409);
+      const onDisk = readTaskFile(fx);
+      expect(onDisk.needsInput).toBe(true);
+      expect(onDisk.needsInputReason).toBe("underspecified");
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("clears underspecified needs_input after the PM runner accepts the send", async () => {
+    const fx = makeFixture("inbox", "needs_input: true\nneeds_input_reason: underspecified\n");
+    try {
+      const { res, fake } = makeRes();
+      await pmMessage(makeCtx(fx), makeReq({ text: "Can you flesh this out?" }), res, {
+        param1: "0558",
+      });
+      expect(fake.status).toBe(200);
+      const onDisk = readTaskFile(fx);
+      expect(onDisk.needsInput).toBe(false);
     } finally {
       fx.clean();
     }
