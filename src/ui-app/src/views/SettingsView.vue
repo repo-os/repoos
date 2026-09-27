@@ -95,7 +95,7 @@ function isFieldVisible(key: string): boolean {
     settingLocationContext(),
   );
   if (key === "dev.inspector.enabled" || key === "dev.inspector.editorCommand") {
-    return loc.hasUiRow;
+    return loc?.hasUiRow ?? false;
   }
   return true;
 }
@@ -554,9 +554,27 @@ watch(
     if (!key) return;
     const field = config.schema.find((f) => f.key === key);
     const loc = resolveSettingLocation(key, field, settingLocationContext());
+    tomlFocusNotice.value = "";
+
+    const tryFocusUnknown = (attempt = 0): void => {
+      if (config.loaded && document.getElementById(`setting-${key}`)) {
+        focusSetting(key);
+        void router.replace({
+          name: "settings",
+          query: { tab: activeTab.value },
+        });
+      } else if (attempt < 20) {
+        window.setTimeout(() => tryFocusUnknown(attempt + 1), 100);
+      }
+    };
+
+    if (!loc) {
+      tryFocusUnknown();
+      return;
+    }
+
     const targetTab: TabId = loc.hasUiRow ? loc.tab : "toml";
     const resolvedTab: TabId = targetTab;
-    tomlFocusNotice.value = "";
     if (activeTab.value !== targetTab) {
       void router.replace({
         name: "settings",

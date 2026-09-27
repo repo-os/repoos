@@ -460,6 +460,18 @@ describe("settings ?setting= deep-link (#0345)", () => {
     wrapper.unmount();
   });
 
+  it("?focus= with an unknown key does not redirect to the toml tab", async () => {
+    await loadConfig();
+    currentQuery = { focus: "bogus-key", tab: "general" };
+    const wrapper = mount(SettingsView, { attachTo: document.body });
+    await flushPromises();
+    await new Promise((r) => setTimeout(r, 250));
+
+    expect(replaceSpy).not.toHaveBeenCalledWith({ name: "settings", query: { tab: "toml" } });
+    expect(wrapper.text()).not.toContain("only in repoos.toml");
+    wrapper.unmount();
+  });
+
   it("?focus= on a toml-only key opens the repoos.toml tab instead of dead-ending", async () => {
     api.mockResolvedValue({
       config: { maxActiveTasks: 3 },

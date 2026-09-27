@@ -66,11 +66,12 @@ export function resolveSettingLocation(
   key: string,
   field: Pick<ConfigField, "tier" | "group"> | undefined,
   ctx: SettingLocationContext,
-): SettingLocation {
+): SettingLocation | null {
   if (key === "tunnelEnabled" || key === "remoteValidation.enabled") {
     return { tab: "general", hasUiRow: true };
   }
   if (key.startsWith("remoteValidation.")) {
+    if (!field) return null;
     return { tab: "toml", hasUiRow: false };
   }
   if (key === "ntfyEnabled" || key === "ntfyTopic") {
@@ -95,7 +96,10 @@ export function resolveSettingLocation(
   if (field && isGeneralSchemaFieldKey(key)) {
     return { tab: "general", hasUiRow: true };
   }
-  return { tab: "toml", hasUiRow: false };
+  if (field) {
+    return { tab: "toml", hasUiRow: false };
+  }
+  return null;
 }
 
 export function settingTabLabel(tab: SettingsTabId): string {
