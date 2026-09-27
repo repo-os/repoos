@@ -2,14 +2,14 @@
 id: "0518"
 title: "Fix Hub sidebar server rows: stack alert badges when narrow, and stop the accent bar shifting the icon"
 type: bug
-status: ready
+status: active
 priority: p2
 area: macos
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/fix-hub-sidebar-server-rows-stack-alert-
 created_at: "2026-09-26T09:41:44Z"
-updated_at: "2026-09-26T11:53:42Z"
+updated_at: "2026-09-27T02:46:08Z"
 ---
 ## Problem
 
@@ -236,3 +236,4 @@ Deferred / out of scope:
 - 2026-09-26T09:41:45Z · screenshots
 - 2026-09-26T09:43:33Z · status draft→inbox, title, area, type, body
 - 2026-09-26T11:53:42Z · status inbox→ready
+- 2026-09-27T02:46:08Z · status ready→active, branch
