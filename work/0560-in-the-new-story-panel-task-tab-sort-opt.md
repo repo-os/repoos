@@ -1,5 +1,5 @@
 ---
-updated_at: "2026-09-27T18:54:41Z"
+updated_at: "2026-09-27T19:05:53Z"
 review_passes: 1
 id: "0560"
 title: Add status sort and status colors to the story panel task tab
