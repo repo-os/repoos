@@ -2,16 +2,16 @@
 id: "0521"
 title: "Remote validation: pool multiple tailscale hosts"
 type: feature
-status: ready
+status: active
 priority: p3
 area: core
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/remote-validation-pool-multiple-tailscal
 cli_override: opencode
 model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-26T11:49:01Z"
-updated_at: "2026-09-27T03:11:01Z"
+updated_at: "2026-09-27T03:11:03Z"
 ---
 ## Problem
 
@@ -89,3 +89,4 @@ Autoscaling, and pooling Hetzner VMs.
 - 2026-09-27T02:46:03Z · body
 - 2026-09-27T03:10:47Z · cli_override
 - 2026-09-27T03:11:01Z · model_override
+- 2026-09-27T03:11:03Z · status ready→active, branch
