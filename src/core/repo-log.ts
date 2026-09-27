@@ -27,6 +27,9 @@ const LOG_FORMAT = `${["%H", "%h", "%s", "%an", "%ae", "%aI", "%D", "%P", "%b"].
 const SHA_RE = /^[0-9a-f]{4,40}$/i;
 const BRANCH_RE = /^(?!-)[A-Za-z0-9._/-]+$/;
 
+/** RepoOS `docs(NNNN):` bookkeeping commits — excluded from history unless opted in. */
+export const DOCS_COMMIT_GREP = "^docs\\(";
+
 export interface RepoCommit {
   sha: string;
   shortSha: string;
@@ -210,7 +213,14 @@ export async function listRepoBranches(root: string): Promise<RepoBranchList | R
 
 export async function listRepoLog(
   root: string,
-  opts: { branch?: string; path?: string; limit?: number; before?: string } = {},
+  opts: {
+    branch?: string;
+    path?: string;
+    limit?: number;
+    before?: string;
+    /** When false/omitted, `docs(NNNN):` subjects are excluded via `git log --invert-grep`. */
+    includeDocs?: boolean;
+  } = {},
 ): Promise<RepoLogPage | RepoLogError> {
   if (!isGitRepo(root)) return { ok: false, error: "not a git repository", code: "not-git" };
 
@@ -235,8 +245,11 @@ export async function listRepoLog(
     `--max-count=${fetchCount}`,
     `--pretty=format:${LOG_FORMAT}`,
     "--decorate=short",
-    revision,
   ];
+  if (!opts.includeDocs) {
+    args.push("--invert-grep", "--extended-regexp", "--grep", DOCS_COMMIT_GREP);
+  }
+  args.push(revision);
   if (pathFilter) args.push("--", pathFilter);
 
   const run = await runGit(root, args, LOG_TIMEOUT_MS);

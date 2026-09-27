@@ -12,6 +12,7 @@ import {
 import { useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import Button from "./ui/button.vue";
+import Checkbox from "./ui/checkbox.vue";
 import Input from "./ui/input.vue";
 import Select from "./ui/select/root.vue";
 import SelectContent from "./ui/select/content.vue";
@@ -104,9 +105,16 @@ function logUrl(before?: string | null): string {
   const q = new URLSearchParams();
   if (branch.value) q.set("branch", branch.value);
   if (pathApplied.value) q.set("path", pathApplied.value);
+  if (ui.historyShowDocsCommits) q.set("includeDocs", "1");
   q.set("limit", "50");
   if (before) q.set("before", before);
   return `/api/repo/log?${q.toString()}`;
+}
+
+function onShowDocsChange(checked: boolean): void {
+  ui.setHistoryShowDocsCommits(checked);
+  if (!filtersReady.value) return;
+  void loadPage(false);
 }
 
 async function loadPage(more: boolean): Promise<void> {
@@ -242,6 +250,17 @@ function openDiff(sha: string, file?: string): void {
         </label>
         <Button type="submit" variant="ghost" size="sm" class="hist-apply">Apply</Button>
       </form>
+      <label
+        class="hist-docs-toggle"
+        title="Task-status flips, activity entries, and other documentation bookkeeping commits."
+      >
+        <Checkbox
+          :checked="ui.historyShowDocsCommits"
+          aria-label="Show docs commits"
+          @update:checked="onShowDocsChange"
+        />
+        <span class="hist-docs-label">Show docs commits</span>
+      </label>
     </div>
 
     <div v-if="loading" class="hist-state">Loading history…</div>
@@ -250,11 +269,18 @@ function openDiff(sha: string, file?: string): void {
     </div>
     <div v-else-if="error && !commits.length" class="hist-state hist-error">{{ error }}</div>
     <div v-else-if="!commits.length" class="hist-state hist-empty">
-      {{
-        pathApplied
-          ? "No commits touch that path on this branch."
-          : "No commits on this branch yet."
-      }}
+      <template v-if="!ui.historyShowDocsCommits">
+        <template v-if="pathApplied">
+          No non-docs commits touch that path on this branch. Turn on
+          <strong>Show docs commits</strong> above to include documentation bookkeeping.
+        </template>
+        <template v-else>
+          Documentation and task-status commits are hidden. Turn on
+          <strong>Show docs commits</strong> above to include them.
+        </template>
+      </template>
+      <template v-else-if="pathApplied"> No commits touch that path on this branch. </template>
+      <template v-else> No commits on this branch yet. </template>
     </div>
 
     <div v-else class="hist-rail" role="list">
@@ -394,6 +420,20 @@ function openDiff(sha: string, file?: string): void {
 }
 .hist-apply {
   margin-bottom: 1px;
+}
+.hist-docs-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding-bottom: 6px;
+  user-select: none;
+}
+.hist-docs-label {
+  font-size: 13px;
+  color: var(--txt-dim);
+  line-height: 1.3;
+  max-width: 22ch;
 }
 .hist-state {
   padding: 28px 0;
