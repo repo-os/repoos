@@ -8,8 +8,9 @@ area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+review_model_override: opencode-go/hy3
 created_at: "2026-09-27T15:56:03Z"
-updated_at: "2026-09-27T16:11:46Z"
+updated_at: "2026-09-27T16:13:59Z"
 ---
 ## Problem
 
@@ -89,3 +90,4 @@ Let's add sorting to tasks on the Story panel Tasks tab. Use the same sorting dr
 - 2026-09-27T15:56:04Z · screenshots
 - 2026-09-27T15:56:41Z · status draft→inbox, title, area, body
 - 2026-09-27T16:11:46Z · status inbox→ready
+- 2026-09-27T16:13:59Z · review_model_override
