@@ -10,12 +10,8 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:32:39Z"
-updated_at: "2026-09-27T15:51:51Z"
+updated_at: "2026-09-27T15:52:42Z"
 ---
-## Governing decision
-
-Follow [ADR 0007 — Telegram identity and authorization](../docs/adr/0007-telegram-identity-and-authorization.md) for user binding, chat binding, live role resolution, and unauthorized-sender behavior. This task implements or relies on that model; do not define a separate policy here.
-
 ## Problem
 
 Story #0003 lists "permission checks and audit logging" under Phase 2 and "rate-limit Telegram commands and agent messages" under security requirements. Both belong in Phase 1: **no message can be authorized before senders can be authorized**, and the very first notification RepoOS sends is already an act of disclosure about a repository. This task is the enforcement point every later Telegram task depends on.
@@ -59,3 +55,4 @@ Reuse the exported `RateLimiter` class (`src/server/routes/auth.ts`, already use
 - 2026-09-27T15:42:31Z · body
 - 2026-09-27T15:43:17Z · body
 - 2026-09-27T15:51:51Z · body
+- 2026-09-27T15:52:42Z · body
