@@ -2,14 +2,14 @@
 id: "0553"
 title: Add a go-to-story link arrow on tasks and make sure every story has a unique number
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-a-go-to-story-link-arrow-on-tasks-an
 created_at: "2026-09-27T15:06:45Z"
-updated_at: "2026-09-27T16:35:02Z"
+updated_at: "2026-09-27T16:43:32Z"
 review_rounds: 2
 review_passes: 2
 last_check_failure: "[object Object]"
@@ -168,3 +168,4 @@ failed to connect to the docker API at unix:///var/run/docker.sock; check if the
 - 2026-09-27T16:19:05Z · status active→review
 - 2026-09-27T16:29:22Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
 - 2026-09-27T16:35:02Z · status review→active
+- 2026-09-27T16:43:32Z · status active→review
