@@ -274,7 +274,12 @@ export function finalizeFreeformRun(
         type: fields.type,
         priority: fields.priority,
         area: fields.area,
-        story: fields.story,
+        // #0555: a story preset at creation (the New task hand-off) is the
+        // human's choice and outranks whatever the PM agent's rewrite declared.
+        // Untagged drafts have `story === ""` (or undefined), so this falls
+        // through to `fields.story` — `undefined` still means "leave it alone" —
+        // and every create without a preset behaves exactly as it did before.
+        story: task.story || fields.story,
         assignedTo: fields.assignedTo,
         body: finalBody,
         status: config.defaultStatus,
@@ -352,6 +357,12 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
   // already contains them (via `## Screenshots` in the draft body), and
   // PROTECTED_SECTIONS preserves the section across the rewrite.
   const sourceInputId = typeof body?.inputId === "string" && body.inputId ? body.inputId : null;
+  // #0555: a story hand-off from the Story panel's New task button. Absent or
+  // blank means "untagged", exactly as before; `createTask` normalizes it with
+  // `normalizeStoryName` on write, so a messy name can't create a near-duplicate
+  // story. Set on the draft up front so the tag is on the file the PM agent
+  // rewrites rather than being reconstructed from that rewrite afterwards.
+  const story = typeof body?.story === "string" && body.story.trim() ? body.story : undefined;
 
   // Parse the freeform pane's PM picker overrides. "default" is the sentinel
   // for "use the configured pm agent's own model" — not a real pin (same bug
@@ -400,6 +411,7 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
     body: explanation,
     originalPrompt: explanation,
     status: "draft",
+    story,
     createdBy: getCurrentUser(req, config)?.email,
     pmAgentOverride,
     pmCliOverride,
