@@ -183,7 +183,7 @@ import {
 } from "./ntfy.js";
 import { AgentSupervisor } from "./supervisor.js";
 import { TaskWatchdog } from "./task-watchdog.js";
-import { resumeTelegramTransports, resetTelegramProviders } from "./telegram/index.js";
+import { bootstrapTelegramAtBoot, resetTelegramProviders } from "./telegram/index.js";
 import { parseCookies, SESSION_COOKIE_NAME, randomHex } from "../core/auth.js";
 import { getAuthStore } from "../core/auth-store.js";
 import {
@@ -329,8 +329,12 @@ import {
   deleteUser,
   updateUserRole,
   getAuditLog,
+  bindTelegramChatRoute,
+  createTelegramChatBindCodeRoute,
   createTelegramInviteRoute,
+  listTelegramChatsRoute,
   listTelegramLinksRoute,
+  unbindTelegramChatRoute,
   unbindTelegramLinkRoute,
   reassignTelegramLinkRoute,
   createHubCapability,
@@ -2587,6 +2591,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("PATCH", /^\/api\/auth\/users\/([^/]+)$/, updateUserRole);
   router.register("GET", "/api/auth/audit", getAuditLog);
   router.register("POST", "/api/auth/telegram/invites", createTelegramInviteRoute);
+  router.register("POST", "/api/auth/telegram/chats/bind-codes", createTelegramChatBindCodeRoute);
+  router.register("GET", "/api/auth/telegram/chats", listTelegramChatsRoute);
+  router.register("POST", "/api/auth/telegram/chats", bindTelegramChatRoute);
+  router.register("DELETE", /^\/api\/auth\/telegram\/chats\/([^/]+)$/, unbindTelegramChatRoute);
   router.register("GET", "/api/auth/telegram/links", listTelegramLinksRoute);
   router.register("DELETE", /^\/api\/auth\/telegram\/links\/([^/]+)$/, unbindTelegramLinkRoute);
   router.register(
@@ -3175,7 +3183,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // boot. Safe and never-throwing (reports one log line); the loop
       // gates on the live `telegram.enabled` switch itself, so a disabled
       // integration arms paused with no Telegram traffic.
-      void resumeTelegramTransports(config).then((resumed) => {
+      void bootstrapTelegramAtBoot(config).then((resumed) => {
         if (resumed.detail) {
           logger.system(resumed.resumed ? "info" : "warn", "Telegram transport resume", {
             pid: process.pid,
