@@ -2,14 +2,14 @@
 id: "0520"
 title: Run the pre-review gate on the remote validation runner
 type: feature
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/run-the-pre-review-gate-on-the-remote-va
 created_at: "2026-09-26T11:49:00Z"
-updated_at: "2026-09-27T01:11:39Z"
+updated_at: "2026-09-27T01:13:26Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -73,3 +73,4 @@ runner hosts (separate task).
 - 2026-09-27T01:11:33Z · note: Merged main (#0512); remote gate tests committed tree, dirty CLI check runs locally, dispose awaited, remote failures recorded; check green with worktree CLI
 - 2026-09-27T01:11:39Z · status active→review
 - 2026-09-27T01:11:39Z · status review→active
+- 2026-09-27T01:13:26Z · status active→review
