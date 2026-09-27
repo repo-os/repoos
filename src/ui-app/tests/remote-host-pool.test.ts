@@ -14,10 +14,12 @@ import { loadConfig } from "../../core/config.js";
 import { resolveRemoteHosts, remoteHostUser } from "../../core/remote-hosts.js";
 import { planJobCapabilities, resolveCheckPlan } from "../../core/check-plan.js";
 import {
+  DEFAULT_HOST_LOCK_WAIT_SECS,
   HOST_LOCK_TIMEOUT_EXIT,
   PREREQ_OK_TOKEN,
   RemoteValidationRunner,
   TailscaleRunner,
+  deadlineLockWaitSecs,
   hostLockShell,
   prereqProbeCommand,
   type RemoteExecDeps,
@@ -203,6 +205,8 @@ function poolFixture(opts: {
   unreachable?: string[];
   /** First validation run on this host drops its ssh connection (mid-run failure). */
   dropFirstRunOn?: string;
+  /** Listed hosts stay unreachable after their drop: later probes keep failing. */
+  stayDown?: string[];
   healthRetryMs?: number;
 }): Fixture {
   const root = tmpRoot();
@@ -226,6 +230,7 @@ function poolFixture(opts: {
   const cmds: Record<string, string[]> = {};
   const pending: Array<{ host: string; resolve: () => void }> = [];
   const dropped = new Set<string>();
+  const down = new Set<string>();
   let inFlight = 0;
   let peak = 0;
   const exec: RemoteExecDeps = {
@@ -234,7 +239,7 @@ function poolFixture(opts: {
     downloadDir: vi.fn(async () => {}),
     runRemote: vi.fn(async (host, cmd): Promise<RemoteExecResult> => {
       if (cmd.includes(PREREQ_OK_TOKEN)) {
-        if (opts.unreachable?.includes(host.ip)) {
+        if (opts.unreachable?.includes(host.ip) || down.has(host.ip)) {
           return {
             code: 255,
             output: "ssh: connect to host 100.x.x.x port 22: Connection timed out",
@@ -247,6 +252,7 @@ function poolFixture(opts: {
         // Mark the run as one that WILL drop its ssh connection when released
         // (a mid-run failure, not an instant one), so jobs can queue behind it.
         dropped.add(host.ip);
+        if (opts.stayDown?.includes(host.ip)) down.add(host.ip);
         (cmds[host.ip] ??= []).push(cmd);
         inFlight++;
         peak = Math.max(peak, inFlight);
@@ -410,6 +416,33 @@ describe("TailscaleRunner pool dispatch (#0521)", () => {
     f.release();
     expect((await first).ok).toBe(true);
   });
+
+  it("counts each queued run against exactly one host in status (#0521 review)", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }, { host: "b" }] });
+    const job1 = f.runner.validate(opts("0001"));
+    const job2 = f.runner.validate(opts("0002"));
+    await tick();
+    expect(f.pending().sort()).toEqual(["a", "b"]); // both hosts at their cap
+
+    const job3 = f.runner.validate(opts("0003"));
+    const job4 = f.runner.validate(opts("0004"));
+    await tick();
+    const status = f.runner.hostStatus()!;
+    // Two real waiters: the old per-compatible-host count reported 2 on EACH
+    // host (sum 4). Each waiter now belongs to the host dispatch would give it
+    // next, so the column totals sum to the real queue length.
+    expect(status.reduce((n, h) => n + h.queued, 0)).toBe(2);
+    expect(Math.max(...status.map((h) => h.queued))).toBeLessThanOrEqual(2);
+
+    // Drain: each release hands its slot to a queued job (FIFO), no hangs.
+    for (let i = 0; i < 4; i++) {
+      f.release();
+      await tick();
+    }
+    const results = await Promise.all([job1, job2, job3, job4]);
+    expect(results.every((r) => r.ok)).toBe(true);
+    expect(f.peak()).toBe(2);
+  });
 });
 
 // ── OS / label routing ───────────────────────────────────────────────────────
@@ -539,6 +572,99 @@ describe("health-cooldown arrivals and recovery (#0521 review)", () => {
     expect(resD.ok).toBe(true);
     expect(f.peak()).toBe(1); // the recovered slot never ran two suites at once
   }, 15_000);
+
+  it("a FIRST arrival during a cooldown waits for recovery too, not just later ones (#0521 review)", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "flaky" }],
+      dropFirstRunOn: "flaky",
+      healthRetryMs: 300,
+    });
+    const job1 = f.runner.validate(opts("0001"));
+    await tick();
+    f.release("flaky");
+    expect((await job1).ok).toBe(false); // mid-run drop → cooldown starts
+    expect(f.runner.hostStatus()![0]!.healthy).toBe(false);
+
+    // Nobody is queued when this arrival lands — it must still wait out the
+    // cooldown and re-probe instead of failing immediately (the old branch
+    // only ran when an earlier waiter had armed the retry).
+    let settled = false;
+    const job2 = f.runner.validate(opts("0002")).then((r) => {
+      settled = true;
+      return r;
+    });
+    await tick(100);
+    expect(settled).toBe(false); // inside the 300 ms cooldown — waiting, not failed
+    await tick(500); // cooldown over → re-probe succeeds → dispatched
+    expect(settled).toBe(false);
+    expect(f.pending()).toEqual(["flaky"]);
+    f.release("flaky");
+    expect((await job2).ok).toBe(true);
+  }, 15_000);
+
+  it("fails a queued run when its only host exhausts health retries, instead of hanging (#0521 review)", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "flaky" }],
+      dropFirstRunOn: "flaky",
+      stayDown: ["flaky"],
+      healthRetryMs: 20,
+    });
+    const first = f.runner.validate(opts("0001"));
+    await tick();
+    expect(f.pending()).toEqual(["flaky"]);
+    // No deadline on purpose: close-out (integration-orchestrator) and release
+    // pass none, so the retry cap itself has to settle this waiter — before,
+    // the stopped retry chain left it awaiting a slot forever.
+    const queued = f.runner.validate(opts("0002"));
+    await tick();
+    f.release("flaky"); // mid-run ssh drop → marked unhealthy, probes now fail
+    expect((await first).ok).toBe(false);
+    expect(f.runner.hostStatus()![0]).toMatchObject({ probed: true, healthy: false });
+
+    const summary = await queued; // settles once the 10-probe cap is hit
+    expect(summary.ok).toBe(false);
+    expect(summary.transient).toBe(true);
+    expect(summary.detail).toContain("no usable remote host");
+    expect(summary.detail).toContain("gave up after 10 failed probes");
+  }, 15_000);
+
+  it("keeps a queued run waiting when another eligible host can still free up (#0521 review)", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "flaky" }, { host: "steady" }],
+      dropFirstRunOn: "flaky",
+      stayDown: ["flaky"],
+      healthRetryMs: 20,
+    });
+    const job1 = f.runner.validate(opts("0001"));
+    const job2 = f.runner.validate(opts("0002"));
+    await tick();
+    expect(f.pending().sort()).toEqual(["flaky", "steady"]);
+
+    let settled = false;
+    const job3 = f.runner.validate(opts("0003")).then((r) => {
+      settled = true;
+      return r;
+    });
+    await tick();
+    expect(f.pending()).toHaveLength(2); // both at cap → job3 queues
+
+    f.release("flaky"); // flaky goes down for good (stays unreachable)
+    expect((await job1).ok).toBe(false);
+
+    // Ride out the retry cap: flaky exhausts all 10 probes …
+    await tick(700);
+    // … but job3 must NOT be rejected — `steady` is healthy and will free up.
+    expect(settled).toBe(false);
+
+    f.release("steady");
+    await tick(); // job2 finishes → its slot goes straight to job3 on `steady`
+    expect(f.pending()).toEqual(["steady"]);
+    f.release("steady");
+    const [res2, res3] = await Promise.all([job2, job3]);
+    expect(res2.ok).toBe(true);
+    expect(res3.ok).toBe(true);
+    expect(f.cmds.flaky).toHaveLength(1); // never dispatched there again
+  }, 15_000);
 });
 
 describe("queue deadlines (#0521)", () => {
@@ -568,6 +694,32 @@ describe("queue deadlines (#0521)", () => {
     expect(f.pending()).toEqual(["a"]);
     f.release();
     await Promise.all([first, third]);
+  });
+
+  it("cancels a run that reaches its host after the caller's deadline (#0521 spec 5)", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }] });
+    // The fast path hands over a free slot without re-checking the deadline
+    // (dispatch can also win the race with the queue timer) — the run itself
+    // must then refuse to enter the host lock and hold it.
+    const summary = await f.runner.validate(opts("0001", { deadlineAt: Date.now() - 1 }));
+    expect(summary.ok).toBe(false);
+    expect(summary.transient).toBe(true);
+    expect(summary.detail).toContain("deadline passed");
+    expect(f.pending()).toHaveLength(0); // never started a suite
+    expect(f.cmds.a ?? []).toHaveLength(0); // …so it never entered the host lock
+  });
+
+  it("rounds the lock wait budget down to the shell's 5s steps, never past the deadline", () => {
+    const now = 1_000_000;
+    // The shell tries the slot at 0s, 5s, 10s … and checks its budget only
+    // after a failed attempt, so WAIT must be a multiple of 5 ≤ the budget —
+    // the old Math.max(10, …) floor let a dead caller's run wait (and enter)
+    // up to 10 s past its deadline.
+    expect(deadlineLockWaitSecs(now + 7_000, now)).toBe(5);
+    expect(deadlineLockWaitSecs(now + 4_999, now)).toBe(0); // attempt-now-or-give-up
+    expect(deadlineLockWaitSecs(now + 12_001, now)).toBe(10);
+    expect(deadlineLockWaitSecs(now - 6_000, now)).toBe(0); // already past
+    expect(deadlineLockWaitSecs(now + 30 * 60_000, now)).toBe(DEFAULT_HOST_LOCK_WAIT_SECS);
   });
 });
 
@@ -650,10 +802,14 @@ describe("per-host prerequisite probe", () => {
     expect(cmd).not.toContain("bun not found");
   });
 
-  it("checks the native toolchain on macOS hosts instead of docker", () => {
+  it("checks docker on macOS hosts too — just setup-mini is Docker-based, not native (#0521 review)", () => {
+    // A macOS host set up via `just setup-mini` gets the same Docker-based
+    // validate.sh as a Linux one (requires Docker Desktop); there is no
+    // wired-up native bun/git runner path, so probing for bun/git there
+    // fails a correctly-provisioned host and never checks what it runs.
     const cmd = prereqProbeCommand("macos");
-    expect(cmd).toContain("bun not found");
-    expect(cmd).toContain("git not found");
-    expect(cmd).not.toContain("docker info");
+    expect(cmd).toContain("docker info");
+    expect(cmd).not.toContain("bun not found");
+    expect(cmd).not.toContain("git not found");
   });
 });

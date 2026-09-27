@@ -1587,7 +1587,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         label: String(i + 1),
       })),
       description:
-        "How many remote validation runs may execute at once. Extra runs wait in a queue. Default 1: two full test suites on one machine cause load-induced timeouts that show up as a failed gate.",
+        "How many remote validation runs may execute at once per host. Extra runs wait in a queue. Default 1: two full test suites on one machine cause load-induced timeouts that show up as a failed gate.",
     },
     {
       key: "remoteValidation.fallbackToLocal",

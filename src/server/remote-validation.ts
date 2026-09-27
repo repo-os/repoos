@@ -308,19 +308,22 @@ export const HOST_LOCK_STALE_MINUTES = 40;
  * instead of failing jobs with an opaque error mid-run. Checks the toolchain
  * the host's `validate.sh` needs and that the script is an up-to-date copy
  * accepting the per-run artifacts dir as its third argument (#0520).
+ *
+ * `os` is accepted (and still used elsewhere for `runsOn` capability
+ * routing) but does NOT change which toolchain gets probed: `just
+ * setup-<host>` / `_setup-runner` installs the same Docker-based
+ * `validate.sh` on every host regardless of OS — including macOS
+ * (`just setup-mini` requires Docker Desktop; see the justfile) — there is
+ * no wired-up native bun/git runner path. A prior version of this probe
+ * checked for `bun`/`git` on a macOS host, which fails a correctly
+ * Docker-provisioned macOS host and never actually verifies the toolchain
+ * that host runs (#0521 review).
  */
-export function prereqProbeCommand(os?: string): string {
-  const mac = (os ?? "").trim().toLowerCase() === "macos";
-  const lines = mac
-    ? [
-        'command -v git >/dev/null 2>&1 || { echo "git not found on PATH"; exit 1; }',
-        "(command -v bun >/dev/null 2>&1 || [ -x /opt/homebrew/bin/bun ]) || " +
-          '{ echo "bun not found (install it, e.g. brew install bun)"; exit 1; }',
-      ]
-    : [
-        'command -v docker >/dev/null 2>&1 || { echo "docker not found on PATH"; exit 1; }',
-        'docker info >/dev/null 2>&1 || { echo "docker daemon not reachable (is docker running?)"; exit 1; }',
-      ];
+export function prereqProbeCommand(_os?: string): string {
+  const lines = [
+    'command -v docker >/dev/null 2>&1 || { echo "docker not found on PATH"; exit 1; }',
+    'docker info >/dev/null 2>&1 || { echo "docker daemon not reachable (is docker running?)"; exit 1; }',
+  ];
   lines.push(
     `[ -f ${VALIDATE_SCRIPT} ] || ` +
       `{ echo "missing ${VALIDATE_SCRIPT} — run the per-host install (docs/remote-validation.md)"; exit 1; }`,
@@ -348,7 +351,12 @@ export function prereqProbeCommand(os?: string): string {
 export function hostLockShell(opts: {
   slots: number;
   waitSecs: number;
-  /** Lock root on the host. Defaults to the shared /tmp path (one machine = one limit). */
+  /**
+   * Lock root on the host. Deliberately HOST-GLOBAL (default
+   * `/tmp/repoos-validate-locks`), not per-repo: the cap exists because of
+   * machine load, so two different repos validated on the same host share its
+   * slots — one machine = one suite, whoever asked for it (#0521 review).
+   */
   lockRoot?: string;
   inner: string;
 }): string {
@@ -387,6 +395,20 @@ export function hostLockShell(opts: {
     opts.inner,
   ];
   return script.join("\n");
+}
+
+/**
+ * Lock wait budget for a run carrying the caller's deadline — never past it
+ * (#0521 spec item 5). `hostLockShell` checks its budget in 5-second steps and
+ * tries the slot BEFORE checking it, so the budget is rounded down to a whole
+ * number of steps: every acquisition attempt then lands at or before the
+ * deadline. `0` still takes a free slot immediately; it just never sleeps (the
+ * old `Math.max(10, …)` floor let a run whose caller had already given up
+ * enter the lock up to 10 s late and run a full suite holding the slot).
+ */
+export function deadlineLockWaitSecs(deadlineAt: number, now = Date.now()): number {
+  const remainSecs = Math.floor((deadlineAt - now) / 1000);
+  return Math.max(0, Math.min(DEFAULT_HOST_LOCK_WAIT_SECS, 5 * Math.floor(remainSecs / 5)));
 }
 
 // ── default IO implementation ────────────────────────────────────────────────
@@ -979,7 +1001,13 @@ interface PoolWaiter {
 
 /** How long an unhealthy host waits before a probe may retry it. */
 const HEALTH_RETRY_MS = 30_000;
-/** Consecutive failed probes before retries stop (waiters still drain on release). */
+/**
+ * Consecutive failed probes before a host stops being retried. Hitting the cap
+ * must not strand queued runs: callers such as close-out and release pass no
+ * `deadlineAt`, so a waiter left behind by the stopped retry chain would await
+ * a slot forever (#0521 review). {@link TailscaleHostPool.settleHopelessWaiters}
+ * rejects waiters whose eligible hosts have ALL hit this cap.
+ */
 const MAX_HEALTH_RETRIES = 10;
 
 /**
@@ -991,9 +1019,12 @@ const MAX_HEALTH_RETRIES = 10;
  *   none does it fails immediately with the mismatch spelled out.
  * - Every host is probed once before its first job (docker/toolchain +
  *   an up-to-date `validate.sh`); a failing host is skipped and re-probed later,
- *   so one dead box doesn't fail jobs while others are idle.
+ *   so one dead box doesn't fail jobs while others are idle. Probe retries are
+ *   capped — once every eligible host hits the cap, queued runs fail transiently
+ *   instead of waiting forever (close-out and release pass no deadline).
  * - Queue waits honour the caller's deadline: a job that can't start in time
- *   is cancelled and its slot released.
+ *   is cancelled and its slot released, and a run that reaches its host after
+ *   the deadline cancels instead of starting.
  *
  * The in-process cap covers one server process; the host-side lock inside the
  * remote command (`hostLockShell`) enforces the same cap across processes.
@@ -1071,11 +1102,12 @@ export class TailscaleHostPool {
     );
 
     let healthy = candidates.filter((s) => s.healthy);
-    if (healthy.length === 0 && inCooldown && this.waiters.length > 0) {
-      // Another run is already queued waiting on these hosts' recovery (its
-      // armed health retry is what is pending). Join that wait — wait-vs-fail
-      // must not depend on arrival order (#0521 review): sleep out the same
-      // cooldown, re-probe, then decide. Bounded by the caller's deadline.
+    if (healthy.length === 0 && inCooldown) {
+      // Nobody is usable and a recovery probe is pending or due: sleep out the
+      // same cooldown, re-probe, then decide — wait-vs-fail must not depend on
+      // arrival order (#0521 review: a FIRST arrival used to fail instantly
+      // while a later one, joining an armed retry, waited for recovery).
+      // Bounded by the caller's deadline.
       const cooldown = Math.max(0, Math.min(...candidates.map((s) => s.retryAt)) - Date.now());
       const budget =
         opts.deadlineAt !== undefined ? opts.deadlineAt - Date.now() : Number.POSITIVE_INFINITY;
@@ -1168,6 +1200,17 @@ export class TailscaleHostPool {
 
   /** Per-host state for `/api/remote-validation/status`. */
   status(): RemoteHostStatus[] {
+    // Each queued run counts against exactly ONE host — the one dispatch would
+    // hand it next (eligible, preferring a healthy host, then least loaded) —
+    // so per-host `queued` totals sum to the real queue length instead of
+    // counting one waiter once per compatible host (#0521 review).
+    const queuedOn = new Map<PoolHostState, number>();
+    for (const w of this.waiters) {
+      const next = this.hosts
+        .filter((s) => hostSatisfies(s.spec, w.capabilities))
+        .sort((a, b) => Number(b.healthy) - Number(a.healthy) || a.active - b.active)[0];
+      if (next) queuedOn.set(next, (queuedOn.get(next) ?? 0) + 1);
+    }
     return this.hosts.map((s) => ({
       host: s.spec.host,
       user: s.ssh.user,
@@ -1175,7 +1218,7 @@ export class TailscaleHostPool {
       labels: s.spec.labels ?? [],
       maxConcurrent: s.limit,
       inFlight: s.active,
-      queued: this.waiters.filter((w) => hostSatisfies(s.spec, w.capabilities)).length,
+      queued: queuedOn.get(s) ?? 0,
       probed: s.probed,
       healthy: s.healthy,
       detail: s.detail,
@@ -1252,9 +1295,17 @@ export class TailscaleHostPool {
   /** Single-flight prerequisite probe; sets health + detail on the host. */
   private async probe(s: PoolHostState): Promise<void> {
     if (s.probing) return s.probing;
-    s.probing = this.doProbe(s).finally(() => {
-      s.probing = undefined;
-    });
+    s.probing = this.doProbe(s)
+      .finally(() => {
+        s.probing = undefined;
+      })
+      .then(() => {
+        // This probe's result is now final and `probing` no longer masks the
+        // host: if it exhausted the retry cap, queued runs waiting only on
+        // dead hosts must be settled now (#0521 review — without this they
+        // hang forever once the retry chain stops).
+        if (!s.healthy && s.healthFails >= MAX_HEALTH_RETRIES) this.settleHopelessWaiters();
+      });
     return s.probing;
   }
 
@@ -1292,9 +1343,18 @@ export class TailscaleHostPool {
     }
   }
 
-  /** One more probe for a dead host while somebody is waiting on it. */
+  /**
+   * One more probe for a dead host while somebody is waiting on it. Once the
+   * retry cap is hit, no timer will ever fire for this host again — settle any
+   * queued run left with no recoverable host at all (#0521 review).
+   */
   private armHealthRetry(s: PoolHostState): void {
-    if (s.healthy || s.healthFails >= MAX_HEALTH_RETRIES || s.retryTimer) return;
+    if (s.healthy) return;
+    if (s.healthFails >= MAX_HEALTH_RETRIES) {
+      this.settleHopelessWaiters();
+      return;
+    }
+    if (s.retryTimer) return;
     const delay = Math.max(0, s.retryAt - Date.now());
     s.retryTimer = setTimeout(() => {
       s.retryTimer = undefined;
@@ -1305,6 +1365,39 @@ export class TailscaleHostPool {
       });
     }, delay);
     s.retryTimer.unref?.();
+  }
+
+  /**
+   * Reject queued runs that can never start (#0521 review): every host
+   * eligible for them has exhausted its probe retries, so nothing will ever
+   * dispatch them. They fail transiently with {@link HostsUnavailableError} —
+   * callers without their own deadline (close-out in
+   * `integration-orchestrator.ts`, `release.ts`) would otherwise await a slot
+   * forever. A waiter with ANY still-recoverable eligible host — healthy,
+   * still inside its retry budget, or mid-probe — stays queued.
+   */
+  private settleHopelessWaiters(): void {
+    for (const w of [...this.waiters]) {
+      const eligible = this.hosts.filter((s) => hostSatisfies(s.spec, w.capabilities));
+      const hopeless =
+        eligible.length > 0 &&
+        eligible.every((s) => !s.healthy && !s.probing && s.healthFails >= MAX_HEALTH_RETRIES);
+      if (!hopeless) continue;
+      if (!this.settle(w)) continue;
+      this.logger?.system(
+        "warn",
+        `remote validation: cancelling a queued run — every eligible host ` +
+          `(${eligible.map((s) => s.spec.host).join(", ")}) exhausted its ` +
+          `${MAX_HEALTH_RETRIES} probe retries`,
+      );
+      w.reject(
+        new HostsUnavailableError(
+          `no usable remote host for ${describeCapabilities(w.capabilities)} — ` +
+            `${eligible.map((s) => `${s.spec.host}: ${s.detail ?? "unreachable"}`).join("; ")} ` +
+            `(gave up after ${MAX_HEALTH_RETRIES} failed probes — retry once a host is back)`,
+        ),
+      );
+    }
   }
 }
 
@@ -1468,11 +1561,20 @@ export class TailscaleRunner implements RemoteValidator {
       //    itself), wrapped in the host-side slot lock so this process's gate
       //    and every other repoos process share ONE per-host limit (#0521).
       const image = rv.containerImage ?? "repoos-ci";
+      // Never enter the host lock after the caller's deadline (#0521 spec
+      // item 5): a run whose caller already gave up (dispatch can win the race
+      // with the queue timer, or the deadline passes during bundle/upload) must
+      // not start a suite or hold a slot — cancel transiently, like a queued run.
+      if (opts.deadlineAt !== undefined && Date.now() >= opts.deadlineAt) {
+        return this.infraFail(
+          `the caller's deadline passed before the run could start on ${host.ip} — the run was cancelled`,
+        );
+      }
       emit(`[running build + test in ${image} on ${host.ip}]\n`);
       const inner = `REPOOS_CI_IMAGE=${image} ${VALIDATE_SCRIPT} ${remoteBundle} ${opts.candidateSha} ${paths.artifacts}`;
       const waitSecs =
         opts.deadlineAt !== undefined
-          ? Math.max(10, Math.ceil((opts.deadlineAt - Date.now()) / 1000))
+          ? deadlineLockWaitSecs(opts.deadlineAt)
           : DEFAULT_HOST_LOCK_WAIT_SECS;
       const cmd = hostLockShell({ slots: slot.limit, waitSecs, inner });
       const run = await this.exec.runRemote(host, cmd, emit, this.timings.remoteRunTimeoutMs);
