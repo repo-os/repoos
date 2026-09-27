@@ -20,6 +20,20 @@ describe("encrypted secret store", () => {
     );
   });
 
+  it("round trips an empty string", () => {
+    const record = encryptSecret("", key);
+    expect(decryptSecret(record, key)).toBe("");
+  });
+
+  it.each(["iv", "tag"] as const)("fails closed for a tampered %s", (field) => {
+    const record = encryptSecret("secret", key);
+    const bytes = Buffer.from(record[field], "base64");
+    bytes[0] ^= 1;
+    expect(() => decryptSecret({ ...record, [field]: bytes.toString("base64") }, key)).toThrow(
+      /authentication failed/,
+    );
+  });
+
   it("rewraps a record under a new key", () => {
     const nextKey = Buffer.alloc(32, 9);
     const result = rewrapSecret(encryptSecret("secret", key), key, nextKey);
