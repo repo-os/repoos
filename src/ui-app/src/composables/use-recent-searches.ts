@@ -1,11 +1,17 @@
-import { ref } from "vue";
+import { ref, type Ref } from "vue";
 
-const recentSearches = ref<string[]>([]);
+export type RecentSearchScope = "all" | "settings";
 
-export function useRecentSearches(): {
-  recentSearches: typeof recentSearches;
+const recentByScope: Record<RecentSearchScope, Ref<string[]>> = {
+  all: ref<string[]>([]),
+  settings: ref<string[]>([]),
+};
+
+export function useRecentSearches(scope: RecentSearchScope): {
+  recentSearches: Ref<string[]>;
   addRecentSearch: (q: string) => void;
 } {
+  const recentSearches = recentByScope[scope];
   function addRecentSearch(q: string): void {
     const trimmed = q.trim();
     if (!trimmed) return;

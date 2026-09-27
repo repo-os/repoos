@@ -90,8 +90,7 @@ export function resolveSettingLocation(
     return { tab: visible ? "advanced" : "toml", hasUiRow: visible };
   }
   if (field?.tier === "guarded") {
-    const visible = isInspectorFieldVisible(key, ctx);
-    return { tab: visible ? "advanced" : "toml", hasUiRow: visible };
+    return { tab: "advanced", hasUiRow: true };
   }
   if (field && isGeneralSchemaFieldKey(key)) {
     return { tab: "general", hasUiRow: true };
