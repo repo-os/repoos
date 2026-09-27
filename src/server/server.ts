@@ -184,7 +184,7 @@ import {
 } from "./ntfy.js";
 import { AgentSupervisor } from "./supervisor.js";
 import { TaskWatchdog } from "./task-watchdog.js";
-import { resumeTelegramTransports, resetTelegramProviders } from "./telegram/index.js";
+import { bootstrapTelegramAtBoot, resetTelegramProviders } from "./telegram/index.js";
 import { parseCookies, SESSION_COOKIE_NAME, randomHex } from "../core/auth.js";
 import { getAuthStore } from "../core/auth-store.js";
 import {
@@ -3184,7 +3184,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // boot. Safe and never-throwing (reports one log line); the loop
       // gates on the live `telegram.enabled` switch itself, so a disabled
       // integration arms paused with no Telegram traffic.
-      void resumeTelegramTransports(config).then((resumed) => {
+      void bootstrapTelegramAtBoot(config).then((resumed) => {
         if (resumed.detail) {
           logger.system(resumed.resumed ? "info" : "warn", "Telegram transport resume", {
             pid: process.pid,
