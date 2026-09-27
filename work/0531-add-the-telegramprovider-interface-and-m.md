@@ -3,6 +3,9 @@ id: "0531"
 title: Add the local Telegram adapter and Bring Your Own Bot Token support
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "error: Rate limit exceeded. Please try again later."
 priority: p1
 area: server
 story: RepoOS Telegram Bot
@@ -10,10 +13,11 @@ assigned_to: ai
 created_by: ""
 branch: feat/add-the-local-telegram-adapter-and-bring
 cli_override: opencode
-model_override: opencode/big-pickle
+model_override: openrouter/z-ai/glm-5.3-flash
 review_model_override: opencode-go/space-bunny-free
 created_at: "2026-09-27T07:32:10Z"
-updated_at: "2026-09-27T18:37:00Z"
+updated_at: "2026-09-27T18:39:31Z"
+dev_error_count: 1
 ---
 ## Problem
 
@@ -59,3 +63,5 @@ Not in scope: the manager-bot service, its Neon/Cloudflare deployment, hosted me
 - 2026-09-27T18:36:48Z · model_override
 - 2026-09-27T18:36:58Z · review_model_override
 - 2026-09-27T18:37:00Z · status ready→active, branch
+- 2026-09-27T18:38:40Z · agent exited with an error (opencode) · error: Rate limit exceeded. Please try again later.
+- 2026-09-27T18:39:31Z · model_override
