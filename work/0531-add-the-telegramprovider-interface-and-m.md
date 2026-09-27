@@ -1,6 +1,6 @@
 ---
 id: "0531"
-title: Add the TelegramProvider interface and manager-bot project bot provisioning
+title: Add the local Telegram adapter and Bring Your Own Bot Token support
 type: feature
 status: ready
 priority: p1
@@ -10,46 +10,45 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:32:10Z"
-updated_at: "2026-09-27T07:34:11Z"
+updated_at: "2026-09-27T17:33:19Z"
 ---
 ## Problem
 
-Story #0003 mandates "one manager bot, one project bot per repository" as the default model, and specifies a `TelegramProvider` interface. Nothing in the codebase can accept that interface yet: the only outbound notification path is ntfy, and it is a set of hardcoded free functions (`src/server/ntfy.ts`, 10 exports, no interface, no registry, no seam). The provider abstraction has to be introduced before the Telegram bot can be provisioned or configured, and it is the reason the transport can later change between webhook and polling.
+Story #0003 needs a local Telegram adapter before webhook intake, identity linking, notifications, Settings, or agent commands can use a project bot. This task was split: local integration remains here; the official manager-bot provisioning service and secure token handoff live in #0559.
 
 ## What to build
 
-The interface from the story definition, with both transports behind it:
+Define the shared TelegramProvider and ProvisionedBot / TelegramMessage / TelegramUpdate shapes needed by later tasks. Keep provisioning, bot configuration, message delivery, and update handling behind explicit interfaces so future integration does not require parallel implementations.
 
-```ts
-interface TelegramProvider {
-  provisionBot(): Promise<ProvisionedBot>;
-  configureBot(bot: ProvisionedBot): Promise<void>;
-  sendMessage(chatId: string, message: TelegramMessage): Promise<void>;
-  handleUpdate(update: TelegramUpdate): Promise<void>;
-}
-```
+- Implement the local Bring Your Own Bot Token path first. Accept a token server-side, validate the bot identity with Telegram, and store/retrieve the credential through #0530's encrypted secret store. Never fall back to plaintext .env storage for imported credentials.
+- Configure the project bot's supported commands, description/profile information, and update transport. Preserve group privacy mode; verify current Telegram support and document operator-only settings rather than claiming unsupported API toggles.
+- Send messages through Telegram's Bot API and normalize incoming updates for the downstream intake/authorization/command pipeline. This task supplies the adapter, not the later command implementations or authorization policy.
+- Support self-hosted webhook and long-polling modes behind a transport boundary. Webhook route authentication belongs to #0532; user identity, live authorization, and chat routing belong to #0533–#0535. Until those exist, no incoming update may trigger an agent or disclose repository data.
+- Define a narrow client boundary for managed provisioning via #0559: begin a request, inspect its state, and redeem the project credential server-to-server. #0559 supplies the service and real secure handoff. Document the contract and use a fake service in tests here; this task must not require a hosted deployment to finish.
+- BYO and managed provisioning ultimately return the same ProvisionedBot shape. If the managed service is unavailable or not yet configured, report that honestly and keep BYO functional. No manager-bot credential is ever accepted or stored by a repository instance.
+- Any configuration introduced here must follow AGENTS.md: user-facing non-secret settings get schema entries, Settings controls, docs, and tests in the same change. Coordinate with #0538 for the full connection-management UI; do not leave new feature toggles raw-TOML-only. Credentials remain outside TOML and never appear in browser responses.
 
-- Two transports: **self-hosted** (the instance's own `setWebhook`, or long polling) and **hosted/central** (a service receives updates centrally and routes to the right instance). Selection must be configuration, never a hardcoded choice, so the transport is swappable later as the story requires.
-- `provisionBot` drives the managed-bot flow: the RepoOS manager bot has Bot Management Mode enabled and creates a project bot via the deep link `https://t.me/newbot/RepoOSManager/<name>?name=<display+name>`. The manager bot receives the managed-bot update and the RepoOS service retrieves the new token.
-- `configureBot` sets bot commands, description/profile info, group permission behavior (privacy mode stays **on**), and webhook or polling mode.
+## Security and architecture
 
-## Manager bot token handling — the hard constraint
-
-- The manager bot token lives **only** in the provisioning service or secure server environment. It must never be written into an individual repository, never appear in `repoos.toml`, and never be returned to a browser. Env-only, following `REPOOS_AUTH_DEV_BACKDOOR_CODE` (env var, no TOML key, never honored under `NODE_ENV=production`).
-- Project bot tokens are stored via the encrypted secret store, and are **never** written into ordinary repository files. `.env` is a working fallback for the self-hosted bring-your-own-token path, but it is plaintext on disk and worktree inheritance can copy it — prefer the encrypted store.
-- The manager bot provisions and manages only. It does **not** process each project's messages. Each project bot talks directly to its own RepoOS instance, which preserves the decentralized "one server, one repository" model.
-
-## Bring Your Own Bot Token
-
-The story's design decision also requires a manual path for self-hosted/enterprise installs that do not want RepoOS provisioning a bot. Both modes must produce the same internal `ProvisionedBot` shape so nothing downstream branches on which was used.
+Use ADR 0007 for identity and authorization. Project tokens must remain encrypted at rest through #0530 and redacted from logs, errors, URLs exposed to clients, HTTP responses, and support bundles. Normal project messages go directly between Telegram and the local RepoOS server, preserving one server per repository. Hosted/central message relaying is outside this task; retain an extension boundary rather than deploying that transport now. Add no runtime dependencies to RepoOS.
 
 ## Done when
 
-- `provisionBot` / `configureBot` work end-to-end against a project bot in both modes, and the same interface serves a manually supplied token.
-- Tests assert the manager token is absent from config, from every HTTP response, and from the repository directory.
-- Switching transports requires no change above the provider interface.
+- A real BYO project bot can be validated, configured, and used by the local adapter, without a manager service or BotFather automation.
+- Webhook and polling adapters normalize updates consistently; transport switching does not change code above the adapter.
+- Tests cover token validation failures, encrypted storage, redacted errors, missing credentials, API failures, and managed-service unavailability.
+- The provisioning client contract is documented and tested with a fake service; #0559 owns its deployed end-to-end implementation.
+- Manager credentials never enter the repository; project credentials never reach the browser.
+- Relevant docs and required configuration controls are updated, and repoos check passes.
+
+## Dependencies and scope
+
+Depends on #0530 (done). #0533 can run alongside this task with agreed bot/linking types. #0532, #0535, #0537, and #0538 consume this adapter. #0559 follows once the provisioning client contract is stable and its hosting choice is settled.
+
+Not in scope: the manager-bot service, its Neon/Cloudflare deployment, hosted message relay, user/chat linking, notification registry, agent chat, or task lifecycle commands. Those have separate tasks. The story's automatic provisioning acceptance criterion is completed by #0559, not removed.
 
 ## Activity
 
 - 2026-09-27T07:32:10Z · created · unknown
 - 2026-09-27T07:34:11Z · status inbox→ready
+- 2026-09-27T17:33:19Z · title, body
