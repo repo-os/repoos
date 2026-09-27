@@ -1596,6 +1596,36 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
       );
     }
   }
+  // The plan never runs when the remote gate fails, so the normal end-of-run
+  // record is never written: persist the failure for the Checks surface too,
+  // like a local failure and like the handoff path (fail-soft).
+  const persistRemoteFailure = (detail: string, output: string, startedAt: Date): void => {
+    const finishedAt = new Date();
+    const durationMs = finishedAt.getTime() - startedAt.getTime();
+    writeCheckRun(
+      repoRoot,
+      {
+        profile,
+        source: plan.source,
+        changedRef,
+        startedAt: startedAt.toISOString(),
+        finishedAt: finishedAt.toISOString(),
+        durationMs,
+        passed: false,
+        results: [
+          {
+            name: "remote-validation",
+            status: "failed",
+            durationMs,
+            output: output || undefined,
+            detail,
+            required: true,
+          },
+        ],
+      },
+      cfg.cacheDir,
+    );
+  };
   if (runRemoteGate) {
     heading("Remote validation");
     const logger = new Logger({ root: repoRoot });
@@ -1606,6 +1636,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
       const msg = `remote validation init failed: ${(e as Error).message}`;
       if (!cfg.remoteValidation?.fallbackToLocal) {
         console.log(c.red(`\n  ✗ ${msg}\n`));
+        persistRemoteFailure(msg, "", new Date());
         process.exit(1);
       }
       console.log(c.yellow(`  ⚠ ${msg} — running the full local gate\n`));
@@ -1630,33 +1661,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
       await remoteValidator.dispose().catch(() => {});
       if (gate.kind === "fail") {
         console.log(c.red(`\n  ✗ ${gate.detail}\n`));
-        // The plan never ran, so the normal end-of-run record below is never
-        // written: persist the remote failure for the Checks surface too, like
-        // a local failure and like the handoff path (fail-soft).
-        const finishedAt = new Date();
-        writeCheckRun(
-          repoRoot,
-          {
-            profile,
-            source: plan.source,
-            changedRef,
-            startedAt: remoteStartedAt.toISOString(),
-            finishedAt: finishedAt.toISOString(),
-            durationMs: finishedAt.getTime() - remoteStartedAt.getTime(),
-            passed: false,
-            results: [
-              {
-                name: "remote-validation",
-                status: "failed",
-                durationMs: finishedAt.getTime() - remoteStartedAt.getTime(),
-                output: remoteOutput || undefined,
-                detail: gate.detail,
-                required: true,
-              },
-            ],
-          },
-          cfg.cacheDir,
-        );
+        persistRemoteFailure(gate.detail, remoteOutput, remoteStartedAt);
         process.exit(1);
       }
       if (gate.kind === "local-only" && gate.skipTests) {

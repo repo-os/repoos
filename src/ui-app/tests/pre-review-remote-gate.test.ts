@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import type { RepoOSConfig } from "../../core/types.js";
 import {
   REPOOS_REMOTE_VALIDATION_DONE,
@@ -15,6 +15,7 @@ import {
   uncommittedFilesBlockingRemoteGate,
 } from "../../server/pre-review-remote-gate.js";
 import { CLOSEOUT_CHECK_ARGS } from "../../core/check-plan.js";
+import { readCheckRun } from "../../core/check-results-store.js";
 import type { RemoteValidator } from "../../server/remote-validation.js";
 import { parseCheckArgs } from "../../commands/check.js";
 import { scheduleCheckFailureRetry } from "../../server/handoff.js";
@@ -306,4 +307,43 @@ describe("uncommittedFilesBlockingRemoteGate (#0520 / #0512)", () => {
     );
     expect(files.length).toBeGreaterThan(0);
   });
+});
+
+describe("standalone `repoos check` remote failure (#0520)", () => {
+  const cli = join(__dirname, "..", "..", "..", "dist", "cli", "index.js");
+
+  // Needs the compiled CLI; `repoos check` builds before it runs the test step,
+  // so this runs in the gate. A bare `vitest` on a fresh checkout skips it.
+  it.skipIf(!existsSync(cli))(
+    "exits non-zero AND records the failure for the Checks surface when the runner is unusable",
+    () => {
+      const root = mkdtempSync(join(tmpdir(), "repoos-cli-remote-fail-"));
+      git(root, ["init", "-q"]);
+      git(root, ["config", "user.email", "t@example.com"]);
+      git(root, ["config", "user.name", "T"]);
+      mkdirSync(join(root, "work"), { recursive: true });
+      // Tailscale provider with no host: validate() reports an infra failure,
+      // which is retryable and (fallbackToLocal off) fails the gate.
+      writeFileSync(
+        join(root, "repoos.toml"),
+        'workDir = "work"\n[remoteValidation]\nenabled = true\nprovider = "tailscale"\n' +
+          '[[check.steps]]\nname = "noop"\ncommand = "true"\n',
+      );
+      git(root, ["add", "."]);
+      git(root, ["commit", "-q", "-m", "init"]);
+
+      const res = spawnSync(process.execPath, [cli, "check"], {
+        cwd: root,
+        encoding: "utf8",
+        env: { ...process.env, REPOOS_CHECK_CHANGED: "", REPOOS_SKIP_TESTS: "" },
+      });
+      expect(res.status).toBe(1);
+      const run = readCheckRun(root, ".repoos");
+      expect(run).not.toBeNull();
+      expect(run!.passed).toBe(false);
+      expect(run!.results[0]).toMatchObject({ name: "remote-validation", status: "failed" });
+      expect(String(run!.results[0]!.detail)).toMatch(/tailscaleHost|remote validation/i);
+    },
+    60_000,
+  );
 });
