@@ -3696,6 +3696,15 @@
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
+.field-story-control {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+}
+.field-story-control > :first-child {
+  flex: 1;
+  min-width: 0;
+}
 .btn {
   padding: 11px 16px;
   border-radius: 11px;

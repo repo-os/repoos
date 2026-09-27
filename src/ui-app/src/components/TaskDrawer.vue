@@ -70,6 +70,7 @@ import DoneErrorCard from "./DoneErrorCard.vue";
 import DebugPanel from "./DebugPanel.vue";
 import StopWorkConfirmModal from "./StopWorkConfirmModal.vue";
 import DeleteTaskDialog from "./DeleteTaskDialog.vue";
+import { storyDeepLinkRef, storyOpenLabel } from "../lib/story-deep-link";
 import { insertTextAtCursor } from "../utils/text-insertion";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
 import Dialog from "./ui/dialog/root.vue";
@@ -996,6 +997,19 @@ const storySelectLabel = computed(() => {
 
 function onStorySelectUpdate(v: string | null): void {
   draft.story = !v || v === STORY_NONE_SELECT ? "" : v;
+}
+
+const assignedStoryName = computed(() => draft.story.replace(/\s+/g, " ").trim());
+
+const showStoryOpenLink = computed(() => storiesEnabled.value && Boolean(assignedStoryName.value));
+
+const storyOpenAccessibleLabel = computed(() => storyOpenLabel(draft.story, repo.storyDefinitions));
+
+function openAssignedStory(): void {
+  const ref = storyDeepLinkRef(draft.story, repo.storyDefinitions);
+  if (!ref) return;
+  ui.close();
+  void router.push({ name: "stories", query: { story: ref } });
 }
 
 const transitioned = computed(() => !!(ui.active && repo.transitionState?.id === ui.active.id));
@@ -3480,23 +3494,36 @@ watch(
             </div>
             <div v-if="storiesEnabled" class="field">
               <label for="et-story">Story</label>
-              <Select :model-value="storySelectValue" @update:model-value="onStorySelectUpdate">
-                <SelectTrigger id="et-story">
-                  <SelectValue placeholder="No story">
-                    {{ storySelectLabel }}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent position="popper">
-                  <SelectViewport
-                    class="h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
-                  >
-                    <SelectItem :value="STORY_NONE_SELECT">No story</SelectItem>
-                    <SelectItem v-for="name in storyOptions" :key="name" :value="name">
-                      {{ name }}
-                    </SelectItem>
-                  </SelectViewport>
-                </SelectContent>
-              </Select>
+              <div class="field-story-control">
+                <Select :model-value="storySelectValue" @update:model-value="onStorySelectUpdate">
+                  <SelectTrigger id="et-story">
+                    <SelectValue placeholder="No story">
+                      {{ storySelectLabel }}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectViewport
+                      class="h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
+                    >
+                      <SelectItem :value="STORY_NONE_SELECT">No story</SelectItem>
+                      <SelectItem v-for="name in storyOptions" :key="name" :value="name">
+                        {{ name }}
+                      </SelectItem>
+                    </SelectViewport>
+                  </SelectContent>
+                </Select>
+                <Button
+                  v-if="showStoryOpenLink"
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  :title="storyOpenAccessibleLabel"
+                  :aria-label="storyOpenAccessibleLabel"
+                  @click="openAssignedStory"
+                >
+                  <ArrowRight class="size-3.5" aria-hidden="true" />
+                </Button>
+              </div>
             </div>
             <div v-else class="field">
               <label for="et-assignee">Assigned to</label>

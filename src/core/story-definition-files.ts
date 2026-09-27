@@ -245,7 +245,8 @@ function nextStoryNumber(config: RepoOSConfig): string {
  * (#0515), with the same guarantees and the same limits:
  *
  *   - Idempotent. A number already on disk is never touched or renumbered, so a
- *     repeated call is a no-op.
+ *     repeated call is a no-op — except when two files share the same `number:`,
+ *     in which case the oldest claimant keeps it and the rest are reassigned.
  *   - Deterministic. Existing definitions are numbered oldest-first (by
  *     `created_at`, then path), skipping any number already in use.
  *   - A *surviving* story never has its number reassigned. Deleting the
@@ -261,18 +262,25 @@ function nextStoryNumber(config: RepoOSConfig): string {
  */
 export function ensureStoryNumbers(config: RepoOSConfig): StoryDefinition[] {
   const items = listStoryDefinitions(config);
-  const missing = items
-    .filter((d) => !d.number)
-    .sort(
-      (a, b) =>
-        (a.createdAt || "").localeCompare(b.createdAt || "") || a.path.localeCompare(b.path),
-    );
-  if (!missing.length) return [];
-  const used = new Set(items.map((d) => d.number).filter(Boolean));
+  const byAge = [...items].sort(
+    (a, b) => (a.createdAt || "").localeCompare(b.createdAt || "") || a.path.localeCompare(b.path),
+  );
+  const used = new Set<string>();
+  const needsNumber: StoryDefinition[] = [];
+  for (const item of byAge) {
+    const n = item.number;
+    if (!n) needsNumber.push(item);
+    else if (used.has(n)) needsNumber.push(item);
+    else used.add(n);
+  }
+  if (!needsNumber.length) return [];
+  needsNumber.sort(
+    (a, b) => (a.createdAt || "").localeCompare(b.createdAt || "") || a.path.localeCompare(b.path),
+  );
   let max = 0;
   for (const n of used) max = Math.max(max, parseInt(n, 10));
   const changed: StoryDefinition[] = [];
-  for (const item of missing) {
+  for (const item of needsNumber) {
     let number = String(max + 1).padStart(4, "0");
     while (used.has(number)) number = String(++max).padStart(4, "0");
     used.add(number);
