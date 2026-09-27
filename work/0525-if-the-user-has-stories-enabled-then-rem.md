@@ -2,14 +2,14 @@
 id: "0525"
 title: Replace Assigned to with a styled story dropdown in the task panel
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/replace-assigned-to-with-a-styled-story-
 created_at: "2026-09-27T00:58:01Z"
-updated_at: "2026-09-27T01:12:21Z"
+updated_at: "2026-09-27T02:43:05Z"
 ---
 ## Problem
 
@@ -147,3 +147,4 @@ If the user has stories enabled, then remove "assigned to" in the task panel top
 - 2026-09-27T01:03:51Z · status inbox→ready
 - 2026-09-27T01:07:23Z · status ready→active, branch
 - 2026-09-27T01:12:21Z · status active→review
+- 2026-09-27T02:43:05Z · status review→done, release:success
