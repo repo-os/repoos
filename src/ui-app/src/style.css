@@ -3107,9 +3107,17 @@
   flex-direction: column;
   gap: 10px;
 }
+/* #0555: the sort Select sits at the left of the row, the New task button at
+   the right. `margin-left: auto` rather than `justify-content: space-between`
+   on the row, so the button stays pinned right when the Select is absent —
+   a story with nothing to sort still gets its New task button on the right. */
 .story-panel-tasks-toolbar {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+}
+.story-panel-tasks-new {
+  margin-left: auto;
 }
 .story-panel-tasks {
   display: flex;
