@@ -1,5 +1,5 @@
 import type { Task } from "../../../core/types.js";
-import { needsInputSuppressedOnReview } from "../../../core/needs-input.js";
+import { MAX_AUTO_REVIEW_ROUNDS, needsInputSuppressedOnReview } from "../../../core/needs-input.js";
 
 /**
  * Copy and labels for `needs_input` on board cards and the task drawer (#0511).
@@ -29,8 +29,7 @@ export const NEEDS_INPUT_STATUS_LABELS: Record<string, string> = {
 
 export const NEEDS_INPUT_BANNER_LABELS: Record<string, string> = {
   "review-failed": "The reviewer crashed or timed out without producing a report.",
-  "review-rounds-exhausted":
-    "The reviewer has sent this back to the engineer twice and still found issues. No review is running now.",
+  "review-rounds-exhausted": `The reviewer has sent this back to the engineer ${MAX_AUTO_REVIEW_ROUNDS} times and still found issues. No review is running now.`,
   "dev-error": "The agent exited with an error.",
   "check-failed-after-retries": "Checks failed after automatic retries.",
   "cto-escalation": "The CTO agent flagged this for a human decision.",
