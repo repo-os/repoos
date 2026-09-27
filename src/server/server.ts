@@ -309,6 +309,7 @@ import {
   telegramProvisionBegin,
   telegramProvisionStatus,
   telegramProvisionRedeem,
+  telegramWebhook,
   // Transcription
   transcribe,
   // UI routes
@@ -2576,6 +2577,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/telegram/provision", telegramProvisionBegin);
   router.register("GET", /^\/api\/telegram\/provision\/([^/]+)$/, telegramProvisionStatus);
   router.register("POST", /^\/api\/telegram\/provision\/([^/]+)\/redeem$/, telegramProvisionRedeem);
+  router.register("POST", /^\/api\/telegram\/webhook\/([^/]+)$/, telegramWebhook);
 
   // Transcription routes
   router.register("POST", "/api/transcribe", transcribe);
@@ -2655,6 +2657,15 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           "/api/auth/",
           "/api/hub/v1/summary",
           "/api/hub/v1/tasks/search",
+          // Telegram webhook (#0532): must stay public so Telegram can POST
+          // without a session cookie. Session middleware runs before dispatch,
+          // so this prefix only bypasses the cookie gate — the webhook handler
+          // still validates X-Telegram-Bot-Api-Secret-Token before reading the
+          // body. Do not move secret checks into middleware without re-reading
+          // that ordering; a future edit that runs auth after dispatch would
+          // break delivery, and one that drops the route handler's secret check
+          // would expose the repo to the open internet.
+          "/api/telegram/webhook/",
         ];
         const PUBLIC_PATHS = ["/login", "/manifest.webmanifest"];
         const isPublicRoute =
