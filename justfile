@@ -274,16 +274,24 @@ check-runners *args:
 
         # 7. Optional full validation
         if [ "$FULL" = true ]; then
-            echo "  → full validation (this takes a few minutes)..."
+            echo "  → full validation (streaming output)..."
             SHA=$(git rev-parse HEAD)
             BUNDLE=$(mktemp /tmp/repoos-check-bundle.XXXXXX.bundle)
             git bundle create "$BUNDLE" HEAD >/dev/null
             scp -q "$BUNDLE" "$HOST:/tmp/repoos-check-bundle.bundle"
             rm -f "$BUNDLE"
-            if ssh "$HOST" "/opt/repoos/validate.sh /tmp/repoos-check-bundle.bundle $SHA 2>&1" | tail -3; then
-                echo "  ✔ full validation passed"
+            T0=$(date +%s)
+            ssh "$HOST" "/opt/repoos/validate.sh /tmp/repoos-check-bundle.bundle $SHA 2>&1" \
+                | while IFS= read -r line; do
+                    ELAPSED=$(( $(date +%s) - T0 ))
+                    printf "  [%3ds] %s\n" "$ELAPSED" "$line"
+                done
+            CODE=${PIPESTATUS[0]}
+            ELAPSED=$(( $(date +%s) - T0 ))
+            if [ "$CODE" -eq 0 ]; then
+                echo "  ✔ full validation passed in ${ELAPSED}s"
             else
-                echo "  ✗ full validation failed"
+                echo "  ✗ full validation failed after ${ELAPSED}s (exit $CODE)"
                 FAIL=$((FAIL+1)); continue
             fi
         fi
