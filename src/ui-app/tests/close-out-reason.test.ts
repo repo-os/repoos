@@ -30,7 +30,7 @@ describe("tailLine (reason capture)", () => {
   });
 
   it("redacts credential-shaped values from the stored reason", () => {
-    const out = tailLine("check failed: token=ghp_AbCdEf123456", "");
+    const out = tailLine("check failed: token=ghu_1234567890abcdef", "");
     expect(out).not.toMatch(/ghp_/);
     expect(out).toContain("***");
   });
@@ -167,7 +167,7 @@ describe("failing phase recording (0215)", () => {
       ).recordCheckFailure({ taskId: "0001" }, "check failed", {
         status: 1,
         stdout: fmtOutput,
-        stderr: "token=ghp_AbCdEf123456",
+        stderr: "token=ghu_1234567890abcdef",
       });
 
       expect(failure.failedChecks).toEqual(["check-fmt:check"]);

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { api, JSON_OPTS } from "../api";
-import { renderMarkdown } from "../lib/markdown";
+import { renderChatMarkdown } from "../lib/markdown";
 import { fmtTime } from "../lib/time";
 import { useConfigStore } from "../stores/config";
 import { useRepoStore } from "../stores/repo";
@@ -16,6 +16,7 @@ import ChatDiagnosticRow from "./ChatDiagnosticRow.vue";
 import ChatToolCallRow from "./ChatToolCallRow.vue";
 import { ArrowDown } from "lucide-vue-next";
 import { useChatScroll } from "../composables/useChatScroll";
+import { useCopyChatMessage } from "../composables/useCopyChatMessage";
 import { bubbleRole, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
 
 const props = withDefaults(defineProps<{ task: Task; active?: boolean }>(), { active: true });
@@ -45,6 +46,8 @@ const { showJumpToLatest, onScroll, scrollToLatest } = useChatScroll(log, {
   contentSize: () => lines.value.length,
   active: () => props.active,
 });
+
+const { messageBubbleListeners } = useCopyChatMessage();
 
 const dispatchRole = ref<null | "engineer" | "pm">(null);
 const dispatchBusy = ref(false);
@@ -242,11 +245,15 @@ watch(
               <div v-if="bubbleRole(row) === 'assistant'" class="td-mini-avatar">
                 <img :src="DEBUGGER_AVATAR" alt="D" />
               </div>
-              <div class="td-bubble" :class="`td-bubble-${bubbleRole(row)}`">
+              <div
+                class="td-bubble"
+                :class="`td-bubble-${bubbleRole(row)}`"
+                v-on="messageBubbleListeners(row)"
+              >
                 <div
                   v-if="bubbleRole(row) === 'assistant'"
                   class="td-markdown"
-                  v-html="renderMarkdown(row.text)"
+                  v-html="renderChatMarkdown(row.text)"
                 ></div>
                 <span v-else>{{ row.text }}</span>
                 <!-- Every row carries its last-updated time (#0506), system rows

@@ -391,6 +391,10 @@ async function runHandoffFinalization(
   const { workdir, isHotfix, worktreeTaskPath, worktreeTask } = resolved;
   const onProgress = opts.onProgress;
   const onStatusChange = opts.onStatusChange;
+  // Mirrors `withHandoffDeadline`'s 10-minute cap (armed moments before this
+  // body runs): a remote run still QUEUED at that point cancels itself and
+  // releases its host slot instead of orphaning it (#0521).
+  const handoffDeadlineAt = Date.now() + HANDOFF_DEADLINE_MS;
 
   if (task.status === "review" && worktreeTask.status === "review") {
     onProgress?.("done");
@@ -449,6 +453,7 @@ async function runHandoffFinalization(
         worktreePath: workdir,
         taskId: task.id,
         onChunk: checkHandle?.chunk,
+        deadlineAt: handoffDeadlineAt,
       });
       if (remoteOutcome.kind === "fail") {
         checkHandle?.done(1);
@@ -902,7 +907,7 @@ const HANDOFF_SIGNAL_RETRY_DELAY_MS = 3_000;
 /**
  * Third instance of the same pattern (#0271 follow-up), for the task-watchdog's
  * `exited-without-handoff` classification (task-watchdog.ts): a session ran to
- * completion but its final line wasn't exactly `::repoos-handoff-ready::`, so no
+ * completion but no handoff signal was detected in its output, so no
  * handoff ever fired. Previously the watchdog could only surface this — move
  * the task to `review`/`ready` and leave a human to notice and click Restart
  * (task #0268 sat this way until someone asked "why hasn't this recovered on
@@ -960,7 +965,7 @@ export function scheduleHandoffSignalRetry(
     const message = [
       `Automatic recovery (attempt ${attempt} of ${MAX_HANDOFF_SIGNAL_RETRY_ATTEMPTS}): your previous turn on this task ended without the server detecting a clean handoff.`,
       "",
-      "The handoff signal must be exactly `::repoos-handoff-ready::` on its own line — a rendering quirk can occasionally mangle it (see #0154/#0155).",
+      "Put `::repoos-handoff-ready::` at the start of a line, preferably alone. RepoOS also accepts following text joined to the token, but not incidental mentions in prose.",
       "",
       "Check your last output and the current state of your worktree. If the work is actually complete and `repoos check` passes: emit the signal line correctly this time. If it is NOT complete: finish it, verify `repoos check` passes, then emit the signal.",
     ].join("\n");

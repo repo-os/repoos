@@ -57,6 +57,7 @@ import ChatJumpToLatest from "./ChatJumpToLatest.vue";
 import ChatDiagnosticRow from "./ChatDiagnosticRow.vue";
 import ChatToolCallRow from "./ChatToolCallRow.vue";
 import { useChatScroll } from "../composables/useChatScroll";
+import { useCopyChatMessage } from "../composables/useCopyChatMessage";
 import { bubbleRole, stripAnsi, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyCheckoutDialog from "./DirtyCheckoutDialog.vue";
@@ -104,6 +105,7 @@ const auth = useAuthStore();
 const router = useRouter();
 const recovery = uiRecoveryState();
 const { recall: recallModelForCli } = useModelMemory();
+const { onTaskDrawerBubbleClick } = useCopyChatMessage();
 
 const GEMINI_MIGRATION_URL = "https://antigravity.google/docs/cli/gcli-migration/";
 
@@ -3919,10 +3921,16 @@ watch(
                 <!-- human / user message -->
                 <div v-else-if="row.kind === 'human'" class="agent-human">
                   <time v-if="row.at" class="entry-time">{{ fmtTime(row.at) }}</time>
-                  <div class="agent-human-bubble">{{ row.text }}</div>
+                  <div class="agent-human-bubble" @click="onTaskDrawerBubbleClick(row, $event)">
+                    {{ row.text }}
+                  </div>
                 </div>
                 <!-- assistant text block -->
-                <div v-else-if="row.kind === 'text'" class="agent-text">
+                <div
+                  v-else-if="row.kind === 'text'"
+                  class="agent-text"
+                  @click="onTaskDrawerBubbleClick(row, $event)"
+                >
                   <time v-if="row.at" class="entry-time">{{ fmtTime(row.at) }}</time>
                   {{ row.text }}
                 </div>
@@ -4178,9 +4186,15 @@ watch(
                   </div>
                   <div v-else-if="row.kind === 'human'" class="agent-human">
                     <time v-if="row.at" class="entry-time">{{ fmtTime(row.at) }}</time>
-                    <div class="agent-human-bubble">{{ row.text }}</div>
+                    <div class="agent-human-bubble" @click="onTaskDrawerBubbleClick(row, $event)">
+                      {{ row.text }}
+                    </div>
                   </div>
-                  <div v-else-if="row.kind === 'text'" class="agent-text">
+                  <div
+                    v-else-if="row.kind === 'text'"
+                    class="agent-text"
+                    @click="onTaskDrawerBubbleClick(row, $event)"
+                  >
                     <time v-if="row.at" class="entry-time">{{ fmtTime(row.at) }}</time>
                     {{ row.text }}
                   </div>

@@ -3,7 +3,7 @@ import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { X, ArrowDown } from "lucide-vue-next";
 import { useRouter } from "vue-router";
 import { api, JSON_OPTS } from "../api";
-import { renderMarkdown } from "../lib/markdown";
+import { renderChatMarkdown } from "../lib/markdown";
 import { fmtTime } from "../lib/time";
 import { useConfigStore } from "../stores/config";
 import { useRepoStore } from "../stores/repo";
@@ -15,6 +15,7 @@ import AiChatThinking from "./AiChatThinking.vue";
 import ChatDiagnosticRow from "./ChatDiagnosticRow.vue";
 import ChatToolCallRow from "./ChatToolCallRow.vue";
 import { useChatScroll } from "../composables/useChatScroll";
+import { useCopyChatMessage } from "../composables/useCopyChatMessage";
 import { bubbleRole, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
 import { insertTextAtCursor } from "../utils/text-insertion";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
@@ -64,6 +65,8 @@ const { showJumpToLatest, onScroll, scrollToLatest } = useChatScroll(log, {
   contentSize: () => lines.value.length,
   active: () => props.open,
 });
+
+const { messageBubbleListeners } = useCopyChatMessage();
 
 // Rows are grouped by the shared transform (#0506): a run of adjacent tool
 // calls is one expandable row with counts and the time it finished, not a
@@ -267,11 +270,15 @@ watch(
             <div v-if="bubbleRole(row) === 'assistant'" class="debugger-mini-avatar">
               <img :src="DEBUGGER_AVATAR" alt="D" />
             </div>
-            <div class="debugger-bubble" :class="`debugger-bubble-${bubbleRole(row)}`">
+            <div
+              class="debugger-bubble"
+              :class="`debugger-bubble-${bubbleRole(row)}`"
+              v-on="messageBubbleListeners(row)"
+            >
               <div
                 v-if="bubbleRole(row) === 'assistant'"
                 class="debugger-markdown"
-                v-html="renderMarkdown(row.text)"
+                v-html="renderChatMarkdown(row.text)"
               ></div>
               <span v-else>{{ row.text }}</span>
               <!-- Every row carries its last-updated time (#0506), system rows

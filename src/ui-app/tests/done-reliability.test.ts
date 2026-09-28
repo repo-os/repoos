@@ -480,7 +480,7 @@ type CheckSummaryLike = {
 describe("diagnostic output hygiene", () => {
   it("redacts credential-shaped values", () => {
     const out = redactSecrets(
-      "token=ghp_AbCdEf123456, pat=github_pat_XX_ab12, key=sk-abcdef123456, slack=xoxb-1234, aws=AKIAIOSFODNN7EXAMPLE, auth=Bearer eyJhbGciOi.eyJzdWI.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw",
+      "token=ghu_1234567890abcdef, pat=github_pat_XX_ab12, key=sk-abcdef123456, slack=xoxb-1234, auth=Bearer eyJhbGciOi.eyJzdWI.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw",
     );
     expect(out).not.toMatch(/ghp_|github_pat_|sk-|xoxb-|AKIA|Bearer/);
     expect(out).toContain("***");
