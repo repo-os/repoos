@@ -3,6 +3,9 @@ id: "0559"
 title: Build the Telegram manager-bot provisioning service and secure instance handoff
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
 priority: p1
 area: server
 story: RepoOS Telegram Bot
@@ -13,12 +16,12 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-27T17:32:41Z"
-updated_at: "2026-09-28T08:07:42Z"
+updated_at: "2026-09-28T08:38:40Z"
 review_rounds: 2
 review_passes: 2
 check_retry_count: 1
 last_check_failure: "[object Object]"
-dev_error_count: 3
+dev_error_count: 4
 ---
 ## Problem
 
@@ -104,3 +107,5 @@ Depends on #0530 (done) and the local adapter/client contract from #0531 (still 
 - 2026-09-28T08:00:38Z · review_model_override
 - 2026-09-28T08:00:39Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-09-28T08:07:42Z · status review→active
+- 2026-09-28T08:30:53Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-09-28T08:38:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
