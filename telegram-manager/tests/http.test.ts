@@ -277,4 +277,133 @@ describe("HTTP contract (#0531 client boundary)", () => {
     });
     expect(tooSoon.status).toBe(409);
   });
+
+  it("revokes a managed bot over HTTP for the #0539 disconnect caller", async () => {
+    const { app, telegram, store } = makeApp();
+    const auth = { Authorization: "Bearer instance-key-xyz", "Content-Type": "application/json" };
+    const begun = await json(
+      await app.request("/v1/provisioning/requests", {
+        method: "POST",
+        headers: auth,
+        body: JSON.stringify({
+          repository: "acme/widgets",
+          instance: { id: "inst-a" },
+          requestedBy: "admin@acme.test",
+        }),
+      }),
+    );
+    const webhook = (body: Record<string, unknown>) =>
+      app.request("/v1/telegram/webhook", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Telegram-Bot-Api-Secret-Token": "whsec-abc",
+        },
+        body: JSON.stringify(body),
+      });
+    await webhook(linkMessage(1, 42, String(begun.link_code)));
+    await webhook(
+      managedBotUpdate(2, 42, { id: 555, username: "acme_bot", firstName: "Acme Bot" }),
+    );
+    telegram.tokensByBotId.set(555, "secret-project-token");
+    await app.request(`/v1/provisioning/requests/${begun.id}/redeem`, {
+      method: "POST",
+      headers: auth,
+    });
+
+    // Exactly the body/shape `HttpProvisioningClient.revokeBot` sends (main,
+    // #0539): the route is keyed by bot id, not request id.
+    const revokeRes = await app.request("/v1/provisioning/bots/555/revoke", {
+      method: "POST",
+      headers: auth,
+      body: JSON.stringify({ repository: "acme/widgets", instance: { id: "inst-a" } }),
+    });
+    expect(revokeRes.status).toBe(200);
+    expect(await json(revokeRes)).toEqual({ confirmed: true });
+    expect(telegram.replaceTokenCallCount).toBe(1);
+
+    // The dropped credential can no longer be replayed, and mismatches are
+    // the same impersonation-safe 404 the per-request routes use.
+    const lateReplay = await app.request(`/v1/provisioning/requests/${begun.id}/redeem`, {
+      method: "POST",
+      headers: auth,
+    });
+    expect(lateReplay.status).toBe(200);
+    expect(await json(lateReplay)).toEqual({});
+    const alien = await app.request("/v1/provisioning/bots/555/revoke", {
+      method: "POST",
+      headers: { Authorization: "Bearer another-key" },
+      body: JSON.stringify({ repository: "acme/widgets", instance: { id: "inst-a" } }),
+    });
+    expect(alien.status).toBe(401);
+    const unknownBot = await app.request("/v1/provisioning/bots/999/revoke", {
+      method: "POST",
+      headers: auth,
+      body: JSON.stringify({ repository: "acme/widgets", instance: { id: "inst-a" } }),
+    });
+    expect(unknownBot.status).toBe(404);
+    expect((await json(unknownBot)).error).toBe("no such managed bot");
+
+    const events = store.auditLog.map((e) => e.event);
+    expect(events).toContain("bot_revoked");
+  });
+
+  it("validates the revoke body shape", async () => {
+    const { app } = makeApp();
+    const auth = { Authorization: "Bearer instance-key-xyz", "Content-Type": "application/json" };
+    const badBotId = await app.request("/v1/provisioning/bots/not-a-number/revoke", {
+      method: "POST",
+      headers: auth,
+      body: JSON.stringify({ repository: "r", instance: { id: "i" } }),
+    });
+    expect(badBotId.status).toBe(400);
+    const missingRepository = await app.request("/v1/provisioning/bots/5/revoke", {
+      method: "POST",
+      headers: auth,
+      body: JSON.stringify({ instance: { id: "i" } }),
+    });
+    expect(missingRepository.status).toBe(400);
+    const missingInstance = await app.request("/v1/provisioning/bots/5/revoke", {
+      method: "POST",
+      headers: auth,
+      body: JSON.stringify({ repository: "r" }),
+    });
+    expect(missingRepository.status).toBe(400);
+  });
+
+  it("answers a duplicate begin for the same repository/instance with 409, not 500", async () => {
+    const { app, store } = makeApp();
+    const auth = { Authorization: "Bearer instance-key-xyz", "Content-Type": "application/json" };
+    const body = {
+      repository: "acme/widgets",
+      instance: { id: "inst-a" },
+      requestedBy: "admin@acme.test",
+    };
+    const first = await app.request("/v1/provisioning/requests", {
+      method: "POST",
+      headers: auth,
+      body: JSON.stringify(body),
+    });
+    expect(first.status).toBe(200);
+    // Regression: previously the per-(repository, instance) active-request
+    // unique index threw an unhandled Postgres unique violation (opaque 500).
+    // Now the service maps it to a clean conflict.
+    const second = await app.request("/v1/provisioning/requests", {
+      method: "POST",
+      headers: auth,
+      body: JSON.stringify(body),
+    });
+    expect(second.status).toBe(409);
+    const err = await json(second);
+    expect(String(err.error)).toContain("already have a live provisioning request");
+
+    // A different repository on the same (shared) auth key is not blocked.
+    const other = await app.request("/v1/provisioning/requests", {
+      method: "POST",
+      headers: auth,
+      body: JSON.stringify({ ...body, repository: "beta/gizmos" }),
+    });
+    expect(other.status).toBe(200);
+    expect(store.auditLog.map((e) => e.event)).toContain("begin_rejected_active_exists");
+  });
 });

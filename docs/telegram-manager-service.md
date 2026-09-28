@@ -48,10 +48,22 @@ mitigation is the `/link <code>` step below.
 3. Only *after* that binding does the admin tap the deep link and create the
    bot. When Telegram delivers the resulting `managed_bot` update to the
    manager bot's webhook, the service matches it to a request **by the
-   Telegram user id recorded in step 2** — never by bot username, bot id, or
-   arrival order. An unmatched `managed_bot` event (no pending
-   `awaiting_bot_creation` row for that user) is logged (`bot_created_unmatched`)
-   and otherwise ignored; it does not create or bind anything.
+   Telegram user id recorded in step 2, and only by that** — no event can
+   bind a request whose admin never sent the matching `/link`. When a user
+   *is* linked to more than one `awaiting_bot_creation` row, the matcher picks
+   exactly one: it prefers the row whose `suggested_username` matches the
+   created bot's username, and otherwise claims the single oldest pending row
+   (a Telegram user with two pending requests must never have both bound to
+   one bot — the second gets `bot_created_unmatched` and needs a new
+   request). The suggested username is a *tiebreaker between that user's own
+   pending requests*, never a proof of identity. An unmatched `managed_bot`
+   event (no `awaiting_bot_creation` row for that user) is logged
+   (`bot_created_unmatched`) and otherwise ignored; it does not create or
+   bind anything. One accepted caveat: Telegram's `ManagedBotUpdated` also
+   fires when a managed bot's **token or owner changes**, and during
+   `awaiting_bot_creation` the matcher cannot tell that from a creation —
+   such a stray event binds credulously but still only to the correctly
+   linked user (documented on `ProvisioningStore.recordBotCreated`).
 4. The request becomes `ready`; `GET /v1/provisioning/requests/{id}` starts
    returning the bot summary. The instance calls
    `POST /v1/provisioning/requests/{id}/redeem` to fetch the actual bot token.
@@ -76,6 +88,59 @@ link, not the bot username). If a stronger per-instance credential model is
 needed later (e.g. so one compromised instance can't redeem another's
 requests), that's a follow-up, not a blocker here — the state machine doesn't
 change, only what's checked before allowing a redeem.
+
+## Per-request authorization
+
+`getStatus`/`redeem`/`rotate-token` are authorized by the **pair** (the
+instance auth key presented on the call, the request `id`): each request row
+stores only `hashAuthKey()` of the auth key presented at `begin` time, and a
+call presenting a key whose hash does not match the row's gets exactly the
+same `404 no such provisioning request` a wrong `id` would get — never a
+distinct "forbidden", so responses cannot be used to confirm another
+instance's request ids exist. The revocation route applies the same rule
+twice over: a presented key may only act on a bot whose recording row carries
+that key's hash *and* the caller's `repository`/`instance.id` (it still reads
+as `404 no such managed bot` on any mismatch — see
+[Management lifecycle](#management-lifecycle-rotate-and-revoke-0539)).
+
+## Management lifecycle: rotate and revoke (#0539)
+
+Telegram exposes exactly two managed-bot token methods,
+`getManagedBotToken` and `replaceManagedBotToken`, and **no revoke
+primitive** — replacing the token is the only way to invalidate a previous
+one (the old token stops working the moment it is replaced). The service
+exposes the two operations RepoOS needs, both authenticated with the instance
+bearer key:
+
+- `POST /v1/provisioning/requests/{id}/rotate-token` — replaces the token and
+  returns the fresh one to the *owning* instance (same per-request
+  authorization as redeem), re-encrypted into the grace-window envelope.
+  Callable only after a successful redeem. Used when an instance believes its
+  local copy of the credential needs cycling.
+- `POST /v1/provisioning/bots/{botId}/revoke` — the disconnect contract
+  `HttpProvisioningClient.revokeBot` (main, #0539) calls when an admin
+  disconnects a bot of managed source. Body `{ repository,
+  instance: { id } }`; ownership is the full triple (auth-key hash,
+  repository, instance) matched against the request row that recorded the
+  bot. Implementation: `replaceManagedBotToken` — then the fresh token is
+  **discarded, never stored or returned** (the disconnecting instance must
+  not receive a usable credential, and nothing about the bot needs it: the
+  bot keeps its Telegram identity but its API token is one nobody holds) —
+  and the stored grace-window envelope is purged so the just-dropped
+  credential can never be replayed afterwards. Answers
+  `{ confirmed: true }`; any Telegram-side failure is a retryable `502` and
+  a later retry simply rotates again (repeat calls are idempotent in
+  outcome). A `not_found` means the bot id is not recorded for this
+  repository/instance/key — nothing was revoked.
+
+Documented limitations, per the task's own instruction to verify Telegram's
+actual semantics rather than assume: revocation here invalidates the *token*
+(the bot can no longer act as a Bot API bot under the credential RepoOS
+held), but it neither deletes the bot nor removes the manager bot's
+management link — the bot remains visible to the manager bot's Bot
+Management Mode, and only Telegram's own BotFather-side tooling (or the
+human owner) can delete it. This service stores nothing after the envelope
+is purged, so retention following a revoke is nil.
 
 ## State machine
 
@@ -116,6 +181,24 @@ exists as defense-in-depth to bulk-expire rows, purge spent redemption
 envelopes past their grace window, and prune old dedup rows; see
 [Recommended: wire the sweep to a cron trigger](#recommended-wire-the-sweep-to-a-cron-trigger).
 
+## One active request per repository/instance
+
+A partial unique index (`provisioning_requests_active_per_instance`,
+`migrations/0001_init.sql`) allows at most one **non-terminal** request per
+`(repository, instance_id)` — a confused admin re-clicking "connect" mid-flow
+cannot pile up duplicate pending requests. Because `redeem` is keyed by
+request id (not this pair), a second live request can never orphan or
+double-serve a delivered credential.
+
+- `begin` for a pair with a still-live request answers **409** (regression
+  formerly an opaque 500: the raw Postgres unique violation
+  (`SQLSTATE 23505`) escaped the `ServiceError` mapping). The message asks
+  the caller to poll the existing request's status or let it expire.
+- The **TTL does have to unpin the pair**, and it does: `createRequest`
+  expires an already-past-TTL predecessor in place and retries the insert, so
+  "wait ~15 minutes and re-click" works without waiting for the sweep cron.
+  A still-live predecessor reaches the 409.
+
 ## Redemption and the replay grace window
 
 `redeem()` acquires an exclusive lock with an atomic
@@ -130,7 +213,12 @@ success:
 3. If the instance's HTTP call to `/redeem` was itself dropped/retried (network
    blips are the norm, not the exception, for this kind of handoff), a second
    `POST .../redeem` within the grace window decrypts and replays the **same**
-   token — no second Telegram API call, no new credential minted.
+   token — no second Telegram API call, no new credential minted. This covers
+   the retry that races an *in-flight* first attempt too: while a redeem is
+   mid-Telegram-call a concurrent duplicate gets an explicit
+   `409 a redemption is already in progress` (clients treat it as retryable),
+   and its next attempt replays from the envelope. Only *post-completion*
+   replays (this paragraph) are token-bearing and idempotent.
 4. Past the grace window the encrypted envelope is purged (lazily on next
    read, or in bulk by `sweep()`). A `/redeem` call after that point returns a
    plain `200` with **no** `token` field. This is intentional and matches the
@@ -145,7 +233,7 @@ wedging the request in a permanently broken state.
 
 ## Rate limiting
 
-Two independent limits, both enforced in the store so they hold across
+Three independent limits, all enforced in the store so they hold across
 restarts:
 
 - **`begin`**, per instance id: 5 requests / 60s. Exceeding it is a
@@ -154,6 +242,9 @@ restarts:
   guessing of another admin's link code from the same Telegram account; it
   does not block the request itself (a rejected guess never touches state),
   only floods of guesses.
+- **`rotate-token`**, per request id: 10 / 60s. Each accepted rotate is a real
+  `replaceManagedBotToken` call to Telegram, so a valid-key flood against one
+  request is bounded (Telegram rejections revert to a retryable `429`).
 
 ## Duplicate Telegram updates (at-least-once webhook delivery)
 
@@ -172,7 +263,7 @@ answers **500** so Telegram retries; the retry is then processed normally
 Never in the repo, the image, or a function's committed config. Local dev
 copies live in `telegram-manager/.env` (gitignored — see `.env.example` for
 what to generate and how). In production every one of these is a Neon
-Functions deploy-time env var, injected via `neon deploy --env KEY=value` or
+Functions deploy-time env var, injected via `neon functions deploy manager --env KEY=VALUE` or
 declared in `neon.ts`'s `env` field reading from `process.env` at deploy-config
 evaluation time — see the important Neon-vs-Cloudflare distinction below.
 
@@ -203,7 +294,7 @@ call out wherever the difference matters:
 - **No distinct "secret" storage type.** Unlike Cloudflare Workers'
   `wrangler secret put` (an encrypted store separate from plain vars), Neon
   Functions has one mechanism: environment variables set at deploy time
-  (`neon deploy --env KEY=value`, or `neon.ts`'s `env` field, itself just
+  (`neon functions deploy manager --env KEY=VALUE`, or `neon.ts`'s `env` field, itself just
   reading `process.env` when the deploy config is evaluated). Treat every
   value in the secrets table above as equally sensitive regardless of this —
   never commit real values to `neon.ts`, only the `requireDeployEnv()` lookup
@@ -217,7 +308,7 @@ call out wherever the difference matters:
   evicted.** The service must be — and is — fully stateless between requests
   except for a memoized cold-start connection pool (`src/index.ts`); nothing
   is cached in memory across requests that isn't safe to lose and rebuild.
-- **Deploy tooling**: `neon deploy`, configured by `neon.ts` (using the real
+- **Deploy tooling**: `neon functions deploy manager`, configured by `neon.ts` (using the real
   `@neon/config` npm package — a dev-only dependency of `telegram-manager/`,
   never installed into the root package). One function (`manager`) is
   declared, sourced from `src/index.ts`.
@@ -249,11 +340,30 @@ handoff to whoever owns the operator-side Neon account and the manager bot.
    bun install --frozen-lockfile
    DATABASE_URL=<neon pooled connection string> bun run migrate
    ```
-5. **Deploy**:
+5. **Smoke-test the store against that real Postgres** (`bun run smoke:pg`
+   exercises the exact SQL the service's race-safety depends on — the
+   per-(repository, instance) conflict mapping, the `beginRedeem`
+   compare-and-swap and abandoned-lock reclaim, grace-window replay/purge,
+   and revoke cleanup — then cleans up after itself; see
+   `scripts/smoke-pg.ts`):
    ```bash
-   bunx neon deploy   # reads neon.ts; requires the env vars from step 3
+   DATABASE_URL=<neon pooled connection string> bun run smoke:pg   # expect: smoke ok
    ```
-6. **Register the webhook** once the function's public URL is known (Neon
+6. **Deploy**:
+   ```bash
+   # Deploy the function (slug `manager`, matching neon.ts); pass the secrets
+   # as repeatable --env flags or export them and verify their names first.
+   # `neon.ts` declares the function's name/source/env for tooling that reads
+   # it; confirm the exact accepted flag surface against Neon's live CLI docs
+   # (neon.com/docs/cli/functions) at deploy time.
+   bunx neon functions deploy manager --src src/index.ts \
+     --env TELEGRAM_MANAGER_BOT_TOKEN="$TELEGRAM_MANAGER_BOT_TOKEN" \
+     --env TELEGRAM_MANAGER_BOT_USERNAME="$TELEGRAM_MANAGER_BOT_USERNAME" \
+     --env TELEGRAM_MANAGER_WEBHOOK_SECRET="$TELEGRAM_MANAGER_WEBHOOK_SECRET" \
+     --env TELEGRAM_MANAGER_INSTANCE_AUTH_KEY="$TELEGRAM_MANAGER_INSTANCE_AUTH_KEY" \
+     --env TELEGRAM_MANAGER_ENCRYPTION_KEY="$TELEGRAM_MANAGER_ENCRYPTION_KEY"
+   ```
+7. **Register the webhook** once the function's public URL is known (Neon
    prints it on deploy): call Telegram's `setWebhook` for the manager bot with
    `url = <function url>/v1/telegram/webhook` and
    `secret_token = TELEGRAM_MANAGER_WEBHOOK_SECRET`. `HttpTelegramManagerClient`
@@ -262,8 +372,8 @@ handoff to whoever owns the operator-side Neon account and the manager bot.
    does not re-register its own webhook automatically on every boot (a
    function that did that on every cold start would fight Telegram's own
    webhook rate limits for no benefit).
-7. **Wire the sweep to a schedule** — see below.
-8. **Point RepoOS instances at it**: set `[telegram] provisioningUrl` to the
+8. **Wire the sweep to a schedule** — see below.
+9. **Point RepoOS instances at it**: set `[telegram] provisioningUrl` to the
    function's URL and `REPOOS_TELEGRAM_PROVISIONING_KEY` to the same value as
    `TELEGRAM_MANAGER_INSTANCE_AUTH_KEY` (`user-docs/telegram.md` has the
    instance-side instructions).

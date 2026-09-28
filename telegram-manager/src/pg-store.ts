@@ -18,7 +18,7 @@ import type {
   RecordBotCreatedOutcome,
   RequestRow,
 } from "./store.js";
-import { REDEEM_LOCK_TIMEOUT_MS } from "./store.js";
+import { ActiveRequestExistsError, REDEEM_LOCK_TIMEOUT_MS } from "./store.js";
 import type { EncryptedEnvelope } from "./crypto.js";
 
 interface Row {
@@ -84,29 +84,59 @@ function toRequestRow(row: Row): RequestRow {
 
 const NON_TERMINAL: ProvisioningState[] = ["pending", "awaiting_bot_creation", "ready"];
 
+const INSERT_SQL = `INSERT INTO provisioning_requests
+  (id, repository, instance_id, admin_email, bot_name_hint, auth_key_hash,
+   suggested_username, state, deep_link, link_code, link_code_expires_at, expires_at)
+ VALUES ($1,$2,$3,$4,$5,$6,$7,'pending',$8,$9,$10,$11)`;
+
+function insertParams(input: NewRequestInput): unknown[] {
+  return [
+    input.id,
+    input.repository,
+    input.instanceId,
+    input.adminEmail,
+    input.botNameHint,
+    input.authKeyHash,
+    input.suggestedUsername,
+    input.deepLink,
+    input.linkCode,
+    input.linkCodeExpiresAt,
+    input.expiresAt,
+  ];
+}
+
 export class PgProvisioningStore implements ProvisioningStore {
   constructor(private readonly pool: Pool) {}
 
-  async createRequest(input: NewRequestInput): Promise<void> {
-    await this.pool.query(
-      `INSERT INTO provisioning_requests
-        (id, repository, instance_id, admin_email, bot_name_hint, auth_key_hash,
-         suggested_username, state, deep_link, link_code, link_code_expires_at, expires_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,'pending',$8,$9,$10,$11)`,
-      [
-        input.id,
-        input.repository,
-        input.instanceId,
-        input.adminEmail,
-        input.botNameHint,
-        input.authKeyHash,
-        input.suggestedUsername,
-        input.deepLink,
-        input.linkCode,
-        input.linkCodeExpiresAt,
-        input.expiresAt,
-      ],
+  async createRequest(input: NewRequestInput, now: Date): Promise<void> {
+    try {
+      await this.pool.query(INSERT_SQL, insertParams(input));
+      return;
+    } catch (e) {
+      // Map the partial unique index (`provisioning_requests_active_per_instance`,
+      // migrations/0001_init.sql) to the typed error the service translates
+      // into a clean 409 — SQLSTATE 23505 = unique_violation. Anything else
+      // (connection failure, constraint on another column) rethrows unchanged
+      // so the generic 500 path still fires for real faults.
+      const code = (e as { code?: unknown }).code;
+      if (code !== "23505") throw e;
+    }
+    // The pair is pinned by a live request. If that predecessor is already
+    // past its TTL it no longer deserves the pin: expire it in place and
+    // retry the insert once, so "wait for it to expire" never depends on the
+    // sweep cron firing first. A still-live predecessor (or a lost
+    //expire-and-retry race) reaches the typed error → service-level 409.
+    const expired = await this.pool.query(
+      `UPDATE provisioning_requests
+         SET state = 'expired',
+             error = 'the provisioning request expired before it was completed',
+             updated_at = $3
+       WHERE repository = $1 AND instance_id = $2
+         AND state = ANY($4) AND expires_at < $3`,
+      [input.repository, input.instanceId, now, NON_TERMINAL],
     );
+    if ((expired.rowCount ?? 0) === 0) throw new ActiveRequestExistsError();
+    await this.pool.query(INSERT_SQL, insertParams(input));
   }
 
   /** Passively expires a single row in place (used before every read/CAS so
@@ -280,10 +310,27 @@ export class PgProvisioningStore implements ProvisioningStore {
   private async purgeEnvelope(id: string): Promise<void> {
     await this.pool.query(
       `UPDATE provisioning_requests
-         SET token_envelope_iv = NULL, token_envelope_tag = NULL, token_envelope_ciphertext = NULL
+         SET token_envelope_iv = NULL, token_envelope_tag = NULL, token_envelope_ciphertext = NULL,
+             grace_until = NULL
        WHERE id = $1`,
       [id],
     );
+  }
+
+  async getByBotId(botId: number, now: Date): Promise<RequestRow | null> {
+    const { rows } = await this.pool.query<Pick<Row, "id">>(
+      `SELECT id FROM provisioning_requests WHERE bot_id = $1`,
+      [botId],
+    );
+    const found = rows[0];
+    // Same passive-expiry pass as `getById`, so a late revoke on a stale row
+    // never resurrects a request that should read as expired.
+    const row = found ? await this.expireIfDue(found.id, now) : null;
+    return row ? toRequestRow(row) : null;
+  }
+
+  async clearRedeemedEnvelope(id: string): Promise<void> {
+    await this.purgeEnvelope(id);
   }
 
   async seeUpdate(updateId: number, now: Date): Promise<boolean> {

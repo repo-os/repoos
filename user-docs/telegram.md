@@ -159,6 +159,11 @@ with you:
    bot-creation link it gives you. That `/link` step is what proves the bot
    you're about to create is *yours* — a bare creation link carries no such
    proof, so don't skip it even if the link looks ready to tap on its own.
+4. Disconnecting a managed bot later asks the service to invalidate its
+   token (the service rotates the bot's token so the one your instance held
+   stops working). This needs the same provisioning URL and key to still be
+   configured — if either goes missing, disconnect reports it as retryable
+   rather than silently leaving the credential live.
 
 Deploying and operating the service itself (creating the manager bot,
 provisioning the Neon project, running migrations, setting secrets, going

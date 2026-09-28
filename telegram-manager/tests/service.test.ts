@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { hashAuthKey } from "../src/crypto.js";
 import { InMemoryProvisioningStore } from "../src/memory-store.js";
-import { ProvisioningService, REDEEM_GRACE_MS } from "../src/service.js";
+import { ProvisioningService, REDEEM_GRACE_MS, REQUEST_TTL_MS } from "../src/service.js";
 import type { ManagerConfig } from "../src/config.js";
 import { FakeTelegramManagerClient, linkMessage, managedBotUpdate } from "./fakes.js";
 
@@ -312,7 +312,28 @@ describe("provisioning state machine", () => {
   it("rate-limits repeated begin calls from one instance", async () => {
     const nowRef = { value: new Date("2026-09-28T00:00:00Z") };
     const { service } = setup(nowRef);
-    const attempt = () =>
+    // Distinct repositories, same instance id — the rate limiter is keyed per
+    // instance, while the per-(repository, instance) uniqueness constraint
+    // would otherwise (correctly) refuse a second live request for the same
+    // pair with a conflict first.
+    const attempt = (n: number) =>
+      service.begin(
+        "inst-a",
+        {
+          repository: `acme/repo-${n}`,
+          instance: { id: "inst-a" },
+          requestedBy: "admin@acme.test",
+        },
+        authKeyHash(),
+      );
+    for (let i = 0; i < 5; i++) await attempt(i);
+    await expect(attempt(99)).rejects.toMatchObject({ kind: "rate_limited" });
+  });
+
+  it("answers a second live request for the same repository/instance with a conflict, not a 500", async () => {
+    const nowRef = { value: new Date("2026-09-28T00:00:00Z") };
+    const { service } = setup(nowRef);
+    const begin = () =>
       service.begin(
         "inst-a",
         {
@@ -322,7 +343,143 @@ describe("provisioning state machine", () => {
         },
         authKeyHash(),
       );
-    for (let i = 0; i < 5; i++) await attempt();
-    await expect(attempt()).rejects.toMatchObject({ kind: "rate_limited" });
+    await begin();
+    // A second non-terminal request for the same pair is refused with the
+    // mapped ServiceError (409 on the wire), never the raw Postgres
+    // unique-violation that previously escaped as an opaque 500.
+    await expect(begin()).rejects.toMatchObject({ kind: "conflict" });
+
+    // A different instance (or repository) is never affected by that pair's
+    // conflict.
+    await expect(
+      service.begin(
+        "inst-b",
+        {
+          repository: "acme/widgets",
+          instance: { id: "inst-b" },
+          requestedBy: "admin@acme.test",
+        },
+        authKeyHash(),
+      ),
+    ).resolves.toBeTruthy();
+
+    // Once the first request has expired, the pair is free again.
+    nowRef.value = new Date(nowRef.value.getTime() + REQUEST_TTL_MS + 1000);
+    const restarted = await begin();
+    expect(restarted.id).toBeTruthy();
+  });
+
+  it("maps an in-flight duplicate redeem to an explicit conflict and replays after it completes", async () => {
+    const nowRef = { value: new Date("2026-09-28T00:00:00Z") };
+    const { service, telegram } = setup(nowRef);
+    const begin = await driveToReady(service, telegram, {
+      instanceId: "inst-a",
+      repository: "acme/widgets",
+      adminEmail: "admin@acme.test",
+      telegramUserId: 42,
+      botId: 777,
+    });
+
+    // Hold the first redeem inside the Telegram token call (it owns the CAS
+    // lock), then let a retried redeem race it.
+    let releaseGate: () => void = () => {};
+    telegram.tokenGate = new Promise<void>((resolve) => {
+      releaseGate = resolve;
+    });
+    const first = service.redeem(begin.id, authKeyHash());
+    await expect(service.redeem(begin.id, authKeyHash())).rejects.toMatchObject({
+      kind: "conflict",
+      message: expect.stringContaining("a redemption is already in progress"),
+    });
+
+    // The first attempt completes; the retrier's next attempt replays the
+    // same token from the grace window — the exact scenario the window exists
+    // for (#0531's ManagedRedemptionFollowUpError retry contract).
+    releaseGate();
+    expect((await first).token).toBe("token-for-777");
+    const replay = await service.redeem(begin.id, authKeyHash());
+    expect(replay.token).toBe("token-for-777");
+    expect(telegram.getTokenCallCount).toBe(1);
+  });
+});
+
+describe("bot revocation (#0539 disconnect contract)", () => {
+  it("revokes a redeemed bot: token rotated, envelope purged, replay dry", async () => {
+    const nowRef = { value: new Date("2026-09-28T00:00:00Z") };
+    const { service, telegram, store } = setup(nowRef);
+    const begin = await driveToReady(service, telegram, {
+      instanceId: "inst-a",
+      repository: "acme/widgets",
+      adminEmail: "admin@acme.test",
+      telegramUserId: 42,
+      botId: 777,
+    });
+    await service.redeem(begin.id, authKeyHash());
+    const revoked = await service.revokeBot(777, "acme/widgets", "inst-a", authKeyHash());
+    expect(revoked.confirmed).toBe(true);
+    expect(telegram.replaceTokenCallCount).toBe(1);
+
+    // The grace envelope is gone: a late redeem returns no token (the client
+    // reads that as ManagedRedemptionFollowUpError), and revocation is
+    // idempotent — a repeat rotates again rather than erroring.
+    const after = await service.redeem(begin.id, authKeyHash());
+    expect(after.token).toBeUndefined();
+    await expect(
+      service.revokeBot(777, "acme/widgets", "inst-a", authKeyHash()),
+    ).resolves.toMatchObject({ confirmed: true });
+    expect(telegram.replaceTokenCallCount).toBe(2);
+
+    const events = store.auditLog.map((e) => e.event);
+    expect(events).toContain("bot_revoked");
+  });
+
+  it("refuses revocation for a wrong auth key, repository, instance, or unknown bot", async () => {
+    const nowRef = { value: new Date("2026-09-28T00:00:00Z") };
+    const { service, telegram } = setup(nowRef);
+    await driveToReady(service, telegram, {
+      instanceId: "inst-a",
+      repository: "acme/widgets",
+      adminEmail: "admin@acme.test",
+      telegramUserId: 42,
+      botId: 777,
+    });
+    // Every flavor of mismatch is the same not_found — never a hint that a
+    // bot with this id exists (per-request-authorization invariant), and no
+    // Telegram side effect ever runs.
+    await expect(
+      service.revokeBot(777, "acme/widgets", "inst-a", hashAuthKey("wrong-key")),
+    ).rejects.toMatchObject({ kind: "not_found" });
+    await expect(
+      service.revokeBot(777, "beta/gizmos", "inst-a", authKeyHash()),
+    ).rejects.toMatchObject({ kind: "not_found" });
+    await expect(
+      service.revokeBot(777, "acme/widgets", "inst-b", authKeyHash()),
+    ).rejects.toMatchObject({ kind: "not_found" });
+    await expect(
+      service.revokeBot(999, "acme/widgets", "inst-a", authKeyHash()),
+    ).rejects.toMatchObject({ kind: "not_found" });
+    expect(telegram.replaceTokenCallCount).toBe(0);
+  });
+
+  it("maps a Telegram-side revocation failure to an upstream error (retryable)", async () => {
+    const nowRef = { value: new Date("2026-09-28T00:00:00Z") };
+    const { service, telegram } = setup(nowRef);
+    await driveToReady(service, telegram, {
+      instanceId: "inst-a",
+      repository: "acme/widgets",
+      adminEmail: "admin@acme.test",
+      telegramUserId: 42,
+      botId: 777,
+    });
+    telegram.failNextReplace = new Error("Telegram API replaceManagedBotToken failed: down");
+    await expect(
+      service.revokeBot(777, "acme/widgets", "inst-a", authKeyHash()),
+    ).rejects.toMatchObject({ kind: "upstream" });
+
+    // Recovery: a retry succeeds against the restored Telegram API.
+    telegram.failNextReplace = null;
+    await expect(
+      service.revokeBot(777, "acme/widgets", "inst-a", authKeyHash()),
+    ).resolves.toMatchObject({ confirmed: true });
   });
 });

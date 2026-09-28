@@ -1,5 +1,5 @@
 /**
- * Neon Functions deployment config (`neon deploy`). Declares one function:
+ * Neon Functions deployment config. Declares one function:
  * the provisioning HTTP service. Postgres must be enabled on the target Neon
  * project/branch for `DATABASE_URL` to be injected automatically — see
  * docs/telegram-manager-service.md#deploying for the full walkthrough
@@ -7,7 +7,7 @@
  * the Telegram webhook and the maintenance-sweep trigger).
  *
  * Every value below that is a secret is read from `process.env` at deploy
- * time (`neon deploy --env .env.production`), never hardcoded — the file
+ * time (`neon functions deploy manager --env KEY=VALUE`), never hardcoded — the file
  * itself is committed, the secrets never are.
  */
 import { defineConfig } from "@neon/config/v1";
@@ -17,7 +17,7 @@ function requireDeployEnv(name: string): string {
   if (!value) {
     throw new Error(
       `${name} must be set in the environment neon.ts is evaluated in (e.g. via ` +
-        `\`neon deploy --env .env.production\`) — it is never hardcoded here.`,
+        `\`neon functions deploy manager --env KEY=VALUE\`) — it is never hardcoded here.`,
     );
   }
   return value;
