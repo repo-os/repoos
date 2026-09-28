@@ -172,10 +172,11 @@ export interface TaskNotificationHandlersOptions {
   providers?: NotificationProvider[];
   /**
    * The live runner, when one is available (#0542). The agent-completed
-   * notification must not fire while a later turn is already resuming or a
-   * review handoff is finalizing — those carry their own notifications.
+   * notification must not fire while a later turn is already resuming (or
+   * queued for one), paused, or a review handoff is finalizing — those carry
+   * their own notifications.
    */
-  runner?: Pick<AgentRunner, "isRunning" | "isHandoffInFlight" | "isPaused">;
+  runner?: Pick<AgentRunner, "isRunning" | "isQueued" | "isHandoffInFlight" | "isPaused">;
   /**
    * Test seam: overrides the grace the agent-completed notification waits out
    * after `agent.exited` (needs-input writes and handoff finalization land
@@ -352,7 +353,13 @@ export function attachTaskNotificationHandlers(
         if (!task) return;
         if (task.status !== "active" || task.needsInput || task.needsMerge) return;
         if (opts.runner) {
-          if (opts.runner.isRunning(e.id) || opts.runner.isHandoffInFlight(e.id)) return;
+          if (
+            opts.runner.isRunning(e.id) ||
+            opts.runner.isQueued(e.id) ||
+            opts.runner.isHandoffInFlight(e.id)
+          ) {
+            return;
+          }
           if (opts.runner.isPaused(e.id)) return;
         }
         const spec = notificationForAgentCompleted();

@@ -27,7 +27,18 @@ import {
   createTelegramAgentChatHandler,
   type TelegramAgentChatOptions,
 } from "../../server/telegram/agent-chat.js";
-import { createTelegramIntakeHandler } from "../../server/telegram/intake.js";
+import { createTelegramCommandHandler } from "../../server/telegram/commands.js";
+import {
+  bootstrapTelegramAtBoot,
+  resetTelegramProviders,
+  setTelegramProvider,
+} from "../../server/telegram/index.js";
+import { LocalTelegramProvider } from "../../server/telegram/provider.js";
+import { TelegramCredentialStore } from "../../server/telegram/store.js";
+import {
+  createTelegramIntakeHandler,
+  type TelegramAuthorizedHandler,
+} from "../../server/telegram/intake.js";
 import {
   resetTelegramRateLimitersForTests,
   tryAcquireTelegramAgentLimits,
@@ -114,6 +125,9 @@ interface RunnerStub {
     agent: unknown,
     opts: unknown,
   ): { ok: boolean; busy?: boolean; queued?: boolean; reason?: string; pid?: number };
+  /** Optional: present when the stub doubles as the read-command runner. */
+  running?: () => Array<{ id: string; startedAt: string }>;
+  recentlyFinished?: () => Array<{ id: string; at: string; clean: boolean }>;
 }
 
 interface Harness {
@@ -162,6 +176,68 @@ function makeHarness(opts: { runnerOverrides?: Partial<RunnerStub>; index?: Inde
   return {
     replies,
     sent,
+    intake: (update) => intake(update),
+  };
+}
+
+/**
+ * The #0540 command handler with the #0542 agent-chat handler wired as its
+ * `agentChat` disposition — the actual production composition.
+ */
+function composedCommandHarness(opts: { runnerOverrides?: Partial<RunnerStub>; tasks?: Task[] }): {
+  sent: SentTurn[];
+  replies: Array<{ chatId: number; text: string }>;
+  commandReplies: string[];
+  intake(update: TelegramUpdate): void | Promise<void>;
+} {
+  const tasks = new Map<string, Task>((opts.tasks ?? [taskFixture()]).map((t) => [t.id, t]));
+  const sent: SentTurn[] = [];
+  const runner: RunnerStub = {
+    output: () => ({ id: "0042", lines: [] }),
+    send: (id, text, _agent, _opts) => {
+      sent.push({ id, text });
+      return { ok: true, pid: 99 };
+    },
+    running: () => [],
+    recentlyFinished: () => [],
+    ...opts.runnerOverrides,
+  };
+  const replies: Array<{ chatId: number; text: string }> = [];
+  const commandReplies: string[] = [];
+  const agentChat: TelegramAuthorizedHandler = createTelegramAgentChatHandler({
+    config: repoConfig(),
+    index: { getTask: (id) => tasks.get(id) ?? null, applyFileChange: () => {} },
+    runner: runner as unknown as TelegramAgentChatOptions["runner"],
+    logger: new Logger({ root }),
+    reply: async (chatId, text) => {
+      replies.push({ chatId, text });
+    },
+  });
+  const commandHandler = createTelegramCommandHandler({
+    config: { root },
+    repositoryName: "RepoOS",
+    index: {
+      getTasks: () => [...tasks.values()],
+      getTask: (id) => tasks.get(id) ?? null,
+      counts: () => ({ active: 1, review: 0, done: 0, inbox: 0, ready: 0, draft: 0 }),
+    },
+    runner: runner as unknown as never,
+    reviews: { enabled: () => true, runningCount: () => 0 },
+    send: async (_chatId, text) => {
+      commandReplies.push(text);
+    },
+    agentChat,
+  });
+  const intake = createTelegramIntakeHandler({
+    root,
+    authSessionSecret: SECRET,
+    enabled: () => true,
+    onAuthorized: commandHandler,
+  });
+  return {
+    sent,
+    replies,
+    commandReplies,
     intake: (update) => intake(update),
   };
 }
@@ -393,6 +469,256 @@ describe("task-agent follow-ups over Telegram (#0542)", () => {
     await h.intake(messageUpdate({ senderId: 53, chatId: 53, text: "/start LeTwelveCharsOnly" }));
     expect(h.sent).toEqual([]);
     expect(h.replies).toEqual([]);
+  });
+
+  it("an over-padded ref is looked up exactly, never reinterpreted (#00042 ≠ #0042)", async () => {
+    bindUser("admin@test.com", "admin", 54);
+    const h = makeHarness({});
+    await h.intake(msgUpdate(54, 54, "/msg 00042 over-padded"));
+    expect(h.sent).toEqual([]);
+    expect(h.replies[0].text).toBe("No task #00042 in this repository.");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The composition seam: /msg routes through the #0540 command handler, which
+// is the intake's ONE onAuthorized consumer in production.
+// ---------------------------------------------------------------------------
+
+describe("/msg through the composed command handler (#0542 seam)", () => {
+  beforeEach(() => {
+    setupRoot();
+    mkdirSync(join(root, "work"), { recursive: true });
+  });
+  afterEach(teardownRoot);
+
+  it("routes /msg to the agent handler while /status still renders", async () => {
+    bindUser("admin@test.com", "admin", 71);
+    const h = composedCommandHarness({});
+    await h.intake(msgUpdate(71, 71, "/msg 0042 keep the settings test out"));
+    expect(h.sent).toEqual([{ id: "0042", text: "keep the settings test out" }]);
+    expect(h.replies[0].text).toBe("✅ Sent to the agent for #0042.");
+    // Reads still work through the same handler — a second onAuthorized
+    // consumer would have killed one side or the other.
+    const h2 = composedCommandHarness({});
+    await h2.intake(
+      messageUpdate({
+        senderId: 71,
+        chatId: 71,
+        text: "/status",
+        command: "status",
+        commandArgs: [],
+      }),
+    );
+    expect(h2.commandReplies).toHaveLength(1);
+    expect(h2.commandReplies[0]).toContain("RepoOS — status");
+    expect(h2.sent).toEqual([]);
+  });
+
+  it("a member is refused by the agent handler through the command path too", async () => {
+    bindUser("member@test.com", "member", 72);
+    const h = composedCommandHarness({});
+    await h.intake(msgUpdate(72, 72, "/msg 0042 hello"));
+    expect(h.sent).toEqual([]);
+    expect(h.replies[0].text).toContain("admin action");
+  });
+
+  it("an unwired command handler treats /msg as an unknown command (help, no send)", async () => {
+    bindUser("admin@test.com", "admin", 73);
+    const tasks = new Map<string, Task>([["0042", taskFixture()]]);
+    const sent: SentTurn[] = [];
+    const helpSent: Array<{ chatId: number; text: string }> = [];
+    const commandHandler = createTelegramCommandHandler({
+      config: { root },
+      repositoryName: "RepoOS",
+      index: {
+        getTasks: () => [...tasks.values()],
+        getTask: (id) => tasks.get(id) ?? null,
+        counts: () => ({ active: 1, review: 0, done: 0, inbox: 0, ready: 0, draft: 0 }),
+      },
+      runner: { running: () => [], recentlyFinished: () => [] } as never,
+      reviews: { enabled: () => true, runningCount: () => 0 },
+      send: async (chatId, text) => {
+        helpSent.push({ chatId, text });
+      },
+    });
+    const intake = createTelegramIntakeHandler({
+      root,
+      authSessionSecret: SECRET,
+      enabled: () => true,
+      onAuthorized: commandHandler,
+    });
+    await intake(msgUpdate(73, 73, "/msg 0042 hello"));
+    expect(sent).toEqual([]);
+    expect(helpSent).toHaveLength(1);
+    // No agent reply happened — nothing was sent to an agent.
+    expect(helpSent[0].text).toContain("Read-only commands");
+  });
+
+  it("/help advertises /msg for admins and states the member boundary", async () => {
+    bindUser("admin@test.com", "admin", 74);
+    bindUser("memberxyz@test.com", "member", 75);
+    const tasks = new Map<string, Task>([["0042", taskFixture()]]);
+    const commandReplies: string[] = [];
+    const commandHandler = createTelegramCommandHandler({
+      config: { root },
+      repositoryName: "RepoOS",
+      index: {
+        getTasks: () => [...tasks.values()],
+        getTask: (id) => tasks.get(id) ?? null,
+        counts: () => ({ active: 1, review: 0, done: 0, inbox: 0, ready: 0, draft: 0 }),
+      },
+      runner: { running: () => [], recentlyFinished: () => [] } as never,
+      reviews: { enabled: () => true, runningCount: () => 0 },
+      send: async (_chatId, text) => {
+        commandReplies.push(text);
+      },
+      agentChat: createTelegramAgentChatHandler({
+        config: repoConfig(),
+        index: { getTask: (id) => tasks.get(id) ?? null, applyFileChange: () => {} },
+        runner: {
+          output: () => ({}),
+          send: () => ({ ok: true }),
+        } as unknown as TelegramAgentChatOptions["runner"],
+        logger: new Logger({ root }),
+        reply: async () => {},
+      }),
+    });
+    const adminActor = { email: "admin@test.com", role: "admin" as const, telegramUserId: 74 };
+    const memberActor = {
+      email: "memberxyz@test.com",
+      role: "member" as const,
+      telegramUserId: 75,
+    };
+    await commandHandler(
+      messageUpdate({ senderId: 74, chatId: 74, text: "/help", command: "help", commandArgs: [] }),
+      adminActor,
+    );
+    await commandHandler(
+      messageUpdate({ senderId: 75, chatId: 75, text: "/help", command: "help", commandArgs: [] }),
+      memberActor,
+    );
+    expect(commandReplies[0]).toContain("/msg <task-id>");
+    expect(commandReplies[1]).toContain("Messaging a task's agent is an admin action");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Boot-level seam: the REAL bootstrapTelegramAtBoot registers ONE intake
+// handler that serves both /status (read commands) and /msg (agent chat).
+// ---------------------------------------------------------------------------
+
+describe("bootstrapTelegramAtBoot composes /msg with the commands (#0542)", () => {
+  beforeEach(() => {
+    setupRoot();
+    mkdirSync(join(root, "work"), { recursive: true });
+    process.env.REPOOS_SECRET_STORE_KEY = Buffer.alloc(32, 7).toString("hex");
+  });
+
+  afterEach(() => {
+    resetTelegramProviders();
+    delete process.env.REPOOS_SECRET_STORE_KEY;
+    teardownRoot();
+  });
+
+  interface BootHarness {
+    sent: SentTurn[];
+    providerSends: Array<{ chatId: number; text: string }>;
+    raw(update: Record<string, unknown>): Promise<void>;
+  }
+
+  async function bootHarness(): Promise<BootHarness> {
+    const tasks = new Map<string, Task>([["0042", taskFixture()]]);
+    const sent: SentTurn[] = [];
+    const providerSends: Array<{ chatId: number; text: string }> = [];
+    const runner = {
+      output: () => ({ id: "0042", lines: [] }),
+      send: (id: string, text: string) => {
+        sent.push({ id, text });
+        return { ok: true, pid: 7 };
+      },
+      running: () => [],
+      recentlyFinished: () => [],
+    };
+    // Inject a provider whose Bot API never leaves the process, and connect
+    // it: send paths require a stored credential (`status().connected`).
+    const provider = new LocalTelegramProvider({
+      resolveConfig: () => ({ enabled: true, provisioningUrl: "" }),
+      root,
+      repositoryName: "RepoOS",
+      store: new TelegramCredentialStore(root),
+      createApi: () =>
+        ({
+          getMe: async () => ({ id: 1, is_bot: true, first_name: "Bot", username: "bot" }),
+          sendMessage: async (input: { chatId: number; text: string }) => {
+            providerSends.push({ chatId: input.chatId, text: input.text });
+            return { message_id: 1, chat: { id: input.chatId } };
+          },
+        }) as never,
+    });
+    await provider.connectByBotToken("123456:ABCDEF");
+    setTelegramProvider(root, provider);
+
+    void bootstrapTelegramAtBoot(
+      { ...repoConfig(), telegram: { enabled: true } },
+      {
+        index: {
+          getTasks: () => [...tasks.values()],
+          getTask: (id: string) => tasks.get(id) ?? null,
+          counts: () => ({ active: 1, review: 0, done: 0, inbox: 0, ready: 0, draft: 0 }),
+        } as never,
+        runner: runner as never,
+        reviews: { enabled: () => true, runningCount: () => 0 } as never,
+        agentChat: { logger: new Logger({ root }) },
+      },
+    );
+
+    return {
+      sent,
+      providerSends,
+      raw: async (update) => {
+        await provider.handleUpdate(update);
+      },
+    };
+  }
+
+  function rawMsg(senderId: number, text: string): Record<string, unknown> {
+    return {
+      update_id: senderId,
+      message: {
+        message_id: senderId,
+        chat: { id: senderId, type: "private" },
+        from: { id: senderId, is_bot: false, username: "u" },
+        text,
+        date: Math.floor(Date.now() / 1000),
+      },
+    };
+  }
+
+  it("serves /msg and /status through the single registered intake handler", async () => {
+    bindUser("bootadmin@test.com", "admin", 81);
+    const h = await bootHarness();
+
+    await h.raw(rawMsg(81, "/msg 0042 boot-level follow-up"));
+    expect(h.sent).toEqual([{ id: "0042", text: "boot-level follow-up" }]);
+    expect(JSON.stringify(h.providerSends)).toContain("✅ Sent to the agent for #0042.");
+
+    await h.raw(rawMsg(81, "/status"));
+    // The wiring's repositoryName is projectDisplayName(config.root) — match
+    // the shared "— status" suffix rather than a repo name.
+    const reads = h.providerSends.filter((s) => s.text.includes("— status"));
+    expect(reads).toHaveLength(1);
+  });
+
+  it("a member reaches /status but never /msg", async () => {
+    bindUser("bootmember@test.com", "member", 82);
+    const h = await bootHarness();
+    await h.raw(rawMsg(82, "/msg 0042 tried"));
+    await h.raw(rawMsg(82, "/status"));
+    expect(h.sent).toEqual([]);
+    const reads = h.providerSends.filter((s) => s.text.includes("— status"));
+    expect(reads).toHaveLength(1);
+    expect(JSON.stringify(h.providerSends)).toContain("admin action");
   });
 });
 
