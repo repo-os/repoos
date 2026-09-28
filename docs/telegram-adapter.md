@@ -147,6 +147,15 @@ POST {base}/v1/provisioning/requests/{id}/rotate-token
     headers: Authorization: Bearer <REPOOS_TELEGRAM_PROVISIONING_KEY>
     → 200 { token }        # replaces the managed bot token via Telegram (#0539)
        409 when not yet redeemed
+
+POST {base}/v1/provisioning/bots/{botId}/revoke
+    headers: Authorization: Bearer <REPOOS_TELEGRAM_PROVISIONING_KEY>
+    body: { repository, instance: { id } }
+    → 200 { confirmed: true }   # managed-bot disconnect (#0539): the service
+                                # rotates the bot token (Telegram has no
+                                # revoke primitive) and purges any stored
+                                # grace-window credential. 409/404/502 per
+                                # state/ownership/Telegram failures.
 ```
 
 Rules the client enforces (see `provisioning.ts`): missing `provisioningUrl`
@@ -161,7 +170,13 @@ response's optional `bot` summary is ignored in `redeem` (the provider
 re-derives the authoritative bot from `getMe`), so a malformed summary can
 never discard an already-delivered single-use credential — `getStatus` keeps
 the strict validation for the browser-rendered view. The service sees
-repository/instance/admin identity only. The
+repository/instance/admin identity only. Managed disconnect (#0539) is the
+revoke caller: `HttpProvisioningClient.revokeBot` posts
+`/v1/provisioning/bots/{botId}/revoke` above, and disconnect treats a
+confirmed response as revocation complete (it then clears local bindings and
+the encrypted credential); BYO disconnect still requires BotFather-side
+token revocation confirmed by a 401 probe, since Telegram exposes no
+Bot API revoke for a plain bot token. The
 provider funnels the redeemed token through the **same** `connectByBotToken`
 path as BYO, so both provisioning sources produce one `ProvisionedBot`
 shape. If validation or storage fails *after* a successful redeem (the

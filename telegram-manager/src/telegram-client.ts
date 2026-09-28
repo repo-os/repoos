@@ -59,7 +59,7 @@ export interface TelegramManagerClient {
   /** Rotates (replaces) the project bot's token via `replaceManagedBotToken`
    * — the only lifecycle primitive Telegram exposes for a managed bot's
    * credential; there is no separate revoke call, see the module doc
-   * comment above and docs/telegram-manager-service.md#lifecycle-rotation-and-no-revoke. */
+   * comment above and docs/telegram-manager-service.md#management-lifecycle-rotate-and-revoke-0539. */
   replaceManagedBotToken(botId: number): Promise<string>;
   sendMessage(chatId: number, text: string): Promise<void>;
   setWebhook(url: string, secretToken: string): Promise<void>;

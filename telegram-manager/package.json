@@ -8,7 +8,8 @@
     "build": "tsc --noEmit",
     "test": "vitest run",
     "migrate": "bun scripts/migrate.ts up",
-    "migrate:down": "bun scripts/migrate.ts down"
+    "migrate:down": "bun scripts/migrate.ts down",
+    "smoke:pg": "bun scripts/smoke-pg.ts"
   },
   "dependencies": {
     "hono": "^4.6.0",

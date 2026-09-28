@@ -14,7 +14,7 @@ import type {
   RecordBotCreatedOutcome,
   RequestRow,
 } from "./store.js";
-import { REDEEM_LOCK_TIMEOUT_MS } from "./store.js";
+import { ActiveRequestExistsError, REDEEM_LOCK_TIMEOUT_MS } from "./store.js";
 import type { EncryptedEnvelope } from "./crypto.js";
 
 interface InternalRow extends RequestRow {
@@ -22,14 +22,30 @@ interface InternalRow extends RequestRow {
   redeemingSince: number | null;
 }
 
+/** States the per-(repository, instance) uniqueness constraint excludes
+ * — mirrors `provisioning_requests_active_per_instance`
+ * (migrations/0001_init.sql): terminal states never block a new request. */
+const TERMINAL_STATE_NAMES: ProvisioningState[] = ["redeemed", "expired", "failed"];
+
 export class InMemoryProvisioningStore implements ProvisioningStore {
   private rows = new Map<string, InternalRow>();
   private seenUpdateIds = new Set<number>();
   private rateBuckets = new Map<string, Map<number, number>>();
   auditLog: { event: string; detail: string; requestId: string | null; at: string }[] = [];
 
-  async createRequest(input: NewRequestInput): Promise<void> {
-    const now = new Date().toISOString();
+  async createRequest(input: NewRequestInput, now: Date): Promise<void> {
+    // Mirror the partial unique index so both stores fail the same way when a
+    // second non-terminal request is created for the same (repository,
+    // instance) — the service maps this to a 409 either way. A predecessor
+    // past its TTL is expired in place (passive expiry) so it no longer pins
+    // the pair, exactly like the pg-store's expire-and-retry.
+    for (const row of this.rows.values()) {
+      if (row.repository !== input.repository || row.instanceId !== input.instanceId) continue;
+      this.applyPassiveExpiry(row, now);
+      if (TERMINAL_STATE_NAMES.includes(row.state)) continue;
+      throw new ActiveRequestExistsError();
+    }
+    const nowIso = now.toISOString();
     this.rows.set(input.id, {
       id: input.id,
       repository: input.repository,
@@ -47,8 +63,8 @@ export class InMemoryProvisioningStore implements ProvisioningStore {
       error: null,
       expiresAt: input.expiresAt.toISOString(),
       graceUntil: null,
-      createdAt: now,
-      updatedAt: now,
+      createdAt: nowIso,
+      updatedAt: nowIso,
       envelope: null,
       redeemingSince: null,
     });
@@ -113,6 +129,8 @@ export class InMemoryProvisioningStore implements ProvisioningStore {
     // an exact suggested-username match, otherwise the single oldest
     // candidate — two repositories linked by the same admin before either
     // bot exists must not both claim the next-created bot's credential.
+    // Accepts any `managed_bot` event, including the token/owner-change ones
+    // Telegram also sends (see the interface doc in store.ts).
     const winner = usernameMatch ?? oldestCandidate;
     if (!winner) return { kind: "no_pending_request" };
     winner.bot = bot;
@@ -186,6 +204,24 @@ export class InMemoryProvisioningStore implements ProvisioningStore {
     if (!row || row.state !== "redeemed") return;
     row.envelope = envelope;
     row.graceUntil = graceUntil.toISOString();
+    this.touch(row);
+  }
+
+  async getByBotId(botId: number, now: Date): Promise<RequestRow | null> {
+    for (const row of this.rows.values()) {
+      if (row.bot?.id !== botId) continue;
+      this.applyPassiveExpiry(row, now);
+      const { envelope: _envelope, redeemingSince: _redeemingSince, ...view } = row;
+      return { ...view };
+    }
+    return null;
+  }
+
+  async clearRedeemedEnvelope(id: string): Promise<void> {
+    const row = this.rows.get(id);
+    if (!row) return;
+    row.envelope = null;
+    row.graceUntil = null;
     this.touch(row);
   }
 

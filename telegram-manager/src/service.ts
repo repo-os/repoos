@@ -16,6 +16,7 @@ import {
 import type { ManagerConfig } from "./config.js";
 import type { BeginRequestBody, ProvisioningState } from "./types.js";
 import type { ProvisioningStore, RequestRow } from "./store.js";
+import { ActiveRequestExistsError } from "./store.js";
 import { botFieldsFromEvent, type TelegramManagerClient } from "./telegram-client.js";
 
 export const REQUEST_TTL_MS = 15 * 60 * 1000; // 15 minutes to create the bot
@@ -26,6 +27,8 @@ const BEGIN_WINDOW_MS = 60_000;
 const BEGIN_MAX_PER_INSTANCE = 5;
 const LINK_WINDOW_MS = 60_000;
 const LINK_MAX_PER_TELEGRAM_USER = 10;
+const ROTATE_WINDOW_MS = 60_000;
+const ROTATE_MAX_PER_REQUEST = 10;
 
 export class ServiceError extends Error {
   constructor(
@@ -114,19 +117,42 @@ export class ProvisioningService {
     const deepLink = `https://t.me/newbot/${this.managerBotUsername}/${suggestedUsername}?name=${encodeURIComponent(displayName)}`;
     const expiresAt = new Date(now.getTime() + REQUEST_TTL_MS);
     const linkCodeExpiresAt = new Date(now.getTime() + LINK_CODE_TTL_MS);
-    await this.store.createRequest({
-      id,
-      repository: body.repository,
-      instanceId,
-      adminEmail: body.requestedBy,
-      botNameHint: body.botNameHint ?? null,
-      authKeyHash,
-      suggestedUsername,
-      deepLink,
-      linkCode,
-      linkCodeExpiresAt,
-      expiresAt,
-    });
+    try {
+      await this.store.createRequest(
+        {
+          id,
+          repository: body.repository,
+          instanceId,
+          adminEmail: body.requestedBy,
+          botNameHint: body.botNameHint ?? null,
+          authKeyHash,
+          suggestedUsername,
+          deepLink,
+          linkCode,
+          linkCodeExpiresAt,
+          expiresAt,
+        },
+        now,
+      );
+    } catch (e) {
+      // The storage-level uniqueness constraint (one non-terminal request per
+      // repository/instance) maps to a clean conflict, never an opaque 500 —
+      // re-clicking "connect" mid-flow is a normal, recoverable situation.
+      if (e instanceof ActiveRequestExistsError) {
+        await this.store.audit(
+          "begin_rejected_active_exists",
+          `repository=${body.repository} instance=${instanceId}`,
+          null,
+          now,
+        );
+        throw new ServiceError(
+          "this repository and instance already have a live provisioning request — " +
+            "poll its status or wait for it to expire before starting another",
+          "conflict",
+        );
+      }
+      throw e;
+    }
     await this.store.audit(
       "begin",
       `repository=${body.repository} instance=${instanceId}`,
@@ -270,6 +296,18 @@ export class ProvisioningService {
       if (begun.row.state === "failed") {
         throw new ServiceError(begun.row.error ?? "the provisioning request failed", "gone");
       }
+      if (begun.row.state === "redeeming") {
+        // A concurrent redeem of this same request (client retry while the
+        // first attempt is mid-Telegram-call, typically after a dropped
+        // connection) — completing attempt one publishes the envelope, so the
+        // caller's backoff-then-retry replays the same token from the grace
+        // window. Phrase it specifically so a retrier can tell this apart
+        // from a structurally not-ready request.
+        throw new ServiceError(
+          "a redemption is already in progress for this request — retry shortly",
+          "conflict",
+        );
+      }
       throw new ServiceError(
         `the provisioning request is not ready yet (state: ${begun.row.state})`,
         "conflict",
@@ -303,7 +341,7 @@ export class ProvisioningService {
   /** Rotates the project bot's token via Telegram's `replaceManagedBotToken`
    * (see #0539) — Telegram has no separate revoke primitive; replacing the
    * token is the only way to invalidate the previous one
-   * (docs/telegram-manager-service.md#lifecycle-rotation-and-no-revoke).
+   * (docs/telegram-manager-service.md#management-lifecycle-rotate-and-revoke-0539).
    * Only callable once a bot has actually been redeemed; the fresh token is
    * re-encrypted into the same grace-window envelope so an in-flight local
    * instance can still fetch it once. */
@@ -314,6 +352,23 @@ export class ProvisioningService {
       throw new ServiceError(
         "the provisioning request has not been redeemed yet — nothing to rotate",
         "conflict",
+      );
+    }
+    // Ownership is verified first (only then do we count against the cap) —
+    // each accepted rotate is a real `replaceManagedBotToken` call to
+    // Telegram, so a valid-key flood must be bounded per request.
+    const allowed = await this.store.rateLimit(
+      "rotate",
+      id,
+      ROTATE_WINDOW_MS,
+      ROTATE_MAX_PER_REQUEST,
+      now,
+    );
+    if (!allowed) {
+      await this.store.audit("rate_limited_rotate", `bot_id=${row.bot.id}`, id, now);
+      throw new ServiceError(
+        "too many token rotations for this request — try again shortly",
+        "rate_limited",
       );
     }
     try {
@@ -328,5 +383,56 @@ export class ProvisioningService {
       await this.store.audit("token_rotate_failed", detail, id, now);
       throw new ServiceError(`could not rotate the project bot token: ${detail}`, "upstream");
     }
+  }
+
+  /** Revokes a managed project bot — the #0539 disconnect contract. The
+   * local instance's `HttpProvisioningClient.revokeBot`
+   * (`src/server/telegram/provisioning.ts` on main) calls
+   * `POST /v1/provisioning/bots/{botId}/revoke` with
+   * `{ repository, instance: { id } }` when an admin disconnects a
+   * managed-source bot, and treats any confirmed response as success.
+   *
+   * Telegram exposes no revoke/rename primitive for a managed bot
+   * (docs/telegram-manager-service.md#management-lifecycle-rotate-and-revoke-0539), so
+   * revocation here is `replaceManagedBotToken`: the caller's old token stops
+   * working immediately, the fresh token is known to nobody (it is never
+   * stored or returned — unlike `rotateToken`, this discards it), and any
+   * stored grace-window envelope is purged so the dropped credential can
+   * never be replayed by this route afterwards. Repeat calls simply rotate
+   * again — idempotent in outcome, so a retry that races the first is safe.
+   * Ownership is the same triple redeem uses: the presented auth key's hash,
+   * the repository, and the instance id. Any mismatch is `not_found`, never
+   * a distinguishing 403, so the route cannot be probed for bot existence
+   * (docs/telegram-manager-service.md#per-request-authorization). */
+  async revokeBot(
+    botId: number,
+    repository: string,
+    instanceId: string,
+    authKeyHash: string,
+  ): Promise<{ confirmed: boolean }> {
+    const now = this.now();
+    const row = await this.store.getByBotId(botId, now);
+    if (
+      !row ||
+      row.authKeyHash !== authKeyHash ||
+      row.repository !== repository ||
+      row.instanceId !== instanceId ||
+      !row.bot
+    ) {
+      throw new ServiceError("no such managed bot", "not_found");
+    }
+    try {
+      await this.telegram.replaceManagedBotToken(botId);
+      // Confirming the Telegram-side rotation, not reporting success — the
+      // fresh token is deliberately dropped: callers of this route are
+      // disconnecting, and the credential should go nowhere.
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e);
+      await this.store.audit("bot_revoke_failed", detail, row.id, now);
+      throw new ServiceError(`could not revoke the project bot: ${detail}`, "upstream");
+    }
+    await this.store.clearRedeemedEnvelope(row.id);
+    await this.store.audit("bot_revoked", `bot_id=${botId}`, row.id, now);
+    return { confirmed: true };
   }
 }

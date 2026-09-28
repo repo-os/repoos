@@ -10,9 +10,16 @@ export class FakeTelegramManagerClient implements TelegramManagerClient {
   tokenFailures = new Set<number>();
   sentMessages: { chatId: number; text: string }[] = [];
   getTokenCallCount = 0;
+  replaceTokenCallCount = 0;
+  /** When set, `getManagedBotToken` waits for it first — lets a test hold a
+   * redeem's CAS lock open to exercise the concurrent-retry path. */
+  tokenGate: Promise<void> | null = null;
+  /** Rejects `replaceManagedBotToken` with this error, once, if set. */
+  failNextReplace: Error | null = null;
 
   async getManagedBotToken(botId: number): Promise<string> {
     this.getTokenCallCount++;
+    if (this.tokenGate) await this.tokenGate;
     if (this.tokenFailures.has(botId))
       throw new Error("Telegram API getManagedBotToken failed: down");
     const token = this.tokensByBotId.get(botId);
@@ -21,6 +28,8 @@ export class FakeTelegramManagerClient implements TelegramManagerClient {
   }
 
   async replaceManagedBotToken(botId: number): Promise<string> {
+    this.replaceTokenCallCount++;
+    if (this.failNextReplace) throw this.failNextReplace;
     const token = this.tokensByBotId.get(botId);
     if (!token) throw new Error("Telegram API replaceManagedBotToken returned no token");
     const rotated = `${token}-rotated`;

@@ -59,6 +59,18 @@ export interface RedeemResponseBody {
   token: string;
 }
 
+/** Body of `POST /v1/provisioning/bots/{botId}/revoke` — the #0539 disconnect
+ * contract (`HttpProvisioningClient.revokeBot` accepts `confirmed === true` or
+ * `revoked === true`). */
+export interface RevokeRequestBody {
+  repository: string;
+  instance: { id: string };
+}
+
+export interface RevokeResponseBody {
+  confirmed: true;
+}
+
 export interface ErrorResponseBody {
   error: string;
 }

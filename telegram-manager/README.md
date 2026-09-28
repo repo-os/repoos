@@ -15,6 +15,7 @@ here is a dependency of the root `repoos` package.
 bun install --frozen-lockfile
 cp .env.example .env   # fill in the generated secrets; see the file for how
 bun run migrate        # applies migrations/*.sql against $DATABASE_URL
+bun run smoke:pg       # race-safety smoke test of PgProvisioningStore SQL
 bun run build          # tsc --noEmit
 bun run test           # vitest, runs entirely against in-memory fakes
 ```
@@ -35,8 +36,9 @@ the doc above).
 - `src/store.ts` / `memory-store.ts` / `pg-store.ts` — the storage boundary
   (state machine, dedup, rate limits, audit log) and its two implementations.
 - `src/telegram-client.ts` — the manager bot's own Telegram API calls.
-- `src/service.ts` — orchestration: `begin` / `getStatus` / `handleUpdate` /
-  `redeem` / `sweep`.
+- `src/service.ts` — orchestration: `begin` / `getStatus` / `handleUpdate`
+  / `redeem` / `rotateToken` / `revokeBot` (the #0539 disconnect contract) /
+  `sweep`.
 - `src/http.ts` — the Hono app implementing the exact `/v1/provisioning/*` and
   `/v1/telegram/webhook` contract `src/server/telegram/provisioning.ts` (in the
   main package) already consumes.

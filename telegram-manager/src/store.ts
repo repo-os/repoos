@@ -8,6 +8,20 @@
  */
 import type { EncryptedEnvelope } from "./crypto.js";
 
+/** Thrown by `createRequest` when the per-(repository, instance) active-request
+ * uniqueness constraint (`provisioning_requests_active_per_instance`,
+ * migrations/0001_init.sql) rejects a second non-terminal request. The service
+ * maps this to a clean 409; without this typed error a raw Postgres
+ * unique-violation (SQLSTATE 23505) would escape the ServiceError mapping and
+ * surface as an opaque 500 — see
+ * docs/telegram-manager-service.md#one-active-request-per-repository-instance. */
+export class ActiveRequestExistsError extends Error {
+  constructor() {
+    super("an active provisioning request already exists for this repository and instance");
+    this.name = "ActiveRequestExistsError";
+  }
+}
+
 /** How long a `redeeming` CAS-lock may be held before it is considered
  * abandoned (crash/restart mid-redeem) and reclaimable by a fresh attempt —
  * see docs/telegram-manager-service.md#recovering-a-stuck-redeeming-lock.
@@ -87,7 +101,13 @@ export type BeginRedeemOutcome =
   | { kind: "expired" };
 
 export interface ProvisioningStore {
-  createRequest(input: NewRequestInput): Promise<void>;
+  /** Throws `ActiveRequestExistsError` when a non-terminal request already
+   * exists for the same (repository, instance) pair — the storage-enforced
+   * uniqueness every implementation must mirror
+   * (docs/telegram-manager-service.md#one-active-request-per-repository-instance).
+   * A predecessor already past `expires_at` is expired in place by this call
+   * (it no longer pins the pair) instead of blocking. */
+  createRequest(input: NewRequestInput, now: Date): Promise<void>;
   /** Single-use: the first caller to present an unexpired code wins; a
    * second attempt (typo, replay, or an attacker guessing) gets `not_found`
    * because the code is cleared the moment it is consumed. */
@@ -102,7 +122,14 @@ export interface ProvisioningStore {
    * Never updates more than one row: prefers the row whose `suggestedUsername`
    * matches the created bot's username, and otherwise falls back to the
    * single oldest `awaiting_bot_creation` row for that user — a Telegram user
-   * with two pending requests must never have both bound to one bot. */
+   * with two pending requests must never have both bound to one bot.
+   *
+   * Known limitation, accepted deliberately: Telegram's `ManagedBotUpdated`
+   * fires not only for creations but also when a managed bot's token or owner
+   * *changes*. During `awaiting_bot_creation` the matcher cannot distinguish
+   * that from a creation, so such a stray event binds credulously (it is
+   * still bound to the right creator user id, and unmatched change events
+   * reach `bot_created_unmatched`). */
   recordBotCreated(
     creatorTelegramUserId: number,
     bot: BotFields,
@@ -129,6 +156,15 @@ export interface ProvisioningStore {
   /** Stores a freshly rotated credential over an already-redeemed row,
    * restarting its grace window — see `ProvisioningService.rotateToken`. */
   recordRotatedToken(id: string, envelope: EncryptedEnvelope, graceUntil: Date): Promise<void>;
+  /** Looks up the request row that recorded this Telegram bot id (managed bot
+   * ids are globally unique; only one row carries a given bot). No
+   * authorization filtering happens here — the caller (e.g.
+   * `ProvisioningService.revokeBot`) checks {@link RequestRow.authKeyHash},
+   * repository and instance and reports a mismatch as `not_found`. */
+  getByBotId(botId: number, now: Date): Promise<RequestRow | null>;
+  /** Clears any stored redemption envelope and its grace window — post-revoke
+   * cleanup so a dropped credential can never be replayed afterwards. */
+  clearRedeemedEnvelope(id: string): Promise<void>;
   /** True the first time an `update_id` is seen; false (duplicate) after. */
   seeUpdate(updateId: number, now: Date): Promise<boolean>;
   /** Compensates a `seeUpdate` when handling the update then failed, so

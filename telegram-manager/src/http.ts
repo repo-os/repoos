@@ -17,6 +17,8 @@ import type {
   BeginResponseBody,
   ErrorResponseBody,
   RedeemResponseBody,
+  RevokeRequestBody,
+  RevokeResponseBody,
   StatusResponseBody,
 } from "./types.js";
 
@@ -166,6 +168,39 @@ export function createApp(deps: AppDeps) {
       const response: RedeemResponseBody | Record<string, never> = result.token
         ? { token: result.token }
         : {};
+      return c.json(response, 200);
+    } catch (e) {
+      if (e instanceof ServiceError) {
+        const err: ErrorResponseBody = { error: e.message };
+        return c.json(err, errorStatus(e.kind));
+      }
+      throw e;
+    }
+  });
+
+  // The #0539 disconnect contract: called by `HttpProvisioningClient.revokeBot`
+  // (src/server/telegram/provisioning.ts) when an admin disconnects a bot of
+  // managed source. Same Bearer key as the per-request routes; ownership of
+  // the bot is (auth key hash, repository, instance) inside the service.
+  app.post("/v1/provisioning/bots/:botId/revoke", async (c) => {
+    const botId = Number(c.req.param("botId"));
+    if (!Number.isSafeInteger(botId) || botId <= 0) {
+      const err: ErrorResponseBody = { error: "invalid bot id" };
+      return c.json(err, 400);
+    }
+    const body = (await c.req.json().catch(() => null)) as RevokeRequestBody | null;
+    if (!body || typeof body.repository !== "string" || !body.repository) {
+      const err: ErrorResponseBody = { error: "repository is required" };
+      return c.json(err, 400);
+    }
+    if (typeof body.instance?.id !== "string" || !body.instance.id) {
+      const err: ErrorResponseBody = { error: "instance.id is required" };
+      return c.json(err, 400);
+    }
+    try {
+      const authKeyHash = hashAuthKey(c.get("instanceAuthKey"));
+      await service.revokeBot(botId, body.repository, body.instance.id, authKeyHash);
+      const response: RevokeResponseBody = { confirmed: true };
       return c.json(response, 200);
     } catch (e) {
       if (e instanceof ServiceError) {
