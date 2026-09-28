@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p1
 area: macos
+story: MacOS Native App
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-28T18:44:08Z"
-updated_at: "2026-09-28T18:44:35Z"
+updated_at: "2026-09-28T18:45:05Z"
 ---
 Add Sparkle 2 to RepoOS Hub so users receive in-app update prompts automatically when a new version is released, without needing to re-download from GitHub or re-run Homebrew.
 
@@ -57,3 +58,4 @@ In `.github/workflows/macos-hub.yml`, after notarization and stapling (#0579):
 
 - 2026-09-28T18:44:08Z · created · unknown
 - 2026-09-28T18:44:35Z · body
+- 2026-09-28T18:45:05Z · story
