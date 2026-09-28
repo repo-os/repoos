@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-28T12:26:50Z"
-review_passes: 6
 id: "0559"
 title: Build the Telegram manager-bot provisioning service and secure instance handoff
 type: feature
@@ -18,6 +16,8 @@ model_override: opencode-go/glm-5.3-flash
 review_cli_override: cursor
 review_model_override: cursor-grok-4.6-medium
 created_at: "2026-09-27T17:32:41Z"
+updated_at: "2026-09-28T12:43:38Z"
+review_passes: 6
 review_rounds: 2
 last_check_failure: "[object Object]"
 dev_error_count: 4
@@ -137,4 +137,4 @@ rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/.repoos/repoos.db-shm
 - 2026-09-28T12:24:16Z · review_model_override
 - 2026-09-28T12:24:22Z · needs_input (review-rounds-exhausted) cleared for review again by hello@repoos.org
 - 2026-09-28T12:26:50Z · needs_input
-
+- 2026-09-28T12:43:38Z · note: Fixed: re-throw ServiceError in redeem catch so a 409 from the completeRedeem 0-rows path isn't swallowed and remapped to 502.
