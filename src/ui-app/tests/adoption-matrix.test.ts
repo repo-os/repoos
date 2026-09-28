@@ -354,7 +354,7 @@ describe("matrix integrity", () => {
       for (const rel of fixtureFilePaths(fixture.id)) {
         const content = readFileSync(join(root, rel), "utf8");
         if (
-          /(sk-[A-Za-z0-9]{16,}|ghp_[A-Za-z0-9]{20,}|ANTHROPIC_API_KEY|OPENAI_API_KEY|api[_-]?key\s*[=:]\s*\S|Bearer\s+[A-Za-z0-9._-]{8,})/i.test(
+          /(sk-[A-Za-z0-9]{16,}|ghu_[A-Za-z0-9]{20,}|ANTHROPIC_API_KEY|OPENAI_API_KEY|api[_-]?key\s*[=:]\s*\S|Bearer\s+[A-Za-z0-9._-]{8,})/i.test(
             content,
           )
         ) {
