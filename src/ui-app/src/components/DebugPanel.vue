@@ -131,9 +131,13 @@ const events = computed<DebugEvent[]>(() => {
 
   for (const c of repo.taskChecks[props.task.id] ?? []) {
     const label = checkLabel(c.kind);
+    // Scope + machine (#0564): say what the run covered and where it ran —
+    // a changed-path handoff check and a full merge-gate read very differently.
+    const scopeTag = c.scope && c.scope !== "full" ? ` · ${c.scope}` : "";
+    const machineTag = c.machine ? ` · on ${c.machine}` : "";
     const title = c.running
-      ? `${label} — running…`
-      : `${label} — ${c.passed ? "passed" : "failed"} in ${fmtDuration(c.durationMs)}`;
+      ? `${label}${scopeTag}${machineTag} — running…`
+      : `${label}${scopeTag}${machineTag} — ${c.passed ? "passed" : "failed"} in ${fmtDuration(c.durationMs)}`;
     out.push({
       key: `check-${c.id}`,
       at: c.startedAt,
