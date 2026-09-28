@@ -1384,7 +1384,7 @@ describe("connection-record shape validation (review round 3)", () => {
       }
       expect(thrown).toBeInstanceOf(TelegramStoreCorruptError);
       expect(thrown?.message).toContain(telegramConnectionPath(tmpRoot));
-      expect(thrown?.message).toMatch(/Recover by disconnecting|reconnecting/);
+      expect(thrown?.message).toMatch(/Reconnect after recovering/);
     }
   });
 
@@ -1393,29 +1393,29 @@ describe("connection-record shape validation (review round 3)", () => {
     expect(new TelegramCredentialStore(tmpRoot).load()).not.toBeNull();
   });
 
-  it("a corrupt record does not block reconnecting or disconnecting", async () => {
+  it("a corrupt record can be replaced by connect but disconnect fails closed", async () => {
     mkdirSync(join(tmpRoot, ".repoos"), { recursive: true });
     writeFileSync(telegramConnectionPath(tmpRoot), '{"version":1,"bot":', "utf8");
     const { provider } = makeProvider({
       getMe: repoBot(),
       deleteWebhook: () => true,
       getWebhookInfo: () => ({ url: "" }),
-      logOut: true,
-      close: true,
     });
     // status() reports the corruption loudly...
     expect(provider.status().lastError).toMatch(/unreadable/);
-    // ...but connect replaces the state and disconnect clears it.
+    // ...but connect replaces it. Disconnect cannot clear a still-valid BYO token.
     const bot = await provider.connectByBotToken(TOKEN);
     expect(bot.username).toBe("repoos_project_bot");
     expect(provider.status().connected).toBe(true);
     const authStore = new AuthStore(tmpRoot);
-    await provider.disconnect({
-      actorEmail: "admin@test.com",
-      authStore,
-      instanceId: "test-instance",
-    });
-    expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(false);
+    await expect(
+      provider.disconnect({
+        actorEmail: "admin@test.com",
+        authStore,
+        instanceId: "test-instance",
+      }),
+    ).rejects.toMatchObject({ phase: "revoke", retryable: true });
+    expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(true);
   });
 });
 

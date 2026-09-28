@@ -2,10 +2,7 @@
  * Telegram disconnect orchestration (#0539) — complete or loudly incomplete.
  */
 import type { AuthStore } from "../../core/auth-store.js";
-import {
-  clearTelegramBindingsForRepository,
-  logTelegramDisconnectAudit,
-} from "../../core/telegram-disconnect.js";
+import { clearTelegramBindingsForRepository } from "../../core/telegram-disconnect.js";
 import { TelegramApiClient, TelegramApiError, TelegramNetworkError } from "./api.js";
 import {
   ManagedProvisioningNotConfiguredError,
@@ -17,10 +14,6 @@ import { TelegramDisconnectError } from "./types.js";
 
 const BYO_REVOKE_BOTFATHER_HINT =
   "the bot token is still valid at Telegram — revoke it in @BotFather, then retry disconnect";
-
-function isUnauthorizedTelegramError(e: unknown): boolean {
-  return e instanceof TelegramApiError && e.code === 401;
-}
 
 function managedProvisioningDisconnectRetryable(e: ManagedProvisioningUnavailableError): boolean {
   if (e instanceof ManagedProvisioningNotConfiguredError) return false;
@@ -68,11 +61,18 @@ export async function revokeProjectBotToken(input: {
       );
     }
     try {
-      await input.managed.revokeBot({
+      const result = await input.managed.revokeBot({
         botId: input.botId,
         instanceId: input.instanceId,
         repository: input.repository,
       });
+      if (!result.confirmed) {
+        throw new TelegramDisconnectError(
+          "revoke",
+          "the provisioning service did not confirm bot revocation",
+          true,
+        );
+      }
       return { confirmed: true, method: "managed-provisioning-service" };
     } catch (e) {
       if (e instanceof ManagedProvisioningUnavailableError) {
@@ -86,22 +86,9 @@ export async function revokeProjectBotToken(input: {
     }
   }
 
-  // BYO: logOut stops cloud delivery; only a 401 on the old token counts as revoked.
-  try {
-    await input.api.logOut();
-    await input.api.close().catch(() => false);
-  } catch (e) {
-    if (e instanceof TelegramDisconnectError) throw e;
-    if (e instanceof TelegramNetworkError) {
-      throw new TelegramDisconnectError("revoke", e.message);
-    }
-    throw new TelegramDisconnectError(
-      "revoke",
-      e instanceof Error ? e.message : "could not revoke BYO bot at Telegram",
-    );
-  }
-
-  const probe = await probeBotTokenRevoked(buildApi, input.oldToken, "logOut+close");
+  // Telegram exposes no Bot API method to revoke a BYO token. BotFather must
+  // revoke it; a 401 from the old token is the only confirmation we accept.
+  const probe = await probeBotTokenRevoked(buildApi, input.oldToken, "botfather-revocation");
   if (!probe.confirmed) {
     throw new TelegramDisconnectError("revoke", BYO_REVOKE_BOTFATHER_HINT, true);
   }
@@ -109,17 +96,15 @@ export async function revokeProjectBotToken(input: {
 }
 
 export async function removeBotWebhook(api: TelegramApiClient): Promise<boolean> {
-  try {
-    await api.deleteWebhook(false);
-    const info = await api.getWebhookInfo();
-    return !info.url;
-  } catch (e) {
-    if (isUnauthorizedTelegramError(e)) return true;
-    throw e;
-  }
+  await api.deleteWebhook(false);
+  const info = await api.getWebhookInfo();
+  return !info.url;
 }
 
-/** Revoke at Telegram first, then drop the webhook (tolerates an already-revoked token). */
+/**
+ * Remove the webhook while its credential still works, then revoke the bot.
+ * The Bot API cannot remove a webhook after the token has been revoked.
+ */
 export async function disconnectRemoteTelegram(input: {
   api: TelegramApiClient;
   token: string;
@@ -128,6 +113,8 @@ export async function disconnectRemoteTelegram(input: {
   managed: ManagedProvisioningClient;
   repository: string;
   instanceId: string;
+  webhookAlreadyRemoved: boolean;
+  markWebhookRemoved: () => Promise<boolean>;
   createApi?: (token: string) => TelegramApiClient;
 }): Promise<{
   revocationConfirmed: boolean;
@@ -135,6 +122,35 @@ export async function disconnectRemoteTelegram(input: {
   webhookRemoved: boolean;
 }> {
   const buildApi = input.createApi ?? ((token: string) => new TelegramApiClient(token));
+  let webhookRemoved = input.webhookAlreadyRemoved;
+  if (!webhookRemoved) {
+    try {
+      webhookRemoved = await removeBotWebhook(input.api);
+      if (!webhookRemoved) {
+        throw new TelegramDisconnectError(
+          "webhook",
+          "Telegram did not confirm the webhook was removed — local state was left intact",
+        );
+      }
+      if (!(await input.markWebhookRemoved())) {
+        throw new TelegramDisconnectError(
+          "local",
+          "Telegram webhook was removed, but the stored connection changed during disconnect; " +
+            "the new credential was left intact",
+        );
+      }
+    } catch (e) {
+      if (e instanceof TelegramDisconnectError) throw e;
+      if (e instanceof TelegramNetworkError) {
+        throw new TelegramDisconnectError("webhook", e.message);
+      }
+      throw new TelegramDisconnectError(
+        "webhook",
+        e instanceof Error ? e.message : "failed to remove Telegram webhook",
+      );
+    }
+  }
+
   const preRevoke = await probeBotTokenRevoked(buildApi, input.token, "already-revoked");
   let revocationConfirmed = preRevoke.confirmed;
   let revocationMethod = preRevoke.method;
@@ -151,25 +167,6 @@ export async function disconnectRemoteTelegram(input: {
     });
     revocationConfirmed = revoked.confirmed;
     revocationMethod = revoked.method;
-  }
-  let webhookRemoved: boolean;
-  try {
-    webhookRemoved = await removeBotWebhook(input.api);
-  } catch (e) {
-    if (e instanceof TelegramDisconnectError) throw e;
-    if (e instanceof TelegramNetworkError) {
-      throw new TelegramDisconnectError("webhook", e.message);
-    }
-    throw new TelegramDisconnectError(
-      "webhook",
-      e instanceof Error ? e.message : "failed to remove Telegram webhook",
-    );
-  }
-  if (!webhookRemoved) {
-    throw new TelegramDisconnectError(
-      "webhook",
-      "Telegram did not confirm the webhook was removed — local state was left intact",
-    );
   }
   return { revocationConfirmed, revocationMethod, webhookRemoved };
 }
@@ -203,18 +200,17 @@ export function finalizeTelegramDisconnect(input: {
         input.actorEmail,
         input.revokedAt,
         input.instanceId,
+        {
+          alreadyDisconnected: input.alreadyDisconnected,
+          revocationConfirmed: input.revocationConfirmed,
+          revocationMethod: input.revocationMethod,
+          webhookRemoved: input.webhookRemoved,
+          botId: input.record?.bot.id ?? null,
+          botSource: input.record?.bot.source ?? null,
+        },
       );
       userLinks = cleared.userLinks;
       chatLinks = cleared.chatLinks;
-      logTelegramDisconnectAudit(input.authStore, input.actorEmail, {
-        alreadyDisconnected: input.alreadyDisconnected,
-        revocationConfirmed: input.revocationConfirmed,
-        revocationMethod: input.revocationMethod,
-        webhookRemoved: input.webhookRemoved,
-        botId: input.record?.bot.id ?? null,
-        botSource: input.record?.bot.source ?? null,
-        bindings: cleared,
-      });
     } catch (e) {
       throw new TelegramDisconnectError(
         "local",
@@ -222,7 +218,7 @@ export function finalizeTelegramDisconnect(input: {
         true,
       );
     }
-  } else if (!input.alreadyDisconnected) {
+  } else {
     // authStore unavailable means we cannot clear chat/user bindings. Dropping the
     // credential here would leave those bindings dangling on reconnect — false success.
     throw new TelegramDisconnectError(
