@@ -2,16 +2,16 @@
 id: "0575"
 title: Prevent clicks from passing through modals and popups
 type: bug
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/prevent-clicks-from-passing-through-moda
 model_override: opencode-go/mimo-v2.6-flash
 review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-28T13:15:47Z"
-updated_at: "2026-09-28T13:28:03Z"
+updated_at: "2026-09-28T13:28:04Z"
 ---
 ## Problem
 
@@ -74,3 +74,4 @@ All of these popups and modals seem to have the same issue: clicks on them go pa
 - 2026-09-28T13:27:59Z · model_override
 - 2026-09-28T13:28:03Z · review_model_override
 - 2026-09-28T13:28:03Z · status inbox→ready
+- 2026-09-28T13:28:04Z · status ready→active, branch
