@@ -2,7 +2,7 @@
 id: "0541"
 title: Chat with the repository guide agent from Telegram
 type: feature
-status: active
+status: review
 priority: p2
 area: server
 story: RepoOS Telegram Bot
@@ -12,7 +12,7 @@ branch: feat/chat-with-the-repository-guide-agent-fro
 model_override: opencode-go/glm-5.3-flash
 review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-27T07:33:38Z"
-updated_at: "2026-09-28T11:43:33Z"
+updated_at: "2026-09-28T12:52:09Z"
 ---
 ## Problem
 
@@ -58,3 +58,4 @@ Agent turns are the most expensive thing Telegram can trigger, and a group makes
 - 2026-09-28T11:43:27Z · model_override
 - 2026-09-28T11:43:32Z · review_model_override
 - 2026-09-28T11:43:33Z · status ready→active, branch
+- 2026-09-28T12:52:09Z · status active→review
