@@ -2032,7 +2032,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // there. Both firing for a single transition is harmless: `previews.stop` and
   // `runner.stop` are idempotent.
   const notificationCtx = notificationContextFromConfig(config, getAuthStore(config.root));
-  const unsubscribeNotifications = attachTaskNotificationHandlers(index, notificationCtx);
+  const unsubscribeNotifications = attachTaskNotificationHandlers(index, notificationCtx, {
+    // #0542: the agent-completed notification must know when a later turn,
+    // pause, or in-flight review handoff already owns the post-turn state.
+    runner,
+  });
 
   const unsubscribeCleanup = index.on((e) => {
     if (e.type === "task.created") {
@@ -3262,11 +3266,17 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // boot. Safe and never-throwing (reports one log line); the loop
       // gates on the live `telegram.enabled` switch itself, so a disabled
       // integration arms paused with no Telegram traffic.
+      //
+      // #0542: the same single intake `onAuthorized` (the #0540 command
+      // handler) also routes `/msg` to the task-agent follow-up handler, so
+      // an authorized admin can continue an active task's agent conversation
+      // and answer needs-input prompts from Telegram.
       void bootstrapTelegramAtBoot(config, {
         index,
         runner,
         reviews,
         publicOrigin: url,
+        agentChat: { logger },
       }).then((resumed) => {
         if (resumed.detail) {
           logger.system(resumed.resumed ? "info" : "warn", "Telegram transport resume", {

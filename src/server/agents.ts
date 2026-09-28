@@ -4723,6 +4723,16 @@ export class AgentRunner {
     return Array.from(this.queuedIds.entries()).map(([id, queuedAt]) => ({ id, queuedAt }));
   }
 
+  /**
+   * Whether a start/send for this id is being held for a free slot (#0542).
+   * The agent-completed notification uses it so a turn accepted just before
+   * an exit (pending in the queue, not yet an entry) is never mistaken for
+   * "nothing is running".
+   */
+  isQueued(taskId: string): boolean {
+    return this.queuedIds.has(taskId);
+  }
+
   /** Start the next queued spawn once a slot is free (called from cleanup() on every exit). */
   private drainQueue(): void {
     while (this.startQueue.length > 0 && this.entries.size < this.maxConcurrentAgents) {

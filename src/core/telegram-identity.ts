@@ -24,6 +24,10 @@ export const TELEGRAM_AUDIT = {
   commandInvoked: "telegram_command_invoked",
   /** Plain-text message on the agent path (pre-LLM intake; #0541 consumes this). */
   agentMessage: "telegram_agent_message",
+  /** A Telegram follow-up was accepted and sent to a task's agent (#0542). */
+  agentFollowUp: "telegram_agent_follow_up",
+  /** A Telegram follow-up was refused by role or never reached an agent (#0542). */
+  agentFollowUpRefused: "telegram_agent_follow_up_refused",
 } as const;
 
 /** Telegram Bot API start-parameter limit. Hex nonce is 32 chars. */
