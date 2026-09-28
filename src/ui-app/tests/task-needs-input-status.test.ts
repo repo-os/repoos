@@ -359,3 +359,70 @@ describe("underspecified needs_input Send to PM (#0558)", () => {
     expect((primary!.element as HTMLButtonElement).disabled).toBe(true);
   });
 });
+
+describe("agent questions needs_input (#0566)", () => {
+  it("shows one Questions for you banner and not the Task-tab duplicate", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const task = makeTask({
+      status: "active",
+      needsInput: true,
+      questions: ["Which database?", "Include migrations?"],
+    });
+    stubDrawerApi(task);
+    const wrapper = await mountDrawer(pinia, task);
+    expect(wrapper.find(".questions-for-you-banner").exists()).toBe(true);
+    expect(wrapper.find(".needs-input-block").exists()).toBe(false);
+    expect(wrapper.findAll(".questions-for-you-banner")).toHaveLength(1);
+    expect(wrapper.find(".agent-waiting").exists()).toBe(false);
+  });
+
+  it("routes to PM without prefilling the compose box and sends question context", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const posts: { text?: string; answeringQuestions?: string[] }[] = [];
+    const task = makeTask({
+      status: "active",
+      needsInput: true,
+      questions: ["Which database?"],
+    });
+    vi.stubGlobal("EventSource", FakeEventSource);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        const u = String(url);
+        if (u.includes("/api/health"))
+          return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+        if (u.includes("/api/index"))
+          return json({ tasks: [task], counts: { ...EMPTY_COUNTS, active: 1 }, taskCount: 1 });
+        if (u.includes("/api/agents/running")) return json({ tasks: [] });
+        if (u.includes("/review"))
+          return json({ ok: true, running: false, enabled: true, review: null, lines: [] });
+        if (u.includes("/output")) return json({ ok: true, lines: [], stats: {} });
+        if (u.includes("/pm/message")) {
+          posts.push(JSON.parse(String((init?.body as string) ?? "{}")));
+          return json({ ok: true, spawn: { ok: true, pid: 1 } });
+        }
+        throw new Error("unexpected fetch: " + u);
+      }),
+    );
+
+    const wrapper = await mountDrawer(pinia, task);
+    const answerBtn = wrapper.findAll("button").find((b) => b.text().includes("Answer in PM"));
+    expect(answerBtn).toBeDefined();
+    await answerBtn!.trigger("click");
+    await flush();
+    expect(useUiStore().activeTab).toBe("pm");
+    expect(wrapper.find(".pm-open-questions").exists()).toBe(true);
+
+    const textarea = wrapper.find('textarea[aria-label="Message PM"]');
+    expect((textarea.element as HTMLTextAreaElement).value).toBe("");
+    await textarea.setValue("Postgres with migrations.");
+    await wrapper.find("form.pm-compose").trigger("submit.prevent");
+    await flush();
+
+    expect(posts).toHaveLength(1);
+    expect(posts[0]?.text).toBe("Postgres with migrations.");
+    expect(posts[0]?.answeringQuestions).toEqual(["Which database?"]);
+  });
+});

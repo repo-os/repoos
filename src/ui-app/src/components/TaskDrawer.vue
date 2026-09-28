@@ -46,6 +46,7 @@ import {
   needsInputSuggestionText,
   needsInputSuppressedOnReview,
   needsInputSurfaces,
+  resolveNeedsInputReasonKey,
   STALE_REVIEW_DEV_ERROR_BANNER,
 } from "../lib/needs-input-ui";
 import Button from "./ui/button.vue";
@@ -1402,6 +1403,16 @@ function openSkillSuggestion(): void {
  */
 const activeNeedsInputQuestions = computed(() => (ui.active?.questions?.length ?? 0) > 0);
 
+/** Agent `questions:` frontmatter — one dedicated banner, not the generic needs-input strip. */
+const showAgentQuestionsBanner = computed(() => {
+  if (!ui.active?.needsInput || !ui.active.questions?.length) return false;
+  if (handoffBusy.value || awaitingFreshReview.value || staleNeedsInputOnReview.value) {
+    return false;
+  }
+  const key = resolveNeedsInputReasonKey(ui.active.needsInputReason, true);
+  return key === "questions" || key === "cto-escalation";
+});
+
 const staleNeedsInputOnReview = computed(() =>
   ui.active ? needsInputSuppressedOnReview(ui.active) : false,
 );
@@ -1682,8 +1693,10 @@ function pmSessionId(taskId: string): string {
 }
 
 const pmDraft = ref("");
+/** Open task questions shown above the PM composer until the user sends a reply. */
+const pmOpenQuestions = ref<string[] | null>(null);
 const pmSubmitting = ref(false);
-/** The shared PM chat surface, for the needs-input prefill's focus() call. */
+/** The shared PM chat surface, for focusing the composer after routing to PM. */
 const pmSurface = ref<InstanceType<typeof PmChatSurface> | null>(null);
 
 // 0513: pending PM screenshots open the shared full-size viewer. Kept here, in
@@ -1737,39 +1750,27 @@ const pmCannedMessages = computed(() => {
   return t ? pmCannedMessagesFor(t.status) : [];
 });
 
-function buildNeedsInputPmPrompt(questions: string[]): string {
-  return [
-    "I need a quick human decision before I can continue with this task.",
-    "Please help me answer the questions below and then we can update the task together.",
-    "",
-    ...questions.map((q, i) => `${i + 1}. ${q}`),
-    "",
-    "Once we agree on the answers, I’ll update the task body and clear the blocking flag.",
-  ].join("\n");
-}
-
-function openPmWithNeedsInputQuestions(): void {
+function openPmToAnswerQuestions(): void {
   if (!ui.active?.questions?.length) return;
   ui.activeTab = "pm";
-  pmDraft.value = buildNeedsInputPmPrompt(ui.active.questions);
-  // The composer lives inside <PmChatSurface> since #0515, so ask it to focus
-  // rather than reaching for an element this component no longer holds.
+  pmOpenQuestions.value = [...ui.active.questions];
+  pmDraft.value = "";
   void nextTick(() => pmSurface.value?.focusDraft());
 }
-
-// Row grouping (#0506) and the scroll standard (#0444) are the surface's job now
-// — see the note above the PM section and docs/ai-chat-standards.md.
 
 async function pmSend(): Promise<void> {
   const text = pmDraft.value.trim();
   if (!text || pmBusy.value || !pmAgentEnabled.value || !ui.active) return;
 
   pmSubmitting.value = true;
+  const answeringQuestions =
+    pmOpenQuestions.value && pmOpenQuestions.value.length > 0 ? [...pmOpenQuestions.value] : null;
   const optimistic: AgentOutputEntry = { type: "human", text, at: new Date().toISOString() };
   const sessionId = pmSessionId(ui.active.id);
   const optimisticIndex = (repo.outputs[sessionId] ?? []).length;
   repo.outputs[sessionId] = [...(repo.outputs[sessionId] ?? []), optimistic];
   pmDraft.value = "";
+  if (answeringQuestions) pmOpenQuestions.value = null;
   // Same wire shape as the per-task attachment upload: base64 without the
   // data-URL prefix. Kept locally until the send succeeds so a failure
   // doesn't lose the user's picks.
@@ -1787,6 +1788,7 @@ async function pmSend(): Promise<void> {
       `/api/tasks/${ui.active.id}/pm/message`,
       JSON_OPTS("POST", {
         text,
+        answeringQuestions: answeringQuestions ?? undefined,
         agentOverride: pmOverrideDraft.agent || undefined,
         cliOverride: pmOverrideDraft.cli || undefined,
         modelOverride: pmOverrideDraft.model || undefined,
@@ -1799,6 +1801,7 @@ async function pmSend(): Promise<void> {
       (_entry, index) => index !== optimisticIndex,
     );
     pmDraft.value = text;
+    if (answeringQuestions) pmOpenQuestions.value = answeringQuestions;
     repo.outputs[sessionId] = [
       ...(repo.outputs[sessionId] ?? []),
       { type: "sys", d: error instanceof Error ? error.message : String(error) },
@@ -2277,7 +2280,7 @@ async function runNeedsInputPrimaryAction(): Promise<void> {
     return;
   }
   if (ui.active.questions?.length) {
-    openPmWithNeedsInputQuestions();
+    openPmToAnswerQuestions();
     return;
   }
   ui.activeTab = "pm";
@@ -2737,6 +2740,12 @@ watch(
     // draft changes (#0515).
   },
   { immediate: true },
+);
+watch(
+  () => ui.active?.id,
+  () => {
+    pmOpenQuestions.value = null;
+  },
 );
 watch(
   () => reviewDraftMsg.value,
@@ -3472,8 +3481,43 @@ watch(
         <!-- Critical status lives above the tabs so it is visible no matter
              which tab is open — a "needs input" / "reviewer crashed" message
              buried in one tab is a message the human never sees. -->
+        <div v-if="showAgentQuestionsBanner && ui.active" class="drawer-critical">
+          <div class="questions-for-you-banner" role="region" aria-label="Questions for you">
+            <div class="questions-for-you-head">
+              <span class="questions-for-you-badge">Questions for you</span>
+              <span class="questions-for-you-sub">{{
+                needsInputBannerText(ui.active.needsInputReason, true)
+              }}</span>
+            </div>
+            <ol class="questions-for-you-list">
+              <li v-for="(question, index) in ui.active.questions" :key="index">
+                {{ question }}
+              </li>
+            </ol>
+            <div class="questions-for-you-actions">
+              <Button
+                variant="default"
+                size="sm"
+                class="questions-for-you-answer"
+                :disabled="!pmAgentEnabled || pmBusy || pmSubmitting"
+                @click="openPmToAnswerQuestions"
+              >
+                Answer in PM
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                :disabled="ui.saving || dismissNeedsInputBusy"
+                @click="dismissNeedsInputFlag"
+              >
+                <ActivityIndicator v-if="dismissNeedsInputBusy" />
+                {{ dismissNeedsInputBusy ? "Dismissing…" : "Dismiss" }}
+              </Button>
+            </div>
+          </div>
+        </div>
         <div
-          v-if="ui.active && ui.active.needsInput && !handoffBusy && !awaitingFreshReview"
+          v-else-if="ui.active && ui.active.needsInput && !handoffBusy && !awaitingFreshReview"
           class="drawer-critical"
         >
           <div class="agent-waiting" :class="{ 'agent-waiting-static': staleNeedsInputOnReview }">
@@ -3730,27 +3774,6 @@ watch(
                 <option value="ai"></option>
                 <option value="human"></option>
               </datalist>
-            </div>
-          </div>
-          <div
-            v-if="ui.active?.needsInput && ui.active.questions?.length"
-            class="needs-input-block"
-          >
-            <div class="md-h">Questions for you</div>
-            <div class="needs-input-card">
-              <ul class="needs-input-list">
-                <li v-for="(question, index) in ui.active.questions" :key="index">
-                  {{ question }}
-                </li>
-              </ul>
-              <Button
-                variant="default"
-                size="sm"
-                class="needs-input-answer"
-                @click="openPmWithNeedsInputQuestions"
-              >
-                Answer these
-              </Button>
             </div>
           </div>
           <div class="md-h spec-head" style="margin-top: 18px">
@@ -4626,6 +4649,7 @@ watch(
             welcome-body="Ask the PM to edit the task, suggest changes, or discuss progress."
             log-label="Conversation with the PM about this task"
             :canned="pmCannedMessages"
+            :open-questions="pmOpenQuestions ?? []"
             :shots="ui.pmScreenshots"
             @send="pmSend"
             @interrupt="pmInterrupt"
