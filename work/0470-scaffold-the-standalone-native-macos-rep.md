@@ -5,13 +5,14 @@ type: feature
 status: done
 priority: p1
 area: desktop
+story: MacOS Native App
 assigned_to: ai
 created_by: ""
 branch: feat/scaffold-the-standalone-native-macos-rep
 cli_override: codex
 model_override: gpt-5.6-luna
 created_at: "2026-09-21T11:50:24Z"
-updated_at: "2026-09-21T15:51:47Z"
+updated_at: "2026-09-28T00:08:32Z"
 review_passes: 2
 handoff_signal_retry_count: 2
 ---
@@ -39,3 +40,4 @@ Follow the approved architecture task. Keep this foundation small; server regist
 - 2026-09-21T15:07:55Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-09-21T15:09:05Z · status active→review
 - 2026-09-21T15:51:47Z · status review→done, release:success
+- 2026-09-28T00:08:32Z · story
