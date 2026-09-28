@@ -14,9 +14,10 @@ created_by: ""
 branch: feat/build-the-telegram-manager-bot-provision
 cli_override: github copilot
 model_override: copilot-auto-balance
-review_model_override: opencode-go/glm-5.3-flash
+review_cli_override: codex
+review_model_override: default
 created_at: "2026-09-27T17:32:41Z"
-updated_at: "2026-09-28T05:34:15Z"
+updated_at: "2026-09-28T05:34:59Z"
 ---
 ## Problem
 
@@ -70,3 +71,4 @@ Depends on #0530 (done) and the local adapter/client contract from #0531 (still 
 - 2026-09-28T04:49:51Z · status ready→active, branch
 - 2026-09-28T05:19:15Z · status active→review
 - 2026-09-28T05:34:15Z · needs_input
+- 2026-09-28T05:34:59Z · review_cli_override, review_model_override
