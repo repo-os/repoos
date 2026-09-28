@@ -14,10 +14,10 @@ created_by: ""
 branch: feat/build-the-telegram-manager-bot-provision
 cli_override: github copilot
 model_override: copilot-auto-balance
-review_cli_override: codex
+review_cli_override: cursor
 review_model_override: default
 created_at: "2026-09-27T17:32:41Z"
-updated_at: "2026-09-28T05:34:59Z"
+updated_at: "2026-09-28T05:35:00Z"
 ---
 ## Problem
 
@@ -72,3 +72,4 @@ Depends on #0530 (done) and the local adapter/client contract from #0531 (still 
 - 2026-09-28T05:19:15Z · status active→review
 - 2026-09-28T05:34:15Z · needs_input
 - 2026-09-28T05:34:59Z · review_cli_override, review_model_override
+- 2026-09-28T05:35:00Z · review_cli_override
