@@ -2,7 +2,7 @@
  * #0511 — card and drawer name the `needs_input` reason; idle review tasks
  * must not show a working indicator while needs-input uses a static warning.
  */
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, beforeAll } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia, type Pinia } from "pinia";
 import { createRouter, createMemoryHistory } from "vue-router";
@@ -366,6 +366,16 @@ describe("underspecified needs_input Send to PM (#0558)", () => {
 });
 
 describe("agent questions needs_input (#0566)", () => {
+  beforeAll(() => {
+    if (typeof HTMLElement.prototype.scrollTo !== "function") {
+      Object.defineProperty(HTMLElement.prototype, "scrollTo", {
+        configurable: true,
+        writable: true,
+        value: () => {},
+      });
+    }
+  });
+
   it("shows one Questions for you banner and not the Task-tab duplicate", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
@@ -500,5 +510,81 @@ describe("agent questions needs_input (#0566)", () => {
     expect(posts).toHaveLength(1);
     expect(posts[0]?.text).toBe("Reply on task B only.");
     expect(posts[0]?.answeringQuestions).toBeUndefined();
+  });
+
+  it("does not restore answer draft or context on another task after a failed send", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const taskA = makeTask({
+      id: "0566a",
+      path: "work/0566a-a.md",
+      absPath: "/tmp/repo/work/0566a-a.md",
+      status: "active",
+      needsInput: true,
+      questions: ["Question for task A?"],
+    });
+    const taskB = makeTask({
+      id: "0566b",
+      path: "work/0566b-b.md",
+      absPath: "/tmp/repo/work/0566b-b.md",
+      status: "active",
+      needsInput: false,
+      questions: [],
+    });
+    let releaseSend: (() => void) | undefined;
+    const sendGate = new Promise<void>((resolve) => {
+      releaseSend = resolve;
+    });
+    vi.stubGlobal("EventSource", FakeEventSource);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        const u = String(url);
+        if (u.includes("/api/health"))
+          return json({ ok: true, root: "/tmp/repo", taskCount: 2, workDir: "work" });
+        if (u.includes("/api/index"))
+          return json({
+            tasks: [taskA, taskB],
+            counts: { ...EMPTY_COUNTS, active: 2 },
+            taskCount: 2,
+          });
+        if (u.includes("/api/agents/running")) return json({ tasks: [] });
+        if (u.includes("/review"))
+          return json({ ok: true, running: false, enabled: true, review: null, lines: [] });
+        if (u.includes("/output")) return json({ ok: true, lines: [], stats: {} });
+        if (u.includes("/pm/message")) {
+          await sendGate;
+          return { ok: false, status: 500, json: async () => ({ error: "PM failed" }) };
+        }
+        throw new Error("unexpected fetch: " + u);
+      }),
+    );
+
+    const ui = useUiStore();
+    const repo = useRepoStore();
+    vi.spyOn(repo, "onError").mockImplementation(() => {});
+    const wrapper = await mountDrawer(pinia, taskA);
+    await wrapper
+      .findAll("button")
+      .find((b) => b.text().includes("Answer in PM"))!
+      .trigger("click");
+    await flush();
+    const textarea = wrapper.find('textarea[aria-label="Message PM"]');
+    await textarea.setValue("Answer for task A.");
+    const sendPromise = wrapper.find("form.pm-compose").trigger("submit.prevent");
+    await flush();
+
+    ui.open(taskB);
+    await flush();
+    releaseSend!();
+    await sendPromise;
+    await flush();
+
+    ui.activeTab = "pm";
+    await flush();
+    expect(
+      (wrapper.find('textarea[aria-label="Message PM"]').element as HTMLTextAreaElement).value,
+    ).toBe("");
+    expect(wrapper.find(".pm-open-questions").exists()).toBe(false);
   });
 });

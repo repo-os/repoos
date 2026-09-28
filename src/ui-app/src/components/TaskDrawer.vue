@@ -1775,12 +1775,13 @@ async function pmSend(): Promise<void> {
   const text = pmDraft.value.trim();
   if (!text || pmBusy.value || !pmAgentEnabled.value || !ui.active) return;
 
+  const sendTaskId = ui.active.id;
   pmSubmitting.value = true;
   const ctx = pmAnswerContext.value;
   const answeringQuestions =
-    ctx && ctx.taskId === ui.active.id && ctx.questions.length > 0 ? [...ctx.questions] : null;
+    ctx && ctx.taskId === sendTaskId && ctx.questions.length > 0 ? [...ctx.questions] : null;
   const optimistic: AgentOutputEntry = { type: "human", text, at: new Date().toISOString() };
-  const sessionId = pmSessionId(ui.active.id);
+  const sessionId = pmSessionId(sendTaskId);
   const optimisticIndex = (repo.outputs[sessionId] ?? []).length;
   repo.outputs[sessionId] = [...(repo.outputs[sessionId] ?? []), optimistic];
   pmDraft.value = "";
@@ -1799,7 +1800,7 @@ async function pmSend(): Promise<void> {
 
   try {
     await api(
-      `/api/tasks/${ui.active.id}/pm/message`,
+      `/api/tasks/${sendTaskId}/pm/message`,
       JSON_OPTS("POST", {
         text,
         answeringQuestions: answeringQuestions ?? undefined,
@@ -1814,9 +1815,11 @@ async function pmSend(): Promise<void> {
     repo.outputs[sessionId] = (repo.outputs[sessionId] ?? []).filter(
       (_entry, index) => index !== optimisticIndex,
     );
-    pmDraft.value = text;
-    if (answeringQuestions) {
-      pmAnswerContext.value = { taskId: ui.active.id, questions: answeringQuestions };
+    if (ui.active?.id === sendTaskId) {
+      pmDraft.value = text;
+      if (answeringQuestions) {
+        pmAnswerContext.value = { taskId: sendTaskId, questions: answeringQuestions };
+      }
     }
     repo.outputs[sessionId] = [
       ...(repo.outputs[sessionId] ?? []),
