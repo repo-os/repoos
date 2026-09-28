@@ -2,7 +2,7 @@
 id: "0565"
 title: Review Again (clears this) leaves the needs-input warning card visible while the fresh review runs
 type: bug
-status: inbox
+status: ready
 needs_input: true
 needs_input_reason: underspecified
 needs_input_detail: "missing sections: Desired UX, Notes for AI"
@@ -13,7 +13,7 @@ created_by: hello@repoos.org
 branch: ""
 pm_model_override: opencode/muse-spark-1.3-contributor-free
 created_at: "2026-09-28T04:05:24Z"
-updated_at: "2026-09-28T04:21:59Z"
+updated_at: "2026-09-28T04:22:01Z"
 ---
 ## Problem
 
@@ -79,3 +79,4 @@ FYI, clicking "Review Again (clears this)" button, does start the review again, 
 - 2026-09-28T04:21:18Z · title, area, type, body
 - 2026-09-28T04:21:58Z · status draft→inbox
 - 2026-09-28T04:21:59Z · needs_input
+- 2026-09-28T04:22:01Z · status inbox→ready
