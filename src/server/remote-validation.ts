@@ -1430,6 +1430,7 @@ export class TailscaleHostPool {
         if (s.removed || s.probed) continue;
         void this.probe(s).then(() => {
           if (s.healthy) this.dispatch();
+          else if (!s.removed && this.waiters.length) this.armHealthRetry(s);
         });
       }
     }
