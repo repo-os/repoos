@@ -166,6 +166,16 @@ describe("toDisplayRows — run splitting", () => {
     expect(rows[0].kind).toBe("text");
   });
 
+  it("drops thematic-break-only text rows (#0563)", () => {
+    const rows = toDisplayRows([
+      { type: "human", text: "Hi", at: AT_0 },
+      { type: "human", text: "---", at: AT_1 },
+      { type: "human", text: "Bye", at: AT_2 },
+    ]);
+    expect(rows).toHaveLength(2);
+    expect(messages(rows).map((row) => row.text)).toEqual(["Hi", "Bye"]);
+  });
+
   it("strips ANSI escapes from row text and tool input", () => {
     const rows = toDisplayRows([
       text("[31mred[0m text", AT_0),

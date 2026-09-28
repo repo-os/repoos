@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { api, JSON_OPTS } from "../api";
-import { renderMarkdown } from "../lib/markdown";
+import { renderChatMarkdown } from "../lib/markdown";
 import { fmtContext } from "../lib/format";
 import type {
   PlaygroundChatMessage,
@@ -314,7 +314,7 @@ onMounted(() => {
                 <div
                   v-if="m.role === 'assistant'"
                   class="playground-markdown"
-                  v-html="renderMarkdown(m.text)"
+                  v-html="renderChatMarkdown(m.text)"
                 ></div>
                 <span v-else>{{ m.text }}</span>
               </div>
