@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p1
 area: macos
-assigned_to: ""
+story: MacOS Native App
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-28T18:43:47Z"
-updated_at: "2026-09-28T18:43:47Z"
+updated_at: "2026-09-28T18:45:04Z"
 ---
 After the app is Developer ID–signed (#0578), submit it to Apple's notary service, wait for approval, and staple the ticket to the DMG before uploading the release asset. This removes the Gatekeeper warning on first launch.
 
@@ -58,3 +59,4 @@ In `.github/workflows/macos-hub.yml`, after the signing step:
 ## Activity
 
 - 2026-09-28T18:43:47Z · created · unknown
+- 2026-09-28T18:45:04Z · story
