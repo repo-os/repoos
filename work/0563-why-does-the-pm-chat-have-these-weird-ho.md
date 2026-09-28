@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-28T00:59:01Z"
-review_passes: 3
 id: "0563"
 title: Remove horizontal separators from all AI chats
 type: feature
@@ -10,10 +8,10 @@ area: general
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/remove-horizontal-separators-from-all-ai
-pm_cli_override: cursor
-pm_model_override: composer-2.5
+pm_cli_override: github copilot
+pm_model_override: default
 created_at: "2026-09-28T00:04:51Z"
-review_rounds: 2
+updated_at: "2026-09-28T00:29:29Z"
 ---
 ## Problem
 
@@ -55,11 +53,4 @@ why does the pm chat have these weird horizontal lines between chat messages (se
 - 2026-09-28T00:15:40Z · needs_input
 - 2026-09-28T00:15:46Z · status inbox→ready
 - 2026-09-28T00:16:17Z · status ready→active, needs_input, branch
-- 2026-09-28T00:29:30Z · status active→review
-- 2026-09-28T00:35:03Z · pm_cli_override
-- 2026-09-28T00:35:07Z · pm_model_override
-- 2026-09-28T00:42:32Z · status review→active
-- 2026-09-28T00:47:36Z · status active→review
-- 2026-09-28T00:51:21Z · status review→active
-- 2026-09-28T00:56:14Z · status active→review
-
+- 2026-09-28T00:29:29Z · status active→review

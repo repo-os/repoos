@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { renderMarkdown } from "../src/lib/markdown";
+import { isThematicBreakOnlyText, renderChatMarkdown, renderMarkdown } from "../src/lib/markdown";
 
 describe("renderMarkdown", () => {
   it("returns empty for blank input", () => {
@@ -183,5 +183,41 @@ describe("renderMarkdown", () => {
   it("treats invisible-only lines as blank", () => {
     const html = renderMarkdown("Done.\n\u200b\n\u200b\nBye.");
     expect(html).toBe("<p>Done.</p><p>Bye.</p>");
+  });
+});
+
+describe("renderChatMarkdown (#0563)", () => {
+  it("omits thematic breaks so they do not render as <hr> between turns", () => {
+    expect(renderChatMarkdown("Hello\n\n---\n\nWorld")).toBe("<p>Hello</p><p>World</p>");
+    expect(renderChatMarkdown("---")).toBe("");
+    expect(renderChatMarkdown("> ━━━━━━━━━━━━━━━━━━━━━━━━")).toBe("");
+  });
+
+  it("still renders other markdown like renderMarkdown", () => {
+    expect(renderChatMarkdown("**bold**")).toBe(renderMarkdown("**bold**"));
+  });
+});
+
+describe("isThematicBreakOnlyText (#0563)", () => {
+  it("recognizes separator-only rows", () => {
+    expect(isThematicBreakOnlyText("---")).toBe(true);
+    expect(isThematicBreakOnlyText("\n---\n")).toBe(true);
+    expect(isThematicBreakOnlyText("> ━━━━━━━━━━━")).toBe(true);
+    expect(isThematicBreakOnlyText("Hello")).toBe(false);
+    expect(isThematicBreakOnlyText("Hello\n---")).toBe(false);
+  });
+});
+
+describe("renderChatMarkdown section dividers (#0563)", () => {
+  it("removes hr blocks inside a longer assistant message", () => {
+    expect(renderChatMarkdown("Part one\n\n---\n\nPart two")).toBe(
+      "<p>Part one</p><p>Part two</p>",
+    );
+  });
+
+  it("strips box-drawing rule lines inside a longer assistant message", () => {
+    const html = renderChatMarkdown("Intro\n\n> ━━━━━━━━━━━━━━━━━━━━━━━━\n\nOutro");
+    expect(html).toBe("<p>Intro</p><p>Outro</p>");
+    expect(html).not.toContain("━");
   });
 });

@@ -112,10 +112,23 @@ and `<ChatToolCallRow>` is the only thing that draws one:
   is one block rather than several.
 - **Whitespace is clamped at the display boundary** (#0527): rows whose text is
   only whitespace (including zero-width characters) are not drawn; merged
-  assistant text and `renderMarkdown()` collapse runs of three or more blank
+  assistant text and `renderChatMarkdown()` collapse runs of three or more blank
   lines to at most one, strip trailing blank lines, and trim trailing blank
   lines inside fenced code blocks without touching interior spacing. The stored
   transcript is unchanged.
+- **Rows do not collapse inside the log** (#0563): `.ai-chat-log` is a flex column
+  inside a fixed-height scroll region. Its direct children use `flex-shrink: 0`
+  so `overflow: hidden` on `.agent-tool` / `.agent-diagnostic` cannot shrink
+  them to a ~2px border line.
+- **Thematic breaks are not drawn in agent chat bubbles** (#0563): registered
+  agent chats render assistant bubbles with `renderChatMarkdown()`, which strips
+  `---` / box-drawing rule lines (including mid-message) and omits `<hr>` blocks.
+  Entire assistant rows that are only a rule are dropped in `toDisplayRows()`.
+  Human messages are unchanged. The Model Playground keeps `renderMarkdown()` so
+  markdown can be previewed faithfully. CTO reports and task specs also keep
+  `renderMarkdown()`; bubble-only CSS hides stray `<hr>` under `.pm-markdown`,
+  `.guide-markdown`, `.debugger-markdown`, and `.td-markdown` — not under the
+  whole `.ai-chat-log`.
 - Expansion is per row, collapsible, and defaults to collapsed. It is native
   `<details>`, which is also why the row is keyboard-activatable and keeps its
   open state while a live run streams more calls into it.
