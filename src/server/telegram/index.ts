@@ -15,7 +15,15 @@ import type { RepoOSConfig } from "../../core/types.js";
 import { projectDisplayName } from "../../core/config.js";
 import { LocalTelegramProvider } from "./provider.js";
 import { TelegramCredentialStore } from "./store.js";
-import { createTelegramIntakeHandler, telegramIntakeOptionsFromConfig } from "./intake.js";
+import {
+  createTelegramIntakeHandler,
+  telegramIntakeOptionsFromConfig,
+  type TelegramAuthorizedHandler,
+} from "./intake.js";
+import { createTelegramCommandHandler } from "./commands.js";
+import type { LiveIndex } from "../live-index.js";
+import type { AgentRunner } from "../agents.js";
+import type { ReviewManager } from "../review.js";
 
 /** The adapter's live config view — everything it needs from RepoOSConfig. */
 export interface TelegramRuntimeConfig {
@@ -102,14 +110,47 @@ export async function resumeTelegramTransports(
 }
 
 /**
+ * Server-owned read sources the Telegram commands render from (#0540) — the
+ * same in-process `LiveIndex`/`AgentRunner`/`ReviewManager` the HTTP read
+ * routes use, so Telegram never grows a parallel data path.
+ */
+export interface TelegramCommandWiring {
+  index: LiveIndex;
+  runner: AgentRunner;
+  reviews: ReviewManager;
+  /** Control-plane origin for web links; falls back to env/tunnel. */
+  publicOrigin?: string;
+}
+
+/**
  * Register the authorization intake handler and resume polling when configured
  * (#0534). Call after `resetTelegramProviders()` on reload so the new provider
  * singleton receives the handler.
+ *
+ * When `commands` is supplied, the read-only command handler (#0540) is
+ * registered as the intake `onAuthorized` callback. Omitted (as in adapter
+ * tests) the intake path stays exactly as #0534 left it: authorize, audit,
+ * drop — no replies.
  */
 export async function bootstrapTelegramAtBoot(
   config: Pick<RepoOSConfig, "root" | "auth" | "telegram">,
+  commands?: TelegramCommandWiring,
 ): Promise<{ resumed: boolean; detail?: string }> {
   const provider = getTelegramProvider(config);
+  let onAuthorized: TelegramAuthorizedHandler | undefined;
+  if (commands) {
+    onAuthorized = createTelegramCommandHandler({
+      config,
+      repositoryName: projectDisplayName(config.root),
+      index: commands.index,
+      runner: commands.runner,
+      reviews: commands.reviews,
+      ...(commands.publicOrigin ? { publicOrigin: commands.publicOrigin } : {}),
+      send: async (chatId, text, options) => {
+        await provider.sendMessage(chatId, text, options);
+      },
+    });
+  }
   provider.onUpdate(
     createTelegramIntakeHandler(
       telegramIntakeOptionsFromConfig(config, {
@@ -118,6 +159,7 @@ export async function bootstrapTelegramAtBoot(
           if (!status.connected || !status.bot) return null;
           return { id: status.bot.id, username: status.bot.username };
         },
+        ...(onAuthorized ? { onAuthorized } : {}),
       }),
     ),
   );

@@ -3262,7 +3262,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // boot. Safe and never-throwing (reports one log line); the loop
       // gates on the live `telegram.enabled` switch itself, so a disabled
       // integration arms paused with no Telegram traffic.
-      void bootstrapTelegramAtBoot(config).then((resumed) => {
+      void bootstrapTelegramAtBoot(config, {
+        index,
+        runner,
+        reviews,
+        publicOrigin: url,
+      }).then((resumed) => {
         if (resumed.detail) {
           logger.system(resumed.resumed ? "info" : "warn", "Telegram transport resume", {
             pid: process.pid,
