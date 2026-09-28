@@ -623,7 +623,7 @@ export interface RemoteHostStatusView {
   probed: boolean;
   healthy: boolean;
   detail?: string;
-  lastRun?: { taskId: string; ok: boolean; at: string };
+  lastRun?: { taskId: string; ok: boolean; at: string; durationMs?: number };
   activeRuns?: { taskId: string; startedAt: string }[];
   queuedTasks?: string[];
 }

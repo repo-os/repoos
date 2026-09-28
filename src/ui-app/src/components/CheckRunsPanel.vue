@@ -53,9 +53,18 @@ function setSort(key: SortKey): void {
     sortDesc.value = !sortDesc.value;
   } else {
     sortKey.value = key;
-    sortDesc.value = key !== "taskId" && key !== "phase";
+    // Task/phase read naturally ascending; outcome ascends by severity
+    // (failures first); everything else descends (newest / longest first).
+    sortDesc.value = !["taskId", "phase", "outcome"].includes(key);
   }
 }
+
+/** Failures before cancellations before passes — severity, not alphabet. */
+const OUTCOME_SEVERITY: Record<CheckRunRow["outcome"], number> = {
+  fail: 0,
+  cancelled: 1,
+  pass: 2,
+};
 
 function sortValue(r: CheckRunRow, key: SortKey): string | number {
   switch (key) {
@@ -67,6 +76,8 @@ function sortValue(r: CheckRunRow, key: SortKey): string | number {
       return Date.parse(r.startedAt) || 0;
     case "machine":
       return (r.remote ? "" : "~") + (r.machine ?? "?"); // group local/remote of one host together
+    case "outcome":
+      return OUTCOME_SEVERITY[r.outcome] ?? 3;
     default:
       return String(r[key as keyof CheckRunRow] ?? "");
   }

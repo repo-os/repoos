@@ -12,6 +12,7 @@ import { join } from "node:path";
 import type { RepoOSConfig } from "../../core/types.js";
 import {
   PREREQ_OK_TOKEN,
+  TailscaleHostPool,
   TailscaleRunner,
   type RemoteExecDeps,
   type RemoteExecResult,
@@ -40,7 +41,6 @@ interface Fixture {
   pending(): number;
   store(): CheckStore;
 }
-
 function fixture(opts: { hosts: Array<{ host: string; maxConcurrent?: number }> }): Fixture {
   const root = tmpRoot();
   const config = {
@@ -131,6 +131,46 @@ describe("TailscaleHostPool activeRuns (#0564)", () => {
       { ok: true, stage: "check" },
       { ok: true, stage: "check" },
     ]);
+  });
+
+  it("counts waiters without a task id toward queued without inventing one (0564 review)", async () => {
+    const root = tmpRoot();
+    // A direct pool acquire with no taskId — the remote runners panel must
+    // still see the queue depth, and must not render a fake "#?" as next-up.
+    const exec: RemoteExecDeps = {
+      bundleRepo: vi.fn(async () => ({ ok: true })),
+      uploadFile: vi.fn(async () => ({ ok: true })),
+      downloadDir: vi.fn(async () => {}),
+      probeTcp: vi.fn(async () => true),
+      runRemote: vi.fn((_host, cmd): Promise<RemoteExecResult> => {
+        if (cmd.includes(PREREQ_OK_TOKEN)) {
+          return Promise.resolve({ code: 0, output: PREREQ_OK_TOKEN, timedOut: false });
+        }
+        // Never finishes — the holder keeps its slot for the whole test.
+        return new Promise<RemoteExecResult>(() => {});
+      }),
+    };
+    const pool = new TailscaleHostPool(
+      {
+        enabled: true,
+        provider: "tailscale",
+        tailscaleHosts: [{ host: "bee" }],
+        maxConcurrent: 1,
+      } as never,
+      { exec },
+    );
+    const holder = pool.acquire([], {});
+    await tick();
+    const unknown = pool.acquire([], {});
+    await tick();
+
+    const status = pool.status()[0]!;
+    expect(status.queued).toBe(1);
+    expect(status.queuedTasks).toEqual([]);
+
+    (await holder).release();
+    const slot = await unknown;
+    slot.release();
   });
 
   it("lastRun carries the duration of the completed run", async () => {
