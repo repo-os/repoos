@@ -14,10 +14,9 @@ created_by: ""
 branch: feat/build-the-telegram-manager-bot-provision
 cli_override: cursor
 model_override: composer-2.5
-review_cli_override: github copilot
-review_model_override: copilot-auto-balance
+review_model_override: default
 created_at: "2026-09-27T17:32:41Z"
-updated_at: "2026-09-28T06:41:55Z"
+updated_at: "2026-09-28T06:42:04Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 2
@@ -87,3 +86,4 @@ Depends on #0530 (done) and the local adapter/client contract from #0531 (still 
 - 2026-09-28T05:56:51Z · handoff failed · task-file handoff failed at check · repoos check failed: tests/service.test.ts(233,7): error TS2345: Argument of type 'FakeTelegramManagerClient' is not assignable to parameter of type 'TelegramManagerClient'. · Property 'replaceManagedBotToken' is missing in type 'FakeTelegramManagerClient' but required in type 'TelegramManagerClient'. · tests/service.test.ts(238,36): error TS2554: Expected 2 arguments, but got 1. · tests/service.test.ts(240,38): error TS2554: Expected 2 arguments, but got 1. · tests/service.test.ts(248,15): error TS2554: Expected 3 arguments, but got 2. · ⏭ telegram-manager-test  — skipped — blocked by failed step(s): telegram-manager-build · ⏭ macos-hub-icon-transparency  — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-icon-transparency.sh · 2 check(s) failed.
 - 2026-09-28T06:41:53Z · cli_override, model_override
 - 2026-09-28T06:41:55Z · model_override
+- 2026-09-28T06:42:04Z · review_cli_override, review_model_override
