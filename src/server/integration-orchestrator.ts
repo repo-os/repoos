@@ -59,7 +59,7 @@ import { saveDiffSnapshot } from "./diff-snapshot.js";
 import { parseTask } from "../core/task.js";
 import { resolveCheckPlan } from "../core/check-plan.js";
 import { detectRepoMarkers } from "../core/check-runner.js";
-import { loadConfig } from "../core/config.js";
+import { DEFAULT_CONFIG, loadConfig } from "../core/config.js";
 import { summarizeCheckFailure } from "../core/check-failure-summary.js";
 import { checkFailureSignature, summarizeCheckOutput } from "../core/check-results.js";
 import type { TaskCheckManager, TaskCheckListener } from "./task-check.js";
@@ -78,6 +78,54 @@ const PHASE_FAILED = "failed";
  * plain, actionable `review` state.
  */
 export const CANCEL_REASON = "close-out cancelled by user";
+
+/**
+ * Stable, grep-friendly prefix for the failure reason recorded when a
+ * close-out runs past its wall-clock budget (#0573). Deliberately distinct
+ * from `CANCEL_REASON`: a timeout is a normal retryable `failed` job with an
+ * inline error card, while a user cancel is never a failure.
+ */
+export const TIMEOUT_REASON_PREFIX = "close-out timed out after";
+
+/** Human-readable budget for the timeout reason (360000 → "6m", 90000 → "90s"). */
+export function formatCloseOutBudget(timeoutMs: number): string {
+  if (timeoutMs % 3_600_000 === 0) return `${timeoutMs / 3_600_000}h`;
+  const minutes = timeoutMs / 60_000;
+  if (Number.isInteger(minutes)) return `${minutes}m`;
+  if (timeoutMs % 1000 === 0) return `${timeoutMs / 1000}s`;
+  return `${Math.round(timeoutMs)}ms`;
+}
+
+/** The configured budget for one close-out attempt; 6 minutes when unset. */
+export function closeOutTimeoutMs(config: Pick<RepoOSConfig, "closeOut">): number {
+  return config.closeOut?.timeoutMs ?? DEFAULT_CONFIG.closeOut?.timeoutMs ?? 360_000;
+}
+
+/** The recorded failure reason for a close-out that hit its budget (#0573). */
+export function closeOutTimeoutReason(timeoutMs: number): string {
+  return (
+    `${TIMEOUT_REASON_PREFIX} ${formatCloseOutBudget(timeoutMs)} — increase closeOut.timeoutMs ` +
+    "or retry when the runner is less loaded"
+  );
+}
+
+/**
+ * Absolute epoch-ms deadline for one close-out attempt: `startedAt +
+ * closeOut.timeoutMs`. `null` means "no ceiling" — the budget is disabled
+ * (`closeOut.timeoutMs = 0`) or the job has not left `queued` yet (no
+ * `startedAt` set), in which case today's unbounded behaviour is preserved.
+ * Exported for tests (#0573).
+ */
+export function closeOutDeadline(
+  config: Pick<RepoOSConfig, "closeOut">,
+  startedAt: string | null | undefined,
+): number | null {
+  const timeoutMs = closeOutTimeoutMs(config);
+  if (!(timeoutMs > 0) || !startedAt) return null;
+  const started = Date.parse(startedAt);
+  if (!Number.isFinite(started)) return null;
+  return started + timeoutMs;
+}
 
 /**
  * Cap on consecutive publish-time "main advanced" resyncs (#0386). Every
@@ -430,7 +478,7 @@ export function tailLine(stdout: string, stderr: string): string {
   return tail;
 }
 
-interface ProcessRunResult {
+export interface ProcessRunResult {
   status: number | null;
   stdout: string;
   stderr: string;
@@ -445,7 +493,14 @@ interface ProcessRunResult {
   cancelled?: boolean;
 }
 
-function runProcess(
+/**
+ * Run a close-out child process (build, check, install) with its own step
+ * timeout, `isCancelled` polling for Stop MTD (#0459), and — when a pipeline
+ * deadline is active (#0573) — a `deadlineAt` cap so the step can never
+ * outlive the close-out itself: the effective kill timer is
+ * `min(stepTimeout, remaining budget)`. Exported for tests.
+ */
+export function runProcess(
   cmd: string,
   args: string[],
   opts: {
@@ -459,10 +514,21 @@ function runProcess(
      * interrupts a hung build or check without waiting for its own timeout.
      */
     isCancelled?: () => boolean;
+    /**
+     * Absolute epoch-ms pipeline deadline (#0573). When set, the kill timer is
+     * capped to the remaining budget, so a long step (a 10-minute check) can
+     * never outlive the close-out (default 6 minutes). The caller classifies
+     * the kill by re-checking the pipeline clock after the child returns.
+     */
+    deadlineAt?: number;
   },
 ): Promise<ProcessRunResult> {
   return new Promise((resolve) => {
     const child = spawn(cmd, args, { cwd: opts.cwd, env: opts.env });
+    const effectiveTimeout =
+      opts.deadlineAt !== undefined
+        ? Math.min(opts.timeout, Math.max(0, opts.deadlineAt - Date.now()))
+        : opts.timeout;
     let stdout = "";
     let stderr = "";
     let timedOut = false;
@@ -508,7 +574,7 @@ function runProcess(
     timer = setTimeout(() => {
       timedOut = true;
       child.kill("SIGKILL");
-    }, opts.timeout);
+    }, effectiveTimeout);
   });
 }
 
@@ -525,6 +591,8 @@ interface CandidateDependencyPreparation {
   ok: boolean;
   reason?: string;
   cancelled?: boolean;
+  /** True when the install was killed by the pipeline deadline (#0573). */
+  timedOut?: boolean;
 }
 
 /**
@@ -536,6 +604,7 @@ interface CandidateDependencyPreparation {
 async function prepareCandidateDependencies(
   candidatePath: string,
   isCancelled: () => boolean,
+  deadlineAt?: number,
 ): Promise<CandidateDependencyPreparation> {
   const nodeModules = join(candidatePath, "node_modules");
   try {
@@ -572,8 +641,14 @@ async function prepareCandidateDependencies(
     cwd: candidatePath,
     timeout: 300_000,
     isCancelled,
+    ...(deadlineAt !== undefined ? { deadlineAt } : {}),
   });
   if (result.cancelled) return { ok: false, cancelled: true };
+  // Killed (or finished) at/after the pipeline deadline (#0573): the caller
+  // fails the whole close-out as a timeout, never as a dependency-install bug.
+  if (deadlineAt !== undefined && Date.now() >= deadlineAt) {
+    return { ok: false, timedOut: true };
+  }
   if (result.status === 0) return { ok: true };
   const detail = commandMissing(result)
     ? `${command} is not available to prepare candidate dependencies`
@@ -688,6 +763,58 @@ export class CloseOutOrchestrator {
   }
 
   /**
+   * Absolute epoch-ms deadline for THIS close-out attempt (#0573):
+   * `startedAt + closeOut.timeoutMs`, or `null` when the budget is disabled
+   * (`timeoutMs = 0`) or the job has not left `queued` yet. `startedAt` is
+   * read fresh from the durable job record, so retries, drift resyncs and the
+   * single #0216 validate retry all count against ONE budget — the clock
+   * never resets.
+   */
+  private pipelineDeadline(job: IntegrationJob): number | null {
+    const fresh = this.coordinator.getJob(job.taskId);
+    return closeOutDeadline(this.config, fresh?.startedAt ?? job.startedAt);
+  }
+
+  /** True when the close-out has spent its wall-clock budget (#0573). */
+  private pipelineTimedOut(job: IntegrationJob): boolean {
+    const deadline = this.pipelineDeadline(job);
+    return deadline !== null && Date.now() >= deadline;
+  }
+
+  /**
+   * Record a budget-exhausted close-out as a normal `failed` job (#0573).
+   *
+   * Uses the same machinery as every other gate failure — `failOrReconcile`
+   * tears down the throwaway candidate and records `failed` + a stable,
+   * grep-friendly `reason` — deliberately NOT the silent job removal a user
+   * cancel uses: a timeout must show the inline error card and stay
+   * retryable, while the task remains in `review` with its feature
+   * branch/worktree untouched. Distinct from #0459 by construction: cancel
+   * is always checked first everywhere below, so a stopped job never gets a
+   * failure badge.
+   */
+  private timeoutJob(job: IntegrationJob): { ok: boolean; reason?: string } {
+    const timeoutMs = closeOutTimeoutMs(this.config);
+    const reason = closeOutTimeoutReason(timeoutMs);
+    this.logger?.integration(job.taskId, "error", "close-out hit its pipeline timeout", {
+      reason,
+      phase: job.phase,
+      startedAt: job.startedAt,
+      timeoutMs,
+    });
+    return this.failOrReconcile(job, job.phase, reason);
+  }
+
+  /** The `{ ok: false, timedOut: true }` phase result for an expired budget (#0573). */
+  private timeoutResult(): { ok: false; timedOut: true; reason: string } {
+    return {
+      ok: false,
+      timedOut: true,
+      reason: closeOutTimeoutReason(closeOutTimeoutMs(this.config)),
+    };
+  }
+
+  /**
    * Abort a cancelled close-out cooperatively (#0459). Tears down the throwaway
    * `repoos/integrate/<id>` candidate and drops the job record so the task
    * leaves `inPipeline` and becomes actionable again. The task's own feature
@@ -766,6 +893,15 @@ export class CloseOutOrchestrator {
         return this.cancelJob(job);
       }
 
+      // Budget check (#0573): a close-out that already spent its wall-clock
+      // budget fails here — before any further work — with a retryable
+      // `failed` job. `cleanup` is deliberately excluded: by then the publish
+      // merge has landed, so the job must finish as `done`, never be failed
+      // out from under a completed merge.
+      if (job.phase !== "cleanup" && this.pipelineTimedOut(job)) {
+        return this.timeoutJob(job);
+      }
+
       // Transition from queued to syncing.
       if (job.phase === "queued") {
         const updated = this.coordinator.updateJob(job.taskId, {
@@ -780,6 +916,7 @@ export class CloseOutOrchestrator {
       if (job.phase === "syncing") {
         const syncRes = await this.syncCandidate(job);
         if (syncRes.cancelled) return this.cancelJob(job);
+        if (syncRes.timedOut) return this.timeoutJob(job);
         if (!syncRes.ok) {
           this.logger?.integration(job.taskId, "error", "sync failed", {
             reason: syncRes.reason,
@@ -796,6 +933,8 @@ export class CloseOutOrchestrator {
           }
           return this.failOrReconcile(job, "syncing", syncRes.reason);
         }
+        // Budget spent while syncing (#0573): fail before the gate starts.
+        if (this.pipelineTimedOut(job)) return this.timeoutJob(job);
         job = this.coordinator.updateJob(job.taskId, { phase: "validating" })!;
       }
 
@@ -813,6 +952,7 @@ export class CloseOutOrchestrator {
       if (job.phase === "validating") {
         let validateRes = await this.validateCandidate(job);
         if (validateRes.cancelled) return this.cancelJob(job);
+        if (validateRes.timedOut) return this.timeoutJob(job);
         if (validateRes.resynced) {
           // Main advanced while the candidate was being validated: it was
           // discarded and the job reset to `syncing`. Return now so the next
@@ -846,10 +986,15 @@ export class CloseOutOrchestrator {
           );
         }
         if (!validateRes.ok) {
+          // The single #0216 retry spends the SAME budget (#0573): when the
+          // clock is already gone, fail as a timeout instead of starting a
+          // second full gate cycle the pipeline cannot afford.
+          if (this.pipelineTimedOut(job)) return this.timeoutJob(job);
           const firstReason = validateRes.reason ?? "unknown";
           const firstChecks = validateRes.failedChecks;
           validateRes = await this.validateCandidate(job);
           if (validateRes.cancelled) return this.cancelJob(job);
+          if (validateRes.timedOut) return this.timeoutJob(job);
           if (validateRes.resynced) {
             // Main advanced before the retry could run: identical to the first
             // call's drift branch — candidate discarded, job reset to
@@ -877,6 +1022,9 @@ export class CloseOutOrchestrator {
             return this.failOrReconcile(job, "validating", reason);
           }
         }
+        // Gate green — but never promote past an exhausted budget (#0573):
+        // fail here while main is still untouched.
+        if (this.pipelineTimedOut(job)) return this.timeoutJob(job);
         job = this.coordinator.updateJob(job.taskId, {
           phase: "publishing",
           candidateSha: validateRes.candidateSha,
@@ -887,6 +1035,7 @@ export class CloseOutOrchestrator {
       if (job.phase === "publishing") {
         const pubRes = await this.publishCandidate(job);
         if (pubRes.cancelled) return this.cancelJob(job);
+        if (pubRes.timedOut) return this.timeoutJob(job);
         if (!pubRes.ok) {
           // Check if the job phase was changed by publishCandidate() (e.g., drift handling).
           // If it was moved back to "syncing" for retry, don't overwrite it to "failed".
@@ -1000,6 +1149,8 @@ export class CloseOutOrchestrator {
     candidateSha?: string;
     conflict?: boolean;
     cancelled?: boolean;
+    /** Pipeline budget spent before any work ran (#0573). */
+    timedOut?: boolean;
   }> {
     this.onProgress?.("sync");
     const root = this.config.root;
@@ -1008,6 +1159,10 @@ export class CloseOutOrchestrator {
     // Stop MTD (#0459) can land between a queued job and this phase.
     if (this.isCancelled(job.taskId)) {
       return { ok: false, cancelled: true, reason: CANCEL_REASON };
+    }
+    // Pipeline budget already spent (#0573) — abort before touching git.
+    if (this.pipelineTimedOut(job)) {
+      return this.timeoutResult();
     }
 
     // Resolve the repository's actual default branch
@@ -1155,6 +1310,13 @@ export class CloseOutOrchestrator {
      */
     cancelled?: boolean;
     /**
+     * True when the close-out spent its wall-clock budget (#0573) — before the
+     * gate started or while a build/check child was running. `processJob`
+     * records a retryable timeout failure, never a gate failure and never the
+     * silent removal of a user cancel.
+     */
+    timedOut?: boolean;
+    /**
      * Main advanced between sync and validate, so the candidate was discarded
      * and the job reset to `syncing`. Distinguishes this retry from a genuine
      * validation failure — `processJob` must return to the phase machine
@@ -1172,6 +1334,13 @@ export class CloseOutOrchestrator {
     // Stop MTD (#0459): abort before the merge/gate if already requested.
     if (this.isCancelled(job.taskId)) {
       return { ok: false, cancelled: true, reason: CANCEL_REASON };
+    }
+    // Pipeline budget (#0573): computed once — `startedAt` never moves during
+    // an attempt, so every step below (install, build, remote gate, check)
+    // shares the same absolute deadline. `undefined` = ceiling disabled.
+    const deadlineAt = this.pipelineDeadline(job) ?? undefined;
+    if (deadlineAt !== undefined && Date.now() >= deadlineAt) {
+      return this.timeoutResult();
     }
 
     // Check for main SHA changes. If main advanced, discard candidate and rebuild.
@@ -1368,11 +1537,16 @@ export class CloseOutOrchestrator {
       // Give only dependency-changing candidates their own frozen install.
       if (changedPaths !== null && hasDependencyInputChange(changedPaths)) {
         this.onProgress?.("build");
-        const dependencies = await prepareCandidateDependencies(wtPath, () =>
-          this.isCancelled(job.taskId),
+        const dependencies = await prepareCandidateDependencies(
+          wtPath,
+          () => this.isCancelled(job.taskId),
+          deadlineAt,
         );
         if (dependencies.cancelled) {
           return { ok: false, cancelled: true, reason: CANCEL_REASON };
+        }
+        if (dependencies.timedOut || this.pipelineTimedOut(job)) {
+          return this.timeoutResult();
         }
         if (!dependencies.ok) {
           return {
@@ -1395,19 +1569,27 @@ export class CloseOutOrchestrator {
           cwd: wtPath,
           timeout: 300_000,
           isCancelled: () => this.isCancelled(job.taskId),
+          ...(deadlineAt !== undefined ? { deadlineAt } : {}),
         });
         if (buildRes.cancelled) {
           return { ok: false, cancelled: true, reason: CANCEL_REASON };
+        }
+        if (this.pipelineTimedOut(job)) {
+          return this.timeoutResult();
         }
         if (commandMissing(buildRes)) {
           buildRes = await runProcess("npm", ["run", "build"], {
             cwd: wtPath,
             timeout: 300_000,
             isCancelled: () => this.isCancelled(job.taskId),
+            ...(deadlineAt !== undefined ? { deadlineAt } : {}),
           });
         }
         if (buildRes.cancelled) {
           return { ok: false, cancelled: true, reason: CANCEL_REASON };
+        }
+        if (this.pipelineTimedOut(job)) {
+          return this.timeoutResult();
         }
         if (buildRes.status !== 0) {
           return {
@@ -1439,6 +1621,10 @@ export class CloseOutOrchestrator {
           worktreePath: wtPath,
           taskId: job.taskId,
           phase: "close-out",
+          // The pool queue and a stuck SSH session must spend the SAME budget
+          // as the rest of the pipeline (#0573 → #0521's queue-deadline path):
+          // without this, remote validation could sit past any local cap.
+          ...(deadlineAt !== undefined ? { deadlineAt } : {}),
         });
         if (remoteGateOutcome.kind === "fail") {
           return {
@@ -1459,9 +1645,13 @@ export class CloseOutOrchestrator {
         }
       }
 
-      // Stop MTD (#0459) may have landed while the remote runner was busy.
+      // Stop MTD (#0459) may have landed while the remote runner was busy —
+      // and the remote wait may have burned the pipeline budget (#0573).
       if (this.isCancelled(job.taskId)) {
         return { ok: false, cancelled: true, reason: CANCEL_REASON };
+      }
+      if (this.pipelineTimedOut(job)) {
+        return this.timeoutResult();
       }
 
       if (bootstrapWithoutPlan) {
@@ -1505,6 +1695,7 @@ export class CloseOutOrchestrator {
             env: checkEnv,
             onChunk: checkHandle?.chunk,
             isCancelled: () => this.isCancelled(job.taskId),
+            ...(deadlineAt !== undefined ? { deadlineAt } : {}),
           });
         // A check whose ONLY failure is a stale build marker: the same marker the
         // close-out build above should have refreshed. This is the self-resolving
@@ -1576,11 +1767,16 @@ export class CloseOutOrchestrator {
               cwd: wtPath,
               timeout: 300_000,
               isCancelled: () => this.isCancelled(job.taskId),
+              ...(deadlineAt !== undefined ? { deadlineAt } : {}),
             });
             checkRes = await rawCheck(process.execPath, [localCli, "check", ...checkArgs]);
             if (checkRes.cancelled) {
               checkHandle?.done(checkRes.status);
               return { ok: false, cancelled: true, reason: CANCEL_REASON };
+            }
+            if (this.pipelineTimedOut(job)) {
+              checkHandle?.done(checkRes.status);
+              return this.timeoutResult();
             }
             if (checkRes.status !== 0) {
               checkHandle?.done(checkRes.status);
@@ -1594,9 +1790,12 @@ export class CloseOutOrchestrator {
           } else {
             // Genuine non-staleness failure from the local CLI: preserve the prior
             // fallback behaviour (retry via the global repoos, then bun run repoos).
+            // Skipped when the pipeline budget is already spent (#0573) — a
+            // fallback run cannot fit in a budget that has no time left, and the
+            // timeout classification below is the real result.
             outcome = "fallback";
             checkRes = await rawCheck("repoos", ["check", ...checkArgs]);
-            if (checkRes.status !== 0) {
+            if (checkRes.status !== 0 && !this.pipelineTimedOut(job)) {
               checkRes = await rawCheck("bun", ["run", "repoos", "check", ...checkArgs]);
             }
           }
@@ -1606,6 +1805,13 @@ export class CloseOutOrchestrator {
         // A check killed by Stop MTD (#0459) is not a gate failure — abort.
         if (checkRes.cancelled) {
           return { ok: false, cancelled: true, reason: CANCEL_REASON };
+        }
+
+        // A check killed (or finished) at the pipeline deadline (#0573) is a
+        // timeout, not a gate failure — classify it before the recorder below
+        // would blame the branch for the machine's clock.
+        if (this.pipelineTimedOut(job)) {
+          return this.timeoutResult();
         }
 
         if (checkRes.status !== 0) {
@@ -1647,6 +1853,8 @@ export class CloseOutOrchestrator {
     ok: boolean;
     reason?: string;
     cancelled?: boolean;
+    /** Pipeline budget spent before the irreversible merge (#0573). */
+    timedOut?: boolean;
   }> {
     const root = this.config.root;
     const mainBranch = await resolveDefaultBranch(root);
@@ -1663,6 +1871,11 @@ export class CloseOutOrchestrator {
     // Stop MTD (#0459): never mutate live main for a job the user cancelled.
     if (this.isCancelled(job.taskId)) {
       return { ok: false, cancelled: true, reason: CANCEL_REASON };
+    }
+    // Budget check (#0573): fail before taking any locks — main is untouched
+    // at this point, so the failure is as retryable as any other pre-merge one.
+    if (this.pipelineTimedOut(job)) {
+      return this.timeoutResult();
     }
 
     // Acquire the repository lock before publishing.
@@ -1877,6 +2090,13 @@ export class CloseOutOrchestrator {
       // Stop MTD is only safe while main has not yet been mutated.
       if (this.isCancelled(job.taskId)) {
         return { ok: false, cancelled: true, reason: CANCEL_REASON };
+      }
+      // Last budget checkpoint before the irreversible merge (#0573). This is
+      // the final timeout check in the pipeline: once the merge below lands,
+      // the job must finish as `done` — the post-merge rebuild and cleanup are
+      // deliberately never timed out from under a completed publish.
+      if (this.pipelineTimedOut(job)) {
+        return this.timeoutResult();
       }
 
       const publishMerge = await mergeBranch(root, branch, {

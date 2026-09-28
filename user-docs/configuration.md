@@ -85,6 +85,9 @@ worktreeWarnThreshold = 20     # 0 disables the warning
 servePort = 7171   # omit to derive a stable per-repo port (7200-7999)
 strictBuild = false
 
+# ── Close-out (Move to done) ─────────────────────────────────────────────
+closeOut.timeoutMs = 360000  # 6-minute budget per close-out attempt; 0 = no limit
+
 # ── Agents ───────────────────────────────────────────────────────────────
 maxConcurrentAgents = 5  # omit to size from this machine's CPU count
 
@@ -303,6 +306,22 @@ strictBuild = false
 Appearance is **not** a `repoos.toml` setting. The dark/light/system theme and
 the UI design language are per-browser preferences stored in the browser, so
 they never travel with the repo.
+
+## Close-out (Move to done)
+
+```toml
+closeOut.timeoutMs = 360000
+```
+
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `closeOut.timeoutMs` | number | `360000` (6 min) | yes | Total wall-clock budget for **one** close-out attempt — from when the job leaves the queue until it reaches `failed`, `done`, or is removed by a user cancel. A close-out that runs past it is aborted: in-flight build/check/publish children are killed, the throwaway candidate worktree is torn down, and the job is recorded as a retryable `failed` whose reason starts `close-out timed out after …`. The task stays in `review` with its feature branch and worktree untouched, so **Move to done** can be retried. The single validating retry, main-drift resyncs, and remote validation (host-pool queue wait included) all spend the **same** budget, and per-step child timeouts are capped to whatever budget remains. `0` disables the ceiling (the unbounded pre-#0573 behaviour). Invalid or negative values are ignored with a `[closeOut] timeoutMs …` console warning and fall back to the default. |
+
+Edit it in **Settings → General → "Close-out timeout"** (presets plus *Off (no
+limit)*), or set any value directly in `repoos.toml`. A timeout is a failure
+with an error card; **Stop MTD** on the task drawer is a user cancel and stays
+badge-free — see [docs/close-out-pipeline.md](../docs/close-out-pipeline.md)
+for how the three outcomes differ.
 
 ## Worktrees and runtime
 
