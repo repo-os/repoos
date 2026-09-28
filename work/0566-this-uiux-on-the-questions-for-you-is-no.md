@@ -13,9 +13,9 @@ created_by: hello@repoos.org
 branch: feat/fix-questions-for-you-duplication-and-an
 pm_model_override: opencode/muse-spark-1.3-contributor-free
 review_cli_override: cursor
-review_model_override: default
+review_model_override: composer-2.5
 created_at: "2026-09-28T04:34:57Z"
-updated_at: "2026-09-28T05:58:15Z"
+updated_at: "2026-09-28T05:58:16Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -131,3 +131,4 @@ rm: cannot remove '/home/nick/.repoos-validate.YNH9F1/repo/.repoos/repoos.db-shm
 - 2026-09-28T05:46:36Z · status active→review
 - 2026-09-28T05:47:46Z · needs_input
 - 2026-09-28T05:58:15Z · review_cli_override, review_model_override
+- 2026-09-28T05:58:16Z · review_model_override
