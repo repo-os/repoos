@@ -311,4 +311,12 @@ export interface ProvisioningClient {
  */
 export interface ManagedProvisioningClient extends ProvisioningClient {
   isConfigured(): boolean;
+  /** Rotate the managed bot's token via the #0559 service and return the new
+   * one; the old token is immediately invalidated by Telegram. Only callable
+   * after a successful redeem — used by #0539's rotate-credential flow. */
+  rotateToken(id: string): Promise<{ token: string }>;
+  /** Revoke a managed project bot — the #0539 disconnect contract. The service
+   * replaces the bot token (Telegram has no revoke primitive) and purges any
+   * stored grace-window credential. Idempotent: a retry rotates again. */
+  revokeBot(botId: number, repository: string, instanceId: string): Promise<{ confirmed: boolean }>;
 }

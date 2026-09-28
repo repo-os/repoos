@@ -256,8 +256,12 @@ export class PgProvisioningStore implements ProvisioningStore {
     return { kind: "wrong_state", row: toRequestRow(current) };
   }
 
-  async completeRedeem(id: string, envelope: EncryptedEnvelope, graceUntil: Date): Promise<void> {
-    await this.pool.query(
+  async completeRedeem(
+    id: string,
+    envelope: EncryptedEnvelope,
+    graceUntil: Date,
+  ): Promise<boolean> {
+    const result = await this.pool.query(
       `UPDATE provisioning_requests
          SET state = 'redeemed', redeemed_at = now(), grace_until = $2,
              token_envelope_iv = $3, token_envelope_tag = $4, token_envelope_ciphertext = $5,
@@ -265,6 +269,7 @@ export class PgProvisioningStore implements ProvisioningStore {
        WHERE id = $1 AND state = 'redeeming'`,
       [id, graceUntil, envelope.iv, envelope.tag, envelope.ciphertext],
     );
+    return (result.rowCount ?? 0) > 0;
   }
 
   async failRedeem(id: string): Promise<void> {
