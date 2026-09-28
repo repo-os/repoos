@@ -11,6 +11,7 @@ import AiChatThinking from "./AiChatThinking.vue";
 import ChatDiagnosticRow from "./ChatDiagnosticRow.vue";
 import ChatToolCallRow from "./ChatToolCallRow.vue";
 import { useChatScroll } from "../composables/useChatScroll";
+import { useCopyChatMessage } from "../composables/useCopyChatMessage";
 import { bubbleRole, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
 
 const props = defineProps<{ open: boolean }>();
@@ -35,6 +36,8 @@ const { showJumpToLatest, onScroll, scrollToLatest } = useChatScroll(log, {
   contentSize: () => lines.value.length,
   active: () => props.open,
 });
+
+const { messageBubbleListeners } = useCopyChatMessage();
 
 // Rows are grouped by the shared transform (#0506): a run of adjacent tool
 // calls is one expandable row with counts and the time it finished, not a
@@ -147,7 +150,7 @@ watch(
             :at="row.at"
           />
           <ChatToolCallRow v-else-if="row.kind === 'tools'" :calls="row.calls" :at="row.at" />
-          <div v-else :class="`cto-line ${bubbleRole(row)}`">
+          <div v-else :class="`cto-line ${bubbleRole(row)}`" v-on="messageBubbleListeners(row)">
             {{ row.text }}
             <!-- Every row carries its last-updated time (#0506), system rows
                  included: a `sys` entry is stamped like any other. -->
