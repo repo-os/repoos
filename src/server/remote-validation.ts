@@ -572,6 +572,10 @@ export function hostLockShell(opts: {
     `HOSTMAX=${HOST_LOCK_MAX_SLOTS}`,
     `WAIT=${wait}`,
     `DEADLINE=${deadline !== undefined ? deadline : ""}`,
+    // zsh throws "no matches found" when a glob expands to nothing (unlike bash/sh
+    // which pass the literal string — caught by the `[ -d ]` guard below).
+    // nullglob makes unmatched globs expand to nothing instead of erroring.
+    "setopt nullglob 2>/dev/null; shopt -s nullglob 2>/dev/null; true",
     'mkdir -p "$LOCKROOT" 2>/dev/null || true',
     // Refuse to even ATTEMPT the first acquisition once already past the
     // caller's absolute deadline — self-clocked on this host's own `date`,
