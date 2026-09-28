@@ -2,7 +2,7 @@
 id: "0566"
 title: Fix Questions-for-You duplication and answer UX
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
@@ -12,7 +12,7 @@ pm_model_override: opencode/muse-spark-1.3-contributor-free
 review_cli_override: github copilot
 review_model_override: copilot-auto-balance
 created_at: "2026-09-28T04:34:57Z"
-updated_at: "2026-09-28T04:36:26Z"
+updated_at: "2026-09-28T05:07:18Z"
 ---
 ## Problem
 
@@ -74,3 +74,4 @@ This uiux on the "questions for you" is not great because it shows up twice on t
 - 2026-09-28T04:36:21Z · review_model_override
 - 2026-09-28T04:36:24Z · status inbox→ready
 - 2026-09-28T04:36:26Z · status ready→active, branch
+- 2026-09-28T05:07:18Z · status active→review
