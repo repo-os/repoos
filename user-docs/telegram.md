@@ -133,7 +133,9 @@ files or change task status.
   follows you between the private chat and a group you both use.
 - **Conversations expire.** After 24 hours of inactivity a conversation ends;
   your next message starts a fresh one and the bot tells you it did. Send
-  `/new` to start a fresh conversation yourself at any time.
+  `/new` to start a fresh conversation yourself at any time — while a reply is
+  still being generated, the bot asks you to wait instead of cutting the
+  turn short.
 - **Pace yourself.** Telegram agent turns are metered per user and per chat
   (a small number per minute). When the limit applies you get a clear
   "too many questions per minute" message instead of silence, and no turn is

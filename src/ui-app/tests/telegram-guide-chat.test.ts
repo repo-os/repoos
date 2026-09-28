@@ -455,10 +455,49 @@ describe("telegramGuideTurnHandler — conversation flow", () => {
     expect(t.sent.some((s) => s.text.startsWith("Started a fresh conversation"))).toBe(false);
   });
 
+  it("/new while a turn is running is refused — the session (and its usage) survive", async () => {
+    const t = setup();
+    t.runner.autoFinish = false; // keep the paid turn in flight
+    t.runner.nextReply = [{ type: "text", text: "answer" } as AgentOutputEntry];
+    await t.handle(messageUpdate({ senderId: 5, chatId: 500, text: "one" }), 5);
+    await waitFor(() => t.runner.turnCalls.length === 1, "turn started");
+
+    await t.handle(messageUpdate({ senderId: 5, chatId: 500, command: "new", text: "/new" }), 5);
+    await new Promise((r) => setTimeout(r, 30));
+    // NOT cleared: AgentRunner.cleanup would find no session and skip
+    // recordSessionToDb entirely — a paid turn vanishing from the Tokens tab.
+    expect(t.runner.output("tg-guide:5")).not.toBeNull();
+    expect(t.sent.at(-1)?.text).toContain("still working");
+    expect(t.audited.filter((a) => a.action === "telegram_agent_turn_refused")).toEqual([
+      expect.objectContaining({
+        details: expect.objectContaining({ reason: "conversation reset while a turn is running" }),
+      }),
+    ]);
+  });
+
+  it("the lazy expiry clear never touches a session with a running turn", async () => {
+    const t = setup({
+      expiryMs: 1000,
+      now: () => Date.parse("2026-09-28T03:00:00.000Z"),
+    });
+    t.runner.autoFinish = false;
+    t.runner.nextReply = [];
+    await t.handle(messageUpdate({ senderId: 5, chatId: 500, text: "one" }), 5);
+    await waitFor(() => t.runner.turnCalls.length === 1, "turn started");
+    // The turn has been running for a frozen forever — expired by now.
+    await t.handle(messageUpdate({ senderId: 5, chatId: 500, text: "two" }), 5);
+    await new Promise((r) => setTimeout(r, 30));
+    // Still not cleared; the second message was refused busy, like /new.
+    expect(t.runner.output("tg-guide:5")).not.toBeNull();
+    expect(t.runner.turnCalls.length).toBe(1);
+  });
+
   it("/new clears the conversation on demand without starting a run", async () => {
     const t = setup();
     t.runner.nextReply = [{ type: "text", text: "answer" } as AgentOutputEntry];
     await t.handle(messageUpdate({ senderId: 5, chatId: 500, text: "one" }), 5);
+    // Wait for the turn to finish settle-delivering before /new: waiter and
+    // runner both complete during this.
     await waitFor(() => t.runner.turnCalls.length === 1 && t.sent.length > 0, "first turn");
     expect(t.runner.output("tg-guide:5")).not.toBeNull();
 
@@ -588,6 +627,21 @@ describe("reply shaping", () => {
     expect(split.join("")).toBe(oneLine);
 
     expect(chunkForTelegram("short")).toEqual(["short"]);
+
+    // Regression (review round 3): a >chunkSize line AFTER accumulated
+    // content must not push its own head before that content — the reply
+    // would reach Telegram scrambled. Mixed-length input, order asserted by
+    // character coverage once per-chunk separators are stripped.
+    const mixed = ["intro line", "x".repeat(8000), "trailing line"].join("\n");
+    const mixedChunks = chunkForTelegram(mixed);
+    for (const chunk of mixedChunks) expect(chunk.length).toBeLessThanOrEqual(3800);
+    expect(mixedChunks[0]).toBe("intro line");
+    expect(mixedChunks[0]).toBe("intro line");
+    expect(mixedChunks[1]).toMatch(/^x{3800}$/);
+    expect(mixedChunks[2]).toMatch(/^x{3800}$/);
+    expect(mixedChunks[3]!.startsWith("x")).toBe(true);
+    expect(mixedChunks[3]!.endsWith("trailing line")).toBe(true);
+    expect(mixedChunks.join("").replace(/\n/g, "")).toBe(mixed.replace(/\n/g, ""));
   });
 
   it("joins a turn's assistant text entries from the transcript slice", () => {
