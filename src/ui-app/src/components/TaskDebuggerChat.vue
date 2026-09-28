@@ -47,7 +47,7 @@ const { showJumpToLatest, onScroll, scrollToLatest } = useChatScroll(log, {
   active: () => props.active,
 });
 
-const { onBubbleClick } = useCopyChatMessage();
+const { messageBubbleListeners } = useCopyChatMessage();
 
 const dispatchRole = ref<null | "engineer" | "pm">(null);
 const dispatchBusy = ref(false);
@@ -248,7 +248,7 @@ watch(
               <div
                 class="td-bubble"
                 :class="`td-bubble-${bubbleRole(row)}`"
-                @click="onBubbleClick(row, $event)"
+                v-on="messageBubbleListeners(row)"
               >
                 <div
                   v-if="bubbleRole(row) === 'assistant'"

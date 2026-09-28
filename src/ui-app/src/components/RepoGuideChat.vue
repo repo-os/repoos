@@ -60,7 +60,7 @@ const { showJumpToLatest, onScroll, scrollToLatest } = useChatScroll(log, {
   active: () => props.open,
 });
 
-const { onBubbleClick } = useCopyChatMessage();
+const { messageBubbleListeners } = useCopyChatMessage();
 
 // Rows are grouped by the shared transform (#0506): a run of adjacent tool
 // calls is one expandable row with counts and the time it finished, not a
@@ -220,7 +220,7 @@ watch(
             <div
               class="guide-bubble"
               :class="`guide-bubble-${bubbleRole(row)}`"
-              @click="onBubbleClick(row, $event)"
+              v-on="messageBubbleListeners(row)"
             >
               <div
                 v-if="bubbleRole(row) === 'assistant'"

@@ -2,6 +2,11 @@ import { bubbleRole, type DisplayRow } from "./chat-rows.js";
 
 const INTERACTIVE_SELECTOR = "a, button, input, textarea, select";
 
+/** True when the row is a human or assistant message bubble that can be copied. */
+export function isCopyableBubbleRow(row: DisplayRow): boolean {
+  return copyTextForBubbleRow(row) !== null;
+}
+
 /** Plain text to copy for a bubble chat row, or null when the row is not a message. */
 export function copyTextForBubbleRow(row: DisplayRow): string | null {
   const role = bubbleRole(row);
