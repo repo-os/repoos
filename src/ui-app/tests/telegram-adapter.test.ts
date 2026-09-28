@@ -492,8 +492,14 @@ describe("BYO connect and encrypted storage", () => {
     const commands = calls.find((c) => c.method === "setMyCommands")?.body.commands as {
       command: string;
     }[];
+    // #0542: the menu advertises the task-agent follow-up command too;
+    // #0541: `/new` (the guide conversation reset) is on the menu as well.
     expect(commands).toEqual([
       { command: "help", description: "What this RepoOS bot can do" },
+      {
+        command: "msg",
+        description: "Send a follow-up to a task's agent — /msg <id> <message>",
+      },
       { command: "new", description: "Start a fresh guide conversation" },
     ]);
     // The description names this repository.

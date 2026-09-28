@@ -44,6 +44,7 @@ import {
 import { chainedOnAuthorized } from "../../server/telegram/index.js";
 import { createTelegramCommandHandler } from "../../server/telegram/commands.js";
 import { TELEGRAM_AUDIT } from "../../core/telegram-identity.js";
+import type { TelegramActor } from "../../server/telegram/actor.js";
 import { RepoOSDb, resetDbInstance } from "../../core/db.js";
 import { waitFor } from "./helpers.js";
 
@@ -623,7 +624,7 @@ describe("chainedOnAuthorized — #0540 and #0541 both see every authorized upda
     const runner = new FakeRunner();
     runner.nextReply = [{ type: "text", text: "guide answer" } as AgentOutputEntry];
     const sent: { chatId: number; text: string }[] = [];
-    const sendDep = async (chatId: number, text: string): Promise<unknown> => {
+    const sendDep = async (chatId: number, text: string): Promise<void> => {
       sent.push({ chatId, text });
     };
     const commands = createTelegramCommandHandler({
@@ -679,10 +680,8 @@ describe("chainedOnAuthorized — #0540 and #0541 both see every authorized upda
     const next = async (_update: unknown, actorNext: TelegramActor): Promise<void> => {
       seen.push(actorNext.email);
     };
-    await chainedOnAuthorized(boom, next)(
-      messageUpdate({ senderId: 1, chatId: 1, text: "hi" }),
-      actor(1),
-    );
+    const chained = chainedOnAuthorized(boom, next)!;
+    await chained(messageUpdate({ senderId: 1, chatId: 1, text: "hi" }), actor(1));
     expect(seen).toEqual(["ross@test.com"]);
   });
 
