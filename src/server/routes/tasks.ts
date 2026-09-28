@@ -46,6 +46,10 @@ import {
   flagUnderspecifiedIfNeeded,
   needsInputClearsOnPmMessage,
 } from "../task-underspecified-flag.js";
+import {
+  answeringQuestionsMatchTask,
+  wrapPmMessageWithQuestionContext,
+} from "../../core/pm-question-context.js";
 import { listInputs } from "../../core/input.js";
 import {
   commitTaskFile,
@@ -1678,6 +1682,25 @@ export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
     return json(res, 400, { error: "message text is required" });
   }
 
+  const rawAnsweringQuestions = Array.isArray(body?.answeringQuestions)
+    ? (body.answeringQuestions as unknown[])
+    : [];
+  const answeringQuestions = rawAnsweringQuestions.filter(
+    (q): q is string => typeof q === "string" && q.trim().length > 0,
+  );
+  if (
+    answeringQuestions.length > 0 &&
+    !answeringQuestionsMatchTask(answeringQuestions, existing.questions)
+  ) {
+    return json(res, 400, {
+      error: "answeringQuestions must match this task's open questions",
+    });
+  }
+  const messageText =
+    answeringQuestions.length > 0
+      ? wrapPmMessageWithQuestionContext(answeringQuestions, text)
+      : text;
+
   // Build a one-shot agent override for this PM request. Falls back to the
   // task's persisted PM overrides (set via the PM tab's selector) when the
   // client doesn't pass explicit values.
@@ -1777,11 +1800,11 @@ ${existing.body || "(no description)"}`;
 
   const existing_session = runner.output(pmSessionId);
   const result = existing_session
-    ? runner.send(pmSessionId, text, pm, {
+    ? runner.send(pmSessionId, messageText, pm, {
         resumePreamble: `Task context:\n${fullContext}`,
         ...(pmCwd ? { cwd: pmCwd } : {}),
       })
-    : runner.startChat(pmSessionId, text, pm, fullContext, taskPmPrompt, {
+    : runner.startChat(pmSessionId, messageText, pm, fullContext, taskPmPrompt, {
         ...(pmCwd ? { cwd: pmCwd } : {}),
       });
 
