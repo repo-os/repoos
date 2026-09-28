@@ -89,8 +89,31 @@ describe("runRemotePreReviewGate", () => {
       taskId: "0520",
       worktreePath: root,
       candidateSha: sha,
+      phase: "pre-review",
       onChunk: undefined,
     });
+  });
+
+  it("carries the caller's phase through to validate() (#0564)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-prrv-"));
+    git(root, ["init", "-q"]);
+    git(root, ["commit", "--allow-empty", "-qm", "init"]);
+    const config = makeConfig(root, { enabled: true, fallbackToLocal: false });
+    const validate = vi.fn().mockResolvedValue({ ok: true });
+    const out = await runRemotePreReviewGate({
+      config,
+      remoteValidator: {
+        validate,
+        reconcile: vi.fn(),
+        dispose: vi.fn(),
+        logPath: () => "",
+      },
+      worktreePath: root,
+      taskId: "0564",
+      phase: "close-out",
+    });
+    expect(out).toEqual({ kind: "local-only", skipTests: true });
+    expect(validate).toHaveBeenCalledWith(expect.objectContaining({ phase: "close-out" }));
   });
 
   it("treats a red remote gate as non-retryable", async () => {

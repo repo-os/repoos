@@ -543,6 +543,8 @@ export type RepoEvent =
       taskId: string;
       checkId: string;
       checkKind: TaskCheckKind;
+      scope: string;
+      machine: string;
       at: string;
     }
   | { type: "task-check.output"; taskId: string; checkId: string; chunk: string; at: string }
@@ -553,6 +555,8 @@ export type RepoEvent =
       code: number | null;
       passed: boolean;
       durationMs: number;
+      scope: string;
+      machine: string;
       at: string;
     }
   /** A built-in agent finished a run (0439) — surfaced as a toast. */
@@ -581,6 +585,58 @@ export interface TaskCheckRun {
   passed: boolean | null;
   code: number | null;
   output: string;
+  /** 'full' or 'changed:<ref>' — what the run covers (#0564). */
+  scope: string;
+  /** Short hostname of the machine the check runs on (#0564). */
+  machine: string;
+}
+
+/** One durable check run (#0564) — a row of the Runs tab / check history. */
+export interface CheckRunRow {
+  id: number;
+  /** null for bare CLI runs. */
+  taskId: string | null;
+  phase: "pre-review" | "close-out" | "release" | "cli";
+  /** Short hostname of the executing machine, or null when never dispatched. */
+  machine: string | null;
+  /** True when the run executed on a remote validation host. */
+  remote: boolean;
+  /** 'full' or 'changed:<ref>'. */
+  scope: string;
+  startedAt: string;
+  durationMs: number | null;
+  outcome: "pass" | "fail" | "cancelled";
+  failedStep: string | null;
+  skippedSteps: string[];
+  detail: string | null;
+}
+
+/** One host's live state from `GET /api/remote-validation/status` (#0521/#0564). */
+export interface RemoteHostStatusView {
+  host: string;
+  user: string;
+  os?: string;
+  labels: string[];
+  maxConcurrent: number;
+  inFlight: number;
+  queued: number;
+  probed: boolean;
+  healthy: boolean;
+  detail?: string;
+  lastRun?: { taskId: string; ok: boolean; at: string; durationMs?: number };
+  activeRuns?: { taskId: string; startedAt: string }[];
+  queuedTasks?: string[];
+}
+
+/** The `/api/remote-validation/status` payload (#0521/#0564). */
+export interface RemoteValidationStatusView {
+  enabled: boolean;
+  running: boolean;
+  provider: "hetzner" | "tailscale";
+  tailscaleHosts: string[];
+  hosts: RemoteHostStatusView[];
+  activeServer: { id: number; ip: string; ageMinutes: number } | null;
+  maxConcurrent: number;
 }
 
 /** One entry from a task's `.repoos/logs/tasks/<id>.log` (0310 Debug tab). */
@@ -590,6 +646,19 @@ export interface TaskLogEntry {
   component: "system" | "task" | "agent" | "integration";
   message: string;
   context?: Record<string, unknown>;
+}
+
+/** One structured remote-validation event for a task (#0568 Debug tab) — which
+ *  host ran, the exit code, and any infra/config error behind a non-test failure. */
+export interface RemoteValidationEvent {
+  at: string;
+  level: "info" | "warn" | "error";
+  phase: "queued" | "dispatch" | "run" | "result";
+  message: string;
+  host?: string;
+  exitCode?: number | null;
+  infra?: boolean;
+  configError?: boolean;
 }
 
 /** Latest auto-engineering reconcile decision (mirrors the server shape). */

@@ -12,6 +12,7 @@ import { mkdirSync, rmSync, existsSync, readFileSync, writeFileSync } from "node
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import type { RepoOSConfig } from "../../core/types.js";
+import { getCheckStore, resetCheckStore } from "../../core/check-store.js";
 import {
   RemoteValidationRunner,
   type RemoteExecDeps,
@@ -96,6 +97,10 @@ describe("RemoteValidationRunner", () => {
     mkdirSync(join(root, ".repoos"), { recursive: true });
     process.env.HETZNER_API_TOKEN = "test-token";
     process.env.REPOOS_REMOTE_SSH_KEY = join(root, "key");
+    // These fixtures assert on their own tmp-root store; an inherited
+    // REPOOS_CHECK_STORE_ROOT (a `repoos check` parent exports it) would
+    // silently redirect the history rows.
+    delete process.env.REPOOS_CHECK_STORE_ROOT;
     writeFileSync(join(root, "key"), "PRIVATE");
     config = {
       root,
@@ -123,6 +128,8 @@ describe("RemoteValidationRunner", () => {
   afterEach(async () => {
     delete process.env.HETZNER_API_TOKEN;
     delete process.env.REPOOS_REMOTE_SSH_KEY;
+    delete process.env.REPOOS_CHECK_STORE_ROOT;
+    resetCheckStore();
     try {
       rmSync(root, { recursive: true, force: true });
     } catch {
@@ -374,6 +381,43 @@ describe("RemoteValidationRunner", () => {
     await r.dispose();
   });
 
+  it("a deadline passing mid-dispatch is a CANCELLED history row, not a fail (#0564 review)", async () => {
+    const h = fakeHetzner();
+    // The bundle step is where the deadline expires: it takes just long
+    // enough that the slot is already held and a runner VM chosen when the
+    // caller's deadline passes. This used to be recorded as `fail` with
+    // failedStep "remote-validation" — the Runs tab would show a cancelled
+    // gate as a branch failure.
+    const exec = fakeExec({
+      bundleRepo: vi.fn(async () => {
+        await new Promise((r) => setTimeout(r, 30));
+        return { ok: true };
+      }),
+    });
+    const r = new RemoteValidationRunner(config, undefined, {
+      hetzner: h.client,
+      exec,
+      timings: FAST,
+    });
+
+    const summary = await r.validate({ ...mkOpts("0564"), deadlineAt: Date.now() + 15 });
+
+    expect(summary.ok).toBe(false);
+    expect(summary.cancelled).toBe(true);
+    expect(exec.runRemote).not.toHaveBeenCalled(); // the suite never started
+
+    const rows = getCheckStore(config.root, config.cacheDir).list();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      taskId: "0564",
+      remote: true,
+      outcome: "cancelled",
+      durationMs: null,
+    });
+    expect(rows[0]!.machine).toBeTruthy(); // a runner VM WAS chosen before the cancel
+    await r.dispose();
+  });
+
   it("reconcile() deletes every labelled runner VM", async () => {
     const h = fakeHetzner();
     // Pretend two runners leaked from an earlier crash.
@@ -417,5 +461,85 @@ describe("RemoteValidationRunner", () => {
     expect(res.ok).toBe(false);
     expect(res.transient).toBe(true);
     expect(h.calls.some((c) => c.startsWith("create:"))).toBe(false);
+  });
+
+  // ── structured per-task events (#0568) ────────────────────────────────────
+
+  it("records structured events for a passing run, with host and exit code (#0568)", async () => {
+    const h = fakeHetzner();
+    const r = new RemoteValidationRunner(config, undefined, {
+      hetzner: h.client,
+      exec: fakeExec(),
+      timings: FAST,
+    });
+
+    await r.validate(opts());
+
+    const events = r.remoteEvents("0999");
+    expect(events.some((e) => e.phase === "run")).toBe(true);
+    const result = events.find((e) => e.phase === "result");
+    expect(result?.exitCode).toBe(0);
+    expect(result?.level).toBe("info");
+    expect(result?.host).toBeTruthy();
+    await r.dispose();
+  });
+
+  it("records an infra event with host and exit code when the ssh transport drops (#0568)", async () => {
+    const h = fakeHetzner();
+    const exec = fakeExec({
+      runRemote: vi.fn(async () => ({
+        code: 255,
+        output: "ssh: connect to host 203.0.113.5 port 22: Connection timed out\n",
+        timedOut: false,
+      })),
+    });
+    const r = new RemoteValidationRunner(config, undefined, {
+      hetzner: h.client,
+      exec,
+      timings: FAST,
+    });
+
+    await r.validate(opts());
+
+    const ev = r.remoteEvents("0999").find((e) => e.infra);
+    expect(ev).toBeTruthy();
+    expect(ev?.exitCode).toBe(255);
+    expect(ev?.host).toBeTruthy();
+    expect(ev?.message).toContain("ssh connection");
+    await r.dispose();
+  });
+
+  it("records a config error event when the runner cannot satisfy the job (#0568)", async () => {
+    const h = fakeHetzner();
+    const r = new RemoteValidationRunner(config, undefined, {
+      hetzner: h.client,
+      exec: fakeExec(),
+      timings: FAST,
+    });
+
+    const res = await r.validate({ ...opts(), capabilities: ["macos"] });
+
+    expect(res.configError).toBe(true);
+    const ev = r.remoteEvents("0999").find((e) => e.configError);
+    expect(ev).toBeTruthy();
+    expect(ev?.level).toBe("error");
+    expect(ev?.message).toContain("cannot run");
+    await r.dispose();
+  });
+
+  it("records a dispatch event when the caller's deadline passed before the run (#0568)", async () => {
+    const h = fakeHetzner();
+    const r = new RemoteValidationRunner(config, undefined, {
+      hetzner: h.client,
+      exec: fakeExec(),
+      timings: FAST,
+    });
+
+    await r.validate({ ...opts(), deadlineAt: Date.now() - 1 });
+
+    const ev = r.remoteEvents("0999").find((e) => e.infra && e.phase === "dispatch");
+    expect(ev).toBeTruthy();
+    expect(ev?.message).toContain("deadline passed");
+    await r.dispose();
   });
 });

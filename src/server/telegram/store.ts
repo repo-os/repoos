@@ -44,6 +44,8 @@ export interface TelegramConnectionRecord {
   webhookSecret: EncryptedSecret | null;
   /** Highest update id consumed by long polling; avoids replays across restarts. */
   polling: { lastUpdateId: number | null };
+  /** Disconnect progress is retained until remote revocation is confirmed. */
+  disconnect?: { webhookRemoved: true };
   createdAt: string;
   updatedAt: string;
 }
@@ -91,6 +93,14 @@ function recordShapeProblem(rec: unknown): string | null {
   }
   if (typeof r.profile !== "object" || r.profile === null) return "missing profile";
   if (typeof r.polling !== "object" || r.polling === null) return "missing polling";
+  if (
+    r.disconnect !== undefined &&
+    (typeof r.disconnect !== "object" ||
+      r.disconnect === null ||
+      (r.disconnect as { webhookRemoved?: unknown }).webhookRemoved !== true)
+  ) {
+    return "invalid disconnect progress";
+  }
   const pointer = (r.polling as { lastUpdateId?: unknown }).lastUpdateId;
   if (pointer !== null && typeof pointer !== "number") {
     return `invalid polling pointer ${JSON.stringify(pointer)}`;
@@ -133,8 +143,7 @@ export class TelegramCredentialStore {
     if (problem) {
       throw new TelegramStoreCorruptError(
         `stored Telegram connection state has an unrecognized shape (${this.path}: ${problem}). ` +
-          "Recover by disconnecting (clears it) or reconnecting (replaces it) — no need to " +
-          "delete the file by hand.",
+          "Reconnect after recovering the existing token state; do not delete the file by hand.",
       );
     }
     return parsed as TelegramConnectionRecord;
@@ -142,10 +151,10 @@ export class TelegramCredentialStore {
 
   /**
    * `load()`, with a corrupt/unreadable record reported as `null` instead of
-   * thrown. For paths whose whole purpose is to *replace* or *forget* stored
-   * state (connect, disconnect, default-profile decisions): a corrupt record
-   * must not block recovery, and `status()` is the loud reporter. Never use
-   * this to silently continue reading a record you did not just write.
+   * thrown. For paths whose whole purpose is to replace stored state
+   * (connect, default-profile decisions): a corrupt record must not block
+   * recovery, and `status()` is the loud reporter. Disconnect must use `load()`
+   * and fail closed because it cannot revoke an unreadable credential.
    */
   loadOrNull(): TelegramConnectionRecord | null {
     try {
@@ -175,15 +184,42 @@ export class TelegramCredentialStore {
     return record;
   }
 
-  /** Forget the connection. Returns whether a record existed. */
+  /** Update disconnect progress only if this is still the credential being disconnected. */
+  markWebhookRemoved(expected: TelegramConnectionRecord): TelegramConnectionRecord | null {
+    const current = this.load();
+    if (!current || JSON.stringify(current) !== JSON.stringify(expected)) return null;
+    current.disconnect = { webhookRemoved: true };
+    current.updatedAt = new Date().toISOString();
+    this.save(current);
+    return current;
+  }
+
+  /** Remove only the exact connection whose remote token was just revoked. */
+  clearIfUnchanged(expected: TelegramConnectionRecord): boolean {
+    const current = this.load();
+    if (!current || JSON.stringify(current) !== JSON.stringify(expected)) return false;
+    return this.clear();
+  }
+
+  /** Forget the connection. Returns whether a record existed before removal. */
   clear(): boolean {
     const existed = existsSync(this.path);
+    if (!existed) return false;
     try {
       rmSync(this.path, { force: true });
-    } catch {
-      /* already gone */
+    } catch (e) {
+      throw new Error(
+        `failed to remove stored Telegram connection (${this.path}): ${
+          e instanceof Error ? e.message : String(e)
+        }`,
+      );
     }
-    return existed;
+    if (existsSync(this.path)) {
+      throw new Error(
+        `stored Telegram connection file was not removed (${this.path}) — disconnect is incomplete`,
+      );
+    }
+    return true;
   }
 
   /**

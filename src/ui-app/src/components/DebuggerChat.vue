@@ -53,11 +53,17 @@ const busy = computed(() => submitting.value || repo.runningIds.includes(CHAT_ID
 const lines = computed(() => repo.outputs[CHAT_ID] ?? []);
 const hasConversation = computed(() => lines.value.length > 0);
 const repairTaskId = computed(() => {
-  const text = lines.value.map(lineText).join("\n");
+  const text = rows.value.map((row) => row.text).join("\n");
   const matches = [...text.matchAll(/task\s+#(\d{4})/gi)];
   return matches.length ? matches[matches.length - 1][1] : null;
 });
-const diagnosis = computed(() => lines.value.map(lineText).filter(Boolean).slice(-8).join("\n"));
+const diagnosis = computed(() =>
+  rows.value
+    .map((row) => row.text)
+    .filter(Boolean)
+    .slice(-8)
+    .join("\n"),
+);
 // Chat scroll standard (#0444): open on the newest message, remember where the
 // reader was, and offer a jump back down once they scroll away.
 const { showJumpToLatest, onScroll, scrollToLatest } = useChatScroll(log, {

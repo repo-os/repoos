@@ -199,6 +199,8 @@ export interface TelegramProfile {
 /** The downstream intake/authorization/command pipeline (registered later). */
 export type TelegramUpdateHandler = (update: TelegramUpdate) => void | Promise<void>;
 
+import type { AuthStore } from "../../core/auth-store.js";
+
 /**
  * The Telegram boundary every later task programs against. Implementations
  * must keep credentials server-side: nothing on this interface returns a
@@ -211,8 +213,11 @@ export interface TelegramProvider {
    * redeemed from the managed provisioning service (#0559).
    */
   connectByBotToken(token: string, source?: BotSource): Promise<ProvisionedBot>;
-  /** Stop transports, then forget the stored credential entirely. */
-  disconnect(): Promise<void>;
+  /**
+   * Revoke the bot at Telegram, remove the webhook, forget the credential, and
+   * clear repository bindings — complete or loudly incomplete (#0539).
+   */
+  disconnect(input: TelegramDisconnectInput): Promise<TelegramDisconnectResult>;
   status(): TelegramStatus;
   configureProfile(input: TelegramProfileInput): Promise<TelegramProfile>;
   /** Send a message through the connected project bot. */
@@ -315,8 +320,49 @@ export interface ManagedProvisioningClient extends ProvisioningClient {
    * one; the old token is immediately invalidated by Telegram. Only callable
    * after a successful redeem — used by #0539's rotate-credential flow. */
   rotateToken(id: string): Promise<{ token: string }>;
-  /** Revoke a managed project bot — the #0539 disconnect contract. The service
-   * replaces the bot token (Telegram has no revoke primitive) and purges any
-   * stored grace-window credential. Idempotent: a retry rotates again. */
-  revokeBot(botId: number, repository: string, instanceId: string): Promise<{ confirmed: boolean }>;
+  /**
+   * Ask the #0559 service to revoke a managed project bot. Disconnect requires
+   * a configured service for managed bots. BYO tokens must be revoked through
+   * @BotFather and are confirmed by probing the old token for 401.
+   */
+  revokeBot(input: {
+    botId: number;
+    instanceId: string;
+    repository: string;
+  }): Promise<{ confirmed: boolean }>;
+}
+
+export interface TelegramDisconnectInput {
+  actorEmail: string;
+  authStore: AuthStore | null;
+  instanceId: string;
+}
+
+export interface TelegramDisconnectResult {
+  ok: true;
+  /** True only when remote revocation/webhook cleanup and local cleanup completed. */
+  complete: boolean;
+  /** Reserved for incomplete results returned by older or alternate providers. */
+  warning?: string;
+  alreadyDisconnected: boolean;
+  revocationConfirmed: boolean;
+  webhookRemoved: boolean;
+  bindingsCleared: {
+    userLinks: number;
+    chatLinks: number;
+  };
+}
+
+export type TelegramDisconnectPhase = "revoke" | "webhook" | "local";
+
+export class TelegramDisconnectError extends Error {
+  readonly phase: TelegramDisconnectPhase;
+  readonly retryable: boolean;
+
+  constructor(phase: TelegramDisconnectPhase, message: string, retryable = true) {
+    super(message);
+    this.name = "TelegramDisconnectError";
+    this.phase = phase;
+    this.retryable = retryable;
+  }
 }

@@ -2292,6 +2292,48 @@
   background: var(--green);
   box-shadow: 0 0 6px var(--green);
 }
+
+/* live check chip on the task drawer header (#0564): running / passed / failed */
+.ck-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-family: "JetBrains Mono", monospace;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--panel-solid);
+  color: var(--txt-dim);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ck-chip:hover {
+  border-color: var(--border-bright);
+  color: var(--txt);
+}
+.ck-chip-running {
+  color: var(--amber);
+  border-color: var(--amber-border-tint);
+  background: var(--amber-tint);
+}
+.ck-chip-pass {
+  color: var(--green);
+  border-color: var(--green-border-tint);
+  background: var(--green-tint);
+}
+.ck-chip-fail {
+  color: var(--red);
+  border-color: var(--red-border-tint);
+  background: var(--red-tint);
+}
+.ck-chip-spin {
+  width: 10px;
+  height: 10px;
+}
 .rs-incomplete {
   color: var(--amber);
   border: 1px solid var(--amber-border-tint);
@@ -3081,6 +3123,42 @@
 .drawer-head-title {
   flex: 1;
   min-width: 0;
+}
+/* #0569: the header title is an in-place editor. The text reads as the plain
+   title until clicked, when an input takes over the same slot. */
+.task-title-text {
+  display: inline-block;
+  max-width: 100%;
+  margin: -2px -6px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  cursor: text;
+  outline: none;
+  transition: background-color 120ms ease;
+}
+.task-title-text:hover {
+  background: var(--chip-bg);
+}
+.task-title-text:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+.task-title-input {
+  display: block;
+  width: 100%;
+  margin: -4px -7px;
+  padding: 3px 6px;
+  font: inherit;
+  letter-spacing: inherit;
+  color: var(--txt);
+  background: var(--panel-solid);
+  border: 1px solid var(--border-bright);
+  border-radius: 8px;
+  outline: none;
+}
+.task-title-input::selection {
+  background: var(--cyan);
+  color: var(--panel-solid);
 }
 .drawer-body {
   flex: 1;
@@ -4357,26 +4435,59 @@
 .md-card:hover .md-rendered {
   border-color: var(--border-bright);
 }
-.needs-input-block {
-  margin: 18px 0 4px;
+.questions-for-you-banner {
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--cyan) 55%, var(--green) 25%);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--cyan) 14%, var(--panel-solid)),
+    color-mix(in srgb, var(--green) 10%, var(--panel-solid))
+  );
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--cyan) 12%, transparent);
 }
-.needs-input-card {
-  padding: 14px;
-  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
-  border-radius: 11px;
-  background: color-mix(in srgb, var(--accent) 7%, var(--md-body-bg));
+.questions-for-you-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
 }
-.needs-input-list {
+.questions-for-you-badge {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+.questions-for-you-sub {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--txt);
+}
+.questions-for-you-list {
+  margin: 0 0 14px;
+  padding-left: 22px;
   display: grid;
   gap: 8px;
-  margin: 0 0 14px;
-  padding-left: 20px;
-  color: var(--txt);
   font-size: 13px;
   line-height: 1.5;
+  color: var(--txt);
 }
-.needs-input-answer {
-  margin-top: 2px;
+.questions-for-you-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.questions-for-you-answer {
+  background: color-mix(in srgb, var(--cyan) 22%, var(--btn-bg, var(--panel-solid)));
+  border-color: color-mix(in srgb, var(--cyan) 45%, var(--border));
+}
+.questions-for-you-answer:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--cyan) 32%, var(--btn-bg, var(--panel-solid)));
+  border-color: var(--cyan);
 }
 .md-rendered h1,
 .md-rendered h2,
@@ -4859,11 +4970,70 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.shot-hint {
-  font-size: 11px;
+/* Screenshots field label row + format info popover (#0571). The help text
+ * moved off the form into a themed pane opened by the control beside the
+ * label; the pane is teleported to <body> (the drawer would trap a fixed
+ * child) and follows the #0460 stage-pane styling. */
+.shot-label-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.shot-label-row label {
+  margin-bottom: 0;
+}
+.field-info {
+  display: inline-grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
   color: var(--txt-faint);
-  font-family: "JetBrains Mono", monospace;
-  margin-top: 6px;
+  cursor: help;
+  flex-shrink: 0;
+}
+.field-info:hover,
+.field-info:focus-visible {
+  color: var(--txt);
+  outline: none;
+}
+.field-info-pane {
+  position: fixed;
+  z-index: 65;
+  pointer-events: none;
+  width: max-content;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+  animation: field-info-in 0.12s ease-out;
+}
+.field-info-pane p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--txt-dim);
+}
+@keyframes field-info-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .field-info-pane {
+    animation: none;
+  }
 }
 .shot-expand {
   display: grid;
@@ -5096,20 +5266,6 @@
   color: var(--txt-faint);
   font-family: "JetBrains Mono", monospace;
   margin-bottom: 14px;
-}
-.ro-value {
-  font-size: 13px;
-  color: var(--txt);
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--panel-solid);
-  min-height: 20px;
-  word-break: break-word;
-}
-.ro-value.mono {
-  font-family: "JetBrains Mono", monospace;
-  font-size: 12.5px;
 }
 
 .drawer-quickbar {
@@ -10733,6 +10889,42 @@
 
 .pm-shot-remove:hover {
   color: var(--red, #ef5b5b);
+}
+
+.pm-open-questions {
+  margin: 0 12px 10px;
+  padding: 12px 14px;
+  border-radius: 11px;
+  border: 1px solid color-mix(in srgb, var(--cyan) 50%, var(--border));
+  background: color-mix(in srgb, var(--cyan) 10%, var(--panel-solid));
+}
+.pm-open-questions-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.pm-open-questions-badge {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+.pm-open-questions-hint {
+  font-size: 11px;
+  color: var(--txt-dim);
+}
+.pm-open-questions-list {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--txt);
 }
 
 .pm-canned {

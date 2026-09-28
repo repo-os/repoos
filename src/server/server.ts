@@ -182,12 +182,9 @@ import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
 import { readRegistry, unionApps } from "../core/tunnel-registry.js";
 import { portListening } from "../core/net-probe.js";
 import {
-  notifyStatusChange,
-  notifyTaskCreated,
-  notifyNeedsInput,
-  publish,
-  ntfyBaseUrl,
-} from "./ntfy.js";
+  attachTaskNotificationHandlers,
+  notificationContextFromConfig,
+} from "./notifications/index.js";
 import { AgentSupervisor } from "./supervisor.js";
 import { TaskWatchdog } from "./task-watchdog.js";
 import { bootstrapTelegramAtBoot, resetTelegramProviders } from "./telegram/index.js";
@@ -312,6 +309,7 @@ import {
   telegramDisconnect,
   telegramProfile,
   telegramTransport,
+  telegramTestMessage,
   telegramProvisionBegin,
   telegramProvisionStatus,
   telegramProvisionRedeem,
@@ -342,8 +340,10 @@ import {
   createTelegramInviteRoute,
   listTelegramChatsRoute,
   listTelegramLinksRoute,
+  patchTelegramChatNotificationsRoute,
   unbindTelegramChatRoute,
   unbindTelegramLinkRoute,
+  telegramDisconnectFromAuthRoute,
   reassignTelegramLinkRoute,
   createHubCapability,
   listHubCapabilities,
@@ -363,6 +363,7 @@ import {
   removeServiceRoute,
   healthCheckRoute,
   getCheckPlan,
+  getCheckRuns,
   getSupportBundlePreview,
   createSupportBundle,
   revealSupportBundle,
@@ -1162,7 +1163,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Per-task `repoos check` run tracking for the Debug tab (0310): the
   // handoff-finalize check and the MTD merge-gate check are the only two
   // checks the server spawns directly, so only those two are instrumented.
-  const taskChecks = new TaskCheckManager();
+  // The repo root enables durable history for cancelled runs (#0564) — the
+  // CLI child records its own completed runs.
+  const taskChecks = new TaskCheckManager(config.root, config.cacheDir);
   const onTaskCheckEvent: TaskCheckListener = (run, eventKind, chunk) => {
     if (eventKind === "started") {
       emitEvent({
@@ -1170,6 +1173,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         taskId: run.taskId,
         checkId: run.id,
         checkKind: run.kind,
+        scope: run.scope,
+        machine: run.machine,
         at: run.startedAt,
       });
     } else if (eventKind === "output") {
@@ -1188,6 +1193,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         code: run.code,
         passed: run.passed === true,
         durationMs: run.durationMs ?? 0,
+        scope: run.scope,
+        machine: run.machine,
         at: run.finishedAt ?? new Date().toISOString(),
       });
     }
@@ -2024,12 +2031,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // start/pause, the watcher, and the 0077 self-heal) — apply the same cleanup
   // there. Both firing for a single transition is harmless: `previews.stop` and
   // `runner.stop` are idempotent.
+  const notificationCtx = notificationContextFromConfig(config, getAuthStore(config.root));
+  const unsubscribeNotifications = attachTaskNotificationHandlers(index, notificationCtx);
+
   const unsubscribeCleanup = index.on((e) => {
-    // Optional ntfy push notifications hang off the index stream for the same
-    // reason the cleanup does: it is the one place every transition surfaces,
-    // exactly once per real change (applyFileChange dedupes by state diff).
     if (e.type === "task.created") {
-      notifyTaskCreated(config, e.task);
       // 0381: a PM chat session with pending screenshots may have just
       // created this task through `repoos new` — attach its parked images
       // now, while the session is still running. Best-effort and a no-op
@@ -2043,7 +2049,6 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     const prev = e.prev.status;
     if (prev === undefined || prev === e.task.status) return;
     onStatusChange(e.task, prev, e.task.status);
-    notifyStatusChange(config, e.task, prev, e.task.status);
     // Every route into `review` — a board drag, the drawer, an agent editing
     // its own task file — surfaces here, so this is the one place the agent
     // review needs to hang off. The skill-suggestion pass deliberately does
@@ -2066,16 +2071,6 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // — #0370 removed the implicit nested-`repoos serve` default for every
   // OTHER project). MAX_PREVIEWS is 1 (preview.ts) so only one is ever
   // running; starting a new one evicts the last.
-
-  // Handle needsInput changes separately (fires alongside status change when both occur).
-  const unsubscribeNeedsInput = index.on((e) => {
-    if (e.type !== "task.updated") return;
-    const prevNeedsInput = e.prev.needsInput ?? false;
-    const nextNeedsInput = e.task.needsInput;
-    if (!prevNeedsInput && nextNeedsInput) {
-      notifyNeedsInput(config, e.task);
-    }
-  });
 
   // Trigger CTO monitor on key events: task status changes, review completion, agent exit.
   const unsubscribeCTOEvents = index.on((e) => {
@@ -2301,6 +2296,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           taskId: "checks-test-suite",
           worktreePath: config.root,
           candidateSha,
+          phase: "cli",
           capabilities: remoteJobCapabilities(config),
           onChunk: (chunk) => {
             testRuns.appendOutput(chunk);
@@ -2392,6 +2388,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         healthy: false,
         detail: undefined as string | undefined,
         lastRun: undefined as { taskId: string; ok: boolean; at: string } | undefined,
+        activeRuns: [] as { taskId: string; startedAt: string }[],
+        queuedTasks: [] as string[],
       })),
     ];
     return json(res, 200, {
@@ -2497,9 +2495,24 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       return json(res, 200, { enabled: true, log });
     },
   );
+  // Structured per-task remote-validation events for the Debug tab (#0568):
+  // which host ran, the exit code, and the infra/config error behind a run
+  // that did not simply fail its tests. Empty when remote validation is off.
+  router.register(
+    "GET",
+    /^\/api\/tasks\/([^/]+)\/remote-validation\/events$/,
+    (_ctx, _req, res, params) => {
+      return json(res, 200, {
+        ok: true,
+        events: remoteValidator?.remoteEvents?.(params.param1) ?? [],
+      });
+    },
+  );
   router.register("GET", /^\/api\/tasks\/([^/]+)\/integration-job$/, getIntegrationJob);
   router.register("GET", "/api/integration-jobs", getIntegrationJobs);
   router.register("GET", "/api/check-plan", getCheckPlan);
+  // Durable check-run history across all tasks (#0564) — the Runs tab.
+  router.register("GET", "/api/check-runs", getCheckRuns);
   router.register("GET", "/api/integration/pipeline", getIntegrationPipeline);
   router.register("POST", /^\/api\/integration\/pipeline\/retry\/([^/]+)$/, retryIntegration);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/done\/cancel$/, cancelDone);
@@ -2616,6 +2629,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/telegram/disconnect", telegramDisconnect);
   router.register("POST", "/api/telegram/profile", telegramProfile);
   router.register("POST", "/api/telegram/transport", telegramTransport);
+  router.register("POST", "/api/telegram/test-message", telegramTestMessage);
   router.register("POST", "/api/telegram/provision", telegramProvisionBegin);
   router.register("GET", /^\/api\/telegram\/provision\/([^/]+)$/, telegramProvisionStatus);
   router.register("POST", /^\/api\/telegram\/provision\/([^/]+)\/redeem$/, telegramProvisionRedeem);
@@ -2643,8 +2657,14 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/auth/telegram/chats/bind-codes", createTelegramChatBindCodeRoute);
   router.register("GET", "/api/auth/telegram/chats", listTelegramChatsRoute);
   router.register("POST", "/api/auth/telegram/chats", bindTelegramChatRoute);
+  router.register(
+    "PATCH",
+    /^\/api\/auth\/telegram\/chats\/([^/]+)$/,
+    patchTelegramChatNotificationsRoute,
+  );
   router.register("DELETE", /^\/api\/auth\/telegram\/chats\/([^/]+)$/, unbindTelegramChatRoute);
   router.register("GET", "/api/auth/telegram/links", listTelegramLinksRoute);
+  router.register("POST", "/api/auth/telegram/disconnect", telegramDisconnectFromAuthRoute);
   router.register("DELETE", /^\/api\/auth\/telegram\/links\/([^/]+)$/, unbindTelegramLinkRoute);
   router.register(
     "POST",
@@ -3052,6 +3072,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // The agent runner injects the real control-plane URL into every spawned
       // agent so preview requests target THIS server, never a hardcoded port.
       runner.apiUrl = url;
+      notificationCtx.publicOrigin = url;
 
       // Register this serve process in the lockfile so port conflicts can be
       // detected on the next startup (0168).
@@ -3086,7 +3107,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           void remoteValidator?.dispose();
           unsubscribe();
           unsubscribeCleanup();
-          unsubscribeNeedsInput();
+          unsubscribeNotifications();
           unsubscribeCTOEvents();
           watcher.stop();
           supervisor?.stop();
@@ -3241,7 +3262,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // boot. Safe and never-throwing (reports one log line); the loop
       // gates on the live `telegram.enabled` switch itself, so a disabled
       // integration arms paused with no Telegram traffic.
-      void bootstrapTelegramAtBoot(config).then((resumed) => {
+      void bootstrapTelegramAtBoot(config, {
+        index,
+        runner,
+        reviews,
+        publicOrigin: url,
+      }).then((resumed) => {
         if (resumed.detail) {
           logger.system(resumed.resumed ? "info" : "warn", "Telegram transport resume", {
             pid: process.pid,

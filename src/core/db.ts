@@ -217,13 +217,15 @@ const MIGRATIONS: Migration[] = [
     version: 6,
     up: `
       CREATE TABLE IF NOT EXISTS telegram_user_links (
-        telegram_user_id INTEGER PRIMARY KEY,
+        instance_identity TEXT NOT NULL,
+        telegram_user_id INTEGER NOT NULL,
         email TEXT NOT NULL,
         telegram_username TEXT,
         bound_at TEXT NOT NULL,
         bound_by TEXT,
         last_seen_at TEXT,
-        revoked_at TEXT
+        revoked_at TEXT,
+        PRIMARY KEY (instance_identity, telegram_user_id)
       );
       CREATE INDEX IF NOT EXISTS idx_telegram_user_links_email ON telegram_user_links(email);
 

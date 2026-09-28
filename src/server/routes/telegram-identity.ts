@@ -16,6 +16,7 @@ import {
   chatTypeMatchesTelegramChatId,
   createTelegramChatBindCode,
   listTelegramChatsForSettings,
+  setTelegramChatNotificationsEnabled,
   unbindTelegramChat,
 } from "../../core/telegram-chat.js";
 import {
@@ -27,6 +28,8 @@ import {
   telegramInviteSecret,
   unbindTelegramUser,
 } from "../../core/telegram-identity.js";
+import { performTelegramDisconnectRoute } from "./telegram.js";
+import { TelegramDisconnectError } from "../telegram/types.js";
 
 function requireAdmin(
   req: Parameters<RouteHandler>[1],
@@ -251,6 +254,30 @@ export const bindTelegramChatRoute: RouteHandler = async (ctx, req, res) => {
   return json(res, 200, { ok: true, chat: bound });
 };
 
+/** PATCH /api/auth/telegram/chats/:telegramChatId  { notificationsEnabled: boolean } */
+export const patchTelegramChatNotificationsRoute: RouteHandler = async (ctx, req, res) => {
+  const { config } = ctx;
+  const admin = requireAdmin(req, config, res);
+  if (!admin) return;
+
+  const store = getAuthStore(config.root);
+  if (!store) return json(res, 500, { error: "Auth store unavailable" });
+
+  const url = new URL(req.url ?? "/", "http://localhost");
+  const id = parseTelegramChatId(decodeURIComponent(url.pathname.split("/").pop() ?? ""));
+  if (id === null) return json(res, 400, { error: "Invalid Telegram chat id" });
+
+  const body = (await readBody(req)) as Record<string, unknown>;
+  if (typeof body.notificationsEnabled !== "boolean") {
+    return json(res, 400, { error: "notificationsEnabled must be a boolean" });
+  }
+
+  const updated = setTelegramChatNotificationsEnabled(store, id, body.notificationsEnabled);
+  if (!updated) return json(res, 404, { error: "Chat binding not found" });
+  const chat = store.getTelegramChatLink(id);
+  return json(res, 200, { ok: true, chat });
+};
+
 /** DELETE /api/auth/telegram/chats/:telegramChatId */
 export const unbindTelegramChatRoute: RouteHandler = (ctx, req, res) => {
   const { config } = ctx;
@@ -267,4 +294,29 @@ export const unbindTelegramChatRoute: RouteHandler = (ctx, req, res) => {
   const unbound = unbindTelegramChat(store, id, admin.email);
   if (!unbound) return json(res, 404, { error: "Chat binding not found" });
   return json(res, 200, { ok: true });
+};
+
+/** POST /api/auth/telegram/disconnect — same teardown as Settings → Telegram (#0539). */
+export const telegramDisconnectFromAuthRoute: RouteHandler = async (ctx, req, res) => {
+  const { config } = ctx;
+  const admin = requireAdmin(req, config, res);
+  if (!admin) return;
+  try {
+    const outcome = await performTelegramDisconnectRoute(ctx, admin.email);
+    return json(res, 200, { ...outcome, status: outcome.status });
+  } catch (e) {
+    if (e instanceof TelegramDisconnectError) {
+      return json(res, e.retryable ? 502 : 409, {
+        ok: false,
+        error: e.message,
+        phase: e.phase,
+        retryable: e.retryable,
+      });
+    }
+    return json(res, 500, {
+      ok: false,
+      error: e instanceof Error ? e.message : String(e),
+      retryable: true,
+    });
+  }
 };

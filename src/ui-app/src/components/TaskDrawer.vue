@@ -13,6 +13,7 @@ import {
   ArrowDown,
   RotateCcw,
   ImagePlus,
+  Info,
   FileText,
   MessageSquare,
   Bot,
@@ -23,7 +24,14 @@ import {
   Bug,
   Expand,
 } from "lucide-vue-next";
-import type { ReviewState, Task, AgentOutputEntry, SessionUsage, DetectedAgent } from "../types";
+import type {
+  ReviewState,
+  Task,
+  AgentOutputEntry,
+  SessionUsage,
+  DetectedAgent,
+  CheckRunRow,
+} from "../types";
 import {
   COLUMNS,
   columnsWithLabels,
@@ -36,7 +44,7 @@ import { useUiStore } from "../stores/ui";
 import { useConfigStore } from "../stores/config";
 import { useAuthStore } from "../stores/auth";
 import { renderMarkdown } from "../lib/markdown";
-import { fmtTime, formatDuration } from "../lib/time";
+import { fmtTime, formatDuration, relTime } from "../lib/time";
 import { fmtTokens } from "../lib/format";
 import { api, JSON_OPTS } from "../api";
 import {
@@ -46,6 +54,7 @@ import {
   needsInputSuggestionText,
   needsInputSuppressedOnReview,
   needsInputSurfaces,
+  resolveNeedsInputReasonKey,
   STALE_REVIEW_DEV_ERROR_BANNER,
 } from "../lib/needs-input-ui";
 import Button from "./ui/button.vue";
@@ -58,7 +67,7 @@ import ChatDiagnosticRow from "./ChatDiagnosticRow.vue";
 import ChatToolCallRow from "./ChatToolCallRow.vue";
 import { useChatScroll } from "../composables/useChatScroll";
 import { useCopyChatMessage } from "../composables/useCopyChatMessage";
-import { bubbleRole, stripAnsi, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
+import { bubbleRole, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyCheckoutDialog from "./DirtyCheckoutDialog.vue";
 import HotfixConfirmDialog from "./HotfixConfirmDialog.vue";
@@ -225,6 +234,162 @@ const handoffStepLabel = computed(() => {
     default:
       return "Running checks…";
   }
+});
+
+// ── live check chip (#0564) ──────────────────────────────────────────────────
+// The task page should say what a check is doing while it runs — which
+// machine, how long — and show the result inline instead of burying it in the
+// Debug tab. Live state comes from the task-check SSE events; the machine of
+// the REMOTE half comes from the durable run history, which it lands in
+// mid-gate — so the rows are re-fetched on a short interval while a run is
+// active, not just when the run identity changes.
+
+/** Durable run rows for the open task, newest first. */
+const checkRows = ref<CheckRunRow[]>([]);
+
+/** How often the durable rows are re-fetched while a run is active. */
+const CHECK_ROWS_POLL_MS = 5_000;
+
+async function refreshCheckRows(taskId: string): Promise<void> {
+  try {
+    const r = await api<{ ok: boolean; runs: CheckRunRow[] }>(
+      `/api/check-runs?taskId=${encodeURIComponent(taskId)}&limit=20`,
+    );
+    checkRows.value = r.runs ?? [];
+  } catch {
+    /* keep whatever the last fetch produced — the chip degrades, not breaks */
+  }
+}
+
+const activeCheckRun = computed(() => {
+  const id = ui.active?.id;
+  if (!id) return null;
+  return (repo.taskChecks[id] ?? []).find((r) => r.running) ?? null;
+});
+
+const lastCheckRun = computed(() => {
+  const id = ui.active?.id;
+  if (!id) return null;
+  const runs = repo.taskChecks[id] ?? [];
+  return runs.filter((r) => !r.running).at(-1) ?? null;
+});
+
+/**
+ * Newest durable row for this task that carries the gate's FINAL verdict.
+ * A remote row is one half of a gate; prefer the local half, which completes
+ * last. Used when the in-memory run is gone (server restart) — the durable
+ * history survives it.
+ */
+const lastDurableCheck = computed(() => {
+  const local = checkRows.value.find((r) => !r.remote);
+  return local ?? checkRows.value[0] ?? null;
+});
+
+/** Ticks once a second while a check runs, so the elapsed time stays live. */
+const checkNow = ref(Date.now());
+let checkTick: ReturnType<typeof setInterval> | undefined;
+let checkRowsTimer: ReturnType<typeof setInterval> | undefined;
+
+function stopCheckLoops(): void {
+  if (checkTick) {
+    clearInterval(checkTick);
+    checkTick = undefined;
+  }
+  if (checkRowsTimer) {
+    clearInterval(checkRowsTimer);
+    checkRowsTimer = undefined;
+  }
+}
+
+function startCheckLoops(taskId: string): void {
+  stopCheckLoops();
+  void refreshCheckRows(taskId);
+  checkNow.value = Date.now();
+  checkTick = setInterval(() => (checkNow.value = Date.now()), 1000);
+  checkRowsTimer = setInterval(() => void refreshCheckRows(taskId), CHECK_ROWS_POLL_MS);
+}
+
+watch(
+  () => [ui.active?.id, activeCheckRun.value?.id, lastCheckRun.value?.finishedAt],
+  ([taskId]) => {
+    if (!taskId) {
+      stopCheckLoops();
+      checkRows.value = [];
+      return;
+    }
+    // Bootstrap the in-memory runs from the server (0564 review): after a
+    // page reload mid-gate this store slice is empty — SSE only delivers
+    // events from now on — so the chip would sit on the stale durable row
+    // instead of "Checks running on …" until the Debug tab happened to open.
+    // Only when we have nothing: an SSE-fed slice is fresher than a snapshot.
+    if ((repo.taskChecks[taskId as string] ?? []).length === 0) {
+      void repo.refreshTaskChecks(taskId as string);
+    }
+    if (activeCheckRun.value) {
+      startCheckLoops(taskId as string);
+    } else {
+      // Not running: hydrate once so the done-state fallback can read the
+      // durable history (covers runs that finished before this session, or
+      // while the drawer was closed — in-memory runs die with the server).
+      stopCheckLoops();
+      void refreshCheckRows(taskId as string);
+    }
+  },
+  { immediate: true },
+);
+onUnmounted(stopCheckLoops);
+
+/**
+ * The machine the current gate is running on. Prefer the remote host when the
+ * durable history shows the remote half ran within this gate's window (it
+ * lands there mid-gate, while the chip is still showing "running"); fall back
+ * to the local machine the SSE started event already carries.
+ */
+const checkMachine = computed(() => {
+  const run = activeCheckRun.value;
+  if (!run) return null;
+  const since = Date.parse(run.startedAt) - 60_000;
+  const row = checkRows.value.find(
+    (r) => r.remote && r.machine && Date.parse(r.startedAt) >= since,
+  );
+  return row?.machine ?? run.machine ?? null;
+});
+
+/** Durable fallback stops being useful long after the tree it tested changed. */
+const DURABLE_CHIP_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+const checkChip = computed(() => {
+  const run = activeCheckRun.value;
+  if (run) {
+    const elapsed = formatDuration(Math.max(0, checkNow.value - Date.parse(run.startedAt)));
+    const machine = checkMachine.value;
+    return {
+      state: "running" as const,
+      label: `Checks running${machine ? ` on ${machine}` : ""} · ${elapsed}`,
+      title:
+        run.scope === "full"
+          ? "The check gate is running — open the Debug tab for live output"
+          : `Changed-path check (${run.scope}) — open the Debug tab for live output`,
+    };
+  }
+  // Done state: the in-memory run when we have one; otherwise the durable
+  // history, which survives a server restart. The remote half alone is not
+  // the gate's verdict, so lastDurableCheck prefers the local row.
+  const last = lastCheckRun.value;
+  if (last) {
+    const dur = formatDuration(last.durationMs ?? 0);
+    return last.passed
+      ? { state: "pass" as const, label: `Checks passed · ${dur}`, title: "Open the Debug tab" }
+      : { state: "fail" as const, label: `Checks failed · ${dur}`, title: "Open the Debug tab" };
+  }
+  const row = lastDurableCheck.value;
+  if (!row || row.outcome === "cancelled") return null;
+  if (Date.now() - Date.parse(row.startedAt) > DURABLE_CHIP_MAX_AGE_MS) return null;
+  const dur = row.durationMs != null ? ` · ${formatDuration(row.durationMs)}` : "";
+  const title = `Last recorded check run (${relTime(row.startedAt)}) — open the Debug tab`;
+  return row.outcome === "pass"
+    ? { state: "pass" as const, label: `Checks passed${dur}`, title }
+    : { state: "fail" as const, label: `Checks failed${dur}`, title };
 });
 
 const open = computed(() => ui.active !== null || ui.isNew);
@@ -626,6 +791,51 @@ function onDrop(e: DragEvent): void {
   const files = e.dataTransfer?.files;
   if (files && files.length) ui.addScreenshots(Array.from(files));
 }
+
+// ---- screenshot format info popover (#0571) ----
+// The accepted-format/attachment help used to sit permanently under the
+// dropzone; it now opens on hover/focus of a small control beside the
+// Screenshots label. The pane is teleported to <body> (#0460's stage-pane is
+// the reference) because the drawer's stacking context would trap a fixed
+// child, and it is anchored under the control.
+const shotInfoEl = ref<HTMLButtonElement | null>(null);
+const shotHintOpen = ref(false);
+const shotHintStyle = ref<Record<string, string>>({});
+
+/** Position the pane just under the info control, clamped into the viewport. */
+function positionShotHint(): void {
+  const rect = shotInfoEl.value?.getBoundingClientRect();
+  if (!rect || typeof window === "undefined") return;
+  const maxW = Math.min(320, Math.max(200, window.innerWidth - 28));
+  const left = Math.min(Math.max(rect.left, 14), window.innerWidth - maxW - 14);
+  shotHintStyle.value = {
+    left: `${left}px`,
+    top: `${rect.bottom + 8}px`,
+    maxWidth: `${maxW}px`,
+  };
+}
+
+function showShotHint(): void {
+  shotHintOpen.value = true;
+  positionShotHint();
+}
+
+function hideShotHint(): void {
+  shotHintOpen.value = false;
+}
+
+/** Keep the pane glued to its control if the drawer scrolls or the window resizes. */
+function onShotHintViewportChange(): void {
+  if (shotHintOpen.value) positionShotHint();
+}
+onMounted(() => {
+  window.addEventListener("resize", onShotHintViewportChange);
+  window.addEventListener("scroll", onShotHintViewportChange, true);
+});
+onUnmounted(() => {
+  window.removeEventListener("resize", onShotHintViewportChange);
+  window.removeEventListener("scroll", onShotHintViewportChange, true);
+});
 
 async function setStatus(status: string): Promise<void> {
   if (!ui.active || ui.active.status === status) return;
@@ -1109,7 +1319,11 @@ function openAssignedStory(): void {
 
 const transitioned = computed(() => !!(ui.active && repo.transitionState?.id === ui.active.id));
 
-/** Title and branch are frozen once a task leaves the planning stages. */
+/**
+ * Planning has ended, so the branch is frozen. The title is deliberately NOT
+ * gated by this (#0569): renaming a task never rewrites its branch, and the
+ * title stays editable in place for the whole life of the task.
+ */
 const locked = computed(() => {
   const s = ui.active?.status;
   return s === "active" || s === "review" || s === "done";
@@ -1202,6 +1416,81 @@ async function saveDraft(): Promise<void> {
 function cancelDraft(): void {
   if (ui.active) initDraft(ui.active);
 }
+
+// ---- in-place title editing (#0569) ----
+//
+// The header title is the single title surface. Clicking it swaps the text for
+// an input in the same slot. Enter or blur commits and autosaves through the
+// same `patchTask` path the details form uses; Esc cancels the edit. The title
+// stays editable after planning (unlike the branch): renaming a task never
+// touches its branch, so this only derives a new branch while `locked` is false
+// (same rule as saveDraft).
+
+/** True while the header title is showing its input. */
+const titleEditing = ref(false);
+/** Working copy of the title while editing; never bound to `ui.active`. */
+const titleDraft = ref("");
+const titleInputEl = ref<HTMLInputElement | null>(null);
+
+function beginTitleEdit(): void {
+  if (!ui.active) return;
+  titleDraft.value = ui.active.title;
+  titleEditing.value = true;
+  void nextTick(() => {
+    const el = titleInputEl.value;
+    if (!el) return;
+    el.focus();
+    el.select();
+  });
+}
+
+function cancelTitleEdit(): void {
+  titleEditing.value = false;
+  titleDraft.value = "";
+}
+
+async function commitTitleEdit(): Promise<void> {
+  // Guard against the blur that follows the unmount in cancel/commit.
+  if (!titleEditing.value) return;
+  const next = titleDraft.value.trim();
+  titleEditing.value = false;
+  titleDraft.value = "";
+  if (!ui.active || !next || next === ui.active.title) return;
+  await saveTitle(next);
+}
+
+/** Autosaves an in-place title edit; mirrors saveDraft's branch rule. */
+async function saveTitle(title: string): Promise<void> {
+  const t = ui.active;
+  if (!t) return;
+  const patch: Record<string, string> = { title };
+  if (!locked.value) {
+    const prevDerived = `feat/${slugify(t.title)}`;
+    const hadDerived = t.branch === "" || t.branch === prevDerived;
+    if (hadDerived) patch.branch = `feat/${slugify(title)}`;
+  }
+  ui.saving = true;
+  try {
+    await repo.patchTask(t.id, patch);
+    // Keep the details draft in step so a later Save of another field neither
+    // re-sends the title nor derives the branch from a stale value.
+    draft.title = title;
+    original.title = title;
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    ui.saving = false;
+  }
+}
+
+// Opening a different task (or closing the drawer) abandons any in-flight edit.
+watch(
+  () => ui.active?.id,
+  () => {
+    titleEditing.value = false;
+    titleDraft.value = "";
+  },
+);
 
 // ---- read-only worktree preview ----
 
@@ -1402,12 +1691,24 @@ function openSkillSuggestion(): void {
  */
 const activeNeedsInputQuestions = computed(() => (ui.active?.questions?.length ?? 0) > 0);
 
+/** Agent `questions:` frontmatter — one dedicated banner, not the generic needs-input strip. */
+const showAgentQuestionsBanner = computed(() => {
+  if (!ui.active?.needsInput || !ui.active.questions?.length) return false;
+  if (handoffBusy.value || awaitingFreshReview.value || staleNeedsInputOnReview.value) {
+    return false;
+  }
+  const key = resolveNeedsInputReasonKey(ui.active.needsInputReason, true);
+  return key === "questions" || key === "cto-escalation";
+});
+
 const staleNeedsInputOnReview = computed(() =>
   ui.active ? needsInputSuppressedOnReview(ui.active) : false,
 );
 
 const needsInputHeaderChip = computed<{ label: string; cls: string } | null>(() => {
   if (!ui.active || !needsInputSurfaces(ui.active)) return null;
+  // The dedicated question banner already signals this — avoid a second chip (#0566).
+  if (showAgentQuestionsBanner.value) return null;
   // A stale flag must not hide a live review or engineer session (#0511 R2).
   if (review.value?.running || repo.isRunning(ui.active.id)) return null;
   return {
@@ -1682,8 +1983,10 @@ function pmSessionId(taskId: string): string {
 }
 
 const pmDraft = ref("");
+/** Open task questions for the PM answer flow, scoped to one task id. */
+const pmAnswerContext = ref<{ taskId: string; questions: string[] } | null>(null);
 const pmSubmitting = ref(false);
-/** The shared PM chat surface, for the needs-input prefill's focus() call. */
+/** The shared PM chat surface, for focusing the composer after routing to PM. */
 const pmSurface = ref<InstanceType<typeof PmChatSurface> | null>(null);
 
 // 0513: pending PM screenshots open the shared full-size viewer. Kept here, in
@@ -1737,39 +2040,40 @@ const pmCannedMessages = computed(() => {
   return t ? pmCannedMessagesFor(t.status) : [];
 });
 
-function buildNeedsInputPmPrompt(questions: string[]): string {
-  return [
-    "I need a quick human decision before I can continue with this task.",
-    "Please help me answer the questions below and then we can update the task together.",
-    "",
-    ...questions.map((q, i) => `${i + 1}. ${q}`),
-    "",
-    "Once we agree on the answers, I’ll update the task body and clear the blocking flag.",
-  ].join("\n");
-}
-
-function openPmWithNeedsInputQuestions(): void {
+function openPmToAnswerQuestions(): void {
   if (!ui.active?.questions?.length) return;
   ui.activeTab = "pm";
-  pmDraft.value = buildNeedsInputPmPrompt(ui.active.questions);
-  // The composer lives inside <PmChatSurface> since #0515, so ask it to focus
-  // rather than reaching for an element this component no longer holds.
+  pmAnswerContext.value = { taskId: ui.active.id, questions: [...ui.active.questions] };
+  pmDraft.value = "";
   void nextTick(() => pmSurface.value?.focusDraft());
 }
 
-// Row grouping (#0506) and the scroll standard (#0444) are the surface's job now
-// — see the note above the PM section and docs/ai-chat-standards.md.
+function clearPmAnswerContext(clearDraft = false): void {
+  pmAnswerContext.value = null;
+  if (clearDraft) pmDraft.value = "";
+}
+
+function pmOpenQuestionsForActive(): string[] {
+  const ctx = pmAnswerContext.value;
+  if (!ctx || !ui.active || ctx.taskId !== ui.active.id) return [];
+  return ctx.questions;
+}
 
 async function pmSend(): Promise<void> {
   const text = pmDraft.value.trim();
   if (!text || pmBusy.value || !pmAgentEnabled.value || !ui.active) return;
 
+  const sendTaskId = ui.active.id;
   pmSubmitting.value = true;
+  const ctx = pmAnswerContext.value;
+  const answeringQuestions =
+    ctx && ctx.taskId === sendTaskId && ctx.questions.length > 0 ? [...ctx.questions] : null;
   const optimistic: AgentOutputEntry = { type: "human", text, at: new Date().toISOString() };
-  const sessionId = pmSessionId(ui.active.id);
+  const sessionId = pmSessionId(sendTaskId);
   const optimisticIndex = (repo.outputs[sessionId] ?? []).length;
   repo.outputs[sessionId] = [...(repo.outputs[sessionId] ?? []), optimistic];
   pmDraft.value = "";
+  if (answeringQuestions) clearPmAnswerContext(false);
   // Same wire shape as the per-task attachment upload: base64 without the
   // data-URL prefix. Kept locally until the send succeeds so a failure
   // doesn't lose the user's picks.
@@ -1784,9 +2088,10 @@ async function pmSend(): Promise<void> {
 
   try {
     await api(
-      `/api/tasks/${ui.active.id}/pm/message`,
+      `/api/tasks/${sendTaskId}/pm/message`,
       JSON_OPTS("POST", {
         text,
+        answeringQuestions: answeringQuestions ?? undefined,
         agentOverride: pmOverrideDraft.agent || undefined,
         cliOverride: pmOverrideDraft.cli || undefined,
         modelOverride: pmOverrideDraft.model || undefined,
@@ -1798,7 +2103,12 @@ async function pmSend(): Promise<void> {
     repo.outputs[sessionId] = (repo.outputs[sessionId] ?? []).filter(
       (_entry, index) => index !== optimisticIndex,
     );
-    pmDraft.value = text;
+    if (ui.active?.id === sendTaskId) {
+      pmDraft.value = text;
+      if (answeringQuestions) {
+        pmAnswerContext.value = { taskId: sendTaskId, questions: answeringQuestions };
+      }
+    }
     repo.outputs[sessionId] = [
       ...(repo.outputs[sessionId] ?? []),
       { type: "sys", d: error instanceof Error ? error.message : String(error) },
@@ -2054,34 +2364,6 @@ watch(
 
 // ---- agent session tab ----
 
-// ANSI stripping is shared with the row grouping (#0506): `stripAnsi` lives in
-// `lib/chat-rows` so the row builder and the freeform stream below strip the
-// same way, from one copy of the pattern.
-
-// ---- freeform PM-agent live stream ----
-
-/** Plain display lines for the in-flight freeform run, fed by agent.output SSE. */
-const freeformLines = computed<{ s: "out" | "err"; d: string }[]>(() => {
-  const raw = freeformRunId.value ? (repo.outputs[freeformRunId.value] ?? []) : [];
-  return raw.map((e) => {
-    if ("type" in e) {
-      return {
-        s: "out",
-        d: stripAnsi(e.type === "text" ? e.text : ((e as { d?: string }).d ?? "")),
-      };
-    }
-    return { s: e.s === "err" ? "err" : "out", d: stripAnsi(e.d) };
-  });
-});
-
-const ffLogEl = ref<HTMLElement | null>(null);
-watch(freeformLines, () => {
-  nextTick(() => {
-    const el = ffLogEl.value;
-    if (el) el.scrollTop = el.scrollHeight;
-  });
-});
-
 /**
  * The rendered transcript for the open task. Legacy `{s,d}` lines render as
  * today (ANSI stripped); structured entries become text blocks, human turns,
@@ -2277,7 +2559,7 @@ async function runNeedsInputPrimaryAction(): Promise<void> {
     return;
   }
   if (ui.active.questions?.length) {
-    openPmWithNeedsInputQuestions();
+    openPmToAnswerQuestions();
     return;
   }
   ui.activeTab = "pm";
@@ -2739,6 +3021,15 @@ watch(
   { immediate: true },
 );
 watch(
+  () => ui.active?.id,
+  (newId, oldId) => {
+    if (oldId != null && newId !== oldId) {
+      const hadAnswerFlow = pmAnswerContext.value?.taskId === oldId;
+      clearPmAnswerContext(hadAnswerFlow);
+    }
+  },
+);
+watch(
   () => reviewDraftMsg.value,
   () => {
     updateChatDraftDirty();
@@ -2801,7 +3092,21 @@ watch(
         </div>
         <div class="drawer-body">
           <div class="field" style="margin-top: 4px">
-            <label>Screenshots</label>
+            <div class="shot-label-row">
+              <label>Screenshots</label>
+              <button
+                ref="shotInfoEl"
+                type="button"
+                class="field-info"
+                aria-label="Accepted screenshot formats"
+                @mouseenter="showShotHint"
+                @mouseleave="hideShotHint"
+                @focus="showShotHint"
+                @blur="hideShotHint"
+              >
+                <Info class="size-3.5" />
+              </button>
+            </div>
             <div
               class="shot-dropzone"
               :class="{ over: dragDepth > 0 }"
@@ -2842,10 +3147,18 @@ watch(
                 <span class="shot-name" :title="s.name">{{ s.name }}</span>
               </div>
             </div>
-            <p class="shot-hint" v-else>
-              PNG, JPEG, GIF, WebP, AVIF or BMP — attached to the new task when you create it.
-            </p>
           </div>
+          <!-- Format/attachment help (#0571) used to be a permanent line under
+               the dropzone. It now lives in a themed pane, teleported to <body>
+               (the drawer's stacking context would trap a fixed child) and
+               anchored under the info control beside the label. -->
+          <Teleport to="body">
+            <div v-if="shotHintOpen" class="field-info-pane" role="tooltip" :style="shotHintStyle">
+              <p>
+                PNG, JPEG, GIF, WebP, AVIF or BMP — attached to the new task when you create it.
+              </p>
+            </div>
+          </Teleport>
           <!-- #0555: story, shared by both modes so Freeform (the default)
                can't silently drop the tag. It sits with the other mode-
                independent field (Screenshots) rather than inside the Manual
@@ -2888,22 +3201,6 @@ watch(
               <div class="btn-row" style="margin-top: 18px">
                 <Button variant="default" @click="createAnotherTask">Create another task</Button>
                 <Button variant="outline" @click="doneFreeform">Done</Button>
-              </div>
-              <div v-if="freeformLines.length" class="ff-stream" style="margin-top: 16px">
-                <div class="ff-stream-head">
-                  <ActivityIndicator />
-                  PM agent
-                </div>
-                <div class="ff-stream-log" ref="ffLogEl">
-                  <div
-                    v-for="(line, i) in freeformLines"
-                    :key="i"
-                    class="ff-stream-line"
-                    :class="line.s === 'err' ? 'err' : ''"
-                  >
-                    {{ line.d }}
-                  </div>
-                </div>
               </div>
             </div>
             <template v-else>
@@ -2978,22 +3275,6 @@ watch(
                   <ActivityIndicator v-if="freeformRunning" />
                   {{ freeformRunning ? "Asking the PM agent…" : "Create task" }}
                 </Button>
-              </div>
-              <div v-if="freeformLines.length" class="ff-stream">
-                <div class="ff-stream-head">
-                  <ActivityIndicator />
-                  PM agent
-                </div>
-                <div class="ff-stream-log" ref="ffLogEl">
-                  <div
-                    v-for="(line, i) in freeformLines"
-                    :key="i"
-                    class="ff-stream-line"
-                    :class="line.s === 'err' ? 'err' : ''"
-                  >
-                    {{ line.d }}
-                  </div>
-                </div>
               </div>
             </template>
           </template>
@@ -3112,11 +3393,46 @@ watch(
                 :title="needsInputBannerText(ui.active.needsInputReason, activeNeedsInputQuestions)"
                 >{{ needsInputHeaderChip.label }}</span
               >
+              <button
+                v-if="checkChip"
+                type="button"
+                class="ck-chip"
+                :class="`ck-chip-${checkChip.state}`"
+                :title="checkChip.title"
+                @click="ui.activeTab = 'debug'"
+              >
+                <ActivityIndicator v-if="checkChip.state === 'running'" class="ck-chip-spin" />
+                {{ checkChip.label }}
+              </button>
               <span class="tc-prio" :class="ui.active.priority" style="margin-left: auto">
                 {{ ui.active.priority }}
               </span>
             </div>
-            <DialogTitle>{{ ui.active.title }}</DialogTitle>
+            <!-- #0569: the header title IS the title editor. Click it to edit
+                 in place; Enter/blur commits and autosaves, Esc cancels. -->
+            <DialogTitle class="task-title" :aria-label="ui.active.title">
+              <input
+                v-if="titleEditing"
+                ref="titleInputEl"
+                v-model="titleDraft"
+                class="task-title-input"
+                aria-label="Task title"
+                @keydown.enter.prevent="commitTitleEdit"
+                @keydown.esc.stop.prevent="cancelTitleEdit"
+                @blur="commitTitleEdit"
+              />
+              <span
+                v-else
+                class="task-title-text"
+                role="button"
+                tabindex="0"
+                title="Click to edit title"
+                @click="beginTitleEdit"
+                @keydown.enter.prevent="beginTitleEdit"
+                @keydown.space.prevent="beginTitleEdit"
+                >{{ ui.active.title }}</span
+              >
+            </DialogTitle>
             <DialogDescription class="sr-only">{{
               ui.active.body || "Task details"
             }}</DialogDescription>
@@ -3472,8 +3788,43 @@ watch(
         <!-- Critical status lives above the tabs so it is visible no matter
              which tab is open — a "needs input" / "reviewer crashed" message
              buried in one tab is a message the human never sees. -->
+        <div v-if="showAgentQuestionsBanner && ui.active" class="drawer-critical">
+          <div class="questions-for-you-banner" role="region" aria-label="Questions for you">
+            <div class="questions-for-you-head">
+              <span class="questions-for-you-badge">Questions for you</span>
+              <span class="questions-for-you-sub">{{
+                needsInputBannerText(ui.active.needsInputReason, true)
+              }}</span>
+            </div>
+            <ol class="questions-for-you-list">
+              <li v-for="(question, index) in ui.active.questions" :key="index">
+                {{ question }}
+              </li>
+            </ol>
+            <div class="questions-for-you-actions">
+              <Button
+                variant="default"
+                size="sm"
+                class="questions-for-you-answer"
+                :disabled="!pmAgentEnabled || pmBusy || pmSubmitting"
+                @click="openPmToAnswerQuestions"
+              >
+                Answer in PM
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                :disabled="ui.saving || dismissNeedsInputBusy"
+                @click="dismissNeedsInputFlag"
+              >
+                <ActivityIndicator v-if="dismissNeedsInputBusy" />
+                {{ dismissNeedsInputBusy ? "Dismissing…" : "Dismiss" }}
+              </Button>
+            </div>
+          </div>
+        </div>
         <div
-          v-if="ui.active && ui.active.needsInput && !handoffBusy && !awaitingFreshReview"
+          v-else-if="ui.active && ui.active.needsInput && !handoffBusy && !awaitingFreshReview"
           class="drawer-critical"
         >
           <div class="agent-waiting" :class="{ 'agent-waiting-static': staleNeedsInputOnReview }">
@@ -3636,20 +3987,7 @@ watch(
           class="drawer-body"
           :class="{ 'transition-success': transitioned }"
         >
-          <template v-if="!locked">
-            <div class="field">
-              <label for="et-title">Title</label>
-              <Input id="et-title" v-model="draft.title" placeholder="Task title" />
-            </div>
-          </template>
-          <template v-else>
-            <div class="field">
-              <label>Title</label>
-              <div class="ro-value">{{ ui.active.title }}</div>
-            </div>
-          </template>
-
-          <div class="field-row" style="margin-top: 16px">
+          <div class="field-row">
             <div class="field">
               <label>Type</label>
               <Select v-model="draft.type">
@@ -3730,27 +4068,6 @@ watch(
                 <option value="ai"></option>
                 <option value="human"></option>
               </datalist>
-            </div>
-          </div>
-          <div
-            v-if="ui.active?.needsInput && ui.active.questions?.length"
-            class="needs-input-block"
-          >
-            <div class="md-h">Questions for you</div>
-            <div class="needs-input-card">
-              <ul class="needs-input-list">
-                <li v-for="(question, index) in ui.active.questions" :key="index">
-                  {{ question }}
-                </li>
-              </ul>
-              <Button
-                variant="default"
-                size="sm"
-                class="needs-input-answer"
-                @click="openPmWithNeedsInputQuestions"
-              >
-                Answer these
-              </Button>
             </div>
           </div>
           <div class="md-h spec-head" style="margin-top: 18px">
@@ -4626,6 +4943,7 @@ watch(
             welcome-body="Ask the PM to edit the task, suggest changes, or discuss progress."
             log-label="Conversation with the PM about this task"
             :canned="pmCannedMessages"
+            :open-questions="pmOpenQuestionsForActive()"
             :shots="ui.pmScreenshots"
             @send="pmSend"
             @interrupt="pmInterrupt"

@@ -46,6 +46,10 @@ afterEach(() => {
   for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
 });
 
+// Never let an inherited REPOOS_CHECK_STORE_ROOT (a `repoos check` parent
+// exports it for its own rows) redirect these fixtures into a live store.
+delete process.env.REPOOS_CHECK_STORE_ROOT;
+
 function tmpRoot(): string {
   const root = mkdtempSync(join(tmpdir(), "repoos-pool-"));
   dirs.push(root);
@@ -72,9 +76,35 @@ describe("host pool config parsing", () => {
 
   it("reads this repo's own repoos.toml (flat dotted keys) without losing the host", () => {
     const cfg = loadConfig(join(__dirname, "..", "..", ".."));
-    // Just verify parsing produces at least one host and doesn't throw — exact
-    // pool membership reflects whatever is live in repoos.toml.
-    expect(resolveRemoteHosts(cfg.remoteValidation).length).toBeGreaterThan(0);
+    const hosts = resolveRemoteHosts(cfg.remoteValidation).map((h) => h.host);
+    expect(hosts.length).toBeGreaterThan(0);
+    // Exact pool membership is the developer's to change (the live file is a
+    // real host list), but the shorthand host must survive the fold — losing
+    // it is a parse regression, not a config choice (#0564 review).
+    const shorthand = cfg.remoteValidation?.tailscaleHost?.trim();
+    if (shorthand) {
+      const host = shorthand.includes("@") ? shorthand.split("@").pop()! : shorthand;
+      expect(hosts).toContain(host);
+    }
+  });
+
+  it("folds flat dotted keys exactly, user@host shorthand included (0564 review)", () => {
+    // Same shape this repo's own repoos.toml uses — top-level dotted keys, a
+    // user@host shorthand, and a flat pool list that repeats the shorthand —
+    // but synthesized so the exact expectation can't drift with the live
+    // host list.
+    const root = tmpRoot();
+    writeFileSync(
+      join(root, "repoos.toml"),
+      "remoteValidation.enabled = true\n" +
+        'remoteValidation.provider = "tailscale"\n' +
+        'remoteValidation.tailscaleHost = "peckjachowski@mini"\n' +
+        'remoteValidation.tailscaleUser = "peckjachowski"\n' +
+        'remoteValidation.tailscaleHosts = ["peckjachowski@mini", "nick@bee"]\n',
+    );
+    const cfg = loadConfig(root);
+    expect(resolveRemoteHosts(cfg.remoteValidation).map((h) => h.host)).toEqual(["mini", "bee"]);
+    expect(cfg.remoteValidation?.tailscaleHost).toBe("peckjachowski@mini");
   });
 
   it("pools a flat list plus [[…]] rows, folding the shorthand without duplicates", () => {
@@ -400,6 +430,38 @@ describe("TailscaleRunner pool dispatch (#0521)", () => {
     expect(f.pending()).toEqual(["b"]);
     f.release("b");
     expect(await next).toEqual({ ok: true, stage: "check" });
+  });
+
+  it("records a per-task infra event naming the host when an upload fails (#0568)", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }, { host: "b" }] });
+    vi.mocked(f.exec.uploadFile).mockImplementation(async (host) =>
+      host.ip === "a" ? { ok: false, detail: "ssh: Connection timed out" } : { ok: true },
+    );
+
+    await f.runner.validate(opts("0001"));
+
+    const ev = f.runner.remoteEvents("0001").find((e) => e.infra);
+    expect(ev).toBeTruthy();
+    expect(ev?.host).toBe("a");
+    expect(ev?.message).toContain("upload");
+  });
+
+  it("records a queued event while a job waits for a host slot (#0568)", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }] });
+    const job1 = f.runner.validate(opts("0001"));
+    await tick();
+    const job2 = f.runner.validate(opts("0002"));
+    await tick();
+
+    expect(f.runner.remoteEvents("0002").some((e) => e.phase === "queued")).toBe(true);
+
+    f.release("a");
+    await tick();
+    f.release("a");
+    expect(await Promise.all([job1, job2])).toEqual([
+      { ok: true, stage: "check" },
+      { ok: true, stage: "check" },
+    ]);
   });
 
   it("runs two jobs on two hosts and queues a third until one frees", async () => {
