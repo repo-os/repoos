@@ -2,7 +2,7 @@
 id: "0575"
 title: Prevent clicks from passing through modals and popups
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
@@ -73,3 +73,4 @@ All of these popups and modals seem to have the same issue: clicks on them go pa
 - 2026-09-28T13:16:27Z · status draft→inbox, title, area, type, body
 - 2026-09-28T13:27:59Z · model_override
 - 2026-09-28T13:28:03Z · review_model_override
+- 2026-09-28T13:28:03Z · status inbox→ready
