@@ -3,14 +3,15 @@ import type { RepoOSConfig, Status, Task } from "../../core/types.js";
 import type { LiveIndex, RepoEvent } from "../live-index.js";
 import { taskNotificationLink } from "./link.js";
 import { NtfyNotificationProvider } from "./ntfy-provider.js";
+import { isAgentFailureNeedsInputReason } from "./reasons.js";
 import { TelegramNotificationProvider } from "./telegram-provider.js";
 import {
-  notificationForAgentCompleted,
   notificationForAgentFailed,
   notificationForIntegrationFailed,
   notificationForMovedToReview,
   notificationForNeedsInput,
   notificationForReviewFeedback,
+  notificationForServerFailed,
   notificationForStatusChange,
   notificationForTaskCreated,
 } from "./spec.js";
@@ -139,6 +140,18 @@ export function notifyIntegrationFailed(
   );
 }
 
+export function notifyServerFailed(
+  ctx: NotificationDispatchContext,
+  task: Task,
+  detail?: string,
+): void {
+  const spec = notificationForServerFailed(detail);
+  dispatchNotification(
+    ctx,
+    basePayload(ctx, task, "task.server_failed", spec, spec.subtitle ?? detail ?? ""),
+  );
+}
+
 export function notifyAgentFailed(
   ctx: NotificationDispatchContext,
   task: Task,
@@ -148,14 +161,6 @@ export function notifyAgentFailed(
   dispatchNotification(
     ctx,
     basePayload(ctx, task, "task.agent_failed", spec, spec.subtitle ?? detail ?? ""),
-  );
-}
-
-export function notifyAgentCompleted(ctx: NotificationDispatchContext, task: Task): void {
-  const spec = notificationForAgentCompleted();
-  dispatchNotification(
-    ctx,
-    basePayload(ctx, task, "task.agent_completed", spec, "The engineering agent finished its run."),
   );
 }
 
@@ -190,6 +195,7 @@ export function attachTaskNotificationHandlers(
         kind === "task.done" ? "The task was marked done." : "An agent started work on this task.";
       dispatch(basePayload(ctx, task, kind, spec, summary));
     }
+    // `active → review` is owned by moved_to_review (engineering handoff), not agent_completed.
     if (prev !== next && next === "review") {
       const reviewSpec = notificationForMovedToReview();
       dispatch(
@@ -201,9 +207,6 @@ export function attachTaskNotificationHandlers(
           "The task is ready for human review.",
         ),
       );
-    }
-    if (prev === "active" && next === "review") {
-      notifyAgentCompleted(ctx, task);
     }
   };
 
@@ -223,6 +226,15 @@ export function attachTaskNotificationHandlers(
     const prevNeedsInput = e.prev.needsInput ?? false;
     const nextNeedsInput = e.task.needsInput;
     if (!prevNeedsInput && nextNeedsInput) {
+      const reason = e.task.needsInputReason?.trim();
+      const detail = e.task.needsInputDetail?.trim() || reason || "";
+      if (isAgentFailureNeedsInputReason(reason)) {
+        const spec = notificationForAgentFailed(detail || reason);
+        dispatch(
+          basePayload(ctx, e.task, "task.agent_failed", spec, detail || reason || spec.subtitle!),
+        );
+        return;
+      }
       const spec = notificationForNeedsInput();
       dispatch(
         basePayload(
@@ -230,7 +242,7 @@ export function attachTaskNotificationHandlers(
           e.task,
           "task.needs_input",
           spec,
-          e.task.needsInputReason?.trim() || "The agent is waiting for your decision.",
+          reason || "The agent is waiting for your decision.",
         ),
       );
     }
@@ -253,24 +265,19 @@ export function attachTaskNotificationHandlers(
   });
 
   const unsubProgress = index.on((e: RepoEvent) => {
-    if (e.type !== "task.progress" || e.step !== "failed") return;
+    if (e.type !== "task.progress") return;
     const task = index.getTask(e.id);
     if (!task) return;
+    if (e.step === "handoff:failed") {
+      const spec = notificationForServerFailed(e.detail);
+      dispatch(basePayload(ctx, task, "task.server_failed", spec, e.detail ?? spec.subtitle ?? ""));
+      return;
+    }
+    if (e.step !== "failed") return;
     const spec = notificationForIntegrationFailed(e.detail);
     dispatch(
       basePayload(ctx, task, "task.integration_failed", spec, e.detail ?? spec.subtitle ?? ""),
     );
-  });
-
-  const unsubAgentExit = index.on((e: RepoEvent) => {
-    if (e.type !== "agent.exited") return;
-    const task = index.getTask(e.id);
-    if (!task || task.status !== "active") return;
-    if (!task.needsInput) return;
-    const reason = task.needsInputReason?.trim();
-    if (!reason || !/fail|crash|interrupt|error/i.test(reason)) return;
-    const spec = notificationForAgentFailed(reason);
-    dispatch(basePayload(ctx, task, "task.agent_failed", spec, reason));
   });
 
   return () => {
@@ -278,7 +285,6 @@ export function attachTaskNotificationHandlers(
     unsubNeedsInput();
     unsubReview();
     unsubProgress();
-    unsubAgentExit();
   };
 }
 

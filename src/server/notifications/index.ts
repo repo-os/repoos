@@ -14,9 +14,10 @@ export {
   notificationForMovedToReview,
   notificationForReviewFeedback,
   notificationForIntegrationFailed,
+  notificationForServerFailed,
   notificationForAgentFailed,
-  notificationForAgentCompleted,
 } from "./spec.js";
+export { isAgentFailureNeedsInputReason } from "./reasons.js";
 export { taskNotificationLink } from "./link.js";
 export { ntfyBaseUrl, publishNtfyRaw, NtfyNotificationProvider } from "./ntfy-provider.js";
 export { TelegramNotificationProvider } from "./telegram-provider.js";
@@ -24,12 +25,12 @@ export {
   attachTaskNotificationHandlers,
   dispatchNotification,
   notificationContextFromConfig,
-  notifyAgentCompleted,
   notifyAgentFailed,
   notifyIntegrationFailed,
   notifyMovedToReview,
   notifyNeedsInput,
   notifyReviewFeedback,
+  notifyServerFailed,
   notifyStatusChange,
   notifyTaskCreated,
 } from "./dispatch.js";

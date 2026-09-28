@@ -11,6 +11,7 @@ import {
   bindTelegramChatDirect,
   createTelegramChatBindCode,
   isTelegramChatBound,
+  listTelegramNotificationChatIds,
   mayDeliverTelegramNotification,
   redeemTelegramChatBindCode,
   unbindTelegramChat,
@@ -357,6 +358,21 @@ describe("isTelegramUpdateAddressedToBot", () => {
       text: "hey @RepoBot what is up",
     });
     expect(isTelegramUpdateAddressedToBot(mention, bot)).toBe(true);
+  });
+});
+
+describe("telegram chat notification opt-out", () => {
+  it("excludes chats with notifications disabled from routing", () => {
+    bindTelegramChatDirect(store, {
+      telegramChatId: 8,
+      chatType: "private",
+      title: null,
+      actorEmail: "admin@test.com",
+    });
+    expect(mayDeliverTelegramNotification(store, 8)).toBe(true);
+    expect(store.setTelegramChatNotificationsEnabled(8, false)).toBe(true);
+    expect(mayDeliverTelegramNotification(store, 8)).toBe(false);
+    expect(listTelegramNotificationChatIds(store)).not.toContain(8);
   });
 });
 

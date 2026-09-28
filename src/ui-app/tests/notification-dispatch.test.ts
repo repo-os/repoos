@@ -1,17 +1,18 @@
 import { afterEach, describe, expect, it } from "vitest";
 import type { RepoOSConfig, Task } from "../../core/types";
 import { AuthStore } from "../../core/auth-store.js";
-import { bindTelegramChatDirect } from "../../core/telegram-chat.js";
 import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
   dispatchNotification,
   notificationContextFromConfig,
-  notifyStatusChange,
+  NtfyNotificationProvider,
   type NotificationPayload,
   type NotificationProvider,
 } from "../../server/notifications/index.js";
+import { TelegramNotificationProvider } from "../../server/notifications/telegram-provider.js";
+import { bindTelegramChatDirect } from "../../core/telegram-chat.js";
 import { LocalTelegramProvider } from "../../server/telegram/provider.js";
 import { TelegramCredentialStore } from "../../server/telegram/store.js";
 import { setTelegramProvider, resetTelegramProviders } from "../../server/telegram/index.js";
@@ -70,6 +71,18 @@ function task(): Task {
   };
 }
 
+const samplePayload: NotificationPayload = {
+  kind: "task.started",
+  severity: "low",
+  repositoryName: "repo",
+  taskId: "1",
+  taskTitle: "t",
+  status: "active",
+  summary: "s",
+  link: "/work?task=1",
+  headline: "▶️ Started",
+};
+
 describe("dispatchNotification", () => {
   it("does not throw when a provider throws during deliver", () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-notif-dispatch-"));
@@ -81,18 +94,7 @@ describe("dispatchNotification", () => {
         throw new Error("telegram down");
       },
     };
-    const payload: NotificationPayload = {
-      kind: "task.started",
-      severity: "low",
-      repositoryName: "repo",
-      taskId: "1",
-      taskTitle: "t",
-      status: "active",
-      summary: "s",
-      link: "/work?task=1",
-      headline: "▶️ Started",
-    };
-    expect(() => dispatchNotification(ctx, payload, [boom])).not.toThrow();
+    expect(() => dispatchNotification(ctx, samplePayload, [boom])).not.toThrow();
   });
 
   it("dispatches to every enabled provider from one call", () => {
@@ -113,21 +115,10 @@ describe("dispatchNotification", () => {
         seen.push("b");
       },
     };
-    dispatchNotification(
-      ctx,
-      {
-        kind: "task.created",
-        severity: "low",
-        repositoryName: "r",
-        taskId: "1",
-        taskTitle: "t",
-        status: "inbox",
-        summary: "s",
-        link: "/work?task=1",
-        headline: "🆕 New",
-      },
-      [a, b],
-    );
+    dispatchNotification(ctx, { ...samplePayload, kind: "task.created", headline: "🆕 New" }, [
+      a,
+      b,
+    ]);
     expect(seen).toEqual(["a", "b"]);
   });
 });
@@ -144,21 +135,60 @@ describe("notifyStatusChange + ntfy", () => {
 
   afterEach(() => {
     sent.length = 0;
+    resetTelegramProviders();
     // @ts-expect-error cleanup
     delete globalThis.fetch;
   });
 
-  it("still posts ntfy with unchanged body and priority when telegram also runs", () => {
+  it("still posts ntfy when a throwing telegram provider is also registered", () => {
     stubFetch();
     const root = mkdtempSync(join(tmpdir(), "repoos-notif-ntfy-"));
+    const ctx = notificationContextFromConfig(
+      config(root, { ntfyEnabled: true, ntfyTopic: "repoos_test" }),
+      null,
+    );
+    const throwingTelegram: NotificationProvider = {
+      id: "telegram",
+      isEnabled: () => true,
+      deliver: () => {
+        throw new Error("telegram outage");
+      },
+    };
+    dispatchNotification(
+      ctx,
+      {
+        kind: "task.started",
+        severity: "low",
+        repositoryName: "repo",
+        taskId: task().id,
+        taskTitle: task().title,
+        status: task().status,
+        summary: "s",
+        link: "/work?task=0042",
+        headline: "▶️ Started",
+      },
+      [new NtfyNotificationProvider(), throwingTelegram],
+    );
+    expect(sent).toHaveLength(1);
+    expect(sent[0].url).toBe("https://ntfy.sh/repoos_test");
+    expect(sent[0].body).toBe("▶️ Started · Fix the widget");
+    expect(sent[0].headers.Priority).toBe("low");
+  });
+});
+
+describe("TelegramNotificationProvider", () => {
+  afterEach(() => {
+    resetTelegramProviders();
+    delete process.env.REPOOS_SECRET_STORE_KEY;
+  });
+
+  it("does not send to unbound chats or chats opted out of notifications", async () => {
+    process.env.REPOOS_SECRET_STORE_KEY = Buffer.alloc(32, 7).toString("hex");
+    const root = mkdtempSync(join(tmpdir(), "repoos-telegram-notif-"));
     const store = new AuthStore(root);
     expect(store.isAvailable()).toBe(true);
-    bindTelegramChatDirect(store, {
-      telegramChatId: 99,
-      chatType: "private",
-      title: null,
-      actorEmail: "admin@test.com",
-    });
+
+    const sends: number[] = [];
     const provider = new LocalTelegramProvider({
       resolveConfig: () => ({ enabled: true, provisioningUrl: "" }),
       root,
@@ -172,21 +202,33 @@ describe("notifyStatusChange + ntfy", () => {
             first_name: "Bot",
             username: "bot",
           }),
-          sendMessage: async () => {
-            throw new Error("telegram outage");
+          sendMessage: async (input: { chatId: number }) => {
+            sends.push(input.chatId);
+            return { message_id: 1, chat: { id: input.chatId } };
           },
         }) as never,
     });
+    await provider.connectByBotToken("123456:ABCDEF");
     setTelegramProvider(root, provider);
-    const ctx = notificationContextFromConfig(
-      config(root, { ntfyEnabled: true, ntfyTopic: "repoos_test" }),
-      store,
-    );
-    notifyStatusChange(ctx, task(), "ready", "active");
-    expect(sent).toHaveLength(1);
-    expect(sent[0].url).toBe("https://ntfy.sh/repoos_test");
-    expect(sent[0].body).toBe("▶️ Started · Fix the widget");
-    expect(sent[0].headers.Priority).toBe("low");
-    resetTelegramProviders();
+
+    bindTelegramChatDirect(store, {
+      telegramChatId: 10,
+      chatType: "private",
+      title: null,
+      actorEmail: "admin@test.com",
+    });
+    store.setTelegramChatNotificationsEnabled(10, false);
+
+    const ctx = notificationContextFromConfig(config(root), store, "http://127.0.0.1:7171");
+    const telegram = new TelegramNotificationProvider();
+    telegram.deliver(ctx, samplePayload);
+
+    await new Promise((r) => setTimeout(r, 20));
+    expect(sends).toEqual([]);
+
+    store.setTelegramChatNotificationsEnabled(10, true);
+    telegram.deliver(ctx, samplePayload);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(sends).toEqual([10]);
   });
 });
