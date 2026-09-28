@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 model_override: opencode-go/mimo-v2.6-flash
+review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-28T08:39:50Z"
-updated_at: "2026-09-28T12:06:15Z"
+updated_at: "2026-09-28T12:06:18Z"
 ---
 ## Problem
 
@@ -85,3 +86,4 @@ Add a **configurable pipeline timeout** so a hung or pathologically slow close-o
 - 2026-09-28T08:39:50Z · created · unknown
 - 2026-09-28T11:45:41Z · body
 - 2026-09-28T12:06:15Z · model_override
+- 2026-09-28T12:06:18Z · review_model_override
