@@ -53,10 +53,23 @@ const botMe = (): Record<string, unknown> => ({
   can_read_all_group_messages: false,
 });
 
+/** Handlers every disconnect test needs (#0539). */
+function disconnectApiDefaults(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    deleteWebhook: true,
+    getWebhookInfo: () => ({ url: "" }),
+    ...overrides,
+  };
+}
+
 function fakeApi(handlers: Record<string, unknown> = {}) {
+  const revokedTokens = new Set<string>();
   const calls: { method: string; body: Record<string, unknown> }[] = [];
   const fetcher = (async (input: unknown, init?: RequestInit) => {
-    const method = String(input).split("/").pop() ?? "";
+    const url = String(input);
+    const method = url.split("/").pop() ?? "";
+    const tokenMatch = url.match(/\/bot([^/]+)\//);
+    const callToken = tokenMatch?.[1] ?? "";
     let body: Record<string, unknown> = {};
     try {
       body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
@@ -64,20 +77,29 @@ function fakeApi(handlers: Record<string, unknown> = {}) {
       /* empty */
     }
     calls.push({ method, body });
+
+    if (revokedTokens.has(callToken)) {
+      return new Response(
+        JSON.stringify({ ok: false, error_code: 401, description: "Unauthorized" }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
     const scripted = handlers[method];
     const result =
       scripted === undefined
         ? undefined
         : typeof scripted === "function"
-          ? scripted(body)
+          ? scripted(body, { callToken, revokedTokens })
           : scripted;
+
     const text =
       result === undefined
         ? JSON.stringify({ ok: false, error_code: 404, description: `no fake for ${method}` })
         : JSON.stringify({ ok: true, result });
     return new Response(text, { status: 200, headers: { "Content-Type": "application/json" } });
   }) as unknown as typeof fetch;
-  return { fetcher, calls };
+  return { fetcher, calls, revokedTokens };
 }
 
 function makeReq(body?: unknown, cookie?: string): IncomingMessage {
@@ -128,6 +150,7 @@ interface Harness {
   config: RepoOSConfig;
   provider: LocalTelegramProvider;
   calls: { method: string; body: Record<string, unknown> }[];
+  revokeToken: (token: string) => void;
   /** Present when a real auth session was installed ("admin"/"member"). */
   cookie: string | null;
 }
@@ -147,7 +170,7 @@ function harness(options: {
   apiHandlers?: Record<string, unknown>;
   provisioningService?: ManagedProvisioningClient;
 }): Harness {
-  const api = fakeApi(options.apiHandlers ?? {});
+  const api = fakeApi(disconnectApiDefaults(options.apiHandlers ?? {}));
   const config = {
     root: tmpRoot,
     telegram: { enabled: true, provisioningUrl: "" },
@@ -177,7 +200,13 @@ function harness(options: {
       options.auth === "admin" ? "admin" : "member",
     );
   }
-  return { config, provider, calls: api.calls, cookie };
+  return {
+    config,
+    provider,
+    calls: api.calls,
+    revokeToken: (token) => api.revokedTokens.add(token),
+    cookie,
+  };
 }
 
 /**
@@ -185,7 +214,7 @@ function harness(options: {
  * shared by the enabled-gate tests and the off-while-disabled exemption.
  */
 function disabledHarness(options: { apiHandlers?: Record<string, unknown> } = {}): Harness {
-  const api = fakeApi(options.apiHandlers ?? {});
+  const api = fakeApi(disconnectApiDefaults(options.apiHandlers ?? {}));
   const config = {
     root: tmpRoot,
     telegram: { enabled: false, provisioningUrl: "" },
@@ -201,7 +230,13 @@ function disabledHarness(options: { apiHandlers?: Record<string, unknown> } = {}
   });
   setTelegramProvider(tmpRoot, provider);
   providers.push(provider);
-  return { config, provider, calls: api.calls, cookie: null };
+  return {
+    config,
+    provider,
+    calls: api.calls,
+    revokeToken: (token) => api.revokedTokens.add(token),
+    cookie: null,
+  };
 }
 
 /** Install `email` with `role` and mint a session cookie. */
@@ -330,7 +365,7 @@ describe("BYO connect", () => {
     expect(String(fake.raw)).not.toContain(TOKEN);
   });
 
-  it("status shows the connected bot; disconnect clears credential and disk", async () => {
+  it("status shows the connected bot; disconnect stays retryable until BotFather revokes the token", async () => {
     const h = harness({
       auth: "admin",
       apiHandlers: { getMe: botMe(), deleteWebhook: true },
@@ -348,7 +383,13 @@ describe("BYO connect", () => {
 
     const disconnect = makeRes();
     await telegramDisconnect(ctx(h.config), makeReq(undefined, cookie), disconnect.res, {});
-    expect(disconnect.fake.status).toBe(200);
+    expect(disconnect.fake.status).toBe(502);
+    expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(true);
+
+    h.revokeToken(TOKEN);
+    const retry = makeRes();
+    await telegramDisconnect(ctx(h.config), makeReq(undefined, cookie), retry.res, {});
+    expect(retry.fake.status).toBe(200);
     const status2 = makeRes();
     await telegramStatus(ctx(h.config), makeReq(undefined, cookie), status2.res, {});
     expect((status2.fake.payload as { connected: boolean }).connected).toBe(false);
@@ -363,7 +404,11 @@ describe("BYO connect", () => {
     expect(connect.fake.status).toBe(200);
     const disconnect = makeRes();
     await telegramDisconnect(ctx(h.config), makeReq(), disconnect.res, {});
-    expect(disconnect.fake.status).toBe(200);
+    expect(disconnect.fake.status).toBe(502);
+    h.revokeToken(TOKEN);
+    const retry = makeRes();
+    await telegramDisconnect(ctx(h.config), makeReq(), retry.res, {});
+    expect(retry.fake.status).toBe(200);
   });
 });
 
@@ -573,7 +618,12 @@ describe("the enabled gate", () => {
     await h.provider.connectByBotToken(TOKEN);
     const disconnect = makeRes();
     await telegramDisconnect(ctx(h.config), makeReq(), disconnect.res, {});
-    expect(disconnect.fake.status).toBe(200);
+    expect(disconnect.fake.status).toBe(502);
+    expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(true);
+    h.revokeToken(TOKEN);
+    const retry = makeRes();
+    await telegramDisconnect(ctx(h.config), makeReq(), retry.res, {});
+    expect(retry.fake.status).toBe(200);
     expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(false);
   });
 });

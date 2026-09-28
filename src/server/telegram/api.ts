@@ -257,6 +257,14 @@ export class TelegramApiClient {
     return this.call("getWebhookInfo");
   }
 
+  async logOut(): Promise<boolean> {
+    return this.call("logOut");
+  }
+
+  async close(): Promise<boolean> {
+    return this.call("close");
+  }
+
   /**
    * One long-poll batch. The HTTP timeout must exceed the poll timeout or
    * every idle poll would look like a network error.
