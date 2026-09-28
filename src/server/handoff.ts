@@ -677,6 +677,35 @@ const MAX_CHECK_RETRY_ATTEMPTS = 2;
  *  cleared the task from `handoffsInFlight` — `send()` rejects while set. */
 const CHECK_RETRY_DELAY_MS = 3_000;
 
+/** Cap on the `detail` text inlined into `last_check_failure`. Task files are
+ *  committed and diffed, so an unbounded check log would bloat every change
+ *  that touches the file. Long enough to identify the failing step; the full
+ *  output still reaches the engineer via the retry message. */
+const MAX_CHECK_FAILURE_DETAIL = 500;
+
+/**
+ * Render a handoff check failure as a single frontmatter-safe line.
+ *
+ * Task frontmatter is a FLAT scalar format — `scanFrontmatterLines` matches
+ * keys with /^([A-Za-z0-9_-]+):(.*)$/, which has no leading-whitespace
+ * tolerance, so an indented child line is skipped entirely on the next read.
+ * Emitting a nested YAML mapping would therefore be *worse* than the string it
+ * replaces: the value would round-trip back as null. One line, newlines
+ * collapsed, so the record survives parse → serialize and stays greppable in
+ * the raw file.
+ */
+export function formatCheckFailure(detail: string, exitCode?: string | null): string {
+  const flat = detail.replace(/\s+/g, " ").trim();
+  const shown =
+    flat.length > MAX_CHECK_FAILURE_DETAIL
+      ? `${flat.slice(0, MAX_CHECK_FAILURE_DETAIL)}… (truncated)`
+      : flat;
+  // The ISO timestamp's colons make serializeScalar quote this, and
+  // coerceScalar unquotes it on read — so it round-trips verbatim.
+  const exit = exitCode ? ` (exit ${exitCode})` : "";
+  return `repoos check${exit} at ${new Date().toISOString()}: ${shown}`;
+}
+
 /**
  * On a finalization failure at the `check` step, automatically resume the
  * same engineer session with the check output and ask it to fix (or re-verify,
@@ -760,14 +789,16 @@ export function scheduleCheckFailureRetry(
       const doc = parseDocument(raw);
       doc.data.check_retry_count = attempt;
 
-      // Persist parseable handoff-check failure details
-      doc.data.last_check_failure = {
-        stage: "check",
-        command: "repoos check",
-        exitCode: result.detail?.match(/exit (\d+)/)?.[1] || null,
-        detail: detail,
-        timestamp: new Date().toISOString(),
-      };
+      // Persist handoff-check failure details. Task frontmatter is a FLAT
+      // scalar format: `serializeScalar` stringifies anything that isn't a
+      // boolean or number, so assigning the structured object this used to
+      // hold wrote the literal "[object Object]" and discarded stage, exit
+      // code and detail — the only record of why the check failed. See
+      // `formatCheckFailure` for why a nested mapping isn't the answer.
+      doc.data.last_check_failure = formatCheckFailure(
+        detail,
+        result.detail?.match(/exit (\d+)/)?.[1],
+      );
 
       const keys = Object.keys(doc.data).filter(
         (k) => k !== "check_retry_count" && k !== "last_check_failure",
