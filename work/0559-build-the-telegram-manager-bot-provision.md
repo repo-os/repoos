@@ -3,6 +3,9 @@ id: "0559"
 title: Build the Telegram manager-bot provisioning service and secure instance handoff
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the cursor agent exited without output: Error: [unavailable] read ETIMEDOUT"
 priority: p1
 area: server
 story: RepoOS Telegram Bot
@@ -14,7 +17,7 @@ model_override: composer-2.5
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-27T17:32:41Z"
-updated_at: "2026-09-28T07:30:30Z"
+updated_at: "2026-09-28T07:58:49Z"
 check_retry_count: 1
 last_check_failure: "[object Object]"
 review_rounds: 1
@@ -94,3 +97,4 @@ Depends on #0530 (done) and the local adapter/client contract from #0531 (still 
 - 2026-09-28T07:19:22Z · review_cli_override, review_model_override
 - 2026-09-28T07:30:24Z · review_model_override
 - 2026-09-28T07:30:30Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-09-28T07:58:49Z · needs_input
