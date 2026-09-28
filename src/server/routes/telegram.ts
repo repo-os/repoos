@@ -332,7 +332,7 @@ export const telegramProvisionRedeem: RouteHandler = async (ctx, req, res, param
 };
 
 function requestView(
-  begin: { id: string; deepLink: string; expiresAt: string },
+  begin: { id: string; deepLink: string; expiresAt: string; linkCode?: string },
   extra: { state?: ProvisioningRequestView["state"]; bot?: ProvisionedBot; error?: string } | null,
 ): ProvisioningRequestView {
   return {
@@ -340,6 +340,7 @@ function requestView(
     state: extra?.state ?? "pending",
     deepLink: begin.deepLink,
     expiresAt: begin.expiresAt,
+    ...(begin.linkCode ? { linkCode: begin.linkCode } : {}),
     ...(extra?.bot ? { bot: extra.bot } : {}),
     ...(extra?.error ? { error: extra.error } : {}),
   };

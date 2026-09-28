@@ -40,10 +40,7 @@ export interface BeginResponseBody {
   expires_at: string;
   /** The one-time code the admin sends to the manager bot to bind their
    * Telegram identity to this request BEFORE tapping the create-bot link —
-   * see docs/telegram-manager-service.md#correlation. Not part of #0531's
-   * client contract (which only reads id/deep_link/expires_at), so the
-   * local instance ignores it; it exists for the browser-rendered
-   * instructions the admin follows by hand. */
+   * see docs/telegram-manager-service.md#correlation. */
   link_code: string;
 }
 
@@ -52,6 +49,8 @@ export interface StatusResponseBody {
   state: ProvisioningState;
   deep_link: string;
   expires_at: string;
+  /** Echoed while `state` is `pending` and the code has not been consumed. */
+  link_code?: string;
   bot?: BotSummary;
   error?: string;
 }

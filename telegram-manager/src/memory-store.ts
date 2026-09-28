@@ -246,6 +246,16 @@ export class InMemoryProvisioningStore implements ProvisioningStore {
         touched++;
       }
     }
+    const rateCutoff = now.getTime() - 24 * 60 * 60 * 1000;
+    for (const [bucketKey, windows] of this.rateBuckets) {
+      for (const windowStart of windows.keys()) {
+        if (windowStart < rateCutoff) {
+          windows.delete(windowStart);
+          touched++;
+        }
+      }
+      if (windows.size === 0) this.rateBuckets.delete(bucketKey);
+    }
     return touched;
   }
 }

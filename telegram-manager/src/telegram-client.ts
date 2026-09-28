@@ -82,6 +82,7 @@ class HttpTelegramManagerClient implements TelegramManagerClient {
     private readonly token: string,
     private readonly apiBase: string,
     private readonly fetcher: Fetcher,
+    private readonly timeoutMs: number,
   ) {
     this.redact = makeTokenRedactor(token);
   }
@@ -93,6 +94,7 @@ class HttpTelegramManagerClient implements TelegramManagerClient {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
+        signal: AbortSignal.timeout(this.timeoutMs),
       });
     } catch (e) {
       const raw = e instanceof Error ? e.message : String(e);
@@ -195,8 +197,9 @@ export function createTelegramManagerClient(
   token: string,
   apiBase: string,
   fetcher: Fetcher = fetch,
+  timeoutMs: number = 30_000,
 ): TelegramManagerClient {
-  return new HttpTelegramManagerClient(token, apiBase, fetcher);
+  return new HttpTelegramManagerClient(token, apiBase, fetcher, timeoutMs);
 }
 
 /** For assembling the encrypted bot-summary fields stored on a request. */

@@ -119,6 +119,7 @@ export function createApp(deps: AppDeps) {
         state: status.state,
         deep_link: status.deepLink,
         expires_at: status.expiresAt,
+        ...(status.linkCode ? { link_code: status.linkCode } : {}),
         ...(status.bot
           ? {
               bot: {
@@ -131,6 +132,23 @@ export function createApp(deps: AppDeps) {
           : {}),
         ...(status.error ? { error: status.error } : {}),
       };
+      return c.json(response, 200);
+    } catch (e) {
+      if (e instanceof ServiceError) {
+        const err: ErrorResponseBody = { error: e.message };
+        return c.json(err, errorStatus(e.kind));
+      }
+      throw e;
+    }
+  });
+
+  app.post("/v1/provisioning/requests/:id/rotate-token", async (c) => {
+    try {
+      const authKeyHash = hashAuthKey(c.get("instanceAuthKey"));
+      const result = await service.rotateToken(c.req.param("id"), authKeyHash);
+      const response: RedeemResponseBody | Record<string, never> = result.token
+        ? { token: result.token }
+        : {};
       return c.json(response, 200);
     } catch (e) {
       if (e instanceof ServiceError) {
@@ -171,9 +189,16 @@ export function createApp(deps: AppDeps) {
       // unparseable body will never become parseable on retry.
       return c.json({ ok: true }, 200);
     }
-    const isNew = await deps.store.seeUpdate(raw.update_id, new Date());
+    const updateId = raw.update_id;
+    const seenAt = new Date();
+    const isNew = await deps.store.seeUpdate(updateId, seenAt);
     if (isNew) {
-      await service.handleUpdate(raw);
+      try {
+        await service.handleUpdate(raw);
+      } catch (e) {
+        await deps.store.forgetUpdate(updateId);
+        throw e;
+      }
     }
     return c.json({ ok: true }, 200);
   });

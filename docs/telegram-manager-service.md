@@ -162,7 +162,10 @@ update is deduplicated by `update_id` (`telegram_update_dedup` table, 7-day
 retention swept by `sweep()`) **before** it reaches the service's business
 logic, so a redelivered `/link` message or `managed_bot` event is acknowledged
 with `200` but processed at most once — this is asserted in
-`tests/http.test.ts`.
+`tests/http.test.ts`. If handling throws after dedup (transient Postgres error,
+Telegram outage), the route calls `forgetUpdate` for that `update_id` and
+answers **500** so Telegram retries; the retry is then processed normally
+(`tests/http.test.ts`, "forgets dedup when handling fails").
 
 ## Secrets
 

@@ -13,6 +13,7 @@ function makeConfig(): ManagerConfig {
     instanceAuthKeys: ["instance-key-xyz"],
     encryptionKey: "0".repeat(64),
     telegramApiBase: "https://api.telegram.org",
+    telegramApiTimeoutMs: 30_000,
   };
 }
 
@@ -141,6 +142,115 @@ describe("HTTP contract (#0531 client boundary)", () => {
 
     const boundEvents = store.auditLog.filter((e) => e.event === "link_bound");
     expect(boundEvents).toHaveLength(1);
+  });
+
+  it("returns 404 when a different instance key probes another instance's request", async () => {
+    const store = new InMemoryProvisioningStore();
+    const telegram = new FakeTelegramManagerClient();
+    const config = {
+      ...makeConfig(),
+      instanceAuthKeys: ["key-for-inst-a", "key-for-inst-b"],
+    };
+    const app = createApp({ config, store, telegram });
+    const beginRes = await app.request("/v1/provisioning/requests", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer key-for-inst-a",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        repository: "acme/widgets",
+        instance: { id: "inst-a" },
+        requestedBy: "admin@acme.test",
+      }),
+    });
+    const begun = await json(beginRes);
+    const probe = await app.request(`/v1/provisioning/requests/${begun.id}`, {
+      headers: { Authorization: "Bearer key-for-inst-b" },
+    });
+    expect(probe.status).toBe(404);
+  });
+
+  it("rotates a redeemed project bot token for the owning instance", async () => {
+    const { app, telegram } = makeApp();
+    const auth = { Authorization: "Bearer instance-key-xyz", "Content-Type": "application/json" };
+    const beginRes = await app.request("/v1/provisioning/requests", {
+      method: "POST",
+      headers: auth,
+      body: JSON.stringify({
+        repository: "r",
+        instance: { id: "inst-a" },
+        requestedBy: "a@b.test",
+      }),
+    });
+    const begun = await json(beginRes);
+    const webhook = (body: Record<string, unknown>) =>
+      app.request("/v1/telegram/webhook", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Telegram-Bot-Api-Secret-Token": "whsec-abc",
+        },
+        body: JSON.stringify(body),
+      });
+    await webhook(linkMessage(1, 42, String(begun.link_code)));
+    await webhook(
+      managedBotUpdate(2, 42, { id: 555, username: "acme_bot", firstName: "Acme Bot" }),
+    );
+    telegram.tokensByBotId.set(555, "secret-project-token");
+    await app.request(`/v1/provisioning/requests/${begun.id}/redeem`, {
+      method: "POST",
+      headers: auth,
+    });
+    const rotateRes = await app.request(`/v1/provisioning/requests/${begun.id}/rotate-token`, {
+      method: "POST",
+      headers: auth,
+    });
+    expect(rotateRes.status).toBe(200);
+    const rotated = await json(rotateRes);
+    expect(rotated.token).toBe("secret-project-token-rotated");
+  });
+
+  it("forgets dedup when handling fails so Telegram can redeliver", async () => {
+    const store = new InMemoryProvisioningStore();
+    const telegram = new FakeTelegramManagerClient();
+    const app = createApp({ config: makeConfig(), store, telegram });
+    const auth = { Authorization: "Bearer instance-key-xyz", "Content-Type": "application/json" };
+    const beginRes = await app.request("/v1/provisioning/requests", {
+      method: "POST",
+      headers: auth,
+      body: JSON.stringify({
+        repository: "r",
+        instance: { id: "inst-a" },
+        requestedBy: "a@b.test",
+      }),
+    });
+    const begun = await json(beginRes);
+    const update = linkMessage(1, 42, String(begun.link_code));
+    const originalBind = store.bindLinkCode.bind(store);
+    let failOnce = true;
+    store.bindLinkCode = async (...args) => {
+      if (failOnce) {
+        failOnce = false;
+        throw new Error("transient postgres blip");
+      }
+      return originalBind(...args);
+    };
+    const send = () =>
+      app.request("/v1/telegram/webhook", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Telegram-Bot-Api-Secret-Token": "whsec-abc",
+        },
+        body: JSON.stringify(update),
+      });
+    const failed = await send();
+    expect(failed.status).toBe(500);
+    const recovered = await send();
+    expect(recovered.status).toBe(200);
+    const statusRes = await app.request(`/v1/provisioning/requests/${begun.id}`, { headers: auth });
+    expect((await json(statusRes)).state).toBe("awaiting_bot_creation");
   });
 
   it("returns 404 for an unknown request id and 409 for redeeming before ready", async () => {

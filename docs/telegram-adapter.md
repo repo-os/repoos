@@ -130,16 +130,22 @@ Server-to-server HTTPS from the instance to the #0559 service:
 ```
 POST {base}/v1/provisioning/requests
     body: { repository, instance: { id }, requestedBy, botNameHint? }
-    → 200 { id, deep_link, expires_at }         # t.me/newbot deep link
+    → 200 { id, deep_link, expires_at, link_code }   # deep link + /link code
 
 GET  {base}/v1/provisioning/requests/{id}
-    → 200 { id, state, deep_link, expires_at, bot?, error? }
+    → 200 { id, state, deep_link, expires_at, link_code?, bot?, error? }
       state ∈ pending | awaiting_bot_creation | ready | redeemed | expired | failed
+      link_code is present only while state = pending and the code is unconsumed
 
 POST {base}/v1/provisioning/requests/{id}/redeem
     headers: Authorization: Bearer <REPOOS_TELEGRAM_PROVISIONING_KEY>
     → 200 { token }        # single-use credential pickup, idempotent on retry
        409 already-redeemed (no second delivery)
+
+POST {base}/v1/provisioning/requests/{id}/rotate-token
+    headers: Authorization: Bearer <REPOOS_TELEGRAM_PROVISIONING_KEY>
+    → 200 { token }        # replaces the managed bot token via Telegram (#0539)
+       409 when not yet redeemed
 ```
 
 Rules the client enforces (see `provisioning.ts`): missing `provisioningUrl`

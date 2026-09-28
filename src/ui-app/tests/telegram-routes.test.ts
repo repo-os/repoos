@@ -652,6 +652,7 @@ describe("managed provisioning routes", () => {
         id: "req-7",
         deep_link: "https://t.me/newbot/RepoOSBot",
         expires_at: "2026-09-29T00:00:00Z",
+        link_code: "LINK7XYZ",
       },
       status: {
         id: "req-7",
@@ -677,9 +678,12 @@ describe("managed provisioning routes", () => {
       {},
     );
     expect(begun.fake.status).toBe(200);
-    const request = (begun.fake.payload as { request: { id: string; deepLink: string } }).request;
+    const request = (
+      begun.fake.payload as { request: { id: string; deepLink: string; linkCode: string } }
+    ).request;
     expect(request.id).toBe("req-7");
     expect(request.deepLink).toContain("t.me/newbot");
+    expect(request.linkCode).toBe("LINK7XYZ");
 
     const statusRes = makeRes();
     await telegramProvisionStatus(ctx(h.config), makeReq(), statusRes.res, { param1: "req-7" });
@@ -713,6 +717,7 @@ function fakeProvisioningService(responses: {
         id: "req-1",
         deep_link: "https://t.me/newbot/RepoOSBot",
         expires_at: "2026-09-29T00:00:00Z",
+        link_code: "ABCD2345",
       };
     } else if (method === "POST" && url.endsWith("/redeem")) {
       result = responses.redeem ?? {};
