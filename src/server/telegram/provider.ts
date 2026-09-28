@@ -240,6 +240,8 @@ export class LocalTelegramProvider implements TelegramProvider {
     try {
       record = this.store.load();
     } catch (e) {
+      // Credential still in place — restart polling so the bot stays alive.
+      this.startPollingLoop();
       throw new TelegramDisconnectError(
         "revoke",
         `stored Telegram connection state is unreadable; it was left intact and no bindings were cleared ` +
@@ -283,6 +285,8 @@ export class LocalTelegramProvider implements TelegramProvider {
     }
 
     if (!input.authStore?.isAvailable()) {
+      // Credential still in place — restart polling so the bot stays alive.
+      this.startPollingLoop();
       throw new TelegramDisconnectError(
         "local",
         "auth store is unavailable — disconnect was aborted before contacting Telegram",
@@ -360,11 +364,15 @@ export class LocalTelegramProvider implements TelegramProvider {
           true,
         );
       }
+      // Credential still in place — restart polling so the bot stays alive.
+      this.startPollingLoop();
       throw disconnectError;
     }
 
     const { revocationConfirmed: confirmed, revocationMethod: method, webhookRemoved } = remote;
     if (!confirmed) {
+      // Credential still in place — restart polling so the bot stays alive.
+      this.startPollingLoop();
       throw new TelegramDisconnectError(
         "revoke",
         "Telegram did not confirm the bot token was revoked — local state was left intact",

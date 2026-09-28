@@ -1294,6 +1294,39 @@ function sleepTick(ms: number): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Review round 4: polling restarts after a failed disconnect
+// ---------------------------------------------------------------------------
+
+describe("polling restarts after a failed BYO disconnect (review round 4)", () => {
+  it("isPolling() is true after a BYO revoke that fails at Telegram", async () => {
+    // logOut throws a network error → disconnect fails, but credential stays;
+    // polling must restart so the bot keeps delivering messages.
+    const { provider } = makeProvider({
+      getMe: repoBot(),
+      getWebhookInfo: () => ({ url: "" }),
+      deleteWebhook: () => true,
+      getUpdates: () => [],
+      logOut: () => {
+        throw new TelegramNetworkError("timeout");
+      },
+    });
+    await provider.connectByBotToken(TOKEN);
+    await provider.setTransport({ mode: "polling" });
+    expect(provider.isPolling()).toBe(true);
+
+    const auth = new AuthStore(tmpRoot);
+    let threw = false;
+    try {
+      await provider.disconnect({ authStore: auth, actorEmail: "a@b.com", instanceId: "i1" });
+    } catch {
+      threw = true;
+    }
+    expect(threw).toBe(true);
+    expect(provider.isPolling()).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Review round 3: default-profile preservation, store shape validation,
 // redeem leniency, redactor scope, deterministic receivedAt
 // ---------------------------------------------------------------------------
