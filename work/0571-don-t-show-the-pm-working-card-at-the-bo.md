@@ -2,7 +2,7 @@
 id: "0571"
 title: Hide PM working UI on freeform create and tidy screenshot hint
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 pm_cli_override: cursor
 pm_model_override: composer-2.5
 created_at: "2026-09-28T06:11:24Z"
-updated_at: "2026-09-28T06:13:19Z"
+updated_at: "2026-09-28T06:31:00Z"
 ---
 ## Problem
 
@@ -75,3 +75,4 @@ Don't show the PM working card at the bottom when the user clicks create task, b
 - 2026-09-28T06:11:24Z · created · hello@repoos.org
 - 2026-09-28T06:11:25Z · screenshots
 - 2026-09-28T06:13:19Z · status draft→inbox, title, area, body
+- 2026-09-28T06:31:00Z · status inbox→ready
