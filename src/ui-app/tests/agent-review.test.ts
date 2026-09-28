@@ -477,6 +477,28 @@ ${printReport}`,
     });
   }, 90_000);
 
+  it("clears needs_input immediately when Review again is clicked (#0565)", async () => {
+    const fx = makeFixture(`process.stderr.write("boom\\n"); process.exit(3);`);
+    await withServer(fx, async (server) => {
+      const task = await taskWithWorktree(server, fx, "Review again clears banner");
+      await requestReview(server, task.id, task.absPath);
+      await waitFor(
+        () => /^needs_input: true$/m.test(readFileSync(task.absPath, "utf8")),
+        "needs_input is raised after a failed review",
+      );
+      await waitForAsync(async () => {
+        const row = await api(server, "GET", `/api/tasks/${task.id}`);
+        return row.body.needsInput === true;
+      }, "the index reports needs_input before Review again");
+
+      const again = await api(server, "POST", `/api/tasks/${task.id}/review/again`);
+      expect(again.status, JSON.stringify(again.body)).toBe(200);
+      expect((again.body as { task?: { needsInput?: boolean } }).task?.needsInput).toBe(false);
+      expect(readFileSync(task.absPath, "utf8")).toContain("cleared for review again by");
+      await waitForReviewRunning(server, task.id, true);
+    });
+  }, 90_000);
+
   it("rejects move-to-done while automatic review is still running without cancelling it", async () => {
     // The fake reviewer must outlive the 409 assertions below, and the index
     // must observe it running, so it may not finish early. This was flaky at
