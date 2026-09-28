@@ -44,7 +44,7 @@ export const NEEDS_INPUT_SUGGESTION_LABELS: Record<string, string> = {
   "review-failed":
     "Try Review again from the Review tab (or Restart work if the task is back in active). If it keeps failing, check the CLI/model picker there — an invalid pairing (e.g. after switching CLI) causes exactly this.",
   "review-rounds-exhausted":
-    "Read the latest review report, then send it back to the engineer, fix it yourself, or move to done if the remaining findings are acceptable. Review again runs a fresh review and clears this if it comes back clean.",
+    "Read the latest review report, then send it back to the engineer, fix it yourself, or move to done if the remaining findings are acceptable. Review again hides this banner while a fresh review runs; it stays cleared if the review comes back clean.",
   "dev-error":
     "Restart work to resume the agent, or reply below with more context first. If it keeps failing on the same error, check the coding agent/model picker above — a CLI switch without a matching model pin causes exactly this.",
   "check-failed-after-retries":
