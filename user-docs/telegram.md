@@ -188,6 +188,33 @@ and set `REPOOS_TELEGRAM_PROVISIONING_KEY` in the environment), connect reports
 keeps working. A repository instance never holds or accepts a manager-bot
 credential of any kind.
 
+The service itself — a standalone deployment hosted on Neon Functions and
+Neon Postgres, source under `telegram-manager/` — is the operator's own
+account to run. It is not something a repository instance can start or
+depend on. When your operator has deployed it and shared the two values above
+with you:
+
+1. Set `[telegram] provisioningUrl` in `repoos.toml` to the service's URL.
+2. Set `REPOOS_TELEGRAM_PROVISIONING_KEY` in your environment to the shared
+   auth key the operator issued.
+3. Use **Connect Telegram** as normal — it will now offer managed
+   provisioning instead of (or alongside) Bring Your Own Bot Token, prompting
+   you to send `/link <code>` to the official manager bot before tapping the
+   bot-creation link it gives you. That `/link` step is what proves the bot
+   you're about to create is *yours* — a bare creation link carries no such
+   proof, so don't skip it even if the link looks ready to tap on its own.
+4. Disconnecting a managed bot later asks the service to invalidate its
+   token (the service rotates the bot's token so the one your instance held
+   stops working). This needs the same provisioning URL and key to still be
+   configured — if either goes missing, disconnect reports it as retryable
+   rather than silently leaving the credential live.
+
+Deploying and operating the service itself (creating the manager bot,
+provisioning the Neon project, running migrations, setting secrets, going
+live) is documented for the operator in
+[`docs/telegram-manager-service.md`](../docs/telegram-manager-service.md); it
+is out of scope for a repository instance's own setup.
+
 For how RepoOS login, the email allowlist, and admin/member roles work, read
 [Native authentication](/native-auth). The implementation decision is recorded
 in [ADR 0007](../docs/adr/0007-telegram-identity-and-authorization.md), and the
