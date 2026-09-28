@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-28T00:05:41Z"
-review_passes: 1
 id: "0535"
 title: Link Telegram chats to a repository from an authenticated admin
 type: feature
-status: review
+status: active
 priority: p1
 area: server
 story: RepoOS Telegram Bot
@@ -12,6 +10,9 @@ assigned_to: ai
 created_by: ""
 branch: feat/link-telegram-chats-to-a-repository-from
 created_at: "2026-09-27T07:32:50Z"
+updated_at: "2026-09-28T00:05:41Z"
+review_rounds: 1
+review_passes: 1
 ---
 ## Problem
 
@@ -58,4 +59,4 @@ In a group, act only when the message is addressed to the bot. Story #0003 requi
 - 2026-09-27T15:59:56Z · body
 - 2026-09-27T23:51:21Z · status ready→active, branch
 - 2026-09-28T00:01:26Z · status active→review
-
+- 2026-09-28T00:05:41Z · status review→active
