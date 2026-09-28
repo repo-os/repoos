@@ -72,6 +72,8 @@ export const AI_CHAT_REQUIREMENTS = {
   logClass: "ai-chat-log",
   /** Class giving the send button its distinct accent fill. */
   sendClass: "ai-chat-send",
+  /** Chat bubbles omit markdown thematic breaks (#0563). */
+  chatMarkdown: "renderChatMarkdown",
 } as const;
 
 /** True when the surface renders either allowed jump-to-latest control. */

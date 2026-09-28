@@ -28,7 +28,7 @@
  * agent produced the entries.
  */
 
-import { clampPlainDisplayText, isDisplayEmptyText } from "./markdown.js";
+import { clampPlainDisplayText, isDisplayEmptyText, isThematicBreakOnlyText } from "./markdown.js";
 import type { AgentOutputEntry } from "../types";
 
 /** Strip ANSI escape sequences so no `[0m`-style codes ever reach the DOM. */
@@ -222,6 +222,8 @@ export function toDisplayRows(entries: readonly AgentOutputEntry[]): DisplayRow[
     const rawText = rowText(entry);
     // Nothing to show — no row, rather than an empty bubble (incl. whitespace-only).
     if (isDisplayEmptyText(rawText)) continue;
+    // A lone `---` / box-drawing rule is a separator, not a message (#0563).
+    if (isThematicBreakOnlyText(rawText)) continue;
 
     const isAssistantText = "type" in entry && entry.type === "text";
     const text = isAssistantText ? rawText : displayPlainText(rawText);

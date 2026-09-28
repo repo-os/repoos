@@ -429,6 +429,10 @@ describe("every AI chat surface follows the standard", () => {
     expect(ruleBody(css, ".ai-chat-log")).toMatch(/gap:\s*\d/);
   });
 
+  it("hides stray thematic-break <hr> inside the message list (#0563)", () => {
+    expect(ruleBody(css, ".ai-chat-log hr")).toMatch(/display:\s*none/);
+  });
+
   for (const surface of AI_CHAT_SURFACES) {
     describe(surface.name, () => {
       const source = readSurface(surface.file);
@@ -480,6 +484,19 @@ describe("every AI chat surface follows the standard", () => {
 
       it("conveys a stopped agent visually, never in text", () => {
         expect(source).not.toMatch(FORBIDDEN_CHAT_STATUS_TEXT);
+      });
+
+      it("renders assistant bubbles with the chat markdown helper (#0563)", () => {
+        if (!source.includes("-markdown")) return;
+        expect(
+          source,
+          `${surface.file} must use ${AI_CHAT_REQUIREMENTS.chatMarkdown} for bubble markdown`,
+        ).toContain(AI_CHAT_REQUIREMENTS.chatMarkdown);
+        const body = stripComments(source);
+        expect(
+          body,
+          `${surface.file} must not use renderMarkdown() on chat bubble text`,
+        ).not.toMatch(/v-html="renderMarkdown\((?:row|m)\./);
       });
 
       it("groups tool calls through the shared transform and row (#0506)", () => {

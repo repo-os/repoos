@@ -10361,6 +10361,11 @@
   gap: 14px;
   overscroll-behavior: contain;
 }
+/* Thematic breaks belong in docs, not between chat turns (#0563). Bubbles use
+   renderChatMarkdown(), which omits them; this backstop covers any stray <hr>. */
+.ai-chat-log hr {
+  display: none;
+}
 
 /* Pulsing "working" indicator. Mounted only while the model is active; an idle
  * model renders nothing at all (no "agent stopped" status line). */
