@@ -415,6 +415,9 @@ describe("BYO connect and encrypted storage", () => {
     const bot = await provider.connectByBotToken(TOKEN);
     // Group privacy mode stays enabled (BotFather default); adapter only reports it.
     expect(bot.canReadAllGroupMessages).toBe(false);
+    for (const { method } of calls) {
+      expect(String(method)).not.toMatch(/privacy|read_all_group/i);
+    }
     expect(bot).toEqual({
       id: 9876543210,
       username: "repoos_project_bot",
@@ -620,6 +623,29 @@ describe("bot profile configuration", () => {
     );
     const commandBody = calls.find((c) => c.method === "setMyCommands")?.body;
     expect(commandBody?.commands).toEqual([{ command: "help", description: "Help" }]);
+  });
+
+  it("never calls the Bot API to change group privacy mode", async () => {
+    const { provider, calls } = makeProvider({
+      getMe: repoBot(),
+      setMyCommands: () => true,
+      setMyName: () => true,
+      setMyDescription: () => true,
+      setMyShortDescription: () => true,
+    });
+    await provider.connectByBotToken(TOKEN);
+    await provider.applyDefaultProfile();
+    const allowed = new Set([
+      "getMe",
+      "setMyCommands",
+      "setMyName",
+      "setMyDescription",
+      "setMyShortDescription",
+    ]);
+    for (const { method } of calls) {
+      expect(String(method)).not.toMatch(/privacy|read_all_group/i);
+      expect(allowed.has(method)).toBe(true);
+    }
   });
 
   it("rejects out-of-limit inputs without an API call", async () => {

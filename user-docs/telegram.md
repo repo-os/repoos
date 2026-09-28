@@ -100,11 +100,14 @@ Notifications and commands only flow through chats an administrator explicitly
 binds. Adding the bot to a group — or opening a private chat — does **not**
 bind that chat.
 
-From **Settings → Telegram**, an administrator can:
+An administrator binds chats through the authenticated admin API (a Settings
+panel for chat management ships in a later task):
 
-- Generate a short-lived **bind code** and post `/bind <code>` in the group (or
-  private chat) so that chat becomes an approved destination.
-- Bind a chat directly by `telegram_chat_id` when the id is already known.
+- `POST /api/auth/telegram/chats/bind-codes` — create a short-lived bind code.
+  An **allowlisted admin** who is also linked on Telegram runs `/bind <code>` in
+  the target group or chat; only that live admin role can redeem the code.
+- `POST /api/auth/telegram/chats` — bind a chat directly by `telegram_chat_id`
+  when the id is already known (`chatType` is required for group/channel ids).
 
 When a user completes account linking in a private chat (`/start <invite>`),
 that 1:1 chat is bound automatically as a side effect of their own link.

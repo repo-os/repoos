@@ -92,6 +92,21 @@ function allow(email: string, role: "admin" | "member" = "member"): void {
   store.upsertUser(email, role, "admin@test.com");
 }
 
+function linkTelegramUser(
+  email: string,
+  telegramUserId: number,
+  role: "admin" | "member" = "member",
+): void {
+  allow(email, role);
+  const created = createTelegramInvite(store, userCtx, { email, createdBy: "admin@test.com" });
+  if ("error" in created) throw new Error("invite");
+  redeemTelegramInvite(store, userCtx, { nonce: created.nonce, telegramUserId });
+}
+
+function linkAdminOnTelegram(telegramUserId: number, email = "admin@test.com"): void {
+  linkTelegramUser(email, telegramUserId, "admin");
+}
+
 function intake(extra?: Partial<Parameters<typeof createTelegramIntakeHandler>[0]>) {
   return createTelegramIntakeHandler({
     root: tmpDir,
@@ -105,6 +120,7 @@ function intake(extra?: Partial<Parameters<typeof createTelegramIntakeHandler>[0
 
 describe("createTelegramChatBindCode", () => {
   it("requires an admin-created code before a chat can bind", () => {
+    linkAdminOnTelegram(1);
     const created = createTelegramChatBindCode(store, chatCtx, {
       createdBy: "admin@test.com",
     });
@@ -115,13 +131,35 @@ describe("createTelegramChatBindCode", () => {
     expect(isTelegramChatBound(store, groupId)).toBe(false);
     const redeemed = redeemTelegramChatBindCode(store, chatCtx, {
       code: created.code,
+      redeemerTelegramUserId: 1,
       telegramChatId: groupId,
       chatType: "supergroup",
       chatTitle: "Ops",
     });
     expect(redeemed).toEqual({ ok: true, telegramChatId: groupId });
     expect(isTelegramChatBound(store, groupId)).toBe(true);
-    expect(store.getAuditLog(5).some((e) => e.action === TELEGRAM_CHAT_AUDIT.chatBound)).toBe(true);
+    const boundAudit = store
+      .getAuditLog(10)
+      .find((e) => e.action === TELEGRAM_CHAT_AUDIT.chatBound);
+    expect(boundAudit?.actorEmail).toBe("admin@test.com");
+  });
+
+  it("refuses bind-code redemption by a non-admin even with the code", () => {
+    linkTelegramUser("member@test.com", 50);
+    const created = createTelegramChatBindCode(store, chatCtx, {
+      createdBy: "admin@test.com",
+    });
+    if ("error" in created) throw new Error("code");
+    const stolenPrivate = 50;
+    const result = redeemTelegramChatBindCode(store, chatCtx, {
+      code: created.code,
+      redeemerTelegramUserId: 50,
+      telegramChatId: stolenPrivate,
+      chatType: "private",
+      chatTitle: null,
+    });
+    expect(result).toEqual({ ok: false, reason: "not_admin" });
+    expect(isTelegramChatBound(store, stolenPrivate)).toBe(false);
   });
 });
 
@@ -167,6 +205,17 @@ describe("createTelegramIntakeHandler chat routing", () => {
     if ("error" in createdAlice || "error" in createdBob) throw new Error("invite");
     redeemTelegramInvite(store, userCtx, { nonce: createdAlice.nonce, telegramUserId: 10 });
     redeemTelegramInvite(store, userCtx, { nonce: createdBob.nonce, telegramUserId: 20 });
+    allow("charlie@test.com");
+    const createdCharlie = createTelegramInvite(store, userCtx, {
+      email: "charlie@test.com",
+      createdBy: "admin@test.com",
+    });
+    if ("error" in createdCharlie) throw new Error("invite");
+    redeemTelegramInvite(store, userCtx, {
+      nonce: createdCharlie.nonce,
+      telegramUserId: 30,
+    });
+    store.deleteUser("charlie@test.com");
 
     const onAuthorized = vi.fn();
     const handler = intake({ onAuthorized });
@@ -176,7 +225,7 @@ describe("createTelegramIntakeHandler chat routing", () => {
         senderId: 30,
         chatId: groupId,
         chatType: "supergroup",
-        text: "/status",
+        text: "/status@RepoBot",
         command: "status",
         commandArgs: [],
       }),

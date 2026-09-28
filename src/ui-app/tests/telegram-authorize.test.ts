@@ -159,6 +159,7 @@ describe("createTelegramIntakeHandler", () => {
     expect(resolveTelegramSender(store, 55)?.role).toBe("member");
     store.deleteUser("alice@test.com");
     expect(resolveTelegramSender(store, 55)).toBeNull();
+    bindChat(55);
 
     const onAuthorized = vi.fn();
     const handler = createTelegramIntakeHandler(intakeOptions({ onAuthorized }));

@@ -163,6 +163,7 @@ async function tryRedeemStartInvite(
 function tryRedeemChatBind(
   store: NonNullable<ReturnType<typeof getAuthStore>>,
   options: TelegramIntakeOptions,
+  telegramUserId: number,
   update: TelegramUpdate,
   code: string,
 ): void {
@@ -177,11 +178,25 @@ function tryRedeemChatBind(
     },
     {
       code,
+      redeemerTelegramUserId: telegramUserId,
       telegramChatId: msg.chatId,
       chatType: msg.chatType,
       chatTitle: msg.chatTitle,
     },
   );
+}
+
+function isNonPrivateChatUpdate(update: TelegramUpdate): boolean {
+  const chatType = update.message?.chatType;
+  if (chatType === "group" || chatType === "supergroup" || chatType === "channel") return true;
+  if (update.callbackQuery && chatIdFromUpdate(update) !== null) {
+    const rawMsg = update.raw?.callback_query as Record<string, unknown> | undefined;
+    const msg = rawMsg?.message as Record<string, unknown> | undefined;
+    const chat = msg?.chat as Record<string, unknown> | undefined;
+    const t = typeof chat?.type === "string" ? chat.type : "";
+    return t === "group" || t === "supergroup" || t === "channel";
+  }
+  return false;
 }
 
 export function createTelegramIntakeHandler(options: TelegramIntakeOptions): TelegramUpdateHandler {
@@ -203,13 +218,16 @@ export function createTelegramIntakeHandler(options: TelegramIntakeOptions): Tel
     if (!store?.isAvailable()) return;
 
     const bot = resolveBot();
-    if (bot && update.message && !isTelegramUpdateAddressedToBot(update, bot)) {
+    if (isNonPrivateChatUpdate(update)) {
+      if (!bot) return;
+      if (!isTelegramUpdateAddressedToBot(update, bot)) return;
+    } else if (bot && update.message && !isTelegramUpdateAddressedToBot(update, bot)) {
       return;
     }
 
     const chatBindCode = isChatBindRedeem(update);
     if (chatBindCode) {
-      tryRedeemChatBind(store, options, update, chatBindCode);
+      tryRedeemChatBind(store, options, telegramUserId, update, chatBindCode);
       return;
     }
 
