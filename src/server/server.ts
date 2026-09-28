@@ -309,6 +309,7 @@ import {
   telegramDisconnect,
   telegramProfile,
   telegramTransport,
+  telegramTestMessage,
   telegramProvisionBegin,
   telegramProvisionStatus,
   telegramProvisionRedeem,
@@ -2602,6 +2603,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/telegram/disconnect", telegramDisconnect);
   router.register("POST", "/api/telegram/profile", telegramProfile);
   router.register("POST", "/api/telegram/transport", telegramTransport);
+  router.register("POST", "/api/telegram/test-message", telegramTestMessage);
   router.register("POST", "/api/telegram/provision", telegramProvisionBegin);
   router.register("GET", /^\/api\/telegram\/provision\/([^/]+)$/, telegramProvisionStatus);
   router.register("POST", /^\/api\/telegram\/provision\/([^/]+)\/redeem$/, telegramProvisionRedeem);
