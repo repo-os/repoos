@@ -14,10 +14,10 @@ created_by: ""
 branch: feat/revoke-the-project-bot-and-unbind-chats-
 cli_override: github copilot
 model_override: default
-review_cli_override: github copilot
-review_model_override: copilot-auto-balance
+review_cli_override: cursor
+review_model_override: default
 created_at: "2026-09-27T07:33:20Z"
-updated_at: "2026-09-28T04:22:25Z"
+updated_at: "2026-09-28T04:28:17Z"
 review_passes: 5
 review_rounds: 2
 last_check_failure: "[object Object]"
@@ -89,3 +89,4 @@ rm: cannot remove '/home/nick/.repoos-validate.zYLgdA/repo/.repoos/repoos.db': P
 rm: cannot remove '/home/nick/.repoos-validate.zYLgdA/repo/.repoos/repoos.db-wal': Permission denied
 rm: cannot remove '/home/nick/.repoos-validate.zYLgdA/repo/.repoos/repoos.db-shm': Permission denied — fix it in the feature branch and re-run the gate
 - 2026-09-28T04:22:25Z · cli_override, model_override
+- 2026-09-28T04:28:17Z · review_cli_override, review_model_override
