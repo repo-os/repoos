@@ -308,6 +308,20 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
       }
       patch[field.key] = val;
     } else if (field.type === "select") {
+      // Numeric budget selects accept ANY whole non-negative number, not just
+      // the preset option labels — a hand-written repoos.toml value (e.g.
+      // `closeOut.timeoutMs = 450000`) must survive an unrelated Settings
+      // save instead of failing it with "must be one of: …".
+      if (field.key === "closeOut.timeoutMs") {
+        const num = Number(val);
+        if (!Number.isInteger(num) || num < 0) {
+          return json(res, 400, {
+            error: `${field.label} must be 0 (disabled) or a whole number of milliseconds`,
+          });
+        }
+        patch[field.key] = num;
+        continue;
+      }
       const valid = field.options?.map((o) => o.value) ?? [];
       if (!valid.includes(val as string)) {
         return json(res, 400, {

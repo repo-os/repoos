@@ -118,6 +118,7 @@ describe("repoos.toml and environment docs", () => {
       expect(cfg.distribution?.[0]?.kind).toBe("npm");
       expect(cfg.tunnelEnabled).toBe(false);
       expect(cfg.remoteValidation?.enabled).toBe(false);
+      expect(cfg.closeOut?.timeoutMs).toBe(360000);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

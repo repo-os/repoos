@@ -207,6 +207,12 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     fallbackToLocal: false,
     maxConcurrent: 1,
   },
+  // Close-out (Move to done) pipeline budget (#0573): a 6-minute wall clock
+  // from `queued → syncing` (`startedAt`) to a terminal job state. `0`
+  // disables the ceiling for repos whose gate legitimately needs longer.
+  closeOut: {
+    timeoutMs: 360_000,
+  },
 };
 
 /**
@@ -1238,6 +1244,28 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof rvReleases === "boolean") {
       cfg.remoteValidation = { ...cfg.remoteValidation, useForReleases: rvReleases };
     }
+
+    // [closeOut] section — wall-clock budget for one Move-to-done attempt
+    // (#0573). Invalid/negative values are clamped back to the default with a
+    // clear warning rather than failing config load: a typo in repoos.toml must
+    // never make the whole server unbootable, and the safe behaviour (a real
+    // ceiling) is the DEFAULT behaviour, so falling back to it is never worse
+    // than today. `0` disables the ceiling on purpose.
+    const closeOutTimeout = parsed["closeOut.timeoutMs"];
+    if (closeOutTimeout !== undefined) {
+      if (
+        typeof closeOutTimeout === "number" &&
+        Number.isFinite(closeOutTimeout) &&
+        closeOutTimeout >= 0
+      ) {
+        cfg.closeOut = { timeoutMs: Math.floor(closeOutTimeout) };
+      } else {
+        console.warn(
+          `[closeOut] timeoutMs must be a number of milliseconds >= 0 (0 disables the ceiling), ` +
+            `got ${JSON.stringify(closeOutTimeout)} — using the default 360000 (6 minutes)`,
+        );
+      }
+    }
   }
 
   // Model-provider API keys (0327): env-only, same rule as the [auth] secrets
@@ -1478,6 +1506,29 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       ],
       description:
         "Advisory ceiling on registered git worktrees. Above it, the Control page's Codebase card turns amber and the server logs a `repoos gc` reminder. Never blocks a task.",
+    },
+    {
+      key: "closeOut.timeoutMs",
+      label: "Close-out timeout",
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.closeOut?.timeoutMs ?? 360_000,
+      options: [
+        { value: "0", label: "Off (no limit)" },
+        { value: "180000", label: "3 min" },
+        { value: "360000", label: "6 min (default)" },
+        { value: "600000", label: "10 min" },
+        { value: "900000", label: "15 min" },
+        { value: "1800000", label: "30 min" },
+        { value: "3600000", label: "60 min" },
+      ],
+      description:
+        "Total wall-clock budget for one close-out (Move to done) attempt — from when the job " +
+        "leaves the queue until it fails, completes, or you stop it. A close-out that runs past " +
+        "it is aborted with a retryable failure and the task stays in review; retries and remote " +
+        "validation share the same budget. 0 disables the ceiling. Set any value in repoos.toml " +
+        "(`[closeOut] timeoutMs`).",
     },
     {
       key: "maxConcurrentAgents",
@@ -1806,6 +1857,8 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "tunnel.domain",
   "tunnel.tunnel_id",
   "tunnel.apps",
+  // Close-out (Move to done) pipeline budget (#0573)
+  "closeOut.timeoutMs",
   // Remote validation
   "remoteValidation.enabled",
   "remoteValidation.provider",

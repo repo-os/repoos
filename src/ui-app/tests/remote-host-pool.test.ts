@@ -957,9 +957,10 @@ describe("health-cooldown arrivals and recovery (#0521 review)", () => {
     const first = f.runner.validate(opts("0001"));
     await tick();
     expect(f.pending()).toEqual(["flaky"]);
-    // No deadline on purpose: close-out (integration-orchestrator) and release
-    // pass none, so the retry cap itself has to settle this waiter — before,
-    // the stopped retry chain left it awaiting a slot forever.
+    // No deadline on purpose: release (and close-out with
+    // `closeOut.timeoutMs = 0`) pass none, so the retry cap itself has to
+    // settle this waiter — before, the stopped retry chain left it awaiting a
+    // slot forever.
     const queued = f.runner.validate(opts("0002"));
     await tick();
     f.release("flaky"); // mid-run ssh drop → marked unhealthy, probes now fail
