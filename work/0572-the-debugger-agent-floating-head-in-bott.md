@@ -2,14 +2,14 @@
 id: "0572"
 title: Fix Debugger floating panel close behavior
 type: bug
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/fix-debugger-floating-panel-close-behavi
 created_at: "2026-09-28T07:20:34Z"
-updated_at: "2026-09-28T07:58:39Z"
+updated_at: "2026-09-28T08:10:00Z"
 ---
 ## Problem
 
@@ -55,3 +55,4 @@ The debugger agent (floating head in bottom right) has a bug. When you open it y
 - 2026-09-28T07:20:34Z · created · hello@repoos.org
 - 2026-09-28T07:22:23Z · status draft→inbox, title, area, type, body
 - 2026-09-28T07:58:39Z · status inbox→ready
+- 2026-09-28T08:10:00Z · status ready→active, branch
