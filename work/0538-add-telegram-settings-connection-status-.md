@@ -10,9 +10,9 @@ assigned_to: ai
 created_by: ""
 branch: feat/add-telegram-settings-connection-status-
 cli_override: github copilot
-model_override: default
+model_override: copilot-auto-balance
 created_at: "2026-09-27T07:33:10Z"
-updated_at: "2026-09-28T05:09:39Z"
+updated_at: "2026-09-28T05:09:40Z"
 ---
 ## Problem
 
@@ -54,3 +54,4 @@ Use the shared dialog components (`ui/dialog/*`, body-teleported) and the global
 - 2026-09-28T00:02:22Z · status ready→active, branch
 - 2026-09-28T00:02:37Z · status active→ready
 - 2026-09-28T05:09:39Z · cli_override, model_override
+- 2026-09-28T05:09:40Z · model_override
