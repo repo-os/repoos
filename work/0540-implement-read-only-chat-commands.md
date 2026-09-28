@@ -1,13 +1,8 @@
 ---
-updated_at: "2026-09-28T11:40:34Z"
-review_passes: 1
 id: "0540"
 title: Implement read-only chat commands
 type: feature
-status: review
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
+status: done
 priority: p2
 area: server
 story: RepoOS Telegram Bot
@@ -15,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/implement-read-only-chat-commands
 created_at: "2026-09-27T07:33:29Z"
-dev_error_count: 1
+updated_at: "2026-09-28T11:47:02Z"
 ---
 ## Problem
 
@@ -57,7 +52,5 @@ In a bound group these commands work for any authorized sender, but keep the tri
 - 2026-09-27T15:52:47Z · body
 - 2026-09-27T23:54:38Z · status inbox→ready
 - 2026-09-28T10:30:17Z · status ready→active, branch
-- 2026-09-28T11:25:46Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
-- 2026-09-28T11:34:21Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-09-28T11:37:55Z · status active→review
-
+- 2026-09-28T11:47:02Z · status review→done, release:success

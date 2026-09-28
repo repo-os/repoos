@@ -205,6 +205,16 @@ export interface RunningAgentInfo {
   workdir?: string;
 }
 
+/** A turn that recently exited (#0540) — the `/agents` "recently finished" tail. */
+export interface FinishedAgentInfo {
+  /** Task id, or a synthetic chat/review session key. */
+  id: string;
+  /** When the turn exited. */
+  at: string;
+  /** False when the turn ended in error (including a deliberate stop). */
+  clean: boolean;
+}
+
 interface Entry {
   /** Undefined for an entry adopted after this server process started. */
   proc?: ChildProcess;
@@ -3688,6 +3698,13 @@ export function recordOneShotSession(
 
 export class AgentRunner {
   private entries = new Map<string, Entry>();
+  /**
+   * A short, in-memory tail of recently finished turns (#0540), newest first.
+   * `/agents` lists these alongside `running()`; there is no durable history
+   * here on purpose — the DB session log is the source of truth for cost and
+   * timing, and this is only the glance surface Telegram needs.
+   */
+  private readonly recentFinished: FinishedAgentInfo[] = [];
   private readonly sessions = new Map<string, Session>();
   private readonly config: RepoOSConfig;
   /**
@@ -6038,6 +6055,22 @@ export class AgentRunner {
         );
       }
     }
+    // #0540: keep a small finished tail for `/agents`. Dedup so a task that
+    // runs again shows only its latest exit, and cap the list so a busy board
+    // cannot grow it without bound.
+    const finished: FinishedAgentInfo = { id: taskId, at: now(), clean: exitedCleanly };
+    const prior = this.recentFinished.findIndex((f) => f.id === taskId);
+    if (prior !== -1) this.recentFinished.splice(prior, 1);
+    this.recentFinished.unshift(finished);
+    if (this.recentFinished.length > 20) this.recentFinished.length = 20;
+  }
+
+  /**
+   * Recent turn exits, newest first (#0540). Ids currently running are filtered
+   * out so a task that just restarted reads as running, not finished.
+   */
+  recentlyFinished(limit = 5): FinishedAgentInfo[] {
+    return this.recentFinished.filter((f) => !this.entries.has(f.id)).slice(0, limit);
   }
 
   /**

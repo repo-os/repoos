@@ -3267,14 +3267,23 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // boot. Safe and never-throwing (reports one log line); the loop
       // gates on the live `telegram.enabled` switch itself, so a disabled
       // integration arms paused with no Telegram traffic.
-      // #0541 registers the agent-chat surface on the same intake: a linked
-      // sender's plain message becomes a Ross guide turn on the shared
-      // AgentRunner, state per Telegram user, replies delivered back to the
-      // originating chat.
+      // #0541 registers the agent-chat surface on the same intake as the
+      // #0540 command handler: a linked sender's plain message becomes a
+      // Ross guide turn on the shared AgentRunner (state per Telegram user),
+      // replies delivered back to the originating chat; commands render
+      // read-only repository views. `chainedOnAuthorized` composes both.
       void bootstrapTelegramAtBoot(config, {
+        index,
+        runner,
+        reviews,
+        ...(url ? { publicOrigin: url } : {}),
         onAuthorized: createTelegramGuideTurn(config, runner, {
           getTasks: () => index.getTasks(),
           resolveBotUsername: () => getTelegramProvider(config).status().bot?.username ?? null,
+          audit: (action, actor, details) => {
+            const store = getAuthStore(config.root);
+            store?.logAudit(action, actor.email, actor.email, JSON.stringify(details));
+          },
         }),
       }).then((resumed) => {
         if (resumed.detail) {

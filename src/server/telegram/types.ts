@@ -271,6 +271,10 @@ export interface ProvisioningRequestView {
   /** The `https://t.me/newbot/…` link the admin opens in Telegram. */
   deepLink: string;
   expiresAt: string;
+  /** One-time code the admin sends to the manager bot as `/link <code>` before
+   * tapping the deep link. Present while the request is still `pending` and the
+   * code has not been consumed; omitted once linked or expired. */
+  linkCode?: string;
   /** Populated once the request is ready/redeemed. Never contains a token. */
   bot?: ProvisionedBot;
   /** Redacted service explanation, present when state = "failed". */
@@ -299,6 +303,7 @@ export interface ProvisioningClient {
     id: string;
     deepLink: string;
     expiresAt: string;
+    linkCode: string;
   }>;
   getStatus(id: string): Promise<ProvisioningRequestView>;
   /** Server-to-server credential pickup. The token never leaves the server. */
@@ -311,6 +316,10 @@ export interface ProvisioningClient {
  */
 export interface ManagedProvisioningClient extends ProvisioningClient {
   isConfigured(): boolean;
+  /** Rotate the managed bot's token via the #0559 service and return the new
+   * one; the old token is immediately invalidated by Telegram. Only callable
+   * after a successful redeem — used by #0539's rotate-credential flow. */
+  rotateToken(id: string): Promise<{ token: string }>;
   /**
    * Ask the #0559 service to revoke a managed project bot. Disconnect requires
    * a configured service for managed bots. BYO tokens must be revoked through

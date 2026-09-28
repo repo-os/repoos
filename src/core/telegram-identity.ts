@@ -22,8 +22,10 @@ export const TELEGRAM_AUDIT = {
   userReassigned: "telegram_user_reassigned",
   /** Authorized slash command after live role check (not /start invite redeem). */
   commandInvoked: "telegram_command_invoked",
-  /** Plain-text message on the agent path (pre-LLM intake; #0541 consumes this). */
+  /** An agent turn actually STARTED on the agent path (#0541). */
   agentMessage: "telegram_agent_message",
+  /** An agent turn was refused before any run (reason in details; #0541). */
+  agentTurnRefused: "telegram_agent_turn_refused",
 } as const;
 
 /** Telegram Bot API start-parameter limit. Hex nonce is 32 chars. */
