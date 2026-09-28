@@ -383,6 +383,12 @@ export interface TaskWatchdogOptions {
    * out of scope for this watchdog.
    */
   reviews?: WatchdogReviewManager;
+  /**
+   * A stuck task just escalated to `needsInput` (#0570): the failure tl;dr
+   * pass schedules its one-shot Debugger diagnosis off this. Fire-and-forget;
+   * the escalation itself never waits on it.
+   */
+  onDiagnosableFailure?: (taskId: string, reason: string) => void;
 }
 
 /**
@@ -406,6 +412,8 @@ export class TaskWatchdog {
   private readonly autoTransition: boolean;
   private readonly canRun?: () => boolean;
   private readonly reviews?: WatchdogReviewManager;
+  /** Failure tl;dr trigger (#0570) — fire-and-forget diagnosis of the escalation. */
+  private readonly onDiagnosableFailure?: (taskId: string, reason: string) => void;
   private timer: ReturnType<typeof setInterval> | null = null;
   private stalenessThresholdMs: number;
   /** Re-entry guard: a scan already in flight is skipped by the next tick. */
@@ -425,6 +433,7 @@ export class TaskWatchdog {
     this.autoTransition = opts.autoTransition !== false;
     this.canRun = opts.canRun;
     this.reviews = opts.reviews;
+    this.onDiagnosableFailure = opts.onDiagnosableFailure;
   }
 
   start(): void {
@@ -684,13 +693,17 @@ export class TaskWatchdog {
     const note = `watchdog: escalated to needs_input · ${reason} · next step: ${suggestNextStep(reason)}`;
     try {
       current.needsInput = true;
-      current.needsInputReason =
+      const escalatedReason =
         needsInputReason ??
         (reason.startsWith("check-failed-after-retries")
           ? "check-failed-after-retries"
           : "watchdog-stuck");
+      current.needsInputReason = escalatedReason;
       recordChange(current, note);
       this.writeTask(current);
+      // Schedule the tl;dr for this failure (#0570) — fire-and-forget; the
+      // escalation above is already written and must never wait on it.
+      this.onDiagnosableFailure?.(current.id, escalatedReason);
     } catch (err) {
       console.error(
         `[repoos] watchdog: failed to write escalation for #${task.id}: ${(err as Error).message}`,

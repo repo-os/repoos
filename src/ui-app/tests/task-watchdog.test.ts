@@ -26,6 +26,7 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { AgentRunner, HANDOFF_READY_SIGNAL } from "../../server/agents";
 import { LiveIndex } from "../../server/live-index";
+import { isDiagnosableReason } from "../../server/debug-tldr";
 import {
   TaskWatchdog,
   isStuckActiveTask,
@@ -928,6 +929,44 @@ Stuck twice.
     await watchdog.checkNow();
     expect(runs).toHaveLength(0);
     expect(parseTaskAt(fx).needsInput).toBe(true);
+    fx.clean();
+  });
+
+  it("hands the escalation to the failure tl;dr trigger (#0570)", async () => {
+    // Same shape as the escalation test above: a review task whose reviewer
+    // died with the one auto-retry already spent. The watchdog's hook is how
+    // the tl;dr pass is scheduled off watchdog escalations — a wiring gap here
+    // would leave `watchdog-stuck` / `check-failed-after-retries` failures
+    // without a tl;dr while every other gate still passes green.
+    const fx = makeReviewFx(10_000);
+    const retried = new Date(Date.now() - 60_000).toISOString();
+    writeFileSync(
+      fx.taskPath,
+      reviewTaskMd(10_000).replace(
+        /\n- .*?status active→review\n?/,
+        `\n- ${retried} · status active→review\n- ${retried} · watchdog: auto-retried dead reviewer session · starting a fresh review\n`,
+      ),
+    );
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    runner = new AgentRunner(fx.config, () => {});
+    const { reviews } = makeFakeReviews(); // still no report
+    const fires: { id: string; reason: string }[] = [];
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000, {
+      reviews,
+      onDiagnosableFailure: (id, reason) => fires.push({ id, reason }),
+    });
+
+    await watchdog.checkNow();
+
+    const task = parseTaskAt(fx);
+    expect(task.needsInput).toBe(true);
+    expect(fires).toEqual([{ id: task.id, reason: task.needsInputReason }]);
+    // The reason handed over is one the tl;dr pass can actually diagnose.
+    expect(isDiagnosableReason(task.needsInputReason)).toBe(true);
+    // A stable escalation must not schedule the pass twice.
+    await watchdog.checkNow();
+    expect(fires).toHaveLength(1);
     fx.clean();
   });
 

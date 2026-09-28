@@ -20,6 +20,9 @@ const KEY_ORDER = [
   "questions",
   "needs_input_reason",
   "needs_input_detail",
+  "debug_tldr",
+  "debug_tldr_at",
+  "debug_tldr_key",
   "needs_merge",
   "no_source_change",
   "priority",
@@ -261,6 +264,9 @@ export function parseTask(args: ParseTaskArgs): Task {
       typeof data.needs_input_reason === "string" ? data.needs_input_reason : undefined,
     needsInputDetail:
       typeof data.needs_input_detail === "string" ? data.needs_input_detail : undefined,
+    debugTldr: typeof data.debug_tldr === "string" ? data.debug_tldr : undefined,
+    debugTldrAt: typeof data.debug_tldr_at === "string" ? data.debug_tldr_at : undefined,
+    debugTldrKey: typeof data.debug_tldr_key === "string" ? data.debug_tldr_key : undefined,
     needsMerge: data.needs_merge === true,
     noSourceChange: data.no_source_change === true,
     priority: String(data.priority ?? "p2"),
@@ -316,10 +322,19 @@ export function serializeTask(task: Task): string {
   // The reason is only ever meaningful alongside the flag itself — clearing
   // needsInput (or never setting a reason) must never leave a stale reason
   // behind to be misread on a later re-escalation.
+  // The AI tl;dr (`debug_tldr*`, #0570) is gated the same way on purpose: it
+  // describes the CURRENT failure, so tying its persistence to the flag makes
+  // every clear path (dismiss, review-again, status advance, release) drop it
+  // automatically instead of each site remembering to clear three fields.
   if (task.needsInput) {
     data.needs_input = true;
     if (task.needsInputReason) data.needs_input_reason = task.needsInputReason;
     if (task.needsInputDetail) data.needs_input_detail = task.needsInputDetail;
+    if (task.debugTldr) {
+      data.debug_tldr = task.debugTldr;
+      if (task.debugTldrAt) data.debug_tldr_at = task.debugTldrAt;
+      if (task.debugTldrKey) data.debug_tldr_key = task.debugTldrKey;
+    }
   }
   if (task.questions && task.questions.length > 0) data.questions = task.questions;
   if (task.needsMerge) data.needs_merge = true;

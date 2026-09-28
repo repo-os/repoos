@@ -67,6 +67,20 @@ export interface TaskFrontmatter {
   questions?: string[];
   /** Machine-readable reason `needs_input` was set (e.g. "review-failed"), for auto-clearing and UI display. Only meaningful while needs_input is true. */
   needs_input_reason?: string;
+  /**
+   * One-line AI tl;dr for the current failure — root cause + next action,
+   * produced by the task's Debugger agent (#0570). Only meaningful while
+   * needs_input is true; the writer drops it the moment the flag clears so a
+   * stale sentence can never outlive the failure it describes.
+   */
+  debug_tldr?: string;
+  /** When {@link debug_tldr} was generated (ISO-8601 UTC). */
+  debug_tldr_at?: string;
+  /**
+   * Fingerprint of the failure this tl;dr describes — `(reason, detail)` —
+   * used to dedupe regeneration. Internal; not rendered.
+   */
+  debug_tldr_key?: string;
   /** True when the task branch has drifted from main and needs a manual merge. */
   needs_merge?: boolean;
   /** True when a legitimate no-op task opts out of the vacuous-handoff rejection. */
@@ -124,6 +138,18 @@ export interface Task {
    * to go dig through the log to even see the error text).
    */
   needsInputDetail?: string;
+  /**
+   * One-line AI tl;dr for the current failure — root cause + next action,
+   * produced by the task's Debugger agent and shown as a callout above the
+   * task drawer's tabs (#0570). Best-effort: absent when the Debugger is
+   * disabled, unconfigured, or its run failed. Cleared with the failure it
+   * describes (see {@link TaskFrontmatter.debug_tldr}).
+   */
+  debugTldr?: string;
+  /** When {@link debugTldr} was generated (ISO-8601 UTC). */
+  debugTldrAt?: string;
+  /** Fingerprint of the failure this tl;dr describes; internal dedupe key. */
+  debugTldrKey?: string;
   /** True when the task branch has drifted from main. Layered on `review`, never a status. */
   needsMerge: boolean;
   /** True when a no-op task opts out of the vacuous-handoff rejection. */
@@ -1214,6 +1240,10 @@ export interface BoardTask {
   /** Specific human-decisions blocking implementation until answered. */
   questions?: string[];
   needsInputReason?: string;
+  /** One-line AI tl;dr for the current failure — root cause + next action (#0570). */
+  debugTldr?: string;
+  /** When `debugTldr` was generated (ISO-8601 UTC). */
+  debugTldrAt?: string;
   needsMerge: boolean;
   priority: Priority | string;
   area: string;
