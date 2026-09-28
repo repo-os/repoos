@@ -207,6 +207,21 @@ requires = ["bun"]
 whenChanged = ["landing/**"]
 
 [[check.steps]]
+name = "telegram-manager-build"
+command = "bun install --frozen-lockfile && bun run build"
+cwd = "telegram-manager"
+requires = ["bun"]
+whenChanged = ["telegram-manager/**"]
+
+[[check.steps]]
+name = "telegram-manager-test"
+command = "bun run test"
+cwd = "telegram-manager"
+requires = ["bun"]
+whenChanged = ["telegram-manager/**"]
+dependsOn = ["telegram-manager-build"]
+
+[[check.steps]]
 name = "macos-hub-icon-transparency"
 command = "bash macos/scripts/verify-dock-icon-transparency.sh"
 whenChanged = ["macos/RepoOSHub/Assets.xcassets/**", "macos/scripts/generate-app-icons.swift", "macos/scripts/verify-dock-icon-transparency.swift", "macos/scripts/verify-dock-icon-transparency.sh"]

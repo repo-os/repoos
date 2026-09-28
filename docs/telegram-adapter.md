@@ -132,16 +132,32 @@ Server-to-server HTTPS from the instance to the #0559 service:
 ```
 POST {base}/v1/provisioning/requests
     body: { repository, instance: { id }, requestedBy, botNameHint? }
-    → 200 { id, deep_link, expires_at }         # t.me/newbot deep link
+    → 200 { id, deep_link, expires_at, link_code }   # deep link + /link code
 
 GET  {base}/v1/provisioning/requests/{id}
-    → 200 { id, state, deep_link, expires_at, bot?, error? }
+    → 200 { id, state, deep_link, expires_at, link_code?, bot?, error? }
       state ∈ pending | awaiting_bot_creation | ready | redeemed | expired | failed
+      link_code is present only while state = pending and the code is unconsumed
 
 POST {base}/v1/provisioning/requests/{id}/redeem
     headers: Authorization: Bearer <REPOOS_TELEGRAM_PROVISIONING_KEY>
-    → 200 { token }        # single-use credential pickup, idempotent on retry
-       409 already-redeemed (no second delivery)
+    → 200 { token }        # single-use credential pickup; replays within grace
+       200 {}              # after grace or replay exhaustion — client maps to
+                             ManagedRedemptionFollowUpError (not 409)
+
+POST {base}/v1/provisioning/requests/{id}/rotate-token
+    headers: Authorization: Bearer <REPOOS_TELEGRAM_PROVISIONING_KEY>
+    → 200 { token }        # replaces the managed bot token via Telegram (#0539)
+       409 when not yet redeemed
+
+POST {base}/v1/provisioning/bots/{botId}/revoke
+    headers: Authorization: Bearer <REPOOS_TELEGRAM_PROVISIONING_KEY>
+    body: { repository, instance: { id } }
+    → 200 { confirmed: true }   # managed-bot disconnect (#0539): the service
+                                # rotates the bot token (Telegram has no
+                                # revoke primitive) and purges any stored
+                                # grace-window credential. 409/404/502 per
+                                # state/ownership/Telegram failures.
 ```
 
 Rules the client enforces (see `provisioning.ts`): missing `provisioningUrl`
@@ -156,7 +172,13 @@ response's optional `bot` summary is ignored in `redeem` (the provider
 re-derives the authoritative bot from `getMe`), so a malformed summary can
 never discard an already-delivered single-use credential — `getStatus` keeps
 the strict validation for the browser-rendered view. The service sees
-repository/instance/admin identity only. The
+repository/instance/admin identity only. Managed disconnect (#0539) is the
+revoke caller: `HttpProvisioningClient.revokeBot` posts
+`/v1/provisioning/bots/{botId}/revoke` above, and disconnect treats a
+confirmed response as revocation complete (it then clears local bindings and
+the encrypted credential); BYO disconnect still requires BotFather-side
+token revocation confirmed by a 401 probe, since Telegram exposes no
+Bot API revoke for a plain bot token. The
 provider funnels the redeemed token through the **same** `connectByBotToken`
 path as BYO, so both provisioning sources produce one `ProvisionedBot`
 shape. If validation or storage fails *after* a successful redeem (the
@@ -165,6 +187,14 @@ service's grace window — the contract replays the original result briefly
 rather than issuing a second token. Tests exercise the whole contract
 against a fetch-stubbed fake service (`fakeProvisioningService` in
 `src/ui-app/tests/telegram-routes.test.ts`).
+
+The #0559 service itself — the hosted implementation of this contract, its
+correlation design (a Telegram deep link alone proves nothing; binding
+happens via an explicit `/link <code>` message before bot creation), state
+machine, credential handling, and deployment procedure — lives in
+`telegram-manager/` as an isolated deployment boundary (own `package.json`,
+never a dependency of the core package), documented in full in
+`docs/telegram-manager-service.md`.
 
 ## Update intake invariant
 

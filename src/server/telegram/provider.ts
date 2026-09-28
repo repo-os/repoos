@@ -449,7 +449,7 @@ export class LocalTelegramProvider implements TelegramProvider {
   async beginManagedProvisioning(input: {
     adminEmail: string;
     botNameHint?: string;
-  }): Promise<{ id: string; deepLink: string; expiresAt: string }> {
+  }): Promise<{ id: string; deepLink: string; expiresAt: string; linkCode: string }> {
     const beginInput: ProvisioningBeginInput = {
       repository: this.repositoryName,
       instanceId: this.root,
