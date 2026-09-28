@@ -241,7 +241,13 @@ export class LocalTelegramProvider implements TelegramProvider {
       record = this.store.load();
     } catch (e) {
       // Credential still in place — restart polling so the bot stays alive.
-      this.startPollingLoop();
+      // A corrupt store means activeClient() may also throw; swallow it so
+      // the real TelegramDisconnectError below is what the caller sees.
+      try {
+        this.startPollingLoop();
+      } catch {
+        /* best-effort; the disconnect error is more important */
+      }
       throw new TelegramDisconnectError(
         "revoke",
         `stored Telegram connection state is unreadable; it was left intact and no bindings were cleared ` +
