@@ -175,15 +175,25 @@ export class TelegramCredentialStore {
     return record;
   }
 
-  /** Forget the connection. Returns whether a record existed. */
+  /** Forget the connection. Returns whether a record existed before removal. */
   clear(): boolean {
     const existed = existsSync(this.path);
+    if (!existed) return false;
     try {
       rmSync(this.path, { force: true });
-    } catch {
-      /* already gone */
+    } catch (e) {
+      throw new Error(
+        `failed to remove stored Telegram connection (${this.path}): ${
+          e instanceof Error ? e.message : String(e)
+        }`,
+      );
     }
-    return existed;
+    if (existsSync(this.path)) {
+      throw new Error(
+        `stored Telegram connection file was not removed (${this.path}) — disconnect is incomplete`,
+      );
+    }
+    return true;
   }
 
   /**

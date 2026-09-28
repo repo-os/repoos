@@ -1,8 +1,8 @@
 /**
  * Telegram disconnect (#0539): ordered teardown, honest partial failure, isolation.
  */
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { chmodSync, existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RepoOSConfig } from "../../core/types";
@@ -288,6 +288,65 @@ describe("disconnect steps", () => {
     expect(result.method).toBe("managed-provisioning-service");
   });
 
+  it("finalizeTelegramDisconnect fails when the disconnect audit row cannot be written", () => {
+    const store = getAuthStore(tmpRoot)!;
+    const spy = vi.spyOn(store, "logAuditRequired").mockImplementation(() => {
+      throw new Error("disk full");
+    });
+    expect(() =>
+      finalizeTelegramDisconnect({
+        authStore: store,
+        actorEmail: "admin@test.com",
+        instanceId: instanceIdentity(tmpRoot),
+        revokedAt: new Date().toISOString(),
+        record: null,
+        revocationConfirmed: true,
+        revocationMethod: "logOut+close",
+        webhookRemoved: true,
+        alreadyDisconnected: true,
+        clearCredential: () => undefined,
+      }),
+    ).toThrow(/disk full/);
+    spy.mockRestore();
+  });
+
+  it("finalizeTelegramDisconnect fails when the credential file cannot be removed", () => {
+    const store = getAuthStore(tmpRoot)!;
+    try {
+      finalizeTelegramDisconnect({
+        authStore: store,
+        actorEmail: "admin@test.com",
+        instanceId: instanceIdentity(tmpRoot),
+        revokedAt: new Date().toISOString(),
+        record: null,
+        revocationConfirmed: true,
+        revocationMethod: "logOut+close",
+        webhookRemoved: true,
+        alreadyDisconnected: true,
+        clearCredential: () => {
+          throw new Error("failed to remove stored Telegram connection: EACCES");
+        },
+      });
+      expect.unreachable("expected disconnect finalization to fail");
+    } catch (e) {
+      expect(e).toMatchObject({ phase: "local", retryable: true });
+    }
+  });
+
+  it("TelegramCredentialStore.clear surfaces filesystem errors", async () => {
+    const { provider } = makeProvider(tmpRoot, disconnectHandlers());
+    await provider.connectByBotToken(TOKEN);
+    const credStore = new TelegramCredentialStore(tmpRoot);
+    const repoosDir = join(tmpRoot, ".repoos");
+    chmodSync(repoosDir, 0o555);
+    try {
+      expect(() => credStore.clear()).toThrow(/failed to remove stored Telegram connection/);
+      expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(true);
+    } finally {
+      chmodSync(repoosDir, 0o700);
+    }
+  });
+
   it("finalizeTelegramDisconnect clears bindings and writes audit", async () => {
     const store = getAuthStore(tmpRoot)!;
     store.upsertUser("alice@test.com", "admin", null);
@@ -363,6 +422,27 @@ describe("provider disconnect", () => {
 
     expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(true);
     expect(store.getTelegramLink(7)?.revokedAt).toBeNull();
+  });
+
+  it("surfaces credential removal failure after Telegram revoke succeeds", async () => {
+    const { provider } = makeProvider(tmpRoot, disconnectHandlers());
+    await provider.connectByBotToken(TOKEN);
+    const store = getAuthStore(tmpRoot)!;
+    const clearSpy = vi.spyOn(TelegramCredentialStore.prototype, "clear").mockImplementation(() => {
+      throw new Error("failed to remove stored Telegram connection: EACCES");
+    });
+    try {
+      await expect(
+        provider.disconnect({
+          actorEmail: "admin@test.com",
+          authStore: store,
+          instanceId: instanceIdentity(tmpRoot),
+        }),
+      ).rejects.toMatchObject({ phase: "local", retryable: true });
+      expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(true);
+    } finally {
+      clearSpy.mockRestore();
+    }
   });
 
   it("revokes, clears credential, bindings, and webhook on success", async () => {
@@ -524,12 +604,12 @@ describe("disconnect route", () => {
 });
 
 describe("corrupt credential recovery", () => {
-  it("disconnect clears an unreadable connection record without calling Telegram", async () => {
+  it("disconnect clears a malformed connection file without calling Telegram", async () => {
     const { writeFileSync, mkdirSync } = await import("node:fs");
     const { join } = await import("node:path");
     mkdirSync(join(tmpRoot, ".repoos"), { recursive: true });
     writeFileSync(telegramConnectionPath(tmpRoot), '{"version":1,"bot":', "utf8");
-    const { provider } = makeProvider(tmpRoot, {});
+    const { provider, api } = makeProvider(tmpRoot, {});
     const store = new AuthStore(tmpRoot);
     const result = await provider.disconnect({
       actorEmail: "admin@test.com",
@@ -540,5 +620,22 @@ describe("corrupt credential recovery", () => {
     expect(result.warning).toMatch(/BotFather/i);
     expect(result.revocationConfirmed).toBe(false);
     expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(false);
+    expect(api.calls).toHaveLength(0);
+  });
+
+  it("disconnect leaves local state intact when the stored credential cannot be decrypted", async () => {
+    const { provider } = makeProvider(tmpRoot, disconnectHandlers());
+    await provider.connectByBotToken(TOKEN);
+    process.env.REPOOS_SECRET_STORE_KEY =
+      "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210";
+    const store = getAuthStore(tmpRoot)!;
+    await expect(
+      provider.disconnect({
+        actorEmail: "admin@test.com",
+        authStore: store,
+        instanceId: instanceIdentity(tmpRoot),
+      }),
+    ).rejects.toMatchObject({ phase: "revoke", retryable: true });
+    expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(true);
   });
 });
