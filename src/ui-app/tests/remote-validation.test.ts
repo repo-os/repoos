@@ -12,6 +12,7 @@ import { mkdirSync, rmSync, existsSync, readFileSync, writeFileSync } from "node
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import type { RepoOSConfig } from "../../core/types.js";
+import { getCheckStore, resetCheckStore } from "../../core/check-store.js";
 import {
   RemoteValidationRunner,
   type RemoteExecDeps,
@@ -96,6 +97,10 @@ describe("RemoteValidationRunner", () => {
     mkdirSync(join(root, ".repoos"), { recursive: true });
     process.env.HETZNER_API_TOKEN = "test-token";
     process.env.REPOOS_REMOTE_SSH_KEY = join(root, "key");
+    // These fixtures assert on their own tmp-root store; an inherited
+    // REPOOS_CHECK_STORE_ROOT (a `repoos check` parent exports it) would
+    // silently redirect the history rows.
+    delete process.env.REPOOS_CHECK_STORE_ROOT;
     writeFileSync(join(root, "key"), "PRIVATE");
     config = {
       root,
@@ -123,6 +128,8 @@ describe("RemoteValidationRunner", () => {
   afterEach(async () => {
     delete process.env.HETZNER_API_TOKEN;
     delete process.env.REPOOS_REMOTE_SSH_KEY;
+    delete process.env.REPOOS_CHECK_STORE_ROOT;
+    resetCheckStore();
     try {
       rmSync(root, { recursive: true, force: true });
     } catch {
@@ -371,6 +378,43 @@ describe("RemoteValidationRunner", () => {
     expect(summary.transient).toBe(true);
     expect(summary.detail).toContain("deadline passed");
     expect(exec.runRemote).not.toHaveBeenCalled(); // never entered the run
+    await r.dispose();
+  });
+
+  it("a deadline passing mid-dispatch is a CANCELLED history row, not a fail (#0564 review)", async () => {
+    const h = fakeHetzner();
+    // The bundle step is where the deadline expires: it takes just long
+    // enough that the slot is already held and a runner VM chosen when the
+    // caller's deadline passes. This used to be recorded as `fail` with
+    // failedStep "remote-validation" — the Runs tab would show a cancelled
+    // gate as a branch failure.
+    const exec = fakeExec({
+      bundleRepo: vi.fn(async () => {
+        await new Promise((r) => setTimeout(r, 30));
+        return { ok: true };
+      }),
+    });
+    const r = new RemoteValidationRunner(config, undefined, {
+      hetzner: h.client,
+      exec,
+      timings: FAST,
+    });
+
+    const summary = await r.validate({ ...mkOpts("0564"), deadlineAt: Date.now() + 15 });
+
+    expect(summary.ok).toBe(false);
+    expect(summary.cancelled).toBe(true);
+    expect(exec.runRemote).not.toHaveBeenCalled(); // the suite never started
+
+    const rows = getCheckStore(config.root, config.cacheDir).list();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      taskId: "0564",
+      remote: true,
+      outcome: "cancelled",
+      durationMs: null,
+    });
+    expect(rows[0]!.machine).toBeTruthy(); // a runner VM WAS chosen before the cancel
     await r.dispose();
   });
 
