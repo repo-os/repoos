@@ -3,6 +3,9 @@ id: "0521"
 title: "Remote validation: pool multiple tailscale hosts"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p3
 area: core
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/remote-validation-pool-multiple-tailscal
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-09-26T11:49:01Z"
-updated_at: "2026-09-28T01:17:08Z"
+updated_at: "2026-09-28T01:18:33Z"
 review_passes: 18
 review_rounds: 2
 dev_error_count: 3
@@ -175,3 +178,4 @@ Autoscaling, and pooling Hetzner VMs.
 - 2026-09-28T01:05:47Z · status review→active
 - 2026-09-28T01:05:47Z · needs_input
 - 2026-09-28T01:17:08Z · status active→review
+- 2026-09-28T01:18:33Z · needs_input
