@@ -3,6 +3,9 @@ id: "0559"
 title: Build the Telegram manager-bot provisioning service and secure instance handoff
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the cursor agent exited without output: Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh"
 priority: p1
 area: server
 story: RepoOS Telegram Bot
@@ -98,3 +101,4 @@ Depends on #0530 (done) and the local adapter/client contract from #0531 (still 
 - 2026-09-28T08:00:16Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-09-28T08:00:17Z · needs_input
 - 2026-09-28T08:00:21Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-09-28T08:00:21Z · needs_input
