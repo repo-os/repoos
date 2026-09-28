@@ -218,7 +218,13 @@ export class LocalTelegramProvider implements TelegramProvider {
     const revokedAt = this.now().toISOString();
     await this.stopPollingLoop();
 
-    const record = this.store.loadOrNull();
+    let record: ReturnType<(typeof this.store)["loadOrNull"]>;
+    try {
+      record = this.store.loadOrNull();
+    } catch (e) {
+      this.startPollingLoop();
+      throw e;
+    }
     if (!record) {
       const corruptOnDisk = existsSync(telegramConnectionPath(this.root));
       const bindings = finalizeTelegramDisconnect({
@@ -310,6 +316,7 @@ export class LocalTelegramProvider implements TelegramProvider {
         createApi: this.buildApi,
       });
     } catch (e) {
+      this.startPollingLoop();
       if (e instanceof TelegramDisconnectError) throw e;
       throw new TelegramDisconnectError(
         "revoke",
@@ -319,6 +326,7 @@ export class LocalTelegramProvider implements TelegramProvider {
 
     const { revocationConfirmed: confirmed, revocationMethod: method, webhookRemoved } = remote;
     if (!confirmed) {
+      this.startPollingLoop();
       throw new TelegramDisconnectError(
         "revoke",
         "Telegram did not confirm the bot token was revoked — local state was left intact",

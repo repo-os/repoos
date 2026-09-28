@@ -222,6 +222,14 @@ export function finalizeTelegramDisconnect(input: {
         true,
       );
     }
+  } else if (!input.alreadyDisconnected) {
+    // authStore unavailable means we cannot clear chat/user bindings. Dropping the
+    // credential here would leave those bindings dangling on reconnect — false success.
+    throw new TelegramDisconnectError(
+      "local",
+      "cannot clear chat bindings: auth store is unavailable — disconnect aborted to avoid leaking active bindings",
+      true,
+    );
   }
   input.clearCredential();
   return { userLinks, chatLinks };
