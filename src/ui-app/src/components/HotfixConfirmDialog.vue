@@ -30,6 +30,7 @@ watch(
     <div
       v-if="open"
       class="hotfix-overlay"
+      data-overlay-layer="floating"
       role="dialog"
       aria-modal="true"
       aria-labelledby="hotfix-confirm-title"

@@ -107,7 +107,12 @@ onBeforeUnmount(() => {
 
 <template>
   <Teleport to="body">
-    <div v-if="open" class="stop-work-overlay" @click.self="onOverlayClick">
+    <div
+      v-if="open"
+      class="stop-work-overlay"
+      data-overlay-layer="floating"
+      @click.self="onOverlayClick"
+    >
       <div
         ref="modalEl"
         class="stop-work-modal"
