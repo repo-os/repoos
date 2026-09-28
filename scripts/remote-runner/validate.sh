@@ -26,17 +26,30 @@ SHA="${2:?usage: validate.sh <bundle-path> <expected-sha>}"
 # a package.json"). $HOME is real disk everywhere and Docker-Desktop-shared.
 ART="${3:-$HOME/.repoos-artifacts}"
 
-WORK="$(mktemp -d "$HOME/.repoos-validate.XXXXXX")"
-# A named Docker volume, NOT a host bind-mount (#0521 review, third round —
-# see the chown-init line below for why). The volume lives inside Docker's
-# own storage and is shared across every run on this host, exactly like the
-# old host directory was.
 CACHE_VOLUME="repoos-bun-cache"
 IMAGE="${REPOOS_CI_IMAGE:-repoos-ci}"
+
+# Clean up any stale work dirs from crashed/killed previous runs.  Old
+# validate.sh ran Docker as uid 1000, leaving files that the SSH user could
+# not rm.  Use a root Docker container to chown them first, then rm.
+for _stale in "$HOME"/.repoos-validate.*; do
+  [ -d "$_stale" ] || continue
+  docker run --rm -v "$_stale":/work -u 0 "$IMAGE" \
+    chown -R "$(id -u):$(id -g)" /work 2>/dev/null || true
+  rm -rf "$_stale" 2>/dev/null || true
+done
+unset _stale
+
+WORK="$(mktemp -d "$HOME/.repoos-validate.XXXXXX")"
 rm -rf "$ART" && mkdir -p "$ART"
 # Per-run dirs live under the shared parent; prune ones nobody collected.
 find "$HOME/.repoos-artifacts" -mindepth 1 -maxdepth 1 -type d -mtime +1 -exec rm -rf {} + 2>/dev/null || true
-trap 'rm -rf "$WORK" "$BUNDLE"' EXIT
+_rvcleanup() {
+  # All files are created by the SSH user's uid (--user flag on the Docker
+  # run below), so a plain rm is sufficient — no chown container needed.
+  rm -rf "$WORK" "$BUNDLE"
+}
+trap _rvcleanup EXIT
 
 echo "[validate] cloning bundle $BUNDLE"
 git clone -q "$BUNDLE" "$WORK/repo"
@@ -50,22 +63,11 @@ if [ "$ACTUAL" != "$SHA" ]; then
 fi
 echo "[validate] HEAD verified at $SHA"
 
-# The bun base image runs as uid 1000 ('bun'); make the cloned repo and
-# artifacts dir writable by that user before entering the container.
-chmod -R o+rw "$WORK/repo" "$ART"
-
-# A fresh named volume is root-owned, mode 0755 by default — uid 1000 can't
-# write into it until something chowns it. A HOST bind-mount (the previous
-# design) can't be fixed by chmod'ing the host side at all on some setups: on
-# macOS via Colima, the bind-mounted directory appears INSIDE the container
-# as owned by root with a fixed 0755, ignoring whatever the real host-side
-# permissions say — confirmed live, chmod o+rwx on the host directory changed
-# nothing about what the container could see (#0521 review, third round). A
-# named volume sidesteps that class of host-filesystem-mapping problem
-# entirely: it's Docker's own storage, never bind-mounted from the host, so
-# a one-time (idempotent, near-instant once already correct) chown as root
-# is all it needs — also confirmed live, writable and persists across runs.
-docker run --rm -v "$CACHE_VOLUME":/bun-cache -u 0 "$IMAGE" "chown 1000:1000 /bun-cache"
+# Run Docker as the SSH user's uid:gid so all files it creates are owned by
+# that user.  This means _rvcleanup needs no Docker chown step — a plain
+# rm -rf works.  Chown the bun-cache volume to match before the main run.
+docker run --rm -v "$CACHE_VOLUME":/bun-cache -u 0 "$IMAGE" \
+  "chown -R $(id -u):$(id -g) /bun-cache"
 
 set +e
 docker run --rm \
@@ -73,9 +75,12 @@ docker run --rm \
   -v "$CACHE_VOLUME":/bun-cache \
   -v "$ART":/artifacts \
   -e BUN_INSTALL_CACHE_DIR=/bun-cache \
+  -e BUN_TMPDIR=/tmp \
+  -e HOME=/repo \
   -w /repo \
+  --user "$(id -u):$(id -g)" \
   "$IMAGE" \
-  'set -o pipefail; bun install --frozen-lockfile && bun run build && printf "#!/bin/sh\nexec bun /repo/dist/cli/index.js \"\$@\"\n" > /usr/local/bin/repoos && chmod +x /usr/local/bin/repoos && bun run test 2>&1 | tee /artifacts/test-output.log'
+  'set -o pipefail; bun install --frozen-lockfile && bun run build && printf "#!/bin/sh\nexec bun /repo/dist/cli/index.js \"\$@\"\n" > /tmp/repoos && chmod +x /tmp/repoos && export PATH="/tmp:$PATH" && bun run test 2>&1 | tee /artifacts/test-output.log'
 CODE=$?
 set -e
 

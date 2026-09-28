@@ -86,13 +86,27 @@ export function isTelegramChatBound(store: AuthStore, telegramChatId: number): b
   return link !== null && !link.revokedAt;
 }
 
-/** Notification routing (#0537): only bound, non-revoked chats receive traffic. */
+/** Notification routing (#0537): bound, non-revoked chats opted in to notifications. */
 export function listTelegramNotificationChatIds(store: AuthStore): number[] {
-  return store.listTelegramChatLinks().map((row) => row.telegramChatId);
+  return store
+    .listTelegramChatLinks()
+    .filter((row) => row.notificationsEnabled)
+    .map((row) => row.telegramChatId);
 }
 
 export function mayDeliverTelegramNotification(store: AuthStore, telegramChatId: number): boolean {
-  return isTelegramChatBound(store, telegramChatId);
+  if (!isTelegramChatBound(store, telegramChatId)) return false;
+  const link = store.getTelegramChatLink(telegramChatId);
+  return link?.notificationsEnabled === true;
+}
+
+export function setTelegramChatNotificationsEnabled(
+  store: AuthStore,
+  telegramChatId: number,
+  enabled: boolean,
+): boolean {
+  if (!isTelegramChatBound(store, telegramChatId)) return false;
+  return store.setTelegramChatNotificationsEnabled(telegramChatId, enabled);
 }
 
 export function createTelegramChatBindCode(
@@ -153,6 +167,7 @@ export function bindTelegramChatDirect(
     boundAt,
     boundBy: input.actorEmail,
     revokedAt: null,
+    notificationsEnabled: existing?.notificationsEnabled ?? true,
   };
   if (!store.upsertTelegramChatLink(link)) return null;
   store.logAudit(
@@ -259,6 +274,7 @@ export function redeemTelegramChatBindCode(
           boundAt,
           boundBy: redeemer.email,
           revokedAt: null,
+          notificationsEnabled: existing?.notificationsEnabled ?? true,
         })
       ) {
         throw new Error("telegram chat link write failed");

@@ -193,6 +193,116 @@ _setup-runner-native host:
     echo "==> $HOST is ready as a NATIVE repoos runner — remember to set"
     echo "    runner = \"native\" on its [[remoteValidation.tailscaleHosts]] row"
 
+# Check health of all configured Docker-based validation runners.
+# For each host: verify Docker + repoos-ci image, clean stale work dirs,
+# run a quick smoke test of the --user setup introduced in the rm-fix.
+# Pass --full to also run a real validation bundle against every runner.
+[group('runner')]
+check-runners *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    FULL=false
+    for arg in {{args}}; do [ "$arg" = "--full" ] && FULL=true; done
+
+    HOSTS=(nick@bee nick@thinkpad peckjachowski@mini)
+    PASS=0; FAIL=0
+
+    for HOST in "${HOSTS[@]}"; do
+        echo ""
+        echo "══ $HOST ══════════════════════════════"
+
+        # 1. Docker running?
+        if ! ssh "$HOST" 'docker info >/dev/null 2>&1'; then
+            echo "  ✗ Docker not running"
+            FAIL=$((FAIL+1)); continue
+        fi
+        echo "  ✔ Docker running"
+
+        # 2. repoos-ci image present?
+        if ! ssh "$HOST" 'docker image inspect repoos-ci >/dev/null 2>&1'; then
+            echo "  ✗ repoos-ci image missing — run just setup-<host>"
+            FAIL=$((FAIL+1)); continue
+        fi
+        IMG=$(ssh "$HOST" 'docker image inspect repoos-ci --format "{{{{.Id}}" | cut -c8-19')
+        echo "  ✔ repoos-ci image $IMG"
+
+        # 3. Validate.sh version (first line of the script for a quick sanity check)
+        LOCAL_SUM=$(md5sum scripts/remote-runner/validate.sh 2>/dev/null | awk '{print $1}' || md5 -q scripts/remote-runner/validate.sh 2>/dev/null)
+        REMOTE_SUM=$(ssh "$HOST" 'md5sum /opt/repoos/validate.sh 2>/dev/null | awk "{print \$1}" || md5 -q /opt/repoos/validate.sh 2>/dev/null')
+        if [ "$LOCAL_SUM" = "$REMOTE_SUM" ]; then
+            echo "  ✔ validate.sh up to date ($REMOTE_SUM)"
+        else
+            SHORTHOST=$(echo "$HOST" | cut -d@ -f2)
+            echo "  ✗ validate.sh OUT OF DATE — run: just setup-$SHORTHOST"
+            echo "    local:  $LOCAL_SUM"
+            echo "    remote: $REMOTE_SUM"
+            FAIL=$((FAIL+1)); continue
+        fi
+
+        # 4. Stale work dirs?
+        STALE=$(ssh "$HOST" 'ls -d ~/.repoos-validate.* 2>/dev/null | wc -l | tr -d " "')
+        if [ "$STALE" -gt 0 ]; then
+            echo "  ⚠ $STALE stale validate dir(s) — cleaning..."
+            ssh "$HOST" '
+                for d in ~/.repoos-validate.*; do
+                    [ -d "$d" ] || continue
+                    docker run --rm -v "$d":/work -u 0 repoos-ci \
+                        "chown -R $(id -u):$(id -g) /work" 2>/dev/null || true
+                    rm -rf "$d" && echo "    cleaned $d"
+                done
+            '
+        else
+            echo "  ✔ no stale work dirs"
+        fi
+
+        # 5. Smoke test: run bun under --user to verify the permission fix
+        echo "  → smoke test (bun --version as SSH user uid)..."
+        if ssh "$HOST" 'docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            -e BUN_TMPDIR=/tmp -e HOME=/tmp \
+            repoos-ci "bun --version" >/dev/null 2>&1'; then
+            BUN=$(ssh "$HOST" 'docker run --rm --user "$(id -u):$(id -g)" -e BUN_TMPDIR=/tmp -e HOME=/tmp repoos-ci "bun --version" 2>/dev/null')
+            echo "  ✔ smoke test passed (bun $BUN as uid $(ssh "$HOST" id -u))"
+        else
+            echo "  ✗ smoke test failed — --user setup broken"
+            FAIL=$((FAIL+1)); continue
+        fi
+
+        # 6. Disk space
+        DISK=$(ssh "$HOST" 'df -h ~ 2>/dev/null | awk "NR==2{print \$4\" free of \"\$2}"')
+        echo "  ✔ disk: $DISK"
+
+        # 7. Optional full validation
+        if [ "$FULL" = true ]; then
+            echo "  → full validation (streaming output)..."
+            SHA=$(git rev-parse HEAD)
+            BUNDLE=$(mktemp /tmp/repoos-check-bundle.XXXXXX.bundle)
+            git bundle create "$BUNDLE" HEAD >/dev/null
+            scp -q "$BUNDLE" "$HOST:/tmp/repoos-check-bundle.bundle"
+            rm -f "$BUNDLE"
+            T0=$(date +%s)
+            ssh "$HOST" "/opt/repoos/validate.sh /tmp/repoos-check-bundle.bundle $SHA 2>&1" \
+                | while IFS= read -r line; do
+                    ELAPSED=$(( $(date +%s) - T0 ))
+                    printf "  [%3ds] %s\n" "$ELAPSED" "$line"
+                done
+            CODE=${PIPESTATUS[0]}
+            ELAPSED=$(( $(date +%s) - T0 ))
+            if [ "$CODE" -eq 0 ]; then
+                echo "  ✔ full validation passed in ${ELAPSED}s"
+            else
+                echo "  ✗ full validation failed after ${ELAPSED}s (exit $CODE)"
+                FAIL=$((FAIL+1)); continue
+            fi
+        fi
+
+        PASS=$((PASS+1))
+    done
+
+    echo ""
+    echo "══ results: $PASS passed, $FAIL failed ══════════"
+    [ "$FAIL" -eq 0 ]
+
 # ── dev ──────────────────────────────────────────────────────────────────
 
 # dev HMR UI

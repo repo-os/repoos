@@ -73,17 +73,17 @@ function task(title = "Fix the widget"): Task {
 describe("notificationForStatusChange", () => {
   it("returns Started for ready -> active with low priority", () => {
     const spec = notificationForStatusChange("ready", "active");
-    expect(spec).toEqual({ headline: "▶️ Started", priority: "low" });
+    expect(spec).toEqual({ headline: "▶️ Started", severity: "low" });
   });
 
   it("returns Done for active -> done with low priority", () => {
     const spec = notificationForStatusChange("active", "done");
-    expect(spec).toEqual({ headline: "✅ Done", priority: "low" });
+    expect(spec).toEqual({ headline: "✅ Done", severity: "low" });
   });
 
   it("returns Done for review -> done with low priority", () => {
     const spec = notificationForStatusChange("review", "done");
-    expect(spec).toEqual({ headline: "✅ Done", priority: "low" });
+    expect(spec).toEqual({ headline: "✅ Done", severity: "low" });
   });
 
   it("returns null for transitions that do not warrant a notification", () => {
@@ -103,7 +103,7 @@ describe("notificationForStatusChange", () => {
 describe("notificationForTaskCreated", () => {
   it("returns New with low priority", () => {
     const spec = notificationForTaskCreated();
-    expect(spec).toEqual({ headline: "🆕 New", priority: "low" });
+    expect(spec).toEqual({ headline: "🆕 New", severity: "low" });
   });
 });
 
@@ -112,7 +112,7 @@ describe("notificationForNeedsInput", () => {
     const spec = notificationForNeedsInput();
     expect(spec).toEqual({
       headline: "🙋 Needs you",
-      priority: "high",
+      severity: "high",
       subtitle: "Agent is waiting for your decision",
     });
   });
@@ -120,13 +120,13 @@ describe("notificationForNeedsInput", () => {
 
 describe("formatNotification", () => {
   it("formats a simple notification as emoji + event · title", () => {
-    const spec = { headline: "▶️ Started", priority: "low" as const };
+    const spec = { headline: "▶️ Started", severity: "low" as const };
     const msg = formatNotification(spec, "Add file tree navigation");
     expect(msg).toBe("▶️ Started · Add file tree navigation");
   });
 
   it("truncates long titles to fit on one line", () => {
-    const spec = { headline: "▶️ Started", priority: "low" as const };
+    const spec = { headline: "▶️ Started", severity: "low" as const };
     const longTitle =
       "Add file tree navigation and refresh button and context menu to context page and activity log";
     const msg = formatNotification(spec, longTitle);
@@ -138,7 +138,7 @@ describe("formatNotification", () => {
   it("includes subtitle on a second line when provided", () => {
     const spec = {
       headline: "🙋 Needs you",
-      priority: "high" as const,
+      severity: "high" as const,
       subtitle: "Agent is waiting for your decision",
     };
     const msg = formatNotification(spec, "Pick auth method");

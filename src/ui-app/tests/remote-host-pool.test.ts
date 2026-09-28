@@ -432,6 +432,38 @@ describe("TailscaleRunner pool dispatch (#0521)", () => {
     expect(await next).toEqual({ ok: true, stage: "check" });
   });
 
+  it("records a per-task infra event naming the host when an upload fails (#0568)", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }, { host: "b" }] });
+    vi.mocked(f.exec.uploadFile).mockImplementation(async (host) =>
+      host.ip === "a" ? { ok: false, detail: "ssh: Connection timed out" } : { ok: true },
+    );
+
+    await f.runner.validate(opts("0001"));
+
+    const ev = f.runner.remoteEvents("0001").find((e) => e.infra);
+    expect(ev).toBeTruthy();
+    expect(ev?.host).toBe("a");
+    expect(ev?.message).toContain("upload");
+  });
+
+  it("records a queued event while a job waits for a host slot (#0568)", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }] });
+    const job1 = f.runner.validate(opts("0001"));
+    await tick();
+    const job2 = f.runner.validate(opts("0002"));
+    await tick();
+
+    expect(f.runner.remoteEvents("0002").some((e) => e.phase === "queued")).toBe(true);
+
+    f.release("a");
+    await tick();
+    f.release("a");
+    expect(await Promise.all([job1, job2])).toEqual([
+      { ok: true, stage: "check" },
+      { ok: true, stage: "check" },
+    ]);
+  });
+
   it("runs two jobs on two hosts and queues a third until one frees", async () => {
     const f = poolFixture({ hosts: [{ host: "a" }, { host: "b" }] });
     const chunks3: string[] = [];

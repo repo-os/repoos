@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { AlertTriangle, ChevronDown, ChevronRight, RefreshCw } from "lucide-vue-next";
-import type { Task, TaskCheckRun, TaskLogEntry } from "../types";
+import type { RemoteValidationEvent, Task, TaskCheckRun, TaskLogEntry } from "../types";
 import { useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { relTime } from "../lib/time";
@@ -44,17 +44,19 @@ async function syncWithMain(): Promise<void> {
 onMounted(() => {
   void repo.refreshTaskChecks(props.task.id);
   void repo.refreshTaskLogs(props.task.id);
+  void repo.refreshTaskRemoteEvents(props.task.id);
 });
 watch(
   () => props.task.id,
   (id) => {
     void repo.refreshTaskChecks(id);
     void repo.refreshTaskLogs(id);
+    void repo.refreshTaskRemoteEvents(id);
   },
 );
 
 type EventLevel = "info" | "warn" | "error";
-type EventKind = "activity" | "log" | "check";
+type EventKind = "activity" | "log" | "check" | "remote";
 
 interface DebugEvent {
   key: string;
@@ -65,6 +67,8 @@ interface DebugEvent {
   detail?: string;
   failureSummary?: string;
   checkRun?: TaskCheckRun;
+  /** Structured remote-validation detail (#0568): host, exit code, infra flag. */
+  remote?: RemoteValidationEvent;
 }
 
 /** Activity lines look like `- 2026-08-27T06:20:50Z · status draft→inbox, title, area, body`
@@ -145,6 +149,18 @@ const events = computed<DebugEvent[]>(() => {
           ? (summarizeCheckFailure(c.output) ?? undefined)
           : undefined,
       checkRun: c,
+    });
+  }
+
+  for (const r of repo.taskRemoteEvents[props.task.id] ?? []) {
+    out.push({
+      key: `remote-${r.at}-${r.message.slice(0, 24)}`,
+      at: r.at,
+      kind: "remote",
+      level: r.level,
+      title: r.message,
+      detail: r.message,
+      remote: r,
     });
   }
 
@@ -307,6 +323,7 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
           <option value="activity">State changes</option>
           <option value="log">Logs</option>
           <option value="check">Checks</option>
+          <option value="remote">Remote validation</option>
         </select>
         <button
           type="button"
@@ -347,6 +364,32 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
             />
             <span class="debug-event-kind">{{ e.kind }}</span>
             <span class="debug-event-title">{{ e.title }}</span>
+            <span v-if="e.remote" class="debug-event-remote">
+              <span v-if="e.remote.host" class="debug-event-chip" :title="`host: ${e.remote.host}`">
+                {{ e.remote.host }}
+              </span>
+              <span
+                v-if="e.remote.exitCode !== undefined"
+                class="debug-event-chip"
+                title="remote exit code"
+              >
+                exit {{ e.remote.exitCode ?? "signal" }}
+              </span>
+              <span
+                v-if="e.remote.infra"
+                class="debug-event-chip debug-event-chip-infra"
+                title="failed for infrastructure reasons, not a red test gate"
+              >
+                infra
+              </span>
+              <span
+                v-if="e.remote.configError"
+                class="debug-event-chip debug-event-chip-infra"
+                title="no config change could make this run pass"
+              >
+                config
+              </span>
+            </span>
             <span class="debug-event-time" :title="e.at">{{ relTime(e.at) }}</span>
           </div>
           <p v-if="e.failureSummary" class="debug-event-summary">{{ e.failureSummary }}</p>
@@ -600,6 +643,30 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.debug-event-remote {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  max-width: 45%;
+  overflow: hidden;
+}
+.debug-event-chip {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10px;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  color: var(--txt-dim);
+  white-space: nowrap;
+}
+.debug-event-chip-infra {
+  border-color: var(--red-border-tint, rgba(255, 107, 125, 0.4));
+  background: var(--red-tint);
+  color: var(--red);
 }
 .debug-event-time {
   flex-shrink: 0;
