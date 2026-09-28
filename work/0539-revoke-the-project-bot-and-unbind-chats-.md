@@ -16,7 +16,7 @@ branch: feat/revoke-the-project-bot-and-unbind-chats-
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-27T07:33:20Z"
-updated_at: "2026-09-28T08:08:37Z"
+updated_at: "2026-09-28T08:14:00Z"
 review_passes: 9
 merge_conflict_retry_count: 2
 review_rounds: 2
