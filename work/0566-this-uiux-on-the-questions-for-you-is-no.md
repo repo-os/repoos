@@ -21,8 +21,10 @@ This uiux on the "questions for you" is not great because it shows up twice on t
 ## Screenshots
 
 ![Screenshot-2026-09-28-at-01.43.16](/api/tasks/0566/attachments/screenshot-1.png)
+![Screenshot-2026-09-28-at-01.43.44](/api/tasks/0566/attachments/screenshot-2.png)
 
 ## Activity
 
 - 2026-09-28T04:34:57Z · created · hello@repoos.org
+- 2026-09-28T04:34:58Z · screenshots
 - 2026-09-28T04:34:58Z · screenshots
