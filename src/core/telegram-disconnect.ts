@@ -26,33 +26,47 @@ export function clearTelegramBindingsForRepository(
   actorEmail: string,
   revokedAt: string,
   instanceIdentity: string,
+  auditDetails: Record<string, unknown>,
 ): ClearedTelegramBindings {
   if (!store.isAvailable()) {
     throw new Error("auth store is not available");
   }
-  const userLinks = store.revokeAllActiveTelegramUserLinks(revokedAt);
-  const chatLinks = store.revokeAllActiveTelegramChatLinks(revokedAt);
-  const userInvites = store.deleteTelegramUserInvitesForInstance(instanceIdentity);
-  const chatBindInvites = store.deleteTelegramChatBindInvitesForInstance(instanceIdentity);
+  if (instanceIdentity !== store.instanceIdentity) {
+    throw new Error("refusing to disconnect Telegram bindings for another instance");
+  }
+  return store.withImmediateTransaction(() => {
+    const userLinks = store.revokeAllActiveTelegramUserLinks(revokedAt);
+    const chatLinks = store.revokeAllActiveTelegramChatLinks(revokedAt);
+    const userInvites = store.deleteTelegramUserInvitesForInstance(instanceIdentity);
+    const chatBindInvites = store.deleteTelegramChatBindInvitesForInstance(instanceIdentity);
 
-  if (userLinks > 0) {
-    store.logAudit(
-      TELEGRAM_AUDIT.userUnbound,
+    if (userLinks > 0) {
+      store.logAudit(
+        TELEGRAM_AUDIT.userUnbound,
+        null,
+        actorEmail,
+        JSON.stringify({ bulk: true, count: userLinks, reason: "telegram_disconnect" }),
+      );
+    }
+    if (chatLinks > 0) {
+      store.logAudit(
+        TELEGRAM_CHAT_AUDIT.chatUnbound,
+        null,
+        actorEmail,
+        JSON.stringify({ bulk: true, count: chatLinks, reason: "telegram_disconnect" }),
+      );
+    }
+    store.logAuditRequired(
+      TELEGRAM_DISCONNECT_AUDIT.integrationDisconnected,
       null,
       actorEmail,
-      JSON.stringify({ bulk: true, count: userLinks, reason: "telegram_disconnect" }),
+      JSON.stringify({
+        ...auditDetails,
+        bindings: { userLinks, chatLinks, userInvites, chatBindInvites },
+      }),
     );
-  }
-  if (chatLinks > 0) {
-    store.logAudit(
-      TELEGRAM_CHAT_AUDIT.chatUnbound,
-      null,
-      actorEmail,
-      JSON.stringify({ bulk: true, count: chatLinks, reason: "telegram_disconnect" }),
-    );
-  }
-
-  return { userLinks, chatLinks, userInvites, chatBindInvites };
+    return { userLinks, chatLinks, userInvites, chatBindInvites };
+  });
 }
 
 export function logTelegramDisconnectAudit(

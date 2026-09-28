@@ -20,19 +20,15 @@
  *
  * Nothing in this module ever returns, logs, or serializes the bot token.
  */
-import { existsSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { TelegramApiClient, toProvisionedBot, type BotApiUser } from "./api.js";
 import { normalizeUpdate } from "./normalize.js";
 import { TelegramPolling } from "./polling.js";
 import { createManagedProvisioningClient, ManagedRedemptionFollowUpError } from "./provisioning.js";
 import { encryptSecret } from "../../core/secret-store.js";
+import { logTelegramDisconnectAudit } from "../../core/telegram-disconnect.js";
 import { makeTokenRedactor } from "./redact.js";
-import {
-  TelegramCredentialStore,
-  telegramConnectionPath,
-  type TelegramConnectionRecord,
-} from "./store.js";
+import { TelegramCredentialStore, type TelegramConnectionRecord } from "./store.js";
 import {
   disconnectRemoteTelegram,
   finalizeTelegramDisconnect,
@@ -58,7 +54,6 @@ import type {
   BotSource,
 } from "./types.js";
 import { TelegramDisconnectError } from "./types.js";
-import { TelegramNetworkError } from "./api.js";
 
 /** `secret_token` charset per the Bot API: A-Z a-z 0-9 _ -, 1–256 chars. */
 const WEBHOOK_SECRET_BYTES = 32;
@@ -118,6 +113,7 @@ export class LocalTelegramProvider implements TelegramProvider {
   /** Redacted text of the last transport failure, surfaced via status(). */
   private lastError: string | null = null;
   private readonly now: () => Date;
+  private operationTail: Promise<void> = Promise.resolve();
 
   constructor(options: TelegramProviderOptions) {
     this.store = options.store;
@@ -151,9 +147,25 @@ export class LocalTelegramProvider implements TelegramProvider {
     return makeTokenRedactor(token);
   }
 
+  private runConnectionOperation<T>(operation: () => Promise<T>): Promise<T> {
+    const result = this.operationTail.then(operation, operation);
+    this.operationTail = result.then(
+      () => undefined,
+      () => undefined,
+    );
+    return result;
+  }
+
   // ── Provisioning ───────────────────────────────────────────────────────────
 
-  async connectByBotToken(token: string, source: BotSource = "byo-token"): Promise<ProvisionedBot> {
+  connectByBotToken(token: string, source: BotSource = "byo-token"): Promise<ProvisionedBot> {
+    return this.runConnectionOperation(() => this.connectByBotTokenUnlocked(token, source));
+  }
+
+  private async connectByBotTokenUnlocked(
+    token: string,
+    source: BotSource,
+  ): Promise<ProvisionedBot> {
     const trimmed = typeof token === "string" ? token.trim() : "";
     if (!trimmed) {
       throw new TelegramValidationError("bot token is required");
@@ -214,37 +226,47 @@ export class LocalTelegramProvider implements TelegramProvider {
     return bot;
   }
 
-  async disconnect(input: TelegramDisconnectInput): Promise<TelegramDisconnectResult> {
+  disconnect(input: TelegramDisconnectInput): Promise<TelegramDisconnectResult> {
+    return this.runConnectionOperation(() => this.disconnectUnlocked(input));
+  }
+
+  private async disconnectUnlocked(
+    input: TelegramDisconnectInput,
+  ): Promise<TelegramDisconnectResult> {
     const revokedAt = this.now().toISOString();
     await this.stopPollingLoop();
 
-    let record: ReturnType<(typeof this.store)["loadOrNull"]>;
+    let record: TelegramConnectionRecord | null;
     try {
-      record = this.store.loadOrNull();
+      record = this.store.load();
     } catch (e) {
-      this.startPollingLoop();
-      throw e;
+      throw new TelegramDisconnectError(
+        "revoke",
+        `stored Telegram connection state is unreadable; it was left intact and no bindings were cleared ` +
+          `(${e instanceof Error ? e.message : String(e)}). Restore the connection record or revoke the ` +
+          "bot in @BotFather before retrying.",
+        true,
+      );
     }
     if (!record) {
-      const corruptOnDisk = existsSync(telegramConnectionPath(this.root));
       const bindings = finalizeTelegramDisconnect({
         authStore: input.authStore,
         actorEmail: input.actorEmail,
         instanceId: input.instanceId,
         revokedAt,
         record: null,
-        revocationConfirmed: !corruptOnDisk,
-        revocationMethod: corruptOnDisk ? "local-record-unreadable" : null,
-        webhookRemoved: !corruptOnDisk,
-        alreadyDisconnected: !corruptOnDisk,
+        revocationConfirmed: true,
+        revocationMethod: null,
+        webhookRemoved: true,
+        alreadyDisconnected: true,
         clearCredential: () => {
           this.store.clear();
           this.lastError = null;
         },
       });
-      const alreadyDisconnected = !corruptOnDisk;
-      const revocationConfirmed = !corruptOnDisk;
-      const webhookRemoved = !corruptOnDisk;
+      const alreadyDisconnected = true;
+      const revocationConfirmed = true;
+      const webhookRemoved = true;
       const complete = telegramDisconnectComplete({
         alreadyDisconnected,
         revocationConfirmed,
@@ -253,18 +275,19 @@ export class LocalTelegramProvider implements TelegramProvider {
       return {
         ok: true,
         complete,
-        ...(complete
-          ? {}
-          : {
-              warning:
-                "Local Telegram state was cleared, but the on-disk connection record was unreadable — " +
-                "revoke the bot in @BotFather if a token might still be valid.",
-            }),
         alreadyDisconnected,
         revocationConfirmed,
         webhookRemoved,
         bindingsCleared: bindings,
       };
+    }
+
+    if (!input.authStore?.isAvailable()) {
+      throw new TelegramDisconnectError(
+        "local",
+        "auth store is unavailable — disconnect was aborted before contacting Telegram",
+        true,
+      );
     }
 
     let token: string;
@@ -294,20 +317,54 @@ export class LocalTelegramProvider implements TelegramProvider {
         managed: this.managed(),
         repository: this.repositoryName,
         instanceId: input.instanceId,
+        webhookAlreadyRemoved: record.disconnect?.webhookRemoved === true,
+        markWebhookRemoved: async () => {
+          const updated = this.store.markWebhookRemoved(record!);
+          if (!updated) return false;
+          record = updated;
+          return true;
+        },
         createApi: this.buildApi,
       });
     } catch (e) {
-      this.startPollingLoop();
-      if (e instanceof TelegramDisconnectError) throw e;
-      throw new TelegramDisconnectError(
-        "revoke",
-        e instanceof Error ? e.message : "failed to disconnect the Telegram bot",
-      );
+      const disconnectError =
+        e instanceof TelegramDisconnectError
+          ? e
+          : new TelegramDisconnectError(
+              "revoke",
+              e instanceof Error ? e.message : "failed to disconnect the Telegram bot",
+            );
+      try {
+        logTelegramDisconnectAudit(input.authStore, input.actorEmail, {
+          alreadyDisconnected: false,
+          revocationConfirmed: false,
+          revocationAttempted: disconnectError.phase === "revoke",
+          revocationMethod:
+            disconnectError.phase === "revoke"
+              ? record.source === "managed"
+                ? "managed-provisioning-service"
+                : "botfather-revocation"
+              : null,
+          webhookRemoved: record.disconnect?.webhookRemoved === true,
+          botId: record.bot.id,
+          botSource: record.source,
+          failedPhase: disconnectError.phase,
+          failure: disconnectError.message,
+        });
+      } catch (auditError) {
+        throw new TelegramDisconnectError(
+          "local",
+          `${disconnectError.message}; failed to record disconnect attempt: ${
+            auditError instanceof Error ? auditError.message : String(auditError)
+          }`,
+          true,
+        );
+      }
+      throw disconnectError;
     }
 
     const { revocationConfirmed: confirmed, revocationMethod: method, webhookRemoved } = remote;
     if (!confirmed) {
-      this.startPollingLoop();
       throw new TelegramDisconnectError(
         "revoke",
         "Telegram did not confirm the bot token was revoked — local state was left intact",
@@ -326,7 +383,11 @@ export class LocalTelegramProvider implements TelegramProvider {
       webhookRemoved,
       alreadyDisconnected: false,
       clearCredential: () => {
-        this.store.clear();
+        if (!this.store.clearIfUnchanged(record!)) {
+          throw new Error(
+            "the stored Telegram credential changed during disconnect; the new credential was left intact",
+          );
+        }
         this.lastError = null;
       },
     });

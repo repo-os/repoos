@@ -2,7 +2,7 @@
  * Telegram disconnect (#0539): ordered teardown, honest partial failure, isolation.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { chmodSync, existsSync, mkdtempSync, rmSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RepoOSConfig } from "../../core/types";
@@ -32,10 +32,7 @@ const botMe = (): Record<string, unknown> => ({
   can_read_all_group_messages: false,
 });
 
-function fakeApi(handlers: Record<string, unknown> = {}) {
-  const revokeTokenOnLogOut = handlers.revokeTokenOnLogOut !== false;
-  const methodHandlers = { ...handlers };
-  delete methodHandlers.revokeTokenOnLogOut;
+function fakeApi(methodHandlers: Record<string, unknown> = {}) {
   const revokedTokens = new Set<string>();
   const calls: { method: string; body: Record<string, unknown> }[] = [];
   const fetcher = (async (input: unknown, init?: RequestInit) => {
@@ -51,7 +48,7 @@ function fakeApi(handlers: Record<string, unknown> = {}) {
     }
     calls.push({ method, body });
 
-    if (method === "getMe" && revokedTokens.has(callToken)) {
+    if (revokedTokens.has(callToken)) {
       return new Response(
         JSON.stringify({ ok: false, error_code: 401, description: "Unauthorized" }),
         { status: 200, headers: { "Content-Type": "application/json" } },
@@ -65,10 +62,6 @@ function fakeApi(handlers: Record<string, unknown> = {}) {
         : typeof scripted === "function"
           ? scripted(body, { callToken, revokedTokens })
           : scripted;
-
-    if (method === "logOut" && revokeTokenOnLogOut && result !== undefined && result !== false) {
-      revokedTokens.add(callToken);
-    }
 
     const text =
       result === undefined
@@ -84,8 +77,6 @@ function disconnectHandlers(): Record<string, unknown> {
     getMe: botMe(),
     deleteWebhook: true,
     getWebhookInfo: () => ({ url: "" }),
-    logOut: true,
-    close: true,
   };
 }
 
@@ -124,7 +115,7 @@ afterEach(() => {
 });
 
 describe("disconnect steps", () => {
-  it("removeBotWebhook treats an unauthorized token as webhook removed", async () => {
+  it("removeBotWebhook rejects unauthorized responses instead of claiming removal", async () => {
     const fetcher = (async (input: unknown) => {
       const method = String(input).split("/").pop() ?? "";
       if (method === "deleteWebhook") {
@@ -136,7 +127,7 @@ describe("disconnect steps", () => {
       return new Response(JSON.stringify({ ok: false }), { status: 404 });
     }) as typeof fetch;
     const client = new TelegramApiClient(TOKEN, { fetcher });
-    await expect(removeBotWebhook(client)).resolves.toBe(true);
+    await expect(removeBotWebhook(client)).rejects.toMatchObject({ code: 401 });
   });
 
   it("removeBotWebhook deletes and confirms an empty webhook URL", async () => {
@@ -150,12 +141,11 @@ describe("disconnect steps", () => {
     expect(api.calls.some((c) => c.method === "getWebhookInfo")).toBe(true);
   });
 
-  it("revokeProjectBotToken confirms BYO bots only when the old token returns 401", async () => {
+  it("revokeProjectBotToken confirms BYO after BotFather invalidates the old token", async () => {
     const api = fakeApi({
-      getWebhookInfo: () => ({ url: "" }),
-      logOut: true,
-      close: true,
+      getMe: botMe(),
     });
+    api.revokedTokens.add(TOKEN);
     const client = new TelegramApiClient(TOKEN, { fetcher: api.fetcher });
     const managed = createManagedProvisioningClient();
     const result = await revokeProjectBotToken({
@@ -169,15 +159,12 @@ describe("disconnect steps", () => {
       createApi: (token) => new TelegramApiClient(token, { fetcher: api.fetcher }),
     });
     expect(result.confirmed).toBe(true);
-    expect(result.method).toBe("logOut+close");
+    expect(result.method).toBe("botfather-revocation");
   });
 
-  it("revokeProjectBotToken rejects BYO when the old token still works after logOut", async () => {
+  it("revokeProjectBotToken directs admins to revoke a still-valid BYO token in BotFather", async () => {
     const api = fakeApi({
-      logOut: true,
-      close: true,
       getMe: botMe(),
-      revokeTokenOnLogOut: false,
     });
     const client = new TelegramApiClient(TOKEN, { fetcher: api.fetcher });
     await expect(
@@ -191,7 +178,11 @@ describe("disconnect steps", () => {
         instanceId: "inst-a",
         createApi: (token) => new TelegramApiClient(token, { fetcher: api.fetcher }),
       }),
-    ).rejects.toMatchObject({ phase: "revoke", retryable: true });
+    ).rejects.toMatchObject({
+      phase: "revoke",
+      retryable: true,
+      message: expect.stringMatching(/revoke it in @BotFather/i),
+    });
   });
 
   it("revokeProjectBotToken treats provisioning network errors as retryable", async () => {
@@ -301,12 +292,51 @@ describe("disconnect steps", () => {
         revokedAt: new Date().toISOString(),
         record: null,
         revocationConfirmed: true,
-        revocationMethod: "logOut+close",
+        revocationMethod: "botfather-revocation",
         webhookRemoved: true,
         alreadyDisconnected: true,
         clearCredential: () => undefined,
       }),
     ).toThrow(/disk full/);
+    spy.mockRestore();
+  });
+
+  it("rolls back all binding changes when disconnect audit writing fails", () => {
+    const store = getAuthStore(tmpRoot)!;
+    store.upsertTelegramLink({
+      telegramUserId: 43,
+      email: "alice@test.com",
+      telegramUsername: null,
+      boundAt: new Date().toISOString(),
+      boundBy: "admin@test.com",
+      lastSeenAt: null,
+      revokedAt: null,
+    });
+    bindTelegramChatDirect(store, {
+      telegramChatId: -1002,
+      chatType: "group",
+      title: "Ops",
+      actorEmail: "admin@test.com",
+    });
+    const spy = vi.spyOn(store, "logAuditRequired").mockImplementation(() => {
+      throw new Error("disk full");
+    });
+    expect(() =>
+      finalizeTelegramDisconnect({
+        authStore: store,
+        actorEmail: "admin@test.com",
+        instanceId: instanceIdentity(tmpRoot),
+        revokedAt: new Date().toISOString(),
+        record: null,
+        revocationConfirmed: true,
+        revocationMethod: "botfather-revocation",
+        webhookRemoved: true,
+        alreadyDisconnected: false,
+        clearCredential: () => expect.unreachable("credential must remain"),
+      }),
+    ).toThrow(/disk full/);
+    expect(store.getTelegramLink(43)?.revokedAt).toBeNull();
+    expect(store.getTelegramChatLink(-1002)?.revokedAt).toBeNull();
     spy.mockRestore();
   });
 
@@ -320,7 +350,7 @@ describe("disconnect steps", () => {
         revokedAt: new Date().toISOString(),
         record: null,
         revocationConfirmed: true,
-        revocationMethod: "logOut+close",
+        revocationMethod: "botfather-revocation",
         webhookRemoved: true,
         alreadyDisconnected: true,
         clearCredential: () => {
@@ -373,7 +403,7 @@ describe("disconnect steps", () => {
       revokedAt: new Date().toISOString(),
       record: null,
       revocationConfirmed: true,
-      revocationMethod: "logOut+close",
+      revocationMethod: "botfather-revocation",
       webhookRemoved: true,
       alreadyDisconnected: false,
       clearCredential: () => undefined,
@@ -393,9 +423,8 @@ describe("provider disconnect", () => {
   it("leaves local state intact when Telegram revoke fails", async () => {
     const { provider } = makeProvider(tmpRoot, {
       getMe: botMe(),
-      deleteWebhook: true,
       getWebhookInfo: () => ({ url: "" }),
-      logOut: () => {
+      deleteWebhook: () => {
         throw new Error("network down");
       },
     });
@@ -418,16 +447,33 @@ describe("provider disconnect", () => {
         authStore: store,
         instanceId: instanceIdentity(tmpRoot),
       }),
-    ).rejects.toMatchObject({ phase: "revoke" });
+    ).rejects.toMatchObject({ phase: "webhook" });
 
     expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(true);
     expect(store.getTelegramLink(7)?.revokedAt).toBeNull();
+    const attempt = store
+      .getAuditLog(10)
+      .find((row) => row.action === TELEGRAM_DISCONNECT_AUDIT.integrationDisconnected);
+    expect(attempt?.actorEmail).toBe("admin@test.com");
+    expect(JSON.parse(attempt?.details ?? "{}")).toMatchObject({
+      revocationConfirmed: false,
+      revocationAttempted: false,
+      failedPhase: "webhook",
+    });
   });
 
-  it("surfaces credential removal failure after Telegram revoke succeeds", async () => {
-    const { provider } = makeProvider(tmpRoot, disconnectHandlers());
+  it("surfaces credential removal failure after Telegram revocation succeeds", async () => {
+    const { provider, api } = makeProvider(tmpRoot, disconnectHandlers());
     await provider.connectByBotToken(TOKEN);
     const store = getAuthStore(tmpRoot)!;
+    await expect(
+      provider.disconnect({
+        actorEmail: "admin@test.com",
+        authStore: store,
+        instanceId: instanceIdentity(tmpRoot),
+      }),
+    ).rejects.toMatchObject({ phase: "revoke" });
+    api.revokedTokens.add(TOKEN);
     const clearSpy = vi.spyOn(TelegramCredentialStore.prototype, "clear").mockImplementation(() => {
       throw new Error("failed to remove stored Telegram connection: EACCES");
     });
@@ -445,8 +491,8 @@ describe("provider disconnect", () => {
     }
   });
 
-  it("revokes, clears credential, bindings, and webhook on success", async () => {
-    const { provider } = makeProvider(tmpRoot, disconnectHandlers());
+  it("keeps local state until BYO token revocation is confirmed, then tears down", async () => {
+    const { provider, api } = makeProvider(tmpRoot, disconnectHandlers());
     await provider.connectByBotToken(TOKEN);
     const store = getAuthStore(tmpRoot)!;
     store.upsertUser("alice@test.com", "admin", null);
@@ -466,6 +512,26 @@ describe("provider disconnect", () => {
       actorEmail: "admin@test.com",
     });
 
+    await expect(
+      provider.disconnect({
+        actorEmail: "admin@test.com",
+        authStore: store,
+        instanceId: instanceIdentity(tmpRoot),
+      }),
+    ).rejects.toMatchObject({ phase: "revoke", retryable: true });
+    expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(true);
+    expect(store.listTelegramLinks()).toHaveLength(1);
+    const attempt = store
+      .getAuditLog(10)
+      .find((row) => row.action === TELEGRAM_DISCONNECT_AUDIT.integrationDisconnected);
+    expect(JSON.parse(attempt?.details ?? "{}")).toMatchObject({
+      revocationConfirmed: false,
+      revocationAttempted: true,
+      revocationMethod: "botfather-revocation",
+      webhookRemoved: true,
+      failedPhase: "revoke",
+    });
+    api.revokedTokens.add(TOKEN);
     const result = await provider.disconnect({
       actorEmail: "admin@test.com",
       authStore: store,
@@ -478,13 +544,22 @@ describe("provider disconnect", () => {
     expect(result.bindingsCleared.chatLinks).toBe(1);
     expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(false);
     expect(store.listTelegramLinks()).toHaveLength(0);
+    const disconnectAudit = store
+      .getAuditLog(10)
+      .find(
+        (row) =>
+          row.action === TELEGRAM_DISCONNECT_AUDIT.integrationDisconnected &&
+          JSON.parse(row.details ?? "{}").revocationConfirmed === true,
+      );
+    expect(disconnectAudit?.actorEmail).toBe("admin@test.com");
+    expect(JSON.parse(disconnectAudit?.details ?? "{}")).toMatchObject({
+      revocationConfirmed: true,
+      webhookRemoved: true,
+    });
   });
 
   it("BYO disconnect completes on retry after the token is revoked at BotFather", async () => {
-    const { provider, api } = makeProvider(tmpRoot, {
-      ...disconnectHandlers(),
-      revokeTokenOnLogOut: false,
-    });
+    const { provider, api } = makeProvider(tmpRoot, disconnectHandlers());
     await provider.connectByBotToken(TOKEN);
     const store = getAuthStore(tmpRoot)!;
     await expect(
@@ -507,14 +582,21 @@ describe("provider disconnect", () => {
     expect(result.revocationConfirmed).toBe(true);
     expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(false);
     const retryCalls = api.calls.slice(callsBeforeRetry);
-    expect(retryCalls.some((c) => c.method === "logOut")).toBe(false);
-    expect(retryCalls.some((c) => c.method === "deleteWebhook")).toBe(true);
+    expect(retryCalls.some((c) => c.method === "deleteWebhook")).toBe(false);
   });
 
   it("a second disconnect after success is idempotent", async () => {
-    const { provider } = makeProvider(tmpRoot, disconnectHandlers());
+    const { provider, api } = makeProvider(tmpRoot, disconnectHandlers());
     await provider.connectByBotToken(TOKEN);
     const store = getAuthStore(tmpRoot)!;
+    await expect(
+      provider.disconnect({
+        actorEmail: "admin@test.com",
+        authStore: store,
+        instanceId: instanceIdentity(tmpRoot),
+      }),
+    ).rejects.toMatchObject({ phase: "revoke" });
+    api.revokedTokens.add(TOKEN);
     const first = await provider.disconnect({
       actorEmail: "admin@test.com",
       authStore: store,
@@ -529,31 +611,54 @@ describe("provider disconnect", () => {
     expect(second.complete).toBe(true);
     expect(second.alreadyDisconnected).toBe(true);
   });
+
+  it("serializes reconnect behind an in-flight disconnect and preserves the new credential", async () => {
+    const nextToken = "9876543210:AAReconnectFakeTokenValueHereYY";
+    let releaseRevocation!: () => void;
+    let reachedRevocation!: () => void;
+    const revocationReached = new Promise<void>((resolve) => {
+      reachedRevocation = resolve;
+    });
+    const revocationGate = new Promise<void>((resolve) => {
+      releaseRevocation = resolve;
+    });
+    const managed = createManagedProvisioningClient({
+      baseUrl: "https://provision.example.com",
+      fetcher: (async () => {
+        reachedRevocation();
+        await revocationGate;
+        return new Response(JSON.stringify({ ok: true, confirmed: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }) as typeof fetch,
+    });
+    const { provider, store } = makeProvider(tmpRoot, disconnectHandlers(), managed);
+    await provider.connectByBotToken(TOKEN, "managed");
+    const authStore = getAuthStore(tmpRoot)!;
+
+    const disconnect = provider.disconnect({
+      actorEmail: "admin@test.com",
+      authStore,
+      instanceId: instanceIdentity(tmpRoot),
+    });
+    await revocationReached;
+    const reconnect = provider.connectByBotToken(nextToken);
+    releaseRevocation();
+    await disconnect;
+    await reconnect;
+
+    expect(store.readToken()).toBe(nextToken);
+  });
 });
 
 describe("repository isolation", () => {
-  it("disconnecting one checkout does not clear another repository's bindings", async () => {
+  it("preserves another instance's bindings in a shared auth database, including the same chat", async () => {
     const rootA = mkdtempSync(join(tmpdir(), "repoos-tg-a-"));
     const rootB = mkdtempSync(join(tmpdir(), "repoos-tg-b-"));
     try {
-      const { provider: providerA } = makeProvider(rootA, disconnectHandlers());
-      makeProvider(rootB, disconnectHandlers());
-      await providerA.connectByBotToken(TOKEN);
-
-      const storeA = new AuthStore(rootA);
       const storeB = new AuthStore(rootB);
-      expect(storeA.isAvailable() && storeB.isAvailable()).toBe(true);
-      storeA.upsertUser("alice@test.com", "admin", null);
-      storeB.upsertUser("alice@test.com", "admin", null);
-      storeA.upsertTelegramLink({
-        telegramUserId: 99,
-        email: "alice@test.com",
-        telegramUsername: null,
-        boundAt: new Date().toISOString(),
-        boundBy: "admin@test.com",
-        lastSeenAt: null,
-        revokedAt: null,
-      });
+      const instanceB = instanceIdentity(rootB);
       storeB.upsertTelegramLink({
         telegramUserId: 99,
         email: "alice@test.com",
@@ -563,15 +668,67 @@ describe("repository isolation", () => {
         lastSeenAt: null,
         revokedAt: null,
       });
+      bindTelegramChatDirect(storeB, {
+        telegramChatId: -10099,
+        chatType: "group",
+        title: "Shared",
+        actorEmail: "admin@test.com",
+      });
+      storeB.close();
 
+      const dbA = join(rootA, ".repoos", "repoos.db");
+      const dbB = join(rootB, ".repoos", "repoos.db");
+      mkdirSync(join(rootA, ".repoos"), { recursive: true });
+      copyFileSync(dbB, dbA);
+      const instanceA = instanceIdentity(rootA);
+      expect(instanceA).not.toBe(instanceB);
+      const { provider: providerA, api } = makeProvider(rootA, disconnectHandlers());
+      await providerA.connectByBotToken(TOKEN);
+
+      const storeA = new AuthStore(rootA);
+      expect(storeA.isAvailable() && storeB.isAvailable()).toBe(true);
+      storeA.upsertUser("alice@test.com", "admin", null);
+      storeA.upsertTelegramLink({
+        telegramUserId: 99,
+        email: "alice@test.com",
+        telegramUsername: null,
+        boundAt: new Date().toISOString(),
+        boundBy: "admin@test.com",
+        lastSeenAt: null,
+        revokedAt: null,
+      });
+      bindTelegramChatDirect(storeA, {
+        telegramChatId: -10099,
+        chatType: "group",
+        title: "Shared",
+        actorEmail: "admin@test.com",
+      });
+
+      await expect(
+        providerA.disconnect({
+          actorEmail: "admin@test.com",
+          authStore: storeA,
+          instanceId: instanceA,
+        }),
+      ).rejects.toMatchObject({ phase: "revoke" });
+      api.revokedTokens.add(TOKEN);
       await providerA.disconnect({
         actorEmail: "admin@test.com",
         authStore: storeA,
-        instanceId: instanceIdentity(rootA),
+        instanceId: instanceA,
       });
 
       expect(storeA.listTelegramLinks()).toHaveLength(0);
-      expect(storeB.listTelegramLinks()).toHaveLength(1);
+      expect(storeA.listTelegramChatLinks()).toHaveLength(0);
+      storeA.close();
+
+      copyFileSync(dbA, dbB);
+      const verifyB = new AuthStore(rootB);
+      expect(verifyB.listTelegramLinks()).toHaveLength(1);
+      expect(verifyB.getTelegramLink(99)?.instanceIdentity).toBe(instanceB);
+      expect(verifyB.listTelegramChatLinks()).toHaveLength(1);
+      expect(verifyB.getTelegramChatLink(-10099)?.instanceIdentity).toBe(instanceB);
+      verifyB.close();
     } finally {
       rmSync(rootA, { recursive: true, force: true });
       rmSync(rootB, { recursive: true, force: true });
@@ -584,9 +741,8 @@ describe("disconnect route", () => {
     resetAuthStoreInstance();
     const { provider } = makeProvider(tmpRoot, {
       getMe: botMe(),
-      deleteWebhook: true,
       getWebhookInfo: () => ({ url: "" }),
-      logOut: () => {
+      deleteWebhook: () => {
         throw new Error("fetch failed");
       },
     });
@@ -598,28 +754,27 @@ describe("disconnect route", () => {
     } as RepoOSConfig;
     await expect(
       performTelegramDisconnectRoute({ config }, "admin@test.com"),
-    ).rejects.toMatchObject({ phase: "revoke", retryable: true });
+    ).rejects.toMatchObject({ phase: "webhook", retryable: true });
     expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(true);
   });
 });
 
 describe("corrupt credential recovery", () => {
-  it("disconnect clears a malformed connection file without calling Telegram", async () => {
+  it("preserves a malformed connection file and reports incomplete disconnect", async () => {
     const { writeFileSync, mkdirSync } = await import("node:fs");
     const { join } = await import("node:path");
     mkdirSync(join(tmpRoot, ".repoos"), { recursive: true });
     writeFileSync(telegramConnectionPath(tmpRoot), '{"version":1,"bot":', "utf8");
     const { provider, api } = makeProvider(tmpRoot, {});
     const store = new AuthStore(tmpRoot);
-    const result = await provider.disconnect({
-      actorEmail: "admin@test.com",
-      authStore: store,
-      instanceId: instanceIdentity(tmpRoot),
-    });
-    expect(result.complete).toBe(false);
-    expect(result.warning).toMatch(/BotFather/i);
-    expect(result.revocationConfirmed).toBe(false);
-    expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(false);
+    await expect(
+      provider.disconnect({
+        actorEmail: "admin@test.com",
+        authStore: store,
+        instanceId: instanceIdentity(tmpRoot),
+      }),
+    ).rejects.toMatchObject({ phase: "revoke", retryable: true });
+    expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(true);
     expect(api.calls).toHaveLength(0);
   });
 
