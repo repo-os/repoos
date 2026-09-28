@@ -49,6 +49,8 @@ export interface StatusResult {
   state: ProvisioningState;
   deepLink: string;
   expiresAt: string;
+  /** Present only while the code is still unconsumed (`pending`). */
+  linkCode?: string;
   bot?: RequestRow["bot"];
   error?: string;
 }
@@ -147,6 +149,7 @@ export class ProvisioningService {
       state: row.state === "redeeming" ? "ready" : row.state, // "redeeming" is an internal-only state
       deepLink: row.deepLink,
       expiresAt: row.expiresAt,
+      ...(row.state === "pending" && row.linkCode ? { linkCode: row.linkCode } : {}),
       ...(row.bot ? { bot: row.bot } : {}),
       ...(row.error ? { error: row.error } : {}),
     };

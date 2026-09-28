@@ -12,7 +12,8 @@
  *   POST {base}/v1/provisioning/requests/{id}/redeem  → redeem the credential
  *
  * Contract rules (documented at length in docs/telegram-adapter.md):
- *  - `begin` returns an id, a deep link (the admin opens it in Telegram), and
+ *  - `begin` returns an id, a deep link (the admin opens it in Telegram), a
+ *    one-time `linkCode` (send `/link <code>` to the manager bot first), and
  *    an expiry. The service binds the request to this repository + instance +
  *    the initiating admin; correlation is a service-side decision and is never
  *    inferred from a username or callback URL here.
@@ -80,6 +81,8 @@ interface ServiceRequestResponse {
   state?: unknown;
   deep_link?: unknown;
   deepLink?: unknown;
+  link_code?: unknown;
+  linkCode?: unknown;
   expires_at?: unknown;
   expiresAt?: unknown;
   bot?: {
@@ -198,7 +201,7 @@ class HttpProvisioningClient implements ManagedProvisioningClient {
 
   async begin(
     input: ProvisioningBeginInput,
-  ): Promise<{ id: string; deepLink: string; expiresAt: string }> {
+  ): Promise<{ id: string; deepLink: string; expiresAt: string; linkCode: string }> {
     const payload = await this.request("POST", "/v1/provisioning/requests", {
       repository: input.repository,
       instance: { id: input.instanceId },
@@ -209,6 +212,7 @@ class HttpProvisioningClient implements ManagedProvisioningClient {
       id: requireString(payload.id, "request id"),
       deepLink: requireString(payload.deep_link ?? payload.deepLink, "deep link"),
       expiresAt: requireString(payload.expires_at ?? payload.expiresAt, "expiry"),
+      linkCode: requireString(payload.link_code ?? payload.linkCode, "link code"),
     };
   }
 
@@ -223,11 +227,13 @@ class HttpProvisioningClient implements ManagedProvisioningClient {
         `managed provisioning service returned an unknown request state (${String(payload.state)})`,
       );
     }
+    const linkCodeRaw = payload.link_code ?? payload.linkCode;
     const view: ProvisioningRequestView = {
       id: requireString(payload.id, "request id"),
       state: state,
       deepLink: requireString(payload.deep_link ?? payload.deepLink, "deep link"),
       expiresAt: requireString(payload.expires_at ?? payload.expiresAt, "expiry"),
+      ...(typeof linkCodeRaw === "string" && linkCodeRaw ? { linkCode: linkCodeRaw } : {}),
       ...(typeof payload.error === "string" ? { error: this.redact(payload.error) } : {}),
     };
     const bot = await requireServiceBot(payload);
@@ -299,7 +305,7 @@ class UnconfiguredProvisioningClient implements ManagedProvisioningClient {
     throw new ManagedProvisioningNotConfiguredError(PROVISIONING_NOT_CONFIGURED_MESSAGE);
   }
 
-  async begin(): Promise<{ id: string; deepLink: string; expiresAt: string }> {
+  async begin(): Promise<{ id: string; deepLink: string; expiresAt: string; linkCode: string }> {
     this.fail();
   }
 

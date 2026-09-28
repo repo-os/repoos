@@ -354,11 +354,16 @@ export class PgProvisioningStore implements ProvisioningStore {
     const dedup = await this.pool.query(`DELETE FROM telegram_update_dedup WHERE seen_at < $1`, [
       new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
     ]);
+    const rateLimits = await this.pool.query(
+      `DELETE FROM rate_limit_counters WHERE window_start < $1`,
+      [new Date(now.getTime() - 24 * 60 * 60 * 1000)],
+    );
     return (
       (expired.rowCount ?? 0) +
       (reclaimed.rowCount ?? 0) +
       (purged.rowCount ?? 0) +
-      (dedup.rowCount ?? 0)
+      (dedup.rowCount ?? 0) +
+      (rateLimits.rowCount ?? 0)
     );
   }
 }

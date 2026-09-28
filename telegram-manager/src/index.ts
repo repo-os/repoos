@@ -18,14 +18,28 @@ async function buildApp() {
   const config = loadConfig();
   const pool = new Pool({ connectionString: config.databaseUrl });
   const store = new PgProvisioningStore(pool);
-  const telegram = createTelegramManagerClient(config.managerBotToken, config.telegramApiBase);
+  const telegram = createTelegramManagerClient(
+    config.managerBotToken,
+    config.telegramApiBase,
+    fetch,
+    config.telegramApiTimeoutMs,
+  );
   return createApp({ config, store, telegram });
+}
+
+async function getApp() {
+  if (!appPromise) {
+    appPromise = buildApp().catch((err) => {
+      appPromise = null;
+      throw err;
+    });
+  }
+  return appPromise;
 }
 
 export default {
   async fetch(request: Request): Promise<Response> {
-    if (!appPromise) appPromise = buildApp();
-    const app = await appPromise;
+    const app = await getApp();
     return app.fetch(request);
   },
 };

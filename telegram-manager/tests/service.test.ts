@@ -16,6 +16,7 @@ function makeConfig(): ManagerConfig {
     instanceAuthKeys: [INSTANCE_AUTH_KEY],
     encryptionKey: "0".repeat(64), // 32 bytes hex
     telegramApiBase: "https://api.telegram.org",
+    telegramApiTimeoutMs: 30_000,
   };
 }
 
@@ -262,6 +263,50 @@ describe("provisioning state machine", () => {
     expect(status.state).toBe("ready");
     const redeemed = await restarted.redeem(begin.id, authKeyHash());
     expect(redeemed.token).toBe("token-for-777");
+  });
+
+  it("refuses getStatus/redeem when a different keyring key is presented", async () => {
+    const nowRef = { value: new Date("2026-09-28T00:00:00Z") };
+    const store = new InMemoryProvisioningStore();
+    const telegram = new FakeTelegramManagerClient();
+    const config = {
+      ...makeConfig(),
+      instanceAuthKeys: ["key-a", "key-b"],
+    };
+    const service = new ProvisioningService(
+      store,
+      telegram,
+      config,
+      config.managerBotUsername,
+      () => nowRef.value,
+    );
+    const begin = await service.begin(
+      "inst-a",
+      {
+        repository: "acme/widgets",
+        instance: { id: "inst-a" },
+        requestedBy: "admin@acme.test",
+      },
+      hashAuthKey("key-a"),
+    );
+    await expect(service.getStatus(begin.id, hashAuthKey("key-b"))).rejects.toMatchObject({
+      kind: "not_found",
+    });
+  });
+
+  it("rotates the project bot token after redemption", async () => {
+    const nowRef = { value: new Date("2026-09-28T00:00:00Z") };
+    const { service, telegram } = setup(nowRef);
+    const begin = await driveToReady(service, telegram, {
+      instanceId: "inst-a",
+      repository: "acme/widgets",
+      adminEmail: "admin@acme.test",
+      telegramUserId: 42,
+      botId: 777,
+    });
+    await service.redeem(begin.id, authKeyHash());
+    const rotated = await service.rotateToken(begin.id, authKeyHash());
+    expect(rotated.token).toBe("token-for-777-rotated");
   });
 
   it("rate-limits repeated begin calls from one instance", async () => {

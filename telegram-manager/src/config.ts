@@ -30,6 +30,8 @@ export interface ManagerConfig {
   encryptionKey: string;
   /** Telegram Bot API base, overridable in tests. */
   telegramApiBase: string;
+  /** Outbound Telegram Bot API call timeout (ms). */
+  telegramApiTimeoutMs: number;
 }
 
 function requireEnv(name: string): string {
@@ -52,7 +54,14 @@ export function loadConfig(): ManagerConfig {
     instanceAuthKeys: parseInstanceAuthKeys(requireEnv("TELEGRAM_MANAGER_INSTANCE_AUTH_KEY")),
     encryptionKey: requireEnv("TELEGRAM_MANAGER_ENCRYPTION_KEY"),
     telegramApiBase: process.env.TELEGRAM_API_BASE?.trim() || "https://api.telegram.org",
+    telegramApiTimeoutMs: parsePositiveInt(process.env.TELEGRAM_API_TIMEOUT_MS, 30_000),
   };
+}
+
+function parsePositiveInt(raw: string | undefined, fallback: number): number {
+  if (!raw?.trim()) return fallback;
+  const n = Number.parseInt(raw.trim(), 10);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
 /** `TELEGRAM_MANAGER_INSTANCE_AUTH_KEY` may be a single shared key or a
