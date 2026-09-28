@@ -41,6 +41,7 @@ import {
 } from "./config.js";
 import { checkBuildForRoot, readBuildMeta } from "./build.js";
 import { resolveCheckPlan, type CheckPlan } from "./check-plan.js";
+import { resolveRemoteHosts } from "./remote-hosts.js";
 import { detectRepoMarkers, hasBinary } from "./check-runner.js";
 import { detectAgents, type DetectedAgent } from "./detect.js";
 import { isBun } from "./runtime.js";
@@ -326,8 +327,10 @@ export function summarizeConfigShape(
     },
     remoteValidation: {
       enabled: Boolean(config.remoteValidation?.enabled),
+      provider: config.remoteValidation?.provider ?? "hetzner",
       fallbackToLocal: Boolean(config.remoteValidation?.fallbackToLocal),
       maxConcurrent: config.remoteValidation?.maxConcurrent ?? 1,
+      hosts: resolveRemoteHosts(config.remoteValidation).map((h) => h.host),
     },
     modelProviders: {
       openrouterConfigured: Boolean(config.modelProviders?.openrouterApiKey),

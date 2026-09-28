@@ -1,10 +1,14 @@
 # Remote Validation Runner
 
-Written 2026-08-28. Updated 2026-09-22 to add the Tailscale provider.
+Written 2026-08-28. Updated 2026-09-22 to add the Tailscale provider, and
+2026-09-27 to pool multiple Tailscale hosts (#0521).
 Runs the expensive half of the close-out gate on a remote machine instead of
 the developer's machine. Two providers are supported: **hetzner** (disposable
-cloud VM, the original) and **tailscale** (persistent machine on your tailnet,
-runs the gate in a fresh Docker container).
+cloud VM, the original) and **tailscale** (one or more persistent machines on
+your tailnet). A tailscale host runs the gate one of two ways, set per host
+(default: Docker — see "Docker vs. native" below): in a fresh Docker
+container (Linux or macOS via Docker Desktop), or, on macOS only, natively
+with no Docker at all. Both are real, maintained setup paths.
 
 ## Why
 
@@ -92,7 +96,12 @@ validation). When **false** (default), an unreachable runner fails **retryably**
 on handoff (the server may auto-resume the engineer) and fails `repoos check`
 with a non-zero exit. A **red** remote gate (build/test failed on the runner) is
 **non-retryable** — fix the branch and re-run. When **fallbackToLocal** is true,
-the full local test suite runs instead.
+the full local test suite runs instead. A **routing/config failure** (no host
+provides a capability the plan's `runsOn` requires) is also non-retryable, but
+its detail is `remote validation cannot run: …` pointing at the host
+configuration — and it never falls back locally even when `fallbackToLocal` is
+true, because running the job on the wrong machine is exactly the outcome
+capability routing exists to prevent.
 
 ### Result handling
 
@@ -102,6 +111,7 @@ the full local test suite runs instead.
 | --- | --- | --- | --- |
 | remote gate green | `true` | — | run local guards with `REPOOS_SKIP_TESTS=1`, then publish |
 | remote gate red (build/test failed) | `false` | `false` | **non-retryable** fail — fix in the feature branch and resubmit |
+| no host provides a required capability (`configError`) | `false` | `false` | **non-retryable** fail — `remote validation cannot run…`; fix the `remoteValidation` host config, never a local fallback |
 | runner unreachable / provisioning failed / ssh dropped / timed out | `false` | `true` | **retryable** fail (close-out: task stays in `review`; pre-review handoff: may auto-resume the engineer) — unless `remoteValidation.fallbackToLocal`, then run the full gate locally |
 
 ## VM lifecycle
@@ -140,11 +150,53 @@ the full local test suite runs instead.
 [remoteValidation]
 enabled = true
 provider = "tailscale"
-tailscaleHost = "mybox.tail1234.ts.net"   # or 100.x.x.x
-tailscaleUser = "root"                     # default "root"
-containerImage = "repoos-ci"               # default "repoos-ci"
+tailscaleHost = "mybox.tail1234.ts.net"   # single-host shorthand (or 100.x.x.x)
+tailscaleUser = "root"                     # default SSH user (per-host user wins)
+containerImage = "repoos-ci"               # Linux hosts' Docker image
 fallbackToLocal = false
+maxConcurrent = 1                          # global per-host limit (see below)
 ```
+
+The host pool (#0521) — every machine jobs may be dispatched to — can be
+written two ways. **Pick one per host**; showing both together for the same
+host in one example, as an earlier version of this doc did, is not valid
+standard TOML (you cannot define a key as both a plain value and
+`[[table-array]]` blocks) even though RepoOS's own tolerant parser accepts
+it — the two forms below are separately valid files, not one combined file:
+
+**Plain list** — hosts with no per-host attrs to set. Also editable in
+Settings → Remote validation ("Host pool"). Saving the list updates the
+running dispatcher immediately (no restart); in-flight jobs on a removed
+host finish there, and new jobs use the saved pool.
+
+```toml
+[remoteValidation]
+tailscaleHosts = ["bee", "mac1"]
+```
+
+**Rich rows** — one `[[remoteValidation.tailscaleHosts]]` block per host that
+needs its own settings (a host may still appear in the plain list too, for
+others with no attrs — the two merge, just never redefine the *same* host in
+both):
+
+```toml
+[[remoteValidation.tailscaleHosts]]
+host = "mac1"
+user = "nick"          # SSH user for this host (default tailscaleUser, else root)
+os = "macos"           # capability: jobs with runsOn = ["macos"] land here
+runner = "docker"      # HOW this host runs validate.sh: "docker" (default) or
+                        # "native" — see "Docker vs. native" below. Optional;
+                        # omit for the default (docker).
+labels = ["apple-silicon"]  # extra capabilities jobs can require
+maxConcurrent = 2      # this host's own in-flight cap (default maxConcurrent, else 1)
+```
+
+`user`/`os`/`labels`/`maxConcurrent`/`runner` are TOML-only — there is no
+Settings UI for per-host rows (only the plain host-name list is editable
+there). This is a deliberate exception to the "every feature setting needs a
+Settings control" rule (AGENTS.md, Conventions): per-host attrs are advanced,
+infrequently-changed configuration where a dedicated UI would add real
+complexity for little benefit over editing the row directly.
 
 `.env`:
 
@@ -152,29 +204,203 @@ fallbackToLocal = false
 REPOOS_REMOTE_SSH_KEY=/abs/path/to/private_key
 ```
 
-The key must be authorised on the tailscale host (in `~/.ssh/authorized_keys`
-for `tailscaleUser`). No Hetzner token is needed.
+The key must be authorised on every tailscale host (in `~/.ssh/authorized_keys`
+for that host's user). No Hetzner token is needed.
 
-**One-time setup on the tailnet host:** install Docker (or Podman aliased as
-`docker`), pull the `repoos-ci` image, and create the bun-cache volume:
+### Docker vs. native — both are real, maintained options
+
+A host runs `validate.sh` one of two ways, set per-host via `runner` (default
+`"docker"` when omitted — this is the field that decides it, NOT `os`, which
+is a separate, purely capability-routing concept: `os` says what platform a
+host provides for `runsOn` matching; `runner` says how that host actually
+executes the gate, and either runner satisfies the same `os` capability
+since the result is identical either way):
+
+- **`runner = "docker"` (default).** Linux or macOS, in a fresh `repoos-ci`
+  container. Requires Docker (Docker Desktop on macOS).
+- **`runner = "native"` (macOS only today).** No Docker: `bun install` +
+  `bun run build` + `bun run test` directly on the host.
+
+**One-time setup per host.** The `just` recipes are the maintained path for
+both:
 
 ```sh
-docker pull repoos-ci
-docker volume create repoos-bun-cache   # or mkdir -p /var/cache/repoos/bun
+just setup-bee                          # Linux (Arch), Docker
+just setup-thinkpad                     # Linux (Arch), Docker
+just setup-mini                         # macOS, Docker (Docker Desktop)
+just setup-mini-native                  # macOS, native — no Docker
+just _setup-runner <host> <arch|macos>         # any other Docker host
+just _setup-runner-native <host>               # any other native macOS host
 ```
 
-Runs are limited by `remoteValidation.maxConcurrent` (default **1**, Settings →
-Remote validation). The limit is a FIFO queue inside the server's single runner
-instance, so **every server-side caller shares it** — engineer handoff,
-close-out and release. A run that has to wait logs `[queued behind N other remote
-run(s) …]` in its remote-validation log and starts when a slot frees. Why one:
-two full suites on one machine cause load-induced timeouts and timing-sensitive
-test failures, and a remote failure is reported as a red gate ("fix it in the
-branch"), so contention would blame a branch that is fine. Raise it only for a
-host with headroom. A standalone `repoos check` is its own process and is **not**
-counted against the server's queue; multiple hosts are a separate problem (#0521).
-Waiting counts against the caller's own deadline (handoff has 10 minutes), so a
-long queue can time a handoff out.
+Each installs the matching `validate.sh` at `/opt/repoos/validate.sh` on the
+host. **Set `runner` on that host's config row to match what you installed**
+— the per-host prerequisite probe (below) checks the toolchain `runner` says
+to expect, so a mismatch (e.g. a native install left at the default
+`runner = "docker"`) reports the host unhealthy even though it works.
+
+Two prior versions of the probe got this wrong in opposite directions by
+branching on `os` instead of a dedicated `runner` field (#0521 review, twice
+over): checking bun/git unconditionally on macOS (fails a real
+Docker-provisioned macOS host) and checking Docker unconditionally
+everywhere (fails a real native macOS host). `runner` is what fixes this —
+it says explicitly which toolchain a given host uses, independent of its
+platform.
+
+The scripts on hosts are **copies**: after updating RepoOS re-run the setup
+above, otherwise an old `validate.sh` ignores the third (artifacts) argument —
+the per-host prerequisite check below reports exactly that.
+
+#### Dispatch, health and queueing (#0521)
+
+Each job goes to an **idle host that satisfies its requirements**; it queues
+only when *every* eligible host is at its per-host limit, in FIFO order, and a
+macOS-only waiter never blocks a Linux job. Limits are per host
+(`maxConcurrent` per host → `remoteValidation.maxConcurrent` → 1), so two jobs
+run on two hosts while a third waits. A run that has to wait logs
+`[queued behind N other remote run(s) …]` in its remote-validation log and in
+the caller's output, and the log records which host ran each job
+(`[runner user@host (os)]`).
+
+Before a host's first job it is probed over SSH: reachability, the toolchain
+its `runner` says to expect — Docker, the configured `containerImage`
+actually present (not just the daemon reachable — a daemon up with the
+image never built/pulled used to report healthy, then fail every job it
+got, #0521 review), or bun/git for a native host — see "Docker vs. native"
+above — **the bun cache is actually writable by whoever will write to it**
+(native: a plain host-path write-then-remove, since bun runs as the SSH
+user directly; Docker: the exact sequence `validate.sh` runs against the
+named `repoos-bun-cache` volume — chown it to the container's uid as root,
+then write as that uid — proved live against a real macOS/Colima host
+rather than approximated, after two earlier, narrower versions of this
+check both turned out insufficient in successive review rounds: first it
+tested only the SSH user's own — trivially true — access to a *host
+directory*; second it added a host-side `chmod`, which is invisible to the
+container on macOS/Colima, whose bind-mount view maps a host directory to
+root:root 0755 inside the VM regardless of the real host-side permissions.
+A named volume sidesteps that host-filesystem-mapping problem entirely) —
+and an **up-to-date `validate.sh` that accepts the artifacts dir as
+its third argument**. A host that fails is reported instead
+of failing jobs — its state and reason show in Settings → Remote validation
+(Hosts) and in `GET /api/remote-validation/status` (`hosts[]` with `probed`,
+`healthy`, `detail`, `inFlight`, `queued` — each waiting run counted against the
+one host it would run on next, so the column totals sum to the real queue
+length — and `lastRun`) — it is skipped while
+other hosts are healthy, and re-probed later (30 s cooldown, capped at 10
+retries) so it rejoins the pool when it comes back. Once a host hits that cap
+its retries stop; a queued run whose eligible hosts have **all** hit it is
+cancelled and fails retryably rather than waiting forever (close-out and
+release pass no deadline of their own). A run whose every eligible host is
+unusable fails retryably with each host's reason.
+
+#### Capability routing (`runsOn`)
+
+A `[[check.steps]]` row can declare `runsOn = ["macos"]` (any capability
+string; a host provides its `os` plus its `labels`, case-insensitive). The
+job's requirement is the union of `runsOn` across only the plan's `build`-
+and `tests`-kind steps — NOT every step. The remote host never runs the
+check plan step-by-step; `validate.sh` runs the fixed sequence
+`bun install && bun run build && bun run test`, which is exactly the work
+those two kinds represent. A step of any other kind (or a raw custom
+`command` step), even one declaring its own `runsOn`, always runs locally as
+part of `repoos check` regardless — so its capability requirement must not
+constrain which remote host the job needs (a prior version unioned every
+step's `runsOn` here; that was a real bug, not just conservative — a project
+with a macOS-only *local* gate and only Linux remote hosts would
+config-error its entire remote build+test over a capability the remote
+portion never used, #0521 review). Deliberately still not profile- or
+changed-path-filtered even within build/tests, because host selection
+happens once, up front, before any per-step filtering runs. A job whose
+requirement no host provides **never** runs in the wrong place: it
+fails immediately with `no remote host provides …` naming the configured
+hosts, or waits (with the capability in its queue line) while a capable host is
+busy. That failure is **non-retryable and never falls back locally** — it is a
+configuration problem, so with `remoteValidation.fallbackToLocal = true` a
+transient classification would otherwise silently run macOS-bound work on the
+wrong machine; the gate reports it as `remote validation cannot run: …` and
+points at this config instead. (An *unreachable* eligible host is different:
+that stays transient and retryable.) The Hetzner runner is always one Linux VM
+of a fixed, known type, so it implicitly satisfies a `"linux"` requirement
+without needing to declare it — a Tailscale host does not get the same
+free pass: its `os` reflects a real, arbitrary machine you configured, not
+a guaranteed-Linux VM, so a `runsOn: ["linux"]` job only routes to a
+Tailscale host that explicitly sets `os = "linux"` (#0521 review — this
+asymmetry is intentional, not a bug: assuming an unlabeled Tailscale host is
+Linux would be a guess this file can't verify). Today nothing declares
+`runsOn` — native Swift/Xcode steps don't exist in the gate yet; keep them
+local until they do.
+
+#### Cross-process limit (the host lock)
+
+The per-host cap above lives in one server process. A standalone `repoos check`
+is another process, so the remote command itself is wrapped in a portable
+`mkdir`-based slot lock on the host (`~/.repoos-validate-locks/<slot>`, under
+the remote user's home like every other repoos scratch path — never
+`/tmp`/`/var/tmp`, per the #0528/#0544 runner-scratch fixes — `hostLockShell`
+in `src/server/remote-validation.ts`) with the same slot count:
+server and CLI can never put more than the limit on one machine. That lock root
+is deliberately **host-global, not per-repo** — the cap exists because of
+machine load, so two different repos validated on the same host share its
+slots (one machine = one suite, whoever asked for it). **Known limit:** this
+only holds within one SSH user — living under `$HOME` means two different
+SSH users on the same host get separate `$HOME`s and therefore separate lock
+namespaces, so the shared cap doesn't actually span users (#0521 review). Not
+fixed: a genuinely shared location (`/tmp`/`/var/tmp`) would restore it but
+introduces a real permission problem instead (the sticky bit blocks one
+user's stale-lock cleanup from removing another user's slot directory). Every
+`just setup-<host>` recipe this repo ships only ever configures one SSH user
+per host, so this is a documented limit for a multi-user host pool, not
+something the maintained setup path can hit. A waiter
+streams `[lock] waiting for a free slot …` while it waits and gives up after
+its wait budget (the caller's deadline, else 15 min) with exit code 75, which
+the runner reports as a transient "another repoos check is already running"
+infra failure — never a red gate. While its suite runs, a holder **heartbeats**
+its slot dir (a `touch` every minute), so a dir untouched for 10 minutes
+provably belongs to a killed run and the next waiter breaks it — the stale
+threshold sits deliberately *inside* the 15-minute wait budget so a waiter can
+actually recover an orphan within one wait (the earlier 40-minute threshold
+exceeded that budget and left waiters timing out with the misleading "another
+repoos check is still running" message before the dir was breakable).
+
+#### Deadlines
+
+Waiting counts against the caller's own deadline: handoff passes its
+10-minute finalization deadline (`deadlineAt`), and a run still **queued** at
+that point cancels itself, releases its slot and fails retryably with
+`… the caller's deadline passed, so the run was cancelled and its slot
+released`. A run that reaches its host **after** the deadline (its dispatch won
+the race with that cancellation timer, or the deadline passed while it bundled
+and uploaded) cancels the same way instead of starting.
+
+The host lock is given the caller's deadline as an **absolute** timestamp
+(`hostLockShell`'s `deadlineAtEpochSecs`), not just a relative wait budget
+computed locally (`deadlineLockWaitSecs`, still passed too, for the
+human-readable "waiting… (up to Ns)" message and as the sole budget when
+there is no deadline at all). A purely relative budget is fixed before SSH
+even connects; the remote script has no visibility into how long that
+handshake took, so it could otherwise start well past the real deadline —
+and a `0`-second budget alone did not stop it grabbing a slot that happened
+to be free on the very first check (#0521 review). With the absolute
+deadline, the remote script self-clocks against its own `date +%s`: it
+refuses to even attempt the first acquisition once already past it, and its
+wait loop checks the same absolute value on every 5-second poll instead of
+counting elapsed sleeps from zero — both immune to however long it took to
+get there. The Hetzner runner honours `deadlineAt` the same way on its own
+in-process queue: a run still queued at the deadline is cancelled without ever
+holding a slot, and provisioning that overruns it never starts a suite. A run
+already executing is never interrupted mid-suite.
+
+#### Concurrency
+
+Runs are limited per host by `remoteValidation.maxConcurrent` (default **1**,
+Settings → Remote validation) with optional per-host overrides. The limit is a
+FIFO queue inside the server's single runner instance, so **every server-side
+caller shares it** — engineer handoff, close-out and release — and the host
+lock extends it across processes (above). Why one by default: two full suites
+on one machine cause load-induced timeouts and timing-sensitive test failures,
+and a remote failure is reported as a red gate ("fix it in the branch"), so
+contention would blame a branch that is fine. Raise it only for a host with
+headroom.
 
 Each run also gets its **own bundle and artifacts path** on the host
 (`~/.repoos-<task>-<id>.bundle`, `~/.repoos-artifacts/<task>-<id>/`, passed to
@@ -253,6 +479,7 @@ See `scripts/remote-runner/build-snapshot.md`. Rebuild whenever
 
 ## Future (not in the MVP)
 
-Abstract job/provider model, a worker pool, per-task autoscaling, and live log
-streaming into the browser SSE feed (today logs are a file + the failure tail,
-matching how the pipeline surfaces gate output).
+Abstract job/provider model (beyond the tailscale host pool), per-task
+autoscaling, Hetzner VM pooling (out of scope for #0521 by design), and live
+log streaming into the browser SSE feed (today logs are a file + the failure
+tail, matching how the pipeline surfaces gate output).

@@ -391,6 +391,10 @@ async function runHandoffFinalization(
   const { workdir, isHotfix, worktreeTaskPath, worktreeTask } = resolved;
   const onProgress = opts.onProgress;
   const onStatusChange = opts.onStatusChange;
+  // Mirrors `withHandoffDeadline`'s 10-minute cap (armed moments before this
+  // body runs): a remote run still QUEUED at that point cancels itself and
+  // releases its host slot instead of orphaning it (#0521).
+  const handoffDeadlineAt = Date.now() + HANDOFF_DEADLINE_MS;
 
   if (task.status === "review" && worktreeTask.status === "review") {
     onProgress?.("done");
@@ -449,6 +453,7 @@ async function runHandoffFinalization(
         worktreePath: workdir,
         taskId: task.id,
         onChunk: checkHandle?.chunk,
+        deadlineAt: handoffDeadlineAt,
       });
       if (remoteOutcome.kind === "fail") {
         checkHandle?.done(1);

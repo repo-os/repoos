@@ -315,6 +315,65 @@ describe("RemoteValidationRunner", () => {
     await r.dispose();
   });
 
+  it("cancels a run still queued at the caller's deadline instead of outliving it (#0521 spec 5)", async () => {
+    const h = fakeHetzner();
+    const pending: Array<(r: RemoteExecResult) => void> = [];
+    const exec = fakeExec({
+      runRemote: vi.fn(
+        () =>
+          new Promise<RemoteExecResult>((resolve) => {
+            pending.push(resolve);
+          }),
+      ),
+    });
+    const r = new RemoteValidationRunner(config, undefined, {
+      hetzner: h.client,
+      exec,
+      timings: FAST,
+    });
+    const waitUntil = async (cond: () => boolean): Promise<void> => {
+      const deadline = Date.now() + 5_000;
+      while (!cond()) {
+        if (Date.now() > deadline) throw new Error("condition never became true");
+        await new Promise((res) => setTimeout(res, 10));
+      }
+    };
+
+    const first = r.validate(mkOpts("1001")); // holds the gate (limit 1)
+    await waitUntil(() => pending.length >= 1);
+    // The second run's caller gives up while it waits for the slot.
+    const summary = await r.validate({ ...mkOpts("1002"), deadlineAt: Date.now() + 300 });
+    expect(summary.ok).toBe(false);
+    expect(summary.transient).toBe(true);
+    expect(summary.detail).toMatch(/deadline passed/);
+
+    // The cancelled waiter left nothing behind: the first run finishes and the
+    // gate hands its slot on normally.
+    pending[0]!({ code: 0, output: "ok", timedOut: false });
+    expect((await first).ok).toBe(true);
+    const third = r.validate(mkOpts("1003"));
+    await waitUntil(() => pending.length >= 2);
+    pending[1]!({ code: 0, output: "ok", timedOut: false });
+    expect((await third).ok).toBe(true);
+    await r.dispose();
+  });
+
+  it("never starts a suite when the caller's deadline passed before dispatch (#0521 spec 5)", async () => {
+    const h = fakeHetzner();
+    const exec = fakeExec();
+    const r = new RemoteValidationRunner(config, undefined, {
+      hetzner: h.client,
+      exec,
+      timings: FAST,
+    });
+    const summary = await r.validate({ ...mkOpts(), deadlineAt: Date.now() - 1 });
+    expect(summary.ok).toBe(false);
+    expect(summary.transient).toBe(true);
+    expect(summary.detail).toContain("deadline passed");
+    expect(exec.runRemote).not.toHaveBeenCalled(); // never entered the run
+    await r.dispose();
+  });
+
   it("reconcile() deletes every labelled runner VM", async () => {
     const h = fakeHetzner();
     // Pretend two runners leaked from an earlier crash.

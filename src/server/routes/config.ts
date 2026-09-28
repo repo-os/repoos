@@ -11,11 +11,14 @@ import {
   getConfigSchema,
   patchTomlConfig,
   loadConfig,
+  parseFlatToml,
   sanitizeBuiltInAgents,
   saveBuiltInAgentsConfig,
   resolveColumnLabels,
 } from "../../core/config.js";
+import { resolveRemoteHosts } from "../../core/remote-hosts.js";
 import { formatTomlError, validateToml } from "../../core/toml-validate.js";
+import { stripTomlComment } from "../../core/toml-line.js";
 import { readTunnelConfig, writeTunnelConfig } from "../../core/tunnel.js";
 import { listSkills } from "./helpers.js";
 
@@ -90,6 +93,11 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
   const { config, repoos, index } = ctx;
   const body = (await readBody(req)) as Record<string, unknown>;
   const patch: Record<string, unknown> = {};
+  // Host-pool [[…]] rows to rewrite alongside a flat `tailscaleHosts` patch
+  // (#0521) — written with a second, table-array patch of the same key.
+  let patchRows: Record<string, unknown>[] | undefined;
+  /** Set when a pool edit removed every row host: the blocks get deleted. */
+  let dropRows = false;
 
   if (body.agents !== undefined) {
     if (!Array.isArray(body.agents)) {
@@ -282,6 +290,14 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
         if (trimmed) patch[field.key] = trimmed;
         continue;
       }
+      if (field.key === "remoteValidation.tailscaleHost") {
+        // Optional by design (a pool-only config sets no shorthand, and most
+        // repos set none at all): empty means "leave it as-is", so one empty
+        // field can't reject an entire Settings save with a 400.
+        const trimmed = typeof val === "string" ? val.trim() : "";
+        if (trimmed) patch[field.key] = trimmed;
+        continue;
+      }
       if (typeof val !== "string" || (!val.toString().trim() && field.key !== "ntfyTopic")) {
         return json(res, 400, { error: `${field.label} must be a non-empty string` });
       }
@@ -309,6 +325,78 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
           ? Number(val)
           : val;
     } else if (field.type === "array") {
+      if (
+        field.key === "remoteValidation.tailscaleHosts" &&
+        (Array.isArray(val) || typeof val === "string")
+      ) {
+        // The host pool (#0521) round-trips through the Settings form as host
+        // names (a comma-separated string is tolerated for hand callers). An
+        // empty list means "nothing to change" (the file may still carry the
+        // tailscaleHost shorthand or [[…]] rows), and a list that matches what
+        // config already resolves to is a no-op — never materialise the folded
+        // shorthand into a written key.
+        const list = (Array.isArray(val) ? val : String(val).split(",")).map((s) =>
+          typeof s === "string" ? s.trim() : "",
+        );
+        if (list.some((s) => !s)) {
+          return json(res, 400, { error: `${field.label} entries must be non-empty strings` });
+        }
+        if (list.length === 0) continue;
+        const onDisk = loadConfig(config.root);
+        const current = resolveRemoteHosts(onDisk.remoteValidation).map((h) => h.host);
+        const unchanged = current.length === list.length && current.every((h, i) => h === list[i]);
+        if (unchanged) continue;
+        // Rewrite the [[…]] rows too: keep a surviving host's per-host attrs
+        // (user/os/labels/maxConcurrent), drop rows for hosts the user removed
+        // — otherwise a row would silently re-add a deleted host on reload.
+        const rows = (
+          (parseFlatToml(readRawToml(config.root))[
+            "remoteValidation.tailscaleHosts"
+          ] as unknown[]) ?? []
+        ).filter(
+          (r): r is Record<string, unknown> =>
+            typeof r === "object" && r !== null && !Array.isArray(r),
+        );
+        // Map every host in the new `list` (order preserved) to its existing
+        // row when there is one — carrying its attrs forward — or a fresh
+        // bare `{ host }` when there isn't (just added, or no rows existed
+        // at all). Filtering existing rows down to `list` alone would
+        // silently drop a newly-added host once the flat-array write is
+        // skipped below for a rows-based pool.
+        const rowByHost = new Map(
+          rows
+            .filter((r) => typeof r.host === "string")
+            .map((r) => [(r.host as string).trim(), r] as const),
+        );
+        const mappedRows = list.map((h) => rowByHost.get(h) ?? { host: h });
+        // Only keep the pool in [[…]] row form when at least one entry
+        // actually carries an attr beyond `host` — otherwise every host is
+        // now a bare name and the clean flat-array form is strictly better
+        // (no per-host attrs to lose). A pool that used to need rows but no
+        // longer does collapses back to flat and the stale [[…]] blocks are
+        // dropped, not left behind as bogus attr-less rows.
+        const needsRowForm = mappedRows.some((r) => Object.keys(r).length > 1);
+        if (needsRowForm) {
+          // Also writing patch[field.key] here would additionally emit a
+          // flat `tailscaleHosts = [...]` line for the same key: two writes,
+          // two TOML forms, one key — patchTomlConfig applies both in
+          // sequence and the file ends up with duplicate keys (#0521 review).
+          patchRows = mappedRows;
+        } else {
+          patch[field.key] = list;
+          if (rows.length) dropRows = true;
+        }
+        // A removed shorthand host would otherwise be re-added by its own
+        // line: repoint `tailscaleHost` at the first surviving host (parse
+        // folds it back in). Absent shorthand is left absent — no key is
+        // invented. Independent of the rows/flat choice above — shorthand is
+        // its own key either way.
+        const shorthand = onDisk.remoteValidation?.tailscaleHost;
+        if (shorthand && !list.includes(shorthand)) {
+          patch["remoteValidation.tailscaleHost"] = list[0]!;
+        }
+        continue;
+      }
       if (!Array.isArray(val) || !val.length) {
         return json(res, 400, { error: `${field.label} must be a non-empty array` });
       }
@@ -347,6 +435,16 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
   if (Object.keys(patch).length > 0) {
     patchTomlConfig(join(config.root, "repoos.toml"), patch);
   }
+  if (dropRows) {
+    dropTomlTableArray(join(config.root, "repoos.toml"), "remoteValidation.tailscaleHosts");
+  }
+  if (patchRows?.length) {
+    // Second pass: replace the [[remoteValidation.tailscaleHosts]] blocks with
+    // the surviving rows (same key, table-array form — see patchTomlConfig).
+    patchTomlConfig(join(config.root, "repoos.toml"), {
+      "remoteValidation.tailscaleHosts": patchRows,
+    });
+  }
   if (tunnelEnabled !== undefined) {
     const tunnel = readTunnelConfig(config.root);
     tunnel.enabled = tunnelEnabled;
@@ -354,6 +452,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
   }
 
   Object.assign(repoos.config, loadConfig(config.root));
+  ctx.remoteValidator?.applyConfig?.();
 
   if (patch.workDir || patch.cacheDir || patch.taskExtensions) {
     index.refreshAll();
@@ -365,6 +464,42 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
 /** Content hash used to detect concurrent edits to repoos.toml. */
 function hashConfigContent(content: string): string {
   return createHash("sha256").update(content, "utf8").digest("hex");
+}
+
+/**
+ * Remove every `[[key]]` block (header plus its lines, up to the next header)
+ * from repoos.toml. Used when a host-pool edit drops the last
+ * `[[remoteValidation.tailscaleHosts]]` row (#0521) — `patchTomlConfig` can
+ * replace a table array it is given, but an empty array would serialise as a
+ * bogus `key = []` line instead of removing the blocks.
+ */
+function dropTomlTableArray(tomlPath: string, key: string): void {
+  if (!existsSync(tomlPath)) return;
+  const lines = readFileSync(tomlPath, "utf8").replace(/\r\n/g, "\n").split("\n");
+  const kept: string[] = [];
+  let removed = false;
+  let i = 0;
+  while (i < lines.length) {
+    if (stripTomlComment(lines[i] ?? "").trim() === `[[${key}]]`) {
+      removed = true;
+      i++;
+      while (i < lines.length) {
+        if (
+          stripTomlComment(lines[i] ?? "")
+            .trim()
+            .startsWith("[")
+        )
+          break;
+        i++;
+      }
+      continue;
+    }
+    kept.push(lines[i] ?? "");
+    i++;
+  }
+  if (!removed) return;
+  while (kept.length && !kept[kept.length - 1]!.trim()) kept.pop();
+  writeFileSync(tomlPath, `${kept.join("\n")}\n`, "utf8");
 }
 
 /** Read repoos.toml, tolerating its absence (a repo may have no config file). */
@@ -424,6 +559,7 @@ export const writeRawConfig: RouteHandler = async (ctx, req, res) => {
   // in-memory config and reconcile the index (the raw file can change
   // workDir/cacheDir/taskExtensions, which a curated save would also refresh).
   Object.assign(repoos.config, loadConfig(config.root));
+  ctx.remoteValidator?.applyConfig?.();
   index.refreshAll();
 
   return json(res, 200, {

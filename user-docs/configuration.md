@@ -813,7 +813,8 @@ machine. Enabling it sends repo contents to a third-party host.
 | --- | --- | --- | --- | --- |
 | `remoteValidation.enabled` | boolean | `false` | yes | Master switch for the remote runner. |
 | `remoteValidation.provider` | string | `hetzner` | yes | Runner backend: `hetzner` (disposable cloud VM) or `tailscale` (persistent tailnet machine). |
-| `remoteValidation.tailscaleHost` | string | unset | yes | Tailscale hostname or 100.x.x.x IP of the runner machine (Tailscale provider only). |
+| `remoteValidation.tailscaleHost` | string | unset | yes | Tailscale hostname or 100.x.x.x IP of the runner machine — single-host shorthand for the pool (Tailscale provider only). |
+| `remoteValidation.tailscaleHosts` | array | unset | yes | Tailnet host pool (#0521): jobs dispatch to an idle host from this list and queue only when every eligible host is at its per-host limit. Edit as a comma-separated host list in Settings → Remote validation — a save updates the live dispatcher without restarting — or per host with `[[remoteValidation.tailscaleHosts]]` rows in `repoos.toml` (`host`, plus optional `user`, `os`, `labels`, `maxConcurrent`). `remoteValidation.tailscaleHost` is folded in as a host. |
 | `remoteValidation.tailscaleUser` | string | `root` | yes | SSH user on the tailscale host (Tailscale provider only). |
 | `remoteValidation.containerImage` | string | `repoos-ci` | yes | Docker image to run the gate in (Tailscale provider only). |
 | `remoteValidation.serverType` | string | `cax31` | yes | Hetzner server type. Must match the architecture the snapshot was built on. |
@@ -822,7 +823,7 @@ machine. Enabling it sends repo contents to a third-party host.
 | `remoteValidation.sshKeyName` | string | unset | yes | Name of the SSH key registered in the Hetzner project. |
 | `remoteValidation.idleShutdownMinutes` | number | `8` | yes | How long a warm server stays alive after a job so queued jobs reuse it. |
 | `remoteValidation.maxServerLifetimeMinutes` | number | `120` | yes | Hard cost stop-loss: any runner older than this is force-deleted. Minimum `10`. |
-| `remoteValidation.maxConcurrent` | select (1–8) | `1` | yes | How many remote validation runs may execute at once; extra runs wait in a queue. Two full test suites on one machine cause load-induced timeouts that show up as a failed gate. Covers handoff, close-out and release in the server; a standalone `repoos check` is its own process. |
+| `remoteValidation.maxConcurrent` | select (1–8) | `1` | yes | How many remote validation runs may execute at once **per host**; extra runs wait in a FIFO queue. Two full test suites on one machine cause load-induced timeouts that show up as a failed gate. Covers handoff, close-out and release in the server; a host-side lock extends the same limit to standalone `repoos check` runs. |
 | `remoteValidation.fallbackToLocal` | boolean | `false` | yes | When the runner is unreachable, run the full gate locally instead of keeping the task in review for retry. |
 | `remoteValidation.useForReleases` | boolean | `false` | yes | Also validate release cuts on the runner. Off by default because a release is watched live. |
 The `HETZNER_API_TOKEN` and `REPOOS_REMOTE_SSH_KEY` credentials are

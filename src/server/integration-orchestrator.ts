@@ -1424,7 +1424,10 @@ export class CloseOutOrchestrator {
       // cheap static guards + UI smoke (REPOOS_SKIP_TESTS=1). On a transient infra
       // failure the job fails RETRYABLY (resumes from this phase) unless
       // `remoteValidation.fallbackToLocal` is set; a real remote test failure is
-      // non-retryable — fix it in the feature branch and resubmit.
+      // non-retryable — fix it in the feature branch and resubmit; and a
+      // config/routing failure (no host provides a required capability) is
+      // non-retryable too, but its detail names the config to fix and it never
+      // falls back locally (#0521).
       let remoteGateOutcome: Awaited<ReturnType<typeof runRemotePreReviewGate>> = {
         kind: "skip",
       };
