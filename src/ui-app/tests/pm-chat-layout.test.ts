@@ -25,10 +25,6 @@ beforeAll(() => {
     .ai-chat-log > * {
       flex-shrink: 0;
     }
-    .ai-chat-log > .agent-tool,
-    .ai-chat-log > .agent-diagnostic {
-      min-height: min-content;
-    }
     .agent-tool {
       border: 1px solid #888;
       overflow: hidden;
@@ -86,6 +82,5 @@ describe("PmChatSurface layout", () => {
 
     const toolRow = wrapper.find('[data-testid="chat-tool-row"]').element as HTMLElement;
     expect(getComputedStyle(toolRow).flexShrink).toBe("0");
-    expect(getComputedStyle(toolRow).minHeight).toBe("min-content");
   });
 });

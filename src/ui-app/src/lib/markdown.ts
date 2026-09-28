@@ -110,6 +110,43 @@ export function clampMarkdownForDisplay(src: string): string {
   return out.join("\n");
 }
 
+/** Drop thematic-break lines outside fenced code — chat bubbles only (#0563). */
+export function stripThematicBreakLinesForChat(src: string): string {
+  const lines = src.replace(/\r\n?/g, "\n").split("\n");
+  const out: string[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i]!;
+    const fence = line.match(/^(`{3,}|~{3,})([\w-]*)\s*$/);
+    if (fence) {
+      const marker = fence[1]!;
+      out.push(line);
+      i++;
+      const close = new RegExp(`^${marker[0]}{${marker.length},}\\s*$`);
+      while (i < lines.length && !close.test(lines[i]!)) {
+        out.push(lines[i]!);
+        i++;
+      }
+      if (i < lines.length) {
+        out.push(lines[i]!);
+        i++;
+      }
+      continue;
+    }
+
+    if (isThematicBreakLine(line)) {
+      i++;
+      continue;
+    }
+
+    out.push(line);
+    i++;
+  }
+
+  return out.join("\n");
+}
+
 /** Prose-only clamp for plain `<span>` bubbles (human / status lines). */
 export function clampPlainDisplayText(src: string): string {
   const lines = src.replace(/\r\n?/g, "\n").split("\n");
@@ -406,7 +443,8 @@ export function renderMarkdown(src: string): string {
  * Task specs, docs, and review reports keep using `renderMarkdown`.
  */
 export function renderChatMarkdown(src: string): string {
-  const clamped = clampMarkdownForDisplay(src);
+  const stripped = stripThematicBreakLinesForChat(src);
+  const clamped = clampMarkdownForDisplay(stripped);
   if (!clamped || !clamped.replace(DISPLAY_EMPTY_RE, "")) return "";
   if (isThematicBreakOnlyText(clamped)) return "";
   return parseBlocks(clamped)
