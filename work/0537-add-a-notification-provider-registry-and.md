@@ -2,7 +2,7 @@
 id: "0537"
 title: Add a notification provider registry and the Telegram notification provider
 type: feature
-status: review
+status: done
 priority: p1
 area: server
 story: RepoOS Telegram Bot
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/add-a-notification-provider-registry-and
 created_at: "2026-09-27T07:33:00Z"
-updated_at: "2026-09-28T01:18:16Z"
+updated_at: "2026-09-28T05:15:08Z"
 ---
 ## Problem
 
@@ -50,3 +50,4 @@ Two properties of the existing code must survive the refactor:
 - 2026-09-27T15:52:44Z · body
 - 2026-09-28T01:11:51Z · status ready→active, branch
 - 2026-09-28T01:18:16Z · status active→review
+- 2026-09-28T05:15:08Z · status review→done, release:success
