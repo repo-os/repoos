@@ -15,9 +15,9 @@ branch: feat/build-the-telegram-manager-bot-provision
 cli_override: cursor
 model_override: composer-2.5
 review_cli_override: cursor
-review_model_override: default
+review_model_override: composer-2.5
 created_at: "2026-09-27T17:32:41Z"
-updated_at: "2026-09-28T07:19:22Z"
+updated_at: "2026-09-28T07:30:24Z"
 check_retry_count: 1
 last_check_failure: "[object Object]"
 review_rounds: 1
@@ -95,3 +95,4 @@ Depends on #0530 (done) and the local adapter/client contract from #0531 (still 
 - 2026-09-28T06:49:38Z · status active→review
 - 2026-09-28T07:13:17Z · needs_input
 - 2026-09-28T07:19:22Z · review_cli_override, review_model_override
+- 2026-09-28T07:30:24Z · review_model_override
