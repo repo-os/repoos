@@ -196,3 +196,21 @@ a 500-class error with an actionable message. Recovery never requires hand-
 deleting the file: `disconnect` clears it and `connect` replaces it
 wholesale, and both tolerate the unreadable record (`loadOrNull`) instead of
 failing on it.
+
+## Disconnect (#0539)
+
+`disconnect` is one ordered operation — complete or loudly incomplete:
+
+1. Stop polling, remove the webhook (confirmed via `getWebhookInfo`), then
+   revoke the bot token (managed service `POST …/bots/{id}/revoke`, else
+   `replaceManagedBotToken` or BYO `logOut`+`close`).
+2. Only after confirmed revocation: delete `.repoos/telegram-bot.json`.
+3. Revoke every `telegram_user_links` and `telegram_chat_links` row in this
+   repository's auth database (scoped by checkout — never another instance's
+   DB).
+4. Audit `telegram_integration_disconnected` with the admin's email and whether
+   revocation was confirmed.
+
+Partial failure returns HTTP 502 with `retryable: true` and leaves credentials
+and bindings untouched. `POST /api/telegram/disconnect` and
+`POST /api/auth/telegram/disconnect` share the same implementation.

@@ -1379,14 +1379,24 @@ describe("connection-record shape validation (review round 3)", () => {
   it("a corrupt record does not block reconnecting or disconnecting", async () => {
     mkdirSync(join(tmpRoot, ".repoos"), { recursive: true });
     writeFileSync(telegramConnectionPath(tmpRoot), '{"version":1,"bot":', "utf8");
-    const { provider } = makeProvider({ getMe: repoBot(), deleteWebhook: () => true });
+    const { provider } = makeProvider({
+      getMe: repoBot(),
+      deleteWebhook: () => true,
+      getWebhookInfo: () => ({ url: "" }),
+      logOut: true,
+      close: true,
+    });
     // status() reports the corruption loudly...
     expect(provider.status().lastError).toMatch(/unreadable/);
     // ...but connect replaces the state and disconnect clears it.
     const bot = await provider.connectByBotToken(TOKEN);
     expect(bot.username).toBe("repoos_project_bot");
     expect(provider.status().connected).toBe(true);
-    await provider.disconnect();
+    await provider.disconnect({
+      actorEmail: "admin@test.com",
+      authStore: null,
+      instanceId: "test-instance",
+    });
     expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(false);
   });
 });
