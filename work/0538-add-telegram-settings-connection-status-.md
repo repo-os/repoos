@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/add-telegram-settings-connection-status-
 created_at: "2026-09-27T07:33:10Z"
-updated_at: "2026-09-28T00:02:22Z"
+updated_at: "2026-09-28T00:02:26Z"
 ---
 ## Problem
 
