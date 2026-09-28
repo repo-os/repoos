@@ -424,6 +424,57 @@ describe("TailscaleRunner pool dispatch (#0521)", () => {
     ]);
   });
 
+  it("retries a newly added host whose first probe fails while work is queued", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }], healthRetryMs: 20 });
+    const originalRunRemote = vi.mocked(f.exec.runRemote).getMockImplementation()!;
+    let newHostProbes = 0;
+    vi.mocked(f.exec.runRemote).mockImplementation(async (...args) => {
+      if (args[0].ip === "b" && args[1].includes(PREREQ_OK_TOKEN) && ++newHostProbes === 1) {
+        return { code: 255, output: "ssh: temporarily unavailable", timedOut: false };
+      }
+      return originalRunRemote(...args);
+    });
+
+    const first = f.runner.validate(opts("0001"));
+    await tick();
+    const queued = f.runner.validate(opts("0002")); // no caller deadline
+    await tick();
+    expect(f.pending()).toEqual(["a"]);
+
+    f.config.remoteValidation!.tailscaleHosts = [{ host: "a" }, { host: "b" }];
+    f.runner.applyConfig();
+    await vi.waitFor(() => expect(f.pending()).toContain("b"), { timeout: 1_000 });
+    expect(newHostProbes).toBe(2);
+
+    f.release("b");
+    expect((await queued).ok).toBe(true);
+    f.release("a");
+    expect((await first).ok).toBe(true);
+  });
+
+  it("settles a deadline-free waiter when a newly added host exhausts probe retries", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }], healthRetryMs: 10 });
+    const originalRunRemote = vi.mocked(f.exec.runRemote).getMockImplementation()!;
+    vi.mocked(f.exec.runRemote).mockImplementation(async (...args) =>
+      args[0].ip === "b" && args[1].includes(PREREQ_OK_TOKEN)
+        ? { code: 255, output: "ssh: unavailable", timedOut: false }
+        : originalRunRemote(...args),
+    );
+
+    const first = f.runner.validate(opts("0001"));
+    await tick();
+    const queued = f.runner.validate(opts("0002")); // no caller deadline
+    await tick();
+    f.config.remoteValidation!.tailscaleHosts = [{ host: "b" }];
+    f.runner.applyConfig(); // a stays busy but is no longer eligible for queued work
+
+    const summary = await queued;
+    expect(summary).toMatchObject({ ok: false, transient: true });
+    expect(summary.detail).toContain("gave up after 10 failed probes");
+    f.release("a");
+    expect((await first).ok).toBe(true);
+  }, 5_000);
+
   it("reprobes healthy hosts when the configured container image changes (#0521 review)", async () => {
     const f = poolFixture({ hosts: [{ host: "a" }], containerImage: "repoos-ci:v1" });
     const first = f.runner.validate(opts("0001"));
