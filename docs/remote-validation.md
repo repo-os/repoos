@@ -298,9 +298,10 @@ the durable record of what actually ran lives in the check-run history
 other hosts are healthy, and re-probed later (30 s cooldown, capped at 10
 retries) so it rejoins the pool when it comes back. Once a host hits that cap
 its retries stop; a queued run whose eligible hosts have **all** hit it is
-cancelled and fails retryably rather than waiting forever (close-out and
-release pass no deadline of their own). A run whose every eligible host is
-unusable fails retryably with each host's reason.
+cancelled and fails retryably rather than waiting forever (release, and
+close-out with `closeOut.timeoutMs = 0`, pass no deadline of their own;
+close-out otherwise passes its pipeline budget — #0573). A run whose every
+eligible host is unusable fails retryably with each host's reason.
 
 #### Check-run history (#0564)
 
@@ -383,12 +384,14 @@ repoos check is still running" message before the dir was breakable).
 #### Deadlines
 
 Waiting counts against the caller's own deadline: handoff passes its
-10-minute finalization deadline (`deadlineAt`), and a run still **queued** at
-that point cancels itself, releases its slot and fails retryably with
-`… the caller's deadline passed, so the run was cancelled and its slot
-released`. A run that reaches its host **after** the deadline (its dispatch won
-the race with that cancellation timer, or the deadline passed while it bundled
-and uploaded) cancels the same way instead of starting.
+10-minute finalization deadline (`deadlineAt`), close-out passes its pipeline
+budget — `startedAt + closeOut.timeoutMs`, 6 minutes by default, `0` disables
+it (#0573) — and a run still **queued** at that point cancels itself, releases
+its slot and fails retryably with `… the caller's deadline passed, so the run
+was cancelled and its slot released`. A run that reaches its host **after**
+the deadline (its dispatch won the race with that cancellation timer, or the
+deadline passed while it bundled and uploaded) cancels the same way instead of
+starting.
 
 The host lock is given the caller's deadline as an **absolute** timestamp
 (`hostLockShell`'s `deadlineAtEpochSecs`), not just a relative wait budget

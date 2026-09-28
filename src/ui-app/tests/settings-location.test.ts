@@ -63,6 +63,19 @@ describe("resolveSettingLocation", () => {
     expect(resolveSettingLocation("remoteValidation.notInSchema", undefined, ctx)).toBeNull();
   });
 
+  // #0573 — the close-out budget must render as a real Settings control, not
+  // fall through to the raw repoos.toml editor.
+  it("gives closeOut.timeoutMs a rendered General row", () => {
+    expect(
+      resolveSettingLocation(
+        "closeOut.timeoutMs",
+        field({ key: "closeOut.timeoutMs", type: "select" }),
+        ctx,
+      ),
+    ).toEqual({ tab: "general", hasUiRow: true });
+    expect(isGeneralSchemaFieldKey("closeOut.timeoutMs")).toBe(true);
+  });
+
   it("mirrors generalFields exclusions via isGeneralSchemaFieldKey", () => {
     expect(isGeneralSchemaFieldKey("maxActiveTasks")).toBe(true);
     expect(isGeneralSchemaFieldKey("remoteValidation.tailscaleHost")).toBe(false);
