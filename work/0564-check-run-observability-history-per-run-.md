@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-28T03:44:07Z"
-updated_at: "2026-09-28T03:44:07Z"
+updated_at: "2026-09-28T03:52:34Z"
 ---
 ## Problem
 
@@ -32,7 +32,7 @@ Surface this as a tab on the Checks page ("Runs" or "History") showing a sortabl
 
 ### 2. Live runner status (operational)
 
-Add a "Remote runners" tab to the Checks page showing each configured host (local host too, if meaningful) with:
+Add a "Remote runners" tab to the Checks page showing each configured host with:
 - Health / reachability (probed: yes/no, healthy: yes/no, failure detail)
 - Current in-flight run(s): task ID + elapsed time (not just a count)
 - Queue depth and next-up task
@@ -44,13 +44,35 @@ This requires tracking `activeRuns: { taskId, startedAt }[]` per host in `Tailsc
 
 On the task page, when a task's pre-review or close-out check is in progress, show a chip or status line: "Checks running on bee · 2m 34s". When done, show the result inline rather than only in the Debug tab.
 
+## Storage
+
+A new `.repoos/checks.db` SQLite file — **separate from `repoos.db`** (the auth DB). `repoos.db` requires `REPOOS_SECRET_STORE_KEY` and is unavailable on machines without auth configured; check run history has no security requirement and should not inherit that dependency. Separate file = no locking contention, independently inspectable/deletable, always available.
+
+Suggested schema:
+
+```sql
+CREATE TABLE check_runs (
+  id          INTEGER PRIMARY KEY,
+  task_id     TEXT,        -- null for bare CLI runs
+  phase       TEXT,        -- 'pre-review' | 'close-out' | 'release' | 'cli'
+  machine     TEXT,        -- hostname or 'local'
+  remote      INTEGER,     -- 0 = local, 1 = remote tailscale host
+  scope       TEXT,        -- 'full' | 'changed:<ref>'
+  started_at  TEXT,        -- ISO-8601
+  duration_ms INTEGER,     -- wall-clock, null if cancelled before completion
+  outcome     TEXT,        -- 'pass' | 'fail' | 'cancelled'
+  failed_step TEXT         -- null when passing
+);
+```
+
 ## Scope
 
-- Backend: a `check_runs` table (or log file per run) recording the metadata above; written by the pre-review gate (`runRemotePreReviewGate`), close-out orchestrator (`validateCandidate`), and standalone `repoos check`
-- `TailscaleHostPool`: add `activeRuns` tracking per host; update `RemoteHostStatus`
-- Checks page: new "Runs" history tab + new "Remote runners" live tab (alongside existing "Plan" / "Test suite")
-- Task page: surface current check status and which machine during active runs
-- Settings remote validation drawer: keep as-is (or fold into the new Checks tab if redundant)
+- `src/core/check-store.ts` — new module; open/migrate `.repoos/checks.db`, write and query `check_runs`
+- Pre-review gate (`runRemotePreReviewGate`), close-out orchestrator (`validateCandidate`), and standalone `repoos check` — each writes a row on completion
+- `TailscaleHostPool` — add `activeRuns: { taskId, startedAt }[]` per host; update `RemoteHostStatus` and the status endpoint
+- Checks page — new "Runs" history tab + new "Remote runners" live tab (alongside existing "Plan" / "Test suite")
+- Task page — surface current check machine/elapsed during active runs; result inline when done
+- Settings remote validation drawer — keep as-is or fold into the Checks tab if it becomes redundant
 
 ## Out of scope
 
@@ -59,3 +81,4 @@ Resource metrics (CPU/memory on remote hosts), autoscaling, Hetzner runner pooli
 ## Activity
 
 - 2026-09-28T03:44:07Z · created · unknown
+- 2026-09-28T03:52:34Z · body
