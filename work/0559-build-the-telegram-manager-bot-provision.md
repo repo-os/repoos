@@ -2,7 +2,7 @@
 id: "0559"
 title: Build the Telegram manager-bot provisioning service and secure instance handoff
 type: feature
-status: review
+status: active
 priority: p1
 area: server
 story: RepoOS Telegram Bot
@@ -13,7 +13,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-27T17:32:41Z"
-updated_at: "2026-09-28T10:17:32Z"
+updated_at: "2026-09-28T10:18:13Z"
 review_passes: 3
 review_rounds: 2
 check_retry_count: 1
@@ -120,3 +120,5 @@ rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/.repoos/repoos.db': P
 rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/.repoos/repoos.db-wal': Permission denied
 rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/.repoos/repoos.db-shm': Permission denied — fix it in the feature branch and re-run the gate
 - 2026-09-28T10:17:32Z · needs_input (dev-error) dismissed by hello@repoos.org
+- 2026-09-28T10:18:13Z · status review→active
+- 2026-09-28T10:18:13Z · note: FYI remote runners are fixed now, so please try to fix the review bugs/suggestions again
