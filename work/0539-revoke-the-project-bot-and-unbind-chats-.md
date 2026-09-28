@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-28T05:35:31Z"
+review_passes: 7
 id: "0539"
 title: Revoke the project bot and unbind chats on disconnect
 type: feature
@@ -17,8 +19,6 @@ model_override: default
 review_cli_override: cursor
 review_model_override: cursor-grok-4.6-medium
 created_at: "2026-09-27T07:33:20Z"
-updated_at: "2026-09-28T05:35:31Z"
-review_passes: 6
 review_rounds: 2
 last_check_failure: "[object Object]"
 ---
@@ -109,3 +109,4 @@ rm: cannot remove '/home/nick/.repoos-validate.r2sYPk/repo/.repoos/repoos.db-wal
 rm: cannot remove '/home/nick/.repoos-validate.r2sYPk/repo/.repoos/repoos.db-shm': Permission denied — fix it in the feature branch and re-run the gate
 - 2026-09-28T05:33:26Z · needs_input (review-rounds-exhausted) cleared for review again by hello@repoos.org
 - 2026-09-28T05:35:31Z · needs_input
+
