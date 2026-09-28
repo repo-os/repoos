@@ -116,11 +116,16 @@ and `<ChatToolCallRow>` is the only thing that draws one:
   lines to at most one, strip trailing blank lines, and trim trailing blank
   lines inside fenced code blocks without touching interior spacing. The stored
   transcript is unchanged.
-- **Thematic breaks are not drawn in chat** (#0563): `---` and terminal-rendered
-  box-drawing rules are omitted from bubble markdown (`renderChatMarkdown()` in
-  `src/ui-app/src/lib/markdown.ts`) and dropped when they are an entire row, so
-  they never become `<hr>` separators between turns. Task specs and docs keep
-  using `renderMarkdown()`.
+- **Rows do not collapse inside the log** (#0563): `.ai-chat-log` is a flex column
+  inside a fixed-height scroll region. Its children use `flex-shrink: 0`; tool and
+  diagnostic cards also set `min-height: min-content` so `overflow: hidden` on
+  `.agent-tool` / `.agent-diagnostic` cannot shrink them to a ~2px border line.
+- **Thematic breaks are not drawn in assistant chat** (#0563): `---` and
+  terminal-rendered box-drawing rules are omitted from bubble markdown
+  (`renderChatMarkdown()` in `src/ui-app/src/lib/markdown.ts`) and dropped when
+  they are an entire assistant row, so they never become `<hr>` separators
+  between turns. Human messages are unchanged. Task specs and docs keep using
+  `renderMarkdown()`.
 - Expansion is per row, collapsible, and defaults to collapsed. It is native
   `<details>`, which is also why the row is keyboard-activatable and keeps its
   open state while a live run streams more calls into it.

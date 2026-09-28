@@ -10361,6 +10361,16 @@
   gap: 14px;
   overscroll-behavior: contain;
 }
+/* Rows scroll inside the log; they must not shrink when the column is full.
+   Flex items with overflow:hidden (tool/diagnostic cards) otherwise get
+   min-height:auto → 0 and collapse to a ~2px border line (#0563). */
+.ai-chat-log > * {
+  flex-shrink: 0;
+}
+.ai-chat-log > .agent-tool,
+.ai-chat-log > .agent-diagnostic {
+  min-height: min-content;
+}
 /* Thematic breaks belong in docs, not between chat turns (#0563). Bubbles use
    renderChatMarkdown(), which omits them; this backstop covers any stray <hr>. */
 .ai-chat-log hr {

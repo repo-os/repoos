@@ -220,12 +220,12 @@ export function toDisplayRows(entries: readonly AgentOutputEntry[]): DisplayRow[
     flushRun();
 
     const rawText = rowText(entry);
+    const isAssistantText = "type" in entry && entry.type === "text";
     // Nothing to show — no row, rather than an empty bubble (incl. whitespace-only).
     if (isDisplayEmptyText(rawText)) continue;
-    // A lone `---` / box-drawing rule is a separator, not a message (#0563).
-    if (isThematicBreakOnlyText(rawText)) continue;
-
-    const isAssistantText = "type" in entry && entry.type === "text";
+    // Assistant-only: a lone `---` / box-drawing rule is noise, not a turn. Humans
+    // may still send a literal `---` on purpose.
+    if (isAssistantText && isThematicBreakOnlyText(rawText)) continue;
     const text = isAssistantText ? rawText : displayPlainText(rawText);
 
     const last = rows[rows.length - 1];

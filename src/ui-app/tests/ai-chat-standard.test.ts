@@ -433,6 +433,12 @@ describe("every AI chat surface follows the standard", () => {
     expect(ruleBody(css, ".ai-chat-log hr")).toMatch(/display:\s*none/);
   });
 
+  it("keeps chat log rows from flex-shrinking to border lines (#0563)", () => {
+    expect(ruleBody(css, ".ai-chat-log > *")).toMatch(/flex-shrink:\s*0/);
+    expect(ruleBody(css, ".ai-chat-log > .agent-tool")).toMatch(/min-height:\s*min-content/);
+    expect(ruleBody(css, ".ai-chat-log > .agent-diagnostic")).toMatch(/min-height:\s*min-content/);
+  });
+
   for (const surface of AI_CHAT_SURFACES) {
     describe(surface.name, () => {
       const source = readSurface(surface.file);
