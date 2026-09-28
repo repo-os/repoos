@@ -21,6 +21,7 @@ import ScreenshotExpandButton from "../components/ScreenshotExpandButton.vue";
 import { pendingToShots } from "../lib/screenshot-viewer";
 import AuthSettingsPanel from "../components/AuthSettingsPanel.vue";
 import ServiceSettings from "../components/ServiceSettings.vue";
+import TelegramSettingsPanel from "../components/TelegramSettingsPanel.vue";
 import Select from "../components/ui/select/root.vue";
 import SelectContent from "../components/ui/select/content.vue";
 import SelectItem from "../components/ui/select/item.vue";
@@ -1155,6 +1156,7 @@ onUnmounted(() => {
                 />
               </div>
             </div>
+            <TelegramSettingsPanel :enabled="!!form['telegram.enabled']" />
           </div>
         </Card>
 
