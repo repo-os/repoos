@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-28T08:06:15Z"
+review_passes: 9
 id: "0539"
 title: Revoke the project bot and unbind chats on disconnect
 type: feature
@@ -13,9 +15,7 @@ branch: feat/revoke-the-project-bot-and-unbind-chats-
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-27T07:33:20Z"
-updated_at: "2026-09-28T06:48:05Z"
 merge_conflict_retry_count: 2
-review_passes: 8
 review_rounds: 2
 last_check_failure: "[object Object]"
 dev_error_count: 2
@@ -120,3 +120,4 @@ rm: cannot remove '/home/nick/.repoos-validate.r2sYPk/repo/.repoos/repoos.db-shm
 - 2026-09-28T06:40:52Z · needs_merge
 - 2026-09-28T06:41:38Z · cli_override
 - 2026-09-28T06:41:40Z · model_override
+
