@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-28T02:35:01Z"
-review_passes: 3
 id: "0539"
 title: Revoke the project bot and unbind chats on disconnect
 type: feature
@@ -15,6 +13,8 @@ assigned_to: ai
 created_by: ""
 branch: feat/revoke-the-project-bot-and-unbind-chats-
 created_at: "2026-09-27T07:33:20Z"
+updated_at: "2026-09-28T03:11:26Z"
+review_passes: 3
 review_rounds: 2
 last_check_failure: "[object Object]"
 ---
