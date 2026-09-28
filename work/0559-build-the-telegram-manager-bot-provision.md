@@ -12,10 +12,10 @@ story: RepoOS Telegram Bot
 assigned_to: ai
 created_by: ""
 branch: feat/build-the-telegram-manager-bot-provision
-model_override: default
+model_override: opencode-go/glm-5.3-flash
 review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-27T17:32:41Z"
-updated_at: "2026-09-28T10:51:15Z"
+updated_at: "2026-09-28T10:51:17Z"
 review_passes: 4
 review_rounds: 2
 last_check_failure: "[object Object]"
@@ -126,3 +126,4 @@ rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/.repoos/repoos.db-shm
 - 2026-09-28T10:22:22Z · status active→review
 - 2026-09-28T10:49:15Z · needs_input
 - 2026-09-28T10:51:15Z · cli_override, model_override
+- 2026-09-28T10:51:17Z · model_override
