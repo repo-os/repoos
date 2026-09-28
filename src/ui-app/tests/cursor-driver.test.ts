@@ -250,6 +250,36 @@ afterEach(() => {
 });
 
 describe("cursor driver (stream-json events)", () => {
+  it.each([
+    ["standalone", "Done.\n\n::repoos-handoff-ready::", true],
+    ["joined to following prose", "Done.\n\n::repoos-handoff-ready::The checks passed.", true],
+    ["indented with extra blank lines", "Done.\n\n\n  ::repoos-handoff-ready::  ", true],
+    ["mentioned in prose", "Do not emit ::repoos-handoff-ready:: until checks pass.", false],
+  ])("handles a %s handoff signal", async (_case, reply, expected) => {
+    const fx = makeFixture(`#!/usr/bin/env node
+process.stdout.write(JSON.stringify({ type: "assistant", message: { role: "assistant", content: [{ type: "text", text: ${JSON.stringify(reply)} }] } }) + "\\n");
+process.stdout.write(JSON.stringify({ type: "result", subtype: "success", is_error: false, result: ${JSON.stringify(reply)} }) + "\\n");
+`);
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    try {
+      const requests: unknown[] = [];
+      const runner = new AgentRunner(config(fx.bin), () => {}, {
+        onHandoff: (request) => {
+          requests.push(request);
+        },
+      });
+      runner.start(TASK, "feat/cursor", agent("default"), { cwd: fx.bin });
+      await waitFor(() => !runner.isRunning("0398"), "cursor signal turn exit");
+      if (expected) await waitFor(() => requests.length === 1, "cursor handoff request");
+      expect(requests).toHaveLength(expected ? 1 : 0);
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
   it("spawns cursor-agent, parses entries, and resumes the captured session", async () => {
     const fx = makeFixture();
     const oldPath = withFakePath(fx);
