@@ -73,7 +73,10 @@ drawer is trapped in that drawer's stacking context and ends up unclickable) or
 an inline `.agent-jump` sibling inside a `position: relative` log wrap. Floating
 head panels (Ross, CTO, Debugger, Playground) use the inline control because
 the teleported button's clicks were intercepted by the Radix Dialog stacking
-context despite living on `<body>`. Clicking either control scrolls smoothly to
+context despite living on `<body>` — the click fell through to the panel behind
+it instead of landing on the button. A teleported layer marked
+`data-overlay-layer` no longer falls through (#0575), but the inline control
+stays. Clicking either control scrolls smoothly to
 the newest message and the button hides itself on arrival.
 
 ### 5. Signal "working" visually, never in text

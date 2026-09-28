@@ -424,6 +424,7 @@ onBeforeUnmount(() => {
       <div
         v-if="confirmOpen"
         class="dep-overlay"
+        data-overlay-layer="floating"
         role="dialog"
         aria-modal="true"
         aria-labelledby="dep-confirm-title"

@@ -3043,6 +3043,20 @@
   margin-bottom: 20px;
 }
 
+/* Floating overlay layers (#0575).
+   While a modal dialog is open, Radix puts `pointer-events: none` on <body>,
+   so everything outside the panel stops being a hit-test target. A
+   body-teleported layer that does not opt back in becomes click-transparent:
+   the pointer event falls through to the side panel, its title, or a board
+   card behind it. Every floating layer root therefore carries
+   `data-overlay-layer` (the shared dialog content + scrim set it themselves;
+   hand-rolled <Teleport> overlays set it by hand), which is what keeps the
+   layer on top of the hit-test. An inline `pointer-events` from Radix still
+   wins over this rule, so a lower panel underneath a newer one stays inert. */
+[data-overlay-layer] {
+  pointer-events: auto;
+}
+
 /* drawer */
 .overlay {
   position: fixed;
