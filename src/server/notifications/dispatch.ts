@@ -15,6 +15,7 @@ import {
   notificationForStatusChange,
   notificationForTaskCreated,
 } from "./spec.js";
+import { progressFailureNotification } from "./progress.js";
 import type {
   NotificationDispatchContext,
   NotificationKind,
@@ -268,16 +269,9 @@ export function attachTaskNotificationHandlers(
     if (e.type !== "task.progress") return;
     const task = index.getTask(e.id);
     if (!task) return;
-    if (e.step === "handoff:failed") {
-      const spec = notificationForServerFailed(e.detail);
-      dispatch(basePayload(ctx, task, "task.server_failed", spec, e.detail ?? spec.subtitle ?? ""));
-      return;
-    }
-    if (e.step !== "failed") return;
-    const spec = notificationForIntegrationFailed(e.detail);
-    dispatch(
-      basePayload(ctx, task, "task.integration_failed", spec, e.detail ?? spec.subtitle ?? ""),
-    );
+    const failure = progressFailureNotification(task, e.step, e.detail);
+    if (!failure) return;
+    dispatch(basePayload(ctx, task, failure.kind, failure.spec, failure.summary));
   });
 
   return () => {

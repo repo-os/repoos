@@ -7,7 +7,6 @@ export type NotificationKind =
   | "task.created"
   | "task.started"
   | "task.needs_input"
-  | "task.agent_completed"
   | "task.moved_to_review"
   | "task.review_feedback"
   | "task.integration_failed"

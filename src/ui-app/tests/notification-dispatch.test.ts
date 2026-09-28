@@ -123,6 +123,50 @@ describe("dispatchNotification", () => {
   });
 });
 
+describe("ntfy agent failure parity", () => {
+  const sent: { body: string; headers: Record<string, string> }[] = [];
+  afterEach(() => {
+    sent.length = 0;
+    // @ts-expect-error cleanup
+    delete globalThis.fetch;
+  });
+
+  it("delivers Needs you for task.agent_failed", () => {
+    // @ts-expect-error test stub
+    globalThis.fetch = (
+      _url: string,
+      init: { body?: string; headers?: Record<string, string> },
+    ) => {
+      sent.push({ body: init?.body ?? "", headers: init?.headers ?? {} });
+      return Promise.resolve({ ok: true, status: 200 });
+    };
+    const root = mkdtempSync(join(tmpdir(), "repoos-notif-agent-fail-"));
+    const ctx = notificationContextFromConfig(
+      config(root, { ntfyEnabled: true, ntfyTopic: "repoos_test" }),
+      null,
+    );
+    dispatchNotification(
+      ctx,
+      {
+        kind: "task.agent_failed",
+        severity: "high",
+        repositoryName: "repo",
+        taskId: "0042",
+        taskTitle: "Fix the widget",
+        status: "active",
+        summary: "watchdog-stuck",
+        link: "/work?task=0042",
+        headline: "❌ Agent failed",
+        subtitle: "Agent is waiting for your decision",
+      },
+      [new NtfyNotificationProvider()],
+    );
+    expect(sent).toHaveLength(1);
+    expect(sent[0].body).toContain("🙋 Needs you");
+    expect(sent[0].headers.Priority).toBe("high");
+  });
+});
+
 describe("notifyStatusChange + ntfy", () => {
   const sent: { url: string; body: string; headers: Record<string, string> }[] = [];
   const stubFetch = (): void => {
