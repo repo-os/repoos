@@ -2,7 +2,7 @@
 id: "0521"
 title: "Remote validation: pool multiple tailscale hosts"
 type: feature
-status: active
+status: review
 priority: p3
 area: core
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-09-26T11:49:01Z"
-updated_at: "2026-09-28T00:21:30Z"
+updated_at: "2026-09-28T00:24:20Z"
 review_passes: 17
 review_rounds: 2
 dev_error_count: 3
@@ -170,3 +170,4 @@ Autoscaling, and pooling Hetzner VMs.
 - 2026-09-28T00:21:16Z · needs_input
 - 2026-09-28T00:21:29Z · status active→review
 - 2026-09-28T00:21:30Z · status review→active
+- 2026-09-28T00:24:20Z · status active→review
