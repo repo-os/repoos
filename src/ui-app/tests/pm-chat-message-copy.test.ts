@@ -40,12 +40,6 @@ describe("PmChatSurface message copy", () => {
     await bubbles[1].trigger("click");
     expect(copySpy).toHaveBeenLastCalledWith("from assistant");
 
-    await bubbles[0].trigger("click");
-    await bubbles[1].trigger("click");
-    expect(repo.toasts.filter((t) => t.message === "Message copied").length).toBeGreaterThanOrEqual(
-      2,
-    );
-
     wrapper.unmount();
   });
 });

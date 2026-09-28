@@ -20,11 +20,14 @@ describe("copyTextForBubbleRow", () => {
     const tools = toDisplayRows([
       { type: "tool", tool: "bash", state: "completed", at: "2026-01-01T00:00:00Z" },
     ])[0];
+    const stdout = toDisplayRows([{ s: "out", d: "legacy log line" }])[0];
 
     expect(copyTextForBubbleRow(human)).toBe("hello");
     expect(copyTextForBubbleRow(assistant)).toBe("**md**");
     expect(copyTextForBubbleRow(status)).toBeNull();
     expect(copyTextForBubbleRow(tools)).toBeNull();
+    expect(copyTextForBubbleRow(stdout)).toBeNull();
+    expect(isCopyableBubbleRow(stdout)).toBe(false);
     expect(isCopyableBubbleRow(human)).toBe(true);
     expect(isCopyableBubbleRow(status)).toBe(false);
   });
