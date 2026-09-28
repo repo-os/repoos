@@ -17,6 +17,8 @@ call site — the point of the task was that there be none.
 | `telegram/polling.ts` | The long-polling loop (`getUpdates` + pointer). |
 | `telegram/provider.ts` | `LocalTelegramProvider implements TelegramProvider`: connect/disconnect (BYO + managed redemption), profile configuration, send, intake, transport switching. |
 | `telegram/provisioning.ts` | The `ProvisioningClient` boundary and its honest "not configured" client; #0559 supplies the hosted side. |
+| `telegram/commands.ts` | Read-only command handler (`/status`, `/tasks`, `/agents`, `/help`, #0540), registered as intake's `onAuthorized`. |
+| `telegram/render.ts` | Command-side formatting: item pagination, "Showing N–M of T", Telegram's 4096-char clamp. |
 | `telegram/index.ts` | Per-repository provider singleton (`getTelegramProvider(config)`); `setTelegramProvider`/`resetTelegramProviders` for tests. |
 
 ## Security invariants (test-pinned)
@@ -173,6 +175,41 @@ per-process — not coordinated across multiple RepoOS processes), and audit
 logging for privileged intake. Unbound or unauthorized senders are dropped
 silently with no outbound Telegram traffic (ADR 0007). A handler failure is
 logged redacted, never allowed to kill the transport loop.
+
+## Read-only commands (#0540)
+
+`bootstrapTelegramAtBoot(config, wiring)` registers
+`createTelegramCommandHandler` (`src/server/telegram/commands.ts`) as the
+intake `onAuthorized` callback when `startServer` passes `{ index, runner,
+reviews, publicOrigin }`. It renders `/status`, `/tasks`, `/agents`, and
+`/help` and sends through the same connected project bot. It never has a data
+path of its own: it reads the in-process `LiveIndex`, `AgentRunner` (including
+its small `recentlyFinished` tail, added for `/agents`), and `ReviewManager` —
+the same sources the HTTP read routes serve — and resolves web links through
+the notification provider's `webUiLink`, not a second origin rule. The
+one-line task renderer reuses the notification `NotificationSpec` formatter.
+
+- **Authorization is inherited, not re-implemented.** `onAuthorized` is only
+  reached after a live `auth_users` lookup; an unbound sender, or one whose row
+  was deleted, produces no reply at all. The command handler is never a place
+  to add an access-denied response.
+- **Role awareness is explicit.** `/help` states the sender's live role and
+  what it can and cannot do, so a `member` learns the boundary exists instead
+  of discovering it by refusal. `/tasks` defaults to the `work` scope
+  (`active` + `review`) for both roles; arbitrary status queries are
+  admin-only, and a member asking for one is told so.
+- **Lists paginate.** `/tasks` shows "Showing N–M of T" and emits a
+  `/tasks <scope> <page>` hint for the rest. `render.ts`'s `clampMessage` is a
+  final safety net — if any message still exceeds Telegram's 4096 chars it is
+  cut at a line boundary with an explicit truncation notice, never silently.
+- **Per-chat serialization.** Concurrent commands in one chat run through a
+  promise chain, so a group burst (notably over the concurrent webhook
+  transport) cannot interleave two replies' lines. Group trigger rules are
+  unchanged — they remain `isTelegramUpdateAddressedToBot`'s (#0535).
+
+`startServer` passes the wiring; adapter tests that call
+`bootstrapTelegramAtBoot(config)` without it get exactly #0534's behavior:
+authorize, audit, drop.
 
 ## The `[telegram] enabled` gate
 
