@@ -14,9 +14,9 @@ created_by: ""
 branch: feat/build-the-telegram-manager-bot-provision
 cli_override: cursor
 model_override: composer-2.5
-review_model_override: opencode-go/deepseek-v4.1-flash
+review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-27T17:32:41Z"
-updated_at: "2026-09-28T08:00:30Z"
+updated_at: "2026-09-28T08:00:38Z"
 check_retry_count: 1
 last_check_failure: "[object Object]"
 review_rounds: 1
@@ -104,3 +104,4 @@ Depends on #0530 (done) and the local adapter/client contract from #0531 (still 
 - 2026-09-28T08:00:26Z · review_cli_override, review_model_override
 - 2026-09-28T08:00:28Z · review_cli_override
 - 2026-09-28T08:00:30Z · review_cli_override, review_model_override
+- 2026-09-28T08:00:38Z · review_model_override
