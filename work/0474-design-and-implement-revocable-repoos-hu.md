@@ -5,13 +5,14 @@ type: feature
 status: done
 priority: p2
 area: server
+story: MacOS Native App
 assigned_to: ai
 created_by: ""
 branch: feat/design-and-implement-revocable-repoos-hu
 cli_override: cursor
 model_override: auto
 created_at: "2026-09-21T11:50:27Z"
-updated_at: "2026-09-21T18:33:05Z"
+updated_at: "2026-09-28T00:08:34Z"
 review_passes: 2
 handoff_signal_retry_count: 1
 dev_error_count: 1
@@ -43,3 +44,4 @@ Depends on the macOS Hub architecture task. This task is intentionally independe
 - 2026-09-21T18:16:32Z · cli_override, model_override
 - 2026-09-21T18:16:35Z · model_override
 - 2026-09-21T18:33:05Z · status review→done, release:success
+- 2026-09-28T00:08:34Z · story
