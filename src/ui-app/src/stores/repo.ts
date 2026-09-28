@@ -48,11 +48,6 @@ export interface ToastItem {
   type: "error" | "success" | "info";
 }
 
-export interface PushToastOptions {
-  /** When false, every call shows a toast even inside the dedup window. */
-  dedupe?: boolean;
-}
-
 /** Summary returned by the review→done close-out endpoint. */
 export interface DoneResult {
   ok: boolean;
@@ -920,19 +915,12 @@ export const useRepoStore = defineStore("repo", () => {
   const recentToasts = new Map<string, number>();
   const DEDUP_WINDOW_MS = 100;
 
-  function pushToast(
-    message: string,
-    type: ToastItem["type"] = "error",
-    options?: PushToastOptions,
-  ): ToastItem | null {
-    const dedupe = options?.dedupe ?? true;
+  function pushToast(message: string, type: ToastItem["type"] = "error"): ToastItem | null {
+    const key = `${type}:${message}`;
     const now = Date.now();
-    if (dedupe) {
-      const key = `${type}:${message}`;
-      const last = recentToasts.get(key);
-      if (last && now - last < DEDUP_WINDOW_MS) return null;
-      recentToasts.set(key, now);
-    }
+    const last = recentToasts.get(key);
+    if (last && now - last < DEDUP_WINDOW_MS) return null;
+    recentToasts.set(key, now);
     const id = ++toastId;
     const toast = { id, message, type };
     toasts.value.unshift(toast);

@@ -13,7 +13,7 @@ export function useCopyChatMessage() {
 
   async function copyMessageText(text: string): Promise<void> {
     if (await copyToClipboard(text)) {
-      repo.pushToast("Message copied", "success", { dedupe: false });
+      repo.pushToast("Message copied", "success");
     } else {
       repo.pushToast("Could not copy message", "error");
     }
