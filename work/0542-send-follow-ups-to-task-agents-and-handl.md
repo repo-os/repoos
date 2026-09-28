@@ -2,7 +2,7 @@
 id: "0542"
 title: Send follow-ups to task agents and handle needs-input over Telegram
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: server
 story: RepoOS Telegram Bot
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:33:47Z"
-updated_at: "2026-09-27T15:52:49Z"
+updated_at: "2026-09-28T01:19:04Z"
 ---
 ## Problem
 
@@ -47,3 +47,4 @@ Task transitions driven from Telegram must record the real actor. Existing calle
 - 2026-09-27T15:42:40Z · body
 - 2026-09-27T15:51:57Z · body
 - 2026-09-27T15:52:49Z · body
+- 2026-09-28T01:19:04Z · status inbox→ready
