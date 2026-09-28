@@ -5,11 +5,12 @@ type: bug
 status: inbox
 priority: p3
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-27T13:14:24Z"
-updated_at: "2026-09-27T13:14:24Z"
+updated_at: "2026-09-28T12:05:45Z"
 ---
 ## Problem
 
@@ -71,3 +72,4 @@ logic errors like #0521's.
 ## Activity
 
 - 2026-09-27T13:14:24Z · created · unknown
+- 2026-09-28T12:05:45Z · model_override
