@@ -113,6 +113,18 @@ Unknown, unlinked, or no-longer-allowlisted senders receive no reply in any
 chat. This avoids confirming the bot is active and flooding groups with access
 errors.
 
+### Verify the connection
+
+The Settings connection panel (**Settings → Notifications → Telegram**) shows
+whether a bot is connected — its display name, username, and transport — and
+lists the private chats currently bound (one per linked Telegram account),
+with a **Send test message** control for each so an admin can confirm
+delivery before relying on the integration for real notifications: any
+failure (blocked bot, chat left, rate limit) surfaces Telegram's own error
+text instead of a generic "failed." Unbinding a chat from this panel and from
+**Settings → Authentication & Users** are the same action against the same
+underlying links — either one immediately reflects on both.
+
 ## Managed provisioning (the official service)
 
 Managed provisioning lets RepoOS create and hand over a project bot without
