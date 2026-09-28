@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-28T18:43:15Z"
-updated_at: "2026-09-28T18:44:58Z"
+updated_at: "2026-09-28T18:45:04Z"
 ---
 Notarization requires the app to opt into Apple's hardened runtime. Configure the Xcode project and add an entitlements file that accurately declares what the app uses.
 
