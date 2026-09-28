@@ -1688,17 +1688,18 @@ export class TailscaleHostPool {
     // hand it next (eligible, preferring a healthy host, then least loaded) —
     // so per-host `queued` totals sum to the real queue length instead of
     // counting one waiter once per compatible host (#0521 review).
-    const queuedOn = new Map<PoolHostState, string[]>();
+    const queuedOn = new Map<PoolHostState, { count: number; taskIds: string[] }>();
     for (const w of this.waiters) {
       const next = this.liveHosts()
         .filter((s) => hostSatisfies(s.spec, w.capabilities))
         .sort((a, b) => Number(b.healthy) - Number(a.healthy) || a.active - b.active)[0];
       if (next) {
-        const ids = queuedOn.get(next) ?? [];
-        // Every waiter counts toward `queued`; task ids surface next-up only
-        // when the caller supplied one (direct pool.acquires may not).
-        ids.push(w.taskId ?? "?");
-        queuedOn.set(next, ids);
+        const entry = queuedOn.get(next) ?? { count: 0, taskIds: [] };
+        // Every waiter counts toward `queued`; next-up task ids surface only
+        // for waiters that carry one (direct pool.acquires may not).
+        entry.count++;
+        if (w.taskId) entry.taskIds.push(w.taskId);
+        queuedOn.set(next, entry);
       }
     }
     return this.hosts.map((s) => ({
@@ -1708,13 +1709,13 @@ export class TailscaleHostPool {
       labels: s.spec.labels ?? [],
       maxConcurrent: s.limit,
       inFlight: s.active,
-      queued: (queuedOn.get(s) ?? []).length,
+      queued: queuedOn.get(s)?.count ?? 0,
       probed: s.probed,
       healthy: s.healthy,
       detail: s.detail,
       lastRun: s.lastRun,
       activeRuns: s.activeRuns.map((r) => ({ ...r })),
-      queuedTasks: [...(queuedOn.get(s) ?? [])],
+      queuedTasks: [...(queuedOn.get(s)?.taskIds ?? [])],
     }));
   }
 

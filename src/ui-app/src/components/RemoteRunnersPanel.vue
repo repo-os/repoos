@@ -140,10 +140,13 @@ function fmtAgo(iso: string): string {
         <div>
           <dt>Queue</dt>
           <dd>
-            <template v-if="(h.queuedTasks ?? []).length">
-              next: <span class="mono">#{{ h.queuedTasks![0] }}</span>
-              <span v-if="h.queuedTasks!.length > 1" class="rr-dim">
-                (+{{ h.queuedTasks!.length - 1 }} behind)</span
+            <template v-if="h.queued > 0">
+              <template v-if="(h.queuedTasks ?? []).length">
+                next: <span class="mono">#{{ h.queuedTasks![0] }}</span>
+              </template>
+              <span v-if="h.queued > 1" class="rr-dim"> +{{ h.queued - 1 }} behind</span>
+              <span v-else-if="(h.queuedTasks ?? []).length === 0" class="rr-dim"
+                >{{ h.queued }} queued</span
               >
             </template>
             <span v-else class="rr-dim">empty</span>

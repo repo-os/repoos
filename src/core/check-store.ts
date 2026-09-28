@@ -25,6 +25,7 @@ import { join } from "node:path";
 let Database: any;
 let sqliteAvailable = false;
 let sqliteLoadAttempted = false;
+let warnedSqliteUnavailable = false;
 // RepoOS is ESM, so the CommonJS global `require` is not available. Create a
 // local resolver for optional runtime builtins instead (same as db.ts).
 const runtimeRequire = createRequire(import.meta.url);
@@ -59,6 +60,14 @@ function loadSqlite(): void {
     }
   } catch {
     // Any error during initialization — degrade gracefully
+  }
+  if (!sqliteAvailable && !warnedSqliteUnavailable) {
+    // Silent degradation here is how history silently disappears (0564
+    // review): say so, once per process, instead of failing quietly forever.
+    warnedSqliteUnavailable = true;
+    console.error(
+      "[repoos] check-run history unavailable: no SQLite runtime (needs Bun, or Node >= 22)",
+    );
   }
 }
 
@@ -179,8 +188,14 @@ export class CheckStore {
       this.db.exec("PRAGMA synchronous=NORMAL");
       this.db.exec(SCHEMA);
       this.available = true;
-    } catch {
+    } catch (e) {
       this.available = false;
+      // Same rule as loadSqlite: a store that cannot open must say why once,
+      // not let history vanish silently (0564 review).
+      console.error(
+        `[repoos] check-run history unavailable (${join(repoRoot, cacheDir, "checks.db")}): ` +
+          `${(e as Error).message}`,
+      );
     }
   }
 
