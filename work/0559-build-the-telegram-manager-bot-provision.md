@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-28T05:36:54Z"
-review_passes: 1
 id: "0559"
 title: Build the Telegram manager-bot provisioning service and secure instance handoff
 type: feature
-status: review
+status: active
 priority: p1
 area: server
 story: RepoOS Telegram Bot
@@ -16,6 +14,9 @@ model_override: copilot-auto-balance
 review_cli_override: github copilot
 review_model_override: copilot-auto-balance
 created_at: "2026-09-27T17:32:41Z"
+updated_at: "2026-09-28T05:36:54Z"
+review_rounds: 1
+review_passes: 1
 ---
 ## Problem
 
@@ -74,4 +75,4 @@ Depends on #0530 (done) and the local adapter/client contract from #0531 (still 
 - 2026-09-28T05:35:01Z · review_cli_override
 - 2026-09-28T05:35:02Z · review_model_override
 - 2026-09-28T05:35:13Z · needs_input (review-failed) cleared for review again by hello@repoos.org
-
+- 2026-09-28T05:36:54Z · status review→active
