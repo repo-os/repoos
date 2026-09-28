@@ -2316,13 +2316,22 @@ export const useRepoStore = defineStore("repo", () => {
 
   /** Start a fresh review run against the task's current worktree state. */
   async function reviewAgain(id: string): Promise<void> {
-    const r = await api<{ ok: boolean; reason?: string }>(`/api/tasks/${id}/review/again`, {
-      method: "POST",
-    });
+    const r = await api<{ ok: boolean; reason?: string; task?: Task }>(
+      `/api/tasks/${id}/review/again`,
+      {
+        method: "POST",
+      },
+    );
     if (!r.ok) {
       const message = r.reason ?? "could not start a fresh review";
       pushToast(message, "error");
       throw new Error(message);
+    }
+    if (r.task) {
+      const i = tasks.value.findIndex((t) => t.id === id);
+      if (i >= 0) tasks.value[i] = r.task;
+      const ui = useUiStore();
+      if (ui.active?.id === id) ui.syncActive(r.task);
     }
   }
 
