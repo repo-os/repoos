@@ -112,7 +112,7 @@ const { showJumpToLatest, onScroll, scrollToLatest } = useChatScroll(log, {
   active: () => props.active,
 });
 
-const { onBubbleClick } = useCopyChatMessage();
+const { messageBubbleListeners } = useCopyChatMessage();
 
 /** Canned prompts are a shortcut, not a competitor to typing — hide once used. */
 const showCanned = computed(() => props.canned.length > 0 && !draft.value.trim());
@@ -188,7 +188,7 @@ defineExpose({ focusDraft });
             <div
               class="pm-bubble"
               :class="`pm-bubble-${bubbleRole(row)}`"
-              @click="onBubbleClick(row, $event)"
+              v-on="messageBubbleListeners(row)"
             >
               <div
                 v-if="bubbleRole(row) === 'assistant'"

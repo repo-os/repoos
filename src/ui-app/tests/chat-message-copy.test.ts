@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   copyTextForBubbleRow,
   copyTextForTaskDrawerRow,
+  isCopyableBubbleRow,
   shouldCopyMessageOnClick,
 } from "../src/lib/chat-message-copy";
 import { toDisplayRows } from "../src/lib/chat-rows";
@@ -24,6 +25,8 @@ describe("copyTextForBubbleRow", () => {
     expect(copyTextForBubbleRow(assistant)).toBe("**md**");
     expect(copyTextForBubbleRow(status)).toBeNull();
     expect(copyTextForBubbleRow(tools)).toBeNull();
+    expect(isCopyableBubbleRow(human)).toBe(true);
+    expect(isCopyableBubbleRow(status)).toBe(false);
   });
 });
 

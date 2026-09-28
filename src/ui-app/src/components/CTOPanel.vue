@@ -37,7 +37,7 @@ const { showJumpToLatest, onScroll, scrollToLatest } = useChatScroll(log, {
   active: () => props.open,
 });
 
-const { onBubbleClick } = useCopyChatMessage();
+const { messageBubbleListeners } = useCopyChatMessage();
 
 // Rows are grouped by the shared transform (#0506): a run of adjacent tool
 // calls is one expandable row with counts and the time it finished, not a
@@ -150,7 +150,7 @@ watch(
             :at="row.at"
           />
           <ChatToolCallRow v-else-if="row.kind === 'tools'" :calls="row.calls" :at="row.at" />
-          <div v-else :class="`cto-line ${bubbleRole(row)}`" @click="onBubbleClick(row, $event)">
+          <div v-else :class="`cto-line ${bubbleRole(row)}`" v-on="messageBubbleListeners(row)">
             {{ row.text }}
             <!-- Every row carries its last-updated time (#0506), system rows
                  included: a `sys` entry is stamped like any other. -->
