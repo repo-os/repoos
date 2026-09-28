@@ -5,13 +5,14 @@ type: feature
 status: done
 priority: p1
 area: desktop
+story: MacOS Native App
 assigned_to: ai
 created_by: ""
 branch: feat/embed-selected-repoos-servers-in-an-isol
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-09-21T11:50:26Z"
-updated_at: "2026-09-21T18:49:02Z"
+updated_at: "2026-09-28T00:08:33Z"
 ---
 Let the macOS Hub open the selected saved RepoOS server in the main content area while preserving the native shell’s security boundary.
 
@@ -36,3 +37,4 @@ Depends on the architecture, project scaffold, and server registry tasks. Do not
 - 2026-09-21T18:37:16Z · status ready→active, branch
 - 2026-09-21T18:40:54Z · status active→review
 - 2026-09-21T18:49:02Z · status review→done, release:success
+- 2026-09-28T00:08:33Z · story
