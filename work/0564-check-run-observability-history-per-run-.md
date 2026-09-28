@@ -3,6 +3,9 @@ id: "0564"
 title: "Check run observability: history, per-run metadata, and live runner dashboard"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: the opencode agent timed out after 900s
 priority: p3
 area: core
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/check-run-observability-history-per-run-
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-28T03:44:07Z"
-updated_at: "2026-09-28T09:22:09Z"
+updated_at: "2026-09-28T09:44:06Z"
 check_retry_count: 1
 last_check_failure: "[object Object]"
 review_passes: 2
@@ -97,3 +100,20 @@ Resource metrics (CPU/memory on remote hosts), autoscaling, Hetzner runner pooli
 - 2026-09-28T05:36:14Z · status active→review
 - 2026-09-28T06:30:47Z · status review→active
 - 2026-09-28T09:22:09Z · status active→review
+- 2026-09-28T09:22:52Z · handoff failed · remote validation failed: remote validation failed (exit 1) — [lock] slot 0 acquired after 0s
+[validate] cloning bundle /Users/peckjachowski/.repoos-0564-5242433e.bundle
+Note: switching to '6695d61895c04464e2f05da4e660fc1c5c96ca9c'.
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by switching back to a branch.
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -c with the switch command. Example:
+  git switch -c <new-branch-name>
+Or undo this operation with:
+  git switch -
+Turn off this advice by setting config variable advice.detachedHead to false
+[validate] HEAD verified at 6695d61895c04464e2f05da4e660fc1c5c96ca9c
+bun install v1.4.2 (744846f84)
+error: EACCES accessing temporary directory. Please set $BUN_TMPDIR or $BUN_INSTALL
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-09-28T09:44:06Z · needs_input
