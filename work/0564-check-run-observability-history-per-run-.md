@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-28T10:04:17Z"
+review_passes: 3
 id: "0564"
 title: "Check run observability: history, per-run metadata, and live runner dashboard"
 type: feature
@@ -13,10 +15,8 @@ model_override: opencode-go/glm-5.3-flash
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-28T03:44:07Z"
-updated_at: "2026-09-28T10:03:01Z"
 check_retry_count: 1
 last_check_failure: "[object Object]"
-review_passes: 2
 review_rounds: 1
 ---
 ## Problem
@@ -119,3 +119,4 @@ error: EACCES accessing temporary directory. Please set $BUN_TMPDIR or $BUN_INST
 - 2026-09-28T10:02:51Z · review_cli_override, review_model_override
 - 2026-09-28T10:02:53Z · review_model_override
 - 2026-09-28T10:03:01Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+
