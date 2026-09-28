@@ -115,6 +115,8 @@ export interface TelegramChatLink {
   boundAt: string;
   boundBy: string;
   revokedAt: string | null;
+  /** When false, this chat is bound but opted out of push notifications (#0537). */
+  notificationsEnabled: boolean;
 }
 
 export interface TelegramChatBindInvite {
@@ -264,6 +266,7 @@ const AUTH_MIGRATION = `
     bound_at TEXT NOT NULL,
     bound_by TEXT NOT NULL,
     revoked_at TEXT,
+    notifications_enabled INTEGER NOT NULL DEFAULT 1,
     PRIMARY KEY (instance_identity, telegram_chat_id)
   );
 
@@ -279,6 +282,22 @@ const AUTH_MIGRATION = `
     redeemed_chat_id INTEGER
   );
 `;
+
+function ensureTelegramChatNotificationColumn(db: {
+  prepare: (sql: string) => { all: () => { name: string }[] };
+  exec: (sql: string) => void;
+}): void {
+  try {
+    const cols = db.prepare("PRAGMA table_info(telegram_chat_links)").all();
+    if (cols.length === 0) return;
+    if (cols.some((c) => c.name === "notifications_enabled")) return;
+    db.exec(
+      "ALTER TABLE telegram_chat_links ADD COLUMN notifications_enabled INTEGER NOT NULL DEFAULT 1",
+    );
+  } catch {
+    /* best-effort schema heal */
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Store
@@ -307,6 +326,7 @@ export class AuthStore {
       this.db.exec("PRAGMA journal_mode=WAL");
       this.db.exec("PRAGMA synchronous=NORMAL");
       this.db.exec(AUTH_MIGRATION);
+      ensureTelegramChatNotificationColumn(this.db);
       this.migrateTelegramBindingTables();
       this.available = true;
     } catch {
@@ -341,7 +361,8 @@ export class AuthStore {
       {
         name: "telegram_chat_links",
         id: "telegram_chat_id",
-        columns: "telegram_chat_id, chat_type, title, bound_at, bound_by, revoked_at",
+        columns:
+          "telegram_chat_id, chat_type, title, bound_at, bound_by, revoked_at, notifications_enabled",
         definition: `instance_identity TEXT NOT NULL,
           telegram_chat_id INTEGER NOT NULL,
           chat_type TEXT NOT NULL,
@@ -349,6 +370,7 @@ export class AuthStore {
           bound_at TEXT NOT NULL,
           bound_by TEXT NOT NULL,
           revoked_at TEXT,
+          notifications_enabled INTEGER NOT NULL DEFAULT 1,
           PRIMARY KEY (instance_identity, telegram_chat_id)`,
         indexes: [],
       },
@@ -1049,14 +1071,16 @@ export class AuthStore {
       this.db
         .prepare(`
         INSERT INTO telegram_chat_links (
-          instance_identity, telegram_chat_id, chat_type, title, bound_at, bound_by, revoked_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+          instance_identity, telegram_chat_id, chat_type, title, bound_at, bound_by, revoked_at,
+          notifications_enabled
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(instance_identity, telegram_chat_id) DO UPDATE SET
           chat_type = excluded.chat_type,
           title = excluded.title,
           bound_at = excluded.bound_at,
           bound_by = excluded.bound_by,
-          revoked_at = excluded.revoked_at
+          revoked_at = excluded.revoked_at,
+          notifications_enabled = excluded.notifications_enabled
       `)
         .run(
           this.instanceIdentity,
@@ -1066,8 +1090,24 @@ export class AuthStore {
           link.boundAt,
           link.boundBy,
           link.revokedAt,
+          link.notificationsEnabled ? 1 : 0,
         );
       return true;
+    } catch {
+      return false;
+    }
+  }
+
+  setTelegramChatNotificationsEnabled(telegramChatId: number, enabled: boolean): boolean {
+    if (!this.available) return false;
+    try {
+      const result = this.db
+        .prepare(
+          `UPDATE telegram_chat_links SET notifications_enabled = ?
+           WHERE telegram_chat_id = ? AND revoked_at IS NULL`,
+        )
+        .run(enabled ? 1 : 0, telegramChatId);
+      return (result.changes ?? 0) > 0;
     } catch {
       return false;
     }
@@ -1329,6 +1369,8 @@ export class AuthStore {
   }
 
   private toTelegramChatLink(row: any): TelegramChatLink {
+    const raw = row.notifications_enabled;
+    const notificationsEnabled = raw === undefined || raw === null ? true : Number(raw) !== 0;
     return {
       instanceIdentity: row.instance_identity,
       telegramChatId: Number(row.telegram_chat_id),
@@ -1337,6 +1379,7 @@ export class AuthStore {
       boundAt: row.bound_at,
       boundBy: row.bound_by,
       revokedAt: row.revoked_at ?? null,
+      notificationsEnabled,
     };
   }
 

@@ -178,7 +178,7 @@ logged redacted, never allowed to kill the transport loop.
 
 `requireTelegramEnabled` (`src/server/routes/telegram.ts`) enforces the
 master switch on the mutating connection routes (connect, profile, transport
-arm, provision begin/status/redeem) with an honest 400; only
+arm, provision begin/status/redeem, test-message) with an honest 400; only
 `GET /api/telegram/status` stays readable while disabled so the Settings
 panel can render the switch and state. Two safe-direction calls are
 deliberately exempt: `transport {mode: "off"}` and `disconnect` — stopping
@@ -186,6 +186,69 @@ delivery or forgetting a credential must never require re-enabling the
 integration. The enforcement is duplicated where the traffic actually is:
 the polling loop pauses (no Telegram calls) while `enabled` is false and
 resumes live when it flips back. Tests pin both layers.
+
+## #0538: the Settings connection panel
+
+`TelegramSettingsPanel.vue` (Settings → Notifications → Telegram) is the
+admin-facing surface for everything above. It renders `GET
+/api/telegram/status` (bot display name/username, source, transport mode —
+never a token), and drives:
+
+- **Connect Telegram** (managed provisioning) — `POST /api/telegram/provision`
+  begins a request and opens its deep link; the panel polls `GET
+  /api/telegram/provision/:id` every 2.5s and calls `POST
+  /api/telegram/provision/:id/redeem` itself the moment the state reaches
+  `ready`. A `managedProvisioning.configured: false` body (501) is shown as
+  "not configured — use Bring Your Own Bot Token" rather than a bare error.
+- **Bring Your Own Bot Token** — a password-type input posted once to `POST
+  /api/telegram/connect`; the field is cleared immediately after the call
+  resolves (success or failure) and the token never round-trips into a
+  response the panel renders.
+- **Disconnect** — `POST /api/telegram/disconnect`, confirmed, always
+  available regardless of the enabled switch (see above).
+
+### Test message (`POST /api/telegram/test-message`)
+
+Body: `{ chatId: number, text?: string }`, admin-gated and enabled-gated like
+the other mutating routes. `chatId` must already be a currently-bound chat —
+the route looks it up with `AuthStore.getTelegramLink` and 404s otherwise, so
+a test send can never reach an arbitrary numeric id an admin mistypes or
+pastes from elsewhere (the same "binding is an admin action, not an
+observation" boundary #0535 enforces for delivery, applied here to the send
+path too). With no `text`, a default identifies the repository and confirms
+delivery; Telegram's own (redacted) error text surfaces on failure via
+`telegramErrorStatus`, per the task's "undiagnosable otherwise" requirement.
+
+### Bound chats scope: private chats only, for now
+
+The panel's bound-chats list and the test-message target picker both read
+`GET /api/auth/telegram/links` (#0533) — one row per Telegram **user**
+bound to an allowlisted email. In the Bot API a private chat's `chat_id`
+equals that user's numeric id, so today every bound row *is* a sendable
+private chat and this is a complete, correct "bound chats" view. **Group/
+supergroup chat binding is #0535's `telegram_user_links`-adjacent table,
+which had not landed on `main` when this task shipped** (still `review` at
+the time); there is no `telegram_group_links`-shaped storage to read yet.
+When #0535 lands, extend this list (and the test-message picker) to include
+bound groups from its storage — do not invent a second, parallel "chats"
+concept; the picker should grow one more row source, not a second UI.
+Unbinding here calls the *same* `DELETE /api/auth/telegram/links/:id` route
+Settings → Security → Authentication & Users uses, so the two surfaces are
+always one live source, never a cached copy of each other (the task's own
+requirement).
+
+### Config treatment for this task
+
+No new `repoos.toml` keys: `telegram.enabled` (live-tier, existing) already
+gates every route this task adds, and `telegram.provisioningUrl` (TOML-only,
+existing deliberate exception — see `user-docs/configuration.md`) already
+documents the provisioning-service URL this panel's "Connect Telegram" button
+depends on. The bot token itself has no TOML key at all, by design (see
+"Secrets stay env-only" in the task) — it never touches `repoos.toml`; it is
+POSTed once and stored only in the encrypted `.repoos/telegram-bot.json`
+record. There is nothing here to add a Settings *schema* control for beyond
+the switch that already exists — the connect/status/test-message controls
+this task adds are actions and live state, not configuration.
 
 ## Recovery from a corrupt connection record
 

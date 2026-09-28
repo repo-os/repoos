@@ -184,9 +184,10 @@ describe("canned PM messages above the compose box", () => {
     expect(sent[0]).toBe("Can you flesh this out?");
   });
 
-  it("prefills the PM chat with the task's questions when the human clicks Answer these", async () => {
+  it("opens the PM tab with question cards instead of prefilling the compose box", async () => {
     const { wrapper } = await mountPmTab(
       makeTask({
+        status: "active",
         needsInput: true,
         questions: ["Should we fix it?", "Or update the docs?"],
       }),
@@ -195,12 +196,14 @@ describe("canned PM messages above the compose box", () => {
     ui.activeTab = "details";
     await flush();
 
-    await wrapper.find(".needs-input-answer").trigger("click");
+    await wrapper.find(".questions-for-you-answer").trigger("click");
     await flush();
 
+    expect(ui.activeTab).toBe("pm");
+    expect(wrapper.find(".pm-open-questions").exists()).toBe(true);
+    expect(wrapper.find(".pm-open-questions").text()).toContain("Should we fix it?");
     const textarea = wrapper.find('textarea[aria-label="Message PM"]');
     expect(textarea.exists()).toBe(true);
-    expect((textarea.element as HTMLTextAreaElement).value).toContain("Should we fix it?");
-    expect((textarea.element as HTMLTextAreaElement).value).toContain("Or update the docs?");
+    expect((textarea.element as HTMLTextAreaElement).value).toBe("");
   });
 });

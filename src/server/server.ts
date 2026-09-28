@@ -104,6 +104,13 @@ import {
   runGit,
 } from "../core/git.js";
 import { sweepAndWarn } from "../core/worktree-gc.js";
+import { remoteJobCapabilities } from "./pre-review-remote-gate.js";
+import {
+  hostRunner,
+  remoteHostLimit,
+  remoteHostUser,
+  resolveRemoteHosts,
+} from "../core/remote-hosts.js";
 import { runBuiltInAgent, isDueForScheduledRun, builtInAgentLabel } from "./built-in-agents.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
@@ -175,12 +182,9 @@ import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
 import { readRegistry, unionApps } from "../core/tunnel-registry.js";
 import { portListening } from "../core/net-probe.js";
 import {
-  notifyStatusChange,
-  notifyTaskCreated,
-  notifyNeedsInput,
-  publish,
-  ntfyBaseUrl,
-} from "./ntfy.js";
+  attachTaskNotificationHandlers,
+  notificationContextFromConfig,
+} from "./notifications/index.js";
 import { AgentSupervisor } from "./supervisor.js";
 import { TaskWatchdog } from "./task-watchdog.js";
 import { bootstrapTelegramAtBoot, resetTelegramProviders } from "./telegram/index.js";
@@ -305,6 +309,7 @@ import {
   telegramDisconnect,
   telegramProfile,
   telegramTransport,
+  telegramTestMessage,
   telegramProvisionBegin,
   telegramProvisionStatus,
   telegramProvisionRedeem,
@@ -335,6 +340,7 @@ import {
   createTelegramInviteRoute,
   listTelegramChatsRoute,
   listTelegramLinksRoute,
+  patchTelegramChatNotificationsRoute,
   unbindTelegramChatRoute,
   unbindTelegramLinkRoute,
   telegramDisconnectFromAuthRoute,
@@ -2018,12 +2024,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // start/pause, the watcher, and the 0077 self-heal) — apply the same cleanup
   // there. Both firing for a single transition is harmless: `previews.stop` and
   // `runner.stop` are idempotent.
+  const notificationCtx = notificationContextFromConfig(config, getAuthStore(config.root));
+  const unsubscribeNotifications = attachTaskNotificationHandlers(index, notificationCtx);
+
   const unsubscribeCleanup = index.on((e) => {
-    // Optional ntfy push notifications hang off the index stream for the same
-    // reason the cleanup does: it is the one place every transition surfaces,
-    // exactly once per real change (applyFileChange dedupes by state diff).
     if (e.type === "task.created") {
-      notifyTaskCreated(config, e.task);
       // 0381: a PM chat session with pending screenshots may have just
       // created this task through `repoos new` — attach its parked images
       // now, while the session is still running. Best-effort and a no-op
@@ -2037,7 +2042,6 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     const prev = e.prev.status;
     if (prev === undefined || prev === e.task.status) return;
     onStatusChange(e.task, prev, e.task.status);
-    notifyStatusChange(config, e.task, prev, e.task.status);
     // Every route into `review` — a board drag, the drawer, an agent editing
     // its own task file — surfaces here, so this is the one place the agent
     // review needs to hang off. The skill-suggestion pass deliberately does
@@ -2060,16 +2064,6 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // — #0370 removed the implicit nested-`repoos serve` default for every
   // OTHER project). MAX_PREVIEWS is 1 (preview.ts) so only one is ever
   // running; starting a new one evicts the last.
-
-  // Handle needsInput changes separately (fires alongside status change when both occur).
-  const unsubscribeNeedsInput = index.on((e) => {
-    if (e.type !== "task.updated") return;
-    const prevNeedsInput = e.prev.needsInput ?? false;
-    const nextNeedsInput = e.task.needsInput;
-    if (!prevNeedsInput && nextNeedsInput) {
-      notifyNeedsInput(config, e.task);
-    }
-  });
 
   // Trigger CTO monitor on key events: task status changes, review completion, agent exit.
   const unsubscribeCTOEvents = index.on((e) => {
@@ -2289,10 +2283,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           emitDone(null);
           return;
         }
+        // Route like every other remote caller (#0521): a plan step with
+        // `runsOn = ["macos"]` must not send this run to a Linux host.
         const result = await remoteValidator.validate({
           taskId: "checks-test-suite",
           worktreePath: config.root,
           candidateSha,
+          capabilities: remoteJobCapabilities(config),
           onChunk: (chunk) => {
             testRuns.appendOutput(chunk);
             emitChunk(chunk);
@@ -2366,6 +2363,25 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       /* no warm runner */
     }
     const sshKeyEnv = process.env.REPOOS_REMOTE_SSH_KEY;
+    // Per-host pool state (#0521): live from the runner when it exists
+    // (`applyConfig` keeps this list in sync with Settings saves). Otherwise
+    // the configured list (probed:false) so the drawer still shows hosts when
+    // the runner wasn't constructed at boot.
+    const hosts = remoteValidator?.hostStatus?.() ?? [
+      ...resolveRemoteHosts(rv).map((h) => ({
+        host: h.host,
+        user: remoteHostUser(rv, h),
+        os: h.os,
+        labels: h.labels ?? [],
+        maxConcurrent: remoteHostLimit(rv, h),
+        inFlight: 0,
+        queued: 0,
+        probed: false,
+        healthy: false,
+        detail: undefined as string | undefined,
+        lastRun: undefined as { taskId: string; ok: boolean; at: string } | undefined,
+      })),
+    ];
     return json(res, 200, {
       enabled: !!rv.enabled,
       running: !!remoteValidator,
@@ -2380,8 +2396,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       hasApiToken: !!process.env.HETZNER_API_TOKEN,
       hasSshKey: !!sshKeyEnv && existsSync(sshKeyEnv),
       tailscaleHost: rv.tailscaleHost ?? "",
+      tailscaleHosts: resolveRemoteHosts(rv).map((h) => h.host),
       tailscaleUser: rv.tailscaleUser ?? "root",
       containerImage: rv.containerImage ?? "repoos-ci",
+      maxConcurrent: rv.maxConcurrent ?? 1,
+      hosts,
       activeServer,
     });
   });
@@ -2391,31 +2410,46 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     try {
       let output = "";
       if (provider === "tailscale") {
-        const host = rv.tailscaleHost;
-        if (!host)
+        const hosts = resolveRemoteHosts(rv);
+        if (!hosts.length)
           return json(res, 400, {
             ok: false,
             error: "remoteValidation.tailscaleHost is not configured.",
           });
         const sshKeyEnv = process.env.REPOOS_REMOTE_SSH_KEY;
         const keyPath = sshKeyEnv && existsSync(sshKeyEnv) ? sshKeyEnv : undefined;
-        const { defaultRemoteExec } = await import("./remote-validation.js");
+        const { defaultRemoteExec, prereqProbeCommand, PREREQ_OK_TOKEN } =
+          await import("./remote-validation.js");
         const exec = defaultRemoteExec();
-        const result = await exec.runRemote(
-          { ip: host, user: rv.tailscaleUser ?? "root", keyPath },
-          "docker info --format '{{.ServerVersion}}' 2>&1 && echo OK",
-          (chunk) => {
-            output += chunk;
-          },
-          15_000,
-        );
-        if (result.code === 0 && output.includes("OK")) {
-          return json(res, 200, { ok: true, output: output.trim() });
+        // Same per-host prerequisite check the pool runs (#0521), so the
+        // button reports every misconfigured host instead of only the first.
+        const reports: string[] = [];
+        let allOk = true;
+        for (const h of hosts) {
+          let probeOutput = "";
+          const probeRes = await exec.runRemote(
+            { ip: h.host, user: remoteHostUser(rv, h), keyPath },
+            prereqProbeCommand(hostRunner(h), rv.containerImage ?? "repoos-ci"),
+            (chunk) => {
+              probeOutput += chunk;
+            },
+            15_000,
+          );
+          const ok = probeRes.code === 0 && probeOutput.includes(PREREQ_OK_TOKEN);
+          if (!ok) allOk = false;
+          reports.push(
+            `── ${h.host}${h.os ? ` (${h.os})` : ""} ──\n` +
+              (ok
+                ? probeOutput.trim() || "ok"
+                : `FAILED (exit ${probeRes.code}): ${probeOutput.trim() || "no output"}`),
+          );
         }
+        output = reports.join("\n\n");
+        if (allOk) return json(res, 200, { ok: true, output });
         return json(res, 200, {
           ok: false,
-          error: `SSH/Docker check failed (exit ${result.code})`,
-          output: output.trim(),
+          error: "One or more hosts failed the prerequisite check.",
+          output,
         });
       } else {
         // Hetzner: just verify the API token and that provider config is present
@@ -2570,6 +2604,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/telegram/disconnect", telegramDisconnect);
   router.register("POST", "/api/telegram/profile", telegramProfile);
   router.register("POST", "/api/telegram/transport", telegramTransport);
+  router.register("POST", "/api/telegram/test-message", telegramTestMessage);
   router.register("POST", "/api/telegram/provision", telegramProvisionBegin);
   router.register("GET", /^\/api\/telegram\/provision\/([^/]+)$/, telegramProvisionStatus);
   router.register("POST", /^\/api\/telegram\/provision\/([^/]+)\/redeem$/, telegramProvisionRedeem);
@@ -2597,6 +2632,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/auth/telegram/chats/bind-codes", createTelegramChatBindCodeRoute);
   router.register("GET", "/api/auth/telegram/chats", listTelegramChatsRoute);
   router.register("POST", "/api/auth/telegram/chats", bindTelegramChatRoute);
+  router.register(
+    "PATCH",
+    /^\/api\/auth\/telegram\/chats\/([^/]+)$/,
+    patchTelegramChatNotificationsRoute,
+  );
   router.register("DELETE", /^\/api\/auth\/telegram\/chats\/([^/]+)$/, unbindTelegramChatRoute);
   router.register("GET", "/api/auth/telegram/links", listTelegramLinksRoute);
   router.register("POST", "/api/auth/telegram/disconnect", telegramDisconnectFromAuthRoute);
@@ -3007,6 +3047,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // The agent runner injects the real control-plane URL into every spawned
       // agent so preview requests target THIS server, never a hardcoded port.
       runner.apiUrl = url;
+      notificationCtx.publicOrigin = url;
 
       // Register this serve process in the lockfile so port conflicts can be
       // detected on the next startup (0168).
@@ -3041,7 +3082,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           void remoteValidator?.dispose();
           unsubscribe();
           unsubscribeCleanup();
-          unsubscribeNeedsInput();
+          unsubscribeNotifications();
           unsubscribeCTOEvents();
           watcher.stop();
           supervisor?.stop();

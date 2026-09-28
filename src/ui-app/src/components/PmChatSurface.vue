@@ -27,6 +27,7 @@ import { renderChatMarkdown } from "../lib/markdown";
 import { fmtTime } from "../lib/time";
 import { bubbleRole, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
 import { useChatScroll } from "../composables/useChatScroll";
+import { useCopyChatMessage } from "../composables/useCopyChatMessage";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
 import AiChatThinking from "./AiChatThinking.vue";
 import ChatJumpToLatest from "./ChatJumpToLatest.vue";
@@ -64,6 +65,8 @@ const props = withDefaults(
     busyLabel?: string;
     /** Suggested prompts; rendered above the composer. */
     canned?: string[];
+    /** Open agent questions the human is answering in this compose session. */
+    openQuestions?: string[];
     /** Screenshots picked but not yet sent. */
     shots?: PendingShot[];
     /** Hide the attach control (hosts with no attachment path). */
@@ -76,6 +79,7 @@ const props = withDefaults(
     placeholder: "Ask PM…",
     busyLabel: "PM is thinking",
     canned: () => [],
+    openQuestions: () => [],
     shots: () => [],
     canAttach: true,
     title: undefined,
@@ -111,8 +115,12 @@ const { showJumpToLatest, onScroll, scrollToLatest } = useChatScroll(log, {
   active: () => props.active,
 });
 
+const { messageBubbleListeners } = useCopyChatMessage();
+
 /** Canned prompts are a shortcut, not a competitor to typing — hide once used. */
 const showCanned = computed(() => props.canned.length > 0 && !draft.value.trim());
+
+const showOpenQuestions = computed(() => props.openQuestions.length > 0);
 
 function sendCanned(text: string): void {
   draft.value = text;
@@ -182,7 +190,11 @@ defineExpose({ focusDraft });
           <ChatToolCallRow v-else-if="row.kind === 'tools'" :calls="row.calls" :at="row.at" />
           <div v-else-if="bubbleRole(row)" class="pm-row" :class="`pm-row-${bubbleRole(row)}`">
             <div v-if="bubbleRole(row) === 'assistant'" class="pm-mini-avatar">PM</div>
-            <div class="pm-bubble" :class="`pm-bubble-${bubbleRole(row)}`">
+            <div
+              class="pm-bubble"
+              :class="`pm-bubble-${bubbleRole(row)}`"
+              v-on="messageBubbleListeners(row)"
+            >
               <div
                 v-if="bubbleRole(row) === 'assistant'"
                 class="pm-markdown"
@@ -200,6 +212,21 @@ defineExpose({ focusDraft });
     </div>
 
     <ChatJumpToLatest :visible="showJumpToLatest" :anchor="log" @click="scrollToLatest()" />
+
+    <div
+      v-if="showOpenQuestions"
+      class="pm-open-questions"
+      role="region"
+      aria-label="Questions for you"
+    >
+      <div class="pm-open-questions-head">
+        <span class="pm-open-questions-badge">Questions for you</span>
+        <span class="pm-open-questions-hint">Your reply below answers these</span>
+      </div>
+      <ol class="pm-open-questions-list">
+        <li v-for="(question, index) in openQuestions" :key="index">{{ question }}</li>
+      </ol>
+    </div>
 
     <div v-if="showCanned" class="pm-canned" role="list" aria-label="Suggested prompts">
       <div
