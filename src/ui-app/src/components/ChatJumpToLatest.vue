@@ -118,6 +118,7 @@ onBeforeUnmount(() => {
       v-if="visible"
       type="button"
       class="chat-jump-latest"
+      data-overlay-layer="floating"
       data-testid="chat-jump-latest"
       :style="style"
       :aria-label="label"

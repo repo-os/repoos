@@ -38,6 +38,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
     <div
       v-if="task"
       class="dirty-overlay"
+      data-overlay-layer="floating"
       role="dialog"
       aria-modal="true"
       aria-labelledby="dirty-checkout-title"

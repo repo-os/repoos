@@ -31,6 +31,7 @@ const COLORS: Record<string, { bg: string; border: string; icon: string }> = {
       v-for="toast in toasts"
       :key="toast.id"
       class="toast-item"
+      data-overlay-layer="floating"
       :style="{
         background: COLORS[toast.type].bg,
         borderColor: COLORS[toast.type].border,

@@ -365,6 +365,7 @@ watch([docList, skillList], () => {
     <div
       v-if="open"
       class="search-overlay-backdrop"
+      data-overlay-layer="floating"
       role="presentation"
       @click="handleBackdropClick"
     >
