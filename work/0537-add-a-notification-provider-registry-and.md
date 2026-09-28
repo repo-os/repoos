@@ -3,6 +3,9 @@ id: "0537"
 title: Add a notification provider registry and the Telegram notification provider
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p1
 area: server
 story: RepoOS Telegram Bot
@@ -10,7 +13,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/add-a-notification-provider-registry-and
 created_at: "2026-09-27T07:33:00Z"
-updated_at: "2026-09-28T02:18:37Z"
+updated_at: "2026-09-28T02:21:32Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -81,3 +84,4 @@ error: script "test" exited with code 1
 - 2026-09-28T01:45:38Z · status active→review
 - 2026-09-28T01:48:49Z · status review→active
 - 2026-09-28T02:18:37Z · status active→review
+- 2026-09-28T02:21:32Z · needs_input
