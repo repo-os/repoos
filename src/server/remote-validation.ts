@@ -1033,7 +1033,7 @@ export class RemoteValidationRunner implements RemoteValidator {
         opts,
         startedAt,
         runMeta.machine,
-        summary.ok ? "pass" : "fail",
+        classifyRunOutcome(summary),
         summary.detail,
       );
       return summary;
@@ -1085,11 +1085,16 @@ export class RemoteValidationRunner implements RemoteValidator {
         return this.infraFail(`scp of candidate bundle failed: ${up.detail ?? "unknown"}`);
 
       // Provisioning + bundling can outlast the caller's deadline (#0521 spec
-      // item 5) — never start a suite for a caller that already gave up.
+      // item 5) — never start a suite for a caller that already gave up. The
+      // `cancelled` marker tells the history row apart from a real gate
+      // failure (0564 review: this used to land as `fail`).
       if (opts.deadlineAt !== undefined && Date.now() >= opts.deadlineAt) {
-        return this.infraFail(
-          `the caller's deadline passed before the run could start on ${host.ip} — the run was cancelled`,
-        );
+        return {
+          ...this.infraFail(
+            `the caller's deadline passed before the run could start on ${host.ip} — the run was cancelled`,
+          ),
+          cancelled: true,
+        };
       }
 
       // 3. run build + test inside the container
@@ -1978,6 +1983,17 @@ export interface HostPoolOptions {
 }
 
 /**
+ * The history outcome for a validate() summary (#0564 review): a deadline
+ * that passed mid-dispatch marks its summary `cancelled`, and the row must
+ * say `cancelled` — the Runs tab exists to tell "the gate was cancelled"
+ * apart from "the gate caught something".
+ */
+function classifyRunOutcome(summary: CheckSummary): "pass" | "fail" | "cancelled" {
+  if (summary.ok) return "pass";
+  return summary.cancelled ? "cancelled" : "fail";
+}
+
+/**
  * Record one remote validation run in the durable check-run history (#0564).
  *
  * One row per `validate()` invocation — dispatch failures included, with a
@@ -1985,6 +2001,12 @@ export interface HostPoolOptions {
  * "checks-test-suite") record task-less; their phase tells the story. The
  * remote half always runs the full plan, so scope is always 'full'. Fail-soft:
  * history is observability, never a gate input.
+ *
+ * The store root honours `REPOOS_CHECK_STORE_ROOT` (0564 review): a standalone
+ * `repoos check` that dispatches the remote half itself resolves it to the
+ * MAIN checkout before dispatching, so the row lands in the history the
+ * server reads instead of the worktree's own file. Server-side callers leave
+ * the env unset and fall through to `config.root` — the main checkout.
  */
 function recordRemoteRunHistory(
   config: RepoOSConfig,
@@ -1995,7 +2017,8 @@ function recordRemoteRunHistory(
   detail?: string | null,
 ): void {
   try {
-    getCheckStore(config.root, config.cacheDir).record({
+    const storeRoot = process.env.REPOOS_CHECK_STORE_ROOT?.trim() || config.root;
+    getCheckStore(storeRoot, config.cacheDir).record({
       taskId: /^\d+$/.test(opts.taskId) ? opts.taskId : null,
       phase: opts.phase ?? "pre-review",
       machine,
@@ -2122,9 +2145,24 @@ export class TailscaleRunner implements RemoteValidator {
 
   async validate(opts: ValidateOptions): Promise<CheckSummary> {
     const rv = this.config.remoteValidation ?? {};
-    if (!rv.enabled) return this.infraFail("remote validation is disabled");
-    const capabilities = (opts.capabilities ?? []).map((c) => c.trim()).filter(Boolean);
     const startedAt = Date.now();
+    if (!rv.enabled) {
+      // The Hetzner runner records an infra row for this same condition
+      // (validate() falls through to runValidation, which fails on the
+      // disabled config) — record one here too, with no machine, instead of
+      // returning before anything is written (0564 review: keep the two
+      // providers consistent so a dispatch attempt never vanishes).
+      recordRemoteRunHistory(
+        this.config,
+        opts,
+        startedAt,
+        null,
+        "fail",
+        "remote validation is disabled",
+      );
+      return this.infraFail("remote validation is disabled");
+    }
+    const capabilities = (opts.capabilities ?? []).map((c) => c.trim()).filter(Boolean);
     const emit = (s: string): void => {
       this.appendLog(opts.taskId, s);
       opts.onChunk?.(s);
@@ -2162,12 +2200,14 @@ export class TailscaleRunner implements RemoteValidator {
     try {
       const summary = await this.runValidation(opts, slot, capabilities);
       // One durable row per validate() — attributed to the host that ran it.
+      // A deadline that passed mid-dispatch (inside runValidation) is a
+      // cancellation, not a gate failure (0564 review).
       recordRemoteRunHistory(
         this.config,
         opts,
         startedAt,
         slot.host.host,
-        summary.ok ? "pass" : "fail",
+        classifyRunOutcome(summary),
         summary.detail,
       );
       return summary;
@@ -2226,11 +2266,16 @@ export class TailscaleRunner implements RemoteValidator {
       // Never enter the host lock after the caller's deadline (#0521 spec
       // item 5): a run whose caller already gave up (dispatch can win the race
       // with the queue timer, or the deadline passes during bundle/upload) must
-      // not start a suite or hold a slot — cancel transiently, like a queued run.
+      // not start a suite or hold a slot — cancel transiently, like a queued
+      // run. The `cancelled` marker keeps the history row from reading as a
+      // gate failure (0564 review).
       if (opts.deadlineAt !== undefined && Date.now() >= opts.deadlineAt) {
-        return this.infraFail(
-          `the caller's deadline passed before the run could start on ${host.ip} — the run was cancelled`,
-        );
+        return {
+          ...this.infraFail(
+            `the caller's deadline passed before the run could start on ${host.ip} — the run was cancelled`,
+          ),
+          cancelled: true,
+        };
       }
       emit(`[running build + test in ${image} on ${host.ip}]\n`);
       const inner = `REPOOS_CI_IMAGE=${shellQuote(image)} ${VALIDATE_SCRIPT} ${remoteBundle} ${opts.candidateSha} ${paths.artifacts}`;

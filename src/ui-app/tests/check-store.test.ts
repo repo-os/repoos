@@ -5,7 +5,8 @@
  * throughout — the store is for visibility, never a gate input.
  */
 import { afterEach, describe, expect, it } from "vitest";
-import { rmSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { realpathSync, rmSync, writeFileSync } from "node:fs";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -15,12 +16,17 @@ import {
   localMachineName,
   resetCheckStore,
 } from "../../core/check-store.js";
+import { mainCheckoutRoot } from "../../core/git.js";
 
 const dirs: string[] = [];
 afterEach(() => {
   for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
   resetCheckStore();
 });
+
+// Never let an inherited REPOOS_CHECK_STORE_ROOT (a `repoos check` parent
+// exports it for its own rows) redirect these fixtures into a live store.
+delete process.env.REPOOS_CHECK_STORE_ROOT;
 
 function store(): { s: CheckStore; root: string } {
   const root = mkdtempSync(join(tmpdir(), "repoos-checkstore-"));
@@ -167,5 +173,40 @@ describe("envToRunContext (caller attribution)", () => {
     expect(name).toBeTruthy();
     expect(name).not.toContain(".");
     expect(name).toBe(name.toLowerCase());
+  });
+});
+
+describe("mainCheckoutRoot (worktree → server store, #0564 review)", () => {
+  function gitRepo(): string {
+    const root = mkdtempSync(join(tmpdir(), "repoos-mcroot-"));
+    dirs.push(root);
+    const run = (args: string[], cwd: string): void => {
+      execFileSync("git", args, { cwd, stdio: "ignore" });
+    };
+    run(["init", "-q"], root);
+    run(["config", "user.email", "t@example.com"], root);
+    run(["config", "user.name", "T"], root);
+    writeFileSync(join(root, "f.txt"), "x");
+    run(["add", "."], root);
+    run(["commit", "-qm", "init"], root);
+    return root;
+  }
+
+  it("resolves the main checkout from inside a linked worktree", () => {
+    const main = gitRepo();
+    const wt = join(main, "..", "repoos-mcroot-wt");
+    execFileSync("git", ["worktree", "add", "-q", wt, "-b", "side"], { cwd: main });
+    dirs.push(wt);
+    // git prints resolved paths, so compare through realpath (macOS /var →
+    // /private/var); the main checkout itself is idempotent either way.
+    const real = (p: string): string => realpathSync(p);
+    expect(real(mainCheckoutRoot(wt))).toBe(real(main));
+    expect(real(mainCheckoutRoot(main))).toBe(real(main));
+  });
+
+  it("falls back to the given root outside git (fail-soft)", () => {
+    const plain = mkdtempSync(join(tmpdir(), "repoos-mcplain-"));
+    dirs.push(plain);
+    expect(mainCheckoutRoot(plain)).toBe(plain);
   });
 });

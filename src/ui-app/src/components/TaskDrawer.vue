@@ -315,6 +315,14 @@ watch(
       checkRows.value = [];
       return;
     }
+    // Bootstrap the in-memory runs from the server (0564 review): after a
+    // page reload mid-gate this store slice is empty — SSE only delivers
+    // events from now on — so the chip would sit on the stale durable row
+    // instead of "Checks running on …" until the Debug tab happened to open.
+    // Only when we have nothing: an SSE-fed slice is fresher than a snapshot.
+    if ((repo.taskChecks[taskId as string] ?? []).length === 0) {
+      void repo.refreshTaskChecks(taskId as string);
+    }
     if (activeCheckRun.value) {
       startCheckLoops(taskId as string);
     } else {

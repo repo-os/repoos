@@ -186,6 +186,60 @@ describe("task drawer check chip (#0564)", () => {
     expect(useUiStore().activeTab).toBe("debug");
   });
 
+  it("rehydrates a mid-gate run after a page reload (0564 review)", async () => {
+    // A reload wipes the store's in-memory slice, and SSE only delivers
+    // events from now on — so the drawer must bootstrap from
+    // /api/tasks/:id/checks (which still has the running run) or the chip
+    // would show the stale durable row instead of "Checks running".
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    checkRunsPayload = [];
+    const runningRun = {
+      id: "0001-handoff-finalize-1",
+      taskId: "0001",
+      kind: "handoff-finalize",
+      startedAt: new Date(T0 - 10_000).toISOString(),
+      finishedAt: null,
+      durationMs: null,
+      running: true,
+      passed: null,
+      code: null,
+      output: "",
+      scope: "full",
+      machine: "macbook",
+    };
+
+    class FakeES {
+      addEventListener(): void {}
+      close(): void {}
+      onopen: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+    }
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/check-runs")) return json({ ok: true, runs: checkRunsPayload });
+        if (url.includes("/checks")) return json({ ok: true, runs: [runningRun] });
+        if (url.includes("/api/health"))
+          return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+        if (url.includes("/api/index"))
+          return json({ tasks: [], counts: { ...EMPTY_COUNTS, active: 1 }, taskCount: 1 });
+        if (url.includes("/api/agents/running")) return json({ tasks: [] });
+        if (url.includes("/review"))
+          return json({ ok: true, running: false, enabled: true, review: null, lines: [] });
+        if (url.includes("/output")) return json({ ok: true, lines: [], stats: {} });
+        if (url.includes("/logs")) return json({ ok: true, logs: [] });
+        throw new Error("unexpected fetch: " + url);
+      }),
+    );
+
+    const wrapper = await mountDrawer(pinia, makeTask());
+    const chip = wrapper.find(".ck-chip");
+    expect(chip.exists()).toBe(true);
+    expect(chip.classes()).toContain("ck-chip-running");
+    expect(chip.text()).toContain("Checks running on macbook");
+  });
+
   it("shows the durable result inline when the in-memory run is gone (server restart)", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
