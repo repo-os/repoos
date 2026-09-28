@@ -46,8 +46,13 @@ same routes). RepoOS validates the bot identity with Telegram, stores the
 token encrypted at rest, and returns the bot's non-secret identity. The token
 is never echoed back — not to the browser, not into logs, `.env`,
 `repoos.toml`, or a support bundle — and it is not readable through the API
-after it is stored. Disconnecting forgets the credential and removes any
-webhook.
+after it is stored. Disconnect first removes and confirms the webhook. For a
+BYO bot, Telegram does not provide a Bot API method to revoke its token: when
+prompted, revoke it in @BotFather and retry disconnect. RepoOS confirms
+revocation by checking that the old token returns 401, then removes the
+encrypted credential and this instance's user links and chat bindings. A
+failed step is reported as incomplete and leaves the credential and bindings
+available for a retry; webhook-removal progress is retained safely.
 
 The same connection procedure registers the bot's supported profile with
 Telegram: its command list (starting with `/help`), and name/description text
