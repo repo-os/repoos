@@ -118,6 +118,30 @@ panel for chat management ships in a later task):
 When a user completes account linking in a private chat (`/start <invite>`),
 that 1:1 chat is bound automatically as a side effect of their own link.
 
+## Chat with the repository guide (Ross)
+
+Once your Telegram account is linked and the chat is bound, send any plain
+message to the bot: in a private chat, or in a bound group by @-mentioning the
+bot or replying to one of its messages. The message becomes a question for
+**Ross**, the repository guide — the same agent the board UI's guide chat
+uses — and the answer comes back to the chat you asked in. Ross is read-only:
+it answers questions about the repository, tasks, and docs; it cannot edit
+files or change task status.
+
+- **Your conversation is yours.** State is kept per Telegram user, not per
+  chat: two members of the same group never share a transcript. Your context
+  follows you between the private chat and a group you both use.
+- **Conversations expire.** After 24 hours of inactivity a conversation ends;
+  your next message starts a fresh one and the bot tells you it did. Send
+  `/new` to start a fresh conversation yourself at any time — while a reply is
+  still being generated, the bot asks you to wait instead of cutting the
+  turn short.
+- **Pace yourself.** Telegram agent turns are metered per user and per chat
+  (a small number per minute). When the limit applies you get a clear
+  "too many questions per minute" message instead of silence, and no turn is
+  started until you try again.
+- Every turn books its tokens and cost to the guide role on the board's AI
+  usage panel, so Telegram-driven spend is visible like every other AI role.
 ## Link your account
 
 An administrator creates a Telegram link from **Settings → Authentication &

@@ -44,7 +44,15 @@ export const TELEGRAM_READ_COMMANDS = ["status", "tasks", "agents", "help"] as c
  * linking and chat binding live in intake). When they arrive bare they must be
  * met with silence here, not an "unknown command" reply.
  */
-const SILENT_FALLTHROUGH_COMMANDS = new Set(["start", "bind", "link", "unlink"]);
+const SILENT_FALLTHROUGH_COMMANDS = new Set([
+  "start",
+  "bind",
+  "link",
+  "unlink",
+  // #0541 owns `/new`'s reply (guide-conversation reset); bare `/new` falling
+  // into "unknown command → help" would answer it twice.
+  "new",
+]);
 
 /** The default `/tasks` scope: work that is actually moving. */
 const WORK_SCOPE = "work";

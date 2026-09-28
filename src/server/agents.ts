@@ -681,9 +681,10 @@ export function usageCostSource(agent: Agent, usage: { costUsd?: number }): stri
  * and review sessions are keyed by the task id directly. PM chats are keyed by
  * a synthetic `pm-task-v2:<id>` id whose suffix is the actual task — attribute
  * them under that real id so PM cost/tokens aggregate per-task. Non-task chats
- * (guide) have no task and return null. Per-user PM sessions (0248) append
- * `::<email>` after the task id; that suffix is stripped here too so cost
- * attribution doesn't treat "<id>::<email>" as the task id.
+ * (guide, debugger, Telegram guide #0541) have no task and return null. Per-user
+ * PM sessions (0248) append `::<email>` after the task id; that suffix is
+ * stripped here too so cost attribution doesn't treat "<id>::<email>" as the
+ * task id.
  */
 export function resolveSessionTaskId(taskKey: string | undefined): string | null {
   if (!taskKey) return null;
@@ -694,6 +695,12 @@ export function resolveSessionTaskId(taskKey: string | undefined): string | null
   // not a task's engineering work — never attribute their cost/tokens to a task
   // named "debugger:<id>" (which would otherwise surface as a phantom board task).
   if (taskKey.startsWith("debugger:")) return null;
+  // Telegram guide conversations (#0541) are keyed per Telegram user —
+  // `tg-guide:<telegramUserId>` — repository-level Ross chats driven from
+  // Telegram, unrelated to any task. The generic pass-through below would
+  // otherwise record the key itself as the taskId (a phantom task), so they
+  // attribute to null like every other board-level chat.
+  if (taskKey.startsWith("tg-guide:")) return null;
   // Story PM chats (#0515) are keyed `pm-story-v1:<number>` (or a slug, for a
   // story with no definition file) plus an optional `::<email>`. They belong to
   // no task, and the generic `pm:` alternative below would otherwise capture
