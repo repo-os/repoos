@@ -159,51 +159,85 @@ function agentChatOptions(
 }
 
 /**
+ * Boot options: optional command wiring (#0540) and/or an extra
+ * authorized-update handler (#0541 agent chat). The intake supports exactly
+ * ONE `onAuthorized` sink, so both are composed with `chainedOnAuthorized` —
+ * each handler filters its own scope out of every update, so a chained
+ * update flows through every handler that can act on it.
+ */
+export interface TelegramBootOptions extends Partial<TelegramCommandWiring> {
+  onAuthorized?: TelegramAuthorizedHandler;
+}
+
+/**
+ * Compose authorized-update handlers into the intake's single sink.
+ * Handlers are run in the given order and each filters its own surface
+ * (#0540 commands act on `msg.command`; #0541 agent chat acts on plain new
+ * non-command text); a failure in one is logged redacted and never
+ * suppresses the next. Returns undefined when nothing is registered, so
+ * `bootstrapTelegramAtBoot` keeps #0534's drop-with-no-sink behavior.
+ */
+export function chainedOnAuthorized(
+  ...handlers: readonly (TelegramAuthorizedHandler | undefined)[]
+): TelegramAuthorizedHandler | undefined {
+  const chain = handlers.filter((h): h is TelegramAuthorizedHandler => h != null);
+  if (chain.length === 0) return undefined;
+  if (chain.length === 1) return chain[0];
+  return async (update, actor, meta) => {
+    for (const handler of chain) {
+      try {
+        await handler(update, actor, meta);
+      } catch (e) {
+        console.error(
+          `[telegram] authorized handler failed: ${e instanceof Error ? e.message : String(e)}`,
+        );
+      }
+    }
+  };
+}
+
+/**
  * Register the authorization intake handler and resume polling when configured
  * (#0534). Call after `resetTelegramProviders()` on reload so the new provider
  * singleton receives the handler.
  *
- * When `commands` is supplied, the read-only command handler (#0540) is
- * registered as THE intake `onAuthorized` callback, and `/msg` routes inside
- * it to the task-agent follow-up handler (#0542) when `commands.agentChat` is
- * wired — one intake consumer, never two. Omitted (as in adapter tests) the
- * intake path stays exactly as #0534 left it: authorize, audit, drop — no
- * replies.
+ * With wiring supplied, the read-only command handler (#0540) is composed
+ * into the intake `onAuthorized` sink, with `/msg` routing inside it to the
+ * task-agent follow-up handler (#0542) when `commands.agentChat` is wired —
+ * one intake consumer there, never two. With `onAuthorized` supplied an
+ * extra handler (#0541 agent chat) is chained after the commands. Neither
+ * (adapter tests): the intake path stays exactly as #0534 left it:
+ * authorize, audit, drop.
  */
 export async function bootstrapTelegramAtBoot(
-  /**
-   * The full config object the server holds (Settings saves mutate it in
-   * place). Declared `RepoOSConfig` rather than a Pick so the `/msg` handler
-   * (#0542) can see the agents list and task-file defaults; every consumer
-   * below reads a narrow view of the same live object.
-   */
   config: RepoOSConfig,
-  commands?: TelegramCommandWiring,
+  options: TelegramBootOptions = {},
 ): Promise<{ resumed: boolean; detail?: string }> {
   const provider = getTelegramProvider(config);
-  let onAuthorized: TelegramAuthorizedHandler | undefined;
-  if (commands) {
+  let commandHandler: TelegramAuthorizedHandler | undefined;
+  if (options.index && options.runner && options.reviews) {
     // `/msg` shares the commands' single authorized-entry point: the command
     // handler dispatches to it before the unknown-command fallback, so reads
     // and agent chat compose instead of competing for onAuthorized.
-    const agentChat = commands.agentChat
+    const agentChat = options.agentChat
       ? createTelegramAgentChatHandler(
-          agentChatOptions(config, commands.index, commands.runner, commands.agentChat.logger),
+          agentChatOptions(config, options.index, options.runner, options.agentChat.logger),
         )
       : undefined;
-    onAuthorized = createTelegramCommandHandler({
+    commandHandler = createTelegramCommandHandler({
       config,
       repositoryName: projectDisplayName(config.root),
-      index: commands.index,
-      runner: commands.runner,
-      reviews: commands.reviews,
-      ...(commands.publicOrigin ? { publicOrigin: commands.publicOrigin } : {}),
-      send: async (chatId, text, options) => {
-        await provider.sendMessage(chatId, text, options);
+      index: options.index,
+      runner: options.runner,
+      reviews: options.reviews,
+      ...(options.publicOrigin ? { publicOrigin: options.publicOrigin } : {}),
+      send: async (chatId, text, sendOpts) => {
+        await provider.sendMessage(chatId, text, sendOpts);
       },
       ...(agentChat ? { agentChat } : {}),
     });
   }
+  const onAuthorized = chainedOnAuthorized(commandHandler, options.onAuthorized);
   provider.onUpdate(
     createTelegramIntakeHandler(
       telegramIntakeOptionsFromConfig(config, {
