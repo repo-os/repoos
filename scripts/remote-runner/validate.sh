@@ -36,7 +36,15 @@ IMAGE="${REPOOS_CI_IMAGE:-repoos-ci}"
 rm -rf "$ART" && mkdir -p "$ART"
 # Per-run dirs live under the shared parent; prune ones nobody collected.
 find "$HOME/.repoos-artifacts" -mindepth 1 -maxdepth 1 -type d -mtime +1 -exec rm -rf {} + 2>/dev/null || true
-trap 'rm -rf "$WORK" "$BUNDLE"' EXIT
+_rvcleanup() {
+  # The container writes files as uid 1000 ('bun'); if the SSH user has a
+  # different uid they cannot rm those files directly. Chown everything back
+  # as root inside a throwaway container before the host-side rm.
+  docker run --rm -v "$WORK":/work -u 0 "$IMAGE" \
+    chown -R "$(id -u)" /work 2>/dev/null || true
+  rm -rf "$WORK" "$BUNDLE"
+}
+trap _rvcleanup EXIT
 
 echo "[validate] cloning bundle $BUNDLE"
 git clone -q "$BUNDLE" "$WORK/repo"
