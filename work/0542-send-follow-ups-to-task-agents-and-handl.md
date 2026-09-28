@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-28T11:55:44Z"
-review_passes: 1
 id: "0542"
 title: Send follow-ups to task agents and handle needs-input over Telegram
 type: feature
-status: review
+status: active
 priority: p2
 area: server
 story: RepoOS Telegram Bot
@@ -14,6 +12,9 @@ branch: feat/send-follow-ups-to-task-agents-and-handl
 model_override: opencode-go/glm-5.3-flash
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-27T07:33:47Z"
+updated_at: "2026-09-28T11:55:44Z"
+review_rounds: 1
+review_passes: 1
 ---
 ## Problem
 
@@ -55,4 +56,4 @@ Task transitions driven from Telegram must record the real actor. Existing calle
 - 2026-09-28T10:30:35Z · review_model_override
 - 2026-09-28T10:30:36Z · status ready→active, branch
 - 2026-09-28T11:51:05Z · status active→review
-
+- 2026-09-28T11:55:44Z · status review→active
