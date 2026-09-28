@@ -2,7 +2,7 @@
 id: "0566"
 title: Fix Questions-for-You duplication and answer UX
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
@@ -12,7 +12,7 @@ pm_model_override: opencode/muse-spark-1.3-contributor-free
 review_cli_override: github copilot
 review_model_override: copilot-auto-balance
 created_at: "2026-09-28T04:34:57Z"
-updated_at: "2026-09-28T04:55:12Z"
+updated_at: "2026-09-28T05:04:11Z"
 ---
 ## Problem
 
@@ -88,3 +88,16 @@ rm: cannot remove '/home/nick/.repoos-validate.TcaN0Q/repo/.repoos/repoos.db-wal
 rm: cannot remove '/home/nick/.repoos-validate.TcaN0Q/repo/.repoos/repoos.db-shm': Permission denied — fix it in the feature branch and re-run the gate
 - 2026-09-28T04:55:11Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) — …/dist/ui/assets/VoiceDictate-CEyIL7fp.css': Permission denied · next step: check the transcript for an unanswered permission/approval prompt — see docs/adr/0005-agents-use-repoos-apis-for-privileged-operations.md
 - 2026-09-28T04:55:12Z · status review→active
+- 2026-09-28T04:58:30Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 1) — …/dist/ui/assets/VoiceDictate-CEyIL7fp.css': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.CznTbm/repo/dist/ui/assets/WorkView-C4lr2ckC.css': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.CznTbm/repo/dist/ui/assets/index-DOd6wdrS.css': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.CznTbm/repo/dist/ui/favicon.svg': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.CznTbm/repo/dist/ui/sw.js': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.CznTbm/repo/dist/ui/index.html': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.CznTbm/repo/dist/.build-info.json': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.CznTbm/repo/dist/.build-stamp.json': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.CznTbm/repo/.repoos/auto-engineering-decision.json': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.CznTbm/repo/.repoos/repoos.db': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.CznTbm/repo/.repoos/repoos.db-wal': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.CznTbm/repo/.repoos/repoos.db-shm': Permission denied — fix it in the feature branch and re-run the gate
+- 2026-09-28T05:04:11Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) — …/dist/ui/assets/VoiceDictate-CEyIL7fp.css': Permission denied · next step: check the transcript for an unanswered permission/approval prompt — see docs/adr/0005-agents-use-repoos-apis-for-privileged-operations.md
