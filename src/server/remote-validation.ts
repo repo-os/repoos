@@ -377,6 +377,8 @@ export const HOST_LOCK_HEARTBEAT_SECS = 60;
  * minutes, comfortably past the 25-minute run cap so no LIVE run goes quiet.
  */
 export const HOST_LOCK_HEARTBEAT_TICKS = 30;
+/** Slot indices 0..N-1 on a host — independent of any one caller's limit (#0521 review). */
+export const HOST_LOCK_MAX_SLOTS = 16;
 
 /**
  * Per-host prerequisite check (#0521) run over ssh before a host's first job,
@@ -423,8 +425,8 @@ export function prereqProbeCommand(
           'command -v git >/dev/null 2>&1 || { echo "git not found on PATH"; exit 1; }',
           'command -v docker >/dev/null 2>&1 || { echo "docker not found on PATH"; exit 1; }',
           'docker info >/dev/null 2>&1 || { echo "docker daemon not reachable (is docker running?)"; exit 1; }',
-          `docker image inspect '${image}' >/dev/null 2>&1 || ` +
-            `{ echo "image '${image}' not found — build it (just setup-<host>) or fix remoteValidation.containerImage"; exit 1; }`,
+          `docker image inspect ${shellQuote(image)} >/dev/null 2>&1 || ` +
+            `{ echo ${shellQuote(`image '${image}' not found — build it (just setup-<host>) or fix remoteValidation.containerImage`)}; exit 1; }`,
         ];
   lines.push(
     ...(runner === "native"
@@ -457,9 +459,9 @@ export function prereqProbeCommand(
           // ground truth instead of approximating it (#0521 review, third
           // round).
           `docker volume create ${CACHE_VOLUME_NAME} >/dev/null 2>&1 && ` +
-            `docker run --rm -v ${CACHE_VOLUME_NAME}:/bun-cache -u 0 '${image}' ` +
+            `docker run --rm -v ${CACHE_VOLUME_NAME}:/bun-cache -u 0 ${shellQuote(image)} ` +
             `"chown 1000:1000 /bun-cache" >/dev/null 2>&1 && ` +
-            `docker run --rm -v ${CACHE_VOLUME_NAME}:/bun-cache -u 1000 '${image}' ` +
+            `docker run --rm -v ${CACHE_VOLUME_NAME}:/bun-cache -u 1000 ${shellQuote(image)} ` +
             `"touch /bun-cache/.repoos-probe && rm -f /bun-cache/.repoos-probe" >/dev/null 2>&1 || ` +
             `{ echo "bun cache volume ${CACHE_VOLUME_NAME} is not writable by the container even after chown as root"; exit 1; }`,
         ]),
@@ -567,6 +569,7 @@ export function hostLockShell(opts: {
   const script = [
     lockLine,
     `SLOTS=${slots}`,
+    `HOSTMAX=${HOST_LOCK_MAX_SLOTS}`,
     `WAIT=${wait}`,
     `DEADLINE=${deadline !== undefined ? deadline : ""}`,
     'mkdir -p "$LOCKROOT" 2>/dev/null || true',
@@ -582,11 +585,43 @@ export function hostLockShell(opts: {
     '_rvslot=""',
     "_rvwaited=0",
     'while [ -z "$_rvslot" ]; do',
-    "  _i=0",
-    '  while [ "$_i" -lt "$SLOTS" ]; do',
-    '    if mkdir "$LOCKROOT/$_i" 2>/dev/null; then _rvslot="$_i"; break; fi',
-    "    _i=$((_i+1))",
+    // Host-wide cap = min(this caller's limit, every occupied slot's limit).
+    // Scan all slot indices (HOSTMAX), not just 0..SLOTS-1, so a caller with
+    // a lower limit cannot grab a free high index while another run holds a
+    // different index (#0521 review).
+    "  _rvoccupied=0",
+    "  _rvcap=$SLOTS",
+    '  for _rvdir in "$LOCKROOT"/[0-9]*; do',
+    '    [ -d "$_rvdir" ] || continue',
+    "    _rvoccupied=$((_rvoccupied+1))",
+    "    _rvother=1",
+    '    [ -r "$_rvdir/.limit" ] && IFS= read -r _rvother < "$_rvdir/.limit"',
+    '    case "$_rvother" in ""|*[!0-9]*) _rvother=1 ;; esac',
+    '    [ "$_rvother" -ge 1 ] || _rvother=1',
+    '    [ "$_rvother" -lt "$_rvcap" ] && _rvcap=$_rvother',
     "  done",
+    '  if [ "$_rvoccupied" -lt "$_rvcap" ]; then',
+    "    _i=0",
+    '    while [ "$_i" -lt "$HOSTMAX" ]; do',
+    '      if mkdir "$LOCKROOT/$_i" 2>/dev/null; then',
+    '        if ! printf "%s\\n" "$SLOTS" > "$LOCKROOT/$_i/.limit"; then rmdir "$LOCKROOT/$_i" 2>/dev/null; _i=$((_i+1)); continue; fi',
+    "        _rvcount=0",
+    "        _rvcap2=$SLOTS",
+    '        for _rvdir in "$LOCKROOT"/[0-9]*; do',
+    '          [ -d "$_rvdir" ] || continue',
+    "          _rvcount=$((_rvcount+1))",
+    "          _rvother=1",
+    '          [ -r "$_rvdir/.limit" ] && IFS= read -r _rvother < "$_rvdir/.limit"',
+    '          case "$_rvother" in ""|*[!0-9]*) _rvother=1 ;; esac',
+    '          [ "$_rvother" -ge 1 ] || _rvother=1',
+    '          [ "$_rvother" -lt "$_rvcap2" ] && _rvcap2=$_rvother',
+    "        done",
+    '        if [ "$_rvcount" -le "$_rvcap2" ]; then _rvslot=$_i; break; fi',
+    '        rm -f "$LOCKROOT/$_i/.limit"; rmdir "$LOCKROOT/$_i" 2>/dev/null',
+    "      fi",
+    "      _i=$((_i+1))",
+    "    done",
+    "  fi",
     '  [ -n "$_rvslot" ] && break',
     // Self-clocked against the absolute deadline when there is one (immune
     // to setup delay); otherwise the original relative-elapsed counter.
@@ -626,7 +661,7 @@ export function hostLockShell(opts: {
     // for up to a full heartbeat interval after every run.
     "_rvbeat >/dev/null 2>&1 &",
     "_rvhb=$!",
-    '_rvcleanup() { _rc=$?; kill "$_rvhb" 2>/dev/null; rmdir "$LOCKROOT/$_rvslot" 2>/dev/null; exit $_rc; }',
+    '_rvcleanup() { _rc=$?; kill "$_rvhb" 2>/dev/null; rm -f "$LOCKROOT/$_rvslot/.limit"; rmdir "$LOCKROOT/$_rvslot" 2>/dev/null; exit $_rc; }',
     "trap _rvcleanup EXIT",
     "trap 'exit 129' HUP",
     "trap 'exit 130' INT",
@@ -1553,8 +1588,7 @@ export class TailscaleHostPool {
         }, ms);
         waiter.timer.unref?.();
       }
-      const ahead = candidates.reduce((n, s) => n + s.active, 0) + (this.waiters.length - 1);
-      waiter.onQueue?.(ahead);
+      waiter.onQueue?.(this.queueAheadCount(capabilities, this.waiters.length - 1));
       // Opportunistic recovery while queued: re-probe dead candidates so the
       // job can move to one the moment it comes back.
       for (const s of candidates) if (!s.healthy) this.armHealthRetry(s);
@@ -1629,6 +1663,32 @@ export class TailscaleHostPool {
 
   private liveHosts(): PoolHostState[] {
     return this.hosts.filter((s) => !s.removed);
+  }
+
+  /** Hosts that could take a job with these capabilities. */
+  private hostsEligibleFor(capabilities: string[]): PoolHostState[] {
+    return this.liveHosts().filter((s) => hostSatisfies(s.spec, capabilities));
+  }
+
+  /** True when two jobs could be assigned to the same host. */
+  private waitersCompete(a: string[], b: string[]): boolean {
+    const hostsA = new Set(this.hostsEligibleFor(a).map((s) => s.spec.host));
+    return this.hostsEligibleFor(b).some((s) => hostsA.has(s.spec.host));
+  }
+
+  /**
+   * How many runs are ahead of a queued waiter: in-flight on its eligible
+   * hosts plus earlier FIFO waiters that compete for the same hosts — not
+   * waiters that only need a different host (#0521 review).
+   */
+  private queueAheadCount(capabilities: string[], waiterIndex: number): number {
+    const active = this.hostsEligibleFor(capabilities).reduce((n, s) => n + s.active, 0);
+    let aheadWaiters = 0;
+    for (let i = 0; i < waiterIndex; i++) {
+      const w = this.waiters[i]!;
+      if (this.waitersCompete(w.capabilities, capabilities)) aheadWaiters++;
+    }
+    return active + aheadWaiters;
   }
 
   private dropIfIdle(s: PoolHostState): void {
