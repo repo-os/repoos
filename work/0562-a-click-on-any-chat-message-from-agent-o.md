@@ -1,4 +1,5 @@
 ---
+merge_conflict_retry_count: 1
 updated_at: "2026-09-28T02:25:11Z"
 review_passes: 5
 id: "0562"
@@ -95,4 +96,5 @@ A click on any chat message (from agent or human) should automatically copy the 
 - 2026-09-28T00:36:26Z · needs_input
 - 2026-09-28T01:05:36Z · needs_input
 - 2026-09-28T02:25:11Z · needs_input
+
 
