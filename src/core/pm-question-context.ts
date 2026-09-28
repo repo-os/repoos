@@ -13,3 +13,14 @@ export function wrapPmMessageWithQuestionContext(questions: string[], answer: st
     trimmedAnswer,
   ].join("\n");
 }
+
+/** Client-supplied questions must match the task's current open list exactly. */
+export function answeringQuestionsMatchTask(
+  answeringQuestions: string[],
+  taskQuestions: string[] | undefined,
+): boolean {
+  const open = taskQuestions ?? [];
+  return (
+    answeringQuestions.length === open.length && answeringQuestions.every((q, i) => q === open[i])
+  );
+}

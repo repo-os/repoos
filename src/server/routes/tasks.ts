@@ -46,7 +46,10 @@ import {
   flagUnderspecifiedIfNeeded,
   needsInputClearsOnPmMessage,
 } from "../task-underspecified-flag.js";
-import { wrapPmMessageWithQuestionContext } from "../../core/pm-question-context.js";
+import {
+  answeringQuestionsMatchTask,
+  wrapPmMessageWithQuestionContext,
+} from "../../core/pm-question-context.js";
 import { listInputs } from "../../core/input.js";
 import {
   commitTaskFile,
@@ -1653,6 +1656,14 @@ export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
   const answeringQuestions = rawAnsweringQuestions.filter(
     (q): q is string => typeof q === "string" && q.trim().length > 0,
   );
+  if (
+    answeringQuestions.length > 0 &&
+    !answeringQuestionsMatchTask(answeringQuestions, existing.questions)
+  ) {
+    return json(res, 400, {
+      error: "answeringQuestions must match this task's open questions",
+    });
+  }
   const messageText =
     answeringQuestions.length > 0
       ? wrapPmMessageWithQuestionContext(answeringQuestions, text)

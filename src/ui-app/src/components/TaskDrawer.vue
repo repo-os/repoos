@@ -1419,6 +1419,8 @@ const staleNeedsInputOnReview = computed(() =>
 
 const needsInputHeaderChip = computed<{ label: string; cls: string } | null>(() => {
   if (!ui.active || !needsInputSurfaces(ui.active)) return null;
+  // The dedicated question banner already signals this — avoid a second chip (#0566).
+  if (showAgentQuestionsBanner.value) return null;
   // A stale flag must not hide a live review or engineer session (#0511 R2).
   if (review.value?.running || repo.isRunning(ui.active.id)) return null;
   return {
@@ -1693,8 +1695,8 @@ function pmSessionId(taskId: string): string {
 }
 
 const pmDraft = ref("");
-/** Open task questions shown above the PM composer until the user sends a reply. */
-const pmOpenQuestions = ref<string[] | null>(null);
+/** Open task questions for the PM answer flow, scoped to one task id. */
+const pmAnswerContext = ref<{ taskId: string; questions: string[] } | null>(null);
 const pmSubmitting = ref(false);
 /** The shared PM chat surface, for focusing the composer after routing to PM. */
 const pmSurface = ref<InstanceType<typeof PmChatSurface> | null>(null);
@@ -1753,9 +1755,20 @@ const pmCannedMessages = computed(() => {
 function openPmToAnswerQuestions(): void {
   if (!ui.active?.questions?.length) return;
   ui.activeTab = "pm";
-  pmOpenQuestions.value = [...ui.active.questions];
+  pmAnswerContext.value = { taskId: ui.active.id, questions: [...ui.active.questions] };
   pmDraft.value = "";
   void nextTick(() => pmSurface.value?.focusDraft());
+}
+
+function clearPmAnswerContext(clearDraft = false): void {
+  pmAnswerContext.value = null;
+  if (clearDraft) pmDraft.value = "";
+}
+
+function pmOpenQuestionsForActive(): string[] {
+  const ctx = pmAnswerContext.value;
+  if (!ctx || !ui.active || ctx.taskId !== ui.active.id) return [];
+  return ctx.questions;
 }
 
 async function pmSend(): Promise<void> {
@@ -1763,14 +1776,15 @@ async function pmSend(): Promise<void> {
   if (!text || pmBusy.value || !pmAgentEnabled.value || !ui.active) return;
 
   pmSubmitting.value = true;
+  const ctx = pmAnswerContext.value;
   const answeringQuestions =
-    pmOpenQuestions.value && pmOpenQuestions.value.length > 0 ? [...pmOpenQuestions.value] : null;
+    ctx && ctx.taskId === ui.active.id && ctx.questions.length > 0 ? [...ctx.questions] : null;
   const optimistic: AgentOutputEntry = { type: "human", text, at: new Date().toISOString() };
   const sessionId = pmSessionId(ui.active.id);
   const optimisticIndex = (repo.outputs[sessionId] ?? []).length;
   repo.outputs[sessionId] = [...(repo.outputs[sessionId] ?? []), optimistic];
   pmDraft.value = "";
-  if (answeringQuestions) pmOpenQuestions.value = null;
+  if (answeringQuestions) clearPmAnswerContext(false);
   // Same wire shape as the per-task attachment upload: base64 without the
   // data-URL prefix. Kept locally until the send succeeds so a failure
   // doesn't lose the user's picks.
@@ -1801,7 +1815,9 @@ async function pmSend(): Promise<void> {
       (_entry, index) => index !== optimisticIndex,
     );
     pmDraft.value = text;
-    if (answeringQuestions) pmOpenQuestions.value = answeringQuestions;
+    if (answeringQuestions) {
+      pmAnswerContext.value = { taskId: ui.active.id, questions: answeringQuestions };
+    }
     repo.outputs[sessionId] = [
       ...(repo.outputs[sessionId] ?? []),
       { type: "sys", d: error instanceof Error ? error.message : String(error) },
@@ -2743,8 +2759,11 @@ watch(
 );
 watch(
   () => ui.active?.id,
-  () => {
-    pmOpenQuestions.value = null;
+  (newId, oldId) => {
+    if (oldId != null && newId !== oldId) {
+      const hadAnswerFlow = pmAnswerContext.value?.taskId === oldId;
+      clearPmAnswerContext(hadAnswerFlow);
+    }
   },
 );
 watch(
@@ -4649,7 +4668,7 @@ watch(
             welcome-body="Ask the PM to edit the task, suggest changes, or discuss progress."
             log-label="Conversation with the PM about this task"
             :canned="pmCannedMessages"
-            :open-questions="pmOpenQuestions ?? []"
+            :open-questions="pmOpenQuestionsForActive()"
             :shots="ui.pmScreenshots"
             @send="pmSend"
             @interrupt="pmInterrupt"
