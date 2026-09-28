@@ -241,6 +241,54 @@ one-line task renderer reuses the notification `NotificationSpec` formatter.
 `bootstrapTelegramAtBoot(config)` without it get exactly #0534's behavior:
 authorize, audit, drop.
 
+## Task-agent follow-ups and needs-input (#0542)
+
+`/msg <task-id> <message>` addresses a named task's running agent — the first
+Telegram surface that acts on a task rather than reading repository state.
+The handler lives in `src/server/telegram/agent-chat.ts` and is composed with
+the read commands, not alongside them: `bootstrapTelegramAtBoot` still
+registers exactly ONE intake `onAuthorized` (the #0540 command handler), and
+`TelegramCommandDeps.agentChat` is what it dispatches `/msg` through the same
+per-chat queue. A second `onAuthorized` would have made the two consumers'
+lands race each other out of the codebase, so `/msg` must be added to or
+removed from the command handler's deps — never as a parallel intake hook.
+Unwired, `/msg` falls to the unknown-command help; the bot command menu still
+advertises it, so wiring is the difference between honest help and a working
+command. The invariants it pins:
+
+- **Admin-scoped, live role.** Messaging an agent can steer a task toward a
+  status transition (an engineer turn that ends in a review handoff), so it
+  requires `admin`. The check runs before any task lookup: a `member` cannot
+  probe task ids for existence with `/msg`, and a demoted admin's next message
+  is refused because the role is resolved live per message (ADR 0007).
+- **One repository.** The id resolves through this repository's live index
+  only; a cross-repo id and a nonexistent id produce the same "No task … in
+  this repository" reply. Short refs are padded (`542` → `0542`); longer digit
+  strings are looked up exactly, so `00042` is refused rather than
+  reinterpreted as `0042`.
+- **Active tasks only, stated as intent.** The spec scopes follow-ups to
+  active tasks, so a task in `review` is refused with its status in the reply
+  — needs-input prompts that surface during review are answered through the
+  web UI, not Telegram, until the task returns to active state.
+- **Nothing drops silently.** Unknown task, non-active status, no agent
+  conversation, mid-turn busy, and the agent-path rate limit (re-checked at
+  the turn-creation site, `tryAcquireTelegramAgentLimits`) all answer in the
+  chat the command came from. Plain-text agent messages belong to the guide
+  conversation (#0541), which owns per-user state.
+- **Attribution.** Answering a needs-input prompt clears the flag through
+  `dismissNeedsInputOnTask` with the sender's allowlisted email, so activity
+  and audit rows never read `"human"`. Denied attempts and successful sends
+  are audited (`telegram_agent_follow_up[_refused]`).
+
+Notifications: the lifecycle handlers (`src/server/notifications/dispatch.ts`)
+gained an agent-completed notification (`agent.exited` after a short grace,
+silent when a review handoff, a pause, a queued turn (`runner.isQueued`), a
+live follow-up turn, or a needs-input/merge flag already owns the post-turn
+state) and a merge-conflict notification (`needs_merge` off→on, the
+`syncTaskBranch` failure edge). Flag edges are detected by key presence in the
+index's `prev` diff — not `?? false` — so a held flag is not re-pushed on
+every unrelated task-file write.
+
 ## The `[telegram] enabled` gate
 
 `requireTelegramEnabled` (`src/server/routes/telegram.ts`) enforces the
