@@ -1,4 +1,5 @@
 ---
+merge_conflict_retry_count: 1
 updated_at: "2026-09-28T10:04:17Z"
 review_passes: 3
 id: "0564"
@@ -119,4 +120,5 @@ error: EACCES accessing temporary directory. Please set $BUN_TMPDIR or $BUN_INST
 - 2026-09-28T10:02:51Z · review_cli_override, review_model_override
 - 2026-09-28T10:02:53Z · review_model_override
 - 2026-09-28T10:03:01Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+
 
