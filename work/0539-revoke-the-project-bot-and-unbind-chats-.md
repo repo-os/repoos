@@ -3,6 +3,7 @@ id: "0539"
 title: Revoke the project bot and unbind chats on disconnect
 type: feature
 status: review
+needs_merge: true
 priority: p2
 area: server
 story: RepoOS Telegram Bot
@@ -14,7 +15,7 @@ model_override: default
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-27T07:33:20Z"
-updated_at: "2026-09-28T06:40:16Z"
+updated_at: "2026-09-28T06:40:52Z"
 merge_conflict_retry_count: 2
 review_passes: 8
 review_rounds: 2
@@ -117,3 +118,5 @@ rm: cannot remove '/home/nick/.repoos-validate.r2sYPk/repo/.repoos/repoos.db-shm
 - 2026-09-28T06:27:36Z · agent exited with an error (copilot) · error: You have exceeded your monthly quota (Request ID: 338B:1B695:657A14:747C83:6ABA08D2)
 - 2026-09-28T06:27:55Z · handoff failed · merge conflict unresolved after 2 automatic retries · merge conflict in src/core/auth-store.ts, src/server/routes/telegram.ts — resolve it in the feature branch's own worktree (merge main into the branch), then retry
 - 2026-09-28T06:40:16Z · needs_input (dev-error) dismissed by hello@repoos.org
+- 2026-09-28T06:40:37Z · handoff failed · merge conflict unresolved after 2 automatic retries · merge conflict in src/core/auth-store.ts, src/server/routes/telegram.ts — resolve it in the feature branch's own worktree (merge main into the branch), then retry
+- 2026-09-28T06:40:52Z · needs_merge
