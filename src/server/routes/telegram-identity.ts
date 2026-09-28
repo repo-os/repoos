@@ -13,6 +13,7 @@ import { getCurrentUser } from "./auth.js";
 import {
   bindTelegramChatDirect,
   chatBindContextFromConfig,
+  chatTypeMatchesTelegramChatId,
   createTelegramChatBindCode,
   listTelegramChatsForSettings,
   unbindTelegramChat,
@@ -230,8 +231,14 @@ export const bindTelegramChatRoute: RouteHandler = async (ctx, req, res) => {
   if (telegramChatId === null) {
     return json(res, 400, { error: "telegramChatId must be a numeric chat id" });
   }
-  const chatType =
-    typeof body.chatType === "string" && body.chatType.trim() ? body.chatType.trim() : "private";
+  const chatTypeRaw = typeof body.chatType === "string" ? body.chatType.trim() : "";
+  if (telegramChatId < 0 && !chatTypeRaw) {
+    return json(res, 400, { error: "chatType is required for group and channel chat ids" });
+  }
+  const chatType = chatTypeRaw || "private";
+  if (!chatTypeMatchesTelegramChatId(telegramChatId, chatType)) {
+    return json(res, 400, { error: "chatType does not match telegramChatId" });
+  }
   const title = typeof body.title === "string" && body.title.trim() ? body.title.trim() : null;
 
   const bound = bindTelegramChatDirect(store, {

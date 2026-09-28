@@ -9,7 +9,12 @@
 import { createHmac as hmac } from "node:crypto";
 import type { AuthStore, TelegramChatLink } from "./auth-store.js";
 import { hashOtp, randomHex, timingSafeEqualStr } from "./auth.js";
-import { instanceIdentity, repositoryIdentity, telegramInviteSecret } from "./telegram-identity.js";
+import {
+  instanceIdentity,
+  repositoryIdentity,
+  resolveTelegramSender,
+  telegramInviteSecret,
+} from "./telegram-identity.js";
 
 export const TELEGRAM_CHAT_AUDIT = {
   bindCodeCreated: "telegram_chat_bind_code_created",
@@ -20,7 +25,12 @@ export const TELEGRAM_CHAT_AUDIT = {
 export const TELEGRAM_CHAT_BIND_NONCE_BYTES = 16;
 export const TELEGRAM_CHAT_BIND_TTL_MS = 30 * 60 * 1000;
 
-export type TelegramChatBindFailReason = "expired" | "replay" | "invalid" | "identity_mismatch";
+export type TelegramChatBindFailReason =
+  | "expired"
+  | "replay"
+  | "invalid"
+  | "identity_mismatch"
+  | "not_admin";
 
 export type RedeemTelegramChatBindResult =
   | { ok: true; telegramChatId: number }
@@ -60,6 +70,14 @@ export function signTelegramChatBind(
 
 function isSafeChatId(id: number): boolean {
   return Number.isSafeInteger(id) && id !== 0;
+}
+
+/** Telegram chat ids are positive for private 1:1, negative for groups/channels. */
+export function chatTypeMatchesTelegramChatId(chatId: number, chatType: string): boolean {
+  const t = chatType.trim().toLowerCase();
+  if (chatId > 0) return t === "private";
+  if (chatId < 0) return t === "group" || t === "supergroup" || t === "channel";
+  return false;
 }
 
 export function isTelegramChatBound(store: AuthStore, telegramChatId: number): boolean {
@@ -124,6 +142,9 @@ export function bindTelegramChatDirect(
   },
 ): TelegramChatLink | null {
   if (!store.isAvailable() || !isSafeChatId(input.telegramChatId)) return null;
+  if (!chatTypeMatchesTelegramChatId(input.telegramChatId, input.chatType)) return null;
+  const existing = store.getTelegramChatLink(input.telegramChatId);
+  if (existing && !existing.revokedAt && existing.chatType !== input.chatType) return null;
   const boundAt = new Date().toISOString();
   const link: TelegramChatLink = {
     telegramChatId: input.telegramChatId,
@@ -172,6 +193,7 @@ export function redeemTelegramChatBindCode(
   ctx: TelegramChatBindContext,
   input: {
     code: string;
+    redeemerTelegramUserId: number;
     telegramChatId: number;
     chatType: string;
     chatTitle: string | null;
@@ -182,9 +204,15 @@ export function redeemTelegramChatBindCode(
     !code ||
     code.length !== TELEGRAM_CHAT_BIND_NONCE_BYTES * 2 ||
     !NONCE_RE.test(code) ||
-    !isSafeChatId(input.telegramChatId)
+    !isSafeChatId(input.telegramChatId) ||
+    !chatTypeMatchesTelegramChatId(input.telegramChatId, input.chatType)
   ) {
     return { ok: false, reason: "invalid" };
+  }
+
+  const redeemer = resolveTelegramSender(store, input.redeemerTelegramUserId);
+  if (!redeemer || redeemer.role !== "admin") {
+    return { ok: false, reason: "not_admin" };
   }
 
   const now = ctx.now ?? new Date();
@@ -218,13 +246,18 @@ export function redeemTelegramChatBindCode(
         return { ok: false, reason: "replay" } as const;
       }
 
+      const existing = store.getTelegramChatLink(input.telegramChatId);
+      if (existing && !existing.revokedAt && existing.chatType !== input.chatType) {
+        throw new Error("telegram chat type mismatch");
+      }
+
       if (
         !store.upsertTelegramChatLink({
           telegramChatId: input.telegramChatId,
           chatType: input.chatType,
           title: input.chatTitle,
           boundAt,
-          boundBy: invite.createdBy,
+          boundBy: redeemer.email,
           revokedAt: null,
         })
       ) {
@@ -234,11 +267,12 @@ export function redeemTelegramChatBindCode(
       store.logAudit(
         TELEGRAM_CHAT_AUDIT.chatBound,
         null,
-        invite.createdBy,
+        redeemer.email,
         JSON.stringify({
           telegramChatId: input.telegramChatId,
           chatType: input.chatType,
           via: "bind_code",
+          codeCreatedBy: invite.createdBy,
         }),
       );
       return { ok: true, telegramChatId: input.telegramChatId } as const;
