@@ -1,4 +1,5 @@
 ---
+merge_conflict_retry_count: 1
 updated_at: "2026-09-28T12:45:59Z"
 review_passes: 7
 id: "0559"
@@ -137,4 +138,5 @@ rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/.repoos/repoos.db-shm
 - 2026-09-28T12:43:38Z · note: Fixed: re-throw ServiceError in redeem catch so a 409 from the completeRedeem 0-rows path isn't swallowed and remapped to 502.
 - 2026-09-28T12:44:25Z · review_model_override
 - 2026-09-28T12:44:29Z · needs_input (review-rounds-exhausted) cleared for review again by hello@repoos.org
+
 
