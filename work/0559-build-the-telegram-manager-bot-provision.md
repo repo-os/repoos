@@ -3,6 +3,9 @@ id: "0559"
 title: Build the Telegram manager-bot provisioning service and secure instance handoff
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p1
 area: server
 story: RepoOS Telegram Bot
@@ -13,7 +16,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-27T17:32:41Z"
-updated_at: "2026-09-28T10:25:43Z"
+updated_at: "2026-09-28T10:49:15Z"
 review_passes: 3
 review_rounds: 2
 last_check_failure: "[object Object]"
@@ -122,4 +125,4 @@ rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/.repoos/repoos.db-shm
 - 2026-09-28T10:18:13Z · status review→active
 - 2026-09-28T10:18:13Z · note: FYI remote runners are fixed now, so please try to fix the review bugs/suggestions again
 - 2026-09-28T10:22:22Z · status active→review
-
+- 2026-09-28T10:49:15Z · needs_input
