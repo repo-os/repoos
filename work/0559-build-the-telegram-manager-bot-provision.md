@@ -2,7 +2,7 @@
 id: "0559"
 title: Build the Telegram manager-bot provisioning service and secure instance handoff
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "error: You have exceeded your monthly quota (Request ID: 35DF:3F8AB2:411825:4BD041:6ABA00E8)"
@@ -83,3 +83,4 @@ Depends on #0530 (done) and the local adapter/client contract from #0531 (still 
 - 2026-09-28T05:47:44Z · agent exited with an error (copilot) · permission problem, not a code failure: GitHub Copilot denied a tool call despite RepoOS's non-interactive permission setting
 - 2026-09-28T05:53:37Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-09-28T05:53:47Z · status active→review
+- 2026-09-28T05:53:47Z · status review→active
