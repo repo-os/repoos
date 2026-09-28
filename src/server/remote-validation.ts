@@ -58,6 +58,7 @@ import {
   resolveRemoteHosts,
 } from "../core/remote-hosts.js";
 import type { Logger } from "../core/logger.js";
+import { getCheckStore, type CheckRunPhase } from "../core/check-store.js";
 import type { CheckSummary } from "./done.js";
 import { redactSecrets, stripAnsi } from "./done.js";
 
@@ -239,6 +240,11 @@ export interface ValidateOptions {
   /** Live output sink (SSE, status bar). The per-task log file is always written. */
   onChunk?: (chunk: string) => void;
   /**
+   * Which gate is dispatching this run (#0564) — recorded in the check-run
+   * history so a remote run can be told apart from the local one it precedes.
+   */
+  phase?: CheckRunPhase;
+  /**
    * Host capabilities this job needs (#0521) — the `runsOn` union of the check
    * plan. The pool only considers hosts providing every one of them; a job with
    * no requirement runs anywhere. Absent means "any host".
@@ -272,7 +278,14 @@ export interface RemoteHostStatus {
   /** Why the host is unusable (prereq failure / unreachable), when it is. */
   detail?: string;
   /** Most recent run dispatched here, for the drawer's per-host state. */
-  lastRun?: { taskId: string; ok: boolean; at: string };
+  lastRun?: { taskId: string; ok: boolean; at: string; durationMs?: number };
+  /**
+   * In-flight runs with WHO is running and since when (#0564) — the Remote
+   * runners tab shows "#0564 · 2m 10s", not just a count.
+   */
+  activeRuns?: { taskId: string; startedAt: string }[];
+  /** Task ids of the queued runs waiting for THIS host, FIFO order (#0564). */
+  queuedTasks?: string[];
 }
 
 export interface RemoteValidator {
@@ -1092,6 +1105,7 @@ export class RemoteValidationRunner implements RemoteValidator {
     // `deadlineAt` entirely, so a queued Hetzner run could outlive the
     // handoff's 10-minute deadline).
     let release: () => void;
+    const startedAt = Date.now();
     try {
       release = await this.gate.acquire(
         (ahead) => {
@@ -1113,25 +1127,58 @@ export class RemoteValidationRunner implements RemoteValidator {
       const note = `[remote validation not started: ${detail}]\n`;
       this.appendLog(opts.taskId, note);
       opts.onChunk?.(note);
+      recordRemoteRunHistory(
+        this.config,
+        opts,
+        startedAt,
+        null,
+        e instanceof QueueDeadlineError ? "cancelled" : "fail",
+        detail,
+      );
       return this.infraFail(detail, { taskId: opts.taskId, phase: "dispatch" });
     }
+    // Which machine ends up running the suite is known only after provisioning
+    // inside runValidation — captured here so the history row can name it.
+    const runMeta: { machine: string | null } = { machine: null };
     try {
       // Dispatch can hand over a free slot in the same tick the deadline
       // passes — cancel here rather than start a suite nobody waits for.
       if (opts.deadlineAt !== undefined && Date.now() >= opts.deadlineAt) {
+        recordRemoteRunHistory(
+          this.config,
+          opts,
+          startedAt,
+          null,
+          "cancelled",
+          "the caller's deadline passed before the run could start on the Hetzner runner",
+        );
         return this.infraFail(
           "the caller's deadline passed before the run could start on the Hetzner runner — " +
             "the run was cancelled (retry once a slot is free)",
           { taskId: opts.taskId, phase: "dispatch" },
         );
       }
-      return await this.runValidation(opts, remoteRunPaths(opts.taskId));
+      const summary = await this.runValidation(opts, remoteRunPaths(opts.taskId), runMeta);
+      recordRemoteRunHistory(
+        this.config,
+        opts,
+        startedAt,
+        runMeta.machine,
+        classifyRunOutcome(summary),
+        summary.detail,
+      );
+      return summary;
     } finally {
       release();
     }
   }
 
-  private async runValidation(opts: ValidateOptions, paths: RemoteRunPaths): Promise<CheckSummary> {
+  private async runValidation(
+    opts: ValidateOptions,
+    paths: RemoteRunPaths,
+    /** Set once a runner VM is actually chosen — the history row's machine (#0564). */
+    runMeta: { machine: string | null },
+  ): Promise<CheckSummary> {
     const rv = this.config.remoteValidation ?? {};
     const dispatch = { taskId: opts.taskId, phase: "dispatch" as const };
     if (!rv.enabled) return this.infraFail("remote validation is disabled", dispatch);
@@ -1160,6 +1207,7 @@ export class RemoteValidationRunner implements RemoteValidator {
     let tmp: string | null = null;
     try {
       const host = await this.ensureRunner();
+      runMeta.machine = host.ip;
       emit(`[runner ${host.ip} ready in ${Math.round((Date.now() - startedAt) / 1000)}s]\n`);
       this.record(
         { taskId: opts.taskId, host: host.ip, phase: "run" },
@@ -1186,12 +1234,17 @@ export class RemoteValidationRunner implements RemoteValidator {
         });
 
       // Provisioning + bundling can outlast the caller's deadline (#0521 spec
-      // item 5) — never start a suite for a caller that already gave up.
+      // item 5) — never start a suite for a caller that already gave up. The
+      // `cancelled` marker tells the history row apart from a real gate
+      // failure (0564 review: this used to land as `fail`).
       if (opts.deadlineAt !== undefined && Date.now() >= opts.deadlineAt) {
-        return this.infraFail(
-          `the caller's deadline passed before the run could start on ${host.ip} — the run was cancelled`,
-          { taskId: opts.taskId, host: host.ip, phase: "dispatch" },
-        );
+        return {
+          ...this.infraFail(
+            `the caller's deadline passed before the run could start on ${host.ip} — the run was cancelled`,
+            { taskId: opts.taskId, host: host.ip, phase: "dispatch" },
+          ),
+          cancelled: true,
+        };
       }
 
       // 3. run build + test inside the container
@@ -1499,6 +1552,8 @@ interface PoolHostState {
   ssh: RemoteHost;
   limit: number;
   active: number;
+  /** Runs in flight right now, oldest first (#0564) — task id + start time. */
+  activeRuns: ActiveRemoteRun[];
   /** Dropped from config; kept only until in-flight slots release. */
   removed?: boolean;
   probed: boolean;
@@ -1510,7 +1565,13 @@ interface PoolHostState {
   healthFails: number;
   probing?: Promise<void>;
   retryTimer?: ReturnType<typeof setTimeout>;
-  lastRun?: { taskId: string; ok: boolean; at: string };
+  lastRun?: { taskId: string; ok: boolean; at: string; durationMs?: number };
+}
+
+/** One in-flight remote run, attributed to the host executing it (#0564). */
+export interface ActiveRemoteRun {
+  taskId: string;
+  startedAt: string;
 }
 
 interface PoolWaiter {
@@ -1518,6 +1579,8 @@ interface PoolWaiter {
   resolve: (slot: HostSlot) => void;
   reject: (err: Error) => void;
   onQueue?: (ahead: number) => void;
+  /** Which run is waiting — surfaced as the queue's next-up tasks (#0564). */
+  taskId?: string;
   timer?: ReturnType<typeof setTimeout>;
 }
 
@@ -1576,6 +1639,7 @@ export class TailscaleHostPool {
         ssh: { ip: spec.host, user: rv ? remoteHostUser(rv, spec) : "root", keyPath: this.keyPath },
         limit: rv ? remoteHostLimit(rv, spec) : 1,
         active: 0,
+        activeRuns: [],
         probed: false,
         healthy: false,
         retryAt: 0,
@@ -1609,6 +1673,7 @@ export class TailscaleHostPool {
           },
           limit: rv ? remoteHostLimit(rv, spec) : 1,
           active: 0,
+          activeRuns: [],
           probed: false,
           healthy: false,
           retryAt: 0,
@@ -1680,7 +1745,7 @@ export class TailscaleHostPool {
    */
   async acquire(
     capabilities: string[],
-    opts: { onQueue?: (ahead: number) => void; deadlineAt?: number } = {},
+    opts: { onQueue?: (ahead: number) => void; deadlineAt?: number; taskId?: string } = {},
   ): Promise<HostSlot> {
     const live = this.liveHosts();
     if (live.length === 0) {
@@ -1753,13 +1818,19 @@ export class TailscaleHostPool {
       const nowFree = healthy
         .filter((s) => s.healthy && s.active < s.limit)
         .sort((a, b) => a.active - b.active);
-      if (nowFree.length > 0) return this.assign(nowFree[0]!);
+      if (nowFree.length > 0) return this.assign(nowFree[0]!, opts.taskId);
     }
 
     // Every eligible host is at its cap — queue, FIFO, and only until one of
     // THEM frees (a later-arriving compatible job never jumps the queue).
     return new Promise<HostSlot>((resolve, reject) => {
-      const waiter: PoolWaiter = { capabilities, resolve, reject, onQueue: opts.onQueue };
+      const waiter: PoolWaiter = {
+        capabilities,
+        resolve,
+        reject,
+        onQueue: opts.onQueue,
+        taskId: opts.taskId,
+      };
       this.waiters.push(waiter);
       if (opts.deadlineAt !== undefined) {
         const ms = opts.deadlineAt - Date.now();
@@ -1800,9 +1871,11 @@ export class TailscaleHostPool {
   }
 
   /** Record which host ran a job, for the status endpoint (#0521). */
-  recordRun(host: string, taskId: string, ok: boolean): void {
+  recordRun(host: string, taskId: string, ok: boolean, durationMs?: number): void {
     const s = this.hosts.find((c) => c.spec.host === host);
-    if (s) s.lastRun = { taskId, ok, at: new Date().toISOString() };
+    if (s) {
+      s.lastRun = { taskId, ok, at: new Date().toISOString(), durationMs };
+    }
   }
 
   /** Per-host state for `/api/remote-validation/status`. */
@@ -1811,12 +1884,19 @@ export class TailscaleHostPool {
     // hand it next (eligible, preferring a healthy host, then least loaded) —
     // so per-host `queued` totals sum to the real queue length instead of
     // counting one waiter once per compatible host (#0521 review).
-    const queuedOn = new Map<PoolHostState, number>();
+    const queuedOn = new Map<PoolHostState, { count: number; taskIds: string[] }>();
     for (const w of this.waiters) {
       const next = this.liveHosts()
         .filter((s) => hostSatisfies(s.spec, w.capabilities))
         .sort((a, b) => Number(b.healthy) - Number(a.healthy) || a.active - b.active)[0];
-      if (next) queuedOn.set(next, (queuedOn.get(next) ?? 0) + 1);
+      if (next) {
+        const entry = queuedOn.get(next) ?? { count: 0, taskIds: [] };
+        // Every waiter counts toward `queued`; next-up task ids surface only
+        // for waiters that carry one (direct pool.acquires may not).
+        entry.count++;
+        if (w.taskId) entry.taskIds.push(w.taskId);
+        queuedOn.set(next, entry);
+      }
     }
     return this.hosts.map((s) => ({
       host: s.spec.host,
@@ -1825,11 +1905,13 @@ export class TailscaleHostPool {
       labels: s.spec.labels ?? [],
       maxConcurrent: s.limit,
       inFlight: s.active,
-      queued: queuedOn.get(s) ?? 0,
+      queued: queuedOn.get(s)?.count ?? 0,
       probed: s.probed,
       healthy: s.healthy,
       detail: s.detail,
       lastRun: s.lastRun,
+      activeRuns: s.activeRuns.map((r) => ({ ...r })),
+      queuedTasks: [...(queuedOn.get(s)?.taskIds ?? [])],
     }));
   }
 
@@ -1907,8 +1989,13 @@ export class TailscaleHostPool {
     return true;
   }
 
-  private assign(s: PoolHostState): HostSlot {
+  private assign(s: PoolHostState, taskId?: string): HostSlot {
     s.active++;
+    // Attribute the run to this host with its start time (#0564): the Remote
+    // runners tab shows "#0564 · 2m 10s", and release() removes exactly this
+    // entry (a host may run several jobs at once).
+    const run: ActiveRemoteRun = { taskId: taskId ?? "?", startedAt: new Date().toISOString() };
+    s.activeRuns.push(run);
     let released = false;
     return {
       host: s.spec,
@@ -1918,6 +2005,8 @@ export class TailscaleHostPool {
         if (released) return;
         released = true;
         s.active = Math.max(0, s.active - 1);
+        const i = s.activeRuns.indexOf(run);
+        if (i !== -1) s.activeRuns.splice(i, 1);
         this.dropIfIdle(s);
         this.dispatch();
       },
@@ -1937,7 +2026,7 @@ export class TailscaleHostPool {
         continue;
       }
       this.settle(w);
-      w.resolve(this.assign(free));
+      w.resolve(this.assign(free, w.taskId));
     }
   }
 
@@ -2085,6 +2174,60 @@ export interface HostPoolOptions {
 }
 
 /**
+ * The history outcome for a validate() summary (#0564 review): a deadline
+ * that passed mid-dispatch marks its summary `cancelled`, and the row must
+ * say `cancelled` — the Runs tab exists to tell "the gate was cancelled"
+ * apart from "the gate caught something".
+ */
+function classifyRunOutcome(summary: CheckSummary): "pass" | "fail" | "cancelled" {
+  if (summary.ok) return "pass";
+  return summary.cancelled ? "cancelled" : "fail";
+}
+
+/**
+ * Record one remote validation run in the durable check-run history (#0564).
+ *
+ * One row per `validate()` invocation — dispatch failures included, with a
+ * null machine when the run never reached a host. Pseudo task ids ("release",
+ * "checks-test-suite") record task-less; their phase tells the story. The
+ * remote half always runs the full plan, so scope is always 'full'. Fail-soft:
+ * history is observability, never a gate input.
+ *
+ * The store root honours `REPOOS_CHECK_STORE_ROOT` (0564 review): a standalone
+ * `repoos check` that dispatches the remote half itself resolves it to the
+ * MAIN checkout before dispatching, so the row lands in the history the
+ * server reads instead of the worktree's own file. Server-side callers leave
+ * the env unset and fall through to `config.root` — the main checkout.
+ */
+function recordRemoteRunHistory(
+  config: RepoOSConfig,
+  opts: ValidateOptions,
+  startedAt: number,
+  machine: string | null,
+  outcome: "pass" | "fail" | "cancelled",
+  detail?: string | null,
+): void {
+  try {
+    const storeRoot = process.env.REPOOS_CHECK_STORE_ROOT?.trim() || config.root;
+    getCheckStore(storeRoot, config.cacheDir).record({
+      taskId: /^\d+$/.test(opts.taskId) ? opts.taskId : null,
+      phase: opts.phase ?? "pre-review",
+      machine,
+      remote: true,
+      scope: "full",
+      startedAt: new Date(startedAt).toISOString(),
+      durationMs: outcome === "cancelled" ? null : Math.max(0, Date.now() - startedAt),
+      outcome,
+      failedStep: outcome === "pass" ? null : "remote-validation",
+      skippedSteps: [],
+      detail: detail ?? null,
+    });
+  } catch {
+    /* never fail the gate on a history write */
+  }
+}
+
+/**
  * Runs the validation gate on one or more persistent machines reachable via
  * Tailscale (#0521). No VM provisioning — the hosts are always there. Each job
  * runs inside a fresh Docker/Podman container (`docker run --rm`, Linux) or
@@ -2221,8 +2364,24 @@ export class TailscaleRunner implements RemoteValidator {
 
   async validate(opts: ValidateOptions): Promise<CheckSummary> {
     const rv = this.config.remoteValidation ?? {};
+    const startedAt = Date.now();
     const dispatch = { taskId: opts.taskId, phase: "dispatch" as const };
-    if (!rv.enabled) return this.infraFail("remote validation is disabled", dispatch);
+    if (!rv.enabled) {
+      // The Hetzner runner records an infra row for this same condition
+      // (validate() falls through to runValidation, which fails on the
+      // disabled config) — record one here too, with no machine, instead of
+      // returning before anything is written (0564 review: keep the two
+      // providers consistent so a dispatch attempt never vanishes).
+      recordRemoteRunHistory(
+        this.config,
+        opts,
+        startedAt,
+        null,
+        "fail",
+        "remote validation is disabled",
+      );
+      return this.infraFail("remote validation is disabled", dispatch);
+    }
     const capabilities = (opts.capabilities ?? []).map((c) => c.trim()).filter(Boolean);
     const emit = (s: string): void => {
       this.appendLog(opts.taskId, s);
@@ -2237,6 +2396,7 @@ export class TailscaleRunner implements RemoteValidator {
     let slot: HostSlot;
     try {
       slot = await this.pool.acquire(capabilities, {
+        taskId: opts.taskId,
         deadlineAt: opts.deadlineAt,
         onQueue: (ahead) => {
           const note = this.queueNote(ahead, capabilities);
@@ -2251,12 +2411,34 @@ export class TailscaleRunner implements RemoteValidator {
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e);
       emit(`[remote validation not started: ${detail}]\n`);
+      // The run never reached a host: record the attempt with no machine
+      // attribution; a caller-deadline cancel is 'cancelled', the rest fail.
+      recordRemoteRunHistory(
+        this.config,
+        opts,
+        startedAt,
+        null,
+        e instanceof QueueDeadlineError ? "cancelled" : "fail",
+        detail,
+      );
       if (e instanceof NoEligibleHostError) return this.configFail(detail, dispatch);
       return this.infraFail(detail, dispatch);
     }
 
     try {
-      return await this.runValidation(opts, slot, capabilities);
+      const summary = await this.runValidation(opts, slot, capabilities);
+      // One durable row per validate() — attributed to the host that ran it.
+      // A deadline that passed mid-dispatch (inside runValidation) is a
+      // cancellation, not a gate failure (0564 review).
+      recordRemoteRunHistory(
+        this.config,
+        opts,
+        startedAt,
+        slot.host.host,
+        classifyRunOutcome(summary),
+        summary.detail,
+      );
+      return summary;
     } finally {
       slot.release();
     }
@@ -2309,7 +2491,7 @@ export class TailscaleRunner implements RemoteValidator {
         // may have gone away since its prerequisite probe; keep queued work
         // from immediately selecting it again until the health retry probe.
         this.pool.markUnhealthy(host.ip, detail);
-        this.pool.recordRun(host.ip, opts.taskId, false);
+        this.pool.recordRun(host.ip, opts.taskId, false, Date.now() - startedAt);
         return this.infraFail(detail, { taskId: opts.taskId, host: host.ip });
       }
 
@@ -2320,12 +2502,17 @@ export class TailscaleRunner implements RemoteValidator {
       // Never enter the host lock after the caller's deadline (#0521 spec
       // item 5): a run whose caller already gave up (dispatch can win the race
       // with the queue timer, or the deadline passes during bundle/upload) must
-      // not start a suite or hold a slot — cancel transiently, like a queued run.
+      // not start a suite or hold a slot — cancel transiently, like a queued
+      // run. The `cancelled` marker keeps the history row from reading as a
+      // gate failure (0564 review).
       if (opts.deadlineAt !== undefined && Date.now() >= opts.deadlineAt) {
-        return this.infraFail(
-          `the caller's deadline passed before the run could start on ${host.ip} — the run was cancelled`,
-          { taskId: opts.taskId, host: host.ip, phase: "dispatch" },
-        );
+        return {
+          ...this.infraFail(
+            `the caller's deadline passed before the run could start on ${host.ip} — the run was cancelled`,
+            { taskId: opts.taskId, host: host.ip, phase: "dispatch" },
+          ),
+          cancelled: true,
+        };
       }
       emit(`[running build + test in ${image} on ${host.ip}]\n`);
       this.record(
@@ -2373,7 +2560,7 @@ export class TailscaleRunner implements RemoteValidator {
           "warn",
           `remote validation timed out after ${elapsed}s`,
         );
-        this.pool.recordRun(host.ip, opts.taskId, false);
+        this.pool.recordRun(host.ip, opts.taskId, false, Date.now() - startedAt);
         const detail = `remote validation timed out after ${elapsed}s — retrying resumes from the check step`;
         this.record(
           { taskId: opts.taskId, host: host.ip, phase: "result" },
@@ -2399,7 +2586,7 @@ export class TailscaleRunner implements RemoteValidator {
         // Another repoos process held the host past our wait — the cap did its
         // job; this run gives its slot back and retries later.
         emit(`\n[host busy — another repoos check held ${host.ip}]\n`);
-        this.pool.recordRun(host.ip, opts.taskId, false);
+        this.pool.recordRun(host.ip, opts.taskId, false, Date.now() - startedAt);
         return this.infraFail(
           `another repoos check is already running on ${host.ip} — waited ${elapsed}s for a free host slot ` +
             "(the per-host limit is shared by the server and standalone `repoos check`)",
@@ -2409,7 +2596,7 @@ export class TailscaleRunner implements RemoteValidator {
       if (run.code === 0) {
         emit(`\n[remote validation PASSED in ${elapsed}s on ${host.ip}]\n`);
         this.logger?.integration(opts.taskId, "info", `remote validation passed in ${elapsed}s`);
-        this.pool.recordRun(host.ip, opts.taskId, true);
+        this.pool.recordRun(host.ip, opts.taskId, true, Date.now() - startedAt);
         this.record(
           { taskId: opts.taskId, host: host.ip, phase: "result" },
           {
@@ -2431,7 +2618,7 @@ export class TailscaleRunner implements RemoteValidator {
       ) {
         const detail = `ssh connection to ${host.ip} dropped mid-run: ${tail(run.output)}`;
         this.pool.markUnhealthy(host.ip, detail);
-        this.pool.recordRun(host.ip, opts.taskId, false);
+        this.pool.recordRun(host.ip, opts.taskId, false, Date.now() - startedAt);
         return this.infraFail(detail, {
           taskId: opts.taskId,
           host: host.ip,
@@ -2443,7 +2630,7 @@ export class TailscaleRunner implements RemoteValidator {
       this.logger?.integration(opts.taskId, "warn", `remote validation failed (exit ${run.code})`, {
         transient,
       });
-      this.pool.recordRun(host.ip, opts.taskId, false);
+      this.pool.recordRun(host.ip, opts.taskId, false, Date.now() - startedAt);
       this.record(
         { taskId: opts.taskId, host: host.ip, phase: "result" },
         {

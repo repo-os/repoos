@@ -67,6 +67,14 @@ export interface CheckSummary {
    * running the gate on the wrong machine.
    */
   configError?: boolean;
+  /**
+   * True when the run never actually started a suite because the caller's
+   * deadline passed mid-dispatch (#0564 review): the outcome is a
+   * CANCELLATION, not a branch failure, and the check-run history records it
+   * as `cancelled` instead of `fail` — the Runs tab exists to tell "the gate
+   * was cancelled" apart from "the gate caught something".
+   */
+  cancelled?: boolean;
 }
 
 export interface CompleteResult {

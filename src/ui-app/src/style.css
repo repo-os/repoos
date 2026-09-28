@@ -2292,6 +2292,48 @@
   background: var(--green);
   box-shadow: 0 0 6px var(--green);
 }
+
+/* live check chip on the task drawer header (#0564): running / passed / failed */
+.ck-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-family: "JetBrains Mono", monospace;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--panel-solid);
+  color: var(--txt-dim);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ck-chip:hover {
+  border-color: var(--border-bright);
+  color: var(--txt);
+}
+.ck-chip-running {
+  color: var(--amber);
+  border-color: var(--amber-border-tint);
+  background: var(--amber-tint);
+}
+.ck-chip-pass {
+  color: var(--green);
+  border-color: var(--green-border-tint);
+  background: var(--green-tint);
+}
+.ck-chip-fail {
+  color: var(--red);
+  border-color: var(--red-border-tint);
+  background: var(--red-tint);
+}
+.ck-chip-spin {
+  width: 10px;
+  height: 10px;
+}
 .rs-incomplete {
   color: var(--amber);
   border: 1px solid var(--amber-border-tint);
