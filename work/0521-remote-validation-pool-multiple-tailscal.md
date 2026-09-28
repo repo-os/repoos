@@ -3,9 +3,6 @@ id: "0521"
 title: "Remote validation: pool multiple tailscale hosts"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p3
 area: core
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-09-26T11:49:01Z"
-updated_at: "2026-09-28T00:21:00Z"
+updated_at: "2026-09-28T00:21:16Z"
 review_passes: 17
 review_rounds: 2
 dev_error_count: 3
@@ -170,3 +167,4 @@ Autoscaling, and pooling Hetzner VMs.
 - 2026-09-28T00:00:45Z · needs_input
 - 2026-09-28T00:21:00Z · status review→active
 - 2026-09-28T00:21:00Z · note: Fixing the latest review finding: retry a newly added host after a failed probe so queued jobs recover or fail after the retry cap.
+- 2026-09-28T00:21:16Z · needs_input
