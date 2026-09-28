@@ -17,7 +17,7 @@ model_override: default
 review_cli_override: cursor
 review_model_override: cursor-grok-4.6-medium
 created_at: "2026-09-27T07:33:20Z"
-updated_at: "2026-09-28T04:50:34Z"
+updated_at: "2026-09-28T05:31:17Z"
 review_passes: 6
 review_rounds: 2
 last_check_failure: "[object Object]"
