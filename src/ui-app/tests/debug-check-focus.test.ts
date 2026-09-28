@@ -34,6 +34,8 @@ function mergeGateRun(over: Partial<TaskCheckRun> = {}): TaskCheckRun {
     passed: null,
     code: null,
     output: "checking…",
+    scope: "full",
+    machine: "local",
     ...over,
   };
 }

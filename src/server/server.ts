@@ -363,6 +363,7 @@ import {
   removeServiceRoute,
   healthCheckRoute,
   getCheckPlan,
+  getCheckRuns,
   getSupportBundlePreview,
   createSupportBundle,
   revealSupportBundle,
@@ -1162,7 +1163,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Per-task `repoos check` run tracking for the Debug tab (0310): the
   // handoff-finalize check and the MTD merge-gate check are the only two
   // checks the server spawns directly, so only those two are instrumented.
-  const taskChecks = new TaskCheckManager();
+  // The repo root enables durable history for cancelled runs (#0564) — the
+  // CLI child records its own completed runs.
+  const taskChecks = new TaskCheckManager(config.root, config.cacheDir);
   const onTaskCheckEvent: TaskCheckListener = (run, eventKind, chunk) => {
     if (eventKind === "started") {
       emitEvent({
@@ -1170,6 +1173,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         taskId: run.taskId,
         checkId: run.id,
         checkKind: run.kind,
+        scope: run.scope,
+        machine: run.machine,
         at: run.startedAt,
       });
     } else if (eventKind === "output") {
@@ -1188,6 +1193,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         code: run.code,
         passed: run.passed === true,
         durationMs: run.durationMs ?? 0,
+        scope: run.scope,
+        machine: run.machine,
         at: run.finishedAt ?? new Date().toISOString(),
       });
     }
@@ -2289,6 +2296,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           taskId: "checks-test-suite",
           worktreePath: config.root,
           candidateSha,
+          phase: "cli",
           capabilities: remoteJobCapabilities(config),
           onChunk: (chunk) => {
             testRuns.appendOutput(chunk);
@@ -2380,6 +2388,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         healthy: false,
         detail: undefined as string | undefined,
         lastRun: undefined as { taskId: string; ok: boolean; at: string } | undefined,
+        activeRuns: [] as { taskId: string; startedAt: string }[],
+        queuedTasks: [] as string[],
       })),
     ];
     return json(res, 200, {
@@ -2501,6 +2511,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", /^\/api\/tasks\/([^/]+)\/integration-job$/, getIntegrationJob);
   router.register("GET", "/api/integration-jobs", getIntegrationJobs);
   router.register("GET", "/api/check-plan", getCheckPlan);
+  // Durable check-run history across all tasks (#0564) — the Runs tab.
+  router.register("GET", "/api/check-runs", getCheckRuns);
   router.register("GET", "/api/integration/pipeline", getIntegrationPipeline);
   router.register("POST", /^\/api\/integration\/pipeline\/retry\/([^/]+)$/, retryIntegration);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/done\/cancel$/, cancelDone);
