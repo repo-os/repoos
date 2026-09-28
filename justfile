@@ -227,8 +227,17 @@ check-runners *args:
         echo "  ✔ repoos-ci image $IMG"
 
         # 3. Validate.sh version (first line of the script for a quick sanity check)
-        VDATE=$(ssh "$HOST" 'stat -c "%y" /opt/repoos/validate.sh 2>/dev/null || stat -f "%Sm" /opt/repoos/validate.sh 2>/dev/null || echo unknown')
-        echo "  ✔ validate.sh installed (modified: $VDATE)"
+        LOCAL_SUM=$(md5sum scripts/remote-runner/validate.sh 2>/dev/null | awk '{print $1}' || md5 -q scripts/remote-runner/validate.sh 2>/dev/null)
+        REMOTE_SUM=$(ssh "$HOST" 'md5sum /opt/repoos/validate.sh 2>/dev/null | awk "{print \$1}" || md5 -q /opt/repoos/validate.sh 2>/dev/null')
+        if [ "$LOCAL_SUM" = "$REMOTE_SUM" ]; then
+            echo "  ✔ validate.sh up to date ($REMOTE_SUM)"
+        else
+            SHORTHOST=$(echo "$HOST" | cut -d@ -f2)
+            echo "  ✗ validate.sh OUT OF DATE — run: just setup-$SHORTHOST"
+            echo "    local:  $LOCAL_SUM"
+            echo "    remote: $REMOTE_SUM"
+            FAIL=$((FAIL+1)); continue
+        fi
 
         # 4. Stale work dirs?
         STALE=$(ssh "$HOST" 'ls -d ~/.repoos-validate.* 2>/dev/null | wc -l | tr -d " "')
