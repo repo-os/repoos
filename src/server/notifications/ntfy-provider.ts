@@ -54,10 +54,7 @@ export class NtfyNotificationProvider implements NotificationProvider {
     const url = `${ntfyBaseUrl(ctx.config)}/${topic}`;
     const spec =
       payload.kind === "task.agent_failed"
-        ? {
-            ...notificationForNeedsInput(),
-            subtitle: payload.subtitle?.trim() || payload.summary.trim() || undefined,
-          }
+        ? notificationForNeedsInput()
         : {
             headline: payload.headline,
             severity: payload.severity,
