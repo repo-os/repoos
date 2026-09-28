@@ -64,3 +64,28 @@ export function notificationForServerFailed(detail?: string): NotificationSpec {
     subtitle: detail?.trim() || "Handoff or server finalization failed",
   };
 }
+
+/**
+ * A clean agent turn ended and nothing else took over — the task sits `active`
+ * with no live turn (#0542). Deliberately quiet: it is the "the agent finished,
+ * what next?" moment, not an alarm.
+ */
+export function notificationForAgentCompleted(): NotificationSpec {
+  return {
+    headline: "🏁 Agent finished",
+    severity: "low",
+    subtitle: "The agent finished its turn; the task is still active",
+  };
+}
+
+/**
+ * The task branch diverged from `main` and a sync could not resolve it
+ * (`needs_merge`) — the agent cannot cleanly continue until it resolves (#0542).
+ */
+export function notificationForMergeConflict(): NotificationSpec {
+  return {
+    headline: "🔀 Merge conflict",
+    severity: "high",
+    subtitle: "Task branch conflicts with main — resolve the sync",
+  };
+}

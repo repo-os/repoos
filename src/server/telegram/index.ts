@@ -15,7 +15,11 @@ import type { RepoOSConfig } from "../../core/types.js";
 import { projectDisplayName } from "../../core/config.js";
 import { LocalTelegramProvider } from "./provider.js";
 import { TelegramCredentialStore } from "./store.js";
-import { createTelegramIntakeHandler, telegramIntakeOptionsFromConfig } from "./intake.js";
+import {
+  createTelegramIntakeHandler,
+  telegramIntakeOptionsFromConfig,
+  type TelegramIntakeOptions,
+} from "./intake.js";
 
 /** The adapter's live config view — everything it needs from RepoOSConfig. */
 export interface TelegramRuntimeConfig {
@@ -105,14 +109,19 @@ export async function resumeTelegramTransports(
  * Register the authorization intake handler and resume polling when configured
  * (#0534). Call after `resetTelegramProviders()` on reload so the new provider
  * singleton receives the handler.
+ *
+ * `extra.onAuthorized` adds a downstream authorized-update consumer (#0542):
+ * without one, authorized commands are audited and silently dropped.
  */
 export async function bootstrapTelegramAtBoot(
   config: Pick<RepoOSConfig, "root" | "auth" | "telegram">,
+  extra?: Pick<TelegramIntakeOptions, "onAuthorized">,
 ): Promise<{ resumed: boolean; detail?: string }> {
   const provider = getTelegramProvider(config);
   provider.onUpdate(
     createTelegramIntakeHandler(
       telegramIntakeOptionsFromConfig(config, {
+        onAuthorized: extra?.onAuthorized,
         resolveBot: () => {
           const status = provider.status();
           if (!status.connected || !status.bot) return null;

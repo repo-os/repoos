@@ -187,7 +187,12 @@ import {
 } from "./notifications/index.js";
 import { AgentSupervisor } from "./supervisor.js";
 import { TaskWatchdog } from "./task-watchdog.js";
-import { bootstrapTelegramAtBoot, resetTelegramProviders } from "./telegram/index.js";
+import {
+  bootstrapTelegramAtBoot,
+  getTelegramProvider,
+  resetTelegramProviders,
+} from "./telegram/index.js";
+import { createTelegramAgentChatHandler } from "./telegram/agent-chat.js";
 import { parseCookies, SESSION_COOKIE_NAME, randomHex } from "../core/auth.js";
 import { getAuthStore } from "../core/auth-store.js";
 import {
@@ -2025,7 +2030,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // there. Both firing for a single transition is harmless: `previews.stop` and
   // `runner.stop` are idempotent.
   const notificationCtx = notificationContextFromConfig(config, getAuthStore(config.root));
-  const unsubscribeNotifications = attachTaskNotificationHandlers(index, notificationCtx);
+  const unsubscribeNotifications = attachTaskNotificationHandlers(index, notificationCtx, {
+    // #0542: the agent-completed notification must know when a later turn,
+    // pause, or in-flight review handoff already owns the post-turn state.
+    runner,
+  });
 
   const unsubscribeCleanup = index.on((e) => {
     if (e.type === "task.created") {
@@ -3250,7 +3259,21 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // boot. Safe and never-throwing (reports one log line); the loop
       // gates on the live `telegram.enabled` switch itself, so a disabled
       // integration arms paused with no Telegram traffic.
-      void bootstrapTelegramAtBoot(config).then((resumed) => {
+      //
+      // #0542: the same intake also gains the task-agent follow-up handler,
+      // so an authorized admin can continue an active task's agent
+      // conversation and answer needs-input prompts from Telegram.
+      void bootstrapTelegramAtBoot(config, {
+        onAuthorized: createTelegramAgentChatHandler({
+          config,
+          index,
+          runner,
+          logger,
+          reply: async (chatId, text) => {
+            await getTelegramProvider(config).sendMessage(chatId, text);
+          },
+        }),
+      }).then((resumed) => {
         if (resumed.detail) {
           logger.system(resumed.resumed ? "info" : "warn", "Telegram transport resume", {
             pid: process.pid,

@@ -174,6 +174,39 @@ logging for privileged intake. Unbound or unauthorized senders are dropped
 silently with no outbound Telegram traffic (ADR 0007). A handler failure is
 logged redacted, never allowed to kill the transport loop.
 
+## Task-agent follow-ups and needs-input (#0542)
+
+`/msg <task-id> <message>` (intake hook `src/server/telegram/agent-chat.ts`,
+wired in `bootstrapTelegramAtBoot`) addresses a named task's
+running agent — the first Telegram surface that acts on a task rather than
+reading repository state. The invariants it pins:
+
+- **Admin-scoped, live role.** Messaging an agent can steer a task toward a
+  status transition (an engineer turn that ends in a review handoff), so it
+  requires `admin`. The check runs before any task lookup: a `member` cannot
+  probe task ids for existence with `/msg`, and a demoted admin's next message
+  is refused because the role is resolved live per message (ADR 0007).
+- **One repository.** The id resolves through this repository's live index
+  only; a cross-repo id and a nonexistent id produce the same "No task … in
+  this repository" reply.
+- **Nothing drops silently.** Unknown task, non-active status, no agent
+  conversation, mid-turn busy, and the agent-path rate limit (re-checked at
+  the turn-creation site, `tryAcquireTelegramAgentLimits`) all answer in the
+  chat the command came from. Plain-text agent messages belong to the guide
+  conversation (#0541), which owns per-user state.
+- **Attribution.** Answering a needs-input prompt clears the flag through
+  `dismissNeedsInputOnTask` with the sender's allowlisted email, so activity
+  and audit rows never read `"human"`. Denied attempts and successful sends
+  are audited (`telegram_agent_follow_up[_refused]`).
+
+Notifications: the lifecycle handlers (`src/server/notifications/dispatch.ts`)
+gained an agent-completed notification (`agent.exited` after a short grace,
+silent when a review handoff, a pause, a queued turn, or a needs-input flag
+already owns the post-turn state) and a merge-conflict notification
+(`needs_merge` off→on, the `syncTaskBranch` failure edge). Flag edges are
+detected by key presence in the index's `prev` diff — not `?? false` — so a
+held flag is not re-pushed on every unrelated task-file write.
+
 ## The `[telegram] enabled` gate
 
 `requireTelegramEnabled` (`src/server/routes/telegram.ts`) enforces the
