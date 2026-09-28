@@ -3,9 +3,6 @@ id: "0559"
 title: Build the Telegram manager-bot provisioning service and secure instance handoff
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p1
 area: server
 story: RepoOS Telegram Bot
@@ -16,7 +13,7 @@ model_override: opencode-go/glm-5.3-flash
 review_cli_override: cursor
 review_model_override: cursor-grok-4.6-medium
 created_at: "2026-09-27T17:32:41Z"
-updated_at: "2026-09-28T12:24:16Z"
+updated_at: "2026-09-28T12:24:22Z"
 review_passes: 5
 review_rounds: 2
 last_check_failure: "[object Object]"
@@ -135,3 +132,4 @@ rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/.repoos/repoos.db-shm
 - 2026-09-28T11:44:08Z · needs_input
 - 2026-09-28T12:21:48Z · note: Fixed review round 2 findings: added revokeBot/rotateToken to HttpProvisioningClient and ManagedProvisioningClient interface; made completeRedeem return bool with service-level assert to prevent token return without persisted envelope.
 - 2026-09-28T12:24:16Z · review_model_override
+- 2026-09-28T12:24:22Z · needs_input (review-rounds-exhausted) cleared for review again by hello@repoos.org
