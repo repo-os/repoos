@@ -332,6 +332,7 @@ import {
   createTelegramInviteRoute,
   listTelegramChatsRoute,
   listTelegramLinksRoute,
+  patchTelegramChatNotificationsRoute,
   unbindTelegramChatRoute,
   unbindTelegramLinkRoute,
   reassignTelegramLinkRoute,
@@ -2581,6 +2582,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/auth/telegram/chats/bind-codes", createTelegramChatBindCodeRoute);
   router.register("GET", "/api/auth/telegram/chats", listTelegramChatsRoute);
   router.register("POST", "/api/auth/telegram/chats", bindTelegramChatRoute);
+  router.register(
+    "PATCH",
+    /^\/api\/auth\/telegram\/chats\/([^/]+)$/,
+    patchTelegramChatNotificationsRoute,
+  );
   router.register("DELETE", /^\/api\/auth\/telegram\/chats\/([^/]+)$/, unbindTelegramChatRoute);
   router.register("GET", "/api/auth/telegram/links", listTelegramLinksRoute);
   router.register("DELETE", /^\/api\/auth\/telegram\/links\/([^/]+)$/, unbindTelegramLinkRoute);

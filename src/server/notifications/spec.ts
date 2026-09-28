@@ -57,6 +57,10 @@ export function notificationForAgentFailed(detail?: string): NotificationSpec {
   };
 }
 
-export function notificationForAgentCompleted(): NotificationSpec {
-  return { headline: "✅ Agent done", severity: "low" };
+export function notificationForServerFailed(detail?: string): NotificationSpec {
+  return {
+    headline: "🛑 Server failed",
+    severity: "high",
+    subtitle: detail?.trim() || "Handoff or server finalization failed",
+  };
 }

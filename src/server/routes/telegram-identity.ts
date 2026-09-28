@@ -16,6 +16,7 @@ import {
   chatTypeMatchesTelegramChatId,
   createTelegramChatBindCode,
   listTelegramChatsForSettings,
+  setTelegramChatNotificationsEnabled,
   unbindTelegramChat,
 } from "../../core/telegram-chat.js";
 import {
@@ -249,6 +250,30 @@ export const bindTelegramChatRoute: RouteHandler = async (ctx, req, res) => {
   });
   if (!bound) return json(res, 500, { error: "Failed to bind chat" });
   return json(res, 200, { ok: true, chat: bound });
+};
+
+/** PATCH /api/auth/telegram/chats/:telegramChatId  { notificationsEnabled: boolean } */
+export const patchTelegramChatNotificationsRoute: RouteHandler = async (ctx, req, res) => {
+  const { config } = ctx;
+  const admin = requireAdmin(req, config, res);
+  if (!admin) return;
+
+  const store = getAuthStore(config.root);
+  if (!store) return json(res, 500, { error: "Auth store unavailable" });
+
+  const url = new URL(req.url ?? "/", "http://localhost");
+  const id = parseTelegramChatId(decodeURIComponent(url.pathname.split("/").pop() ?? ""));
+  if (id === null) return json(res, 400, { error: "Invalid Telegram chat id" });
+
+  const body = (await readBody(req)) as Record<string, unknown>;
+  if (typeof body.notificationsEnabled !== "boolean") {
+    return json(res, 400, { error: "notificationsEnabled must be a boolean" });
+  }
+
+  const updated = setTelegramChatNotificationsEnabled(store, id, body.notificationsEnabled);
+  if (!updated) return json(res, 404, { error: "Chat binding not found" });
+  const chat = store.getTelegramChatLink(id);
+  return json(res, 200, { ok: true, chat });
 };
 
 /** DELETE /api/auth/telegram/chats/:telegramChatId */

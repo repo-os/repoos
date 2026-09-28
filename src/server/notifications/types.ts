@@ -11,6 +11,7 @@ export type NotificationKind =
   | "task.moved_to_review"
   | "task.review_feedback"
   | "task.integration_failed"
+  | "task.server_failed"
   | "task.agent_failed"
   | "task.done";
 
