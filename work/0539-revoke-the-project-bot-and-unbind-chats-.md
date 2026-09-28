@@ -3,9 +3,6 @@ id: "0539"
 title: Revoke the project bot and unbind chats on disconnect
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: "the github copilot agent exited without output: Copilot emitted an unknown protocol event \"user.message\". error: You have exceeded your monthly quota (Request ID: 0785:2B5CEF:9348F19:AE302AE:6AB9FFA5) Copilot emitted an unknown protocol event \"assistant.idle\"."
 priority: p2
 area: server
 story: RepoOS Telegram Bot
@@ -17,7 +14,7 @@ model_override: default
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-27T07:33:20Z"
-updated_at: "2026-09-28T05:58:00Z"
+updated_at: "2026-09-28T05:58:02Z"
 review_passes: 7
 review_rounds: 2
 last_check_failure: "[object Object]"
@@ -114,3 +111,4 @@ rm: cannot remove '/home/nick/.repoos-validate.r2sYPk/repo/.repoos/repoos.db-shm
 - 2026-09-28T05:48:25Z · needs_input
 - 2026-09-28T05:57:58Z · review_cli_override, review_model_override
 - 2026-09-28T05:58:00Z · review_model_override
+- 2026-09-28T05:58:02Z · needs_input (review-failed) cleared for review again by hello@repoos.org
