@@ -67,7 +67,7 @@ echo "[validate] HEAD verified at $SHA"
 # that user.  This means _rvcleanup needs no Docker chown step — a plain
 # rm -rf works.  Chown the bun-cache volume to match before the main run.
 docker run --rm -v "$CACHE_VOLUME":/bun-cache -u 0 "$IMAGE" \
-  "chown $(id -u):$(id -g) /bun-cache"
+  "chown -R $(id -u):$(id -g) /bun-cache"
 
 set +e
 docker run --rm \
