@@ -418,4 +418,84 @@ describe("RemoteValidationRunner", () => {
     expect(res.transient).toBe(true);
     expect(h.calls.some((c) => c.startsWith("create:"))).toBe(false);
   });
+
+  // ── structured per-task events (#0568) ────────────────────────────────────
+
+  it("records structured events for a passing run, with host and exit code (#0568)", async () => {
+    const h = fakeHetzner();
+    const r = new RemoteValidationRunner(config, undefined, {
+      hetzner: h.client,
+      exec: fakeExec(),
+      timings: FAST,
+    });
+
+    await r.validate(opts());
+
+    const events = r.remoteEvents("0999");
+    expect(events.some((e) => e.phase === "run")).toBe(true);
+    const result = events.find((e) => e.phase === "result");
+    expect(result?.exitCode).toBe(0);
+    expect(result?.level).toBe("info");
+    expect(result?.host).toBeTruthy();
+    await r.dispose();
+  });
+
+  it("records an infra event with host and exit code when the ssh transport drops (#0568)", async () => {
+    const h = fakeHetzner();
+    const exec = fakeExec({
+      runRemote: vi.fn(async () => ({
+        code: 255,
+        output: "ssh: connect to host 203.0.113.5 port 22: Connection timed out\n",
+        timedOut: false,
+      })),
+    });
+    const r = new RemoteValidationRunner(config, undefined, {
+      hetzner: h.client,
+      exec,
+      timings: FAST,
+    });
+
+    await r.validate(opts());
+
+    const ev = r.remoteEvents("0999").find((e) => e.infra);
+    expect(ev).toBeTruthy();
+    expect(ev?.exitCode).toBe(255);
+    expect(ev?.host).toBeTruthy();
+    expect(ev?.message).toContain("ssh connection");
+    await r.dispose();
+  });
+
+  it("records a config error event when the runner cannot satisfy the job (#0568)", async () => {
+    const h = fakeHetzner();
+    const r = new RemoteValidationRunner(config, undefined, {
+      hetzner: h.client,
+      exec: fakeExec(),
+      timings: FAST,
+    });
+
+    const res = await r.validate({ ...opts(), capabilities: ["macos"] });
+
+    expect(res.configError).toBe(true);
+    const ev = r.remoteEvents("0999").find((e) => e.configError);
+    expect(ev).toBeTruthy();
+    expect(ev?.level).toBe("error");
+    expect(ev?.message).toContain("cannot run");
+    await r.dispose();
+  });
+
+  it("records a dispatch event when the caller's deadline passed before the run (#0568)", async () => {
+    const h = fakeHetzner();
+    const r = new RemoteValidationRunner(config, undefined, {
+      hetzner: h.client,
+      exec: fakeExec(),
+      timings: FAST,
+    });
+
+    await r.validate({ ...opts(), deadlineAt: Date.now() - 1 });
+
+    const ev = r.remoteEvents("0999").find((e) => e.infra && e.phase === "dispatch");
+    expect(ev).toBeTruthy();
+    expect(ev?.message).toContain("deadline passed");
+    await r.dispose();
+  });
 });
