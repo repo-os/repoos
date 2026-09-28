@@ -658,6 +658,11 @@ export const useRepoStore = defineStore("repo", () => {
    *  page reload reconciles from the index/`/api/board` payload instead of a
    *  persisted set that could outlive the actual run. */
   const pmWorkingIds = ref<Set<string>>(new Set());
+  /** Task ids whose failure tl;dr the Debugger is generating right now
+   *  (#0570). In-memory only, like `pmWorkingIds`: the state lives on the
+   *  server for seconds at most, so a page reload reconciles to "not
+   *  diagnosing" instead of a stale hint. */
+  const tldrDiagnosingIds = ref<Set<string>>(new Set());
   /** AI-created card ids awaiting the human's acknowledgement (0320). Persisted;
    *  an id here keeps the violet "newly created" highlight across reloads. */
   const aiCreateUnacked = ref<Set<string>>(readIdSet(AI_CREATE_UNACKED_KEY));
@@ -1127,6 +1132,9 @@ export const useRepoStore = defineStore("repo", () => {
       // the user off the pm/dev/review tab they're viewing (0312).
       if (ui.active && ui.active.id === e.task.id) ui.syncActive(merged);
       recount();
+      // A persisted tl;dr (or a cleared failure) supersedes the "diagnosing…"
+      // hint — the SSE pass events can arrive out of order around a refresh.
+      if (merged.debugTldr || !merged.needsInput) clearTldrDiagnosingLocal(e.task.id);
       // AI-created card (0320): the PM agent's flesh-out lands as a
       // draft -> default-status patch, and that transition is the
       // "creation completed" moment — move the card into its persistent
@@ -1220,6 +1228,12 @@ export const useRepoStore = defineStore("repo", () => {
       // The PM flesh-out ended — success or failure (0335). The server emits
       // this on every exit path, so the indicator can never get stuck.
       clearPmWorkingLocal(e.id);
+    } else if (e.type === "task.debugTldr") {
+      // The Debugger is generating (or gave up on) the failure tl;dr (#0570).
+      // `finished` fires on every exit path, so the "diagnosing…" hint in the
+      // drawer can never get stuck.
+      if (e.state === "started") markTldrDiagnosingLocal(e.id);
+      else clearTldrDiagnosingLocal(e.id);
     } else if (e.type === "agent.running") {
       if (!runningIds.value.includes(e.id)) {
         runningIds.value = [...runningIds.value, e.id];
@@ -1956,6 +1970,25 @@ export const useRepoStore = defineStore("repo", () => {
 
   /** True while the freeform PM flesh-out is working on this draft (0335). */
   const pmWorkingFor = (id: string): boolean => pmWorkingIds.value.has(id);
+
+  /** True while the Debugger is generating this task's failure tl;dr (#0570). */
+  const debugTldrWorkingFor = (id: string): boolean => tldrDiagnosingIds.value.has(id);
+
+  /** Flag a task as being diagnosed by the tl;dr pass right now (#0570). */
+  function markTldrDiagnosingLocal(id: string): void {
+    if (tldrDiagnosingIds.value.has(id)) return;
+    const next = new Set(tldrDiagnosingIds.value);
+    next.add(id);
+    tldrDiagnosingIds.value = next;
+  }
+
+  /** Clear the tl;dr "diagnosing" hint — every pass exit path (#0570). */
+  function clearTldrDiagnosingLocal(id: string): void {
+    if (!tldrDiagnosingIds.value.has(id)) return;
+    const next = new Set(tldrDiagnosingIds.value);
+    next.delete(id);
+    tldrDiagnosingIds.value = next;
+  }
 
   /** Flag a draft as being fleshed out by the PM agent right now (0335). */
   function markPmWorkingLocal(id: string): void {
@@ -2838,6 +2871,7 @@ export const useRepoStore = defineStore("repo", () => {
     isRunning,
     isQueued,
     pmWorkingFor,
+    debugTldrWorkingFor,
     startWork,
     pauseWork,
     abandonWork,

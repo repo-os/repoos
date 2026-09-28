@@ -190,6 +190,12 @@ export function patchTaskFile(
       current.needsInputReason = undefined;
       current.needsInputDetail = undefined;
       current.questions = undefined;
+      // The AI tl;dr describes the failure this flag was raised for (#0570) —
+      // same rule: the file drops it via serializeTask's needsInput gate, and
+      // clearing here keeps the returned Task honest.
+      current.debugTldr = undefined;
+      current.debugTldrAt = undefined;
+      current.debugTldrKey = undefined;
     }
   }
   if (patch.questions !== undefined) {
