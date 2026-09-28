@@ -6,6 +6,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { AuthStore } from "../../core/auth-store.js";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -1408,9 +1409,10 @@ describe("connection-record shape validation (review round 3)", () => {
     const bot = await provider.connectByBotToken(TOKEN);
     expect(bot.username).toBe("repoos_project_bot");
     expect(provider.status().connected).toBe(true);
+    const authStore = new AuthStore(tmpRoot);
     await provider.disconnect({
       actorEmail: "admin@test.com",
-      authStore: null,
+      authStore,
       instanceId: "test-instance",
     });
     expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(false);
