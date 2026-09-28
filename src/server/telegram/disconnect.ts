@@ -231,6 +231,14 @@ export function finalizeTelegramDisconnect(input: {
       true,
     );
   }
-  input.clearCredential();
+  try {
+    input.clearCredential();
+  } catch (e) {
+    throw new TelegramDisconnectError(
+      "local",
+      e instanceof Error ? e.message : "failed to remove stored Telegram credential",
+      true,
+    );
+  }
   return { userLinks, chatLinks };
 }

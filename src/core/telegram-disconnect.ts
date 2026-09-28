@@ -60,7 +60,7 @@ export function logTelegramDisconnectAudit(
   actorEmail: string,
   details: Record<string, unknown>,
 ): void {
-  store.logAudit(
+  store.logAuditRequired(
     TELEGRAM_DISCONNECT_AUDIT.integrationDisconnected,
     null,
     actorEmail,

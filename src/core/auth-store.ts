@@ -593,6 +593,30 @@ export class AuthStore {
     }
   }
 
+  /** Like logAudit, but required for lifecycle events that must not report success without a row. */
+  logAuditRequired(
+    action: string,
+    targetEmail: string | null,
+    actorEmail: string | null,
+    details?: string,
+  ): void {
+    if (!this.available) {
+      throw new Error("auth store is not available");
+    }
+    try {
+      this.db
+        .prepare(`
+        INSERT INTO auth_audit_log (action, target_email, actor_email, details, created_at)
+        VALUES (?, ?, ?, ?, datetime('now'))
+      `)
+        .run(action, targetEmail, actorEmail, details ?? null);
+    } catch (e) {
+      throw new Error(
+        `failed to write audit log (${action}): ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+  }
+
   getAuditLog(limit: number = 50): AuditLogEntry[] {
     if (!this.available) return [];
     try {

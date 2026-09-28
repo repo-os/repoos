@@ -270,36 +270,17 @@ export class LocalTelegramProvider implements TelegramProvider {
     let token: string;
     try {
       token = this.store.readToken(record);
-    } catch {
-      // Corrupt or undecryptable credential: skip Telegram (nothing to call with)
-      // but still clear local state — the store documents disconnect as recovery.
-      const bindings = finalizeTelegramDisconnect({
-        authStore: input.authStore,
-        actorEmail: input.actorEmail,
-        instanceId: input.instanceId,
-        revokedAt,
-        record,
-        revocationConfirmed: false,
-        revocationMethod: "local-credential-unreadable",
-        webhookRemoved: false,
-        alreadyDisconnected: false,
-        clearCredential: () => {
-          this.store.clear();
-          this.lastError = null;
-        },
-      });
-      const complete = false;
-      return {
-        ok: true,
-        complete,
-        warning:
-          "Local Telegram state was cleared, but the stored credential could not be read — " +
-          "revoke the bot in @BotFather if a token might still be valid.",
-        alreadyDisconnected: false,
-        revocationConfirmed: false,
-        webhookRemoved: false,
-        bindingsCleared: bindings,
-      };
+    } catch (e) {
+      // Undecryptable credential: cannot confirm revocation at Telegram — leave
+      // local state intact so the operator can fix the secret-store key and retry.
+      // Polling stays stopped: it cannot run without a decryptable credential.
+      const detail =
+        e instanceof Error ? e.message : "stored Telegram credential cannot be decrypted";
+      throw new TelegramDisconnectError(
+        "revoke",
+        `${detail} — fix REPOOS_SECRET_STORE_KEY and retry disconnect, or revoke the bot in @BotFather`,
+        true,
+      );
     }
 
     const api = this.buildApi(token);
