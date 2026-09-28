@@ -340,6 +340,11 @@ export class ProvisioningService {
       await this.store.audit("redeemed", `bot_id=${bot.id}`, id, now);
       return { token, bot };
     } catch (e) {
+      // Re-throw ServiceErrors unchanged — they already carry the right kind
+      // (e.g. "conflict" from the completeRedeem 0-rows path above) and have
+      // already called failRedeem/audit before throwing. Wrapping them here
+      // would turn a 409 into a misleading 502.
+      if (e instanceof ServiceError) throw e;
       await this.store.failRedeem(id);
       const detail = e instanceof Error ? e.message : String(e);
       await this.store.audit("redeem_failed", detail, id, now);
