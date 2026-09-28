@@ -552,6 +552,48 @@ separate mechanisms did it. Fixed `5ca3f0fb` / `b6c365c5`:
 - The 30s stray-process sweep now classifies a detached serve belonging to a
   **different live root** as `foreign` — censused, never reaped.
 
+## Hung MTD: timeout vs Stop MTD vs a real failure (#0573)
+
+Three different things can end a close-out that looks stuck, and they are easy
+to tell apart:
+
+| Outcome | How it ends | Badge | Job record | What to do |
+|---|---|---|---|---|
+| **Pipeline timeout** | Automatically, once the attempt spends `closeOut.timeoutMs` (default 6 min) of wall clock from `startedAt` | Inline error card | `failed` — reason starts `close-out timed out after ` | Raise the budget (Settings → General → "Close-out timeout", or `[closeOut] timeoutMs` in `repoos.toml`) or retry when the runner is less loaded. Retryable: the task stays `review`, feature branch/worktree untouched. |
+| **Stop MTD** (#0459) | You clicked Stop | none — a cancel is not a failure | job record removed, no `failed` state | Inspect what happened, then click **Move to done** again. |
+| **Genuine gate failure** | The gate itself failed | Inline error card with the check's Results summary | `failed` — `check failed: …`, `merge conflict in …`, … | Fix per the reason; a real conflict resolves on the feature branch. |
+
+**How the budget works:**
+
+- The clock starts when the job transitions `queued → syncing` (`startedAt`)
+  and **never resets**: the single validating retry (#0216), the drift/resync
+  loops, and remote validation all spend the same budget. The remaining budget
+  is passed to `runRemotePreReviewGate` as `deadlineAt`, so a run sitting in
+  the host-pool queue or on a stuck SSH session (#0521) cannot outlive the
+  pipeline either.
+- Child step timeouts are capped at `min(stepTimeout, remaining budget)`, so a
+  10-minute `[[check.steps]]` timeout cannot defeat a 6-minute pipeline.
+- Enforcement checkpoints mirror Stop MTD exactly: `runProcess` children are
+  SIGKILLed at the deadline, and `processJob` / `syncCandidate` /
+  `validateCandidate` / `publishCandidate` check between phases (cancel is
+  always checked first, so a stopped job never gains a failure badge). The
+  **last** checkpoint is the one immediately before the publish merge — once
+  main is mutated, `cleanup` finishes as `done` and is deliberately never
+  failed out from under a landed merge.
+- `closeOut.timeoutMs = 0` disables the ceiling (the unbounded pre-#0573
+  behaviour); invalid or negative values fall back to the default with a
+  `[closeOut] timeoutMs …` console warning.
+- Release cuts (`release.ts`) still pass no deadline of their own — sharing
+  this budget helper there is a possible follow-up, deliberately out of scope
+  for #0573.
+
+**If a job is still stuck with no terminal state** (the pre-#0573 failure
+mode: >23 minutes on the check step with no actionable error): grep
+`.repoos/logs/system.log` for `close-out hit its pipeline timeout`, confirm
+`closeOut.timeoutMs` in `repoos.toml` has not been set to `0`, and check that
+the deadline still reaches `runRemotePreReviewGate` in
+`integration-orchestrator.ts`. Otherwise Stop MTD works as before.
+
 ## Quick reference: symptom → cause → fix
 
 | Symptom | Likely cause | Fix |
@@ -565,7 +607,8 @@ separate mechanisms did it. Fixed `5ca3f0fb` / `b6c365c5`:
 | `check failed: <real reason>`, and it reproduces manually in the candidate worktree | The task's actual code has a real bug | Fix it on the feature branch, not the candidate (the candidate is discarded and rebuilt from the branch every retry) |
 | API call to `/done` or `/integration-job` returns nothing / times out | Reload churn (see above) | Check `/api/health`, wait, retry — don't assume corruption |
 | `Port 7171 is already bound by another repoos serve process (PID N)` and PID N is dead | Stale `.repoos/serve.lock` after a manual kill | See "The `.repoos/serve.lock` trap" above |
-| Job silently disappears / stays `validating` far longer than a normal check run (~2-3 min) | Server reload interrupted the job mid-flight | Retry `POST .../done` — the job will resync from a fresh candidate |
+| Job failed with `close-out timed out after 6m — …` | The pipeline budget ran out (slow gate, remote queue wait, loaded machine) | Retry Move-to-done, or raise `closeOut.timeoutMs` (Settings → "Close-out timeout"); the task stays `review` with its branch intact (#0573) |
+| Job silently disappears / stays `validating` far longer than a normal check run (~2-3 min) | Server reload interrupted the job mid-flight — or, since #0573, budget enforcement regressed (it should terminate at `closeOut.timeoutMs` first) | Retry `POST .../done` — the job will resync from a fresh candidate; if it hangs past the budget, check the timeout wiring |
 
 ## Before you conclude something is "broken" — checklist
 

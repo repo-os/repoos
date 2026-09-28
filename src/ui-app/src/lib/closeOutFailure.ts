@@ -64,11 +64,20 @@ function headline(s: string): string {
 /** What the failure actually was, derived from phase + reason. */
 export type CloseOutFailureKind =
   | "conflict" // a genuine merge conflict: list files + resolve-then-retry
+  | "timeout" // the pipeline budget (closeOut.timeoutMs) ran out — retryable infra
   | "validating" // build/check gate failed: show output, offer retry, no conflicts
   | "dirty" // publish blocked by a dirty tree: name files, commit/stash
   | "syncing" // branch could not be brought up to date with main
   | "publishing" // any other publish-time failure
   | "other";
+
+/**
+ * The orchestrator's stable timeout-reason prefix (#0573). Kept in sync with
+ * `TIMEOUT_REASON_PREFIX` in `src/server/integration-orchestrator.ts` — a
+ * string match is deliberately the contract, so a timeout recorded by any
+ * older build still classifies correctly.
+ */
+const TIMEOUT_PREFIX = "close-out timed out after";
 
 export function classifyFailure(
   phase: string | undefined,
@@ -77,6 +86,10 @@ export function classifyFailure(
 ): CloseOutFailureKind {
   if (conflicts.length > 0 || /merge conflict|unresolved conflict markers/i.test(reason))
     return "conflict";
+  // A budget-exhausted close-out is retryable validating/infra — never a
+  // conflict and never blamed on the branch (#0573). Checked before the
+  // phase-based arms below so a timeout at any phase classifies the same way.
+  if (reason.trim().startsWith(TIMEOUT_PREFIX)) return "timeout";
   if (/^(?:repoos\s+)?(?:check|build) failed:/i.test(reason) || phase === "validating")
     return "validating";
   if (/uncommitted|dirty|would be overwritten|clean at publish|not merged/i.test(reason))
@@ -129,6 +142,24 @@ export function describeCloseOutFailure(
         step: "merge",
         detail: clean || undefined,
         hint: CONFLICT_HINT,
+      };
+    }
+    case "timeout": {
+      // #0573 — the close-out spent its wall-clock budget (closeOut.timeoutMs).
+      // Retryable infrastructure, not a branch problem: nothing merged, the
+      // feature branch and worktree are untouched, and Move to done can be
+      // retried after raising the budget or when the machine is quieter.
+      const step = phase === "syncing" ? "sync" : phase === "publishing" ? "publish" : "check";
+      return {
+        message: clean ? headline(clean) : "The close-out timed out.",
+        conflicts: [],
+        step,
+        detail: clean || undefined,
+        hint:
+          "The close-out ran past its wall-clock budget and was aborted before anything merged — " +
+          "the branch and worktree are untouched. Retry Move to done when the machine is less " +
+          "loaded, or raise the budget in Settings → Close-out timeout (`closeOut.timeoutMs` in " +
+          "repoos.toml).",
       };
     }
     case "validating": {

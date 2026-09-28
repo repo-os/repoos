@@ -1588,10 +1588,11 @@ interface PoolWaiter {
 const HEALTH_RETRY_MS = 30_000;
 /**
  * Consecutive failed probes before a host stops being retried. Hitting the cap
- * must not strand queued runs: callers such as close-out and release pass no
- * `deadlineAt`, so a waiter left behind by the stopped retry chain would await
- * a slot forever (#0521 review). {@link TailscaleHostPool.settleHopelessWaiters}
- * rejects waiters whose eligible hosts have ALL hit this cap.
+ * must not strand queued runs: callers with no `deadlineAt` of their own
+ * (release, and close-out when `closeOut.timeoutMs = 0`) would otherwise leave
+ * a waiter behind by the stopped retry chain awaiting a slot forever (#0521
+ * review). {@link TailscaleHostPool.settleHopelessWaiters} rejects waiters
+ * whose eligible hosts have ALL hit this cap.
  */
 const MAX_HEALTH_RETRIES = 10;
 
@@ -1606,7 +1607,9 @@ const MAX_HEALTH_RETRIES = 10;
  *   an up-to-date `validate.sh`); a failing host is skipped and re-probed later,
  *   so one dead box doesn't fail jobs while others are idle. Probe retries are
  *   capped — once every eligible host hits the cap, queued runs fail transiently
- *   instead of waiting forever (close-out and release pass no deadline).
+ *   instead of waiting forever (close-out passes its pipeline deadline when
+ *   `closeOut.timeoutMs` is non-zero — #0573; release and a disabled budget
+ *   still pass none).
  * - Queue waits honour the caller's deadline: a job that can't start in time
  *   is cancelled and its slot released, and a run that reaches its host after
  *   the deadline cancels instead of starting.
@@ -2109,9 +2112,10 @@ export class TailscaleHostPool {
    * Reject queued runs that can never start (#0521 review): every host
    * eligible for them has exhausted its probe retries, so nothing will ever
    * dispatch them. They fail transiently with {@link HostsUnavailableError} —
-   * callers without their own deadline (close-out in
-   * `integration-orchestrator.ts`, `release.ts`) would otherwise await a slot
-   * forever. A waiter with ANY still-recoverable eligible host — healthy,
+   * callers with no deadline of their own (`release.ts`, and close-out in
+   * `integration-orchestrator.ts` when `closeOut.timeoutMs = 0`; close-out
+   * otherwise passes its pipeline deadline, #0573) would otherwise await a
+   * slot forever. A waiter with ANY still-recoverable eligible host — healthy,
    * still inside its retry budget, or mid-probe — stays queued.
    */
   private settleHopelessWaiters(): void {

@@ -191,6 +191,16 @@ untouched, so you can inspect what happened and click **Move to done** again.
 Once the candidate has merged into your primary branch (the cleanup phase) it is
 too late to stop — the job finishes on its own.
 
+You no longer have to babysit a hung close-out, though: every attempt also has
+an automatic wall-clock budget (`closeOut.timeoutMs`, **6 minutes** by default,
+configurable in Settings → General → "Close-out timeout", `0` for no limit). A
+close-out that runs past it is aborted the same way — candidate torn down,
+branch untouched, task still in `review` — but unlike Stop MTD it is recorded
+as a **retryable failure** with a `close-out timed out after …` reason and an
+error card, so a pathologically slow run is visible instead of silently
+disappearing. Retries and remote validation spend the same budget; see
+[docs/close-out-pipeline.md](../docs/close-out-pipeline.md) for the details.
+
 ### Merge conflicts repair themselves
 
 The first time two tasks are in flight at once, one of them may conflict with

@@ -33,6 +33,20 @@ describe("classifyFailure", () => {
     expect(classifyFailure(undefined, "build failed: tsc error")).toBe("validating");
   });
 
+  // #0573 — a budget-exhausted close-out is retryable validating/infra. It
+  // must never read as a merge conflict (there is nothing to resolve) and
+  // never as a branch regression (nothing about the branch was tested again).
+  it("classifies a pipeline timeout as timeout at any phase, not conflict/validating", () => {
+    const reason =
+      "close-out timed out after 6m — increase closeOut.timeoutMs or retry when the runner is less loaded";
+    expect(classifyFailure("validating", reason)).toBe("timeout");
+    expect(classifyFailure("syncing", reason)).toBe("timeout");
+    expect(classifyFailure("publishing", reason)).toBe("timeout");
+    expect(classifyFailure(undefined, reason)).toBe("timeout");
+    // Even a phase that would otherwise read "validating" stays a timeout.
+    expect(classifyFailure("validating", `${reason} (while running check)`)).toBe("timeout");
+  });
+
   it("classifies a dirty publish as dirty, not a conflict", () => {
     expect(classifyFailure("publishing", "main has 1 uncommitted file at publish time")).toBe(
       "dirty",
@@ -162,6 +176,26 @@ describe("describeCloseOutFailure", () => {
     expect(err.message).toContain("feat/x");
     expect(err.step).toBe("sync");
     expect(err.hint).toMatch(/brought up to date/i);
+  });
+
+  // #0573 — the timeout error card: retryable infra guidance, no conflicts,
+  // and it names the knob to raise.
+  it("describes a pipeline timeout as retryable infra naming closeOut.timeoutMs", () => {
+    const reason =
+      "close-out timed out after 6m — increase closeOut.timeoutMs or retry when the runner is less loaded";
+    const err = describeCloseOutFailure("validating", reason);
+    expect(err.message).toContain("timed out");
+    expect(err.message).toContain("6m");
+    expect(err.conflicts).toEqual([]);
+    expect(err.detail).toBe(reason);
+    expect(err.hint).not.toMatch(/merge conflict/i);
+    expect(err.hint).toMatch(/retry/i);
+    expect(err.hint).toMatch(/closeOut\.timeoutMs/);
+    expect(err.hint).toMatch(/untouched/i);
+    // The step tracks the phase that was interrupted.
+    expect(describeCloseOutFailure("syncing", reason).step).toBe("sync");
+    expect(describeCloseOutFailure("publishing", reason).step).toBe("publish");
+    expect(err.step).toBe("check");
   });
 
   it("falls back gracefully for an unknown phase and empty reason", () => {

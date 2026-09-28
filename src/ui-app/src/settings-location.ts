@@ -121,6 +121,7 @@ const SETTING_SEARCH_ALIASES: Record<string, string> = {
   "remoteValidation.enabled":
     "tailscale hetzner remote validation runner configure disposable vm cloud",
   tunnelEnabled: "cloudflare tunnel publish publishing hostname public",
+  "closeOut.timeoutMs": "close out move to done mtd merge pipeline budget timeout hung",
 };
 
 export function settingSearchAliases(key: string): string {

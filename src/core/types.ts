@@ -444,6 +444,13 @@ export interface RepoOSConfig {
    */
   stories?: StoriesConfig;
   /**
+   * Close-out (Move to done) pipeline settings (#0573) — a wall-clock budget
+   * so a hung or pathologically slow close-out always terminates with a
+   * retryable `failed` job instead of sitting on the check step forever.
+   * Defaults to `{ timeoutMs: 360000 }` (6 minutes); `timeoutMs: 0` disables.
+   */
+  closeOut?: CloseOutConfig;
+  /**
    * Distribution destinations shown as the Releases page's "Published to"
    * summary (a `[[distribution]]` array of tables). Omitted/empty keeps the
    * existing Releases experience with no extra section. See [DistributionConfig].
@@ -1146,6 +1153,19 @@ export interface WatchdogConfig {
    * `needsInput`. Default true.
    */
   autoTransition?: boolean;
+}
+
+/**
+ * Close-out (Move to done) pipeline budget (#0573).
+ */
+export interface CloseOutConfig {
+  /**
+   * Total wall-clock budget for ONE close-out attempt, from when the job
+   * leaves `queued` (sets `startedAt`) until it reaches `failed`, `done`, or
+   * is removed by a user cancel. `0` disables the ceiling (today's unbounded
+   * behaviour). Default `360000` (6 minutes).
+   */
+  timeoutMs: number;
 }
 
 /** Agent supervisor configuration. */
