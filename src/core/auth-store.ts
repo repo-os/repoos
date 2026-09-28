@@ -105,6 +105,27 @@ export interface TelegramUserLink {
   revokedAt: string | null;
 }
 
+export interface TelegramChatLink {
+  telegramChatId: number;
+  chatType: string;
+  title: string | null;
+  boundAt: string;
+  boundBy: string;
+  revokedAt: string | null;
+}
+
+export interface TelegramChatBindInvite {
+  nonceHash: string;
+  repoIdentity: string;
+  instanceIdentity: string;
+  mac: string;
+  createdBy: string;
+  createdAt: string;
+  expiresAt: string;
+  redeemedAt: string | null;
+  redeemedChatId: number | null;
+}
+
 export interface TelegramLinkInvite {
   nonceHash: string;
   email: string;
@@ -228,6 +249,28 @@ const AUTH_MIGRATION = `
     redeemed_at TEXT
   );
   CREATE INDEX IF NOT EXISTS idx_telegram_link_invites_email ON telegram_link_invites(email);
+
+  -- Approved Telegram destinations for this repository (routing only; ADR 0007).
+  CREATE TABLE IF NOT EXISTS telegram_chat_links (
+    telegram_chat_id INTEGER PRIMARY KEY,
+    chat_type TEXT NOT NULL,
+    title TEXT,
+    bound_at TEXT NOT NULL,
+    bound_by TEXT NOT NULL,
+    revoked_at TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS telegram_chat_bind_invites (
+    nonce_hash TEXT PRIMARY KEY,
+    repo_identity TEXT NOT NULL,
+    instance_identity TEXT NOT NULL,
+    mac TEXT NOT NULL,
+    created_by TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    redeemed_at TEXT,
+    redeemed_chat_id INTEGER
+  );
 `;
 
 // ---------------------------------------------------------------------------
@@ -822,6 +865,150 @@ export class AuthStore {
     }
   }
 
+  // ---- Telegram chat links + bind invites ----
+
+  getTelegramChatLink(telegramChatId: number): TelegramChatLink | null {
+    if (!this.available) return null;
+    try {
+      const rows = this.db
+        .prepare("SELECT * FROM telegram_chat_links WHERE telegram_chat_id = ?")
+        .all(telegramChatId);
+      return rows.length > 0 ? this.toTelegramChatLink(rows[0]) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  listTelegramChatLinks(): TelegramChatLink[] {
+    if (!this.available) return [];
+    try {
+      return this.db
+        .prepare(
+          "SELECT * FROM telegram_chat_links WHERE revoked_at IS NULL ORDER BY bound_at DESC",
+        )
+        .all()
+        .map((row: Record<string, unknown>) => this.toTelegramChatLink(row));
+    } catch {
+      return [];
+    }
+  }
+
+  upsertTelegramChatLink(link: TelegramChatLink): boolean {
+    if (!this.available) return false;
+    try {
+      this.db
+        .prepare(`
+        INSERT INTO telegram_chat_links (
+          telegram_chat_id, chat_type, title, bound_at, bound_by, revoked_at
+        ) VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(telegram_chat_id) DO UPDATE SET
+          chat_type = excluded.chat_type,
+          title = excluded.title,
+          bound_at = excluded.bound_at,
+          bound_by = excluded.bound_by,
+          revoked_at = excluded.revoked_at
+      `)
+        .run(
+          link.telegramChatId,
+          link.chatType,
+          link.title,
+          link.boundAt,
+          link.boundBy,
+          link.revokedAt,
+        );
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  revokeTelegramChatLink(telegramChatId: number, revokedAt: string): boolean {
+    if (!this.available) return false;
+    try {
+      const result = this.db
+        .prepare(
+          `UPDATE telegram_chat_links SET revoked_at = ?
+           WHERE telegram_chat_id = ? AND revoked_at IS NULL`,
+        )
+        .run(revokedAt, telegramChatId);
+      return (result.changes ?? 0) > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  insertTelegramChatBindInvite(invite: TelegramChatBindInvite): boolean {
+    if (!this.available) return false;
+    try {
+      this.db
+        .prepare(`
+        INSERT INTO telegram_chat_bind_invites (
+          nonce_hash, repo_identity, instance_identity, mac,
+          created_by, created_at, expires_at, redeemed_at, redeemed_chat_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL)
+      `)
+        .run(
+          invite.nonceHash,
+          invite.repoIdentity,
+          invite.instanceIdentity,
+          invite.mac,
+          invite.createdBy,
+          invite.createdAt,
+          invite.expiresAt,
+        );
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  getTelegramChatBindInviteByNonceHash(nonceHash: string): TelegramChatBindInvite | null {
+    if (!this.available) return null;
+    try {
+      const rows = this.db
+        .prepare("SELECT * FROM telegram_chat_bind_invites WHERE nonce_hash = ?")
+        .all(nonceHash);
+      return rows.length > 0 ? this.toTelegramChatBindInvite(rows[0]) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  markTelegramChatBindInviteRedeemed(
+    nonceHash: string,
+    redeemedAt: string,
+    redeemedChatId: number,
+  ): boolean {
+    if (!this.available) return false;
+    try {
+      const result = this.db
+        .prepare(
+          `UPDATE telegram_chat_bind_invites SET redeemed_at = ?, redeemed_chat_id = ?
+           WHERE nonce_hash = ? AND redeemed_at IS NULL`,
+        )
+        .run(redeemedAt, redeemedChatId, nonceHash);
+      return (result.changes ?? 0) > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  cleanupExpiredTelegramChatBindInvites(): number {
+    if (!this.available) return 0;
+    try {
+      const now = new Date().toISOString();
+      const result = this.db
+        .prepare(
+          `DELETE FROM telegram_chat_bind_invites
+           WHERE expires_at < ? AND redeemed_at IS NULL`,
+        )
+        .run(now);
+      return result.changes ?? 0;
+    } catch {
+      return 0;
+    }
+  }
+
   /**
    * Run `fn` inside BEGIN IMMEDIATE so invite redeem cannot race a second
    * /start into a double bind. Nested calls are not supported — later
@@ -934,6 +1121,34 @@ export class AuthStore {
       createdAt: row.created_at,
       expiresAt: row.expires_at,
       redeemedAt: row.redeemed_at ?? null,
+    };
+  }
+
+  private toTelegramChatLink(row: any): TelegramChatLink {
+    return {
+      telegramChatId: Number(row.telegram_chat_id),
+      chatType: row.chat_type,
+      title: row.title ?? null,
+      boundAt: row.bound_at,
+      boundBy: row.bound_by,
+      revokedAt: row.revoked_at ?? null,
+    };
+  }
+
+  private toTelegramChatBindInvite(row: any): TelegramChatBindInvite {
+    return {
+      nonceHash: row.nonce_hash,
+      repoIdentity: row.repo_identity,
+      instanceIdentity: row.instance_identity,
+      mac: row.mac,
+      createdBy: row.created_by,
+      createdAt: row.created_at,
+      expiresAt: row.expires_at,
+      redeemedAt: row.redeemed_at ?? null,
+      redeemedChatId:
+        row.redeemed_chat_id != null && row.redeemed_chat_id !== ""
+          ? Number(row.redeemed_chat_id)
+          : null,
     };
   }
 

@@ -1,16 +1,21 @@
 ---
+updated_at: "2026-09-28T02:21:35Z"
+review_passes: 3
 id: "0537"
 title: Add a notification provider registry and the Telegram notification provider
 type: feature
-status: ready
+status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p1
 area: server
 story: RepoOS Telegram Bot
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/add-a-notification-provider-registry-and
 created_at: "2026-09-27T07:33:00Z"
-updated_at: "2026-09-27T15:52:44Z"
+review_rounds: 2
 ---
 ## Problem
 
@@ -48,3 +53,36 @@ Two properties of the existing code must survive the refactor:
 - 2026-09-27T15:42:33Z · body
 - 2026-09-27T15:51:53Z · body
 - 2026-09-27T15:52:44Z · body
+- 2026-09-28T01:11:51Z · status ready→active, branch
+- 2026-09-28T01:18:16Z · status active→review
+- 2026-09-28T01:21:29Z · status review→active
+- 2026-09-28T01:29:06Z · handoff failed · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:64:30
+     62|     const match = environmentDoc.match(/## `\.env\.example`\n[\s\S]*?`…
+     63|     expect(match, "embedded .env.example block not found").not.toBeNul…
+     64|     expect(match![1].trim()).toBe(envExample.trim());
+       |                              ^
+     65|   });
+     66|
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 291 passed (292)
+      Tests  1 failed | 3394 passed | 12 skipped (3407)
+   Start at  01:26:51
+   Duration  132.01s (transform 3.96s, setup 1.25s, import 17.66s, tests 103.75s, environment 127.65s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 268ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  01:29:03
+   Duration  1.51s (transform 655ms, setup 9ms, import 759ms, tests 268ms, environment 409ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
+- 2026-09-28T01:34:25Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:64:30 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-09-28T01:34:30Z · status review→active
+- 2026-09-28T01:38:40Z · handoff failed · task-file handoff failed at check · repoos check failed: [90mstderr[2m | tests/auto-preview.test.ts[2m > [22m[2mon-demand previews (#0271 follow-up)[2m > [22m[2mcaps concurrent previews at 1 and evicts the previous one when a new one starts · [22m[39m[preview] 2026-09-28T01:38:29.568Z #0001 evicted — terminated to keep concurrent previews at 1 (oldest running; started 2026-09-28T01:38:29.076Z) · [preview] 2026-09-28T01:38:29.568Z #0001 stopped — target=default url=http://127.0.0.1:51102 pid=2527 · [90mstderr[2m | tests/auto-preview.test.ts[2m > [22m[2mon-demand previews (#0271 follow-up)[2m > [22m[2mcaps concurrent previews at 1 and evicts the previous one when a new one starts · [22m[39m[preview] 2026-09-28T01:38:33.740Z #0002 started — target=default url=http://127.0.0.1:51118 pid=4117 port=51118 · [31m❯[39m tests/auto-preview.test.ts [2m([22m[2m2 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 35061[2mms[22m[39m · [31m     [31m×[31m does not auto-launch on transition to review, launches on request, and closes when leaving review[39m[33m 18510[2mms[22m[39m · [33m[2m✓[22m[39m caps concurrent previews at 1 and evicts the previous one when a new one starts [33m 16550[2mms[22m[39m
+- 2026-09-28T01:44:24Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:64:30 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-09-28T01:44:24Z · status review→active
+- 2026-09-28T01:45:38Z · status active→review
+- 2026-09-28T01:48:49Z · status review→active
+- 2026-09-28T02:18:37Z · status active→review
+- 2026-09-28T02:21:32Z · needs_input
+

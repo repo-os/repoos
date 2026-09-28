@@ -104,6 +104,13 @@ import {
   runGit,
 } from "../core/git.js";
 import { sweepAndWarn } from "../core/worktree-gc.js";
+import { remoteJobCapabilities } from "./pre-review-remote-gate.js";
+import {
+  hostRunner,
+  remoteHostLimit,
+  remoteHostUser,
+  resolveRemoteHosts,
+} from "../core/remote-hosts.js";
 import { runBuiltInAgent, isDueForScheduledRun, builtInAgentLabel } from "./built-in-agents.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
 import { WorkWatcher } from "./watcher.js";
@@ -308,6 +315,7 @@ import {
   telegramProvisionBegin,
   telegramProvisionStatus,
   telegramProvisionRedeem,
+  telegramWebhook,
   // Transcription
   transcribe,
   // UI routes
@@ -329,8 +337,12 @@ import {
   deleteUser,
   updateUserRole,
   getAuditLog,
+  bindTelegramChatRoute,
+  createTelegramChatBindCodeRoute,
   createTelegramInviteRoute,
+  listTelegramChatsRoute,
   listTelegramLinksRoute,
+  unbindTelegramChatRoute,
   unbindTelegramLinkRoute,
   reassignTelegramLinkRoute,
   createHubCapability,
@@ -2283,10 +2295,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           emitDone(null);
           return;
         }
+        // Route like every other remote caller (#0521): a plan step with
+        // `runsOn = ["macos"]` must not send this run to a Linux host.
         const result = await remoteValidator.validate({
           taskId: "checks-test-suite",
           worktreePath: config.root,
           candidateSha,
+          capabilities: remoteJobCapabilities(config),
           onChunk: (chunk) => {
             testRuns.appendOutput(chunk);
             emitChunk(chunk);
@@ -2360,6 +2375,25 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       /* no warm runner */
     }
     const sshKeyEnv = process.env.REPOOS_REMOTE_SSH_KEY;
+    // Per-host pool state (#0521): live from the runner when it exists
+    // (`applyConfig` keeps this list in sync with Settings saves). Otherwise
+    // the configured list (probed:false) so the drawer still shows hosts when
+    // the runner wasn't constructed at boot.
+    const hosts = remoteValidator?.hostStatus?.() ?? [
+      ...resolveRemoteHosts(rv).map((h) => ({
+        host: h.host,
+        user: remoteHostUser(rv, h),
+        os: h.os,
+        labels: h.labels ?? [],
+        maxConcurrent: remoteHostLimit(rv, h),
+        inFlight: 0,
+        queued: 0,
+        probed: false,
+        healthy: false,
+        detail: undefined as string | undefined,
+        lastRun: undefined as { taskId: string; ok: boolean; at: string } | undefined,
+      })),
+    ];
     return json(res, 200, {
       enabled: !!rv.enabled,
       running: !!remoteValidator,
@@ -2374,8 +2408,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       hasApiToken: !!process.env.HETZNER_API_TOKEN,
       hasSshKey: !!sshKeyEnv && existsSync(sshKeyEnv),
       tailscaleHost: rv.tailscaleHost ?? "",
+      tailscaleHosts: resolveRemoteHosts(rv).map((h) => h.host),
       tailscaleUser: rv.tailscaleUser ?? "root",
       containerImage: rv.containerImage ?? "repoos-ci",
+      maxConcurrent: rv.maxConcurrent ?? 1,
+      hosts,
       activeServer,
     });
   });
@@ -2385,31 +2422,46 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     try {
       let output = "";
       if (provider === "tailscale") {
-        const host = rv.tailscaleHost;
-        if (!host)
+        const hosts = resolveRemoteHosts(rv);
+        if (!hosts.length)
           return json(res, 400, {
             ok: false,
             error: "remoteValidation.tailscaleHost is not configured.",
           });
         const sshKeyEnv = process.env.REPOOS_REMOTE_SSH_KEY;
         const keyPath = sshKeyEnv && existsSync(sshKeyEnv) ? sshKeyEnv : undefined;
-        const { defaultRemoteExec } = await import("./remote-validation.js");
+        const { defaultRemoteExec, prereqProbeCommand, PREREQ_OK_TOKEN } =
+          await import("./remote-validation.js");
         const exec = defaultRemoteExec();
-        const result = await exec.runRemote(
-          { ip: host, user: rv.tailscaleUser ?? "root", keyPath },
-          "docker info --format '{{.ServerVersion}}' 2>&1 && echo OK",
-          (chunk) => {
-            output += chunk;
-          },
-          15_000,
-        );
-        if (result.code === 0 && output.includes("OK")) {
-          return json(res, 200, { ok: true, output: output.trim() });
+        // Same per-host prerequisite check the pool runs (#0521), so the
+        // button reports every misconfigured host instead of only the first.
+        const reports: string[] = [];
+        let allOk = true;
+        for (const h of hosts) {
+          let probeOutput = "";
+          const probeRes = await exec.runRemote(
+            { ip: h.host, user: remoteHostUser(rv, h), keyPath },
+            prereqProbeCommand(hostRunner(h), rv.containerImage ?? "repoos-ci"),
+            (chunk) => {
+              probeOutput += chunk;
+            },
+            15_000,
+          );
+          const ok = probeRes.code === 0 && probeOutput.includes(PREREQ_OK_TOKEN);
+          if (!ok) allOk = false;
+          reports.push(
+            `── ${h.host}${h.os ? ` (${h.os})` : ""} ──\n` +
+              (ok
+                ? probeOutput.trim() || "ok"
+                : `FAILED (exit ${probeRes.code}): ${probeOutput.trim() || "no output"}`),
+          );
         }
+        output = reports.join("\n\n");
+        if (allOk) return json(res, 200, { ok: true, output });
         return json(res, 200, {
           ok: false,
-          error: `SSH/Docker check failed (exit ${result.code})`,
-          output: output.trim(),
+          error: "One or more hosts failed the prerequisite check.",
+          output,
         });
       } else {
         // Hetzner: just verify the API token and that provider config is present
@@ -2567,6 +2619,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/telegram/provision", telegramProvisionBegin);
   router.register("GET", /^\/api\/telegram\/provision\/([^/]+)$/, telegramProvisionStatus);
   router.register("POST", /^\/api\/telegram\/provision\/([^/]+)\/redeem$/, telegramProvisionRedeem);
+  router.register("POST", /^\/api\/telegram\/webhook\/([^/]+)$/, telegramWebhook);
 
   // Transcription routes
   router.register("POST", "/api/transcribe", transcribe);
@@ -2587,6 +2640,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("PATCH", /^\/api\/auth\/users\/([^/]+)$/, updateUserRole);
   router.register("GET", "/api/auth/audit", getAuditLog);
   router.register("POST", "/api/auth/telegram/invites", createTelegramInviteRoute);
+  router.register("POST", "/api/auth/telegram/chats/bind-codes", createTelegramChatBindCodeRoute);
+  router.register("GET", "/api/auth/telegram/chats", listTelegramChatsRoute);
+  router.register("POST", "/api/auth/telegram/chats", bindTelegramChatRoute);
+  router.register("DELETE", /^\/api\/auth\/telegram\/chats\/([^/]+)$/, unbindTelegramChatRoute);
   router.register("GET", "/api/auth/telegram/links", listTelegramLinksRoute);
   router.register("DELETE", /^\/api\/auth\/telegram\/links\/([^/]+)$/, unbindTelegramLinkRoute);
   router.register(
@@ -2646,6 +2703,15 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           "/api/auth/",
           "/api/hub/v1/summary",
           "/api/hub/v1/tasks/search",
+          // Telegram webhook (#0532): must stay public so Telegram can POST
+          // without a session cookie. Session middleware runs before dispatch,
+          // so this prefix only bypasses the cookie gate — the webhook handler
+          // still validates X-Telegram-Bot-Api-Secret-Token before reading the
+          // body. Do not move secret checks into middleware without re-reading
+          // that ordering; a future edit that runs auth after dispatch would
+          // break delivery, and one that drops the route handler's secret check
+          // would expose the repo to the open internet.
+          "/api/telegram/webhook/",
         ];
         const PUBLIC_PATHS = ["/login", "/manifest.webmanifest"];
         const isPublicRoute =

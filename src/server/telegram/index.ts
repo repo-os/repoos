@@ -110,6 +110,16 @@ export async function bootstrapTelegramAtBoot(
   config: Pick<RepoOSConfig, "root" | "auth" | "telegram">,
 ): Promise<{ resumed: boolean; detail?: string }> {
   const provider = getTelegramProvider(config);
-  provider.onUpdate(createTelegramIntakeHandler(telegramIntakeOptionsFromConfig(config)));
+  provider.onUpdate(
+    createTelegramIntakeHandler(
+      telegramIntakeOptionsFromConfig(config, {
+        resolveBot: () => {
+          const status = provider.status();
+          if (!status.connected || !status.bot) return null;
+          return { id: status.bot.id, username: status.bot.username };
+        },
+      }),
+    ),
+  );
   return resumeTelegramTransports(config);
 }

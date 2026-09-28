@@ -38,6 +38,7 @@ import type {
 } from "./types.js";
 import { STATUSES } from "./types.js";
 import { parseCheckPlanConfig } from "./check-plan.js";
+import { parseTailscaleHosts } from "./remote-hosts.js";
 import { stripTomlComment, unquoteTomlString } from "./toml-line.js";
 
 /** Default display labels for board columns, keyed by canonical status ID. */
@@ -1185,6 +1186,14 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof rvTailscaleUser === "string" && rvTailscaleUser) {
       cfg.remoteValidation = { ...cfg.remoteValidation, tailscaleUser: rvTailscaleUser };
     }
+    // The host pool (#0521): folds `tailscaleHost` (shorthand), the flat
+    // `tailscaleHosts` list and `[[remoteValidation.tailscaleHosts]]` rows into
+    // one normalised list. Undefined when no host is configured, so the runner
+    // keeps reporting the missing-host error itself.
+    const rvHosts = parseTailscaleHosts(parsed);
+    if (rvHosts) {
+      cfg.remoteValidation = { ...cfg.remoteValidation, tailscaleHosts: rvHosts };
+    }
     const rvContainerImage = parsed["remoteValidation.containerImage"];
     if (typeof rvContainerImage === "string" && rvContainerImage) {
       cfg.remoteValidation = { ...cfg.remoteValidation, containerImage: rvContainerImage };
@@ -1564,7 +1573,21 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: true,
       default: "",
       description:
-        "Tailscale hostname (e.g. 'bee') or 100.x.x.x IP of the persistent runner machine. Required when provider is 'tailscale'.",
+        "Tailscale hostname (e.g. 'bee') or 100.x.x.x IP of the persistent runner machine. Required when provider is 'tailscale' (single-host shorthand for the host pool).",
+    },
+    {
+      key: "remoteValidation.tailscaleHosts",
+      label: "Remote validation: host pool",
+      type: "array",
+      tier: "live",
+      restartRequired: false,
+      default: [],
+      description:
+        "Tailnet hosts validation jobs may run on, comma-separated (hostname or 100.x.x.x each). " +
+        "Jobs dispatch to an idle eligible host and queue only when every one is at its per-host limit. " +
+        "A Settings save updates the live dispatcher immediately (no restart). " +
+        "For a per-host SSH user, OS, labels or concurrency, declare [[remoteValidation.tailscaleHosts]] " +
+        "rows in repoos.toml instead — see docs/remote-validation.md.",
     },
     {
       key: "remoteValidation.tailscaleUser",
@@ -1597,7 +1620,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         label: String(i + 1),
       })),
       description:
-        "How many remote validation runs may execute at once. Extra runs wait in a queue. Default 1: two full test suites on one machine cause load-induced timeouts that show up as a failed gate.",
+        "How many remote validation runs may execute at once per host. Extra runs wait in a queue. Default 1: two full test suites on one machine cause load-induced timeouts that show up as a failed gate.",
     },
     {
       key: "remoteValidation.fallbackToLocal",
@@ -1787,6 +1810,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "remoteValidation.enabled",
   "remoteValidation.provider",
   "remoteValidation.tailscaleHost",
+  "remoteValidation.tailscaleHosts",
   "remoteValidation.tailscaleUser",
   "remoteValidation.containerImage",
   "remoteValidation.serverType",
@@ -1845,7 +1869,16 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
   let modified = false;
 
   // Array-of-tables keys ([[agents]]): drop the existing blocks and append the
-  // freshly serialized ones at the end of the file.
+  // freshly serialized ones at the end of the file. Also drop any pre-existing
+  // FLAT scalar/array line for the same key (root- or section-scoped) — TOML
+  // cannot validly have both a `key = [...]` line and `[[key]]` blocks for one
+  // key, and leaving a stale flat line untouched here resurrects whatever it
+  // said on the next parse even though this patch never wrote to it (#0521
+  // review: shortening a pool that has both forms rewrote the rows but left
+  // the old flat list, so a removed host came back on reload). Scoped to only
+  // remove a *stray* flat line, not one this same patch is also setting —
+  // callers that intentionally want both never happen; this just guards
+  // against ONE of them going stale after the other form is chosen.
   for (const [key, rawVal] of Object.entries(patch)) {
     if (!isTableArray(rawVal)) continue;
     const blocks = serializeTableArray(key, rawVal);
@@ -1864,9 +1897,30 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
       kept.push(result[i]);
       i++;
     }
-    while (kept.length && kept[kept.length - 1].trim() === "") kept.pop();
-    kept.push(blocks);
-    result = kept;
+    // Second pass: strip a stray flat line for the same key, root- or
+    // section-scoped — same full-name resolution as the scalar/array patch
+    // loop below (a root-scoped line's own identifier IS the full dotted
+    // key, e.g. `remoteValidation.tailscaleHosts = […]`; a section-scoped
+    // line's leaf combines with its `[section]` header to the same name).
+    let section = "";
+    const withoutFlat: string[] = [];
+    for (const line of kept) {
+      const stripped = stripTomlComment(line).trim();
+      const header = stripped.match(/^\[\[([^\]]+)\]\]/) ?? stripped.match(/^\[([^\]]+)\]/);
+      if (header) {
+        section = header[1]!.trim();
+        withoutFlat.push(line);
+        continue;
+      }
+      const kv = stripped.match(/^([A-Za-z0-9_.-]+)\s*=\s*/);
+      const full = kv ? (section ? `${section}.${kv[1]}` : kv[1]!) : null;
+      if (full === key) continue; // drop the stray flat line for this key
+      withoutFlat.push(line);
+    }
+    let finalKept = withoutFlat;
+    while (finalKept.length && finalKept[finalKept.length - 1].trim() === "") finalKept.pop();
+    finalKept.push(blocks);
+    result = finalKept;
     modified = true;
   }
 
@@ -1917,43 +1971,90 @@ export function patchTomlConfig(tomlPath: string, patch: Record<string, unknown>
     }
   }
 
-  // Scalars and plain arrays: in-place line-preserving patch.
+  // Scalars and plain arrays: in-place line-preserving patch. A dotted key is
+  // matched BOTH as its full name at root scope (`remoteValidation.enabled = …`
+  // with no section header) and as its leaf name inside the section that gives
+  // it that full name (`enabled = …` under `[remoteValidation]`) — those are one
+  // and the same key to parseFlatToml. Matching only the full name (the old
+  // behaviour) made a section-scoped line invisible: a duplicate root line was
+  // inserted instead, and the in-section line — parsed later — silently
+  // overrode it, so a Settings write claimed success while the file never
+  // changed (#0521 review: the host pool editor on the `[remoteValidation]`
+  // block the docs tell users to paste; same latent bug for every dotted key).
   for (const [key, rawVal] of Object.entries(patch)) {
     if (isTableArray(rawVal)) continue;
     if (key.startsWith("board.columns.")) continue; // handled above
     const serialized = serializeTomlVal(rawVal);
-    let found = false;
+    const dot = key.lastIndexOf(".");
+    const sectionPath = dot === -1 ? "" : key.slice(0, dot);
+    const leaf = dot === -1 ? key : key.slice(dot + 1);
 
+    // Every existing line that resolves to this key, with the scope it sat in.
+    const matches: Array<{ line: number; inSection: boolean }> = [];
+    let section = "";
     for (let i = 0; i < result.length; i++) {
       const stripped = stripTomlComment(result[i]).trim();
-      if (!stripped || stripped.startsWith("[")) continue;
-
+      const header = stripped.match(/^\[\[([^\]]+)\]\]/) ?? stripped.match(/^\[([^\]]+)\]/);
+      if (header) {
+        section = header[1].trim();
+        continue;
+      }
+      if (!stripped) continue;
       const kv = stripped.match(/^([A-Za-z0-9_.-]+)\s*=\s*/);
-      if (kv && kv[1] === key) {
-        const indent = result[i].match(/^\s*/)?.[0] || "";
-        result[i] = `${indent}${key} = ${serialized}`;
-        modified = true;
-        found = true;
-        break;
-      }
+      if (!kv) continue;
+      const full = section ? `${section}.${kv[1]}` : kv[1]!;
+      if (full === key) matches.push({ line: i, inSection: section !== "" });
     }
 
-    if (!found) {
-      // A brand-new scalar must land at root scope. Appending at the very end
-      // of the file is only safe when nothing after it is a `[section]` or
-      // `[[array-of-tables]]` block — otherwise the line reads back as a
-      // member of that table instead of the root config (the reader has no
-      // way to know the table "ended" without a following header). Insert
-      // before the first header line instead, so newly-saved keys are always
-      // unambiguously root-level regardless of what tables follow.
-      const firstHeaderIndex = result.findIndex((l) => stripTomlComment(l).trim().startsWith("["));
-      if (firstHeaderIndex === -1) {
-        result.push(`${key} = ${serialized}`);
-      } else {
-        result.splice(firstHeaderIndex, 0, `${key} = ${serialized}`);
-      }
+    if (matches.length > 0) {
+      // Rewrite the first match in place — leaf name inside its section, full
+      // dotted name at root — and drop any duplicates: two lines resolving to
+      // one key is exactly how the old bug hid itself (the later line won).
+      const first = matches[0]!;
+      const indent = result[first.line].match(/^\s*/)?.[0] || "";
+      result[first.line] = `${indent}${first.inSection ? leaf : key} = ${serialized}`;
+      for (let m = matches.length - 1; m >= 1; m--) result.splice(matches[m]!.line, 1);
       modified = true;
+      continue;
     }
+
+    // Not present yet: put it where a reader expects it — at the end of its
+    // own section when that section exists (same key on parse, no duplicate),
+    // else at root scope before the first header (appending at the very end is
+    // only safe when no `[section]`/`[[array]]` follows, so a root key must
+    // land before the first header to stay unambiguous).
+    if (sectionPath) {
+      const headerIndex = result.findIndex(
+        (l) => stripTomlComment(l).trim() === `[${sectionPath}]`,
+      );
+      if (headerIndex !== -1) {
+        let end = result.length;
+        for (let i = headerIndex + 1; i < result.length; i++) {
+          if (stripTomlComment(result[i]).trim().startsWith("[")) {
+            end = i;
+            break;
+          }
+        }
+        let indent = "";
+        for (let i = headerIndex + 1; i < end; i++) {
+          const m = result[i]?.match(/^(\s+)\S/);
+          if (m) {
+            indent = m[1]!;
+            break;
+          }
+        }
+        result.splice(end, 0, `${indent}${leaf} = ${serialized}`);
+        modified = true;
+        continue;
+      }
+    }
+    const firstHeaderIndex = result.findIndex((l) => stripTomlComment(l).trim().startsWith("["));
+    if (firstHeaderIndex === -1) {
+      result.push(`${key} = ${serialized}`);
+    } else {
+      result.splice(firstHeaderIndex, 0, `${key} = ${serialized}`);
+    }
+    modified = true;
   }
 
   if (modified) {

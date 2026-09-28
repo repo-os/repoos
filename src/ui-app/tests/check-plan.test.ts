@@ -59,6 +59,7 @@ function step(over: Partial<CheckStep> = {}): CheckStep {
     profiles: [],
     whenChanged: [],
     requires: [],
+    runsOn: [],
     dependsOn: [],
     ...over,
   };

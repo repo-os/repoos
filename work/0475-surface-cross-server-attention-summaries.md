@@ -5,14 +5,14 @@ type: feature
 status: done
 priority: p2
 area: desktop
-story: MacOS native app
+story: MacOS Native App
 assigned_to: ai
 created_by: ""
 branch: feat/surface-cross-server-attention-summaries
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-09-21T11:50:28Z"
-updated_at: "2026-09-21T20:10:27Z"
+updated_at: "2026-09-28T00:08:50Z"
 merge_conflict_retry_count: 2
 review_passes: 1
 ---
@@ -40,3 +40,4 @@ Depends on the macOS registry/WebKit tasks and the Hub read-capability/summary A
 - 2026-09-21T19:12:15Z · status active→review
 - 2026-09-21T19:37:16Z · status review→done, release:success
 - 2026-09-21T20:10:27Z · story
+- 2026-09-28T00:08:50Z · story

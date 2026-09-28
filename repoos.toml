@@ -48,7 +48,7 @@ auth.emailProvider.fromAddress = "otp@send.repoos.org"
 # # clientSecret likewise goes in .env as REPOOS_GOOGLE_CLIENT_SECRET, not here.
 whisper.provider = "none"
 
-remoteValidation.enabled = true
+remoteValidation.enabled = false
 remoteValidation.fallbackToLocal = true
 
 worktreeWarnThreshold = 20
@@ -469,7 +469,6 @@ tunnel_id = "961e778d-b048-46ff-a848-756e3cf235b0"
 hostname = "dev.repoos.org"
 service = "http://localhost:7171"
 access = ["njachowski@gmail.com", "faizullah.misrab@gmail.com", "nick@tukapp.co"]
-
 [[agents]]
 name = "engineer"
 cli = "cursor"
@@ -486,7 +485,7 @@ instructions = "Review the task's implementation on its feature branch. The impl
 [[agents]]
 name = "pm"
 cli = "opencode"
-model = "opencode/big-pickle"
+model = "opencode-go/mimo-v2.6-flash"
 enabled = true
 instructions = "Owns the roadmap: moves tasks between statuses, writes activity entries, keeps the work board tidy."
 [[agents]]

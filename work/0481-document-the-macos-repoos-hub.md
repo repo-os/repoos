@@ -5,6 +5,7 @@ type: documentation
 status: done
 priority: p2
 area: macos
+story: MacOS Native App
 assigned_to: ai
 created_by: ""
 branch: feat/document-the-macos-repoos-hub
@@ -13,7 +14,7 @@ model_override: opencode/big-pickle
 pm_cli_override: github copilot
 pm_model_override: default
 created_at: "2026-09-22T05:30:52Z"
-updated_at: "2026-09-22T18:20:39Z"
+updated_at: "2026-09-28T00:08:35Z"
 review_rounds: 1
 review_passes: 2
 ---
@@ -84,3 +85,4 @@ Add screenshots or product visuals only if the native UI is stable and an approv
 - 2026-09-22T17:16:03Z · status review→active
 - 2026-09-22T18:07:52Z · status active→review
 - 2026-09-22T18:20:39Z · status review→done, release:success
+- 2026-09-28T00:08:35Z · story

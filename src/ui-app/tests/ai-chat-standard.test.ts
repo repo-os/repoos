@@ -25,6 +25,7 @@ import AiChatThinking from "../src/components/AiChatThinking.vue";
 import ChatJumpToLatest from "../src/components/ChatJumpToLatest.vue";
 import { useChatScroll } from "../src/composables/useChatScroll";
 import {
+  AI_CHAT_BUBBLE_MARKDOWN_FILES,
   AI_CHAT_REQUIREMENTS,
   AI_CHAT_SURFACES,
   AI_CHAT_TOOL_ROWS,
@@ -429,6 +430,33 @@ describe("every AI chat surface follows the standard", () => {
     expect(ruleBody(css, ".ai-chat-log")).toMatch(/gap:\s*\d/);
   });
 
+  it("hides stray <hr> only in agent chat bubbles, not whole logs (#0563)", () => {
+    expect(ruleBody(css, ".ai-chat-log hr")).not.toMatch(/display:\s*none/);
+    expect(ruleBody(css, ".pm-markdown hr")).toMatch(/display:\s*none/);
+    expect(ruleBody(css, ".guide-markdown hr")).toMatch(/display:\s*none/);
+    expect(css.includes(".cto-report-content hr")).toBe(false);
+    expect(css.includes(".playground-markdown hr")).toBe(false);
+  });
+
+  it("keeps chat log rows from flex-shrinking to border lines (#0563)", () => {
+    expect(ruleBody(css, ".ai-chat-log > *")).toMatch(/flex-shrink:\s*0/);
+  });
+
+  it("lists every agent-chat bubble surface for renderChatMarkdown (#0563)", () => {
+    expect(AI_CHAT_BUBBLE_MARKDOWN_FILES).toEqual([
+      "PmChatSurface.vue",
+      "RepoGuideChat.vue",
+      "DebuggerChat.vue",
+      "TaskDebuggerChat.vue",
+    ]);
+  });
+
+  it("keeps the Model Playground on renderMarkdown for faithful preview (#0563)", () => {
+    const source = readSurface("ModelPlaygroundPanel.vue");
+    expect(source).toContain('v-html="renderMarkdown(m.text)"');
+    expect(source).not.toContain("renderChatMarkdown");
+  });
+
   for (const surface of AI_CHAT_SURFACES) {
     describe(surface.name, () => {
       const source = readSurface(surface.file);
@@ -480,6 +508,19 @@ describe("every AI chat surface follows the standard", () => {
 
       it("conveys a stopped agent visually, never in text", () => {
         expect(source).not.toMatch(FORBIDDEN_CHAT_STATUS_TEXT);
+      });
+
+      it("renders assistant bubbles with the chat markdown helper (#0563)", () => {
+        if (!AI_CHAT_BUBBLE_MARKDOWN_FILES.includes(surface.file)) return;
+        expect(
+          source,
+          `${surface.file} must use ${AI_CHAT_REQUIREMENTS.chatMarkdown} for bubble markdown`,
+        ).toContain(AI_CHAT_REQUIREMENTS.chatMarkdown);
+        const body = stripComments(source);
+        expect(
+          body,
+          `${surface.file} must not use renderMarkdown() on chat bubble text`,
+        ).not.toMatch(/v-html="renderMarkdown\(row\./);
       });
 
       it("groups tool calls through the shared transform and row (#0506)", () => {

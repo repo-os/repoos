@@ -26,6 +26,7 @@ let copiedTimer: number | undefined;
 async function refresh(): Promise<void> {
   try {
     status.value = await api("/api/remote-validation/status");
+    syncHostsInput();
   } catch {
     status.value = null;
   }
@@ -50,15 +51,33 @@ const statusLabel = computed(() => {
   const s = status.value;
   if (!s || !s.enabled) return "Disabled";
   if (s.provider === "tailscale") {
-    if (!s.tailscaleHost) return "Needs setup — tailscaleHost missing";
+    const hosts: string[] = s.tailscaleHosts ?? [];
+    if (!hosts.length) return "Needs setup — no tailscale host configured";
     if (!s.running) return "Enabled — restart server to apply";
-    return "Ready (tailscale)";
+    const down = (s.hosts ?? []).filter((h: any) => h.probed && !h.healthy).length;
+    if (down > 0) return `${hosts.length} host${hosts.length > 1 ? "s" : ""} · ${down} unavailable`;
+    return `Ready (tailscale, ${hosts.length} host${hosts.length > 1 ? "s" : ""})`;
   }
   if (!s.hasApiToken || !s.snapshotConfigured) return "Needs setup";
   if (!s.running) return "Enabled — restart server to apply";
   if (s.activeServer) return `Runner up · ${s.activeServer.ageMinutes}m old`;
   return "Ready — no VM running";
 });
+
+/** Per-host pool state line (#0521): never jargon, always says what to do. */
+function hostState(h: Record<string, any>): string {
+  if (!h.probed) return "not checked yet";
+  if (h.healthy) return "ready";
+  return h.detail || "unavailable — run Test connection";
+}
+function hostStateClass(h: Record<string, any>): string {
+  if (!h.probed) return "rvr-host-state--idle";
+  return h.healthy ? "rvr-host-state--ok" : "rvr-host-state--bad";
+}
+function hostCaps(h: Record<string, any>): string {
+  const caps = [h.os, ...(h.labels ?? [])].filter(Boolean);
+  return caps.length ? caps.join(" · ") : "no os/labels";
+}
 
 const enabled = computed({
   get: () => !!config.form["remoteValidation.enabled"],
@@ -72,6 +91,52 @@ const fallbackToLocal = computed({
     void config.setConfigValues({ "remoteValidation.fallbackToLocal": v });
   },
 });
+
+// ── host pool editing (#0521) ────────────────────────────────────────────────
+
+const hostsInput = ref("");
+const hostsSaving = ref(false);
+const hostsMsg = ref("");
+
+function syncHostsInput(): void {
+  const hosts: string[] = status.value?.tailscaleHosts ?? [];
+  hostsInput.value = hosts.join(", ");
+}
+
+async function saveHosts(): Promise<void> {
+  const list = hostsInput.value
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (!list.length) {
+    hostsMsg.value =
+      "Nothing to save — add at least one host. To remove every host, edit repoos.toml.";
+    return;
+  }
+  hostsSaving.value = true;
+  hostsMsg.value = "";
+  try {
+    await config.setConfigValues({ "remoteValidation.tailscaleHosts": list });
+    await refresh();
+    // Never claim success on trust: re-read what the config actually resolves
+    // to (a section-scoped line the patcher could not replace would silently
+    // keep the old pool — #0521 review) and say so if it differs.
+    const resolved: string[] = status.value?.tailscaleHosts ?? [];
+    const live: string[] = (status.value?.hosts ?? []).map((h: { host: string }) => h.host);
+    const same = resolved.length === list.length && list.every((h) => resolved.includes(h));
+    const sameLive = live.length === list.length && list.every((h) => live.includes(h));
+    hostsMsg.value =
+      same && sameLive
+        ? "Saved — new jobs will use this pool."
+        : `Saved, but the live dispatcher has [${live.join(", ") || "none"}] ` +
+          `(config: [${resolved.join(", ") || "none"}]) — check repoos.toml; ` +
+          "a stale line there may be overriding the save.";
+  } catch (e) {
+    hostsMsg.value = (e as Error).message;
+  } finally {
+    hostsSaving.value = false;
+  }
+}
 
 async function copy(text: string): Promise<void> {
   if (!(await copyToClipboard(text))) return;
@@ -91,10 +156,23 @@ onMounted(() => void refresh());
 const tailscaleTomlBlock = `[remoteValidation]
 enabled = true
 provider = "tailscale"
-tailscaleHost = "bee"        # Tailscale hostname or 100.x.x.x IP
-tailscaleUser = "root"       # SSH user (default "root")
-containerImage = "repoos-ci" # Docker image (default "repoos-ci")
-fallbackToLocal = false`;
+tailscaleHost = "bee"        # single-host shorthand (or use the pool below)
+tailscaleUser = "root"       # default SSH user (per-host user overrides it)
+containerImage = "repoos-ci" # Docker image on Linux hosts (default "repoos-ci")
+fallbackToLocal = false
+maxConcurrent = 1            # global per-host limit (each host can override)
+
+# Optional — a pool of hosts jobs dispatch across (#0521).
+# Plain form (also editable as "Host pool" above):
+tailscaleHosts = ["bee", "mac1"]
+
+# Rich form: one row per host with its own settings.
+[[remoteValidation.tailscaleHosts]]
+host = "mac1"
+user = "nick"
+os = "macos"                 # jobs with runsOn = ["macos"] land here
+labels = ["apple-silicon"]
+maxConcurrent = 2`;
 
 const hetznerTomlBlock = `[remoteValidation]
 enabled = true
@@ -121,12 +199,12 @@ const tailscaleSteps: { label: string; body: string; cmd?: string }[] = [
   },
   {
     label: "2 · Build the repoos-ci image on the runner (one-time)",
-    body: "The image is built from the Dockerfile in this repo — it is not on a public registry. Run this on the runner machine (clones the repo, builds, then cleans up):",
-    cmd: `ssh bee 'git clone git@github.com:repo-os/repoos.git /tmp/repoos-build && docker build -f /tmp/repoos-build/scripts/remote-runner/Dockerfile.ci -t repoos-ci /tmp/repoos-build && sudo install -Dm755 /tmp/repoos-build/scripts/remote-runner/validate.sh /opt/repoos/validate.sh && sudo mkdir -p /var/cache/repoos/bun && rm -rf /tmp/repoos-build && echo done'`,
+    body: "The image is built from the Dockerfile in this repo — it is not on a public registry. Run this on the runner machine (clones the repo under $HOME — never /tmp or /var/tmp, which Docker Desktop won't share — builds, then cleans up):",
+    cmd: `ssh bee 'git clone git@github.com:repo-os/repoos.git ~/.repoos-build && docker build -f ~/.repoos-build/scripts/remote-runner/Dockerfile.ci -t repoos-ci ~/.repoos-build && sudo install -Dm755 ~/.repoos-build/scripts/remote-runner/validate.sh /opt/repoos/validate.sh && rm -rf ~/.repoos-build && echo done'`,
   },
   {
     label: "3 · Configure repoos.toml",
-    body: "Add the [remoteValidation] block below. tailscaleHost can be a Tailscale hostname (e.g. 'bee') or a 100.x.x.x IP.",
+    body: "Add the [remoteValidation] block below. tailscaleHost is a Tailscale hostname (e.g. 'bee') or a 100.x.x.x IP; add more machines to the pool with tailscaleHosts or [[remoteValidation.tailscaleHosts]] rows (per-host user, os, labels, maxConcurrent).",
   },
   {
     label: "4 · Restart RepoOS",
@@ -244,9 +322,15 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
           <div v-if="status" class="tunnel-checks">
             <template v-if="provider === 'tailscale'">
               <span>enabled in config: {{ status.enabled ? "yes" : "no" }}</span>
-              <span>tailscaleHost: {{ status.tailscaleHost || "missing" }}</span>
-              <span>tailscaleUser: {{ status.tailscaleUser }}</span>
+              <span
+                >hosts:
+                {{
+                  (status.tailscaleHosts || []).join(", ") ||
+                  "missing — set tailscaleHost or tailscaleHosts"
+                }}</span
+              >
               <span>containerImage: {{ status.containerImage }}</span>
+              <span>global run limit: {{ status.maxConcurrent ?? 1 }} per host</span>
               <span
                 >SSH key (optional):
                 {{ status.hasSshKey ? "set" : "using agent / ~/.ssh/config" }}</span
@@ -278,6 +362,70 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
           <p v-else class="tunnel-help">Status unavailable.</p>
         </div>
 
+        <!-- per-host pool state (#0521) — a genuinely empty list has nothing
+             to show, so this stays gated on hosts existing. -->
+        <div v-if="provider === 'tailscale' && (status?.hosts || []).length" class="rvr-hosts">
+          <div class="tunnel-section-heading">
+            <h3>Hosts</h3>
+            <Button variant="ghost" size="sm" @click="refresh">Refresh</Button>
+          </div>
+          <div v-for="h in status!.hosts" :key="h.host" class="rvr-host">
+            <code class="rvr-host-name">{{ h.user }}@{{ h.host }}</code>
+            <span class="rvr-host-meta">{{ hostCaps(h) }}</span>
+            <span class="rvr-host-meta">
+              in flight {{ h.inFlight }}/{{ h.maxConcurrent
+              }}<template v-if="h.queued"> · {{ h.queued }} queued</template>
+            </span>
+            <span class="rvr-host-state" :class="hostStateClass(h)">{{ hostState(h) }}</span>
+            <span v-if="h.lastRun" class="rvr-host-meta"
+              >last: #{{ h.lastRun.taskId }} {{ h.lastRun.ok ? "passed" : "failed" }}</span
+            >
+          </div>
+          <p class="tunnel-help">
+            Jobs dispatch to an idle host that provides what the check plan's
+            <code>runsOn</code> requires; a job queues only when every eligible host is at its
+            limit, and an unavailable host is skipped and re-checked.
+          </p>
+        </div>
+
+        <!-- Host pool editor (#0521 review): deliberately NOT gated on
+             status?.hosts having any entries — that condition used to wrap
+             this whole editor too, so an empty pool hid the only UI that
+             could add the first host, leaving raw TOML as the sole option. -->
+        <div v-if="provider === 'tailscale'" class="rvr-hosts">
+          <div class="tunnel-section-heading" style="margin-top: 10px">
+            <h3>Host pool</h3>
+          </div>
+          <div class="field">
+            <label for="rvr-hosts-input"
+              >Hosts (comma-separated)
+              <span class="tunnel-help"
+                >Hostname or 100.x.x.x per host. Per-host SSH user, OS, labels and concurrency go in
+                <code>[[remoteValidation.tailscaleHosts]]</code> rows — see the TOML below.</span
+              >
+            </label>
+            <input
+              id="rvr-hosts-input"
+              v-model="hostsInput"
+              type="text"
+              placeholder="bee, mac1"
+              @keydown.enter.prevent="saveHosts"
+            />
+          </div>
+          <div class="btn-row">
+            <Button
+              variant="outline"
+              size="sm"
+              :disabled="hostsSaving"
+              data-testid="save-hosts"
+              @click="saveHosts"
+            >
+              Save hosts
+            </Button>
+            <span v-if="hostsMsg" class="tunnel-help">{{ hostsMsg }}</span>
+          </div>
+        </div>
+
         <!-- test connection -->
         <div class="rvr-test-section">
           <div class="tunnel-section-heading">
@@ -304,9 +452,11 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
           </div>
           <p class="tunnel-help">
             <template v-if="provider === 'tailscale'">
-              SSHes into the tailscale host and runs <code>docker info</code> to confirm the
-              connection and Docker are working. Set <code>tailscaleHost</code> in repoos.toml first
-              — you can test before restarting the server.
+              SSHes into every configured host and runs the per-host prerequisite check: SSH
+              reachability, Docker (the setup recipes are Docker-based on Linux and macOS alike),
+              and an up-to-date <code>validate.sh</code> that accepts the per-run artifacts dir.
+              Runs before a host's first job, so a misconfigured host is reported here instead of
+              failing jobs later.
             </template>
             <template v-else>
               Verifies the Hetzner API token is valid and can list servers.
@@ -487,5 +637,40 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
 }
 .rvr-test-section {
   margin-top: 4px;
+}
+.rvr-hosts {
+  margin-top: 6px;
+}
+.rvr-host {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 7px 10px;
+  border: 1px solid var(--border, #2a2a2a);
+  border-radius: 8px;
+  background: var(--bg-subtle, rgba(255, 255, 255, 0.03));
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+.rvr-host-name {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  color: var(--txt, inherit);
+}
+.rvr-host-meta {
+  color: var(--txt-dim, #8a8a8a);
+}
+.rvr-host-state {
+  margin-left: auto;
+  font-weight: 500;
+}
+.rvr-host-state--ok {
+  color: var(--green, #3fb950);
+}
+.rvr-host-state--bad {
+  color: var(--red, #e05c5c);
+}
+.rvr-host-state--idle {
+  color: var(--txt-dim, #8a8a8a);
 }
 </style>
