@@ -126,6 +126,7 @@ const MESSAGES = {
   disabled: "Ross is disabled — enable it on the Agents page to chat here.",
   limited: "That's more questions per minute than the agent limit allows — try again in a moment.",
   busy: "Ross is still working on your previous message — this one was not sent. Try again once the reply arrives.",
+  busyReset: "Ross is still working on your message — try /new once the reply arrives.",
   fresh: "Started a fresh conversation.",
   resumedExpired: "Started a fresh conversation — the previous one ended after 24h of inactivity.",
   noReply: "Ross finished this turn without a reply — try asking again.",
@@ -174,6 +175,9 @@ export function telegramGuideTurnHandler(
     deps.audit?.(TELEGRAM_AUDIT.agentTurnRefused, actor, { reason, chatId, chatType });
   };
 
+  const isTurnActive = (sessionKey: string): boolean =>
+    deps.runner.isRunning(sessionKey) || deps.runner.queued().some((q) => q.id === sessionKey);
+
   const sendChunks = async (
     chatId: number,
     replyToMessageId: number,
@@ -220,10 +224,7 @@ export function telegramGuideTurnHandler(
       }
       // No newer turn: the waiter's own turn is the slice boundary — it has
       // ended (exited or failed) once the session is idle.
-      if (
-        !deps.runner.isRunning(sessionKey) &&
-        !deps.runner.queued().some((q) => q.id === sessionKey)
-      ) {
+      if (!isTurnActive(sessionKey)) {
         await sendChunks(
           chatId,
           replyToMessageId,
@@ -247,8 +248,18 @@ export function telegramGuideTurnHandler(
     if (!msg || update.kind !== "message" || msg.senderIsBot) return;
 
     if (msg.command === "new") {
+      const key = telegramGuideSessionKey(actor.telegramUserId);
+      if (isTurnActive(key)) {
+        // Never clear while a paid turn is in flight: AgentRunner.cleanup
+        // would find no session and skip recordSessionToDb entirely — a
+        // worked turn vanishing from the Tokens tab (review round 3). The
+        // running reply is unaffected; /new can be retried after it lands.
+        refused(actor, "conversation reset while a turn is running", msg.chatId, msg.chatType);
+        await reply(msg.chatId, MESSAGES.busyReset, msg.messageId);
+        return;
+      }
       // Explicit conversation reset: drop the transcript and confirm.
-      deps.runner.clearSession(telegramGuideSessionKey(actor.telegramUserId));
+      deps.runner.clearSession(key);
       await reply(msg.chatId, MESSAGES.fresh, msg.messageId);
       return;
     }
@@ -287,12 +298,14 @@ export function telegramGuideTurnHandler(
     const sessionKey = telegramGuideSessionKey(actor.telegramUserId);
     let staleNote = false;
     const existing = deps.runner.output(sessionKey);
-    if (existing) {
+    if (existing && !isTurnActive(sessionKey)) {
       const lastAt = lastEntryAt(existing.lines);
       if (lastAt !== null && now() - lastAt > expiryMs) {
         // Expired: context must not accumulate indefinitely. Clearing before
         // the next turn keeps the session bounded, and the resume is visibly
-        // fresh — the user is told a new conversation just started.
+        // fresh — the user is told a new conversation just started. Only
+        // cleared while idle: clearing a running session would lose its
+        // usage record with it.
         deps.runner.clearSession(sessionKey);
         staleNote = true;
       }
@@ -366,27 +379,35 @@ export function chunkForTelegram(text: string, chunkSize = TELEGRAM_REPLY_CHUNK)
   if (text.length <= chunkSize) return [text];
   const chunks: string[] = [];
   let current = "";
-  const hardSplit = (line: string): string => {
-    while (line.length > chunkSize) {
-      chunks.push(line.slice(0, chunkSize));
-      line = line.slice(chunkSize);
+  const flush = (): void => {
+    if (current) {
+      chunks.push(current);
+      current = "";
     }
-    return line; // remaining tail, ≤ chunkSize
   };
   for (const rawLine of text.split("\n")) {
-    const line = rawLine.length > chunkSize ? hardSplit(rawLine) : rawLine;
-    const segments = line === "" ? [""] : line.split("\n");
-    for (const segment of segments) {
-      const candidate = current ? `${current}\n${segment}` : segment;
-      if (candidate.length <= chunkSize) {
-        current = candidate;
-        continue;
+    if (rawLine.length > chunkSize) {
+      // Flush the accumulated content BEFORE hard-splitting: the long line's
+      // pieces must come after everything already produced, or the reply
+      // reaches Telegram scrambled (review round 3).
+      flush();
+      let rest = rawLine;
+      while (rest.length > chunkSize) {
+        chunks.push(rest.slice(0, chunkSize));
+        rest = rest.slice(chunkSize);
       }
-      if (current) chunks.push(current);
-      current = segment;
+      current = rest;
+      continue;
     }
+    const candidate = current ? `${current}\n${rawLine}` : rawLine;
+    if (candidate.length <= chunkSize) {
+      current = candidate;
+      continue;
+    }
+    flush();
+    current = rawLine;
   }
-  if (current) chunks.push(current);
+  flush();
   return chunks;
 }
 
