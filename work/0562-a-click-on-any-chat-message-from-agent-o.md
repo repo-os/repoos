@@ -2,14 +2,14 @@
 id: "0562"
 title: Copy a chat message on click
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-28T00:01:18Z"
-updated_at: "2026-09-28T00:02:57Z"
+updated_at: "2026-09-28T00:06:10Z"
 ---
 ## Problem
 
@@ -80,3 +80,4 @@ A click on any chat message (from agent or human) should automatically copy the 
 
 - 2026-09-28T00:01:18Z · created · hello@repoos.org
 - 2026-09-28T00:02:57Z · status draft→inbox, title, area, body
+- 2026-09-28T00:06:10Z · status inbox→ready
