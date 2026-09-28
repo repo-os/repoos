@@ -23,6 +23,7 @@ import {
   Coins,
   Bug,
   Expand,
+  Lightbulb,
 } from "lucide-vue-next";
 import type {
   ReviewState,
@@ -1690,6 +1691,18 @@ function openSkillSuggestion(): void {
  * or `waiting for human` (review passed, human must approve/merge).
  */
 const activeNeedsInputQuestions = computed(() => (ui.active?.questions?.length ?? 0) > 0);
+
+/**
+ * The Debugger's one-line tl;dr for the current failure (#0570), rendered as a
+ * callout above the tabs. Additive to the "waiting for you" banner: it only
+ * exists while the flag behind that banner is set, and the "diagnosing…"
+ * hint covers the window between the failure and the sentence arriving (it
+ * disappears for good if the Debugger is disabled or its run fails).
+ */
+const activeTldrSentence = computed(() => ui.active?.debugTldr?.trim() || "");
+const activeTldrDiagnosing = computed(
+  () => !!ui.active && !activeTldrSentence.value && repo.debugTldrWorkingFor(ui.active.id),
+);
 
 /** Agent `questions:` frontmatter — one dedicated banner, not the generic needs-input strip. */
 const showAgentQuestionsBanner = computed(() => {
@@ -3906,6 +3919,25 @@ watch(
                   <ActivityIndicator v-if="dismissNeedsInputBusy" />
                   {{ dismissNeedsInputBusy ? "Dismissing…" : "Dismiss" }}
                 </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- The Debugger's one-line tl;dr for the current failure (#0570):
+             the plain-language "what happened / what to do" summary, additive
+             to the banner and the raw detail in the tabs below. Lives above
+             the tabs so it is visible no matter which tab is open. -->
+        <div v-if="activeTldrSentence || activeTldrDiagnosing" class="drawer-critical">
+          <div class="debug-tldr" role="status">
+            <Lightbulb class="debug-tldr-icon" />
+            <div class="debug-tldr-body">
+              <div class="debug-tldr-label">tl;dr — what happened</div>
+              <div v-if="activeTldrSentence" class="debug-tldr-sentence">
+                {{ activeTldrSentence }}
+              </div>
+              <div v-else class="debug-tldr-diagnosing">
+                <ActivityIndicator label="Debugger diagnosing" />
+                Diagnosing…
               </div>
             </div>
           </div>

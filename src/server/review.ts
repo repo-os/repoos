@@ -467,17 +467,21 @@ export class ReviewManager {
   private readonly logger: Logger;
   /** Database for recording review sessions. */
   private readonly db: RepoOSDb | null;
+  /** Failure tl;dr trigger (#0570) — fire-and-forget diagnosis of `review-failed`. */
+  private readonly onDiagnosableFailure?: (taskId: string, reason: string) => void;
 
   constructor(
     config: RepoOSConfig,
     emit: (e: RepoEvent) => void,
     runner?: AgentRunner,
     index?: LiveIndex,
+    onDiagnosableFailure?: (taskId: string, reason: string) => void,
   ) {
     this.config = config;
     this.emit = emit;
     this.runner = runner;
     this.index = index;
+    this.onDiagnosableFailure = onDiagnosableFailure;
     this.logger = createLogger(config.root);
     this.db = getRepoOSDb(config.root);
   }
@@ -911,6 +915,9 @@ export class ReviewManager {
           note: `Review agent failed to produce a report (${error ?? "unknown error"}) — needs a human to retry or investigate.`,
           at: now(),
         });
+        // Schedule the tl;dr for this failure (#0570) — fire-and-forget, the
+        // escalation above is already complete and must never wait on it.
+        this.onDiagnosableFailure?.(task.id, "review-failed");
       } catch (err) {
         console.error(
           `[repoos] could not escalate failed review for #${task.id}: ${(err as Error).message}`,

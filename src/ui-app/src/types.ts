@@ -43,6 +43,10 @@ export interface Task {
   needsInputReason?: string;
   /** Free-text detail for why `needsInput` was set. */
   needsInputDetail?: string;
+  /** One-line AI tl;dr for the current failure — root cause + next action (#0570). */
+  debugTldr?: string;
+  /** When `debugTldr` was generated (ISO-8601 UTC). */
+  debugTldrAt?: string;
   /** True when the task branch has drifted from main. Layered on `review`. */
   needsMerge: boolean;
   priority: string;
@@ -197,6 +201,10 @@ export interface BoardTask {
   questions?: string[];
   needsInputReason?: string;
   needsInputDetail?: string;
+  /** One-line AI tl;dr for the current failure — root cause + next action (#0570). */
+  debugTldr?: string;
+  /** When `debugTldr` was generated (ISO-8601 UTC). */
+  debugTldrAt?: string;
   needsMerge: boolean;
   priority: string;
   area: string;
@@ -483,6 +491,11 @@ export type RepoEvent =
   /** The freeform-create PM flesh-out finished — success or failure (0335).
    *  Emitted on every exit path so the indicator can never get stuck. */
   | { type: "task.pmFinished"; id: string; at: string }
+  /** The task's Debugger is generating (started) or gave up on (finished) the
+   *  one-line tl;dr for the current failure (#0570). `started` drives the
+   *  drawer's subtle "diagnosing…" hint; `finished` clears it on every exit
+   *  path so the hint can never get stuck. */
+  | { type: "task.debugTldr"; id: string; state: "started" | "finished"; at: string }
   | {
       type: "task.progress";
       id: string;
