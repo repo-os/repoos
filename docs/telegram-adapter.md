@@ -202,8 +202,9 @@ failing on it.
 `disconnect` is one ordered operation — complete or loudly incomplete:
 
 1. Stop polling, remove the webhook (confirmed via `getWebhookInfo`), then
-   revoke the bot token (managed service `POST …/bots/{id}/revoke`, else
-   `replaceManagedBotToken` or BYO `logOut`+`close`).
+   revoke the bot token (managed service `POST …/bots/{id}/revoke`; BYO
+   `logOut`+`close` plus a `getMe` probe on the **old** token — must 401 or
+   disconnect fails with a BotFather hint).
 2. Only after confirmed revocation: delete `.repoos/telegram-bot.json`.
 3. Revoke every `telegram_user_links` and `telegram_chat_links` row in this
    repository's auth database (scoped by checkout — never another instance's

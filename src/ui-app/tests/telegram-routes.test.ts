@@ -57,19 +57,23 @@ function disconnectApiDefaults(overrides: Record<string, unknown> = {}): Record<
   return {
     deleteWebhook: true,
     getWebhookInfo: () => ({ url: "" }),
-    logOut: true,
-    close: true,
-    replaceManagedBotToken: () => {
-      throw new Error("BOT_INVALID");
+    logOut: (_body: unknown, ctx: { callToken: string; revokedTokens: Set<string> }) => {
+      ctx.revokedTokens.add(ctx.callToken);
+      return true;
     },
+    close: true,
     ...overrides,
   };
 }
 
 function fakeApi(handlers: Record<string, unknown> = {}) {
+  const revokedTokens = new Set<string>();
   const calls: { method: string; body: Record<string, unknown> }[] = [];
   const fetcher = (async (input: unknown, init?: RequestInit) => {
-    const method = String(input).split("/").pop() ?? "";
+    const url = String(input);
+    const method = url.split("/").pop() ?? "";
+    const tokenMatch = url.match(/\/bot([^/]+)\//);
+    const callToken = tokenMatch?.[1] ?? "";
     let body: Record<string, unknown> = {};
     try {
       body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
@@ -77,13 +81,26 @@ function fakeApi(handlers: Record<string, unknown> = {}) {
       /* empty */
     }
     calls.push({ method, body });
+
+    if (method === "getMe" && revokedTokens.has(callToken)) {
+      return new Response(
+        JSON.stringify({ ok: false, error_code: 401, description: "Unauthorized" }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
     const scripted = handlers[method];
     const result =
       scripted === undefined
         ? undefined
         : typeof scripted === "function"
-          ? scripted(body)
+          ? scripted(body, { callToken, revokedTokens })
           : scripted;
+
+    if (method === "logOut" && result !== undefined && result !== false) {
+      revokedTokens.add(callToken);
+    }
+
     const text =
       result === undefined
         ? JSON.stringify({ ok: false, error_code: 404, description: `no fake for ${method}` })

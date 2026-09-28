@@ -27,6 +27,9 @@ export function clearTelegramBindingsForRepository(
   revokedAt: string,
   instanceIdentity: string,
 ): ClearedTelegramBindings {
+  if (!store.isAvailable()) {
+    throw new Error("auth store is not available");
+  }
   const userLinks = store.revokeAllActiveTelegramUserLinks(revokedAt);
   const chatLinks = store.revokeAllActiveTelegramChatLinks(revokedAt);
   const userInvites = store.deleteTelegramUserInvitesForInstance(instanceIdentity);

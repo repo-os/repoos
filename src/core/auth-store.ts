@@ -793,7 +793,9 @@ export class AuthStore {
   }
 
   revokeAllActiveTelegramUserLinks(revokedAt: string): number {
-    if (!this.available) return 0;
+    if (!this.available) {
+      throw new Error("auth store is not available");
+    }
     try {
       const result = this.db
         .prepare(
@@ -802,8 +804,8 @@ export class AuthStore {
         )
         .run(revokedAt);
       return result.changes ?? 0;
-    } catch {
-      return 0;
+    } catch (e) {
+      throw new Error("failed to revoke Telegram user links", { cause: e });
     }
   }
 
@@ -953,7 +955,9 @@ export class AuthStore {
   }
 
   revokeAllActiveTelegramChatLinks(revokedAt: string): number {
-    if (!this.available) return 0;
+    if (!this.available) {
+      throw new Error("auth store is not available");
+    }
     try {
       const result = this.db
         .prepare(
@@ -962,32 +966,36 @@ export class AuthStore {
         )
         .run(revokedAt);
       return result.changes ?? 0;
-    } catch {
-      return 0;
+    } catch (e) {
+      throw new Error("failed to revoke Telegram chat links", { cause: e });
     }
   }
 
   deleteTelegramUserInvitesForInstance(instanceIdentity: string): number {
-    if (!this.available) return 0;
+    if (!this.available) {
+      throw new Error("auth store is not available");
+    }
     try {
       const result = this.db
         .prepare(`DELETE FROM telegram_link_invites WHERE instance_identity = ?`)
         .run(instanceIdentity);
       return result.changes ?? 0;
-    } catch {
-      return 0;
+    } catch (e) {
+      throw new Error("failed to delete Telegram user invites", { cause: e });
     }
   }
 
   deleteTelegramChatBindInvitesForInstance(instanceIdentity: string): number {
-    if (!this.available) return 0;
+    if (!this.available) {
+      throw new Error("auth store is not available");
+    }
     try {
       const result = this.db
         .prepare(`DELETE FROM telegram_chat_bind_invites WHERE instance_identity = ?`)
         .run(instanceIdentity);
       return result.changes ?? 0;
-    } catch {
-      return 0;
+    } catch (e) {
+      throw new Error("failed to delete Telegram chat bind invites", { cause: e });
     }
   }
 
