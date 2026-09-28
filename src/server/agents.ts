@@ -5306,19 +5306,15 @@ export class AgentRunner {
   }
 
   /**
-   * Whether a raw line carries the exact capability-request `signal` in plain
-   * or structured output. Codex `--json` wraps the final assistant response in
-   * an `item.completed` event, so the signal is matched inside `item.text` too,
-   * not just as a standalone line.
+   * A signal must start a line so explanatory mentions in prose do not act as
+   * requests. Accept following text: some agent renderers join the next
+   * sentence directly to the token even when the agent wrote a separate line.
    */
   private signalPresent(raw: string, entry: AgentOutputEntry, signal: string): boolean {
-    if (raw.trim() === signal) return true;
-    if (
-      "type" in entry &&
-      entry.type === "text" &&
-      entry.text.split("\n").some((line) => line.trim() === signal)
-    )
-      return true;
+    const startsLine = (text: string): boolean =>
+      text.split("\n").some((line) => line.trimStart().startsWith(signal));
+    if (startsLine(raw)) return true;
+    if ("type" in entry && entry.type === "text" && startsLine(entry.text)) return true;
     try {
       const event = JSON.parse(raw) as {
         type?: unknown;
@@ -5328,7 +5324,7 @@ export class AgentRunner {
         event.type === "item.completed" &&
         event.item?.type === "agent_message" &&
         typeof event.item.text === "string" &&
-        event.item.text.split("\n").some((line) => line.trim() === signal)
+        startsLine(event.item.text)
       );
     } catch {
       return false;
