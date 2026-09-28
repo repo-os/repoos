@@ -658,6 +658,40 @@ describe("capability routing (runsOn)", () => {
     await Promise.all([macJob, anyJob]);
   });
 
+  it("does not count incompatible waiters in the queued-behind count", async () => {
+    const f = poolFixture({
+      hosts: [
+        { host: "linux1", os: "linux" },
+        { host: "mac1", os: "macos" },
+      ],
+    });
+    const macBusy = f.runner.validate(opts("0001", { capabilities: ["macos"] }));
+    const linuxBusy = f.runner.validate(opts("0002", { capabilities: ["linux"] }));
+    await tick();
+    expect(f.pending().sort()).toEqual(["linux1", "mac1"]);
+
+    const linuxChunks: string[] = [];
+    const linuxQueued = f.runner.validate(
+      opts("0003", { capabilities: ["linux"], onChunk: (c: string) => linuxChunks.push(c) }),
+    );
+    await tick();
+    const macChunks: string[] = [];
+    const macQueued = f.runner.validate(
+      opts("0004", { capabilities: ["macos"], onChunk: (c: string) => macChunks.push(c) }),
+    );
+    await tick();
+    expect(linuxChunks.join("")).toContain("queued behind 1 other remote run(s)");
+    // mac1 is busy; the linux waiter ahead in FIFO does not compete for mac1.
+    expect(macChunks.join("")).toContain("queued behind 1 other remote run(s)");
+    expect(macChunks.join("")).not.toContain("queued behind 2 other remote run(s)");
+
+    for (let i = 0; i < 4; i++) {
+      f.release();
+      await tick();
+    }
+    await Promise.all([macBusy, linuxBusy, linuxQueued, macQueued]);
+  });
+
   it("waits with a clear log line when the only capable host is busy", async () => {
     const f = poolFixture({ hosts: [{ host: "linux1" }, { host: "mac1", os: "macos" }] });
     const first = f.runner.validate(opts("0001", { capabilities: ["macos"] }));
@@ -1016,6 +1050,27 @@ describe("host-side lock (server + standalone CLI share one limit)", () => {
     expect(a.out + b.out).toContain("[lock] slot 0 acquired");
   }, 30_000);
 
+  it("honors the lowest active limit when callers disagree after a live config change", async () => {
+    const root = tmpRoot();
+    const lockRoot = join(root, "locks");
+    mkdirSync(join(lockRoot, "1"), { recursive: true });
+    writeFileSync(join(lockRoot, "1", ".limit"), "2\n");
+    const lower = await sh(
+      hostLockShell({ slots: 1, waitSecs: 0, lockRoot, inner: "echo SHOULD_NOT_RUN" }),
+    );
+    expect(lower.code).toBe(HOST_LOCK_TIMEOUT_EXIT);
+    expect(lower.out).not.toContain("SHOULD_NOT_RUN");
+
+    rmSync(join(lockRoot, "1"), { recursive: true });
+    mkdirSync(join(lockRoot, "0"), { recursive: true });
+    writeFileSync(join(lockRoot, "0", ".limit"), "1\n");
+    const higher = await sh(
+      hostLockShell({ slots: 2, waitSecs: 0, lockRoot, inner: "echo SHOULD_NOT_RUN" }),
+    );
+    expect(higher.code).toBe(HOST_LOCK_TIMEOUT_EXIT);
+    expect(higher.out).not.toContain("SHOULD_NOT_RUN");
+  });
+
   it("lets a holder expire the waiter with a clear timeout instead of a red gate", async () => {
     const root = tmpRoot();
     const lockRoot = join(root, "locks");
@@ -1104,7 +1159,7 @@ describe("host-side lock (server + standalone CLI share one limit)", () => {
       slots: 1,
       waitSecs: 30,
       lockRoot,
-      inner: `echo start >> "${marks}" && sleep 6 && echo end >> "${marks}"`,
+      inner: `echo start >> "${marks}" && sleep 20 && echo end >> "${marks}"`,
     });
     const held = sh(holder);
     const grabDeadline = Date.now() + 5_000;
