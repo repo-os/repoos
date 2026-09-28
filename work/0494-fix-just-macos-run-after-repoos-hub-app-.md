@@ -5,11 +5,12 @@ type: bug
 status: done
 priority: p1
 area: macos
+story: MacOS Native App
 assigned_to: ai
 created_by: ""
 branch: fix/macos-run-hub-app-path
 created_at: "2026-09-23T04:41:45Z"
-updated_at: "2026-09-23T04:48:27Z"
+updated_at: "2026-09-28T00:08:42Z"
 review_passes: 1
 ---
 Update the just macos-run recipe after the native app product rename. The Debug build now produces RepoOS Hub.app, but the recipe still opens RepoOS.app and fails after a successful build. Point it at the renamed bundle, preserve macos-build behavior, and verify the recipe opens the built app path. Do not alter unrelated Mac release workflow or app behavior.
@@ -21,3 +22,4 @@ Update the just macos-run recipe after the native app product rename. The Debug 
 - 2026-09-23T04:41:57Z · status inbox→active
 - 2026-09-23T04:42:39Z · status active→review
 - 2026-09-23T04:48:27Z · status review→done, release:success
+- 2026-09-28T00:08:42Z · story
