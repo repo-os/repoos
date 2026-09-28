@@ -182,12 +182,9 @@ import { readTunnelConfig, writeTunnelConfig } from "../core/tunnel.js";
 import { readRegistry, unionApps } from "../core/tunnel-registry.js";
 import { portListening } from "../core/net-probe.js";
 import {
-  notifyStatusChange,
-  notifyTaskCreated,
-  notifyNeedsInput,
-  publish,
-  ntfyBaseUrl,
-} from "./ntfy.js";
+  attachTaskNotificationHandlers,
+  notificationContextFromConfig,
+} from "./notifications/index.js";
 import { AgentSupervisor } from "./supervisor.js";
 import { TaskWatchdog } from "./task-watchdog.js";
 import { bootstrapTelegramAtBoot, resetTelegramProviders } from "./telegram/index.js";
@@ -342,6 +339,7 @@ import {
   createTelegramInviteRoute,
   listTelegramChatsRoute,
   listTelegramLinksRoute,
+  patchTelegramChatNotificationsRoute,
   unbindTelegramChatRoute,
   unbindTelegramLinkRoute,
   reassignTelegramLinkRoute,
@@ -2024,12 +2022,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // start/pause, the watcher, and the 0077 self-heal) — apply the same cleanup
   // there. Both firing for a single transition is harmless: `previews.stop` and
   // `runner.stop` are idempotent.
+  const notificationCtx = notificationContextFromConfig(config, getAuthStore(config.root));
+  const unsubscribeNotifications = attachTaskNotificationHandlers(index, notificationCtx);
+
   const unsubscribeCleanup = index.on((e) => {
-    // Optional ntfy push notifications hang off the index stream for the same
-    // reason the cleanup does: it is the one place every transition surfaces,
-    // exactly once per real change (applyFileChange dedupes by state diff).
     if (e.type === "task.created") {
-      notifyTaskCreated(config, e.task);
       // 0381: a PM chat session with pending screenshots may have just
       // created this task through `repoos new` — attach its parked images
       // now, while the session is still running. Best-effort and a no-op
@@ -2043,7 +2040,6 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     const prev = e.prev.status;
     if (prev === undefined || prev === e.task.status) return;
     onStatusChange(e.task, prev, e.task.status);
-    notifyStatusChange(config, e.task, prev, e.task.status);
     // Every route into `review` — a board drag, the drawer, an agent editing
     // its own task file — surfaces here, so this is the one place the agent
     // review needs to hang off. The skill-suggestion pass deliberately does
@@ -2066,16 +2062,6 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // — #0370 removed the implicit nested-`repoos serve` default for every
   // OTHER project). MAX_PREVIEWS is 1 (preview.ts) so only one is ever
   // running; starting a new one evicts the last.
-
-  // Handle needsInput changes separately (fires alongside status change when both occur).
-  const unsubscribeNeedsInput = index.on((e) => {
-    if (e.type !== "task.updated") return;
-    const prevNeedsInput = e.prev.needsInput ?? false;
-    const nextNeedsInput = e.task.needsInput;
-    if (!prevNeedsInput && nextNeedsInput) {
-      notifyNeedsInput(config, e.task);
-    }
-  });
 
   // Trigger CTO monitor on key events: task status changes, review completion, agent exit.
   const unsubscribeCTOEvents = index.on((e) => {
@@ -2643,6 +2629,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/auth/telegram/chats/bind-codes", createTelegramChatBindCodeRoute);
   router.register("GET", "/api/auth/telegram/chats", listTelegramChatsRoute);
   router.register("POST", "/api/auth/telegram/chats", bindTelegramChatRoute);
+  router.register(
+    "PATCH",
+    /^\/api\/auth\/telegram\/chats\/([^/]+)$/,
+    patchTelegramChatNotificationsRoute,
+  );
   router.register("DELETE", /^\/api\/auth\/telegram\/chats\/([^/]+)$/, unbindTelegramChatRoute);
   router.register("GET", "/api/auth/telegram/links", listTelegramLinksRoute);
   router.register("DELETE", /^\/api\/auth\/telegram\/links\/([^/]+)$/, unbindTelegramLinkRoute);
@@ -3052,6 +3043,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // The agent runner injects the real control-plane URL into every spawned
       // agent so preview requests target THIS server, never a hardcoded port.
       runner.apiUrl = url;
+      notificationCtx.publicOrigin = url;
 
       // Register this serve process in the lockfile so port conflicts can be
       // detected on the next startup (0168).
@@ -3086,7 +3078,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           void remoteValidator?.dispose();
           unsubscribe();
           unsubscribeCleanup();
-          unsubscribeNeedsInput();
+          unsubscribeNotifications();
           unsubscribeCTOEvents();
           watcher.stop();
           supervisor?.stop();
