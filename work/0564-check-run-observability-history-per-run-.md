@@ -14,9 +14,9 @@ branch: feat/check-run-observability-history-per-run-
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 review_cli_override: cursor
-review_model_override: default
+review_model_override: composer-2.5
 created_at: "2026-09-28T03:44:07Z"
-updated_at: "2026-09-28T10:02:51Z"
+updated_at: "2026-09-28T10:02:53Z"
 check_retry_count: 1
 last_check_failure: "[object Object]"
 review_passes: 2
@@ -120,3 +120,4 @@ error: EACCES accessing temporary directory. Please set $BUN_TMPDIR or $BUN_INST
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-09-28T09:44:06Z · needs_input
 - 2026-09-28T10:02:51Z · review_cli_override, review_model_override
+- 2026-09-28T10:02:53Z · review_model_override
