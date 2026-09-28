@@ -21,7 +21,7 @@ merge_conflict_retry_count: 1
 review_passes: 7
 review_rounds: 2
 last_check_failure: "[object Object]"
-dev_error_count: 4
+dev_error_count: 5
 ---
 ## Problem
 
