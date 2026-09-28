@@ -2,7 +2,7 @@
 id: "0541"
 title: Chat with the repository guide agent from Telegram
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: server
 story: RepoOS Telegram Bot
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-27T07:33:38Z"
-updated_at: "2026-09-27T15:52:48Z"
+updated_at: "2026-09-28T01:18:42Z"
 ---
 ## Problem
 
@@ -52,3 +52,4 @@ Agent turns are the most expensive thing Telegram can trigger, and a group makes
 - 2026-09-27T15:42:39Z · body
 - 2026-09-27T15:51:56Z · body
 - 2026-09-27T15:52:48Z · body
+- 2026-09-28T01:18:42Z · status inbox→ready
