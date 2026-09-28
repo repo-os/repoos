@@ -2,16 +2,16 @@
 id: "0564"
 title: "Check run observability: history, per-run metadata, and live runner dashboard"
 type: feature
-status: ready
+status: active
 priority: p3
 area: core
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/check-run-observability-history-per-run-
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-28T03:44:07Z"
-updated_at: "2026-09-28T03:56:50Z"
+updated_at: "2026-09-28T03:56:53Z"
 ---
 ## Problem
 
@@ -87,3 +87,4 @@ Resource metrics (CPU/memory on remote hosts), autoscaling, Hetzner runner pooli
 - 2026-09-28T03:56:41Z · cli_override, model_override
 - 2026-09-28T03:56:46Z · model_override
 - 2026-09-28T03:56:50Z · status inbox→ready
+- 2026-09-28T03:56:53Z · status ready→active, branch
