@@ -8,7 +8,7 @@
  * (AES-256-GCM, random 12-byte IV, 16-byte auth tag) — duplicated
  * deliberately, since this service must not depend on `@repo-os/repoos`.
  */
-import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 
 export interface EncryptedEnvelope {
   iv: string;
@@ -76,6 +76,15 @@ export function randomLinkCode(): string {
 }
 
 const REDACTED = "[redacted]";
+
+/** A stable, non-reversible identifier for an instance auth key, bound to a
+ * request at `begin` time and re-checked on every later call for that
+ * request (docs/telegram-manager-service.md#per-request-authorization). Not
+ * a secret itself — it never needs to be — only unforgeable without the
+ * underlying key. */
+export function hashAuthKey(key: string): string {
+  return createHash("sha256").update(key, "utf8").digest("hex");
+}
 
 /** Value-based redaction bound to the manager bot token, mirroring
  * `src/server/telegram/redact.ts` in the main package (duplicated for the

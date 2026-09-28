@@ -5,18 +5,36 @@
  * identity and the (separately encrypted, short-lived) project bot token a
  * `managed_bot` event and `getManagedBotToken` hand over.
  *
- * `getManagedBotToken` and the `managed_bot` update shape are Telegram's
- * "Managed Bots" feature (core.telegram.org/bots/features#managed-bots,
- * read 2026-09-28): a manager bot with Bot Management Mode enabled in
- * BotFather can create and administer other bots on behalf of users. The
- * exact JSON field names below (`managed_bot`, `bot`, `by_user`,
- * `managed_bot_id`) are this implementation's best-documented reading of
- * that feature; **verify them against Telegram's live Bot API reference
- * before the first production deploy** (the task explicitly permits
- * deferring this to implementation/deploy time rather than guessing further
- * in a sandbox with no live bot to test against). `normalizeManagedBotEvent`
- * is the single seam to update if the live shape differs — nothing else in
- * this service depends on the raw update shape.
+ * "Managed Bots" is Telegram Bot API 9.6 (introduced 2026-04-03; see the
+ * "Managed Bots" section of core.telegram.org/bots/api-changelog, and the
+ * `Update`/`User`/`getManagedBotToken`/`replaceManagedBotToken` entries of
+ * core.telegram.org/bots/api, both fetched live 2026-09-28). The following
+ * are **confirmed against those live docs**, not assumed:
+ *   - `User.can_manage_bots` marks a bot with Bot Management Mode enabled.
+ *   - `Update.managed_bot` (type `ManagedBotUpdated`) is the webhook field
+ *     fired "when a new bot was created to be managed by the bot, or token
+ *     or owner of a managed bot was changed" — this is the field
+ *     `normalizeManagedBotEvent` below reads.
+ *   - `getManagedBotToken` and `replaceManagedBotToken` are the only two
+ *     managed-bot token methods Telegram exposes. There is **no distinct
+ *     "revoke" method** — `replaceManagedBotToken` is both the rotation and
+ *     the closest thing to revocation Telegram provides (the old token
+ *     simply stops working once replaced). `rotateManagedBotToken` below
+ *     wraps it for #0539.
+ *   - The `t.me/newbot/{manager}/{suggested}` deep-link format (already
+ *     implemented in `service.ts`) matches exactly.
+ *
+ * **Still unverified** — narrower than before, but real, and worth
+ * confirming against a live manager bot before the first production
+ * deploy: the exact JSON sub-field names inside `ManagedBotUpdated` (this
+ * client assumes a `bot: User` field plus a `by_user`/`creator`/`user`
+ * field identifying who created it, and treats any of those three as
+ * acceptable), and the exact request parameter name `getManagedBotToken` /
+ * `replaceManagedBotToken` expect for the bot identifier (assumed
+ * `managed_bot_id`, matching the `_id` suffix convention Telegram uses
+ * elsewhere in this API). `normalizeManagedBotEvent` and the two token
+ * methods below are the single seams to update if the live shape differs —
+ * nothing else in this service depends on the raw update/response shape.
  */
 import { makeTokenRedactor } from "./crypto.js";
 import type { BotFields } from "./store.js";
@@ -38,6 +56,11 @@ export interface TelegramManagerClient {
    * within this service's own grace-window replay, never re-issued to
    * Telegram after a successful first fetch — see service.ts). */
   getManagedBotToken(botId: number): Promise<string>;
+  /** Rotates (replaces) the project bot's token via `replaceManagedBotToken`
+   * — the only lifecycle primitive Telegram exposes for a managed bot's
+   * credential; there is no separate revoke call, see the module doc
+   * comment above and docs/telegram-manager-service.md#lifecycle-rotation-and-no-revoke. */
+  replaceManagedBotToken(botId: number): Promise<string>;
   sendMessage(chatId: number, text: string): Promise<void>;
   setWebhook(url: string, secretToken: string): Promise<void>;
   /** Extracts a `managed_bot` event from a raw webhook update, or null for
@@ -93,6 +116,15 @@ class HttpTelegramManagerClient implements TelegramManagerClient {
     } | null;
     const token = typeof result?.token === "string" ? result.token : null;
     if (!token) throw new Error("Telegram API getManagedBotToken returned no token");
+    return token;
+  }
+
+  async replaceManagedBotToken(botId: number): Promise<string> {
+    const result = (await this.call("replaceManagedBotToken", { managed_bot_id: botId })) as {
+      token?: unknown;
+    } | null;
+    const token = typeof result?.token === "string" ? result.token : null;
+    if (!token) throw new Error("Telegram API replaceManagedBotToken returned no token");
     return token;
   }
 

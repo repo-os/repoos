@@ -12,6 +12,16 @@ CREATE TABLE IF NOT EXISTS provisioning_requests (
     instance_id        TEXT NOT NULL,
     admin_email        TEXT NOT NULL,
     bot_name_hint      TEXT,
+    -- Hash (sha256) of the instance auth key presented at `begin` time — see
+    -- docs/telegram-manager-service.md#per-request-authorization. Never the
+    -- raw key. `getStatus`/`redeem` refuse a request whose presented key
+    -- hashes to something else, even with a valid key from the keyring.
+    auth_key_hash      TEXT NOT NULL,
+    -- The username suggested in the deep link at `begin` time. Used as the
+    -- primary signal to pick exactly one row when a `managed_bot` event
+    -- arrives for a Telegram user who has linked more than one pending
+    -- request — see docs/telegram-manager-service.md#correlation.
+    suggested_username TEXT NOT NULL,
     state              TEXT NOT NULL,
     deep_link          TEXT NOT NULL,
     link_code          TEXT,
@@ -29,6 +39,10 @@ CREATE TABLE IF NOT EXISTS provisioning_requests (
     token_envelope_ciphertext TEXT,
     redeemed_at        TIMESTAMPTZ,
     grace_until        TIMESTAMPTZ,
+    -- When a redeem CAS-lock was acquired (state = 'redeeming'). Used to
+    -- reclaim an abandoned lock after a crash/restart mid-redeem — see
+    -- docs/telegram-manager-service.md#recovering-a-stuck-redeeming-lock.
+    redeeming_since    TIMESTAMPTZ,
     error              TEXT,
     expires_at         TIMESTAMPTZ NOT NULL,
     created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),

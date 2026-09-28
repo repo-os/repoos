@@ -14,10 +14,12 @@ import type {
   RecordBotCreatedOutcome,
   RequestRow,
 } from "./store.js";
+import { REDEEM_LOCK_TIMEOUT_MS } from "./store.js";
 import type { EncryptedEnvelope } from "./crypto.js";
 
 interface InternalRow extends RequestRow {
   envelope: EncryptedEnvelope | null;
+  redeemingSince: number | null;
 }
 
 export class InMemoryProvisioningStore implements ProvisioningStore {
@@ -34,6 +36,8 @@ export class InMemoryProvisioningStore implements ProvisioningStore {
       instanceId: input.instanceId,
       adminEmail: input.adminEmail,
       botNameHint: input.botNameHint,
+      authKeyHash: input.authKeyHash,
+      suggestedUsername: input.suggestedUsername,
       state: "pending",
       deepLink: input.deepLink,
       linkCode: input.linkCode,
@@ -46,6 +50,7 @@ export class InMemoryProvisioningStore implements ProvisioningStore {
       createdAt: now,
       updatedAt: now,
       envelope: null,
+      redeemingSince: null,
     });
   }
 
@@ -90,23 +95,37 @@ export class InMemoryProvisioningStore implements ProvisioningStore {
     bot: BotFields,
     now: Date,
   ): Promise<RecordBotCreatedOutcome> {
+    let usernameMatch: InternalRow | null = null;
+    let oldestCandidate: InternalRow | null = null;
     for (const row of this.rows.values()) {
       this.applyPassiveExpiry(row, now);
       if (row.creatorTelegramUserId !== creatorTelegramUserId) continue;
       if (row.state !== "awaiting_bot_creation") continue;
-      row.bot = bot;
-      row.state = "ready";
-      this.touch(row);
-      return { kind: "matched", requestId: row.id };
+      if (row.suggestedUsername && row.suggestedUsername === bot.username) {
+        usernameMatch = row;
+        break; // an exact username match can never be ambiguous
+      }
+      if (!oldestCandidate || row.createdAt < oldestCandidate.createdAt) {
+        oldestCandidate = row;
+      }
     }
-    return { kind: "no_pending_request" };
+    // Never bind more than one row to the same `managed_bot` event: prefer
+    // an exact suggested-username match, otherwise the single oldest
+    // candidate — two repositories linked by the same admin before either
+    // bot exists must not both claim the next-created bot's credential.
+    const winner = usernameMatch ?? oldestCandidate;
+    if (!winner) return { kind: "no_pending_request" };
+    winner.bot = bot;
+    winner.state = "ready";
+    this.touch(winner);
+    return { kind: "matched", requestId: winner.id };
   }
 
   async getById(id: string, now: Date): Promise<RequestRow | null> {
     const row = this.rows.get(id);
     if (!row) return null;
     this.applyPassiveExpiry(row, now);
-    const { envelope: _envelope, ...view } = row;
+    const { envelope: _envelope, redeemingSince: _redeemingSince, ...view } = row;
     return { ...view };
   }
 
@@ -115,13 +134,18 @@ export class InMemoryProvisioningStore implements ProvisioningStore {
     if (!row) return { kind: "not_found" };
     this.applyPassiveExpiry(row, now);
     if (row.state === "expired") return { kind: "expired" };
-    if (row.state !== "ready") {
-      const { envelope: _e, ...view } = row;
+    const lockAbandoned =
+      row.state === "redeeming" &&
+      row.redeemingSince !== null &&
+      now.getTime() - row.redeemingSince > REDEEM_LOCK_TIMEOUT_MS;
+    if (row.state !== "ready" && !lockAbandoned) {
+      const { envelope: _e, redeemingSince: _rs, ...view } = row;
       return { kind: "wrong_state", row: { ...view } };
     }
     row.state = "redeeming";
+    row.redeemingSince = now.getTime();
     this.touch(row);
-    const { envelope: _e2, ...view } = row;
+    const { envelope: _e2, redeemingSince: _rs2, ...view } = row;
     return { kind: "owned", row: { ...view } };
   }
 
@@ -131,6 +155,7 @@ export class InMemoryProvisioningStore implements ProvisioningStore {
     row.state = "redeemed";
     row.envelope = envelope;
     row.graceUntil = graceUntil.toISOString();
+    row.redeemingSince = null;
     this.touch(row);
   }
 
@@ -138,6 +163,7 @@ export class InMemoryProvisioningStore implements ProvisioningStore {
     const row = this.rows.get(id);
     if (!row) return;
     row.state = "ready";
+    row.redeemingSince = null;
     this.touch(row);
   }
 
@@ -151,10 +177,22 @@ export class InMemoryProvisioningStore implements ProvisioningStore {
     return row.envelope;
   }
 
+  async recordRotatedToken(id: string, envelope: EncryptedEnvelope, graceUntil: Date): Promise<void> {
+    const row = this.rows.get(id);
+    if (!row) return;
+    row.envelope = envelope;
+    row.graceUntil = graceUntil.toISOString();
+    this.touch(row);
+  }
+
   async seeUpdate(updateId: number, _now: Date): Promise<boolean> {
     if (this.seenUpdateIds.has(updateId)) return false;
     this.seenUpdateIds.add(updateId);
     return true;
+  }
+
+  async forgetUpdate(updateId: number): Promise<void> {
+    this.seenUpdateIds.delete(updateId);
   }
 
   async rateLimit(
@@ -188,6 +226,19 @@ export class InMemoryProvisioningStore implements ProvisioningStore {
       if (row.state !== before) touched++;
       if (row.envelope && row.graceUntil && now.getTime() > Date.parse(row.graceUntil)) {
         row.envelope = null;
+        touched++;
+      }
+      // Reclaim a `redeeming` lock abandoned by a crashed/restarted redeem
+      // attempt so it does not stay wedged forever waiting for a fresh
+      // beginRedeem call — see docs/telegram-manager-service.md#recovering-a-stuck-redeeming-lock.
+      if (
+        row.state === "redeeming" &&
+        row.redeemingSince !== null &&
+        now.getTime() - row.redeemingSince > REDEEM_LOCK_TIMEOUT_MS
+      ) {
+        row.state = "ready";
+        row.redeemingSince = null;
+        this.touch(row);
         touched++;
       }
     }

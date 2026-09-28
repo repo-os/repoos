@@ -18,6 +18,7 @@ import type {
   RecordBotCreatedOutcome,
   RequestRow,
 } from "./store.js";
+import { REDEEM_LOCK_TIMEOUT_MS } from "./store.js";
 import type { EncryptedEnvelope } from "./crypto.js";
 
 interface Row {
@@ -26,6 +27,8 @@ interface Row {
   instance_id: string;
   admin_email: string;
   bot_name_hint: string | null;
+  auth_key_hash: string;
+  suggested_username: string;
   state: ProvisioningState;
   deep_link: string;
   link_code: string | null;
@@ -38,6 +41,7 @@ interface Row {
   error: string | null;
   expires_at: Date;
   grace_until: Date | null;
+  redeeming_since: Date | null;
   created_at: Date;
   updated_at: Date;
   token_envelope_iv?: string | null;
@@ -52,6 +56,8 @@ function toRequestRow(row: Row): RequestRow {
     instanceId: row.instance_id,
     adminEmail: row.admin_email,
     botNameHint: row.bot_name_hint,
+    authKeyHash: row.auth_key_hash,
+    suggestedUsername: row.suggested_username,
     state: row.state,
     deepLink: row.deep_link,
     linkCode: row.link_code,
@@ -84,15 +90,17 @@ export class PgProvisioningStore implements ProvisioningStore {
   async createRequest(input: NewRequestInput): Promise<void> {
     await this.pool.query(
       `INSERT INTO provisioning_requests
-        (id, repository, instance_id, admin_email, bot_name_hint, state, deep_link,
-         link_code, link_code_expires_at, expires_at)
-       VALUES ($1,$2,$3,$4,$5,'pending',$6,$7,$8,$9)`,
+        (id, repository, instance_id, admin_email, bot_name_hint, auth_key_hash,
+         suggested_username, state, deep_link, link_code, link_code_expires_at, expires_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,'pending',$8,$9,$10,$11)`,
       [
         input.id,
         input.repository,
         input.instanceId,
         input.adminEmail,
         input.botNameHint,
+        input.authKeyHash,
+        input.suggestedUsername,
         input.deepLink,
         input.linkCode,
         input.linkCodeExpiresAt,
@@ -156,18 +164,33 @@ export class PgProvisioningStore implements ProvisioningStore {
     return { kind: "bound", requestId: candidate.id };
   }
 
+  /** Picks exactly one candidate row per event — never more than one, even
+   * when a Telegram user has several pending requests (Bug: a bare
+   * `WHERE creator_telegram_user_id = ... AND state = 'awaiting_bot_creation'`
+   * UPDATE with no LIMIT touches every matching row). Prefers an exact
+   * `suggested_username` match; otherwise the single oldest candidate. The
+   * `FOR UPDATE SKIP LOCKED` selection plus the join-on-id UPDATE keeps the
+   * pick-and-claim atomic against a concurrent duplicate delivery. */
   async recordBotCreated(
     creatorTelegramUserId: number,
     bot: BotFields,
     now: Date,
   ): Promise<RecordBotCreatedOutcome> {
     const { rows } = await this.pool.query<{ id: string }>(
-      `UPDATE provisioning_requests
+      `WITH candidate AS (
+         SELECT id FROM provisioning_requests
+         WHERE creator_telegram_user_id = $1 AND state = 'awaiting_bot_creation'
+           AND expires_at >= $6
+         ORDER BY (suggested_username = $3) DESC, created_at ASC
+         LIMIT 1
+         FOR UPDATE SKIP LOCKED
+       )
+       UPDATE provisioning_requests p
          SET state = 'ready', bot_id = $2, bot_username = $3, bot_display_name = $4,
              bot_can_read_all_group_messages = $5, updated_at = now()
-       WHERE creator_telegram_user_id = $1 AND state = 'awaiting_bot_creation'
-         AND expires_at >= $6
-       RETURNING id`,
+       FROM candidate
+       WHERE p.id = candidate.id
+       RETURNING p.id AS id`,
       [
         creatorTelegramUserId,
         bot.id,
@@ -188,10 +211,13 @@ export class PgProvisioningStore implements ProvisioningStore {
 
   async beginRedeem(id: string, now: Date): Promise<BeginRedeemOutcome> {
     await this.expireIfDue(id, now);
+    const staleCutoff = new Date(now.getTime() - REDEEM_LOCK_TIMEOUT_MS);
     const { rows } = await this.pool.query<Row>(
-      `UPDATE provisioning_requests SET state = 'redeeming', updated_at = now()
-       WHERE id = $1 AND state = 'ready' RETURNING *`,
-      [id],
+      `UPDATE provisioning_requests SET state = 'redeeming', redeeming_since = $2, updated_at = now()
+       WHERE id = $1
+         AND (state = 'ready' OR (state = 'redeeming' AND redeeming_since < $3))
+       RETURNING *`,
+      [id, now, staleCutoff],
     );
     if (rows[0]) return { kind: "owned", row: toRequestRow(rows[0]) };
     const current = await this.expireIfDue(id, now);
@@ -205,7 +231,7 @@ export class PgProvisioningStore implements ProvisioningStore {
       `UPDATE provisioning_requests
          SET state = 'redeemed', redeemed_at = now(), grace_until = $2,
              token_envelope_iv = $3, token_envelope_tag = $4, token_envelope_ciphertext = $5,
-             updated_at = now()
+             redeeming_since = NULL, updated_at = now()
        WHERE id = $1`,
       [id, graceUntil, envelope.iv, envelope.tag, envelope.ciphertext],
     );
@@ -213,7 +239,7 @@ export class PgProvisioningStore implements ProvisioningStore {
 
   async failRedeem(id: string): Promise<void> {
     await this.pool.query(
-      `UPDATE provisioning_requests SET state = 'ready', updated_at = now()
+      `UPDATE provisioning_requests SET state = 'ready', redeeming_since = NULL, updated_at = now()
        WHERE id = $1 AND state = 'redeeming'`,
       [id],
     );
@@ -237,6 +263,16 @@ export class PgProvisioningStore implements ProvisioningStore {
     };
   }
 
+  async recordRotatedToken(id: string, envelope: EncryptedEnvelope, graceUntil: Date): Promise<void> {
+    await this.pool.query(
+      `UPDATE provisioning_requests
+         SET grace_until = $2, token_envelope_iv = $3, token_envelope_tag = $4,
+             token_envelope_ciphertext = $5, updated_at = now()
+       WHERE id = $1`,
+      [id, graceUntil, envelope.iv, envelope.tag, envelope.ciphertext],
+    );
+  }
+
   private async purgeEnvelope(id: string): Promise<void> {
     await this.pool.query(
       `UPDATE provisioning_requests
@@ -253,6 +289,10 @@ export class PgProvisioningStore implements ProvisioningStore {
       [updateId, now],
     );
     return (rowCount ?? 0) > 0;
+  }
+
+  async forgetUpdate(updateId: number): Promise<void> {
+    await this.pool.query(`DELETE FROM telegram_update_dedup WHERE update_id = $1`, [updateId]);
   }
 
   async rateLimit(
@@ -288,6 +328,17 @@ export class PgProvisioningStore implements ProvisioningStore {
        WHERE state = ANY($1) AND expires_at < $2`,
       [NON_TERMINAL, now],
     );
+    // Defense-in-depth reclamation of a `redeeming` lock abandoned by a
+    // crashed/restarted redeem attempt — `beginRedeem` already reclaims one
+    // lazily on the next attempt, but a request nobody retries would
+    // otherwise stay wedged forever. See
+    // docs/telegram-manager-service.md#recovering-a-stuck-redeeming-lock.
+    const staleCutoff = new Date(now.getTime() - REDEEM_LOCK_TIMEOUT_MS);
+    const reclaimed = await this.pool.query(
+      `UPDATE provisioning_requests SET state = 'ready', redeeming_since = NULL, updated_at = now()
+       WHERE state = 'redeeming' AND redeeming_since < $1`,
+      [staleCutoff],
+    );
     const purged = await this.pool.query(
       `UPDATE provisioning_requests
          SET token_envelope_iv = NULL, token_envelope_tag = NULL, token_envelope_ciphertext = NULL
@@ -299,6 +350,11 @@ export class PgProvisioningStore implements ProvisioningStore {
     const dedup = await this.pool.query(`DELETE FROM telegram_update_dedup WHERE seen_at < $1`, [
       new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
     ]);
-    return (expired.rowCount ?? 0) + (purged.rowCount ?? 0) + (dedup.rowCount ?? 0);
+    return (
+      (expired.rowCount ?? 0) +
+      (reclaimed.rowCount ?? 0) +
+      (purged.rowCount ?? 0) +
+      (dedup.rowCount ?? 0)
+    );
   }
 }

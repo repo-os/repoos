@@ -72,7 +72,7 @@ export class ProvisioningService {
     private readonly now: () => Date = () => new Date(),
   ) {}
 
-  async begin(instanceId: string, body: BeginRequestBody): Promise<BeginResult> {
+  async begin(instanceId: string, body: BeginRequestBody, authKeyHash: string): Promise<BeginResult> {
     const now = this.now();
     const allowed = await this.store.rateLimit(
       "begin",
@@ -107,6 +107,8 @@ export class ProvisioningService {
       instanceId,
       adminEmail: body.requestedBy,
       botNameHint: body.botNameHint ?? null,
+      authKeyHash,
+      suggestedUsername,
       deepLink,
       linkCode,
       linkCodeExpiresAt,
@@ -121,9 +123,21 @@ export class ProvisioningService {
     return { id, deepLink, expiresAt: expiresAt.toISOString(), linkCode };
   }
 
-  async getStatus(id: string): Promise<StatusResult> {
-    const row = await this.store.getById(id, this.now());
-    if (!row) throw new ServiceError("no such provisioning request", "not_found");
+  /** Fetches a row and enforces that it was created with the same instance
+   * auth key presented for this call. A mismatch is reported as `not_found`
+   * — never a distinct "forbidden" — so a caller cannot use the response to
+   * confirm another instance's request id exists
+   * (docs/telegram-manager-service.md#per-request-authorization). */
+  private async getOwnedRow(id: string, authKeyHash: string, now: Date): Promise<RequestRow> {
+    const row = await this.store.getById(id, now);
+    if (!row || row.authKeyHash !== authKeyHash) {
+      throw new ServiceError("no such provisioning request", "not_found");
+    }
+    return row;
+  }
+
+  async getStatus(id: string, authKeyHash: string): Promise<StatusResult> {
+    const row = await this.getOwnedRow(id, authKeyHash, this.now());
     return {
       id: row.id,
       state: row.state === "redeeming" ? "ready" : row.state, // "redeeming" is an internal-only state
@@ -216,8 +230,12 @@ export class ProvisioningService {
     }
   }
 
-  async redeem(id: string): Promise<RedeemResult> {
+  async redeem(id: string, authKeyHash: string): Promise<RedeemResult> {
     const now = this.now();
+    // Ownership check first: a caller presenting a different (but valid)
+    // instance key must get the same "not found" a wrong id would produce,
+    // never a hint that a request with this id exists for someone else.
+    await this.getOwnedRow(id, authKeyHash, now);
     const begun = await this.store.beginRedeem(id, now);
     if (begun.kind === "not_found")
       throw new ServiceError("no such provisioning request", "not_found");
@@ -266,5 +284,35 @@ export class ProvisioningService {
 
   async sweep(): Promise<number> {
     return this.store.sweep(this.now());
+  }
+
+  /** Rotates the project bot's token via Telegram's `replaceManagedBotToken`
+   * (see #0539) — Telegram has no separate revoke primitive; replacing the
+   * token is the only way to invalidate the previous one
+   * (docs/telegram-manager-service.md#lifecycle-rotation-and-no-revoke).
+   * Only callable once a bot has actually been redeemed; the fresh token is
+   * re-encrypted into the same grace-window envelope so an in-flight local
+   * instance can still fetch it once. */
+  async rotateToken(id: string, authKeyHash: string): Promise<RedeemResult> {
+    const now = this.now();
+    const row = await this.getOwnedRow(id, authKeyHash, now);
+    if (row.state !== "redeemed" || !row.bot) {
+      throw new ServiceError(
+        "the provisioning request has not been redeemed yet — nothing to rotate",
+        "conflict",
+      );
+    }
+    try {
+      const token = await this.telegram.replaceManagedBotToken(row.bot.id);
+      const envelope = encryptToken(token, this.config.encryptionKey);
+      const graceUntil = new Date(now.getTime() + REDEEM_GRACE_MS);
+      await this.store.recordRotatedToken(id, envelope, graceUntil);
+      await this.store.audit("token_rotated", `bot_id=${row.bot.id}`, id, now);
+      return { token, bot: row.bot };
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e);
+      await this.store.audit("token_rotate_failed", detail, id, now);
+      throw new ServiceError(`could not rotate the project bot token: ${detail}`, "upstream");
+    }
   }
 }
