@@ -189,10 +189,11 @@ describe("createTelegramIntakeHandler", () => {
     expect(resolveTelegramSender(store, 8080)?.email).toBe("bob@test.com");
   });
 
-  it("audits agent-bound plain text and enforces the tighter agent limit", async () => {
+  it("gates agent-bound plain text with the tighter agent limit", async () => {
     bindUser("carol@test.com", 3);
     bindChat(99);
-    const handler = createTelegramIntakeHandler(intakeOptions());
+    const onAuthorized = vi.fn();
+    const handler = createTelegramIntakeHandler(intakeOptions({ onAuthorized }));
     for (let i = 0; i < 10; i++) {
       await handler(
         messageUpdate({
@@ -202,14 +203,19 @@ describe("createTelegramIntakeHandler", () => {
         }),
       );
     }
+    expect(onAuthorized).toHaveBeenCalledTimes(10);
+    // The audit trail never claims a turn that never ran (review round 2):
+    // `agentMessage` rows are written THIS layer only when the chat handler
+    // starts a run — intake records refusals instead.
     expect(
       store.getAuditLog(20).filter((e) => e.action === TELEGRAM_AUDIT.agentMessage).length,
-    ).toBe(10);
+    ).toBe(0);
 
     await handler(messageUpdate({ senderId: 3, chatId: 99, text: "one more" }));
+    expect(onAuthorized).toHaveBeenCalledTimes(11);
     expect(
-      store.getAuditLog(25).filter((e) => e.action === TELEGRAM_AUDIT.agentMessage).length,
-    ).toBe(10);
+      store.getAuditLog(25).filter((e) => e.action === TELEGRAM_AUDIT.agentTurnRefused).length,
+    ).toBe(1);
   });
 
   it("hands the agent-limit refusal to onAuthorized instead of dropping it (#0541)", async () => {

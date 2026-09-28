@@ -41,6 +41,9 @@ import {
   resolveSessionTaskId,
   type StartResult,
 } from "../../server/agents.js";
+import { chainedOnAuthorized } from "../../server/telegram/index.js";
+import { createTelegramCommandHandler } from "../../server/telegram/commands.js";
+import { TELEGRAM_AUDIT } from "../../core/telegram-identity.js";
 import { RepoOSDb, resetDbInstance } from "../../core/db.js";
 import { waitFor } from "./helpers.js";
 
@@ -133,6 +136,8 @@ class FakeRunner implements TelegramGuideTurnRunner {
   nextReply: AgentOutputEntry[] = [];
   /** False simulates a long-running turn (busy path, capped waiters). */
   autoFinish = true;
+  /** Simulates OUTPUT_CAP_BYTES trimming dropping this turn's prompt entry. */
+  dropMarkerOnFinish = false;
   /** Stamp for entries the runner itself writes (expiry uses these). */
   stamp: () => string = () => new Date().toISOString();
 
@@ -154,10 +159,13 @@ class FakeRunner implements TelegramGuideTurnRunner {
     this.turnCalls.push({ method, sessionId, text });
     this.running.add(sessionId);
     if (this.autoFinish) {
+      const stampNow = this.stamp();
       setImmediate(() => {
+        if (this.dropMarkerOnFinish) s.lines.shift();
         s.lines.push(...this.nextReply);
         this.nextReply = [];
         this.running.delete(sessionId);
+        void stampNow;
       });
     }
     return { ok: true };
@@ -261,6 +269,7 @@ describe("telegramGuideTurnHandler — conversation flow", () => {
   function setup(overrides: Partial<Parameters<typeof telegramGuideTurnHandler>[0]> = {}): {
     runner: FakeRunner;
     sent: { chatId: number; text: string; replyToMessageId?: number }[];
+    audited: { action: string; telegramUserId: number; details: Record<string, unknown> }[];
     handle: (
       update: TelegramUpdate,
       telegramUserId?: number,
@@ -269,6 +278,8 @@ describe("telegramGuideTurnHandler — conversation flow", () => {
   } {
     const runner = new FakeRunner();
     const sent: { chatId: number; text: string; replyToMessageId?: number }[] = [];
+    const audited: { action: string; telegramUserId: number; details: Record<string, unknown> }[] =
+      [];
     const handler = telegramGuideTurnHandler({
       runner,
       resolveAgent: () => ross,
@@ -276,6 +287,9 @@ describe("telegramGuideTurnHandler — conversation flow", () => {
       resolveBotUsername: () => "repoos_project_bot",
       pollIntervalMs: 5,
       maxTurnWaitMs: 250,
+      audit: (action, actor, details) => {
+        audited.push({ action, telegramUserId: actor.telegramUserId, details });
+      },
       send: async (chatId, text, opts) => {
         sent.push({ chatId, text, ...(opts?.replyToMessageId ? { ...opts } : {}) });
       },
@@ -284,6 +298,7 @@ describe("telegramGuideTurnHandler — conversation flow", () => {
     return {
       runner,
       sent,
+      audited,
       handle: async (update, telegramUserId = update.message?.senderId ?? 1, meta) => {
         await handler(update, actor(telegramUserId), meta);
       },
@@ -364,7 +379,7 @@ describe("telegramGuideTurnHandler — conversation flow", () => {
     expect(t.runner.turnCalls[0].text).toBe("what does this do?");
   });
 
-  it("drops a bare @mention ping without starting a run", async () => {
+  it("drops a bare @mention ping without starting a run, audited as a refusal", async () => {
     const t = setup();
     await t.handle(
       messageUpdate({ senderId: 11, chatId: 900, chatType: "group", text: "@repoos_project_bot" }),
@@ -373,6 +388,12 @@ describe("telegramGuideTurnHandler — conversation flow", () => {
     await new Promise((r) => setTimeout(r, 30));
     expect(t.runner.turnCalls.length).toBe(0);
     expect(t.sent.length).toBe(0);
+    expect(t.audited).toEqual([
+      expect.objectContaining({
+        action: "telegram_agent_turn_refused",
+        details: expect.objectContaining({ reason: "bare mention" }),
+      }),
+    ]);
   });
 
   it("answers the rate-limit refusal with a clear message and never calls the runner", async () => {
@@ -385,6 +406,22 @@ describe("telegramGuideTurnHandler — conversation flow", () => {
     expect(t.sent.length).toBe(1);
     expect(t.sent[0].text).toContain("agent limit");
     expect(t.sent[0].replyToMessageId).toBe(42);
+    // The refusal row comes from the intake (when its limiter trips); the
+    // chat handler must not double-record it.
+    expect(t.audited.filter((a) => a.action === "telegram_agent_turn_refused").length).toBe(0);
+  });
+
+  it("a rate-limited ping still hears the real problem first: a disabled Ross", async () => {
+    const t = setup({ resolveAgent: () => null });
+    await t.handle(messageUpdate({ senderId: 5, chatId: 500, text: "question" }), 5, {
+      agentLimited: true,
+    });
+    await waitFor(() => t.sent.length > 0, "answered");
+    expect(t.sent[0].text).toContain("Ross is disabled");
+    // The refusal audit row says why the turn was refused.
+    expect(t.audited.find((a) => a.action === "telegram_agent_turn_refused")).toMatchObject({
+      details: { reason: "ross disabled" },
+    });
   });
 
   it("clears an expired conversation and visibly starts fresh on the next message", async () => {
@@ -447,7 +484,7 @@ describe("telegramGuideTurnHandler — conversation flow", () => {
     expect(t.runner.turnCalls.length).toBe(0);
   });
 
-  it("replies honestly when a turn is already running (busy)", async () => {
+  it("replies honestly when a turn is already running (busy), audited as a refusal", async () => {
     const t = setup();
     t.runner.autoFinish = false; // keep turn 1 "running" for the busy check
     t.runner.nextReply = [{ type: "text", text: "slow answer" } as AgentOutputEntry];
@@ -458,7 +495,55 @@ describe("telegramGuideTurnHandler — conversation flow", () => {
       "busy note",
     );
     expect(t.runner.turnCalls.length).toBe(1);
+    // Only turn 1 was an agent message; the busy refusal is audited as one.
+    expect(t.audited.filter((a) => a.action === "telegram_agent_message").length).toBe(1);
+    expect(t.audited.filter((a) => a.action === "telegram_agent_turn_refused")).toEqual([
+      expect.objectContaining({
+        details: expect.objectContaining({ reason: "a turn is already running" }),
+      }),
+    ]);
   });
+
+  it(
+    "delivers exactly this turn's slice when a follow-up races the waiter",
+    { timeout: 10_000 },
+    async () => {
+      const t = setup({ pollIntervalMs: 50, maxTurnWaitMs: 2_000 });
+      // Turn 1 finishes on a macrotask hop; wait for it to exit, then start
+      // the follow-up BEFORE waiter 1 (50ms poll) can observe the exit.
+      t.runner.nextReply = [{ type: "text", text: "First answer." } as AgentOutputEntry];
+      await t.handle(messageUpdate({ senderId: 5, chatId: 500, text: "one" }), 5);
+      await waitFor(() => !t.runner.isRunning(telegramGuideSessionKey(5)), "turn 1 exit");
+      // The exact gap the earlier count-based slice would have mis-delivered
+      // across: turn 1 exited, but a follow-up turn begins before waiter 1
+      // wakes up.
+      t.runner.nextReply = [{ type: "text", text: "Second answer." } as AgentOutputEntry];
+      await t.handle(messageUpdate({ senderId: 5, chatId: 500, text: "two" }), 5);
+
+      await waitFor(() => t.sent.some((s) => s.text === "First answer."), "turn 1 reply");
+      await waitFor(() => t.sent.some((s) => s.text === "Second answer."), "turn 2 reply");
+      // Exactly one delivery of each, and neither contains the other's text.
+      expect(t.sent.filter((s) => s.text === "First answer.").length).toBe(1);
+      expect(t.sent.filter((s) => s.text === "Second answer.").length).toBe(1);
+      expect(
+        t.sent.filter((s) => s.text.includes("First") && s.text.includes("Second")).length,
+      ).toBe(0);
+    },
+  );
+
+  it(
+    "says so when transcript trimming removed this turn's prompt marker",
+    { timeout: 10_000 },
+    async () => {
+      const t = setup();
+      t.runner.dropMarkerOnFinish = true; // trim this turn's human entry on exit
+      t.runner.nextReply = [{ type: "text", text: "huge answer" } as AgentOutputEntry];
+      await t.handle(messageUpdate({ senderId: 5, chatId: 500, text: "question" }), 5);
+      await waitFor(() => t.sent.length > 0, "fallback note");
+      expect(t.sent[0].text).toContain("transcript limit");
+      expect(t.sent.some((s) => s.text === "huge answer")).toBe(false);
+    },
+  );
 
   it("reports honestly when the turn produced no assistant text", async () => {
     const t = setup();
@@ -522,5 +607,86 @@ describe("reply shaping", () => {
       "@other_bot hello",
     );
     expect(stripLeadingBotMention("hello", null)).toBe("hello");
+  });
+});
+
+/**
+ * Composition (#0540 + #0541): the intake supports exactly ONE onAuthorized,
+ * so both surfaces are chained. This pins that a chained update flows
+ * through every handler that can act on it — plain text starts a guide turn
+ * without tripping the command handler's "unknown command" reply, and `/new`
+ * is answered exactly once (by the agent chat, never twice).
+ */
+describe("chainedOnAuthorized — #0540 and #0541 both see every authorized update", () => {
+  it("commands render commands, plain text starts a guide turn, /new answers once", async () => {
+    const root = tempRoot();
+    const runner = new FakeRunner();
+    runner.nextReply = [{ type: "text", text: "guide answer" } as AgentOutputEntry];
+    const sent: { chatId: number; text: string }[] = [];
+    const sendDep = async (chatId: number, text: string): Promise<unknown> => {
+      sent.push({ chatId, text });
+    };
+    const commands = createTelegramCommandHandler({
+      config: configFor(root),
+      repositoryName: "RepoOS",
+      index: {
+        getTasks: () => [],
+        getTask: () => null,
+        counts: () => ({}) as never,
+      },
+      runner: { running: () => [], recentlyFinished: () => [] },
+      reviews: { enabled: () => true, runningCount: () => 0 },
+      publicOrigin: "http://test.local",
+      send: sendDep,
+    });
+    const guide = telegramGuideTurnHandler({
+      runner,
+      resolveAgent: () => ross,
+      repositoryContext: () => "ctx",
+      send: sendDep,
+      pollIntervalMs: 5,
+      maxTurnWaitMs: 500,
+    });
+    const chained = chainedOnAuthorized(commands, guide)!;
+
+    // Plain text: the command handler renders nothing (no unknown-command
+    // noise); the guide handler starts exactly ONE turn and delivers the
+    // reply — delivered once, never twice.
+    await chained(messageUpdate({ senderId: 9, chatId: 900, text: "hello" }), actor(9));
+    await waitFor(() => runner.turnCalls.length === 1, "guide turn started");
+    await waitFor(() => sent.some((s) => s.text === "guide answer"), "guide reply");
+    expect(sent.length).toBe(1);
+
+    // `/new`: the command handler passes it through silently (#0540's
+    // fall-through set), the agent chat owns the single confirmation.
+    await chained(
+      messageUpdate({ senderId: 9, chatId: 900, command: "new", text: "/new" }),
+      actor(9),
+    );
+    await waitFor(
+      () => sent.some((s) => s.text.startsWith("Started a fresh conversation")),
+      "fresh confirmation",
+    );
+    expect(sent.filter((s) => s.text.startsWith("Started a fresh conversation")).length).toBe(1);
+    expect(runner.turnCalls.length).toBe(1); // `/new` starts no paid run
+  });
+
+  it("a throwing handler never suppresses the next one", async () => {
+    const seen: string[] = [];
+    const boom = async (): Promise<void> => {
+      throw new Error("boom");
+    };
+    const next = async (_update: unknown, actorNext: TelegramActor): Promise<void> => {
+      seen.push(actorNext.email);
+    };
+    await chainedOnAuthorized(boom, next)(
+      messageUpdate({ senderId: 1, chatId: 1, text: "hi" }),
+      actor(1),
+    );
+    expect(seen).toEqual(["ross@test.com"]);
+  });
+
+  it("with no handlers it resolves to undefined (#0534's no-sink behavior)", () => {
+    expect(chainedOnAuthorized()).toBeUndefined();
   });
 });

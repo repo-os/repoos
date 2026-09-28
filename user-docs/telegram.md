@@ -56,9 +56,9 @@ available for a retry; webhook-removal progress is retained safely.
 
 The same connection procedure registers the bot's supported profile with
 Telegram: its command list (starting with `/help`), and name/description text
-that mentions the repository. Command *behavior* beyond authorization and
-account binding ships with later intake tasks; unauthorized senders get
-silence, by design.
+that mentions the repository. Unauthorized senders get silence, by design; see
+[Use the bot](#use-the-bot) for the read-only commands an authorized sender can
+run.
 
 ### Update transport
 
@@ -80,8 +80,9 @@ delivered to the intake/authorization pipeline. The intake handler
 (`src/server/telegram/intake.ts`) resolves each sender against the allowlist
 on every message, rate-limits per user and per chat (in-memory, per-process),
 audits privileged intake, and silently drops unauthorized traffic per ADR 0007.
-Later tasks register work on the authorized callback; until then nothing
-replies on the bot's behalf beyond binding via `/start`.
+Authorized senders reach the read-only command handler below; other work
+(agent chat, lifecycle actions) is registered on the same authorized callback
+by later tasks.
 
 ### The bot's Telegram settings are the operator's to set
 
@@ -170,6 +171,32 @@ text instead of a generic "failed." Unbinding a chat from this panel and from
 **Settings → Authentication & Users** are the same action against the same
 underlying links — either one immediately reflects on both.
 
+## Use the bot
+
+Once your account is linked and the chat is bound, you can run read-only
+commands in a private chat or an addressed group message:
+
+- `/status` — repository overview: task counts, anything needing attention,
+  and how many agents/reviews are running.
+- `/tasks [scope] [page]` — list tasks. `scope` is `work` (active and
+  in-review, the default) or a status name; `page` moves through long lists.
+  Members can use the `work` scope; querying arbitrary statuses is admin-only.
+- `/agents` — agents running now, plus recently finished ones.
+- `/help` — the commands **and what your role can do**, based on your current
+  RepoOS role.
+
+Replies link back into the RepoOS web UI for detail — Telegram is a glance and
+notification surface, not a full client. Long task lists paginate with an
+explicit "Showing N–M of T" and a `/tasks … <page>` hint rather than being cut
+off silently. Your role is checked from the allowlist on every message, so a
+change to it takes effect immediately; an unlinked or no-longer-allowlisted
+sender gets no reply at all.
+
+In a group, the bot only acts on a command addressed to it, a reply to one of
+its messages, or an `@mention` — the same trigger rules as notifications. It
+answers one command at a time per chat, so a burst from several members does
+not interleave replies.
+
 ## Managed provisioning (the official service)
 
 Managed provisioning lets RepoOS create and hand over a project bot without
@@ -182,6 +209,33 @@ and set `REPOOS_TELEGRAM_PROVISIONING_KEY` in the environment), connect reports
 "managed provisioning is not configured" honestly and Bring Your Own Bot Token
 keeps working. A repository instance never holds or accepts a manager-bot
 credential of any kind.
+
+The service itself — a standalone deployment hosted on Neon Functions and
+Neon Postgres, source under `telegram-manager/` — is the operator's own
+account to run. It is not something a repository instance can start or
+depend on. When your operator has deployed it and shared the two values above
+with you:
+
+1. Set `[telegram] provisioningUrl` in `repoos.toml` to the service's URL.
+2. Set `REPOOS_TELEGRAM_PROVISIONING_KEY` in your environment to the shared
+   auth key the operator issued.
+3. Use **Connect Telegram** as normal — it will now offer managed
+   provisioning instead of (or alongside) Bring Your Own Bot Token, prompting
+   you to send `/link <code>` to the official manager bot before tapping the
+   bot-creation link it gives you. That `/link` step is what proves the bot
+   you're about to create is *yours* — a bare creation link carries no such
+   proof, so don't skip it even if the link looks ready to tap on its own.
+4. Disconnecting a managed bot later asks the service to invalidate its
+   token (the service rotates the bot's token so the one your instance held
+   stops working). This needs the same provisioning URL and key to still be
+   configured — if either goes missing, disconnect reports it as retryable
+   rather than silently leaving the credential live.
+
+Deploying and operating the service itself (creating the manager bot,
+provisioning the Neon project, running migrations, setting secrets, going
+live) is documented for the operator in
+[`docs/telegram-manager-service.md`](../docs/telegram-manager-service.md); it
+is out of scope for a repository instance's own setup.
 
 For how RepoOS login, the email allowlist, and admin/member roles work, read
 [Native authentication](/native-auth). The implementation decision is recorded

@@ -121,22 +121,6 @@ function auditCommand(
   );
 }
 
-function auditAgentMessage(
-  store: NonNullable<ReturnType<typeof getAuthStore>>,
-  actor: TelegramActor,
-  update: TelegramUpdate,
-): void {
-  store.logAudit(
-    TELEGRAM_AUDIT.agentMessage,
-    actor.email,
-    actor.email,
-    JSON.stringify({
-      chatId: update.message?.chatId ?? null,
-      chatType: update.message?.chatType ?? null,
-    }),
-  );
-}
-
 async function tryRedeemStartInvite(
   store: NonNullable<ReturnType<typeof getAuthStore>>,
   options: TelegramIntakeOptions,
@@ -271,14 +255,24 @@ export function createTelegramIntakeHandler(options: TelegramIntakeOptions): Tel
     let agentLimited: TelegramAuthorizedMeta | undefined;
     if (isAgentBoundMessage(update)) {
       // The expensive LLM path is gated here, BEFORE the handler can spawn
-      // any run (#0541). A refusal for an authorized sender is no longer a
-      // silent no-op: the verdict reaches the handler ({agentLimited: true})
-      // so it can reply plainly, while no `agentMessage` audit row claims a
-      // turn happened.
+      // any run (#0541). A refusal for an authorized sender is not a silent
+      // no-op: the verdict reaches the handler ({agentLimited: true}) so it
+      // can reply plainly. Its own refusal row is recorded here — no
+      // `agentMessage` row is (that one is written by the chat handler when a
+      // run actually starts, so the audit never claims a turn that never
+      // ran; review round 2).
       if (!tryAcquireTelegramAgentLimits(telegramUserId, chatId)) {
         agentLimited = { agentLimited: true };
-      } else {
-        auditAgentMessage(store, actor, update);
+        store.logAudit(
+          TELEGRAM_AUDIT.agentTurnRefused,
+          actor.email,
+          actor.email,
+          JSON.stringify({
+            reason: "agent rate limit",
+            chatId: update.message?.chatId ?? null,
+            chatType: update.message?.chatType ?? null,
+          }),
+        );
       }
     } else if (update.callbackQuery) {
       store.logAudit(

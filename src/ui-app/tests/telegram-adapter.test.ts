@@ -171,6 +171,7 @@ function fakeProvisioningService(responses: {
         id: "req-1",
         deep_link: "https://t.me/newbot/RepoOSBot",
         expires_at: "2026-09-29T00:00:00Z",
+        link_code: "ABCD2345",
       };
     } else if (method === "POST" && url.endsWith("/redeem")) {
       if (!responses.redeem) {
@@ -843,12 +844,14 @@ describe("managed provisioning", () => {
         id: "req-9",
         deep_link: "https://t.me/newbot/RepoOSBot",
         expires_at: "2026-09-29T00:00:00Z",
+        link_code: "LINKCODE1",
       },
       status: {
         id: "req-9",
-        state: "ready",
+        state: "pending",
         deep_link: "https://t.me/newbot/RepoOSBot",
         expires_at: "2026-09-29T00:00:00Z",
+        link_code: "LINKCODE1",
       },
       redeem: { token: TOKEN2 },
     });
@@ -869,9 +872,11 @@ describe("managed provisioning", () => {
       id: "req-9",
       deepLink: "https://t.me/newbot/RepoOSBot",
       expiresAt: "2026-09-29T00:00:00Z",
+      linkCode: "LINKCODE1",
     });
     const status = await provider.getManagedProvisioningStatus("req-9");
-    expect(status.state).toBe("ready");
+    expect(status.state).toBe("pending");
+    expect(status.linkCode).toBe("LINKCODE1");
     expect(JSON.stringify(status)).not.toContain(TOKEN2);
     // Redeem — the service delivers the project credential server-to-server.
     const bot = await provider.redeemManagedCredential("req-9");
@@ -896,6 +901,7 @@ describe("managed provisioning", () => {
         id: "req-2",
         deep_link: "https://t.me/newbot/RepoOSBot",
         expires_at: "2026-09-29T00:00:00Z",
+        link_code: "LINKCODE2",
       },
       redeem: { token: TOKEN2 },
     });

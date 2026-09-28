@@ -2,14 +2,17 @@
 id: "0548"
 title: Add component test coverage for RemoteValidationDrawer.vue
 type: bug
-status: inbox
+status: done
 priority: p3
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/add-component-test-coverage-for-remoteva
+model_override: opencode-go/glm-5.3-flash
+review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-27T13:14:24Z"
-updated_at: "2026-09-27T13:14:24Z"
+updated_at: "2026-09-28T13:13:28Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -71,3 +74,9 @@ logic errors like #0521's.
 ## Activity
 
 - 2026-09-27T13:14:24Z · created · unknown
+- 2026-09-28T12:05:45Z · model_override
+- 2026-09-28T12:05:52Z · review_model_override
+- 2026-09-28T12:05:53Z · status inbox→ready
+- 2026-09-28T12:05:54Z · status ready→active, branch
+- 2026-09-28T12:50:49Z · status active→review
+- 2026-09-28T13:13:28Z · status review→done, release:success

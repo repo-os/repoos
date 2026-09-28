@@ -17,6 +17,8 @@ call site — the point of the task was that there be none.
 | `telegram/polling.ts` | The long-polling loop (`getUpdates` + pointer). |
 | `telegram/provider.ts` | `LocalTelegramProvider implements TelegramProvider`: connect/disconnect (BYO + managed redemption), profile configuration, send, intake, transport switching. |
 | `telegram/provisioning.ts` | The `ProvisioningClient` boundary and its honest "not configured" client; #0559 supplies the hosted side. |
+| `telegram/commands.ts` | Read-only command handler (`/status`, `/tasks`, `/agents`, `/help`, #0540), registered as intake's `onAuthorized`. |
+| `telegram/render.ts` | Command-side formatting: item pagination, "Showing N–M of T", Telegram's 4096-char clamp. |
 | `telegram/index.ts` | Per-repository provider singleton (`getTelegramProvider(config)`); `setTelegramProvider`/`resetTelegramProviders` for tests. |
 | `telegram/actor.ts` | `TelegramActor` (email/role/telegramUserId) for downstream mutations — never the "human" fallback. |
 | `telegram/intake.ts` | Per-message authorization, rate limits, audit (#0534), group addressing (#0535); dispatches authorized updates to `onAuthorized` handlers (agent chat registers here, #0541). |
@@ -135,16 +137,32 @@ Server-to-server HTTPS from the instance to the #0559 service:
 ```
 POST {base}/v1/provisioning/requests
     body: { repository, instance: { id }, requestedBy, botNameHint? }
-    → 200 { id, deep_link, expires_at }         # t.me/newbot deep link
+    → 200 { id, deep_link, expires_at, link_code }   # deep link + /link code
 
 GET  {base}/v1/provisioning/requests/{id}
-    → 200 { id, state, deep_link, expires_at, bot?, error? }
+    → 200 { id, state, deep_link, expires_at, link_code?, bot?, error? }
       state ∈ pending | awaiting_bot_creation | ready | redeemed | expired | failed
+      link_code is present only while state = pending and the code is unconsumed
 
 POST {base}/v1/provisioning/requests/{id}/redeem
     headers: Authorization: Bearer <REPOOS_TELEGRAM_PROVISIONING_KEY>
-    → 200 { token }        # single-use credential pickup, idempotent on retry
-       409 already-redeemed (no second delivery)
+    → 200 { token }        # single-use credential pickup; replays within grace
+       200 {}              # after grace or replay exhaustion — client maps to
+                             ManagedRedemptionFollowUpError (not 409)
+
+POST {base}/v1/provisioning/requests/{id}/rotate-token
+    headers: Authorization: Bearer <REPOOS_TELEGRAM_PROVISIONING_KEY>
+    → 200 { token }        # replaces the managed bot token via Telegram (#0539)
+       409 when not yet redeemed
+
+POST {base}/v1/provisioning/bots/{botId}/revoke
+    headers: Authorization: Bearer <REPOOS_TELEGRAM_PROVISIONING_KEY>
+    body: { repository, instance: { id } }
+    → 200 { confirmed: true }   # managed-bot disconnect (#0539): the service
+                                # rotates the bot token (Telegram has no
+                                # revoke primitive) and purges any stored
+                                # grace-window credential. 409/404/502 per
+                                # state/ownership/Telegram failures.
 ```
 
 Rules the client enforces (see `provisioning.ts`): missing `provisioningUrl`
@@ -159,7 +177,13 @@ response's optional `bot` summary is ignored in `redeem` (the provider
 re-derives the authoritative bot from `getMe`), so a malformed summary can
 never discard an already-delivered single-use credential — `getStatus` keeps
 the strict validation for the browser-rendered view. The service sees
-repository/instance/admin identity only. The
+repository/instance/admin identity only. Managed disconnect (#0539) is the
+revoke caller: `HttpProvisioningClient.revokeBot` posts
+`/v1/provisioning/bots/{botId}/revoke` above, and disconnect treats a
+confirmed response as revocation complete (it then clears local bindings and
+the encrypted credential); BYO disconnect still requires BotFather-side
+token revocation confirmed by a 401 probe, since Telegram exposes no
+Bot API revoke for a plain bot token. The
 provider funnels the redeemed token through the **same** `connectByBotToken`
 path as BYO, so both provisioning sources produce one `ProvisionedBot`
 shape. If validation or storage fails *after* a successful redeem (the
@@ -168,6 +192,14 @@ service's grace window — the contract replays the original result briefly
 rather than issuing a second token. Tests exercise the whole contract
 against a fetch-stubbed fake service (`fakeProvisioningService` in
 `src/ui-app/tests/telegram-routes.test.ts`).
+
+The #0559 service itself — the hosted implementation of this contract, its
+correlation design (a Telegram deep link alone proves nothing; binding
+happens via an explicit `/link <code>` message before bot creation), state
+machine, credential handling, and deployment procedure — lives in
+`telegram-manager/` as an isolated deployment boundary (own `package.json`,
+never a dependency of the core package), documented in full in
+`docs/telegram-manager-service.md`.
 
 ## Update intake invariant
 
@@ -179,15 +211,95 @@ logging for privileged intake. Unbound or unauthorized senders are dropped
 silently with no outbound Telegram traffic (ADR 0007). A handler failure is
 logged redacted, never allowed to kill the transport loop.
 
+## Read-only commands (#0540)
+
+`bootstrapTelegramAtBoot(config, wiring)` registers
+`createTelegramCommandHandler` (`src/server/telegram/commands.ts`). It renders
+`/status`, `/tasks`, `/agents`, and `/help` and sends through the same
+connected project bot. It never has a data path of its own: it reads the
+in-process `LiveIndex`, `AgentRunner` (including its small `recentlyFinished`
+tail, added for `/agents`), and `ReviewManager` — the same sources the HTTP
+read routes serve — and resolves web links through the notification
+provider's `webUiLink`, not a second origin rule. The one-line task renderer
+reuses the notification `NotificationSpec` formatter.
+
+- **Authorization is inherited, not re-implemented.** `onAuthorized` is only
+  reached after a live `auth_users` lookup; an unbound sender, or one whose row
+  was deleted, produces no reply at all. The command handler is never a place
+  to add an access-denied response.
+- **Role awareness is explicit.** `/help` states the sender's live role and
+  what it can and cannot do, so a `member` learns the boundary exists instead
+  of discovering it by refusal. `/tasks` defaults to the `work` scope
+  (`active` + `review`) for both roles; arbitrary status queries are
+  admin-only, and a member asking for one is told so.
+- **Lists paginate.** `/tasks` shows "Showing N–M of T" and emits a
+  `/tasks <scope> <page>` hint for the rest. `render.ts`'s `clampMessage` is a
+  final safety net — if any message still exceeds Telegram's 4096 chars it is
+  cut at a line boundary with an explicit truncation notice, never silently.
+- **Per-chat serialization.** Concurrent commands in one chat run through a
+  promise chain, so a group burst (notably over the concurrent webhook
+  transport) cannot interleave two replies' lines. Group trigger rules are
+  unchanged — they remain `isTelegramUpdateAddressedToBot`'s (#0535).
+
+`startServer` passes the wiring; adapter tests that call
+`bootstrapTelegramAtBoot(config)` without it get exactly #0534's behavior:
+authorize, audit, drop.
+=======
+
+## Composed authorized handlers (#0540 + #0541)
+
+The intake supports exactly ONE `onAuthorized` sink, and later tasks each
+bring their own surface — so `bootstrapTelegramAtBoot` composes them with
+`chainedOnAuthorized(...)`: the read-only command handler (#0540) first, then
+the agent-chat handler (#0541). Every composed handler filters its own scope
+out of every update (commands act on `msg.command`; the agent chat acts only
+on plain, new, non-command text), so a chained update flows through every
+handler that can act on it — plain text never reaches `/help`'s
+"unknown command" reply, and bare `/new` is a silent pass-through for the
+command handler while the agent-chat handler owns its reply. A handler that
+throws logs redacted and never suppresses the next one. Callers that pass
+neither (adapter tests) keep #0534's exact behavior: authorize, audit, drop.
+
+## Read-only commands (#0540)
+
+`createTelegramCommandHandler` (`src/server/telegram/commands.ts`) renders
+`/status`, `/tasks`, `/agents`, and `/help` and sends through the same
+connected project bot. It never has a data path of its own: it reads the
+in-process `LiveIndex`, `AgentRunner` (including its small `recentlyFinished`
+tail, added for `/agents`), and `ReviewManager` — the same sources the HTTP
+read routes serve — and resolves web links through the notification
+provider's `webUiLink`, not a second origin rule. The one-line task renderer
+reuses the notification `NotificationSpec` formatter.
+
+- **Authorization is inherited, not re-implemented.** `onAuthorized` is only
+  reached after a live `auth_users` lookup; an unbound sender, or one whose row
+  was deleted, produces no reply at all. The command handler is never a place
+  to add an access-denied response.
+- **Role awareness is explicit.** `/help` states the sender's live role and
+  what it can and cannot do, so a `member` learns the boundary exists instead
+  of discovering it by refusal. `/tasks` defaults to the `work` scope
+  (`active` + `review`) for both roles; arbitrary status queries are
+  admin-only, and a member asking for one is told so.
+- **Lists paginate.** `/tasks` shows "Showing N–M of T" and emits a
+  `/tasks <scope> <page>` hint for the rest. `render.ts`'s `clampMessage` is a
+  final safety net — if any message still exceeds Telegram's 4096 chars it is
+  cut at a line boundary with an explicit truncation notice, never silently.
+- **Per-chat serialization.** Concurrent commands in one chat run through a
+  promise chain, so a group burst (notably over the concurrent webhook
+  transport) cannot interleave two replies' lines. Group trigger rules are
+  unchanged — they remain `isTelegramUpdateAddressedToBot`'s (#0535).
+
+`startServer` passes the wiring; adapter tests that call
+`bootstrapTelegramAtBoot(config)` without any handler get exactly #0534's
+behavior: authorize, audit, drop.
+
 ## Agent chat: the repository guide over Telegram (#0541)
 
-`telegram/guide-chat.ts` is the first consumer of the intake's `onAuthorized`
-sink, registered at boot by `server.ts` via `bootstrapTelegramAtBoot(config, {
-onAuthorized })`. A linked sender's plain, non-command message — in a private
-chat or a group whose chat is bound — becomes one turn of the existing
-repository guide conversation (Ross) through the shared `AgentRunner`
-chat API (`startChat`/`send`, mirroring `routes/info.ts`), NOT a separate
-agent runtime. Deliberate model:
+A linked sender's plain, non-command message — in a private chat or a group
+whose chat is bound — becomes one turn of the existing repository guide
+conversation (Ross) through the shared AgentRunner chat API
+(`startChat`/`send`, mirroring `routes/info.ts`), NOT a separate agent
+runtime. Deliberate model:
 
 - **State is per Telegram user** — session key `tg-guide:<telegramUserId>` —
   never per chat. Two members of one group never share a transcript; each
@@ -195,7 +307,8 @@ agent runtime. Deliberate model:
   the chat the question came from, threaded to the message in groups.
 - **Expiry**: a conversation idle longer than 24h is cleared before the next
   turn, resuming visibly fresh ("Started a fresh conversation — …"). `/new`
-  clears on demand. Other commands are later tasks' surface.
+  clears on demand and is owned by the agent-chat handler — the command
+  handler passes bare `/new` through silently (its fall-through command set).
 - **Rate limits**: the intake consumes the tighter per-user/per-chat agent
   pair BEFORE the handler can start any run; a refusal arrives as
   `{ agentLimited: true }` and is answered with a clear message. The limit is
@@ -203,14 +316,26 @@ agent runtime. Deliberate model:
 - **Turn lifecycle**: turn-starting decisions are awaited (keeps intake fast),
   but waiting for the LLM turn and delivering its text is detached — a
   multi-minute generation must never hold the polling loop's per-update
-  pointer. Delivery polls `isRunning`/`queued` (same observation the Agent
-  tab has), capped at 10 minutes per turn; `edited_message` never re-fires a
-  paid run. If the server reloads mid-turn, the turn survives
-  (durable registry), but that turn's Telegram reply can be lost.
+  pointer. Delivery watches the transcript for THIS turn's end — the marker
+  is the appended human entry itself, and the slice ends at the next human
+  entry (a newer turn beginning) or at turn exit, whichever comes first — so
+  a follow-up racing the waiter can never deliver overlapping text, and
+  `OUTPUT_CAP_BYTES` trimming can only be noticed honestly (transcript rolled
+  → explicit "reply could not be delivered" fallback), never sliced wrongly.
+  `edited_message` never re-fires a paid run. If the server reloads mid-turn,
+  the turn survives (durable registry), but that turn's Telegram reply can be
+  lost.
 - **Usage recording**: turns flow through `AgentRunner.recordSessionToDb`
   with `classifySessionType("Ross") → "guide"` and
   `resolveSessionTaskId("tg-guide:…") → null` — repository-level spend on the
   board's guide role row, never attributed to a phantom `tg-guide:` task.
+- **Audit says what happened**: an `agentMessage` row is written when a run is
+  actually started (not merely received); a refused turn (rate limit, busy,
+  disabled agent, bare @mention) writes `agentTurnRefused` with the reason —
+  the audit trail never claims a turn that never ran (review round 2).
+`startServer` passes the guide-chat handler through the same compose; adapter
+tests calling `bootstrapTelegramAtBoot(config, { onAuthorized })` drive the
+agent chat exactly as production would.
 
 ## The `[telegram] enabled` gate
 
