@@ -207,3 +207,11 @@ describe("isThematicBreakOnlyText (#0563)", () => {
     expect(isThematicBreakOnlyText("Hello\n---")).toBe(false);
   });
 });
+
+describe("renderChatMarkdown section dividers (#0563)", () => {
+  it("removes hr blocks inside a longer assistant message", () => {
+    expect(renderChatMarkdown("Part one\n\n---\n\nPart two")).toBe(
+      "<p>Part one</p><p>Part two</p>",
+    );
+  });
+});

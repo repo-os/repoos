@@ -166,14 +166,20 @@ describe("toDisplayRows — run splitting", () => {
     expect(rows[0].kind).toBe("text");
   });
 
-  it("drops thematic-break-only text rows (#0563)", () => {
+  it("drops assistant thematic-break-only text rows (#0563)", () => {
+    const rows = toDisplayRows([text("Before.", AT_0), text("---", AT_1), text("After.", AT_2)]);
+    expect(rows).toHaveLength(1);
+    expect(messages(rows)[0].text).toBe("Before.\n\nAfter.");
+  });
+
+  it("keeps a human message that is only a thematic break", () => {
     const rows = toDisplayRows([
       { type: "human", text: "Hi", at: AT_0 },
       { type: "human", text: "---", at: AT_1 },
       { type: "human", text: "Bye", at: AT_2 },
     ]);
-    expect(rows).toHaveLength(2);
-    expect(messages(rows).map((row) => row.text)).toEqual(["Hi", "Bye"]);
+    expect(rows).toHaveLength(3);
+    expect(messages(rows).map((row) => row.text)).toEqual(["Hi", "---", "Bye"]);
   });
 
   it("strips ANSI escapes from row text and tool input", () => {
