@@ -3,6 +3,9 @@ id: "0570"
 title: Add an AI tl;dr callout to failed-task errors
 type: feature
 status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Desired UX, Notes for AI"
 priority: p2
 area: general
 assigned_to: ai
@@ -107,3 +110,4 @@ E.g. for this one the tl;dr would be: Review agent ran out of credits, choose a 
 - 2026-09-28T06:13:21Z · pm_model_override
 - 2026-09-28T06:15:48Z · title, body
 - 2026-09-28T06:43:03Z · status draft→inbox
+- 2026-09-28T06:43:03Z · needs_input
