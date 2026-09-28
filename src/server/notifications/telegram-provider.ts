@@ -17,7 +17,12 @@ function telegramEnabled(ctx: NotificationDispatchContext): boolean {
 function formatTelegramBody(payload: NotificationPayload): string {
   const line = formatNotification(specFromPayload(payload), payload.taskTitle);
   const meta = [payload.repositoryName, `#${payload.taskId}`, payload.status].join(" · ");
-  const parts = [line, meta, payload.summary.trim()].filter(Boolean);
+  const summary = payload.summary.trim();
+  const subtitle = payload.subtitle?.trim() ?? "";
+  const parts = [line, meta];
+  if (summary && summary !== subtitle && !line.includes(summary)) {
+    parts.push(summary);
+  }
   if (payload.link.startsWith("http://") || payload.link.startsWith("https://")) {
     parts.push(payload.link);
   } else if (payload.link) {

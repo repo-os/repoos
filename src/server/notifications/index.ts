@@ -19,6 +19,7 @@ export {
 } from "./spec.js";
 export { isAgentFailureNeedsInputReason } from "./reasons.js";
 export { taskNotificationLink } from "./link.js";
+export { progressFailureNotification } from "./progress.js";
 export { ntfyBaseUrl, publishNtfyRaw, NtfyNotificationProvider } from "./ntfy-provider.js";
 export { TelegramNotificationProvider } from "./telegram-provider.js";
 export {

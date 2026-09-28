@@ -1,5 +1,6 @@
 import type { RepoOSConfig } from "../../core/types.js";
 import { formatNotification } from "./format.js";
+import { notificationForNeedsInput } from "./spec.js";
 import type {
   NotificationDispatchContext,
   NotificationKind,
@@ -25,6 +26,7 @@ const NTFY_KINDS = new Set<NotificationKind>([
   "task.created",
   "task.started",
   "task.needs_input",
+  "task.agent_failed",
   "task.done",
 ]);
 
@@ -50,10 +52,18 @@ export class NtfyNotificationProvider implements NotificationProvider {
     if (!ntfyConfigured(ctx.config)) return;
     const topic = encodeURIComponent((ctx.config.ntfyTopic ?? "").trim());
     const url = `${ntfyBaseUrl(ctx.config)}/${topic}`;
-    const message = formatNotification(
-      { headline: payload.headline, severity: payload.severity, subtitle: payload.subtitle },
-      payload.taskTitle,
-    );
+    const spec =
+      payload.kind === "task.agent_failed"
+        ? {
+            ...notificationForNeedsInput(),
+            subtitle: payload.subtitle?.trim() || payload.summary.trim() || undefined,
+          }
+        : {
+            headline: payload.headline,
+            severity: payload.severity,
+            subtitle: payload.subtitle,
+          };
+    const message = formatNotification(spec, payload.taskTitle);
     const priority = SEVERITY_TO_NTFY[payload.severity];
     const fetchImpl = ctx.fetch ?? fetch;
     void fetchImpl(url, {
