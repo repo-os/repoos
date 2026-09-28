@@ -257,6 +257,23 @@ export class TelegramApiClient {
     return this.call("getWebhookInfo");
   }
 
+  async logOut(): Promise<boolean> {
+    return this.call("logOut");
+  }
+
+  async close(): Promise<boolean> {
+    return this.call("close");
+  }
+
+  /**
+   * Revokes the bot's current token and returns a replacement (managed bots).
+   * The old token stops working immediately; callers must discard the new one
+   * when disconnecting.
+   */
+  async replaceManagedBotToken(userId: number): Promise<string> {
+    return this.call("replaceManagedBotToken", { user_id: userId });
+  }
+
   /**
    * One long-poll batch. The HTTP timeout must exceed the poll timeout or
    * every idle poll would look like a network error.

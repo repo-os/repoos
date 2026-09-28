@@ -26,7 +26,10 @@ import type { AuthRole } from "../../core/auth.js";
 import type { RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
 import { requireAdmin } from "./auth.js";
+import { instanceIdentity } from "../../core/telegram-identity.js";
+import { getAuthStore } from "../../core/auth-store.js";
 import { getTelegramProvider } from "../telegram/index.js";
+import { TelegramDisconnectError } from "../telegram/types.js";
 import {
   ManagedProvisioningNotConfiguredError,
   ManagedProvisioningUnavailableError,
@@ -34,10 +37,15 @@ import {
 } from "../telegram/provisioning.js";
 import { TelegramApiError, TelegramNetworkError } from "../telegram/api.js";
 import { TelegramCredentialDecryptError, TelegramStoreCorruptError } from "../telegram/store.js";
-import { TelegramNotConnectedError, TelegramValidationError } from "../telegram/provider.js";
+import {
+  TelegramNotConnectedError,
+  TelegramValidationError,
+  type LocalTelegramProvider,
+} from "../telegram/provider.js";
 import type {
   ProvisionedBot,
   ProvisioningRequestView,
+  TelegramDisconnectResult,
   TelegramProfileInput,
   TelegramTransportMode,
 } from "../telegram/types.js";
@@ -162,6 +170,24 @@ export const telegramConnect: RouteHandler = async (ctx, req, res) => {
   }
 };
 
+export async function performTelegramDisconnectRoute(
+  ctx: { config: RepoOSConfig },
+  actorEmail: string,
+): Promise<{
+  ok: true;
+  status: ReturnType<LocalTelegramProvider["status"]>;
+  result: TelegramDisconnectResult;
+}> {
+  const provider = getTelegramProvider(ctx.config);
+  const authStore = getAuthStore(ctx.config.root);
+  const result = await provider.disconnect({
+    actorEmail,
+    authStore,
+    instanceId: instanceIdentity(ctx.config.root),
+  });
+  return { ok: true, status: provider.status(), result };
+}
+
 export const telegramDisconnect: RouteHandler = async (ctx, req, res) => {
   const admin = requireTelegramAdmin(req, ctx.config, res);
   if (!admin) return;
@@ -169,12 +195,19 @@ export const telegramDisconnect: RouteHandler = async (ctx, req, res) => {
   // state-destroying, safe direction, and a credential must never require
   // re-enabling the integration to be forgotten.
   try {
-    const provider = getTelegramProvider(ctx.config);
-    await provider.disconnect();
-    return json(res, 200, { ok: true, status: provider.status() });
+    const outcome = await performTelegramDisconnectRoute(ctx, admin.email || "trusted-operator");
+    return json(res, 200, { ...outcome, status: outcome.status });
   } catch (e) {
+    if (e instanceof TelegramDisconnectError) {
+      return json(res, e.retryable ? 502 : 409, {
+        ok: false,
+        error: e.message,
+        phase: e.phase,
+        retryable: e.retryable,
+      });
+    }
     const { status, error } = telegramErrorStatus(e);
-    return json(res, status, { error });
+    return json(res, status, { ok: false, error, retryable: status >= 500 });
   }
 };
 

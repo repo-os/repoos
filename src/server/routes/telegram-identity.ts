@@ -27,6 +27,8 @@ import {
   telegramInviteSecret,
   unbindTelegramUser,
 } from "../../core/telegram-identity.js";
+import { performTelegramDisconnectRoute } from "./telegram.js";
+import { TelegramDisconnectError } from "../telegram/types.js";
 
 function requireAdmin(
   req: Parameters<RouteHandler>[1],
@@ -267,4 +269,29 @@ export const unbindTelegramChatRoute: RouteHandler = (ctx, req, res) => {
   const unbound = unbindTelegramChat(store, id, admin.email);
   if (!unbound) return json(res, 404, { error: "Chat binding not found" });
   return json(res, 200, { ok: true });
+};
+
+/** POST /api/auth/telegram/disconnect — same teardown as Settings → Telegram (#0539). */
+export const telegramDisconnectFromAuthRoute: RouteHandler = async (ctx, req, res) => {
+  const { config } = ctx;
+  const admin = requireAdmin(req, config, res);
+  if (!admin) return;
+  try {
+    const outcome = await performTelegramDisconnectRoute(ctx, admin.email);
+    return json(res, 200, { ...outcome, status: outcome.status });
+  } catch (e) {
+    if (e instanceof TelegramDisconnectError) {
+      return json(res, e.retryable ? 502 : 409, {
+        ok: false,
+        error: e.message,
+        phase: e.phase,
+        retryable: e.retryable,
+      });
+    }
+    return json(res, 500, {
+      ok: false,
+      error: e instanceof Error ? e.message : String(e),
+      retryable: true,
+    });
+  }
 };

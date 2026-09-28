@@ -52,6 +52,20 @@ const botMe = (): Record<string, unknown> => ({
   can_read_all_group_messages: false,
 });
 
+/** Handlers every disconnect test needs (#0539). */
+function disconnectApiDefaults(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    deleteWebhook: true,
+    getWebhookInfo: () => ({ url: "" }),
+    logOut: true,
+    close: true,
+    replaceManagedBotToken: () => {
+      throw new Error("BOT_INVALID");
+    },
+    ...overrides,
+  };
+}
+
 function fakeApi(handlers: Record<string, unknown> = {}) {
   const calls: { method: string; body: Record<string, unknown> }[] = [];
   const fetcher = (async (input: unknown, init?: RequestInit) => {
@@ -146,7 +160,7 @@ function harness(options: {
   apiHandlers?: Record<string, unknown>;
   provisioningService?: ManagedProvisioningClient;
 }): Harness {
-  const api = fakeApi(options.apiHandlers ?? {});
+  const api = fakeApi(disconnectApiDefaults(options.apiHandlers ?? {}));
   const config = {
     root: tmpRoot,
     telegram: { enabled: true, provisioningUrl: "" },
@@ -184,7 +198,7 @@ function harness(options: {
  * shared by the enabled-gate tests and the off-while-disabled exemption.
  */
 function disabledHarness(options: { apiHandlers?: Record<string, unknown> } = {}): Harness {
-  const api = fakeApi(options.apiHandlers ?? {});
+  const api = fakeApi(disconnectApiDefaults(options.apiHandlers ?? {}));
   const config = {
     root: tmpRoot,
     telegram: { enabled: false, provisioningUrl: "" },

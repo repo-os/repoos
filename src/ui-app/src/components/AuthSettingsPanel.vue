@@ -76,6 +76,7 @@ const telegramLinks = ref<TelegramLink[]>([]);
 const loadingLinks = ref(false);
 const pendingInvite = ref<TelegramInvite | null>(null);
 const reassignEmail = ref<Record<number, string>>({});
+const disconnectingTelegram = ref(false);
 
 async function loadUsers(): Promise<void> {
   loadingUsers.value = true;
@@ -202,6 +203,29 @@ async function unbindTelegram(link: TelegramLink): Promise<void> {
     await loadTelegramLinks();
   } catch (err) {
     errorMsg.value = err instanceof Error ? err.message : "Failed to unbind Telegram user";
+  }
+}
+
+async function disconnectTelegramIntegration(): Promise<void> {
+  if (
+    !confirm(
+      "Disconnect Telegram for this repository? This revokes the project bot, removes every chat binding and user link, and cannot be undone for a bring-your-own token — you will need a new token from BotFather to reconnect.",
+    )
+  ) {
+    return;
+  }
+  disconnectingTelegram.value = true;
+  errorMsg.value = "";
+  successMsg.value = "";
+  try {
+    await api("/api/auth/telegram/disconnect", { method: "POST", ...JSON_OPTS });
+    successMsg.value = "Telegram disconnected for this repository";
+    await loadTelegramLinks();
+  } catch (err) {
+    errorMsg.value =
+      err instanceof Error ? err.message : "Failed to disconnect Telegram for this repository";
+  } finally {
+    disconnectingTelegram.value = false;
   }
 }
 
@@ -360,6 +384,18 @@ function formatDate(iso: string): string {
         Each Telegram account must be bound to an allowlisted email before it can act. Reassigning
         an already-bound account is an explicit admin action.
       </p>
+      <div class="tg-disconnect-row">
+        <button
+          class="auth-action danger"
+          :disabled="disconnectingTelegram"
+          @click="disconnectTelegramIntegration"
+        >
+          {{ disconnectingTelegram ? "Disconnecting…" : "Disconnect Telegram" }}
+        </button>
+        <span class="tg-disconnect-hint">
+          Revokes the project bot and clears every binding for this repository.
+        </span>
+      </div>
       <div v-if="loadingLinks" class="auth-loading">Loading Telegram links...</div>
       <div v-else-if="telegramLinks.length === 0" class="auth-empty">
         No Telegram accounts bound yet.

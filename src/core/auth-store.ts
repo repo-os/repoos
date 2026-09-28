@@ -792,6 +792,21 @@ export class AuthStore {
     }
   }
 
+  revokeAllActiveTelegramUserLinks(revokedAt: string): number {
+    if (!this.available) return 0;
+    try {
+      const result = this.db
+        .prepare(
+          `UPDATE telegram_user_links SET revoked_at = ?
+           WHERE revoked_at IS NULL`,
+        )
+        .run(revokedAt);
+      return result.changes ?? 0;
+    } catch {
+      return 0;
+    }
+  }
+
   insertTelegramInvite(invite: TelegramLinkInvite): boolean {
     if (!this.available) return false;
     try {
@@ -934,6 +949,45 @@ export class AuthStore {
       return (result.changes ?? 0) > 0;
     } catch {
       return false;
+    }
+  }
+
+  revokeAllActiveTelegramChatLinks(revokedAt: string): number {
+    if (!this.available) return 0;
+    try {
+      const result = this.db
+        .prepare(
+          `UPDATE telegram_chat_links SET revoked_at = ?
+           WHERE revoked_at IS NULL`,
+        )
+        .run(revokedAt);
+      return result.changes ?? 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  deleteTelegramUserInvitesForInstance(instanceIdentity: string): number {
+    if (!this.available) return 0;
+    try {
+      const result = this.db
+        .prepare(`DELETE FROM telegram_link_invites WHERE instance_identity = ?`)
+        .run(instanceIdentity);
+      return result.changes ?? 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  deleteTelegramChatBindInvitesForInstance(instanceIdentity: string): number {
+    if (!this.available) return 0;
+    try {
+      const result = this.db
+        .prepare(`DELETE FROM telegram_chat_bind_invites WHERE instance_identity = ?`)
+        .run(instanceIdentity);
+      return result.changes ?? 0;
+    } catch {
+      return 0;
     }
   }
 

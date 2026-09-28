@@ -28,11 +28,18 @@ import { createManagedProvisioningClient, ManagedRedemptionFollowUpError } from 
 import { encryptSecret } from "../../core/secret-store.js";
 import { makeTokenRedactor } from "./redact.js";
 import { TelegramCredentialStore, type TelegramConnectionRecord } from "./store.js";
+import {
+  finalizeTelegramDisconnect,
+  removeBotWebhook,
+  revokeProjectBotToken,
+} from "./disconnect.js";
 import type {
   ManagedProvisioningClient,
   ProvisionedBot,
   ProvisioningBeginInput,
   ProvisioningRequestView,
+  TelegramDisconnectInput,
+  TelegramDisconnectResult,
   TelegramProfile,
   TelegramProfileInput,
   TelegramProvider,
@@ -45,6 +52,8 @@ import type {
   TelegramUpdateHandler,
   BotSource,
 } from "./types.js";
+import { TelegramDisconnectError } from "./types.js";
+import { TelegramNetworkError } from "./api.js";
 
 /** `secret_token` charset per the Bot API: A-Z a-z 0-9 _ -, 1–256 chars. */
 const WEBHOOK_SECRET_BYTES = 32;
@@ -200,23 +209,108 @@ export class LocalTelegramProvider implements TelegramProvider {
     return bot;
   }
 
-  async disconnect(): Promise<void> {
+  async disconnect(input: TelegramDisconnectInput): Promise<TelegramDisconnectResult> {
+    const revokedAt = this.now().toISOString();
     await this.stopPollingLoop();
-    // Best-effort webhook removal; clearing the record proceeds even if
-    // Telegram is unreachable (the credential must never outlive intent) —
-    // and even if the stored record is corrupt, which must not turn the one
-    // recovery affordance into a 500.
+
     const record = this.store.loadOrNull();
-    if (record) {
-      try {
-        const token = this.store.readToken(record);
-        await this.buildApi(token).deleteWebhook(false);
-      } catch {
-        /* Telegram unreachable or already removed — the credential is dropped regardless. */
-      }
+    if (!record) {
+      const bindings = finalizeTelegramDisconnect({
+        authStore: input.authStore,
+        actorEmail: input.actorEmail,
+        instanceId: input.instanceId,
+        revokedAt,
+        record: null,
+        revocationConfirmed: true,
+        revocationMethod: null,
+        webhookRemoved: true,
+        alreadyDisconnected: true,
+        clearCredential: () => {
+          this.store.clear();
+          this.lastError = null;
+        },
+      });
+      return {
+        ok: true,
+        alreadyDisconnected: true,
+        revocationConfirmed: true,
+        webhookRemoved: true,
+        bindingsCleared: bindings,
+      };
     }
-    this.store.clear();
-    this.lastError = null;
+
+    let token: string;
+    try {
+      token = this.store.readToken(record);
+    } catch (e) {
+      throw new TelegramDisconnectError(
+        "local",
+        e instanceof Error ? e.message : "stored Telegram credential is unreadable",
+        false,
+      );
+    }
+
+    const api = this.buildApi(token);
+    let webhookRemoved = false;
+    try {
+      webhookRemoved = await removeBotWebhook(api);
+      if (!webhookRemoved) {
+        throw new TelegramDisconnectError(
+          "webhook",
+          "Telegram did not confirm the webhook was removed — local state was left intact",
+        );
+      }
+    } catch (e) {
+      if (e instanceof TelegramDisconnectError) throw e;
+      if (e instanceof TelegramNetworkError) {
+        throw new TelegramDisconnectError("webhook", e.message);
+      }
+      throw new TelegramDisconnectError(
+        "webhook",
+        e instanceof Error ? e.message : "failed to remove Telegram webhook",
+      );
+    }
+
+    const { confirmed, method } = await revokeProjectBotToken({
+      api,
+      oldToken: token,
+      botId: record.bot.id,
+      source: record.source,
+      managed: this.managed(),
+      repository: this.repositoryName,
+      instanceId: input.instanceId,
+      createApi: this.buildApi,
+    });
+    if (!confirmed) {
+      throw new TelegramDisconnectError(
+        "revoke",
+        "Telegram did not confirm the bot token was revoked — local state was left intact",
+      );
+    }
+
+    const bindings = finalizeTelegramDisconnect({
+      authStore: input.authStore,
+      actorEmail: input.actorEmail,
+      instanceId: input.instanceId,
+      revokedAt,
+      record,
+      revocationConfirmed: confirmed,
+      revocationMethod: method,
+      webhookRemoved,
+      alreadyDisconnected: false,
+      clearCredential: () => {
+        this.store.clear();
+        this.lastError = null;
+      },
+    });
+
+    return {
+      ok: true,
+      alreadyDisconnected: false,
+      revocationConfirmed: confirmed,
+      webhookRemoved,
+      bindingsCleared: bindings,
+    };
   }
 
   /**
