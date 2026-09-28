@@ -3,9 +3,6 @@ id: "0539"
 title: Revoke the project bot and unbind chats on disconnect
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p2
 area: server
 story: RepoOS Telegram Bot
@@ -17,7 +14,7 @@ model_override: default
 review_cli_override: cursor
 review_model_override: cursor-grok-4.6-medium
 created_at: "2026-09-27T07:33:20Z"
-updated_at: "2026-09-28T05:31:17Z"
+updated_at: "2026-09-28T05:33:26Z"
 review_passes: 6
 review_rounds: 2
 last_check_failure: "[object Object]"
@@ -107,3 +104,4 @@ rm: cannot remove '/home/nick/.repoos-validate.r2sYPk/repo/.repoos/auto-engineer
 rm: cannot remove '/home/nick/.repoos-validate.r2sYPk/repo/.repoos/repoos.db': Permission denied
 rm: cannot remove '/home/nick/.repoos-validate.r2sYPk/repo/.repoos/repoos.db-wal': Permission denied
 rm: cannot remove '/home/nick/.repoos-validate.r2sYPk/repo/.repoos/repoos.db-shm': Permission denied — fix it in the feature branch and re-run the gate
+- 2026-09-28T05:33:26Z · needs_input (review-rounds-exhausted) cleared for review again by hello@repoos.org
