@@ -2,7 +2,7 @@
 id: "0564"
 title: "Check run observability: history, per-run metadata, and live runner dashboard"
 type: feature
-status: active
+status: review
 priority: p3
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/check-run-observability-history-per-run-
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-28T03:44:07Z"
-updated_at: "2026-09-28T06:30:48Z"
+updated_at: "2026-09-28T09:22:09Z"
 check_retry_count: 1
 last_check_failure: "[object Object]"
 review_passes: 2
@@ -96,3 +96,4 @@ Resource metrics (CPU/memory on remote hosts), autoscaling, Hetzner runner pooli
 - 2026-09-28T05:08:24Z · status review→active
 - 2026-09-28T05:36:14Z · status active→review
 - 2026-09-28T06:30:47Z · status review→active
+- 2026-09-28T09:22:09Z · status active→review
