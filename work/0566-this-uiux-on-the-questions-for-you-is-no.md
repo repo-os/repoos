@@ -2,7 +2,7 @@
 id: "0566"
 title: Fix Questions-for-You duplication and answer UX
 type: feature
-status: review
+status: active
 priority: p2
 area: ui
 assigned_to: ai
@@ -12,7 +12,7 @@ pm_model_override: opencode/muse-spark-1.3-contributor-free
 review_cli_override: github copilot
 review_model_override: copilot-auto-balance
 created_at: "2026-09-28T04:34:57Z"
-updated_at: "2026-09-28T05:25:11Z"
+updated_at: "2026-09-28T05:25:12Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -108,3 +108,4 @@ rm: cannot remove '/home/nick/.repoos-validate.CznTbm/repo/.repoos/repoos.db-shm
 - 2026-09-28T05:08:16Z · status review→active
 - 2026-09-28T05:25:11Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-09-28T05:25:11Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-09-28T05:25:12Z · status review→active
