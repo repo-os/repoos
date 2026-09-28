@@ -3276,6 +3276,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           autoTransition: watchdogConfig.autoTransition !== false,
           canRun: () => !(reload?.isReloading ?? false),
           reviews,
+          onDiagnosableFailure: (taskId, reason) => debugTldr?.onFailureEscalated(taskId, reason),
         },
       );
       if (watchdogConfig.enabled !== false) watchdog.start();
