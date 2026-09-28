@@ -648,6 +648,19 @@ export interface TaskLogEntry {
   context?: Record<string, unknown>;
 }
 
+/** One structured remote-validation event for a task (#0568 Debug tab) — which
+ *  host ran, the exit code, and any infra/config error behind a non-test failure. */
+export interface RemoteValidationEvent {
+  at: string;
+  level: "info" | "warn" | "error";
+  phase: "queued" | "dispatch" | "run" | "result";
+  message: string;
+  host?: string;
+  exitCode?: number | null;
+  infra?: boolean;
+  configError?: boolean;
+}
+
 /** Latest auto-engineering reconcile decision (mirrors the server shape). */
 export interface AutoEngineeringDecision {
   timestamp: string;

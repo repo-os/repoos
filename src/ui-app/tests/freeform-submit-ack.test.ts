@@ -9,6 +9,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { nextTick } from "vue";
 import { createRouter, createMemoryHistory } from "vue-router";
 import TaskDrawer from "../src/components/TaskDrawer.vue";
+import { useRepoStore } from "../src/stores/repo";
 import { useUiStore } from "../src/stores/ui";
 import type { Task } from "../src/types";
 
@@ -102,6 +103,18 @@ async function submitFreeform(wrapper: VueWrapper): Promise<void> {
   await flush();
 }
 
+/** The run id the panel generated and sent with the freeform POST. */
+function postedRunId(): string {
+  const call = vi
+    .mocked(fetch)
+    .mock.calls.find((c) => String(c[0]).includes("/api/tasks/freeform"));
+  expect(call, "no freeform POST").toBeTruthy();
+  const body = JSON.parse(String((call![1] as RequestInit | undefined)?.body ?? "{}")) as {
+    runId?: string;
+  };
+  return String(body.runId);
+}
+
 describe("freeform submit acknowledgment (0311)", () => {
   it("shows the acknowledgment panel after a successful freeform submit", async () => {
     const { wrapper } = await mountNewTask();
@@ -114,6 +127,24 @@ describe("freeform submit acknowledgment (0311)", () => {
     expect(panel.text()).toContain("#0312");
     expect(panel.text()).toContain("Create another task");
     expect(panel.text()).toContain("Done");
+  });
+
+  it("does not pin a PM agent stream card on the acknowledgment panel (#0571)", async () => {
+    const { wrapper } = await mountNewTask();
+    await submitFreeform(wrapper);
+
+    // Seed the live run's buffer as if the PM had started streaming output —
+    // the create panel must not render it, because progress stays on the
+    // created task's PM tab.
+    const repo = useRepoStore();
+    repo.outputs[postedRunId()] = [{ s: "out", d: "Drafting your task…" }];
+    await flush();
+
+    const panel = wrapper.find(".ff-done");
+    expect(panel.exists()).toBe(true);
+    expect(panel.text()).toContain("may take a few minutes");
+    expect(panel.text()).toContain("Create another task");
+    expect(wrapper.find(".ff-stream").exists()).toBe(false);
   });
 
   it("Create another task returns to a clean freeform form", async () => {
@@ -180,5 +211,45 @@ describe("new task screenshot draft persistence (0510)", () => {
 
     expect((wrapper.find("#nt-freeform").element as HTMLTextAreaElement).value).toBe("");
     expect(ui.pendingScreenshots.length).toBe(0);
+  });
+});
+
+describe("screenshots format help (#0571)", () => {
+  it("keeps the format copy off the form and behind a themed popover", async () => {
+    const { wrapper } = await mountNewTask();
+
+    // The empty-state hint is no longer permanent copy under the dropzone.
+    expect(wrapper.text()).not.toContain("attached to the new task");
+    expect(wrapper.find(".shot-hint").exists()).toBe(false);
+
+    const info = wrapper.find(".field-info");
+    expect(info.exists()).toBe(true);
+    expect(wrapper.find(".field-info-pane").exists()).toBe(false);
+
+    // Opens on hover, closes again.
+    await info.trigger("mouseenter");
+    await flush();
+    const pane = wrapper.find(".field-info-pane");
+    expect(pane.exists()).toBe(true);
+    expect(pane.attributes("role")).toBe("tooltip");
+    expect(pane.text()).toContain("PNG, JPEG, GIF, WebP, AVIF or BMP");
+    expect(pane.text()).toContain("attached to the new task when you create it");
+
+    await info.trigger("mouseleave");
+    await flush();
+    expect(wrapper.find(".field-info-pane").exists()).toBe(false);
+  });
+
+  it("opens the format popover on keyboard focus", async () => {
+    const { wrapper } = await mountNewTask();
+
+    const info = wrapper.find(".field-info");
+    await info.trigger("focus");
+    await flush();
+    expect(wrapper.find(".field-info-pane").exists()).toBe(true);
+
+    await info.trigger("blur");
+    await flush();
+    expect(wrapper.find(".field-info-pane").exists()).toBe(false);
   });
 });

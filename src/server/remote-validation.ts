@@ -296,6 +296,12 @@ export interface RemoteValidator {
   dispose(): Promise<void>;
   /** Absolute path of the per-task log file (may not exist yet). */
   logPath(taskId: string): string;
+  /**
+   * Structured per-task events for the task's Debug tab (#0568): which host
+   * ran, the exit code, and any infra/config error. Optional so a runner that
+   * does not record them (or a test double) stays a valid validator.
+   */
+  remoteEvents?(taskId: string): RemoteValidationEvent[];
   /** Per-host pool state for the status endpoint (#0521). Optional: the
    *  Hetzner runner is a single server-owned VM with no pool to report. */
   hostStatus?(): RemoteHostStatus[];
@@ -353,6 +359,92 @@ function tail(output: string, lines = 20, maxChars = 1200): string {
   let out = cleaned.slice(-lines).join("\n");
   if (out.length > maxChars) out = `…${out.slice(out.length - maxChars)}`;
   return out || "no output";
+}
+
+// ── per-task remote-validation events (#0568) ───────────────────────────────
+
+/**
+ * One structured remote-validation event for a task (#0568). The raw log under
+ * `.repoos/logs/remote-validation/<taskId>.log` is a human-readable stream
+ * (also streamed live to the running check's output); this is the structured
+ * mirror the task's Debug tab reads, so an infra failure — an SSH drop, an
+ * unreachable host, a cancelled queue wait, missing provider config — is
+ * legible without opening the log file. `message` is the whole story; the other
+ * fields let the UI badge the event (which host, what exit code, infra vs. a
+ * genuine red test gate).
+ */
+export interface RemoteValidationEvent {
+  at: string;
+  level: "info" | "warn" | "error";
+  /** Where in the run's life the event happened. */
+  phase: "queued" | "dispatch" | "run" | "result";
+  message: string;
+  /** The runner/host this event concerns (ran, or was skipped). */
+  host?: string;
+  /** Remote process exit code, when the event comes from a finished run. */
+  exitCode?: number | null;
+  /** The run failed for infra reasons, not because the branch's tests failed. */
+  infra?: boolean;
+  /** No config change could make this run pass (routing/misconfiguration). */
+  configError?: boolean;
+}
+
+/** `<taskId>.events.ndjson` beside the per-task raw remote log. */
+export function remoteEventsPath(root: string, taskId: string): string {
+  const safe = taskId.replace(/[^A-Za-z0-9_.-]/g, "_") || "run";
+  return join(root, ".repoos", "logs", "remote-validation", `${safe}.events.ndjson`);
+}
+
+/** Append one structured event; best-effort, never throws (mirrors appendLog). */
+export function appendRemoteValidationEvent(
+  root: string,
+  taskId: string,
+  event: Omit<RemoteValidationEvent, "at">,
+): void {
+  try {
+    mkdirSync(join(root, ".repoos", "logs", "remote-validation"), { recursive: true });
+    const entry: RemoteValidationEvent = { at: new Date().toISOString(), ...event };
+    appendFileSync(remoteEventsPath(root, taskId), JSON.stringify(entry) + "\n", "utf8");
+  } catch {
+    /* best effort — observability must never fail a run */
+  }
+}
+
+/**
+ * Read a task's structured remote-validation events, oldest first. Bounded like
+ * the raw-log read: only the tail of the file is parsed, so a task with a long
+ * retry history cannot make the Debug tab fetch unbounded JSON.
+ */
+export function readRemoteValidationEvents(
+  root: string,
+  taskId: string,
+  limit = 500,
+): RemoteValidationEvent[] {
+  const p = remoteEventsPath(root, taskId);
+  let text = "";
+  try {
+    if (existsSync(p)) text = readFileSync(p, "utf8").slice(-500_000);
+  } catch {
+    return [];
+  }
+  const out: RemoteValidationEvent[] = [];
+  for (const line of text.split("\n")) {
+    if (!line.trim()) continue;
+    try {
+      out.push(JSON.parse(line) as RemoteValidationEvent);
+    } catch {
+      /* skip a torn/partial trailing line */
+    }
+  }
+  return out.slice(Math.max(0, out.length - limit));
+}
+
+/** Fields a failure path supplies so its event is complete. */
+interface RemoteEventContext {
+  taskId?: string;
+  host?: string;
+  exitCode?: number | null;
+  phase?: RemoteValidationEvent["phase"];
 }
 
 // ── host prerequisites + the cross-process host lock (#0521) ────────────────
@@ -585,6 +677,10 @@ export function hostLockShell(opts: {
     `HOSTMAX=${HOST_LOCK_MAX_SLOTS}`,
     `WAIT=${wait}`,
     `DEADLINE=${deadline !== undefined ? deadline : ""}`,
+    // zsh throws "no matches found" when a glob expands to nothing (unlike bash/sh
+    // which pass the literal string — caught by the `[ -d ]` guard below).
+    // nullglob makes unmatched globs expand to nothing instead of erroring.
+    "setopt nullglob 2>/dev/null; shopt -s nullglob 2>/dev/null; true",
     'mkdir -p "$LOCKROOT" 2>/dev/null || true',
     // Refuse to even ATTEMPT the first acquisition once already past the
     // caller's absolute deadline — self-clocked on this host's own `date`,
@@ -885,6 +981,11 @@ export class RemoteValidationRunner implements RemoteValidator {
     return join(this.config.root, ".repoos", "logs", "remote-validation", `${taskId}.log`);
   }
 
+  /** Structured events for the Debug tab (#0568). */
+  remoteEvents(taskId: string): RemoteValidationEvent[] {
+    return readRemoteValidationEvents(this.config.root, taskId);
+  }
+
   private stateFile(): string {
     return join(this.config.root, ".repoos", "remote-runner.json");
   }
@@ -933,8 +1034,14 @@ export class RemoteValidationRunner implements RemoteValidator {
   }
 
   /** Infra failure → transient CheckSummary the caller can retry or fall back on. */
-  private infraFail(detail: string): CheckSummary {
+  private infraFail(detail: string, ctx: RemoteEventContext = {}): CheckSummary {
     this.logger?.system("warn", `remote validation unavailable: ${detail}`);
+    this.record(ctx, {
+      level: "warn",
+      phase: ctx.phase ?? "result",
+      message: `remote validation unavailable: ${detail}`,
+      infra: true,
+    });
     return {
       ok: false,
       stage: "check",
@@ -949,8 +1056,15 @@ export class RemoteValidationRunner implements RemoteValidator {
    * change cannot succeed, and letting `fallbackToLocal` swallow it would run
    * e.g. macOS-bound work on the wrong machine instead of failing clearly.
    */
-  private configFail(detail: string): CheckSummary {
+  private configFail(detail: string, ctx: RemoteEventContext = {}): CheckSummary {
     this.logger?.system("error", `remote validation cannot run: ${detail}`);
+    this.record(ctx, {
+      level: "error",
+      phase: ctx.phase ?? "dispatch",
+      message: `remote validation cannot run: ${detail}`,
+      infra: false,
+      configError: true,
+    });
     return {
       ok: false,
       stage: "check",
@@ -958,6 +1072,16 @@ export class RemoteValidationRunner implements RemoteValidator {
       configError: true,
       detail: `remote validation cannot run: ${detail}`,
     };
+  }
+
+  /** Append a structured event when a task id is known (best-effort). */
+  private record(ctx: RemoteEventContext, event: Omit<RemoteValidationEvent, "at">): void {
+    if (!ctx.taskId) return;
+    appendRemoteValidationEvent(this.config.root, ctx.taskId, {
+      ...event,
+      host: event.host ?? ctx.host,
+      exitCode: event.exitCode ?? ctx.exitCode,
+    });
   }
 
   async validate(opts: ValidateOptions): Promise<CheckSummary> {
@@ -972,6 +1096,7 @@ export class RemoteValidationRunner implements RemoteValidator {
       return this.configFail(
         `the Hetzner runner provides only "linux" — cannot satisfy ${unmet.join(", ")}; ` +
           "configure a [[remoteValidation.tailscaleHosts]] host that provides it (docs/remote-validation.md)",
+        { taskId: opts.taskId },
       );
     }
     // Queue deadline (#0521 spec item 5): a run still queued when its caller
@@ -989,6 +1114,11 @@ export class RemoteValidationRunner implements RemoteValidator {
             `${this.gate.limit}; starts when a slot frees]\n`;
           this.appendLog(opts.taskId, note);
           opts.onChunk?.(note);
+          appendRemoteValidationEvent(this.config.root, opts.taskId, {
+            level: "info",
+            phase: "queued",
+            message: note.trim(),
+          });
         },
         { deadlineAt: opts.deadlineAt },
       );
@@ -1005,7 +1135,7 @@ export class RemoteValidationRunner implements RemoteValidator {
         e instanceof QueueDeadlineError ? "cancelled" : "fail",
         detail,
       );
-      return this.infraFail(detail);
+      return this.infraFail(detail, { taskId: opts.taskId, phase: "dispatch" });
     }
     // Which machine ends up running the suite is known only after provisioning
     // inside runValidation — captured here so the history row can name it.
@@ -1025,6 +1155,7 @@ export class RemoteValidationRunner implements RemoteValidator {
         return this.infraFail(
           "the caller's deadline passed before the run could start on the Hetzner runner — " +
             "the run was cancelled (retry once a slot is free)",
+          { taskId: opts.taskId, phase: "dispatch" },
         );
       }
       const summary = await this.runValidation(opts, remoteRunPaths(opts.taskId), runMeta);
@@ -1049,13 +1180,20 @@ export class RemoteValidationRunner implements RemoteValidator {
     runMeta: { machine: string | null },
   ): Promise<CheckSummary> {
     const rv = this.config.remoteValidation ?? {};
-    if (!rv.enabled) return this.infraFail("remote validation is disabled");
-    if (!process.env.HETZNER_API_TOKEN) return this.infraFail("HETZNER_API_TOKEN is not set");
+    const dispatch = { taskId: opts.taskId, phase: "dispatch" as const };
+    if (!rv.enabled) return this.infraFail("remote validation is disabled", dispatch);
+    if (!process.env.HETZNER_API_TOKEN)
+      return this.infraFail("HETZNER_API_TOKEN is not set", dispatch);
     if (!this.keyPath || !existsSync(this.keyPath)) {
-      return this.infraFail("REPOOS_REMOTE_SSH_KEY is not set or the key file is missing");
+      return this.infraFail(
+        "REPOOS_REMOTE_SSH_KEY is not set or the key file is missing",
+        dispatch,
+      );
     }
-    if (!rv.snapshotId) return this.infraFail("remoteValidation.snapshotId is not configured");
-    if (!rv.sshKeyName) return this.infraFail("remoteValidation.sshKeyName is not configured");
+    if (!rv.snapshotId)
+      return this.infraFail("remoteValidation.snapshotId is not configured", dispatch);
+    if (!rv.sshKeyName)
+      return this.infraFail("remoteValidation.sshKeyName is not configured", dispatch);
 
     this.activeJobs++;
     this.clearIdleTimer();
@@ -1071,18 +1209,29 @@ export class RemoteValidationRunner implements RemoteValidator {
       const host = await this.ensureRunner();
       runMeta.machine = host.ip;
       emit(`[runner ${host.ip} ready in ${Math.round((Date.now() - startedAt) / 1000)}s]\n`);
+      this.record(
+        { taskId: opts.taskId, host: host.ip, phase: "run" },
+        { level: "info", phase: "run", message: `runner ${host.ip} ready` },
+      );
 
       // 1. bundle the candidate tree
       tmp = mkdtempSync(join(tmpdir(), "repoos-rvr-"));
       const bundlePath = join(tmp, "candidate.bundle");
       const bundle = await this.exec.bundleRepo(opts.worktreePath, bundlePath);
-      if (!bundle.ok) return this.infraFail(`git bundle failed: ${bundle.detail ?? "unknown"}`);
+      if (!bundle.ok)
+        return this.infraFail(`git bundle failed: ${bundle.detail ?? "unknown"}`, {
+          taskId: opts.taskId,
+          host: host.ip,
+        });
 
       // 2. upload
       const remoteBundle = paths.bundle;
       const up = await this.exec.uploadFile(host, bundlePath, remoteBundle);
       if (!up.ok)
-        return this.infraFail(`scp of candidate bundle failed: ${up.detail ?? "unknown"}`);
+        return this.infraFail(`scp of candidate bundle failed: ${up.detail ?? "unknown"}`, {
+          taskId: opts.taskId,
+          host: host.ip,
+        });
 
       // Provisioning + bundling can outlast the caller's deadline (#0521 spec
       // item 5) — never start a suite for a caller that already gave up. The
@@ -1092,6 +1241,7 @@ export class RemoteValidationRunner implements RemoteValidator {
         return {
           ...this.infraFail(
             `the caller's deadline passed before the run could start on ${host.ip} — the run was cancelled`,
+            { taskId: opts.taskId, host: host.ip, phase: "dispatch" },
           ),
           cancelled: true,
         };
@@ -1099,6 +1249,10 @@ export class RemoteValidationRunner implements RemoteValidator {
 
       // 3. run build + test inside the container
       emit(`[running build + test on ${host.ip}]\n`);
+      this.record(
+        { taskId: opts.taskId, host: host.ip, phase: "run" },
+        { level: "info", phase: "run", message: `running build + test on ${host.ip}` },
+      );
       const cmd = `/opt/repoos/validate.sh ${remoteBundle} ${opts.candidateSha} ${paths.artifacts}`;
       const run = await this.exec.runRemote(host, cmd, emit, this.timings.remoteRunTimeoutMs);
 
@@ -1119,18 +1273,40 @@ export class RemoteValidationRunner implements RemoteValidator {
           "warn",
           `remote validation timed out after ${elapsed}s`,
         );
+        const detail = `remote validation timed out after ${elapsed}s (the runner VM may be overloaded) — retrying resumes from the check step`;
+        this.record(
+          { taskId: opts.taskId, host: host.ip, phase: "result" },
+          {
+            level: "warn",
+            phase: "result",
+            message: detail,
+            host: host.ip,
+            exitCode: null,
+            infra: true,
+          },
+        );
         return {
           ok: false,
           stage: "check",
           transient: true,
           exitCode: null,
           output: tail(run.output, 40, 4000),
-          detail: `remote validation timed out after ${elapsed}s (the runner VM may be overloaded) — retrying resumes from the check step`,
+          detail,
         };
       }
       if (run.code === 0) {
         emit(`\n[remote validation PASSED in ${elapsed}s]\n`);
         this.logger?.integration(opts.taskId, "info", `remote validation passed in ${elapsed}s`);
+        this.record(
+          { taskId: opts.taskId, host: host.ip, phase: "result" },
+          {
+            level: "info",
+            phase: "result",
+            message: `remote validation passed in ${elapsed}s on ${host.ip}`,
+            host: host.ip,
+            exitCode: 0,
+          },
+        );
         return { ok: true, stage: "check" };
       }
 
@@ -1140,13 +1316,28 @@ export class RemoteValidationRunner implements RemoteValidator {
         run.code === 255 &&
         /(?:Connection|ssh:|closed by remote host|Broken pipe)/i.test(run.output)
       ) {
-        return this.infraFail(`ssh connection to the runner dropped mid-run: ${tail(run.output)}`);
+        return this.infraFail(`ssh connection to the runner dropped mid-run: ${tail(run.output)}`, {
+          taskId: opts.taskId,
+          host: host.ip,
+          exitCode: 255,
+        });
       }
       const transient = looksTransient(run.output);
       emit(`\n[remote validation FAILED (exit ${run.code}) in ${elapsed}s]\n`);
       this.logger?.integration(opts.taskId, "warn", `remote validation failed (exit ${run.code})`, {
         transient,
       });
+      this.record(
+        { taskId: opts.taskId, host: host.ip, phase: "result" },
+        {
+          level: transient ? "warn" : "error",
+          phase: "result",
+          message: `remote validation failed (exit ${run.code}) on ${host.ip}`,
+          host: host.ip,
+          exitCode: run.code,
+          infra: transient,
+        },
+      );
       return {
         ok: false,
         stage: "check",
@@ -1156,7 +1347,7 @@ export class RemoteValidationRunner implements RemoteValidator {
         detail: `remote validation failed (exit ${run.code}) — ${tail(run.output)}`,
       };
     } catch (e) {
-      return this.infraFail((e as Error).message);
+      return this.infraFail((e as Error).message, { taskId: opts.taskId });
     } finally {
       if (tmp) rmSync(tmp, { recursive: true, force: true });
       this.activeJobs = Math.max(0, this.activeJobs - 1);
@@ -2077,6 +2268,11 @@ export class TailscaleRunner implements RemoteValidator {
     return join(this.config.root, ".repoos", "logs", "remote-validation", `${taskId}.log`);
   }
 
+  /** Structured events for the Debug tab (#0568). */
+  remoteEvents(taskId: string): RemoteValidationEvent[] {
+    return readRemoteValidationEvents(this.config.root, taskId);
+  }
+
   private appendLog(taskId: string, text: string): void {
     try {
       const p = this.logPath(taskId);
@@ -2089,8 +2285,24 @@ export class TailscaleRunner implements RemoteValidator {
     }
   }
 
-  private infraFail(detail: string): CheckSummary {
+  /** Append a structured event when a task id is known (best-effort). */
+  private record(ctx: RemoteEventContext, event: Omit<RemoteValidationEvent, "at">): void {
+    if (!ctx.taskId) return;
+    appendRemoteValidationEvent(this.config.root, ctx.taskId, {
+      ...event,
+      host: event.host ?? ctx.host,
+      exitCode: event.exitCode ?? ctx.exitCode,
+    });
+  }
+
+  private infraFail(detail: string, ctx: RemoteEventContext = {}): CheckSummary {
     this.logger?.system("warn", `remote validation unavailable: ${detail}`);
+    this.record(ctx, {
+      level: "warn",
+      phase: ctx.phase ?? "result",
+      message: `remote validation unavailable: ${detail}`,
+      infra: true,
+    });
     return {
       ok: false,
       stage: "check",
@@ -2108,8 +2320,15 @@ export class TailscaleRunner implements RemoteValidator {
    * clearly on the wrong machine. An UNREACHABLE host stays transient
    * (`infraFail`): that genuinely can recover on its own.
    */
-  private configFail(detail: string): CheckSummary {
+  private configFail(detail: string, ctx: RemoteEventContext = {}): CheckSummary {
     this.logger?.system("error", `remote validation cannot run: ${detail}`);
+    this.record(ctx, {
+      level: "error",
+      phase: ctx.phase ?? "dispatch",
+      message: `remote validation cannot run: ${detail}`,
+      infra: false,
+      configError: true,
+    });
     return {
       ok: false,
       stage: "check",
@@ -2146,6 +2365,7 @@ export class TailscaleRunner implements RemoteValidator {
   async validate(opts: ValidateOptions): Promise<CheckSummary> {
     const rv = this.config.remoteValidation ?? {};
     const startedAt = Date.now();
+    const dispatch = { taskId: opts.taskId, phase: "dispatch" as const };
     if (!rv.enabled) {
       // The Hetzner runner records an infra row for this same condition
       // (validate() falls through to runValidation, which fails on the
@@ -2160,7 +2380,7 @@ export class TailscaleRunner implements RemoteValidator {
         "fail",
         "remote validation is disabled",
       );
-      return this.infraFail("remote validation is disabled");
+      return this.infraFail("remote validation is disabled", dispatch);
     }
     const capabilities = (opts.capabilities ?? []).map((c) => c.trim()).filter(Boolean);
     const emit = (s: string): void => {
@@ -2178,7 +2398,15 @@ export class TailscaleRunner implements RemoteValidator {
       slot = await this.pool.acquire(capabilities, {
         taskId: opts.taskId,
         deadlineAt: opts.deadlineAt,
-        onQueue: (ahead) => emit(this.queueNote(ahead, capabilities)),
+        onQueue: (ahead) => {
+          const note = this.queueNote(ahead, capabilities);
+          emit(note);
+          appendRemoteValidationEvent(this.config.root, opts.taskId, {
+            level: "info",
+            phase: "queued",
+            message: note.trim(),
+          });
+        },
       });
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e);
@@ -2193,8 +2421,8 @@ export class TailscaleRunner implements RemoteValidator {
         e instanceof QueueDeadlineError ? "cancelled" : "fail",
         detail,
       );
-      if (e instanceof NoEligibleHostError) return this.configFail(detail);
-      return this.infraFail(detail);
+      if (e instanceof NoEligibleHostError) return this.configFail(detail, dispatch);
+      return this.infraFail(detail, dispatch);
     }
 
     try {
@@ -2233,9 +2461,13 @@ export class TailscaleRunner implements RemoteValidator {
       `\n── remote validation (tailscale) for #${opts.taskId} @ ${opts.candidateSha.slice(0, 12)} ──\n`,
     );
     // Which host ran this job — the record the per-task log keeps (#0521).
-    emit(
+    const runnerNote =
       `[runner ${host.user}@${host.ip}${slot.host.os ? ` (${slot.host.os})` : ""}]` +
-        `${capabilities.length ? ` [requires ${describeCapabilities(capabilities)}]` : ""}\n`,
+      `${capabilities.length ? ` [requires ${describeCapabilities(capabilities)}]` : ""}\n`;
+    emit(runnerNote);
+    this.record(
+      { taskId: opts.taskId, host: host.ip, phase: "run" },
+      { level: "info", phase: "run", message: runnerNote.trim(), host: host.ip },
     );
 
     let tmp: string | null = null;
@@ -2244,7 +2476,11 @@ export class TailscaleRunner implements RemoteValidator {
       tmp = mkdtempSync(join(tmpdir(), "repoos-rvr-"));
       const bundlePath = join(tmp, "candidate.bundle");
       const bundle = await this.exec.bundleRepo(opts.worktreePath, bundlePath);
-      if (!bundle.ok) return this.infraFail(`git bundle failed: ${bundle.detail ?? "unknown"}`);
+      if (!bundle.ok)
+        return this.infraFail(`git bundle failed: ${bundle.detail ?? "unknown"}`, {
+          taskId: opts.taskId,
+          host: host.ip,
+        });
 
       // 2. upload
       const remoteBundle = paths.bundle;
@@ -2256,7 +2492,7 @@ export class TailscaleRunner implements RemoteValidator {
         // from immediately selecting it again until the health retry probe.
         this.pool.markUnhealthy(host.ip, detail);
         this.pool.recordRun(host.ip, opts.taskId, false, Date.now() - startedAt);
-        return this.infraFail(detail);
+        return this.infraFail(detail, { taskId: opts.taskId, host: host.ip });
       }
 
       // 3. run build + test via validate.sh on the host (which calls docker run
@@ -2273,11 +2509,16 @@ export class TailscaleRunner implements RemoteValidator {
         return {
           ...this.infraFail(
             `the caller's deadline passed before the run could start on ${host.ip} — the run was cancelled`,
+            { taskId: opts.taskId, host: host.ip, phase: "dispatch" },
           ),
           cancelled: true,
         };
       }
       emit(`[running build + test in ${image} on ${host.ip}]\n`);
+      this.record(
+        { taskId: opts.taskId, host: host.ip, phase: "run" },
+        { level: "info", phase: "run", message: `running build + test in ${image} on ${host.ip}` },
+      );
       const inner = `REPOOS_CI_IMAGE=${shellQuote(image)} ${VALIDATE_SCRIPT} ${remoteBundle} ${opts.candidateSha} ${paths.artifacts}`;
       const waitSecs =
         opts.deadlineAt !== undefined
@@ -2320,13 +2561,25 @@ export class TailscaleRunner implements RemoteValidator {
           `remote validation timed out after ${elapsed}s`,
         );
         this.pool.recordRun(host.ip, opts.taskId, false, Date.now() - startedAt);
+        const detail = `remote validation timed out after ${elapsed}s — retrying resumes from the check step`;
+        this.record(
+          { taskId: opts.taskId, host: host.ip, phase: "result" },
+          {
+            level: "warn",
+            phase: "result",
+            message: detail,
+            host: host.ip,
+            exitCode: null,
+            infra: true,
+          },
+        );
         return {
           ok: false,
           stage: "check",
           transient: true,
           exitCode: null,
           output: tail(run.output, 40, 4000),
-          detail: `remote validation timed out after ${elapsed}s — retrying resumes from the check step`,
+          detail,
         };
       }
       if (run.code === HOST_LOCK_TIMEOUT_EXIT && run.output.includes("[lock]")) {
@@ -2337,12 +2590,23 @@ export class TailscaleRunner implements RemoteValidator {
         return this.infraFail(
           `another repoos check is already running on ${host.ip} — waited ${elapsed}s for a free host slot ` +
             "(the per-host limit is shared by the server and standalone `repoos check`)",
+          { taskId: opts.taskId, host: host.ip, exitCode: run.code },
         );
       }
       if (run.code === 0) {
         emit(`\n[remote validation PASSED in ${elapsed}s on ${host.ip}]\n`);
         this.logger?.integration(opts.taskId, "info", `remote validation passed in ${elapsed}s`);
         this.pool.recordRun(host.ip, opts.taskId, true, Date.now() - startedAt);
+        this.record(
+          { taskId: opts.taskId, host: host.ip, phase: "result" },
+          {
+            level: "info",
+            phase: "result",
+            message: `remote validation passed in ${elapsed}s on ${host.ip}`,
+            host: host.ip,
+            exitCode: 0,
+          },
+        );
         return { ok: true, stage: "check" };
       }
 
@@ -2355,7 +2619,11 @@ export class TailscaleRunner implements RemoteValidator {
         const detail = `ssh connection to ${host.ip} dropped mid-run: ${tail(run.output)}`;
         this.pool.markUnhealthy(host.ip, detail);
         this.pool.recordRun(host.ip, opts.taskId, false, Date.now() - startedAt);
-        return this.infraFail(detail);
+        return this.infraFail(detail, {
+          taskId: opts.taskId,
+          host: host.ip,
+          exitCode: 255,
+        });
       }
       const transient = looksTransient(run.output);
       emit(`\n[remote validation FAILED (exit ${run.code}) in ${elapsed}s on ${host.ip}]\n`);
@@ -2363,6 +2631,17 @@ export class TailscaleRunner implements RemoteValidator {
         transient,
       });
       this.pool.recordRun(host.ip, opts.taskId, false, Date.now() - startedAt);
+      this.record(
+        { taskId: opts.taskId, host: host.ip, phase: "result" },
+        {
+          level: transient ? "warn" : "error",
+          phase: "result",
+          message: `remote validation failed (exit ${run.code}) on ${host.ip}`,
+          host: host.ip,
+          exitCode: run.code,
+          infra: transient,
+        },
+      );
       return {
         ok: false,
         stage: "check",
@@ -2372,7 +2651,7 @@ export class TailscaleRunner implements RemoteValidator {
         detail: `remote validation failed (exit ${run.code}) — ${tail(run.output)}`,
       };
     } catch (e) {
-      return this.infraFail((e as Error).message);
+      return this.infraFail((e as Error).message, { taskId: opts.taskId, host: host.ip });
     } finally {
       if (tmp) rmSync(tmp, { recursive: true, force: true });
     }

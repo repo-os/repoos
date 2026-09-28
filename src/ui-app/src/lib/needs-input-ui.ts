@@ -44,7 +44,7 @@ export const NEEDS_INPUT_SUGGESTION_LABELS: Record<string, string> = {
   "review-failed":
     "Try Review again from the Review tab (or Restart work if the task is back in active). If it keeps failing, check the CLI/model picker there — an invalid pairing (e.g. after switching CLI) causes exactly this.",
   "review-rounds-exhausted":
-    "Read the latest review report, then send it back to the engineer, fix it yourself, or move to done if the remaining findings are acceptable. Review again runs a fresh review and clears this if it comes back clean.",
+    "Read the latest review report, then send it back to the engineer, fix it yourself, or move to done if the remaining findings are acceptable. Review again hides this banner while a fresh review runs; it stays cleared if the review comes back clean.",
   "dev-error":
     "Restart work to resume the agent, or reply below with more context first. If it keeps failing on the same error, check the coding agent/model picker above — a CLI switch without a matching model pin causes exactly this.",
   "check-failed-after-retries":
@@ -54,7 +54,7 @@ export const NEEDS_INPUT_SUGGESTION_LABELS: Record<string, string> = {
   "cto-escalation": "Open the PM tab and send a reply — the flag clears when your message is sent.",
   underspecified:
     "Send it to the PM agent to flesh it out, or write the missing sections yourself.",
-  questions: "Answer the questions below or reply in the PM tab so the agent can continue.",
+  questions: "Open the PM tab to answer — your reply is sent with the questions attached.",
 };
 
 export type NeedsInputPrimaryActionKind = "restart" | "review" | "answer" | "send-pm";
@@ -78,6 +78,11 @@ const REVIEW_AGAIN_ACTION: NeedsInputPrimaryAction = {
 const RESTART_ACTION: NeedsInputPrimaryAction = {
   kind: "restart",
   label: "Restart work (clears this)",
+};
+
+const ANSWER_IN_PM_ACTION: NeedsInputPrimaryAction = {
+  kind: "answer",
+  label: "Answer in PM",
 };
 
 const PM_REPLY_ACTION: NeedsInputPrimaryAction = {
@@ -147,8 +152,9 @@ export function needsInputPrimaryAction(
     case "check-failed-after-retries":
       return canRestartWork(ctx) ? RESTART_ACTION : null;
     case "cto-escalation":
-    case "questions":
       return PM_REPLY_ACTION;
+    case "questions":
+      return ANSWER_IN_PM_ACTION;
     case "underspecified":
       return SEND_TO_PM_ACTION;
     default:

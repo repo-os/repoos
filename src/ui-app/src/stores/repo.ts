@@ -19,6 +19,7 @@ import type {
   CtoState,
   Health,
   IntegrationPipelineSnapshot,
+  RemoteValidationEvent,
   RepoEvent,
   RepoIndex,
   ReviewReport,
@@ -641,6 +642,9 @@ export const useRepoStore = defineStore("repo", () => {
   const taskChecks = ref<Record<string, TaskCheckRun[]>>({});
   /** Per-task log entries (Debug tab, 0310), hydrated via API when the tab opens. */
   const taskLogs = ref<Record<string, TaskLogEntry[]>>({});
+  /** Per-task structured remote-validation events (#0568 Debug tab): which host
+   *  ran, the exit code, and any infra/config error. Hydrated when the tab opens. */
+  const taskRemoteEvents = ref<Record<string, RemoteValidationEvent[]>>({});
   const sortOrder = ref<SortOrder>(readSortOrder());
   const storySortOrder = ref<SortOrder>(readStorySortOrder());
   const storiesPageSortOrder = ref<StoryListSortOrder>(readStoriesPageSortOrder());
@@ -1580,6 +1584,18 @@ export const useRepoStore = defineStore("repo", () => {
     }
   }
 
+  /** Hydrate a task's structured remote-validation events (#0568 Debug tab). */
+  async function refreshTaskRemoteEvents(taskId: string): Promise<void> {
+    try {
+      const r = await api<{ ok: boolean; events: RemoteValidationEvent[] }>(
+        `/api/tasks/${taskId}/remote-validation/events`,
+      );
+      taskRemoteEvents.value[taskId] = r.events;
+    } catch {
+      /* non-fatal — the Debug tab falls back to its empty state */
+    }
+  }
+
   function connectSSE(): void {
     if (es) es.close();
     es = new EventSource(origin + "/api/events");
@@ -2320,13 +2336,22 @@ export const useRepoStore = defineStore("repo", () => {
 
   /** Start a fresh review run against the task's current worktree state. */
   async function reviewAgain(id: string): Promise<void> {
-    const r = await api<{ ok: boolean; reason?: string }>(`/api/tasks/${id}/review/again`, {
-      method: "POST",
-    });
+    const r = await api<{ ok: boolean; reason?: string; task?: Task }>(
+      `/api/tasks/${id}/review/again`,
+      {
+        method: "POST",
+      },
+    );
     if (!r.ok) {
       const message = r.reason ?? "could not start a fresh review";
       pushToast(message, "error");
       throw new Error(message);
+    }
+    if (r.task) {
+      const i = tasks.value.findIndex((t) => t.id === id);
+      if (i >= 0) tasks.value[i] = r.task;
+      const ui = useUiStore();
+      if (ui.active?.id === id) ui.syncActive(r.task);
     }
   }
 
@@ -2767,6 +2792,8 @@ export const useRepoStore = defineStore("repo", () => {
     refreshTaskChecks,
     taskLogs,
     refreshTaskLogs,
+    taskRemoteEvents,
+    refreshTaskRemoteEvents,
     newVersion,
     restarting,
     pushToast,

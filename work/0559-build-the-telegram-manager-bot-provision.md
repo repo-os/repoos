@@ -1,16 +1,27 @@
 ---
+updated_at: "2026-09-28T08:49:58Z"
+review_passes: 3
 id: "0559"
 title: Build the Telegram manager-bot provisioning service and secure instance handoff
 type: feature
-status: inbox
+status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
 priority: p1
 area: server
 story: RepoOS Telegram Bot
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/build-the-telegram-manager-bot-provision
+cli_override: cursor
+model_override: composer-2.5
+review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-27T17:32:41Z"
-updated_at: "2026-09-27T17:45:21Z"
+review_rounds: 2
+check_retry_count: 1
+last_check_failure: "[object Object]"
+dev_error_count: 4
 ---
 ## Problem
 
@@ -57,3 +68,58 @@ Depends on #0530 (done) and the local adapter/client contract from #0531 (still 
 - 2026-09-27T17:32:41Z · created · unknown
 - 2026-09-27T17:45:19Z · needs_input, body
 - 2026-09-27T17:45:21Z · note: Human decision 2026-09-28: hosting settled as Neon Functions + Neon Postgres (Cloudflare Workers ruled out); needs_input cleared. Still held in inbox pending #0531's client contract.
+- 2026-09-28T04:49:18Z · cli_override, model_override
+- 2026-09-28T04:49:19Z · model_override
+- 2026-09-28T04:49:24Z · review_model_override
+- 2026-09-28T04:49:48Z · status inbox→ready
+- 2026-09-28T04:49:51Z · status ready→active, branch
+- 2026-09-28T05:19:15Z · status active→review
+- 2026-09-28T05:34:15Z · needs_input
+- 2026-09-28T05:34:59Z · review_cli_override, review_model_override
+- 2026-09-28T05:35:00Z · review_cli_override
+- 2026-09-28T05:35:01Z · review_cli_override
+- 2026-09-28T05:35:02Z · review_model_override
+- 2026-09-28T05:35:13Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-09-28T05:36:54Z · status review→active
+- 2026-09-28T05:47:44Z · agent exited with an error (copilot) · permission problem, not a code failure: GitHub Copilot denied a tool call despite RepoOS's non-interactive permission setting
+- 2026-09-28T05:53:37Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-09-28T05:53:47Z · status active→review
+- 2026-09-28T05:53:47Z · status review→active
+- 2026-09-28T05:56:51Z · handoff failed · task-file handoff failed at check · repoos check failed: tests/service.test.ts(233,7): error TS2345: Argument of type 'FakeTelegramManagerClient' is not assignable to parameter of type 'TelegramManagerClient'. · Property 'replaceManagedBotToken' is missing in type 'FakeTelegramManagerClient' but required in type 'TelegramManagerClient'. · tests/service.test.ts(238,36): error TS2554: Expected 2 arguments, but got 1. · tests/service.test.ts(240,38): error TS2554: Expected 2 arguments, but got 1. · tests/service.test.ts(248,15): error TS2554: Expected 3 arguments, but got 2. · ⏭ telegram-manager-test  — skipped — blocked by failed step(s): telegram-manager-build · ⏭ macos-hub-icon-transparency  — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-icon-transparency.sh · 2 check(s) failed.
+- 2026-09-28T06:41:53Z · cli_override, model_override
+- 2026-09-28T06:41:55Z · model_override
+- 2026-09-28T06:42:04Z · review_cli_override, review_model_override
+- 2026-09-28T06:42:05Z · review_model_override
+- 2026-09-28T06:42:08Z · needs_input
+- 2026-09-28T06:49:38Z · status active→review
+- 2026-09-28T07:13:17Z · needs_input
+- 2026-09-28T07:19:22Z · review_cli_override, review_model_override
+- 2026-09-28T07:30:24Z · review_model_override
+- 2026-09-28T07:30:30Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-09-28T07:58:49Z · needs_input
+- 2026-09-28T08:00:16Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-09-28T08:00:17Z · needs_input
+- 2026-09-28T08:00:21Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-09-28T08:00:21Z · needs_input
+- 2026-09-28T08:00:26Z · review_cli_override, review_model_override
+- 2026-09-28T08:00:28Z · review_cli_override
+- 2026-09-28T08:00:30Z · review_cli_override, review_model_override
+- 2026-09-28T08:00:38Z · review_model_override
+- 2026-09-28T08:00:39Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-09-28T08:07:42Z · status review→active
+- 2026-09-28T08:30:53Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-09-28T08:38:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-09-28T08:42:38Z · status active→review
+- 2026-09-28T08:46:38Z · handoff failed · remote validation failed: remote validation failed (exit 1) — …/dist/ui/assets/VoiceDictate-CEyIL7fp.css': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/dist/ui/assets/WorkView-C4lr2ckC.css': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/dist/ui/assets/index-BuRg_glO.css': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/dist/ui/favicon.svg': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/dist/ui/sw.js': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/dist/ui/index.html': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/dist/.build-info.json': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/dist/.build-stamp.json': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/.repoos/auto-engineering-decision.json': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/.repoos/repoos.db': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/.repoos/repoos.db-wal': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/.repoos/repoos.db-shm': Permission denied — fix it in the feature branch and re-run the gate
+

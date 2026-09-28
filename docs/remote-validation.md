@@ -76,7 +76,11 @@ The pre-review, close-out and release gates share `runRemotePreReviewGate` (`src
   worktree at `HEAD`, runs install + build + test on the runner, then local
   guards with `REPOOS_SKIP_TESTS=1`. Logs land in
   `.repoos/logs/remote-validation/<taskId>.log` (task id, or `pre-review` for a
-  bare CLI run).
+  bare CLI run). Alongside it, `<taskId>.events.ndjson` records the same run's
+  structured outcomes — the host, the exit code, and any infra/config failure —
+  so a failed or skipped run is legible straight from the task's Debug tab
+  (`GET /api/tasks/:id/remote-validation/events`) without opening the raw log
+  (#0568).
 - **Close-out** — **`src/server/integration-orchestrator.ts` `validateCandidate`**
   (since #0118). After the local `bun run build` on the merged candidate, same
   remote + local-guards sequence as pre-review.

@@ -209,7 +209,7 @@ const tailscaleSteps: { label: string; body: string; cmd?: string }[] = [
   {
     label: "4 · Restart RepoOS",
     body: "Restart the server to pick up the new config, then use Test connection below to verify SSH and Docker are reachable.",
-    cmd: "just restart",
+    cmd: "repoos stop && repoos serve",
   },
 ];
 
@@ -234,7 +234,7 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
   {
     label: "5 · Restart RepoOS",
     body: "On boot, RepoOS reconciles (deletes any leaked runner VM) and the next review → done runs the gate remotely.",
-    cmd: "just restart",
+    cmd: "repoos stop && repoos serve",
   },
 ];
 </script>

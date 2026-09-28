@@ -140,6 +140,7 @@ Groq, or the reverse.
 | Variable | Purpose |
 | --- | --- |
 | `NTFY_BASE_URL` | Overrides `ntfyBaseUrl` in `repoos.toml` for a self-hosted ntfy server. |
+| `REPOOS_PUBLIC_URL` | Absolute base URL for task deep links in outbound Telegram notifications (for example `https://repo.example.com`). When unset, RepoOS uses the first configured tunnel hostname or the control-plane `publicOrigin` after the server binds. |
 
 ### Runtime and build
 
@@ -227,6 +228,9 @@ REPOOS_REMOTE_SSH_KEY=/absolute/path/to/private_key
 
 # Self-hosted notifications
 # NTFY_BASE_URL=https://ntfy.example.com
+# Absolute base URL for task deep links in Telegram (e.g. https://repo.example.com).
+# Falls back to the first tunnel hostname, then server publicOrigin after listen.
+# REPOOS_PUBLIC_URL=https://repo.example.com
 
 # Runtime and build overrides — leave these commented unless you need them.
 # REPOOS_RUNTIME=auto           # auto | bun | node
