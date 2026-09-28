@@ -1438,6 +1438,7 @@ export class CloseOutOrchestrator {
           remoteValidator: this.remoteValidator,
           worktreePath: wtPath,
           taskId: job.taskId,
+          phase: "close-out",
         });
         if (remoteGateOutcome.kind === "fail") {
           return {
@@ -1484,6 +1485,11 @@ export class CloseOutOrchestrator {
         const checkEnv = {
           ...process.env,
           ...checkEnvAfterRemoteGate(remoteGateOutcome),
+          // Identify the caller to the check-run history (#0564): the child
+          // records its own completed run in THIS repo's store.
+          REPOOS_CHECK_TASK_ID: job.taskId,
+          REPOOS_CHECK_PHASE: "close-out",
+          REPOOS_CHECK_STORE_ROOT: this.config.root,
         };
         const checkArgs = spawnedRepoosCheckArgs(this.config, remoteGateOutcome);
         const localCli = join(wtPath, "dist", "cli", "index.js");
