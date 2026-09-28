@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-09-28T04:09:46Z"
-review_passes: 5
+updated_at: "2026-09-28T04:49:41Z"
+review_passes: 6
 id: "0539"
 title: Revoke the project bot and unbind chats on disconnect
 type: feature
@@ -14,8 +14,10 @@ story: RepoOS Telegram Bot
 assigned_to: ai
 created_by: ""
 branch: feat/revoke-the-project-bot-and-unbind-chats-
-review_cli_override: github copilot
-review_model_override: copilot-auto-balance
+cli_override: github copilot
+model_override: default
+review_cli_override: cursor
+review_model_override: cursor-grok-4.6-medium
 created_at: "2026-09-27T07:33:20Z"
 review_rounds: 2
 last_check_failure: "[object Object]"
@@ -74,4 +76,23 @@ One operation, in a deliberate order, that is **complete or loudly incomplete**:
 - 2026-09-28T04:04:12Z · needs_input
 - 2026-09-28T04:08:47Z · status active→review
 - 2026-09-28T04:09:45Z · needs_input
+- 2026-09-28T04:11:56Z · handoff failed · remote validation failed: remote validation failed (exit 1) — …/dist/ui/assets/VoiceDictate-CEyIL7fp.css': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.zYLgdA/repo/dist/ui/assets/WorkView-C4lr2ckC.css': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.zYLgdA/repo/dist/ui/assets/index-Br3b6DIs.css': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.zYLgdA/repo/dist/ui/favicon.svg': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.zYLgdA/repo/dist/ui/sw.js': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.zYLgdA/repo/dist/ui/index.html': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.zYLgdA/repo/dist/.build-info.json': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.zYLgdA/repo/dist/.build-stamp.json': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.zYLgdA/repo/.repoos/auto-engineering-decision.json': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.zYLgdA/repo/.repoos/repoos.db': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.zYLgdA/repo/.repoos/repoos.db-wal': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.zYLgdA/repo/.repoos/repoos.db-shm': Permission denied — fix it in the feature branch and re-run the gate
+- 2026-09-28T04:22:25Z · cli_override, model_override
+- 2026-09-28T04:28:17Z · review_cli_override, review_model_override
+- 2026-09-28T04:28:43Z · review_model_override
+- 2026-09-28T04:28:52Z · status review→active
+- 2026-09-28T04:28:53Z · needs_input
+- 2026-09-28T04:47:37Z · status active→review
+- 2026-09-28T04:49:40Z · needs_input
 
