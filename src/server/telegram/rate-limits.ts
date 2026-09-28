@@ -3,7 +3,10 @@
  *
  * Keys are scoped per Telegram user and per chat. Limits apply before live
  * authorization or invite redeem do SQLite work. Agent-bound traffic uses the
- * tighter pair — the expensive LLM path (#0541) must check those first.
+ * tighter pair, checked in the intake BEFORE the agent-chat handler (#0541)
+ * can start any run — a refusal reaches that handler as
+ * `{ agentLimited: true }` so the authorized user is told plainly instead of
+ * the turn being dropped silently.
  *
  * These limiters are per-process only; multiple RepoOS processes do not share
  * counters (same limitation as OTP / Hub rate limits in `src/core/auth.ts`).

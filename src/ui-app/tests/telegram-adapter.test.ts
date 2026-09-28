@@ -491,7 +491,10 @@ describe("BYO connect and encrypted storage", () => {
     const commands = calls.find((c) => c.method === "setMyCommands")?.body.commands as {
       command: string;
     }[];
-    expect(commands).toEqual([{ command: "help", description: "What this RepoOS bot can do" }]);
+    expect(commands).toEqual([
+      { command: "help", description: "What this RepoOS bot can do" },
+      { command: "new", description: "Start a fresh guide conversation" },
+    ]);
     // The description names this repository.
     const description = String(
       calls.find((c) => c.method === "setMyDescription")?.body.description,

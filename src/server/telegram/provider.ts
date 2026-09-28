@@ -95,6 +95,7 @@ export interface TelegramProviderOptions {
 /** RepoOS's default public profile applied at connect time (overridable). */
 export const DEFAULT_BOT_COMMANDS = [
   { command: "help", description: "What this RepoOS bot can do" },
+  { command: "new", description: "Start a fresh guide conversation" },
 ];
 
 export class LocalTelegramProvider implements TelegramProvider {
