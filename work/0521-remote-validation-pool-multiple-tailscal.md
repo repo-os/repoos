@@ -3,18 +3,21 @@ id: "0521"
 title: "Remote validation: pool multiple tailscale hosts"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p3
 area: core
 assigned_to: ai
 created_by: ""
 branch: feat/remote-validation-pool-multiple-tailscal
-cli_override: opencode
-model_override: opencode-go/mimo-v2.6-flash
+review_cli_override: github copilot
+review_model_override: default
 created_at: "2026-09-26T11:49:01Z"
-updated_at: "2026-09-27T11:05:38Z"
-review_passes: 4
+updated_at: "2026-09-28T01:21:06Z"
+review_passes: 19
 review_rounds: 2
-dev_error_count: 2
+dev_error_count: 3
 ---
 ## Problem
 
@@ -113,3 +116,67 @@ Autoscaling, and pooling Hetzner VMs.
 - 2026-09-27T10:22:59Z · status review→active
 - 2026-09-27T10:23:00Z · needs_input
 - 2026-09-27T11:05:38Z · status active→review
+- 2026-09-27T11:13:34Z · needs_input
+- 2026-09-27T13:20:26Z · needs_input
+- 2026-09-27T13:20:26Z · needs_input
+- 2026-09-27T14:42:04Z · review_cli_override, review_model_override
+- 2026-09-27T14:42:06Z · review_model_override
+- 2026-09-27T14:44:00Z · needs_input
+- 2026-09-27T14:44:00Z · needs_input
+- 2026-09-27T15:10:05Z · needs_input
+- 2026-09-27T15:10:06Z · needs_input
+- 2026-09-27T15:58:51Z · needs_input dismissed by hello@repoos.org
+- 2026-09-27T16:08:07Z · needs_input
+- 2026-09-27T16:31:25Z · needs_input
+- 2026-09-27T16:31:25Z · needs_input
+- 2026-09-27T17:43:47Z · needs_input
+- 2026-09-27T17:43:47Z · needs_input
+- 2026-09-27T18:22:58Z · review_cli_override, review_model_override
+- 2026-09-27T18:23:27Z · review_cli_override, review_model_override
+- 2026-09-27T18:23:29Z · review_model_override
+- 2026-09-27T18:24:20Z · needs_input dismissed by hello@repoos.org
+- 2026-09-27T18:25:47Z · exhausted-review flag left cleared: dismissed during this review
+- 2026-09-27T19:09:24Z · needs_input
+- 2026-09-27T19:10:07Z · cli_override, model_override
+- 2026-09-27T19:10:09Z · model_override
+- 2026-09-27T19:10:19Z · review_cli_override, review_model_override
+- 2026-09-27T19:10:22Z · review_cli_override, review_model_override
+- 2026-09-27T19:10:23Z · review_cli_override, review_model_override
+- 2026-09-27T19:10:31Z · status review→active
+- 2026-09-27T19:10:31Z · needs_input
+- 2026-09-27T19:24:47Z · status active→review
+- 2026-09-27T19:35:20Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
+- 2026-09-27T19:36:53Z · needs_input
+- 2026-09-27T22:57:04Z · cli_override, model_override
+- 2026-09-27T22:57:24Z · model_override
+- 2026-09-27T22:57:33Z · needs_input (review-rounds-exhausted) dismissed by hello@repoos.org
+- 2026-09-27T22:58:36Z · status review→active
+- 2026-09-27T22:58:36Z · note: This has been through many rounds of dev and review already, please make the minimal changes necessary to try to get it to a green review.
+- 2026-09-27T23:08:22Z · status active→review
+- 2026-09-27T23:18:30Z · needs_input
+- 2026-09-27T23:20:31Z · status review→active
+- 2026-09-27T23:20:31Z · needs_input
+- 2026-09-27T23:36:46Z · status active→review
+- 2026-09-27T23:45:23Z · needs_input
+- 2026-09-27T23:49:01Z · status review→active
+- 2026-09-27T23:49:01Z · needs_input
+- 2026-09-27T23:55:42Z · agent exited with an error (codex) · Reading additional input from stdin...
+- 2026-09-27T23:55:42Z · status active→review
+- 2026-09-27T23:55:43Z · status review→active
+- 2026-09-27T23:58:02Z · needs_input (dev-error) dismissed by hello@repoos.org
+- 2026-09-27T23:58:38Z · status active→review
+- 2026-09-28T00:00:45Z · needs_input
+- 2026-09-28T00:21:00Z · status review→active
+- 2026-09-28T00:21:00Z · note: Fixing the latest review finding: retry a newly added host after a failed probe so queued jobs recover or fail after the retry cap.
+- 2026-09-28T00:21:16Z · needs_input
+- 2026-09-28T00:21:29Z · status active→review
+- 2026-09-28T00:21:30Z · status review→active
+- 2026-09-28T00:24:20Z · status active→review
+- 2026-09-28T00:26:20Z · needs_input
+- 2026-09-28T01:05:29Z · cli_override, model_override
+- 2026-09-28T01:05:36Z · model_override
+- 2026-09-28T01:05:47Z · status review→active
+- 2026-09-28T01:05:47Z · needs_input
+- 2026-09-28T01:17:08Z · status active→review
+- 2026-09-28T01:18:33Z · needs_input
+
