@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-28T08:07:42Z"
-review_passes: 2
 id: "0559"
 title: Build the Telegram manager-bot provisioning service and secure instance handoff
 type: feature
-status: review
+status: active
 priority: p1
 area: server
 story: RepoOS Telegram Bot
@@ -15,9 +13,11 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-27T17:32:41Z"
+updated_at: "2026-09-28T08:07:42Z"
+review_rounds: 2
+review_passes: 2
 check_retry_count: 1
 last_check_failure: "[object Object]"
-review_rounds: 1
 dev_error_count: 3
 ---
 ## Problem
@@ -103,4 +103,4 @@ Depends on #0530 (done) and the local adapter/client contract from #0531 (still 
 - 2026-09-28T08:00:30Z · review_cli_override, review_model_override
 - 2026-09-28T08:00:38Z · review_model_override
 - 2026-09-28T08:00:39Z · needs_input (review-failed) cleared for review again by hello@repoos.org
-
+- 2026-09-28T08:07:42Z · status review→active
