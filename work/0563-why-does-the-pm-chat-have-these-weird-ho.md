@@ -2,7 +2,7 @@
 id: "0563"
 title: Remove horizontal separators from all AI chats
 type: feature
-status: inbox
+status: ready
 needs_input: true
 needs_input_reason: underspecified
 needs_input_detail: "missing sections: Desired UX, Notes for AI"
@@ -14,7 +14,7 @@ branch: ""
 pm_cli_override: github copilot
 pm_model_override: default
 created_at: "2026-09-28T00:04:51Z"
-updated_at: "2026-09-28T00:15:40Z"
+updated_at: "2026-09-28T00:15:46Z"
 ---
 ## Problem
 
@@ -54,3 +54,4 @@ why does the pm chat have these weird horizontal lines between chat messages (se
 - 2026-09-28T00:10:00Z · title, body
 - 2026-09-28T00:15:40Z · status draft→inbox
 - 2026-09-28T00:15:40Z · needs_input
+- 2026-09-28T00:15:46Z · status inbox→ready
