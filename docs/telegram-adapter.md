@@ -253,9 +253,35 @@ this task adds are actions and live state, not configuration.
 ## Recovery from a corrupt connection record
 
 `TelegramCredentialStore.load()` validates the full record shape (version,
-bot, credential, transport, profile, polling pointer, webhook secret) and
+bot, credential, transport, profile, polling pointer, webhook secret, disconnect progress) and
 fails loudly with the file path and what is wrong — `status()` surfaces it as
 a 500-class error with an actionable message. Recovery never requires hand-
-deleting the file: `disconnect` clears it and `connect` replaces it
-wholesale, and both tolerate the unreadable record (`loadOrNull`) instead of
-failing on it.
+deleting the file: `connect` can replace it wholesale. `disconnect` preserves
+an unreadable record and refuses to report success because the token cannot be
+verified or revoked.
+
+## Disconnect (#0539)
+
+`disconnect` is one ordered operation — complete or loudly incomplete:
+
+1. Stop polling and remove the webhook while its token still works. Confirm
+   removal with `getWebhookInfo`; unauthorized responses are failures, not
+   proof of removal. Persist only this confirmed progress so a retry can safely
+   continue after revocation.
+2. Revoke a managed bot through the provisioning service. Telegram has no Bot
+   API operation to revoke a BYO token: RepoOS removes its webhook, instructs
+   the admin to revoke the token in @BotFather, then requires a 401 probe of
+   that old token on retry. `logOut`/`close` are not token revocation.
+3. Only after revocation is confirmed, atomically revoke this instance's user
+   and chat bindings, delete its invites, and write the audit record.
+4. Delete the encrypted credential only if it is still the exact credential
+   that was just revoked; connect and disconnect operations are serialized so
+   a reconnect cannot be deleted by an older disconnect.
+
+All binding rows carry `instance_identity` and use composite keys, so different
+instances can bind the same Telegram user or chat in a shared auth database.
+The cleanup and disconnect audit are one SQLite transaction. A failed Telegram
+step, unreadable local record, database failure, or credential change returns
+a visible retryable error; the encrypted connection remains available for
+retry. `POST /api/telegram/disconnect` and
+`POST /api/auth/telegram/disconnect` share the same implementation.

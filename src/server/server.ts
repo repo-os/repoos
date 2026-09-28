@@ -343,6 +343,7 @@ import {
   patchTelegramChatNotificationsRoute,
   unbindTelegramChatRoute,
   unbindTelegramLinkRoute,
+  telegramDisconnectFromAuthRoute,
   reassignTelegramLinkRoute,
   createHubCapability,
   listHubCapabilities,
@@ -2651,6 +2652,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   );
   router.register("DELETE", /^\/api\/auth\/telegram\/chats\/([^/]+)$/, unbindTelegramChatRoute);
   router.register("GET", "/api/auth/telegram/links", listTelegramLinksRoute);
+  router.register("POST", "/api/auth/telegram/disconnect", telegramDisconnectFromAuthRoute);
   router.register("DELETE", /^\/api\/auth\/telegram\/links\/([^/]+)$/, unbindTelegramLinkRoute);
   router.register(
     "POST",

@@ -12,6 +12,7 @@ import { join } from "node:path";
 import type { AuthRole } from "./auth.js";
 import { hashOtp, hashSessionToken, randomHex, DEFAULT_SESSION_MAX_AGE } from "./auth.js";
 import type { HubCapability } from "./hub-capabilities.js";
+import { instanceIdentity as getInstanceIdentity } from "./telegram-identity.js";
 
 let Database: any;
 let dbAvailable = false;
@@ -96,6 +97,7 @@ export interface AuditLogEntry {
 }
 
 export interface TelegramUserLink {
+  instanceIdentity?: string;
   telegramUserId: number;
   email: string;
   telegramUsername: string | null;
@@ -106,6 +108,7 @@ export interface TelegramUserLink {
 }
 
 export interface TelegramChatLink {
+  instanceIdentity?: string;
   telegramChatId: number;
   chatType: string;
   title: string | null;
@@ -229,13 +232,15 @@ const AUTH_MIGRATION = `
   -- cascade-delete it (ADR 0007). Enforce presence of the email at bind time
   -- in application code. telegram_username is display-only.
   CREATE TABLE IF NOT EXISTS telegram_user_links (
-    telegram_user_id INTEGER PRIMARY KEY,
+    instance_identity TEXT NOT NULL,
+    telegram_user_id INTEGER NOT NULL,
     email TEXT NOT NULL,
     telegram_username TEXT,
     bound_at TEXT NOT NULL,
     bound_by TEXT,
     last_seen_at TEXT,
-    revoked_at TEXT
+    revoked_at TEXT,
+    PRIMARY KEY (instance_identity, telegram_user_id)
   );
   CREATE INDEX IF NOT EXISTS idx_telegram_user_links_email ON telegram_user_links(email);
 
@@ -254,13 +259,15 @@ const AUTH_MIGRATION = `
 
   -- Approved Telegram destinations for this repository (routing only; ADR 0007).
   CREATE TABLE IF NOT EXISTS telegram_chat_links (
-    telegram_chat_id INTEGER PRIMARY KEY,
+    instance_identity TEXT NOT NULL,
+    telegram_chat_id INTEGER NOT NULL,
     chat_type TEXT NOT NULL,
     title TEXT,
     bound_at TEXT NOT NULL,
     bound_by TEXT NOT NULL,
     revoked_at TEXT,
-    notifications_enabled INTEGER NOT NULL DEFAULT 1
+    notifications_enabled INTEGER NOT NULL DEFAULT 1,
+    PRIMARY KEY (instance_identity, telegram_chat_id)
   );
 
   CREATE TABLE IF NOT EXISTS telegram_chat_bind_invites (
@@ -299,6 +306,11 @@ function ensureTelegramChatNotificationColumn(db: {
 export class AuthStore {
   private db: any;
   private available: boolean;
+  private instanceIdentityValue = "";
+
+  get instanceIdentity(): string {
+    return this.instanceIdentityValue;
+  }
 
   constructor(repoRoot: string) {
     this.available = false;
@@ -306,6 +318,7 @@ export class AuthStore {
     if (!dbAvailable || !Database) return;
 
     try {
+      this.instanceIdentityValue = getInstanceIdentity(repoRoot);
       const cacheDir = join(repoRoot, ".repoos");
       if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
       const dbPath = join(cacheDir, "repoos.db");
@@ -314,6 +327,7 @@ export class AuthStore {
       this.db.exec("PRAGMA synchronous=NORMAL");
       this.db.exec(AUTH_MIGRATION);
       ensureTelegramChatNotificationColumn(this.db);
+      this.migrateTelegramBindingTables();
       this.available = true;
     } catch {
       this.available = false;
@@ -322,6 +336,93 @@ export class AuthStore {
 
   isAvailable(): boolean {
     return this.available;
+  }
+
+  private migrateTelegramBindingTables(): void {
+    const tables = [
+      {
+        name: "telegram_user_links",
+        id: "telegram_user_id",
+        columns:
+          "telegram_user_id, email, telegram_username, bound_at, bound_by, last_seen_at, revoked_at",
+        definition: `instance_identity TEXT NOT NULL,
+          telegram_user_id INTEGER NOT NULL,
+          email TEXT NOT NULL,
+          telegram_username TEXT,
+          bound_at TEXT NOT NULL,
+          bound_by TEXT,
+          last_seen_at TEXT,
+          revoked_at TEXT,
+          PRIMARY KEY (instance_identity, telegram_user_id)`,
+        indexes: [
+          "CREATE INDEX IF NOT EXISTS idx_telegram_user_links_instance_email ON telegram_user_links(instance_identity, email)",
+        ],
+      },
+      {
+        name: "telegram_chat_links",
+        id: "telegram_chat_id",
+        columns:
+          "telegram_chat_id, chat_type, title, bound_at, bound_by, revoked_at, notifications_enabled",
+        definition: `instance_identity TEXT NOT NULL,
+          telegram_chat_id INTEGER NOT NULL,
+          chat_type TEXT NOT NULL,
+          title TEXT,
+          bound_at TEXT NOT NULL,
+          bound_by TEXT NOT NULL,
+          revoked_at TEXT,
+          notifications_enabled INTEGER NOT NULL DEFAULT 1,
+          PRIMARY KEY (instance_identity, telegram_chat_id)`,
+        indexes: [],
+      },
+    ] as const;
+
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      for (const table of tables) {
+        const columns = this.db.prepare(`PRAGMA table_info(${table.name})`).all() as Array<{
+          name: string;
+          pk: number;
+        }>;
+        const hasInstance = columns.some((column) => column.name === "instance_identity");
+        const primaryKey = columns.filter((column) => column.pk > 0).sort((a, b) => a.pk - b.pk);
+        const hasScopedPrimaryKey =
+          primaryKey.length === 2 &&
+          primaryKey[0]?.name === "instance_identity" &&
+          primaryKey[1]?.name === table.id;
+
+        if (!hasInstance || !hasScopedPrimaryKey) {
+          const temporary = `${table.name}_scoped`;
+          this.db.exec(`DROP TABLE IF EXISTS ${temporary}`);
+          this.db.exec(`CREATE TABLE ${temporary} (${table.definition})`);
+          if (hasInstance) {
+            this.db
+              .prepare(
+                `INSERT INTO ${temporary} (instance_identity, ${table.columns})
+                 SELECT instance_identity, ${table.columns} FROM ${table.name}`,
+              )
+              .run();
+          } else {
+            this.db
+              .prepare(
+                `INSERT INTO ${temporary} (instance_identity, ${table.columns})
+                 SELECT ?, ${table.columns} FROM ${table.name}`,
+              )
+              .run(this.instanceIdentity);
+          }
+          this.db.exec(`DROP TABLE ${table.name}`);
+          this.db.exec(`ALTER TABLE ${temporary} RENAME TO ${table.name}`);
+        }
+        for (const index of table.indexes) this.db.exec(index);
+      }
+      this.db.exec("COMMIT");
+    } catch (error) {
+      try {
+        this.db.exec("ROLLBACK");
+      } catch {
+        /* preserve the migration error */
+      }
+      throw error;
+    }
   }
 
   // ---- Users ----
@@ -613,6 +714,30 @@ export class AuthStore {
     }
   }
 
+  /** Like logAudit, but required for lifecycle events that must not report success without a row. */
+  logAuditRequired(
+    action: string,
+    targetEmail: string | null,
+    actorEmail: string | null,
+    details?: string,
+  ): void {
+    if (!this.available) {
+      throw new Error("auth store is not available");
+    }
+    try {
+      this.db
+        .prepare(`
+        INSERT INTO auth_audit_log (action, target_email, actor_email, details, created_at)
+        VALUES (?, ?, ?, ?, datetime('now'))
+      `)
+        .run(action, targetEmail, actorEmail, details ?? null);
+    } catch (e) {
+      throw new Error(
+        `failed to write audit log (${action}): ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+  }
+
   getAuditLog(limit: number = 50): AuditLogEntry[] {
     if (!this.available) return [];
     try {
@@ -730,8 +855,10 @@ export class AuthStore {
     if (!this.available) return null;
     try {
       const rows = this.db
-        .prepare("SELECT * FROM telegram_user_links WHERE telegram_user_id = ?")
-        .all(telegramUserId);
+        .prepare(
+          "SELECT * FROM telegram_user_links WHERE instance_identity = ? AND telegram_user_id = ?",
+        )
+        .all(this.instanceIdentity, telegramUserId);
       return rows.length > 0 ? this.toTelegramLink(rows[0]) : null;
     } catch {
       return null;
@@ -743,9 +870,10 @@ export class AuthStore {
     try {
       return this.db
         .prepare(
-          "SELECT * FROM telegram_user_links WHERE revoked_at IS NULL ORDER BY bound_at DESC",
+          `SELECT * FROM telegram_user_links
+           WHERE instance_identity = ? AND revoked_at IS NULL ORDER BY bound_at DESC`,
         )
-        .all()
+        .all(this.instanceIdentity)
         .map((row: Record<string, unknown>) => this.toTelegramLink(row));
     } catch {
       return [];
@@ -758,9 +886,9 @@ export class AuthStore {
       this.db
         .prepare(`
         INSERT INTO telegram_user_links (
-          telegram_user_id, email, telegram_username, bound_at, bound_by, last_seen_at, revoked_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(telegram_user_id) DO UPDATE SET
+          instance_identity, telegram_user_id, email, telegram_username, bound_at, bound_by, last_seen_at, revoked_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(instance_identity, telegram_user_id) DO UPDATE SET
           email = excluded.email,
           telegram_username = excluded.telegram_username,
           bound_at = excluded.bound_at,
@@ -769,6 +897,7 @@ export class AuthStore {
           revoked_at = excluded.revoked_at
       `)
         .run(
+          this.instanceIdentity,
           link.telegramUserId,
           link.email,
           link.telegramUsername,
@@ -789,9 +918,9 @@ export class AuthStore {
       this.db
         .prepare(
           `UPDATE telegram_user_links SET last_seen_at = ?
-           WHERE telegram_user_id = ? AND revoked_at IS NULL`,
+           WHERE instance_identity = ? AND telegram_user_id = ? AND revoked_at IS NULL`,
         )
-        .run(seenAt, telegramUserId);
+        .run(seenAt, this.instanceIdentity, telegramUserId);
     } catch {
       /* ignore */
     }
@@ -803,12 +932,32 @@ export class AuthStore {
       const result = this.db
         .prepare(
           `UPDATE telegram_user_links SET revoked_at = ?
-           WHERE telegram_user_id = ? AND revoked_at IS NULL`,
+           WHERE instance_identity = ? AND telegram_user_id = ? AND revoked_at IS NULL`,
         )
-        .run(revokedAt, telegramUserId);
+        .run(revokedAt, this.instanceIdentity, telegramUserId);
       return (result.changes ?? 0) > 0;
     } catch {
       return false;
+    }
+  }
+
+  /**
+   * Revoke active user links for this instance only.
+   */
+  revokeAllActiveTelegramUserLinks(revokedAt: string): number {
+    if (!this.available) {
+      throw new Error("auth store is not available");
+    }
+    try {
+      const result = this.db
+        .prepare(
+          `UPDATE telegram_user_links SET revoked_at = ?
+           WHERE instance_identity = ? AND revoked_at IS NULL`,
+        )
+        .run(revokedAt, this.instanceIdentity);
+      return result.changes ?? 0;
+    } catch (e) {
+      throw new Error("failed to revoke Telegram user links", { cause: e });
     }
   }
 
@@ -891,8 +1040,10 @@ export class AuthStore {
     if (!this.available) return null;
     try {
       const rows = this.db
-        .prepare("SELECT * FROM telegram_chat_links WHERE telegram_chat_id = ?")
-        .all(telegramChatId);
+        .prepare(
+          "SELECT * FROM telegram_chat_links WHERE instance_identity = ? AND telegram_chat_id = ?",
+        )
+        .all(this.instanceIdentity, telegramChatId);
       return rows.length > 0 ? this.toTelegramChatLink(rows[0]) : null;
     } catch {
       return null;
@@ -904,9 +1055,10 @@ export class AuthStore {
     try {
       return this.db
         .prepare(
-          "SELECT * FROM telegram_chat_links WHERE revoked_at IS NULL ORDER BY bound_at DESC",
+          `SELECT * FROM telegram_chat_links
+           WHERE instance_identity = ? AND revoked_at IS NULL ORDER BY bound_at DESC`,
         )
-        .all()
+        .all(this.instanceIdentity)
         .map((row: Record<string, unknown>) => this.toTelegramChatLink(row));
     } catch {
       return [];
@@ -919,10 +1071,10 @@ export class AuthStore {
       this.db
         .prepare(`
         INSERT INTO telegram_chat_links (
-          telegram_chat_id, chat_type, title, bound_at, bound_by, revoked_at,
+          instance_identity, telegram_chat_id, chat_type, title, bound_at, bound_by, revoked_at,
           notifications_enabled
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(telegram_chat_id) DO UPDATE SET
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(instance_identity, telegram_chat_id) DO UPDATE SET
           chat_type = excluded.chat_type,
           title = excluded.title,
           bound_at = excluded.bound_at,
@@ -931,6 +1083,7 @@ export class AuthStore {
           notifications_enabled = excluded.notifications_enabled
       `)
         .run(
+          this.instanceIdentity,
           link.telegramChatId,
           link.chatType,
           link.title,
@@ -966,12 +1119,64 @@ export class AuthStore {
       const result = this.db
         .prepare(
           `UPDATE telegram_chat_links SET revoked_at = ?
-           WHERE telegram_chat_id = ? AND revoked_at IS NULL`,
+           WHERE instance_identity = ? AND telegram_chat_id = ? AND revoked_at IS NULL`,
         )
-        .run(revokedAt, telegramChatId);
+        .run(revokedAt, this.instanceIdentity, telegramChatId);
       return (result.changes ?? 0) > 0;
     } catch {
       return false;
+    }
+  }
+
+  /** Revoke active chat links for this instance only. */
+  revokeAllActiveTelegramChatLinks(revokedAt: string): number {
+    if (!this.available) {
+      throw new Error("auth store is not available");
+    }
+    try {
+      const result = this.db
+        .prepare(
+          `UPDATE telegram_chat_links SET revoked_at = ?
+           WHERE instance_identity = ? AND revoked_at IS NULL`,
+        )
+        .run(revokedAt, this.instanceIdentity);
+      return result.changes ?? 0;
+    } catch (e) {
+      throw new Error("failed to revoke Telegram chat links", { cause: e });
+    }
+  }
+
+  deleteTelegramUserInvitesForInstance(instanceIdentity: string): number {
+    if (!this.available) {
+      throw new Error("auth store is not available");
+    }
+    if (instanceIdentity !== this.instanceIdentity) {
+      throw new Error("refusing to delete Telegram invites for another instance");
+    }
+    try {
+      const result = this.db
+        .prepare(`DELETE FROM telegram_link_invites WHERE instance_identity = ?`)
+        .run(instanceIdentity);
+      return result.changes ?? 0;
+    } catch (e) {
+      throw new Error("failed to delete Telegram user invites", { cause: e });
+    }
+  }
+
+  deleteTelegramChatBindInvitesForInstance(instanceIdentity: string): number {
+    if (!this.available) {
+      throw new Error("auth store is not available");
+    }
+    if (instanceIdentity !== this.instanceIdentity) {
+      throw new Error("refusing to delete Telegram chat invites for another instance");
+    }
+    try {
+      const result = this.db
+        .prepare(`DELETE FROM telegram_chat_bind_invites WHERE instance_identity = ?`)
+        .run(instanceIdentity);
+      return result.changes ?? 0;
+    } catch (e) {
+      throw new Error("failed to delete Telegram chat bind invites", { cause: e });
     }
   }
 
@@ -1138,6 +1343,7 @@ export class AuthStore {
 
   private toTelegramLink(row: any): TelegramUserLink {
     return {
+      instanceIdentity: row.instance_identity,
       telegramUserId: Number(row.telegram_user_id),
       email: row.email,
       telegramUsername: row.telegram_username ?? null,
@@ -1166,6 +1372,7 @@ export class AuthStore {
     const raw = row.notifications_enabled;
     const notificationsEnabled = raw === undefined || raw === null ? true : Number(raw) !== 0;
     return {
+      instanceIdentity: row.instance_identity,
       telegramChatId: Number(row.telegram_chat_id),
       chatType: row.chat_type,
       title: row.title ?? null,

@@ -6,6 +6,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { AuthStore } from "../../core/auth-store.js";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -53,10 +54,13 @@ let tmpRoot: string;
 /** Scripted Bot API: routed per method, capturing URL/method/body. Values may
  * be literal results or functions of the request body. */
 function fakeApi(handlers: Record<string, unknown> = {}) {
+  const revokedTokens = new Set<string>();
   const calls: { url: string; method: string; body: Record<string, unknown> }[] = [];
   const fetcher = (async (input: unknown, init?: RequestInit) => {
     const url = String(input);
     const method = url.split("/").pop() ?? "";
+    const tokenMatch = url.match(/\/bot([^/]+)\//);
+    const callToken = tokenMatch?.[1] ?? "";
     let body: Record<string, unknown> = {};
     try {
       body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
@@ -64,6 +68,14 @@ function fakeApi(handlers: Record<string, unknown> = {}) {
       /* empty body */
     }
     calls.push({ url, method, body });
+
+    if (method === "getMe" && revokedTokens.has(callToken)) {
+      return new Response(
+        JSON.stringify({ ok: false, error_code: 401, description: "Unauthorized" }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
     const scripted = handlers[method];
     const result =
       scripted === undefined
@@ -71,6 +83,11 @@ function fakeApi(handlers: Record<string, unknown> = {}) {
         : typeof scripted === "function"
           ? scripted(body)
           : scripted;
+
+    if (method === "logOut" && result !== undefined && result !== false) {
+      revokedTokens.add(callToken);
+    }
+
     const text =
       result === undefined
         ? JSON.stringify({ ok: false, error_code: 404, description: `no fake for ${method}` })
@@ -1277,6 +1294,39 @@ function sleepTick(ms: number): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Review round 4: polling restarts after a failed disconnect
+// ---------------------------------------------------------------------------
+
+describe("polling restarts after a failed BYO disconnect (review round 4)", () => {
+  it("isPolling() is true after a BYO revoke that fails at Telegram", async () => {
+    // logOut throws a network error → disconnect fails, but credential stays;
+    // polling must restart so the bot keeps delivering messages.
+    const { provider } = makeProvider({
+      getMe: repoBot(),
+      getWebhookInfo: () => ({ url: "" }),
+      deleteWebhook: () => true,
+      getUpdates: () => [],
+      logOut: () => {
+        throw new TelegramNetworkError("timeout");
+      },
+    });
+    await provider.connectByBotToken(TOKEN);
+    await provider.setTransport({ mode: "polling" });
+    expect(provider.isPolling()).toBe(true);
+
+    const auth = new AuthStore(tmpRoot);
+    let threw = false;
+    try {
+      await provider.disconnect({ authStore: auth, actorEmail: "a@b.com", instanceId: "i1" });
+    } catch {
+      threw = true;
+    }
+    expect(threw).toBe(true);
+    expect(provider.isPolling()).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Review round 3: default-profile preservation, store shape validation,
 // redeem leniency, redactor scope, deterministic receivedAt
 // ---------------------------------------------------------------------------
@@ -1367,7 +1417,7 @@ describe("connection-record shape validation (review round 3)", () => {
       }
       expect(thrown).toBeInstanceOf(TelegramStoreCorruptError);
       expect(thrown?.message).toContain(telegramConnectionPath(tmpRoot));
-      expect(thrown?.message).toMatch(/Recover by disconnecting|reconnecting/);
+      expect(thrown?.message).toMatch(/Reconnect after recovering/);
     }
   });
 
@@ -1376,18 +1426,29 @@ describe("connection-record shape validation (review round 3)", () => {
     expect(new TelegramCredentialStore(tmpRoot).load()).not.toBeNull();
   });
 
-  it("a corrupt record does not block reconnecting or disconnecting", async () => {
+  it("a corrupt record can be replaced by connect but disconnect fails closed", async () => {
     mkdirSync(join(tmpRoot, ".repoos"), { recursive: true });
     writeFileSync(telegramConnectionPath(tmpRoot), '{"version":1,"bot":', "utf8");
-    const { provider } = makeProvider({ getMe: repoBot(), deleteWebhook: () => true });
+    const { provider } = makeProvider({
+      getMe: repoBot(),
+      deleteWebhook: () => true,
+      getWebhookInfo: () => ({ url: "" }),
+    });
     // status() reports the corruption loudly...
     expect(provider.status().lastError).toMatch(/unreadable/);
-    // ...but connect replaces the state and disconnect clears it.
+    // ...but connect replaces it. Disconnect cannot clear a still-valid BYO token.
     const bot = await provider.connectByBotToken(TOKEN);
     expect(bot.username).toBe("repoos_project_bot");
     expect(provider.status().connected).toBe(true);
-    await provider.disconnect();
-    expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(false);
+    const authStore = new AuthStore(tmpRoot);
+    await expect(
+      provider.disconnect({
+        actorEmail: "admin@test.com",
+        authStore,
+        instanceId: "test-instance",
+      }),
+    ).rejects.toMatchObject({ phase: "revoke", retryable: true });
+    expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(true);
   });
 });
 
