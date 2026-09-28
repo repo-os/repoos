@@ -5,12 +5,12 @@ type: chore
 status: inbox
 priority: p2
 area: docs-debt
-story: MacOS native app
+story: MacOS Native App
 assigned_to: unassigned
 created_by: docs-debt-agent
 branch: ""
 created_at: "2026-09-19T02:09:23.307Z"
-updated_at: "2026-09-21T20:11:34Z"
+updated_at: "2026-09-28T00:08:48Z"
 ---
 ## Docs Debt Findings
 
@@ -32,3 +32,4 @@ The Docs Debt Agent verified concrete claims in `AGENTS.md`/`docs/`/`user-docs/`
 ## Activity
 
 - 2026-09-21T20:11:34Z · story
+- 2026-09-28T00:08:48Z · story
