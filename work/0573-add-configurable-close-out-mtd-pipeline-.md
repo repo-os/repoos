@@ -2,7 +2,7 @@
 id: "0573"
 title: Add configurable close-out (MTD) pipeline timeout
 type: feature
-status: active
+status: review
 priority: p2
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/add-configurable-close-out-mtd-pipeline-
 model_override: opencode-go/mimo-v2.6-flash
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-28T08:39:50Z"
-updated_at: "2026-09-28T12:06:21Z"
+updated_at: "2026-09-28T13:49:03Z"
 ---
 ## Problem
 
@@ -89,3 +89,4 @@ Add a **configurable pipeline timeout** so a hung or pathologically slow close-o
 - 2026-09-28T12:06:18Z · review_model_override
 - 2026-09-28T12:06:18Z · status inbox→ready
 - 2026-09-28T12:06:21Z · status ready→active, branch
+- 2026-09-28T13:49:03Z · status active→review
