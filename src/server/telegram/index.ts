@@ -21,6 +21,8 @@ import {
   type TelegramAuthorizedHandler,
 } from "./intake.js";
 import { createTelegramCommandHandler } from "./commands.js";
+import { createTelegramAgentChatHandler, type TelegramAgentChatOptions } from "./agent-chat.js";
+import type { Logger } from "../../core/logger.js";
 import type { LiveIndex } from "../live-index.js";
 import type { AgentRunner } from "../agents.js";
 import type { ReviewManager } from "../review.js";
@@ -120,6 +122,40 @@ export interface TelegramCommandWiring {
   reviews: ReviewManager;
   /** Control-plane origin for web links; falls back to env/tunnel. */
   publicOrigin?: string;
+  /**
+   * Wire `/msg` (#0542): the task-agent follow-up and needs-input handler.
+   * Located here because autonomy lives with the commands' ONE authorized
+   * entry point — the command handler dispatches to it before the
+   * unknown-command fallback, so reads and agent chat can never end up on
+   * competing intake paths. Nothing to pass but the logger; every other
+   * collaborator is already in this wiring.
+   */
+  agentChat?: { logger: Logger };
+}
+
+/**
+ * Assemble the agent-chat handler's collaborators from the command wiring.
+ * `config` is the full `RepoOSConfig` object the server already holds —
+ * `bootstrapTelegramAtBoot` declares it as `RepoOSConfig` (not a Pick)
+ * precisely so this handler can see the agents list and task-file defaults
+ * its follow-up turn needs; every other consumer reads a narrow view of the
+ * same live object.
+ */
+function agentChatOptions(
+  config: RepoOSConfig,
+  index: LiveIndex,
+  runner: AgentRunner,
+  logger: Logger,
+): TelegramAgentChatOptions {
+  return {
+    config,
+    index,
+    runner,
+    logger,
+    reply: async (chatId, text) => {
+      await getTelegramProvider(config).sendMessage(chatId, text);
+    },
+  };
 }
 
 /**
@@ -128,17 +164,33 @@ export interface TelegramCommandWiring {
  * singleton receives the handler.
  *
  * When `commands` is supplied, the read-only command handler (#0540) is
- * registered as the intake `onAuthorized` callback. Omitted (as in adapter
- * tests) the intake path stays exactly as #0534 left it: authorize, audit,
- * drop — no replies.
+ * registered as THE intake `onAuthorized` callback, and `/msg` routes inside
+ * it to the task-agent follow-up handler (#0542) when `commands.agentChat` is
+ * wired — one intake consumer, never two. Omitted (as in adapter tests) the
+ * intake path stays exactly as #0534 left it: authorize, audit, drop — no
+ * replies.
  */
 export async function bootstrapTelegramAtBoot(
-  config: Pick<RepoOSConfig, "root" | "auth" | "telegram">,
+  /**
+   * The full config object the server holds (Settings saves mutate it in
+   * place). Declared `RepoOSConfig` rather than a Pick so the `/msg` handler
+   * (#0542) can see the agents list and task-file defaults; every consumer
+   * below reads a narrow view of the same live object.
+   */
+  config: RepoOSConfig,
   commands?: TelegramCommandWiring,
 ): Promise<{ resumed: boolean; detail?: string }> {
   const provider = getTelegramProvider(config);
   let onAuthorized: TelegramAuthorizedHandler | undefined;
   if (commands) {
+    // `/msg` shares the commands' single authorized-entry point: the command
+    // handler dispatches to it before the unknown-command fallback, so reads
+    // and agent chat compose instead of competing for onAuthorized.
+    const agentChat = commands.agentChat
+      ? createTelegramAgentChatHandler(
+          agentChatOptions(config, commands.index, commands.runner, commands.agentChat.logger),
+        )
+      : undefined;
     onAuthorized = createTelegramCommandHandler({
       config,
       repositoryName: projectDisplayName(config.root),
@@ -149,6 +201,7 @@ export async function bootstrapTelegramAtBoot(
       send: async (chatId, text, options) => {
         await provider.sendMessage(chatId, text, options);
       },
+      ...(agentChat ? { agentChat } : {}),
     });
   }
   provider.onUpdate(
