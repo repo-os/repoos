@@ -6,7 +6,13 @@
  * module knows nothing about HTTP status codes, only outcome kinds, so the
  * mapping to wire responses stays in one place.
  */
-import { decryptToken, encryptToken, randomLinkCode, randomRequestId } from "./crypto.js";
+import {
+  decryptToken,
+  encryptToken,
+  randomLinkCode,
+  randomRequestId,
+  telegramUsernameSuffixFromRequestId,
+} from "./crypto.js";
 import type { ManagerConfig } from "./config.js";
 import type { BeginRequestBody, ProvisioningState } from "./types.js";
 import type { ProvisioningStore, RequestRow } from "./store.js";
@@ -99,10 +105,11 @@ export class ProvisioningService {
     }
     const id = randomRequestId();
     const linkCode = randomLinkCode();
-    const suggestedUsername = `${sanitizeUsernamePart(body.botNameHint)}${id.slice(0, 6)}Bot`.slice(
-      0,
-      32,
-    );
+    const suggestedUsername =
+      `${sanitizeUsernamePart(body.botNameHint)}${telegramUsernameSuffixFromRequestId(id)}Bot`.slice(
+        0,
+        32,
+      );
     const displayName = body.botNameHint || "RepoOS Bot";
     const deepLink = `https://t.me/newbot/${this.managerBotUsername}/${suggestedUsername}?name=${encodeURIComponent(displayName)}`;
     const expiresAt = new Date(now.getTime() + REQUEST_TTL_MS);

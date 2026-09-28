@@ -151,7 +151,7 @@ export class InMemoryProvisioningStore implements ProvisioningStore {
 
   async completeRedeem(id: string, envelope: EncryptedEnvelope, graceUntil: Date): Promise<void> {
     const row = this.rows.get(id);
-    if (!row) return;
+    if (!row || row.state !== "redeeming") return;
     row.state = "redeemed";
     row.envelope = envelope;
     row.graceUntil = graceUntil.toISOString();
@@ -183,7 +183,7 @@ export class InMemoryProvisioningStore implements ProvisioningStore {
     graceUntil: Date,
   ): Promise<void> {
     const row = this.rows.get(id);
-    if (!row) return;
+    if (!row || row.state !== "redeemed") return;
     row.envelope = envelope;
     row.graceUntil = graceUntil.toISOString();
     this.touch(row);
