@@ -153,6 +153,7 @@ import {
 import { PreviewManager, probePreview } from "./preview.js";
 import { ReviewManager } from "./review.js";
 import { SkillSuggestionManager, markOriginTask } from "./skill-suggestions.js";
+import { DebugTldrManager } from "./debug-tldr.js";
 import { TestRunManager } from "./test-run.js";
 import { TaskCheckManager, type TaskCheckListener } from "./task-check.js";
 import { CTOManager } from "./cto.js";
@@ -1365,6 +1366,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Track launched coding agents so Pause can signal them and the UI can
   // reflect live running state without any polling.
   let reviews: ReviewManager; // Assigned after runner creation below
+  // Failure tl;dr (#0570): assigned after the index-dependent managers below;
+  // the runner's and reviewer's hooks late-bind to it like `reviews`.
+  let debugTldr: DebugTldrManager | null = null;
   const runner = new AgentRunner(
     config,
     (e) => {
@@ -1426,6 +1430,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     {
       logger,
       getTask: (taskId) => index.getTask(taskId),
+      onDiagnosableFailure: (taskId, reason) => debugTldr?.onFailureEscalated(taskId, reason),
       onHandoff: async (request) => {
         let reachedFinalization = false;
         try {
@@ -1587,7 +1592,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // implementation and writes a short report for whoever signs the task off.
   // Advisory only — it never moves a task to `done`.
   // Created after the runner so it can send auto-bounce messages to the engineer.
-  reviews = new ReviewManager(config, emitEvent, runner, index);
+  reviews = new ReviewManager(config, emitEvent, runner, index, (taskId, reason) =>
+    debugTldr?.onFailureEscalated(taskId, reason),
+  );
 
   // Checks → Test Suite tab (0296-adjacent): an
   // ephemeral, non-durable background run, one at a time — see test-run.ts.
@@ -1624,6 +1631,34 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       markOriginTask(config, origin, suggestionId);
       index.applyFileChange(origin.absPath);
     },
+    logger,
+  });
+
+  // Failure tl;dr (#0570): when a task escalates to a diagnosable failure
+  // (`review-failed`, `dev-error`, `check-failed-after-retries`,
+  // `watchdog-stuck`), the Debugger runs once as a one-shot and its single
+  // sentence is persisted as `debug_tldr`. Best-effort: the failure paths that
+  // trigger it never wait on it, and a failed run leaves behavior unchanged.
+  debugTldr = new DebugTldrManager({
+    config,
+    getTask: (taskId) => index.getTask(taskId),
+    getTranscript: (sessionId) => runner.output(sessionId)?.lines ?? [],
+    getTaskLogs: (taskId, limit) => logger.getTaskLogs(taskId, limit),
+    onTaskFileChanged: (absPath) => index.applyFileChange(absPath),
+    onDiagnosisStarted: (taskId) =>
+      emitEvent({
+        type: "task.debugTldr",
+        id: taskId,
+        state: "started",
+        at: new Date().toISOString(),
+      }),
+    onDiagnosisFinished: (taskId) =>
+      emitEvent({
+        type: "task.debugTldr",
+        id: taskId,
+        state: "finished",
+        at: new Date().toISOString(),
+      }),
     logger,
   });
 

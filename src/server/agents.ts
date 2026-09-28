@@ -3735,6 +3735,8 @@ export class AgentRunner {
     exitedCleanly: boolean,
     reviewKind?: "run" | "chat",
   ) => void;
+  /** See the constructor opts — the failure tl;dr trigger (#0570). */
+  private readonly onDiagnosableFailure?: (taskId: string, reason: string) => void;
 
   /**
    * Tasks a human deliberately paused (via POST /api/tasks/:id/pause, 0070).
@@ -3775,6 +3777,12 @@ export class AgentRunner {
         exitedCleanly: boolean,
         reviewKind?: "run" | "chat",
       ) => void;
+      /**
+       * A diagnosable failure just escalated the task to `needs_input` (#0570):
+       * the failure tl;dr pass schedules its one-shot Debugger diagnosis off
+       * this. Fire-and-forget; the escalation itself never waits on it.
+       */
+      onDiagnosableFailure?: (taskId: string, reason: string) => void;
       logger?: Logger;
     } & AgentRunnerOptions = {},
   ) {
@@ -3785,6 +3793,7 @@ export class AgentRunner {
     this.onHandoff = opts.onHandoff;
     this.onPreviewRequest = opts.onPreviewRequest;
     this.onReviewDone = opts.onReviewDone;
+    this.onDiagnosableFailure = opts.onDiagnosableFailure;
     this.getTask = opts.getTask;
     this.db = getRepoOSDb(config.root);
     this.cacheDir = join(config.root, config.cacheDir);
@@ -6416,7 +6425,14 @@ export class AgentRunner {
         // A repeat error before the human cleared the flag — still refresh
         // the detail so the banner shows the LATEST failure, not whichever
         // one happened to trip needsInput first.
-        if (current.needsInputReason === "dev-error") current.needsInputDetail = detail;
+        if (current.needsInputReason === "dev-error") {
+          current.needsInputDetail = detail;
+          writeFileSync(task.absPath, serializeTask(current));
+          // The latest failure may differ from the one the existing tl;dr
+          // describes — the pass dedupes on the (reason, detail) fingerprint.
+          this.onDiagnosableFailure?.(taskId, "dev-error");
+          return;
+        }
         writeFileSync(task.absPath, serializeTask(current));
         return;
       }
@@ -6425,6 +6441,7 @@ export class AgentRunner {
       current.needsInputDetail = detail;
       recordChange(current, `agent exited with an error${engine} · ${detail}`);
       writeFileSync(task.absPath, serializeTask(current));
+      this.onDiagnosableFailure?.(taskId, "dev-error");
     } catch (err) {
       console.error(
         `[repoos] failed to escalate failed exit for #${taskId}: ${(err as Error).message}`,
