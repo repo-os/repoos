@@ -13,6 +13,7 @@ import {
   ArrowDown,
   RotateCcw,
   ImagePlus,
+  Info,
   FileText,
   MessageSquare,
   Bot,
@@ -59,7 +60,7 @@ import ChatDiagnosticRow from "./ChatDiagnosticRow.vue";
 import ChatToolCallRow from "./ChatToolCallRow.vue";
 import { useChatScroll } from "../composables/useChatScroll";
 import { useCopyChatMessage } from "../composables/useCopyChatMessage";
-import { bubbleRole, stripAnsi, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
+import { bubbleRole, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyCheckoutDialog from "./DirtyCheckoutDialog.vue";
 import HotfixConfirmDialog from "./HotfixConfirmDialog.vue";
@@ -627,6 +628,51 @@ function onDrop(e: DragEvent): void {
   const files = e.dataTransfer?.files;
   if (files && files.length) ui.addScreenshots(Array.from(files));
 }
+
+// ---- screenshot format info popover (#0571) ----
+// The accepted-format/attachment help used to sit permanently under the
+// dropzone; it now opens on hover/focus of a small control beside the
+// Screenshots label. The pane is teleported to <body> (#0460's stage-pane is
+// the reference) because the drawer's stacking context would trap a fixed
+// child, and it is anchored under the control.
+const shotInfoEl = ref<HTMLButtonElement | null>(null);
+const shotHintOpen = ref(false);
+const shotHintStyle = ref<Record<string, string>>({});
+
+/** Position the pane just under the info control, clamped into the viewport. */
+function positionShotHint(): void {
+  const rect = shotInfoEl.value?.getBoundingClientRect();
+  if (!rect || typeof window === "undefined") return;
+  const maxW = Math.min(320, Math.max(200, window.innerWidth - 28));
+  const left = Math.min(Math.max(rect.left, 14), window.innerWidth - maxW - 14);
+  shotHintStyle.value = {
+    left: `${left}px`,
+    top: `${rect.bottom + 8}px`,
+    maxWidth: `${maxW}px`,
+  };
+}
+
+function showShotHint(): void {
+  shotHintOpen.value = true;
+  positionShotHint();
+}
+
+function hideShotHint(): void {
+  shotHintOpen.value = false;
+}
+
+/** Keep the pane glued to its control if the drawer scrolls or the window resizes. */
+function onShotHintViewportChange(): void {
+  if (shotHintOpen.value) positionShotHint();
+}
+onMounted(() => {
+  window.addEventListener("resize", onShotHintViewportChange);
+  window.addEventListener("scroll", onShotHintViewportChange, true);
+});
+onUnmounted(() => {
+  window.removeEventListener("resize", onShotHintViewportChange);
+  window.removeEventListener("scroll", onShotHintViewportChange, true);
+});
 
 async function setStatus(status: string): Promise<void> {
   if (!ui.active || ui.active.status === status) return;
@@ -2076,34 +2122,6 @@ watch(
 
 // ---- agent session tab ----
 
-// ANSI stripping is shared with the row grouping (#0506): `stripAnsi` lives in
-// `lib/chat-rows` so the row builder and the freeform stream below strip the
-// same way, from one copy of the pattern.
-
-// ---- freeform PM-agent live stream ----
-
-/** Plain display lines for the in-flight freeform run, fed by agent.output SSE. */
-const freeformLines = computed<{ s: "out" | "err"; d: string }[]>(() => {
-  const raw = freeformRunId.value ? (repo.outputs[freeformRunId.value] ?? []) : [];
-  return raw.map((e) => {
-    if ("type" in e) {
-      return {
-        s: "out",
-        d: stripAnsi(e.type === "text" ? e.text : ((e as { d?: string }).d ?? "")),
-      };
-    }
-    return { s: e.s === "err" ? "err" : "out", d: stripAnsi(e.d) };
-  });
-});
-
-const ffLogEl = ref<HTMLElement | null>(null);
-watch(freeformLines, () => {
-  nextTick(() => {
-    const el = ffLogEl.value;
-    if (el) el.scrollTop = el.scrollHeight;
-  });
-});
-
 /**
  * The rendered transcript for the open task. Legacy `{s,d}` lines render as
  * today (ANSI stripped); structured entries become text blocks, human turns,
@@ -2832,7 +2850,21 @@ watch(
         </div>
         <div class="drawer-body">
           <div class="field" style="margin-top: 4px">
-            <label>Screenshots</label>
+            <div class="shot-label-row">
+              <label>Screenshots</label>
+              <button
+                ref="shotInfoEl"
+                type="button"
+                class="field-info"
+                aria-label="Accepted screenshot formats"
+                @mouseenter="showShotHint"
+                @mouseleave="hideShotHint"
+                @focus="showShotHint"
+                @blur="hideShotHint"
+              >
+                <Info class="size-3.5" />
+              </button>
+            </div>
             <div
               class="shot-dropzone"
               :class="{ over: dragDepth > 0 }"
@@ -2873,10 +2905,18 @@ watch(
                 <span class="shot-name" :title="s.name">{{ s.name }}</span>
               </div>
             </div>
-            <p class="shot-hint" v-else>
-              PNG, JPEG, GIF, WebP, AVIF or BMP — attached to the new task when you create it.
-            </p>
           </div>
+          <!-- Format/attachment help (#0571) used to be a permanent line under
+               the dropzone. It now lives in a themed pane, teleported to <body>
+               (the drawer's stacking context would trap a fixed child) and
+               anchored under the info control beside the label. -->
+          <Teleport to="body">
+            <div v-if="shotHintOpen" class="field-info-pane" role="tooltip" :style="shotHintStyle">
+              <p>
+                PNG, JPEG, GIF, WebP, AVIF or BMP — attached to the new task when you create it.
+              </p>
+            </div>
+          </Teleport>
           <!-- #0555: story, shared by both modes so Freeform (the default)
                can't silently drop the tag. It sits with the other mode-
                independent field (Screenshots) rather than inside the Manual
@@ -2919,22 +2959,6 @@ watch(
               <div class="btn-row" style="margin-top: 18px">
                 <Button variant="default" @click="createAnotherTask">Create another task</Button>
                 <Button variant="outline" @click="doneFreeform">Done</Button>
-              </div>
-              <div v-if="freeformLines.length" class="ff-stream" style="margin-top: 16px">
-                <div class="ff-stream-head">
-                  <ActivityIndicator />
-                  PM agent
-                </div>
-                <div class="ff-stream-log" ref="ffLogEl">
-                  <div
-                    v-for="(line, i) in freeformLines"
-                    :key="i"
-                    class="ff-stream-line"
-                    :class="line.s === 'err' ? 'err' : ''"
-                  >
-                    {{ line.d }}
-                  </div>
-                </div>
               </div>
             </div>
             <template v-else>
@@ -3009,22 +3033,6 @@ watch(
                   <ActivityIndicator v-if="freeformRunning" />
                   {{ freeformRunning ? "Asking the PM agent…" : "Create task" }}
                 </Button>
-              </div>
-              <div v-if="freeformLines.length" class="ff-stream">
-                <div class="ff-stream-head">
-                  <ActivityIndicator />
-                  PM agent
-                </div>
-                <div class="ff-stream-log" ref="ffLogEl">
-                  <div
-                    v-for="(line, i) in freeformLines"
-                    :key="i"
-                    class="ff-stream-line"
-                    :class="line.s === 'err' ? 'err' : ''"
-                  >
-                    {{ line.d }}
-                  </div>
-                </div>
               </div>
             </template>
           </template>
