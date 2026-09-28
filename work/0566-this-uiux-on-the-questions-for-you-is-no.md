@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-28T05:08:16Z"
-review_passes: 1
 id: "0566"
 title: Fix Questions-for-You duplication and answer UX
 type: feature
-status: review
+status: active
 priority: p2
 area: ui
 assigned_to: ai
@@ -14,6 +12,9 @@ pm_model_override: opencode/muse-spark-1.3-contributor-free
 review_cli_override: github copilot
 review_model_override: copilot-auto-balance
 created_at: "2026-09-28T04:34:57Z"
+updated_at: "2026-09-28T05:08:16Z"
+review_rounds: 1
+review_passes: 1
 ---
 ## Problem
 
@@ -104,4 +105,4 @@ rm: cannot remove '/home/nick/.repoos-validate.CznTbm/repo/.repoos/repoos.db-shm
 - 2026-09-28T05:04:11Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) — …/dist/ui/assets/VoiceDictate-CEyIL7fp.css': Permission denied · next step: check the transcript for an unanswered permission/approval prompt — see docs/adr/0005-agents-use-repoos-apis-for-privileged-operations.md
 - 2026-09-28T05:04:12Z · status review→active
 - 2026-09-28T05:07:18Z · status active→review
-
+- 2026-09-28T05:08:16Z · status review→active
