@@ -2,7 +2,7 @@
 id: "0569"
 title: Make task title click-to-edit in place with autosave
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: ""
 pm_model_override: opencode/muse-spark-1.3-contributor-free
 created_at: "2026-09-28T05:28:58Z"
-updated_at: "2026-09-28T05:29:21Z"
+updated_at: "2026-09-28T05:29:56Z"
 ---
 ## Problem
 The task title is currently shown twice in the task view, which is redundant and visually noisy.
@@ -49,3 +49,4 @@ Rather than showing the task title twice, let's just keep the top one and if a u
 - 2026-09-28T05:29:02Z · screenshots
 - 2026-09-28T05:29:03Z · screenshots
 - 2026-09-28T05:29:21Z · status draft→inbox, title, area, body
+- 2026-09-28T05:29:56Z · status inbox→ready
