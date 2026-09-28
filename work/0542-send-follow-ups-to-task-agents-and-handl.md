@@ -10,8 +10,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 model_override: opencode-go/glm-5.3-flash
+review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-27T07:33:47Z"
-updated_at: "2026-09-28T10:30:27Z"
+updated_at: "2026-09-28T10:30:35Z"
 ---
 ## Problem
 
@@ -50,3 +51,4 @@ Task transitions driven from Telegram must record the real actor. Existing calle
 - 2026-09-27T15:52:49Z · body
 - 2026-09-28T01:19:04Z · status inbox→ready
 - 2026-09-28T10:30:27Z · model_override
+- 2026-09-28T10:30:35Z · review_model_override
