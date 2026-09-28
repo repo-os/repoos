@@ -12,9 +12,9 @@ branch: feat/add-telegram-settings-connection-status-
 cli_override: github copilot
 model_override: copilot-auto-balance
 review_cli_override: cursor
-review_model_override: default
+review_model_override: composer-2.5
 created_at: "2026-09-27T07:33:10Z"
-updated_at: "2026-09-28T05:09:46Z"
+updated_at: "2026-09-28T05:09:47Z"
 ---
 ## Problem
 
@@ -58,3 +58,4 @@ Use the shared dialog components (`ui/dialog/*`, body-teleported) and the global
 - 2026-09-28T05:09:39Z · cli_override, model_override
 - 2026-09-28T05:09:40Z · model_override
 - 2026-09-28T05:09:46Z · review_cli_override, review_model_override
+- 2026-09-28T05:09:47Z · review_model_override
