@@ -86,6 +86,16 @@ export interface TelegramCommandDeps {
   publicOrigin?: string;
   pageSize?: number;
   send: TelegramCommandSender;
+  /**
+   * The `/msg` disposition (#0542): the task-agent follow-up handler, wired
+   * by `bootstrapTelegramAtBoot` next to the read commands. Present or not,
+   * there is exactly ONE intake `onAuthorized` — this handler owns `/msg`
+   * and dispatches to it (through the same per-chat queue) instead of
+   * letting the agent chat compete for a second intake path. Unwired, `/msg`
+   * falls to the unknown-command help: the honest answer for a command this
+   * instance does not run.
+   */
+  agentChat?: TelegramAuthorizedHandler;
 }
 
 /**
@@ -272,14 +282,26 @@ function renderHelp(deps: TelegramCommandDeps, actor: TelegramActor): string {
   ];
 
   if (actor.role === "admin") {
-    lines.push(
-      "",
-      "Admin actions — start/pause agents, review, and settings — are not available from Telegram yet; use the web UI for now.",
-    );
+    if (deps.agentChat) {
+      lines.push(
+        "",
+        "Admin actions on tasks",
+        "/msg <task-id> <message> — send a follow-up to an active task's agent; when the agent is blocked waiting for your input, the message answers it",
+        "",
+        "Other admin actions — starting or pausing agents, reviews, and settings — use the web UI for now.",
+      );
+    } else {
+      lines.push(
+        "",
+        "Admin actions — start/pause agents, review, and settings — are not available from Telegram yet; use the web UI for now.",
+      );
+    }
   } else {
     lines.push(
       "",
-      "Your role is member, so the commands above are all that is available here. Creating tasks, starting or pausing agents, approving reviews, and changing settings are admin-only.",
+      deps.agentChat
+        ? "Your role is member, so the read-only commands above are all that is available here. Messaging a task's agent is an admin action, as is creating tasks, starting or pausing agents, approving reviews, and changing settings."
+        : "Your role is member, so the commands above are all that is available here. Creating tasks, starting or pausing agents, approving reviews, and changing settings are admin-only.",
     );
   }
 
@@ -338,6 +360,16 @@ export function createTelegramCommandHandler(deps: TelegramCommandDeps): Telegra
     if (!message || message.command === null) return;
     const command = message.command;
     if (SILENT_FALLTHROUGH_COMMANDS.has(command)) return;
+    // #0542: the agent-chat handler owns `/msg`. It runs through the same
+    // per-chat queue as the read commands so its replies never interleave
+    // with a read reply in a busy group. Unwired, no early return: `/msg`
+    // falls through to the unknown-command branch and its honest help reply.
+    if (command === "msg" && deps.agentChat) {
+      await enqueue(message.chatId, async () => {
+        await deps.agentChat?.(update, actor);
+      });
+      return;
+    }
     if (!(TELEGRAM_READ_COMMANDS as readonly string[]).includes(command)) {
       // Unknown command: point at what exists rather than staying silent.
       const text = renderHelp(deps, actor);

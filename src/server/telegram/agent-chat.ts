@@ -91,15 +91,19 @@ export function parseTaskAgentCommand(text: string | null): ParsedTaskAgentComma
 
 /**
  * Canonical task id for a chat-typed reference: task ids are 4-digit zero-
- * padded strings (`"0542"`), so `#0542`, `0542` and `542` all resolve the same
- * way and `#542` never names a different task. Non-numeric input is refused —
- * it can only be a nonexistent task, and the reply must not differ.
+ * padded strings (`"0542"`), so `#0542`, `0542` and `542` resolve the same
+ * way and `#542` never names a different task. Longer digit strings are
+ * looked up EXACTLY — `00042` is refused rather than reinterpreted as `0042`
+ * (over-padded refs are not a valid id form and padding cannot guess intent),
+ * and a repo whose ids outgrow four digits still resolves exactly. Anything
+ * non-numeric is null: it can only be a nonexistent task, and the reply must
+ * not differ.
  */
 export function canonicalTaskRef(raw: string | null): string | null {
   if (!raw) return null;
   const digits = raw.replace(/^#/, "").trim();
   if (!/^\d{1,9}$/.test(digits)) return null;
-  return digits.padStart(4, "0");
+  return digits.length <= 4 ? digits.padStart(4, "0") : digits;
 }
 
 const USAGE =
@@ -149,9 +153,13 @@ function auditAgentChat(
 }
 
 /**
- * Build the agent-chat handler for the intake's `onAuthorized` hook. Other
- * commands return without acting: `/status`, `/tasks`, `/agents`, `/help` are
- * the read-only surface's (#0540), and plain text belongs to #0541.
+ * Build the `/msg` handler. Registered in `bootstrapTelegramAtBoot` next to
+ * the read commands (#0540) as `TelegramCommandDeps.agentChat`; the command
+ * handler dispatches `/msg` here through its per-chat queue. It is also a
+ * valid direct intake `onAuthorized` consumer (tests use it that way): other
+ * commands and non-command updates return without acting — `/status`,
+ * `/tasks`, `/agents`, `/help` are the read-only surface's (#0540), plain
+ * text belongs to #0541, and edited messages must never re-trigger a send.
  */
 export function createTelegramAgentChatHandler(
   options: TelegramAgentChatOptions,

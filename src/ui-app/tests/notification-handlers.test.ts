@@ -122,10 +122,12 @@ function captureProvider(captured: Captured[]): NotificationProvider {
 
 const idleRunner = (): {
   isRunning: () => boolean;
+  isQueued: () => boolean;
   isHandoffInFlight: () => boolean;
   isPaused: () => boolean;
 } => ({
   isRunning: () => false,
+  isQueued: () => false,
   isHandoffInFlight: () => false,
   isPaused: () => false,
 });
@@ -177,6 +179,7 @@ describe("agent-completed notification (#0542)", () => {
     withTask({ needsInput: true });
     withTask({ needsMerge: true });
     withTask({}, { ...idleRunner(), isRunning: () => true });
+    withTask({}, { ...idleRunner(), isQueued: () => true });
     withTask({}, { ...idleRunner(), isPaused: () => true });
     withTask({}, { ...idleRunner(), isHandoffInFlight: () => true });
     await settle();

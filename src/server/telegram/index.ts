@@ -18,6 +18,7 @@ import { TelegramCredentialStore } from "./store.js";
 import {
   createTelegramIntakeHandler,
   telegramIntakeOptionsFromConfig,
+  type TelegramAuthorizedHandler,
 } from "./intake.js";
 import { createTelegramCommandHandler } from "./commands.js";
 import { createTelegramAgentChatHandler, type TelegramAgentChatOptions } from "./agent-chat.js";
@@ -134,30 +135,29 @@ export interface TelegramCommandWiring {
 
 /**
  * Assemble the agent-chat handler's collaborators from the command wiring.
- * `config` is the full `RepoOSConfig` object the server already holds — the
- * Pick in this function's signature only narrows the declared view, and the
- * handler needs the agents list and task-file defaults for its follow-up turn.
+ * `config` is the full `RepoOSConfig` object the server already holds —
+ * `bootstrapTelegramAtBoot` declares it as `RepoOSConfig` (not a Pick)
+ * precisely so this handler can see the agents list and task-file defaults
+ * its follow-up turn needs; every other consumer reads a narrow view of the
+ * same live object.
  */
 function agentChatOptions(
   config: RepoOSConfig,
-  commands: TelegramCommandWiring & { agentChat: { logger: Logger } },
+  index: LiveIndex,
+  runner: AgentRunner,
+  logger: Logger,
 ): TelegramAgentChatOptions {
   return {
     config,
-    index: commands.index,
-    runner: commands.runner,
-    logger: commands.agentChat.logger,
+    index,
+    runner,
+    logger,
     reply: async (chatId, text) => {
       await getTelegramProvider(config).sendMessage(chatId, text);
     },
   };
 }
 
-/**
- * Register the authorization intake handler and resume polling when configured
- * (#0534). Call after `resetTelegramProviders()` on reload so the new provider
- * singleton receives the handler.
- *
 /**
  * Register the authorization intake handler and resume polling when configured
  * (#0534). Call after `resetTelegramProviders()` on reload so the new provider
@@ -186,8 +186,10 @@ export async function bootstrapTelegramAtBoot(
     // `/msg` shares the commands' single authorized-entry point: the command
     // handler dispatches to it before the unknown-command fallback, so reads
     // and agent chat compose instead of competing for onAuthorized.
-    const agentChat: TelegramAuthorizedHandler | undefined = commands.agentChat
-      ? createTelegramAgentChatHandler(agentChatOptions(config, commands))
+    const agentChat = commands.agentChat
+      ? createTelegramAgentChatHandler(
+          agentChatOptions(config, commands.index, commands.runner, commands.agentChat.logger),
+        )
       : undefined;
     onAuthorized = createTelegramCommandHandler({
       config,
