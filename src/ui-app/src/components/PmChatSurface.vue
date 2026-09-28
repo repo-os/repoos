@@ -23,7 +23,7 @@
 import { computed, nextTick, ref, watch } from "vue";
 import { ImagePlus, X } from "lucide-vue-next";
 import type { AgentOutputEntry } from "../types";
-import { renderMarkdown } from "../lib/markdown";
+import { renderChatMarkdown } from "../lib/markdown";
 import { fmtTime } from "../lib/time";
 import { bubbleRole, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
 import { useChatScroll } from "../composables/useChatScroll";
@@ -186,7 +186,7 @@ defineExpose({ focusDraft });
               <div
                 v-if="bubbleRole(row) === 'assistant'"
                 class="pm-markdown"
-                v-html="renderMarkdown(row.text)"
+                v-html="renderChatMarkdown(row.text)"
               ></div>
               <span v-else>{{ row.text }}</span>
               <!-- Every row carries its last-updated time (#0506), system rows

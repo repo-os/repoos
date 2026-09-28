@@ -10361,6 +10361,21 @@
   gap: 14px;
   overscroll-behavior: contain;
 }
+/* Rows scroll inside the log; they must not shrink when the column is full.
+   Flex items with overflow:hidden (tool/diagnostic cards) otherwise get
+   min-height:auto → 0 and collapse to a ~2px border line (#0563). */
+.ai-chat-log > * {
+  flex-shrink: 0;
+}
+/* Thematic breaks belong in docs, not agent chat bubbles (#0563). Scoped to
+   bubble markdown — not the whole log (CTO reports use renderMarkdown) and not
+   the Model Playground preview. */
+.pm-markdown hr,
+.guide-markdown hr,
+.debugger-markdown hr,
+.td-markdown hr {
+  display: none;
+}
 
 /* Pulsing "working" indicator. Mounted only while the model is active; an idle
  * model renders nothing at all (no "agent stopped" status line). */

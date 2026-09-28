@@ -28,7 +28,7 @@
  * agent produced the entries.
  */
 
-import { clampPlainDisplayText, isDisplayEmptyText } from "./markdown.js";
+import { clampPlainDisplayText, isDisplayEmptyText, isThematicBreakOnlyText } from "./markdown.js";
 import type { AgentOutputEntry } from "../types";
 
 /** Strip ANSI escape sequences so no `[0m`-style codes ever reach the DOM. */
@@ -153,6 +153,16 @@ function displayPlainText(text: string): string {
 }
 
 /** Join consecutive assistant text parts without amplifying surrounding newlines. */
+/** Drop a row that is only thematic-break noise from the assistant stream (#0563). */
+function shouldDropThematicSeparatorRow(entry: AgentOutputEntry, rawText: string): boolean {
+  if (!isThematicBreakOnlyText(rawText)) return false;
+  if ("type" in entry) {
+    if (entry.type === "human") return false;
+    return entry.type === "text" || entry.type === "sys";
+  }
+  return entry.s === "out" || entry.s === "sys";
+}
+
 function mergeAssistantText(existing: string, addition: string): string {
   const left = existing.replace(/\s+$/u, "");
   const right = addition.replace(/^\s+/u, "");
@@ -220,10 +230,11 @@ export function toDisplayRows(entries: readonly AgentOutputEntry[]): DisplayRow[
     flushRun();
 
     const rawText = rowText(entry);
+    const isAssistantText = "type" in entry && entry.type === "text";
     // Nothing to show — no row, rather than an empty bubble (incl. whitespace-only).
     if (isDisplayEmptyText(rawText)) continue;
-
-    const isAssistantText = "type" in entry && entry.type === "text";
+    // Assistant stream only — humans may send a literal `---` on purpose.
+    if (shouldDropThematicSeparatorRow(entry, rawText)) continue;
     const text = isAssistantText ? rawText : displayPlainText(rawText);
 
     const last = rows[rows.length - 1];

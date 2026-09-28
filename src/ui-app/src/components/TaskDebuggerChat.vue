@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { api, JSON_OPTS } from "../api";
-import { renderMarkdown } from "../lib/markdown";
+import { renderChatMarkdown } from "../lib/markdown";
 import { fmtTime } from "../lib/time";
 import { useConfigStore } from "../stores/config";
 import { useRepoStore } from "../stores/repo";
@@ -246,7 +246,7 @@ watch(
                 <div
                   v-if="bubbleRole(row) === 'assistant'"
                   class="td-markdown"
-                  v-html="renderMarkdown(row.text)"
+                  v-html="renderChatMarkdown(row.text)"
                 ></div>
                 <span v-else>{{ row.text }}</span>
                 <!-- Every row carries its last-updated time (#0506), system rows
