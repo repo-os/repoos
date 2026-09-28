@@ -57,6 +57,17 @@ function hostRow(raw: unknown): RemoteValidationHost | null {
   return out;
 }
 
+/** Parse a plain-string entry: `"nick@bee"` → `{ host: "bee", user: "nick" }`, `"bee"` → `{ host: "bee" }`. */
+function parseHostString(s: string): RemoteValidationHost {
+  const at = s.indexOf("@");
+  if (at > 0) {
+    const user = s.slice(0, at).trim();
+    const host = s.slice(at + 1).trim();
+    return host ? { host, user } : { host: s };
+  }
+  return { host: s };
+}
+
 /**
  * Parse `tailscaleHost` + `tailscaleHosts` from the flat TOML map into the
  * normalised pool. Returns undefined when no host is configured at all (the
@@ -77,10 +88,10 @@ export function parseTailscaleHosts(
   else if (typeof raw === "string" && raw.trim()) entries.push(...raw.split(","));
 
   const pool: RemoteValidationHost[] = [];
-  if (shorthand) pool.push({ host: shorthand });
+  if (shorthand) pool.push(parseHostString(shorthand));
   for (const entry of entries) {
-    const host = typeof entry === "string" ? entry.trim() : "";
-    const row = host ? { host } : hostRow(entry);
+    const s = typeof entry === "string" ? entry.trim() : "";
+    const row = s ? parseHostString(s) : hostRow(entry);
     if (!row) continue;
     const existing = pool.find((h) => h.host === row.host);
     if (existing) {

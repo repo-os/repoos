@@ -136,6 +136,35 @@ describe("host pool config parsing", () => {
       { host: "mac1" },
     ]);
   });
+
+  it("parses user@host strings in a plain list into { host, user }", () => {
+    const root = tmpRoot();
+    writeFileSync(
+      join(root, "repoos.toml"),
+      'remoteValidation.tailscaleHosts = ["peckjachowski@mini", "nick@bee", "thinkpad"]\n' +
+        'remoteValidation.tailscaleUser = "root"\n',
+    );
+    const cfg = loadConfig(root);
+    expect(resolveRemoteHosts(cfg.remoteValidation)).toEqual([
+      { host: "mini", user: "peckjachowski" },
+      { host: "bee", user: "nick" },
+      { host: "thinkpad" },
+    ]);
+    // user@host overrides the global tailscaleUser
+    expect(remoteHostUser(cfg.remoteValidation!, { host: "mini", user: "peckjachowski" })).toBe(
+      "peckjachowski",
+    );
+    // bare host falls back to tailscaleUser
+    expect(remoteHostUser(cfg.remoteValidation!, { host: "thinkpad" })).toBe("root");
+  });
+
+  it("parses user@host in the single-host shorthand tailscaleHost", () => {
+    const root = tmpRoot();
+    writeFileSync(join(root, "repoos.toml"), 'remoteValidation.tailscaleHost = "nick@bee"\n');
+    expect(resolveRemoteHosts(loadConfig(root).remoteValidation)).toEqual([
+      { host: "bee", user: "nick" },
+    ]);
+  });
 });
 
 // ── capability derivation from the check plan ────────────────────────────────

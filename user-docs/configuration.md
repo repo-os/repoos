@@ -838,7 +838,15 @@ There are two authoring forms — pick **one** per config:
 
 **Plain list** (also editable in Settings → Remote validation → "Host pool").
 Saving in Settings updates the running dispatcher immediately without a
-restart:
+restart. Each entry is a hostname or a `user@host` string:
+
+```toml
+[remoteValidation]
+provider = "tailscale"
+tailscaleHosts = ["nick@bee", "nick@thinkpad", "peckjachowski@mini"]
+```
+
+Without a `user@` prefix the global `tailscaleUser` (default `"root"`) is used:
 
 ```toml
 [remoteValidation]

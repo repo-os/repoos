@@ -48,7 +48,7 @@ auth.emailProvider.fromAddress = "otp@send.repoos.org"
 # # clientSecret likewise goes in .env as REPOOS_GOOGLE_CLIENT_SECRET, not here.
 whisper.provider = "none"
 
-remoteValidation.enabled = false
+remoteValidation.enabled = true
 remoteValidation.fallbackToLocal = true
 
 worktreeWarnThreshold = 20
@@ -70,19 +70,21 @@ remoteValidation.provider = "tailscale"
 remoteValidation.tailscaleHost = "mini"
 remoteValidation.tailscaleUser = "peckjachowski"
 remoteValidation.containerImage = "repoos-ci"
-# Host pool — uncomment and replace tailscaleHost above to use multiple machines.
+# Host pool — uncomment and replace tailscaleHost/tailscaleUser above to use multiple machines.
 # Jobs dispatch to whichever host is idle; they queue only when every host is busy.
-# Plain list (also editable in Settings → Remote validation → "Host pool"):
-#   remoteValidation.tailscaleHosts = ["bee", "thinkpad", "mini"]
-# Rich rows (per-host SSH user, OS, concurrency — TOML only, not editable in Settings):
+# Plain list with per-host user (user@host syntax, also editable in Settings → Remote validation):
+#   remoteValidation.tailscaleHosts = ["peckjachowski@mini", "nick@bee", "nick@thinkpad"]
+# Rich rows (per-host OS, labels, concurrency — TOML only, not editable in Settings):
 #   [[remoteValidation.tailscaleHosts]]
 #   host = "mini"
+#   user = "peckjachowski"
 #   [[remoteValidation.tailscaleHosts]]
 #   host = "bee"
+#   user = "nick"
 #   os = "linux"
-#   maxConcurrent = 2
 #   [[remoteValidation.tailscaleHosts]]
 #   host = "thinkpad"
+#   user = "nick"
 #   os = "linux"
 dev.inspector.enabled = true
 dev.inspector.editorCommand = "zed {file}:{line}"
@@ -519,4 +521,5 @@ name = "data analyst"
 cli = "opencode"
 model = "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731"
 enabled = true
+
 
