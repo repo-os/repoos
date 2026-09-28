@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/add-a-notification-provider-registry-and
 created_at: "2026-09-27T07:33:00Z"
-updated_at: "2026-09-28T01:21:29Z"
+updated_at: "2026-09-28T01:29:06Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -53,3 +53,23 @@ Two properties of the existing code must survive the refactor:
 - 2026-09-28T01:11:51Z · status ready→active, branch
 - 2026-09-28T01:18:16Z · status active→review
 - 2026-09-28T01:21:29Z · status review→active
+- 2026-09-28T01:29:06Z · handoff failed · remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:64:30
+     62|     const match = environmentDoc.match(/## `\.env\.example`\n[\s\S]*?`…
+     63|     expect(match, "embedded .env.example block not found").not.toBeNul…
+     64|     expect(match![1].trim()).toBe(envExample.trim());
+       |                              ^
+     65|   });
+     66|
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ Test Files  1 failed | 291 passed (292)
+      Tests  1 failed | 3394 passed | 12 skipped (3407)
+   Start at  01:26:51
+   Duration  132.01s (transform 3.96s, setup 1.25s, import 17.66s, tests 103.75s, environment 127.65s)
+ RUN  v4.1.10 /repo/src/ui-app
+ ✓ tests/boot-timing.test.ts (2 tests) 268ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  01:29:03
+   Duration  1.51s (transform 655ms, setup 9ms, import 759ms, tests 268ms, environment 409ms)
+error: script "test" exited with code 1
+[validate] gate exit 1 — fix it in the feature branch and re-run the gate
