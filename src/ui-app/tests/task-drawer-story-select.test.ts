@@ -205,8 +205,8 @@ describe("task drawer story select (#0525)", () => {
     const repo = useRepoStore();
     const patchSpy = vi.spyOn(repo, "patchTask").mockResolvedValue(task);
 
-    const titleInput = wrapper.find("#et-title");
-    await titleInput.setValue("Edited title");
+    const areaInput = wrapper.find("#et-area");
+    await areaInput.setValue("Edited area");
     expect(wrapper.find(".save-bar").exists()).toBe(true);
 
     await wrapper.find('button[aria-label^="Open story"]').trigger("click");

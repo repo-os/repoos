@@ -1156,7 +1156,11 @@ function openAssignedStory(): void {
 
 const transitioned = computed(() => !!(ui.active && repo.transitionState?.id === ui.active.id));
 
-/** Title and branch are frozen once a task leaves the planning stages. */
+/**
+ * Planning has ended, so the branch is frozen. The title is deliberately NOT
+ * gated by this (#0569): renaming a task never rewrites its branch, and the
+ * title stays editable in place for the whole life of the task.
+ */
 const locked = computed(() => {
   const s = ui.active?.status;
   return s === "active" || s === "review" || s === "done";
@@ -1249,6 +1253,81 @@ async function saveDraft(): Promise<void> {
 function cancelDraft(): void {
   if (ui.active) initDraft(ui.active);
 }
+
+// ---- in-place title editing (#0569) ----
+//
+// The header title is the single title surface. Clicking it swaps the text for
+// an input in the same slot. Enter or blur commits and autosaves through the
+// same `patchTask` path the details form uses; Esc cancels the edit. The title
+// stays editable after planning (unlike the branch): renaming a task never
+// touches its branch, so this only derives a new branch while `locked` is false
+// (same rule as saveDraft).
+
+/** True while the header title is showing its input. */
+const titleEditing = ref(false);
+/** Working copy of the title while editing; never bound to `ui.active`. */
+const titleDraft = ref("");
+const titleInputEl = ref<HTMLInputElement | null>(null);
+
+function beginTitleEdit(): void {
+  if (!ui.active) return;
+  titleDraft.value = ui.active.title;
+  titleEditing.value = true;
+  void nextTick(() => {
+    const el = titleInputEl.value;
+    if (!el) return;
+    el.focus();
+    el.select();
+  });
+}
+
+function cancelTitleEdit(): void {
+  titleEditing.value = false;
+  titleDraft.value = "";
+}
+
+async function commitTitleEdit(): Promise<void> {
+  // Guard against the blur that follows the unmount in cancel/commit.
+  if (!titleEditing.value) return;
+  const next = titleDraft.value.trim();
+  titleEditing.value = false;
+  titleDraft.value = "";
+  if (!ui.active || !next || next === ui.active.title) return;
+  await saveTitle(next);
+}
+
+/** Autosaves an in-place title edit; mirrors saveDraft's branch rule. */
+async function saveTitle(title: string): Promise<void> {
+  const t = ui.active;
+  if (!t) return;
+  const patch: Record<string, string> = { title };
+  if (!locked.value) {
+    const prevDerived = `feat/${slugify(t.title)}`;
+    const hadDerived = t.branch === "" || t.branch === prevDerived;
+    if (hadDerived) patch.branch = `feat/${slugify(title)}`;
+  }
+  ui.saving = true;
+  try {
+    await repo.patchTask(t.id, patch);
+    // Keep the details draft in step so a later Save of another field neither
+    // re-sends the title nor derives the branch from a stale value.
+    draft.title = title;
+    original.title = title;
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    ui.saving = false;
+  }
+}
+
+// Opening a different task (or closing the drawer) abandons any in-flight edit.
+watch(
+  () => ui.active?.id,
+  () => {
+    titleEditing.value = false;
+    titleDraft.value = "";
+  },
+);
 
 // ---- read-only worktree preview ----
 
@@ -3155,7 +3234,31 @@ watch(
                 {{ ui.active.priority }}
               </span>
             </div>
-            <DialogTitle>{{ ui.active.title }}</DialogTitle>
+            <!-- #0569: the header title IS the title editor. Click it to edit
+                 in place; Enter/blur commits and autosaves, Esc cancels. -->
+            <DialogTitle class="task-title" :aria-label="ui.active.title">
+              <input
+                v-if="titleEditing"
+                ref="titleInputEl"
+                v-model="titleDraft"
+                class="task-title-input"
+                aria-label="Task title"
+                @keydown.enter.prevent="commitTitleEdit"
+                @keydown.esc.stop.prevent="cancelTitleEdit"
+                @blur="commitTitleEdit"
+              />
+              <span
+                v-else
+                class="task-title-text"
+                role="button"
+                tabindex="0"
+                title="Click to edit title"
+                @click="beginTitleEdit"
+                @keydown.enter.prevent="beginTitleEdit"
+                @keydown.space.prevent="beginTitleEdit"
+                >{{ ui.active.title }}</span
+              >
+            </DialogTitle>
             <DialogDescription class="sr-only">{{
               ui.active.body || "Task details"
             }}</DialogDescription>
@@ -3710,20 +3813,7 @@ watch(
           class="drawer-body"
           :class="{ 'transition-success': transitioned }"
         >
-          <template v-if="!locked">
-            <div class="field">
-              <label for="et-title">Title</label>
-              <Input id="et-title" v-model="draft.title" placeholder="Task title" />
-            </div>
-          </template>
-          <template v-else>
-            <div class="field">
-              <label>Title</label>
-              <div class="ro-value">{{ ui.active.title }}</div>
-            </div>
-          </template>
-
-          <div class="field-row" style="margin-top: 16px">
+          <div class="field-row">
             <div class="field">
               <label>Type</label>
               <Select v-model="draft.type">
