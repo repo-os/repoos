@@ -426,6 +426,30 @@ export function worktreePathForBranch(root: string, branch: string): string | nu
 }
 
 /**
+ * The main checkout's absolute path for the repo containing `root`: `root`
+ * itself when it IS the main checkout (or git can't tell us), the main
+ * worktree's path when `root` is a linked worktree. `git worktree list`
+ * always prints the main worktree (or the bare repo) as its first entry.
+ *
+ * Used by the check-run history (#0564 review): a standalone `repoos check`
+ * inside a task worktree must write its row to the MAIN checkout's
+ * `.repoos/checks.db` — the one store the running server reads — not a
+ * per-worktree file nobody lists. Fail-soft: any git trouble yields `root`.
+ */
+export function mainCheckoutRoot(root: string): string {
+  const out = git(root, ["worktree", "list", "--porcelain"]);
+  if (!out) return root;
+  const first = out.split("\n\n")[0] ?? "";
+  for (const line of first.split("\n")) {
+    if (line.startsWith("worktree ")) {
+      const path = line.slice("worktree ".length).trim();
+      if (path) return path;
+    }
+  }
+  return root;
+}
+
+/**
  * Copy `taskRelPath` from `root` into an already-resolved `worktreePath` and
  * commit it there, ONLY when the worktree is missing it. This heals a
  * specific, narrow race: `ensureWorktree` cuts (or reuses) a worktree from

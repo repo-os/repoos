@@ -8,6 +8,7 @@
  */
 
 import { CLOSEOUT_CHECK_ARGS, planJobCapabilities, resolveCheckPlan } from "../core/check-plan.js";
+import type { CheckRunPhase } from "../core/check-store.js";
 import type { RepoOSConfig } from "../core/types.js";
 import { runGit, uncommittedWorkFiles, workFileFilter } from "../core/git.js";
 import type { RemoteValidator } from "./remote-validation.js";
@@ -137,6 +138,8 @@ export async function runRemotePreReviewGate(params: {
   remoteValidator: RemoteValidator;
   worktreePath: string;
   taskId: string;
+  /** Which gate is calling — recorded in the check-run history (#0564). */
+  phase?: CheckRunPhase;
   onChunk?: (chunk: string) => void;
   /**
    * Epoch ms after which the caller has given up (#0521) — passed through so a
@@ -165,6 +168,7 @@ export async function runRemotePreReviewGate(params: {
     taskId: params.taskId,
     worktreePath: params.worktreePath,
     candidateSha,
+    phase: params.phase ?? "pre-review",
     onChunk: params.onChunk,
     ...(capabilities.length ? { capabilities } : {}),
     ...(params.deadlineAt !== undefined ? { deadlineAt: params.deadlineAt } : {}),
