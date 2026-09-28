@@ -139,8 +139,9 @@ GET  {base}/v1/provisioning/requests/{id}
 
 POST {base}/v1/provisioning/requests/{id}/redeem
     headers: Authorization: Bearer <REPOOS_TELEGRAM_PROVISIONING_KEY>
-    → 200 { token }        # single-use credential pickup, idempotent on retry
-       409 already-redeemed (no second delivery)
+    → 200 { token }        # single-use credential pickup; replays within grace
+       200 {}              # after grace or replay exhaustion — client maps to
+                             ManagedRedemptionFollowUpError (not 409)
 
 POST {base}/v1/provisioning/requests/{id}/rotate-token
     headers: Authorization: Bearer <REPOOS_TELEGRAM_PROVISIONING_KEY>

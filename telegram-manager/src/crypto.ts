@@ -62,6 +62,15 @@ export function randomRequestId(): string {
   return randomBytes(32).toString("base64url");
 }
 
+/** Telegram usernames allow [A-Za-z0-9_]; request ids are base64url and may
+ * contain `-`. Take the first six allowed characters for deep-link correlation. */
+export function telegramUsernameSuffixFromRequestId(requestId: string): string {
+  const suffix = requestId.replace(/[^A-Za-z0-9_]/g, "").slice(0, 6);
+  if (suffix.length >= 4) return suffix;
+  const expanded = requestId.replace(/[^A-Za-z0-9_]/g, "");
+  return (expanded + "0000").slice(0, 6);
+}
+
 /** A short, human-typeable one-time code the admin sends to the manager bot
  * (`/link <code>`) to bind their Telegram identity to a pending request
  * before tapping the create-bot deep link. 8 unambiguous base32 characters

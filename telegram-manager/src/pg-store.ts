@@ -232,7 +232,7 @@ export class PgProvisioningStore implements ProvisioningStore {
          SET state = 'redeemed', redeemed_at = now(), grace_until = $2,
              token_envelope_iv = $3, token_envelope_tag = $4, token_envelope_ciphertext = $5,
              redeeming_since = NULL, updated_at = now()
-       WHERE id = $1`,
+       WHERE id = $1 AND state = 'redeeming'`,
       [id, graceUntil, envelope.iv, envelope.tag, envelope.ciphertext],
     );
   }
@@ -272,7 +272,7 @@ export class PgProvisioningStore implements ProvisioningStore {
       `UPDATE provisioning_requests
          SET grace_until = $2, token_envelope_iv = $3, token_envelope_tag = $4,
              token_envelope_ciphertext = $5, updated_at = now()
-       WHERE id = $1`,
+       WHERE id = $1 AND state = 'redeemed'`,
       [id, graceUntil, envelope.iv, envelope.tag, envelope.ciphertext],
     );
   }

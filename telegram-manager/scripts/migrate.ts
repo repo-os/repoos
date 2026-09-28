@@ -14,6 +14,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Pool } from "pg";
+import { splitRollback } from "./migration-split.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const migrationsDir = join(here, "..", "migrations");
@@ -31,19 +32,6 @@ function migrationFiles(): string[] {
   return readdirSync(migrationsDir)
     .filter((f) => f.endsWith(".sql"))
     .sort();
-}
-
-function splitRollback(sql: string): { forward: string; rollback: string } {
-  const marker = "-- rollback";
-  const idx = sql.indexOf(marker);
-  if (idx === -1) return { forward: sql, rollback: "" };
-  const forward = sql.slice(0, idx);
-  const rollback = sql
-    .slice(idx + marker.length)
-    .split("\n")
-    .map((line) => line.replace(/^--\s?/, ""))
-    .join("\n");
-  return { forward, rollback };
 }
 
 async function up(pool: Pool): Promise<void> {
