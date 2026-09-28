@@ -5972,6 +5972,52 @@
   align-items: center;
 }
 
+/* The Debugger's failure tl;dr (#0570): the one-sentence "what happened /
+   what to do next" summary, above the drawer tabs. Deliberately static —
+   the pulsing dot is the waiting banner's job — but with a slightly stronger
+   amber surface than the banner so the sentence reads as the summary, not
+   another log line. */
+.debug-tldr {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border-radius: 11px;
+  border: 1px solid color-mix(in srgb, var(--amber) 45%, transparent);
+  background: linear-gradient(rgba(255, 180, 84, 0.14), rgba(255, 180, 84, 0.07));
+}
+.debug-tldr-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--amber);
+  flex: none;
+  margin-top: 1px;
+}
+.debug-tldr-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--amber);
+  font-family: "JetBrains Mono", monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.debug-tldr-sentence {
+  font-size: 12.5px;
+  color: var(--txt);
+  margin-top: 3px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.debug-tldr-diagnosing {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--txt-dim);
+  margin-top: 3px;
+}
+
 /* live run stats: time / tokens / cost (0080) */
 .agent-stats {
   display: flex;
