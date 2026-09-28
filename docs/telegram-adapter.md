@@ -164,6 +164,14 @@ rather than issuing a second token. Tests exercise the whole contract
 against a fetch-stubbed fake service (`fakeProvisioningService` in
 `src/ui-app/tests/telegram-routes.test.ts`).
 
+The #0559 service itself — the hosted implementation of this contract, its
+correlation design (a Telegram deep link alone proves nothing; binding
+happens via an explicit `/link <code>` message before bot creation), state
+machine, credential handling, and deployment procedure — lives in
+`telegram-manager/` as an isolated deployment boundary (own `package.json`,
+never a dependency of the core package), documented in full in
+`docs/telegram-manager-service.md`.
+
 ## Update intake invariant
 
 The intake handler (`src/server/telegram/intake.ts`) is registered at boot via
