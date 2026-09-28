@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/revoke-the-project-bot-and-unbind-chats-
 created_at: "2026-09-27T07:33:20Z"
-updated_at: "2026-09-28T06:40:52Z"
+updated_at: "2026-09-28T06:47:39Z"
 ---
 ## Problem
 
