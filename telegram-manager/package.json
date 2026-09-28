@@ -1,0 +1,24 @@
+{
+  "name": "repoos-telegram-manager",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The official RepoOS Telegram manager-bot provisioning service (#0559). A standalone Neon Function + Neon Postgres deployment, decoupled from the RepoOS app itself — own install, own lockfile, own deploy pipeline. Never imported by @repo-os/repoos.",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test": "vitest run",
+    "migrate": "bun scripts/migrate.ts up",
+    "migrate:down": "bun scripts/migrate.ts down"
+  },
+  "dependencies": {
+    "hono": "^4.6.0",
+    "pg": "^8.13.0"
+  },
+  "devDependencies": {
+    "@neon/config": "^1.8.2",
+    "@types/node": "^26.2.0",
+    "@types/pg": "^8.11.0",
+    "typescript": "^5.5.0",
+    "vitest": "^3.0.0"
+  }
+}

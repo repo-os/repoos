@@ -1,0 +1,270 @@
+/**
+ * Orchestration: ties the state machine (`store.ts`), the manager bot's
+ * Telegram calls (`telegram-client.ts`), and rate limiting/audit together
+ * into the three operations `docs/telegram-manager-service.md` and
+ * `docs/telegram-adapter.md` document. `http.ts` is the only caller — this
+ * module knows nothing about HTTP status codes, only outcome kinds, so the
+ * mapping to wire responses stays in one place.
+ */
+import { decryptToken, encryptToken, randomLinkCode, randomRequestId } from "./crypto.js";
+import type { ManagerConfig } from "./config.js";
+import type { BeginRequestBody, ProvisioningState } from "./types.js";
+import type { ProvisioningStore, RequestRow } from "./store.js";
+import { botFieldsFromEvent, type TelegramManagerClient } from "./telegram-client.js";
+
+export const REQUEST_TTL_MS = 15 * 60 * 1000; // 15 minutes to create the bot
+export const LINK_CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes to send /link
+export const REDEEM_GRACE_MS = 5 * 60 * 1000; // replay window after a successful redeem
+
+const BEGIN_WINDOW_MS = 60_000;
+const BEGIN_MAX_PER_INSTANCE = 5;
+const LINK_WINDOW_MS = 60_000;
+const LINK_MAX_PER_TELEGRAM_USER = 10;
+
+export class ServiceError extends Error {
+  constructor(
+    message: string,
+    public readonly kind:
+      | "invalid"
+      | "not_found"
+      | "conflict"
+      | "gone"
+      | "rate_limited"
+      | "upstream",
+  ) {
+    super(message);
+    this.name = "ServiceError";
+  }
+}
+
+export interface BeginResult {
+  id: string;
+  deepLink: string;
+  expiresAt: string;
+  linkCode: string;
+}
+
+export interface StatusResult {
+  id: string;
+  state: ProvisioningState;
+  deepLink: string;
+  expiresAt: string;
+  bot?: RequestRow["bot"];
+  error?: string;
+}
+
+export interface RedeemResult {
+  token?: string;
+  bot?: RequestRow["bot"];
+}
+
+function sanitizeUsernamePart(hint: string | undefined): string {
+  const cleaned = (hint ?? "").replace(/[^A-Za-z0-9]/g, "");
+  return cleaned.slice(0, 20) || "RepoOS";
+}
+
+export class ProvisioningService {
+  constructor(
+    private readonly store: ProvisioningStore,
+    private readonly telegram: TelegramManagerClient,
+    private readonly config: ManagerConfig,
+    private readonly managerBotUsername: string,
+    private readonly now: () => Date = () => new Date(),
+  ) {}
+
+  async begin(instanceId: string, body: BeginRequestBody): Promise<BeginResult> {
+    const now = this.now();
+    const allowed = await this.store.rateLimit(
+      "begin",
+      instanceId,
+      BEGIN_WINDOW_MS,
+      BEGIN_MAX_PER_INSTANCE,
+      now,
+    );
+    if (!allowed) {
+      await this.store.audit("rate_limited_begin", instanceId, null, now);
+      throw new ServiceError(
+        "too many provisioning requests from this instance — try again shortly",
+        "rate_limited",
+      );
+    }
+    if (!body.repository || !body.requestedBy) {
+      throw new ServiceError("repository and requestedBy are required", "invalid");
+    }
+    const id = randomRequestId();
+    const linkCode = randomLinkCode();
+    const suggestedUsername = `${sanitizeUsernamePart(body.botNameHint)}${id.slice(0, 6)}Bot`.slice(
+      0,
+      32,
+    );
+    const displayName = body.botNameHint || "RepoOS Bot";
+    const deepLink = `https://t.me/newbot/${this.managerBotUsername}/${suggestedUsername}?name=${encodeURIComponent(displayName)}`;
+    const expiresAt = new Date(now.getTime() + REQUEST_TTL_MS);
+    const linkCodeExpiresAt = new Date(now.getTime() + LINK_CODE_TTL_MS);
+    await this.store.createRequest({
+      id,
+      repository: body.repository,
+      instanceId,
+      adminEmail: body.requestedBy,
+      botNameHint: body.botNameHint ?? null,
+      deepLink,
+      linkCode,
+      linkCodeExpiresAt,
+      expiresAt,
+    });
+    await this.store.audit(
+      "begin",
+      `repository=${body.repository} instance=${instanceId}`,
+      id,
+      now,
+    );
+    return { id, deepLink, expiresAt: expiresAt.toISOString(), linkCode };
+  }
+
+  async getStatus(id: string): Promise<StatusResult> {
+    const row = await this.store.getById(id, this.now());
+    if (!row) throw new ServiceError("no such provisioning request", "not_found");
+    return {
+      id: row.id,
+      state: row.state === "redeeming" ? "ready" : row.state, // "redeeming" is an internal-only state
+      deepLink: row.deepLink,
+      expiresAt: row.expiresAt,
+      ...(row.bot ? { bot: row.bot } : {}),
+      ...(row.error ? { error: row.error } : {}),
+    };
+  }
+
+  /** Handles a manager-bot webhook update once past secret-token
+   * verification and dedup. Never throws for a malformed/irrelevant update —
+   * it is normalized away and silently ignored, same invariant as the local
+   * adapter (#0531). */
+  async handleUpdate(raw: Record<string, unknown>): Promise<void> {
+    const now = this.now();
+    const link = this.telegram.normalizeLinkCommand(raw);
+    if (link) {
+      const allowed = await this.store.rateLimit(
+        "link",
+        String(link.telegramUserId),
+        LINK_WINDOW_MS,
+        LINK_MAX_PER_TELEGRAM_USER,
+        now,
+      );
+      if (!allowed) return; // silent — no information disclosed to a guesser
+      const outcome = await this.store.bindLinkCode(
+        link.code,
+        link.telegramUserId,
+        link.telegramUsername,
+        now,
+      );
+      if (outcome.kind === "bound") {
+        await this.store.audit(
+          "link_bound",
+          `telegram_user=${link.telegramUserId}`,
+          outcome.requestId,
+          now,
+        );
+        await this.safeReply(
+          link.chatId,
+          "Linked. Now tap the bot-creation link from RepoOS to finish connecting.",
+        );
+      } else {
+        await this.store.audit(
+          "link_rejected",
+          `telegram_user=${link.telegramUserId} reason=${outcome.kind}`,
+          null,
+          now,
+        );
+        await this.safeReply(
+          link.chatId,
+          "That code is invalid or expired. Start again from RepoOS.",
+        );
+      }
+      return;
+    }
+    const event = this.telegram.normalizeManagedBotEvent(raw);
+    if (event) {
+      const outcome = await this.store.recordBotCreated(
+        event.creatorTelegramUserId,
+        botFieldsFromEvent(event),
+        now,
+      );
+      if (outcome.kind === "matched") {
+        await this.store.audit("bot_created", `bot_id=${event.botId}`, outcome.requestId, now);
+      } else {
+        // Not necessarily an attack — could be a stray/duplicate delivery,
+        // or a creation that never sent /link first. Either way nothing is
+        // disclosed and no credential is fetched.
+        await this.store.audit(
+          "bot_created_unmatched",
+          `telegram_user=${event.creatorTelegramUserId} bot_id=${event.botId}`,
+          null,
+          now,
+        );
+      }
+      return;
+    }
+    // Anything else (other update kinds) is out of scope for this service —
+    // it handles provisioning and management only.
+  }
+
+  private async safeReply(chatId: number, text: string): Promise<void> {
+    try {
+      await this.telegram.sendMessage(chatId, text);
+    } catch {
+      // A reply is a courtesy, not part of the state machine; a Telegram
+      // send failure must never fail the update handler.
+    }
+  }
+
+  async redeem(id: string): Promise<RedeemResult> {
+    const now = this.now();
+    const begun = await this.store.beginRedeem(id, now);
+    if (begun.kind === "not_found")
+      throw new ServiceError("no such provisioning request", "not_found");
+    if (begun.kind === "expired")
+      throw new ServiceError("the provisioning request expired", "gone");
+    if (begun.kind === "wrong_state") {
+      if (begun.row.state === "redeemed") {
+        const envelope = await this.store.takeRedeemedEnvelope(id, now);
+        if (envelope) {
+          const token = decryptToken(envelope, this.config.encryptionKey);
+          return { token, ...(begun.row.bot ? { bot: begun.row.bot } : {}) };
+        }
+        // Grace window elapsed or already replayed past it: the honest
+        // answer is "no credential" (200, no token) — the client contract
+        // (#0531) reads that as ManagedRedemptionFollowUpError.
+        return {};
+      }
+      if (begun.row.state === "failed") {
+        throw new ServiceError(begun.row.error ?? "the provisioning request failed", "gone");
+      }
+      throw new ServiceError(
+        `the provisioning request is not ready yet (state: ${begun.row.state})`,
+        "conflict",
+      );
+    }
+    // begun.kind === "owned": we hold the only "redeeming" lock for this id.
+    const bot = begun.row.bot;
+    if (!bot) {
+      await this.store.failRedeem(id);
+      throw new ServiceError("the provisioning request has no bot recorded", "conflict");
+    }
+    try {
+      const token = await this.telegram.getManagedBotToken(bot.id);
+      const envelope = encryptToken(token, this.config.encryptionKey);
+      const graceUntil = new Date(now.getTime() + REDEEM_GRACE_MS);
+      await this.store.completeRedeem(id, envelope, graceUntil);
+      await this.store.audit("redeemed", `bot_id=${bot.id}`, id, now);
+      return { token, bot };
+    } catch (e) {
+      await this.store.failRedeem(id);
+      const detail = e instanceof Error ? e.message : String(e);
+      await this.store.audit("redeem_failed", detail, id, now);
+      throw new ServiceError(`could not retrieve the project bot token: ${detail}`, "upstream");
+    }
+  }
+
+  async sweep(): Promise<number> {
+    return this.store.sweep(this.now());
+  }
+}
