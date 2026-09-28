@@ -18,6 +18,11 @@ call site — the point of the task was that there be none.
 | `telegram/provider.ts` | `LocalTelegramProvider implements TelegramProvider`: connect/disconnect (BYO + managed redemption), profile configuration, send, intake, transport switching. |
 | `telegram/provisioning.ts` | The `ProvisioningClient` boundary and its honest "not configured" client; #0559 supplies the hosted side. |
 | `telegram/index.ts` | Per-repository provider singleton (`getTelegramProvider(config)`); `setTelegramProvider`/`resetTelegramProviders` for tests. |
+| `telegram/actor.ts` | `TelegramActor` (email/role/telegramUserId) for downstream mutations — never the "human" fallback. |
+| `telegram/intake.ts` | Per-message authorization, rate limits, audit (#0534), group addressing (#0535); dispatches authorized updates to `onAuthorized` handlers (agent chat registers here, #0541). |
+| `telegram/rate-limits.ts` | In-memory per-user/per-chat limiters: general intake plus the tighter agent pair, consumed before any LLM run (#0541). |
+| `telegram/guide-chat.ts` | Telegram → repository-guide agent turns (#0541): per-user conversation state on the shared AgentRunner, expiry, reply delivery. |
+| `telegram/group-addressing.ts` | Group trigger rules: commands, replies to the bot, @mentions (#0535). |
 
 ## Security invariants (test-pinned)
 
@@ -173,6 +178,39 @@ per-process — not coordinated across multiple RepoOS processes), and audit
 logging for privileged intake. Unbound or unauthorized senders are dropped
 silently with no outbound Telegram traffic (ADR 0007). A handler failure is
 logged redacted, never allowed to kill the transport loop.
+
+## Agent chat: the repository guide over Telegram (#0541)
+
+`telegram/guide-chat.ts` is the first consumer of the intake's `onAuthorized`
+sink, registered at boot by `server.ts` via `bootstrapTelegramAtBoot(config, {
+onAuthorized })`. A linked sender's plain, non-command message — in a private
+chat or a group whose chat is bound — becomes one turn of the existing
+repository guide conversation (Ross) through the shared `AgentRunner`
+chat API (`startChat`/`send`, mirroring `routes/info.ts`), NOT a separate
+agent runtime. Deliberate model:
+
+- **State is per Telegram user** — session key `tg-guide:<telegramUserId>` —
+  never per chat. Two members of one group never share a transcript; each
+  user carries their context across every chat they use. Replies go back to
+  the chat the question came from, threaded to the message in groups.
+- **Expiry**: a conversation idle longer than 24h is cleared before the next
+  turn, resuming visibly fresh ("Started a fresh conversation — …"). `/new`
+  clears on demand. Other commands are later tasks' surface.
+- **Rate limits**: the intake consumes the tighter per-user/per-chat agent
+  pair BEFORE the handler can start any run; a refusal arrives as
+  `{ agentLimited: true }` and is answered with a clear message. The limit is
+  therefore always enforced before any LLM call, per user and per chat.
+- **Turn lifecycle**: turn-starting decisions are awaited (keeps intake fast),
+  but waiting for the LLM turn and delivering its text is detached — a
+  multi-minute generation must never hold the polling loop's per-update
+  pointer. Delivery polls `isRunning`/`queued` (same observation the Agent
+  tab has), capped at 10 minutes per turn; `edited_message` never re-fires a
+  paid run. If the server reloads mid-turn, the turn survives
+  (durable registry), but that turn's Telegram reply can be lost.
+- **Usage recording**: turns flow through `AgentRunner.recordSessionToDb`
+  with `classifySessionType("Ross") → "guide"` and
+  `resolveSessionTaskId("tg-guide:…") → null` — repository-level spend on the
+  board's guide role row, never attributed to a phantom `tg-guide:` task.
 
 ## The `[telegram] enabled` gate
 

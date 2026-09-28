@@ -33,9 +33,22 @@ import { isTelegramUpdateAddressedToBot } from "./group-addressing.js";
 import { tryAcquireTelegramAgentLimits, tryAcquireTelegramGeneralLimits } from "./rate-limits.js";
 import type { TelegramUpdate, TelegramUpdateHandler } from "./types.js";
 
+export interface TelegramAuthorizedMeta {
+  /**
+   * True when the per-user/per-chat AGENT limiter refused this message
+   * (#0541). By the time the agent limiter runs the sender is already
+   * resolved, so a refusal is not an ADR-0007 silent no-op: the registered
+   * handler receives the verdict so it can answer the authorized user with a
+   * clear "rate limited" message instead of dropping the turn quietly. No
+   * audit row for `agentMessage` is recorded and no run is started.
+   */
+  agentLimited?: boolean;
+}
+
 export type TelegramAuthorizedHandler = (
   update: TelegramUpdate,
   actor: TelegramActor,
+  meta?: TelegramAuthorizedMeta,
 ) => void | Promise<void>;
 
 export interface TelegramIntakeOptions {
@@ -47,7 +60,7 @@ export interface TelegramIntakeOptions {
   now?: () => Date;
   /** Connected bot identity for group trigger rules. */
   resolveBot?: () => { id: number; username: string | null } | null;
-  /** Later tasks: commands, agent runner, etc. */
+  /** Agent chat and later command surfaces receive authorized updates. */
   onAuthorized?: TelegramAuthorizedHandler;
 }
 
@@ -255,9 +268,18 @@ export function createTelegramIntakeHandler(options: TelegramIntakeOptions): Tel
       telegramUserId,
     };
 
+    let agentLimited: TelegramAuthorizedMeta | undefined;
     if (isAgentBoundMessage(update)) {
-      if (!tryAcquireTelegramAgentLimits(telegramUserId, chatId)) return;
-      auditAgentMessage(store, actor, update);
+      // The expensive LLM path is gated here, BEFORE the handler can spawn
+      // any run (#0541). A refusal for an authorized sender is no longer a
+      // silent no-op: the verdict reaches the handler ({agentLimited: true})
+      // so it can reply plainly, while no `agentMessage` audit row claims a
+      // turn happened.
+      if (!tryAcquireTelegramAgentLimits(telegramUserId, chatId)) {
+        agentLimited = { agentLimited: true };
+      } else {
+        auditAgentMessage(store, actor, update);
+      }
     } else if (update.callbackQuery) {
       store.logAudit(
         TELEGRAM_AUDIT.commandInvoked,
@@ -274,7 +296,7 @@ export function createTelegramIntakeHandler(options: TelegramIntakeOptions): Tel
     }
 
     if (options.onAuthorized) {
-      await options.onAuthorized(update, actor);
+      await options.onAuthorized(update, actor, agentLimited);
     }
   };
 }

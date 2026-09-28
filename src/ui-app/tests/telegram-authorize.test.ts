@@ -212,6 +212,24 @@ describe("createTelegramIntakeHandler", () => {
     ).toBe(10);
   });
 
+  it("hands the agent-limit refusal to onAuthorized instead of dropping it (#0541)", async () => {
+    bindUser("carol@test.com", 3);
+    bindChat(99);
+    const onAuthorized = vi.fn();
+    const handler = createTelegramIntakeHandler(intakeOptions({ onAuthorized }));
+    for (let i = 0; i < 10; i++) {
+      await handler(messageUpdate({ senderId: 3, chatId: 99, text: `question ${i}` }));
+    }
+    expect(onAuthorized).toHaveBeenCalledTimes(10);
+    await handler(messageUpdate({ senderId: 3, chatId: 99, text: "one more" }));
+    expect(onAuthorized).toHaveBeenCalledTimes(11);
+    // The refusal arrives explicitly: the chat handler answers the user with
+    // a clear rate-limit message and never starts a run. Earlier messages in
+    // the window got no meta (undefined), so the flag is per-message truth.
+    expect(onAuthorized.mock.calls[10][2]).toEqual({ agentLimited: true });
+    expect(onAuthorized.mock.calls[0][2]).toBeUndefined();
+  });
+
   it("does nothing when the integration master switch is off", async () => {
     bindUser("dave@test.com", 4);
     const onAuthorized = vi.fn();

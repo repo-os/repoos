@@ -13,6 +13,7 @@
  */
 import type { RepoOSConfig } from "../../core/types.js";
 import { projectDisplayName } from "../../core/config.js";
+import type { TelegramAuthorizedHandler } from "./intake.js";
 import { LocalTelegramProvider } from "./provider.js";
 import { TelegramCredentialStore } from "./store.js";
 import { createTelegramIntakeHandler, telegramIntakeOptionsFromConfig } from "./intake.js";
@@ -108,6 +109,9 @@ export async function resumeTelegramTransports(
  */
 export async function bootstrapTelegramAtBoot(
   config: Pick<RepoOSConfig, "root" | "auth" | "telegram">,
+  // #0541: the authorized-update sink lives server-side (it needs the
+  // AgentRunner and live index), so the server builds it and hands it here.
+  options: { onAuthorized?: TelegramAuthorizedHandler } = {},
 ): Promise<{ resumed: boolean; detail?: string }> {
   const provider = getTelegramProvider(config);
   provider.onUpdate(
@@ -118,6 +122,7 @@ export async function bootstrapTelegramAtBoot(
           if (!status.connected || !status.bot) return null;
           return { id: status.bot.id, username: status.bot.username };
         },
+        ...(options.onAuthorized ? { onAuthorized: options.onAuthorized } : {}),
       }),
     ),
   );
