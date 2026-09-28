@@ -75,6 +75,7 @@ docker run --rm \
   -v "$CACHE_VOLUME":/bun-cache \
   -v "$ART":/artifacts \
   -e BUN_INSTALL_CACHE_DIR=/bun-cache \
+  -e BUN_TMPDIR=/tmp \
   -e HOME=/repo \
   -w /repo \
   --user "$(id -u):$(id -g)" \
