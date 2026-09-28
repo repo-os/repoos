@@ -2,7 +2,7 @@
 id: "0566"
 title: Fix Questions-for-You duplication and answer UX
 type: feature
-status: active
+status: review
 priority: p2
 area: ui
 assigned_to: ai
@@ -12,7 +12,7 @@ pm_model_override: opencode/muse-spark-1.3-contributor-free
 review_cli_override: github copilot
 review_model_override: copilot-auto-balance
 created_at: "2026-09-28T04:34:57Z"
-updated_at: "2026-09-28T05:45:10Z"
+updated_at: "2026-09-28T05:46:36Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -125,3 +125,4 @@ rm: cannot remove '/home/nick/.repoos-validate.YNH9F1/repo/.repoos/repoos.db': P
 rm: cannot remove '/home/nick/.repoos-validate.YNH9F1/repo/.repoos/repoos.db-wal': Permission denied
 rm: cannot remove '/home/nick/.repoos-validate.YNH9F1/repo/.repoos/repoos.db-shm': Permission denied — fix it in the feature branch and re-run the gate
 - 2026-09-28T05:45:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-09-28T05:46:36Z · status active→review
