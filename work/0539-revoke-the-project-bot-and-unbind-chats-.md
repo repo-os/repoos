@@ -1,4 +1,6 @@
 ---
+check_retry_count: 2
+last_check_failure: "[object Object]"
 id: "0539"
 title: Revoke the project bot and unbind chats on disconnect
 type: feature
@@ -56,3 +58,5 @@ One operation, in a deliberate order, that is **complete or loudly incomplete**:
 - 2026-09-28T01:11:58Z · status ready→active, branch
 - 2026-09-28T01:23:41Z · status active→review
 - 2026-09-28T01:26:11Z · status review→active
+
+
