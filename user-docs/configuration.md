@@ -826,8 +826,63 @@ machine. Enabling it sends repo contents to a third-party host.
 | `remoteValidation.maxConcurrent` | select (1–8) | `1` | yes | How many remote validation runs may execute at once **per host**; extra runs wait in a FIFO queue. Two full test suites on one machine cause load-induced timeouts that show up as a failed gate. Covers handoff, close-out and release in the server; a host-side lock extends the same limit to standalone `repoos check` runs. |
 | `remoteValidation.fallbackToLocal` | boolean | `false` | yes | When the runner is unreachable, run the full gate locally instead of keeping the task in review for retry. |
 | `remoteValidation.useForReleases` | boolean | `false` | yes | Also validate release cuts on the runner. Off by default because a release is watched live. |
+
 The `HETZNER_API_TOKEN` and `REPOOS_REMOTE_SSH_KEY` credentials are
 environment-only.
+
+### Tailscale host pool
+
+With the `tailscale` provider you can configure a pool of machines. Jobs
+dispatch to whichever host is idle; they queue only when every host is busy.
+There are two authoring forms — pick **one** per config:
+
+**Plain list** (also editable in Settings → Remote validation → "Host pool").
+Saving in Settings updates the running dispatcher immediately without a
+restart:
+
+```toml
+[remoteValidation]
+provider = "tailscale"
+tailscaleHosts = ["bee", "thinkpad", "mini"]
+tailscaleUser = "nick"     # default SSH user for all hosts
+```
+
+**Rich rows** — one `[[remoteValidation.tailscaleHosts]]` block per host when
+you need per-host settings (`user`, `os`, `labels`, `maxConcurrent`,
+`runner`). Use this form when hosts differ (different SSH users, macOS vs
+Linux, etc.):
+
+```toml
+[remoteValidation]
+provider = "tailscale"
+tailscaleUser = "nick"     # fallback user for hosts without an explicit one
+
+[[remoteValidation.tailscaleHosts]]
+host = "mini"
+# user = "nick"            # inherits tailscaleUser
+
+[[remoteValidation.tailscaleHosts]]
+host = "bee"
+os = "linux"
+maxConcurrent = 2          # this host can run two suites at once
+
+[[remoteValidation.tailscaleHosts]]
+host = "thinkpad"
+os = "linux"
+```
+
+Per-host fields: `host` (required), `user`, `os` (capability label, e.g.
+`"macos"` or `"linux"`), `labels` (extra capabilities, e.g.
+`["apple-silicon"]`), `maxConcurrent` (per-host FIFO limit, default 1),
+`runner` (`"docker"` (default) or `"native"` — macOS-only).
+
+The per-host attrs (`user`, `os`, `labels`, `maxConcurrent`, `runner`) are
+TOML-only; the Settings UI only edits the plain host-name list.
+
+The existing single-host shorthand `tailscaleHost = "mini"` still works and
+is folded into the pool as a plain entry. See
+[docs/remote-validation.md](/repo/docs/remote-validation.md) for full
+dispatch, routing and cross-process-limit details.
 
 ## Dev copy inspector (RepoOS self-host only)
 

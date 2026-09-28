@@ -70,6 +70,20 @@ remoteValidation.provider = "tailscale"
 remoteValidation.tailscaleHost = "mini"
 remoteValidation.tailscaleUser = "peckjachowski"
 remoteValidation.containerImage = "repoos-ci"
+# Host pool — uncomment and replace tailscaleHost above to use multiple machines.
+# Jobs dispatch to whichever host is idle; they queue only when every host is busy.
+# Plain list (also editable in Settings → Remote validation → "Host pool"):
+#   remoteValidation.tailscaleHosts = ["bee", "thinkpad", "mini"]
+# Rich rows (per-host SSH user, OS, concurrency — TOML only, not editable in Settings):
+#   [[remoteValidation.tailscaleHosts]]
+#   host = "mini"
+#   [[remoteValidation.tailscaleHosts]]
+#   host = "bee"
+#   os = "linux"
+#   maxConcurrent = 2
+#   [[remoteValidation.tailscaleHosts]]
+#   host = "thinkpad"
+#   os = "linux"
 dev.inspector.enabled = true
 dev.inspector.editorCommand = "zed {file}:{line}"
 [board.columns]
