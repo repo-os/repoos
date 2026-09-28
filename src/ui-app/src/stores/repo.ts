@@ -1437,6 +1437,8 @@ export const useRepoStore = defineStore("repo", () => {
         passed: null,
         code: null,
         output: "",
+        scope: e.scope,
+        machine: e.machine,
       });
     } else if (e.type === "task-check.output") {
       const run = taskChecks.value[e.taskId]?.find((r) => r.id === e.checkId);
@@ -1449,6 +1451,8 @@ export const useRepoStore = defineStore("repo", () => {
         run.durationMs = e.durationMs;
         run.code = e.code;
         run.passed = e.passed;
+        run.scope = e.scope;
+        run.machine = e.machine;
       }
     }
   }

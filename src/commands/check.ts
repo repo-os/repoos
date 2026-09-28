@@ -50,6 +50,7 @@ import {
   type StepStatus,
 } from "../core/check-runner.js";
 import { writeCheckRun } from "../core/check-results-store.js";
+import { envToRunContext, getCheckStore, localMachineName } from "../core/check-store.js";
 import { Logger } from "../core/logger.js";
 import { createRemoteValidator } from "../server/remote-validation.js";
 import {
@@ -1653,6 +1654,20 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
       if (!cfg.remoteValidation?.fallbackToLocal) {
         console.log(c.red(`\n  ✗ ${msg}\n`));
         persistRemoteFailure(msg, "", new Date());
+        // The runner never dispatched, so nothing else will record this
+        // failed remote attempt in the history (#0564). Record it here —
+        // machine unknown (no host was ever chosen), remote half only.
+        recordRunHistoryRow({
+          root: process.env.REPOOS_CHECK_STORE_ROOT?.trim() || repoRoot,
+          cacheDir: cfg.cacheDir,
+          scope: "full",
+          startedAt: new Date().toISOString(),
+          durationMs: 0,
+          outcome: "fail",
+          failedStep: "remote-validation",
+          skippedSteps: [],
+          detail: msg,
+        });
         process.exit(1);
       }
       console.log(c.yellow(`  ⚠ ${msg} — running the full local gate\n`));
@@ -1661,11 +1676,15 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
       const taskId = process.env.REPOOS_TASK_ID?.trim() || "pre-review";
       const remoteStartedAt = new Date();
       let remoteOutput = "";
+      // Which gate is calling (#0564): a caller-supplied task id means this is
+      // a pre-review pass for that task; otherwise a bare CLI run.
+      const { phase: runPhase } = envToRunContext(process.env);
       const gate = await runRemotePreReviewGate({
         config: cfg,
         remoteValidator,
         worktreePath: repoRoot,
         taskId,
+        phase: runPhase,
         onChunk: (chunk) => {
           remoteOutput += chunk;
           process.stdout.write(chunk);
@@ -1782,7 +1801,59 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     cfg.cacheDir,
   );
 
+  // Record the run in the durable history (#0564). The caller (handoff,
+  // close-out, release) identifies itself via env; a bare `repoos check`
+  // records as phase "cli" with a null task id. The store lives on the
+  // CALLER's repo root so worktree runs land in the history the server reads.
+  recordRunHistoryRow({
+    root: process.env.REPOOS_CHECK_STORE_ROOT?.trim() || repoRoot,
+    cacheDir: cfg.cacheDir,
+    scope: changedRef ? `changed:${changedRef}` : "full",
+    startedAt: runStartedAt.toISOString(),
+    durationMs: finishedAt.getTime() - runStartedAt.getTime(),
+    outcome: gatingFailures.length === 0 ? "pass" : "fail",
+    failedStep: gatingFailures[0]?.name ?? null,
+    skippedSteps: results.filter((r) => r.status === "skipped").map((r) => r.name),
+    detail: gatingFailures[0]?.detail ?? null,
+  });
+
   process.exit(gatingFailures.length > 0 ? 1 : 0);
+}
+
+/**
+ * Write one local check-run row into the durable history (#0564), attributing
+ * the caller/phase from the environment. Fail-soft: history is observability,
+ * never a gate input.
+ */
+function recordRunHistoryRow(row: {
+  root: string;
+  cacheDir: string;
+  scope: string;
+  startedAt: string;
+  durationMs: number;
+  outcome: "pass" | "fail";
+  failedStep: string | null;
+  skippedSteps: string[];
+  detail: string | null;
+}): void {
+  try {
+    const { taskId, phase } = envToRunContext(process.env);
+    getCheckStore(row.root, row.cacheDir).record({
+      taskId,
+      phase,
+      machine: localMachineName(),
+      remote: false,
+      scope: row.scope,
+      startedAt: row.startedAt,
+      durationMs: row.durationMs,
+      outcome: row.outcome,
+      failedStep: row.failedStep,
+      skippedSteps: row.skippedSteps,
+      detail: row.detail,
+    });
+  } catch {
+    /* never fail the gate on a history write */
+  }
 }
 
 /**

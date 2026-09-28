@@ -148,6 +148,14 @@ async function runCheck(
   onChunk?: (text: string) => void,
   extraEnv?: NodeJS.ProcessEnv,
   remoteGateOutcome: RemotePreReviewOutcome | { kind: "skip" } = { kind: "skip" },
+  /** Task the gate is for — recorded in the check-run history (#0564). */
+  taskId?: string,
+  /**
+   * Merge-base the run is scoped to, precomputed by the caller so the handle
+   * metadata and the child env agree without a second resolution (#0564).
+   * Absent → resolved here (legacy behavior).
+   */
+  changedBase?: string | null,
 ): Promise<RunResult> {
   const checkArgs = spawnedRepoosCheckArgs(config, remoteGateOutcome);
   // Prefer the assigned worktree's compiled CLI. A globally linked `repoos`
@@ -166,10 +174,24 @@ async function runCheck(
   // not main's merged state, so narrowing coverage here is safe and cuts a
   // ~10-minute full run down to seconds for a typical small task. Falls back
   // to an unscoped (full) run when the merge-base can't be resolved.
-  const baseBranch = currentBranch(config.root) ?? "main";
-  const { base } = branchChangesSinceBase(worktree, baseBranch);
+  const base =
+    changedBase !== undefined
+      ? changedBase
+      : branchChangesSinceBase(worktree, currentBranch(config.root) ?? "main").base;
+  // Identify the caller to the check-run history (#0564): the child records
+  // its own completed run, pointed at THIS repo's store so the history is one
+  // file the server reads, not one per worktree. The scope mirrors the env
+  // above — a merge-base run is a changed-path pass, everything else full.
+  const historyEnv: NodeJS.ProcessEnv = taskId
+    ? {
+        REPOOS_CHECK_TASK_ID: taskId,
+        REPOOS_CHECK_PHASE: "pre-review",
+        REPOOS_CHECK_STORE_ROOT: config.root,
+      }
+    : {};
   const env = {
     ...(base ? { ...process.env, REPOOS_CHECK_CHANGED: base } : process.env),
+    ...historyEnv,
     ...extraEnv,
   };
   let last: RunResult = { status: null, stdout: "", stderr: "check command unavailable" };
@@ -441,9 +463,23 @@ async function runHandoffFinalization(
     // suite and the committed tree are the same object (#0512).
     // One Debug-tab record covers the remote and local halves, so a remote
     // failure is recorded too instead of vanishing from the board.
+    // The run's scope (#0564) comes from the same merge-base the check scopes
+    // its test step to — resolved once here so the handle metadata and the
+    // child env agree without a second resolution.
+    let checkScope = "full";
+    let changedBase: string | undefined;
+    if (opts.taskChecks && opts.onTaskCheckEvent) {
+      const { base } = branchChangesSinceBase(workdir, currentBranch(config.root) ?? "main");
+      if (base) {
+        changedBase = base;
+        checkScope = `changed:${base}`;
+      }
+    }
     const checkHandle =
       opts.taskChecks && opts.onTaskCheckEvent
-        ? opts.taskChecks.start(task.id, "handoff-finalize", opts.onTaskCheckEvent)
+        ? opts.taskChecks.start(task.id, "handoff-finalize", opts.onTaskCheckEvent, {
+            scope: checkScope,
+          })
         : undefined;
     let remoteOutcome: RemotePreReviewOutcome | { kind: "skip" } = { kind: "skip" };
     if (opts.remoteValidator && remotePreReviewEnabled(config)) {
@@ -452,6 +488,7 @@ async function runHandoffFinalization(
         remoteValidator: opts.remoteValidator,
         worktreePath: workdir,
         taskId: task.id,
+        phase: "pre-review",
         onChunk: checkHandle?.chunk,
         deadlineAt: handoffDeadlineAt,
       });
@@ -471,6 +508,8 @@ async function runHandoffFinalization(
       checkHandle?.chunk,
       checkEnvAfterRemoteGate(remoteOutcome),
       remoteOutcome,
+      task.id,
+      changedBase,
     );
     checkHandle?.done(check.status);
     if (check.status !== 0) {

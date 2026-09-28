@@ -198,6 +198,25 @@ declared tool is missing is shown as a **missing prerequisite with the exact
 command to install it**, never as a success, and the last completed run's
 result, duration and command output are shown alongside.
 
+## Run history
+
+Every check run — local or remote, pre-review or close-out or release, and bare
+`repoos check` invocations — is recorded in `.repoos/checks.db` with the machine
+that ran it, how long it took, whether it was the full suite or a changed-path
+pass, which steps were skipped, and what failed. The Checks page's **Runs** tab
+shows this history as a sortable table across all tasks, with a per-machine
+summary (runs, pass rate, median full-suite duration) above it — so "how long
+does a full suite take on bee vs mini?" and "was that failure a fluke?" are
+questions the table answers, not archaeology in log files.
+
+The **Remote runners** tab shows each configured host live: health, the runs in
+flight right now (task and elapsed time), what is queued next, and the last
+completed run with its outcome and duration.
+
+On the task page itself, a chip appears while a check is in progress —
+"Checks running on mini · 2m 34s" — and stays afterwards showing the result
+inline; click it to open the task's Debug tab with the full check output.
+
 ## Bootstrapping a plan with `repoos init`
 
 When a repo has no check plan yet, `repoos init` inspects its durable signals

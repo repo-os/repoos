@@ -4,6 +4,8 @@ import { useRoute, useRouter } from "vue-router";
 import { api } from "../api";
 import Button from "../components/ui/button.vue";
 import TestRunPanel from "../components/TestRunPanel.vue";
+import CheckRunsPanel from "../components/CheckRunsPanel.vue";
+import RemoteRunnersPanel from "../components/RemoteRunnersPanel.vue";
 import Select from "../components/ui/select/root.vue";
 import SelectContent from "../components/ui/select/content.vue";
 import SelectItem from "../components/ui/select/item.vue";
@@ -12,19 +14,21 @@ import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
 import type { CheckPlanStepView, CheckPlanView } from "../types";
 
-type ChecksTab = "plan" | "test-suite";
+type ChecksTab = "plan" | "test-suite" | "runs" | "remote";
 
 const route = useRoute();
 const router = useRouter();
 
+const TABS: ChecksTab[] = ["plan", "test-suite", "runs", "remote"];
+
 const activeTab = computed<ChecksTab>(() =>
-  route.query.tab === "test-suite" ? "test-suite" : "plan",
+  TABS.includes(route.query.tab as ChecksTab) ? (route.query.tab as ChecksTab) : "plan",
 );
 
 function setTab(tab: ChecksTab): void {
   void router.replace({
     name: "checks",
-    query: tab === "test-suite" ? { tab: "test-suite" } : {},
+    query: tab === "plan" ? {} : { tab },
   });
 }
 
@@ -127,9 +131,18 @@ const RESULT_ICON: Record<string, string> = {
             What <code>repoos check</code> runs for this repo, which profile selects what, and why a
             step is skipped. Nothing here runs a command — it reads the same plan the gate resolves.
           </template>
-          <template v-else>
+          <template v-else-if="activeTab === 'test-suite'">
             Run the test suite on this machine or on the configured remote validation runner. Output
             streams here while the run is in progress.
+          </template>
+          <template v-else-if="activeTab === 'runs'">
+            Every check run — local and remote, handoff and close-out — with its machine, duration,
+            scope and outcome. Sortable, so "how long does a full suite take on mini?" has an
+            answer.
+          </template>
+          <template v-else>
+            Each configured remote host: health, what is running on it right now, what is queued,
+            and what ran last. Live — refreshes every few seconds.
           </template>
         </p>
       </div>
@@ -174,10 +187,36 @@ const RESULT_ICON: Record<string, string> = {
       >
         Test suite
       </button>
+      <button
+        type="button"
+        role="tab"
+        class="tab-btn"
+        :class="{ active: activeTab === 'runs' }"
+        :aria-selected="activeTab === 'runs'"
+        @click="setTab('runs')"
+      >
+        Runs
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="tab-btn"
+        :class="{ active: activeTab === 'remote' }"
+        :aria-selected="activeTab === 'remote'"
+        @click="setTab('remote')"
+      >
+        Remote runners
+      </button>
     </nav>
 
     <div v-if="activeTab === 'test-suite'" class="ck-test-suite">
       <TestRunPanel embedded />
+    </div>
+    <div v-else-if="activeTab === 'runs'" class="ck-test-suite">
+      <CheckRunsPanel />
+    </div>
+    <div v-else-if="activeTab === 'remote'" class="ck-test-suite">
+      <RemoteRunnersPanel />
     </div>
 
     <template v-else>

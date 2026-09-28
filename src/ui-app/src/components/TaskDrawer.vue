@@ -23,7 +23,14 @@ import {
   Bug,
   Expand,
 } from "lucide-vue-next";
-import type { ReviewState, Task, AgentOutputEntry, SessionUsage, DetectedAgent } from "../types";
+import type {
+  ReviewState,
+  Task,
+  AgentOutputEntry,
+  SessionUsage,
+  DetectedAgent,
+  CheckRunRow,
+} from "../types";
 import {
   COLUMNS,
   columnsWithLabels,
@@ -225,6 +232,103 @@ const handoffStepLabel = computed(() => {
     default:
       return "Running checks…";
   }
+});
+
+// ── live check chip (#0564) ──────────────────────────────────────────────────
+// The task page should say what a check is doing while it runs — which
+// machine, how long — and show the result inline instead of burying it in the
+// Debug tab. Live state comes from the task-check SSE events; the machine name
+// comes from the durable run history (the remote half lands there mid-gate).
+
+/** Durable run rows for the open task, newest first. */
+const checkRows = ref<CheckRunRow[]>([]);
+async function refreshCheckRows(taskId: string): Promise<void> {
+  try {
+    const r = await api<{ ok: boolean; runs: CheckRunRow[] }>(
+      `/api/check-runs?taskId=${encodeURIComponent(taskId)}&limit=20`,
+    );
+    checkRows.value = r.runs ?? [];
+  } catch {
+    checkRows.value = [];
+  }
+}
+
+const activeCheckRun = computed(() => {
+  const id = ui.active?.id;
+  if (!id) return null;
+  return (repo.taskChecks[id] ?? []).find((r) => r.running) ?? null;
+});
+
+const lastCheckRun = computed(() => {
+  const id = ui.active?.id;
+  if (!id) return null;
+  const runs = repo.taskChecks[id] ?? [];
+  return runs.filter((r) => !r.running).at(-1) ?? null;
+});
+
+/** Ticks once a second while a check runs, so the elapsed time stays live. */
+const checkNow = ref(Date.now());
+let checkTick: ReturnType<typeof setInterval> | undefined;
+
+watch(
+  () => [ui.active?.id, activeCheckRun.value?.id, lastCheckRun.value?.finishedAt],
+  ([taskId]) => {
+    if (checkTick) {
+      clearInterval(checkTick);
+      checkTick = undefined;
+    }
+    if (!taskId) {
+      checkRows.value = [];
+      return;
+    }
+    void refreshCheckRows(taskId as string);
+    if (activeCheckRun.value) {
+      checkNow.value = Date.now();
+      checkTick = setInterval(() => (checkNow.value = Date.now()), 1000);
+    }
+  },
+  { immediate: true },
+);
+onUnmounted(() => {
+  if (checkTick) clearInterval(checkTick);
+});
+
+/**
+ * The machine the current gate is running on, when the durable history
+ * already knows it: a remote half lands there the moment it completes, which
+ * is mid-gate — exactly while the chip is showing "running". Otherwise the
+ * chip stays machine-less rather than guessing wrong.
+ */
+const checkMachine = computed(() => {
+  const run = activeCheckRun.value;
+  if (!run) return null;
+  const since = Date.parse(run.startedAt) - 60_000;
+  const row = checkRows.value.find(
+    (r) => r.remote && r.machine && Date.parse(r.startedAt) >= since,
+  );
+  return row?.machine ?? null;
+});
+
+const checkChip = computed(() => {
+  const run = activeCheckRun.value;
+  if (run) {
+    const elapsed = formatDuration(Math.max(0, checkNow.value - Date.parse(run.startedAt)));
+    const machine = checkMachine.value;
+    return {
+      state: "running" as const,
+      label: `Checks running${machine ? ` on ${machine}` : ""} · ${elapsed}`,
+      title:
+        run.scope === "full"
+          ? "The check gate is running — open the Debug tab for live output"
+          : `Changed-path check (${run.scope}) — open the Debug tab for live output`,
+    };
+  }
+  const last = lastCheckRun.value;
+  if (!last) return null;
+  const dur = formatDuration(last.durationMs ?? 0);
+  return last.passed
+    ? { state: "pass" as const, label: `Checks passed · ${dur}`, title: "Open the Debug tab" }
+    : { state: "fail" as const, label: `Checks failed · ${dur}`, title: "Open the Debug tab" };
 });
 
 const open = computed(() => ui.active !== null || ui.isNew);
@@ -3112,6 +3216,17 @@ watch(
                 :title="needsInputBannerText(ui.active.needsInputReason, activeNeedsInputQuestions)"
                 >{{ needsInputHeaderChip.label }}</span
               >
+              <button
+                v-if="checkChip"
+                type="button"
+                class="ck-chip"
+                :class="`ck-chip-${checkChip.state}`"
+                :title="checkChip.title"
+                @click="ui.activeTab = 'debug'"
+              >
+                <ActivityIndicator v-if="checkChip.state === 'running'" class="ck-chip-spin" />
+                {{ checkChip.label }}
+              </button>
               <span class="tc-prio" :class="ui.active.priority" style="margin-left: auto">
                 {{ ui.active.priority }}
               </span>
