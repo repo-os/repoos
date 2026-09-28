@@ -4,7 +4,10 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RepoOSConfig } from "../../core/types";
-import { dismissNeedsInputOnTask } from "../../server/needs-input-dismiss";
+import {
+  dismissNeedsInputOnTask,
+  clearNeedsInputForReviewAgainOnTask,
+} from "../../server/needs-input-dismiss";
 
 function config(root: string): RepoOSConfig {
   return {
@@ -90,6 +93,40 @@ Body.
       const updated = dismissNeedsInputOnTask(config(root), absPath, "hello@repoos.org");
       expect(updated.questions ?? []).toEqual([]);
       expect(readFileSync(absPath, "utf8")).not.toContain("questions:");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("clears needs_input for review again with a distinct activity line (#0565)", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-needs-review-again-"));
+    const work = join(root, "work");
+    mkdirSync(work, { recursive: true });
+    execFileSync("git", ["init", "-q"], { cwd: root });
+    execFileSync("git", ["config", "user.email", "t@example.com"], { cwd: root });
+    execFileSync("git", ["config", "user.name", "Test"], { cwd: root });
+    execFileSync("git", ["commit", "-q", "--allow-empty", "-m", "init"], { cwd: root });
+    const absPath = join(work, "0069-review-again.md");
+    writeFileSync(
+      absPath,
+      FLAGGED.replace("status: active", "status: review").replace(
+        "review-failed",
+        "watchdog-stuck",
+      ),
+    );
+    try {
+      const updated = clearNeedsInputForReviewAgainOnTask(
+        config(root),
+        absPath,
+        "hello@repoos.org",
+      );
+      expect(updated.needsInput).toBe(false);
+      const onDisk = readFileSync(absPath, "utf8");
+      expect(onDisk).not.toContain("needs_input: true");
+      expect(onDisk).toContain(
+        "needs_input (watchdog-stuck) cleared for review again by hello@repoos.org",
+      );
+      expect(onDisk).not.toContain("dismissed by");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

@@ -67,11 +67,28 @@ taskExtensions = [".md"]
 skillSuggestions = false
 remoteValidation.useForReleases = false
 remoteValidation.provider = "tailscale"
-remoteValidation.tailscaleHost = "mini"
+remoteValidation.tailscaleHost = "peckjachowski@mini"
 remoteValidation.tailscaleUser = "peckjachowski"
 remoteValidation.containerImage = "repoos-ci"
+# Host pool — uncomment and replace tailscaleHost/tailscaleUser above to use multiple machines.
+# Jobs dispatch to whichever host is idle; they queue only when every host is busy.
+# Plain list with per-host user (user@host syntax, also editable in Settings → Remote validation):
+#   remoteValidation.tailscaleHosts = ["peckjachowski@mini", "nick@bee", "nick@thinkpad"]
+# Rich rows (per-host OS, labels, concurrency — TOML only, not editable in Settings):
+#   [[remoteValidation.tailscaleHosts]]
+#   host = "mini"
+#   user = "peckjachowski"
+#   [[remoteValidation.tailscaleHosts]]
+#   host = "bee"
+#   user = "nick"
+#   os = "linux"
+#   [[remoteValidation.tailscaleHosts]]
+#   host = "thinkpad"
+#   user = "nick"
+#   os = "linux"
 dev.inspector.enabled = true
 dev.inspector.editorCommand = "zed {file}:{line}"
+remoteValidation.tailscaleHosts = ["peckjachowski@mini", "nick@bee", "nick@thinkpad"]
 [board.columns]
 
   draft = "Draft"
@@ -469,7 +486,6 @@ tunnel_id = "961e778d-b048-46ff-a848-756e3cf235b0"
 hostname = "dev.repoos.org"
 service = "http://localhost:7171"
 access = ["njachowski@gmail.com", "faizullah.misrab@gmail.com", "nick@tukapp.co"]
-
 [[agents]]
 name = "engineer"
 cli = "cursor"
@@ -486,7 +502,7 @@ instructions = "Review the task's implementation on its feature branch. The impl
 [[agents]]
 name = "pm"
 cli = "opencode"
-model = "opencode/big-pickle"
+model = "opencode/muse-spark-1.3-contributor-free"
 enabled = true
 instructions = "Owns the roadmap: moves tasks between statuses, writes activity entries, keeps the work board tidy."
 [[agents]]
@@ -506,4 +522,3 @@ name = "data analyst"
 cli = "opencode"
 model = "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731"
 enabled = true
-

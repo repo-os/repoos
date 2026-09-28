@@ -154,6 +154,45 @@ describe("runRemotePreReviewGate", () => {
     });
     expect(out).toEqual({ kind: "local-only", skipTests: false });
   });
+
+  it("never falls back locally for a config error — even with fallbackToLocal (#0521 review)", async () => {
+    // A `runsOn` requirement no host provides must FAIL CLEARLY: a transient
+    // classification here made the gate silently run the full gate locally,
+    // which is exactly the wrong-machine outcome capability routing exists to
+    // prevent.
+    const root = mkdtempSync(join(tmpdir(), "repoos-prrv-"));
+    git(root, ["init", "-q"]);
+    git(root, ["commit", "--allow-empty", "-qm", "init"]);
+    const config = makeConfig(root, { enabled: true, fallbackToLocal: true });
+    const validator: RemoteValidator = {
+      validate: vi.fn().mockResolvedValue({
+        ok: false,
+        transient: false,
+        configError: true,
+        detail:
+          "remote validation cannot run: no remote host provides macos " +
+          "(configured: bee [linux]) — add a [[remoteValidation.tailscaleHosts]] row",
+      }),
+      reconcile: vi.fn(),
+      dispose: vi.fn(),
+      logPath: () => "",
+    };
+    const out = await runRemotePreReviewGate({
+      config,
+      remoteValidator: validator,
+      worktreePath: root,
+      taskId: "0520",
+    });
+    expect(out.kind).toBe("fail");
+    if (out.kind === "fail") {
+      expect(out.retryable).toBe(false);
+      expect(out.detail).toContain("remote validation cannot run");
+      expect(out.detail).toContain("[[remoteValidation.tailscaleHosts]]");
+      // The remedy is a config change, not a branch change.
+      expect(out.detail).toContain("remoteValidation host configuration");
+      expect(out.detail).not.toContain("fix it in the feature branch");
+    }
+  });
 });
 
 describe("remotePreReviewEnabled", () => {
@@ -332,8 +371,9 @@ describe("standalone `repoos check` remote failure (#0520)", () => {
       git(root, ["config", "user.email", "t@example.com"]);
       git(root, ["config", "user.name", "T"]);
       mkdirSync(join(root, "work"), { recursive: true });
-      // Tailscale provider with no host: validate() reports an infra failure,
-      // which is retryable and (fallbackToLocal off) fails the gate.
+      // Tailscale provider with no host: validate() reports a CONFIG failure
+      // (no eligible host — non-retryable since #0521's review fix), which
+      // fails the gate with an actionable detail either way.
       writeFileSync(
         join(root, "repoos.toml"),
         'workDir = "work"\n[remoteValidation]\nenabled = true\nprovider = "tailscale"\n' +

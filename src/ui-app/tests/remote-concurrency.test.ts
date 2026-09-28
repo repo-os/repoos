@@ -11,6 +11,8 @@ import type { RepoOSConfig } from "../../core/types.js";
 import { loadConfig } from "../../core/config.js";
 import {
   ConcurrencyGate,
+  PREREQ_OK_TOKEN,
+  QueueDeadlineError,
   TailscaleRunner,
   remoteConcurrencyLimit,
   remoteRunPaths,
@@ -83,6 +85,35 @@ describe("ConcurrencyGate", () => {
     other();
     (await next)();
   });
+
+  it("cancels a queued acquire at its deadline and leaves the gate usable (#0521 spec 5)", async () => {
+    const gate = new ConcurrencyGate(1);
+    const first = await gate.acquire();
+    let rejected: unknown = null;
+    const queued = gate.acquire(undefined, { deadlineAt: Date.now() + 200 }).catch((e) => {
+      rejected = e;
+      return null;
+    });
+    expect(gate.pending).toBe(2);
+    expect(await queued).toBeNull();
+    expect(rejected).toBeInstanceOf(QueueDeadlineError);
+    // The cancelled waiter is GONE (never held a slot) and hands out normally.
+    expect(gate.pending).toBe(1);
+    first();
+    const next = await gate.acquire();
+    next();
+    expect(gate.pending).toBe(0);
+  });
+
+  it("rejects immediately when the deadline already passed, even while full", async () => {
+    const gate = new ConcurrencyGate(1);
+    const first = await gate.acquire();
+    await expect(gate.acquire(undefined, { deadlineAt: Date.now() - 1 })).rejects.toBeInstanceOf(
+      QueueDeadlineError,
+    );
+    expect(gate.pending).toBe(1);
+    first();
+  });
 });
 
 describe("remote run paths and limit", () => {
@@ -150,6 +181,7 @@ describe("TailscaleRunner queueing and isolation", () => {
     let inFlight = 0;
     let peak = 0;
     const gates: Array<() => void> = [];
+    let probes = 0;
     const exec: RemoteExecDeps = {
       bundleRepo: vi.fn(async () => ({ ok: true })),
       uploadFile: vi.fn(async (_h, _l, remote: string) => {
@@ -160,6 +192,12 @@ describe("TailscaleRunner queueing and isolation", () => {
         downloads.push(remoteGlob);
       }),
       runRemote: vi.fn(async (_h, cmd: string): Promise<RemoteExecResult> => {
+        // The per-host prerequisite probe (#0521) runs before the first job —
+        // answer it without counting it as a validation run.
+        if (cmd.includes(PREREQ_OK_TOKEN)) {
+          probes++;
+          return { code: 0, output: `ok ${PREREQ_OK_TOKEN}`, timedOut: false };
+        }
         cmds.push(cmd);
         inFlight++;
         peak = Math.max(peak, inFlight);
@@ -175,6 +213,7 @@ describe("TailscaleRunner queueing and isolation", () => {
       downloads,
       uploads,
       gates,
+      probes: () => probes,
       peak: () => peak,
     };
   }

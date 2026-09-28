@@ -78,7 +78,10 @@ import { buildIntegrationSnapshot } from "../integration-status.js";
 import { resolvePipelineCheckPlan } from "../check-plan-info.js";
 import { loadDiffSnapshot } from "../diff-snapshot.js";
 import { previewTargetOptions, type PreviewTargetOption } from "../preview.js";
-import { dismissNeedsInputOnTask } from "../needs-input-dismiss.js";
+import {
+  clearNeedsInputForReviewAgainOnTask,
+  dismissNeedsInputOnTask,
+} from "../needs-input-dismiss.js";
 
 // Helper to add review status to tasks
 function withReviewStatus<T extends { id: string }>(
@@ -1506,8 +1509,8 @@ export const dismissNeedsInput: RouteHandler = async (ctx, req, res, params) => 
   }
 };
 
-export const reviewAgain: RouteHandler = async (ctx, _req, res, params) => {
-  const { index, runner, reviews } = ctx;
+export const reviewAgain: RouteHandler = async (ctx, req, res, params) => {
+  const { config, index, runner, reviews } = ctx;
   const id = params.param1;
   const existing = index.getTask(id);
   if (!existing) {
@@ -1529,8 +1532,37 @@ export const reviewAgain: RouteHandler = async (ctx, _req, res, params) => {
       error: gate.reason ?? "could not start the review",
     });
   }
-  void reviews.run(existing);
-  return json(res, 200, { ok: true });
+  let task = existing;
+  let needsClear = existing.needsInput;
+  if (!needsClear) {
+    try {
+      const fresh = parseTask({
+        content: readFileSync(existing.absPath, "utf8"),
+        absPath: existing.absPath,
+        root: config.root,
+        defaultStatus: config.defaultStatus,
+        defaultAssignee: config.defaultAssignee,
+      });
+      needsClear = fresh.needsInput;
+    } catch {
+      // Fall back to the indexed snapshot.
+    }
+  }
+  if (needsClear) {
+    const user = getCurrentUser(req, config)?.email ?? "human";
+    try {
+      const updated = clearNeedsInputForReviewAgainOnTask(config, existing.absPath, user);
+      index.applyFileChange(updated.absPath, { guarded: true });
+      task = index.getTask(updated.id) ?? updated;
+    } catch (err) {
+      if (err instanceof WriteError) {
+        return json(res, 400, { error: err.message });
+      }
+      throw err;
+    }
+  }
+  void reviews.run(task);
+  return json(res, 200, { ok: true, task });
 };
 
 export const reviewMessage: RouteHandler = async (ctx, req, res, params) => {

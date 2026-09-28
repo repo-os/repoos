@@ -5,11 +5,12 @@ type: bug
 status: done
 priority: p1
 area: macos
+story: MacOS Native App
 assigned_to: ai
 created_by: ""
 branch: fix/hub-dock-icon-transparency
 created_at: "2026-09-23T04:57:55Z"
-updated_at: "2026-09-23T06:32:00Z"
+updated_at: "2026-09-28T00:08:42Z"
 ---
 Fix the RepoOS Hub Dock icon after the branded icon rollout. The generated PNG paints the full square canvas with the dark interior color before drawing the rounded border, leaving opaque dark corners outside the intended colored rounded-square icon in the Dock. Generate icons with transparent pixels outside the outer rounded shape, preserve the dark inner rounded panel and colored border, regenerate AppIcon and DockIcon assets, and add a regression check for transparent corners.
 
@@ -20,3 +21,4 @@ Fix the RepoOS Hub Dock icon after the branded icon rollout. The generated PNG p
 - 2026-09-23T04:58:06Z · status inbox→active
 - 2026-09-23T05:42:48Z · status active→review
 - 2026-09-23T06:32:00Z · status review→done, release:success
+- 2026-09-28T00:08:42Z · story

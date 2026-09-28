@@ -94,6 +94,24 @@ nor claims them:
   file uploads, which the connection flow does not perform.
 - **Inline mode** — leave off unless a later task opts in.
 
+## Bind a chat
+
+Notifications and commands only flow through chats an administrator explicitly
+binds. Adding the bot to a group — or opening a private chat — does **not**
+bind that chat.
+
+An administrator binds chats through the authenticated admin API (a Settings
+panel for chat management ships in a later task):
+
+- `POST /api/auth/telegram/chats/bind-codes` — create a short-lived bind code.
+  An **allowlisted admin** who is also linked on Telegram runs `/bind <code>` in
+  the target group or chat; only that live admin role can redeem the code.
+- `POST /api/auth/telegram/chats` — bind a chat directly by `telegram_chat_id`
+  when the id is already known (`chatType` is required for group/channel ids).
+
+When a user completes account linking in a private chat (`/start <invite>`),
+that 1:1 chat is bound automatically as a side effect of their own link.
+
 ## Link your account
 
 An administrator creates a Telegram link from **Settings → Authentication &

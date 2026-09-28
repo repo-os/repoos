@@ -72,7 +72,17 @@ export const AI_CHAT_REQUIREMENTS = {
   logClass: "ai-chat-log",
   /** Class giving the send button its distinct accent fill. */
   sendClass: "ai-chat-send",
+  /** Chat bubbles omit markdown thematic breaks (#0563). */
+  chatMarkdown: "renderChatMarkdown",
 } as const;
+
+/** Agent-chat surfaces that render assistant bubbles with `renderChatMarkdown`. */
+export const AI_CHAT_BUBBLE_MARKDOWN_FILES: readonly string[] = [
+  "PmChatSurface.vue",
+  "RepoGuideChat.vue",
+  "DebuggerChat.vue",
+  "TaskDebuggerChat.vue",
+] as const;
 
 /** True when the surface renders either allowed jump-to-latest control. */
 export function hasJumpToLatestControl(source: string): boolean {

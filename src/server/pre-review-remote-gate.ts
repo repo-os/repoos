@@ -7,7 +7,7 @@
  * docs/remote-validation.md.
  */
 
-import { CLOSEOUT_CHECK_ARGS } from "../core/check-plan.js";
+import { CLOSEOUT_CHECK_ARGS, planJobCapabilities, resolveCheckPlan } from "../core/check-plan.js";
 import type { RepoOSConfig } from "../core/types.js";
 import { runGit, uncommittedWorkFiles, workFileFilter } from "../core/git.js";
 import type { RemoteValidator } from "./remote-validation.js";
@@ -117,6 +117,16 @@ export function spawnedRepoosCheckArgs(
   return CLOSEOUT_CHECK_ARGS;
 }
 
+/**
+ * The host capabilities a remote run of THIS repo's plan needs (#0521): the
+ * `runsOn` union of every declared step. Shared by `runRemotePreReviewGate`
+ * and any other route that dispatches `validate()` directly (the Checks
+ * "Test suite" endpoint), so no caller can forget to route.
+ */
+export function remoteJobCapabilities(config: RepoOSConfig): string[] {
+  return planJobCapabilities(resolveCheckPlan({ check: config.check }));
+}
+
 export type RemotePreReviewOutcome =
   | { kind: "skip" }
   | { kind: "local-only"; skipTests: boolean; detail?: string }
@@ -128,6 +138,12 @@ export async function runRemotePreReviewGate(params: {
   worktreePath: string;
   taskId: string;
   onChunk?: (chunk: string) => void;
+  /**
+   * Epoch ms after which the caller has given up (#0521) — passed through so a
+   * queued remote run cancels itself instead of outliving the caller that
+   * abandoned it (the handoff's 10-minute deadline).
+   */
+  deadlineAt?: number;
 }): Promise<RemotePreReviewOutcome> {
   const rv = params.config.remoteValidation;
   if (!rv?.enabled) return { kind: "skip" };
@@ -141,11 +157,17 @@ export async function runRemotePreReviewGate(params: {
     };
   }
   const candidateSha = headRes.stdout.trim();
+  // Which host may run this job (#0521): the `runsOn` union of the whole plan,
+  // deliberately not profile-filtered — the remote run executes the entire
+  // plan in one go, so it must never land on a host missing one of its steps.
+  const capabilities = remoteJobCapabilities(params.config);
   const remote = await params.remoteValidator.validate({
     taskId: params.taskId,
     worktreePath: params.worktreePath,
     candidateSha,
     onChunk: params.onChunk,
+    ...(capabilities.length ? { capabilities } : {}),
+    ...(params.deadlineAt !== undefined ? { deadlineAt: params.deadlineAt } : {}),
   });
   if (remote.ok) {
     return { kind: "local-only", skipTests: true };
@@ -160,12 +182,18 @@ export async function runRemotePreReviewGate(params: {
     };
   }
   if (!remote.transient) {
+    // A red remote run is the branch's fault; a CONFIG error (no host
+    // provides a required capability) is not — it must not fall back locally
+    // either, or macOS-bound work would run on the wrong machine (#0521
+    // review), so the detail points at the config instead of the branch.
     return {
       kind: "fail",
       retryable: false,
-      detail:
-        `remote validation failed: ${remote.detail ?? "build or test suite failed on the runner"} — ` +
-        `fix it in the feature branch and re-run the gate`,
+      detail: remote.configError
+        ? `${remote.detail ?? "remote validation cannot run"} — fix the ` +
+          `remoteValidation host configuration (docs/remote-validation.md) and re-run the gate`
+        : `remote validation failed: ${remote.detail ?? "build or test suite failed on the runner"} — ` +
+          `fix it in the feature branch and re-run the gate`,
     };
   }
   return {

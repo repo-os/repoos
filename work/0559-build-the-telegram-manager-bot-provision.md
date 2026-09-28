@@ -2,15 +2,21 @@
 id: "0559"
 title: Build the Telegram manager-bot provisioning service and secure instance handoff
 type: feature
-status: inbox
+status: active
 priority: p1
 area: server
 story: RepoOS Telegram Bot
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/build-the-telegram-manager-bot-provision
+cli_override: github copilot
+model_override: copilot-auto-balance
+review_cli_override: github copilot
+review_model_override: copilot-auto-balance
 created_at: "2026-09-27T17:32:41Z"
-updated_at: "2026-09-27T17:45:21Z"
+updated_at: "2026-09-28T05:36:54Z"
+review_rounds: 1
+review_passes: 1
 ---
 ## Problem
 
@@ -57,3 +63,16 @@ Depends on #0530 (done) and the local adapter/client contract from #0531 (still 
 - 2026-09-27T17:32:41Z · created · unknown
 - 2026-09-27T17:45:19Z · needs_input, body
 - 2026-09-27T17:45:21Z · note: Human decision 2026-09-28: hosting settled as Neon Functions + Neon Postgres (Cloudflare Workers ruled out); needs_input cleared. Still held in inbox pending #0531's client contract.
+- 2026-09-28T04:49:18Z · cli_override, model_override
+- 2026-09-28T04:49:19Z · model_override
+- 2026-09-28T04:49:24Z · review_model_override
+- 2026-09-28T04:49:48Z · status inbox→ready
+- 2026-09-28T04:49:51Z · status ready→active, branch
+- 2026-09-28T05:19:15Z · status active→review
+- 2026-09-28T05:34:15Z · needs_input
+- 2026-09-28T05:34:59Z · review_cli_override, review_model_override
+- 2026-09-28T05:35:00Z · review_cli_override
+- 2026-09-28T05:35:01Z · review_cli_override
+- 2026-09-28T05:35:02Z · review_model_override
+- 2026-09-28T05:35:13Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-09-28T05:36:54Z · status review→active
