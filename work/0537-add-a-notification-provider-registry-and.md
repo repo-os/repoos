@@ -2,7 +2,7 @@
 id: "0537"
 title: Add a notification provider registry and the Telegram notification provider
 type: feature
-status: review
+status: active
 priority: p1
 area: server
 story: RepoOS Telegram Bot
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/add-a-notification-provider-registry-and
 created_at: "2026-09-27T07:33:00Z"
-updated_at: "2026-09-28T01:34:25Z"
+updated_at: "2026-09-28T01:34:30Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -74,3 +74,4 @@ Two properties of the existing code must survive the refactor:
 error: script "test" exited with code 1
 [validate] gate exit 1 — fix it in the feature branch and re-run the gate
 - 2026-09-28T01:34:25Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: remote validation failed (exit 1) —  ❯ tests/config-docs.test.ts:64:30 · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-09-28T01:34:30Z · status review→active
