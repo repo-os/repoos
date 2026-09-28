@@ -792,6 +792,10 @@ export class AuthStore {
     }
   }
 
+  /**
+   * Revokes every active user link in this repository's database. Rows are not
+   * filtered by instance id — isolation is one `.repoos/repoos.db` per checkout.
+   */
   revokeAllActiveTelegramUserLinks(revokedAt: string): number {
     if (!this.available) {
       throw new Error("auth store is not available");
@@ -954,6 +958,7 @@ export class AuthStore {
     }
   }
 
+  /** Same scoping model as {@link revokeAllActiveTelegramUserLinks}. */
   revokeAllActiveTelegramChatLinks(revokedAt: string): number {
     if (!this.available) {
       throw new Error("auth store is not available");

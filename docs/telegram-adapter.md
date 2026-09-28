@@ -201,17 +201,20 @@ failing on it.
 
 `disconnect` is one ordered operation — complete or loudly incomplete:
 
-1. Stop polling, remove the webhook (confirmed via `getWebhookInfo`), then
-   revoke the bot token (managed service `POST …/bots/{id}/revoke`; BYO
-   `logOut`+`close` plus a `getMe` probe on the **old** token — must 401 or
-   disconnect fails with a BotFather hint).
-2. Only after confirmed revocation: delete `.repoos/telegram-bot.json`.
-3. Revoke every `telegram_user_links` and `telegram_chat_links` row in this
-   repository's auth database (scoped by checkout — never another instance's
-   DB).
-4. Audit `telegram_integration_disconnected` with the admin's email and whether
+1. Stop polling, then revoke the bot token (managed service `POST …/bots/{id}/revoke`;
+   BYO `logOut`+`close` plus a `getMe` probe on the **old** token — must 401 or
+   disconnect fails with a BotFather hint). If the token already returns 401,
+   revocation is treated as confirmed (retry after BotFather).
+2. Remove the webhook (confirmed via `getWebhookInfo`; 401 on a revoked token
+   counts as removed).
+3. Only after confirmed revocation: delete `.repoos/telegram-bot.json`.
+4. Revoke every `telegram_user_links` and `telegram_chat_links` row in this
+   repository's auth database (one `.repoos/repoos.db` per checkout — never
+   another instance's DB; link rows are not filtered by `instance_identity`).
+5. Audit `telegram_integration_disconnected` with the admin's email and whether
    revocation was confirmed.
 
 Partial failure returns HTTP 502 with `retryable: true` and leaves credentials
-and bindings untouched. `POST /api/telegram/disconnect` and
+and bindings untouched. Unreadable local credentials may still clear bindings
+with HTTP 200, `complete: false`, and a `warning` for the admin. `POST /api/telegram/disconnect` and
 `POST /api/auth/telegram/disconnect` share the same implementation.
