@@ -1,13 +1,8 @@
 ---
-updated_at: "2026-09-28T08:49:58Z"
-review_passes: 3
 id: "0559"
 title: Build the Telegram manager-bot provisioning service and secure instance handoff
 type: feature
 status: review
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
 priority: p1
 area: server
 story: RepoOS Telegram Bot
@@ -18,6 +13,8 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-27T17:32:41Z"
+updated_at: "2026-09-28T10:17:32Z"
+review_passes: 3
 review_rounds: 2
 check_retry_count: 1
 last_check_failure: "[object Object]"
@@ -122,4 +119,4 @@ rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/.repoos/auto-engineer
 rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/.repoos/repoos.db': Permission denied
 rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/.repoos/repoos.db-wal': Permission denied
 rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/.repoos/repoos.db-shm': Permission denied — fix it in the feature branch and re-run the gate
-
+- 2026-09-28T10:17:32Z · needs_input (dev-error) dismissed by hello@repoos.org
