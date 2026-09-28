@@ -1,13 +1,16 @@
 import { projectDisplayName } from "../../core/config.js";
 import type { RepoOSConfig, Status, Task } from "../../core/types.js";
+import type { AgentRunner } from "../agents.js";
 import type { LiveIndex, RepoEvent } from "../live-index.js";
 import { taskNotificationLink } from "./link.js";
 import { NtfyNotificationProvider } from "./ntfy-provider.js";
 import { isAgentFailureNeedsInputReason } from "./reasons.js";
 import { TelegramNotificationProvider } from "./telegram-provider.js";
 import {
+  notificationForAgentCompleted,
   notificationForAgentFailed,
   notificationForIntegrationFailed,
+  notificationForMergeConflict,
   notificationForMovedToReview,
   notificationForNeedsInput,
   notificationForReviewFeedback,
@@ -167,7 +170,28 @@ export function notifyAgentFailed(
 
 export interface TaskNotificationHandlersOptions {
   providers?: NotificationProvider[];
+  /**
+   * The live runner, when one is available (#0542). The agent-completed
+   * notification must not fire while a later turn is already resuming or a
+   * review handoff is finalizing — those carry their own notifications.
+   */
+  runner?: Pick<AgentRunner, "isRunning" | "isHandoffInFlight" | "isPaused">;
+  /**
+   * Test seam: overrides the grace the agent-completed notification waits out
+   * after `agent.exited` (needs-input writes and handoff finalization land
+   * moments later; the subscriber must lose every race to them).
+   */
+  completedGraceMs?: number;
 }
+
+/**
+ * Grace between `agent.exited` and the "agent finished" notification. Long
+ * enough that needs_input writes (which can land right after the exit —
+ * escalateFailedExit runs in the same cleanup tick) and handoff state changes
+ * have settled; short enough to still feel live. Tested with 0 via
+ * `completedGraceMs`; production uses this default.
+ */
+const AGENT_COMPLETED_GRACE_MS = 4_000;
 
 /** Subscribe to index events and fan out lifecycle notifications. */
 export function attachTaskNotificationHandlers(
@@ -222,31 +246,45 @@ export function attachTaskNotificationHandlers(
     onStatus(e.task, prev, e.task.status);
   });
 
+  /**
+   * Flag-edge detection with the index's event contract: `prev` is a *diff of
+   * changed fields*, so a flag key present in `prev` means the flag changed on
+   * THIS event, and its value there is the prior value. A bare `?? false`
+   * against `prev.flag` would re-fire on every unrelated write that keeps the
+   * flag held — a duplicated push per task-file touch while a task waits.
+   * Fires only when the flag was off/unset before this event and is on now.
+   */
+  const flippedOn = (
+    e: Extract<RepoEvent, { type: "task.updated" }>,
+    key: "needsInput" | "needsMerge",
+  ): boolean => {
+    if (e.task[key] !== true) return false;
+    if (!(key in e.prev)) return false;
+    return !e.prev[key];
+  };
+
   const unsubNeedsInput = index.on((e: RepoEvent) => {
     if (e.type !== "task.updated") return;
-    const prevNeedsInput = e.prev.needsInput ?? false;
-    const nextNeedsInput = e.task.needsInput;
-    if (!prevNeedsInput && nextNeedsInput) {
-      const reason = e.task.needsInputReason?.trim();
-      const detail = e.task.needsInputDetail?.trim() || reason || "";
-      if (isAgentFailureNeedsInputReason(reason)) {
-        const spec = notificationForAgentFailed(detail || reason);
-        dispatch(
-          basePayload(ctx, e.task, "task.agent_failed", spec, detail || reason || spec.subtitle!),
-        );
-        return;
-      }
-      const spec = notificationForNeedsInput();
+    if (!flippedOn(e, "needsInput")) return;
+    const reason = e.task.needsInputReason?.trim();
+    const detail = e.task.needsInputDetail?.trim() || reason || "";
+    if (isAgentFailureNeedsInputReason(reason)) {
+      const spec = notificationForAgentFailed(detail || reason);
       dispatch(
-        basePayload(
-          ctx,
-          e.task,
-          "task.needs_input",
-          spec,
-          reason || "The agent is waiting for your decision.",
-        ),
+        basePayload(ctx, e.task, "task.agent_failed", spec, detail || reason || spec.subtitle!),
       );
+      return;
     }
+    const spec = notificationForNeedsInput();
+    dispatch(
+      basePayload(
+        ctx,
+        e.task,
+        "task.needs_input",
+        spec,
+        reason || "The agent is waiting for your decision.",
+      ),
+    );
   });
 
   const unsubReview = index.on((e: RepoEvent) => {
@@ -274,11 +312,67 @@ export function attachTaskNotificationHandlers(
     dispatch(basePayload(ctx, task, failure.kind, failure.spec, failure.summary));
   });
 
+  // #0542: needsMerge false→true is a merge failure that currently only
+  // surfaces on the board — exactly the silent stall the Telegram channel
+  // exists to break. The sync route (syncTaskBranch) is this flag's only
+  // writer; it sets and clears it.
+  const unsubNeedsMerge = index.on((e: RepoEvent) => {
+    if (e.type !== "task.updated") return;
+    if (!flippedOn(e, "needsMerge")) return;
+    const spec = notificationForMergeConflict();
+    dispatch(
+      basePayload(
+        ctx,
+        e.task,
+        "task.integration_failed",
+        spec,
+        spec.subtitle ?? "Task branch conflicts with main",
+      ),
+    );
+  });
+
+  // #0542: "agent completed" — a turn ended and NOTHING took over: the task
+  // still reads active with no turn, no paused marker, no handoff in flight,
+  // and no needs-input escalation. Every one of those states has its own
+  // (louder) notification, so completed stays silent when it loses the race.
+  // The check runs after a short grace because escalateFailedExit (dev-error
+  // needs_input) and handoff finalization both act moments after the exit.
+  const pendingCompleted = new Map<string, ReturnType<typeof setTimeout>>();
+  const unsubAgentExited = index.on((e: RepoEvent) => {
+    if (e.type !== "agent.exited") return;
+    // Review sessions run under `review:<taskId>` keys; `getTask` resolves
+    // neither that shape nor unknown ids, so they are naturally ignored.
+    const earlier = pendingCompleted.get(e.id);
+    if (earlier !== undefined) clearTimeout(earlier);
+    pendingCompleted.set(
+      e.id,
+      setTimeout(() => {
+        pendingCompleted.delete(e.id);
+        const task = index.getTask(e.id);
+        if (!task) return;
+        if (task.status !== "active" || task.needsInput || task.needsMerge) return;
+        if (opts.runner) {
+          if (opts.runner.isRunning(e.id) || opts.runner.isHandoffInFlight(e.id)) return;
+          if (opts.runner.isPaused(e.id)) return;
+        }
+        const spec = notificationForAgentCompleted();
+        const summary =
+          `The agent finished its turn and the task is still active — ` +
+          `send "/msg ${task.id} <message>" over Telegram to continue it, or use the web UI.`;
+        dispatch(basePayload(ctx, task, "task.agent_completed", spec, summary));
+      }, opts.completedGraceMs ?? AGENT_COMPLETED_GRACE_MS),
+    );
+  });
+
   return () => {
     unsubMain();
     unsubNeedsInput();
     unsubReview();
     unsubProgress();
+    unsubNeedsMerge();
+    unsubAgentExited();
+    for (const timer of pendingCompleted.values()) clearTimeout(timer);
+    pendingCompleted.clear();
   };
 }
 

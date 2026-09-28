@@ -12,6 +12,7 @@ export type NotificationKind =
   | "task.integration_failed"
   | "task.server_failed"
   | "task.agent_failed"
+  | "task.agent_completed"
   | "task.done";
 
 export interface NotificationAction {
