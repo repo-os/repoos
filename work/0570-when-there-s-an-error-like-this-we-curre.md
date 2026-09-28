@@ -2,7 +2,7 @@
 id: "0570"
 title: Add an AI tl;dr callout to failed-task errors
 type: feature
-status: draft
+status: inbox
 priority: p2
 area: general
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 pm_cli_override: opencode
 pm_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-28T06:07:26Z"
-updated_at: "2026-09-28T06:15:48Z"
+updated_at: "2026-09-28T06:43:03Z"
 ---
 ## Problem
 
@@ -106,3 +106,4 @@ E.g. for this one the tl;dr would be: Review agent ran out of credits, choose a 
 - 2026-09-28T06:12:49Z · pm_cli_override, pm_model_override
 - 2026-09-28T06:13:21Z · pm_model_override
 - 2026-09-28T06:15:48Z · title, body
+- 2026-09-28T06:43:03Z · status draft→inbox
