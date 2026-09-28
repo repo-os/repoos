@@ -3,6 +3,9 @@ id: "0539"
 title: Revoke the project bot and unbind chats on disconnect
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p2
 area: server
 story: RepoOS Telegram Bot
@@ -14,7 +17,7 @@ model_override: default
 review_cli_override: cursor
 review_model_override: cursor-grok-4.6-medium
 created_at: "2026-09-27T07:33:20Z"
-updated_at: "2026-09-28T04:47:37Z"
+updated_at: "2026-09-28T04:49:40Z"
 review_passes: 5
 review_rounds: 2
 last_check_failure: "[object Object]"
@@ -91,3 +94,4 @@ rm: cannot remove '/home/nick/.repoos-validate.zYLgdA/repo/.repoos/repoos.db-shm
 - 2026-09-28T04:28:52Z · status review→active
 - 2026-09-28T04:28:53Z · needs_input
 - 2026-09-28T04:47:37Z · status active→review
+- 2026-09-28T04:49:40Z · needs_input
