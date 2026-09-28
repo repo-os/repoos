@@ -263,7 +263,11 @@ export class PgProvisioningStore implements ProvisioningStore {
     };
   }
 
-  async recordRotatedToken(id: string, envelope: EncryptedEnvelope, graceUntil: Date): Promise<void> {
+  async recordRotatedToken(
+    id: string,
+    envelope: EncryptedEnvelope,
+    graceUntil: Date,
+  ): Promise<void> {
     await this.pool.query(
       `UPDATE provisioning_requests
          SET grace_until = $2, token_envelope_iv = $3, token_envelope_tag = $4,

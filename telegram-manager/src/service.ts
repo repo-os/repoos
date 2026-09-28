@@ -72,7 +72,11 @@ export class ProvisioningService {
     private readonly now: () => Date = () => new Date(),
   ) {}
 
-  async begin(instanceId: string, body: BeginRequestBody, authKeyHash: string): Promise<BeginResult> {
+  async begin(
+    instanceId: string,
+    body: BeginRequestBody,
+    authKeyHash: string,
+  ): Promise<BeginResult> {
     const now = this.now();
     const allowed = await this.store.rateLimit(
       "begin",

@@ -14,7 +14,6 @@ import type { EncryptedEnvelope } from "./crypto.js";
  * Comfortably above the slowest plausible `getManagedBotToken` round trip. */
 export const REDEEM_LOCK_TIMEOUT_MS = 2 * 60 * 1000;
 
-
 export type ProvisioningState =
   | "pending"
   | "awaiting_bot_creation"

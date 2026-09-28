@@ -8,6 +8,7 @@
 import { Hono, type Context, type Next } from "hono";
 import { timingSafeEqual } from "node:crypto";
 import type { ManagerConfig } from "./config.js";
+import { hashAuthKey } from "./crypto.js";
 import { ProvisioningService, ServiceError } from "./service.js";
 import type { ProvisioningStore } from "./store.js";
 import type { TelegramManagerClient } from "./telegram-client.js";
@@ -24,6 +25,12 @@ export interface AppDeps {
   store: ProvisioningStore;
   telegram: TelegramManagerClient;
 }
+
+type AppEnv = {
+  Variables: {
+    instanceAuthKey: string;
+  };
+};
 
 function timingSafeEqualStr(a: string, b: string): boolean {
   const bufA = Buffer.from(a);
@@ -56,17 +63,20 @@ export function createApp(deps: AppDeps) {
     deps.config,
     deps.config.managerBotUsername,
   );
-  const app = new Hono();
+  const app = new Hono<AppEnv>();
 
   app.get("/healthz", (c) => c.json({ ok: true }));
 
-  const instanceAuth = async (c: Context, next: Next) => {
+  const instanceAuth = async (c: Context<AppEnv>, next: Next) => {
     const header = c.req.header("Authorization") ?? "";
-    const expected = `Bearer ${deps.config.instanceAuthKey}`;
-    if (!header || !timingSafeEqualStr(header, expected)) {
+    const match = /^Bearer (.+)$/.exec(header);
+    const presented = match?.[1] ?? "";
+    const accepted = deps.config.instanceAuthKeys.some((key) => timingSafeEqualStr(presented, key));
+    if (!presented || !accepted) {
       const body: ErrorResponseBody = { error: "invalid or missing instance authentication" };
       return c.json(body, 401);
     }
+    c.set("instanceAuthKey", presented);
     await next();
   };
 
@@ -82,7 +92,8 @@ export function createApp(deps: AppDeps) {
       return c.json(err, 400);
     }
     try {
-      const result = await service.begin(body.instance.id, body);
+      const authKeyHash = hashAuthKey(c.get("instanceAuthKey"));
+      const result = await service.begin(body.instance.id, body, authKeyHash);
       const response: BeginResponseBody = {
         id: result.id,
         deep_link: result.deepLink,
@@ -101,7 +112,8 @@ export function createApp(deps: AppDeps) {
 
   app.get("/v1/provisioning/requests/:id", async (c) => {
     try {
-      const status = await service.getStatus(c.req.param("id"));
+      const authKeyHash = hashAuthKey(c.get("instanceAuthKey"));
+      const status = await service.getStatus(c.req.param("id"), authKeyHash);
       const response: StatusResponseBody = {
         id: status.id,
         state: status.state,
@@ -131,7 +143,8 @@ export function createApp(deps: AppDeps) {
 
   app.post("/v1/provisioning/requests/:id/redeem", async (c) => {
     try {
-      const result = await service.redeem(c.req.param("id"));
+      const authKeyHash = hashAuthKey(c.get("instanceAuthKey"));
+      const result = await service.redeem(c.req.param("id"), authKeyHash);
       const response: RedeemResponseBody | Record<string, never> = result.token
         ? { token: result.token }
         : {};

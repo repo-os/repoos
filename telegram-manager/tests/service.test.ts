@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { hashAuthKey } from "../src/crypto.js";
 import { InMemoryProvisioningStore } from "../src/memory-store.js";
 import { ProvisioningService, REDEEM_GRACE_MS } from "../src/service.js";
 import type { ManagerConfig } from "../src/config.js";
 import { FakeTelegramManagerClient, linkMessage, managedBotUpdate } from "./fakes.js";
+
+const INSTANCE_AUTH_KEY = "instance-key";
 
 function makeConfig(): ManagerConfig {
   return {
@@ -10,10 +13,14 @@ function makeConfig(): ManagerConfig {
     managerBotToken: "999:manager-token",
     managerBotUsername: "RepoOSManagerBot",
     webhookSecret: "whsec",
-    instanceAuthKey: "instance-key",
+    instanceAuthKeys: [INSTANCE_AUTH_KEY],
     encryptionKey: "0".repeat(64), // 32 bytes hex
     telegramApiBase: "https://api.telegram.org",
   };
+}
+
+function authKeyHash(): string {
+  return hashAuthKey(INSTANCE_AUTH_KEY);
 }
 
 function setup(nowRef: { value: Date }) {
@@ -41,11 +48,15 @@ async function driveToReady(
     botId: number;
   },
 ) {
-  const begin = await service.begin(opts.instanceId, {
-    repository: opts.repository,
-    instance: { id: opts.instanceId },
-    requestedBy: opts.adminEmail,
-  });
+  const begin = await service.begin(
+    opts.instanceId,
+    {
+      repository: opts.repository,
+      instance: { id: opts.instanceId },
+      requestedBy: opts.adminEmail,
+    },
+    authKeyHash(),
+  );
   await service.handleUpdate(linkMessage(500, opts.telegramUserId, begin.linkCode));
   await service.handleUpdate(
     managedBotUpdate(1, opts.telegramUserId, {
@@ -70,15 +81,15 @@ describe("provisioning state machine", () => {
       botId: 777,
     });
 
-    const status = await service.getStatus(begin.id);
+    const status = await service.getStatus(begin.id, authKeyHash());
     expect(status.state).toBe("ready");
     expect(status.bot?.id).toBe(777);
 
-    const redeemed = await service.redeem(begin.id);
+    const redeemed = await service.redeem(begin.id, authKeyHash());
     expect(redeemed.token).toBe("token-for-777");
     expect(redeemed.bot?.username).toBe("project_bot");
 
-    const afterStatus = await service.getStatus(begin.id);
+    const afterStatus = await service.getStatus(begin.id, authKeyHash());
     expect(afterStatus.state).toBe("redeemed");
   });
 
@@ -92,19 +103,19 @@ describe("provisioning state machine", () => {
       telegramUserId: 42,
       botId: 777,
     });
-    const first = await service.redeem(begin.id);
+    const first = await service.redeem(begin.id, authKeyHash());
     expect(first.token).toBe("token-for-777");
     expect(telegram.getTokenCallCount).toBe(1);
 
     // Replay within grace window: same token, no second Telegram call.
-    const replay = await service.redeem(begin.id);
+    const replay = await service.redeem(begin.id, authKeyHash());
     expect(replay.token).toBe("token-for-777");
     expect(telegram.getTokenCallCount).toBe(1);
 
     // Past the grace window: no credential, no throw (client reads a
     // tokenless 200 as ManagedRedemptionFollowUpError — see #0531 contract).
     nowRef.value = new Date(nowRef.value.getTime() + REDEEM_GRACE_MS + 1000);
-    const gone = await service.redeem(begin.id);
+    const gone = await service.redeem(begin.id, authKeyHash());
     expect(gone.token).toBeUndefined();
   });
 
@@ -126,15 +137,15 @@ describe("provisioning state machine", () => {
       botId: 222,
     });
 
-    const redeemedA = await service.redeem(a.id);
-    const redeemedB = await service.redeem(b.id);
+    const redeemedA = await service.redeem(a.id, authKeyHash());
+    const redeemedB = await service.redeem(b.id, authKeyHash());
     expect(redeemedA.token).toBe("token-for-111");
     expect(redeemedB.token).toBe("token-for-222");
     expect(redeemedA.token).not.toBe(redeemedB.token);
 
     // b's request id never yields a's credential, even hypothetically:
     // redeeming a's id again only ever replays a's own token.
-    const replayA = await service.redeem(a.id);
+    const replayA = await service.redeem(a.id, authKeyHash());
     expect(replayA.token).toBe("token-for-111");
   });
 
@@ -150,24 +161,28 @@ describe("provisioning state machine", () => {
     });
     nowRef.value = new Date(nowRef.value.getTime() + 60 * 60 * 1000); // +1h, past the 15m TTL
 
-    const status = await service.getStatus(begin.id);
+    const status = await service.getStatus(begin.id, authKeyHash());
     expect(status.state).toBe("expired");
 
-    await expect(service.redeem(begin.id)).rejects.toMatchObject({ kind: "gone" });
+    await expect(service.redeem(begin.id, authKeyHash())).rejects.toMatchObject({ kind: "gone" });
   });
 
   it("refuses a stale or already-used link code, and never binds without one", async () => {
     const nowRef = { value: new Date("2026-09-28T00:00:00Z") };
     const { service, store } = setup(nowRef);
-    const begin = await service.begin("inst-a", {
-      repository: "acme/widgets",
-      instance: { id: "inst-a" },
-      requestedBy: "admin@acme.test",
-    });
+    const begin = await service.begin(
+      "inst-a",
+      {
+        repository: "acme/widgets",
+        instance: { id: "inst-a" },
+        requestedBy: "admin@acme.test",
+      },
+      authKeyHash(),
+    );
 
     // Wrong code: no state change.
     await service.handleUpdate(linkMessage(500, 42, "WRONGCODE"));
-    let status = await service.getStatus(begin.id);
+    let status = await service.getStatus(begin.id, authKeyHash());
     expect(status.state).toBe("pending");
 
     // Correct code binds it once...
@@ -184,11 +199,15 @@ describe("provisioning state machine", () => {
   it("drops a managed_bot event that never sent /link first (no request matched)", async () => {
     const nowRef = { value: new Date("2026-09-28T00:00:00Z") };
     const { service, store } = setup(nowRef);
-    await service.begin("inst-a", {
-      repository: "acme/widgets",
-      instance: { id: "inst-a" },
-      requestedBy: "admin@acme.test",
-    });
+    await service.begin(
+      "inst-a",
+      {
+        repository: "acme/widgets",
+        instance: { id: "inst-a" },
+        requestedBy: "admin@acme.test",
+      },
+      authKeyHash(),
+    );
     await service.handleUpdate(managedBotUpdate(1, 42, { id: 777, username: "x", firstName: "X" }));
     const events = store.auditLog.map((e) => e.event);
     expect(events).toContain("bot_created_unmatched");
@@ -197,11 +216,15 @@ describe("provisioning state machine", () => {
   it("deduplicates a Telegram update delivered twice (at-least-once webhook retries)", async () => {
     const nowRef = { value: new Date("2026-09-28T00:00:00Z") };
     const { service, store } = setup(nowRef);
-    const begin = await service.begin("inst-a", {
-      repository: "acme/widgets",
-      instance: { id: "inst-a" },
-      requestedBy: "admin@acme.test",
-    });
+    const begin = await service.begin(
+      "inst-a",
+      {
+        repository: "acme/widgets",
+        instance: { id: "inst-a" },
+        requestedBy: "admin@acme.test",
+      },
+      authKeyHash(),
+    );
     const update = linkMessage(500, 42, begin.linkCode);
     const firstSeen = await store.seeUpdate(update.update_id as number, nowRef.value);
     expect(firstSeen).toBe(true);
@@ -209,7 +232,7 @@ describe("provisioning state machine", () => {
     const secondSeen = await store.seeUpdate(update.update_id as number, nowRef.value);
     expect(secondSeen).toBe(false); // the webhook route would skip re-processing
 
-    const status = await service.getStatus(begin.id);
+    const status = await service.getStatus(begin.id, authKeyHash());
     expect(status.state).toBe("awaiting_bot_creation"); // bound exactly once
   });
 
@@ -235,9 +258,9 @@ describe("provisioning state machine", () => {
       config.managerBotUsername,
       () => nowRef.value,
     );
-    const status = await restarted.getStatus(begin.id);
+    const status = await restarted.getStatus(begin.id, authKeyHash());
     expect(status.state).toBe("ready");
-    const redeemed = await restarted.redeem(begin.id);
+    const redeemed = await restarted.redeem(begin.id, authKeyHash());
     expect(redeemed.token).toBe("token-for-777");
   });
 
@@ -245,11 +268,15 @@ describe("provisioning state machine", () => {
     const nowRef = { value: new Date("2026-09-28T00:00:00Z") };
     const { service } = setup(nowRef);
     const attempt = () =>
-      service.begin("inst-a", {
-        repository: "acme/widgets",
-        instance: { id: "inst-a" },
-        requestedBy: "admin@acme.test",
-      });
+      service.begin(
+        "inst-a",
+        {
+          repository: "acme/widgets",
+          instance: { id: "inst-a" },
+          requestedBy: "admin@acme.test",
+        },
+        authKeyHash(),
+      );
     for (let i = 0; i < 5; i++) await attempt();
     await expect(attempt()).rejects.toMatchObject({ kind: "rate_limited" });
   });

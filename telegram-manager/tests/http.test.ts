@@ -10,7 +10,7 @@ function makeConfig(): ManagerConfig {
     managerBotToken: "999:manager-token",
     managerBotUsername: "RepoOSManagerBot",
     webhookSecret: "whsec-abc",
-    instanceAuthKey: "instance-key-xyz",
+    instanceAuthKeys: ["instance-key-xyz"],
     encryptionKey: "0".repeat(64),
     telegramApiBase: "https://api.telegram.org",
   };

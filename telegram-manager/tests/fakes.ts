@@ -20,6 +20,14 @@ export class FakeTelegramManagerClient implements TelegramManagerClient {
     return token;
   }
 
+  async replaceManagedBotToken(botId: number): Promise<string> {
+    const token = this.tokensByBotId.get(botId);
+    if (!token) throw new Error("Telegram API replaceManagedBotToken returned no token");
+    const rotated = `${token}-rotated`;
+    this.tokensByBotId.set(botId, rotated);
+    return rotated;
+  }
+
   async sendMessage(chatId: number, text: string): Promise<void> {
     this.sentMessages.push({ chatId, text });
   }

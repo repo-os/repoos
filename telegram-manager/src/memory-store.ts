@@ -177,7 +177,11 @@ export class InMemoryProvisioningStore implements ProvisioningStore {
     return row.envelope;
   }
 
-  async recordRotatedToken(id: string, envelope: EncryptedEnvelope, graceUntil: Date): Promise<void> {
+  async recordRotatedToken(
+    id: string,
+    envelope: EncryptedEnvelope,
+    graceUntil: Date,
+  ): Promise<void> {
     const row = this.rows.get(id);
     if (!row) return;
     row.envelope = envelope;
