@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p1
 area: macos
-assigned_to: ""
+story: MacOS Native App
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-28T18:43:15Z"
-updated_at: "2026-09-28T18:43:15Z"
+updated_at: "2026-09-28T18:44:58Z"
 ---
 Notarization requires the app to opt into Apple's hardened runtime. Configure the Xcode project and add an entitlements file that accurately declares what the app uses.
 
@@ -36,3 +37,4 @@ Notarization requires the app to opt into Apple's hardened runtime. Configure th
 ## Activity
 
 - 2026-09-28T18:43:15Z · created · unknown
+- 2026-09-28T18:44:58Z · story
