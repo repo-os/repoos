@@ -9,8 +9,10 @@ story: RepoOS Telegram Bot
 assigned_to: ai
 created_by: ""
 branch: feat/add-telegram-settings-connection-status-
+cli_override: github copilot
+model_override: default
 created_at: "2026-09-27T07:33:10Z"
-updated_at: "2026-09-28T00:02:37Z"
+updated_at: "2026-09-28T05:09:39Z"
 ---
 ## Problem
 
@@ -51,3 +53,4 @@ Use the shared dialog components (`ui/dialog/*`, body-teleported) and the global
 - 2026-09-27T15:52:45Z · body
 - 2026-09-28T00:02:22Z · status ready→active, branch
 - 2026-09-28T00:02:37Z · status active→ready
+- 2026-09-28T05:09:39Z · cli_override, model_override
