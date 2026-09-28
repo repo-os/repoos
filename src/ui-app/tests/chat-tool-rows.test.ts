@@ -172,6 +172,16 @@ describe("toDisplayRows — run splitting", () => {
     expect(messages(rows)[0].text).toBe("Before.\n\nAfter.");
   });
 
+  it("drops legacy assistant line rows that are only a thematic break", () => {
+    const rows = toDisplayRows([
+      { s: "out", d: "Before.", at: AT_0 },
+      { s: "out", d: "---", at: AT_1 },
+      { s: "out", d: "After.", at: AT_2 },
+    ]);
+    expect(rows).toHaveLength(2);
+    expect(messages(rows).map((row) => row.text)).toEqual(["Before.", "After."]);
+  });
+
   it("keeps a human message that is only a thematic break", () => {
     const rows = toDisplayRows([
       { type: "human", text: "Hi", at: AT_0 },

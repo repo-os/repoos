@@ -76,6 +76,14 @@ export const AI_CHAT_REQUIREMENTS = {
   chatMarkdown: "renderChatMarkdown",
 } as const;
 
+/** Agent-chat surfaces that render assistant bubbles with `renderChatMarkdown`. */
+export const AI_CHAT_BUBBLE_MARKDOWN_FILES: readonly string[] = [
+  "PmChatSurface.vue",
+  "RepoGuideChat.vue",
+  "DebuggerChat.vue",
+  "TaskDebuggerChat.vue",
+] as const;
+
 /** True when the surface renders either allowed jump-to-latest control. */
 export function hasJumpToLatestControl(source: string): boolean {
   return (

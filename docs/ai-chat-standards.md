@@ -117,15 +117,18 @@ and `<ChatToolCallRow>` is the only thing that draws one:
   lines inside fenced code blocks without touching interior spacing. The stored
   transcript is unchanged.
 - **Rows do not collapse inside the log** (#0563): `.ai-chat-log` is a flex column
-  inside a fixed-height scroll region. Its children use `flex-shrink: 0`; tool and
-  diagnostic cards also set `min-height: min-content` so `overflow: hidden` on
-  `.agent-tool` / `.agent-diagnostic` cannot shrink them to a ~2px border line.
-- **Thematic breaks are not drawn in assistant chat** (#0563): `---` and
-  terminal-rendered box-drawing rules are omitted from bubble markdown
-  (`renderChatMarkdown()` in `src/ui-app/src/lib/markdown.ts`) and dropped when
-  they are an entire assistant row, so they never become `<hr>` separators
-  between turns. Human messages are unchanged. Task specs and docs keep using
-  `renderMarkdown()`.
+  inside a fixed-height scroll region. Its direct children use `flex-shrink: 0`
+  so `overflow: hidden` on `.agent-tool` / `.agent-diagnostic` cannot shrink
+  them to a ~2px border line.
+- **Thematic breaks are not drawn in agent chat bubbles** (#0563): registered
+  agent chats render assistant bubbles with `renderChatMarkdown()`, which strips
+  `---` / box-drawing rule lines (including mid-message) and omits `<hr>` blocks.
+  Entire assistant rows that are only a rule are dropped in `toDisplayRows()`.
+  Human messages are unchanged. The Model Playground keeps `renderMarkdown()` so
+  markdown can be previewed faithfully. CTO reports and task specs also keep
+  `renderMarkdown()`; bubble-only CSS hides stray `<hr>` under `.pm-markdown`,
+  `.guide-markdown`, `.debugger-markdown`, and `.td-markdown` — not under the
+  whole `.ai-chat-log`.
 - Expansion is per row, collapsible, and defaults to collapsed. It is native
   `<details>`, which is also why the row is keyboard-activatable and keeps its
   open state while a live run streams more calls into it.

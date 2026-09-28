@@ -214,4 +214,10 @@ describe("renderChatMarkdown section dividers (#0563)", () => {
       "<p>Part one</p><p>Part two</p>",
     );
   });
+
+  it("strips box-drawing rule lines inside a longer assistant message", () => {
+    const html = renderChatMarkdown("Intro\n\n> ━━━━━━━━━━━━━━━━━━━━━━━━\n\nOutro");
+    expect(html).toBe("<p>Intro</p><p>Outro</p>");
+    expect(html).not.toContain("━");
+  });
 });
