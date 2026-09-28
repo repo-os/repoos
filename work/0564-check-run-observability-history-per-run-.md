@@ -11,7 +11,7 @@ branch: feat/check-run-observability-history-per-run-
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-28T03:44:07Z"
-updated_at: "2026-09-28T06:30:47Z"
+updated_at: "2026-09-28T06:30:48Z"
 check_retry_count: 1
 last_check_failure: "[object Object]"
 review_passes: 2
