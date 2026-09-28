@@ -5,14 +5,14 @@ type: feature
 status: done
 priority: p3
 area: desktop
-story: MacOS native app
+story: MacOS Native App
 assigned_to: ai
 created_by: ""
 branch: feat/add-privacy-preserving-cross-server-task
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-09-21T11:50:29Z"
-updated_at: "2026-09-22T02:38:49Z"
+updated_at: "2026-09-28T00:08:51Z"
 merge_conflict_retry_count: 1
 review_passes: 1
 ---
@@ -38,3 +38,4 @@ Depends on the Hub summary capability work and the native navigation/command pal
 - 2026-09-22T02:07:22Z · status ready→active, branch
 - 2026-09-22T02:15:26Z · status active→review
 - 2026-09-22T02:38:49Z · status review→done, release:success
+- 2026-09-28T00:08:51Z · story
