@@ -232,20 +232,25 @@ describe("isDiagnosableReason", () => {
 
 describe("sanitizeTldrAnswer", () => {
   it("takes the first non-empty line, strips quotes and a tl;dr prefix, collapses whitespace", () => {
-    expect(sanitizeTldrAnswer("“Review agent ran out of credits — pick another.”")).toBe(
-      "Review agent ran out of credits — pick another.",
+    expect(
+      sanitizeTldrAnswer("opencode", "“Review agent ran out of credits — pick another.”"),
+    ).toBe("Review agent ran out of credits — pick another.");
+    expect(
+      sanitizeTldrAnswer("opencode", "tl;dr: Reviewer hit its quota. Retry with another agent."),
+    ).toBe("Reviewer hit its quota. Retry with another agent.");
+    expect(sanitizeTldrAnswer("opencode", "  A   b\n\n  c  ")).toBe("A b");
+    expect(sanitizeTldrAnswer("opencode", "")).toBeNull();
+    expect(sanitizeTldrAnswer("opencode", "\n  \n")).toBeNull();
+    // A non-default Debugger CLI: the report text parses with THAT cli's
+    // format, not a hardcoded one.
+    expect(sanitizeTldrAnswer("claude code", "Review agent ran out of credits.")).toBe(
+      "Review agent ran out of credits.",
     );
-    expect(sanitizeTldrAnswer("tl;dr: Reviewer hit its quota. Retry with another agent.")).toBe(
-      "Reviewer hit its quota. Retry with another agent.",
-    );
-    expect(sanitizeTldrAnswer("  A   b\n\n  c  ")).toBe("A b");
-    expect(sanitizeTldrAnswer("")).toBeNull();
-    expect(sanitizeTldrAnswer("\n  \n")).toBeNull();
   });
 
   it("hard-caps a runaway answer", () => {
     const long = "x".repeat(400);
-    const out = sanitizeTldrAnswer(long);
+    const out = sanitizeTldrAnswer("opencode", long);
     expect(out).not.toBeNull();
     expect(out!.length).toBeLessThanOrEqual(280);
     expect(out!.endsWith("…")).toBe(true);
@@ -395,6 +400,60 @@ describe("DebugTldrManager", () => {
     release({ ok: true, output: "Review agent ran out of credits." });
     expect((await first).ok).toBe(true);
     expect(h.finished).toEqual(["0570"]);
+  });
+
+  it("keeps the newest log lines when the excerpt truncates", async () => {
+    // getTaskLogs is newest-first; a head-slice keeps the freshest. The tail
+    // would keep the OLDEST lines and miss the failure entirely.
+    const filler = "y".repeat(120);
+    const logs = [
+      {
+        timestamp: "t0",
+        level: "error" as const,
+        component: "task" as const,
+        message: "FRESHEST failure line",
+      },
+      ...Array.from({ length: 39 }, (_, i) => ({
+        timestamp: `t${i + 1}`,
+        level: "info" as const,
+        component: "task" as const,
+        message: `older ${i} ${filler} ${filler} ${filler}`,
+      })),
+    ];
+    const h = harness(FAILED, { logs });
+    const manager = new DebugTldrManager(h.deps);
+    await manager.run("0570", "review-failed");
+    expect(h.prompts[0]).toContain("FRESHEST failure line");
+    // The oldest lines — the tail of the newest-first list — are the ones cut.
+    expect(h.prompts[0]).not.toContain("older 39");
+  });
+
+  it("redacts secrets before any length cut clips the logs", async () => {
+    const secret = "token=ghp_abcdefghijklmnopqrstuvwx";
+    // A secret sitting entirely inside the 40th (oldest, clipped) line would
+    // have been safe anyway; the interesting case is one whose redacted
+    // replacement crosses the cut. Simple check: a secret near the head
+    // survives the slice only as ***REDACTED***.
+    const filler = "z".repeat(100);
+    const logs = [
+      {
+        timestamp: "t0",
+        level: "error" as const,
+        component: "task" as const,
+        message: `line with ${secret}`,
+      },
+      ...Array.from({ length: 39 }, (_, i) => ({
+        timestamp: `t${i + 1}`,
+        level: "info" as const,
+        component: "task" as const,
+        message: `older ${i} ${filler} ${filler} ${filler} ${filler}`,
+      })),
+    ];
+    const h = harness(FAILED, { logs });
+    const manager = new DebugTldrManager(h.deps);
+    await manager.run("0570", "review-failed");
+    expect(h.prompts.join("\n")).not.toContain("ghp_abcdefghijklmnopqrstuvwx");
+    expect(h.prompts.join("\n")).toContain("***REDACTED***");
   });
 
   it("leaves no tl;dr behind when the run fails", async () => {

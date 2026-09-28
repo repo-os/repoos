@@ -123,9 +123,14 @@ export function buildDebugTldrPrompt(
  * one-shot framing, take the first non-empty line, strip wrapping quotes and
  * a "tl;dr:"-style prefix, collapse whitespace, and hard-cap the length.
  * Returns null when nothing usable came back.
+ *
+ * `cli` is the Debugger's own (user-overridable) CLI: the one-shot output is
+ * parsed with that CLI's stream format, and the fallback-to-raw-JSON failure
+ * mode of a mismatched parser is exactly what turns a JSON line into the
+ * persisted "sentence".
  */
-export function sanitizeTldrAnswer(raw: string): string | null {
-  const report = extractOneShotReportText("opencode", raw);
+export function sanitizeTldrAnswer(cli: string, raw: string): string | null {
+  const report = extractOneShotReportText(cli, raw);
   const firstLine =
     report
       .split("\n")
@@ -249,7 +254,7 @@ export class DebugTldrManager {
       });
       if (!result.ok) return { ok: false, reason: result.error ?? "diagnosis failed" };
 
-      const sentence = sanitizeTldrAnswer(result.output ?? "");
+      const sentence = sanitizeTldrAnswer(agent.cli, result.output ?? "");
       if (!sentence) return { ok: false, reason: "empty answer" };
       return this.persist(absPath, fingerprint, sentence);
     } finally {
@@ -323,22 +328,31 @@ export class DebugTldrManager {
     const parts: string[] = [];
     const logs = this.deps.getTaskLogs(taskId, 40);
     if (logs.length) {
-      parts.push(
-        logs
-          .map((l) => `[${l.timestamp}] ${l.level}: ${l.message}`)
-          .join("\n")
-          .slice(-LOG_CHARS),
+      // Redact BEFORE slicing so a secret can never straddle a cut boundary,
+      // then slice from the HEAD: getTaskLogs is newest-first, so keeping the
+      // head keeps the freshest lines — the ones around the failure — and
+      // matches the prompt's "newest first" label.
+      const joined = redactSecrets(
+        logs.map((l) => `[${l.timestamp}] ${l.level}: ${l.message}`).join("\n"),
       );
+      parts.push(joined.slice(0, LOG_CHARS));
     }
     const sessionId = transcriptSessionIdFor(reason, taskId);
     if (sessionId) {
+      // transcriptToText is chronological, so the failure sits at the END:
+      // this part keeps the tail.
       const transcript = transcriptToText(this.deps.getTranscript(sessionId));
-      if (transcript)
-        parts.push(`Session transcript tail:\n${transcript.slice(-TRANSCRIPT_CHARS)}`);
+      if (transcript) {
+        parts.push(
+          `Session transcript tail:\n${redactSecrets(transcript).slice(-TRANSCRIPT_CHARS)}`,
+        );
+      }
     }
     // The failure detail is not repeated here — the prompt template carries it
-    // under "Failure detail:", redacted at the call site.
-    return redactSecrets(parts.join("\n\n").trim()) || "(no context captured)";
+    // under "Failure detail:", redacted at the call site. Everything in this
+    // excerpt is already redacted (and every slice is taken after redaction),
+    // so nothing reaches the model unredacted.
+    return parts.join("\n\n").trim() || "(no context captured)";
   }
 }
 
