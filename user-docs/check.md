@@ -58,6 +58,7 @@ definition of done. Only a step you mark `required = false` is advisory.
 | `profiles` | every profile | Which profiles include this step. `["full"]` keeps a slow step out of a routine run. |
 | `whenChanged` | always runs | Path globs; in changed-path mode the step runs only when one matches. |
 | `requires` | — | Binaries that must be on `PATH`. |
+| `runsOn` | any host | Host capabilities a **remote** run of this plan needs (`remoteValidation`), e.g. `runsOn = ["macos"]`. The runner routes the whole job to a host whose `os`/`labels` provide every capability; a job with no `runsOn` runs on any host, and local runs ignore the field. |
 | `dependsOn` | — | Skip this step if a named earlier step failed. |
 
 ### Built-in `kind`s

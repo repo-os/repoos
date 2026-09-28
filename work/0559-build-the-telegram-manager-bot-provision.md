@@ -2,15 +2,21 @@
 id: "0559"
 title: Build the Telegram manager-bot provisioning service and secure instance handoff
 type: feature
-status: inbox
+status: review
 priority: p1
 area: server
 story: RepoOS Telegram Bot
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/build-the-telegram-manager-bot-provision
+cli_override: cursor
+model_override: composer-2.5
+review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-27T17:32:41Z"
-updated_at: "2026-09-27T17:45:21Z"
+updated_at: "2026-09-28T06:49:38Z"
+review_rounds: 1
+review_passes: 1
+dev_error_count: 2
 ---
 ## Problem
 
@@ -57,3 +63,27 @@ Depends on #0530 (done) and the local adapter/client contract from #0531 (still 
 - 2026-09-27T17:32:41Z · created · unknown
 - 2026-09-27T17:45:19Z · needs_input, body
 - 2026-09-27T17:45:21Z · note: Human decision 2026-09-28: hosting settled as Neon Functions + Neon Postgres (Cloudflare Workers ruled out); needs_input cleared. Still held in inbox pending #0531's client contract.
+- 2026-09-28T04:49:18Z · cli_override, model_override
+- 2026-09-28T04:49:19Z · model_override
+- 2026-09-28T04:49:24Z · review_model_override
+- 2026-09-28T04:49:48Z · status inbox→ready
+- 2026-09-28T04:49:51Z · status ready→active, branch
+- 2026-09-28T05:19:15Z · status active→review
+- 2026-09-28T05:34:15Z · needs_input
+- 2026-09-28T05:34:59Z · review_cli_override, review_model_override
+- 2026-09-28T05:35:00Z · review_cli_override
+- 2026-09-28T05:35:01Z · review_cli_override
+- 2026-09-28T05:35:02Z · review_model_override
+- 2026-09-28T05:35:13Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-09-28T05:36:54Z · status review→active
+- 2026-09-28T05:47:44Z · agent exited with an error (copilot) · permission problem, not a code failure: GitHub Copilot denied a tool call despite RepoOS's non-interactive permission setting
+- 2026-09-28T05:53:37Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-09-28T05:53:47Z · status active→review
+- 2026-09-28T05:53:47Z · status review→active
+- 2026-09-28T05:56:51Z · handoff failed · task-file handoff failed at check · repoos check failed: tests/service.test.ts(233,7): error TS2345: Argument of type 'FakeTelegramManagerClient' is not assignable to parameter of type 'TelegramManagerClient'. · Property 'replaceManagedBotToken' is missing in type 'FakeTelegramManagerClient' but required in type 'TelegramManagerClient'. · tests/service.test.ts(238,36): error TS2554: Expected 2 arguments, but got 1. · tests/service.test.ts(240,38): error TS2554: Expected 2 arguments, but got 1. · tests/service.test.ts(248,15): error TS2554: Expected 3 arguments, but got 2. · ⏭ telegram-manager-test  — skipped — blocked by failed step(s): telegram-manager-build · ⏭ macos-hub-icon-transparency  — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-icon-transparency.sh · 2 check(s) failed.
+- 2026-09-28T06:41:53Z · cli_override, model_override
+- 2026-09-28T06:41:55Z · model_override
+- 2026-09-28T06:42:04Z · review_cli_override, review_model_override
+- 2026-09-28T06:42:05Z · review_model_override
+- 2026-09-28T06:42:08Z · needs_input
+- 2026-09-28T06:49:38Z · status active→review

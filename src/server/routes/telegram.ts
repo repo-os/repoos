@@ -26,7 +26,7 @@ import type { AuthRole } from "../../core/auth.js";
 import type { RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
 import { requireAdmin } from "./auth.js";
-import { instanceIdentity } from "../../core/telegram-identity.js";
+import { instanceIdentity, repositoryIdentity } from "../../core/telegram-identity.js";
 import { getAuthStore } from "../../core/auth-store.js";
 import { getTelegramProvider } from "../telegram/index.js";
 import { TelegramDisconnectError } from "../telegram/types.js";
@@ -293,6 +293,55 @@ export const telegramTransport: RouteHandler = async (ctx, req, res) => {
     if (e instanceof TelegramNotConnectedError) {
       return json(res, 409, { error: e.message });
     }
+    return json(res, status, { error });
+  }
+};
+
+/** Default text a test message carries when the admin does not supply one. */
+function defaultTestMessageText(root: string): string {
+  return (
+    `✅ Test message from RepoOS (${repositoryIdentity(root)}). ` +
+    "If you can read this, the connected bot can notify this chat."
+  );
+}
+
+/**
+ * Admin test-message send (#0538): proves a bound chat actually receives
+ * notifications before an admin relies on the integration. The target must
+ * already be a currently-bound chat — sending to an arbitrary numeric chat
+ * id an admin might mistype or paste from elsewhere would bypass the same
+ * "binding is an admin action" boundary #0535 enforces for delivery.
+ * Failures surface Telegram's own (redacted) error text, not a generic one.
+ */
+export const telegramTestMessage: RouteHandler = async (ctx, req, res) => {
+  const admin = requireTelegramAdmin(req, ctx.config, res);
+  if (!admin) return;
+  if (!requireTelegramEnabled(ctx, res)) return;
+  const body = (await readBody(req)) as Record<string, unknown>;
+  const chatIdRaw = body.chatId;
+  const chatId = typeof chatIdRaw === "number" ? chatIdRaw : Number(chatIdRaw);
+  if (!Number.isSafeInteger(chatId) || chatId <= 0) {
+    return json(res, 400, { error: "chatId must be a positive integer" });
+  }
+  const store = getAuthStore(ctx.config.root);
+  const link = store?.getTelegramLink(chatId);
+  if (!store || !link || link.revokedAt) {
+    return json(res, 404, {
+      error:
+        "that chat is not currently bound — bind a Telegram account from Settings before " +
+        "sending a test message",
+    });
+  }
+  const text =
+    typeof body.text === "string" && body.text.trim()
+      ? body.text.trim().slice(0, 4096)
+      : defaultTestMessageText(ctx.config.root);
+  try {
+    const provider = getTelegramProvider(ctx.config);
+    const sent = await provider.sendMessage(chatId, text);
+    return json(res, 200, { ok: true, messageId: sent.messageId });
+  } catch (e) {
+    const { status, error } = telegramErrorStatus(e);
     return json(res, status, { error });
   }
 };

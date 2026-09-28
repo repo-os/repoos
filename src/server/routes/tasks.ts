@@ -46,6 +46,10 @@ import {
   flagUnderspecifiedIfNeeded,
   needsInputClearsOnPmMessage,
 } from "../task-underspecified-flag.js";
+import {
+  answeringQuestionsMatchTask,
+  wrapPmMessageWithQuestionContext,
+} from "../../core/pm-question-context.js";
 import { listInputs } from "../../core/input.js";
 import {
   commitTaskFile,
@@ -78,7 +82,10 @@ import { buildIntegrationSnapshot } from "../integration-status.js";
 import { resolvePipelineCheckPlan } from "../check-plan-info.js";
 import { loadDiffSnapshot } from "../diff-snapshot.js";
 import { previewTargetOptions, type PreviewTargetOption } from "../preview.js";
-import { dismissNeedsInputOnTask } from "../needs-input-dismiss.js";
+import {
+  clearNeedsInputForReviewAgainOnTask,
+  dismissNeedsInputOnTask,
+} from "../needs-input-dismiss.js";
 
 // Helper to add review status to tasks
 function withReviewStatus<T extends { id: string }>(
@@ -1506,8 +1513,8 @@ export const dismissNeedsInput: RouteHandler = async (ctx, req, res, params) => 
   }
 };
 
-export const reviewAgain: RouteHandler = async (ctx, _req, res, params) => {
-  const { index, runner, reviews } = ctx;
+export const reviewAgain: RouteHandler = async (ctx, req, res, params) => {
+  const { config, index, runner, reviews } = ctx;
   const id = params.param1;
   const existing = index.getTask(id);
   if (!existing) {
@@ -1529,8 +1536,37 @@ export const reviewAgain: RouteHandler = async (ctx, _req, res, params) => {
       error: gate.reason ?? "could not start the review",
     });
   }
-  void reviews.run(existing);
-  return json(res, 200, { ok: true });
+  let task = existing;
+  let needsClear = existing.needsInput;
+  if (!needsClear) {
+    try {
+      const fresh = parseTask({
+        content: readFileSync(existing.absPath, "utf8"),
+        absPath: existing.absPath,
+        root: config.root,
+        defaultStatus: config.defaultStatus,
+        defaultAssignee: config.defaultAssignee,
+      });
+      needsClear = fresh.needsInput;
+    } catch {
+      // Fall back to the indexed snapshot.
+    }
+  }
+  if (needsClear) {
+    const user = getCurrentUser(req, config)?.email ?? "human";
+    try {
+      const updated = clearNeedsInputForReviewAgainOnTask(config, existing.absPath, user);
+      index.applyFileChange(updated.absPath, { guarded: true });
+      task = index.getTask(updated.id) ?? updated;
+    } catch (err) {
+      if (err instanceof WriteError) {
+        return json(res, 400, { error: err.message });
+      }
+      throw err;
+    }
+  }
+  void reviews.run(task);
+  return json(res, 200, { ok: true, task });
 };
 
 export const reviewMessage: RouteHandler = async (ctx, req, res, params) => {
@@ -1646,6 +1682,25 @@ export const pmMessage: RouteHandler = async (ctx, req, res, params) => {
     return json(res, 400, { error: "message text is required" });
   }
 
+  const rawAnsweringQuestions = Array.isArray(body?.answeringQuestions)
+    ? (body.answeringQuestions as unknown[])
+    : [];
+  const answeringQuestions = rawAnsweringQuestions.filter(
+    (q): q is string => typeof q === "string" && q.trim().length > 0,
+  );
+  if (
+    answeringQuestions.length > 0 &&
+    !answeringQuestionsMatchTask(answeringQuestions, existing.questions)
+  ) {
+    return json(res, 400, {
+      error: "answeringQuestions must match this task's open questions",
+    });
+  }
+  const messageText =
+    answeringQuestions.length > 0
+      ? wrapPmMessageWithQuestionContext(answeringQuestions, text)
+      : text;
+
   // Build a one-shot agent override for this PM request. Falls back to the
   // task's persisted PM overrides (set via the PM tab's selector) when the
   // client doesn't pass explicit values.
@@ -1745,11 +1800,11 @@ ${existing.body || "(no description)"}`;
 
   const existing_session = runner.output(pmSessionId);
   const result = existing_session
-    ? runner.send(pmSessionId, text, pm, {
+    ? runner.send(pmSessionId, messageText, pm, {
         resumePreamble: `Task context:\n${fullContext}`,
         ...(pmCwd ? { cwd: pmCwd } : {}),
       })
-    : runner.startChat(pmSessionId, text, pm, fullContext, taskPmPrompt, {
+    : runner.startChat(pmSessionId, messageText, pm, fullContext, taskPmPrompt, {
         ...(pmCwd ? { cwd: pmCwd } : {}),
       });
 

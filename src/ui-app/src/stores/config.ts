@@ -398,11 +398,28 @@ export const useConfigStore = defineStore("config", () => {
     return cur;
   }
 
+  /** Host name from a pool entry (a plain string or a `{ host }` object). */
+  function hostNameOf(item: unknown): string {
+    if (typeof item === "string") return item;
+    if (item && typeof item === "object" && typeof (item as { host?: unknown }).host === "string") {
+      return (item as { host: string }).host;
+    }
+    return "";
+  }
+
   function fillForm(res: ConfigResponse): void {
     for (const f of res.schema) {
       const val = configValue(res.config, f.key) ?? f.default;
-      if (f.type === "array") form[f.key] = Array.isArray(val) ? val.join(", ") : String(val);
-      else if (f.type === "boolean") form[f.key] = !!val;
+      if (f.type === "array") {
+        // Most array settings are plain strings; the remote-validation host
+        // pool (#0521) arrives as host objects and must not render as
+        // "[object Object]" — show its host names, which is what editing sends
+        // back (per-host attrs live in repoos.toml rows, not this field).
+        const items = Array.isArray(val)
+          ? val.map((item) => (typeof item === "string" ? item : hostNameOf(item)))
+          : [String(val)];
+        form[f.key] = items.filter(Boolean).join(", ");
+      } else if (f.type === "boolean") form[f.key] = !!val;
       // Settings saves include the complete schema-backed form. Preserve the
       // wire type declared by the schema so an unrelated toggle cannot submit
       // a numeric runtime value to a string-only setting (auth.sessionMaxAge).

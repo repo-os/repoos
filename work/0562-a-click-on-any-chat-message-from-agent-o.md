@@ -1,16 +1,17 @@
 ---
-updated_at: "2026-09-28T01:05:36Z"
-review_passes: 4
 id: "0562"
 title: Copy a chat message on click
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/copy-a-chat-message-on-click
 created_at: "2026-09-28T00:01:18Z"
+updated_at: "2026-09-28T02:55:26Z"
+merge_conflict_retry_count: 1
+review_passes: 5
 review_rounds: 2
 ---
 ## Problem
@@ -91,4 +92,5 @@ A click on any chat message (from agent or human) should automatically copy the 
 - 2026-09-28T00:32:06Z · status active→review
 - 2026-09-28T00:36:26Z · needs_input
 - 2026-09-28T01:05:36Z · needs_input
-
+- 2026-09-28T02:25:11Z · needs_input
+- 2026-09-28T02:55:26Z · status review→done, release:success

@@ -31,6 +31,7 @@ import {
   telegramProvisionRedeem,
   telegramProvisionStatus,
   telegramStatus,
+  telegramTestMessage,
   telegramTransport,
 } from "../../server/routes/telegram";
 import { resetTelegramProviders, setTelegramProvider } from "../../server/telegram/index.js";
@@ -487,6 +488,84 @@ describe("profile and transport routes", () => {
     const transportRes = makeRes();
     await telegramTransport(ctx(h.config), makeReq({ mode: "polling" }), transportRes.res, {});
     expect(transportRes.fake.status).toBe(409);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Test message (#0538)
+// ---------------------------------------------------------------------------
+
+describe("test message", () => {
+  const BOUND_EMAIL = "bound@repoos.org";
+  const BOUND_CHAT_ID = 555111;
+
+  function bindChat(): void {
+    const store = getAuthStore(tmpRoot);
+    if (!store) throw new Error("auth store unavailable in test env");
+    store.upsertUser(BOUND_EMAIL, "member", null);
+    store.upsertTelegramLink({
+      telegramUserId: BOUND_CHAT_ID,
+      email: BOUND_EMAIL,
+      telegramUsername: "boundchat",
+      boundAt: new Date().toISOString(),
+      boundBy: ADMIN_EMAIL,
+      lastSeenAt: null,
+      revokedAt: null,
+    });
+  }
+
+  it("sends to a bound chat and reports the message id", async () => {
+    const h = harness({ apiHandlers: { getMe: botMe(), sendMessage: { message_id: 42 } } });
+    await telegramConnect(ctx(h.config), makeReq({ token: TOKEN }), makeRes().res, {});
+    bindChat();
+    const { res, fake } = makeRes();
+    await telegramTestMessage(ctx(h.config), makeReq({ chatId: BOUND_CHAT_ID }), res, {});
+    expect(fake.status).toBe(200);
+    expect((fake.payload as { ok: boolean; messageId: number }).messageId).toBe(42);
+    const sent = h.calls.find((c) => c.method === "sendMessage");
+    expect(sent?.body.chat_id).toBe(BOUND_CHAT_ID);
+    expect(String(fake.raw)).not.toContain(TOKEN);
+  });
+
+  it("404s a chat that is not currently bound", async () => {
+    const h = harness({ apiHandlers: { getMe: botMe() } });
+    await telegramConnect(ctx(h.config), makeReq({ token: TOKEN }), makeRes().res, {});
+    const { res, fake } = makeRes();
+    await telegramTestMessage(ctx(h.config), makeReq({ chatId: 999999 }), res, {});
+    expect(fake.status).toBe(404);
+    expect((fake.payload as { error: string }).error).toMatch(/not currently bound/);
+  });
+
+  it("rejects a non-numeric chatId", async () => {
+    const h = harness({ apiHandlers: { getMe: botMe() } });
+    await telegramConnect(ctx(h.config), makeReq({ token: TOKEN }), makeRes().res, {});
+    const { res, fake } = makeRes();
+    await telegramTestMessage(ctx(h.config), makeReq({ chatId: "not-a-number" }), res, {});
+    expect(fake.status).toBe(400);
+  });
+
+  it("surfaces Telegram's own error text on send failure", async () => {
+    const h = harness({
+      apiHandlers: {
+        getMe: botMe(),
+        sendMessage: () => undefined, // fakeApi answers "no fake for sendMessage" (404-ish)
+      },
+    });
+    await telegramConnect(ctx(h.config), makeReq({ token: TOKEN }), makeRes().res, {});
+    bindChat();
+    const { res, fake } = makeRes();
+    await telegramTestMessage(ctx(h.config), makeReq({ chatId: BOUND_CHAT_ID }), res, {});
+    expect(fake.status).toBeGreaterThanOrEqual(400);
+    expect((fake.payload as { error: string }).error).toMatch(/no fake for sendMessage/);
+  });
+
+  it("400s while the integration is disabled", async () => {
+    const h = disabledHarness();
+    bindChat();
+    const { res, fake } = makeRes();
+    await telegramTestMessage(ctx(h.config), makeReq({ chatId: BOUND_CHAT_ID }), res, {});
+    expect(fake.status).toBe(400);
+    expect((fake.payload as { error: string }).error).toMatch(/integration is disabled/);
   });
 });
 
