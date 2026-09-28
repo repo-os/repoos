@@ -2,7 +2,7 @@
 id: "0540"
 title: Implement read-only chat commands
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: the agent process exited with an error — open the task to see the full output
@@ -13,7 +13,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/implement-read-only-chat-commands
 created_at: "2026-09-27T07:33:29Z"
-updated_at: "2026-09-28T11:34:21Z"
+updated_at: "2026-09-28T11:37:55Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -58,3 +58,4 @@ In a bound group these commands work for any authorized sender, but keep the tri
 - 2026-09-28T10:30:17Z · status ready→active, branch
 - 2026-09-28T11:25:46Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-09-28T11:34:21Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-09-28T11:37:55Z · status active→review
