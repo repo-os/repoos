@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-28T13:20:19Z"
+review_passes: 1
 id: "0570"
 title: Add an AI tl;dr callout to failed-task errors
 type: feature
@@ -13,7 +15,6 @@ pm_cli_override: opencode
 pm_model_override: opencode-go/deepseek-v4.1-flash
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-28T06:07:26Z"
-updated_at: "2026-09-28T13:16:40Z"
 ---
 ## Problem
 
@@ -116,3 +117,4 @@ E.g. for this one the tl;dr would be: Review agent ran out of credits, choose a 
 - 2026-09-28T10:47:55Z · review_model_override
 - 2026-09-28T10:47:56Z · status ready→active, branch
 - 2026-09-28T13:16:40Z · status active→review
+
