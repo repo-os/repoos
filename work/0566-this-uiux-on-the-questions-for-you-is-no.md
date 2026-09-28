@@ -12,7 +12,7 @@ pm_model_override: opencode/muse-spark-1.3-contributor-free
 review_cli_override: github copilot
 review_model_override: copilot-auto-balance
 created_at: "2026-09-28T04:34:57Z"
-updated_at: "2026-09-28T05:30:12Z"
+updated_at: "2026-09-28T05:45:10Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -112,3 +112,16 @@ rm: cannot remove '/home/nick/.repoos-validate.CznTbm/repo/.repoos/repoos.db-shm
 - 2026-09-28T05:25:14Z · handoff failed · could not auto-retry after check failure · agent is busy — wait for the current turn or handoff to finish
 - 2026-09-28T05:28:40Z · status active→review
 - 2026-09-28T05:30:12Z · status review→active
+- 2026-09-28T05:39:45Z · handoff failed · remote validation failed: remote validation failed (exit 1) — …/dist/ui/assets/VoiceDictate-CEyIL7fp.css': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.YNH9F1/repo/dist/ui/assets/WorkView-C4lr2ckC.css': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.YNH9F1/repo/dist/ui/assets/index-C2g9beAd.css': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.YNH9F1/repo/dist/ui/favicon.svg': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.YNH9F1/repo/dist/ui/sw.js': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.YNH9F1/repo/dist/ui/index.html': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.YNH9F1/repo/dist/.build-info.json': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.YNH9F1/repo/dist/.build-stamp.json': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.YNH9F1/repo/.repoos/auto-engineering-decision.json': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.YNH9F1/repo/.repoos/repoos.db': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.YNH9F1/repo/.repoos/repoos.db-wal': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.YNH9F1/repo/.repoos/repoos.db-shm': Permission denied — fix it in the feature branch and re-run the gate
+- 2026-09-28T05:45:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
