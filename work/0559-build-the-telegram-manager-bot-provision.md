@@ -3,9 +3,6 @@ id: "0559"
 title: Build the Telegram manager-bot provisioning service and secure instance handoff
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "error: You have exceeded your monthly quota (Request ID: 35DF:3F8AB2:411825:4BD041:6ABA00E8)"
 priority: p1
 area: server
 story: RepoOS Telegram Bot
@@ -16,7 +13,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-27T17:32:41Z"
-updated_at: "2026-09-28T06:42:05Z"
+updated_at: "2026-09-28T06:42:08Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 2
@@ -88,3 +85,4 @@ Depends on #0530 (done) and the local adapter/client contract from #0531 (still 
 - 2026-09-28T06:41:55Z · model_override
 - 2026-09-28T06:42:04Z · review_cli_override, review_model_override
 - 2026-09-28T06:42:05Z · review_model_override
+- 2026-09-28T06:42:08Z · needs_input
