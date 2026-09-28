@@ -33,6 +33,9 @@ const botMe = (): Record<string, unknown> => ({
 });
 
 function fakeApi(handlers: Record<string, unknown> = {}) {
+  const revokeTokenOnLogOut = handlers.revokeTokenOnLogOut !== false;
+  const methodHandlers = { ...handlers };
+  delete methodHandlers.revokeTokenOnLogOut;
   const revokedTokens = new Set<string>();
   const calls: { method: string; body: Record<string, unknown> }[] = [];
   const fetcher = (async (input: unknown, init?: RequestInit) => {
@@ -55,7 +58,7 @@ function fakeApi(handlers: Record<string, unknown> = {}) {
       );
     }
 
-    const scripted = handlers[method];
+    const scripted = methodHandlers[method];
     const result =
       scripted === undefined
         ? undefined
@@ -64,6 +67,9 @@ function fakeApi(handlers: Record<string, unknown> = {}) {
           : scripted;
 
     if (method === "replaceManagedBotToken" && result !== undefined) {
+      revokedTokens.add(callToken);
+    }
+    if (method === "logOut" && revokeTokenOnLogOut && result !== undefined && result !== false) {
       revokedTokens.add(callToken);
     }
 
@@ -135,14 +141,11 @@ describe("disconnect steps", () => {
     expect(api.calls.some((c) => c.method === "getWebhookInfo")).toBe(true);
   });
 
-  it("revokeProjectBotToken confirms BYO bots via logOut when replacement is unavailable", async () => {
+  it("revokeProjectBotToken confirms BYO bots only when the old token returns 401", async () => {
     const api = fakeApi({
       getWebhookInfo: () => ({ url: "" }),
       logOut: true,
       close: true,
-      replaceManagedBotToken: () => {
-        throw new Error("BOT_INVALID");
-      },
     });
     const client = new TelegramApiClient(TOKEN, { fetcher: api.fetcher });
     const managed = createManagedProvisioningClient();
@@ -158,6 +161,69 @@ describe("disconnect steps", () => {
     });
     expect(result.confirmed).toBe(true);
     expect(result.method).toBe("logOut+close");
+  });
+
+  it("revokeProjectBotToken rejects BYO when the old token still works after logOut", async () => {
+    const api = fakeApi({
+      logOut: true,
+      close: true,
+      getMe: botMe(),
+      revokeTokenOnLogOut: false,
+    });
+    const client = new TelegramApiClient(TOKEN, { fetcher: api.fetcher });
+    await expect(
+      revokeProjectBotToken({
+        api: client,
+        oldToken: TOKEN,
+        botId: 246810,
+        source: "byo-token",
+        managed: createManagedProvisioningClient(),
+        repository: "disconnect-test",
+        instanceId: "inst-a",
+        createApi: (token) => new TelegramApiClient(token, { fetcher: api.fetcher }),
+      }),
+    ).rejects.toMatchObject({ phase: "revoke", retryable: true });
+  });
+
+  it("revokeProjectBotToken treats provisioning HTTP 5xx as retryable", async () => {
+    const service = {
+      fetcher: (async () =>
+        new Response(JSON.stringify({ error: "down" }), {
+          status: 503,
+          headers: { "Content-Type": "application/json" },
+        })) as typeof fetch,
+    };
+    const managed = createManagedProvisioningClient({
+      baseUrl: "https://provision.example.com",
+      fetcher: service.fetcher,
+    });
+    const client = new TelegramApiClient(TOKEN, { fetcher: fakeApi({}).fetcher });
+    await expect(
+      revokeProjectBotToken({
+        api: client,
+        oldToken: TOKEN,
+        botId: 246810,
+        source: "managed",
+        managed,
+        repository: "disconnect-test",
+        instanceId: "inst-a",
+      }),
+    ).rejects.toMatchObject({ phase: "revoke", retryable: true });
+  });
+
+  it("revokeProjectBotToken refuses managed bots when provisioning is not configured", async () => {
+    const client = new TelegramApiClient(TOKEN, { fetcher: fakeApi({}).fetcher });
+    await expect(
+      revokeProjectBotToken({
+        api: client,
+        oldToken: TOKEN,
+        botId: 246810,
+        source: "managed",
+        managed: createManagedProvisioningClient(),
+        repository: "disconnect-test",
+        instanceId: "inst-a",
+      }),
+    ).rejects.toMatchObject({ phase: "revoke", retryable: false });
   });
 
   it("revokeProjectBotToken uses managed provisioning when configured", async () => {
@@ -377,7 +443,25 @@ describe("disconnect route", () => {
     } as RepoOSConfig;
     await expect(
       performTelegramDisconnectRoute({ config }, "admin@test.com"),
-    ).rejects.toBeInstanceOf(TelegramDisconnectError);
+    ).rejects.toMatchObject({ phase: "revoke", retryable: true });
     expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(true);
+  });
+});
+
+describe("corrupt credential recovery", () => {
+  it("disconnect clears an unreadable connection record without calling Telegram", async () => {
+    const { writeFileSync, mkdirSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    mkdirSync(join(tmpRoot, ".repoos"), { recursive: true });
+    writeFileSync(telegramConnectionPath(tmpRoot), '{"version":1,"bot":', "utf8");
+    const { provider } = makeProvider(tmpRoot, {});
+    const store = new AuthStore(tmpRoot);
+    const result = await provider.disconnect({
+      actorEmail: "admin@test.com",
+      authStore: store,
+      instanceId: instanceIdentity(tmpRoot),
+    });
+    expect(result.revocationConfirmed).toBe(false);
+    expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(false);
   });
 });
