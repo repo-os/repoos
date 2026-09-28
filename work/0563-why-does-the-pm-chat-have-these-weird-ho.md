@@ -8,10 +8,10 @@ area: general
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/remove-horizontal-separators-from-all-ai
-pm_cli_override: github copilot
+pm_cli_override: cursor
 pm_model_override: default
 created_at: "2026-09-28T00:04:51Z"
-updated_at: "2026-09-28T00:29:30Z"
+updated_at: "2026-09-28T00:35:03Z"
 ---
 ## Problem
 
@@ -54,3 +54,4 @@ why does the pm chat have these weird horizontal lines between chat messages (se
 - 2026-09-28T00:15:46Z · status inbox→ready
 - 2026-09-28T00:16:17Z · status ready→active, needs_input, branch
 - 2026-09-28T00:29:30Z · status active→review
+- 2026-09-28T00:35:03Z · pm_cli_override
