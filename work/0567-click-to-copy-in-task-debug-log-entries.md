@@ -2,7 +2,7 @@
 id: "0567"
 title: Click-to-copy in task debug log entries
 type: ux
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: ""
 pm_model_override: opencode/muse-spark-1.3-contributor-free
 created_at: "2026-09-28T05:07:19Z"
-updated_at: "2026-09-28T05:09:26Z"
+updated_at: "2026-09-28T06:31:11Z"
 ---
 ## Problem
 
@@ -76,3 +76,4 @@ Use the shared `copyToClipboard()` helper (`src/ui-app/src/lib/clipboard.ts`) so
 - 2026-09-28T05:07:19Z · created · unknown
 - 2026-09-28T05:08:18Z · pm_model_override
 - 2026-09-28T05:09:26Z · body
+- 2026-09-28T06:31:11Z · status inbox→ready
