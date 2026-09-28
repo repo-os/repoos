@@ -2,7 +2,7 @@
 id: "0573"
 title: Add configurable close-out (MTD) pipeline timeout
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: server
 assigned_to: ai
@@ -87,3 +87,4 @@ Add a **configurable pipeline timeout** so a hung or pathologically slow close-o
 - 2026-09-28T11:45:41Z · body
 - 2026-09-28T12:06:15Z · model_override
 - 2026-09-28T12:06:18Z · review_model_override
+- 2026-09-28T12:06:18Z · status inbox→ready
