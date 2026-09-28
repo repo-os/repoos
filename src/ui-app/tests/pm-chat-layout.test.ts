@@ -6,8 +6,9 @@
  * injects the chat-log flex rules under test. `ai-chat-standard.test.ts` asserts
  * they stay in the real stylesheet.
  */
-import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { mount, type VueWrapper } from "@vue/test-utils";
+import { createPinia, setActivePinia } from "pinia";
 import PmChatSurface from "../src/components/PmChatSurface.vue";
 import type { AgentOutputEntry } from "../src/types";
 
@@ -42,6 +43,10 @@ beforeAll(() => {
     }
   `;
   document.head.appendChild(style);
+});
+
+beforeEach(() => {
+  setActivePinia(createPinia());
 });
 
 afterEach(() => {
