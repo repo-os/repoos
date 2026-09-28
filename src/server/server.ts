@@ -187,12 +187,7 @@ import {
 } from "./notifications/index.js";
 import { AgentSupervisor } from "./supervisor.js";
 import { TaskWatchdog } from "./task-watchdog.js";
-import {
-  bootstrapTelegramAtBoot,
-  getTelegramProvider,
-  resetTelegramProviders,
-} from "./telegram/index.js";
-import { createTelegramAgentChatHandler } from "./telegram/agent-chat.js";
+import { bootstrapTelegramAtBoot, resetTelegramProviders } from "./telegram/index.js";
 import { parseCookies, SESSION_COOKIE_NAME, randomHex } from "../core/auth.js";
 import { getAuthStore } from "../core/auth-store.js";
 import {
@@ -368,6 +363,7 @@ import {
   removeServiceRoute,
   healthCheckRoute,
   getCheckPlan,
+  getCheckRuns,
   getSupportBundlePreview,
   createSupportBundle,
   revealSupportBundle,
@@ -1167,7 +1163,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Per-task `repoos check` run tracking for the Debug tab (0310): the
   // handoff-finalize check and the MTD merge-gate check are the only two
   // checks the server spawns directly, so only those two are instrumented.
-  const taskChecks = new TaskCheckManager();
+  // The repo root enables durable history for cancelled runs (#0564) — the
+  // CLI child records its own completed runs.
+  const taskChecks = new TaskCheckManager(config.root, config.cacheDir);
   const onTaskCheckEvent: TaskCheckListener = (run, eventKind, chunk) => {
     if (eventKind === "started") {
       emitEvent({
@@ -1175,6 +1173,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         taskId: run.taskId,
         checkId: run.id,
         checkKind: run.kind,
+        scope: run.scope,
+        machine: run.machine,
         at: run.startedAt,
       });
     } else if (eventKind === "output") {
@@ -1193,6 +1193,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         code: run.code,
         passed: run.passed === true,
         durationMs: run.durationMs ?? 0,
+        scope: run.scope,
+        machine: run.machine,
         at: run.finishedAt ?? new Date().toISOString(),
       });
     }
@@ -2298,6 +2300,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           taskId: "checks-test-suite",
           worktreePath: config.root,
           candidateSha,
+          phase: "cli",
           capabilities: remoteJobCapabilities(config),
           onChunk: (chunk) => {
             testRuns.appendOutput(chunk);
@@ -2389,6 +2392,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         healthy: false,
         detail: undefined as string | undefined,
         lastRun: undefined as { taskId: string; ok: boolean; at: string } | undefined,
+        activeRuns: [] as { taskId: string; startedAt: string }[],
+        queuedTasks: [] as string[],
       })),
     ];
     return json(res, 200, {
@@ -2510,6 +2515,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", /^\/api\/tasks\/([^/]+)\/integration-job$/, getIntegrationJob);
   router.register("GET", "/api/integration-jobs", getIntegrationJobs);
   router.register("GET", "/api/check-plan", getCheckPlan);
+  // Durable check-run history across all tasks (#0564) — the Runs tab.
+  router.register("GET", "/api/check-runs", getCheckRuns);
   router.register("GET", "/api/integration/pipeline", getIntegrationPipeline);
   router.register("POST", /^\/api\/integration\/pipeline\/retry\/([^/]+)$/, retryIntegration);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/done\/cancel$/, cancelDone);
@@ -3260,19 +3267,16 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // gates on the live `telegram.enabled` switch itself, so a disabled
       // integration arms paused with no Telegram traffic.
       //
-      // #0542: the same intake also gains the task-agent follow-up handler,
-      // so an authorized admin can continue an active task's agent
-      // conversation and answer needs-input prompts from Telegram.
+      // #0542: the same single intake `onAuthorized` (the #0540 command
+      // handler) also routes `/msg` to the task-agent follow-up handler, so
+      // an authorized admin can continue an active task's agent conversation
+      // and answer needs-input prompts from Telegram.
       void bootstrapTelegramAtBoot(config, {
-        onAuthorized: createTelegramAgentChatHandler({
-          config,
-          index,
-          runner,
-          logger,
-          reply: async (chatId, text) => {
-            await getTelegramProvider(config).sendMessage(chatId, text);
-          },
-        }),
+        index,
+        runner,
+        reviews,
+        publicOrigin: url,
+        agentChat: { logger },
       }).then((resumed) => {
         if (resumed.detail) {
           logger.system(resumed.resumed ? "info" : "warn", "Telegram transport resume", {

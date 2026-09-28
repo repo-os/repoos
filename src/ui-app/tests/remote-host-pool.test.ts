@@ -46,6 +46,10 @@ afterEach(() => {
   for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
 });
 
+// Never let an inherited REPOOS_CHECK_STORE_ROOT (a `repoos check` parent
+// exports it for its own rows) redirect these fixtures into a live store.
+delete process.env.REPOOS_CHECK_STORE_ROOT;
+
 function tmpRoot(): string {
   const root = mkdtempSync(join(tmpdir(), "repoos-pool-"));
   dirs.push(root);
@@ -72,9 +76,35 @@ describe("host pool config parsing", () => {
 
   it("reads this repo's own repoos.toml (flat dotted keys) without losing the host", () => {
     const cfg = loadConfig(join(__dirname, "..", "..", ".."));
-    // Just verify parsing produces at least one host and doesn't throw — exact
-    // pool membership reflects whatever is live in repoos.toml.
-    expect(resolveRemoteHosts(cfg.remoteValidation).length).toBeGreaterThan(0);
+    const hosts = resolveRemoteHosts(cfg.remoteValidation).map((h) => h.host);
+    expect(hosts.length).toBeGreaterThan(0);
+    // Exact pool membership is the developer's to change (the live file is a
+    // real host list), but the shorthand host must survive the fold — losing
+    // it is a parse regression, not a config choice (#0564 review).
+    const shorthand = cfg.remoteValidation?.tailscaleHost?.trim();
+    if (shorthand) {
+      const host = shorthand.includes("@") ? shorthand.split("@").pop()! : shorthand;
+      expect(hosts).toContain(host);
+    }
+  });
+
+  it("folds flat dotted keys exactly, user@host shorthand included (0564 review)", () => {
+    // Same shape this repo's own repoos.toml uses — top-level dotted keys, a
+    // user@host shorthand, and a flat pool list that repeats the shorthand —
+    // but synthesized so the exact expectation can't drift with the live
+    // host list.
+    const root = tmpRoot();
+    writeFileSync(
+      join(root, "repoos.toml"),
+      "remoteValidation.enabled = true\n" +
+        'remoteValidation.provider = "tailscale"\n' +
+        'remoteValidation.tailscaleHost = "peckjachowski@mini"\n' +
+        'remoteValidation.tailscaleUser = "peckjachowski"\n' +
+        'remoteValidation.tailscaleHosts = ["peckjachowski@mini", "nick@bee"]\n',
+    );
+    const cfg = loadConfig(root);
+    expect(resolveRemoteHosts(cfg.remoteValidation).map((h) => h.host)).toEqual(["mini", "bee"]);
+    expect(cfg.remoteValidation?.tailscaleHost).toBe("peckjachowski@mini");
   });
 
   it("pools a flat list plus [[…]] rows, folding the shorthand without duplicates", () => {

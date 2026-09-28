@@ -17,6 +17,8 @@ call site — the point of the task was that there be none.
 | `telegram/polling.ts` | The long-polling loop (`getUpdates` + pointer). |
 | `telegram/provider.ts` | `LocalTelegramProvider implements TelegramProvider`: connect/disconnect (BYO + managed redemption), profile configuration, send, intake, transport switching. |
 | `telegram/provisioning.ts` | The `ProvisioningClient` boundary and its honest "not configured" client; #0559 supplies the hosted side. |
+| `telegram/commands.ts` | Read-only command handler (`/status`, `/tasks`, `/agents`, `/help`, #0540), registered as intake's `onAuthorized`. |
+| `telegram/render.ts` | Command-side formatting: item pagination, "Showing N–M of T", Telegram's 4096-char clamp. |
 | `telegram/index.ts` | Per-repository provider singleton (`getTelegramProvider(config)`); `setTelegramProvider`/`resetTelegramProviders` for tests. |
 
 ## Security invariants (test-pinned)
@@ -174,12 +176,55 @@ logging for privileged intake. Unbound or unauthorized senders are dropped
 silently with no outbound Telegram traffic (ADR 0007). A handler failure is
 logged redacted, never allowed to kill the transport loop.
 
+## Read-only commands (#0540)
+
+`bootstrapTelegramAtBoot(config, wiring)` registers
+`createTelegramCommandHandler` (`src/server/telegram/commands.ts`) as the
+intake `onAuthorized` callback when `startServer` passes `{ index, runner,
+reviews, publicOrigin }`. It renders `/status`, `/tasks`, `/agents`, and
+`/help` and sends through the same connected project bot. It never has a data
+path of its own: it reads the in-process `LiveIndex`, `AgentRunner` (including
+its small `recentlyFinished` tail, added for `/agents`), and `ReviewManager` —
+the same sources the HTTP read routes serve — and resolves web links through
+the notification provider's `webUiLink`, not a second origin rule. The
+one-line task renderer reuses the notification `NotificationSpec` formatter.
+
+- **Authorization is inherited, not re-implemented.** `onAuthorized` is only
+  reached after a live `auth_users` lookup; an unbound sender, or one whose row
+  was deleted, produces no reply at all. The command handler is never a place
+  to add an access-denied response.
+- **Role awareness is explicit.** `/help` states the sender's live role and
+  what it can and cannot do, so a `member` learns the boundary exists instead
+  of discovering it by refusal. `/tasks` defaults to the `work` scope
+  (`active` + `review`) for both roles; arbitrary status queries are
+  admin-only, and a member asking for one is told so.
+- **Lists paginate.** `/tasks` shows "Showing N–M of T" and emits a
+  `/tasks <scope> <page>` hint for the rest. `render.ts`'s `clampMessage` is a
+  final safety net — if any message still exceeds Telegram's 4096 chars it is
+  cut at a line boundary with an explicit truncation notice, never silently.
+- **Per-chat serialization.** Concurrent commands in one chat run through a
+  promise chain, so a group burst (notably over the concurrent webhook
+  transport) cannot interleave two replies' lines. Group trigger rules are
+  unchanged — they remain `isTelegramUpdateAddressedToBot`'s (#0535).
+
+`startServer` passes the wiring; adapter tests that call
+`bootstrapTelegramAtBoot(config)` without it get exactly #0534's behavior:
+authorize, audit, drop.
+
 ## Task-agent follow-ups and needs-input (#0542)
 
-`/msg <task-id> <message>` (intake hook `src/server/telegram/agent-chat.ts`,
-wired in `bootstrapTelegramAtBoot`) addresses a named task's
-running agent — the first Telegram surface that acts on a task rather than
-reading repository state. The invariants it pins:
+`/msg <task-id> <message>` addresses a named task's running agent — the first
+Telegram surface that acts on a task rather than reading repository state.
+The handler lives in `src/server/telegram/agent-chat.ts` and is composed with
+the read commands, not alongside them: `bootstrapTelegramAtBoot` still
+registers exactly ONE intake `onAuthorized` (the #0540 command handler), and
+`TelegramCommandDeps.agentChat` is what it dispatches `/msg` through the same
+per-chat queue. A second `onAuthorized` would have made the two consumers'
+lands race each other out of the codebase, so `/msg` must be added to or
+removed from the command handler's deps — never as a parallel intake hook.
+Unwired, `/msg` falls to the unknown-command help; the bot command menu still
+advertises it, so wiring is the difference between honest help and a working
+command. The invariants it pins:
 
 - **Admin-scoped, live role.** Messaging an agent can steer a task toward a
   status transition (an engineer turn that ends in a review handoff), so it
@@ -188,7 +233,13 @@ reading repository state. The invariants it pins:
   is refused because the role is resolved live per message (ADR 0007).
 - **One repository.** The id resolves through this repository's live index
   only; a cross-repo id and a nonexistent id produce the same "No task … in
-  this repository" reply.
+  this repository" reply. Short refs are padded (`542` → `0542`); longer digit
+  strings are looked up exactly, so `00042` is refused rather than
+  reinterpreted as `0042`.
+- **Active tasks only, stated as intent.** The spec scopes follow-ups to
+  active tasks, so a task in `review` is refused with its status in the reply
+  — needs-input prompts that surface during review are answered through the
+  web UI, not Telegram, until the task returns to active state.
 - **Nothing drops silently.** Unknown task, non-active status, no agent
   conversation, mid-turn busy, and the agent-path rate limit (re-checked at
   the turn-creation site, `tryAcquireTelegramAgentLimits`) all answer in the
@@ -201,11 +252,12 @@ reading repository state. The invariants it pins:
 
 Notifications: the lifecycle handlers (`src/server/notifications/dispatch.ts`)
 gained an agent-completed notification (`agent.exited` after a short grace,
-silent when a review handoff, a pause, a queued turn, or a needs-input flag
-already owns the post-turn state) and a merge-conflict notification
-(`needs_merge` off→on, the `syncTaskBranch` failure edge). Flag edges are
-detected by key presence in the index's `prev` diff — not `?? false` — so a
-held flag is not re-pushed on every unrelated task-file write.
+silent when a review handoff, a pause, a queued turn (`runner.isQueued`), a
+live follow-up turn, or a needs-input/merge flag already owns the post-turn
+state) and a merge-conflict notification (`needs_merge` off→on, the
+`syncTaskBranch` failure edge). Flag edges are detected by key presence in the
+index's `prev` diff — not `?? false` — so a held flag is not re-pushed on
+every unrelated task-file write.
 
 ## The `[telegram] enabled` gate
 
