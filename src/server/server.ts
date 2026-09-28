@@ -2037,7 +2037,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // there. Both firing for a single transition is harmless: `previews.stop` and
   // `runner.stop` are idempotent.
   const notificationCtx = notificationContextFromConfig(config, getAuthStore(config.root));
-  const unsubscribeNotifications = attachTaskNotificationHandlers(index, notificationCtx);
+  const unsubscribeNotifications = attachTaskNotificationHandlers(index, notificationCtx, {
+    // #0542: the agent-completed notification must know when a later turn,
+    // pause, or in-flight review handoff already owns the post-turn state.
+    runner,
+  });
 
   const unsubscribeCleanup = index.on((e) => {
     if (e.type === "task.created") {
@@ -3267,16 +3271,19 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // boot. Safe and never-throwing (reports one log line); the loop
       // gates on the live `telegram.enabled` switch itself, so a disabled
       // integration arms paused with no Telegram traffic.
-      // #0541 registers the agent-chat surface on the same intake as the
-      // #0540 command handler: a linked sender's plain message becomes a
-      // Ross guide turn on the shared AgentRunner (state per Telegram user),
-      // replies delivered back to the originating chat; commands render
-      // read-only repository views. `chainedOnAuthorized` composes both.
+      //
+      // #0541 registers the agent-chat surface on the same intake: a linked
+      // sender's plain message becomes a Ross guide turn on the shared
+      // AgentRunner (state per Telegram user), replies delivered back to the
+      // originating chat. #0542's task-agent follow-ups (/msg) and #0540's
+      // read-only commands run on this same single sink —
+      // `chainedOnAuthorized` composes them.
       void bootstrapTelegramAtBoot(config, {
         index,
         runner,
         reviews,
-        ...(url ? { publicOrigin: url } : {}),
+        publicOrigin: url,
+        agentChat: { logger },
         onAuthorized: createTelegramGuideTurn(config, runner, {
           getTasks: () => index.getTasks(),
           resolveBotUsername: () => getTelegramProvider(config).status().bot?.username ?? null,
