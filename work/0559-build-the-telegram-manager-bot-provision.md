@@ -3,6 +3,9 @@ id: "0559"
 title: Build the Telegram manager-bot provisioning service and secure instance handoff
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: the opencode agent timed out after 900s
 priority: p1
 area: server
 story: RepoOS Telegram Bot
@@ -13,7 +16,7 @@ cli_override: github copilot
 model_override: copilot-auto-balance
 review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-27T17:32:41Z"
-updated_at: "2026-09-28T05:19:15Z"
+updated_at: "2026-09-28T05:34:15Z"
 ---
 ## Problem
 
@@ -66,3 +69,4 @@ Depends on #0530 (done) and the local adapter/client contract from #0531 (still 
 - 2026-09-28T04:49:48Z · status inbox→ready
 - 2026-09-28T04:49:51Z · status ready→active, branch
 - 2026-09-28T05:19:15Z · status active→review
+- 2026-09-28T05:34:15Z · needs_input
