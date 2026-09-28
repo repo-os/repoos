@@ -173,9 +173,20 @@ own.
 ## Debugger
 
 The Debugger is a built-in agent's neighbour but not one of the scanners: it's a
-chat-only assistant. Paste a bug, stack trace, or error and it gives you a
+chat assistant. Paste a bug, stack trace, or error and it gives you a
 diagnosis. It has no schedule and no **Run now** — you talk to it from its
 floating head, next to Ross and the CTO.
+
+It also earns its keep without being asked: when a task fails hard enough to
+raise its **waiting for you** banner (a crashed reviewer, an agent that exited
+with an error, failed checks, a stuck run), the Debugger runs once in the
+background and boils the raw error down into a one-line **tl;dr** — what
+happened and what to do next. You'll see it in the task drawer, just above the
+tabs, on every tab; the banner and the raw logs below stay as they were, for
+anyone who wants the full story. The line is best-effort: if the Debugger is
+off (or its own run fails), nothing extra appears, and it disappears when you
+handle the failure — dismiss the flag, start a fresh review, or move the task
+along. Each diagnosis is booked on the task's Tokens tab under `debugger`.
 
 ## Where `repoos check` fits
 

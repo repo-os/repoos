@@ -140,8 +140,11 @@ export const taskDebuggerSessionId = (taskId: string): string => `debugger:${tas
  * Debugger. The agent is instructed never to surface secrets too, but defense
  * in depth: a stray API key or password in a log line should never reach the
  * model's prompt (and therefore the user's screen).
+ *
+ * Exported for the failure tl;dr pass (#0570), which assembles failure context
+ * with the same rule: nothing reaches a model unredacted.
  */
-function redactSecrets(text: string): string {
+export function redactSecrets(text: string): string {
   return text
     .replace(/sk-[A-Za-z0-9_-]{20,}/g, "***REDACTED***")
     .replace(/AKIA[0-9A-Z]{16}/g, "***REDACTED***")

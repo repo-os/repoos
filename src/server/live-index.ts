@@ -74,6 +74,11 @@ export type RepoEvent =
   /** The freeform-create PM flesh-out finished — success or failure (0335).
    *  Emitted on every exit path so the indicator can never get stuck. */
   | { type: "task.pmFinished"; id: string; at: string }
+  /** The task's Debugger is generating (started) or gave up on (finished) the
+   *  one-line tl;dr for the current failure (#0570). `started` drives the
+   *  drawer's subtle "diagnosing…" hint; `finished` clears it on every exit
+   *  path so the hint can never get stuck. */
+  | { type: "task.debugTldr"; id: string; state: "started" | "finished"; at: string }
   | { type: "index.rebuilt"; taskCount: number; at: string }
   | {
       type: "task.progress";
@@ -622,6 +627,8 @@ function toBoardTask(t: Task): BoardTask {
     needsInput: t.needsInput,
     questions: t.questions,
     needsInputReason: t.needsInputReason,
+    debugTldr: t.debugTldr,
+    debugTldrAt: t.debugTldrAt,
     needsMerge: t.needsMerge,
     priority: t.priority,
     area: t.area,
@@ -675,6 +682,8 @@ function diff(a: Task, b: Task): Partial<Task> {
     "needsInput",
     "questions",
     "needsInputReason",
+    "debugTldr",
+    "debugTldrAt",
     "needsInputDetail",
     "needsMerge",
     "agentOverride",
