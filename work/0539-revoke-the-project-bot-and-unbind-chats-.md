@@ -3,9 +3,6 @@ id: "0539"
 title: Revoke the project bot and unbind chats on disconnect
 type: feature
 status: review
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
 needs_merge: true
 priority: p2
 area: server
@@ -16,7 +13,7 @@ branch: feat/revoke-the-project-bot-and-unbind-chats-
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-27T07:33:20Z"
-updated_at: "2026-09-28T08:14:00Z"
+updated_at: "2026-09-28T08:16:10Z"
 review_passes: 9
 merge_conflict_retry_count: 2
 review_rounds: 2
@@ -124,3 +121,4 @@ rm: cannot remove '/home/nick/.repoos-validate.r2sYPk/repo/.repoos/repoos.db-shm
 - 2026-09-28T06:41:38Z · cli_override
 - 2026-09-28T06:41:40Z · model_override
 - 2026-09-28T08:08:37Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-09-28T08:16:10Z · needs_input (dev-error) dismissed by hello@repoos.org
