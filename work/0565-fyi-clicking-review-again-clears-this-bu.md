@@ -2,7 +2,7 @@
 id: "0565"
 title: Review Again (clears this) leaves the needs-input warning card visible while the fresh review runs
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/review-again-clears-this-leaves-the-need
 pm_model_override: opencode/muse-spark-1.3-contributor-free
 created_at: "2026-09-28T04:05:24Z"
-updated_at: "2026-09-28T04:22:02Z"
+updated_at: "2026-09-28T04:30:15Z"
 ---
 ## Problem
 
@@ -78,3 +78,4 @@ FYI, clicking "Review Again (clears this)" button, does start the review again, 
 - 2026-09-28T04:21:59Z · needs_input
 - 2026-09-28T04:22:01Z · status inbox→ready
 - 2026-09-28T04:22:02Z · status ready→active, needs_input, branch
+- 2026-09-28T04:30:15Z · status active→review
