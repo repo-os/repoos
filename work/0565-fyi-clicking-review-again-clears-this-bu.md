@@ -3,6 +3,9 @@ id: "0565"
 title: "FYI, clicking \"Review Again (clears this)\" button, does s…"
 type: feature
 status: draft
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI; body under 400 characters (excluding original prompt)"
 priority: p2
 area: general
 assigned_to: ai
@@ -28,3 +31,4 @@ FYI, clicking "Review Again (clears this)" button, does start the review again, 
 - 2026-09-28T04:05:24Z · screenshots
 - 2026-09-28T04:05:24Z · screenshots
 - 2026-09-28T04:08:24Z · note: Freeform PM run failed: the opencode agent timed out after 180s
+- 2026-09-28T04:08:24Z · needs_input
