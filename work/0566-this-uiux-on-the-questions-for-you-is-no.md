@@ -9,11 +9,11 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-questions-for-you-duplication-and-an
 pm_cli_override: opencode
-pm_model_override: default
+pm_model_override: opencode-go/hy3
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-28T04:34:57Z"
-updated_at: "2026-09-28T06:27:53Z"
+updated_at: "2026-09-28T06:27:54Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -132,3 +132,4 @@ rm: cannot remove '/home/nick/.repoos-validate.YNH9F1/repo/.repoos/repoos.db-shm
 - 2026-09-28T05:58:16Z · review_model_override
 - 2026-09-28T05:58:22Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-09-28T06:27:53Z · pm_cli_override, pm_model_override
+- 2026-09-28T06:27:54Z · pm_model_override
