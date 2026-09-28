@@ -2,7 +2,7 @@
 id: "0569"
 title: Make task title click-to-edit in place with autosave
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/make-task-title-click-to-edit-in-place-w
 pm_cli_override: opencode
 pm_model_override: opencode-go/hy3
 created_at: "2026-09-28T05:28:58Z"
-updated_at: "2026-09-28T08:08:54Z"
+updated_at: "2026-09-28T10:06:49Z"
 ---
 ## Problem
 The task title is currently shown twice in the task view, which is redundant and visually noisy.
@@ -55,3 +55,4 @@ Rather than showing the task title twice, let's just keep the top one and if a u
 - 2026-09-28T06:42:25Z · pm_model_override
 - 2026-09-28T06:42:28Z · status ready→active, branch
 - 2026-09-28T08:08:54Z · status active→review
+- 2026-09-28T10:06:49Z · status review→done, release:success
