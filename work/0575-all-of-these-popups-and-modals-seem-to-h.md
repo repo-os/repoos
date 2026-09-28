@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 model_override: opencode-go/mimo-v2.6-flash
+review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-28T13:15:47Z"
-updated_at: "2026-09-28T13:27:59Z"
+updated_at: "2026-09-28T13:28:03Z"
 ---
 ## Problem
 
@@ -71,3 +72,4 @@ All of these popups and modals seem to have the same issue: clicks on them go pa
 - 2026-09-28T13:15:48Z · screenshots
 - 2026-09-28T13:16:27Z · status draft→inbox, title, area, type, body
 - 2026-09-28T13:27:59Z · model_override
+- 2026-09-28T13:28:03Z · review_model_override
