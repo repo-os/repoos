@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "[object Object]"
 updated_at: "2026-09-28T05:38:15Z"
 review_passes: 2
 id: "0564"
@@ -93,4 +95,5 @@ Resource metrics (CPU/memory on remote hosts), autoscaling, Hetzner runner pooli
 - 2026-09-28T05:02:25Z · status active→review
 - 2026-09-28T05:08:24Z · status review→active
 - 2026-09-28T05:36:14Z · status active→review
+
 

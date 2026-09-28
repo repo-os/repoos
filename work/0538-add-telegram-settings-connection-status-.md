@@ -1,4 +1,5 @@
 ---
+merge_conflict_retry_count: 1
 updated_at: "2026-09-28T05:38:57Z"
 review_passes: 1
 id: "0538"
@@ -62,4 +63,5 @@ Use the shared dialog components (`ui/dialog/*`, body-teleported) and the global
 - 2026-09-28T05:09:47Z · review_model_override
 - 2026-09-28T05:09:47Z · status ready→active
 - 2026-09-28T05:37:50Z · status active→review
+
 
