@@ -25,6 +25,11 @@ afterEach(() => {
   resetCheckStore();
 });
 
+// A `repoos check` parent exports REPOOS_CHECK_STORE_ROOT for its OWN rows;
+// these fixtures own their tmp stores and must never be redirected by an
+// inherited env (a leaked export sent fixture rows into the live store).
+delete process.env.REPOOS_CHECK_STORE_ROOT;
+
 function tmpRoot(): string {
   const root = mkdtempSync(join(tmpdir(), "repoos-runobs-"));
   dirs.push(root);
@@ -278,5 +283,126 @@ describe("remote run history rows (#0564)", () => {
     const all = f.store().list();
     expect(all).toHaveLength(1);
     expect(all[0]).toMatchObject({ taskId: null, phase: "release", machine: "bee" });
+  });
+
+  it("records a mid-dispatch deadline cancel as cancelled, attributed to the host (0564 review)", async () => {
+    // The deadline expires while the bundle is in flight — AFTER the slot was
+    // acquired and a host chosen, before the suite starts. This used to land
+    // as `fail` with failedStep "remote-validation"; it is a cancellation.
+    const root = tmpRoot();
+    const config = {
+      root,
+      cacheDir: ".repoos",
+      remoteValidation: {
+        enabled: true,
+        provider: "tailscale",
+        tailscaleHosts: [{ host: "bee" }],
+      },
+    } as unknown as RepoOSConfig;
+    const exec: RemoteExecDeps = {
+      bundleRepo: vi.fn(async () => {
+        await new Promise((r) => setTimeout(r, 30));
+        return { ok: true };
+      }),
+      uploadFile: vi.fn(async () => ({ ok: true })),
+      downloadDir: vi.fn(async () => {}),
+      probeTcp: vi.fn(async () => true),
+      runRemote: vi.fn(async (_h, cmd): Promise<RemoteExecResult> =>
+        cmd.includes(PREREQ_OK_TOKEN)
+          ? { code: 0, output: PREREQ_OK_TOKEN, timedOut: false }
+          : { code: 0, output: "ok", timedOut: false },
+      ),
+    };
+    const runner = new TailscaleRunner(config, undefined, { exec });
+    const summary = await runner.validate(opts("0564", { deadlineAt: Date.now() + 15 }));
+    expect(summary.ok).toBe(false);
+    expect(summary.cancelled).toBe(true);
+
+    const rows = getCheckStore(root).list();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      taskId: "0564",
+      machine: "bee", // a host WAS chosen before the cancel
+      remote: true,
+      outcome: "cancelled",
+      durationMs: null,
+    });
+  });
+
+  it("records a row for a disabled runner, like the Hetzner path (0564 review)", async () => {
+    const root = tmpRoot();
+    const config = {
+      root,
+      cacheDir: ".repoos",
+      remoteValidation: {
+        enabled: false,
+        provider: "tailscale",
+        tailscaleHosts: [{ host: "bee" }],
+      },
+    } as unknown as RepoOSConfig;
+    const exec: RemoteExecDeps = {
+      bundleRepo: vi.fn(async () => ({ ok: true })),
+      uploadFile: vi.fn(async () => ({ ok: true })),
+      downloadDir: vi.fn(async () => {}),
+      probeTcp: vi.fn(async () => true),
+      runRemote: vi.fn(async (): Promise<RemoteExecResult> => ({
+        code: 0,
+        output: "ok",
+        timedOut: false,
+      })),
+    };
+    const runner = new TailscaleRunner(config, undefined, { exec });
+    const summary = await runner.validate(opts("0564"));
+    expect(summary.ok).toBe(false);
+    expect(exec.runRemote).not.toHaveBeenCalled();
+
+    const rows = getCheckStore(root).list();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      taskId: "0564",
+      machine: null,
+      remote: true,
+      outcome: "fail",
+      failedStep: "remote-validation",
+      detail: "remote validation is disabled",
+    });
+  });
+
+  it("writes to REPOOS_CHECK_STORE_ROOT when set (0564 review)", async () => {
+    // A standalone `repoos check` in a task worktree resolves the env to the
+    // MAIN checkout before dispatching, so the row lands in the history the
+    // server reads — not the worktree's own store.
+    const root = tmpRoot();
+    const mainRoot = tmpRoot();
+    process.env.REPOOS_CHECK_STORE_ROOT = mainRoot;
+    try {
+      const config = {
+        root,
+        cacheDir: ".repoos",
+        remoteValidation: {
+          enabled: true,
+          provider: "tailscale",
+          tailscaleHosts: [{ host: "bee" }],
+        },
+      } as unknown as RepoOSConfig;
+      const exec: RemoteExecDeps = {
+        bundleRepo: vi.fn(async () => ({ ok: true })),
+        uploadFile: vi.fn(async () => ({ ok: true })),
+        downloadDir: vi.fn(async () => {}),
+        probeTcp: vi.fn(async () => true),
+        runRemote: vi.fn(async (_h, cmd): Promise<RemoteExecResult> =>
+          cmd.includes(PREREQ_OK_TOKEN)
+            ? { code: 0, output: PREREQ_OK_TOKEN, timedOut: false }
+            : { code: 0, output: "ok", timedOut: false },
+        ),
+      };
+      const runner = new TailscaleRunner(config, undefined, { exec });
+      expect(await runner.validate(opts("0564"))).toMatchObject({ ok: true });
+
+      expect(getCheckStore(mainRoot).list()).toHaveLength(1);
+      expect(getCheckStore(root).list()).toHaveLength(0);
+    } finally {
+      delete process.env.REPOOS_CHECK_STORE_ROOT;
+    }
   });
 });

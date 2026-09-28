@@ -51,6 +51,7 @@ import {
 } from "../core/check-runner.js";
 import { writeCheckRun } from "../core/check-results-store.js";
 import { envToRunContext, getCheckStore, localMachineName } from "../core/check-store.js";
+import { mainCheckoutRoot } from "../core/git.js";
 import { Logger } from "../core/logger.js";
 import { createRemoteValidator } from "../server/remote-validation.js";
 import {
@@ -1507,6 +1508,16 @@ export async function runCheckPlan(
 export async function cmdCheck(argv: string[] = []): Promise<void> {
   const opts = parseCheckArgs(argv);
   const repoRoot = findRepoRoot();
+  // Where this run's history row(s) go (#0564 review): the MAIN checkout's
+  // `.repoos/checks.db`, the one store the running server reads. A standalone
+  // `repoos check` inside a task worktree used to write to the worktree's own
+  // file, so an agent's self-check never appeared in Checks → Runs. An
+  // explicit REPOOS_CHECK_STORE_ROOT (server-spawned paths) already points at
+  // the main root and wins. Deliberately a local value, NOT a process.env
+  // write: an exported env var reaches every child this command spawns —
+  // including the test suite, whose own check-store fixtures would then
+  // record into this repo's live store instead of their own tmp ones.
+  const checkStoreRoot = resolveCheckStoreRoot(repoRoot);
   const cfg = loadConfig(repoRoot);
   const markers = detectRepoMarkers(repoRoot);
   const plan = resolveCheckPlan({
@@ -1658,7 +1669,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
         // failed remote attempt in the history (#0564). Record it here —
         // machine unknown (no host was ever chosen), remote half only.
         recordRunHistoryRow({
-          root: process.env.REPOOS_CHECK_STORE_ROOT?.trim() || repoRoot,
+          root: checkStoreRoot,
           cacheDir: cfg.cacheDir,
           scope: "full",
           startedAt: new Date().toISOString(),
@@ -1673,67 +1684,101 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
       console.log(c.yellow(`  ⚠ ${msg} — running the full local gate\n`));
     }
     if (remoteValidator) {
-      const taskId = process.env.REPOOS_TASK_ID?.trim() || "pre-review";
-      const remoteStartedAt = new Date();
-      let remoteOutput = "";
-      // Which gate is calling (#0564): a caller-supplied task id means this is
-      // a pre-review pass for that task; otherwise a bare CLI run.
-      const { phase: runPhase } = envToRunContext(process.env);
-      const gate = await runRemotePreReviewGate({
-        config: cfg,
-        remoteValidator,
-        worktreePath: repoRoot,
-        taskId,
-        phase: runPhase,
-        onChunk: (chunk) => {
-          remoteOutput += chunk;
-          process.stdout.write(chunk);
-        },
-      });
-      // Await the teardown: the failure path below exits the process, and an
-      // un-awaited async runner delete would be cut off mid-request, leaking a
-      // warm VM that no idle timer survives the exit to reap.
-      await remoteValidator.dispose().catch(() => {});
-      if (gate.kind === "fail") {
-        console.log(c.red(`\n  ✗ ${gate.detail}\n`));
-        persistRemoteFailure(gate.detail, remoteOutput, remoteStartedAt);
-        process.exit(1);
-      }
-      if (gate.kind === "local-only" && gate.skipTests) {
-        process.env.REPOOS_SKIP_TESTS = "1";
-        console.log(c.green("  ✔ remote gate passed — running local guards only\n"));
-      } else if (gate.kind === "local-only") {
-        console.log(c.yellow("  ⚠ remote unavailable — running the full local gate\n"));
+      // Route the runner's own history rows (recordRemoteRunHistory reads
+      // this env) to the resolved store root for THIS dispatch only, then
+      // restore — a process-wide export here would leak into the check
+      // plan's child processes (the test suite's own check-store fixtures
+      // record via the same env and would land in the live store).
+      const prevStoreRoot = process.env.REPOOS_CHECK_STORE_ROOT;
+      process.env.REPOOS_CHECK_STORE_ROOT = checkStoreRoot;
+      try {
+        const taskId = process.env.REPOOS_TASK_ID?.trim() || "pre-review";
+        const remoteStartedAt = new Date();
+        let remoteOutput = "";
+        // Which gate is calling (#0564): a caller-supplied task id means this is
+        // a pre-review pass for that task; otherwise a bare CLI run.
+        const { phase: runPhase } = envToRunContext(process.env);
+        const gate = await runRemotePreReviewGate({
+          config: cfg,
+          remoteValidator,
+          worktreePath: repoRoot,
+          taskId,
+          phase: runPhase,
+          onChunk: (chunk) => {
+            remoteOutput += chunk;
+            process.stdout.write(chunk);
+          },
+        });
+        // Await the teardown: the failure path below exits the process, and an
+        // un-awaited async runner delete would be cut off mid-request, leaking a
+        // warm VM that no idle timer survives the exit to reap.
+        await remoteValidator.dispose().catch(() => {});
+        if (gate.kind === "fail") {
+          console.log(c.red(`\n  ✗ ${gate.detail}\n`));
+          persistRemoteFailure(gate.detail, remoteOutput, remoteStartedAt);
+          process.exit(1);
+        }
+        if (gate.kind === "local-only" && gate.skipTests) {
+          process.env.REPOOS_SKIP_TESTS = "1";
+          console.log(c.green("  ✔ remote gate passed — running local guards only\n"));
+        } else if (gate.kind === "local-only") {
+          console.log(c.yellow("  ⚠ remote unavailable — running the full local gate\n"));
+        }
+      } finally {
+        if (prevStoreRoot === undefined) delete process.env.REPOOS_CHECK_STORE_ROOT;
+        else process.env.REPOOS_CHECK_STORE_ROOT = prevStoreRoot;
       }
     }
   }
 
   const runStartedAt = new Date();
-  const results = await runCheckPlan(plan, {
-    repoRoot,
-    cfg,
-    profile,
-    // Narrowed above after the null check; `?? undefined` keeps the types
-    // honest without a cast.
-    changedPaths: changedPaths ?? undefined,
-    changedRef,
-    onStart: (step) => {
-      heading(step.name);
-      console.log(c.dim(`  · ${describeStep(step)}`));
-    },
-    onResult: (r) => {
-      const secs = r.durationMs >= 1000 ? ` (${(r.durationMs / 1000).toFixed(1)}s)` : "";
-      if (r.status === "passed") {
-        console.log(c.green(`  ✔ ${r.name}${secs}${r.detail ? ` — ${r.detail}` : ""}`));
-      } else if (r.status === "skipped") {
-        console.log(c.dim(`  ⏭ ${r.name} — ${statusDetail(r)}`));
-      } else if (!r.required) {
-        console.log(c.yellow(`  ⚠ ${r.name} failed (optional) — ${statusDetail(r)}`));
-      } else {
-        console.log(c.red(`  ✗ ${r.name}${secs}`));
-      }
-    },
-  });
+  let results: StepRunResult[];
+  try {
+    results = await runCheckPlan(plan, {
+      repoRoot,
+      cfg,
+      profile,
+      // Narrowed above after the null check; `?? undefined` keeps the types
+      // honest without a cast.
+      changedPaths: changedPaths ?? undefined,
+      changedRef,
+      onStart: (step) => {
+        heading(step.name);
+        console.log(c.dim(`  · ${describeStep(step)}`));
+      },
+      onResult: (r) => {
+        const secs = r.durationMs >= 1000 ? ` (${(r.durationMs / 1000).toFixed(1)}s)` : "";
+        if (r.status === "passed") {
+          console.log(c.green(`  ✔ ${r.name}${secs}${r.detail ? ` — ${r.detail}` : ""}`));
+        } else if (r.status === "skipped") {
+          console.log(c.dim(`  ⏭ ${r.name} — ${statusDetail(r)}`));
+        } else if (!r.required) {
+          console.log(c.yellow(`  ⚠ ${r.name} failed (optional) — ${statusDetail(r)}`));
+        } else {
+          console.log(c.red(`  ✗ ${r.name}${secs}`));
+        }
+      },
+    });
+  } catch (e) {
+    // The plan runner is not expected to throw, but if it does the normal
+    // end-of-run record below never runs — and the server-side check manager
+    // records only `code === null`, so a child that dies on an unhandled
+    // error would leave NO row at all (#0564 review). Record the crash, then
+    // re-throw for the usual CLI error path.
+    const finishedAt = new Date();
+    recordRunHistoryRow({
+      root: checkStoreRoot,
+      cacheDir: cfg.cacheDir,
+      scope: changedRef ? `changed:${changedRef}` : "full",
+      startedAt: runStartedAt.toISOString(),
+      durationMs: finishedAt.getTime() - runStartedAt.getTime(),
+      outcome: "fail",
+      failedStep: "check",
+      skippedSteps: [],
+      detail: `check crashed before completing: ${(e as Error).message}`,
+    });
+    throw e;
+  }
 
   // ── Summary ─────────────────────────────────────────────────────────
   const gatingFailures = results.filter(
@@ -1803,10 +1848,11 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
 
   // Record the run in the durable history (#0564). The caller (handoff,
   // close-out, release) identifies itself via env; a bare `repoos check`
-  // records as phase "cli" with a null task id. The store lives on the
-  // CALLER's repo root so worktree runs land in the history the server reads.
+  // records as phase "cli" with a null task id. The store lives in the MAIN
+  // checkout (resolved at the top of this command, #0564 review) so worktree
+  // runs land in the history the server reads.
   recordRunHistoryRow({
-    root: process.env.REPOOS_CHECK_STORE_ROOT?.trim() || repoRoot,
+    root: checkStoreRoot,
     cacheDir: cfg.cacheDir,
     scope: changedRef ? `changed:${changedRef}` : "full",
     startedAt: runStartedAt.toISOString(),
@@ -1818,6 +1864,16 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   });
 
   process.exit(gatingFailures.length > 0 ? 1 : 0);
+}
+
+/**
+ * Where a standalone run's check-run history rows belong (#0564 review): an
+ * explicit `REPOOS_CHECK_STORE_ROOT` (server-spawned paths) wins; otherwise
+ * the MAIN checkout, resolved through any linked worktree. Fail-soft.
+ */
+function resolveCheckStoreRoot(repoRoot: string): string {
+  const envRoot = process.env.REPOOS_CHECK_STORE_ROOT?.trim();
+  return envRoot || mainCheckoutRoot(repoRoot);
 }
 
 /**

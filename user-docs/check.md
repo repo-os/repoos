@@ -203,11 +203,15 @@ result, duration and command output are shown alongside.
 Every check run — local or remote, pre-review or close-out or release, and bare
 `repoos check` invocations — is recorded in `.repoos/checks.db` with the machine
 that ran it, how long it took, whether it was the full suite or a changed-path
-pass, which steps were skipped, and what failed. The Checks page's **Runs** tab
-shows this history as a sortable table across all tasks, with a per-machine
+pass, which steps were skipped, and what failed. The history lives in the MAIN
+checkout: a standalone `repoos check` inside a task worktree records into the
+same file the server reads, not a per-worktree store. The Checks page's **Runs**
+tab shows this history as a sortable table across all tasks, with a per-machine
 summary (runs, pass rate, median full-suite duration) above it — so "how long
 does a full suite take on bee vs mini?" and "was that failure a fluke?" are
-questions the table answers, not archaeology in log files.
+questions the table answers, not archaeology in log files. A run whose caller's
+deadline passed mid-dispatch is recorded as **cancelled**, not failed, so a
+give-up never reads as a gate the branch failed.
 
 The **Remote runners** tab shows each configured host live: health, the runs in
 flight right now (task and elapsed time), what is queued next, and the last
