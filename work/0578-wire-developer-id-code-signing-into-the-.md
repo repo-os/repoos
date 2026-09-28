@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p1
 area: macos
-assigned_to: ""
+story: MacOS Native App
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-28T18:43:30Z"
-updated_at: "2026-09-28T18:43:30Z"
+updated_at: "2026-09-28T18:45:04Z"
 ---
 Replace the current ad-hoc signing in the RepoOS Hub Xcode project and release CI with Developer ID signing using the certificate provisioned in #0576.
 
@@ -46,3 +47,4 @@ Add a signing step before the DMG packaging step:
 ## Activity
 
 - 2026-09-28T18:43:30Z · created · unknown
+- 2026-09-28T18:45:04Z · story
