@@ -104,7 +104,6 @@ import { GENERIC_PATCH_TARGETS } from "../lib/taskTransitions";
 import { parseReviewVerdict } from "../lib/reviewVerdict";
 import { reportPredatesLatestHandoff } from "../lib/reviewFreshness";
 import { autoRepairHint, retryCountFrom } from "../lib/retryHints";
-import { uiRecoveryState } from "../lib/uiRecovery";
 import CopyableNumber from "./CopyableNumber.vue";
 import PmChatSurface from "./PmChatSurface.vue";
 
@@ -113,7 +112,6 @@ const ui = useUiStore();
 const config = useConfigStore();
 const auth = useAuthStore();
 const router = useRouter();
-const recovery = uiRecoveryState();
 const { recall: recallModelForCli } = useModelMemory();
 const { onTaskDrawerBubbleClick } = useCopyChatMessage();
 
@@ -3065,7 +3063,6 @@ watch(
     <DialogOverlay />
     <DialogContent
       :style="{ width: ui.drawerWidth + 'px', 'max-width': '100vw' }"
-      :disable-outside-pointer-events="!recovery.kind"
       @open-auto-focus="onOpenAutoFocus"
       @dragenter.prevent="onDragEnter"
       @dragover.prevent

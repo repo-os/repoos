@@ -38,6 +38,7 @@ function confirm(): void {
     <div
       v-if="open"
       class="ste-overlay"
+      data-overlay-layer="floating"
       role="dialog"
       aria-modal="true"
       aria-labelledby="ste-confirm-title"
