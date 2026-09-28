@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-28T05:59:27Z"
-review_passes: 3
 id: "0566"
 title: Fix Questions-for-You duplication and answer UX
 type: feature
@@ -10,10 +8,13 @@ area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-questions-for-you-duplication-and-an
-pm_model_override: opencode/muse-spark-1.3-contributor-free
+pm_cli_override: opencode
+pm_model_override: default
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-28T04:34:57Z"
+updated_at: "2026-09-28T06:27:53Z"
+review_passes: 3
 review_rounds: 2
 ---
 ## Problem
@@ -130,4 +131,4 @@ rm: cannot remove '/home/nick/.repoos-validate.YNH9F1/repo/.repoos/repoos.db-shm
 - 2026-09-28T05:58:15Z · review_cli_override, review_model_override
 - 2026-09-28T05:58:16Z · review_model_override
 - 2026-09-28T05:58:22Z · needs_input (review-failed) cleared for review again by hello@repoos.org
-
+- 2026-09-28T06:27:53Z · pm_cli_override, pm_model_override
