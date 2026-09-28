@@ -8,9 +8,9 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
-pm_model_override: opencode/muse-spark-1.3-contributor-free
+pm_cli_override: opencode
 created_at: "2026-09-28T05:28:58Z"
-updated_at: "2026-09-28T05:29:56Z"
+updated_at: "2026-09-28T06:42:24Z"
 ---
 ## Problem
 The task title is currently shown twice in the task view, which is redundant and visually noisy.
@@ -50,3 +50,4 @@ Rather than showing the task title twice, let's just keep the top one and if a u
 - 2026-09-28T05:29:03Z · screenshots
 - 2026-09-28T05:29:21Z · status draft→inbox, title, area, body
 - 2026-09-28T05:29:56Z · status inbox→ready
+- 2026-09-28T06:42:24Z · pm_cli_override, pm_model_override
