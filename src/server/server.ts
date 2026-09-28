@@ -2484,6 +2484,19 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       return json(res, 200, { enabled: true, log });
     },
   );
+  // Structured per-task remote-validation events for the Debug tab (#0568):
+  // which host ran, the exit code, and the infra/config error behind a run
+  // that did not simply fail its tests. Empty when remote validation is off.
+  router.register(
+    "GET",
+    /^\/api\/tasks\/([^/]+)\/remote-validation\/events$/,
+    (_ctx, _req, res, params) => {
+      return json(res, 200, {
+        ok: true,
+        events: remoteValidator?.remoteEvents?.(params.param1) ?? [],
+      });
+    },
+  );
   router.register("GET", /^\/api\/tasks\/([^/]+)\/integration-job$/, getIntegrationJob);
   router.register("GET", "/api/integration-jobs", getIntegrationJobs);
   router.register("GET", "/api/check-plan", getCheckPlan);
