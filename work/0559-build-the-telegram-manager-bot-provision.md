@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-28T08:49:58Z"
+review_passes: 3
 id: "0559"
 title: Build the Telegram manager-bot provisioning service and secure instance handoff
 type: feature
@@ -16,9 +18,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-27T17:32:41Z"
-updated_at: "2026-09-28T08:42:38Z"
 review_rounds: 2
-review_passes: 2
 check_retry_count: 1
 last_check_failure: "[object Object]"
 dev_error_count: 4
@@ -110,3 +110,16 @@ Depends on #0530 (done) and the local adapter/client contract from #0531 (still 
 - 2026-09-28T08:30:53Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-09-28T08:38:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-09-28T08:42:38Z · status active→review
+- 2026-09-28T08:46:38Z · handoff failed · remote validation failed: remote validation failed (exit 1) — …/dist/ui/assets/VoiceDictate-CEyIL7fp.css': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/dist/ui/assets/WorkView-C4lr2ckC.css': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/dist/ui/assets/index-BuRg_glO.css': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/dist/ui/favicon.svg': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/dist/ui/sw.js': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/dist/ui/index.html': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/dist/.build-info.json': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/dist/.build-stamp.json': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/.repoos/auto-engineering-decision.json': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/.repoos/repoos.db': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/.repoos/repoos.db-wal': Permission denied
+rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/.repoos/repoos.db-shm': Permission denied — fix it in the feature branch and re-run the gate
+
