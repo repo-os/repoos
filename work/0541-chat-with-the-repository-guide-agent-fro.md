@@ -10,8 +10,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 model_override: opencode-go/glm-5.3-flash
+review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-27T07:33:38Z"
-updated_at: "2026-09-28T11:43:27Z"
+updated_at: "2026-09-28T11:43:32Z"
 ---
 ## Problem
 
@@ -55,3 +56,4 @@ Agent turns are the most expensive thing Telegram can trigger, and a group makes
 - 2026-09-27T15:52:48Z · body
 - 2026-09-28T01:18:42Z · status inbox→ready
 - 2026-09-28T11:43:27Z · model_override
+- 2026-09-28T11:43:32Z · review_model_override
