@@ -16,6 +16,7 @@ import ChatDiagnosticRow from "./ChatDiagnosticRow.vue";
 import ChatToolCallRow from "./ChatToolCallRow.vue";
 import { ArrowDown } from "lucide-vue-next";
 import { useChatScroll } from "../composables/useChatScroll";
+import { useCopyChatMessage } from "../composables/useCopyChatMessage";
 import { bubbleRole, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
 
 const props = withDefaults(defineProps<{ task: Task; active?: boolean }>(), { active: true });
@@ -45,6 +46,8 @@ const { showJumpToLatest, onScroll, scrollToLatest } = useChatScroll(log, {
   contentSize: () => lines.value.length,
   active: () => props.active,
 });
+
+const { onBubbleClick } = useCopyChatMessage();
 
 const dispatchRole = ref<null | "engineer" | "pm">(null);
 const dispatchBusy = ref(false);
@@ -242,7 +245,11 @@ watch(
               <div v-if="bubbleRole(row) === 'assistant'" class="td-mini-avatar">
                 <img :src="DEBUGGER_AVATAR" alt="D" />
               </div>
-              <div class="td-bubble" :class="`td-bubble-${bubbleRole(row)}`">
+              <div
+                class="td-bubble"
+                :class="`td-bubble-${bubbleRole(row)}`"
+                @click="onBubbleClick(row, $event)"
+              >
                 <div
                   v-if="bubbleRole(row) === 'assistant'"
                   class="td-markdown"
