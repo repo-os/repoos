@@ -8,8 +8,10 @@ area: core
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: opencode
+model_override: default
 created_at: "2026-09-28T03:44:07Z"
-updated_at: "2026-09-28T03:52:34Z"
+updated_at: "2026-09-28T03:56:41Z"
 ---
 ## Problem
 
@@ -82,3 +84,4 @@ Resource metrics (CPU/memory on remote hosts), autoscaling, Hetzner runner pooli
 
 - 2026-09-28T03:44:07Z · created · unknown
 - 2026-09-28T03:52:34Z · body
+- 2026-09-28T03:56:41Z · cli_override, model_override
