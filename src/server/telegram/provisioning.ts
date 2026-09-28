@@ -241,6 +241,28 @@ class HttpProvisioningClient implements ManagedProvisioningClient {
     return view;
   }
 
+  async revokeBot(input: {
+    botId: number;
+    instanceId: string;
+    repository: string;
+  }): Promise<{ confirmed: boolean }> {
+    const payload = await this.request(
+      "POST",
+      `/v1/provisioning/bots/${encodeURIComponent(String(input.botId))}/revoke`,
+      {
+        repository: input.repository,
+        instance: { id: input.instanceId },
+      },
+    );
+    const confirmed = payload.confirmed === true || payload.revoked === true;
+    if (!confirmed) {
+      throw new ManagedProvisioningUnavailableError(
+        "managed provisioning service did not confirm bot revocation",
+      );
+    }
+    return { confirmed: true };
+  }
+
   async redeem(id: string): Promise<{ token: string }> {
     const payload = (await this.request(
       "POST",
@@ -278,19 +300,6 @@ class HttpProvisioningClient implements ManagedProvisioningClient {
       );
     }
     return { token };
-  }
-
-  async revokeBot(
-    botId: number,
-    repository: string,
-    instanceId: string,
-  ): Promise<{ confirmed: boolean }> {
-    const payload = await this.request(
-      "POST",
-      `/v1/provisioning/bots/${encodeURIComponent(String(botId))}/revoke`,
-      { repository, instance: { id: instanceId } },
-    );
-    return { confirmed: payload.confirmed === true };
   }
 }
 

@@ -46,14 +46,19 @@ same routes). RepoOS validates the bot identity with Telegram, stores the
 token encrypted at rest, and returns the bot's non-secret identity. The token
 is never echoed back — not to the browser, not into logs, `.env`,
 `repoos.toml`, or a support bundle — and it is not readable through the API
-after it is stored. Disconnecting forgets the credential and removes any
-webhook.
+after it is stored. Disconnect first removes and confirms the webhook. For a
+BYO bot, Telegram does not provide a Bot API method to revoke its token: when
+prompted, revoke it in @BotFather and retry disconnect. RepoOS confirms
+revocation by checking that the old token returns 401, then removes the
+encrypted credential and this instance's user links and chat bindings. A
+failed step is reported as incomplete and leaves the credential and bindings
+available for a retry; webhook-removal progress is retained safely.
 
 The same connection procedure registers the bot's supported profile with
 Telegram: its command list (starting with `/help`), and name/description text
-that mentions the repository. Command *behavior* beyond authorization and
-account binding ships with later intake tasks; unauthorized senders get
-silence, by design.
+that mentions the repository. Unauthorized senders get silence, by design; see
+[Use the bot](#use-the-bot) for the read-only commands an authorized sender can
+run.
 
 ### Update transport
 
@@ -75,8 +80,9 @@ delivered to the intake/authorization pipeline. The intake handler
 (`src/server/telegram/intake.ts`) resolves each sender against the allowlist
 on every message, rate-limits per user and per chat (in-memory, per-process),
 audits privileged intake, and silently drops unauthorized traffic per ADR 0007.
-Later tasks register work on the authorized callback; until then nothing
-replies on the bot's behalf beyond binding via `/start`.
+Authorized senders reach the read-only command handler below; other work
+(agent chat, lifecycle actions) is registered on the same authorized callback
+by later tasks.
 
 ### The bot's Telegram settings are the operator's to set
 
@@ -130,6 +136,44 @@ grant one.
 Unknown, unlinked, or no-longer-allowlisted senders receive no reply in any
 chat. This avoids confirming the bot is active and flooding groups with access
 errors.
+
+### Verify the connection
+
+The Settings connection panel (**Settings → Notifications → Telegram**) shows
+whether a bot is connected — its display name, username, and transport — and
+lists the private chats currently bound (one per linked Telegram account),
+with a **Send test message** control for each so an admin can confirm
+delivery before relying on the integration for real notifications: any
+failure (blocked bot, chat left, rate limit) surfaces Telegram's own error
+text instead of a generic "failed." Unbinding a chat from this panel and from
+**Settings → Authentication & Users** are the same action against the same
+underlying links — either one immediately reflects on both.
+
+## Use the bot
+
+Once your account is linked and the chat is bound, you can run read-only
+commands in a private chat or an addressed group message:
+
+- `/status` — repository overview: task counts, anything needing attention,
+  and how many agents/reviews are running.
+- `/tasks [scope] [page]` — list tasks. `scope` is `work` (active and
+  in-review, the default) or a status name; `page` moves through long lists.
+  Members can use the `work` scope; querying arbitrary statuses is admin-only.
+- `/agents` — agents running now, plus recently finished ones.
+- `/help` — the commands **and what your role can do**, based on your current
+  RepoOS role.
+
+Replies link back into the RepoOS web UI for detail — Telegram is a glance and
+notification surface, not a full client. Long task lists paginate with an
+explicit "Showing N–M of T" and a `/tasks … <page>` hint rather than being cut
+off silently. Your role is checked from the allowlist on every message, so a
+change to it takes effect immediately; an unlinked or no-longer-allowlisted
+sender gets no reply at all.
+
+In a group, the bot only acts on a command addressed to it, a reply to one of
+its messages, or an `@mention` — the same trigger rules as notifications. It
+answers one command at a time per chat, so a burst from several members does
+not interleave replies.
 
 ## Managed provisioning (the official service)
 

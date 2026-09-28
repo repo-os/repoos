@@ -17,6 +17,8 @@ call site — the point of the task was that there be none.
 | `telegram/polling.ts` | The long-polling loop (`getUpdates` + pointer). |
 | `telegram/provider.ts` | `LocalTelegramProvider implements TelegramProvider`: connect/disconnect (BYO + managed redemption), profile configuration, send, intake, transport switching. |
 | `telegram/provisioning.ts` | The `ProvisioningClient` boundary and its honest "not configured" client; #0559 supplies the hosted side. |
+| `telegram/commands.ts` | Read-only command handler (`/status`, `/tasks`, `/agents`, `/help`, #0540), registered as intake's `onAuthorized`. |
+| `telegram/render.ts` | Command-side formatting: item pagination, "Showing N–M of T", Telegram's 4096-char clamp. |
 | `telegram/index.ts` | Per-repository provider singleton (`getTelegramProvider(config)`); `setTelegramProvider`/`resetTelegramProviders` for tests. |
 
 ## Security invariants (test-pinned)
@@ -204,11 +206,46 @@ logging for privileged intake. Unbound or unauthorized senders are dropped
 silently with no outbound Telegram traffic (ADR 0007). A handler failure is
 logged redacted, never allowed to kill the transport loop.
 
+## Read-only commands (#0540)
+
+`bootstrapTelegramAtBoot(config, wiring)` registers
+`createTelegramCommandHandler` (`src/server/telegram/commands.ts`) as the
+intake `onAuthorized` callback when `startServer` passes `{ index, runner,
+reviews, publicOrigin }`. It renders `/status`, `/tasks`, `/agents`, and
+`/help` and sends through the same connected project bot. It never has a data
+path of its own: it reads the in-process `LiveIndex`, `AgentRunner` (including
+its small `recentlyFinished` tail, added for `/agents`), and `ReviewManager` —
+the same sources the HTTP read routes serve — and resolves web links through
+the notification provider's `webUiLink`, not a second origin rule. The
+one-line task renderer reuses the notification `NotificationSpec` formatter.
+
+- **Authorization is inherited, not re-implemented.** `onAuthorized` is only
+  reached after a live `auth_users` lookup; an unbound sender, or one whose row
+  was deleted, produces no reply at all. The command handler is never a place
+  to add an access-denied response.
+- **Role awareness is explicit.** `/help` states the sender's live role and
+  what it can and cannot do, so a `member` learns the boundary exists instead
+  of discovering it by refusal. `/tasks` defaults to the `work` scope
+  (`active` + `review`) for both roles; arbitrary status queries are
+  admin-only, and a member asking for one is told so.
+- **Lists paginate.** `/tasks` shows "Showing N–M of T" and emits a
+  `/tasks <scope> <page>` hint for the rest. `render.ts`'s `clampMessage` is a
+  final safety net — if any message still exceeds Telegram's 4096 chars it is
+  cut at a line boundary with an explicit truncation notice, never silently.
+- **Per-chat serialization.** Concurrent commands in one chat run through a
+  promise chain, so a group burst (notably over the concurrent webhook
+  transport) cannot interleave two replies' lines. Group trigger rules are
+  unchanged — they remain `isTelegramUpdateAddressedToBot`'s (#0535).
+
+`startServer` passes the wiring; adapter tests that call
+`bootstrapTelegramAtBoot(config)` without it get exactly #0534's behavior:
+authorize, audit, drop.
+
 ## The `[telegram] enabled` gate
 
 `requireTelegramEnabled` (`src/server/routes/telegram.ts`) enforces the
 master switch on the mutating connection routes (connect, profile, transport
-arm, provision begin/status/redeem) with an honest 400; only
+arm, provision begin/status/redeem, test-message) with an honest 400; only
 `GET /api/telegram/status` stays readable while disabled so the Settings
 panel can render the switch and state. Two safe-direction calls are
 deliberately exempt: `transport {mode: "off"}` and `disconnect` — stopping
@@ -217,12 +254,101 @@ integration. The enforcement is duplicated where the traffic actually is:
 the polling loop pauses (no Telegram calls) while `enabled` is false and
 resumes live when it flips back. Tests pin both layers.
 
+## #0538: the Settings connection panel
+
+`TelegramSettingsPanel.vue` (Settings → Notifications → Telegram) is the
+admin-facing surface for everything above. It renders `GET
+/api/telegram/status` (bot display name/username, source, transport mode —
+never a token), and drives:
+
+- **Connect Telegram** (managed provisioning) — `POST /api/telegram/provision`
+  begins a request and opens its deep link; the panel polls `GET
+  /api/telegram/provision/:id` every 2.5s and calls `POST
+  /api/telegram/provision/:id/redeem` itself the moment the state reaches
+  `ready`. A `managedProvisioning.configured: false` body (501) is shown as
+  "not configured — use Bring Your Own Bot Token" rather than a bare error.
+- **Bring Your Own Bot Token** — a password-type input posted once to `POST
+  /api/telegram/connect`; the field is cleared immediately after the call
+  resolves (success or failure) and the token never round-trips into a
+  response the panel renders.
+- **Disconnect** — `POST /api/telegram/disconnect`, confirmed, always
+  available regardless of the enabled switch (see above).
+
+### Test message (`POST /api/telegram/test-message`)
+
+Body: `{ chatId: number, text?: string }`, admin-gated and enabled-gated like
+the other mutating routes. `chatId` must already be a currently-bound chat —
+the route looks it up with `AuthStore.getTelegramLink` and 404s otherwise, so
+a test send can never reach an arbitrary numeric id an admin mistypes or
+pastes from elsewhere (the same "binding is an admin action, not an
+observation" boundary #0535 enforces for delivery, applied here to the send
+path too). With no `text`, a default identifies the repository and confirms
+delivery; Telegram's own (redacted) error text surfaces on failure via
+`telegramErrorStatus`, per the task's "undiagnosable otherwise" requirement.
+
+### Bound chats scope: private chats only, for now
+
+The panel's bound-chats list and the test-message target picker both read
+`GET /api/auth/telegram/links` (#0533) — one row per Telegram **user**
+bound to an allowlisted email. In the Bot API a private chat's `chat_id`
+equals that user's numeric id, so today every bound row *is* a sendable
+private chat and this is a complete, correct "bound chats" view. **Group/
+supergroup chat binding is #0535's `telegram_user_links`-adjacent table,
+which had not landed on `main` when this task shipped** (still `review` at
+the time); there is no `telegram_group_links`-shaped storage to read yet.
+When #0535 lands, extend this list (and the test-message picker) to include
+bound groups from its storage — do not invent a second, parallel "chats"
+concept; the picker should grow one more row source, not a second UI.
+Unbinding here calls the *same* `DELETE /api/auth/telegram/links/:id` route
+Settings → Security → Authentication & Users uses, so the two surfaces are
+always one live source, never a cached copy of each other (the task's own
+requirement).
+
+### Config treatment for this task
+
+No new `repoos.toml` keys: `telegram.enabled` (live-tier, existing) already
+gates every route this task adds, and `telegram.provisioningUrl` (TOML-only,
+existing deliberate exception — see `user-docs/configuration.md`) already
+documents the provisioning-service URL this panel's "Connect Telegram" button
+depends on. The bot token itself has no TOML key at all, by design (see
+"Secrets stay env-only" in the task) — it never touches `repoos.toml`; it is
+POSTed once and stored only in the encrypted `.repoos/telegram-bot.json`
+record. There is nothing here to add a Settings *schema* control for beyond
+the switch that already exists — the connect/status/test-message controls
+this task adds are actions and live state, not configuration.
+
 ## Recovery from a corrupt connection record
 
 `TelegramCredentialStore.load()` validates the full record shape (version,
-bot, credential, transport, profile, polling pointer, webhook secret) and
+bot, credential, transport, profile, polling pointer, webhook secret, disconnect progress) and
 fails loudly with the file path and what is wrong — `status()` surfaces it as
 a 500-class error with an actionable message. Recovery never requires hand-
-deleting the file: `disconnect` clears it and `connect` replaces it
-wholesale, and both tolerate the unreadable record (`loadOrNull`) instead of
-failing on it.
+deleting the file: `connect` can replace it wholesale. `disconnect` preserves
+an unreadable record and refuses to report success because the token cannot be
+verified or revoked.
+
+## Disconnect (#0539)
+
+`disconnect` is one ordered operation — complete or loudly incomplete:
+
+1. Stop polling and remove the webhook while its token still works. Confirm
+   removal with `getWebhookInfo`; unauthorized responses are failures, not
+   proof of removal. Persist only this confirmed progress so a retry can safely
+   continue after revocation.
+2. Revoke a managed bot through the provisioning service. Telegram has no Bot
+   API operation to revoke a BYO token: RepoOS removes its webhook, instructs
+   the admin to revoke the token in @BotFather, then requires a 401 probe of
+   that old token on retry. `logOut`/`close` are not token revocation.
+3. Only after revocation is confirmed, atomically revoke this instance's user
+   and chat bindings, delete its invites, and write the audit record.
+4. Delete the encrypted credential only if it is still the exact credential
+   that was just revoked; connect and disconnect operations are serialized so
+   a reconnect cannot be deleted by an older disconnect.
+
+All binding rows carry `instance_identity` and use composite keys, so different
+instances can bind the same Telegram user or chat in a shared auth database.
+The cleanup and disconnect audit are one SQLite transaction. A failed Telegram
+step, unreadable local record, database failure, or credential change returns
+a visible retryable error; the encrypted connection remains available for
+retry. `POST /api/telegram/disconnect` and
+`POST /api/auth/telegram/disconnect` share the same implementation.

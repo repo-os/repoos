@@ -76,7 +76,11 @@ The pre-review, close-out and release gates share `runRemotePreReviewGate` (`src
   worktree at `HEAD`, runs install + build + test on the runner, then local
   guards with `REPOOS_SKIP_TESTS=1`. Logs land in
   `.repoos/logs/remote-validation/<taskId>.log` (task id, or `pre-review` for a
-  bare CLI run).
+  bare CLI run). Alongside it, `<taskId>.events.ndjson` records the same run's
+  structured outcomes — the host, the exit code, and any infra/config failure —
+  so a failed or skipped run is legible straight from the task's Debug tab
+  (`GET /api/tasks/:id/remote-validation/events`) without opening the raw log
+  (#0568).
 - **Close-out** — **`src/server/integration-orchestrator.ts` `validateCandidate`**
   (since #0118). After the local `bun run build` on the merged candidate, same
   remote + local-guards sequence as pre-review.
@@ -285,13 +289,27 @@ of failing jobs — its state and reason show in Settings → Remote validation
 (Hosts) and in `GET /api/remote-validation/status` (`hosts[]` with `probed`,
 `healthy`, `detail`, `inFlight`, `queued` — each waiting run counted against the
 one host it would run on next, so the column totals sum to the real queue
-length — and `lastRun`) — it is skipped while
+length — `lastRun` with the run's duration, and #0564's `activeRuns`
+(task id + start time of each in-flight run) plus `queuedTasks`, the FIFO
+next-up task ids attributed to that host). The Checks page's **Remote runners**
+tab renders the same payload live. Host state is in-memory per server process;
+the durable record of what actually ran lives in the check-run history
+(`.repoos/checks.db`, below) — it is skipped while
 other hosts are healthy, and re-probed later (30 s cooldown, capped at 10
 retries) so it rejoins the pool when it comes back. Once a host hits that cap
 its retries stop; a queued run whose eligible hosts have **all** hit it is
 cancelled and fails retryably rather than waiting forever (close-out and
 release pass no deadline of their own). A run whose every eligible host is
 unusable fails retryably with each host's reason.
+
+#### Check-run history (#0564)
+
+Every remote validation run — pass, fail, or never dispatched — is recorded as
+one row in `.repoos/checks.db` (`src/core/check-store.ts`), attributed to the
+host that ran it (`machine`, `remote = 1`) and to the gate that called it
+(`phase`: pre-review, close-out, release, or cli). The local `repoos check`
+half records its own row the same way, so a gate that used the runner shows as
+two rows: the remote suite on the host, then the local guards on this machine.
 
 #### Capability routing (`runsOn`)
 

@@ -463,6 +463,7 @@ export async function cutNewRelease(
       remoteValidator,
       worktreePath: config.root,
       taskId: "release",
+      phase: "release",
       onChunk: (chunk) => onProgress?.("checking", chunk),
     });
     if (remoteGateOutcome.kind === "fail") {
@@ -490,6 +491,10 @@ export async function cutNewRelease(
     // `bun run build` is staleness-aware now (#0377), so check's own "Full
     // build" step skips itself — no private skip env flag needed.
     ...checkEnvAfterRemoteGate(remoteGateOutcome),
+    // Identify the caller to the check-run history (#0564): a release-phase
+    // run, no task attached.
+    REPOOS_CHECK_PHASE: "release",
+    REPOOS_CHECK_STORE_ROOT: config.root,
   };
   const checkArgs = spawnedRepoosCheckArgs(config, remoteGateOutcome);
   const check = await exec(

@@ -172,6 +172,10 @@ export type RepoEvent =
       taskId: string;
       checkId: string;
       checkKind: "handoff-finalize" | "merge-gate";
+      /** What this run covers: 'full' or 'changed:<ref>' (#0564). */
+      scope: string;
+      /** Short hostname the check runs on (this server's machine) (#0564). */
+      machine: string;
       at: string;
     }
   | { type: "task-check.output"; taskId: string; checkId: string; chunk: string; at: string }
@@ -182,6 +186,8 @@ export type RepoEvent =
       code: number | null;
       passed: boolean;
       durationMs: number;
+      scope: string;
+      machine: string;
       at: string;
     }
   /**
