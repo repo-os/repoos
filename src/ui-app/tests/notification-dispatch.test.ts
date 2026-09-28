@@ -162,7 +162,9 @@ describe("ntfy agent failure parity", () => {
       [new NtfyNotificationProvider()],
     );
     expect(sent).toHaveLength(1);
-    expect(sent[0].body).toContain("🙋 Needs you");
+    // Must match legacy ntfy output exactly — subtitle is always the generic
+    // "Agent is waiting for your decision", never the failure detail from summary.
+    expect(sent[0].body).toBe("🙋 Needs you · Fix the widget\nAgent is waiting for your decision");
     expect(sent[0].headers.Priority).toBe("high");
   });
 });
