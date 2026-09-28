@@ -34,9 +34,9 @@ import {
   type TelegramConnectionRecord,
 } from "./store.js";
 import {
+  disconnectRemoteTelegram,
   finalizeTelegramDisconnect,
-  removeBotWebhook,
-  revokeProjectBotToken,
+  telegramDisconnectComplete,
 } from "./disconnect.js";
 import type {
   ManagedProvisioningClient,
@@ -236,11 +236,27 @@ export class LocalTelegramProvider implements TelegramProvider {
           this.lastError = null;
         },
       });
+      const alreadyDisconnected = !corruptOnDisk;
+      const revocationConfirmed = !corruptOnDisk;
+      const webhookRemoved = !corruptOnDisk;
+      const complete = telegramDisconnectComplete({
+        alreadyDisconnected,
+        revocationConfirmed,
+        webhookRemoved,
+      });
       return {
         ok: true,
-        alreadyDisconnected: !corruptOnDisk,
-        revocationConfirmed: !corruptOnDisk,
-        webhookRemoved: !corruptOnDisk,
+        complete,
+        ...(complete
+          ? {}
+          : {
+              warning:
+                "Local Telegram state was cleared, but the on-disk connection record was unreadable — " +
+                "revoke the bot in @BotFather if a token might still be valid.",
+            }),
+        alreadyDisconnected,
+        revocationConfirmed,
+        webhookRemoved,
         bindingsCleared: bindings,
       };
     }
@@ -266,8 +282,13 @@ export class LocalTelegramProvider implements TelegramProvider {
           this.lastError = null;
         },
       });
+      const complete = false;
       return {
         ok: true,
+        complete,
+        warning:
+          "Local Telegram state was cleared, but the stored credential could not be read — " +
+          "revoke the bot in @BotFather if a token might still be valid.",
         alreadyDisconnected: false,
         revocationConfirmed: false,
         webhookRemoved: false,
@@ -276,36 +297,27 @@ export class LocalTelegramProvider implements TelegramProvider {
     }
 
     const api = this.buildApi(token);
-    let webhookRemoved = false;
+    let remote: { revocationConfirmed: boolean; revocationMethod: string; webhookRemoved: boolean };
     try {
-      webhookRemoved = await removeBotWebhook(api);
-      if (!webhookRemoved) {
-        throw new TelegramDisconnectError(
-          "webhook",
-          "Telegram did not confirm the webhook was removed — local state was left intact",
-        );
-      }
+      remote = await disconnectRemoteTelegram({
+        api,
+        token,
+        botId: record.bot.id,
+        source: record.source,
+        managed: this.managed(),
+        repository: this.repositoryName,
+        instanceId: input.instanceId,
+        createApi: this.buildApi,
+      });
     } catch (e) {
       if (e instanceof TelegramDisconnectError) throw e;
-      if (e instanceof TelegramNetworkError) {
-        throw new TelegramDisconnectError("webhook", e.message);
-      }
       throw new TelegramDisconnectError(
-        "webhook",
-        e instanceof Error ? e.message : "failed to remove Telegram webhook",
+        "revoke",
+        e instanceof Error ? e.message : "failed to disconnect the Telegram bot",
       );
     }
 
-    const { confirmed, method } = await revokeProjectBotToken({
-      api,
-      oldToken: token,
-      botId: record.bot.id,
-      source: record.source,
-      managed: this.managed(),
-      repository: this.repositoryName,
-      instanceId: input.instanceId,
-      createApi: this.buildApi,
-    });
+    const { revocationConfirmed: confirmed, revocationMethod: method, webhookRemoved } = remote;
     if (!confirmed) {
       throw new TelegramDisconnectError(
         "revoke",
@@ -330,8 +342,14 @@ export class LocalTelegramProvider implements TelegramProvider {
       },
     });
 
+    const complete = telegramDisconnectComplete({
+      alreadyDisconnected: false,
+      revocationConfirmed: confirmed,
+      webhookRemoved,
+    });
     return {
       ok: true,
+      complete,
       alreadyDisconnected: false,
       revocationConfirmed: confirmed,
       webhookRemoved,

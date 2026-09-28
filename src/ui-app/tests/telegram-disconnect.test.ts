@@ -66,9 +66,6 @@ function fakeApi(handlers: Record<string, unknown> = {}) {
           ? scripted(body, { callToken, revokedTokens })
           : scripted;
 
-    if (method === "replaceManagedBotToken" && result !== undefined) {
-      revokedTokens.add(callToken);
-    }
     if (method === "logOut" && revokeTokenOnLogOut && result !== undefined && result !== false) {
       revokedTokens.add(callToken);
     }
@@ -89,9 +86,6 @@ function disconnectHandlers(): Record<string, unknown> {
     getWebhookInfo: () => ({ url: "" }),
     logOut: true,
     close: true,
-    replaceManagedBotToken: () => {
-      throw new Error("not a managed bot");
-    },
   };
 }
 
@@ -130,6 +124,21 @@ afterEach(() => {
 });
 
 describe("disconnect steps", () => {
+  it("removeBotWebhook treats an unauthorized token as webhook removed", async () => {
+    const fetcher = (async (input: unknown) => {
+      const method = String(input).split("/").pop() ?? "";
+      if (method === "deleteWebhook") {
+        return new Response(
+          JSON.stringify({ ok: false, error_code: 401, description: "Unauthorized" }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      return new Response(JSON.stringify({ ok: false }), { status: 404 });
+    }) as typeof fetch;
+    const client = new TelegramApiClient(TOKEN, { fetcher });
+    await expect(removeBotWebhook(client)).resolves.toBe(true);
+  });
+
   it("removeBotWebhook deletes and confirms an empty webhook URL", async () => {
     const api = fakeApi({
       deleteWebhook: true,
@@ -181,6 +190,27 @@ describe("disconnect steps", () => {
         repository: "disconnect-test",
         instanceId: "inst-a",
         createApi: (token) => new TelegramApiClient(token, { fetcher: api.fetcher }),
+      }),
+    ).rejects.toMatchObject({ phase: "revoke", retryable: true });
+  });
+
+  it("revokeProjectBotToken treats provisioning network errors as retryable", async () => {
+    const managed = createManagedProvisioningClient({
+      baseUrl: "https://provision.example.com",
+      fetcher: (async () => {
+        throw new Error("fetch failed: ECONNREFUSED");
+      }) as typeof fetch,
+    });
+    const client = new TelegramApiClient(TOKEN, { fetcher: fakeApi({}).fetcher });
+    await expect(
+      revokeProjectBotToken({
+        api: client,
+        oldToken: TOKEN,
+        botId: 246810,
+        source: "managed",
+        managed,
+        repository: "disconnect-test",
+        instanceId: "inst-a",
       }),
     ).rejects.toMatchObject({ phase: "revoke", retryable: true });
   });
@@ -309,9 +339,6 @@ describe("provider disconnect", () => {
       logOut: () => {
         throw new Error("network down");
       },
-      replaceManagedBotToken: () => {
-        throw new Error("BOT_INVALID");
-      },
     });
     await provider.connectByBotToken(TOKEN);
     const store = getAuthStore(tmpRoot)!;
@@ -364,12 +391,63 @@ describe("provider disconnect", () => {
       authStore: store,
       instanceId: instanceIdentity(tmpRoot),
     });
+    expect(result.complete).toBe(true);
     expect(result.revocationConfirmed).toBe(true);
     expect(result.webhookRemoved).toBe(true);
     expect(result.bindingsCleared.userLinks).toBe(1);
     expect(result.bindingsCleared.chatLinks).toBe(1);
     expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(false);
     expect(store.listTelegramLinks()).toHaveLength(0);
+  });
+
+  it("BYO disconnect completes on retry after the token is revoked at BotFather", async () => {
+    const { provider, api } = makeProvider(tmpRoot, {
+      ...disconnectHandlers(),
+      revokeTokenOnLogOut: false,
+    });
+    await provider.connectByBotToken(TOKEN);
+    const store = getAuthStore(tmpRoot)!;
+    await expect(
+      provider.disconnect({
+        actorEmail: "admin@test.com",
+        authStore: store,
+        instanceId: instanceIdentity(tmpRoot),
+      }),
+    ).rejects.toMatchObject({ phase: "revoke", retryable: true });
+    expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(true);
+
+    api.revokedTokens.add(TOKEN);
+    const callsBeforeRetry = api.calls.length;
+    const result = await provider.disconnect({
+      actorEmail: "admin@test.com",
+      authStore: store,
+      instanceId: instanceIdentity(tmpRoot),
+    });
+    expect(result.complete).toBe(true);
+    expect(result.revocationConfirmed).toBe(true);
+    expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(false);
+    const retryCalls = api.calls.slice(callsBeforeRetry);
+    expect(retryCalls.some((c) => c.method === "logOut")).toBe(false);
+    expect(retryCalls.some((c) => c.method === "deleteWebhook")).toBe(true);
+  });
+
+  it("a second disconnect after success is idempotent", async () => {
+    const { provider } = makeProvider(tmpRoot, disconnectHandlers());
+    await provider.connectByBotToken(TOKEN);
+    const store = getAuthStore(tmpRoot)!;
+    const first = await provider.disconnect({
+      actorEmail: "admin@test.com",
+      authStore: store,
+      instanceId: instanceIdentity(tmpRoot),
+    });
+    expect(first.complete).toBe(true);
+    const second = await provider.disconnect({
+      actorEmail: "admin@test.com",
+      authStore: store,
+      instanceId: instanceIdentity(tmpRoot),
+    });
+    expect(second.complete).toBe(true);
+    expect(second.alreadyDisconnected).toBe(true);
   });
 });
 
@@ -431,9 +509,6 @@ describe("disconnect route", () => {
       logOut: () => {
         throw new Error("fetch failed");
       },
-      replaceManagedBotToken: () => {
-        throw new Error("BOT_INVALID");
-      },
     });
     await provider.connectByBotToken(TOKEN);
     const config = {
@@ -461,6 +536,8 @@ describe("corrupt credential recovery", () => {
       authStore: store,
       instanceId: instanceIdentity(tmpRoot),
     });
+    expect(result.complete).toBe(false);
+    expect(result.warning).toMatch(/BotFather/i);
     expect(result.revocationConfirmed).toBe(false);
     expect(existsSync(telegramConnectionPath(tmpRoot))).toBe(false);
   });

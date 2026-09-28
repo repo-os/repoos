@@ -218,8 +218,19 @@ async function disconnectTelegramIntegration(): Promise<void> {
   errorMsg.value = "";
   successMsg.value = "";
   try {
-    await api("/api/auth/telegram/disconnect", { method: "POST", ...JSON_OPTS });
-    successMsg.value = "Telegram disconnected for this repository";
+    const body = (await api("/api/auth/telegram/disconnect", {
+      method: "POST",
+      ...JSON_OPTS,
+    })) as { result?: { complete?: boolean; warning?: string } };
+    const result = body.result;
+    if (result?.complete === false) {
+      successMsg.value = "";
+      errorMsg.value =
+        result.warning ??
+        "Telegram bindings were cleared locally, but the bot could not be fully revoked at Telegram — retry disconnect or revoke the token in @BotFather.";
+    } else {
+      successMsg.value = "Telegram disconnected for this repository";
+    }
     await loadTelegramLinks();
   } catch (err) {
     errorMsg.value =

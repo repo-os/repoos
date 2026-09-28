@@ -312,8 +312,8 @@ export interface ProvisioningClient {
 export interface ManagedProvisioningClient extends ProvisioningClient {
   isConfigured(): boolean;
   /**
-   * Ask the #0559 service to revoke a managed project bot. When the service is
-   * not configured, disconnect falls back to Bot API token replacement.
+   * Ask the #0559 service to revoke a managed project bot. Disconnect requires
+   * a configured service for managed bots; BYO uses logOut plus a 401 probe.
    */
   revokeBot(input: {
     botId: number;
@@ -330,6 +330,10 @@ export interface TelegramDisconnectInput {
 
 export interface TelegramDisconnectResult {
   ok: true;
+  /** False when local state was cleared but Telegram revoke/webhook could not be confirmed. */
+  complete: boolean;
+  /** Present when `complete` is false — shown to the admin instead of a bare success toast. */
+  warning?: string;
   alreadyDisconnected: boolean;
   revocationConfirmed: boolean;
   webhookRemoved: boolean;
