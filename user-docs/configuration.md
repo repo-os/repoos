@@ -888,9 +888,8 @@ The per-host attrs (`user`, `os`, `labels`, `maxConcurrent`, `runner`) are
 TOML-only; the Settings UI only edits the plain host-name list.
 
 The existing single-host shorthand `tailscaleHost = "mini"` still works and
-is folded into the pool as a plain entry. See
-[docs/remote-validation.md](/repo/docs/remote-validation.md) for full
-dispatch, routing and cross-process-limit details.
+is folded into the pool as a plain entry. See the [check guide](./check.md)
+for dispatch, routing and cross-process-limit details.
 
 ## Dev copy inspector (RepoOS self-host only)
 
