@@ -145,8 +145,10 @@ export interface ProvisioningStore {
    * docs/telegram-manager-service.md#recovering-a-stuck-redeeming-lock. */
   beginRedeem(id: string, now: Date): Promise<BeginRedeemOutcome>;
   /** `redeeming` → `redeemed`, storing the encrypted token for the grace
-   * window only. */
-  completeRedeem(id: string, envelope: EncryptedEnvelope, graceUntil: Date): Promise<void>;
+   * window only. Returns `true` if the row was actually updated, `false` if
+   * the state was no longer `redeeming` (concurrent write/restart). Callers
+   * must treat `false` as a failed redeem and call `failRedeem`. */
+  completeRedeem(id: string, envelope: EncryptedEnvelope, graceUntil: Date): Promise<boolean>;
   /** Roll back `redeeming` → `ready` after a Telegram-side failure, so a
    * retry can proceed — the credential was never delivered. */
   failRedeem(id: string): Promise<void>;

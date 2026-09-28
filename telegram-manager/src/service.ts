@@ -323,7 +323,20 @@ export class ProvisioningService {
       const token = await this.telegram.getManagedBotToken(bot.id);
       const envelope = encryptToken(token, this.config.encryptionKey);
       const graceUntil = new Date(now.getTime() + REDEEM_GRACE_MS);
-      await this.store.completeRedeem(id, envelope, graceUntil);
+      const stored = await this.store.completeRedeem(id, envelope, graceUntil);
+      if (!stored) {
+        // The row's state changed between beginRedeem and completeRedeem (e.g.
+        // an external expiry sweep). The token was fetched from Telegram but
+        // cannot be handed back without a persistent envelope — callers with the
+        // grace-window replay code can retry, or the operator can reset the
+        // request. Roll back the transient lock so a retry can proceed.
+        await this.store.failRedeem(id);
+        await this.store.audit("redeem_failed", "completeRedeem updated 0 rows", id, now);
+        throw new ServiceError(
+          "the provisioning request state changed during redemption — retry within the grace window",
+          "conflict",
+        );
+      }
       await this.store.audit("redeemed", `bot_id=${bot.id}`, id, now);
       return { token, bot };
     } catch (e) {

@@ -265,6 +265,33 @@ class HttpProvisioningClient implements ManagedProvisioningClient {
     // the browser renders.
     return { token };
   }
+
+  async rotateToken(id: string): Promise<{ token: string }> {
+    const payload = (await this.request(
+      "POST",
+      `/v1/provisioning/requests/${encodeURIComponent(id)}/rotate-token`,
+    )) as unknown as RedeemResponse;
+    const token = typeof payload?.token === "string" && payload.token ? payload.token : null;
+    if (!token) {
+      throw new ManagedProvisioningUnavailableError(
+        "managed provisioning service did not return a rotated credential",
+      );
+    }
+    return { token };
+  }
+
+  async revokeBot(
+    botId: number,
+    repository: string,
+    instanceId: string,
+  ): Promise<{ confirmed: boolean }> {
+    const payload = await this.request(
+      "POST",
+      `/v1/provisioning/bots/${encodeURIComponent(String(botId))}/revoke`,
+      { repository, instance: { id: instanceId } },
+    );
+    return { confirmed: payload.confirmed === true };
+  }
 }
 
 /** Validate the service's bot summary; null when the response carries none. */
@@ -314,6 +341,14 @@ class UnconfiguredProvisioningClient implements ManagedProvisioningClient {
   }
 
   async redeem(): Promise<{ token: string }> {
+    this.fail();
+  }
+
+  async rotateToken(): Promise<{ token: string }> {
+    this.fail();
+  }
+
+  async revokeBot(): Promise<{ confirmed: boolean }> {
     this.fail();
   }
 }

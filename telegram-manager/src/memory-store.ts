@@ -167,14 +167,19 @@ export class InMemoryProvisioningStore implements ProvisioningStore {
     return { kind: "owned", row: { ...view } };
   }
 
-  async completeRedeem(id: string, envelope: EncryptedEnvelope, graceUntil: Date): Promise<void> {
+  async completeRedeem(
+    id: string,
+    envelope: EncryptedEnvelope,
+    graceUntil: Date,
+  ): Promise<boolean> {
     const row = this.rows.get(id);
-    if (!row || row.state !== "redeeming") return;
+    if (!row || row.state !== "redeeming") return false;
     row.state = "redeemed";
     row.envelope = envelope;
     row.graceUntil = graceUntil.toISOString();
     row.redeemingSince = null;
     this.touch(row);
+    return true;
   }
 
   async failRedeem(id: string): Promise<void> {
