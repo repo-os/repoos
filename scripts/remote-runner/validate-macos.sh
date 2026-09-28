@@ -15,14 +15,19 @@ BUNDLE="${1:?usage: validate.sh <bundle-path> <expected-sha>}"
 SHA="${2:?usage: validate.sh <bundle-path> <expected-sha>}"
 # Per-run artifacts dir (#0520): RepoOS passes a unique one so overlapping runs
 # never wipe each other's logs. Without it, fall back to the shared default.
-ART="${3:-/tmp/repoos-artifacts}"
+# Under $HOME, not /tmp (matches validate.sh's Docker-based fix, same day):
+# macOS periodically clears stale /tmp entries via its own housekeeping, which
+# would silently wipe the persistent bun cache here between runs — defeating
+# its whole point — and $HOME avoids that as well as any tmpfs-quota concern
+# on a host that's also someone's desktop session.
+ART="${3:-$HOME/.repoos-artifacts}"
 
-WORK="$(mktemp -d /tmp/repoos-validate.XXXXXX)"
-CACHE="/tmp/repoos-bun-cache"
+WORK="$(mktemp -d "$HOME/.repoos-validate.XXXXXX")"
+CACHE="$HOME/.cache/repoos-bun"
 mkdir -p "$CACHE" "$ART"
 rm -rf "$ART" && mkdir -p "$ART"
 # Per-run dirs live under the shared parent; prune ones nobody collected.
-find /tmp/repoos-artifacts -mindepth 1 -maxdepth 1 -type d -mtime +1 -exec rm -rf {} + 2>/dev/null || true
+find "$HOME/.repoos-artifacts" -mindepth 1 -maxdepth 1 -type d -mtime +1 -exec rm -rf {} + 2>/dev/null || true
 trap 'rm -rf "$WORK" "$BUNDLE"' EXIT
 
 echo "[validate] cloning bundle $BUNDLE"

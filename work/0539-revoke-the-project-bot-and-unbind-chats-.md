@@ -1,16 +1,22 @@
 ---
+updated_at: "2026-09-28T02:35:01Z"
+review_passes: 3
 id: "0539"
 title: Revoke the project bot and unbind chats on disconnect
 type: feature
-status: ready
+status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p2
 area: server
 story: RepoOS Telegram Bot
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/revoke-the-project-bot-and-unbind-chats-
 created_at: "2026-09-27T07:33:20Z"
-updated_at: "2026-09-27T23:54:32Z"
+review_rounds: 2
+last_check_failure: "[object Object]"
 ---
 ## Problem
 
@@ -51,3 +57,11 @@ One operation, in a deliberate order, that is **complete or loudly incomplete**:
 - 2026-09-27T15:51:54Z · body
 - 2026-09-27T15:52:46Z · body
 - 2026-09-27T23:54:32Z · status inbox→ready
+- 2026-09-28T01:11:58Z · status ready→active, branch
+- 2026-09-28T01:23:41Z · status active→review
+- 2026-09-28T01:26:11Z · status review→active
+- 2026-09-28T02:21:37Z · status active→review
+- 2026-09-28T02:24:28Z · status review→active
+- 2026-09-28T02:30:10Z · status active→review
+- 2026-09-28T02:35:00Z · needs_input
+

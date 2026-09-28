@@ -26,6 +26,37 @@ function isBlankDisplayLine(line: string): boolean {
   return DISPLAY_EMPTY_RE.test(line);
 }
 
+const THEMATIC_BREAK_RE = /^\s*(-{3,}|\*{3,}|_{3,})\s*$/;
+
+/**
+ * A markdown thematic break (`---`) or a terminal-rendered rule (box-drawing
+ * line, optionally prefixed with `> `). Mirrors `isDelimiter` in
+ * `src/core/frontmatter.ts` so chat rows and parsers agree on what counts as a
+ * horizontal rule.
+ */
+export function isThematicBreakLine(line: string): boolean {
+  const trimmed = line.trim();
+  if (THEMATIC_BREAK_RE.test(trimmed)) return true;
+  const withoutPrefix = trimmed.replace(/^>\s*/, "");
+  if (withoutPrefix.length < 3) return false;
+  const chars = new Set(withoutPrefix);
+  return chars.size <= 2 && /^[─=━═─\-_]+$/.test(withoutPrefix);
+}
+
+/** True when the text is only whitespace and thematic-break lines (#0563). */
+export function isThematicBreakOnlyText(text: string): boolean {
+  let sawBreak = false;
+  for (const line of text.replace(/\r\n?/g, "\n").split("\n")) {
+    if (isBlankDisplayLine(line)) continue;
+    if (isThematicBreakLine(line)) {
+      sawBreak = true;
+      continue;
+    }
+    return false;
+  }
+  return sawBreak;
+}
+
 function trimTrailingBlankCodeLines(lines: string[]): string[] {
   const out = [...lines];
   while (out.length > 0 && isBlankDisplayLine(out[out.length - 1]!)) {
@@ -69,6 +100,43 @@ export function clampMarkdownForDisplay(src: string): string {
       while (j < lines.length && isBlankDisplayLine(lines[j]!)) j++;
       if (j < lines.length) out.push("");
       i = j;
+      continue;
+    }
+
+    out.push(line);
+    i++;
+  }
+
+  return out.join("\n");
+}
+
+/** Drop thematic-break lines outside fenced code — chat bubbles only (#0563). */
+export function stripThematicBreakLinesForChat(src: string): string {
+  const lines = src.replace(/\r\n?/g, "\n").split("\n");
+  const out: string[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i]!;
+    const fence = line.match(/^(`{3,}|~{3,})([\w-]*)\s*$/);
+    if (fence) {
+      const marker = fence[1]!;
+      out.push(line);
+      i++;
+      const close = new RegExp(`^${marker[0]}{${marker.length},}\\s*$`);
+      while (i < lines.length && !close.test(lines[i]!)) {
+        out.push(lines[i]!);
+        i++;
+      }
+      if (i < lines.length) {
+        out.push(lines[i]!);
+        i++;
+      }
+      continue;
+    }
+
+    if (isThematicBreakLine(line)) {
+      i++;
       continue;
     }
 
@@ -367,4 +435,20 @@ export function renderMarkdown(src: string): string {
   const clamped = clampMarkdownForDisplay(src);
   if (!clamped || !clamped.replace(DISPLAY_EMPTY_RE, "")) return "";
   return parseBlocks(clamped).map(renderBlock).join("");
+}
+
+/**
+ * Markdown for AI chat bubbles. Omits thematic-break blocks so `---` and
+ * terminal-rendered rules do not become `<hr>` separators between turns (#0563).
+ * Task specs, docs, and review reports keep using `renderMarkdown`.
+ */
+export function renderChatMarkdown(src: string): string {
+  const stripped = stripThematicBreakLinesForChat(src);
+  const clamped = clampMarkdownForDisplay(stripped);
+  if (!clamped || !clamped.replace(DISPLAY_EMPTY_RE, "")) return "";
+  if (isThematicBreakOnlyText(clamped)) return "";
+  return parseBlocks(clamped)
+    .filter((block) => block.kind !== "hr")
+    .map(renderBlock)
+    .join("");
 }

@@ -99,9 +99,9 @@ export function suggestNextStep(reason: string): string {
   }
   if (/signal|handoff|rendered|ansi|kiro/.test(r)) {
     return (
-      "the handoff signal may not have been emitted on its own line — the agent's " +
-      "final line must be exactly `::repoos-handoff-ready::` (see #0154/#0155 for " +
-      "signal-line rendering bugs)"
+      "the handoff signal may not have been detected — ask the agent to put " +
+      "`::repoos-handoff-ready::` at the start of a line (preferably alone) " +
+      "after checks pass"
     );
   }
   if (/interrupted|stopped|killed|crash|exit/.test(r)) {

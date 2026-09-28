@@ -1,15 +1,20 @@
 ---
+updated_at: "2026-09-28T02:25:11Z"
+review_passes: 5
 id: "0562"
 title: Copy a chat message on click
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/copy-a-chat-message-on-click
 created_at: "2026-09-28T00:01:18Z"
-updated_at: "2026-09-28T00:13:27Z"
+review_rounds: 2
 ---
 ## Problem
 
@@ -83,3 +88,11 @@ A click on any chat message (from agent or human) should automatically copy the 
 - 2026-09-28T00:06:10Z · status inbox→ready
 - 2026-09-28T00:06:14Z · status ready→active, branch
 - 2026-09-28T00:13:27Z · status active→review
+- 2026-09-28T00:14:51Z · status review→active
+- 2026-09-28T00:21:38Z · status active→review
+- 2026-09-28T00:22:26Z · status review→active
+- 2026-09-28T00:32:06Z · status active→review
+- 2026-09-28T00:36:26Z · needs_input
+- 2026-09-28T01:05:36Z · needs_input
+- 2026-09-28T02:25:11Z · needs_input
+

@@ -6,6 +6,7 @@ import { mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { AuthStore, getAuthStore, resetAuthStoreInstance } from "../../core/auth-store.js";
+import { bindTelegramChatDirect } from "../../core/telegram-chat.js";
 import {
   TELEGRAM_AUDIT,
   createTelegramInvite,
@@ -85,6 +86,21 @@ function bindUser(email: string, telegramUserId: number): void {
   const created = createTelegramInvite(store, ctx, { email, createdBy: "admin@test.com" });
   if ("error" in created) throw new Error("invite");
   redeemTelegramInvite(store, ctx, { nonce: created.nonce, telegramUserId });
+  bindTelegramChatDirect(store, {
+    telegramChatId: telegramUserId,
+    chatType: "private",
+    title: null,
+    actorEmail: "admin@test.com",
+  });
+}
+
+function bindChat(chatId: number, chatType: "private" | "supergroup" = "private"): void {
+  bindTelegramChatDirect(store, {
+    telegramChatId: chatId,
+    chatType,
+    title: null,
+    actorEmail: "admin@test.com",
+  });
 }
 
 const INVITE_NOW = (): Date => new Date("2026-01-15T12:00:00.000Z");
@@ -117,6 +133,7 @@ describe("createTelegramIntakeHandler", () => {
 
   it("resolves live role and passes TelegramActor with a real email", async () => {
     bindUser("alice@test.com", 42);
+    bindChat(7);
     const onAuthorized = vi.fn();
     const handler = createTelegramIntakeHandler(intakeOptions({ onAuthorized }));
     await handler(
@@ -142,10 +159,11 @@ describe("createTelegramIntakeHandler", () => {
     expect(resolveTelegramSender(store, 55)?.role).toBe("member");
     store.deleteUser("alice@test.com");
     expect(resolveTelegramSender(store, 55)).toBeNull();
+    bindChat(55);
 
     const onAuthorized = vi.fn();
     const handler = createTelegramIntakeHandler(intakeOptions({ onAuthorized }));
-    await handler(messageUpdate({ senderId: 55, chatId: 1, text: "hi" }));
+    await handler(messageUpdate({ senderId: 55, chatId: 55, text: "hi" }));
     expect(onAuthorized).not.toHaveBeenCalled();
   });
 
@@ -173,6 +191,7 @@ describe("createTelegramIntakeHandler", () => {
 
   it("audits agent-bound plain text and enforces the tighter agent limit", async () => {
     bindUser("carol@test.com", 3);
+    bindChat(99);
     const handler = createTelegramIntakeHandler(intakeOptions());
     for (let i = 0; i < 10; i++) {
       await handler(
@@ -199,7 +218,7 @@ describe("createTelegramIntakeHandler", () => {
     const handler = createTelegramIntakeHandler(
       intakeOptions({ enabled: () => false, onAuthorized }),
     );
-    await handler(messageUpdate({ senderId: 4, chatId: 1, text: "hi" }));
+    await handler(messageUpdate({ senderId: 4, chatId: 4, text: "hi" }));
     expect(onAuthorized).not.toHaveBeenCalled();
   });
 });

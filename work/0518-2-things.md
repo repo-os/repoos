@@ -5,11 +5,12 @@ type: bug
 status: done
 priority: p2
 area: macos
+story: MacOS Native App
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/fix-hub-sidebar-server-rows-stack-alert-
 created_at: "2026-09-26T09:41:44Z"
-updated_at: "2026-09-27T04:35:08Z"
+updated_at: "2026-09-28T00:08:44Z"
 ---
 ## Problem
 
@@ -239,3 +240,4 @@ Deferred / out of scope:
 - 2026-09-27T02:46:08Z · status ready→active, branch
 - 2026-09-27T02:51:14Z · status active→review
 - 2026-09-27T04:35:08Z · status review→done, release:success
+- 2026-09-28T00:08:44Z · story
