@@ -67,7 +67,7 @@ taskExtensions = [".md"]
 skillSuggestions = false
 remoteValidation.useForReleases = false
 remoteValidation.provider = "tailscale"
-remoteValidation.tailscaleHost = "mini"
+remoteValidation.tailscaleHost = "peckjachowski@mini"
 remoteValidation.tailscaleUser = "peckjachowski"
 remoteValidation.containerImage = "repoos-ci"
 # Host pool — uncomment and replace tailscaleHost/tailscaleUser above to use multiple machines.
@@ -88,6 +88,7 @@ remoteValidation.containerImage = "repoos-ci"
 #   os = "linux"
 dev.inspector.enabled = true
 dev.inspector.editorCommand = "zed {file}:{line}"
+remoteValidation.tailscaleHosts = ["peckjachowski@mini", "nick@bee", "nick@thinkpad"]
 [board.columns]
 
   draft = "Draft"
@@ -521,5 +522,6 @@ name = "data analyst"
 cli = "opencode"
 model = "deepinfra/deepseek-ai/DeepSeek-V4-Flash-0731"
 enabled = true
+
 
 
