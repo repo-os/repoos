@@ -2,7 +2,7 @@
 id: "0559"
 title: Build the Telegram manager-bot provisioning service and secure instance handoff
 type: feature
-status: active
+status: review
 priority: p1
 area: server
 story: RepoOS Telegram Bot
@@ -13,7 +13,7 @@ model_override: opencode-go/glm-5.3-flash
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-27T17:32:41Z"
-updated_at: "2026-09-28T10:51:42Z"
+updated_at: "2026-09-28T11:42:48Z"
 review_passes: 4
 review_rounds: 2
 last_check_failure: "[object Object]"
@@ -128,3 +128,4 @@ rm: cannot remove '/home/nick/.repoos-validate.lS2Wzv/repo/.repoos/repoos.db-shm
 - 2026-09-28T10:51:27Z · status review→active
 - 2026-09-28T10:51:28Z · needs_input
 - 2026-09-28T10:51:42Z · review_cli_override, review_model_override
+- 2026-09-28T11:42:48Z · status active→review
