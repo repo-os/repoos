@@ -20,8 +20,10 @@ FYI, clicking "Review Again (clears this)" button, does start the review again, 
 ## Screenshots
 
 ![Screenshot-2026-09-28-at-11.20.49](/api/tasks/0565/attachments/screenshot-1.png)
+![Screenshot-2026-09-28-at-11.20.41](/api/tasks/0565/attachments/screenshot-2.png)
 
 ## Activity
 
 - 2026-09-28T04:05:24Z · created · hello@repoos.org
+- 2026-09-28T04:05:24Z · screenshots
 - 2026-09-28T04:05:24Z · screenshots
