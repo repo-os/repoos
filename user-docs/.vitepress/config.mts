@@ -110,7 +110,11 @@ export default defineConfig({
         items: [{ text: "Troubleshooting", link: "/troubleshooting" }],
       },
     ],
-    socialLinks: [{ icon: "github", link: "https://github.com/repo-os/repoos" }],
+    socialLinks: [
+      // aria-label doubles as the visible label of the GitHub row in the
+      // mobile nav screen (see `#VPNavScreen .social-links` in theme/custom.css).
+      { icon: "github", link: "https://github.com/repo-os/repoos", ariaLabel: "GitHub" },
+    ],
     search: { provider: "local" },
     outline: { level: [2, 3], label: "On this page" },
     lastUpdated: { text: "Updated" },
