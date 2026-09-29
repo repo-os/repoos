@@ -306,7 +306,7 @@ export function repoOSAgentsSectionAddition(existing: string, workDir = "work"):
   return (existing.endsWith("\n") ? "\n" : "\n\n") + REPOOS_AGENTS_SECTION(workDir);
 }
 
-function repoosToml(namespace: string, areas: string[] = []): string {
+function repoosToml(namespace: string, areas: string[] = [], previewStub = false): string {
   const ns = namespace
     ? `workDir = "${namespace}/work"\ndocsDir = "${namespace}/docs"\ncacheDir = "${namespace}/.repoos"\n`
     : "";
@@ -345,6 +345,7 @@ defaultAssignee = "unassigned"
 # review = "Code review"
 # done   = "Shipped"
 ${areaRows(areas)}
+${previewStub ? previewTargetRows(areas) : ""}
 `;
 }
 
@@ -363,6 +364,26 @@ function areaRows(areas: string[]): string {
     ].join("\n");
   }
   return areas.map((a) => `[[areas]]\nname = "${a}"`).join("\n\n");
+}
+
+/**
+ * The commented `[[preview.targets]]` skeleton offered when an area vocabulary
+ * was seeded at init (#0583) — the wiring for when the project has something
+ * previewable, referencing the areas the picker now offers.
+ */
+function previewTargetRows(areas: string[]): string {
+  const areaList = areas.length ? JSON.stringify(areas) : '["web"]';
+  return [
+    "# [preview]                               # read-only task previews",
+    `# command = "bun run dev --port {port} --host {host}"`,
+    `#                                         # default when no target matches`,
+    "",
+    `# [[preview.targets]]`,
+    `# name = "Main app"`,
+    `# areas = ${areaList}`,
+    `# command = "bun run dev --port {port} --host {host}"`,
+    `# readyTimeoutMs = 240000                 # raise for a command that also builds`,
+  ].join("\n");
 }
 
 const ENV_EXAMPLE = `# Copy to .env and fill in what you need — .env is gitignored, this file is
@@ -462,6 +483,8 @@ export function scaffoldInto(
   kind: ScaffoldKind = "new",
   /** Areas collected at init time (#0583) — real `[[areas]]` rows when given. */
   areas: string[] = [],
+  /** When true, scaffold commented `[[preview.targets]]` stubs for those areas. */
+  previewStub = false,
 ) {
   const created: string[] = [];
   const skipped: string[] = [];
@@ -509,7 +532,7 @@ export function scaffoldInto(
   // Write config first so workDir/docsDir/cacheDir overrides are in effect
   // before the dirs are created (namespace layout) — or so an existing
   // config is respected untouched (existing-repo path).
-  ensureFile("repoos.toml", repoosToml(layout, areas));
+  ensureFile("repoos.toml", repoosToml(layout, areas, previewStub));
   const config = loadConfig(root);
 
   ensureDir(config.workDir);
@@ -1055,11 +1078,24 @@ async function guidedNewRepo(args: string[]): Promise<void> {
         .filter(Boolean)
     : [];
   if (areas.length) {
-    console.log(c.dim("  Preview targets can use these areas — set them in repoos.toml's"));
+    console.log(c.dim("  Preview targets route a task preview by its area — the picker and"));
     console.log(
       c.dim(
-        "  [preview] section whenever you add a previewable app; see user-docs/configuration.md.",
+        "  the PM prompt offer target areas automatically; see user-docs/configuration.md's Previews section.",
       ),
+    );
+  }
+
+  // Preview targets reinforce areas ("define them together"): when an area
+  // vocabulary was given, offer to scaffold the commented `[[preview.targets]]`
+  // skeleton those areas feed, so the wiring sits where preview setup happens
+  // later. A brand-new project has nothing runnable yet — never a live
+  // preview command, just the commented shape to fill in.
+  let previewStub = false;
+  if (areas.length) {
+    previewStub = await confirm(
+      "  Scaffold commented preview-target stubs for these areas?",
+      false,
     );
   }
 
@@ -1081,7 +1117,7 @@ async function guidedNewRepo(args: string[]): Promise<void> {
     );
   }
 
-  const { created, skipped } = scaffoldInto(target, description, layout, "new", areas);
+  const { created, skipped } = scaffoldInto(target, description, layout, "new", areas, previewStub);
   reportInit(target, created, skipped);
   await offerCheckPlanProposal(target);
 

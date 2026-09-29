@@ -1610,10 +1610,18 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // tolerates every legacy shape forever, so a skipped file keeps working
   // until its next write. Control-plane only — a preview child (or any
   // worktree-rooted server) must never rewrite the board's own files from a
-  // derived copy, and tests skip it via REPOOS_SKIP_AREA_MIGRATION.
+  // derived copy; a vitest boot skips outright (the VITEST guard below stops
+  // any test-spawned server from touching the live board, ports aside), and
+  // a non-test tool boot can opt out with REPOOS_SKIP_AREA_MIGRATION=1.
   const runAreaMigration = (): void => {
     try {
       if (!isControlPlane) return;
+      // A vitest process must never rewrite the live board, full stop — any
+      // suite that boots a real-port server against the repo root would
+      // otherwise migrate+commit other tasks' files as a side effect.
+      if (process.env.VITEST === "true") return;
+      // Non-test processes that want the pass suppressed (a one-off tool) can
+      // set REPOOS_SKIP_AREA_MIGRATION=1 explicitly.
       if (process.env.REPOOS_SKIP_AREA_MIGRATION === "1") return;
       const result = migrateTaskAreas(config);
       if (!result.updated.length) return;

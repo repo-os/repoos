@@ -36,10 +36,15 @@ describe("parseTaskAreas — the one shared parse helper", () => {
     expect(parseTaskAreas("")).toEqual([]);
   });
 
-  it("still reads the legacy `+` spelling", () => {
+  it("still reads the legacy `+` spelling (space-separated `+` splits)", () => {
     expect(parseTaskAreas("server + ui-app")).toEqual(["server", "ui-app"]);
-    expect(parseTaskAreas("server+ui-app")).toEqual(["server", "ui-app"]);
     expect(parseTaskAreas("web + core + server")).toEqual(["web", "core", "server"]);
+    // A `+` without surrounding whitespace is part of the value, never a
+    // separator — an area literally named "c++" or "a+b" cannot be clobbered.
+    expect(parseTaskAreas("c++")).toEqual(["c++"]);
+    expect(parseTaskAreas("a+b")).toEqual(["a+b"]);
+    expect(parseTaskAreas("server+ui-app")).toEqual(["server+ui-app"]);
+    expect(parseTaskAreas(["web + core", "c++"])).toEqual(["web", "core", "c++"]);
   });
 
   it("does not treat `/` as a separator — 'web/mobile' stays one value", () => {
