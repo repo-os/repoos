@@ -2,7 +2,7 @@
 id: "0582"
 title: "Add repoos shot: optional screenshot capture of a task preview"
 type: feature
-status: active
+status: review
 priority: p2
 area: cli
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/add-repoos-shot-optional-screenshot-capt
 review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-29T11:13:18Z"
-updated_at: "2026-09-29T19:35:46Z"
+updated_at: "2026-09-29T19:41:46Z"
 ---
 ## Problem
 
@@ -93,3 +93,10 @@ src/ui-app/src/views/StoriesView.vue(290,12): error TS2345: Argument of type '{ 
 [validate] gate exit 2 — fix it in the feature branch and re-run the gate
 - 2026-09-29T19:35:46Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 2) — …type '{ readonly label: string; readonly path: string; readonly ariaLabel: string; }'. · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-09-29T19:35:46Z · status review→active
+- 2026-09-29T19:36:27Z · handoff failed · task-file handoff failed at check · remote validation failed: remote validation failed (exit 2) — …type '{ readonly label: string; readonly path: string; readonly ariaLabel: string; }'.
+src/ui-app/src/views/InputsView.vue(463,14): error TS2345: Argument of type '{ label: string; path: string; 'aria-label': string; class: string; }' is not assignable to parameter of type '{ readonly label: string; readonly path: string; readonly ariaLabel: string; } & VNodeProps & AllowedComponentProps & ComponentCustomProps & Record<...>'.
+  Property 'ariaLabel' is missing in type '{ label: string; path: string; 'aria-label': string; class: string; }' but required in type '{ readonly label: string; readonly path: string; readonly ariaLabel: string; }'.
+src/ui-app/src/views/StoriesView.vue(290,12): error TS2345: Argument of type '{ label: string; path: string; 'aria-label': string; }' is not assignable to parameter of type '{ readonly label: string; readonly path: string; readonly ariaLabel: string; } & VNodeProps & AllowedComponentProps & ComponentCustomProps & Record<...>'.
+  Property 'ariaLabel' is missing in type '{ label: string; path: string; 'aria-label': string; }' but required in type '{ readonly label: string; readonly path: string; readonly ariaLabel: string; }'.
+[validate] gate exit 2 — fix it in the feature branch and re-run the gate
+- 2026-09-29T19:41:46Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 2) — …type '{ readonly label: string; readonly path: string; readonly ariaLabel: string; }'. · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
