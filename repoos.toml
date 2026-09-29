@@ -427,6 +427,61 @@ url = "https://main-repoos-docs.njachowski.workers.dev"
 dashboard_url = "https://dash.cloudflare.com/55041dbc1231e6d4ef135135ccc7d4a2/workers/services/view/repoos-docs/production/deployments"
 subdir = "user-docs"
 
+# Task-area vocabulary (#0583). The Settings/drawer area picker and the PM
+# prompt offer these; every `[[preview.targets]].areas` value is offered too,
+# so `docs` and `landing` are declared here only to carry a description.
+[[areas]]
+name = "web"
+description = "The web UI app (src/ui-app): views, components, styling"
+
+[[areas]]
+name = "ui"
+description = "UI-only polish that spans views; prefer web for app changes"
+
+[[areas]]
+name = "server"
+description = "HTTP + SSE server, routes, agents runner, close-out pipeline"
+
+[[areas]]
+name = "core"
+description = "Engine: task model, config, git, indexing (src/core)"
+
+[[areas]]
+name = "cli"
+description = "The repoos command line (src/cli, src/commands)"
+
+[[areas]]
+name = "agent"
+description = "Agent drivers, prompts and adapters"
+
+[[areas]]
+name = "docs"
+description = "The user docs site (user-docs/); previews as the docs site"
+
+[[areas]]
+name = "landing"
+description = "The marketing landing page (landing/); previews as the landing page"
+
+[[areas]]
+name = "macos"
+description = "The native macOS app"
+
+[[areas]]
+name = "desktop"
+description = "Desktop shell / packaging"
+
+[[areas]]
+name = "mobile"
+description = "Mobile clients"
+
+[[areas]]
+name = "infra"
+description = "CI, deployment, tunnels, build tooling"
+
+[[areas]]
+name = "general"
+description = "Cross-cutting or unclassified work"
+
 # Task previews (#0362): this repo has three previewable things — the main
 # web app, the landing page, and the docs site. Matched by the task's `area:`
 # frontmatter — landing/docs tasks should use `area = "landing"` / `area =
