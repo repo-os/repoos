@@ -1,4 +1,5 @@
 ---
+merge_conflict_retry_count: 1
 updated_at: "2026-09-29T19:47:16Z"
 review_passes: 4
 id: "0583"
@@ -73,4 +74,5 @@ Automatically inferring areas from changed paths (#0582's `paths` globs cover th
 - 2026-09-29T18:24:06Z · status active→review
 - 2026-09-29T18:28:19Z · needs_input
 - 2026-09-29T19:47:16Z · needs_input
+
 
