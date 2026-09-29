@@ -48,6 +48,9 @@ const NPM_PACKAGES: Record<string, string> = {
 const HOMEBREW_FORMULAS: Record<string, string> = {
   aider: "aider",
   goose: "goose",
+  // A tap formula, so formulae.brew.sh has no API entry and the check reports
+  // "unavailable" rather than guessing a version — upgrade with the tap command.
+  crush: "crush",
 };
 
 const GITHUB_RELEASES: Record<string, { owner: string; repo: string }> = {

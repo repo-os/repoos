@@ -153,6 +153,7 @@ const CLI_LABELS: Record<string, string> = {
   "qwen code": "qwen code",
   codex: "codex",
   antigravity: "Antigravity CLI (agy)",
+  crush: "Crush",
 };
 
 const defaultInstrRefs = new Map<string, HTMLTextAreaElement | null>();

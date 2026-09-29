@@ -160,3 +160,43 @@ four-event `--format json` stream. The manifest entry stays
 `verifiedAt: null` until a maintainer runs the live probe and records the
 evidence — "do not claim v2 support until it passes the implemented contract
 suite."
+
+## Worked example: Crush (v0.97.x)
+
+Crush (`github.com/charmbracelet/crush`) is the second harness after kiro whose
+default headless mode is plain text. `crush run --quiet <prompt>` streams
+assistant text to stdout and exits; `run --json` / `run --format json` are
+unknown flags, so the `structured-events` and `session-continuation` seams are
+skipped and the command templates use `parseCrushRun` (plain text, no session
+id). Three adapter properties are worth recording because they differ from every
+other driver:
+
+- **Auto-approval is a property of the mode, not a flag.** A non-interactive
+  `crush run` session auto-approves every permission request
+  (`InitCoderAgentNonInteractive` calls `Permissions.AutoApproveSession`).
+  `--yolo` is a TTY-only root flag that `crush run` rejects, so
+  `engineerPermissionGaps` returns no gap and the launch carries no bypass flag.
+  `ContractCommandTemplates.autoPermissions: "mode"` encodes that honestly in the
+  probe instead of inventing a flag.
+- **Cancellation needs SIGINT.** Crush installs a SIGINT handler only
+  (`signal.NotifyContext(ctx, os.Interrupt, os.Kill)`); SIGTERM has no handler
+  and orphans the run's tool subprocesses, while SIGINT cancels gracefully and
+  reaps them. `engineCancelSignal` returns SIGINT for crush, and
+  `ContractCommandTemplates.cancelSignal` exercises the same signal in the
+  probe.
+- **No read-only mode.** There is no Crush equivalent of opencode's
+  `--auto`-less authoring run, so a PM (or any advisory) turn gets full tool
+  access. RepoOS still applies the PM's output only via `patchTaskFile`, but the
+  isolation the other drivers provide is unavailable here — a recorded
+  tradeoff, not an equivalent.
+
+The child env forces `CRUSH_CLIENT_SERVER=0` (`harnessChildEnv`) so a user's
+exported value cannot turn a managed run into a detached `crush server` with
+degraded streaming — the same rule as opencode's `--standalone`. Session id and
+usage are captured post-run: `crush session list --json` before and after the
+turn names the new session by diff (`pickNewCrushSessionId`), and
+`crush session show <id> --json` supplies `cost` (USD), `prompt_tokens`, and
+`completion_tokens` for the Tokens tab. `--continue` is never used, since it
+attaches the most recent session in the cwd. Note the token profile: even a
+trivial prompt reports ~13k prompt tokens because Crush sends its own system
+prompt and tool definitions — expected for this class of harness, not a bug.

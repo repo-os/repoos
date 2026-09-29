@@ -363,6 +363,30 @@ const antigravityAdapter: ModelSourceAdapter = {
   },
 };
 
+/**
+ * Crush adapter: parses `crush models`, which emits one `provider/model` id per
+ * line when stdout is not a TTY (e.g. `aihubmix/DeepSeek-V3`), sorted by the
+ * CLI. There is no `--json` and no refresh flag. The CLI lists models for
+ * unconfigured providers too; the `(not configured)` annotation is TTY-only, so
+ * a piped probe cannot filter it — the picker may therefore offer entries a
+ * given account cannot run. That is acceptable for a pin selector (the run fails
+ * with a clear CLI error) and avoids an extra provider-config probe here.
+ */
+const crushAdapter: ModelSourceAdapter = {
+  id: "crush",
+  cli: "crush",
+  supported: true,
+  async list(opts: ListModelsOptions = {}): Promise<ModelSourceResult> {
+    const bin = resolveBinary("crush", process.env.PATH ?? "");
+    if (!bin) return { supported: true, models: ["default"], refreshable: false };
+    const out = await spawnModels(bin, ["models"], {
+      timeoutMs: MODELS_TIMEOUT_MS,
+      cwd: opts.cwd,
+    });
+    return { supported: true, models: ["default", ...parseLiveModels(out)], refreshable: false };
+  },
+};
+
 /** Placeholder adapter for CLIs with no machine-readable model list. */
 function unsupported(id: string, cli: string): ModelSourceAdapter {
   return {
@@ -383,6 +407,7 @@ export const MODEL_SOURCES: Record<string, ModelSourceAdapter> = {
   kiro: kiroAdapter,
   cursor: cursorAdapter,
   antigravity: antigravityAdapter,
+  crush: crushAdapter,
 };
 for (const known of KNOWN_AGENTS) {
   if (
@@ -391,7 +416,8 @@ for (const known of KNOWN_AGENTS) {
     known.id === "copilot" ||
     known.id === "kiro" ||
     known.id === "cursor" ||
-    known.id === "antigravity"
+    known.id === "antigravity" ||
+    known.id === "crush"
   )
     continue;
   MODEL_SOURCES[known.name] = unsupported(known.id, known.name);

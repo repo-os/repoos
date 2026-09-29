@@ -105,7 +105,14 @@ describe("parseLiveModels", () => {
 describe("MODEL_SOURCES registry", () => {
   it("keys adapters by Agent.cli", () => {
     expect(Object.keys(MODEL_SOURCES)).toEqual(
-      expect.arrayContaining(["opencode", "claude code", "qwen code", "codex", "github copilot"]),
+      expect.arrayContaining([
+        "opencode",
+        "claude code",
+        "qwen code",
+        "codex",
+        "github copilot",
+        "crush",
+      ]),
     );
   });
 
@@ -192,6 +199,40 @@ describe("opencode adapter", () => {
     try {
       const res = await listModelSources({ cwd: tmpDir() });
       expect(res.opencode.models).toEqual(["default"]);
+    } finally {
+      process.env.PATH = old;
+    }
+  });
+});
+
+describe("crush adapter", () => {
+  it("spawns `crush models` and returns 'default' + parsed provider/model lines", async () => {
+    const root = tmpDir();
+    const bin = join(root, "bin");
+    mkdirSync(bin, { recursive: true });
+    writeFileSync(join(bin, "crush"), FAKEBIN, { mode: 0o755 });
+    const fx = { bin, log: join(root, "spawns.log") };
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    process.env.REPOOS_FAKE_MODELS = "aihubmix/DeepSeek-V3\nopencode-go/big-pickle\n";
+    const old = prependPath(fx.bin);
+    try {
+      const res = await listModelSources({ cwd: tmpDir() });
+      expect(res.crush).toEqual({
+        supported: true,
+        models: ["default", "aihubmix/DeepSeek-V3", "opencode-go/big-pickle"],
+        refreshable: false,
+      });
+      expect(spawnArgs(fx)).toContainEqual(["models"]);
+    } finally {
+      process.env.PATH = old;
+    }
+  });
+
+  it("returns only 'default' (fail-soft) when crush is missing", async () => {
+    const old = withPath(join(tmpDir(), "empty"));
+    try {
+      const res = await listModelSources({ cwd: tmpDir() });
+      expect(res.crush.models).toEqual(["default"]);
     } finally {
       process.env.PATH = old;
     }
