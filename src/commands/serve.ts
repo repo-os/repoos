@@ -9,6 +9,7 @@ import { isBun } from "../core/runtime.js";
 import { findRepoRoot } from "../core/config.js";
 import { c, statusColor } from "../cli/colors.js";
 import type { RepoEvent } from "../server/live-index.js";
+import { readVersion } from "../core/version.js";
 import { detectTailscaleIPv4, ensureTailscaleHttps } from "../core/tailscale.js";
 
 /**
@@ -122,6 +123,49 @@ export function directServeBlockedByAgent(env: NodeJS.ProcessEnv = process.env):
   return env.REPOOS_AGENT === "1" && env.REPOOS_PREVIEW_CHILD !== "1" && env.REPOOS_RELOAD !== "1";
 }
 
+export interface BannerRow {
+  label: string;
+  /** May contain ANSI codes. */
+  value: string;
+}
+
+/**
+ * The startup banner: a title line with the running version, an aligned
+ * label/value table, and — when Tailscale HTTPS could not be set up — a
+ * highlighted warning block that separates the problem from its fix. Pure
+ * (returns a string) so tests can assert on it with colors off.
+ */
+export function renderServeBanner(
+  version: string,
+  rows: readonly BannerRow[],
+  httpsWarning?: string,
+): string {
+  const width = Math.max(...rows.map((r) => r.label.length));
+  const out: string[] = [
+    "",
+    `  ${c.bold(c.cyan("◆ RepoOS"))} ${c.dim("v" + version)}  ${c.green("● running")}`,
+    "",
+  ];
+  for (const r of rows) out.push(`  ${c.dim(r.label.padEnd(width))}  ${r.value}`);
+  if (httpsWarning) {
+    // Reasons read "<problem> — <fix> <url>": put the problem, the fix and the
+    // link on their own lines so the actionable part isn't buried.
+    const [problem, ...rest] = httpsWarning.split(" — ");
+    const fixText = rest.join(" — ");
+    const url = /https?:\/\/\S+/.exec(fixText)?.[0];
+    const fix = (url ? fixText.replace(url, "") : fixText).replace(/\s*\bat\s*$/, "").trim();
+    out.push("", `  ${c.yellow("▲")} ${c.bold(c.yellow("Tailscale HTTPS unavailable"))}`);
+    out.push(`    ${c.dim(problem ?? "")}`);
+    if (fix) out.push(`    ${c.bold("Fix:")} ${fix}${url ? c.dim(" at") : ""}`);
+    if (url) out.push(`         ${c.cyan(url)}`);
+    out.push(
+      `    ${c.dim("or pass")} ${c.cyan("--no-tailscale-https")} ${c.dim("to silence this")}`,
+    );
+  }
+  out.push("", c.dim("  press ^C to stop"), "");
+  return out.join("\n");
+}
+
 export async function cmdServe(
   args: string[],
   opts: { onShutdown?: () => void; onReady?: (url: string) => void } = {},
@@ -199,57 +243,46 @@ export async function cmdServe(
   }
 
   const snap = handle.index.snapshot();
-  console.log(c.bold(c.cyan("\n  RepoOS server")) + c.dim("  ·  ") + c.bold(handle.url));
-  console.log(c.dim("  open ") + c.cyan(handle.url) + c.dim(" in your browser for the UI"));
-  console.log(
-    c.dim("  watching ") +
-      snap.taskCount +
-      c.dim(" tasks  ·  SSE stream at ") +
-      c.cyan(handle.url + "/api/events"),
-  );
-  // Report an active preview-only overlay and its effective keys (#0464), so a
-  // preview that deliberately differs from the base config is never silent.
-  if (handle.previewOverrides?.length) {
-    console.log(
-      c.yellow("  preview overrides active: ") + c.dim(handle.previewOverrides.join(", ")),
-    );
-  }
   const rt = isBun()
     ? `Bun ${(process.versions as { bun?: string }).bun ?? ""}`.trim()
     : `Node ${process.versions.node}`;
-  console.log(c.dim("  runtime ") + rt);
-  console.log(
-    c.dim("  api: ") + c.dim("/api/tasks  /api/tasks/:id  /api/counts  /api/index  /api/docs"),
-  );
+  const rows: BannerRow[] = [
+    { label: "Local", value: c.cyan(c.bold(handle.url)) },
+    { label: "Events", value: c.cyan(handle.url + "/api/events") + c.dim("  (SSE)") },
+    { label: "Watching", value: `${snap.taskCount} tasks` },
+    { label: "Runtime", value: rt },
+  ];
+  // Report an active preview-only overlay and its effective keys (#0464), so a
+  // preview that deliberately differs from the base config is never silent.
+  if (handle.previewOverrides?.length) {
+    rows.push({ label: "Preview", value: c.yellow(handle.previewOverrides.join(", ")) });
+  }
   if (tailscaleDetected) {
-    console.log(
-      c.dim("  Tailscale detected — listening on all interfaces (") +
-        c.cyan("0.0.0.0") +
-        c.dim("), reachable from other Tailscale devices at ") +
+    rows.push({
+      label: "Tailnet",
+      value:
         c.cyan(`http://${tailscaleIP}:${handle.port}`) +
-        c.dim(". Use ") +
+        c.dim("  (all interfaces; ") +
         c.cyan("--host 127.0.0.1") +
-        c.dim(" to restrict to localhost only."),
-    );
+        c.dim(" to restrict)"),
+    });
   }
   // HTTPS for tailnet devices (a plain-http IP isn't a secure context, so
   // crypto.randomUUID etc. are missing). Skipped for managed previews, which
   // must not touch the machine's `tailscale serve` config.
+  let httpsWarning: string | undefined;
   if (tailscaleDetected && tailscaleHttps && process.env.REPOOS_PREVIEW_CHILD !== "1") {
     const https = await ensureTailscaleHttps(handle.port);
     if (https.url) {
-      console.log(
-        c.dim("  Tailscale HTTPS — open ") +
-          c.cyan(https.url) +
-          c.dim(" from your tailnet (secure context; ") +
-          c.cyan("--no-tailscale-https") +
-          c.dim(" to skip)."),
-      );
+      rows.push({
+        label: "Tailnet HTTPS",
+        value: c.green(c.bold(https.url)) + c.dim("  (secure context)"),
+      });
     } else if (https.reason) {
-      console.log(c.yellow("  Tailscale HTTPS unavailable: ") + c.dim(https.reason));
+      httpsWarning = https.reason;
     }
   }
-  console.log(c.dim("  press ^C to stop\n"));
+  console.log(renderServeBanner(readVersion(), rows, httpsWarning));
 
   // Fires only now that the server is actually listening (handle.url is a
   // live, bound address) — a caller opening a browser tab any earlier races

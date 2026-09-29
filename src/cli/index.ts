@@ -31,9 +31,7 @@ import { checkBuild } from "../core/build.js";
 import { loadConfig } from "../core/config.js";
 import { reexecAfterStaleBuild, reexecUnderBunIfRequested } from "../core/runtime.js";
 import { c } from "./colors.js";
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { readVersion } from "../core/version.js";
 
 // node:sqlite (used by db.ts/auth-store.ts) is still marked experimental on
 // supported Node versions and prints a warning the first time it's loaded.
@@ -48,20 +46,6 @@ process.on("warning", (warning) => {
   if (/\bsqlite\b/i.test(warning.message)) return;
   console.warn(warning);
 });
-
-/** Reads the version stamped into .build-info.json at build time; falls back for dev/source runs. */
-function readVersion(): string {
-  try {
-    const root = dirname(dirname(fileURLToPath(import.meta.url)));
-    const info = JSON.parse(readFileSync(join(root, ".build-info.json"), "utf8")) as {
-      version?: string;
-    };
-    if (info.version) return info.version;
-  } catch {
-    /* fall through */
-  }
-  return "0.0.0-dev";
-}
 
 const VERSION = readVersion();
 
