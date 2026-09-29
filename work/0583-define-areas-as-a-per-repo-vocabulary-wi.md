@@ -2,16 +2,16 @@
 id: "0583"
 title: Define areas as a per-repo vocabulary with a multi-select picker
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/define-areas-as-a-per-repo-vocabulary-wi
 model_override: opencode-go/glm-5.3-flash
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-29T11:31:44Z"
-updated_at: "2026-09-29T16:47:22Z"
+updated_at: "2026-09-29T16:47:23Z"
 ---
 ## Problem
 
@@ -63,3 +63,4 @@ Automatically inferring areas from changed paths (#0582's `paths` globs cover th
 - 2026-09-29T11:34:57Z · status inbox→ready
 - 2026-09-29T16:47:18Z · model_override
 - 2026-09-29T16:47:22Z · review_model_override
+- 2026-09-29T16:47:23Z · status ready→active, branch
