@@ -1,6 +1,38 @@
 /** API-facing types for the RepoOS web UI. Mirrors src/core/types.ts. */
 
+import type { RepoCommit } from "../../core/repo-log.js";
+
 export type Status = "draft" | "inbox" | "ready" | "active" | "review" | "done";
+
+/** One uncommitted file in the sidebar git-state row (#0584): repo-relative
+ *  path plus git's porcelain `XY` status code (`" M"` modified, `"??"` untracked). */
+export interface RepoStatusDirtyFile {
+  path: string;
+  status: string;
+}
+
+/**
+ * Repo root checkout git state for the persistent sidebar row (#0584) —
+ * client mirror of `src/server/repo-status.ts` (the UI imports core, never
+ * server, so the shape is restated here like every other API type).
+ *
+ * `ok: false` means git could not be read: branch and dirtiness are unknown
+ * and must render as `unknown`, never as `clean`.
+ */
+export interface RepoStatus {
+  ok: boolean;
+  branch: string | null;
+  detached: boolean;
+  baseBranch: string | null;
+  dirty: RepoStatusDirtyFile[];
+  head: string | null;
+  /** The three most recent commits on the checked-out branch (History tab's shape). */
+  recentCommits: RepoCommit[];
+  /** Absolute path of the checkout this describes (the popup says which). */
+  path: string;
+  /** When the server computed this (ISO). Stale data degrades to `unknown`. */
+  computedAt: string;
+}
 
 /** A live read-only preview of a task's worktree (see POST /api/tasks/:id/preview). */
 export interface PreviewInfo {
@@ -494,6 +526,9 @@ export interface BoardUsageStats {
 export type RepoEvent =
   | { type: "hello"; taskCount: number; at: string }
   | { type: "index.rebuilt"; taskCount: number; at: string }
+  /** Repo root checkout git state for the sidebar row (#0584). The server
+   *  emits this only when the computed state actually differs. */
+  | { type: "repo.status"; status: RepoStatus; at: string }
   | { type: "story.definitionsChanged"; at: string }
   | {
       type: "story.pmFinished";

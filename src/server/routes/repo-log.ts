@@ -12,6 +12,7 @@ import {
   MAX_LOG_LIMIT,
 } from "../../core/repo-log.js";
 import { runGit } from "../../core/git.js";
+import { getRepoStatus } from "../repo-status.js";
 
 function query(reqUrl: string | undefined): URLSearchParams {
   try {
@@ -61,6 +62,21 @@ export const getRepoBranches: RouteHandler = async (ctx, _req, res) => {
   const result = await listRepoBranches(ctx.config.root);
   if (!result.ok) return json(res, errorStatus(result.code), result);
   return json(res, 200, result);
+};
+
+/**
+ * `GET /api/repo/status` (#0584) — the sidebar git-state row's data: branch,
+ * detached flag, dirty files with their status column, head, and the three
+ * most recent commits for the repo root checkout.
+ *
+ * Always 200: an unreadable checkout answers `ok: false` ("unknown" in the
+ * UI), it is not an HTTP error — the same reasoning as the log route's
+ * `not-git` → 200. Computation is debounced and coalesced server-side, so
+ * every open tab polling this costs at most one `git status`.
+ */
+export const getRepoStatusRoute: RouteHandler = async (ctx, _req, res) => {
+  const status = await getRepoStatus(ctx.config.root);
+  return json(res, 200, status);
 };
 
 export const getRepoCommitRoute: RouteHandler = async (ctx, _req, res, params) => {

@@ -30,6 +30,7 @@ import {
   workFileFilter,
 } from "../core/git.js";
 import { parseTask } from "../core/task.js";
+import { notifyGitMutation } from "../core/git-activity.js";
 import { parseDocument, serializeDocument } from "../core/frontmatter.js";
 import type { AgentHandoffRequest, AgentRunner } from "./agents.js";
 import { resolveAgentForTask } from "./agents.js";
@@ -568,6 +569,9 @@ async function runHandoffFinalization(
         if (checkoutMain.status !== 0) {
           return fail("main", `could not check out main for task sync: ${concise(checkoutMain)}`);
         }
+        // RepoOS moved HEAD in the root checkout: tell the sidebar git-state
+        // indicator directly rather than waiting for a watcher event (#0584).
+        notifyGitMutation(config.root, "checkout");
         try {
           patchTaskFile(
             config,
@@ -588,6 +592,7 @@ async function runHandoffFinalization(
               `canonical task synced but could not restore hotfix checkout: ${concise(restore)}`,
             );
           }
+          notifyGitMutation(config.root, "checkout");
         }
       } else {
         patchTaskFile(
