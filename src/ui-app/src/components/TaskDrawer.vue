@@ -1366,14 +1366,17 @@ const draftAreaList = computed<string[]>({
 /**
  * Offer a newly typed area to the repo's declared vocabulary: add it to the
  * persisted `[areas]` list (descriptions of unchanged names are preserved
- * server-side). Best-effort: a failure surfaces through the store's error and
- * the selection itself is already applied.
+ * server-side). Uses `config.save`, which PATCHes and then re-reads the
+ * /api/config payload — so `areaVocabulary` (and the picker's rows) update
+ * live and repeat adds never depend on a page reload. Two drawers saved at
+ * once are still last-write-wins on the whole list (there is no per-row
+ * append endpoint), but the window is a single round-trip and a re-opened
+ * Settings always shows the server's truth.
  */
 async function addAreaToVocabulary(name: string): Promise<void> {
   const current = parseTaskAreas(config.form.areas as unknown);
   if (!current.some((s) => s.toLowerCase() === name.toLowerCase())) current.push(name);
-  await config.setConfigValues({ areas: current });
-  config.form.areas = current.join(", ");
+  await config.save({ areas: current });
 }
 
 /**

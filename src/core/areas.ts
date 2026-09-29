@@ -13,12 +13,12 @@
  *   inline list (`area: [web, core]`) when several — the frontmatter parser
  *   (`frontmatter.ts`) already round-trips both. Commas, never `+`.
  * - Reading (`parseTaskAreas`): accepts the list form, a comma string, and the
- *   legacy `a + b` / "a / b" spellings so unchanged files keep parsing. Output
- *   is trimmed, de-duplicated (case-insensitively), non-empty strings.
+ *   legacy ` + ` spelling so unchanged files keep parsing. Output is trimmed,
+ *   de-duplicated (case-insensitively), non-empty strings.
  * - Display (`formatTaskAreas`): `, `-joined plain text — `repoos list`,
  *   `repoos show`, logs, and the plain-text parts of the UI.
- * - Matching (`areaListsIntersect`, `areasMatchVocabulary`): case-insensitive,
- *   per-area — never a whole-string compare.
+ * - Matching (`areaListsIntersect`): case-insensitive, per-area — never a
+ *   whole-string compare.
  *
  * The effective vocabulary a repo offers comes from TWO sources merged
  * (`effectiveAreaVocabulary`): the `[areas]` names declared in `repoos.toml`
@@ -27,10 +27,14 @@
  */
 import type { RepoOSConfig } from "./types.js";
 
-/** Legacy multi-area separator(s), kept readable in old files. Only `+` was
- * ever used by convention ("server + ui-app"); `/` and `&` are deliberately
- * NOT separators — "web/mobile" stays one value, as it always parsed. */
-const LEGACY_SEPARATORS: string[] = ["+"];
+/**
+ * Legacy multi-area separator(s). Only `+` was ever used by convention, and
+ * on this board always with spaces around it (`server + ui-app`). A `+` is a
+ * separator ONLY when preceded by whitespace, so names that legitimately
+ * contain one ("c++", "a+b") stay whole — parse output cannot clobber them.
+ * `/` is deliberately never a separator: "web/mobile" always parsed as one
+ * value.
+ */
 
 /**
  * Parse one `area` frontmatter value into the canonical list of area names.
@@ -40,8 +44,7 @@ const LEGACY_SEPARATORS: string[] = ["+"];
  *   `["web", "core"]` → `["web", "core"]`
  *   `"server + ui-app"` (legacy) → `["server", "ui-app"]`
  * Empty and blank areas are dropped; duplicates collapse case-insensitively
- * (the FIRST spelling wins, so `"web, Web"` keeps `"web"`); separators never
- * survive inside area names themselves.
+ * (the FIRST spelling wins, so `"web, Web"` keeps `"web"`).
  */
 export function parseTaskAreas(raw: unknown): string[] {
   const values: string[] = Array.isArray(raw)
@@ -50,21 +53,25 @@ export function parseTaskAreas(raw: unknown): string[] {
       ? []
       : [String(raw)];
 
-  // Split every entry on the canonical comma AND the legacy separators, so a
-  // single "a + b" or "a/b/c" string (or one stray `["a + b"]` list item) all
-  // normalize to the same shape. Legacy separators are whitespace-flexible —
-  // "server+ui-app" splits exactly like "server + ui-app".
-  const splitRe = new RegExp(`[,]|${LEGACY_SEPARATORS.map((s) => `\\${s}`).join("|")}`);
+  // Split every entry on the canonical comma AND the legacy ` + ` spelling,
+  // so a single "server + ui-app" string (or one stray
+  // `["server + ui-app"]` list item) normalizes to the same shape. A `+`
+  // without whitespace on both sides — "a+b", "c++" — is just characters in
+  // a value, never a separator.
+  const splitRe = /\s*\+\s+/;
   const out: string[] = [];
   const seen = new Set<string>();
   for (const value of values) {
-    for (const piece of value.split(splitRe)) {
-      const name = piece.trim();
-      if (!name) continue;
-      const key = name.toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
-      out.push(name);
+    // First the comma (whitespace-canonical), then the legacy `+`.
+    for (const commaPiece of value.split(",")) {
+      for (const piece of commaPiece.split(/\s+\+/)) {
+        const name = piece.trim();
+        if (!name) continue;
+        const key = name.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(name);
+      }
     }
   }
   return out;

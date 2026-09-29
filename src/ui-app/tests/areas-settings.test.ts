@@ -8,7 +8,7 @@ import { Readable } from "node:stream";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadConfig, SUPPORTED_TOML_KEYS } from "../../core/config.js";
+import { getConfigSchema, loadConfig, SUPPORTED_TOML_KEYS } from "../../core/config.js";
 import { patchConfig, safeConfigForBrowser } from "../../server/routes/config.js";
 
 async function patch(
@@ -78,8 +78,37 @@ describe("Settings PATCH for [areas] (#0583)", () => {
     try {
       const res = await patch(root, { areas: [] });
       expect(res.status).toBe(200);
-      // `areas = []` parses as "nothing declared" — flat shorthand dropped.
+      // Cleared to nothing: the flat list stays as an explicit empty (the
+      // deliberate "free text only" record on disk), parse resolves to no
+      // declared vocabulary.
       expect(loadConfig(root).areas).toBeUndefined();
+      expect(readFileSync(join(root, "repoos.toml"), "utf8")).toContain("areas = []");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("does not touch repoos.toml when the submitted list already matches disk", async () => {
+    const root = repo('workDir = "work"\n'); // no vocabulary, nothing declared
+    try {
+      const before = readFileSync(join(root, "repoos.toml"), "utf8");
+      const res = await patch(root, { areas: [] });
+      expect(res.status).toBe(200);
+      // A visible schema field repeats its current value in EVERY unrelated
+      // Settings save; a no-op must never dirty the file.
+      expect(readFileSync(join(root, "repoos.toml"), "utf8")).toBe(before);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("does not touch repoos.toml when a non-empty list already matches disk", async () => {
+    const root = repo('[[areas]]\nname = "web"\n');
+    try {
+      const before = readFileSync(join(root, "repoos.toml"), "utf8");
+      const res = await patch(root, { areas: ["web"] });
+      expect(res.status).toBe(200);
+      expect(readFileSync(join(root, "repoos.toml"), "utf8")).toBe(before);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -115,7 +144,16 @@ describe("Settings PATCH for [areas] (#0583)", () => {
     expect(SUPPORTED_TOML_KEYS).toContain("areas.name");
     expect(SUPPORTED_TOML_KEYS).toContain("areas.description");
   });
+
+  it("has a Settings UI row (General tab), not just a schema entry", () => {
+    const field = getConfigSchema().find((f) => f.key === "areas");
+    expect(field).toBeDefined();
+    const loc = resolveSettingLocation("areas", field, { inspectorAvailable: true });
+    expect(loc).toEqual({ tab: "general", hasUiRow: true });
+  });
 });
+
+import { resolveSettingLocation } from "../src/settings-location.js";
 
 describe("safeConfigForBrowser — area names only in the array form", () => {
   it("flattens declared rows into names for the Settings form", () => {

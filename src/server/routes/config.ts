@@ -191,6 +191,13 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
   // persisted to the sidecar, NOT repoos.toml — mirroring how built-in agent
   // state is stored and read (see config.ts:saveBuiltInAgentsConfig).
   let builtInAgentsChanged = false;
+  /**
+   * Set when an `areas` PATCH hit the #0583 no-op guard: the submitted list
+   * already says what's on disk, so nothing is written — but a solo no-op
+   * save should still answer 200 ("handled, nothing to change"), not the
+   * generic 400 that an empty patch would otherwise produce.
+   */
+  let areasUnchanged = false;
   if (body.builtInAgents !== undefined) {
     if (
       typeof body.builtInAgents !== "object" ||
@@ -375,11 +382,25 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
         const descriptions = new Map(
           (repoos.config.areas ?? []).map((a) => [a.name.toLowerCase(), a.description] as const),
         );
-        patch[field.key] = (val as string[]).map((s) => {
+        const rows = (val as string[]).map((s) => {
           const name = s.trim();
           const description = descriptions.get(name.toLowerCase());
           return description ? { name, description } : { name };
         });
+        // NO-OP guard (#0583 review round 1): `areas` is a visible schema
+        // field, so EVERY unrelated Settings save repeats its current value
+        // back. Writing it when the on-disk list already says the same thing
+        // would churn repoos.toml on unrelated saves — read the file's actual
+        // state and short-circuit, like the tailscale pool branch below.
+        const onDisk = loadConfig(config.root).areas ?? [];
+        const unchanged =
+          onDisk.length === rows.length &&
+          rows.every((r, i) => onDisk[i]!.name.toLowerCase() === r.name.toLowerCase());
+        if (unchanged) {
+          areasUnchanged = true;
+          continue;
+        }
+        patch[field.key] = rows;
         continue;
       }
       if (
@@ -484,6 +505,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     tunnelEnabled === undefined &&
     !builtInAgentsChanged &&
     !authEnabledChanged &&
+    !areasUnchanged &&
     !onlyEmptyWhisperKey
   ) {
     return json(res, 400, { error: "No valid fields to update" });
