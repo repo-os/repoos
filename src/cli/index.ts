@@ -16,6 +16,7 @@ import {
 import { cmdNewDoc } from "../commands/docs.js";
 import { cmdGc } from "../commands/gc.js";
 import { cmdCheck } from "../commands/check.js";
+import { cmdShot } from "../commands/shot.js";
 import { cmdServe, serveProcessTitle, setServeProcessTitle } from "../commands/serve.js";
 import { cmdStop } from "../commands/stop.js";
 import { cmdTunnel } from "../commands/tunnel.js";
@@ -106,6 +107,10 @@ function help(): void {
     cmdRow("check --changed main", "Fast pre-review pass over steps affected by changed paths"),
     cmdRow("check --print-plan", "Print the resolved plan as [[check.steps]] TOML to commit"),
     cmdRow(
+      "shot [<route|url>]",
+      `Capture preview screenshots into the task's shots folder   ${c.dim("flags: --target --selector --task --base --wait --full-page")}`,
+    ),
+    cmdRow(
       "init [name]",
       "Scaffold work/, repoos.toml, AGENTS.md; outside a git repo runs a guided flow that can launch the web console",
     ),
@@ -176,6 +181,9 @@ function help(): void {
     exRow('repoos note 0012 "Handle the reviewer\'s suggestions before the next review"'),
     exRow('repoos update 0012 --title "New title" --area web'),
     exRow("repoos list ready"),
+    exRow("repoos shot", "screenshot the task preview for the current worktree"),
+    exRow("repoos shot /repo/commits/abc123", "capture one route"),
+    exRow("repoos shot --target 'Docs site' --selector '.sidebar'"),
     exRow("repoos status", "one-screen health snapshot"),
     exRow("repoos status --json", "machine-readable, for agents/tools"),
     exRow("repoos index --json", "machine-readable, for agents/tools"),
@@ -323,6 +331,16 @@ function main(): void {
       break;
     case "check":
       void cmdCheck(rest);
+      break;
+    case "shot":
+      void cmdShot(rest)
+        .then((code) => {
+          if (code !== 0) process.exitCode = code;
+        })
+        .catch((err: unknown) => {
+          console.error(c.red(`  ✗ shot failed: ${(err as Error).message}`));
+          process.exitCode = 1;
+        });
       break;
     case "tunnel":
       void cmdTunnel(rest);

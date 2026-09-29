@@ -1028,6 +1028,14 @@ export interface PreviewTargetConfig {
   /** Task `area:` values this target serves, matched case-insensitively. */
   areas: string[];
   /**
+   * Optional repo-relative glob list (#0582). A changed file matching any glob
+   * makes this target a candidate for `repoos shot`, independent of the task's
+   * `area` — which is often chosen before the changed files are known. `**`
+   * spans path segments, `*` and `?` stay within one. Empty/absent means the
+   * target is only reachable through area resolution or an explicit `--target`.
+   */
+  paths?: string[];
+  /**
    * Shell command that boots the preview. `{port}` and `{host}` are replaced
    * with the OS-assigned values; `PORT`/`HOST` are also exported into the
    * child's environment. Runs with the worktree root as cwd unless `cwd` is set.

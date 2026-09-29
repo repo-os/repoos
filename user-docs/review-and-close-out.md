@@ -235,3 +235,11 @@ runs behind it like the rest of the server, so you'll hit a login screen even
 locally — you don't need a real inbox, see the dev-login note in
 [Troubleshooting](/troubleshooting#logging-into-a-local-preview). Auth is off
 by default, so most repos skip straight to the running app.
+
+For a UI-visible change, an engineer can capture screenshots of that preview
+with [`repoos shot`](/cli#repoos-shot) before handoff. The PNGs are stored
+gitignored under `work/.attachments/<taskId>/shots/` and appear as the **UI
+changes** section of the task drawer's Changes tab, so you see what actually
+rendered rather than only the diff. `repoos shot` picks its target from the
+task's changed files (`[[preview.targets]].paths`), and the drawer warns if the
+task's `area` disagrees — pick the right target from the preview dropdown if so.
