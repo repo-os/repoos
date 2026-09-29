@@ -6,7 +6,7 @@
  * guided, interactive flow that creates a brand-new RepoOS project from
  * scratch: optionally in a subdirectory, with a choice of layout (repo root
  * vs. a `repoos/` subfolder, config file at root either way), an optional
- * one-line project description (seeded into the sample task) and an optional
+ * project description, one or many lines (seeded into the sample task) and an optional
  * initial commit.
  */
 import { spawn } from "node:child_process";
@@ -69,12 +69,20 @@ Status is a frontmatter field — never move files between folders. Keep diffs
 small. Read AGENTS.md before starting any task.
 `;
 
+/** Blockquote every line, so a multi-line (pasted markdown) description stays one quote. */
+export function quoteBlock(text: string): string {
+  return text
+    .split("\n")
+    .map((line) => (line.trim() === "" ? ">" : `> ${line}`))
+    .join("\n");
+}
+
 /**
  * The first *workable* task a guided new-project init leaves on the board.
  * 0001 is deliberately `done` (scaffolding is the whole of it), so this is what
  * a new user — or their first agent — actually picks up. `repoos init` runs
  * before any server or agent exists, so the body itself is the prompt: it
- * embeds the one-line description collected at init and carries the questions
+ * embeds the description collected at init and carries the questions
  * that turn that description into docs and real tasks later.
  */
 const NEW_PROJECT_STARTER_TASK = (
@@ -95,7 +103,7 @@ branch: ""
 ---
 ## Overview
 
-This project started from a one-line description. This task turns it into
+This project started from a short description. This task turns it into
 something a team can actually build from — a shared vision, an initial
 architecture, and a first batch of concrete work.
 
@@ -103,8 +111,8 @@ architecture, and a first batch of concrete work.
 
 ${
   description
-    ? `> ${description}`
-    : "_No description was given at init time. Start by writing one line that says what this project is and who it's for._"
+    ? quoteBlock(description)
+    : "_No description was given at init time. Start by writing a short description that says what this project is and who it's for._"
 }
 
 ## What to do
@@ -584,6 +592,43 @@ async function ask(question: string): Promise<string> {
   }
 }
 
+/**
+ * Like `ask`, but accepts multi-line input. On a TTY, a pasted block arrives as
+ * a burst of lines, so after each line we wait briefly for more; a typed line
+ * ending in `\\` also continues onto the next line. Non-TTY input (pipes, CI)
+ * stays strictly one line so later prompts' answers aren't swallowed.
+ */
+async function askMultiline(question: string): Promise<string> {
+  if (!input.isTTY) return ask(question);
+  const rl = createInterface({ input, output });
+  return new Promise((resolvePromise) => {
+    const lines: string[] = [];
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      if (timer) clearTimeout(timer);
+      rl.close();
+      resolvePromise(lines.join("\n").trim());
+    };
+    rl.on("close", finish);
+    rl.on("line", (line) => {
+      if (timer) clearTimeout(timer);
+      if (line.endsWith("\\")) {
+        lines.push(line.slice(0, -1));
+        rl.setPrompt("  … ");
+        rl.prompt();
+        return;
+      }
+      lines.push(line);
+      timer = setTimeout(finish, 75);
+    });
+    rl.setPrompt(question);
+    rl.prompt();
+  });
+}
+
 async function confirm(question: string, dflt: boolean): Promise<boolean> {
   const hint = dflt ? " [Y/n]" : " [y/N]";
   const answer = (await ask(question + c.dim(hint) + " ")).toLowerCase();
@@ -967,9 +1012,11 @@ async function guidedNewRepo(args: string[]): Promise<void> {
     return;
   }
 
-  const description = await ask(
+  const description = await askMultiline(
     "  Project description" +
-      c.dim(" — one line, gives the AI context to suggest next steps (optional, Enter to skip)") +
+      c.dim(
+        " — gives the AI context to suggest next steps; paste multi-line markdown or end a line with \\ to continue (optional, Enter to skip)",
+      ) +
       ": ",
   );
 
