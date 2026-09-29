@@ -407,6 +407,15 @@ cannot tell from the code alone:
   so the worktree build is fresh. Do NOT automatically request a preview to
   verify it — previews are on request from the human, not something you spin up
   as a routine part of finishing a task (#0268).
+- **`repoos shot` is the one sanctioned use of the managed preview by the
+  engineer**, and only for a UI-visible change: once, before handoff, capture
+  the changed screens into the task's `shots/` folder so the reviewer and human
+  see visual evidence instead of "it looked fine" (#0582). It starts the task's
+  server-owned preview itself (never `repoos serve`) but does not open a preview
+  for the human to browse, and it is skipped for non-UI changes. If Playwright
+  is unavailable or the shot fails, fall back to text verification and say so in
+  the handoff. This exception does not change the rule above: the *human* still
+  owns preview requests, and the engineer still does not auto-request one.
 - **Previews are server-owned — never run `repoos serve` yourself.** RepoOS owns
   the control-plane port and every preview port. Preview requests are the
   human's to make: the human requests a preview manually from the UI when they
