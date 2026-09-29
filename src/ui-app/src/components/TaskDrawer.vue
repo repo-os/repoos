@@ -77,7 +77,7 @@ import SendToEngineerDialog from "./SendToEngineerDialog.vue";
 import SpecEditModal from "./SpecEditModal.vue";
 import ScreenshotViewer from "./ScreenshotViewer.vue";
 import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
-import { pendingToShots } from "../lib/screenshot-viewer";
+import { pendingToShots, type ScreenshotShot } from "../lib/screenshot-viewer";
 import DoneErrorCard from "./DoneErrorCard.vue";
 import DebugPanel from "./DebugPanel.vue";
 import StopWorkConfirmModal from "./StopWorkConfirmModal.vue";
@@ -769,6 +769,21 @@ const pendingViewerShots = computed(() => pendingToShots(ui.pendingScreenshots))
 function openPendingViewer(index: number): void {
   pendingViewerStart.value = index;
   pendingViewerOpen.value = true;
+}
+
+// ---- captured preview shots (#0582) ----
+/** Shots captured by `repoos shot`, listed from the task's `shots/` folder. */
+const taskShots = computed(() => (ui.active ? repo.shotsFor(ui.active.id) : []));
+/** Area/target mismatch warning for the open task, or undefined. */
+const shotWarning = computed(() => (ui.active ? repo.shotWarningFor(ui.active.id) : undefined));
+const shotsViewerOpen = ref(false);
+const shotsViewerStart = ref(0);
+const shotsViewerShots = computed<ScreenshotShot[]>(() =>
+  taskShots.value.map((s) => ({ src: s.url, name: s.name })),
+);
+function openShotsViewer(index: number): void {
+  shotsViewerStart.value = index;
+  shotsViewerOpen.value = true;
 }
 
 function onShotFiles(e: Event): void {
@@ -2700,6 +2715,19 @@ watch(
   },
 );
 
+/**
+ * Load captured preview shots (#0582) whenever the drawer's task changes — not
+ * just when the Changes tab opens, so the area/target mismatch warning is
+ * available next to the preview control too.
+ */
+watch(
+  () => ui.active?.id,
+  (id) => {
+    if (id) void repo.loadShots(id);
+  },
+  { immediate: true },
+);
+
 /** Parse the unified diff into per-file sections with stats. */
 interface DiffFile {
   filename: string;
@@ -3794,6 +3822,13 @@ watch(
               Start preview
             </Button>
           </div>
+          <p
+            v-if="ui.active && shotWarning"
+            class="preview-hint shot-warning-preview"
+            role="status"
+          >
+            {{ shotWarning }}
+          </p>
         </div>
         <!-- Critical status lives above the tabs so it is visible no matter
              which tab is open — a "needs input" / "reviewer crashed" message
@@ -4589,6 +4624,26 @@ watch(
           </section>
         </div>
         <div v-else-if="ui.activeTab === 'changes'" class="drawer-body">
+          <div v-if="ui.active && shotWarning" class="shot-warning shot-warning-changes">
+            {{ shotWarning }}
+            <span class="shot-warning-hint">
+              Pick the right target from the preview control above.
+            </span>
+          </div>
+          <section
+            v-if="ui.active && taskShots.length"
+            class="changes-summary ui-changes"
+            aria-label="UI changes"
+          >
+            <div class="changes-summary-title">UI changes</div>
+            <div class="shot-grid">
+              <div v-for="(s, i) in taskShots" :key="s.name" class="shot-thumb">
+                <img :src="s.url" :alt="s.name" @click="openShotsViewer(i)" />
+                <ScreenshotExpandButton :name="s.name" @click="openShotsViewer(i)" />
+                <span class="shot-name" :title="s.target">{{ s.target }}</span>
+              </div>
+            </div>
+          </section>
           <template v-if="!ui.active">
             <p class="changes-empty">Select a task to view changes.</p>
           </template>
@@ -5094,6 +5149,11 @@ watch(
     v-model:open="pmViewerOpen"
     :shots="pmViewerShots"
     :start-index="pmViewerStart"
+  />
+  <ScreenshotViewer
+    v-model:open="shotsViewerOpen"
+    :shots="shotsViewerShots"
+    :start-index="shotsViewerStart"
   />
 
   <StopWorkConfirmModal

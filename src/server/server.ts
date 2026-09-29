@@ -160,6 +160,7 @@ import { CTOManager } from "./cto.js";
 import { CTOMonitor } from "./cto-monitor.js";
 import { ReloadManager, readBuildHash, isDevBuild } from "./reload.js";
 import { ServeReaper, isPortListening } from "./serve-reaper.js";
+import { isLoopbackAddress, localTokenMatches, writeLocalCliToken } from "./local-token.js";
 import { testModelCombination } from "./model-test.js";
 import {
   generateReleaseNotes,
@@ -285,6 +286,9 @@ import {
   pmInterrupt,
   getScreenshot,
   uploadScreenshot,
+  listTaskShots,
+  getTaskShot,
+  uploadTaskShot,
   // Config routes
   readConfig,
   patchConfig,
@@ -2578,6 +2582,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", /^\/api\/tasks\/([^/]+)\/pm\/interrupt$/, pmInterrupt);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/attachments\/([^/]+)$/, getScreenshot);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/attachments$/, uploadScreenshot);
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/shots$/, listTaskShots);
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/shots$/, uploadTaskShot);
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/shots\/([^/]+)$/, getTaskShot);
 
   // Config routes
   router.register("GET", "/api/config", readConfig);
@@ -2738,6 +2745,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/manifest.webmanifest", serveManifest);
   router.register("GET", /^\/icons\/icon-(\d+)\.png$/, serveIcon);
 
+  const localToken =
+    config.auth?.enabled === true ? writeLocalCliToken(config.root, config.cacheDir) : null;
+
   const server = createServer(async (req, res) => {
     const method = req.method ?? "GET";
     const url = new URL(req.url ?? "/", "http://localhost");
@@ -2794,36 +2804,46 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             validSession = !!session;
           }
           if (!validSession) {
-            // API requests get 401 JSON; browser GETs to SPA routes are served
-            // the login page (via SPA fallback) so the client-side router can
-            // render the login UI. Other browser navigations redirect to /login.
-            const isApiRequest = path.startsWith("/api/");
-            const isNavigation = method === "GET" && req.headers.accept?.includes("text/html");
-            if (isApiRequest) {
+            // A browser-less local CLI (`repoos shot`, #0582) carries the
+            // loopback token the server wrote instead of a session cookie. It
+            // is honored only from a loopback peer, so a request arriving
+            // through the tunnel cannot use it.
+            const provided = req.headers["x-repoos-local-token"];
+            const localCli =
+              isLoopbackAddress(req.socket.remoteAddress) &&
+              localTokenMatches(typeof provided === "string" ? provided : undefined, localToken);
+            if (!localCli) {
+              // API requests get 401 JSON; browser GETs to SPA routes are served
+              // the login page (via SPA fallback) so the client-side router can
+              // render the login UI. Other browser navigations redirect to /login.
+              const isApiRequest = path.startsWith("/api/");
+              const isNavigation = method === "GET" && req.headers.accept?.includes("text/html");
+              if (isApiRequest) {
+                return json(res, 401, { error: "Authentication required" });
+              }
+              if (isNavigation && uiDir) {
+                // Serve the SPA shell so the client router renders /login
+                const indexPath = join(uiDir, "index.html");
+                if (existsSync(indexPath)) {
+                  res.writeHead(200, {
+                    "Content-Type": "text/html; charset=utf-8",
+                    "Access-Control-Allow-Origin": "*",
+                  });
+                  res.end(readUiIndex(indexPath));
+                  return;
+                }
+              }
+              if (isNavigation) {
+                // Carry the full original URL (query string included) so
+                // deep-link params like /work?task=0340 survive the login
+                // round-trip; LoginView redirects back to it verbatim.
+                res.writeHead(302, {
+                  Location: `/login?redirect=${encodeURIComponent(path + url.search)}`,
+                });
+                return res.end();
+              }
               return json(res, 401, { error: "Authentication required" });
             }
-            if (isNavigation && uiDir) {
-              // Serve the SPA shell so the client router renders /login
-              const indexPath = join(uiDir, "index.html");
-              if (existsSync(indexPath)) {
-                res.writeHead(200, {
-                  "Content-Type": "text/html; charset=utf-8",
-                  "Access-Control-Allow-Origin": "*",
-                });
-                res.end(readUiIndex(indexPath));
-                return;
-              }
-            }
-            if (isNavigation) {
-              // Carry the full original URL (query string included) so
-              // deep-link params like /work?task=0340 survive the login
-              // round-trip; LoginView redirects back to it verbatim.
-              res.writeHead(302, {
-                Location: `/login?redirect=${encodeURIComponent(path + url.search)}`,
-              });
-              return res.end();
-            }
-            return json(res, 401, { error: "Authentication required" });
           }
         }
       }

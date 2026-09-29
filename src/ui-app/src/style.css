@@ -4984,6 +4984,30 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Captured preview shots (#0582) — the UI-changes section in the Changes tab
+ * and the area/target mismatch warning shown near the preview control. */
+.ui-changes {
+  margin-bottom: 18px;
+}
+.shot-warning {
+  font-size: 12px;
+  color: var(--amber);
+  border: 1px solid var(--amber-border-tint);
+  background: var(--amber-tint);
+  border-radius: 8px;
+  padding: 7px 10px;
+  margin: 0 0 8px;
+}
+.shot-warning-hint {
+  display: block;
+  color: var(--txt-dim);
+  font-size: 11px;
+  margin-top: 2px;
+}
+.shot-warning-preview {
+  margin-top: 6px;
+  color: var(--amber);
+}
 /* Screenshots field label row + format info popover (#0571). The help text
  * moved off the form into a themed pane opened by the control beside the
  * label; the pane is teleported to <body> (the drawer would trap a fixed

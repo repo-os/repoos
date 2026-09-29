@@ -22,6 +22,7 @@ import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "
 import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
 import type { RepoOSConfig, Status, Task } from "../core/types.js";
 import { readPreviewOverlayKeys } from "../core/config.js";
+import { splitAreas } from "../core/shot-targets.js";
 import { linkInheritedEnv, worktreePathForBranch } from "../core/git.js";
 import type { RepoEvent } from "./live-index.js";
 
@@ -194,7 +195,7 @@ function noPreviewReason(task: Task, lead: string): string {
  */
 function previewCandidates(config: RepoOSConfig, task: Task): PreviewCandidate[] {
   const preview = config.preview;
-  const area = (task.area ?? "").trim().toLowerCase();
+  const taskAreas = splitAreas(task.area);
   const namedTargets = preview?.targets ?? [];
   const areaMatches: PreviewCandidate[] = [];
   const otherTargets: PreviewCandidate[] = [];
@@ -211,7 +212,7 @@ function previewCandidates(config: RepoOSConfig, task: Task): PreviewCandidate[]
         readyTimeoutMs: t.readyTimeoutMs ?? HEALTH_TIMEOUT_MS,
       },
     };
-    if (t.areas.some((a) => a.trim().toLowerCase() === area)) {
+    if (t.areas.some((a) => taskAreas.includes(a.trim().toLowerCase()))) {
       areaMatches.push(candidate);
     } else {
       otherTargets.push(candidate);

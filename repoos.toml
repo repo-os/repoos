@@ -433,6 +433,11 @@ subdir = "user-docs"
 # "docs"` specifically, not the generic "web" most tasks here use, or they
 # won't route to the right target below.
 #
+# `paths` (#0582) is the safety net for that: `repoos shot` resolves the target
+# from the files a task CHANGED, so a docs/landing diff screenshots the right
+# app even when `area` was set wrong before the change was known. The drawer
+# warns when the two disagree; `area` still drives the preview button itself.
+#
 # IMPORTANT: there is no implicit fallback (#0370). A task whose `area`
 # matches no target below, with no default command, gets a clean "no preview
 # configured" message instead of previewing RepoOS's own board. For THIS repo
@@ -481,12 +486,17 @@ enabled = false
 [[preview.targets]]
 name = "Landing page"
 areas = ["landing"]
+# #0582: `repoos shot` picks the target from the CHANGED FILES, not the task's
+# up-front `area:`. A landing-page diff resolves to this target even when the
+# task was filed with a generic area.
+paths = ["landing/**"]
 command = "bun run dev -- --port {port} --host {host}"
 cwd = "landing"
 
 [[preview.targets]]
 name = "Docs site"
 areas = ["docs"]
+paths = ["user-docs/**"]
 command = "bun run dev -- --port {port} --host {host}"
 cwd = "user-docs"
 
