@@ -16,6 +16,7 @@ import {
 import { dirname, isAbsolute, join, relative } from "node:path";
 import type { TaskGitInfo } from "./types.js";
 import { worktreesDir, worktreesInheritEnv } from "./config.js";
+import { notifyGitMutation } from "./git-activity.js";
 
 function git(root: string, args: string[]): string | null {
   try {
@@ -47,6 +48,19 @@ function gitCapture(root: string, args: string[]): GitRun {
     stdout: run.stdout ?? "",
     stderr: run.stderr ?? (run.error ? `${run.error.message}\n` : ""),
   };
+}
+
+/**
+ * One-line explanation of a failed `git worktree add`, for `ensureWorktree`'s
+ * `reason`. A bare "could not create worktree" made a real close-out failure
+ * (#0584) undiagnosable: git's stderr and the timeout case were both dropped.
+ */
+function worktreeAddFailure(run: GitRun): string {
+  const text = run.stderr.trim().split("\n").filter(Boolean).slice(0, 4).join(" ");
+  if (text) return text;
+  return run.status === null
+    ? "git worktree add timed out or was killed (no exit status)"
+    : `git worktree add exited ${run.status} with no output`;
 }
 
 /**
@@ -591,7 +605,9 @@ export function ensureWorktree(
   const args = branchExists
     ? ["worktree", "add", target, branch]
     : ["worktree", "add", "-b", branch, target];
-  if (git(root, args) === null) {
+  const first = gitCapture(root, args);
+  if (first.status !== 0) {
+    let failure = worktreeAddFailure(first);
     // An orphaned directory (leftover from a prior interrupted close-out) blocks
     // `git worktree add`.  Remove it once and retry — the branch is still valid,
     // only the worktree registration (gitdir) is missing.
@@ -601,7 +617,8 @@ export function ensureWorktree(
       } catch {
         /* best-effort */
       }
-      if (git(root, args) !== null) {
+      const retry = gitCapture(root, args);
+      if (retry.status === 0) {
         let path = target;
         try {
           path = realpathSync(target);
@@ -612,12 +629,13 @@ export function ensureWorktree(
         linkInheritedEnv(root, path);
         return { ok: true, path, created: true };
       }
+      failure = worktreeAddFailure(retry);
     }
     return {
       ok: false,
       path: target,
       created: false,
-      reason: "could not create worktree",
+      reason: `could not create worktree: ${failure}`,
     };
   }
   // git reports real paths (macOS /var -> /private/var); normalize the fresh
@@ -932,12 +950,44 @@ export function branchChangesSinceBase(
   return { base, paths: [...new Set([...committed, ...uncommitted])] };
 }
 
+/**
+ * Paths the branch in `worktree` changed relative to `baseBranch`, matching the
+ * `repoos check --changed <ref>` semantics: the merge-base commit range plus
+ * staged, unstaged, and untracked files — so work not yet committed is
+ * included. This is the shared definition `repoos shot` and the drawer's
+ * area/target warning both use, so they can never disagree about what changed.
+ *
+ * Returns `null` when `baseBranch` does not resolve to a commit. Callers MUST
+ * treat that as an error, not an empty diff: a typo'd `--base` would otherwise
+ * silently look like "nothing changed" and fall back to area resolution.
+ */
+export function changedPathsVsBase(worktree: string, baseBranch: string): string[] | null {
+  const verify = gitCapture(worktree, [
+    "rev-parse",
+    "--verify",
+    "--quiet",
+    `${baseBranch}^{commit}`,
+  ]);
+  if (verify.status !== 0) return null;
+  const baseFull = git(worktree, ["merge-base", baseBranch, "HEAD"]);
+  const run = (args: string[]): string[] =>
+    (git(worktree, args) ?? "")
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  const paths = new Set<string>();
+  if (baseFull) for (const p of run(["diff", "--name-only", baseFull, "HEAD"])) paths.add(p);
+  for (const p of run(["diff", "--cached", "--name-only"])) paths.add(p);
+  for (const p of run(["diff", "--name-only"])) paths.add(p);
+  for (const p of run(["ls-files", "--others", "--exclude-standard"])) paths.add(p);
+  return [...paths];
+}
+
 export interface DiffStats {
   filesChanged: number;
   additions: number;
   deletions: number;
 }
-
 export interface DiffResult {
   patch: string;
   truncated: boolean;
@@ -1079,6 +1129,7 @@ export function gitInit(root: string): boolean {
 export function gitCommitAll(root: string, message: string): string | null {
   if (git(root, ["add", "-A"]) === null) return null;
   if (git(root, ["commit", "-m", message]) === null) return null;
+  notifyGitMutation(root, "commit");
   return git(root, ["rev-parse", "--short", "HEAD"]);
 }
 
@@ -1123,6 +1174,7 @@ export function commitNewFile(root: string, absPath: string, message: string): C
     };
   }
   const hash = git(root, ["rev-parse", "--short", "HEAD"]);
+  notifyGitMutation(root, "commit");
   return hash ? { ok: true, hash } : { ok: true };
 }
 
@@ -1266,7 +1318,11 @@ export function commitFiles(root: string, absPaths: string[], message: string): 
   // `--only` with a pathspec commits just these files and leaves everything
   // else already in the index staged (#0353): a plain `git commit` would sweep
   // in whatever a human or agent had staged in the checkout under our message.
-  return git(root, ["commit", "-o", "-m", message, "--", ...rels]) !== null;
+  const committed = git(root, ["commit", "-o", "-m", message, "--", ...rels]) !== null;
+  // RepoOS's own bookkeeping commits are the main reason the sidebar git-state
+  // indicator would otherwise flicker stale — tell it to recompute (#0584).
+  if (committed) notifyGitMutation(root, "commit");
+  return committed;
 }
 
 /**
@@ -1275,12 +1331,12 @@ export function commitFiles(root: string, absPaths: string[], message: string): 
  * Used by the close-out flow to check `main` before merging: a dirty tree
  * aborts `git merge`, so the UI surfaces these so it can offer to commit them.
  *
- * FAILS CLOSED: returns `[]` only for a genuinely clean tree (git exit 0 with
- * empty output). Any git failure — a non-zero exit, a timeout, or git being
- * unavailable — throws `GitDirtyCheckError` instead, so a caller cannot
- * mistake an unknown state for a clean tree and silently proceed into a merge
- * that git will abort. This is the fix for #0211, where the old fail-open
- * behaved that way under load.
+ * FAILS CLOSED: the answer `[]` means a genuinely clean tree (git exit 0 with
+ * empty output) and nothing else. Any git failure — a non-zero exit, a
+ * timeout, or git being unavailable — surfaces as {@link GitDirtyCheckError}
+ * instead, so a caller cannot mistake an unknown state for a clean tree and
+ * silently proceed into a merge that git will abort. This is the fix for
+ * #0211, where the old fail-open behaved that way under load.
  */
 export class GitDirtyCheckError extends Error {
   readonly causeKind: "timeout" | "git-error" | "no-repo";
@@ -1291,7 +1347,53 @@ export class GitDirtyCheckError extends Error {
   }
 }
 
-export async function dirtyFiles(root: string): Promise<string[]> {
+/**
+ * One entry of `git status --porcelain`: the repo-relative path plus the
+ * two-column status code git printed for it (`XY`, e.g. `" M"` modified,
+ * `"A "` added, `"??"` untracked). Renames carry the destination path, which
+ * is the path that exists in the tree afterwards.
+ */
+export interface DirtyFileEntry {
+  path: string;
+  status: string;
+}
+
+/**
+ * Parse porcelain v1 output into entries. Exported so the sidebar git-state
+ * indicator (#0584) reuses this parser instead of growing a second one: it
+ * needs the status column, `dirtyFiles` only needs the paths.
+ *
+ * We read raw stdout (not the shared `git()` helper, whose `.trim()` eats the
+ * first line's leading status column) so the fixed-width parse stays
+ * column-accurate.
+ */
+export function parsePorcelainStatus(stdout: string): DirtyFileEntry[] {
+  const out: DirtyFileEntry[] = [];
+  for (const raw of stdout.split("\n")) {
+    const l = raw.replace(/\r$/, "");
+    if (!l.trim()) continue;
+    // Porcelain v1 short format is two status columns, a separator space,
+    // then the repo-relative path (`XY path`).
+    const status = l.slice(0, 2);
+    let path = l.slice(3).trim();
+    // Renames/renames-with-changes encode the old path before the new one.
+    const arrow = path.indexOf(" -> ");
+    if (arrow !== -1) path = path.slice(arrow + 4);
+    if (path) out.push({ path, status });
+  }
+  return out;
+}
+
+/**
+ * The dirty/uncommitted files in a checkout with their status column —
+ * `dirtyFiles` plus the porcelain `XY` code the sidebar git-state indicator
+ * renders (#0584). `dirtyFiles` is this with the status dropped; there is one
+ * parser, not two.
+ *
+ * FAILS CLOSED exactly as documented on {@link GitDirtyCheckError}: `[]` only
+ * for a genuinely clean tree, a throw for anything git could not answer.
+ */
+export async function dirtyFilesDetailed(root: string): Promise<DirtyFileEntry[]> {
   const out = await runGit(root, ["status", "--porcelain"], 4000);
   // A genuinely clean tree is git exit 0 with empty output.
   if (out.status === 0 && (!out.stdout || out.stdout.trim() === "")) return [];
@@ -1302,25 +1404,21 @@ export async function dirtyFiles(root: string): Promise<string[]> {
   }
   if (out.status === 0) {
     // Exit 0 with non-empty output: genuinely dirty files to list.
-    return out.stdout
-      .split("\n")
-      .map((l) => l.replace(/\r$/, ""))
-      .map((l) => {
-        // Porcelain v1 short format is two status columns, a separator space,
-        // then the repo-relative path (`XY path`). We read the raw stdout here
-        // (not the shared `git()` helper, whose `.trim()` eats the first line's
-        // leading status column) so the fixed-width parse stays column-accurate.
-        const stripped = l.slice(3).trim();
-        // Renames/renames-with-changes encode the old path before the new one.
-        const arrow = stripped.indexOf(" -> ");
-        return arrow === -1 ? stripped : stripped.slice(arrow + 4);
-      })
-      .filter(Boolean);
+    return parsePorcelainStatus(out.stdout);
   }
   const detail =
     out.stderr.split("\n").filter(Boolean).slice(0, 2).join(" ").trim() ||
     (out.status === null ? "git did not run" : `git exited ${out.status}`);
   throw new GitDirtyCheckError(out.status === null ? "no-repo" : "git-error", detail);
+}
+
+/**
+ * The dirty/uncommitted file paths in a checkout — `dirtyFilesDetailed` with
+ * the status column dropped. See that function for the fail-closed contract
+ * this also inherits (empty means clean, never "git failed").
+ */
+export async function dirtyFiles(root: string): Promise<string[]> {
+  return (await dirtyFilesDetailed(root)).map((f) => f.path);
 }
 
 /**
@@ -1336,7 +1434,9 @@ export async function commitDirtyFiles(root: string, message: string): Promise<s
   const add = await runGit(root, ["add", "-A"], 15_000);
   if (add.status !== 0) return [];
   const commit = await runGit(root, ["commit", "-m", message], 15_000);
-  return commit.status === 0 ? files : [];
+  if (commit.status !== 0) return [];
+  notifyGitMutation(root, "commit");
+  return files;
 }
 
 /** Which repo-relative paths count as a task's own work rather than churn. */
@@ -1592,6 +1692,7 @@ export async function mergeBranch(
     if (blocking.length > 0) {
       for (const p of blocking) git(root, ["add", "--", p]);
       if (git(root, ["commit", "-m", "chore: sync working tree before merge"]) !== null) {
+        notifyGitMutation(root, "commit");
         ff = false;
         run = await runGit(root, ["merge", "--no-edit", branch], 60_000);
       }
@@ -1599,6 +1700,9 @@ export async function mergeBranch(
   }
   const stderr = `${run.stderr}\n${run.stdout}`;
   if (run.status === 0) {
+    // The close-out publish merge lands straight on the main checkout — the
+    // sidebar git-state indicator must see the new head (#0584).
+    notifyGitMutation(root, "merge");
     return { merged: true, ff, conflicts: [] };
   }
   // Authoritative conflicted paths come from the merge-in-progress index, not
@@ -1629,6 +1733,7 @@ export async function mergeBranch(
       const commit =
         staged.status === 0 ? await runGit(root, ["commit", "--no-edit"], 15_000) : null;
       if (commit?.status === 0) {
+        notifyGitMutation(root, "merge");
         return { merged: true, ff: false, conflicts: [] };
       }
       await runGit(root, ["merge", "--abort"], 4000);
@@ -1887,6 +1992,9 @@ export function ensureHotfix(
           };
         }
       }
+      // HEAD moved in `root` — the sidebar git-state indicator recomputes on
+      // this rather than waiting for a file event or the fallback interval.
+      notifyGitMutation(root, "checkout");
     }
   } else {
     if (head !== "main") {
@@ -1911,7 +2019,9 @@ export function resetHotfix(root: string, branch: string): boolean {
   const head = currentBranch(root);
   if (!head || head === "main") return false;
   if (head !== branch) return false;
-  return git(root, ["checkout", "main"]) !== null;
+  const back = git(root, ["checkout", "main"]) !== null;
+  if (back) notifyGitMutation(root, "checkout");
+  return back;
 }
 
 /**

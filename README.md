@@ -100,9 +100,7 @@ repoos init        # scaffold repoos/work/, repoos/docs/, repoos.toml, AGENTS.md
 ```
 
 Zero config required. `repoos init` walks up to find your repo root, creates the
-folders if missing, adds a sample task, and gitignores the derived cache. The
-default layout keeps RepoOS metadata under `repoos/`; choose the repo-root
-layout (root `work/` and `docs/`) during the interactive prompts.
+folders if missing, adds a sample task, and gitignores the derived cache.
 
 ## Core principles
 
@@ -220,6 +218,14 @@ interfaces) by default instead of localhost-only, so it's reachable both from
 your other Tailscale devices and from localhost-only tools on the same machine
 (e.g. a Cloudflare Tunnel's local origin). Pass `--host 127.0.0.1` explicitly
 to restrict it to localhost only.
+
+In that mode `repoos serve` also runs `tailscale serve` for you and prints an
+`https://<machine>.<tailnet>.ts.net` URL. Use it: a plain-`http://` Tailscale IP
+isn't a browser secure context, so some UI features can't work there. It is
+tailnet-only (not Funnel), never overwrites another `tailscale serve` mapping
+(it falls back to port 8443, then 10000), and needs MagicDNS + HTTPS
+Certificates enabled in the Tailscale admin console (`serve` prints a hint if
+not). Pass `--no-tailscale-https` to skip it.
 
 ### Endpoints
 

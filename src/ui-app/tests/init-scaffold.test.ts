@@ -4,7 +4,6 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   REPOOS_AGENTS_SECTION_MARKER,
-  REPOOS_PATHS_SECTION_MARKER,
   quoteBlock,
   repoOSAgentsSectionAddition,
   scaffoldInto,
@@ -226,16 +225,20 @@ describe("scaffoldInto starter tasks", () => {
     expect(agents).toContain("`docs/`");
   });
 
-  it("AGENTS.md states that repoos.toml paths are authoritative", () => {
+  it("AGENTS.md makes the configured repoos.toml paths authoritative", () => {
     const root = scratch();
     scaffoldInto(root, "", "repoos", "new");
     const agents = readFileSync(join(root, "AGENTS.md"), "utf8");
-    expect(agents).toMatch(/repoos\.toml.*authoritative/is);
-    expect(agents).toContain("`workDir`");
-    expect(agents).toContain("`docsDir`");
-    expect(agents).toContain("never invent ownership rules");
-    expect(agents).toMatch(/explicit human approval/i);
-    expect(agents).toContain("`repoos doctor`");
+
+    // #0586: an agent moved docs/ to the root against docsDir = "repoos/docs".
+    // The scaffolded instructions must forbid relocating config-owned paths and
+    // route a mismatch to the human instead of a directory move.
+    expect(agents).toContain("`repoos.toml` owns the layout");
+    expect(agents).toMatch(/authoritative/i);
+    expect(agents).toMatch(/never move/i);
+    expect(agents).toMatch(/human\s+approval/i);
+    expect(agents).toContain("`repoos/work/`");
+    expect(agents).toContain("`repoos/docs/`");
   });
 
   it("starter task references configured docsDir", () => {
@@ -284,38 +287,30 @@ describe("existing AGENTS.md RepoOS guidance", () => {
     expect(existing + addition).toContain("Use the RepoOS UI or `repoos` commands");
   });
 
-  it("does not offer a duplicate addition when RepoOS guidance and the path rule are present", () => {
+  it("does not offer a duplicate addition when RepoOS guidance is already present", () => {
+    expect(repoOSAgentsSectionAddition(`${REPOOS_AGENTS_SECTION_MARKER}\n\n## RepoOS`)).toBeNull();
     expect(
-      repoOSAgentsSectionAddition(
-        `${REPOOS_AGENTS_SECTION_MARKER}\n\n## RepoOS\n\n### Project paths are configured\n`,
-      ),
-    ).toBeNull();
-    expect(
-      repoOSAgentsSectionAddition(
-        "This repo uses **RepoOS** for task tracking.\n\n### Project paths are configured\n",
-      ),
+      repoOSAgentsSectionAddition("This repo uses **RepoOS** for task tracking.\n"),
     ).toBeNull();
   });
 
-  it("offers only the path-authority fragment to a RepoOS repo that predates it", () => {
-    const existing = `${REPOOS_AGENTS_SECTION_MARKER}\n\n## RepoOS\n\nOld guidance.\n`;
-    const addition = repoOSAgentsSectionAddition(existing, "repoos/work", "repoos/docs");
-    expect(addition).toContain(REPOOS_PATHS_SECTION_MARKER);
-    expect(addition).toContain("repoos/work/");
-    expect(addition).toContain("repoos/docs/");
-  });
-
-  it("uses the configured workDir and docsDir in the addition", () => {
+  it("uses the configured workDir in the addition", () => {
     const existing = "# My project\n";
-    const addition = repoOSAgentsSectionAddition(existing, "repoos/work", "repoos/docs");
+    const addition = repoOSAgentsSectionAddition(existing, "repoos/work");
     expect(addition).toContain("repoos/work/");
-    expect(addition).toContain("repoos/docs/");
-    expect(addition).toContain(REPOOS_PATHS_SECTION_MARKER);
   });
 
   it("defaults to work/ when workDir is not specified", () => {
     const existing = "# My project\n";
     const addition = repoOSAgentsSectionAddition(existing);
     expect(addition).toContain("`work/`");
+  });
+
+  it("tells existing repos the configured layout is authoritative (#0586)", () => {
+    const addition = repoOSAgentsSectionAddition("# My project\n", "repoos/work");
+    expect(addition).not.toBeNull();
+    expect(addition).toMatch(/repoos\.toml/);
+    expect(addition).toMatch(/authoritative/i);
+    expect(addition).toMatch(/never move/i);
   });
 });

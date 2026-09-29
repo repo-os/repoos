@@ -18,8 +18,9 @@ opt-in `[check] uiSmoke`.
 `[[preview.targets]]` tables), following the same flat-config pattern as
 `[check]`. A task is previewed by:
 
-1. a named target whose `areas` list includes the task's `area:` frontmatter
-   (case-insensitive), else
+1. a named target whose `areas` list includes any area of the task's `area:`
+   frontmatter (case-insensitive; `area` may be a comma/list of several, so
+   `area: [web, docs]` matches a `docs` target — #0583), else
 2. a default `[preview] command`, else
 3. — when neither matched, or when the section is absent entirely — a clean
    **"No preview configured for area …"** result, not a spawn failure (#0370).
@@ -37,6 +38,7 @@ readyPath = "/"                           # optional, default "/"
 [[preview.targets]]
 name      = "Landing page"
 areas     = ["landing", "web"]
+paths     = ["landing/**"]                # optional, for `repoos shot` (#0582)
 command   = "bun run dev --port {port}"
 cwd       = "landing"
 readyPath = "/"
@@ -65,9 +67,10 @@ carry the one signal that matters here: each task's `area:` frontmatter.
 
 So v1 selects a target by **`area` match**, not by diffing changed files. That
 is deliberately simpler than Nx-style affectedness and matches how tasks are
-already filed. Changed-file globs were considered and deferred: they add a
-second selection axis with its own precedence rules for a case (one task
-touching several apps) that `area` already covers at this scale.
+already filed. Changed-file globs were considered and deferred for *routing*: at
+this scale `area` already covers the common case, and #0582 later added them
+only for `repoos shot`'s screenshot-target choice (see below), where the
+area-first guess has no human to correct it before capture.
 
 **v1 is scoped to browser-previewable things.** A target is a command that
 boots something serving HTTP. Non-web areas (a backend with no UI, a CLI) get a
@@ -77,6 +80,28 @@ configured" result above. Mobile is not a separate target: per
 `docs/mobile-architecture.md` (#0297) the shipped mobile app is a Capacitor
 shell that opens the same web UI, so a `mobile` area simply points at whatever
 web target exists (`areas = ["mobile", "web"]`).
+
+## Changed-file target resolution for screenshots (#0582)
+
+`repoos shot` picks the screenshot target from something the `area` cannot see:
+which files the diff actually changed. Each `[[preview.targets]]` may carry an
+optional `paths` glob list; a changed file matching any glob (via
+`src/core/shot-targets.ts`, a tiny dependency-free matcher) makes that target a
+candidate, independent of the task's `area:`. This is intentionally a
+*screenshot* concern, not a preview-routing one: the human's **Preview** button
+still resolves by `area` (the follow-up noted in #0582 would let the same map
+choose the default target there). Area resolves as the fallback, and `--target`
+overrides both.
+
+The same helper drives the drawer's area/target mismatch warning: whenever the
+changed paths touch a target the task's `area` does not resolve to — including
+when only one of several touched targets is unexplained — the warning names it,
+so a stale `area:` is surfaced rather than silently screenshotting the wrong
+app. `area` is also
+split on `+`/`,` (`splitAreas`) for both routing and the warning, so a value
+like `web + core + server` and the target areas are compared element-wise.
+Captured PNGs go under `work/.attachments/<taskId>/shots/` (gitignored, never
+referenced from the task body) and render in the drawer's Changes tab.
 
 ## Target identity and multiple matches (#0379)
 

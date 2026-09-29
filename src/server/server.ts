@@ -20,6 +20,7 @@
  *   GET  /api/docs             -> [{ path, title, mtimeMs }]  (context docs listing)
  *   GET  /api/repo/log         -> git log page { commits, nextCursor, branch } (?branch=&path=&limit=&before=&includeDocs=1)
  *   GET  /api/repo/branches    -> { defaultBranch, branches } local heads, default first
+ *   GET  /api/repo/status      -> repo root checkout git state { branch, detached, dirty, head, recentCommits } (#0584)
  *   GET  /api/repo/commits/:sha -> one commit + changed files + patch
  *   GET  /api/repo/commits/:sha/file -> { before, after } contents at parent vs commit
  *   POST /api/docs/create      -> create a document { path, content }; returns { ok, path }
@@ -97,6 +98,7 @@ import {
 import {
   ensureWorktree,
   commitTaskFile,
+  commitFiles,
   resetWorktree,
   syncBranchWithMain,
   worktreePathForBranch,
@@ -104,6 +106,8 @@ import {
   runGit,
 } from "../core/git.js";
 import { sweepAndWarn } from "../core/worktree-gc.js";
+import { onGitMutation } from "../core/git-activity.js";
+import { createRepoStatusNotifier, isSameCheckout } from "./repo-status.js";
 import { remoteJobCapabilities } from "./pre-review-remote-gate.js";
 import {
   hostRunner,
@@ -132,6 +136,7 @@ import {
   runPrompt,
 } from "./agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
+import { migrateTaskAreas } from "./area-migration.js";
 import { FreeformRunManager } from "./freeform-runs.js";
 import { pmChatSessionTaskId, clearPmChatSession, isPmWorking } from "./pm-runs.js";
 import { attachPendingPmImages } from "./pm-attachments.js";
@@ -160,6 +165,7 @@ import { CTOManager } from "./cto.js";
 import { CTOMonitor } from "./cto-monitor.js";
 import { ReloadManager, readBuildHash, isDevBuild } from "./reload.js";
 import { ServeReaper, isPortListening } from "./serve-reaper.js";
+import { isLoopbackAddress, localTokenMatches, writeLocalCliToken } from "./local-token.js";
 import { testModelCombination } from "./model-test.js";
 import {
   generateReleaseNotes,
@@ -208,6 +214,7 @@ import {
   getDocs,
   getRepoLog,
   getRepoBranches,
+  getRepoStatusRoute,
   getRepoCommitRoute,
   getRepoCommitFile,
   getSkills,
@@ -285,6 +292,9 @@ import {
   pmInterrupt,
   getScreenshot,
   uploadScreenshot,
+  listTaskShots,
+  getTaskShot,
+  uploadTaskShot,
   // Config routes
   readConfig,
   patchConfig,
@@ -1166,6 +1176,24 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   };
   const unsubscribe = index.on(emitEvent);
 
+  // Sidebar git-state indicator (#0584): one server-owned computation for the
+  // repo root checkout, pushed over SSE only when the state actually differs.
+  // Two trigger classes feed it — the work watcher (writes under `work/`, plus
+  // its explicit `.git/HEAD` · refs · index watches for branch switches,
+  // commits and staging) and RepoOS's own commits/merges, which move `main`
+  // without tripping a watched file event. Everything else (focus, visibility,
+  // SSE reconnect, the slow fallback interval) is the client refetching.
+  const repoStatusNotifier = createRepoStatusNotifier({
+    root: config.root,
+    emit: (status) => emitEvent({ type: "repo.status", status, at: status.computedAt }),
+  });
+  watcher.setGitSignal(() => repoStatusNotifier.notify());
+  const offGitMutation = onGitMutation((mutatedRoot) => {
+    // A worktree commit shares `.git` with the root checkout but must not be
+    // read as "the main checkout changed" — only a mutation of this checkout.
+    if (isSameCheckout(mutatedRoot, config.root)) repoStatusNotifier.notify();
+  });
+
   // Per-task `repoos check` run tracking for the Debug tab (0310): the
   // handoff-finalize check and the MTD merge-gate check are the only two
   // checks the server spawns directly, so only those two are instrumented.
@@ -1599,6 +1627,48 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // leaving the task stuck `active` with its work uncommitted.
   const runHandoffRecovery = (): void => runner.recoverPendingHandoffs();
   void indexReady.then(runHandoffRecovery, runHandoffRecovery).catch(() => {});
+
+  // The one-time area-format migration (#0583) runs once AFTER the index has
+  // populated: any task file whose `area` frontmatter still carries a legacy
+  // spelling (`server + ui-app`, a comma string, a one-element list) is
+  // rewritten to the canonical scalar-or-list form through the shared task
+  // engine, then committed in one pass here so `main` never sits dirty and
+  // the change lands as ONE reviewable migration commit. The reader
+  // tolerates every legacy shape forever, so a skipped file keeps working
+  // until its next write. Control-plane only — a preview child (or any
+  // worktree-rooted server) must never rewrite the board's own files from a
+  // derived copy; a vitest boot skips outright (the VITEST guard below stops
+  // any test-spawned server from touching the live board, ports aside), and
+  // a non-test tool boot can opt out with REPOOS_SKIP_AREA_MIGRATION=1.
+  const runAreaMigration = (): void => {
+    try {
+      if (!isControlPlane) return;
+      // A vitest process must never rewrite the live board, full stop — any
+      // suite that boots a real-port server against the repo root would
+      // otherwise migrate+commit other tasks' files as a side effect.
+      if (process.env.VITEST === "true") return;
+      // Non-test processes that want the pass suppressed (a one-off tool) can
+      // set REPOOS_SKIP_AREA_MIGRATION=1 explicitly.
+      if (process.env.REPOOS_SKIP_AREA_MIGRATION === "1") return;
+      const result = migrateTaskAreas(config);
+      if (!result.updated.length) return;
+      commitFiles(
+        config.root,
+        result.rewrittenAbsPaths ?? [],
+        "docs: migrate legacy area values to comma list form (#0583)",
+      );
+      logger.system("info", "area-format migration (#0583)", {
+        rewritten: result.updated.length,
+        scanned: result.scanned,
+      });
+      // The index holds pre-migration parses; refresh so boards and searches
+      // see the canonical `areas` values right away.
+      index.refreshAll();
+    } catch {
+      /* best-effort: the tolerant reader keeps legacy files working anyway */
+    }
+  };
+  void indexReady.then(runAreaMigration, () => {});
 
   // The review agent (0101): when a task lands in `review`, it inspects the
   // implementation and writes a short report for whoever signs the task off.
@@ -2201,6 +2271,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/docs", getDocs);
   router.register("GET", "/api/repo/log", getRepoLog);
   router.register("GET", "/api/repo/branches", getRepoBranches);
+  router.register("GET", "/api/repo/status", getRepoStatusRoute);
   router.register("GET", /^\/api\/repo\/commits\/([^/]+)\/file$/, getRepoCommitFile);
   router.register("GET", /^\/api\/repo\/commits\/([^/]+)$/, getRepoCommitRoute);
   router.register("POST", "/api/docs/create", createDoc);
@@ -2578,6 +2649,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", /^\/api\/tasks\/([^/]+)\/pm\/interrupt$/, pmInterrupt);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/attachments\/([^/]+)$/, getScreenshot);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/attachments$/, uploadScreenshot);
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/shots$/, listTaskShots);
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/shots$/, uploadTaskShot);
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/shots\/([^/]+)$/, getTaskShot);
 
   // Config routes
   router.register("GET", "/api/config", readConfig);
@@ -2738,6 +2812,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/manifest.webmanifest", serveManifest);
   router.register("GET", /^\/icons\/icon-(\d+)\.png$/, serveIcon);
 
+  const localToken =
+    config.auth?.enabled === true ? writeLocalCliToken(config.root, config.cacheDir) : null;
+
   const server = createServer(async (req, res) => {
     const method = req.method ?? "GET";
     const url = new URL(req.url ?? "/", "http://localhost");
@@ -2794,36 +2871,54 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             validSession = !!session;
           }
           if (!validSession) {
-            // API requests get 401 JSON; browser GETs to SPA routes are served
-            // the login page (via SPA fallback) so the client-side router can
-            // render the login UI. Other browser navigations redirect to /login.
-            const isApiRequest = path.startsWith("/api/");
-            const isNavigation = method === "GET" && req.headers.accept?.includes("text/html");
-            if (isApiRequest) {
+            // A browser-less local CLI (`repoos shot`, #0582) carries the
+            // loopback token the server wrote instead of a session cookie. A
+            // tunnel forwards traffic FROM loopback, so the address check alone
+            // would pass for it; also reject any request carrying a forwarding
+            // header. The token's 256-bit secrecy is the actual protection —
+            // these checks are defense in depth.
+            const provided = req.headers["x-repoos-local-token"];
+            const forwarded = Boolean(
+              req.headers["x-forwarded-for"] ||
+              req.headers["x-real-ip"] ||
+              req.headers["cf-connecting-ip"],
+            );
+            const localCli =
+              isLoopbackAddress(req.socket.remoteAddress) &&
+              !forwarded &&
+              localTokenMatches(typeof provided === "string" ? provided : undefined, localToken);
+            if (!localCli) {
+              // API requests get 401 JSON; browser GETs to SPA routes are served
+              // the login page (via SPA fallback) so the client-side router can
+              // render the login UI. Other browser navigations redirect to /login.
+              const isApiRequest = path.startsWith("/api/");
+              const isNavigation = method === "GET" && req.headers.accept?.includes("text/html");
+              if (isApiRequest) {
+                return json(res, 401, { error: "Authentication required" });
+              }
+              if (isNavigation && uiDir) {
+                // Serve the SPA shell so the client router renders /login
+                const indexPath = join(uiDir, "index.html");
+                if (existsSync(indexPath)) {
+                  res.writeHead(200, {
+                    "Content-Type": "text/html; charset=utf-8",
+                    "Access-Control-Allow-Origin": "*",
+                  });
+                  res.end(readUiIndex(indexPath));
+                  return;
+                }
+              }
+              if (isNavigation) {
+                // Carry the full original URL (query string included) so
+                // deep-link params like /work?task=0340 survive the login
+                // round-trip; LoginView redirects back to it verbatim.
+                res.writeHead(302, {
+                  Location: `/login?redirect=${encodeURIComponent(path + url.search)}`,
+                });
+                return res.end();
+              }
               return json(res, 401, { error: "Authentication required" });
             }
-            if (isNavigation && uiDir) {
-              // Serve the SPA shell so the client router renders /login
-              const indexPath = join(uiDir, "index.html");
-              if (existsSync(indexPath)) {
-                res.writeHead(200, {
-                  "Content-Type": "text/html; charset=utf-8",
-                  "Access-Control-Allow-Origin": "*",
-                });
-                res.end(readUiIndex(indexPath));
-                return;
-              }
-            }
-            if (isNavigation) {
-              // Carry the full original URL (query string included) so
-              // deep-link params like /work?task=0340 survive the login
-              // round-trip; LoginView redirects back to it verbatim.
-              res.writeHead(302, {
-                Location: `/login?redirect=${encodeURIComponent(path + url.search)}`,
-              });
-              return res.end();
-            }
-            return json(res, 401, { error: "Authentication required" });
           }
         }
       }
@@ -3084,6 +3179,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         } catch {
           /* ignore */
         }
+        repoStatusNotifier.stop();
+        offGitMutation();
         try {
           unsubscribe();
         } catch {
@@ -3153,6 +3250,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           unsubscribeCleanup();
           unsubscribeNotifications();
           unsubscribeCTOEvents();
+          repoStatusNotifier.stop();
+          offGitMutation();
           watcher.stop();
           supervisor?.stop();
           watchdog?.stop();

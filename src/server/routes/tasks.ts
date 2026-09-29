@@ -30,6 +30,7 @@ import {
 } from "../pm-runs.js";
 import { queuePmImages, dropPmImages, type IncomingPmImage } from "../pm-attachments.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "../freeform.js";
+import { effectiveAreaNames } from "../../core/areas.js";
 import {
   recordFreeformFailure,
   readFreeformStore,
@@ -75,6 +76,8 @@ import { releaseBranchless, isBranchlessReleaseEligible } from "../branchless-re
 import { bootstrap } from "../../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../../core/context-pack.js";
 import { mimeForExtension, resolveScreenshot, saveScreenshot } from "../attachments.js";
+import { localShotStore } from "../shots.js";
+import { computeTaskShotContext } from "../shot-context.js";
 import { STATUSES } from "../../core/types.js";
 import { parseTask } from "../../core/task.js";
 import type { UsageRange } from "../../core/db.js";
@@ -156,7 +159,7 @@ export const createTask: RouteHandler = async (ctx, req, res) => {
   const created = repoos.createTask({
     title: body.title,
     type: body.type as string | undefined,
-    area: body.area as string | undefined,
+    area: (body.area ?? undefined) as string | string[] | undefined,
     story: body.story as string | undefined,
     priority: body.priority as string | undefined,
     assignedTo: body.assignedTo as string | undefined,
@@ -520,7 +523,9 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
   // re-adopts and finishes it. `pmCommand` keeps the same authoring-only blast
   // radius while letting usage extraction see real tokens/cost (0335).
   const effectiveRunId = runId ?? `freeform-${created.id}-${randomUUID()}`;
-  const prompt = pmPrompt(explanation);
+  // #0583: the PM gets the repo's effective area vocabulary so it picks from
+  // it (or proposes a new one explicitly) instead of inventing values.
+  const prompt = pmPrompt(explanation, effectiveAreaNames(config));
   // Antigravity is explicitly worktree-bound: even its read-only PM pass must
   // not start in the main checkout. Reserve a short-lived, task-scoped
   // worktree for this run; the durable finalizer removes it on every exit
@@ -798,6 +803,64 @@ export const uploadScreenshot: RouteHandler = async (ctx, req, res, params) => {
   });
   index.applyFileChange(updated.absPath);
   return json(res, 201, { ok: true, attachment: result });
+};
+
+// Captured preview shots (#0582). Separate from the uploaded screenshots above:
+// written under `shots/`, never referenced from the task body, listed from disk.
+export const listTaskShots: RouteHandler = (ctx, _req, res, params) => {
+  const { config, index } = ctx;
+  const taskId = params.param1;
+  const task = index.getTask(taskId);
+  if (!task) {
+    return json(res, 404, { error: `Task #${taskId} not found` });
+  }
+  const shots = localShotStore(config, taskId).list();
+  const shotContext = computeTaskShotContext(config, task);
+  return json(res, 200, { ok: true, shots, ...shotContext });
+};
+
+export const getTaskShot: RouteHandler = (ctx, _req, res, params) => {
+  const { config } = ctx;
+  const abs = localShotStore(config, params.param1).resolve(params.param2);
+  if (!abs) {
+    return json(res, 404, { error: "Shot not found" });
+  }
+  const mime = mimeForExtension(abs) ?? "image/png";
+  res.writeHead(200, {
+    "Content-Type": mime,
+    "Cache-Control": "no-cache",
+    "Access-Control-Allow-Origin": "*",
+  });
+  res.end(readFileSync(abs));
+};
+
+export const uploadTaskShot: RouteHandler = async (ctx, req, res, params) => {
+  const { config, index } = ctx;
+  const taskId = params.param1;
+  const task = index.getTask(taskId);
+  if (!task) {
+    return json(res, 404, { error: `Task #${taskId} not found` });
+  }
+  const body = (await readBody(req)) as {
+    target?: unknown;
+    route?: unknown;
+    mime?: unknown;
+    name?: unknown;
+    data?: unknown;
+  };
+  const target =
+    typeof body?.target === "string" && body.target.trim() ? body.target.trim() : "default";
+  const result = localShotStore(config, taskId).save({
+    target,
+    ...(typeof body?.route === "string" && body.route ? { route: body.route } : {}),
+    ...(typeof body?.mime === "string" && body.mime ? { mime: body.mime } : {}),
+    ...(typeof body?.name === "string" && body.name ? { name: body.name } : {}),
+    data: typeof body?.data === "string" ? body.data : "",
+  });
+  if ("error" in result) {
+    return json(res, 400, { error: result.error });
+  }
+  return json(res, 201, { ok: true, shot: result });
 };
 
 // Task logs

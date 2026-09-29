@@ -233,22 +233,17 @@ human authorization. If that already-landed work has a branchless task record,
 the \`/done\` endpoint can check the primary checkout and record release without
 a candidate merge. Do not erase a task's branch metadata to force this path.
 
-## Project paths are configured
-
-\`repoos.toml\` is authoritative for where things live: \`workDir\` (tasks),
-\`docsDir\` (project docs) and \`cacheDir\` (the derived index). Never move,
-rename or relocate those directories yourself, and never invent ownership rules
-to justify it — there is no "tooling-owned" directory.
-
-If project docs, a person's instructions or your own reading of the repo
-disagree with the configured layout, flag the mismatch to the human. The
-correct fix is to report it, to create the directory the config names, or to
-change \`repoos.toml\` — and only with explicit human approval. \`repoos doctor\`
-warns when a configured directory has been hollowed out and its content moved
-elsewhere.
-
 ## Rules
 
+- **\`repoos.toml\` owns the layout.** \`workDir\` (\`${workDir}\`) and \`docsDir\`
+  (\`${docsDir}\`) are authoritative: tasks live under \`${workDir}/\` and project
+  docs under \`${docsDir}/\` because the config says so. Never move, rename or
+  relocate those directories, and never "fix" a layout you think is wrong by
+  moving files. If project docs or a person's own notes disagree with the
+  config, report the mismatch — the fix is to update \`repoos.toml\` with human
+  approval (or correct the docs), never to move directories on your own. Do not
+  invent ownership rules for RepoOS directories; the config is the only source
+  of truth for layout.
 - **Never** move task files between folders. Status lives in frontmatter.
 - **Never write directly to \`${workDir}/*.md\` files.** All task creation and
   manipulation goes through \`repoos\` commands or HTTP API endpoints
@@ -288,78 +283,42 @@ active/review.
 export const REPOOS_AGENTS_SECTION_MARKER = "<!-- repoos:managed-instructions -->";
 
 /**
- * Marker for the path-authority rule. Split out from the section marker so a
- * repository initialized before this rule existed is offered just this fragment
- * on a later `repoos init` re-run, without duplicating the whole appendix.
- */
-export const REPOOS_PATHS_SECTION_MARKER = "<!-- repoos:paths-are-configured -->";
-
-/** The path-authority rule, shared by the appendix and its upgrade fragment. */
-export const REPOOS_PATHS_SECTION = (
-  workDir: string,
-  docsDir: string,
-) => `${REPOOS_PATHS_SECTION_MARKER}
-
-### Project paths are configured
-
-\`repoos.toml\` is authoritative for where things live: \`workDir\` (\`${workDir}/\`),
-\`docsDir\` (\`${docsDir}/\`) and \`cacheDir\`. Never move, rename or relocate those
-directories, and never invent ownership rules for them. If project docs or a
-person's instructions disagree with the configured layout, flag it to the human
-instead of moving anything; change \`repoos.toml\` only with explicit approval.
-`;
-
-/**
  * A deliberately small appendix for a repository that already owns its agent
  * instructions. RepoOS supplies its managed-runner instructions itself; this
  * only documents the project-level contract that a human or external agent
  * should see in the repo.
  */
-export const REPOOS_AGENTS_SECTION = (
-  workDir: string,
-  docsDir = "docs",
-) => `${REPOOS_AGENTS_SECTION_MARKER}
+export const REPOOS_AGENTS_SECTION = (workDir: string) => `${REPOOS_AGENTS_SECTION_MARKER}
 
 ## RepoOS
 
 RepoOS keeps tasks as Markdown under \`${workDir}/\` and runs task work in dedicated
-Git worktrees. Use the RepoOS UI or \`repoos\` commands to create and update
+Git worktrees. The layout is set by \`repoos.toml\` (\`workDir\`/\`docsDir\`/\`cacheDir\`):
+those paths are authoritative, so never move or rename them — if project docs
+disagree with the config, ask the human instead of relocating directories.
+Use the RepoOS UI or \`repoos\` commands to create and update
 tasks; do not hand-edit task files. Read the relevant project docs before
 starting work, run \`repoos check\` before handoff, and await human approval
 through RepoOS's **Move to done**. The reviewer is advisory. A Git remote does
 not require a PR; close-out validates and merges through RepoOS.
-
-${REPOOS_PATHS_SECTION(workDir, docsDir)}`;
+`;
 
 /**
  * Return the exact addition that `repoos init` may offer for an existing
- * AGENTS.md, or null when this repository already documents RepoOS *and* the
- * path-authority rule. A repository that documents RepoOS but predates the rule
- * gets the small path fragment appended, so a re-run upgrades it in place.
+ * AGENTS.md, or null when this repository already documents RepoOS.
  */
-export function repoOSAgentsSectionAddition(
-  existing: string,
-  workDir = "work",
-  docsDir = "docs",
-): string | null {
-  const documentsRepoos =
+export function repoOSAgentsSectionAddition(existing: string, workDir = "work"): string | null {
+  if (
     existing.includes(REPOOS_AGENTS_SECTION_MARKER) ||
     /this repo uses \*\*repoos\*\*/i.test(existing) ||
-    /this repository uses repoos/i.test(existing);
-  const separator = existing.endsWith("\n") ? "\n" : "\n\n";
-  if (!documentsRepoos) {
-    return separator + REPOOS_AGENTS_SECTION(workDir, docsDir);
-  }
-  if (
-    existing.includes(REPOOS_PATHS_SECTION_MARKER) ||
-    /project paths are configured/i.test(existing)
+    /this repository uses repoos/i.test(existing)
   ) {
     return null;
   }
-  return separator + REPOOS_PATHS_SECTION(workDir, docsDir);
+  return (existing.endsWith("\n") ? "\n" : "\n\n") + REPOOS_AGENTS_SECTION(workDir);
 }
 
-function repoosToml(namespace: string): string {
+function repoosToml(namespace: string, areas: string[] = [], previewStub = false): string {
   const ns = namespace
     ? `workDir = "${namespace}/work"\ndocsDir = "${namespace}/docs"\ncacheDir = "${namespace}/.repoos"\n`
     : "";
@@ -397,7 +356,46 @@ defaultAssignee = "unassigned"
 # active = "In progress"
 # review = "Code review"
 # done   = "Shipped"
+${areaRows(areas)}
+${previewStub ? previewTargetRows(areas) : ""}
 `;
+}
+
+/**
+ * The `[areas]` block: the vocabulary collected at init time as real
+ * `[[areas]]` rows, or the commented-out stub when skipped (#0583).
+ */
+function areaRows(areas: string[]): string {
+  if (!areas.length) {
+    return [
+      "# [[areas]]                             # the task-area vocabulary (#0583)",
+      '# name = "web"                           # offered in the area picker + the PM prompt',
+      '# description = "The main web app"',
+      "# Every [[preview.targets]] area is offered automatically, even when not",
+      "# declared here. With none declared the area field is free text only.",
+    ].join("\n");
+  }
+  return areas.map((a) => `[[areas]]\nname = "${a}"`).join("\n\n");
+}
+
+/**
+ * The commented `[[preview.targets]]` skeleton offered when an area vocabulary
+ * was seeded at init (#0583) — the wiring for when the project has something
+ * previewable, referencing the areas the picker now offers.
+ */
+function previewTargetRows(areas: string[]): string {
+  const areaList = areas.length ? JSON.stringify(areas) : '["web"]';
+  return [
+    "# [preview]                               # read-only task previews",
+    `# command = "bun run dev --port {port} --host {host}"`,
+    `#                                         # default when no target matches`,
+    "",
+    `# [[preview.targets]]`,
+    `# name = "Main app"`,
+    `# areas = ${areaList}`,
+    `# command = "bun run dev --port {port} --host {host}"`,
+    `# readyTimeoutMs = 240000                 # raise for a command that also builds`,
+  ].join("\n");
 }
 
 const ENV_EXAMPLE = `# Copy to .env and fill in what you need — .env is gitignored, this file is
@@ -495,6 +493,10 @@ export function scaffoldInto(
   description: string,
   layout: ScaffoldLayout = "",
   kind: ScaffoldKind = "new",
+  /** Areas collected at init time (#0583) — real `[[areas]]` rows when given. */
+  areas: string[] = [],
+  /** When true, scaffold commented `[[preview.targets]]` stubs for those areas. */
+  previewStub = false,
 ) {
   const created: string[] = [];
   const skipped: string[] = [];
@@ -542,7 +544,7 @@ export function scaffoldInto(
   // Write config first so workDir/docsDir/cacheDir overrides are in effect
   // before the dirs are created (namespace layout) — or so an existing
   // config is respected untouched (existing-repo path).
-  ensureFile("repoos.toml", repoosToml(layout));
+  ensureFile("repoos.toml", repoosToml(layout, areas, previewStub));
   const config = loadConfig(root);
 
   ensureDir(config.workDir);
@@ -694,11 +696,7 @@ async function confirm(question: string, dflt: boolean): Promise<boolean> {
  * interactive terminal, show the exact small appendix and add it only after an
  * explicit opt-in. Non-interactive init stays fully non-blocking.
  */
-async function offerRepoOSAgentsSection(
-  root: string,
-  workDir = "work",
-  docsDir = "docs",
-): Promise<void> {
+async function offerRepoOSAgentsSection(root: string, workDir = "work"): Promise<void> {
   if (!input.isTTY || !output.isTTY) return;
 
   const path = join(root, "AGENTS.md");
@@ -710,7 +708,7 @@ async function offerRepoOSAgentsSection(
   } catch {
     return;
   }
-  const addition = repoOSAgentsSectionAddition(original, workDir, docsDir);
+  const addition = repoOSAgentsSectionAddition(original, workDir);
   if (!addition) return;
 
   console.log(c.dim("\n  Existing AGENTS.md detected — it will not be replaced."));
@@ -1077,6 +1075,42 @@ async function guidedNewRepo(args: string[]): Promise<void> {
       ": ",
   );
 
+  // The task-area vocabulary (#0583) — reinforced with preview targets, since
+  // a `[[preview.targets]]` area is offered in the picker automatically even
+  // when not declared here. Skipped means free text only; never blocking.
+  const areasInput = await ask(
+    "  Task areas to seed the area picker" +
+      c.dim(" — comma-separated (e.g. web, cli, api; Enter to skip)") +
+      ": ",
+  );
+  const areas = areasInput
+    ? areasInput
+        .split(",")
+        .map((a) => a.trim())
+        .filter(Boolean)
+    : [];
+  if (areas.length) {
+    console.log(c.dim("  Preview targets route a task preview by its area — the picker and"));
+    console.log(
+      c.dim(
+        "  the PM prompt offer target areas automatically; see user-docs/configuration.md's Previews section.",
+      ),
+    );
+  }
+
+  // Preview targets reinforce areas ("define them together"): when an area
+  // vocabulary was given, offer to scaffold the commented `[[preview.targets]]`
+  // skeleton those areas feed, so the wiring sits where preview setup happens
+  // later. A brand-new project has nothing runnable yet — never a live
+  // preview command, just the commented shape to fill in.
+  let previewStub = false;
+  if (areas.length) {
+    previewStub = await confirm(
+      "  Scaffold commented preview-target stubs for these areas?",
+      false,
+    );
+  }
+
   if (!existsSync(target)) mkdirSync(target, { recursive: true });
 
   // git health warnings — fail-soft, scaffold regardless
@@ -1095,7 +1129,7 @@ async function guidedNewRepo(args: string[]): Promise<void> {
     );
   }
 
-  const { created, skipped } = scaffoldInto(target, description, layout);
+  const { created, skipped } = scaffoldInto(target, description, layout, "new", areas, previewStub);
   reportInit(target, created, skipped);
   await offerCheckPlanProposal(target);
 
@@ -1266,7 +1300,7 @@ export async function cmdInit(args: string[]): Promise<void> {
 
     const { created, skipped } = scaffoldInto(root, "", namespace, "existing");
     const config = loadConfig(root);
-    await offerRepoOSAgentsSection(root, config.workDir, config.docsDir);
+    await offerRepoOSAgentsSection(root, config.workDir);
     await offerCheckPlanProposal(root);
     if (created.length === 0) {
       warnAlreadySetUp(root, "Nothing to initialize here.");

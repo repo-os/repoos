@@ -9,7 +9,7 @@ import { isBun } from "../core/runtime.js";
 import { findRepoRoot } from "../core/config.js";
 import { c, statusColor } from "../cli/colors.js";
 import type { RepoEvent } from "../server/live-index.js";
-import { detectTailscaleIPv4 } from "../core/tailscale.js";
+import { detectTailscaleIPv4, ensureTailscaleHttps } from "../core/tailscale.js";
 
 /**
  * The OS-visible process title for a `repoos serve` instance:
@@ -155,10 +155,12 @@ export async function cmdServe(
   let port: number | undefined;
   let explicitHost: string | undefined;
   let quiet = false;
+  let tailscaleHttps = true;
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--port" || args[i] === "-p") port = Number(args[++i]);
     else if (args[i] === "--host") explicitHost = args[++i];
     else if (args[i] === "--quiet" || args[i] === "-q") quiet = true;
+    else if (args[i] === "--no-tailscale-https") tailscaleHttps = false;
   }
   // Preview-only config overlay (#0464). A managed preview child
   // (REPOOS_PREVIEW_CHILD=1, set by PreviewManager) applies the repo's
@@ -229,6 +231,23 @@ export async function cmdServe(
         c.cyan("--host 127.0.0.1") +
         c.dim(" to restrict to localhost only."),
     );
+  }
+  // HTTPS for tailnet devices (a plain-http IP isn't a secure context, so
+  // crypto.randomUUID etc. are missing). Skipped for managed previews, which
+  // must not touch the machine's `tailscale serve` config.
+  if (tailscaleDetected && tailscaleHttps && process.env.REPOOS_PREVIEW_CHILD !== "1") {
+    const https = await ensureTailscaleHttps(handle.port);
+    if (https.url) {
+      console.log(
+        c.dim("  Tailscale HTTPS — open ") +
+          c.cyan(https.url) +
+          c.dim(" from your tailnet (secure context; ") +
+          c.cyan("--no-tailscale-https") +
+          c.dim(" to skip)."),
+      );
+    } else if (https.reason) {
+      console.log(c.yellow("  Tailscale HTTPS unavailable: ") + c.dim(https.reason));
+    }
   }
   console.log(c.dim("  press ^C to stop\n"));
 

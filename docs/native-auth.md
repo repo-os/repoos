@@ -95,6 +95,23 @@ Sessions are server-side (a hashed token in an `HttpOnly`, `SameSite=Lax`
 cookie — `Secure` too when served over HTTPS), rotated on login, and expire
 after `sessionMaxAge` seconds (default 30 days, configurable, minimum 300).
 
+### Loopback CLI token (`repoos shot`)
+
+A browser-less local command has no session cookie. When auth is enabled the
+server writes a random token to `<cacheDir>/local-cli-token` (mode `0600`,
+regenerated on every boot) and the CLI sends it as `x-repoos-local-token`. This
+exists so `repoos shot` (#0582) can start a task's preview and store its
+screenshots over `127.0.0.1` without a login; with auth disabled there is no
+token and none is needed.
+
+The token's **256-bit secrecy is what protects it** — it is a local file, never
+served, never logged. The server additionally accepts it only from a loopback
+peer that carries no forwarding header; that is defense in depth, not the
+guarantee: Cloudflare Tunnel's `cloudflared` dials the origin from loopback, so
+the address check alone would not distinguish tunneled traffic. A remote caller
+cannot present the token without already reading the file. It is not a
+`repoos.toml` key.
+
 ## Cloudflare Tunnel vs. Cloudflare Access
 
 A machine runs one Cloudflare Tunnel shared by every RepoOS repo on it —

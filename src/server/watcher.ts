@@ -13,14 +13,16 @@
  * a platform-proof fallback, comparing mtimes to catch missed content changes,
  * new files, and deletions. fs.watch remains the primary, low-latency path.
  */
-import { watch, existsSync, readdirSync, statSync, type FSWatcher } from "node:fs";
-import { join, extname } from "node:path";
+import { watch, existsSync, readFileSync, readdirSync, statSync, type FSWatcher } from "node:fs";
+import { join, extname, dirname, resolve } from "node:path";
 import type { RepoOSConfig } from "../core/types.js";
 import { STORIES_DIR } from "../core/story-definition-files.js";
 import type { LiveIndex } from "./live-index.js";
 
 const DEBOUNCE_MS = 60;
 const DEFAULT_POLL_MS = 5000;
+/** Coalesce a burst of `.git` writes (commit touches HEAD+index+refs) into one signal. */
+const GIT_SIGNAL_DEBOUNCE_MS = 120;
 
 export class WorkWatcher {
   private config: RepoOSConfig;
@@ -30,10 +32,25 @@ export class WorkWatcher {
   private watchedDirs = new Set<string>();
   private pathToMtime = new Map<string, number>();
   private pollTimer: ReturnType<typeof setInterval> | null = null;
+  /**
+   * "The repo root checkout's git state may have changed" (#0584). Fired for
+   * working-tree writes under the watched dirs and for the explicit `.git`
+   * state files (HEAD, index, refs) — branch switches, commits and staging all
+   * land there without touching a watched file. The subscriber debounces and
+   * coalesces, so a burst costs at most one `git status`.
+   */
+  private gitSignal: (() => void) | null = null;
+  private gitSignalTimer: ReturnType<typeof setTimeout> | null = null;
+  private gitStateWatched = new Set<string>();
 
   constructor(config: RepoOSConfig, index: LiveIndex) {
     this.config = config;
     this.index = index;
+  }
+
+  /** Register the git-state callback (may be set after `start()`). */
+  setGitSignal(fn: () => void): void {
+    this.gitSignal = fn;
   }
 
   start(): void {
@@ -49,6 +66,7 @@ export class WorkWatcher {
         this.watchTree(storiesPath);
       }
     }
+    this.watchGitState();
     this.pollTimer = setInterval(() => this.reconcile(), DEFAULT_POLL_MS);
     this.pollTimer.unref?.();
   }
@@ -65,11 +83,90 @@ export class WorkWatcher {
     for (const t of this.timers.values()) clearTimeout(t);
     this.timers.clear();
     this.watchedDirs.clear();
+    if (this.gitSignalTimer) {
+      clearTimeout(this.gitSignalTimer);
+      this.gitSignalTimer = null;
+    }
+    this.gitStateWatched.clear();
     if (this.pollTimer) {
       clearInterval(this.pollTimer);
       this.pollTimer = null;
     }
     this.pathToMtime.clear();
+  }
+
+  /**
+   * Watch the git state files a branch switch, commit or stage updates
+   * (#0584). The working-tree walk skips dot-directories, so `.git` is never
+   * reached by it and these paths are watched explicitly:
+   *
+   *  - `HEAD`         — checkout / branch switch
+   *  - `logs/HEAD`    — appended on every commit and HEAD move, whatever the
+   *                     branch name (loose refs for deep branch names live in
+   *                     subdirectories a non-recursive watch would miss)
+   *  - `index`        — staging, and rewritten by every commit
+   *  - `refs/heads`   — loose ref updates for first-level branch names
+   *  - `packed-refs`  — repack / gc moving refs
+   *
+   * Missing files are skipped (a fresh repo has no `logs/HEAD` yet), and a
+   * non-`.git` directory root is resolved from a `gitdir:` pointer file so a
+   * linked worktree still reports its own state.
+   *
+   * Re-signalling from our own `git status` rewriting the index is bounded,
+   * not a loop: git rewrites the index only when the stat cache actually
+   * changed — which is the change that triggered the recompute in the first
+   * place — so the follow-up pass finds nothing new and stays quiet.
+   */
+  private watchGitState(): void {
+    const dotGit = join(this.config.root, ".git");
+    if (!existsSync(dotGit)) return;
+    let gitDir = dotGit;
+    try {
+      if (!statSync(dotGit).isDirectory()) {
+        const pointer = /^gitdir:\s*(.+)$/m.exec(readFileSync(dotGit, "utf8"))?.[1]?.trim() ?? "";
+        const resolved = pointer ? resolve(dirname(dotGit), pointer) : "";
+        if (!resolved || !existsSync(resolved)) return;
+        gitDir = resolved;
+      }
+    } catch {
+      return;
+    }
+    this.watchGitPath(join(gitDir, "HEAD"));
+    this.watchGitPath(join(gitDir, "index"));
+    this.watchGitPath(join(gitDir, "packed-refs"));
+    this.watchGitPath(join(gitDir, "logs"));
+    this.watchGitPath(join(gitDir, "logs", "HEAD"));
+    this.watchGitPath(join(gitDir, "refs"));
+    this.watchGitPath(join(gitDir, "refs", "heads"));
+    // The `.git` directory itself: catches creates/removes not listed above.
+    this.watchGitPath(gitDir);
+  }
+
+  private watchGitPath(path: string): void {
+    if (this.gitStateWatched.has(path)) return;
+    if (!existsSync(path)) return;
+    this.gitStateWatched.add(path);
+    try {
+      const w = watch(path, () => this.scheduleGitSignal());
+      this.watchers.push(w);
+    } catch {
+      /* not watchable on this platform — the poll/interval backstops cover it */
+    }
+  }
+
+  /** Coalesce a flurry of git state writes into one callback invocation. */
+  private scheduleGitSignal(): void {
+    if (!this.gitSignal) return;
+    if (this.gitSignalTimer) clearTimeout(this.gitSignalTimer);
+    this.gitSignalTimer = setTimeout(() => {
+      this.gitSignalTimer = null;
+      try {
+        this.gitSignal?.();
+      } catch {
+        /* a subscriber must never break the watcher */
+      }
+    }, GIT_SIGNAL_DEBOUNCE_MS);
+    this.gitSignalTimer.unref?.();
   }
 
   private tryRecursive(dir: string): boolean {
@@ -128,6 +225,10 @@ export class WorkWatcher {
       setTimeout(() => {
         this.timers.delete(absPath);
         this.updateMtime(absPath);
+        // A write under a watched dir can make the repo root checkout dirty
+        // (or clean again once RepoOS commits it) — tell the git-state
+        // subscriber (#0584). Its own debounce turns a burst into one signal.
+        this.scheduleGitSignal();
         if (this.isStoryDefinitionFile(absPath)) {
           this.index.notifyStoryDefinitionsChanged();
           return;
@@ -162,6 +263,7 @@ export class WorkWatcher {
       if (!seenPaths.has(path) && !existsSync(path)) {
         this.pathToMtime.delete(path);
         this.index.applyFileDelete(path);
+        this.scheduleGitSignal();
       }
     }
   }

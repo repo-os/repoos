@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
+import { randomId } from "../lib/random-id";
 import { useRouter } from "vue-router";
 import {
   X,
@@ -77,7 +78,7 @@ import SendToEngineerDialog from "./SendToEngineerDialog.vue";
 import SpecEditModal from "./SpecEditModal.vue";
 import ScreenshotViewer from "./ScreenshotViewer.vue";
 import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
-import { pendingToShots } from "../lib/screenshot-viewer";
+import { pendingToShots, type ScreenshotShot } from "../lib/screenshot-viewer";
 import DoneErrorCard from "./DoneErrorCard.vue";
 import DebugPanel from "./DebugPanel.vue";
 import StopWorkConfirmModal from "./StopWorkConfirmModal.vue";
@@ -106,6 +107,8 @@ import { reportPredatesLatestHandoff } from "../lib/reviewFreshness";
 import { autoRepairHint, retryCountFrom } from "../lib/retryHints";
 import CopyableNumber from "./CopyableNumber.vue";
 import PmChatSurface from "./PmChatSurface.vue";
+import AreaPicker from "./AreaPicker.vue";
+import { formatTaskAreas, parseTaskAreas } from "../../../core/areas.js";
 
 const repo = useRepoStore();
 const ui = useUiStore();
@@ -545,7 +548,7 @@ async function createFreeform(): Promise<void> {
   // A fresh run id each attempt; the previous run's buffer is dropped so the
   // stream never shows stale output and memory stays bounded to one run.
   if (freeformRunId.value) repo.clearOutput(freeformRunId.value);
-  freeformRunId.value = crypto.randomUUID();
+  freeformRunId.value = randomId();
   try {
     const overrides = freeformIsCustom.value
       ? { agent: freeformOverride.agent, cli: freeformOverride.cli, model: freeformOverride.model }
@@ -769,6 +772,21 @@ const pendingViewerShots = computed(() => pendingToShots(ui.pendingScreenshots))
 function openPendingViewer(index: number): void {
   pendingViewerStart.value = index;
   pendingViewerOpen.value = true;
+}
+
+// ---- captured preview shots (#0582) ----
+/** Shots captured by `repoos shot`, listed from the task's `shots/` folder. */
+const taskShots = computed(() => (ui.active ? repo.shotsFor(ui.active.id) : []));
+/** Area/target mismatch warning for the open task, or undefined. */
+const shotWarning = computed(() => (ui.active ? repo.shotWarningFor(ui.active.id) : undefined));
+const shotsViewerOpen = ref(false);
+const shotsViewerStart = ref(0);
+const shotsViewerShots = computed<ScreenshotShot[]>(() =>
+  taskShots.value.map((s) => ({ src: s.url, name: s.name })),
+);
+function openShotsViewer(index: number): void {
+  shotsViewerStart.value = index;
+  shotsViewerOpen.value = true;
 }
 
 function onShotFiles(e: Event): void {
@@ -1317,6 +1335,65 @@ function openAssignedStory(): void {
 }
 
 const transitioned = computed(() => !!(ui.active && repo.transitionState?.id === ui.active.id));
+
+// ---- Area multi-select (#0583) ----
+//
+// Both the edit form and the New task panel keep their area value as the
+// canonical comma-joined string (exactly what the API writes); the picker
+// works on the parsed list. The effective vocabulary comes from the server's
+// computed `areaVocabulary` (`[areas]` + every preview target area) — with
+// none configured the picker degrades to its free-text entry only.
+
+/** The effective area vocabulary; empty until the config load lands. */
+const areaOptions = computed<{ name: string; description?: string }[]>(() => {
+  const v = (config.data ?? {})["areaVocabulary"];
+  if (!Array.isArray(v)) return [];
+  return v
+    .map((e) => {
+      if (typeof e === "string") return { name: e };
+      const o = e as { name?: unknown; description?: unknown };
+      if (typeof o.name !== "string" || !o.name.trim()) return null;
+      return {
+        name: o.name,
+        ...(typeof o.description === "string" && o.description.trim()
+          ? { description: o.description }
+          : {}),
+      };
+    })
+    .filter((e): e is { name: string; description?: string } => e !== null);
+});
+
+/** List view of the New task form's comma-joined area field. */
+const ntAreaList = computed<string[]>({
+  get: () => parseTaskAreas(ui.nt.area),
+  set: (v) => {
+    ui.nt.area = v.length ? formatTaskAreas(v) : "";
+  },
+});
+
+/** List view of the edit draft's comma-joined area field. */
+const draftAreaList = computed<string[]>({
+  get: () => parseTaskAreas(draft.area),
+  set: (v) => {
+    draft.area = v.length ? formatTaskAreas(v) : "";
+  },
+});
+
+/**
+ * Offer a newly typed area to the repo's declared vocabulary: add it to the
+ * persisted `[areas]` list (descriptions of unchanged names are preserved
+ * server-side). Uses `config.save`, which PATCHes and then re-reads the
+ * /api/config payload — so `areaVocabulary` (and the picker's rows) update
+ * live and repeat adds never depend on a page reload. Two drawers saved at
+ * once are still last-write-wins on the whole list (there is no per-row
+ * append endpoint), but the window is a single round-trip and a re-opened
+ * Settings always shows the server's truth.
+ */
+async function addAreaToVocabulary(name: string): Promise<void> {
+  const current = parseTaskAreas(config.form.areas as unknown);
+  if (!current.some((s) => s.toLowerCase() === name.toLowerCase())) current.push(name);
+  await config.save({ areas: current });
+}
 
 /**
  * Planning has ended, so the branch is frozen. The title is deliberately NOT
@@ -2700,6 +2777,21 @@ watch(
   },
 );
 
+/**
+ * Load captured preview shots (#0582) whenever the drawer's task changes — not
+ * just when the Changes tab opens, so the area/target mismatch warning is
+ * available next to the preview control too. Re-loading on a tab switch means a
+ * shot captured while the drawer was open appears when you return to Changes.
+ */
+watch(
+  () => [ui.active?.id, ui.activeTab],
+  () => {
+    const id = ui.active?.id;
+    if (id) void repo.loadShots(id);
+  },
+  { immediate: true },
+);
+
 /** Parse the unified diff into per-file sections with stats. */
 interface DiffFile {
   filename: string;
@@ -3343,7 +3435,13 @@ watch(
             <div class="field-row">
               <div class="field">
                 <label>Area</label>
-                <Input v-model="ui.nt.area" placeholder="web" />
+                <AreaPicker
+                  id="nt-area"
+                  v-model="ntAreaList"
+                  :options="areaOptions"
+                  placeholder="area"
+                  @add-to-vocabulary="addAreaToVocabulary"
+                />
               </div>
               <div class="field">
                 <label>Assign to</label>
@@ -3794,6 +3892,13 @@ watch(
               Start preview
             </Button>
           </div>
+          <p
+            v-if="ui.active && shotWarning"
+            class="preview-hint shot-warning-preview"
+            role="status"
+          >
+            {{ shotWarning }}
+          </p>
         </div>
         <!-- Critical status lives above the tabs so it is visible no matter
              which tab is open — a "needs input" / "reviewer crashed" message
@@ -4051,7 +4156,13 @@ watch(
           <div class="field-row">
             <div class="field">
               <label for="et-area">Area</label>
-              <Input id="et-area" v-model="draft.area" placeholder="web" />
+              <AreaPicker
+                id="et-area"
+                v-model="draftAreaList"
+                :options="areaOptions"
+                placeholder="area"
+                @add-to-vocabulary="addAreaToVocabulary"
+              />
             </div>
             <div v-if="storiesEnabled" class="field">
               <div class="field-header">
@@ -4589,6 +4700,26 @@ watch(
           </section>
         </div>
         <div v-else-if="ui.activeTab === 'changes'" class="drawer-body">
+          <div v-if="ui.active && shotWarning" class="shot-warning shot-warning-changes">
+            {{ shotWarning }}
+            <span class="shot-warning-hint">
+              Pick the right target from the preview control above.
+            </span>
+          </div>
+          <section
+            v-if="ui.active && taskShots.length"
+            class="changes-summary ui-changes"
+            aria-label="UI changes"
+          >
+            <div class="changes-summary-title">UI changes</div>
+            <div class="shot-grid">
+              <div v-for="(s, i) in taskShots" :key="s.name" class="shot-thumb">
+                <img :src="s.url" :alt="s.name" @click="openShotsViewer(i)" />
+                <ScreenshotExpandButton :name="s.name" @click="openShotsViewer(i)" />
+                <span class="shot-name" :title="s.target">{{ s.target }}</span>
+              </div>
+            </div>
+          </section>
           <template v-if="!ui.active">
             <p class="changes-empty">Select a task to view changes.</p>
           </template>
@@ -5094,6 +5225,11 @@ watch(
     v-model:open="pmViewerOpen"
     :shots="pmViewerShots"
     :start-index="pmViewerStart"
+  />
+  <ScreenshotViewer
+    v-model:open="shotsViewerOpen"
+    :shots="shotsViewerShots"
+    :start-index="shotsViewerStart"
   />
 
   <StopWorkConfirmModal

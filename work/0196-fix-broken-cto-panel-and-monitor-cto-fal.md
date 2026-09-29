@@ -4,7 +4,7 @@ title: "Fix broken CTO panel and monitor (CTO false button, agent never resolves
 type: bug
 status: done
 priority: p1
-area: server + ui-app
+area: [server, ui-app]
 assigned_to: ai
 created_by: ""
 branch: feat/fix-broken-cto-panel-and-monitor-cto-fal

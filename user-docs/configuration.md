@@ -118,6 +118,13 @@ autoTransition = true
 provider = "none"  # none | groq | openai
 # apiKey = "..."   # a secret — prefer REPOOS_WHISPER_KEY in .env
 
+# ── Areas (optional task-area vocabulary) ─────────────────────────────────
+[[areas]]
+name = "web"
+description = "The main web app"
+[[areas]]
+name = "cli"
+
 # ── Task previews ────────────────────────────────────────────────────────
 [preview]
 command = "bun run dev --port {port}"
@@ -243,6 +250,12 @@ taskExtensions = [".md"]
 All paths are relative to the repo root. `repoos.toml` and `AGENTS.md` always
 stay at the root regardless of how these are set. Changing `workDir`,
 `cacheDir`, or `taskExtensions` triggers an index refresh.
+
+These configured paths are **authoritative**: RepoOS and the agents it runs read
+the board and project docs from exactly these directories. If another tool or a
+set of project docs assumes a different layout, change `repoos.toml` (or
+reconcile the docs) — never move the directories so the config no longer matches
+where your content lives.
 
 ## Board behavior
 
@@ -379,6 +392,48 @@ from the **Agents** page. Prefer the UI over hand-editing them. See
 
 The built-in supervisor is not exposed as a `repoos.toml` key.
 
+## Areas
+
+```toml
+[[areas]]
+name = "web"
+description = "The main web app"
+
+[[areas]]
+name = "cli"
+```
+
+```toml
+areas = ["web", "core"]
+```
+
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `areas.name` | string | none | yes | One declared area name (`[[areas]] name = "…"`). Required on a row; unusable rows are dropped. |
+| `areas.description` | string | none | yes | Optional one-liner shown in the area picker and given to the PM agent. |
+| `areas` | array of strings | `[]` | yes | Flat shorthand for declaring names without descriptions. |
+
+A task's `area` is the part of the product its work lands in (`web`, `server`,
+`core`, …), and a task can carry **several** — `area: [web, core]` in
+frontmatter, shown as one chip per area in the UI and `web, core` in plain
+text. Legacy `server + ui-app` values keep parsing (the `+` spelling is
+accepted forever), and any file still carrying it is rewritten to the comma
+form by the one-time migration at server boot.
+
+The **effective vocabulary** the task drawer's area multi-select — and the PM
+agent's task-authoring prompt — offers is the `[[areas]]` names merged with
+every `[[preview.targets]].areas` value, so a repo that has only configured
+previews already gets sensible options. Editing either source updates the
+picker live; **Settings → General → "Areas"** edits the declared list
+(descriptions are TOML-only extras). When a source shrinks, tasks whose areas
+no longer sit in the vocabulary get an advisory log warning — never an error,
+because new areas typed in the picker always stay allowed. Save an area first
+used as free text ("add 'x' to repoos areas") in the picker to adopt it into
+the declared list.
+
+With no `[[areas]]` rows and no preview targets, the area field is free text
+only — the picker degrades to its type-an-entry mode, not a blocking select.
+
 ## Previews and checks
 
 ```toml
@@ -390,6 +445,7 @@ readyTimeoutMs = 10000
 [[preview.targets]]
 name = "Landing page"
 areas = ["landing", "web"]
+paths = ["landing/**"]
 command = "bun run dev --port {port}"
 cwd = "landing"
 ```
@@ -405,6 +461,7 @@ when a task is in `active` or `review`.
 | `preview.readyTimeoutMs` | number | `10000` | yes | How long to wait for the default command to answer before giving up. Raise it for a command that also builds first. |
 | `preview.targets[].name` | string | derived from `areas` | yes | Human label for diagnostics and the preview picker. |
 | `preview.targets[].areas` | array of strings | `[]` | yes | Task `area:` values this target serves, matched case-insensitively. |
+| `preview.targets[].paths` | array of strings | `[]` | yes | Repo-relative globs (see below). A changed file matching any glob selects this target for `repoos shot`, independent of the task's `area`. |
 | `preview.targets[].command` | string | required | yes | Command that boots the target. Rows without one are dropped. |
 | `preview.targets[].cwd` | string | worktree root | yes | Subdirectory of the worktree to run the command in. |
 | `preview.targets[].readyPath` | string | `/` | yes | Per-target readiness path (`ready_path` is also accepted). |
@@ -416,6 +473,21 @@ hardcode a port in a preview command. A task with no usable preview
 configuration gets an actionable "no preview configured" message rather than
 booting a random app. Previews are one-at-a-time and a new request evicts the
 previous preview.
+
+`preview.targets[].paths` drives `repoos shot`, which picks the target to
+screenshot from the task's changed files rather than its up-front `area:`. A
+glob uses `*` within one path segment, `**` across segments (including none),
+and `?` for one non-slash character — `landing/**` matches every changed file
+under `landing/`. When no target's globs match, `repoos shot` falls back to the
+area match (then the default command); `--target` overrides either way.
+
+> **`[[preview.targets]]` is deliberately TOML-only.** The Settings UI is built
+> on a flat `key = value` schema, which cannot express a per-row sub-field of an
+> array of tables; there is no control for `name`, `areas`, `command`, or `paths`
+> today. Editing targets in `repoos.toml` is the supported path, and
+> `repoos shot`'s area/target mismatch warning is what makes a stale `area:`
+> visible. This is the documented exception to the "every feature setting needs
+> a Settings control" rule, not an oversight.
 
 ### Preview-only overrides
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from "vue";
+import { randomId } from "../lib/random-id";
 import { X } from "lucide-vue-next";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
@@ -95,7 +96,7 @@ async function createFreeform(): Promise<void> {
   freeformRunning.value = true;
   freeformError.value = "";
   if (freeformRunId.value) repo.clearOutput(freeformRunId.value);
-  freeformRunId.value = crypto.randomUUID();
+  freeformRunId.value = randomId();
   try {
     const overrides = freeformIsCustom.value
       ? { agent: freeformOverride.agent, cli: freeformOverride.cli, model: freeformOverride.model }
