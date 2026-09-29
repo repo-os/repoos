@@ -2,14 +2,14 @@
 id: "0590"
 title: Add Cut Next shortcut and cache AI release notes in release modal
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-29T23:25:13Z"
-updated_at: "2026-09-29T23:25:50Z"
+updated_at: "2026-09-29T23:26:16Z"
 ---
 ## Problem
 
@@ -96,3 +96,4 @@ It's annoying to always have to type the new version, but it is helpful to have 
 - 2026-09-29T23:25:13Z · created · hello@repoos.org
 - 2026-09-29T23:25:13Z · screenshots
 - 2026-09-29T23:25:50Z · status draft→inbox, title, area, body
+- 2026-09-29T23:26:16Z · status inbox→ready
