@@ -197,6 +197,46 @@ repoos check --changed main      # fast pre-review pass over changed paths
 repoos check --print-plan        # print the resolved plan as [[check.steps]]
 ```
 
+### `repoos shot`
+
+Captures screenshots of a task's managed preview so a UI change leaves visual
+evidence a reviewer or human can actually look at, instead of "it looked fine".
+Run it from the task's worktree; it asks the running `repoos serve` to start the
+task's preview (never starting a server itself), drives the same optional
+Playwright/WebKit path the UI check uses, and stores PNGs under
+`work/.attachments/<taskId>/shots/` — gitignored, never referenced from the task
+body, and shown as the **UI changes** section of the drawer's Changes tab.
+
+```bash
+repoos shot                          # capture the preview root for this task
+repoos shot /repo/commits/abc123     # capture one route
+repoos shot --target "Docs site"     # force a target (skip path/area resolution)
+repoos shot --selector ".sidebar"    # capture one element instead of the page
+repoos shot --wait 2000              # wait longer before capturing (default 900ms)
+repoos shot https://example.test/x   # capture an arbitrary URL
+```
+
+After the page loads, `repoos shot` waits for network quiet (best-effort) and a
+short settle before capturing, so a dev server's client-mount spinner is not
+what gets recorded. Raise `--wait <ms>` for a page that renders slower than
+that.
+
+Which target(s) to capture is decided from the files the task changed, matched
+against `[[preview.targets]].paths` globs in `repoos.toml` — not the task's
+up-front `area:`. If nothing matches, it falls back to area resolution;
+`--target` overrides. Each shot records its resolved target name. The drawer
+warns whenever the changed paths touch a target the task's `area` does not
+resolve to, so a mislabeled area becomes visible rather than silently
+screenshotting the wrong app. Only one preview runs per task, so a multi-target
+capture restarts the preview between targets (stopping one you may be watching)
+— the command prints a note when it will do that.
+
+Playwright/WebKit is optional (a dev dependency). When it is missing, `repoos
+shot` prints install advice and exits non-zero without touching anything:
+`bun add -d @playwright/test && bunx playwright install webkit`. A screenshot
+is the one sanctioned use of the managed preview by an engineer agent, and only
+for UI-visible changes — see [Review and close-out](/review-and-close-out).
+
 ### `repoos index [--json]`
 
 Rebuilds the derived index cache. The cache is disposable — the markdown files
