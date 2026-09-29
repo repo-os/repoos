@@ -48,14 +48,14 @@ function repo(toml: string): string {
 }
 
 /** A minimal RouteContext with a logger that captures warnings. */
-function contextWith(root: string, warnings: string[]) {
+function contextWith(root: string, warnings: string[], taskArea = "web") {
   const cfg = loadConfig(root);
   return {
     config: { root, cacheDir: cfg.cacheDir, workDir: cfg.workDir },
     repoos: { config: cfg },
     index: {
       refreshAll() {},
-      getTasks: () => [{ id: "0587", area: "web" }],
+      getTasks: () => [{ id: "0587", area: taskArea }],
     },
     logger: {
       system(level: string, message: string) {
@@ -239,6 +239,55 @@ describe("area-vocabulary drift advisory (#0587)", () => {
       const req = Readable.from([Buffer.from(JSON.stringify({ areas: ["web", "core"] }))]);
       await patchConfig(contextWith(root, warnings), req as never, fakeRes() as never, {});
       expect(warnings).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("fires when the vocabulary is cleared to empty, and drops the stale in-memory rows", async () => {
+    const root = repo('workDir = "work"\n[[areas]]\nname = "web"\n[[areas]]\nname = "core"\n');
+    try {
+      const warnings: string[] = [];
+      const cfg = loadConfig(root);
+      const repoos = { config: cfg };
+      const ctx = {
+        config: { root, cacheDir: cfg.cacheDir, workDir: cfg.workDir },
+        repoos,
+        index: { refreshAll() {}, getTasks: () => [{ id: "0587", area: "web" }] },
+        logger: {
+          system(level: string, message: string) {
+            if (level === "warn") warnings.push(message);
+          },
+        },
+      } as never;
+      const req = Readable.from([Buffer.from(JSON.stringify({ areas: [] }))]);
+      await patchConfig(ctx, req as never, fakeRes() as never, {});
+      // Before == a stale list that never shrinks would silently skip the
+      // advisory (the #0587 review's bug); clearing must warn AND the in-memory
+      // vocabulary must actually empty so the picker/PM prompt stop serving it.
+      expect(warnings.some((m) => m.includes('area "web" no longer resolves'))).toBe(true);
+      expect(repoos.config.areas).toBeUndefined();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("fires when a raw edit deletes the whole [preview] section", async () => {
+    const root = repo(
+      'workDir = "work"\n[[areas]]\nname = "web"\n[[preview.targets]]\nname = "Docs"\nareas = ["docs"]\ncommand = "x"\n',
+    );
+    try {
+      const warnings: string[] = [];
+      const req = Readable.from([
+        Buffer.from(JSON.stringify({ content: 'workDir = "work"\n[[areas]]\nname = "web"\n' })),
+      ]);
+      await writeRawConfig(
+        contextWith(root, warnings, "docs"),
+        req as never,
+        fakeRes() as never,
+        {},
+      );
+      expect(warnings.some((m) => m.includes('area "docs" no longer resolves'))).toBe(true);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

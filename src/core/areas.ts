@@ -115,7 +115,8 @@ interface AreaEntryLike {
 }
 
 /** Read one raw entry defensively — strings and `{name}` rows both work. */
-function entryOf(raw: AreaEntryLike): AreaEntry | null {
+function entryOf(raw: AreaEntryLike | null | undefined): AreaEntry | null {
+  if (raw == null) return null;
   const name = typeof raw === "string" ? raw : typeof raw.name === "string" ? raw.name.trim() : "";
   if (!name) return null;
   const description =

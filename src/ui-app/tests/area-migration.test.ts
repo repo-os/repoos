@@ -207,6 +207,31 @@ describe("runAreaMigrationPass — a failed commit is retried, never swallowed (
     }
   });
 
+  it("keeps the pending marker when the retry fails but a later fresh commit succeeds", () => {
+    const root = repoWithFiles({ "0001-a.md": '---\nid: "0001"\narea: docs + web\n---\nbody' });
+    try {
+      const cfg = config(root);
+      runAreaMigrationPass(cfg, () => false); // 0001-a rewritten, retry owed
+      writeFileSync(
+        join(root, "work", "0002-b.md"),
+        '---\nid: "0002"\narea: server + ui-app\n---\nbody',
+        "utf8",
+      );
+      // The retry for 0001-a fails; the fresh rewrite of 0002-b commits.
+      const second = runAreaMigrationPass(cfg, (abs) => !abs.some((p) => p.endsWith("0001-a.md")));
+      expect(second.retried).toBe(true);
+      expect(second.committed).toBe(false);
+      // 0001-a is still dirty and must remain marked; a successful fresh commit
+      // must NOT clear it (the #0587 review's bug).
+      expect(readAreaMigrationPending(cfg)).toEqual([join("work", "0001-a.md")]);
+      expect(readFileSync(join(root, "work", "0002-b.md"), "utf8")).toContain(
+        "area: [server, ui-app]",
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("never calls commit when there is nothing to rewrite or retry", () => {
     const root = repoWithFiles({ "0001-a.md": '---\nid: "0001"\narea: web\n---\nbody' });
     try {
