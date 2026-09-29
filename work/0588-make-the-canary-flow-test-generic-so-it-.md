@@ -2,7 +2,7 @@
 id: "0588"
 title: Make the canary flow test generic so it works in any managed repo
 type: bug
-status: active
+status: review
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -12,7 +12,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-29T20:19:16Z"
-updated_at: "2026-09-29T20:38:21Z"
+updated_at: "2026-09-29T20:51:31Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -52,3 +52,4 @@ The canary smoke test (draft → inbox → ready → active → review → merge
 - 2026-09-29T20:20:03Z · status ready→active, branch
 - 2026-09-29T20:36:30Z · status active→review
 - 2026-09-29T20:38:21Z · status review→active
+- 2026-09-29T20:51:31Z · status active→review
