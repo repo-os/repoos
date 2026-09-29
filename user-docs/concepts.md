@@ -27,8 +27,15 @@ diff view used for task worktrees.
 The log is read-only. Checkout, revert, and cherry-pick stay on the command
 line.
 
-The left sidebar also carries a one-line summary of the checkout you are
-actually running from: the branch, and `clean`, `dirty (n)` or `unknown`. It
+The left sidebar also shows a small **canary** digit (0–9) above the git
+summary. Clicking it starts a deliberately trivial task that walks the full
+lifecycle (draft through done) by incrementing the digit in
+`.repoos/canary.txt` in your repo — a smoke test that any failure is in the
+pipeline, not your product code. The digit reflects that file on disk and
+advances after a canary run merges.
+
+The git row below it is a one-line summary of the checkout you are actually
+running from: the branch, and `clean`, `dirty (n)` or `unknown`. It
 describes the **repo root checkout only** — task worktrees are separate, and a
 task branch moving never flips it. A warning colour means either the checkout
 is not on the base branch (or HEAD is detached) or there are uncommitted
