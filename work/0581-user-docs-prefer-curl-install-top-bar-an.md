@@ -2,7 +2,7 @@
 id: "0581"
 title: "User docs: prefer curl install, top bar and mobile menu fixes"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: general
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 model_override: opencode-go/mimo-v2.6-flash
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-29T09:55:42Z"
-updated_at: "2026-09-29T09:56:40Z"
+updated_at: "2026-09-29T09:56:54Z"
 ---
 ## Goal
 
@@ -85,3 +85,4 @@ Mirror the style and layout of the repoos.org mobile menu (the landing site in
 - 2026-09-29T09:55:42Z · created · unknown
 - 2026-09-29T09:56:30Z · model_override
 - 2026-09-29T09:56:40Z · review_model_override
+- 2026-09-29T09:56:54Z · status inbox→ready
