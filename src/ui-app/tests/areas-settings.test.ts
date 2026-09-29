@@ -88,6 +88,23 @@ describe("Settings PATCH for [areas] (#0583)", () => {
     }
   });
 
+  it("clears a vocabulary declared as [[areas]] rows without a duplicate key", async () => {
+    const root = repo(
+      '[[areas]]\nname = "web"\ndescription = "The main app"\n\n[[areas]]\nname = "cli"\n',
+    );
+    try {
+      const res = await patch(root, { areas: [] });
+      expect(res.status).toBe(200);
+      const text = readFileSync(join(root, "repoos.toml"), "utf8");
+      // Blocks are gone and no stray flat `areas = []` was inserted before them.
+      expect(text).not.toContain("[[areas]]");
+      expect(text).not.toMatch(/^areas\s*=/m);
+      expect(loadConfig(root).areas).toBeUndefined();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("does not touch repoos.toml when the submitted list already matches disk", async () => {
     const root = repo('workDir = "work"\n'); // no vocabulary, nothing declared
     try {

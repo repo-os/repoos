@@ -198,6 +198,8 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
    * generic 400 that an empty patch would otherwise produce.
    */
   let areasUnchanged = false;
+  // Set when an `areas` PATCH clears a vocabulary declared as `[[areas]]` rows.
+  let dropAreaRows = false;
   if (body.builtInAgents !== undefined) {
     if (
       typeof body.builtInAgents !== "object" ||
@@ -400,6 +402,17 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
           areasUnchanged = true;
           continue;
         }
+        if (rows.length === 0) {
+          // Clearing the vocabulary (#0583 review round 3). `patchTomlConfig`
+          // only strips `[[areas]]` blocks for a NON-empty row list, so an
+          // empty `patch.areas` would insert a root `areas = []` ahead of the
+          // still-present blocks (duplicate key; the rows survive). Drop the
+          // blocks explicitly, like the tailscale pool, and only write a flat
+          // `areas = []` when a flat line is what is being cleared.
+          dropAreaRows = true;
+          if (/^areas\s*=/m.test(readRawToml(config.root))) patch[field.key] = rows;
+          continue;
+        }
         patch[field.key] = rows;
         continue;
       }
@@ -506,6 +519,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     !builtInAgentsChanged &&
     !authEnabledChanged &&
     !areasUnchanged &&
+    !dropAreaRows &&
     !onlyEmptyWhisperKey
   ) {
     return json(res, 400, { error: "No valid fields to update" });
@@ -514,6 +528,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
   if (Object.keys(patch).length > 0) {
     patchTomlConfig(join(config.root, "repoos.toml"), patch);
   }
+  if (dropAreaRows) dropTomlTableArray(join(config.root, "repoos.toml"), "areas");
   if (dropRows) {
     dropTomlTableArray(join(config.root, "repoos.toml"), "remoteValidation.tailscaleHosts");
   }
