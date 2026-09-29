@@ -379,6 +379,23 @@ function areaRows(areas: string[]): string {
 }
 
 /**
+ * The TOML appended to an EXISTING repo's config when it adopts an area
+ * vocabulary (#0587): real `[[areas]]` rows, plus the commented
+ * `[[preview.targets]]` skeleton when asked — the same "define areas and
+ * previews together" shape the guided new-repo flow scaffolds into a fresh
+ * repoos.toml. Empty `areas` yields "" (nothing to append).
+ */
+export function areaVocabularyTomlAddition(areas: string[], previewStub: boolean): string {
+  if (areas.length === 0) return "";
+  const chunks = [
+    "# Task-area vocabulary (#0583). Offered in the area picker and the PM prompt.",
+    areaRows(areas),
+  ];
+  if (previewStub) chunks.push(previewTargetRows(areas));
+  return chunks.join("\n\n") + "\n";
+}
+
+/**
  * The commented `[[preview.targets]]` skeleton offered when an area vocabulary
  * was seeded at init (#0583) — the wiring for when the project has something
  * previewable, referencing the areas the picker now offers.
@@ -824,6 +841,82 @@ async function offerCheckPlanProposal(root: string): Promise<void> {
     console.log("  " + c.green("added") + c.dim(" the check plan to repoos.toml"));
   } catch {
     console.log(c.yellow("  Could not update repoos.toml; the proposal file was left in place."));
+  }
+}
+
+/**
+ * Offer an EXISTING repo the same skippable "define areas (and previews)
+ * together" prompt the guided new-repo flow runs (#0587). Without it, an
+ * already-set-up repo only ever gets the commented `[[areas]]` stub and has to
+ * discover the vocabulary in Settings.
+ *
+ * Idempotent and never blocking: returns when `[areas]` is already declared or
+ * repoos.toml is absent; non-interactively it prints a one-line hint instead
+ * of prompting. A config change during the prompt abandons the write.
+ */
+async function offerAreaVocabulary(root: string): Promise<void> {
+  const tomlPath = join(root, "repoos.toml");
+  if (!existsSync(tomlPath)) return;
+  if ((loadConfig(root).areas ?? []).length > 0) return; // already declared
+
+  if (!input.isTTY || !output.isTTY) {
+    console.log(
+      c.dim(
+        "\n  No task-area vocabulary is declared. Add [[areas]] in repoos.toml (or Settings → " +
+          "General → Areas) to offer areas in the picker and the PM prompt.",
+      ),
+    );
+    return;
+  }
+
+  const original = readFileSync(tomlPath, "utf8");
+  const areasInput = await ask(
+    "  Task areas to seed the area picker" +
+      c.dim(" — comma-separated (e.g. web, cli, api; Enter to skip)") +
+      ": ",
+  );
+  const areas = areasInput
+    ? areasInput
+        .split(",")
+        .map((a) => a.trim())
+        .filter(Boolean)
+    : [];
+  if (areas.length === 0) return;
+
+  console.log(c.dim("  Preview targets route a task preview by its area — the picker and"));
+  console.log(
+    c.dim(
+      "  the PM prompt offer target areas automatically; see user-docs/configuration.md's Previews section.",
+    ),
+  );
+  const previewStub = await confirm(
+    "  Scaffold commented preview-target stubs for these areas?",
+    false,
+  );
+
+  // Do not clobber a config changed while the prompt was open.
+  if (readFileSync(tomlPath, "utf8") !== original) {
+    console.log(
+      c.yellow(
+        "  repoos.toml changed while this prompt was open; nothing was added. Run repoos init again.",
+      ),
+    );
+    return;
+  }
+  try {
+    const addition =
+      (original.endsWith("\n") ? "\n" : "\n\n") + areaVocabularyTomlAddition(areas, previewStub);
+    writeFileSync(tomlPath, original + addition);
+    console.log(
+      "  " +
+        c.green("added") +
+        c.dim(
+          ` ${areas.length} area${areas.length === 1 ? "" : "s"} to repoos.toml` +
+            (previewStub ? " (with preview-target stubs)" : ""),
+        ),
+    );
+  } catch {
+    console.log(c.yellow("  Could not update repoos.toml; your areas were not saved."));
   }
 }
 
@@ -1301,6 +1394,7 @@ export async function cmdInit(args: string[]): Promise<void> {
     const { created, skipped } = scaffoldInto(root, "", namespace, "existing");
     const config = loadConfig(root);
     await offerRepoOSAgentsSection(root, config.workDir);
+    await offerAreaVocabulary(root);
     await offerCheckPlanProposal(root);
     if (created.length === 0) {
       warnAlreadySetUp(root, "Nothing to initialize here.");

@@ -108,7 +108,7 @@ import { autoRepairHint, retryCountFrom } from "../lib/retryHints";
 import CopyableNumber from "./CopyableNumber.vue";
 import PmChatSurface from "./PmChatSurface.vue";
 import AreaPicker from "./AreaPicker.vue";
-import { formatTaskAreas, parseTaskAreas } from "../../../core/areas.js";
+import { defaultTaskArea, formatTaskAreas, parseTaskAreas } from "../../../core/areas.js";
 
 const repo = useRepoStore();
 const ui = useUiStore();
@@ -740,7 +740,7 @@ async function createTask(): Promise<void> {
     ui.close();
     ui.nt.title = "";
     ui.nt.body = "";
-    ui.nt.area = "web";
+    ui.nt.area = defaultTaskArea(areaOptions.value);
     ui.nt.priority = "p2";
     ui.nt.type = "feature";
     ui.nt.assignedTo = "";
