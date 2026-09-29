@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 model_override: opencode-go/glm-5.3-flash
+review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-29T11:31:44Z"
-updated_at: "2026-09-29T16:47:18Z"
+updated_at: "2026-09-29T16:47:22Z"
 ---
 ## Problem
 
@@ -61,3 +62,4 @@ Automatically inferring areas from changed paths (#0582's `paths` globs cover th
 - 2026-09-29T11:34:50Z · body
 - 2026-09-29T11:34:57Z · status inbox→ready
 - 2026-09-29T16:47:18Z · model_override
+- 2026-09-29T16:47:22Z · review_model_override
