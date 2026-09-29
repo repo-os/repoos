@@ -50,6 +50,19 @@ function gitCapture(root: string, args: string[]): GitRun {
 }
 
 /**
+ * One-line explanation of a failed `git worktree add`, for `ensureWorktree`'s
+ * `reason`. A bare "could not create worktree" made a real close-out failure
+ * (#0584) undiagnosable: git's stderr and the timeout case were both dropped.
+ */
+function worktreeAddFailure(run: GitRun): string {
+  const text = run.stderr.trim().split("\n").filter(Boolean).slice(0, 4).join(" ");
+  if (text) return text;
+  return run.status === null
+    ? "git worktree add timed out or was killed (no exit status)"
+    : `git worktree add exited ${run.status} with no output`;
+}
+
+/**
  * Non-blocking counterpart of `git()`. Lets a caller enriching many tasks
  * (e.g. `buildIndexAsync`) run their git spawns concurrently instead of
  * one at a time on the main thread — each `execFileSync` call above blocks
@@ -591,7 +604,9 @@ export function ensureWorktree(
   const args = branchExists
     ? ["worktree", "add", target, branch]
     : ["worktree", "add", "-b", branch, target];
-  if (git(root, args) === null) {
+  const first = gitCapture(root, args);
+  if (first.status !== 0) {
+    let failure = worktreeAddFailure(first);
     // An orphaned directory (leftover from a prior interrupted close-out) blocks
     // `git worktree add`.  Remove it once and retry — the branch is still valid,
     // only the worktree registration (gitdir) is missing.
@@ -601,7 +616,8 @@ export function ensureWorktree(
       } catch {
         /* best-effort */
       }
-      if (git(root, args) !== null) {
+      const retry = gitCapture(root, args);
+      if (retry.status === 0) {
         let path = target;
         try {
           path = realpathSync(target);
@@ -612,12 +628,13 @@ export function ensureWorktree(
         linkInheritedEnv(root, path);
         return { ok: true, path, created: true };
       }
+      failure = worktreeAddFailure(retry);
     }
     return {
       ok: false,
       path: target,
       created: false,
-      reason: "could not create worktree",
+      reason: `could not create worktree: ${failure}`,
     };
   }
   // git reports real paths (macOS /var -> /private/var); normalize the fresh
