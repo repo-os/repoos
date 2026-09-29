@@ -363,7 +363,13 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
     return json(res, 400, { error: "explanation is required" });
   }
   if (isCanaryTaskExplanation(explanation)) {
-    ensureCanaryReadyForTask(config);
+    const ready = ensureCanaryReadyForTask(config, (detail) => logger.system("warn", detail));
+    if (!ready) {
+      return json(res, 500, {
+        error:
+          "Could not prepare the canary counter on main — fix .gitignore / branch and try again",
+      });
+    }
     explanation = buildCanaryPrompt(canaryRelPath(config.cacheDir));
   }
   const runId = typeof body?.runId === "string" && body.runId ? body.runId : null;

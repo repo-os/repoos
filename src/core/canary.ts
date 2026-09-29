@@ -17,6 +17,55 @@ export function canaryGitignoreNegation(cacheDir: string): string {
   return `!${canaryRelPath(cacheDir)}`;
 }
 
+/**
+ * Upgrade legacy `${cacheDir}/` directory ignores to `${cacheDir}/*` and ensure
+ * the canary negation is present. A directory-only ignore prevents git from
+ * ever tracking `canary.txt` inside it.
+ */
+export function patchGitignoreForCanary(
+  raw: string,
+  cacheDir: string,
+): { content: string; changed: boolean } {
+  const base = cacheDir.replace(/\/$/, "");
+  const ignoreGlob = canaryGitignoreIgnore(cacheDir);
+  const negation = canaryGitignoreNegation(cacheDir);
+  const legacyDir = `${base}/`;
+
+  const lines = raw.length > 0 ? raw.split(/\r?\n/) : [];
+  let changed = false;
+
+  const mapped = lines.map((line) => {
+    const trimmed = line.trim();
+    if (trimmed === legacyDir || trimmed === base) {
+      changed = true;
+      return line.replace(trimmed, ignoreGlob);
+    }
+    return line;
+  });
+
+  const hasIgnore = mapped.some((line) => line.trim() === ignoreGlob);
+  const hasNegation = mapped.some((line) => line.trim() === negation);
+
+  const out = [...mapped];
+  if (!hasIgnore || !hasNegation) {
+    changed = true;
+    if (out.length > 0 && out[out.length - 1] !== "") out.push("");
+    if (!hasIgnore) {
+      out.push("# RepoOS derived index cache");
+      out.push(ignoreGlob);
+    }
+    if (!hasNegation) {
+      out.push("# RepoOS canary flow-test counter (tracked)");
+      out.push(negation);
+    }
+  }
+
+  let content = out.join("\n");
+  if (content.length > 0 && !content.endsWith("\n")) content += "\n";
+  if (raw !== content) changed = true;
+  return { content, changed };
+}
+
 export function parseCanaryDigit(raw: string): number {
   const trimmed = raw.trim();
   if (trimmed.length !== 1 || !/[0-9]/.test(trimmed)) return 0;

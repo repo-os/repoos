@@ -1,8 +1,9 @@
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { RepoOSConfig } from "./types.js";
-import { commitFiles } from "./git.js";
-import { canaryGitignoreNegation, canaryRelPath, parseCanaryDigit } from "./canary.js";
+import { commitFiles, currentBranch, isGitRepo } from "./git.js";
+import { canaryRelPath, parseCanaryDigit, patchGitignoreForCanary } from "./canary.js";
 
 export function readCanaryCounter(root: string, cacheDir = ".repoos"): number {
   const abs = join(root, canaryRelPath(cacheDir));
@@ -14,16 +15,42 @@ export function readCanaryCounter(root: string, cacheDir = ".repoos"): number {
   }
 }
 
+function refExists(root: string, ref: string): boolean {
+  try {
+    execFileSync("git", ["show-ref", "--verify", "--quiet", ref], { cwd: root, stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function defaultBranchSync(root: string): string {
+  if (refExists(root, "refs/heads/main")) return "main";
+  if (refExists(root, "refs/heads/master")) return "master";
+  const head = currentBranch(root);
+  return head && head !== "HEAD" ? head : "main";
+}
+
 function ensureCanaryGitignore(root: string, cacheDir: string): string | null {
-  const negation = canaryGitignoreNegation(cacheDir);
   const giPath = join(root, ".gitignore");
-  const existing = existsSync(giPath) ? readFileSync(giPath, "utf8").split(/\r?\n/) : [];
-  if (existing.some((line) => line.trim() === negation)) return null;
-  const block =
-    (existsSync(giPath) && !readFileSync(giPath, "utf8").endsWith("\n") ? "\n" : "") +
-    `# RepoOS canary flow-test counter (tracked)\n${negation}\n`;
-  appendFileSync(giPath, block);
+  const raw = existsSync(giPath) ? readFileSync(giPath, "utf8") : "";
+  const { content, changed } = patchGitignoreForCanary(raw, cacheDir);
+  if (!changed) return null;
+  writeFileSync(giPath, content, "utf8");
   return giPath;
+}
+
+function isCanaryTracked(root: string, cacheDir: string): boolean {
+  const rel = canaryRelPath(cacheDir);
+  try {
+    const out = execFileSync("git", ["ls-files", "--", rel], {
+      cwd: root,
+      encoding: "utf8",
+    }).trim();
+    return out === rel;
+  } catch {
+    return false;
+  }
 }
 
 function writeCanaryFileIfMissing(root: string, cacheDir: string): string | null {
@@ -35,19 +62,54 @@ function writeCanaryFileIfMissing(root: string, cacheDir: string): string | null
   return abs;
 }
 
+/** On disk but still ignored/untracked — commit after gitignore is fixed. */
+function canaryFileNeedingCommit(root: string, cacheDir: string): string | null {
+  const rel = canaryRelPath(cacheDir);
+  const abs = join(root, rel);
+  if (!existsSync(abs) || isCanaryTracked(root, cacheDir)) return null;
+  return abs;
+}
+
 /**
  * Lazily scaffold the counter file (and gitignore exception) on first canary
  * run, then commit to main so the task worktree has the file (#0151).
  */
-export function ensureCanaryReadyForTask(config: RepoOSConfig): void {
+export function ensureCanaryReadyForTask(
+  config: RepoOSConfig,
+  onFailure?: (detail: string) => void,
+): boolean {
   const cacheDir = config.cacheDir ?? ".repoos";
-  const toCommit: string[] = [];
-  const gi = ensureCanaryGitignore(config.root, cacheDir);
-  if (gi) toCommit.push(gi);
-  const canary = writeCanaryFileIfMissing(config.root, cacheDir);
-  if (canary) toCommit.push(canary);
-  if (toCommit.length === 0) return;
-  commitFiles(config.root, toCommit, "chore: add RepoOS canary flow-test counter");
+  const root = config.root;
+  const fail = (detail: string) => {
+    onFailure?.(detail);
+    return false;
+  };
+
+  const gi = ensureCanaryGitignore(root, cacheDir);
+  const canary =
+    writeCanaryFileIfMissing(root, cacheDir) ?? canaryFileNeedingCommit(root, cacheDir);
+  if (!gi && !canary) return true;
+
+  if (!isGitRepo(root)) {
+    return fail("canary: not a git repository — cannot commit counter file to main");
+  }
+
+  const head = currentBranch(root);
+  const main = defaultBranchSync(root);
+  if (head && head !== main) {
+    return fail(
+      `canary: repo root is on branch "${head}", not "${main}" — commit the counter on ${main} before running the canary`,
+    );
+  }
+
+  const message = "chore: add RepoOS canary flow-test counter";
+  if (gi && !commitFiles(root, [gi], message)) {
+    return fail("canary: failed to commit .gitignore update for canary counter");
+  }
+  if (canary && !commitFiles(root, [canary], message)) {
+    return fail("canary: failed to commit canary counter file");
+  }
+  return true;
 }
 
 /**

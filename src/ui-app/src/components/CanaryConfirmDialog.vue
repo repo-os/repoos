@@ -10,6 +10,8 @@ import DialogTitle from "./ui/dialog/title.vue";
 defineProps<{
   open: boolean;
   busy?: boolean;
+  /** Repo-relative canary counter path (from `/api/health`). */
+  canaryPath?: string;
 }>();
 
 const emit = defineEmits<{
@@ -42,8 +44,9 @@ function onConfirm(): void {
           <code>draft → inbox → ready → active → review → merge → done</code>.
         </p>
         <p>
-          The only change is a <strong>one-line diff</strong> to <code>.repoos/canary.txt</code>:
-          increment the single digit by 1 (wrapping 9 → 0) — nothing else, no tests/comments, and
+          The only change is a <strong>one-line diff</strong> to
+          <code>{{ canaryPath ?? ".repoos/canary.txt" }}</code
+          >: increment the single digit by 1 (wrapping 9 → 0) — nothing else, no tests/comments, and
           the canary prompt itself stays untouched.
         </p>
       </div>
