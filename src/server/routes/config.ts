@@ -19,6 +19,7 @@ import {
 import { effectiveAreaVocabulary } from "../../core/areas.js";
 import { effectiveAreaNames, unresolvedAreaReport } from "../../core/areas.js";
 import type { RepoOSConfig } from "../../core/types.js";
+import type { Logger } from "../../core/logger.js";
 import { resolveRemoteHosts } from "../../core/remote-hosts.js";
 import { formatTomlError, validateToml } from "../../core/toml-validate.js";
 import { stripTomlComment } from "../../core/toml-line.js";
@@ -91,6 +92,59 @@ export function safeConfigForBrowser(config: Record<string, unknown>): Record<st
      */
     areaVocabulary: effectiveAreaVocabulary(config as Pick<RepoOSConfig, "areas" | "preview">),
   };
+}
+
+/**
+ * Advisory drift log (#0583/#0587): when a config reload changes the effective
+ * area vocabulary, log the tasks whose areas no longer resolve. Warning only —
+ * free text is always allowed, this is cleanup guidance, not a hard error.
+ *
+ * Called from BOTH config write paths: the curated Settings PATCH and the raw
+ * `repoos.toml` PUT (the escape-hatch editor, which is a direct file edit). A
+ * before/after name comparison is what gates it, so an unrelated save that
+ * leaves the vocabulary alone stays quiet.
+ */
+function logAreaVocabularyDrift(
+  repoos: { config: RepoOSConfig },
+  index: { getTasks?: () => readonly { id: string; area?: string; areas?: string[] }[] },
+  logger: Pick<Logger, "system">,
+  before: readonly string[],
+): void {
+  const after = effectiveAreaNames(repoos.config);
+  if (sameNames(before, after)) return;
+  if (typeof index.getTasks !== "function") return;
+  for (const u of unresolvedAreaReport(index.getTasks(), after)) {
+    logger.system(
+      "warn",
+      `area "${u.area}" no longer resolves to the declared vocabulary (#0583)`,
+      {
+        tasks: u.taskIds.join(", "),
+      },
+    );
+  }
+}
+
+/** Case-insensitive, order-insensitive equality for two name lists. */
+function sameNames(a: readonly string[], b: readonly string[]): boolean {
+  if (a.length !== b.length) return false;
+  const left = new Set(a.map((s) => s.trim().toLowerCase()));
+  return b.every((s) => left.has(s.trim().toLowerCase()));
+}
+
+/**
+ * Adopt a freshly loaded config in place. `Object.assign` alone cannot REMOVE a
+ * key, and BOTH vocabulary sources can vanish: clearing the declared list
+ * re-parses to `undefined` (`parseAreasConfig` returns undefined for zero usable
+ * rows) and deleting `[preview]` entirely omits `cfg.preview`. Left stale, the
+ * old key survives every write until a restart — serving the picker/PM prompt
+ * areas the file no longer declares, and (for the drift advisory) comparing a
+ * stale list to itself so clearing NEVER warns. Reconcile the removable
+ * vocabulary keys explicitly (#0587 review).
+ */
+function applyLoadedConfig(repoos: { config: RepoOSConfig }, fresh: RepoOSConfig): void {
+  Object.assign(repoos.config, fresh);
+  repoos.config.areas = fresh.areas;
+  repoos.config.preview = fresh.preview;
 }
 
 export const readConfig: RouteHandler = (ctx, _req, res) => {
@@ -545,29 +599,15 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     writeTunnelConfig(config.root, tunnel);
   }
 
-  Object.assign(repoos.config, loadConfig(config.root));
+  const vocabularyBefore = effectiveAreaNames(repoos.config);
+  applyLoadedConfig(repoos, loadConfig(config.root));
   ctx.remoteValidator?.applyConfig?.();
 
-  // Advisory drift warning (#0583): when the area SOURCES were just edited
-  // (declared `[areas]` or preview targets), surface tasks whose areas no
-  // longer sit in the effective vocabulary. Log warnings only — free text is
-  // always allowed, this is cleanup guidance, not a hard error.
-  const touchedAreaSources =
-    patch.areas !== undefined || Object.keys(patch).some((k) => k.startsWith("preview."));
-  if (
-    touchedAreaSources &&
-    typeof ctx.logger?.system === "function" &&
-    typeof index.getTasks === "function"
-  ) {
-    const unresolved = unresolvedAreaReport(index.getTasks(), effectiveAreaNames(repoos.config));
-    for (const u of unresolved) {
-      ctx.logger.system(
-        "warn",
-        `area "${u.area}" no longer resolves to the declared vocabulary (#0583)`,
-        { tasks: u.taskIds.join(", ") },
-      );
-    }
-  }
+  // Advisory drift warning (#0583/#0587): any config write that changes the
+  // effective area vocabulary is surfaced here. Comparing before/after makes
+  // it fire on a preview-target edit as well as an `areas` change, and keeps
+  // unrelated saves quiet.
+  logAreaVocabularyDrift(repoos, index, ctx.logger, vocabularyBefore);
 
   if (patch.workDir || patch.cacheDir || patch.taskExtensions) {
     index.refreshAll();
@@ -673,9 +713,15 @@ export const writeRawConfig: RouteHandler = async (ctx, req, res) => {
   // Apply immediately, exactly like a PATCH /api/config save: refresh the
   // in-memory config and reconcile the index (the raw file can change
   // workDir/cacheDir/taskExtensions, which a curated save would also refresh).
-  Object.assign(repoos.config, loadConfig(config.root));
+  const vocabularyBefore = effectiveAreaNames(repoos.config);
+  applyLoadedConfig(repoos, loadConfig(config.root));
   ctx.remoteValidator?.applyConfig?.();
   index.refreshAll();
+
+  // A raw edit is a direct repoos.toml edit, so it is exactly where an area
+  // vocabulary can shrink without the curated PATCH path noticing — run the
+  // same advisory drift log here (#0587).
+  logAreaVocabularyDrift(repoos, index, ctx.logger, vocabularyBefore);
 
   return json(res, 200, {
     ok: true,

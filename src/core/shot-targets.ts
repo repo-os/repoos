@@ -15,30 +15,26 @@
  * server and the UI tests can all share it.
  */
 import type { PreviewConfig, PreviewTargetConfig } from "./types.js";
+import { parseTaskAreas } from "./areas.js";
 
 /** Sentinel target name for the bare `[preview] command` (no `[[preview.targets]]`). */
 export const DEFAULT_PREVIEW_TARGET = "default";
 
 /**
- * Split a task's `area:` value into the individual areas it names. `area` is a
- * single free-text string, but real tasks already write `web + core + server`
- * or `docs, landing`; comparing the whole string against each target's `areas`
- * matches nothing for those. Splitting on `+` and `,` (trimmed, lowercased,
- * de-duplicated) is the shared rule for both preview routing and the mismatch
- * warning. An empty/whitespace area yields `[]`.
+ * Normalize a task's `area:` value into the individual areas it names, lowercased.
+ *
+ * The splitting itself is NOT re-implemented here: it delegates to the one
+ * canonical parser (`parseTaskAreas` in `areas.js`, #0583/#0587), so preview
+ * routing, the mismatch warning, the board, the drawer and the CLI all agree
+ * on what an area value means — including the legacy `server + ui-app`
+ * spelling, comma lists, and the list form. The old local `/[+,]/` splitter
+ * was a second, subtly different rule (it broke `c++`); it is gone.
+ *
+ * Lowercasing here keeps the existing case-insensitive comparison contract.
+ * An empty/absent area yields `[]`.
  */
 export function splitAreas(area: string | null | undefined): string[] {
-  if (typeof area !== "string") return [];
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const part of area.split(/[+,]/)) {
-    const a = part.trim().toLowerCase();
-    if (a && !seen.has(a)) {
-      seen.add(a);
-      out.push(a);
-    }
-  }
-  return out;
+  return parseTaskAreas(area).map((a) => a.toLowerCase());
 }
 
 /** True when any of `areas` (raw, possibly multi-value) names `target`. */

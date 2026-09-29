@@ -4,11 +4,13 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   REPOOS_AGENTS_SECTION_MARKER,
+  areaVocabularyTomlAddition,
   quoteBlock,
   repoOSAgentsSectionAddition,
   scaffoldInto,
   validateNamespace,
 } from "../../commands/init";
+import { loadConfig } from "../../core/config";
 import { parseTask } from "../../core/task";
 import { rmFixture } from "./helpers";
 
@@ -284,6 +286,32 @@ describe("scaffoldInto starter tasks", () => {
     } finally {
       process.exitCode = prevExitCode;
     }
+  });
+});
+
+describe("areaVocabularyTomlAddition — existing-repo areas prompt (#0587)", () => {
+  it("appends real [[areas]] rows an existing repoos.toml round-trips", () => {
+    const root = scratch();
+    const base = 'workDir = "work"\n';
+    writeFileSync(join(root, "repoos.toml"), base);
+    writeFileSync(
+      join(root, "repoos.toml"),
+      base + areaVocabularyTomlAddition(["web", "docs"], false),
+    );
+    expect(loadConfig(root).areas).toEqual([{ name: "web" }, { name: "docs" }]);
+  });
+
+  it("keeps the preview-target skeleton commented and references the areas", () => {
+    const addition = areaVocabularyTomlAddition(["landing"], true);
+    expect(addition).toContain("[[areas]]");
+    expect(addition).toContain("# [[preview.targets]]");
+    expect(addition).toContain('# areas = ["landing"]');
+    // Real (uncommented) preview rows would route previews the repo has not set up.
+    expect(addition).not.toMatch(/^\[\[preview\.targets\]\]/m);
+  });
+
+  it("is empty when there are no areas to add, so nothing is appended", () => {
+    expect(areaVocabularyTomlAddition([], true)).toBe("");
   });
 });
 

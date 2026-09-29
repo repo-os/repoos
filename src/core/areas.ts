@@ -115,7 +115,8 @@ interface AreaEntryLike {
 }
 
 /** Read one raw entry defensively — strings and `{name}` rows both work. */
-function entryOf(raw: AreaEntryLike): AreaEntry | null {
+function entryOf(raw: AreaEntryLike | null | undefined): AreaEntry | null {
+  if (raw == null) return null;
   const name = typeof raw === "string" ? raw : typeof raw.name === "string" ? raw.name.trim() : "";
   if (!name) return null;
   const description =
@@ -156,6 +157,26 @@ export function effectiveAreaVocabulary(
 /** Just the names of the effective vocabulary, for prompts/CLI. */
 export function effectiveAreaNames(config: Pick<RepoOSConfig, "areas" | "preview">): string[] {
   return effectiveAreaVocabulary(config).map((e) => e.name);
+}
+
+/**
+ * The area a brand-new task opens with (#0587): the FIRST name in the
+ * effective vocabulary — `[areas]` declaration order, then preview targets —
+ * or `""` when the repo declares none. Callers pass the vocabulary as it
+ * reaches the browser (`areaVocabulary`: `{name}` rows) or raw strings.
+ *
+ * A hard-coded default (`"web"`) is wrong for any repo that does not declare
+ * it: New task would pre-select an unregistered area and offer to "add web",
+ * so a repo offering only `landing`/`docs` starts every task on the wrong
+ * foot. Returning `""` is the honest fallback — the picker becomes free text,
+ * exactly as it does with no vocabulary at all.
+ */
+export function defaultTaskArea(vocabulary: readonly unknown[] | undefined): string {
+  for (const raw of vocabulary ?? []) {
+    const entry = entryOf(raw as AreaEntryLike);
+    if (entry) return entry.name;
+  }
+  return "";
 }
 
 /** One unresolved-area finding: the unknown value and the tasks carrying it. */
