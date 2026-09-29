@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p2
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-29T11:44:56Z"
-updated_at: "2026-09-29T11:44:56Z"
+updated_at: "2026-09-29T16:46:52Z"
 ---
 ## Problem
 
@@ -61,3 +62,4 @@ Committing, stashing, or switching branches from the popup (read-only for now); 
 ## Activity
 
 - 2026-09-29T11:44:56Z · created · unknown
+- 2026-09-29T16:46:52Z · model_override
