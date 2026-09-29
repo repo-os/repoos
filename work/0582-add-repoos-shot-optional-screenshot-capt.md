@@ -2,14 +2,14 @@
 id: "0582"
 title: "Add repoos shot: optional screenshot capture of a task preview"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: cli
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-29T11:13:18Z"
-updated_at: "2026-09-29T11:24:34Z"
+updated_at: "2026-09-29T11:35:02Z"
 ---
 ## Problem
 
@@ -77,3 +77,4 @@ Visual-regression baselines, image diffing, per-component harnesses, any hosted 
 
 - 2026-09-29T11:13:18Z · created · unknown
 - 2026-09-29T11:24:34Z · body
+- 2026-09-29T11:35:02Z · status inbox→ready
