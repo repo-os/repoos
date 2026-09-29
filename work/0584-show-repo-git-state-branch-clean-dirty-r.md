@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 model_override: opencode-go/mimo-v2.6-flash
+review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-29T11:44:56Z"
-updated_at: "2026-09-29T16:46:52Z"
+updated_at: "2026-09-29T16:46:58Z"
 ---
 ## Problem
 
@@ -63,3 +64,4 @@ Committing, stashing, or switching branches from the popup (read-only for now); 
 
 - 2026-09-29T11:44:56Z · created · unknown
 - 2026-09-29T16:46:52Z · model_override
+- 2026-09-29T16:46:58Z · review_model_override
