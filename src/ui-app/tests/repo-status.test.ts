@@ -21,8 +21,10 @@ import {
   GitDirtyCheckError,
   commitTaskFile,
   dirtyFilesDetailed,
+  ensureHotfix,
   mergeBranch,
   parsePorcelainStatus,
+  resetHotfix,
 } from "../../core/git.js";
 import { onGitMutation } from "../../core/git-activity.js";
 import {
@@ -138,6 +140,28 @@ describe("computeRepoStatus", () => {
         { path: "untracked.txt", status: "??" },
       ]),
     );
+  });
+
+  it("names the branch of a fresh repo with no commits instead of going unknown", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-repo-status-fresh-"));
+    roots.push(root);
+    git(root, ["init", "-q"]);
+    git(root, ["config", "user.email", "t@example.com"]);
+    git(root, ["config", "user.name", "Test"]);
+    const unborn = git(root, ["symbolic-ref", "--short", "HEAD"]);
+
+    const status = await computeRepoStatus(root);
+
+    // `rev-parse HEAD` fails until the first commit, but the checkout is
+    // perfectly readable — branch and dirtiness must still be reported.
+    expect(status.ok).toBe(true);
+    expect(status.branch).toBe(unborn);
+    expect(status.detached).toBe(false);
+    expect(status.head).toBeNull();
+    expect(status.dirty).toEqual([]);
+    expect(status.recentCommits).toEqual([]);
+    // …and it must not warn about being off a base branch it cannot resolve.
+    expect(status.baseBranch).toBe(unborn);
   });
 
   it("flags a detached HEAD instead of pretending it is on a branch", async () => {
@@ -313,6 +337,26 @@ describe("RepoOS-initiated mutations (#0584 trigger 2)", () => {
       const res = await mergeBranch(root, "feat/merge-me");
       expect(res.merged).toBe(true);
       expect(seen).toContain("merge");
+    } finally {
+      off();
+    }
+  });
+
+  it("a RepoOS checkout of the root announces itself", () => {
+    const root = repo();
+    // `resetHotfix` returns to `main` by name — pin it rather than depending
+    // on this machine's `init.defaultBranch`.
+    git(root, ["branch", "-m", "main"]);
+    const seen: string[] = [];
+    const off = onGitMutation((_root, kind) => seen.push(kind));
+    try {
+      expect(ensureHotfix(root, "hotfix/sidebar", "branch").ok).toBe(true);
+      expect(seen).toContain("checkout");
+
+      seen.length = 0;
+      expect(resetHotfix(root, "hotfix/sidebar")).toBe(true);
+      expect(seen).toEqual(["checkout"]);
+      expect(git(root, ["branch", "--show-current"])).toBe("main");
     } finally {
       off();
     }

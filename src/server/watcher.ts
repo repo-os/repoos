@@ -111,6 +111,11 @@ export class WorkWatcher {
    * Missing files are skipped (a fresh repo has no `logs/HEAD` yet), and a
    * non-`.git` directory root is resolved from a `gitdir:` pointer file so a
    * linked worktree still reports its own state.
+   *
+   * Re-signalling from our own `git status` rewriting the index is bounded,
+   * not a loop: git rewrites the index only when the stat cache actually
+   * changed — which is the change that triggered the recompute in the first
+   * place — so the follow-up pass finds nothing new and stays quiet.
    */
   private watchGitState(): void {
     const dotGit = join(this.config.root, ".git");

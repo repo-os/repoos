@@ -97,11 +97,31 @@ beforeEach(() => {
   mockFetch();
 });
 
+/** jsdom ships no `matchMedia`, so `canHover()` is false by default — make the
+ *  capability explicit in the tests that care about it. */
+function setHoverCapability(matches: boolean): void {
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    writable: true,
+    value: (query: string) => ({
+      matches,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }),
+  });
+}
+
 afterEach(() => {
   // Unmount first: the popover is teleported to <body>, and tearing the node
   // down by hand would leave Vue patching a detached parent.
   row?.unmount();
   row = null;
+  Reflect.deleteProperty(window, "matchMedia");
   vi.unstubAllGlobals();
   vi.useRealTimers();
 });
@@ -277,32 +297,69 @@ describe("sidebar git-state popover (#0584)", () => {
     expect(note?.textContent).toMatch(/never as clean/i);
   });
 
-  it("closes on Escape", async () => {
+  it("closes on Escape and puts focus back on the icon without reopening", async () => {
     const repo = useRepoStore();
     repo.gitStatus = status();
     const wrapper = await mountRow();
+    const info = wrapper.find(".side-git-info");
 
-    await wrapper.find(".side-git-info").trigger("click");
+    // Open on the keyboard path so focus is inside the popover when it closes.
+    (info.element as HTMLButtonElement).focus();
     await flushPromises();
-    expect(document.querySelector(".side-git-pop")).not.toBeNull();
+    const pop = document.querySelector(".side-git-pop");
+    expect(pop).not.toBeNull();
+    expect(document.activeElement).toBe(pop);
 
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     await flushPromises();
     expect(document.querySelector(".side-git-pop")).toBeNull();
+    expect(document.activeElement).toBe(info.element);
+
+    // The focus the component put back on the icon must not read as the user
+    // focusing it again — otherwise Escape would close and instantly reopen.
+    await new Promise((r) => setTimeout(r, 300));
+    expect(document.querySelector(".side-git-pop")).toBeNull();
   });
 
-  it("opens on hover", async () => {
+  it("opens on hover and closes when the pointer leaves", async () => {
+    setHoverCapability(true);
     const repo = useRepoStore();
     repo.gitStatus = status();
     const wrapper = await mountRow();
 
     await wrapper.find(".side-git-info").trigger("mouseenter");
     await flushPromises();
+    expect(document.querySelector(".side-git-pop")).not.toBeNull();
 
+    await wrapper.find(".side-git-info").trigger("mouseleave");
+    await new Promise((r) => setTimeout(r, 300));
+    expect(document.querySelector(".side-git-pop")).toBeNull();
+  });
+
+  it("opens from a tap on a no-hover device and stays open", async () => {
+    // The compatibility mouse events a tap dispatches run BEFORE its click.
+    // If hover were an opener here, the tap would open on mouseenter and then
+    // toggle shut on click — the popover would never stay up on touch.
+    setHoverCapability(false);
+    const repo = useRepoStore();
+    repo.gitStatus = status();
+    const wrapper = await mountRow();
+    const info = wrapper.find(".side-git-info");
+
+    await info.trigger("mouseenter");
+    await flushPromises();
+    expect(document.querySelector(".side-git-pop")).toBeNull();
+
+    await info.trigger("click");
+    await flushPromises();
+    expect(document.querySelector(".side-git-pop")).not.toBeNull();
+
+    await info.trigger("mouseleave");
+    await new Promise((r) => setTimeout(r, 300));
     expect(document.querySelector(".side-git-pop")).not.toBeNull();
   });
 
-  it("opens on keyboard focus", async () => {
+  it("opens on keyboard focus and takes focus with it", async () => {
     const repo = useRepoStore();
     repo.gitStatus = status();
     const wrapper = await mountRow();
@@ -311,7 +368,13 @@ describe("sidebar git-state popover (#0584)", () => {
     (wrapper.find(".side-git-info").element as HTMLButtonElement).focus();
     await flushPromises();
 
-    expect(document.querySelector(".side-git-pop")).not.toBeNull();
+    const pop = document.querySelector(".side-git-pop");
+    expect(pop).not.toBeNull();
+    // Teleported to <body>: without moving focus here, tabbing from the icon
+    // would skip straight past the popover.
+    expect(document.activeElement).toBe(pop);
+    expect(wrapper.find(".side-git-info").attributes("aria-controls")).toBe("side-git-pop");
+    expect(wrapper.find(".side-git-info").attributes("aria-expanded")).toBe("true");
   });
 
   it("does not let a pointer press and its focus close what the click opens", async () => {
