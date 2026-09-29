@@ -5,11 +5,12 @@ type: bug
 status: inbox
 priority: p2
 area: [web, core]
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
 created_at: "2026-09-29T20:19:16Z"
-updated_at: "2026-09-29T20:19:16Z"
+updated_at: "2026-09-29T20:19:52Z"
 ---
 ## Problem
 
@@ -40,3 +41,4 @@ The canary smoke test (draft → inbox → ready → active → review → merge
 ## Activity
 
 - 2026-09-29T20:19:16Z · created · unknown
+- 2026-09-29T20:19:52Z · cli_override
