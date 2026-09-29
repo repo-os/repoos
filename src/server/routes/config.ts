@@ -131,6 +131,22 @@ function sameNames(a: readonly string[], b: readonly string[]): boolean {
   return b.every((s) => left.has(s.trim().toLowerCase()));
 }
 
+/**
+ * Adopt a freshly loaded config in place. `Object.assign` alone cannot REMOVE a
+ * key, and BOTH vocabulary sources can vanish: clearing the declared list
+ * re-parses to `undefined` (`parseAreasConfig` returns undefined for zero usable
+ * rows) and deleting `[preview]` entirely omits `cfg.preview`. Left stale, the
+ * old key survives every write until a restart — serving the picker/PM prompt
+ * areas the file no longer declares, and (for the drift advisory) comparing a
+ * stale list to itself so clearing NEVER warns. Reconcile the removable
+ * vocabulary keys explicitly (#0587 review).
+ */
+function applyLoadedConfig(repoos: { config: RepoOSConfig }, fresh: RepoOSConfig): void {
+  Object.assign(repoos.config, fresh);
+  repoos.config.areas = fresh.areas;
+  repoos.config.preview = fresh.preview;
+}
+
 export const readConfig: RouteHandler = (ctx, _req, res) => {
   const { repoos } = ctx;
   const agents = agentsForConfig(repoos.config);
@@ -584,7 +600,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
   }
 
   const vocabularyBefore = effectiveAreaNames(repoos.config);
-  Object.assign(repoos.config, loadConfig(config.root));
+  applyLoadedConfig(repoos, loadConfig(config.root));
   ctx.remoteValidator?.applyConfig?.();
 
   // Advisory drift warning (#0583/#0587): any config write that changes the
@@ -698,7 +714,7 @@ export const writeRawConfig: RouteHandler = async (ctx, req, res) => {
   // in-memory config and reconcile the index (the raw file can change
   // workDir/cacheDir/taskExtensions, which a curated save would also refresh).
   const vocabularyBefore = effectiveAreaNames(repoos.config);
-  Object.assign(repoos.config, loadConfig(config.root));
+  applyLoadedConfig(repoos, loadConfig(config.root));
   ctx.remoteValidator?.applyConfig?.();
   index.refreshAll();
 

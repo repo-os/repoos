@@ -226,28 +226,39 @@ export function runAreaMigrationPass(
   let retried = false;
 
   const pending = readAreaMigrationPending(config);
+  let pendingFailed = false;
   if (pending.length > 0) {
     retried = true;
-    if (commit(pending.map((p) => join(config.root, p)))) {
-      clearAreaMigrationPending(config);
-    } else {
+    if (!commit(pending.map((p) => join(config.root, p)))) {
       committed = false;
+      pendingFailed = true;
     }
   }
 
   const result = migrateTaskAreas(config);
+  let freshFailed = false;
   if (result.rewrittenAbsPaths.length > 0) {
-    if (commit(result.rewrittenAbsPaths)) {
-      clearAreaMigrationPending(config);
-    } else {
+    if (!commit(result.rewrittenAbsPaths)) {
       committed = false;
-      // Union with the paths still pending from a failed retry above: a second
-      // failed commit must not replace the marker and lose the earlier paths.
+      freshFailed = true;
+    }
+  }
+
+  if (!committed) {
+    // Record the paths still owing a commit. Only a FAILED fresh commit needs a
+    // marker written; a failed retry keeps the existing marker. Union the two so
+    // a fresh failure never drops the paths already pending from the retry.
+    if (freshFailed) {
       writeAreaMigrationPending(config, [
-        ...pending.map((p) => join(config.root, p)),
+        ...(pendingFailed ? pending.map((p) => join(config.root, p)) : []),
         ...result.rewrittenAbsPaths,
       ]);
     }
+  } else {
+    // Every commit that was attempted landed — including a pending retry — so
+    // the marker (if any) is fully resolved and safe to clear. Clearing it when
+    // only the fresh commit succeeded would strand the retry's dirty files.
+    clearAreaMigrationPending(config);
   }
 
   return {

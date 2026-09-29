@@ -1363,13 +1363,45 @@ const areaOptions = computed<{ name: string; description?: string }[]>(() => {
     .filter((e): e is { name: string; description?: string } => e !== null);
 });
 
+/**
+ * Whether the user has edited the New task area for the current open (#0587).
+ * The default is applied when the drawer opens, but `/api/config` may not have
+ * landed yet at that point; once the vocabulary arrives we fill a still-empty,
+ * untouched field — and never override a deliberate choice, including clearing.
+ */
+const ntAreaTouched = ref(false);
+
 /** List view of the New task form's comma-joined area field. */
 const ntAreaList = computed<string[]>({
   get: () => parseTaskAreas(ui.nt.area),
   set: (v) => {
+    ntAreaTouched.value = true;
     ui.nt.area = v.length ? formatTaskAreas(v) : "";
   },
 });
+
+// A new open starts untouched, so the late-arriving default can apply.
+watch(
+  () => ui.isNew,
+  (open) => {
+    if (open) ntAreaTouched.value = false;
+  },
+);
+
+/**
+ * Backfill the New task default once the vocabulary lands (#0587): opening the
+ * drawer before `/api/config` resolves would otherwise leave the field empty
+ * for a repo that does declare areas.
+ */
+watch(
+  () => [ui.isNew, areaOptions.value.map((o) => o.name).join("\n")] as const,
+  () => {
+    if (!ui.isNew || ntAreaTouched.value || ui.nt.area) return;
+    const first = areaOptions.value[0]?.name;
+    if (first) ui.nt.area = first;
+  },
+  { immediate: true },
+);
 
 /** List view of the edit draft's comma-joined area field. */
 const draftAreaList = computed<string[]>({

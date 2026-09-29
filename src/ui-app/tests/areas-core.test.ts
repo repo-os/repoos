@@ -159,6 +159,8 @@ describe("defaultTaskArea — the New task default (#0587)", () => {
     expect(defaultTaskArea(undefined)).toBe("");
     // Half-normalized rows (blank names) are skipped, not selected.
     expect(defaultTaskArea([{ name: "  " }, { name: "docs" }])).toBe("docs");
+    // A malformed `null`/non-string entry never throws.
+    expect(defaultTaskArea([null, 7, "core"])).toBe("core");
   });
 });
 
