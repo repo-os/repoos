@@ -9,7 +9,8 @@ assigned_to: ai
 created_by: ""
 branch: feat/make-repoos-toml-paths-authoritative-so-
 created_at: "2026-09-29T18:59:05Z"
-updated_at: "2026-09-29T19:19:52Z"
+updated_at: "2026-09-29T19:27:40Z"
+handoff_signal_retry_count: 1
 ---
 ## Problem
 
@@ -36,3 +37,4 @@ In a fresh `repoos init` (default `repoos/` namespace), a user dropped project c
 - 2026-09-29T18:59:05Z · created · unknown
 - 2026-09-29T19:19:50Z · status inbox→ready
 - 2026-09-29T19:19:52Z · status ready→active, branch
+- 2026-09-29T19:27:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
