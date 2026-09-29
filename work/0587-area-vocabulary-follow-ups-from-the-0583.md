@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-29T21:56:43Z"
+review_passes: 2
 id: "0587"
 title: "Area vocabulary follow-ups from the #0583 review"
 type: chore
@@ -10,9 +12,7 @@ created_by: ""
 branch: feat/area-vocabulary-follow-ups-from-the-0583
 review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-29T19:27:29Z"
-updated_at: "2026-09-29T21:42:59Z"
 review_rounds: 1
-review_passes: 1
 ---
 ## Context
 
@@ -42,3 +42,4 @@ Follow-ups from the #0583 (area vocabulary) review, deliberately left out of tha
 - 2026-09-29T21:18:49Z · status active→review
 - 2026-09-29T21:30:35Z · status review→active
 - 2026-09-29T21:42:59Z · status active→review
+
