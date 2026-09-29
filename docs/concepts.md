@@ -136,8 +136,10 @@ before doing anything. (Rationale: ADR-0003.)
 
 ## `repoos init` vs the template
 
-`repoos init` scaffolds a repo for RepoOS (creates `work/`, `docs/`, `AGENTS.md`,
-`repoos.toml`). The `AGENTS.md` it writes comes from a **template** — a string
+`repoos init` scaffolds a repo for RepoOS: `repoos/work/` and `repoos/docs/`
+under the default `repoos/` namespace (or `work/` and `docs/` at the root in the
+root layout), plus `AGENTS.md` and `repoos.toml`, which records the chosen
+`workDir`/`docsDir`. The `AGENTS.md` it writes comes from a **template** — a string
 in `src/commands/init.ts`. That template is *not* this repo's own `AGENTS.md`;
 editing it changes what every future `repoos init` produces. Don't confuse the two.
 

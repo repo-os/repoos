@@ -244,6 +244,12 @@ All paths are relative to the repo root. `repoos.toml` and `AGENTS.md` always
 stay at the root regardless of how these are set. Changing `workDir`,
 `cacheDir`, or `taskExtensions` triggers an index refresh.
 
+These configured paths are **authoritative**: RepoOS and the agents it runs read
+the board and project docs from exactly these directories. If another tool or a
+set of project docs assumes a different layout, change `repoos.toml` (or
+reconcile the docs) — never move the directories so the config no longer matches
+where your content lives.
+
 ## Board behavior
 
 ```toml
