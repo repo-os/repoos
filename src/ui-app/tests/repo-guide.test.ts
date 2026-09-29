@@ -3,7 +3,12 @@ import { createApp, nextTick, type App } from "vue";
 import { createPinia } from "pinia";
 import type { Agent, RepoOSConfig } from "../../core/types";
 import { agentsForConfig, DEFAULT_AGENTS } from "../../core/config";
-import { repoGuidePrompt, resolveRepoGuide, taskPmPrompt } from "../../server/agents";
+import {
+  repoGuidePrompt,
+  resolveRepoGuide,
+  storyPmPrompt,
+  taskPmPrompt,
+} from "../../server/agents";
 import RepoGuideChat from "../src/components/RepoGuideChat.vue";
 
 const config = (agents: Agent[]): RepoOSConfig => ({
@@ -75,6 +80,31 @@ describe("Ross (Repository Assistant)", () => {
     expect(prompt).toContain("RepoOS CLI commands");
     expect(prompt).toContain("Never call the RepoOS HTTP API directly");
     expect(prompt).not.toContain("You are Ross");
+  });
+
+  it("tells the task PM that repoos.toml paths are authoritative (#0586)", () => {
+    const pm = DEFAULT_AGENTS.find((agent) => agent.name === "pm")!;
+    const prompt = taskPmPrompt(
+      "Check the directory structure and fix it if it's not right",
+      "Task #0586: Layout",
+      pm,
+    );
+
+    expect(prompt).toMatch(/repoos\.toml\b/);
+    expect(prompt).toMatch(/authoritative/i);
+    expect(prompt).toMatch(/never move/i);
+    // The "check/fix the layout" request must resolve to reporting or an
+    // approved config change, not a directory move.
+    expect(prompt).toMatch(/human approval/i);
+  });
+
+  it("gives the story PM the same config-owned-layout rule (#0586)", () => {
+    const pm = DEFAULT_AGENTS.find((agent) => agent.name === "pm")!;
+    const prompt = storyPmPrompt("Check the layout", "Story: Example", pm);
+
+    expect(prompt).toMatch(/repoos\.toml\b/);
+    expect(prompt).toMatch(/authoritative/i);
+    expect(prompt).toMatch(/never move/i);
   });
 });
 
