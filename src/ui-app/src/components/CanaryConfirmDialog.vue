@@ -42,9 +42,9 @@ function onConfirm(): void {
           <code>draft → inbox → ready → active → review → merge → done</code>.
         </p>
         <p>
-          The only change is a <strong>one-line diff</strong> to <code>src/core/canary.ts</code>:
-          increment <code>CANARY_COUNTER</code> by 1 (wrapping 9 → 0) — nothing else, no
-          tests/comments, and <code>CANARY_PROMPT</code> itself stays untouched.
+          The only change is a <strong>one-line diff</strong> to <code>.repoos/canary.txt</code>:
+          increment the single digit by 1 (wrapping 9 → 0) — nothing else, no tests/comments, and
+          the canary prompt itself stays untouched.
         </p>
       </div>
       <div class="cc-modal-actions">

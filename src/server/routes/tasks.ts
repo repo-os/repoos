@@ -51,6 +51,8 @@ import {
   answeringQuestionsMatchTask,
   wrapPmMessageWithQuestionContext,
 } from "../../core/pm-question-context.js";
+import { buildCanaryPrompt, canaryRelPath, isCanaryTaskExplanation } from "../../core/canary.js";
+import { ensureCanaryReadyForTask } from "../../core/canary-repo.js";
 import { listInputs } from "../../core/input.js";
 import {
   commitTaskFile,
@@ -356,9 +358,13 @@ export const getFreeformRun: RouteHandler = (ctx, _req, res, params) => {
 export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
   const { config, repoos, index, logger, emitEvent } = ctx;
   const body = (await readBody(req)) as Record<string, unknown>;
-  const explanation = typeof body?.explanation === "string" ? body.explanation.trim() : "";
+  let explanation = typeof body?.explanation === "string" ? body.explanation.trim() : "";
   if (!explanation) {
     return json(res, 400, { error: "explanation is required" });
+  }
+  if (isCanaryTaskExplanation(explanation)) {
+    ensureCanaryReadyForTask(config);
+    explanation = buildCanaryPrompt(canaryRelPath(config.cacheDir));
   }
   const runId = typeof body?.runId === "string" && body.runId ? body.runId : null;
   // #0382: when a freeform task is created from a resolved input, carry the

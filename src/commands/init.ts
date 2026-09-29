@@ -24,6 +24,8 @@ import { createServer } from "node:net";
 import { join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
+import { canaryGitignoreIgnore, canaryGitignoreNegation, canaryRelPath } from "../core/canary.js";
+import { scaffoldCanaryFile } from "../core/canary-repo.js";
 import { deriveServePort, findRepoRoot, loadConfig } from "../core/config.js";
 import { CHECK_PLAN_PROPOSAL_FILE, proposeCheckPlan } from "../core/check-plan-proposal.js";
 import { formatPlanToml } from "../core/check-plan.js";
@@ -573,11 +575,18 @@ export function scaffoldInto(
     );
   }
   ensureFile(".env.example", ENV_EXAMPLE);
+  if (scaffoldCanaryFile(root, config.cacheDir)) {
+    created.push(canaryRelPath(config.cacheDir));
+  }
 
   // gitignore the derived cache and local secrets
   const giPath = join(root, ".gitignore");
   const ignoreLines = [
-    { comment: "# RepoOS derived index cache", line: `${config.cacheDir}/` },
+    { comment: "# RepoOS derived index cache", line: canaryGitignoreIgnore(config.cacheDir) },
+    {
+      comment: "# RepoOS canary flow-test counter (tracked)",
+      line: canaryGitignoreNegation(config.cacheDir),
+    },
     { comment: "# Local secrets — see .env.example", line: ".env" },
   ];
   const existingLines = existsSync(giPath) ? readFileSync(giPath, "utf8").split(/\r?\n/) : [];

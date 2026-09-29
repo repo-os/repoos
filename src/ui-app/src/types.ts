@@ -218,7 +218,7 @@ export interface Health {
   copyInspectorAvailable?: boolean;
   /** True when this server is a preview instance serving a specific task's worktree. */
   isPreviewBuild: boolean;
-  /** Canary flow-test counter (0-9) — see src/core/canary.ts. */
+  /** Canary flow-test counter (0-9) — from `.repoos/canary.txt` in the managed repo. */
   canaryCounter: number;
 }
 
