@@ -251,6 +251,12 @@ All paths are relative to the repo root. `repoos.toml` and `AGENTS.md` always
 stay at the root regardless of how these are set. Changing `workDir`,
 `cacheDir`, or `taskExtensions` triggers an index refresh.
 
+These configured paths are **authoritative**: RepoOS and the agents it runs read
+the board and project docs from exactly these directories. If another tool or a
+set of project docs assumes a different layout, change `repoos.toml` (or
+reconcile the docs) — never move the directories so the config no longer matches
+where your content lives.
+
 ## Board behavior
 
 ```toml
@@ -439,6 +445,7 @@ readyTimeoutMs = 10000
 [[preview.targets]]
 name = "Landing page"
 areas = ["landing", "web"]
+paths = ["landing/**"]
 command = "bun run dev --port {port}"
 cwd = "landing"
 ```
@@ -454,6 +461,7 @@ when a task is in `active` or `review`.
 | `preview.readyTimeoutMs` | number | `10000` | yes | How long to wait for the default command to answer before giving up. Raise it for a command that also builds first. |
 | `preview.targets[].name` | string | derived from `areas` | yes | Human label for diagnostics and the preview picker. |
 | `preview.targets[].areas` | array of strings | `[]` | yes | Task `area:` values this target serves, matched case-insensitively. |
+| `preview.targets[].paths` | array of strings | `[]` | yes | Repo-relative globs (see below). A changed file matching any glob selects this target for `repoos shot`, independent of the task's `area`. |
 | `preview.targets[].command` | string | required | yes | Command that boots the target. Rows without one are dropped. |
 | `preview.targets[].cwd` | string | worktree root | yes | Subdirectory of the worktree to run the command in. |
 | `preview.targets[].readyPath` | string | `/` | yes | Per-target readiness path (`ready_path` is also accepted). |
@@ -465,6 +473,21 @@ hardcode a port in a preview command. A task with no usable preview
 configuration gets an actionable "no preview configured" message rather than
 booting a random app. Previews are one-at-a-time and a new request evicts the
 previous preview.
+
+`preview.targets[].paths` drives `repoos shot`, which picks the target to
+screenshot from the task's changed files rather than its up-front `area:`. A
+glob uses `*` within one path segment, `**` across segments (including none),
+and `?` for one non-slash character — `landing/**` matches every changed file
+under `landing/`. When no target's globs match, `repoos shot` falls back to the
+area match (then the default command); `--target` overrides either way.
+
+> **`[[preview.targets]]` is deliberately TOML-only.** The Settings UI is built
+> on a flat `key = value` schema, which cannot express a per-row sub-field of an
+> array of tables; there is no control for `name`, `areas`, `command`, or `paths`
+> today. Editing targets in `repoos.toml` is the supported path, and
+> `repoos shot`'s area/target mismatch warning is what makes a stale `area:`
+> visible. This is the documented exception to the "every feature setting needs
+> a Settings control" rule, not an oversight.
 
 ### Preview-only overrides
 

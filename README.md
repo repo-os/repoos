@@ -96,7 +96,7 @@ install, `repoos upgrade` prints the matching package-manager command instead.
 Then in any repo:
 
 ```bash
-repoos init        # scaffold work/, docs/, repoos.toml, AGENTS.md (idempotent)
+repoos init        # scaffold repoos/work/, repoos/docs/, repoos.toml, AGENTS.md (idempotent)
 ```
 
 Zero config required. `repoos init` walks up to find your repo root, creates the

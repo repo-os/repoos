@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-09-29T19:28:00Z"
-review_passes: 1
+updated_at: "2026-09-29T18:29:41Z"
+review_passes: 2
 id: "0584"
 title: "Show repo git state (branch, clean/dirty, recent commits) in the sidebar"
 type: feature
@@ -13,6 +13,7 @@ branch: feat/show-repo-git-state-branch-clean-dirty-r
 model_override: opencode-go/mimo-v2.6-flash
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-29T11:44:56Z"
+review_rounds: 1
 ---
 ## Problem
 
@@ -68,7 +69,7 @@ Committing, stashing, or switching branches from the popup (read-only for now); 
 - 2026-09-29T16:46:58Z · review_model_override
 - 2026-09-29T16:46:59Z · status inbox→ready
 - 2026-09-29T16:47:00Z · status ready→active, branch
-- 2026-09-29T19:18:46Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
-- 2026-09-29T19:18:46Z · status review→active
-- 2026-09-29T19:23:21Z · status active→review
+- 2026-09-29T17:59:49Z · status active→review
+- 2026-09-29T18:05:13Z · status review→active
+- 2026-09-29T18:26:11Z · status active→review
 

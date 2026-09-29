@@ -47,6 +47,10 @@ export const DESIGN_THEMES: DesignTheme[] = [
   // control switches between them and `repoos check` checks both. See the
   // catppuccin block in style.css for why the two differ in more than hue.
   { id: "catppuccin", label: "Catppuccin" },
+  // Hypercolor is Charm/Crush-flavoured: neon ink on tape-black, an animated
+  // gradient wordmark, and a faint scanline. Dark is the intended appearance;
+  // light is the daylight variant the theme-contrast guard also checks.
+  { id: "hypercolor", label: "Hypercolor" },
 ];
 
 /** How many themes a user may star as favorites (#0255). */
@@ -229,9 +233,10 @@ export const useConfigStore = defineStore("config", () => {
   }
 
   /**
-   * Star/unstar a design theme (#0255). Un-starring always succeeds; starring
-   * is capped at MAX_FAVORITE_THEMES — the extra star is rejected with inline
-   * feedback and nothing is silently dropped. Never touches the applied
+   * Star/unstar a design theme (#0255). Un-starring always succeeds. Starring
+   * past MAX_FAVORITE_THEMES drops the oldest star to make room, so a fourth
+   * pick never leaves the user hunting the list for the star to remove; the cap
+   * and the theme that gave way are reported inline. Never touches the applied
    * uiTheme. Returns whether the toggle happened.
    */
   function toggleThemeFavorite(id: string): boolean {
@@ -242,8 +247,17 @@ export const useConfigStore = defineStore("config", () => {
       favoriteThemes.value.splice(idx, 1);
     } else {
       if (favoriteThemes.value.length >= MAX_FAVORITE_THEMES) {
-        themeFavoritesNotice.value = "Up to 3 favorites";
-        return false;
+        // The array is in star order, so index 0 is the oldest pick: dropping
+        // from the front keeps the most recent choices. Trim to one under the
+        // cap rather than assuming exactly one slot is needed.
+        const [dropped] = favoriteThemes.value.splice(
+          0,
+          favoriteThemes.value.length - MAX_FAVORITE_THEMES + 1,
+        );
+        const label = DESIGN_THEMES.find((t) => t.id === dropped)?.label;
+        themeFavoritesNotice.value = label
+          ? `Up to ${MAX_FAVORITE_THEMES} favorites (dropped ${label})`
+          : `Up to ${MAX_FAVORITE_THEMES} favorites`;
       }
       favoriteThemes.value.push(id);
     }
