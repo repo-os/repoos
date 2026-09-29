@@ -1183,7 +1183,7 @@ a.rel-channel-name:hover {
 }
 .rel-channel-state[data-state="unavailable"],
 .rel-channel-state[data-state="unverified"] {
-  color: var(--txt-dim);
+  color: var(--btn-new-color);
   background: var(--btn-new-bg);
   border-color: var(--border);
 }
@@ -1231,7 +1231,7 @@ a.rel-channel-name:hover {
   gap: 5px;
   border: 1px solid var(--border);
   background: var(--btn-new-bg);
-  color: var(--txt-dim);
+  color: var(--btn-new-color);
   border-radius: 7px;
   padding: 5px 9px;
   font-size: 11px;
@@ -1239,7 +1239,7 @@ a.rel-channel-name:hover {
 }
 .rel-copy:hover {
   border-color: var(--border-bright);
-  color: var(--txt);
+  filter: brightness(1.1);
 }
 .rel-copy-ico {
   width: 12px;

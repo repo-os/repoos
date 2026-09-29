@@ -319,7 +319,7 @@ watch(
   border-radius: 8px;
 }
 .cto-line.human {
-  color: var(--txt);
+  color: var(--btn-primary-color);
   font-weight: 500;
   background: var(--btn-primary-bg);
   align-self: flex-end;
