@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
+import { randomId } from "../lib/random-id";
 import { useRouter } from "vue-router";
 import {
   X,
@@ -547,7 +548,7 @@ async function createFreeform(): Promise<void> {
   // A fresh run id each attempt; the previous run's buffer is dropped so the
   // stream never shows stale output and memory stays bounded to one run.
   if (freeformRunId.value) repo.clearOutput(freeformRunId.value);
-  freeformRunId.value = crypto.randomUUID();
+  freeformRunId.value = randomId();
   try {
     const overrides = freeformIsCustom.value
       ? { agent: freeformOverride.agent, cli: freeformOverride.cli, model: freeformOverride.model }
