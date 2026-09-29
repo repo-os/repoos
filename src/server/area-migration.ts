@@ -22,9 +22,14 @@
  *   board lands as a single reviewable migration commit and `main` never
  *   sits dirty — rather than one `docs(<id>): update task` commit per file
  *   with the caller's pass a no-op.
+ * - If that commit FAILS, the rewritten paths are recorded in a cache-dir
+ *   marker (`runAreaMigrationPass`) and retried on the next boot (#0587):
+ *   once the files are canonical a later scan rewrites nothing, so without the
+ *   marker the failed commit could never be re-attempted and `main` would stay
+ *   dirty forever.
  */
-import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { extname, join, relative } from "node:path";
+import { mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { dirname, extname, join, relative } from "node:path";
 import type { RepoOSConfig } from "../core/types.js";
 import { parseTask, serializeTask } from "../core/task.js";
 import { parseDocument } from "../core/frontmatter.js";
@@ -132,4 +137,123 @@ export function migrateTaskAreas(config: RepoOSConfig): MigrateAreasResult {
     }
   }
   return { updated, scanned: files.length, rewrittenAbsPaths };
+}
+
+/** Name of the cache-dir marker recording a migration commit that failed. */
+const PENDING_MARKER = "area-migration-pending.json";
+
+/** Absolute path of the pending-commit marker in the repo's cache dir. */
+export function areaMigrationPendingPath(config: Pick<RepoOSConfig, "root" | "cacheDir">): string {
+  return join(config.root, config.cacheDir, PENDING_MARKER);
+}
+
+/**
+ * Repo-relative paths the last pass rewrote but could not commit. Empty when
+ * no marker exists or it is unreadable/corrupt (best-effort recovery: the
+ * tolerant reader keeps the files working either way).
+ */
+export function readAreaMigrationPending(
+  config: Pick<RepoOSConfig, "root" | "cacheDir">,
+): string[] {
+  try {
+    const raw: unknown = JSON.parse(readFileSync(areaMigrationPendingPath(config), "utf8"));
+    if (!Array.isArray(raw)) return [];
+    return raw.filter((p): p is string => typeof p === "string" && p.length > 0);
+  } catch {
+    return [];
+  }
+}
+
+/** Record the rewritten paths whose commit failed, so the next boot retries. */
+export function writeAreaMigrationPending(
+  config: Pick<RepoOSConfig, "root" | "cacheDir">,
+  absPaths: string[],
+): void {
+  const rels = [
+    ...new Set(
+      absPaths
+        .map((p) => relative(config.root, p))
+        .filter((p) => p && !p.startsWith("..") && !p.startsWith("/")),
+    ),
+  ];
+  if (rels.length === 0) return;
+  try {
+    const marker = areaMigrationPendingPath(config);
+    mkdirSync(dirname(marker), { recursive: true });
+    writeFileSync(marker, JSON.stringify(rels, null, 2) + "\n", "utf8");
+  } catch {
+    /* a marker we cannot write must not break boot — the files stay dirty and
+       the next pass rewrites nothing; a human sees the dirty main either way */
+  }
+}
+
+/** Clear the pending marker (after a successful commit, or when absent). */
+export function clearAreaMigrationPending(config: Pick<RepoOSConfig, "root" | "cacheDir">): void {
+  try {
+    rmSync(areaMigrationPendingPath(config), { force: true });
+  } catch {
+    /* best-effort */
+  }
+}
+
+export interface AreaMigrationPassResult {
+  /** Files rewritten by THIS scan. */
+  rewritten: number;
+  /** True when the pass tried to commit anything (fresh rewrites or a retry). */
+  attempted: boolean;
+  /** True when a pending retry was attempted on this pass. */
+  retried: boolean;
+  /** False when the last commit failed — the tree is still dirty. */
+  committed: boolean;
+}
+
+/**
+ * Run the migration and commit it, retrying a previous failed commit first
+ * (#0587). `commit` receives absolute paths and returns whether the git commit
+ * landed; it is injectable so the retry/ordering logic is testable without a
+ * repo.
+ *
+ * Why the marker: once the files are rewritten they are already canonical, so
+ * a later scan finds nothing to rewrite and would never re-attempt the commit
+ * — the failed commit would leave `main` dirty forever. Recording the paths
+ * makes "retry on the next boot" possible; a successful retry clears it.
+ */
+export function runAreaMigrationPass(
+  config: RepoOSConfig,
+  commit: (absPaths: string[]) => boolean,
+): AreaMigrationPassResult {
+  let committed = true;
+  let retried = false;
+
+  const pending = readAreaMigrationPending(config);
+  if (pending.length > 0) {
+    retried = true;
+    if (commit(pending.map((p) => join(config.root, p)))) {
+      clearAreaMigrationPending(config);
+    } else {
+      committed = false;
+    }
+  }
+
+  const result = migrateTaskAreas(config);
+  if (result.rewrittenAbsPaths.length > 0) {
+    if (commit(result.rewrittenAbsPaths)) {
+      clearAreaMigrationPending(config);
+    } else {
+      committed = false;
+      // Union with the paths still pending from a failed retry above: a second
+      // failed commit must not replace the marker and lose the earlier paths.
+      writeAreaMigrationPending(config, [
+        ...pending.map((p) => join(config.root, p)),
+        ...result.rewrittenAbsPaths,
+      ]);
+    }
+  }
+
+  return {
+    rewritten: result.updated.length,
+    attempted: result.updated.length > 0 || retried,
+    retried,
+    committed,
+  };
 }

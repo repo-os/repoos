@@ -6,6 +6,7 @@
 import { describe, expect, it } from "vitest";
 import {
   areaListsIntersect,
+  defaultTaskArea,
   effectiveAreaNames,
   effectiveAreaVocabulary,
   formatTaskAreas,
@@ -141,6 +142,23 @@ describe("effectiveAreaVocabulary — declared areas plus preview target areas",
       preview: { targets: [{ name: "T", areas: ["WEB"], command: "x" }] },
     };
     expect(effectiveAreaNames(config)).toEqual(["web"]);
+  });
+});
+
+describe("defaultTaskArea — the New task default (#0587)", () => {
+  it("takes the FIRST declared area, not a hard-coded 'web'", () => {
+    expect(defaultTaskArea([{ name: "landing" }, { name: "docs" }])).toBe("landing");
+  });
+
+  it("accepts plain-string vocabulary entries too", () => {
+    expect(defaultTaskArea(["docs", "landing"])).toBe("docs");
+  });
+
+  it("is empty when the repo declares nothing — the free-text fallback", () => {
+    expect(defaultTaskArea([])).toBe("");
+    expect(defaultTaskArea(undefined)).toBe("");
+    // Half-normalized rows (blank names) are skipped, not selected.
+    expect(defaultTaskArea([{ name: "  " }, { name: "docs" }])).toBe("docs");
   });
 });
 

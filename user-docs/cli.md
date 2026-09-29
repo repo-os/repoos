@@ -11,7 +11,10 @@ board isn't empty. By default files go under a `repoos/` subdirectory;
 interactive prompts let you choose a different location or `/` for the repo
 root. `repoos.toml` and `AGENTS.md` always stay at the root. Run outside a git
 repo, it starts a guided new-project flow instead, which can launch the web
-console for you.
+console for you. On an existing repo, an interactive run also offers to seed the
+task-area vocabulary (and commented preview-target stubs for it) — skippable, and
+skipped automatically once `[[areas]]` is declared. See
+[Configuration](/configuration#areas).
 
 When the repo has no check plan yet, init inspects its stack and writes a
 starter plan to an uncommitted `repoos.check-plan.proposed.toml` for review;

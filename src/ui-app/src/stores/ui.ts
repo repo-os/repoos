@@ -2,6 +2,8 @@ import { reactive, ref } from "vue";
 import { defineStore } from "pinia";
 import { api } from "../api";
 import { normalizeStoryName } from "../../../core/stories.js";
+import { defaultTaskArea } from "../../../core/areas.js";
+import { useConfigStore } from "./config.js";
 import type { Task, TaskCheckKind } from "../types";
 
 export interface NewTaskForm {
@@ -185,7 +187,9 @@ export const useUiStore = defineStore("ui", () => {
     body: "",
     type: "feature",
     priority: "p2",
-    area: "web",
+    // Empty until the drawer opens and picks the repository's first declared
+    // area (#0587); never a hard-coded "web" a repo may not offer.
+    area: "",
     assignedTo: "",
     story: "",
   });
@@ -220,6 +224,17 @@ export const useUiStore = defineStore("ui", () => {
   const pmScreenshots = reactive<PendingScreenshot[]>([]);
 
   /**
+   * The area a New task form starts on (#0587): the first area the repo
+   * declares (`areaVocabulary`, which merges `[areas]` with preview-target
+   * areas), or "" when there is none. Read from the config store so a repo
+   * with only `landing`/`docs` never pre-selects an unregistered "web".
+   */
+  function defaultNewTaskArea(): string {
+    const vocabulary = useConfigStore().data?.["areaVocabulary"];
+    return defaultTaskArea(Array.isArray(vocabulary) ? vocabulary : []);
+  }
+
+  /**
    * Open the new-task drawer. `assignedTo` presets the assignee (e.g. "human");
    * `story` (#0555) presets the story this task is being created for — the story
    * panel's hand-off, so the value lands in the panel's visible Story control
@@ -235,7 +250,9 @@ export const useUiStore = defineStore("ui", () => {
     isNewStory.value = false;
     nt.title = "";
     nt.body = "";
-    nt.area = "web";
+    // First declared area, or "" when the repo declares none (#0587) — never a
+    // hard-coded "web" the repo may not offer.
+    nt.area = defaultNewTaskArea();
     nt.priority = "p2";
     nt.type = "feature";
     nt.assignedTo = assignedTo;

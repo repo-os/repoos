@@ -60,6 +60,23 @@ Where should RepoOS files live? [repoos/]
 `repoos.toml` and `AGENTS.md` always stay at the repo root regardless of the
 layout choice.
 
+## Defining your areas
+
+In an interactive terminal, `repoos init` also offers to seed the task-area
+vocabulary that powers the drawer's area picker and the PM prompt:
+
+```
+Task areas to seed the area picker — comma-separated (e.g. web, cli, api; Enter to skip):
+```
+
+Type names (or press Enter to skip) and RepoOS appends real `[[areas]]` rows to
+your existing `repoos.toml`. If you give areas, it then asks whether to
+scaffold commented `[[preview.targets]]` stubs for them, since preview targets
+route by area and the two are usually set up together. Both prompts are
+skippable, and a repo that already declares any `[[areas]]` is never asked
+again. You can edit the list later in **Settings → General → Areas** or by
+hand — see [Configuration](/configuration#areas).
+
 ## What it doesn't touch
 
 Your source, your `package.json`, your build pipeline, and your existing docs

@@ -9,7 +9,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { getConfigSchema, loadConfig, SUPPORTED_TOML_KEYS } from "../../core/config.js";
-import { patchConfig, safeConfigForBrowser } from "../../server/routes/config.js";
+import { patchConfig, safeConfigForBrowser, writeRawConfig } from "../../server/routes/config.js";
 
 async function patch(
   root: string,
@@ -45,6 +45,42 @@ function repo(toml: string): string {
   const root = mkdtempSync(join(tmpdir(), "repoos-areas-patch-"));
   writeFileSync(join(root, "repoos.toml"), toml);
   return root;
+}
+
+/** A minimal RouteContext with a logger that captures warnings. */
+function contextWith(root: string, warnings: string[]) {
+  const cfg = loadConfig(root);
+  return {
+    config: { root, cacheDir: cfg.cacheDir, workDir: cfg.workDir },
+    repoos: { config: cfg },
+    index: {
+      refreshAll() {},
+      getTasks: () => [{ id: "0587", area: "web" }],
+    },
+    logger: {
+      system(level: string, message: string) {
+        if (level === "warn") warnings.push(message);
+      },
+    },
+  } as never;
+}
+
+function fakeRes(): { statusCode?: number; payload?: string } & Record<string, unknown> {
+  const res: {
+    statusCode?: number;
+    payload?: string;
+    writeHead(code: number): unknown;
+    end(payload: string): void;
+  } = {
+    writeHead(code: number) {
+      res.statusCode = code;
+      return res;
+    },
+    end(payload: string) {
+      res.payload = payload;
+    },
+  };
+  return res;
 }
 
 describe("Settings PATCH for [areas] (#0583)", () => {
@@ -178,5 +214,33 @@ describe("safeConfigForBrowser — area names only in the array form", () => {
       areas: [{ name: "web", description: "hidden from edit" }],
     });
     expect(config.areas).toEqual(["web"]);
+  });
+});
+
+describe("area-vocabulary drift advisory (#0587)", () => {
+  it("fires on a raw repoos.toml edit, not just a curated PATCH", async () => {
+    const root = repo('workDir = "work"\n[[areas]]\nname = "web"\n[[areas]]\nname = "core"\n');
+    try {
+      const warnings: string[] = [];
+      const req = Readable.from([
+        Buffer.from(JSON.stringify({ content: 'workDir = "work"\n[[areas]]\nname = "core"\n' })),
+      ]);
+      await writeRawConfig(contextWith(root, warnings), req as never, fakeRes() as never, {});
+      expect(warnings.some((m) => m.includes('area "web" no longer resolves'))).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("stays quiet when an unrelated config save leaves the vocabulary alone", async () => {
+    const root = repo('workDir = "work"\n[[areas]]\nname = "web"\n[[areas]]\nname = "core"\n');
+    try {
+      const warnings: string[] = [];
+      const req = Readable.from([Buffer.from(JSON.stringify({ areas: ["web", "core"] }))]);
+      await patchConfig(contextWith(root, warnings), req as never, fakeRes() as never, {});
+      expect(warnings).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });
