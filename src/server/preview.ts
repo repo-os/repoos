@@ -21,8 +21,8 @@ import { createServer as createTcpServer } from "node:net";
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
 import type { RepoOSConfig, Status, Task } from "../core/types.js";
+import { parseTaskAreas } from "../core/areas.js";
 import { readPreviewOverlayKeys } from "../core/config.js";
-import { splitAreas } from "../core/shot-targets.js";
 import { linkInheritedEnv, worktreePathForBranch } from "../core/git.js";
 import type { RepoEvent } from "./live-index.js";
 
@@ -161,18 +161,35 @@ export interface PreviewStartOptions {
 }
 
 /**
+ * The task's canonical area list, from the shared parser (#0583). Reads the
+ * parsed `areas` when present, else the raw `area` (string or list) — so
+ * partially-constructed Task objects in tests keep working.
+ */
+function taskAreasOf(task: Task): string[] {
+  return parseTaskAreas((task.areas?.length ? task.areas : task.area) as unknown);
+}
+
+/** One same area: case-insensitive, whitespace-trimmed equality. */
+const sameArea = (a: string, b: string): boolean =>
+  a.trim().toLowerCase() === b.trim().toLowerCase();
+
+/**
  * The actionable message shown when nothing resolves for a task (#0370). Both
  * "no `[preview]` section at all" and "section present but no area match" reach
- * here, so the user gets the same guidance either way: the task's own `area`,
- * and the minimal `repoos.toml` that would make it resolve.
+ * here, so the user gets the same guidance either way: the task's own `area`
+ * (each value quoted, or the literal `"(none)"` — the shape #0370 documented),
+ * and the minimal `repoos.toml` that would make it resolve. #0583: a
+ * multi-area task names its whole list; the snippet still suggestions one
+ * target for the FIRST area, because the suggestion has to be valid TOML.
  */
 function noPreviewReason(task: Task, lead: string): string {
-  const area = (task.area ?? "").trim();
-  const label = area || "(none)";
+  const taskAreas = taskAreasOf(task);
+  const label = taskAreas.map((a) => `"${a}"`).join(", ") || '"(none)"';
   // TOML basic-string escape, so an area containing a backslash or quote can't
   // produce a malformed suggested snippet. Message-only; Vue escapes the text.
-  const quoted = area.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
-  const snippet = area
+  const first = taskAreas[0] ?? "";
+  const quoted = first.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
+  const snippet = first
     ? [
         "[[preview.targets]]",
         `name = "${quoted}"`,
@@ -181,7 +198,7 @@ function noPreviewReason(task: Task, lead: string): string {
       ].join("\n")
     : ["[preview]", 'command = "bun run dev --port {port} --host {host}"'].join("\n");
   return (
-    `${lead ? `${lead} ` : ""}No preview configured for area "${label}" (#${task.id}). ` +
+    `${lead ? `${lead} ` : ""}No preview configured for area ${label} (#${task.id}). ` +
     `Add this to repoos.toml:\n\n${snippet}`
   );
 }
@@ -192,10 +209,15 @@ function noPreviewReason(task: Task, lead: string): string {
  * the default `[preview] command` as a last-resort fallback. Returning the
  * whole list — not just the first match — is what lets #0379 surface a
  * ranked picker instead of silently choosing.
+ *
+ * #0583: a task can declare several areas; matching compares the task's
+ * canonical area LIST (`task.areas`, from the shared parser) against each
+ * target area case-insensitively, so one hit routes the task. The whole-string
+ * compare this replaces silently matched nothing for multi-area tasks.
  */
 function previewCandidates(config: RepoOSConfig, task: Task): PreviewCandidate[] {
   const preview = config.preview;
-  const taskAreas = splitAreas(task.area);
+  const taskAreas = taskAreasOf(task);
   const namedTargets = preview?.targets ?? [];
   const areaMatches: PreviewCandidate[] = [];
   const otherTargets: PreviewCandidate[] = [];
@@ -212,7 +234,7 @@ function previewCandidates(config: RepoOSConfig, task: Task): PreviewCandidate[]
         readyTimeoutMs: t.readyTimeoutMs ?? HEALTH_TIMEOUT_MS,
       },
     };
-    if (t.areas.some((a) => taskAreas.includes(a.trim().toLowerCase()))) {
+    if (taskAreas.some((a) => t.areas.some((b) => sameArea(a, b)))) {
       areaMatches.push(candidate);
     } else {
       otherTargets.push(candidate);
@@ -290,7 +312,7 @@ export function resolvePreviewTarget(
   if (targetName) {
     const chosen = candidates.find((c) => c.target.label === targetName);
     if (chosen) return chosen.target;
-    const area = (task.area ?? "").trim() || "(none)";
+    const area = taskAreasOf(task).join(", ") || "(none)";
     const names = candidates.map((c) => `"${c.target.label}"`).join(", ");
     return {
       kind: "none",

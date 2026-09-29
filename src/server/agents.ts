@@ -32,6 +32,7 @@ import type {
   Task,
 } from "../core/types.js";
 import { AGENT_CLIS, agentsForConfig, defaultMaxConcurrentAgents } from "../core/config.js";
+import { parseTaskAreas } from "../core/areas.js";
 import { fileCommittedClean, currentBranch } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
 import { parseTask, serializeTask, recordChange } from "../core/task.js";
@@ -2872,7 +2873,8 @@ const SKILL_ROUTING_HINTS: Record<string, string[]> = {
 
 /** Pick a small relevant subset; role defaults are preferences, never an unconditional prompt append. */
 export function selectSkillsForRun(task: Task, agent: Agent, config: RepoOSConfig): SkillMeta[] {
-  const taskText = `${task.title} ${task.area} ${task.body}`.toLowerCase();
+  const taskText =
+    `${task.title} ${parseTaskAreas(task.area).join(" ")} ${task.body}`.toLowerCase();
   const words = new Set(taskText.match(/[a-z][a-z0-9-]{2,}/g) ?? []);
   const preferred = new Set(agent.skills ?? []);
   return listSkills(config)

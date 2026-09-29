@@ -703,6 +703,18 @@ watch(
   { immediate: true },
 );
 
+/** Per-key placeholder for auto-rendered array fields — the generic
+ * ".md, .markdown" hint only fits taskExtensions; anything else gets its own
+ * example so the row never mislabels what belongs in it (#0583 review). */
+const ARRAY_PLACEHOLDERS: Record<string, string> = {
+  areas: "web, core (comma-separated area names)",
+  taskExtensions: ".md, .markdown",
+};
+
+function arrayPlaceholder(key: string): string {
+  return ARRAY_PLACEHOLDERS[key] ?? "value1, value2";
+}
+
 function buildBody(): Record<string, unknown> {
   const body: Record<string, unknown> = {};
   for (const f of config.schema) {
@@ -1412,7 +1424,7 @@ onUnmounted(() => {
                   v-else-if="f.type === 'array'"
                   :model-value="String(form[f.key])"
                   type="text"
-                  placeholder=".md, .markdown"
+                  :placeholder="arrayPlaceholder(f.key)"
                   @update:model-value="(v) => (form[f.key] = v)"
                 />
               </div>

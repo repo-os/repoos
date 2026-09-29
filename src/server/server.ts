@@ -97,6 +97,7 @@ import {
 import {
   ensureWorktree,
   commitTaskFile,
+  commitFiles,
   resetWorktree,
   syncBranchWithMain,
   worktreePathForBranch,
@@ -132,6 +133,7 @@ import {
   runPrompt,
 } from "./agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
+import { migrateTaskAreas } from "./area-migration.js";
 import { FreeformRunManager } from "./freeform-runs.js";
 import { pmChatSessionTaskId, clearPmChatSession, isPmWorking } from "./pm-runs.js";
 import { attachPendingPmImages } from "./pm-attachments.js";
@@ -1603,6 +1605,48 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // leaving the task stuck `active` with its work uncommitted.
   const runHandoffRecovery = (): void => runner.recoverPendingHandoffs();
   void indexReady.then(runHandoffRecovery, runHandoffRecovery).catch(() => {});
+
+  // The one-time area-format migration (#0583) runs once AFTER the index has
+  // populated: any task file whose `area` frontmatter still carries a legacy
+  // spelling (`server + ui-app`, a comma string, a one-element list) is
+  // rewritten to the canonical scalar-or-list form through the shared task
+  // engine, then committed in one pass here so `main` never sits dirty and
+  // the change lands as ONE reviewable migration commit. The reader
+  // tolerates every legacy shape forever, so a skipped file keeps working
+  // until its next write. Control-plane only — a preview child (or any
+  // worktree-rooted server) must never rewrite the board's own files from a
+  // derived copy; a vitest boot skips outright (the VITEST guard below stops
+  // any test-spawned server from touching the live board, ports aside), and
+  // a non-test tool boot can opt out with REPOOS_SKIP_AREA_MIGRATION=1.
+  const runAreaMigration = (): void => {
+    try {
+      if (!isControlPlane) return;
+      // A vitest process must never rewrite the live board, full stop — any
+      // suite that boots a real-port server against the repo root would
+      // otherwise migrate+commit other tasks' files as a side effect.
+      if (process.env.VITEST === "true") return;
+      // Non-test processes that want the pass suppressed (a one-off tool) can
+      // set REPOOS_SKIP_AREA_MIGRATION=1 explicitly.
+      if (process.env.REPOOS_SKIP_AREA_MIGRATION === "1") return;
+      const result = migrateTaskAreas(config);
+      if (!result.updated.length) return;
+      commitFiles(
+        config.root,
+        result.rewrittenAbsPaths ?? [],
+        "docs: migrate legacy area values to comma list form (#0583)",
+      );
+      logger.system("info", "area-format migration (#0583)", {
+        rewritten: result.updated.length,
+        scanned: result.scanned,
+      });
+      // The index holds pre-migration parses; refresh so boards and searches
+      // see the canonical `areas` values right away.
+      index.refreshAll();
+    } catch {
+      /* best-effort: the tolerant reader keeps legacy files working anyway */
+    }
+  };
+  void indexReady.then(runAreaMigration, () => {});
 
   // The review agent (0101): when a task lands in `review`, it inspects the
   // implementation and writes a short report for whoever signs the task off.

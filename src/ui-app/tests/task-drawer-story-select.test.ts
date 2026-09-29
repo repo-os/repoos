@@ -205,8 +205,20 @@ describe("task drawer story select (#0525)", () => {
     const repo = useRepoStore();
     const patchSpy = vi.spyOn(repo, "patchTask").mockResolvedValue(task);
 
-    const areaInput = wrapper.find("#et-area");
-    await areaInput.setValue("Edited area");
+    // The area field is a multi-select picker (#0583): opening the panel and
+    // committing a free-text selection is how an edit becomes unsaved here.
+    // The panel teleports to <body> (the drawer's dialog layer), so look there.
+    await wrapper.find("#et-area").trigger("click");
+    const pickerInput = document.body.querySelector(
+      'input[aria-label="Add a custom area"]',
+    ) as HTMLInputElement | null;
+    expect(pickerInput).not.toBeNull();
+    await pickerInput!.focus();
+    await pickerInput!.dispatchEvent(new Event("input", { bubbles: true }));
+    pickerInput!.value = "Edited area";
+    await pickerInput!.dispatchEvent(new Event("input", { bubbles: true }));
+    await pickerInput!.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    await flush();
     expect(wrapper.find(".save-bar").exists()).toBe(true);
 
     await wrapper.find('button[aria-label^="Open story"]').trigger("click");

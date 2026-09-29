@@ -318,7 +318,7 @@ export function repoOSAgentsSectionAddition(existing: string, workDir = "work"):
   return (existing.endsWith("\n") ? "\n" : "\n\n") + REPOOS_AGENTS_SECTION(workDir);
 }
 
-function repoosToml(namespace: string): string {
+function repoosToml(namespace: string, areas: string[] = [], previewStub = false): string {
   const ns = namespace
     ? `workDir = "${namespace}/work"\ndocsDir = "${namespace}/docs"\ncacheDir = "${namespace}/.repoos"\n`
     : "";
@@ -356,7 +356,46 @@ defaultAssignee = "unassigned"
 # active = "In progress"
 # review = "Code review"
 # done   = "Shipped"
+${areaRows(areas)}
+${previewStub ? previewTargetRows(areas) : ""}
 `;
+}
+
+/**
+ * The `[areas]` block: the vocabulary collected at init time as real
+ * `[[areas]]` rows, or the commented-out stub when skipped (#0583).
+ */
+function areaRows(areas: string[]): string {
+  if (!areas.length) {
+    return [
+      "# [[areas]]                             # the task-area vocabulary (#0583)",
+      '# name = "web"                           # offered in the area picker + the PM prompt',
+      '# description = "The main web app"',
+      "# Every [[preview.targets]] area is offered automatically, even when not",
+      "# declared here. With none declared the area field is free text only.",
+    ].join("\n");
+  }
+  return areas.map((a) => `[[areas]]\nname = "${a}"`).join("\n\n");
+}
+
+/**
+ * The commented `[[preview.targets]]` skeleton offered when an area vocabulary
+ * was seeded at init (#0583) — the wiring for when the project has something
+ * previewable, referencing the areas the picker now offers.
+ */
+function previewTargetRows(areas: string[]): string {
+  const areaList = areas.length ? JSON.stringify(areas) : '["web"]';
+  return [
+    "# [preview]                               # read-only task previews",
+    `# command = "bun run dev --port {port} --host {host}"`,
+    `#                                         # default when no target matches`,
+    "",
+    `# [[preview.targets]]`,
+    `# name = "Main app"`,
+    `# areas = ${areaList}`,
+    `# command = "bun run dev --port {port} --host {host}"`,
+    `# readyTimeoutMs = 240000                 # raise for a command that also builds`,
+  ].join("\n");
 }
 
 const ENV_EXAMPLE = `# Copy to .env and fill in what you need — .env is gitignored, this file is
@@ -454,6 +493,10 @@ export function scaffoldInto(
   description: string,
   layout: ScaffoldLayout = "",
   kind: ScaffoldKind = "new",
+  /** Areas collected at init time (#0583) — real `[[areas]]` rows when given. */
+  areas: string[] = [],
+  /** When true, scaffold commented `[[preview.targets]]` stubs for those areas. */
+  previewStub = false,
 ) {
   const created: string[] = [];
   const skipped: string[] = [];
@@ -501,7 +544,7 @@ export function scaffoldInto(
   // Write config first so workDir/docsDir/cacheDir overrides are in effect
   // before the dirs are created (namespace layout) — or so an existing
   // config is respected untouched (existing-repo path).
-  ensureFile("repoos.toml", repoosToml(layout));
+  ensureFile("repoos.toml", repoosToml(layout, areas, previewStub));
   const config = loadConfig(root);
 
   ensureDir(config.workDir);
@@ -1032,6 +1075,42 @@ async function guidedNewRepo(args: string[]): Promise<void> {
       ": ",
   );
 
+  // The task-area vocabulary (#0583) — reinforced with preview targets, since
+  // a `[[preview.targets]]` area is offered in the picker automatically even
+  // when not declared here. Skipped means free text only; never blocking.
+  const areasInput = await ask(
+    "  Task areas to seed the area picker" +
+      c.dim(" — comma-separated (e.g. web, cli, api; Enter to skip)") +
+      ": ",
+  );
+  const areas = areasInput
+    ? areasInput
+        .split(",")
+        .map((a) => a.trim())
+        .filter(Boolean)
+    : [];
+  if (areas.length) {
+    console.log(c.dim("  Preview targets route a task preview by its area — the picker and"));
+    console.log(
+      c.dim(
+        "  the PM prompt offer target areas automatically; see user-docs/configuration.md's Previews section.",
+      ),
+    );
+  }
+
+  // Preview targets reinforce areas ("define them together"): when an area
+  // vocabulary was given, offer to scaffold the commented `[[preview.targets]]`
+  // skeleton those areas feed, so the wiring sits where preview setup happens
+  // later. A brand-new project has nothing runnable yet — never a live
+  // preview command, just the commented shape to fill in.
+  let previewStub = false;
+  if (areas.length) {
+    previewStub = await confirm(
+      "  Scaffold commented preview-target stubs for these areas?",
+      false,
+    );
+  }
+
   if (!existsSync(target)) mkdirSync(target, { recursive: true });
 
   // git health warnings — fail-soft, scaffold regardless
@@ -1050,7 +1129,7 @@ async function guidedNewRepo(args: string[]): Promise<void> {
     );
   }
 
-  const { created, skipped } = scaffoldInto(target, description, layout);
+  const { created, skipped } = scaffoldInto(target, description, layout, "new", areas, previewStub);
   reportInit(target, created, skipped);
   await offerCheckPlanProposal(target);
 

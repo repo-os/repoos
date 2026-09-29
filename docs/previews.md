@@ -18,8 +18,9 @@ opt-in `[check] uiSmoke`.
 `[[preview.targets]]` tables), following the same flat-config pattern as
 `[check]`. A task is previewed by:
 
-1. a named target whose `areas` list includes the task's `area:` frontmatter
-   (case-insensitive), else
+1. a named target whose `areas` list includes any area of the task's `area:`
+   frontmatter (case-insensitive; `area` may be a comma/list of several, so
+   `area: [web, docs]` matches a `docs` target — #0583), else
 2. a default `[preview] command`, else
 3. — when neither matched, or when the section is absent entirely — a clean
    **"No preview configured for area …"** result, not a spawn failure (#0370).

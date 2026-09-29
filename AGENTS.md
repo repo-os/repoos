@@ -328,6 +328,14 @@ cannot tell from the code alone:
 
 - **Dropdowns:** Use the custom styled dropdown component for every new
   dropdown in the UI. Never use default, unstyled `<select>` elements.
+- **Areas are comma-separated, never `+`.** A task's `area` is a per-repo
+  vocabulary (`[[areas]]` in repoos.toml merged with every
+  `[[preview.targets]]` area), and one task may carry several: write
+  `area: web` or `area: [web, core]`, i.e. `repoos new/update --area web,core`.
+  The legacy `server + ui-app` spelling parses only so old files read until
+  the one-time migration in the server rewrites them (#0583); nothing new may
+  produce it. Agents picking an area for a task should pick from the
+  vocabulary when one exists and say so when none fits.
 - **Drawer / panel forms:** New creation drawers (New task, New story, New
   input, and future panels) must use the shared dialog components
   (`ui/dialog/*`, body-teleported) and the global form classes in
