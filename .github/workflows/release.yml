@@ -101,7 +101,13 @@ jobs:
           # Wait here so the tap's own update job does not exhaust its retry
           # window against a guaranteed 404.
           for attempt in {1..60}; do
-            if curl --fail --silent --show-error --head "$TARBALL" >/dev/null; then
+            # A fresh query string per attempt plus no-cache headers keeps the
+            # registry CDN from serving a cached 404 from the first probe
+            # (v0.5.57: the tarball was live within seconds, but every plain
+            # HEAD kept returning 404 for the full 10 minutes).
+            if curl --fail --silent --show-error --head \
+              -H "Cache-Control: no-cache" -H "Pragma: no-cache" \
+              "${TARBALL}?cb=${GITHUB_RUN_ID}-${attempt}" >/dev/null; then
               break
             fi
             if [[ "$attempt" == 60 ]]; then
