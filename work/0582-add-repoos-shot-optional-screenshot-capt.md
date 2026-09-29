@@ -2,7 +2,7 @@
 id: "0582"
 title: "Add repoos shot: optional screenshot capture of a task preview"
 type: feature
-status: review
+status: done
 priority: p2
 area: cli
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/add-repoos-shot-optional-screenshot-capt
 review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-29T11:13:18Z"
-updated_at: "2026-09-29T17:25:11Z"
+updated_at: "2026-09-29T19:21:20Z"
 ---
 ## Problem
 
@@ -82,3 +82,4 @@ Visual-regression baselines, image diffing, per-component harnesses, any hosted 
 - 2026-09-29T16:46:29Z · review_model_override
 - 2026-09-29T16:46:31Z · status ready→active, branch
 - 2026-09-29T17:25:11Z · status active→review
+- 2026-09-29T19:21:20Z · status review→done, release:success
