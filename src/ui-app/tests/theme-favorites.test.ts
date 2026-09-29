@@ -3,8 +3,8 @@
  * (capped at 3, persisted to localStorage["repoos.favoriteThemes"]) that both
  * the Settings theme list and the sidebar quick switcher render from.
  *
- * Covers the cap (4th star rejected with inline feedback, nothing silently
- * dropped), star-order display, the empty-favorites fallback to the first
+ * Covers the cap (a 4th star drops the oldest favorite to make room and says
+ * so inline), star-order display, the empty-favorites fallback to the first
  * MAX_VISIBLE_THEMES catalog entries, reload persistence, and that starring
  * never changes the applied
  * uiTheme.
@@ -117,34 +117,44 @@ describe("config store favorites (#0255)", () => {
     expect(store.sidebarThemes.map((t) => t.id)).toEqual(["gen z", "classic"]);
   });
 
-  it("starring a 4th theme is rejected with 'Up to 3 favorites' feedback and nothing is dropped", async () => {
+  it("starring a 4th theme drops the oldest star and states the cap", async () => {
     const store = useConfigStore();
     for (const id of ["classic", "clear", "gen z"]) {
       expect(store.toggleThemeFavorite(id)).toBe(true);
     }
 
-    const before = [...store.favoriteThemes];
-    expect(store.toggleThemeFavorite("gruvbox")).toBe(false);
+    expect(store.toggleThemeFavorite("gruvbox")).toBe(true);
 
-    expect(store.favoriteThemes).toEqual(before);
-    expect(store.themeFavoritesNotice).toBe("Up to 3 favorites");
+    // Oldest first out of the array, newest pick kept.
+    expect(store.favoriteThemes).toEqual(["clear", "gen z", "gruvbox"]);
+    expect(store.themeFavoritesNotice).toBe("Up to 3 favorites (dropped Classic)");
     expect(store.favoriteThemes).toHaveLength(MAX_FAVORITE_THEMES);
-    expect(JSON.parse(localStorage.getItem("repoos.favoriteThemes") ?? "[]")).toEqual(before);
+    expect(JSON.parse(localStorage.getItem("repoos.favoriteThemes") ?? "[]")).toEqual([
+      "clear",
+      "gen z",
+      "gruvbox",
+    ]);
   });
 
-  it("un-starring always works, clears the notice, and frees a slot", async () => {
+  it("drops only as many stars as it must when storage held more than the cap", () => {
+    const store = useConfigStore();
+    // Not reachable through the store (which trims on write), but it keeps the
+    // eviction arithmetic honest if a future cap change or a stale page does it.
+    store.favoriteThemes.push("classic", "clear", "gen z", "jelly", "gruvbox");
+
+    expect(store.toggleThemeFavorite("hypercolor")).toBe(true);
+    expect(store.favoriteThemes).toEqual(["jelly", "gruvbox", "hypercolor"]);
+  });
+
+  it("un-starring always works and clears the notice", async () => {
     const store = useConfigStore();
     for (const id of ["classic", "clear", "gen z"]) store.toggleThemeFavorite(id);
-    expect(store.toggleThemeFavorite("gruvbox")).toBe(false);
-    expect(store.themeFavoritesNotice).toBe("Up to 3 favorites");
+    store.toggleThemeFavorite("gruvbox"); // evicts classic, states the cap
+    expect(store.themeFavoritesNotice).toBe("Up to 3 favorites (dropped Classic)");
 
-    expect(store.toggleThemeFavorite("classic")).toBe(true);
+    expect(store.toggleThemeFavorite("clear")).toBe(true);
     expect(store.themeFavoritesNotice).toBe("");
-    expect(store.favoriteThemes).toEqual(["clear", "gen z"]);
-
-    // The previously-blocked star now fits.
-    expect(store.toggleThemeFavorite("gruvbox")).toBe(true);
-    expect(store.favoriteThemes).toEqual(["clear", "gen z", "gruvbox"]);
+    expect(store.favoriteThemes).toEqual(["gen z", "gruvbox"]);
   });
 
   it("starring/un-starring never changes the applied uiTheme", async () => {
@@ -261,7 +271,7 @@ describe("settings theme list (#0255)", () => {
     expect(rows[0].find(".theme-active-badge").exists()).toBe(false);
   });
 
-  it("stars render as toggles and persist; the 4th is blocked with inline feedback", async () => {
+  it("stars render as toggles and persist; the 4th swaps out the oldest with feedback", async () => {
     await loadConfig();
     const wrapper = await mountSettings();
     const stars = wrapper.findAll(".theme-star");
@@ -270,20 +280,26 @@ describe("settings theme list (#0255)", () => {
     for (let i = 0; i < 3; i++) await stars[i].trigger("click");
     expect(wrapper.findAll(".theme-star.on")).toHaveLength(3);
 
-    // 4th star attempt: blocked, visible feedback, nothing silently dropped
+    // 4th star: the oldest favorite gives way automatically, and the cap is
+    // still stated rather than freeing the slot silently.
     await stars[3].trigger("click");
     expect(wrapper.findAll(".theme-star.on")).toHaveLength(3);
     const note = wrapper.find(".theme-fav-note");
     expect(note.exists()).toBe(true);
-    expect(note.text()).toBe("Up to 3 favorites");
-
-    // un-star always works and clears the feedback
-    await stars[0].trigger("click");
-    expect(wrapper.findAll(".theme-star.on")).toHaveLength(2);
-    expect(wrapper.find(".theme-fav-note").exists()).toBe(false);
+    expect(note.text()).toBe("Up to 3 favorites (dropped Classic)");
     expect(JSON.parse(localStorage.getItem("repoos.favoriteThemes") ?? "[]")).toEqual([
       "clear",
       "gen z",
+      "jelly",
+    ]);
+
+    // un-star always works and clears the feedback
+    await stars[1].trigger("click");
+    expect(wrapper.findAll(".theme-star.on")).toHaveLength(2);
+    expect(wrapper.find(".theme-fav-note").exists()).toBe(false);
+    expect(JSON.parse(localStorage.getItem("repoos.favoriteThemes") ?? "[]")).toEqual([
+      "gen z",
+      "jelly",
     ]);
   });
 
