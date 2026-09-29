@@ -2,15 +2,15 @@
 id: "0587"
 title: "Area vocabulary follow-ups from the #0583 review"
 type: chore
-status: ready
+status: active
 priority: p3
 area: web
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/area-vocabulary-follow-ups-from-the-0583
 review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-29T19:27:29Z"
-updated_at: "2026-09-29T20:42:11Z"
+updated_at: "2026-09-29T20:42:12Z"
 ---
 ## Context
 
@@ -35,3 +35,4 @@ Follow-ups from the #0583 (area vocabulary) review, deliberately left out of tha
 - 2026-09-29T19:27:29Z · created · unknown
 - 2026-09-29T20:42:11Z · review_model_override
 - 2026-09-29T20:42:11Z · status inbox→ready
+- 2026-09-29T20:42:12Z · status ready→active, branch
