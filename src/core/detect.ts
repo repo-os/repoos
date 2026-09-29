@@ -222,6 +222,21 @@ export const KNOWN_AGENTS: KnownAgent[] = [
     authCheckArgs: ["status", "--format", "json"],
     capability: "Print mode with stream-JSON, session resume, and model selection",
   },
+  {
+    id: "crush",
+    name: "crush",
+    cli: "crush",
+    binary: "crush",
+    drivable: true,
+    // Charm's terminal coding agent. CLI-only (there is no auth-status JSON
+    // probe — `crush login`/`logout` are interactive), so authentication is a
+    // plain hint rather than an `authCheckArgs` probe.
+    installHint: "brew install charmbracelet/tap/crush",
+    authHint:
+      "Run `crush` once to configure a provider interactively. With no provider configured, `crush run` exits with: no providers configured - please run 'crush' to set up a provider interactively.",
+    capability:
+      "Plain-text headless runs, unconditional auto-approval in run mode, and `crush models`",
+  },
 ];
 
 const WIN32_SCRIPT_RE = /\.(cmd|bat)$/i;

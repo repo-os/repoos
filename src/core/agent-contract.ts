@@ -95,6 +95,19 @@ interface ContractCommandTemplates {
   /** Parse run stdout to extract session id and confirm the harness answered. Defaults to opencode parser. */
   parseRun?: (stdout: string) => RunParseResult;
   /**
+   * How this harness grants tool permission in a non-interactive run.
+   * Default `"flag"`: one of the known auto flags must be present in the run
+   * argv, and the seam fails when it is missing. `"mode"`: the harness
+   * auto-approves by virtue of being non-interactive and accepts no flag (e.g.
+   * crush) — the seam passes on a clean one-shot and says so.
+   */
+  autoPermissions?: "flag" | "mode";
+  /**
+   * Signal used to exercise the cancellation seam. Default `SIGTERM`; crush
+   * needs `SIGINT` (SIGTERM orphans its tool subprocesses).
+   */
+  cancelSignal?: NodeJS.Signals;
+  /**
    * Seams to auto-pass with a note rather than probe. Use for a CLI that
    * genuinely cannot satisfy a seam (e.g. kiro outputs no session ID during a
    * run, so session-continuation is captured post-run via the sessions list).
@@ -461,6 +474,53 @@ const KIRO_CONTRACT: ContractCommandTemplates = {
 };
 
 /**
+ * Crush raw-text mode (`crush run --quiet`). There is no machine-readable mode
+ * (`--json` / `--format json` are unknown flags), so stdout carries assistant
+ * text only — no session id, tool events, or usage. The session id is captured
+ * post-run from `crush session list --json`, so session-continuation and
+ * structured-events are skipped, exactly as for kiro.
+ *
+ * Non-interactive `run` sessions auto-approve every permission request with no
+ * flag (`InitCoderAgentNonInteractive` calls `AutoApproveSession`), so the
+ * auto-permissions seam is satisfied by the mode itself — `autoPermissions:
+ * "mode"` records that honestly instead of inventing a flag the CLI rejects.
+ * Cancellation must use SIGINT: SIGTERM has no handler and orphans the run's
+ * tool subprocesses (SIGINT reaps them).
+ */
+function parseCrushRun(stdout: string): RunParseResult {
+  const trimmed = stdout.trim();
+  const hasAnswer = /OK/i.test(trimmed);
+  return {
+    sessionId: null,
+    hasAnswer,
+    recognized: trimmed ? 1 : 0,
+    total: 1,
+    detail: trimmed
+      ? `crush printed plain text (${trimmed.length} chars); answer found: ${hasAnswer}`
+      : "crush produced no output",
+  };
+}
+
+const CRUSH_CONTRACT: ContractCommandTemplates = {
+  version: () => ["--version"],
+  help: () => ["--help"],
+  models: () => ["models"],
+  run: (_dir, prompt) => ["run", "--quiet", prompt],
+  resume: (_dir, sessionId, prompt) => ["run", "--quiet", "--session", sessionId, prompt],
+  parseRun: parseCrushRun,
+  autoPermissions: "mode",
+  // SIGTERM kills crush instantly but leaves its tool children reparented to
+  // PID 1; SIGINT cancels gracefully and reaps them. See docs/agent-compatibility.md.
+  cancelSignal: "SIGINT",
+  skipSeams: {
+    "session-continuation":
+      "crush does not print a session id during a run; it is retrieved post-run via `crush session list --json`",
+    "structured-events":
+      "crush has no machine-readable stream (`run --json` and `run --format json` are unknown flags); stdout carries plain assistant text only",
+  },
+};
+
+/**
  * GitHub Copilot CLI — `--output-format json` JSONL, session id on `event.sessionId`.
  * `--no-ask-user` suppresses approval prompts; `--allow-all-tools` for headless engineering.
  */
@@ -573,6 +633,7 @@ const CONTRACT_TEMPLATES: Record<string, (binary: string) => ContractCommandTemp
   kiro: () => KIRO_CONTRACT,
   antigravity: () => ANTIGRAVITY_CONTRACT,
   "github copilot": () => COPILOT_CONTRACT,
+  crush: () => CRUSH_CONTRACT,
 };
 
 const DEFAULT_TIMEOUT_MS: Record<"fixture" | "live", number> = {
@@ -946,18 +1007,33 @@ export async function runAdapterContract(
       "-f",
       "--force",
     ];
-    const autoUsed = runArgs.some((a) => autoFlags.includes(a));
-    const autoOk = oneShotOk && autoUsed;
-    probe(
-      "auto-permissions",
-      "Permission / auto mode",
-      autoOk,
-      autoOk
-        ? `the run used ${runArgs.find((a) => autoFlags.includes(a))} and completed without an interactive permission prompt`
-        : autoUsed
-          ? "the run used an auto/permission flag but did not complete cleanly"
-          : "the adapter's one-shot did not pass a permission/auto flag",
-    );
+    const autoMode = templates.autoPermissions ?? "flag";
+    if (autoMode === "mode") {
+      // The harness auto-approves by being non-interactive and accepts no flag
+      // (crush). A clean one-shot is the evidence; the note records why there
+      // is nothing for the flag check to find.
+      probe(
+        "auto-permissions",
+        "Permission / auto mode",
+        oneShotOk,
+        oneShotOk
+          ? "the run completed without a permission prompt; this harness auto-approves non-interactive sessions by design and accepts no bypass flag"
+          : "the run did not complete cleanly, so auto-approval could not be confirmed",
+      );
+    } else {
+      const autoUsed = runArgs.some((a) => autoFlags.includes(a));
+      const autoOk = oneShotOk && autoUsed;
+      probe(
+        "auto-permissions",
+        "Permission / auto mode",
+        autoOk,
+        autoOk
+          ? `the run used ${runArgs.find((a) => autoFlags.includes(a))} and completed without an interactive permission prompt`
+          : autoUsed
+            ? "the run used an auto/permission flag but did not complete cleanly"
+            : "the adapter's one-shot did not pass a permission/auto flag",
+      );
+    }
 
     // ── session continuation ────────────────────────────────────────────
     const sessionContinuationSkip = templates.skipSeams?.["session-continuation"];
@@ -1004,6 +1080,7 @@ export async function runAdapterContract(
 
     // ── cancellation / clean shutdown ───────────────────────────────────
     const needsShell = process.platform === "win32" && /\.(cmd|bat)$/i.test(binary);
+    const cancelSignal = templates.cancelSignal ?? "SIGTERM";
     let cancelOk = false;
     let cancelDetail = "";
     try {
@@ -1019,19 +1096,19 @@ export async function runAdapterContract(
         // exercised, so do not credit the seam. (Common for a harness that
         // fails immediately — e.g. the broken-stream fixture.)
         cancelOk = false;
-        cancelDetail = `the run exited on its own (code ${cancelProc.exitCode ?? "signal " + cancelProc.signalCode}) before SIGTERM could be delivered; cancellation was not exercised`;
+        cancelDetail = `the run exited on its own (code ${cancelProc.exitCode ?? "signal " + cancelProc.signalCode}) before ${cancelSignal} could be delivered; cancellation was not exercised`;
       } else {
         try {
-          cancelProc.kill("SIGTERM");
+          cancelProc.kill(cancelSignal);
         } catch {
           /* process already gone */
         }
         const cancelExit = await waitForExit(cancelProc, 10_000);
         cancelOk = cancelExit.code !== null || cancelExit.signal !== null;
         cancelDetail = cancelOk
-          ? `SIGTERM stopped the run (exit ${cancelExit.code ?? "signal " + cancelExit.signal})`
+          ? `${cancelSignal} stopped the run (exit ${cancelExit.code ?? "signal " + cancelExit.signal})`
           : cancelExit.timedOut
-            ? "the run ignored SIGTERM and had to be SIGKILLed after 10s"
+            ? `the run ignored ${cancelSignal} and had to be SIGKILLed after 10s`
             : "the run exited without a code/signal";
       }
     } catch (e) {

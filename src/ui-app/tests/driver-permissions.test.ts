@@ -40,6 +40,23 @@ describe("engineer launch permissions", () => {
     );
   });
 
+  it("launches Crush with no gap and no fabricated bypass flag", () => {
+    // Crush auto-approves every permission request in a non-interactive `run`
+    // session and rejects `--yolo`/`--auto`; the launch must not pretend a flag
+    // is doing the work.
+    const launches = engineerLaunches(
+      { name: "engineer", cli: "crush", model: "default", enabled: true },
+      "/tmp/worktree",
+    );
+    for (const { cmd, args } of launches) {
+      expect(cmd).toBe("crush");
+      expect(engineerPermissionGaps("crush", args)).toEqual([]);
+      expect(args).not.toContain("--yolo");
+      expect(args).not.toContain("--auto");
+      expect(args).not.toContain("--dangerously-skip-permissions");
+    }
+  });
+
   it("flags a Codex sandbox without network", () => {
     expect(engineerPermissionGaps("codex", ["exec", "--sandbox", "workspace-write"])).toEqual([
       expect.stringContaining("network is off"),

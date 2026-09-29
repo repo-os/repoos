@@ -7,7 +7,7 @@
  * an HTTP response, so spawns are async-fired and failures surface as events.
  */
 import { randomUUID } from "node:crypto";
-import { spawn, type ChildProcess } from "node:child_process";
+import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import {
   closeSync,
   existsSync,
@@ -257,6 +257,14 @@ interface Entry {
   adoptedPid?: number;
   /** Pollers reading the durable stdout/stderr logs into the live transcript. */
   tailers?: { timer: ReturnType<typeof setInterval>; drain: () => void; flush: () => void }[];
+  /**
+   * Session ids present before a Crush turn spawned (`crush session list
+   * --json`). Crush prints no session id during a run; after exit we diff this
+   * against a fresh listing to name exactly this turn's session. Undefined for
+   * other engines and for an entry adopted after a reload (where no baseline
+   * was captured — the id is then left unset rather than guessed).
+   */
+  crushSessionsBefore?: string[];
 }
 
 /**
@@ -309,6 +317,7 @@ interface Session {
     | "kiro"
     | "cursor"
     | "antigravity"
+    | "crush"
     | "plain";
   /** Cumulative ms across completed turns — excludes any turn in flight (0080). */
   accumulatedMs: number;
@@ -987,7 +996,169 @@ function engineForCli(cli: string): Session["engine"] {
   if (cli === "kiro") return "kiro";
   if (cli === "cursor") return "cursor";
   if (cli === "antigravity") return "antigravity";
+  if (cli === "crush") return "crush";
   return "opencode";
+}
+
+/**
+ * One row of `crush session list --json`. Crush writes sessions to a per-cwd
+ * `<cwd>/.crush/crush.db`; the list is scoped to that project directory.
+ */
+export interface CrushSessionSummary {
+  id: string;
+  /** ISO-ish modification time reported by the CLI, when present. */
+  modified: string | null;
+}
+
+/** Parse `crush session list --json` output. Tolerant: malformed rows are dropped. */
+export function parseCrushSessionList(raw: string): CrushSessionSummary[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed)) return [];
+  const out: CrushSessionSummary[] = [];
+  for (const entry of parsed) {
+    if (!entry || typeof entry !== "object") continue;
+    const row = entry as Record<string, unknown>;
+    if (typeof row.id !== "string" || !row.id) continue;
+    out.push({ id: row.id, modified: typeof row.modified === "string" ? row.modified : null });
+  }
+  return out;
+}
+
+/**
+ * Name the session a Crush turn just created. `before` is the set of ids from
+ * the pre-spawn listing; the turn's session is an id present in `after` but not
+ * in `before`. Among multiple candidates (concurrent runs in the same project)
+ * the most recently modified wins; a candidate with no parseable `modified`
+ * falls back to its position in the (newest-first) listing. Never guesses from
+ * list ordering alone: with no diff, the result is null.
+ */
+export function pickNewCrushSessionId(
+  before: readonly string[],
+  after: readonly CrushSessionSummary[],
+): string | null {
+  const seen = new Set(before);
+  const candidates = after.filter((row) => !seen.has(row.id));
+  if (candidates.length === 0) return null;
+  if (candidates.length === 1) return candidates[0].id;
+  let best = candidates[0];
+  let bestAt = Date.parse(best.modified ?? "");
+  for (const row of candidates.slice(1)) {
+    const at = Date.parse(row.modified ?? "");
+    if (Number.isFinite(at) && (!Number.isFinite(bestAt) || at > bestAt)) {
+      best = row;
+      bestAt = at;
+    }
+  }
+  return best.id;
+}
+
+/** Usage fields Crush reports in `session show --json`'s `meta`. */
+export interface CrushUsage {
+  /** `prompt_tokens` (includes Crush's own system prompt + tool definitions). */
+  inputTokens?: number;
+  /** `completion_tokens`. */
+  outputTokens?: number;
+  /** `total_tokens`. */
+  totalTokens?: number;
+  /** `cost` — US dollars, not a credits unit. */
+  costUsd?: number;
+}
+
+/** Parse `crush session show <id> --json` into a usage summary, or null. */
+export function parseCrushSessionUsage(raw: string): CrushUsage | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  const meta =
+    parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>).meta : undefined;
+  if (!meta || typeof meta !== "object") return null;
+  const m = meta as Record<string, unknown>;
+  const num = (v: unknown): number | undefined =>
+    typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : undefined;
+  const usage: CrushUsage = {};
+  const input = num(m.prompt_tokens);
+  const output = num(m.completion_tokens);
+  const total = num(m.total_tokens);
+  const cost = num(m.cost);
+  if (input !== undefined) usage.inputTokens = input;
+  if (output !== undefined) usage.outputTokens = output;
+  if (total !== undefined) usage.totalTokens = total;
+  if (cost !== undefined) usage.costUsd = cost;
+  return usage;
+}
+
+/** Run `crush session list --json` in a cwd and return its raw stdout. Null on failure. */
+function readCrushSessionListRaw(cwd: string): string | null {
+  try {
+    const res = spawnSync("crush", ["session", "list", "--json"], {
+      cwd,
+      encoding: "utf8",
+      timeout: 5000,
+      stdio: ["ignore", "pipe", "ignore"],
+      // Never let a user's exported client/server mode turn this read into a
+      // detached `crush server` spawn (matches harnessChildEnv at spawn time).
+      env: { ...process.env, CRUSH_CLIENT_SERVER: "0" },
+    });
+    if (res.error || res.status !== 0 || typeof res.stdout !== "string") return null;
+    return res.stdout;
+  } catch {
+    return null;
+  }
+}
+
+/** Read the current `crush session list --json` ids for a cwd. Null on failure. */
+function readCrushSessionIds(cwd: string): string[] | null {
+  const raw = readCrushSessionListRaw(cwd);
+  if (raw === null) return null;
+  return parseCrushSessionList(raw).map((row) => row.id);
+}
+
+/** Read one Crush session's usage via `crush session show <id> --json`. */
+function readCrushSessionUsage(id: string, cwd: string): CrushUsage | null {
+  try {
+    const res = spawnSync("crush", ["session", "show", id, "--json"], {
+      cwd,
+      encoding: "utf8",
+      timeout: 5000,
+      stdio: ["ignore", "pipe", "ignore"],
+      env: { ...process.env, CRUSH_CLIENT_SERVER: "0" },
+    });
+    if (res.error || res.status !== 0 || typeof res.stdout !== "string") return null;
+    return parseCrushSessionUsage(res.stdout);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Extra child-process env a harness needs for a RepoOS-managed headless run.
+ * Crush's client/server mode is off unless `CRUSH_CLIENT_SERVER=1`; when on,
+ * `crush run` auto-spawns a detached `crush server` and suppresses live message
+ * events (one dump at the end). Force local mode explicitly so a user's exported
+ * value cannot silently turn managed runs into a daemon (same rule as opencode's
+ * `--standalone`, docs/agent-compatibility.md).
+ */
+export function harnessChildEnv(cmd: string, env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  if (cmd === "crush") env.CRUSH_CLIENT_SERVER = "0";
+  return env;
+}
+
+/**
+ * The signal used to stop a running harness. Crush only installs a SIGINT
+ * handler (`signal.NotifyContext(ctx, os.Interrupt, os.Kill)`); SIGTERM has no
+ * handler and orphans the run's tool subprocesses, while SIGINT cancels
+ * gracefully and reaps them. Every other engine keeps SIGTERM.
+ */
+export function engineCancelSignal(engine: string | undefined): NodeJS.Signals {
+  return engine === "crush" ? "SIGINT" : "SIGTERM";
 }
 
 /** The opencode `--format json` event fields we consume. */
@@ -2436,6 +2607,10 @@ export const ENGINEER_REQUIRED_COMMANDS = ["repoos", "bun", "bunx", "git"] as co
  * - github copilot: --allow-all-tools under --no-ask-user. GitHub documents
  *   it as required for non-interactive mode; unlike --allow-all/--yolo, it
  *   does not disable Copilot's path or URL verification.
+ * - crush: no flag. Non-interactive `run` sessions auto-approve every
+ *   permission request by design (`InitCoderAgentNonInteractive` calls
+ *   `Permissions.AutoApproveSession`); `--yolo` is a TTY-only root flag that
+ *   `crush run` rejects. So the launch carries no bypass flag and needs none.
  */
 export function engineerPermissionGaps(cli: string, args: readonly string[]): string[] {
   const needFlag = (flag: string): string[] =>
@@ -2448,6 +2623,9 @@ export function engineerPermissionGaps(cli: string, args: readonly string[]): st
       return needFlag("--auto");
     case "kiro":
       return needFlag("--trust-all-tools");
+    case "crush":
+      // Approval is a property of the mode, not a flag — see the comment above.
+      return [];
     case "cursor":
       return needFlag("--force");
     case "qwen code":
@@ -2598,6 +2776,16 @@ function cliCommand(
       ],
     };
   }
+  if (cli === "crush") {
+    // --quiet hides the spinner; --model accepts `model` or `provider/model`.
+    // Non-interactive run sessions auto-approve permissions (no flag), and the
+    // child env forces CRUSH_CLIENT_SERVER=0 so no detached server is spawned.
+    // cwd is set via spawn options; `run --cwd` is not needed.
+    return {
+      cmd: "crush",
+      args: ["run", "--quiet", ...modelArgs(cli, model), mission],
+    };
+  }
   // default: opencode's headless `run` mode. `--format json` streams one JSON
   // event per line (step_start / text / tool_use / step_finish / error) that
   // the runner parses into structured transcript entries. The process is spawned
@@ -2728,6 +2916,22 @@ function resumeCommand(
         "--output-format",
         "stream-json",
         "--dangerously-skip-permissions",
+      ],
+    };
+  }
+  if (cli === "crush") {
+    // Resume the EXACT session captured post-run. Crush's --continue attaches
+    // the most recent session in the cwd, which could belong to a different
+    // task, so when no id is known start a fresh session (the text still gets a
+    // real turn) rather than continuing unrelated work.
+    return {
+      cmd: "crush",
+      args: [
+        "run",
+        "--quiet",
+        ...(sessionId ? ["--session", sessionId] : []),
+        ...modelArgs(cli, model),
+        text,
       ],
     };
   }
@@ -3062,6 +3266,11 @@ export function promptCommand(agent: Agent, prompt: string): { cmd: string; args
       args: ["-p", prompt, ...extra, "--output-format", "json"],
     };
   }
+  if (agent.cli === "crush") {
+    // Plain text, matching the interactive runner. No structured output exists
+    // to extract usage from, and no flag can restrict the tools a run may use.
+    return { cmd: "crush", args: ["run", "--quiet", ...extra, prompt] };
+  }
   return { cmd: "opencode", args: ["run", ...extra, prompt] };
 }
 
@@ -3151,6 +3360,16 @@ export function pmCommand(
       cmd: "agy",
       args: ["-p", prompt, ...extra, "--output-format", "json"],
     };
+  }
+  if (agent.cli === "crush") {
+    // Crush has no read-only mode: a non-interactive `run` auto-approves every
+    // permission request. Unlike opencode/cursor this authoring pass can
+    // therefore run tools and edit files; the PM's output is still only applied
+    // via `patchTaskFile`, but the isolation the other drivers get is
+    // unavailable here. Recorded in docs/agent-compatibility.md rather than
+    // faked. Usage is not reported on stdout; it is captured post-run from
+    // `crush session show --json` for streaming sessions only.
+    return { cmd: "crush", args: ["run", "--quiet", ...extra, prompt] };
   }
   // opencode: `--format json` separates the final answer from step-by-step
   // narration (0264 vs 0253) and its `step_finish` events carry per-call
@@ -3262,6 +3481,12 @@ export function reviewCommand(
       cmd: "agy",
       args: ["-p", prompt, ...extra, "--output-format", "json", "--dangerously-skip-permissions"],
     };
+  }
+  if (agent.cli === "crush") {
+    // The reviewer must run `git diff` and read files; crush auto-approves
+    // those in non-interactive run mode, so no flag is needed. It cannot be
+    // confined to reads — the review boundary is RepoOS's, not the CLI's.
+    return { cmd: "crush", args: ["run", "--quiet", ...extra, prompt] };
   }
   return {
     cmd: "opencode",
@@ -3382,8 +3607,9 @@ export function extractOneShotReportText(cli: string, rawOutput: string): string
  * reuses this spawn/timeout/capture handling instead of duplicating it.
  * `onSpawn` hands the live child to the caller so it can be killed early.
  *
- * The child inherits the server's env verbatim: unlike the streaming runner,
- * NO `REPOOS_API_URL` / `REPOOS_TASK_ID` is injected, so a one-shot agent has
+ * The child inherits the server's env (with a per-harness override applied,
+ * e.g. `CRUSH_CLIENT_SERVER=0`): unlike the streaming runner, NO
+ * `REPOOS_API_URL` / `REPOOS_TASK_ID` is injected, so a one-shot agent has
  * no pointer at the control plane's task endpoints.
  */
 /**
@@ -3452,7 +3678,14 @@ export function runPrompt(
     let proc: ChildProcess;
     const startedAt = Date.now();
     try {
-      proc = spawn(cmd, args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
+      proc = spawn(cmd, args, {
+        cwd,
+        stdio: ["ignore", "pipe", "pipe"],
+        // Inherit the server env (minus the per-harness override below): a
+        // one-shot has no control-plane pointer, but crush still needs
+        // CRUSH_CLIENT_SERVER=0 so it cannot spawn a detached server.
+        env: harnessChildEnv(cmd, { ...process.env }),
+      });
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
       resolve({ ok: false, error: `could not launch ${cmd}: ${reason}` });
@@ -4798,6 +5031,11 @@ export class AgentRunner {
     const logStem = opts.review ? `${taskId}.${runId}` : taskId;
     const outLog = join(this.logDir, `${logStem}.out.log`);
     const errLog = join(this.logDir, `${logStem}.err.log`);
+    // Crush prints no session id during a run, so snapshot the project's
+    // session list before this turn starts; cleanup() diffs it to name THIS
+    // turn's session (never `--continue`, which could attach another task).
+    const crushSessionsBefore =
+      cmd === "crush" ? (readCrushSessionIds(cwd) ?? undefined) : undefined;
     let outFd: number | undefined;
     let errFd: number | undefined;
     let proc: ChildProcess;
@@ -4833,6 +5071,9 @@ export class AgentRunner {
       if (!opts.review) agentEnv.REPOOS_TASK_ID = taskId;
       agentEnv.REPOOS_RUN_ID = runId;
       if (this.apiUrl && !opts.review) agentEnv.REPOOS_API_URL = this.apiUrl;
+      // Per-harness env (e.g. CRUSH_CLIENT_SERVER=0) applied last so it cannot
+      // be clobbered by the lifecycle bookkeeping above.
+      harnessChildEnv(cmd, agentEnv);
       proc = spawn(cmd, args, {
         cwd,
         stdio: ["ignore", outFd, errFd],
@@ -4863,6 +5104,7 @@ export class AgentRunner {
       review: opts.review,
       reviewKind: opts.review ? opts.reviewKind : undefined,
       tailers,
+      ...(crushSessionsBefore ? { crushSessionsBefore } : {}),
     });
     // Turn-start bookkeeping for the live stats readout (0080): the silence
     // clock resets here too, not just on output, so a follow-up turn on a
@@ -5678,8 +5920,10 @@ export class AgentRunner {
   }
 
   /**
-   * Signal a running agent to stop: graceful SIGTERM first, SIGKILL after a
-   * short grace period. Returns immediately; the registry clears on exit.
+   * Signal a running agent to stop: a graceful engine-appropriate signal
+   * (SIGTERM, or SIGINT for crush so it reaps its tool subprocesses), then
+   * SIGKILL after a short grace period. Returns immediately; the registry
+   * clears on exit.
    *
    * Every caller is the server or a human acting deliberately — a task leaving
    * `active`, Stop work / abandon, Stop MTD, an interrupted chat response. None
@@ -5691,6 +5935,7 @@ export class AgentRunner {
     const entry = this.entries.get(taskId);
     if (!entry) return { stopped: false, reason: "task is not running" };
     entry.intentionalStop = true;
+    const cancelSignal = engineCancelSignal(this.sessions.get(taskId)?.engine);
     for (const tailer of entry.tailers ?? []) {
       tailer.drain();
       tailer.flush();
@@ -5700,7 +5945,7 @@ export class AgentRunner {
     if (entry.adoptedPid) {
       // For adopted entries (0214): kill by PID directly since proc is null.
       try {
-        process.kill(entry.adoptedPid, "SIGTERM");
+        process.kill(entry.adoptedPid, cancelSignal);
       } catch {
         /* already gone */
       }
@@ -5714,7 +5959,7 @@ export class AgentRunner {
       }, 3000);
     } else if (!entry.killTimer) {
       try {
-        entry.proc?.kill("SIGTERM");
+        entry.proc?.kill(cancelSignal);
       } catch {
         /* already gone */
       }
@@ -5938,6 +6183,17 @@ export class AgentRunner {
     if (session?.engine === "kiro" && !session.sessionId && entry.workdir) {
       void this.captureKiroSessionId(taskId, session, entry.workdir);
     }
+    // Crush, like kiro, prints no session id during a run. Capture it (and the
+    // turn's usage) synchronously before the DB write below, so the row lands
+    // with the real cost/tokens instead of a token estimate or a blank. On the
+    // first turn a diff against the pre-spawn listing names exactly this turn's
+    // session; later turns reuse the captured id and only refresh usage. No
+    // baseline (e.g. an entry adopted after a reload) leaves the id unset rather
+    // than guessing. Best-effort: a failure changes nothing.
+    if (session?.engine === "crush" && entry.workdir) {
+      this.captureCrushSession(session, entry.workdir, entry.crushSessionsBefore);
+      if (session.sessionId) this.schedulePersist(taskId);
+    }
     this.emit({ type: "agent.exited", id: taskId, at: now() });
     // A confirmed exit always clears any stall warning — silence is only
     // ambiguous while the process is still alive.
@@ -6097,6 +6353,39 @@ export class AgentRunner {
   }
 
   /**
+   * Post-run session-id and usage capture for Crush. `crush run` prints no
+   * session id, so on the first turn the id is the one present in a fresh
+   * `crush session list --json` but absent from the pre-spawn baseline captured
+   * on the entry. Later turns reuse that id (`--session`), so only the usage is
+   * refreshed. `crush session show <id> --json` supplies the session's
+   * cumulative tokens and cost (USD) for the Tokens tab. Best-effort and
+   * fail-soft: any failure leaves the fields untouched so the next turn simply
+   * starts a fresh Crush session.
+   */
+  private captureCrushSession(
+    session: Session,
+    cwd: string,
+    before: readonly string[] | undefined,
+  ): void {
+    let id = session.sessionId;
+    if (!id) {
+      if (!before) return;
+      const afterRaw = readCrushSessionListRaw(cwd);
+      if (!afterRaw) return;
+      const picked = pickNewCrushSessionId(before, parseCrushSessionList(afterRaw));
+      if (!picked) return;
+      id = picked;
+      session.sessionId = id;
+    }
+    const usage = readCrushSessionUsage(id, cwd);
+    if (!usage) return;
+    if (usage.inputTokens !== undefined) session.inputTokens = usage.inputTokens;
+    if (usage.outputTokens !== undefined) session.outputTokens = usage.outputTokens;
+    if (usage.totalTokens !== undefined) session.tokens = usage.totalTokens;
+    if (usage.costUsd !== undefined) session.costUsd = usage.costUsd;
+  }
+
+  /**
    * Post-run session-id capture for Kiro CLI (#0148). Kiro does not print its
    * session id during the run; after the process exits we query the CLI's local
    * session list for the cwd and take the most-recently-updated entry — that is
@@ -6209,6 +6498,7 @@ export class AgentRunner {
           "kiro",
           "cursor",
           "antigravity",
+          "crush",
           "plain",
         ].includes(value.engine as string) ||
         typeof value.updatedAt !== "string" ||

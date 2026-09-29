@@ -118,6 +118,19 @@ describe("detectAgents", () => {
     });
   });
 
+  it("registers Crush as a drivable, CLI-only agent with a distinct cli id", () => {
+    const crush = KNOWN_AGENTS.find((agent) => agent.id === "crush");
+    expect(crush).toMatchObject({
+      name: "crush",
+      cli: "crush",
+      binary: "crush",
+      drivable: true,
+    });
+    expect(crush?.installHint).toContain("brew install");
+    // No machine-readable auth-status probe exists (`crush login` is interactive).
+    expect(crush?.authCheckArgs).toBeUndefined();
+  });
+
   it("reports installed, version-carrying headless binaries", async () => {
     const root = tmpDir();
     makeBin(join(root, "bin"), "opencode", "#!/bin/sh\necho 'opencode v0.3.0'\n");

@@ -34,6 +34,7 @@ model-selection check is not certification of the complete adapter contract.
 | **Antigravity** | `antigravity` | `agy` | `>=1.0.0 <2.0.0` | **1.2.8** (2026-09-22) | Gemini-backed; `--dangerously-skip-permissions` for unattended work. |
 | **GitHub Copilot** | `github copilot` | `copilot` | `>=1.0.0 <2.0.0` | **1.0.87** (2026-09-22) | `--output-format json` JSONL; `--no-ask-user --allow-all-tools` for headless. |
 | **Qwen Code** | `qwen code` | `qwen` | `>=0.1.0 <1.0.0` | Pending | Claude-compatible interface; `--yolo` for headless. Requires `--auth-type` configured. |
+| **Crush** | `crush` | `crush` | `>=0.97.0 <0.98.0` | Pending | Plain-text headless runs; session-continuation and structured-events skipped (session id and usage captured post-run via `crush session list` / `session show --json`). Pre-1.0, so the range is narrow. |
 
 This table is derived from `src/core/agent-compatibility.json`. Update that manifest
 and add contract evidence together when certifying a release. Do not silently

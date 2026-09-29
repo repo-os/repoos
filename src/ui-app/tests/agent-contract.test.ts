@@ -38,6 +38,30 @@ process.stdout.write("unknown subcommand: " + sub + "\\n");
 process.exit(1);
 `;
 
+const FAKE_CRUSH = `#!/usr/bin/env node
+// Fixture crush binary for the adapter contract suite. Crush has no JSON mode:
+// 'run --quiet' prints plain assistant text and exits, the session id is only
+// available post-run via 'session list --json', and non-interactive runs
+// auto-approve with no flag. Cancellation must use SIGINT; node terminates on it.
+const fs = require("fs");
+const log = process.env.REPOOS_CONTRACT_LOG;
+if (log) {
+  try { fs.appendFileSync(log, JSON.stringify(process.argv.slice(2)) + "\\n"); } catch {}
+}
+const args = process.argv.slice(2);
+if (args[0] === "--version") { process.stdout.write("crush version v0.97.1\\n"); process.exit(0); }
+if (args[0] === "--help") { process.stdout.write("Usage: crush [command]\\n\\nCommands: run\\n"); process.exit(0); }
+if (args[0] === "models") { process.stdout.write("aihubmix/DeepSeek-V3\\nopencode-go/big-pickle\\n"); process.exit(0); }
+if (args[0] === "run") {
+  process.stdout.write("OK\\n");
+  // Stay alive briefly so the cancellation probe can signal us mid-run.
+  setTimeout(() => process.exit(0), 1000);
+  return;
+}
+process.stdout.write("unknown subcommand: " + args[0] + "\\n");
+process.exit(1);
+`;
+
 interface Fixture {
   bin: string;
   dir: string;
@@ -51,6 +75,20 @@ function makeFixture(): Fixture {
   const dir = mkdtempSync(join(tmpdir(), "repoos-contract-test-"));
   const bin = join(dir, "opencode");
   writeFileSync(bin, FAKE_OPENCODE, { mode: 0o755 });
+  const fx: Fixture = {
+    bin,
+    dir,
+    log: join(dir, "argv.log"),
+    clean: () => rmSync(dir, { recursive: true, force: true }),
+  };
+  fixtures.push(fx);
+  return fx;
+}
+
+function makeCrushFixture(): Fixture {
+  const dir = mkdtempSync(join(tmpdir(), "repoos-contract-crush-"));
+  const bin = join(dir, "crush");
+  writeFileSync(bin, FAKE_CRUSH, { mode: 0o755 });
   const fx: Fixture = {
     bin,
     dir,
@@ -119,6 +157,48 @@ describe("adapter contract suite", () => {
     expect(firstRun).toContain("--auto"); // --dir removed in opencode v2; cwd is set via spawn option
     expect(resume).toBeDefined();
     expect(resume).toContain("sess-123"); // the session id the fixture emitted
+  });
+
+  it("passes every seam against a deterministic fixture crush binary (two documented skips)", async () => {
+    const fx = makeCrushFixture();
+    process.env.REPOOS_CONTRACT_LOG = fx.log;
+    const result = await runAdapterContract({ cli: "crush", bin: fx.bin, mode: "fixture" });
+    delete process.env.REPOOS_CONTRACT_LOG;
+
+    expect(result.passed).toBe(true);
+    expect(result.evidence).toContain("adapter contract suite passed 8/8");
+    expect(result.detectedVersion).toEqual([0, 97, 1]);
+    const byId = new Map(result.capabilities.map((c) => [c.id, c]));
+    for (const cap of result.capabilities) {
+      expect(cap.ok, `${cap.id} should pass: ${cap.detail}`).toBe(true);
+    }
+    // Crush has no structured stream and no session id during a run; both are
+    // documented skips rather than failures.
+    expect(byId.get("structured-events")?.detail).toMatch(/skipped:/);
+    expect(byId.get("session-continuation")?.detail).toMatch(/skipped:/);
+    // Auto-approval is a property of the non-interactive mode, not a flag.
+    expect(byId.get("auto-permissions")?.detail).toMatch(/accepts no bypass flag/);
+    // Cancellation is exercised with SIGINT, not SIGTERM.
+    expect(byId.get("cancellation")?.detail).toMatch(/SIGINT stopped the run/);
+  });
+
+  it("drives crush's documented invocation shapes (run --quiet, models, --version, --help)", async () => {
+    const fx = makeCrushFixture();
+    process.env.REPOOS_CONTRACT_LOG = fx.log;
+    await runAdapterContract({ cli: "crush", bin: fx.bin, mode: "fixture" });
+    delete process.env.REPOOS_CONTRACT_LOG;
+
+    const argv = readSpawnLog(fx);
+    const firstRun = argv.find((args) => args[0] === "run" && !args.includes("--session"));
+    expect(firstRun).toBeDefined();
+    expect(firstRun).toContain("--quiet");
+    expect(firstRun).not.toContain("--continue");
+    expect(argv.some((args) => args[0] === "models")).toBe(true);
+    expect(argv.some((args) => args[0] === "--version")).toBe(true);
+    expect(argv.some((args) => args[0] === "--help")).toBe(true);
+    // session-continuation is a documented skip, so the probe never resumes; the
+    // real driver's resume shape is asserted in agent-drivers.test.ts.
+    expect(argv.some((args) => args[0] === "run" && args.includes("--session"))).toBe(false);
   });
 
   it("reports honest per-seam failures when the harness starts but streams garbage", async () => {
