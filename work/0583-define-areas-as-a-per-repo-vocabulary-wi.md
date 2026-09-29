@@ -5,11 +5,11 @@ type: feature
 status: inbox
 priority: p2
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-29T11:31:44Z"
-updated_at: "2026-09-29T11:31:44Z"
+updated_at: "2026-09-29T11:34:50Z"
 ---
 ## Problem
 
@@ -22,7 +22,12 @@ Areas become a defined, per-repo vocabulary that users and agents pick from, wit
 ## Design
 
 - **Source of the vocabulary.** A declared list in `repoos.toml` (e.g. `[areas]` with names and optional descriptions), merged with every `areas` value declared by `[[preview.targets]]`, so a repo that has only set up previews already gets sensible options. Repos with nothing declared show only the free-text entry.
-- **Multi-value.** A task may have several areas. Pick a single canonical stored form (a list in frontmatter, or a delimited string) and migrate the existing `a + b` values in `work/*.md`. This is a task-format change, so per AGENTS.md ("self-modifying act") it needs a migration in the same change and a check that the parser still reads every file in `work/`. Preview routing, the board filter and search must all use one shared parse helper.
+- **Multi-value: comma-separated, stored as a list if the parser allows.**
+  - First step: check whether the task frontmatter parser (`src/core/task.ts`) supports list values. It is zero-dependency and may be hand-rolled.
+  - If it does, store `area: [web, core]`. If not, store a comma-separated string (`area: web, core`) and parse it with one shared helper. Either way, there is one canonical written form and it uses commas, never `+`.
+  - Display: one chip per area in the UI (matching the multi-select); `web, core` in plain text (`repoos list`, `show`, logs). CLI and API take `--area web,core`.
+  - Legacy: the reader accepts both `+` and `,` so existing `a + b` tasks keep working until the migration rewrites them.
+  - This is a task-format change, so per AGENTS.md ("self-modifying act") it needs a migration in the same change and a check that the parser still reads every existing file in `work/`. Preview routing, the board filter and search must all use the one shared parse helper.
 - **UI.** A multi-select dropdown in the same style as the existing custom dropdowns (`ui/select/*`, no native `<select>`), with checkmarks like the Story dropdown, plus a free-text entry that adds a new area. Used in the task drawer and in New task. Newly typed areas that are not in the vocabulary are allowed, and can be offered "add to repoos areas".
 - **Agents.** The PM/task-authoring prompt receives the area list and must choose from it (or propose a new one explicitly), so outside-authored specs stop inventing values. Agents still never edit task frontmatter directly; changes go through `repoos update --area` / the API, which accept multiple values.
 - **Onboarding.** `repoos init` and the first-run flow prompt the user to define areas and preview targets together, since they reinforce each other. Skipping is fine; the free-text fallback remains.
@@ -40,7 +45,9 @@ Automatically inferring areas from changed paths (#0582's `paths` globs cover th
 ## Acceptance criteria
 
 - [ ] `repoos.toml` can declare areas; the effective vocabulary is those plus all preview-target areas.
-- [ ] Tasks support multiple areas with one canonical stored form; a migration converts existing `a + b` values and every file in `work/` still parses.
+- [ ] Parser list support is checked first and the stored form chosen accordingly (list, else comma string); the written form always uses commas.
+- [ ] Tasks support multiple areas; the reader accepts legacy `a + b`; a migration rewrites existing values and every file in `work/` still parses.
+- [ ] UI shows one chip per area; plain-text output shows `a, b`; CLI/API accept `--area a,b`.
 - [ ] Area picker is a multi-select in the shared dropdown style with a free-text entry; with no vocabulary configured it degrades to free text only.
 - [ ] `repoos update --area` and the task API accept multiple areas; the PM agent prompt includes the vocabulary.
 - [ ] Preview routing, board filters and search use the shared parse helper; a multi-area task resolves to the matching target(s).
@@ -50,3 +57,4 @@ Automatically inferring areas from changed paths (#0582's `paths` globs cover th
 ## Activity
 
 - 2026-09-29T11:31:44Z · created · unknown
+- 2026-09-29T11:34:50Z · body
