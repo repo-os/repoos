@@ -119,6 +119,11 @@ describe("repoos.toml and environment docs", () => {
       expect(cfg.tunnelEnabled).toBe(false);
       expect(cfg.remoteValidation?.enabled).toBe(false);
       expect(cfg.closeOut?.timeoutMs).toBe(360000);
+      // [areas] (#0583) — the declared area vocabulary parses.
+      expect(cfg.areas).toEqual([
+        { name: "web", description: "The main web app" },
+        { name: "cli" },
+      ]);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

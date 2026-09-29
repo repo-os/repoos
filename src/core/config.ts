@@ -35,6 +35,7 @@ import type {
   Theme,
   UiTheme,
   WhisperConfig,
+  AreaConfig,
 } from "./types.js";
 import { STATUSES } from "./types.js";
 import { parseCheckPlanConfig } from "./check-plan.js";
@@ -642,6 +643,54 @@ export function parseDistributionConfig(
 }
 
 /**
+ * Parse the `[areas]` vocabulary (#0583) from flat TOML. Two accepted shapes:
+ *   `[[areas]]` rows, each `name = "web"` plus an optional `description`;
+ *   a flat `areas = ["web", "core"]` string array shorthand.
+ * Anything not usable is dropped with a warning rather than poisoning the
+ * picker; names are trimmed. Rows without a name are skipped. Duplicate names
+ * are NOT deduped here — the merge in `effectiveAreaVocabulary` owns dedup so
+ * a preview target that repeats a declared area still resolves to it.
+ * Exported for tests; `loadConfig` merges the result into the config.
+ */
+export function parseAreasConfig(parsed: Record<string, unknown>): AreaConfig[] | undefined {
+  const rows: AreaConfig[] = [];
+  const warnings: string[] = [];
+  const addName = (rawName: unknown, description?: unknown): void => {
+    if (typeof rawName !== "string" || !rawName.trim()) {
+      warnings.push(`[areas] ignoring a row with no name`);
+      return;
+    }
+    const entry: AreaConfig = { name: rawName.trim() };
+    if (typeof description === "string" && description.trim()) {
+      entry.description = description.trim();
+    }
+    rows.push(entry);
+  };
+
+  // One accepted shape at a time — mixing a flat string array with [[areas]]
+  // rows is ambiguous about which order wins, and one of them would silently
+  // lose. parseFlatToml gives us both forms in the same `areas` key: the
+  // array-of-tables form is rows of objects, the shorthand every string.
+  const raw = parsed.areas;
+  if (Array.isArray(raw) && raw.every((r) => typeof r === "string")) {
+    for (const name of raw) addName(name);
+  } else if (Array.isArray(raw)) {
+    for (const row of raw) {
+      if (typeof row !== "object" || row === null || Array.isArray(row)) {
+        warnings.push(`[areas] ignoring a non-table row`);
+        continue;
+      }
+      const r = row as Record<string, unknown>;
+      addName(r.name, r.description);
+    }
+  } else if (raw !== undefined) {
+    warnings.push(`[areas] ignoring a non-array value`);
+  }
+  for (const w of warnings) console.warn(w);
+  return rows.length ? rows : undefined;
+}
+
+/**
  * Parse the `[preview]` section (plus `[[preview.targets]]` tables) from flat
  * TOML. Exported for tests; `loadConfig` merges the result into the config.
  * Rows without a usable `command` are dropped rather than poisoning resolution.
@@ -901,6 +950,13 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       const stories: StoriesConfig = { enabled: storiesEnabled };
       cfg.stories = stories;
     }
+    // [areas] section (#0583) — the declared area vocabulary. Both the
+    // `[[areas]]` array-of-tables form (with per-area descriptions) and the
+    // flat `areas = ["web", "core"]` string-array shorthand are accepted.
+    // Invalid rows are dropped with a warning rather than poisoning the
+    // picker; the vocabulary is advisory (free text stays allowed).
+    const declaredAreas = parseAreasConfig(parsed);
+    if (declaredAreas) cfg.areas = declaredAreas;
     const devInspectorEnabled = parsed["dev.inspector.enabled"];
     const devInspectorEditor = parsed["dev.inspector.editorCommand"];
     if (typeof devInspectorEnabled === "boolean" || typeof devInspectorEditor === "string") {
@@ -1327,6 +1383,18 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: DEFAULT_CONFIG.tunnelEnabled,
       description: "Publish local apps securely through Cloudflare Tunnel + Access",
+    },
+    {
+      key: "areas",
+      label: "Areas",
+      type: "array",
+      tier: "live",
+      restartRequired: false,
+      default: [],
+      description:
+        "The task-area vocabulary the drawer's area picker offers — comma-separated, order " +
+        "matters. Empty means free text only; preview-target areas are offered automatically " +
+        "without being declared here.",
     },
     {
       key: "stories.enabled",
@@ -1845,6 +1913,11 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "deployments.subdir",
   // Stories
   "stories.enabled",
+  // Areas vocabulary (#0583): `[[areas]]` rows plus the flat `areas`
+  // string-array shorthand the Settings UI writes.
+  "areas",
+  "areas.name",
+  "areas.description",
   // Distribution
   "distribution.name",
   "distribution.kind",

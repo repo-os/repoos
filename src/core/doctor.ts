@@ -462,6 +462,27 @@ export function findConfigValueProblems(parsed: Record<string, unknown>): string
   if (exts !== undefined && !Array.isArray(exts)) {
     problems.push(`taskExtensions = ${JSON.stringify(exts)} (expected an array)`);
   }
+
+  // [areas] (#0583): `[[areas]]` rows or the flat string-array shorthand. Each
+  // entry needs a usable `name`; non-array, non-row entries would be silently
+  // dropped by the parser, so surface them here instead.
+  const areasVal = get("areas");
+  if (areasVal !== undefined && !Array.isArray(areasVal)) {
+    problems.push(`areas = ${JSON.stringify(areasVal)} (expected an array of names)`);
+  } else if (Array.isArray(areasVal)) {
+    for (const entry of areasVal) {
+      if (typeof entry === "string") continue; // flat shorthand
+      if (typeof entry === "object" && entry !== null && !Array.isArray(entry)) {
+        const name = (entry as Record<string, unknown>).name;
+        if (typeof name === "string" && name.trim()) continue;
+        problems.push(
+          `[areas] row ${JSON.stringify(entry)} has no usable name (expected name = "…")`,
+        );
+      } else {
+        problems.push(`areas entry ${JSON.stringify(entry)} is neither a name nor a [[areas]] row`);
+      }
+    }
+  }
   return problems;
 }
 

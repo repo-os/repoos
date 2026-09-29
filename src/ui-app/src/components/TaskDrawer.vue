@@ -106,6 +106,8 @@ import { reportPredatesLatestHandoff } from "../lib/reviewFreshness";
 import { autoRepairHint, retryCountFrom } from "../lib/retryHints";
 import CopyableNumber from "./CopyableNumber.vue";
 import PmChatSurface from "./PmChatSurface.vue";
+import AreaPicker from "./AreaPicker.vue";
+import { formatTaskAreas, parseTaskAreas } from "../../../core/areas.js";
 
 const repo = useRepoStore();
 const ui = useUiStore();
@@ -1332,6 +1334,65 @@ function openAssignedStory(): void {
 }
 
 const transitioned = computed(() => !!(ui.active && repo.transitionState?.id === ui.active.id));
+
+// ---- Area multi-select (#0583) ----
+//
+// Both the edit form and the New task panel keep their area value as the
+// canonical comma-joined string (exactly what the API writes); the picker
+// works on the parsed list. The effective vocabulary comes from the server's
+// computed `areaVocabulary` (`[areas]` + every preview target area) — with
+// none configured the picker degrades to its free-text entry only.
+
+/** The effective area vocabulary; empty until the config load lands. */
+const areaOptions = computed<{ name: string; description?: string }[]>(() => {
+  const v = (config.data ?? {})["areaVocabulary"];
+  if (!Array.isArray(v)) return [];
+  return v
+    .map((e) => {
+      if (typeof e === "string") return { name: e };
+      const o = e as { name?: unknown; description?: unknown };
+      if (typeof o.name !== "string" || !o.name.trim()) return null;
+      return {
+        name: o.name,
+        ...(typeof o.description === "string" && o.description.trim()
+          ? { description: o.description }
+          : {}),
+      };
+    })
+    .filter((e): e is { name: string; description?: string } => e !== null);
+});
+
+/** List view of the New task form's comma-joined area field. */
+const ntAreaList = computed<string[]>({
+  get: () => parseTaskAreas(ui.nt.area),
+  set: (v) => {
+    ui.nt.area = v.length ? formatTaskAreas(v) : "";
+  },
+});
+
+/** List view of the edit draft's comma-joined area field. */
+const draftAreaList = computed<string[]>({
+  get: () => parseTaskAreas(draft.area),
+  set: (v) => {
+    draft.area = v.length ? formatTaskAreas(v) : "";
+  },
+});
+
+/**
+ * Offer a newly typed area to the repo's declared vocabulary: add it to the
+ * persisted `[areas]` list (descriptions of unchanged names are preserved
+ * server-side). Uses `config.save`, which PATCHes and then re-reads the
+ * /api/config payload — so `areaVocabulary` (and the picker's rows) update
+ * live and repeat adds never depend on a page reload. Two drawers saved at
+ * once are still last-write-wins on the whole list (there is no per-row
+ * append endpoint), but the window is a single round-trip and a re-opened
+ * Settings always shows the server's truth.
+ */
+async function addAreaToVocabulary(name: string): Promise<void> {
+  const current = parseTaskAreas(config.form.areas as unknown);
+  if (!current.some((s) => s.toLowerCase() === name.toLowerCase())) current.push(name);
+  await config.save({ areas: current });
+}
 
 /**
  * Planning has ended, so the branch is frozen. The title is deliberately NOT
@@ -3373,7 +3434,13 @@ watch(
             <div class="field-row">
               <div class="field">
                 <label>Area</label>
-                <Input v-model="ui.nt.area" placeholder="web" />
+                <AreaPicker
+                  id="nt-area"
+                  v-model="ntAreaList"
+                  :options="areaOptions"
+                  placeholder="area"
+                  @add-to-vocabulary="addAreaToVocabulary"
+                />
               </div>
               <div class="field">
                 <label>Assign to</label>
@@ -4088,7 +4155,13 @@ watch(
           <div class="field-row">
             <div class="field">
               <label for="et-area">Area</label>
-              <Input id="et-area" v-model="draft.area" placeholder="web" />
+              <AreaPicker
+                id="et-area"
+                v-model="draftAreaList"
+                :options="areaOptions"
+                placeholder="area"
+                @add-to-vocabulary="addAreaToVocabulary"
+              />
             </div>
             <div v-if="storiesEnabled" class="field">
               <div class="field-header">

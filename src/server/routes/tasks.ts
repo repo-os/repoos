@@ -30,6 +30,7 @@ import {
 } from "../pm-runs.js";
 import { queuePmImages, dropPmImages, type IncomingPmImage } from "../pm-attachments.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "../freeform.js";
+import { effectiveAreaNames } from "../../core/areas.js";
 import {
   recordFreeformFailure,
   readFreeformStore,
@@ -158,7 +159,7 @@ export const createTask: RouteHandler = async (ctx, req, res) => {
   const created = repoos.createTask({
     title: body.title,
     type: body.type as string | undefined,
-    area: body.area as string | undefined,
+    area: (body.area ?? undefined) as string | string[] | undefined,
     story: body.story as string | undefined,
     priority: body.priority as string | undefined,
     assignedTo: body.assignedTo as string | undefined,
@@ -522,7 +523,9 @@ export const createFreeformTask: RouteHandler = async (ctx, req, res) => {
   // re-adopts and finishes it. `pmCommand` keeps the same authoring-only blast
   // radius while letting usage extraction see real tokens/cost (0335).
   const effectiveRunId = runId ?? `freeform-${created.id}-${randomUUID()}`;
-  const prompt = pmPrompt(explanation);
+  // #0583: the PM gets the repo's effective area vocabulary so it picks from
+  // it (or proposes a new one explicitly) instead of inventing values.
+  const prompt = pmPrompt(explanation, effectiveAreaNames(config));
   // Antigravity is explicitly worktree-bound: even its read-only PM pass must
   // not start in the main checkout. Reserve a short-lived, task-scoped
   // worktree for this run; the durable finalizer removes it on every exit
