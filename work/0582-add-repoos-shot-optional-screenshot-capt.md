@@ -8,8 +8,9 @@ area: cli
 assigned_to: ai
 created_by: ""
 branch: ""
+review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-29T11:13:18Z"
-updated_at: "2026-09-29T11:35:02Z"
+updated_at: "2026-09-29T16:46:29Z"
 ---
 ## Problem
 
@@ -78,3 +79,4 @@ Visual-regression baselines, image diffing, per-component harnesses, any hosted 
 - 2026-09-29T11:13:18Z · created · unknown
 - 2026-09-29T11:24:34Z · body
 - 2026-09-29T11:35:02Z · status inbox→ready
+- 2026-09-29T16:46:29Z · review_model_override
