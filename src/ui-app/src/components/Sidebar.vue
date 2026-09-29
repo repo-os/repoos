@@ -7,6 +7,7 @@ import { useConfigStore } from "../stores/config";
 import { relTime } from "../lib/time";
 import { CANARY_PROMPT } from "../../../core/canary.js";
 import CanaryConfirmDialog from "./CanaryConfirmDialog.vue";
+import SidebarGitState from "./SidebarGitState.vue";
 
 const repo = useRepoStore();
 const config = useConfigStore();
@@ -77,6 +78,7 @@ const buildTitle = computed(() =>
       <div class="row">
         <span>events</span><b>{{ eventCount }}</b>
       </div>
+      <SidebarGitState />
     </div>
 
     <div class="theme-switch" role="group" aria-label="Design theme">

@@ -63,6 +63,11 @@ export class FakeEventSource {
     this.listeners.set(t, list);
   }
 
+  /** Deliver a frame to every listener registered for `t`. */
+  emit(t: string, data: unknown): void {
+    for (const fn of this.listeners.get(t) ?? []) fn({ data: JSON.stringify(data) });
+  }
+
   close(): void {
     /* noop */
   }
