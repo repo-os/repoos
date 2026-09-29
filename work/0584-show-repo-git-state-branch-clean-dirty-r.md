@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-29T18:29:41Z"
+review_passes: 2
 id: "0584"
 title: "Show repo git state (branch, clean/dirty, recent commits) in the sidebar"
 type: feature
@@ -11,9 +13,7 @@ branch: feat/show-repo-git-state-branch-clean-dirty-r
 model_override: opencode-go/mimo-v2.6-flash
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-29T11:44:56Z"
-updated_at: "2026-09-29T18:26:11Z"
 review_rounds: 1
-review_passes: 1
 ---
 ## Problem
 
@@ -72,3 +72,4 @@ Committing, stashing, or switching branches from the popup (read-only for now); 
 - 2026-09-29T17:59:49Z · status active→review
 - 2026-09-29T18:05:13Z · status review→active
 - 2026-09-29T18:26:11Z · status active→review
+
