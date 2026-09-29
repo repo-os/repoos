@@ -1,11 +1,8 @@
 ---
-merge_conflict_retry_count: 1
-updated_at: "2026-09-29T19:47:16Z"
-review_passes: 4
 id: "0583"
 title: Define areas as a per-repo vocabulary with a multi-select picker
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
@@ -14,6 +11,9 @@ branch: feat/define-areas-as-a-per-repo-vocabulary-wi
 model_override: opencode-go/glm-5.3-flash
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-29T11:31:44Z"
+updated_at: "2026-09-29T19:59:47Z"
+merge_conflict_retry_count: 1
+review_passes: 4
 review_rounds: 2
 ---
 ## Problem
@@ -74,5 +74,4 @@ Automatically inferring areas from changed paths (#0582's `paths` globs cover th
 - 2026-09-29T18:24:06Z · status active→review
 - 2026-09-29T18:28:19Z · needs_input
 - 2026-09-29T19:47:16Z · needs_input
-
-
+- 2026-09-29T19:59:47Z · status review→done, release:success
