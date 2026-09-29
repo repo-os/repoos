@@ -66,10 +66,24 @@ describe("migrateTaskAreas", () => {
       );
       expect(readFileSync(join(root, "work", "0003-c.md"), "utf8")).toContain("area: web");
       expect(readFileSync(join(root, "work", "0004-d.md"), "utf8")).toContain("area: [web, core]");
-      // activity entry recorded through patchTaskFile
-      expect(readFileSync(join(root, "work", "0001-a.md"), "utf8")).toContain(
-        "area: [server, ui-app]",
-      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("does NOT bump updated_at and does NOT append an activity entry", () => {
+    const original =
+      '---\nid: "0001"\narea: server + ui-app\nupdated_at: "2026-01-02T03:04:05Z"\n---\nbody 1\n\n## Activity\n\n- 2026-01-01T00:00:00Z · created\n';
+    const root = repoWithFiles({ "0001-a.md": original });
+    try {
+      migrateTaskAreas(config(root));
+      const content = readFileSync(join(root, "work", "0001-a.md"), "utf8");
+      // Storage format rewrite, not a task edit (#0583 review round 2):
+      // timestamps and the activity log are left exactly as parsed.
+      expect(content).toContain('updated_at: "2026-01-02T03:04:05Z"');
+      expect(content.split("\n").filter((l) => l.startsWith("- ") && l.includes("·"))).toEqual([
+        "- 2026-01-01T00:00:00Z · created",
+      ]);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

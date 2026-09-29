@@ -56,9 +56,8 @@ export function parseTaskAreas(raw: unknown): string[] {
   // Split every entry on the canonical comma AND the legacy ` + ` spelling,
   // so a single "server + ui-app" string (or one stray
   // `["server + ui-app"]` list item) normalizes to the same shape. A `+`
-  // without whitespace on both sides — "a+b", "c++" — is just characters in
+  // without preceding whitespace — "a+b", "c++" — is just characters in
   // a value, never a separator.
-  const splitRe = /\s*\+\s+/;
   const out: string[] = [];
   const seen = new Set<string>();
   for (const value of values) {
@@ -109,29 +108,47 @@ interface AreaEntry {
   description?: string;
 }
 
+/** One raw vocabulary/`config.areas` entry: a string, or a `{name, description?}` row. */
+interface AreaEntryLike {
+  name?: unknown;
+  description?: unknown;
+}
+
+/** Read one raw entry defensively — strings and `{name}` rows both work. */
+function entryOf(raw: AreaEntryLike): AreaEntry | null {
+  const name = typeof raw === "string" ? raw : typeof raw.name === "string" ? raw.name.trim() : "";
+  if (!name) return null;
+  const description =
+    typeof raw.description === "string" && raw.description.trim()
+      ? raw.description.trim()
+      : undefined;
+  return { name, ...(description ? { description } : {}) };
+}
+
 /**
  * The complete area vocabulary a repo offers, in declaration order:
  * `[areas]` names first, then any `[[preview.targets]].areas` not already
- * declared, then (when `extras` is provided) anything a task sheet has used —
- * NOT included here; extras are allowed as free text but never auto-added.
- * Dedup is case-insensitive with first spelling winning.
+ * declared. Accepts every raw entry shape a caller might carry (plain
+ * strings, `{name}` rows) so exported helpers working on raw config records
+ * can never throw on a half-normalized payload. Dedup is case-insensitive,
+ * first spelling winning.
  */
 export function effectiveAreaVocabulary(
   config: Pick<RepoOSConfig, "areas" | "preview">,
 ): AreaEntry[] {
   const out: AreaEntry[] = [];
   const seen = new Set<string>();
-  const push = (name: string, description?: string): void => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    const key = trimmed.toLowerCase();
+  const push = (raw: AreaEntryLike): void => {
+    const entry = entryOf(raw);
+    if (!entry) return;
+    const key = entry.name.toLowerCase();
     if (seen.has(key)) return;
     seen.add(key);
-    out.push({ name: trimmed, ...(description ? { description } : {}) });
+    out.push(entry);
   };
-  for (const a of config.areas ?? []) push(a.name, a.description);
+  for (const a of config.areas ?? []) push(a as unknown as AreaEntryLike);
   for (const t of config.preview?.targets ?? []) {
-    for (const a of t.areas ?? []) push(a);
+    for (const a of t.areas ?? []) push({ name: a });
   }
   return out;
 }
@@ -155,6 +172,12 @@ export interface UnresolvedArea {
  * allowed, this just makes vocabulary churn visible: when a preview target or
  * `[areas]` entry disappears, the tasks that relied on it show up here.
  * Case-insensitive membership, always through the shared parser.
+ *
+ * The parser's synthesized fallback (`"general"` for area-less tasks) is
+ * deliberately EXCLUDED: an area-less task did not choose an area, so it must
+ * never read as "no longer resolves" just because a repo's vocabulary does
+ * not declare `general`. That would turn every future vocabulary edit into
+ * false-positive noise against the whole untagged backlog.
  */
 export function unresolvedAreaReport(
   tasks: readonly { id: string; area?: string; areas?: string[] }[],
@@ -165,7 +188,9 @@ export function unresolvedAreaReport(
   for (const t of tasks) {
     const areas = (t.areas?.length ? t.areas : t.area) as unknown;
     for (const area of parseTaskAreas(areas)) {
-      if (known.has(area.toLowerCase())) continue;
+      // "general" is the parser's own fallback for an UNSET area (see
+      // beforeAreaFields); advisory drift reporting never counts it.
+      if (known.has(area.toLowerCase()) || area.toLowerCase() === "general") continue;
       const key = area.toLowerCase();
       const entry = out.get(key) ?? { area, taskIds: [] };
       if (!entry.taskIds.includes(t.id)) entry.taskIds.push(t.id);

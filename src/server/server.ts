@@ -1605,8 +1605,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // The one-time area-format migration (#0583) runs once AFTER the index has
   // populated: any task file whose `area` frontmatter still carries a legacy
   // spelling (`server + ui-app`, a comma string, a one-element list) is
-  // rewritten to the canonical scalar-or-list form through `patchTaskFile`,
-  // then committed in one pass so `main` never sits dirty. The reader
+  // rewritten to the canonical scalar-or-list form through the shared task
+  // engine, then committed in one pass here so `main` never sits dirty and
+  // the change lands as ONE reviewable migration commit. The reader
   // tolerates every legacy shape forever, so a skipped file keeps working
   // until its next write. Control-plane only — a preview child (or any
   // worktree-rooted server) must never rewrite the board's own files from a
