@@ -20,6 +20,7 @@
  *   GET  /api/docs             -> [{ path, title, mtimeMs }]  (context docs listing)
  *   GET  /api/repo/log         -> git log page { commits, nextCursor, branch } (?branch=&path=&limit=&before=&includeDocs=1)
  *   GET  /api/repo/branches    -> { defaultBranch, branches } local heads, default first
+ *   GET  /api/repo/status      -> repo root checkout git state { branch, detached, dirty, head, recentCommits } (#0584)
  *   GET  /api/repo/commits/:sha -> one commit + changed files + patch
  *   GET  /api/repo/commits/:sha/file -> { before, after } contents at parent vs commit
  *   POST /api/docs/create      -> create a document { path, content }; returns { ok, path }
@@ -105,6 +106,8 @@ import {
   runGit,
 } from "../core/git.js";
 import { sweepAndWarn } from "../core/worktree-gc.js";
+import { onGitMutation } from "../core/git-activity.js";
+import { createRepoStatusNotifier, isSameCheckout } from "./repo-status.js";
 import { remoteJobCapabilities } from "./pre-review-remote-gate.js";
 import {
   hostRunner,
@@ -211,6 +214,7 @@ import {
   getDocs,
   getRepoLog,
   getRepoBranches,
+  getRepoStatusRoute,
   getRepoCommitRoute,
   getRepoCommitFile,
   getSkills,
@@ -1171,6 +1175,24 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
   };
   const unsubscribe = index.on(emitEvent);
+
+  // Sidebar git-state indicator (#0584): one server-owned computation for the
+  // repo root checkout, pushed over SSE only when the state actually differs.
+  // Two trigger classes feed it — the work watcher (writes under `work/`, plus
+  // its explicit `.git/HEAD` · refs · index watches for branch switches,
+  // commits and staging) and RepoOS's own commits/merges, which move `main`
+  // without tripping a watched file event. Everything else (focus, visibility,
+  // SSE reconnect, the slow fallback interval) is the client refetching.
+  const repoStatusNotifier = createRepoStatusNotifier({
+    root: config.root,
+    emit: (status) => emitEvent({ type: "repo.status", status, at: status.computedAt }),
+  });
+  watcher.setGitSignal(() => repoStatusNotifier.notify());
+  const offGitMutation = onGitMutation((mutatedRoot) => {
+    // A worktree commit shares `.git` with the root checkout but must not be
+    // read as "the main checkout changed" — only a mutation of this checkout.
+    if (isSameCheckout(mutatedRoot, config.root)) repoStatusNotifier.notify();
+  });
 
   // Per-task `repoos check` run tracking for the Debug tab (0310): the
   // handoff-finalize check and the MTD merge-gate check are the only two
@@ -2249,6 +2271,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/docs", getDocs);
   router.register("GET", "/api/repo/log", getRepoLog);
   router.register("GET", "/api/repo/branches", getRepoBranches);
+  router.register("GET", "/api/repo/status", getRepoStatusRoute);
   router.register("GET", /^\/api\/repo\/commits\/([^/]+)\/file$/, getRepoCommitFile);
   router.register("GET", /^\/api\/repo\/commits\/([^/]+)$/, getRepoCommitRoute);
   router.register("POST", "/api/docs/create", createDoc);
@@ -3156,6 +3179,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         } catch {
           /* ignore */
         }
+        repoStatusNotifier.stop();
+        offGitMutation();
         try {
           unsubscribe();
         } catch {
@@ -3225,6 +3250,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           unsubscribeCleanup();
           unsubscribeNotifications();
           unsubscribeCTOEvents();
+          repoStatusNotifier.stop();
+          offGitMutation();
           watcher.stop();
           supervisor?.stop();
           watchdog?.stop();
