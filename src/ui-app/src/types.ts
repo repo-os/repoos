@@ -51,6 +51,8 @@ export interface Task {
   needsMerge: boolean;
   priority: string;
   area: string;
+  /** Parsed area list (#0583); `area` is the comma-joined display form. */
+  areas?: string[];
   /** Optional cross-area delivery slice; empty string means untagged. */
   story?: string;
   assignee: "ai" | "human" | "unassigned";
@@ -208,6 +210,8 @@ export interface BoardTask {
   needsMerge: boolean;
   priority: string;
   area: string;
+  /** The parsed area list (#0583) — one chip per entry in the UI. */
+  areas?: string[];
   /** Optional cross-area delivery slice; empty string means untagged. */
   story?: string;
   assignee: "ai" | "human" | "unassigned";

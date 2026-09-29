@@ -1,4 +1,5 @@
 import type { Task, ConfigField, DocMeta, SkillMeta } from "./types";
+import { parseTaskAreas } from "../../core/areas.js";
 import {
   resolveSettingLocation,
   settingSearchAliases,
@@ -6,6 +7,18 @@ import {
   type SettingLocationContext,
   type SettingsTabId,
 } from "./settings-location.js";
+
+/**
+ * A task's areas as one lowercase searchable string (#0583). The area is a
+ * LIST now, and search must match any of its entries — read through the
+ * shared `parseTaskAreas` helper, the same one preview routing uses, rather
+ * than a whole-string compare on the joined `area`.
+ */
+function taskAreaText(t: Pick<Task, "area" | "areas">): string {
+  return parseTaskAreas((t.areas?.length ? t.areas : t.area) as unknown)
+    .join(" ")
+    .toLowerCase();
+}
 
 export interface HighlightedSnippet {
   html: string;
@@ -279,7 +292,7 @@ export function searchAll(query: string, src: SearchSource): SearchResult[] {
   // hit came first in source order (0007 follow-up — search results were
   // effectively unranked, just capped at the first 8 array-order matches).
   const taskIdf = buildIdf(
-    src.tasks.map((t) => `${t.title} ${t.body}`.toLowerCase()),
+    src.tasks.map((t) => `${t.title} ${t.body} ${taskAreaText(t)}`.toLowerCase()),
     terms,
   );
   const scoredTasks: { result: SearchResult; score: number }[] = [];
@@ -288,18 +301,20 @@ export function searchAll(query: string, src: SearchSource): SearchResult[] {
       includes(t.id, q) ||
       includes(t.title, q) ||
       includes(t.body, q) ||
+      includes(taskAreaText(t), q) ||
       fuzzyMatch(t.title, q) ||
       fuzzyMatch(t.body, q)
     ) {
       const score =
         fieldScore(t.id, 8, terms, taskIdf, q) +
         fieldScore(t.title, 4, terms, taskIdf, q) +
+        fieldScore(taskAreaText(t), 3, terms, taskIdf, q) +
         fieldScore(t.body, 1, terms, taskIdf, q);
       scoredTasks.push({
         result: {
           kind: "task",
           title: t.title,
-          subtitle: `#${t.id} · ${t.status} · ${t.area}`,
+          subtitle: `#${t.id} · ${t.status} · ${taskAreaText(t) || t.area}`,
           task: t,
         },
         score,

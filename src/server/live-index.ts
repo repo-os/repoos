@@ -638,6 +638,7 @@ function toBoardTask(t: Task): BoardTask {
     needsMerge: t.needsMerge,
     priority: t.priority,
     area: t.area,
+    areas: t.areas,
     story: t.story ?? "",
     assignee: t.assignee,
     assignedTo: t.assignedTo,

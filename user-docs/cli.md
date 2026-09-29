@@ -36,13 +36,14 @@ Creates a task.
 
 ```bash
 repoos new "Fix the login redirect loop" --type bug --area web --priority p1
+repoos new "Redesign the onboarding flow" --area "web, onboarding"
 ```
 
 | Flag | Values |
 | --- | --- |
 | `--type` | `feature`, `bug`, `chore`, `spec`, `refactor` |
 | `--priority` | `p0`, `p1`, `p2`, `p3` |
-| `--area` | Free text — your own grouping (`web`, `server`, `core`…) |
+| `--area` | Free text, comma-separated for several (`--area web, core`). Areas a repo declares (`[[areas]]` in repoos.toml) appear in the task drawer's area picker; anything outside it stays allowed. |
 | `--ai` | Assign to an AI agent |
 | `--body` | Task body; pass `-` to read from stdin |
 

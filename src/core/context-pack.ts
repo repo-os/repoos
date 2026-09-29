@@ -18,6 +18,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join, relative, extname } from "node:path";
 import type { RepoOSConfig, Task } from "./types.js";
+import { parseTaskAreas } from "./areas.js";
 import type { BootstrapResult } from "./bootstrap.js";
 
 /** Maximum byte size of a context pack before relevance-ranked truncation. */
@@ -464,7 +465,7 @@ function worktreeState(
 // ---- File relevance ranking ----
 
 /**
- * Map a task area to likely source directories. Extended as conventions grow;
+ * Map ONE task area to likely source directories. Extended as conventions grow;
  * currently covers the self-hosted RepoOS layout.
  */
 function areaToDirs(area: string): string[] {
@@ -526,12 +527,17 @@ function rankFiles(config: RepoOSConfig, task: Task, repoMap: RepoMap): Relevant
     if (!entry.reasons.includes(reason)) entry.reasons.push(reason);
   };
 
-  // 1. Area-based: files in mapped directories
-  const areaDirs = areaToDirs(task.area);
+  // 1. Area-based: files in mapped directories. #0583: a task can carry
+  // several areas; map each through `parseTaskAreas` (which also splits the
+  // legacy "server + ui-app" form) instead of matching the joined string.
+  const taskAreas = parseTaskAreas((task.areas?.length ? task.areas : task.area) as unknown);
+  const areaDirs = taskAreas.flatMap(areaToDirs);
   for (const ad of areaDirs) {
     for (const f of repoMap.files) {
       if (f.path === ad || f.path.startsWith(ad)) {
-        add(f.path, 10, `area match: "${task.area}"`);
+        const matchedArea =
+          taskAreas.find((a) => (areaToDirs(a) as string[]).includes(ad)) ?? taskAreas[0]!;
+        add(f.path, 10, `area match: "${matchedArea}"`);
       }
     }
   }

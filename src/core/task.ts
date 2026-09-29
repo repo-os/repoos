@@ -9,6 +9,7 @@ import { parseDocument, serializeDocument } from "./frontmatter.js";
 import { STATUSES, type Task, type Status, type Assignee, type TaskGitInfo } from "./types.js";
 import { emptyGitInfo } from "./git.js";
 import { normalizeStoryName } from "./stories.js";
+import { formatTaskAreas, parseTaskAreas } from "./areas.js";
 
 /** Canonical frontmatter key order, so writes produce tidy, stable diffs. */
 const KEY_ORDER = [
@@ -176,6 +177,30 @@ function resolveAssignee(raw: string): Assignee {
   return "human";
 }
 
+/**
+ * The two area fields (#0583), parsed once from whatever the frontmatter held.
+ * `area` stays the comma-joined display string (historical single-value
+ * fallback "general" when unset); `areas` is the canonical list matchers must
+ * read — always via the shared `parseTaskAreas` helper, never a whole-string
+ * compare.
+ */
+function beforeAreaFields(data: Record<string, unknown>): { area: string; areas: string[] } {
+  const parsed = parseTaskAreas(data.area);
+  if (parsed.length === 0) return { areas: ["general"], area: "general" };
+  return { areas: parsed, area: formatTaskAreas(parsed) };
+}
+
+/**
+ * The canonical frontmatter WRITTEN form (#0583): a plain scalar when one
+ * area, an inline list when several. It uses the parsed `areas` when present
+ * and otherwise re-parses `area` (legacy shapes included), so a
+ * partially-constructed task still writes exactly one deterministic shape.
+ */
+function beforeAreaWrite(task: Task): string | string[] {
+  const areas = task.areas?.length ? task.areas : parseTaskAreas(task.area);
+  return areas.length > 1 ? areas : (areas[0] ?? task.area);
+}
+
 export interface ParseTaskArgs {
   content: string;
   absPath: string;
@@ -270,7 +295,12 @@ export function parseTask(args: ParseTaskArgs): Task {
     needsMerge: data.needs_merge === true,
     noSourceChange: data.no_source_change === true,
     priority: String(data.priority ?? "p2"),
-    area: String(data.area ?? "general"),
+    // #0583: one shared parse for every shape the frontmatter may hold — list,
+    // comma string, or legacy "a + b". `area` keeps the comma-joined display
+    // form so plain-text consumers (list/show/logs) print "a, b" unchanged;
+    // `areas` is the canonical list matchers must read. An unset/blank area
+    // falls back to the historical "general" default.
+    ...beforeAreaFields(data),
     story: normalizeStoryName(data.story),
     assignee,
     assignedTo: assignedTo || (assignee === "unassigned" ? "" : assignee),
@@ -308,7 +338,11 @@ export function serializeTask(task: Task): string {
     type: task.type,
     status: task.status,
     priority: task.priority,
-    area: task.area,
+    // #0583: the canonical written form — a plain scalar when one area,
+    // an inline list (`area: [web, core]`) when several. Commas as the
+    // separator, never the legacy `+`. `areas` is normalized on parse; a
+    // partially-constructed Task without it falls back to the shared parser.
+    area: beforeAreaWrite(task),
     assigned_to: task.assignedTo || (task.assignee === "ai" ? "ai" : ""),
     created_by: task.createdBy,
     branch: task.branch,

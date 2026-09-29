@@ -85,7 +85,11 @@ export interface TaskFrontmatter {
   needs_merge?: boolean;
   /** True when a legitimate no-op task opts out of the vacuous-handoff rejection. */
   no_source_change?: boolean;
-  area?: string;
+  /**
+   * One area, a comma-separated string ("web, core"), or a list. Legacy
+   * "a + b" values read through the shared `parseTaskAreas` helper too (#0583).
+   */
+  area?: string | string[];
   /**
    * Optional cross-area delivery slice this task belongs to (a "story"). Free
    * text, whitespace-normalized; grouping is case-insensitive. There is no
@@ -156,6 +160,15 @@ export interface Task {
   noSourceChange: boolean;
   priority: Priority | string;
   area: string;
+  /**
+   * The task's areas as a list (#0583) — the canonical parsed form always
+   * produced by `parseTask`/`createTask`/`patchTaskFile`. Optional on the
+   * type so partial constructions (tests, older serialized payloads) never
+   * lie about the field; readers fall back to the shared parser over `area`.
+   * `area` remains the comma-joined display string ("a, b"); matchers read
+   * THIS list through `parseTaskAreas`, never a whole-string compare.
+   */
+  areas?: string[];
   /** Optional cross-area delivery slice; empty string means untagged. */
   story?: string;
   assignee: Assignee;
@@ -444,6 +457,15 @@ export interface RepoOSConfig {
    */
   stories?: StoriesConfig;
   /**
+   * Declared area vocabulary (#0583) — `[areas]` in `repoos.toml`, an array of
+   * tables each with a `name` (required) and an optional human `description`.
+   * Merged with every `[[preview.targets]].areas` value into the effective
+   * vocabulary the task drawer's multi-select, the CLI and the PM prompt
+   * offer. Absent/empty means free-text only: no vocabulary is imposed and
+   * every other behavior is unchanged.
+   */
+  areas?: AreaConfig[];
+  /**
    * Close-out (Move to done) pipeline settings (#0573) — a wall-clock budget
    * so a hung or pathologically slow close-out always terminates with a
    * retryable `failed` job instead of sitting on the check step forever.
@@ -566,6 +588,19 @@ export interface DeploymentConfig {
 export interface StoriesConfig {
   /** Whether the Stories page and its navigation item are shown. Default false. */
   enabled?: boolean;
+}
+
+/**
+ * One declared area (#0583), from a `[[areas]]` row in `repoos.toml`. The
+ * effective vocabulary is these plus every `[[preview.targets]].areas` value;
+ * free text is always allowed beyond it. `name` is required and is matched
+ * case-insensitively against task frontmatter.
+ */
+export interface AreaConfig {
+  /** The area name as tasks should write it, e.g. "web". Required. */
+  name: string;
+  /** Optional one-liner explaining what belongs to this area (picker tooltip, PM prompt). */
+  description?: string;
 }
 
 /** Dev-only UI copy inspector (#0509). */
@@ -1267,6 +1302,8 @@ export interface BoardTask {
   needsMerge: boolean;
   priority: Priority | string;
   area: string;
+  /** The parsed area list (#0583) — one chip per entry in the UI. */
+  areas?: string[];
   /** Optional cross-area delivery slice; empty string means untagged. */
   story?: string;
   assignee: Assignee;
