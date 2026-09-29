@@ -2,7 +2,7 @@
 id: "0584"
 title: "Show repo git state (branch, clean/dirty, recent commits) in the sidebar"
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -68,3 +68,4 @@ Committing, stashing, or switching branches from the popup (read-only for now); 
 - 2026-09-29T16:46:59Z · status inbox→ready
 - 2026-09-29T16:47:00Z · status ready→active, branch
 - 2026-09-29T19:18:46Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-09-29T19:18:46Z · status review→active
