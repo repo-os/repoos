@@ -2,7 +2,7 @@
 id: "0582"
 title: "Add repoos shot: optional screenshot capture of a task preview"
 type: feature
-status: review
+status: active
 priority: p2
 area: cli
 assigned_to: ai
@@ -84,3 +84,4 @@ Visual-regression baselines, image diffing, per-component harnesses, any hosted 
 - 2026-09-29T19:20:46Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
 - 2026-09-29T19:20:47Z · status review→active
 - 2026-09-29T19:29:46Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-09-29T19:29:46Z · status review→active
