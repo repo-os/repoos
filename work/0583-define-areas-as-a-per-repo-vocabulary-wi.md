@@ -2,14 +2,14 @@
 id: "0583"
 title: Define areas as a per-repo vocabulary with a multi-select picker
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-29T11:31:44Z"
-updated_at: "2026-09-29T11:34:50Z"
+updated_at: "2026-09-29T11:34:57Z"
 ---
 ## Problem
 
@@ -58,3 +58,4 @@ Automatically inferring areas from changed paths (#0582's `paths` globs cover th
 
 - 2026-09-29T11:31:44Z · created · unknown
 - 2026-09-29T11:34:50Z · body
+- 2026-09-29T11:34:57Z · status inbox→ready
