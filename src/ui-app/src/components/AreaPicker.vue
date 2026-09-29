@@ -13,6 +13,11 @@
  * dialog is open, Radix puts `pointer-events: none` on `<body>`, and an
  * unmarked teleported layer would be click-transparent.
  *
+ * The dialog's Radix focus trap listens for `focusin` on `document` and yanks
+ * focus back into the drawer when it lands outside it — which is exactly where
+ * this teleported panel (and its free-text input) lives. The panel therefore
+ * stops `focusin` from bubbling up to the trap so typing works.
+ *
  * With no vocabulary configured (`options` empty) the picker degrades to the
  * free-text entry only — the shared multi-select degrades, it never blocks.
  */
@@ -188,6 +193,7 @@ const triggerClasses = cn(
         aria-multiselectable="true"
         class="fixed z-[130] max-h-80 overflow-auto rounded-[10px] border border-[var(--border)] bg-[var(--popover)] text-[var(--txt)] shadow-[0_18px_40px_rgba(0,0,0,.45)] py-1"
         :style="{ top: `${pos.top}px`, left: `${pos.left}px`, minWidth: `${pos.minWidth}px` }"
+        @focusin.stop
       >
         <button
           v-for="row in rows"
