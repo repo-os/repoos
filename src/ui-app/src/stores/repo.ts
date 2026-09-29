@@ -25,6 +25,7 @@ import type {
   ReviewReport,
   ReviewState,
   ScreenshotMeta,
+  ShotMeta,
   Status,
   SystemStats,
   Task,
@@ -610,6 +611,10 @@ export const useRepoStore = defineStore("repo", () => {
   >({});
   /** Full patch diffs per task. */
   const diffs = ref<Record<string, { patch: string; truncated: boolean } | null>>({});
+  /** Captured preview shots per task (#0582), hydrated on demand. */
+  const shots = ref<Record<string, ShotMeta[]>>({});
+  /** Area/target mismatch warning per task (#0582), from the shots response. */
+  const shotWarnings = ref<Record<string, string | undefined>>({});
   /** Historical usage totals for a task (incl. role breakdown), keyed by id. */
   const taskUsage = ref<Record<string, TaskUsageStats | null>>({});
   /** Board-level usage totals (overall + per-role + per-day, 0230). */
@@ -2325,6 +2330,30 @@ export const useRepoStore = defineStore("repo", () => {
   const diffFor = (id: string) => diffs.value[id] ?? undefined;
 
   /**
+   * Load the task's captured preview shots and mismatch warning (#0582).
+   * Best-effort: the endpoint is a nice-to-have for the drawer's UI-changes
+   * section and its warning, never a blocker.
+   */
+  async function loadShots(id: string): Promise<void> {
+    try {
+      const r = await api<{ ok: boolean; shots: ShotMeta[]; warning?: string }>(
+        `/api/tasks/${id}/shots`,
+      );
+      if (r.ok) {
+        shots.value = { ...shots.value, [id]: r.shots ?? [] };
+        shotWarnings.value = { ...shotWarnings.value, [id]: r.warning };
+      }
+    } catch {
+      /* endpoint unavailable — shots and the warning are nice-to-have */
+    }
+  }
+
+  /** Captured shots for a task (empty until loaded). */
+  const shotsFor = (id: string): ShotMeta[] => shots.value[id] ?? [];
+  /** Area/target mismatch warning for a task, or undefined when none loaded. */
+  const shotWarningFor = (id: string): string | undefined => shotWarnings.value[id];
+
+  /**
    * Merge main into a task's branch (the "sync with main" action). Reuses the
    * same sync path the server already runs automatically on entry into review
    * for the large-divergence case — this lets the user trigger it on demand for
@@ -2896,6 +2925,9 @@ export const useRepoStore = defineStore("repo", () => {
     loadBoardUsage,
     loadDiff,
     diffFor,
+    loadShots,
+    shotsFor,
+    shotWarningFor,
     syncTaskBranch,
     sendMessage,
     reviewAgain,

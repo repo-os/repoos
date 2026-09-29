@@ -137,6 +137,28 @@ export interface ScreenshotMeta {
   mime: string;
 }
 
+/**
+ * One captured preview shot (#0582), served from
+ * `work/.attachments/<taskId>/shots/` — separate from the uploaded
+ * `ScreenshotMeta` files above, and never referenced from the task body.
+ */
+export interface ShotMeta {
+  /** File name within the task's `shots/` folder. */
+  name: string;
+  /** Resolved preview target this shot came from. */
+  target: string;
+  /** Requested route/URL, when the caller supplied one. */
+  route?: string;
+  /** Repo-relative path. */
+  path: string;
+  /** API URL the UI loads the image from. */
+  url: string;
+  size: number;
+  mime: string;
+  /** ISO-8601 capture time. */
+  capturedAt: string;
+}
+
 export interface Health {
   ok: boolean;
   root: string;
