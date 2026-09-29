@@ -2,15 +2,15 @@
 id: "0586"
 title: Make repoos.toml paths authoritative so agents never relocate docs/work dirs
 type: bug
-status: active
+status: ready
 priority: p2
 area: agents
 assigned_to: ai
 created_by: ""
 branch: feat/make-repoos-toml-paths-authoritative-so-
 created_at: "2026-09-29T18:59:05Z"
-updated_at: "2026-09-29T19:27:40Z"
-handoff_signal_retry_count: 1
+updated_at: "2026-09-29T19:34:03Z"
+handoff_signal_retry_count: 2
 ---
 ## Problem
 
@@ -38,3 +38,4 @@ In a fresh `repoos init` (default `repoos/` namespace), a user dropped project c
 - 2026-09-29T19:19:50Z · status inbox→ready
 - 2026-09-29T19:19:52Z · status ready→active, branch
 - 2026-09-29T19:27:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-09-29T19:34:03Z · watchdog: auto-surfaced stuck task · status active→ready · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
