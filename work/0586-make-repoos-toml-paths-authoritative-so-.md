@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-29T20:32:17Z"
+review_passes: 1
 id: "0586"
 title: Make repoos.toml paths authoritative so agents never relocate docs/work dirs
 type: bug
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: ""
 branch: feat/make-repoos-toml-paths-authoritative-so-
 created_at: "2026-09-29T18:59:05Z"
-updated_at: "2026-09-29T20:31:10Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -43,3 +44,4 @@ In a fresh `repoos init` (default `repoos/` namespace), a user dropped project c
 - 2026-09-29T20:15:26Z · status inbox→ready
 - 2026-09-29T20:18:43Z · status ready→active
 - 2026-09-29T20:31:10Z · status active→review
+
