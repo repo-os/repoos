@@ -76,6 +76,8 @@ import { releaseBranchless, isBranchlessReleaseEligible } from "../branchless-re
 import { bootstrap } from "../../core/bootstrap.js";
 import { generateContextPack, resumePreamble } from "../../core/context-pack.js";
 import { mimeForExtension, resolveScreenshot, saveScreenshot } from "../attachments.js";
+import { localShotStore } from "../shots.js";
+import { computeTaskShotContext } from "../shot-context.js";
 import { STATUSES } from "../../core/types.js";
 import { parseTask } from "../../core/task.js";
 import type { UsageRange } from "../../core/db.js";
@@ -801,6 +803,64 @@ export const uploadScreenshot: RouteHandler = async (ctx, req, res, params) => {
   });
   index.applyFileChange(updated.absPath);
   return json(res, 201, { ok: true, attachment: result });
+};
+
+// Captured preview shots (#0582). Separate from the uploaded screenshots above:
+// written under `shots/`, never referenced from the task body, listed from disk.
+export const listTaskShots: RouteHandler = (ctx, _req, res, params) => {
+  const { config, index } = ctx;
+  const taskId = params.param1;
+  const task = index.getTask(taskId);
+  if (!task) {
+    return json(res, 404, { error: `Task #${taskId} not found` });
+  }
+  const shots = localShotStore(config, taskId).list();
+  const shotContext = computeTaskShotContext(config, task);
+  return json(res, 200, { ok: true, shots, ...shotContext });
+};
+
+export const getTaskShot: RouteHandler = (ctx, _req, res, params) => {
+  const { config } = ctx;
+  const abs = localShotStore(config, params.param1).resolve(params.param2);
+  if (!abs) {
+    return json(res, 404, { error: "Shot not found" });
+  }
+  const mime = mimeForExtension(abs) ?? "image/png";
+  res.writeHead(200, {
+    "Content-Type": mime,
+    "Cache-Control": "no-cache",
+    "Access-Control-Allow-Origin": "*",
+  });
+  res.end(readFileSync(abs));
+};
+
+export const uploadTaskShot: RouteHandler = async (ctx, req, res, params) => {
+  const { config, index } = ctx;
+  const taskId = params.param1;
+  const task = index.getTask(taskId);
+  if (!task) {
+    return json(res, 404, { error: `Task #${taskId} not found` });
+  }
+  const body = (await readBody(req)) as {
+    target?: unknown;
+    route?: unknown;
+    mime?: unknown;
+    name?: unknown;
+    data?: unknown;
+  };
+  const target =
+    typeof body?.target === "string" && body.target.trim() ? body.target.trim() : "default";
+  const result = localShotStore(config, taskId).save({
+    target,
+    ...(typeof body?.route === "string" && body.route ? { route: body.route } : {}),
+    ...(typeof body?.mime === "string" && body.mime ? { mime: body.mime } : {}),
+    ...(typeof body?.name === "string" && body.name ? { name: body.name } : {}),
+    data: typeof body?.data === "string" ? body.data : "",
+  });
+  if ("error" in result) {
+    return json(res, 400, { error: result.error });
+  }
+  return json(res, 201, { ok: true, shot: result });
 };
 
 // Task logs

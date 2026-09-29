@@ -724,12 +724,14 @@ export function parsePreviewConfig(parsed: Record<string, unknown>): PreviewConf
       const areas = (Array.isArray(areasRaw) ? areasRaw : [areasRaw])
         .map((a) => (typeof a === "string" ? a.trim() : ""))
         .filter(Boolean);
+      const paths = normalizeStringList(r.paths);
       const base =
         typeof r.name === "string" && r.name.trim() ? r.name.trim() : areas.join("/") || "target";
       let name = base;
       for (let n = 2; usedNames.has(name); n++) name = `${base} (${n})`;
       usedNames.add(name);
       const target: PreviewTargetConfig = { name, areas, command: targetCommand };
+      if (paths.length) target.paths = paths;
       const targetCwd = typeof r.cwd === "string" ? r.cwd.trim() : "";
       if (targetCwd) target.cwd = targetCwd;
       const targetReadyPath = normalizeReadyPath(r.ready_path ?? r.readyPath);
@@ -757,6 +759,17 @@ function normalizeReadyPath(value: unknown): string | undefined {
 function normalizeReadyTimeoutMs(value: unknown): number | undefined {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return undefined;
   return value;
+}
+
+/**
+ * Normalize a config string list (e.g. a target's `paths` globs): accept an
+ * array or a single string, trim, drop empties. No glob escaping — patterns are
+ * matched by `core/shot-targets.ts`.
+ */
+function normalizeStringList(value: unknown): string[] {
+  if (value === undefined || value === null) return [];
+  const items = Array.isArray(value) ? value : [value];
+  return items.map((v) => (typeof v === "string" ? v.trim() : "")).filter(Boolean);
 }
 
 /**
@@ -1849,6 +1862,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "preview.readyTimeoutMs",
   "preview.targets.name",
   "preview.targets.areas",
+  "preview.targets.paths",
   "preview.targets.command",
   "preview.targets.cwd",
   "preview.targets.readyPath",

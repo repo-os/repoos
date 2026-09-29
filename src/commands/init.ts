@@ -235,6 +235,15 @@ a candidate merge. Do not erase a task's branch metadata to force this path.
 
 ## Rules
 
+- **\`repoos.toml\` owns the layout.** \`workDir\` (\`${workDir}\`) and \`docsDir\`
+  (\`${docsDir}\`) are authoritative: tasks live under \`${workDir}/\` and project
+  docs under \`${docsDir}/\` because the config says so. Never move, rename or
+  relocate those directories, and never "fix" a layout you think is wrong by
+  moving files. If project docs or a person's own notes disagree with the
+  config, report the mismatch — the fix is to update \`repoos.toml\` with human
+  approval (or correct the docs), never to move directories on your own. Do not
+  invent ownership rules for RepoOS directories; the config is the only source
+  of truth for layout.
 - **Never** move task files between folders. Status lives in frontmatter.
 - **Never write directly to \`${workDir}/*.md\` files.** All task creation and
   manipulation goes through \`repoos\` commands or HTTP API endpoints
@@ -284,7 +293,10 @@ export const REPOOS_AGENTS_SECTION = (workDir: string) => `${REPOOS_AGENTS_SECTI
 ## RepoOS
 
 RepoOS keeps tasks as Markdown under \`${workDir}/\` and runs task work in dedicated
-Git worktrees. Use the RepoOS UI or \`repoos\` commands to create and update
+Git worktrees. The layout is set by \`repoos.toml\` (\`workDir\`/\`docsDir\`/\`cacheDir\`):
+those paths are authoritative, so never move or rename them — if project docs
+disagree with the config, ask the human instead of relocating directories.
+Use the RepoOS UI or \`repoos\` commands to create and update
 tasks; do not hand-edit task files. Read the relevant project docs before
 starting work, run \`repoos check\` before handoff, and await human approval
 through RepoOS's **Move to done**. The reviewer is advisory. A Git remote does

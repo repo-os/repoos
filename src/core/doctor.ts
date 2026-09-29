@@ -273,6 +273,113 @@ function walkTaskFiles(dir: string, exts: string[], acc: string[] = []): string[
   return acc;
 }
 
+/** True when `abs` is the repo root or lives inside it. */
+function insideRepo(abs: string, root: string): boolean {
+  const normRoot = resolve(root);
+  return abs === normRoot || abs.startsWith(normRoot + sep);
+}
+
+function isDirectory(path: string): boolean {
+  try {
+    return statSync(path).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Count substantive docs under `dir` — markdown files anywhere in the tree,
+ * treating a README as scaffolding rather than content. A configured docsDir
+ * that holds only a README has effectively been emptied; the same content
+ * living elsewhere is the signal that the layout moved.
+ */
+function countDocs(dir: string): number {
+  let entries: string[];
+  try {
+    entries = readdirSync(dir);
+  } catch {
+    return 0;
+  }
+  let count = 0;
+  for (const entry of entries) {
+    if (entry.startsWith(".")) continue;
+    const full = join(dir, entry);
+    if (isDirectory(full)) {
+      count += countDocs(full);
+      continue;
+    }
+    const lower = entry.toLowerCase();
+    if (lower === "readme.md" || lower === "readme.mdx") continue;
+    if (lower.endsWith(".md") || lower.endsWith(".mdx")) count++;
+  }
+  return count;
+}
+
+/**
+ * Catch the #0586 failure mode: a configured directory that still exists but
+ * has been hollowed out, while its conventional root-level counterpart holds
+ * the real content (`repoos/docs/` reduced to a README while root `docs/` got
+ * the docs; `repoos/work/` with no tasks while root `work/` has them). Doctor
+ * used to pass because it only checked the configured dirs existed. The finding
+ * points at the config option, because the fix is to change config or move the
+ * content back — doctor must never guess which copy is canonical.
+ */
+function checkMisplacedContent(root: string, config: RepoOSConfig): DoctorFinding[] {
+  const out: DoctorFinding[] = [];
+
+  if (config.docsDir !== "docs") {
+    const configured = resolve(root, config.docsDir);
+    const rootDocs = resolve(root, "docs");
+    if (
+      insideRepo(configured, root) &&
+      configured !== rootDocs &&
+      isDirectory(configured) &&
+      isDirectory(rootDocs) &&
+      countDocs(configured) === 0 &&
+      countDocs(rootDocs) > 0
+    ) {
+      out.push(
+        finding(
+          "layout.docs-dir-relocated",
+          "layout",
+          "warn",
+          "Project docs may have been moved out of docsDir",
+          `${config.docsDir}/ holds no project docs, but docs/ at the repo root does. repoos.toml sets docsDir = "${config.docsDir}", so agents read docs from ${config.docsDir}/ and the root copies are ignored.`,
+          `if docs/ is the real location, set \`docsDir = "docs"\` in repoos.toml; otherwise move the docs back under ${config.docsDir}/`,
+        ),
+      );
+    }
+  }
+
+  if (config.workDir !== "work") {
+    const configured = resolve(root, config.workDir);
+    const rootWork = resolve(root, "work");
+    if (
+      insideRepo(configured, root) &&
+      configured !== rootWork &&
+      isDirectory(configured) &&
+      isDirectory(rootWork)
+    ) {
+      const configuredTasks = walkTaskFiles(configured, config.taskExtensions).length;
+      const rootTasks = walkTaskFiles(rootWork, config.taskExtensions).length;
+      if (configuredTasks === 0 && rootTasks > 0) {
+        out.push(
+          finding(
+            "layout.work-dir-relocated",
+            "layout",
+            "warn",
+            "Task files may have been moved out of workDir",
+            `${config.workDir}/ holds no task files, but work/ at the repo root has ${rootTasks}. repoos.toml sets workDir = "${config.workDir}", so the board reads and writes tasks under ${config.workDir}/ and ignores the root copies.`,
+            `if work/ is the real location, set \`workDir = "work"\` in repoos.toml; otherwise move the tasks back under ${config.workDir}/`,
+          ),
+        );
+      }
+    }
+  }
+
+  return out;
+}
+
 /**
  * Keys the parser genuinely reads but that are deliberately absent from
  * `SUPPORTED_TOML_KEYS` (that list is the user-facing docs contract, verified
@@ -809,6 +916,8 @@ function checkLayout(root: string, config: RepoOSConfig): DoctorFinding[] {
     checkDir(root, "layout.inputs-dir", "Inputs", "inputsDir", config.inputsDir ?? "inputs"),
     checkDir(root, "layout.cache-dir", "Cache", "cacheDir", config.cacheDir),
   ];
+
+  out.push(...checkMisplacedContent(root, config));
 
   const wtDir = worktreesDir(root);
   if (existsSync(wtDir)) {

@@ -225,6 +225,22 @@ describe("scaffoldInto starter tasks", () => {
     expect(agents).toContain("`docs/`");
   });
 
+  it("AGENTS.md makes the configured repoos.toml paths authoritative", () => {
+    const root = scratch();
+    scaffoldInto(root, "", "repoos", "new");
+    const agents = readFileSync(join(root, "AGENTS.md"), "utf8");
+
+    // #0586: an agent moved docs/ to the root against docsDir = "repoos/docs".
+    // The scaffolded instructions must forbid relocating config-owned paths and
+    // route a mismatch to the human instead of a directory move.
+    expect(agents).toContain("`repoos.toml` owns the layout");
+    expect(agents).toMatch(/authoritative/i);
+    expect(agents).toMatch(/never move/i);
+    expect(agents).toMatch(/human\s+approval/i);
+    expect(agents).toContain("`repoos/work/`");
+    expect(agents).toContain("`repoos/docs/`");
+  });
+
   it("starter task references configured docsDir", () => {
     const root = scratch();
     scaffoldInto(root, "my project", "repoos", "new");
@@ -288,5 +304,13 @@ describe("existing AGENTS.md RepoOS guidance", () => {
     const existing = "# My project\n";
     const addition = repoOSAgentsSectionAddition(existing);
     expect(addition).toContain("`work/`");
+  });
+
+  it("tells existing repos the configured layout is authoritative (#0586)", () => {
+    const addition = repoOSAgentsSectionAddition("# My project\n", "repoos/work");
+    expect(addition).not.toBeNull();
+    expect(addition).toMatch(/repoos\.toml/);
+    expect(addition).toMatch(/authoritative/i);
+    expect(addition).toMatch(/never move/i);
   });
 });
