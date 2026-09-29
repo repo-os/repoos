@@ -1943,6 +1943,9 @@ export function ensureHotfix(
           };
         }
       }
+      // HEAD moved in `root` — the sidebar git-state indicator recomputes on
+      // this rather than waiting for a file event or the fallback interval.
+      notifyGitMutation(root, "checkout");
     }
   } else {
     if (head !== "main") {
@@ -1967,7 +1970,9 @@ export function resetHotfix(root: string, branch: string): boolean {
   const head = currentBranch(root);
   if (!head || head === "main") return false;
   if (head !== branch) return false;
-  return git(root, ["checkout", "main"]) !== null;
+  const back = git(root, ["checkout", "main"]) !== null;
+  if (back) notifyGitMutation(root, "checkout");
+  return back;
 }
 
 /**

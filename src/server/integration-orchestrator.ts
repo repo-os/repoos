@@ -20,6 +20,7 @@ import {
 } from "node:fs";
 import { join, relative } from "node:path";
 import { spawn } from "node:child_process";
+import { notifyGitMutation } from "../core/git-activity.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { IntegrationJob, JobCoordinator, JobPhase } from "./integration-job.js";
 import type { RepositoryLock, RootLock } from "./repo-lock.js";
@@ -1995,6 +1996,9 @@ export class CloseOutOrchestrator {
             reason: `could not switch main checkout from ${currentHead} to ${mainBranch} before publishing (${checkoutRes.stderr.trim()}). The candidate was NOT merged; retry.`,
           };
         }
+        // HEAD moved in the main checkout: the sidebar git-state indicator
+        // recomputes on this instead of waiting for a watcher event (#0584).
+        notifyGitMutation(root, "checkout");
       }
 
       // Publish-time dirty-main guard (#0211): the main working tree can be

@@ -1027,6 +1027,13 @@
 .side-git-history:hover {
   text-decoration: underline;
 }
+.side-git-pop:focus {
+  outline: none;
+}
+.side-git-pop:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
 .side-git-pop :focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;

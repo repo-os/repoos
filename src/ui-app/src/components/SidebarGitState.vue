@@ -28,6 +28,8 @@ const CLOSE_DELAY_MS = 200;
 /** How long after a pointer press on the icon a focus event is "its own". */
 const POINTER_FOCUS_GRACE_MS = 600;
 const POPOVER_WIDTH = 300;
+/** Stable id so the icon can point at the popover it controls (aria-controls). */
+const POPOVER_ID = "side-git-pop";
 
 const repo = useRepoStore();
 const { gitStatus } = storeToRefs(repo);
@@ -150,6 +152,9 @@ const popupStyle = ref<Record<string, string>>({ left: "0px", top: "0px" });
 let closeTimer: ReturnType<typeof setTimeout> | null = null;
 /** When the icon was last pressed by a pointer — see `onFocus`. */
 let lastPointerAt = 0;
+/** Focus this component moved itself (close → back to the icon), which must
+ *  not be read as "the user focused the icon" and reopen the popover. */
+let ignoreFocusUntil = 0;
 
 /** Touch devices get no hover, so the icon's click toggles instead of opens. */
 const canHover = (): boolean => {
@@ -187,6 +192,7 @@ function cancelClose(): void {
 }
 
 function scheduleClose(delay = CLOSE_DELAY_MS): void {
+  if (!open.value) return; // never arm a timer for something already closed
   cancelClose();
   closeTimer = setTimeout(() => {
     closeTimer = null;
@@ -199,7 +205,7 @@ function closeNow(): void {
   open.value = false;
 }
 
-async function show(): Promise<void> {
+async function show(opts: { moveFocus?: boolean } = {}): Promise<void> {
   cancelClose();
   if (open.value) return;
   open.value = true;
@@ -208,10 +214,26 @@ async function show(): Promise<void> {
   void repo.refreshGitStatus();
   await nextTick();
   measure();
+  // Keyboard users need focus to follow the popover they just opened — it is
+  // teleported to <body>, so tabbing from the icon would otherwise skip over
+  // it entirely. Pointer opens must NOT steal focus.
+  if (opts.moveFocus) popupEl.value?.focus({ preventScroll: true });
 }
 
 function onEnter(): void {
+  // Touch browsers fire compatibility mouse events before `click`, so on a
+  // no-hover device hover is not an opener: if it were, a tap would open on
+  // `mouseenter` and then toggle shut on `click`, leaving the popover closed.
+  if (!canHover()) return;
   void show();
+}
+
+function onLeave(): void {
+  // The mirror of onEnter: without a real pointer there is no "moved away"
+  // to close on, and a compatibility mouseleave must not dismiss a popover
+  // the tap just opened.
+  if (!canHover()) return;
+  scheduleClose();
 }
 
 /** A pointer press on the icon: the click handler will open (or toggle) it. */
@@ -223,9 +245,17 @@ function onFocus(): void {
   // Keyboard focus opens the popover; focus that this button's own pointer
   // press produced does not — otherwise the click handler's toggle would
   // close what focus just opened, in the same interaction. This is what keeps
-  // hover, keyboard and touch from fighting each other.
+  // hover, keyboard and touch from fighting each other. The same applies to
+  // focus this component put back on the icon when the popover closed.
   if (Date.now() - lastPointerAt < POINTER_FOCUS_GRACE_MS) return;
-  void show();
+  if (Date.now() < ignoreFocusUntil) return;
+  void show({ moveFocus: true });
+}
+
+/** Return focus to the icon without that being read as a user focus. */
+function focusIcon(): void {
+  ignoreFocusUntil = Date.now() + POINTER_FOCUS_GRACE_MS;
+  infoEl.value?.focus({ preventScroll: true });
 }
 
 function onClick(): void {
@@ -260,6 +290,12 @@ watch(open, (isOpen) => {
     window.removeEventListener("resize", measure);
     window.removeEventListener("scroll", measure, true);
     cancelClose();
+    // Focus followed the popover in (keyboard open); it must not be dropped
+    // on <body> when the popover goes away — put it back on the icon.
+    const active = document.activeElement;
+    if (popupEl.value && active && popupEl.value.contains(active)) {
+      focusIcon();
+    }
   }
 });
 
@@ -306,10 +342,11 @@ onBeforeUnmount(() => {
         class="side-git-info"
         :class="{ on: open }"
         :aria-expanded="open"
+        :aria-controls="open ? POPOVER_ID : undefined"
         aria-label="Git state details: changed files and recent commits"
         title="Changed files and recent commits"
         @mouseenter="onEnter"
-        @mouseleave="scheduleClose()"
+        @mouseleave="onLeave"
         @pointerdown="notePointer"
         @focus="onFocus"
         @focusout="scheduleClose()"
@@ -328,13 +365,15 @@ onBeforeUnmount(() => {
     <div
       v-if="open"
       ref="popupEl"
+      :id="POPOVER_ID"
       class="side-git-pop"
       data-overlay-layer="floating"
       role="dialog"
+      tabindex="-1"
       aria-label="Repo git state"
       :style="popupStyle"
       @mouseenter="cancelClose"
-      @mouseleave="scheduleClose()"
+      @mouseleave="onLeave"
       @focusin="cancelClose"
       @focusout="scheduleClose()"
     >

@@ -98,21 +98,31 @@ const RECENT_COMMIT_LIMIT = 3;
 export async function computeRepoStatus(root: string): Promise<RepoStatus> {
   const computedAt = new Date().toISOString();
   try {
-    const [headRun, abbrevRun] = await Promise.all([
+    const [headRun, abbrevRun, symRun] = await Promise.all([
       runGit(root, ["rev-parse", "HEAD"], 4000),
       runGit(root, ["rev-parse", "--abbrev-ref", "HEAD"], 4000),
+      // The one read that still names an unborn branch: until the first
+      // commit exists, `rev-parse --abbrev-ref HEAD` exits 128 while
+      // `symbolic-ref --short HEAD` happily answers "main".
+      runGit(root, ["symbolic-ref", "--short", "HEAD"], 4000),
     ]);
-    const readOk =
-      !headRun.timedOut && headRun.status === 0 && !abbrevRun.timedOut && abbrevRun.status === 0;
-    if (!readOk) return unknownRepoStatus(root, computedAt);
+    const abbrevOk = !abbrevRun.timedOut && abbrevRun.status === 0;
+    const symOk = !symRun.timedOut && symRun.status === 0;
+    // Fail closed on the branch read itself: if git names neither a branch
+    // nor a detached HEAD, this is not a readable checkout.
+    if (!abbrevOk && !symOk) return unknownRepoStatus(root, computedAt);
 
-    const head = headRun.stdout.trim();
     const abbrev = abbrevRun.stdout.trim();
-    // `rev-parse --abbrev-ref HEAD` prints "HEAD" (or nothing) on a detached HEAD.
-    const detached = abbrev === "" || abbrev === "HEAD";
-    const branch = detached ? null : abbrev;
+    const sym = symRun.stdout.trim();
+    // `rev-parse --abbrev-ref HEAD` prints "HEAD" on a detached HEAD; when it
+    // fails outright (unborn branch) the symbolic ref still names the branch.
+    const branch = abbrevOk && abbrev && abbrev !== "HEAD" ? abbrev : sym || null;
+    const detached = branch === null;
+    // Best effort: only an unborn branch has no sha, and that is a real state
+    // (`git status` above is what decides clean vs unknown, not this read).
+    const head = !headRun.timedOut && headRun.status === 0 ? headRun.stdout.trim() || null : null;
 
-    const [dirtyResult, baseBranch] = await Promise.all([
+    const [dirtyResult, resolvedBase] = await Promise.all([
       dirtyFilesDetailed(root)
         .then((files) => ({ ok: true as const, files }))
         .catch((err: unknown) => ({
@@ -125,6 +135,15 @@ export async function computeRepoStatus(root: string): Promise<RepoStatus> {
     ]);
     if (!dirtyResult.ok) return unknownRepoStatus(root, computedAt);
 
+    // resolveDefaultBranch answers "HEAD" when no main/master ref exists yet
+    // and the current branch is unborn. Compare against the symbolic ref
+    // there, or a fresh repo would always warn about being off the base branch.
+    const baseBranch =
+      resolvedBase && resolvedBase !== "HEAD" ? resolvedBase : sym || branch || resolvedBase;
+
+    // Deliberately the History tab's default: `docs(NNNN):` bookkeeping
+    // commits are excluded, so "recent commits" means the ones a person would
+    // recognise from History rather than three consecutive task-file writes.
     const page = await listRepoLog(root, {
       branch: detached ? "HEAD" : (branch ?? ""),
       limit: RECENT_COMMIT_LIMIT,

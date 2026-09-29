@@ -36,7 +36,8 @@ changes; `unknown` is what you see when git could not be read or the last
 check is older than a minute and a half, and it never means clean.
 
 The ℹ button next to it opens the detail: the changed files with their status
-letters when dirty, the three most recent commits, how long ago the state was
+letters when dirty, the three most recent commits exactly as the History tab
+lists them (`docs(NNNN):` bookkeeping excluded), how long ago the state was
 checked, and a link into History. It reads the same data as the History tab
 and is read-only — committing and switching branches stay on the command line.
 
@@ -44,6 +45,14 @@ The state is pushed to every open tab over the event stream when it changes
 (working-tree writes, branch switches, commits, staging, and RepoOS's own
 task-file commits), with focus, tab-visibility, reconnect and a slow interval
 as backstops.
+
+One cadence note: git's own state changes are pushed immediately, but an
+ordinary edit outside the task tree (say, under `src/`) is not watched —
+watching the whole checkout would be a lot of filesystem noise for one
+indicator. Those edits show up on the next backstop (window focus, tab
+visibility, event-stream reconnect, or the 45-second interval), so the row can
+be up to ~45 seconds behind an edit made with a plain text editor. Staging or
+committing that edit pushes it at once.
 
 ## Status is a field, not a folder
 
