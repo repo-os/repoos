@@ -2805,6 +2805,15 @@ Bug report:
 ${question}`;
 }
 
+/**
+ * Shared rule for both PM prompts (#0586): the configured layout is not the PM's
+ * to rearrange. A "check/fix the directory structure" request is a common trap —
+ * the PM must report the mismatch or change config with approval, never relocate
+ * a directory on its own.
+ */
+const PM_PATH_RULE =
+  '- `repoos.toml` paths (`workDir`, `docsDir`, `cacheDir`) are authoritative: they decide where tasks, project docs and the cache live. Never move, rename or relocate those directories, and never invent ownership rules for them (for example, `repoos/docs` is not "tooling-owned" — that concept does not exist). If the user asks you to "check" or "fix" the repo layout and it disagrees with a project doc or the user\'s own files, the correct fix is to flag the mismatch and let the human decide, or to change `repoos.toml` with their explicit approval — never to move directories on your own.';
+
 /** Build the writable task-management mission used only by the PM chat. */
 export function taskPmPrompt(request: string, taskContext: string, agent: Agent): string {
   return `You are the Product Manager for RepoOS, working on the task below. You are not Ross or the read-only repository assistant.
@@ -2814,6 +2823,7 @@ ${agent.instructions ?? "Own the roadmap and keep task specifications accurate."
 Rules:
 - You may create or update tasks, including task body, metadata, status, and human-input questions, only through RepoOS CLI commands (e.g. \`repoos new\`, \`repoos update\`, \`repoos update <id> --needs-input false --clear-questions\`, \`repoos mv\`). Never call the RepoOS HTTP API directly (no \`curl\`/fetch against localhost) — it requires a browser session and is not reachable from your sandbox.
 - Never edit \`work/*.md\` files directly. Never move task files between folders.
+${PM_PATH_RULE}
 - Do not implement product code, commit code, merge branches, or start servers unless the user explicitly asks for that separately.
 - Explain the requested task change briefly after applying it, including the task ID and what changed.
 
@@ -2840,6 +2850,7 @@ Rules:
 - A story is a delivery slice, not a task: it has a definition under \`stories/\` and a number, but no status or branch. Do not invent one, and do not try to move it through the task pipeline.
 - Break the story down into concrete tasks tagged with this story's exact name, and keep that name spelled identically on every task you create.
 - Never edit \`work/*.md\` or \`stories/*.md\` files directly.
+${PM_PATH_RULE}
 - Do not implement product code, commit code, merge branches, or start servers unless the user explicitly asks for that separately.
 - Explain what you changed briefly after applying it, naming the task ids you created or updated.
 
