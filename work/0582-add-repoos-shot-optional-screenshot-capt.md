@@ -2,7 +2,7 @@
 id: "0582"
 title: "Add repoos shot: optional screenshot capture of a task preview"
 type: feature
-status: review
+status: active
 priority: p2
 area: cli
 assigned_to: ai
@@ -92,3 +92,4 @@ src/ui-app/src/views/StoriesView.vue(290,12): error TS2345: Argument of type '{ 
   Property 'ariaLabel' is missing in type '{ label: string; path: string; 'aria-label': string; }' but required in type '{ readonly label: string; readonly path: string; readonly ariaLabel: string; }'.
 [validate] gate exit 2 — fix it in the feature branch and re-run the gate
 - 2026-09-29T19:35:46Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: remote validation failed (exit 2) — …type '{ readonly label: string; readonly path: string; readonly ariaLabel: string; }'. · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-09-29T19:35:46Z · status review→active
