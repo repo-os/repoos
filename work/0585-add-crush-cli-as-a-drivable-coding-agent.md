@@ -2,14 +2,15 @@
 id: "0585"
 title: Add Crush CLI as a drivable coding agent harness
 type: feature
-status: inbox
+status: active
 priority: p1
 area: agent
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/add-crush-cli-as-a-drivable-coding-agent
+review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-29T16:47:31Z"
-updated_at: "2026-09-29T16:47:31Z"
+updated_at: "2026-09-29T20:20:22Z"
 ---
 ## Problem
 
@@ -369,3 +370,6 @@ credential-free install path exists.
 ## Activity
 
 - 2026-09-29T16:47:31Z · created · unknown
+- 2026-09-29T19:24:38Z · review_model_override
+- 2026-09-29T19:24:45Z · status inbox→ready
+- 2026-09-29T20:20:22Z · status ready→active, branch

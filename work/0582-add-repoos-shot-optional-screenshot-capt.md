@@ -1,10 +1,11 @@
 ---
-updated_at: "2026-09-29T18:47:37Z"
-review_passes: 2
 id: "0582"
 title: "Add repoos shot: optional screenshot capture of a task preview"
 type: feature
-status: review
+status: done
+needs_input: true
+needs_input_reason: closeout-worktree-dirty
+needs_input_detail: "the worktree for feat/add-repoos-shot-optional-screenshot-capt was kept because it had uncommitted changes the merge did not carry: .claude/launch.json, .githooks/pre-commit, LICENSE.md, bunfig.toml, install.sh, justfile, landing/.gitignore, landing/README.md, …"
 priority: p2
 area: cli
 assigned_to: ai
@@ -12,7 +13,7 @@ created_by: ""
 branch: feat/add-repoos-shot-optional-screenshot-capt
 review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-29T11:13:18Z"
-review_rounds: 1
+updated_at: "2026-09-29T19:21:20Z"
 ---
 ## Problem
 
@@ -84,8 +85,6 @@ Visual-regression baselines, image diffing, per-component harnesses, any hosted 
 - 2026-09-29T16:46:29Z · review_model_override
 - 2026-09-29T16:46:31Z · status ready→active, branch
 - 2026-09-29T17:25:11Z · status active→review
-- 2026-09-29T17:40:11Z · needs_input
-- 2026-09-29T17:51:14Z · needs_input (review-failed) cleared for review again by hello@repoos.org
-- 2026-09-29T18:13:09Z · status review→active
-- 2026-09-29T18:36:47Z · status active→review
-
+- 2026-09-29T19:21:20Z · status review→done, release:success
+- 2026-09-29T19:21:20Z · needs_input
+- 2026-09-29T19:21:20Z · note: close-out kept a worktree with uncommitted changes

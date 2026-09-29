@@ -7,12 +7,12 @@ before starting a task.
 
 ## This is a RepoOS convention, not just a folder
 
-`repoos init` creates the configured docs directory (`config.docsDir`) in
-**every** repo RepoOS manages, and scaffolds an `AGENTS.md` telling agents to
-read it. The default is namespaced — `repoos/docs/` — with `docs/` at the repo
-root only under the opt-in root layout. In a repo running RepoOS, that directory
-holds *that* project's build context. This repo is self-hosted and uses the root
-layout, so here it holds RepoOS's own.
+`repoos init` creates a docs directory (`config.docsDir`) in **every** repo
+RepoOS manages — `repoos/docs/` under the default `repoos/` namespace, or
+`docs/` at the root in the root layout — and scaffolds an `AGENTS.md` telling
+agents to read it. In a repo running RepoOS, that directory holds *that*
+project's build context. This repo is self-hosted and uses the root layout, so
+here it holds RepoOS's own.
 
 Write things down here when they would otherwise be re-derived, re-litigated or
 re-broken on a future task: why a design went the way it did, what an incident

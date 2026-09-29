@@ -22,9 +22,11 @@ import type {
   RemoteValidationEvent,
   RepoEvent,
   RepoIndex,
+  RepoStatus,
   ReviewReport,
   ReviewState,
   ScreenshotMeta,
+  ShotMeta,
   Status,
   SystemStats,
   Task,
@@ -543,6 +545,27 @@ export const useRepoStore = defineStore("repo", () => {
   const counts = reactive<Counts>({ draft: 0, inbox: 0, ready: 0, active: 0, review: 0, done: 0 });
   const feed = reactive<FeedItem[]>([]);
   const eventCount = ref(0);
+  /**
+   * Repo root checkout git state for the sidebar row (#0584). `null` until
+   * the first payload; `ok: false` is the fail-closed "unknown" — never show
+   * it as clean. Live updates arrive as SSE `repo.status`, with focus,
+   * visibility, reconnect and a slow interval as backstops.
+   */
+  const gitStatus = ref<RepoStatus | null>(null);
+  /** Backstop poll: covers changes no trigger saw (an external `git commit`
+   *  on a machine the watcher missed, a dropped SSE frame). While visible. */
+  const GIT_STATUS_POLL_MS = 45_000;
+  /**
+   * How long the clean→dirty edge is held back (#0584). RepoOS writes a task
+   * file and commits it as `docs(NNNN):` moments later, so a naive indicator
+   * strobes between those two moments; a real uncommitted change still shows
+   * within this window.
+   */
+  const GIT_DIRTY_DEBOUNCE_MS = 2000;
+  let gitStatusInflight: Promise<void> | null = null;
+  let gitStatusDirtyTimer: ReturnType<typeof setTimeout> | null = null;
+  let gitStatusDirtySince: number | null = null;
+  let gitStatusBackstopsStarted = false;
   const flashId = ref<string | null>(null);
   interface TransitionState {
     id: string;
@@ -610,6 +633,10 @@ export const useRepoStore = defineStore("repo", () => {
   >({});
   /** Full patch diffs per task. */
   const diffs = ref<Record<string, { patch: string; truncated: boolean } | null>>({});
+  /** Captured preview shots per task (#0582), hydrated on demand. */
+  const shots = ref<Record<string, ShotMeta[]>>({});
+  /** Area/target mismatch warning per task (#0582), from the shots response. */
+  const shotWarnings = ref<Record<string, string | undefined>>({});
   /** Historical usage totals for a task (incl. role breakdown), keyed by id. */
   const taskUsage = ref<Record<string, TaskUsageStats | null>>({});
   /** Board-level usage totals (overall + per-role + per-day, 0230). */
@@ -1028,6 +1055,13 @@ export const useRepoStore = defineStore("repo", () => {
 
   function applyEvent(e: RepoEvent): void {
     eventCount.value++;
+    if (e.type === "repo.status") {
+      // Sidebar git-state row (#0584). The server emits this only when the
+      // computed state differs, so applying it is all the reconciliation
+      // there is — no feed entry, this indicator is always on screen.
+      applyGitStatus(e.status);
+      return;
+    }
     if (e.type === "story.definitionsChanged") {
       void refresh();
       return;
@@ -1610,6 +1644,104 @@ export const useRepoStore = defineStore("repo", () => {
     }
   }
 
+  /** True when a status is readable and lists at least one uncommitted file. */
+  function gitStatusIsDirty(status: RepoStatus | null): boolean {
+    return !!status && status.ok && status.dirty.length > 0;
+  }
+
+  /**
+   * Everything the row renders *except* dirtiness. A change here is real news
+   * (a new head, a branch switch, git becoming readable) and must never be
+   * held back by the churn debounce — only a pure clean→dirty edge is.
+   */
+  function gitStatusCore(status: RepoStatus): string {
+    return JSON.stringify([
+      status.ok,
+      status.branch,
+      status.detached,
+      status.baseBranch,
+      status.head,
+    ]);
+  }
+
+  /**
+   * Store a fresh git-state payload (#0584), holding back only the
+   * clean→dirty edge so RepoOS's own write-then-commit churn never strobes
+   * the row. Everything else (clean, branch change, unknown) applies at once,
+   * and so does the very first payload — there is nothing to debounce against.
+   */
+  function applyGitStatus(next: RepoStatus): void {
+    const previous = gitStatus.value;
+    if (gitStatusDirtyTimer) {
+      clearTimeout(gitStatusDirtyTimer);
+      gitStatusDirtyTimer = null;
+    }
+    const pureDirtyEdge =
+      previous !== null &&
+      gitStatusIsDirty(next) &&
+      !gitStatusIsDirty(previous) &&
+      gitStatusCore(previous) === gitStatusCore(next);
+    if (pureDirtyEdge) {
+      const now = Date.now();
+      gitStatusDirtySince = gitStatusDirtySince ?? now;
+      // The hold is measured from the FIRST dirty sighting, so a stream of
+      // writes cannot keep pushing it out forever.
+      const remaining = Math.max(0, GIT_DIRTY_DEBOUNCE_MS - (now - gitStatusDirtySince));
+      gitStatusDirtyTimer = setTimeout(() => {
+        gitStatusDirtyTimer = null;
+        gitStatusDirtySince = null;
+        gitStatus.value = next;
+      }, remaining);
+      return;
+    }
+    gitStatusDirtySince = null;
+    gitStatus.value = next;
+  }
+
+  /**
+   * Ask the server for the current git state. Concurrent callers share one
+   * request (and the server coalesces the git work behind it), so N triggers
+   * firing together still cost one round trip.
+   */
+  async function refreshGitStatus(): Promise<void> {
+    if (gitStatusInflight) return gitStatusInflight;
+    const run = (async () => {
+      try {
+        applyGitStatus(await api<RepoStatus>("/api/repo/status"));
+      } catch {
+        // Keep the last known payload; its `computedAt` ages out to `unknown`
+        // on its own, so a fetch failure can never look like "still clean".
+      }
+    })();
+    gitStatusInflight = run;
+    try {
+      await run;
+    } finally {
+      gitStatusInflight = null;
+    }
+  }
+
+  /**
+   * Backstops for the push path (#0584): refetch when the tab regains focus
+   * or becomes visible, on SSE reconnect (`hello`), and on a slow interval —
+   * a stale `clean` is worse than no indicator, so no path may leave one up
+   * indefinitely.
+   */
+  function startGitStatusBackstops(): void {
+    if (gitStatusBackstopsStarted) return;
+    gitStatusBackstopsStarted = true;
+    const refetch = (): void => {
+      void refreshGitStatus();
+    };
+    window.addEventListener("focus", refetch);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") refetch();
+    });
+    setInterval(() => {
+      if (document.visibilityState === "visible") refetch();
+    }, GIT_STATUS_POLL_MS);
+  }
+
   function connectSSE(): void {
     if (es) es.close();
     es = new EventSource(origin + "/api/events");
@@ -1644,6 +1776,10 @@ export const useRepoStore = defineStore("repo", () => {
       void refreshIntegration().catch(() => {
         /* non-fatal hydration */
       });
+      // Reconnect is a documented miss-window for SSE frames (#0584): the
+      // `repo.status` event that kept the sidebar git row live may have fired
+      // while this tab was down, and it is not replayed.
+      void refreshGitStatus();
       // The running map is independent from task status. Reconcile it on every
       // connection so a missed `agent.running` frame can never leave a review
       // card saying "waiting for human" while its engineer is still working.
@@ -1685,6 +1821,7 @@ export const useRepoStore = defineStore("repo", () => {
       "task-check.output",
       "task-check.done",
       "built-in.run",
+      "repo.status",
     ]) {
       es.addEventListener(t, (ev: MessageEvent) => {
         connected.value = true;
@@ -2325,6 +2462,30 @@ export const useRepoStore = defineStore("repo", () => {
   const diffFor = (id: string) => diffs.value[id] ?? undefined;
 
   /**
+   * Load the task's captured preview shots and mismatch warning (#0582).
+   * Best-effort: the endpoint is a nice-to-have for the drawer's UI-changes
+   * section and its warning, never a blocker.
+   */
+  async function loadShots(id: string): Promise<void> {
+    try {
+      const r = await api<{ ok: boolean; shots: ShotMeta[]; warning?: string }>(
+        `/api/tasks/${id}/shots`,
+      );
+      if (r.ok) {
+        shots.value = { ...shots.value, [id]: r.shots ?? [] };
+        shotWarnings.value = { ...shotWarnings.value, [id]: r.warning };
+      }
+    } catch {
+      /* endpoint unavailable — shots and the warning are nice-to-have */
+    }
+  }
+
+  /** Captured shots for a task (empty until loaded). */
+  const shotsFor = (id: string): ShotMeta[] => shots.value[id] ?? [];
+  /** Area/target mismatch warning for a task, or undefined when none loaded. */
+  const shotWarningFor = (id: string): string | undefined => shotWarnings.value[id];
+
+  /**
    * Merge main into a task's branch (the "sync with main" action). Reuses the
    * same sync path the server already runs automatically on entry into review
    * for the large-divergence case — this lets the user trigger it on demand for
@@ -2758,6 +2919,12 @@ export const useRepoStore = defineStore("repo", () => {
       /* server not reachable — UI still renders */
     } finally {
       loading.value = false;
+      // Sidebar git row (#0584), in `finally` so a failed first fetch still
+      // arms its recovery path: hydrate the row and start the focus /
+      // visibility / interval backstops. Until the first payload lands the
+      // row renders `unknown`, which is the honest answer anyway.
+      void refreshGitStatus();
+      startGitStatusBackstops();
     }
     connectSSE();
   }
@@ -2773,6 +2940,8 @@ export const useRepoStore = defineStore("repo", () => {
     counts,
     feed,
     eventCount,
+    gitStatus,
+    refreshGitStatus,
     flashId,
     transitionState,
     draggingTask,
@@ -2896,6 +3065,9 @@ export const useRepoStore = defineStore("repo", () => {
     loadBoardUsage,
     loadDiff,
     diffFor,
+    loadShots,
+    shotsFor,
+    shotWarningFor,
     syncTaskBranch,
     sendMessage,
     reviewAgain,

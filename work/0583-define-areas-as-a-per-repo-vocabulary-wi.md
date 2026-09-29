@@ -1,13 +1,11 @@
 ---
-updated_at: "2026-09-29T18:28:20Z"
-review_passes: 3
 id: "0583"
 title: Define areas as a per-repo vocabulary with a multi-select picker
 type: feature
-status: review
+status: done
 needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
+needs_input_reason: closeout-worktree-dirty
+needs_input_detail: "the worktree for feat/define-areas-as-a-per-repo-vocabulary-wi was kept because it had uncommitted changes the merge did not carry: .claude/launch.json, .githooks/pre-commit, LICENSE.md, bunfig.toml, install.sh, justfile, landing/.gitignore, landing/README.md, …"
 priority: p2
 area: web
 assigned_to: ai
@@ -16,6 +14,9 @@ branch: feat/define-areas-as-a-per-repo-vocabulary-wi
 model_override: opencode-go/glm-5.3-flash
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-29T11:31:44Z"
+updated_at: "2026-09-29T19:59:47Z"
+merge_conflict_retry_count: 1
+review_passes: 4
 review_rounds: 2
 ---
 ## Problem
@@ -75,4 +76,7 @@ Automatically inferring areas from changed paths (#0582's `paths` globs cover th
 - 2026-09-29T18:14:15Z · status review→active
 - 2026-09-29T18:24:06Z · status active→review
 - 2026-09-29T18:28:19Z · needs_input
-
+- 2026-09-29T19:47:16Z · needs_input
+- 2026-09-29T19:59:47Z · status review→done, release:success
+- 2026-09-29T19:59:47Z · needs_input
+- 2026-09-29T19:59:47Z · note: close-out kept a worktree with uncommitted changes

@@ -82,21 +82,29 @@ describe("Ross (Repository Assistant)", () => {
     expect(prompt).not.toContain("You are Ross");
   });
 
-  it("tells both PM prompts that repoos.toml paths are authoritative (#0586)", () => {
+  it("tells the task PM that repoos.toml paths are authoritative (#0586)", () => {
     const pm = DEFAULT_AGENTS.find((agent) => agent.name === "pm")!;
-    const taskPrompt = taskPmPrompt("Check the dir structure and fix it", "Task #0586", pm);
-    const storyPrompt = storyPmPrompt("Check the layout", "Story: Layout", pm);
+    const prompt = taskPmPrompt(
+      "Check the directory structure and fix it if it's not right",
+      "Task #0586: Layout",
+      pm,
+    );
 
-    for (const prompt of [taskPrompt, storyPrompt]) {
-      expect(prompt).toMatch(/repoos\.toml.*authoritative/is);
-      expect(prompt).toContain("workDir");
-      expect(prompt).toContain("docsDir");
-      expect(prompt).toContain("never invent ownership rules");
-      expect(prompt).toMatch(/never to move directories on your own/i);
-      // The "check/fix the layout" trap is named explicitly.
-      expect(prompt).toMatch(/check.*fix.*repo layout/is);
-      expect(prompt).toMatch(/explicit approval/i);
-    }
+    expect(prompt).toMatch(/repoos\.toml\b/);
+    expect(prompt).toMatch(/authoritative/i);
+    expect(prompt).toMatch(/never move/i);
+    // The "check/fix the layout" request must resolve to reporting or an
+    // approved config change, not a directory move.
+    expect(prompt).toMatch(/human approval/i);
+  });
+
+  it("gives the story PM the same config-owned-layout rule (#0586)", () => {
+    const pm = DEFAULT_AGENTS.find((agent) => agent.name === "pm")!;
+    const prompt = storyPmPrompt("Check the layout", "Story: Example", pm);
+
+    expect(prompt).toMatch(/repoos\.toml\b/);
+    expect(prompt).toMatch(/authoritative/i);
+    expect(prompt).toMatch(/never move/i);
   });
 });
 

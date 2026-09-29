@@ -739,6 +739,306 @@
   font-weight: 500;
 }
 
+/* Sidebar git-state row + its popover (#0584). The row is deliberately the
+   quietest thing in the side-foot: monospace branch and state word, one
+   amber accent reserved for "you are not on the base branch" and "dirty". */
+.side-foot .side-git {
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.side-git-branch {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  flex: 1;
+}
+.side-git-branch svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  color: var(--cyan);
+  opacity: 0.85;
+}
+.side-git-branch.warn,
+.side-git-branch.warn svg {
+  color: var(--amber);
+  opacity: 1;
+}
+.side-git-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10.5px;
+  color: var(--txt-dim);
+}
+.side-git-branch.warn .side-git-name {
+  color: var(--amber);
+  font-weight: 600;
+}
+.side-git-tail {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.side-git-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--txt-dim);
+}
+.side-git-state.warn {
+  color: var(--amber);
+}
+.side-git-state.unknown {
+  color: var(--txt-faint);
+}
+.side-git-state i {
+  min-width: 14px;
+  padding: 0 3px;
+  border-radius: 6px;
+  font-style: normal;
+  text-align: center;
+  background: var(--amber-tint);
+  color: var(--amber);
+}
+.side-git-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  color: var(--txt-faint);
+}
+.side-git-info:hover,
+.side-git-info.on {
+  color: var(--cyan);
+  background: var(--cyan-dim);
+}
+.side-git-info svg {
+  width: 13px;
+  height: 13px;
+}
+.side-git-info:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Body-teleported popover: outside the sidebar so its own overflow can never
+   clip it, marked as an overlay layer so it stays clickable while a dialog
+   holds <body> (#0575). */
+.side-git-pop {
+  position: fixed;
+  z-index: 80;
+  box-sizing: border-box;
+  width: 300px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel-solid);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  font-size: 11.5px;
+  color: var(--txt-dim);
+}
+.side-git-pop-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+.side-git-pop-title {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--txt-faint);
+}
+.side-git-pop-path {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10.5px;
+  color: var(--txt-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.side-git-pop-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin: 0 0 10px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--border);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+}
+.side-git-pop-branch {
+  color: var(--txt);
+  font-weight: 600;
+}
+.side-git-pop-branch.warn {
+  color: var(--amber);
+}
+.side-git-pop-state {
+  color: var(--txt-dim);
+}
+.side-git-pop-state.warn {
+  color: var(--amber);
+}
+.side-git-pop-state.ok {
+  color: var(--green);
+}
+.side-git-pop-state.unknown {
+  color: var(--txt-faint);
+}
+.side-git-pop-checked {
+  margin-left: auto;
+  color: var(--txt-faint);
+  font-size: 10px;
+}
+.side-git-pop-sec + .side-git-pop-sec {
+  margin-top: 12px;
+}
+.side-git-pop-sec h3 {
+  margin: 0 0 6px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--txt-faint);
+}
+.side-git-pop-note {
+  margin: 0;
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: var(--chip-bg);
+  color: var(--txt-faint);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.side-git-pop-sec .side-git-pop-note {
+  margin-top: 0;
+}
+.side-git-files,
+.side-git-commits {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.side-git-files li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+}
+.side-git-chip {
+  flex-shrink: 0;
+  min-width: 22px;
+  padding: 1px 4px;
+  border-radius: 5px;
+  text-align: center;
+  font-size: 9.5px;
+  font-weight: 700;
+  background: var(--amber-tint);
+  color: var(--amber);
+}
+.side-git-file-path {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--txt-dim);
+}
+.side-git-more {
+  color: var(--txt-faint);
+  font-size: 10.5px;
+}
+.side-git-commits li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+.side-git-avatar {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--violet-tint);
+  color: var(--violet);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9px;
+  font-weight: 700;
+}
+.side-git-commit {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.side-git-subject {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--txt);
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+.side-git-meta {
+  display: flex;
+  gap: 8px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  color: var(--txt-faint);
+}
+.side-git-pop-foot {
+  margin-top: 12px;
+  padding-top: 9px;
+  border-top: 1px solid var(--border);
+}
+.side-git-history {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10.5px;
+  color: var(--cyan);
+  text-decoration: none;
+}
+.side-git-history:hover {
+  text-decoration: underline;
+}
+.side-git-pop:focus {
+  outline: none;
+}
+.side-git-pop:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.side-git-pop :focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
 .main {
   flex: 1;
   overflow-y: auto;
@@ -4984,6 +5284,30 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Captured preview shots (#0582) — the UI-changes section in the Changes tab
+ * and the area/target mismatch warning shown near the preview control. */
+.ui-changes {
+  margin-bottom: 18px;
+}
+.shot-warning {
+  font-size: 12px;
+  color: var(--amber);
+  border: 1px solid var(--amber-border-tint);
+  background: var(--amber-tint);
+  border-radius: 8px;
+  padding: 7px 10px;
+  margin: 0 0 8px;
+}
+.shot-warning-hint {
+  display: block;
+  color: var(--txt-dim);
+  font-size: 11px;
+  margin-top: 2px;
+}
+.shot-warning-preview {
+  margin-top: 6px;
+  color: var(--amber);
+}
 /* Screenshots field label row + format info popover (#0571). The help text
  * moved off the form into a themed pane opened by the control beside the
  * label; the pane is teleported to <body> (the drawer would trap a fixed
@@ -8429,6 +8753,9 @@
 [data-ui-theme="gen z"] .search-drop {
   border-radius: 16px;
 }
+[data-ui-theme="gen z"] .side-git-pop {
+  border-radius: 16px;
+}
 [data-ui-theme="gen z"] .doc-row {
   border-radius: 10px;
 }
@@ -8732,6 +9059,9 @@
 [data-ui-theme="jelly"] .search-drop {
   border-radius: 18px;
 }
+[data-ui-theme="jelly"] .side-git-pop {
+  border-radius: 18px;
+}
 [data-ui-theme="jelly"] .doc-row {
   border-radius: 12px;
 }
@@ -9022,6 +9352,9 @@
   border-radius: 5px;
 }
 [data-ui-theme="gruvbox"] .search-drop {
+  border-radius: 7px;
+}
+[data-ui-theme="gruvbox"] .side-git-pop {
   border-radius: 7px;
 }
 [data-ui-theme="gruvbox"] .doc-row {

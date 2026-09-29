@@ -24,13 +24,19 @@ import {
 } from "./git.js";
 import { STATUSES, type RepoOSConfig, type RepoIndex, type Task, type Status } from "./types.js";
 import { normalizeStoryName } from "./stories.js";
+import { formatTaskAreas, parseTaskAreas } from "./areas.js";
 
 export interface CreateTaskInput {
   title: string;
   type?: string;
   status?: Status;
   priority?: string;
-  area?: string;
+  /**
+   * One area, a comma-separated string ("web, core"), or a list (#0583).
+   * Normalized through the shared `parseTaskAreas` helper at write time; also
+   * accepts the legacy "a + b" spelling.
+   */
+  area?: string | string[];
   /** Optional cross-area delivery slice (a "story"). */
   story?: string;
   assignedTo?: string;
@@ -224,6 +230,16 @@ export function createRepoOS(root?: string, loadOptions: LoadConfigOptions = {})
         const v = (patch as Record<string, unknown>)[k];
         return v !== undefined && v !== (task as unknown as Record<string, unknown>)[k];
       });
+      // #0583: a raw area patch here (string or list) must land in the same
+      // canonical shape the parse writes (`area` joined + `areas` list), never
+      // as a dup of one field with a stale other.
+      if (patch.area !== undefined) {
+        const parsed = parseTaskAreas(patch.area);
+        const normalized = parsed.length
+          ? { areas: parsed, area: formatTaskAreas(parsed) }
+          : { areas: ["general"], area: "general" };
+        Object.assign(patch as Record<string, unknown>, normalized);
+      }
       Object.assign(task, patch);
       const summary = changed.length ? `updated ${changed.join(", ")}` : "updated";
       return rewrite(task, [summary]);
@@ -253,7 +269,15 @@ export function createRepoOS(root?: string, loadOptions: LoadConfigOptions = {})
         needsMerge: false,
         noSourceChange: false,
         priority: input.priority ?? "p2",
-        area: input.area ?? "general",
+        // #0583: one canonical shape at both write and read time. Comma
+        // string or list input, legacy "a + b" — parseTaskAreas handles all;
+        // empty falls back to the historical "general" default.
+        ...(() => {
+          const parsed = parseTaskAreas(input.area);
+          return parsed.length
+            ? { areas: parsed, area: formatTaskAreas(parsed) }
+            : { areas: ["general"], area: "general" };
+        })(),
         story: normalizeStoryName(input.story),
         assignee: (input.assignedTo ?? "").toLowerCase() === "ai" ? "ai" : "unassigned",
         assignedTo: input.assignedTo ?? "",

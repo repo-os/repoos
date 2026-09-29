@@ -60,6 +60,18 @@ describe("ensureWorktree", () => {
     }
   });
 
+  it("includes git's stderr in the failure reason (#0584)", () => {
+    const { root, clean } = makeRepo();
+    try {
+      const res = ensureWorktree(root, "bad..name");
+
+      expect(res.ok).toBe(false);
+      expect(res.reason).toMatch(/^could not create worktree: .*not a valid branch name/);
+    } finally {
+      clean();
+    }
+  });
+
   it("is idempotent: a second call reuses the same worktree path", () => {
     const { root, clean } = makeRepo();
     try {

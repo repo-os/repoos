@@ -4,7 +4,7 @@ title: Add opt-in Stories page for cross-area delivery tracking
 type: feature
 status: done
 priority: p2
-area: web + core
+area: [web, core]
 story: Story numbers and deep links
 assigned_to: ai
 created_by: ""

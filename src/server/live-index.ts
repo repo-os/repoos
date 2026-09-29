@@ -24,6 +24,7 @@ import type {
 import type { SystemStats } from "./system.js";
 import type { AutoEngineeringDecision } from "./auto-engineering.js";
 import type { IntegrationSnapshot } from "./integration-status.js";
+import type { RepoStatus } from "./repo-status.js";
 import { STATUSES, PRIORITIES } from "../core/types.js";
 import { parseTask } from "../core/task.js";
 import {
@@ -80,6 +81,12 @@ export type RepoEvent =
    *  path so the hint can never get stuck. */
   | { type: "task.debugTldr"; id: string; state: "started" | "finished"; at: string }
   | { type: "index.rebuilt"; taskCount: number; at: string }
+  /**
+   * Repo root checkout git state for the sidebar indicator (#0584): branch,
+   * detached flag, dirty files with status column, head, recent commits.
+   * Emitted only when the recomputed state differs from the last emit.
+   */
+  | { type: "repo.status"; status: RepoStatus; at: string }
   | {
       type: "task.progress";
       id: string;
@@ -638,6 +645,7 @@ function toBoardTask(t: Task): BoardTask {
     needsMerge: t.needsMerge,
     priority: t.priority,
     area: t.area,
+    areas: t.areas,
     story: t.story ?? "",
     assignee: t.assignee,
     assignedTo: t.assignedTo,

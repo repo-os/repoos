@@ -73,6 +73,32 @@ function findingById(report: DoctorReport, id: string) {
   return report.findings.find((f) => f.id === id);
 }
 
+/** A project on the namespaced layout: repoos/work + repoos/docs, config describing it. */
+function namespacedProject(): string {
+  const dir = tmp("repoos-doctor-namespaced-");
+  gitInit(dir);
+  mkdirSync(join(dir, "repoos/work"), { recursive: true });
+  mkdirSync(join(dir, "repoos/docs"), { recursive: true });
+  writeFileSync(
+    join(dir, "repoos.toml"),
+    [
+      'workDir = "repoos/work"',
+      'docsDir = "repoos/docs"',
+      'cacheDir = "repoos/.repoos"',
+      "",
+      "[check]",
+      "version = 1",
+      'defaultProfile = "default"',
+      "",
+      "[[check.steps]]",
+      'name = "build"',
+      'command = "true"',
+      "",
+    ].join("\n"),
+  );
+  return dir;
+}
+
 describe("runDoctor", () => {
   it("reports a clean, declared-plan project with no warnings or failures", async () => {
     const root = cleanProject();
@@ -233,100 +259,6 @@ describe("runDoctor", () => {
     expect(report.summary.fail).toBe(0);
   });
 
-  it("warns when a configured docs dir is hollow but root docs/ holds the content", async () => {
-    const root = tmp("repoos-doctor-misplaced-docs-");
-    gitInit(root);
-    mkdirSync(join(root, "repoos", "docs"), { recursive: true });
-    writeFileSync(join(root, "repoos", "docs", "README.md"), "# docs\n");
-    mkdirSync(join(root, "docs"), { recursive: true });
-    writeFileSync(join(root, "docs", "architecture.md"), "# Architecture\n");
-    writeFileSync(
-      join(root, "repoos.toml"),
-      [
-        'workDir = "repoos/work"',
-        'docsDir = "repoos/docs"',
-        'cacheDir = "repoos/.repoos"',
-        "",
-        "[check]",
-        "version = 1",
-        "",
-        "[[check.steps]]",
-        'name = "build"',
-        'command = "true"',
-        "",
-      ].join("\n"),
-    );
-
-    const report = await runDoctor({ root, probePort: 1, hasBinary: tools("git", "bun") });
-    const misplaced = findingById(report, "layout.docs-dir-misplaced");
-    expect(misplaced?.severity).toBe("warn");
-    expect(misplaced?.detail).toContain("repoos/docs");
-    expect(misplaced?.detail).toContain("docs/");
-    expect(misplaced?.remediation).toContain("docsDir");
-    expect(report.summary.fail).toBe(0);
-  });
-
-  it("warns when a configured work dir is hollow but root work/ holds tasks", async () => {
-    const root = tmp("repoos-doctor-misplaced-work-");
-    gitInit(root);
-    mkdirSync(join(root, "repoos", "work"), { recursive: true });
-    writeFileSync(join(root, "repoos", "work", "README.md"), "# tasks\n");
-    mkdirSync(join(root, "work"), { recursive: true });
-    writeFileSync(join(root, "work", "0001-real.md"), "---\nid: '0001'\ntitle: Real\n---\n");
-    writeFileSync(
-      join(root, "repoos.toml"),
-      [
-        'workDir = "repoos/work"',
-        'docsDir = "repoos/docs"',
-        "",
-        "[check]",
-        "version = 1",
-        "",
-        "[[check.steps]]",
-        'name = "build"',
-        'command = "true"',
-        "",
-      ].join("\n"),
-    );
-
-    const report = await runDoctor({ root, probePort: 1, hasBinary: tools("git", "bun") });
-    const misplaced = findingById(report, "layout.work-dir-misplaced");
-    expect(misplaced?.severity).toBe("warn");
-    expect(misplaced?.remediation).toContain("workDir");
-  });
-
-  it("does not flag a namespaced layout whose configured dirs hold the content", async () => {
-    const root = tmp("repoos-doctor-namespaced-");
-    gitInit(root);
-    mkdirSync(join(root, "repoos", "docs"), { recursive: true });
-    writeFileSync(join(root, "repoos", "docs", "architecture.md"), "# Architecture\n");
-    mkdirSync(join(root, "repoos", "work"), { recursive: true });
-    writeFileSync(
-      join(root, "repoos", "work", "0001-task.md"),
-      "---\nid: '0001'\ntitle: Task\n---\nbody\n",
-    );
-    writeFileSync(
-      join(root, "repoos.toml"),
-      [
-        'workDir = "repoos/work"',
-        'docsDir = "repoos/docs"',
-        "",
-        "[check]",
-        "version = 1",
-        "",
-        "[[check.steps]]",
-        'name = "build"',
-        'command = "true"',
-        "",
-      ].join("\n"),
-    );
-
-    const report = await runDoctor({ root, probePort: 1, hasBinary: tools("git", "bun") });
-    expect(findingById(report, "layout.docs-dir-misplaced")).toBeUndefined();
-    expect(findingById(report, "layout.work-dir-misplaced")).toBeUndefined();
-    expect(report.summary.warn).toBe(0);
-  });
-
   it("never throws even when the root does not exist", async () => {
     const report = await runDoctor({
       root: join(tmpdir(), "repoos-doctor-does-not-exist-xyz"),
@@ -334,6 +266,58 @@ describe("runDoctor", () => {
       hasBinary: tools("git", "bun"),
     });
     expect(report.findings.length).toBeGreaterThan(0);
+  });
+
+  it("warns when docs moved to the root while docsDir stays namespaced", async () => {
+    const root = namespacedProject();
+    // The configured docsDir is hollowed out to a README (a "pointer"), while
+    // the real docs landed at the conventional root location (#0586).
+    writeFileSync(join(root, "repoos/docs/README.md"), "# Docs\n");
+    mkdirSync(join(root, "docs"), { recursive: true });
+    writeFileSync(join(root, "docs/guide.md"), "# Guide\n");
+
+    const report = await runDoctor({ root, probePort: 1, hasBinary: tools("git", "bun") });
+    const relocated = findingById(report, "layout.docs-dir-relocated");
+    expect(relocated?.severity).toBe("warn");
+    expect(relocated?.detail).toContain('docsDir = "repoos/docs"');
+    expect(relocated?.detail).toContain("docs/ at the repo root");
+    expect(relocated?.remediation).toContain("repoos.toml");
+  });
+
+  it("does not warn when docsDir holds the real docs", async () => {
+    const root = namespacedProject();
+    writeFileSync(join(root, "repoos/docs/README.md"), "# Docs\n");
+    writeFileSync(join(root, "repoos/docs/guide.md"), "# Guide\n");
+
+    const report = await runDoctor({ root, probePort: 1, hasBinary: tools("git", "bun") });
+    expect(findingById(report, "layout.docs-dir-relocated")).toBeUndefined();
+  });
+
+  it("warns when task files moved to a root work/ while workDir stays namespaced", async () => {
+    const root = namespacedProject();
+    mkdirSync(join(root, "work"), { recursive: true });
+    writeFileSync(
+      join(root, "work/0001-task.md"),
+      "---\nid: '0001'\ntitle: A task\nstatus: ready\n---\nbody\n",
+    );
+
+    const report = await runDoctor({ root, probePort: 1, hasBinary: tools("git", "bun") });
+    const relocated = findingById(report, "layout.work-dir-relocated");
+    expect(relocated?.severity).toBe("warn");
+    expect(relocated?.detail).toContain('workDir = "repoos/work"');
+    expect(relocated?.remediation).toContain("repoos.toml");
+  });
+
+  it("does not warn about a relocated layout for the root layout", async () => {
+    // Root layout: workDir/docsDir are the conventional names, so the root
+    // dirs *are* the configured dirs and there is nothing to relocate.
+    const root = cleanProject();
+    mkdirSync(join(root, "docs"), { recursive: true });
+    writeFileSync(join(root, "docs/guide.md"), "# Guide\n");
+
+    const report = await runDoctor({ root, probePort: 1, hasBinary: tools("git", "bun") });
+    expect(findingById(report, "layout.docs-dir-relocated")).toBeUndefined();
+    expect(findingById(report, "layout.work-dir-relocated")).toBeUndefined();
   });
 });
 
