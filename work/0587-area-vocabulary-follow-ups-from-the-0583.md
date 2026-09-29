@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-29T21:30:34Z"
-review_passes: 1
 id: "0587"
 title: "Area vocabulary follow-ups from the #0583 review"
 type: chore
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
@@ -12,6 +10,9 @@ created_by: ""
 branch: feat/area-vocabulary-follow-ups-from-the-0583
 review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-29T19:27:29Z"
+updated_at: "2026-09-29T21:30:35Z"
+review_rounds: 1
+review_passes: 1
 ---
 ## Context
 
@@ -39,4 +40,4 @@ Follow-ups from the #0583 (area vocabulary) review, deliberately left out of tha
 - 2026-09-29T20:42:12Z · status ready→active, branch
 - 2026-09-29T20:57:13Z · note: Item 5 (long-tail board areas) dropped from this branch, by design: the handoff guard (src/server/review-guard.ts) strips every work/*.md file except this task's own, so a branch physically cannot carry a cross-board area rewrite, and rewriting 19 sibling task files would also race concurrently active tasks. It is a board-data cleanup for a direct-to-main pass via `repoos update --area`. Mapping to apply then: ui-app→web, api→server, ai/agents→agent, user-docs→docs, init→cli; declare or fold tech-debt/docs-debt/support/release/pm (suggest general for the debt/support ones, infra for release); multi-value rows [server, ui-app]→[server, web], [landing, user-docs]→[landing, docs], [core, server, ui-app]→[core, server, web]. Items 1-4 and 6 are implemented with tests.
 - 2026-09-29T21:18:49Z · status active→review
-
+- 2026-09-29T21:30:35Z · status review→active
