@@ -781,12 +781,87 @@ function checkDir(
   );
 }
 
+/**
+ * File names that do not count as real content when judging whether a
+ * configured directory has been hollowed out — a lone README (or ignore file)
+ * is what a directory looks like after its contents were moved elsewhere.
+ */
+const PLACEHOLDER_ENTRY =
+  /^(readme|readme\.md|readme\.markdown|readme\.txt|index\.md|\.gitkeep|\.gitignore)$/i;
+
+function dirEntries(abs: string): string[] | null {
+  try {
+    return readdirSync(abs);
+  } catch {
+    return null;
+  }
+}
+
+/** Exists, is a directory, and holds nothing but placeholder files (or nothing). */
+function isHollowDir(abs: string): boolean {
+  const entries = dirEntries(abs);
+  if (entries === null) return false;
+  return entries.every((e) => PLACEHOLDER_ENTRY.test(e));
+}
+
+/** Exists, is a directory, and holds at least one non-placeholder entry. */
+function hasRealContent(abs: string): boolean {
+  const entries = dirEntries(abs);
+  if (entries === null) return false;
+  return entries.some((e) => !PLACEHOLDER_ENTRY.test(e));
+}
+
+function isExistingDir(abs: string): boolean {
+  if (!existsSync(abs)) return false;
+  try {
+    return statSync(abs).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Warn when a configured `workDir`/`docsDir` exists but has been hollowed out
+ * while a root-level directory of the same name holds the real content — the
+ * signature of a layout move that left RepoOS reading the empty shell (#0586).
+ * The fix always points back at the config option rather than suggesting a move.
+ */
+function checkDirPlacement(root: string, config: RepoOSConfig): DoctorFinding[] {
+  const out: DoctorFinding[] = [];
+  const targets = [
+    { id: "layout.work-dir-misplaced", label: "Task", key: "workDir", rel: config.workDir },
+    { id: "layout.docs-dir-misplaced", label: "Docs", key: "docsDir", rel: config.docsDir },
+  ];
+  for (const { id, label, key, rel } of targets) {
+    if (isAbsolute(rel)) continue; // already reported as a hard failure
+    const abs = resolve(root, rel);
+    if (!isExistingDir(abs) || abs === resolve(root)) continue;
+    const base = rel.split("/").filter(Boolean).pop() ?? rel;
+    const candidate = join(root, base);
+    // The configured directory *is* the root-level one — nothing misplaced.
+    if (resolve(candidate) === abs) continue;
+    if (!isExistingDir(candidate) || !isHollowDir(abs) || !hasRealContent(candidate)) continue;
+    out.push(
+      finding(
+        id,
+        "layout",
+        "warn",
+        `${label} content looks misplaced`,
+        `${key} is "${rel}", which exists but holds nothing but a placeholder, while ${base}/ at the repo root has real content. RepoOS reads ${label.toLowerCase()} from ${rel}, so it never sees the root ${base}/ files.`,
+        `set \`${key}\` in repoos.toml to "${base}" (with human approval), or move the content into ${rel}/ — the configured path is authoritative`,
+      ),
+    );
+  }
+  return out;
+}
+
 function checkLayout(root: string, config: RepoOSConfig): DoctorFinding[] {
   const out: DoctorFinding[] = [
     checkDir(root, "layout.work-dir", "Task", "workDir", config.workDir, { required: true }),
     checkDir(root, "layout.docs-dir", "Docs", "docsDir", config.docsDir),
     checkDir(root, "layout.inputs-dir", "Inputs", "inputsDir", config.inputsDir ?? "inputs"),
     checkDir(root, "layout.cache-dir", "Cache", "cacheDir", config.cacheDir),
+    ...checkDirPlacement(root, config),
   ];
 
   const wtDir = worktreesDir(root);

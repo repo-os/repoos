@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   REPOOS_AGENTS_SECTION_MARKER,
+  REPOOS_PATHS_SECTION_MARKER,
   quoteBlock,
   repoOSAgentsSectionAddition,
   scaffoldInto,
@@ -225,6 +226,18 @@ describe("scaffoldInto starter tasks", () => {
     expect(agents).toContain("`docs/`");
   });
 
+  it("AGENTS.md states that repoos.toml paths are authoritative", () => {
+    const root = scratch();
+    scaffoldInto(root, "", "repoos", "new");
+    const agents = readFileSync(join(root, "AGENTS.md"), "utf8");
+    expect(agents).toMatch(/repoos\.toml.*authoritative/is);
+    expect(agents).toContain("`workDir`");
+    expect(agents).toContain("`docsDir`");
+    expect(agents).toContain("never invent ownership rules");
+    expect(agents).toMatch(/explicit human approval/i);
+    expect(agents).toContain("`repoos doctor`");
+  });
+
   it("starter task references configured docsDir", () => {
     const root = scratch();
     scaffoldInto(root, "my project", "repoos", "new");
@@ -271,17 +284,33 @@ describe("existing AGENTS.md RepoOS guidance", () => {
     expect(existing + addition).toContain("Use the RepoOS UI or `repoos` commands");
   });
 
-  it("does not offer a duplicate addition when RepoOS guidance is already present", () => {
-    expect(repoOSAgentsSectionAddition(`${REPOOS_AGENTS_SECTION_MARKER}\n\n## RepoOS`)).toBeNull();
+  it("does not offer a duplicate addition when RepoOS guidance and the path rule are present", () => {
     expect(
-      repoOSAgentsSectionAddition("This repo uses **RepoOS** for task tracking.\n"),
+      repoOSAgentsSectionAddition(
+        `${REPOOS_AGENTS_SECTION_MARKER}\n\n## RepoOS\n\n### Project paths are configured\n`,
+      ),
+    ).toBeNull();
+    expect(
+      repoOSAgentsSectionAddition(
+        "This repo uses **RepoOS** for task tracking.\n\n### Project paths are configured\n",
+      ),
     ).toBeNull();
   });
 
-  it("uses the configured workDir in the addition", () => {
-    const existing = "# My project\n";
-    const addition = repoOSAgentsSectionAddition(existing, "repoos/work");
+  it("offers only the path-authority fragment to a RepoOS repo that predates it", () => {
+    const existing = `${REPOOS_AGENTS_SECTION_MARKER}\n\n## RepoOS\n\nOld guidance.\n`;
+    const addition = repoOSAgentsSectionAddition(existing, "repoos/work", "repoos/docs");
+    expect(addition).toContain(REPOOS_PATHS_SECTION_MARKER);
     expect(addition).toContain("repoos/work/");
+    expect(addition).toContain("repoos/docs/");
+  });
+
+  it("uses the configured workDir and docsDir in the addition", () => {
+    const existing = "# My project\n";
+    const addition = repoOSAgentsSectionAddition(existing, "repoos/work", "repoos/docs");
+    expect(addition).toContain("repoos/work/");
+    expect(addition).toContain("repoos/docs/");
+    expect(addition).toContain(REPOOS_PATHS_SECTION_MARKER);
   });
 
   it("defaults to work/ when workDir is not specified", () => {

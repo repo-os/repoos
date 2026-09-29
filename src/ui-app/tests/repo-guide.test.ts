@@ -3,7 +3,12 @@ import { createApp, nextTick, type App } from "vue";
 import { createPinia } from "pinia";
 import type { Agent, RepoOSConfig } from "../../core/types";
 import { agentsForConfig, DEFAULT_AGENTS } from "../../core/config";
-import { repoGuidePrompt, resolveRepoGuide, taskPmPrompt } from "../../server/agents";
+import {
+  repoGuidePrompt,
+  resolveRepoGuide,
+  storyPmPrompt,
+  taskPmPrompt,
+} from "../../server/agents";
 import RepoGuideChat from "../src/components/RepoGuideChat.vue";
 
 const config = (agents: Agent[]): RepoOSConfig => ({
@@ -75,6 +80,23 @@ describe("Ross (Repository Assistant)", () => {
     expect(prompt).toContain("RepoOS CLI commands");
     expect(prompt).toContain("Never call the RepoOS HTTP API directly");
     expect(prompt).not.toContain("You are Ross");
+  });
+
+  it("tells both PM prompts that repoos.toml paths are authoritative (#0586)", () => {
+    const pm = DEFAULT_AGENTS.find((agent) => agent.name === "pm")!;
+    const taskPrompt = taskPmPrompt("Check the dir structure and fix it", "Task #0586", pm);
+    const storyPrompt = storyPmPrompt("Check the layout", "Story: Layout", pm);
+
+    for (const prompt of [taskPrompt, storyPrompt]) {
+      expect(prompt).toMatch(/repoos\.toml.*authoritative/is);
+      expect(prompt).toContain("workDir");
+      expect(prompt).toContain("docsDir");
+      expect(prompt).toContain("never invent ownership rules");
+      expect(prompt).toMatch(/never to move directories on your own/i);
+      // The "check/fix the layout" trap is named explicitly.
+      expect(prompt).toMatch(/check.*fix.*repo layout/is);
+      expect(prompt).toMatch(/explicit approval/i);
+    }
   });
 });
 

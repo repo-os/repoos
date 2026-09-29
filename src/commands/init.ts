@@ -233,6 +233,20 @@ human authorization. If that already-landed work has a branchless task record,
 the \`/done\` endpoint can check the primary checkout and record release without
 a candidate merge. Do not erase a task's branch metadata to force this path.
 
+## Project paths are configured
+
+\`repoos.toml\` is authoritative for where things live: \`workDir\` (tasks),
+\`docsDir\` (project docs) and \`cacheDir\` (the derived index). Never move,
+rename or relocate those directories yourself, and never invent ownership rules
+to justify it — there is no "tooling-owned" directory.
+
+If project docs, a person's instructions or your own reading of the repo
+disagree with the configured layout, flag the mismatch to the human. The
+correct fix is to report it, to create the directory the config names, or to
+change \`repoos.toml\` — and only with explicit human approval. \`repoos doctor\`
+warns when a configured directory has been hollowed out and its content moved
+elsewhere.
+
 ## Rules
 
 - **Never** move task files between folders. Status lives in frontmatter.
@@ -274,12 +288,37 @@ active/review.
 export const REPOOS_AGENTS_SECTION_MARKER = "<!-- repoos:managed-instructions -->";
 
 /**
+ * Marker for the path-authority rule. Split out from the section marker so a
+ * repository initialized before this rule existed is offered just this fragment
+ * on a later `repoos init` re-run, without duplicating the whole appendix.
+ */
+export const REPOOS_PATHS_SECTION_MARKER = "<!-- repoos:paths-are-configured -->";
+
+/** The path-authority rule, shared by the appendix and its upgrade fragment. */
+export const REPOOS_PATHS_SECTION = (
+  workDir: string,
+  docsDir: string,
+) => `${REPOOS_PATHS_SECTION_MARKER}
+
+### Project paths are configured
+
+\`repoos.toml\` is authoritative for where things live: \`workDir\` (\`${workDir}/\`),
+\`docsDir\` (\`${docsDir}/\`) and \`cacheDir\`. Never move, rename or relocate those
+directories, and never invent ownership rules for them. If project docs or a
+person's instructions disagree with the configured layout, flag it to the human
+instead of moving anything; change \`repoos.toml\` only with explicit approval.
+`;
+
+/**
  * A deliberately small appendix for a repository that already owns its agent
  * instructions. RepoOS supplies its managed-runner instructions itself; this
  * only documents the project-level contract that a human or external agent
  * should see in the repo.
  */
-export const REPOOS_AGENTS_SECTION = (workDir: string) => `${REPOOS_AGENTS_SECTION_MARKER}
+export const REPOOS_AGENTS_SECTION = (
+  workDir: string,
+  docsDir = "docs",
+) => `${REPOOS_AGENTS_SECTION_MARKER}
 
 ## RepoOS
 
@@ -289,21 +328,35 @@ tasks; do not hand-edit task files. Read the relevant project docs before
 starting work, run \`repoos check\` before handoff, and await human approval
 through RepoOS's **Move to done**. The reviewer is advisory. A Git remote does
 not require a PR; close-out validates and merges through RepoOS.
-`;
+
+${REPOOS_PATHS_SECTION(workDir, docsDir)}`;
 
 /**
  * Return the exact addition that `repoos init` may offer for an existing
- * AGENTS.md, or null when this repository already documents RepoOS.
+ * AGENTS.md, or null when this repository already documents RepoOS *and* the
+ * path-authority rule. A repository that documents RepoOS but predates the rule
+ * gets the small path fragment appended, so a re-run upgrades it in place.
  */
-export function repoOSAgentsSectionAddition(existing: string, workDir = "work"): string | null {
-  if (
+export function repoOSAgentsSectionAddition(
+  existing: string,
+  workDir = "work",
+  docsDir = "docs",
+): string | null {
+  const documentsRepoos =
     existing.includes(REPOOS_AGENTS_SECTION_MARKER) ||
     /this repo uses \*\*repoos\*\*/i.test(existing) ||
-    /this repository uses repoos/i.test(existing)
+    /this repository uses repoos/i.test(existing);
+  const separator = existing.endsWith("\n") ? "\n" : "\n\n";
+  if (!documentsRepoos) {
+    return separator + REPOOS_AGENTS_SECTION(workDir, docsDir);
+  }
+  if (
+    existing.includes(REPOOS_PATHS_SECTION_MARKER) ||
+    /project paths are configured/i.test(existing)
   ) {
     return null;
   }
-  return (existing.endsWith("\n") ? "\n" : "\n\n") + REPOOS_AGENTS_SECTION(workDir);
+  return separator + REPOOS_PATHS_SECTION(workDir, docsDir);
 }
 
 function repoosToml(namespace: string): string {
@@ -641,7 +694,11 @@ async function confirm(question: string, dflt: boolean): Promise<boolean> {
  * interactive terminal, show the exact small appendix and add it only after an
  * explicit opt-in. Non-interactive init stays fully non-blocking.
  */
-async function offerRepoOSAgentsSection(root: string, workDir = "work"): Promise<void> {
+async function offerRepoOSAgentsSection(
+  root: string,
+  workDir = "work",
+  docsDir = "docs",
+): Promise<void> {
   if (!input.isTTY || !output.isTTY) return;
 
   const path = join(root, "AGENTS.md");
@@ -653,7 +710,7 @@ async function offerRepoOSAgentsSection(root: string, workDir = "work"): Promise
   } catch {
     return;
   }
-  const addition = repoOSAgentsSectionAddition(original, workDir);
+  const addition = repoOSAgentsSectionAddition(original, workDir, docsDir);
   if (!addition) return;
 
   console.log(c.dim("\n  Existing AGENTS.md detected — it will not be replaced."));
@@ -1209,7 +1266,7 @@ export async function cmdInit(args: string[]): Promise<void> {
 
     const { created, skipped } = scaffoldInto(root, "", namespace, "existing");
     const config = loadConfig(root);
-    await offerRepoOSAgentsSection(root, config.workDir);
+    await offerRepoOSAgentsSection(root, config.workDir, config.docsDir);
     await offerCheckPlanProposal(root);
     if (created.length === 0) {
       warnAlreadySetUp(root, "Nothing to initialize here.");

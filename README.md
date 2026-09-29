@@ -96,11 +96,13 @@ install, `repoos upgrade` prints the matching package-manager command instead.
 Then in any repo:
 
 ```bash
-repoos init        # scaffold work/, docs/, repoos.toml, AGENTS.md (idempotent)
+repoos init        # scaffold repoos/work/, repoos/docs/, repoos.toml, AGENTS.md (idempotent)
 ```
 
 Zero config required. `repoos init` walks up to find your repo root, creates the
-folders if missing, adds a sample task, and gitignores the derived cache.
+folders if missing, adds a sample task, and gitignores the derived cache. The
+default layout keeps RepoOS metadata under `repoos/`; choose the repo-root
+layout (root `work/` and `docs/`) during the interactive prompts.
 
 ## Core principles
 
