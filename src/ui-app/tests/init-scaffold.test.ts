@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   REPOOS_AGENTS_SECTION_MARKER,
+  quoteBlock,
   repoOSAgentsSectionAddition,
   scaffoldInto,
   validateNamespace,
@@ -114,6 +115,15 @@ describe("scaffoldInto starter tasks", () => {
     expect(starter.status).toBe("ready");
     expect(starter.body).toContain("Squishy: a tiny social app");
     expect(starter.body).toContain("repoos new");
+  });
+
+  it("keeps every line of a multi-line description inside the quote", () => {
+    const root = scratch();
+    const desc = "Build **Neung**.\n\n- Android only\n- Kotlin";
+    scaffoldInto(root, desc, "", "new");
+    const starter = readTask(root, "work/0002-flesh-out-the-vision.md");
+    expect(starter.body).toContain(quoteBlock(desc));
+    expect(quoteBlock(desc)).toBe("> Build **Neung**.\n>\n> - Android only\n> - Kotlin");
   });
 
   it("notes when no description was given rather than faking one", () => {
