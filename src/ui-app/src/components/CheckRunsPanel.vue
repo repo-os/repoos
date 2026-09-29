@@ -170,10 +170,19 @@ function scopeLabel(r: CheckRunRow): string {
   return "full";
 }
 
+function outcomeTitle(r: CheckRunRow): string | undefined {
+  if (r.failedTests.length === 0) return r.detail ?? undefined;
+  return `Failed tests:\n${r.failedTests.join("\n")}`;
+}
+
 function outcomeLabel(r: CheckRunRow): string {
   if (r.outcome === "pass") return "passed";
   if (r.outcome === "cancelled") return "cancelled";
-  return r.failedStep ? `failed · ${r.failedStep}` : "failed";
+  if (!r.failedStep) return "failed";
+  const n = r.failedTests.length;
+  return n > 0
+    ? `failed · ${r.failedStep} (${n} test${n === 1 ? "" : "s"})`
+    : `failed · ${r.failedStep}`;
 }
 </script>
 
@@ -252,7 +261,7 @@ function outcomeLabel(r: CheckRunRow): string {
             </td>
             <td :data-outcome="r.outcome" class="cr-outcome">
               <span
-                :title="r.detail ?? undefined"
+                :title="outcomeTitle(r)"
                 :class="{ 'cr-failed-step': r.failedStep && r.outcome === 'fail' }"
                 >{{ outcomeLabel(r) }}</span
               >

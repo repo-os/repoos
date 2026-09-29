@@ -213,6 +213,13 @@ questions the table answers, not archaeology in log files. A run whose caller's
 deadline passed mid-dispatch is recorded as **cancelled**, not failed, so a
 give-up never reads as a gate the branch failed.
 
+When the test suite fails, the run also records the name of every failing test
+(`file > suite > test`) in a `failed_tests` column, and the Runs tab shows the
+count and lists the names on hover. This is what tells a repeat offender from a
+one-off: `sqlite3 .repoos/checks.db "select failed_tests from check_runs where
+failed_tests is not null"`. Runs that executed on a remote validation host
+record the failed step but not yet the test names.
+
 The **Remote runners** tab shows each configured host live: health, the runs in
 flight right now (task and elapsed time), what is queued next, and the last
 completed run with its outcome and duration.

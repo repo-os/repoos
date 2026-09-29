@@ -79,6 +79,7 @@ function row(over: Partial<CheckRunRow> = {}): CheckRunRow {
     outcome: "pass",
     failedStep: null,
     skippedSteps: [],
+    failedTests: [],
     detail: null,
     ...over,
   };
