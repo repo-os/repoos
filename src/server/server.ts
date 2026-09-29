@@ -2805,12 +2805,20 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           }
           if (!validSession) {
             // A browser-less local CLI (`repoos shot`, #0582) carries the
-            // loopback token the server wrote instead of a session cookie. It
-            // is honored only from a loopback peer, so a request arriving
-            // through the tunnel cannot use it.
+            // loopback token the server wrote instead of a session cookie. A
+            // tunnel forwards traffic FROM loopback, so the address check alone
+            // would pass for it; also reject any request carrying a forwarding
+            // header. The token's 256-bit secrecy is the actual protection —
+            // these checks are defense in depth.
             const provided = req.headers["x-repoos-local-token"];
+            const forwarded = Boolean(
+              req.headers["x-forwarded-for"] ||
+              req.headers["x-real-ip"] ||
+              req.headers["cf-connecting-ip"],
+            );
             const localCli =
               isLoopbackAddress(req.socket.remoteAddress) &&
+              !forwarded &&
               localTokenMatches(typeof provided === "string" ? provided : undefined, localToken);
             if (!localCli) {
               // API requests get 401 JSON; browser GETs to SPA routes are served

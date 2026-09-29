@@ -9,6 +9,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadConfig, parsePreviewConfig } from "../../core/config";
+import { changedPathsVsBase } from "../../core/git";
 import {
   formatTargetList,
   matchGlob,
@@ -19,7 +20,7 @@ import {
   targetsForPaths,
 } from "../../core/shot-targets";
 import { localShotStore, shotsDir } from "../../server/shots";
-import { isShotCaptureUnavailable } from "../../commands/shot";
+import { isShotCaptureUnavailable, parseShotArgs } from "../../commands/shot";
 import type { PreviewConfig } from "../../core/types";
 
 /** A 1x1 transparent PNG, base64-encoded. */
@@ -137,6 +138,14 @@ describe("shotTargetMismatchWarning", () => {
     ).toBeUndefined();
   });
 
+  it("warns about the unexplained target when only some touched targets are area-reachable", () => {
+    const warning = shotTargetMismatchWarning(PREVIEW, "web + docs", [
+      "user-docs/index.md",
+      "landing/index.html",
+    ]);
+    expect(warning).toBe(`This task's changes touch Landing page but its area is "web + docs".`);
+  });
+
   it("stays quiet when no changed path matches a target", () => {
     expect(shotTargetMismatchWarning(PREVIEW, "web", ["src/app.ts"])).toBeUndefined();
   });
@@ -171,6 +180,33 @@ describe("parsePreviewConfig paths", () => {
   });
 });
 
+describe("shot argument parsing", () => {
+  it("parses a route and flags, defaulting --base and --wait", () => {
+    const opts = parseShotArgs(["/repo", "--target", "Docs site", "--selector", ".x"]);
+    expect(opts.error).toBeUndefined();
+    expect(opts.route).toBe("/repo");
+    expect(opts.target).toBe("Docs site");
+    expect(opts.selector).toBe(".x");
+    expect(opts.base).toBe("main");
+    expect(opts.waitMs).toBeGreaterThan(0);
+  });
+
+  it("rejects unknown flags instead of treating the next arg as a route", () => {
+    expect(parseShotArgs(["--taget", "X"]).error).toMatch(/unknown flag/);
+  });
+
+  it("rejects a flag with no value and a malformed --viewport/--wait", () => {
+    expect(parseShotArgs(["--target"]).error).toMatch(/requires a value/);
+    expect(parseShotArgs(["--viewport", "wide"]).error).toMatch(/WIDTHxHEIGHT/);
+    expect(parseShotArgs(["--wait", "soon"]).error).toMatch(/milliseconds/);
+  });
+
+  it("returns help for -h/--help", () => {
+    expect(parseShotArgs(["--help"]).help).toBe(true);
+    expect(parseShotArgs(["-h"]).help).toBe(true);
+  });
+});
+
 describe("missing browser (Playwright is optional)", () => {
   it("classifies a missing Playwright/WebKit as a clean skip, not a crash", () => {
     expect(isShotCaptureUnavailable(new Error("Cannot find module @playwright/test"))).toBe(true);
@@ -180,6 +216,48 @@ describe("missing browser (Playwright is optional)", () => {
     );
     expect(isShotCaptureUnavailable(new Error("browserType.launch: boom"))).toBe(true);
     expect(isShotCaptureUnavailable(new Error("Timeout 30000ms exceeded navigating"))).toBe(false);
+  });
+});
+
+describe("changedPathsVsBase", () => {
+  const temps: string[] = [];
+  afterEach(() => {
+    for (const t of temps.splice(0)) rmSync(t, { recursive: true, force: true });
+  });
+
+  function repo(): string {
+    const root = mkdtempSync(join(tmpdir(), "repoos-shot-diff-"));
+    temps.push(root);
+    const git = (...args: string[]): string =>
+      execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
+    git("init", "-q");
+    git("config", "user.email", "t@example.com");
+    git("config", "user.name", "Test");
+    git("branch", "-M", "main");
+    writeFileSync(join(root, "a.txt"), "a\n");
+    git("add", ".");
+    git("commit", "-q", "-m", "init");
+    return root;
+  }
+
+  it("returns null for a base ref that is not a commit (no silent empty diff)", () => {
+    expect(changedPathsVsBase(repo(), "no-such-branch")).toBeNull();
+  });
+
+  it("includes committed, unstaged, and untracked changes vs the base", () => {
+    const root = repo();
+    const git = (...args: string[]): string =>
+      execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
+    git("checkout", "-q", "-b", "feat/x");
+    writeFileSync(join(root, "b.txt"), "b\n");
+    git("add", "b.txt");
+    git("commit", "-q", "-m", "b");
+    writeFileSync(join(root, "a.txt"), "a2\n"); // unstaged
+    writeFileSync(join(root, "c.txt"), "c\n"); // untracked
+    const paths = changedPathsVsBase(root, "main") ?? [];
+    expect(paths).toContain("b.txt");
+    expect(paths).toContain("a.txt");
+    expect(paths).toContain("c.txt");
   });
 });
 

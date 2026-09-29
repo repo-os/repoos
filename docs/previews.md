@@ -82,9 +82,9 @@ web target exists (`areas = ["mobile", "web"]`).
 
 ## Changed-file target resolution for screenshots (#0582)
 
-`repoos shot` scrolls back the last thing the diff can *see* better than the
-area can: which files changed. Each `[[preview.targets]]` may carry an optional
-`paths` glob list; a changed file matching any glob (via
+`repoos shot` picks the screenshot target from something the `area` cannot see:
+which files the diff actually changed. Each `[[preview.targets]]` may carry an
+optional `paths` glob list; a changed file matching any glob (via
 `src/core/shot-targets.ts`, a tiny dependency-free matcher) makes that target a
 candidate, independent of the task's `area:`. This is intentionally a
 *screenshot* concern, not a preview-routing one: the human's **Preview** button
@@ -92,9 +92,11 @@ still resolves by `area` (the follow-up noted in #0582 would let the same map
 choose the default target there). Area resolves as the fallback, and `--target`
 overrides both.
 
-The same helper drives the drawer's area/target mismatch warning — changed
-paths touch a target the task's `area` does not resolve to — so a stale `area:`
-is surfaced rather than silently screenshotting the wrong app. `area` is also
+The same helper drives the drawer's area/target mismatch warning: whenever the
+changed paths touch a target the task's `area` does not resolve to — including
+when only one of several touched targets is unexplained — the warning names it,
+so a stale `area:` is surfaced rather than silently screenshotting the wrong
+app. `area` is also
 split on `+`/`,` (`splitAreas`) for both routing and the warning, so a value
 like `web + core + server` and the target areas are compared element-wise.
 Captured PNGs go under `work/.attachments/<taskId>/shots/` (gitignored, never

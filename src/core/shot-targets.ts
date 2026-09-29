@@ -214,10 +214,12 @@ export function formatTargetList(names: string[]): string {
 
 /**
  * The area/target mismatch warning shown in the drawer: the changed paths
- * resolve to preview target(s), but the task's `area` neither names any of them
- * nor otherwise resolves to them. Warning only — nothing is changed
- * automatically; the human can pick the right target from the drawer's existing
- * picker. Returns undefined when there is no mismatch to report.
+ * resolve to preview target(s) that the task's `area` does not reach. Warns
+ * when ANY detected target is unexplained — a diff that touches two apps but
+ * whose area names only one is still a mismatch for the other, and staying
+ * quiet there would hide exactly the #0581 failure. Warning only; nothing is
+ * changed automatically. Returns undefined when every detected target is
+ * explained by the area (or nothing was detected).
  */
 export function shotTargetMismatchWarning(
   preview: PreviewConfig | undefined,
@@ -226,16 +228,15 @@ export function shotTargetMismatchWarning(
 ): string | undefined {
   const detected = targetsForPaths(preview, changedPaths);
   if (detected.length === 0) return undefined;
-  const areaTaskAreas = splitAreas(area);
+  const taskAreas = splitAreas(area);
   // A target is "explained" when the task's area names it directly or one of
-  // its `areas` matches the task's area. Any explained target clears the
-  // warning: the area genuinely reaches one of the things this diff touches.
-  const explained = detected.some((name) => {
-    if (areaTaskAreas.includes(name.trim().toLowerCase())) return true;
+  // its `areas` matches the task's area.
+  const unexplained = detected.filter((name) => {
+    if (taskAreas.includes(name.trim().toLowerCase())) return false;
     const target = (preview?.targets ?? []).find((t) => t.name === name);
-    return Boolean(target?.areas.some((a) => areaTaskAreas.includes(a.trim().toLowerCase())));
+    return !target?.areas.some((a) => taskAreas.includes(a.trim().toLowerCase()));
   });
-  if (explained) return undefined;
+  if (unexplained.length === 0) return undefined;
   const areaLabel = (area ?? "").trim() || "(none)";
-  return `This task's changes touch ${formatTargetList(detected)} but its area is "${areaLabel}".`;
+  return `This task's changes touch ${formatTargetList(unexplained)} but its area is "${areaLabel}".`;
 }

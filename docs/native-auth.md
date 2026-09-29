@@ -99,13 +99,18 @@ after `sessionMaxAge` seconds (default 30 days, configurable, minimum 300).
 
 A browser-less local command has no session cookie. When auth is enabled the
 server writes a random token to `<cacheDir>/local-cli-token` (mode `0600`,
-regenerated on every boot) and the CLI sends it as `x-repoos-local-token`. The
-token is accepted **only from a loopback peer**, so a request arriving through
-the tunnel cannot use it even if the header is guessed — the remote peer as
-seen by the server is not loopback. This exists so `repoos shot` (#0582) can
-start a task's preview and store its screenshots over `127.0.0.1` without a
-login; with auth disabled there is no token and none is needed. It is not a
-`repoos.toml` key and is never logged.
+regenerated on every boot) and the CLI sends it as `x-repoos-local-token`. This
+exists so `repoos shot` (#0582) can start a task's preview and store its
+screenshots over `127.0.0.1` without a login; with auth disabled there is no
+token and none is needed.
+
+The token's **256-bit secrecy is what protects it** — it is a local file, never
+served, never logged. The server additionally accepts it only from a loopback
+peer that carries no forwarding header; that is defense in depth, not the
+guarantee: Cloudflare Tunnel's `cloudflared` dials the origin from loopback, so
+the address check alone would not distinguish tunneled traffic. A remote caller
+cannot present the token without already reading the file. It is not a
+`repoos.toml` key.
 
 ## Cloudflare Tunnel vs. Cloudflare Access
 
