@@ -50,6 +50,7 @@ import {
   type StepStatus,
 } from "../core/check-runner.js";
 import { writeCheckRun } from "../core/check-results-store.js";
+import { extractFailedTests } from "../core/check-failure-summary.js";
 import { envToRunContext, getCheckStore, localMachineName } from "../core/check-store.js";
 import { mainCheckoutRoot } from "../core/git.js";
 import { Logger } from "../core/logger.js";
@@ -1861,6 +1862,9 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     failedStep: gatingFailures[0]?.name ?? null,
     skippedSteps: results.filter((r) => r.status === "skipped").map((r) => r.name),
     detail: gatingFailures[0]?.detail ?? null,
+    // The stored detail is a short log tail that routinely loses the failing
+    // test's name; keep the names themselves so "which test?" is a query.
+    failedTests: gatingFailures.flatMap((r) => extractFailedTests(r.output ?? "")),
   });
 
   process.exit(gatingFailures.length > 0 ? 1 : 0);
@@ -1891,6 +1895,7 @@ function recordRunHistoryRow(row: {
   failedStep: string | null;
   skippedSteps: string[];
   detail: string | null;
+  failedTests?: string[];
 }): void {
   try {
     const { taskId, phase } = envToRunContext(process.env);
@@ -1906,6 +1911,7 @@ function recordRunHistoryRow(row: {
       failedStep: row.failedStep,
       skippedSteps: row.skippedSteps,
       detail: row.detail,
+      failedTests: row.failedTests,
     });
   } catch {
     /* never fail the gate on a history write */

@@ -684,6 +684,7 @@ export interface CheckRunRow {
   outcome: "pass" | "fail" | "cancelled";
   failedStep: string | null;
   skippedSteps: string[];
+  failedTests: string[];
   detail: string | null;
 }
 

@@ -6,6 +6,7 @@
  */
 import { afterEach, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
+import { createRequire } from "node:module";
 import { realpathSync, rmSync, writeFileSync } from "node:fs";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -87,6 +88,33 @@ describe("check-run store", () => {
       skippedSteps: ["css-layers", "ui-smoke"],
       detail: "2 test(s) failed",
     });
+  });
+
+  it("round-trips failed test names, and reads rows written before the column existed", () => {
+    const { s } = store();
+    s.record(row({ outcome: "fail", failedStep: "tests", failedTests: ["a.test.ts > x > y"] }));
+    s.record(row({ outcome: "pass" }));
+    const rows = s.list();
+    expect(rows[1]!.failedTests).toEqual(["a.test.ts > x > y"]);
+    expect(rows[0]!.failedTests).toEqual([]);
+
+    // A checks.db created by an older build has no failed_tests column: opening
+    // it must migrate in place, not drop history.
+    const old = mkdtempSync(join(tmpdir(), "repoos-checkstore-old-"));
+    dirs.push(old);
+    const src = new CheckStore(old);
+    src.record(row());
+    resetCheckStore();
+    const require = createRequire(import.meta.url);
+    const Sqlite = (globalThis as { Bun?: unknown }).Bun
+      ? require("bun:sqlite").Database
+      : require("node:sqlite").DatabaseSync;
+    const raw = new Sqlite(join(old, ".repoos", "checks.db"));
+    raw.exec("ALTER TABLE check_runs DROP COLUMN failed_tests");
+    raw.close();
+    const migrated = new CheckStore(old);
+    migrated.record(row({ failedTests: ["b.test.ts > z"] }));
+    expect(migrated.list().map((r) => r.failedTests)).toEqual([["b.test.ts > z"], []]);
   });
 
   it("filters by task, machine and remote", () => {

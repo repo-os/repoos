@@ -85,7 +85,8 @@ const SCHEMA = `
     outcome       TEXT NOT NULL,
     failed_step   TEXT,
     skipped_steps TEXT,        -- JSON array of step names skipped
-    detail        TEXT
+    detail        TEXT,
+    failed_tests  TEXT         -- JSON array of failing test names (tests step)
   );
   CREATE INDEX IF NOT EXISTS idx_check_runs_started_at ON check_runs(started_at);
   CREATE INDEX IF NOT EXISTS idx_check_runs_task_id ON check_runs(task_id);
@@ -123,6 +124,8 @@ export interface CheckRunRow {
   /** Names of steps this run skipped (profile / changed-path / blocked). */
   skippedSteps: string[];
   detail: string | null;
+  /** Failing tests (`file > suite > test`) when the tests step failed. */
+  failedTests: string[];
 }
 
 export interface RecordCheckRunInput {
@@ -137,6 +140,7 @@ export interface RecordCheckRunInput {
   failedStep?: string | null;
   skippedSteps?: string[];
   detail?: string | null;
+  failedTests?: string[];
 }
 
 export interface ListCheckRunsOptions {
@@ -187,6 +191,7 @@ export class CheckStore {
       this.db.exec("PRAGMA busy_timeout=3000");
       this.db.exec("PRAGMA synchronous=NORMAL");
       this.db.exec(SCHEMA);
+      this.migrate();
       this.available = true;
     } catch (e) {
       this.available = false;
@@ -196,6 +201,14 @@ export class CheckStore {
         `[repoos] check-run history unavailable (${join(repoRoot, cacheDir, "checks.db")}): ` +
           `${(e as Error).message}`,
       );
+    }
+  }
+
+  /** Add columns introduced after a checks.db was first created. */
+  private migrate(): void {
+    const cols = this.db.prepare("PRAGMA table_info(check_runs)").all() as { name: string }[];
+    if (!cols.some((c) => c.name === "failed_tests")) {
+      this.db.exec("ALTER TABLE check_runs ADD COLUMN failed_tests TEXT");
     }
   }
 
@@ -211,8 +224,8 @@ export class CheckStore {
         .prepare(
           `INSERT INTO check_runs
              (task_id, phase, machine, remote, scope, started_at, duration_ms,
-              outcome, failed_step, skipped_steps, detail)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              outcome, failed_step, skipped_steps, detail, failed_tests)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           input.taskId ?? null,
@@ -228,6 +241,9 @@ export class CheckStore {
             ? JSON.stringify(input.skippedSteps)
             : null,
           clipDetail(input.detail),
+          input.failedTests && input.failedTests.length > 0
+            ? JSON.stringify(input.failedTests)
+            : null,
         );
       // Retention: delete everything older than the newest MAX_ROWS rows.
       this.db
@@ -271,15 +287,18 @@ export class CheckStore {
   }
 
   private toRow(r: Record<string, any>): CheckRunRow {
-    let skipped: string[] = [];
-    try {
-      if (typeof r.skipped_steps === "string" && r.skipped_steps) {
-        const parsed = JSON.parse(r.skipped_steps) as unknown;
-        if (Array.isArray(parsed)) skipped = parsed.map(String);
+    const jsonList = (v: unknown): string[] => {
+      try {
+        if (typeof v === "string" && v) {
+          const parsed = JSON.parse(v) as unknown;
+          if (Array.isArray(parsed)) return parsed.map(String);
+        }
+      } catch {
+        /* corrupt row — treat as none */
       }
-    } catch {
-      /* corrupt row — treat as none */
-    }
+      return [];
+    };
+    const skipped = jsonList(r.skipped_steps);
     return {
       id: Number(r.id) || 0,
       taskId: r.task_id ?? null,
@@ -293,6 +312,7 @@ export class CheckStore {
       failedStep: r.failed_step ?? null,
       skippedSteps: skipped,
       detail: r.detail ?? null,
+      failedTests: jsonList(r.failed_tests),
     };
   }
 }
