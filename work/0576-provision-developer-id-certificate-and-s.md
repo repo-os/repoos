@@ -2,14 +2,14 @@
 id: "0576"
 title: Provision Developer ID certificate and store CI secrets for macOS Hub signing
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: macos
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-28T18:42:44Z"
-updated_at: "2026-09-28T18:42:53Z"
+updated_at: "2026-09-29T20:42:34Z"
 ---
 Now that RepoOS has joined the Apple Developer Program, set up the one-time credential provisioning needed for automated Developer ID signing and notarization of RepoOS Hub.
 
@@ -38,3 +38,4 @@ story: MacOS Native App
 
 - 2026-09-28T18:42:44Z · created · unknown
 - 2026-09-28T18:42:53Z · body
+- 2026-09-29T20:42:34Z · status inbox→ready
