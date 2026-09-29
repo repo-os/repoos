@@ -227,8 +227,7 @@ function lastActivity(story: { lastActivity: string | null }): string {
         <div class="page-title">Stories</div>
         <div class="page-desc" style="margin: 3px 0 0">
           Cross-area delivery slices — registered in <code>stories/</code> and grouped with tasks
-          tagged using the same story name. A story is complete only when every one of its tasks is
-          done.
+          tagged using the same story name.
         </div>
       </div>
       <div v-if="enabled" style="display: flex; align-items: center; gap: 10px; flex-shrink: 0">
