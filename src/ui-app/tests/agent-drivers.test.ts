@@ -1111,3 +1111,76 @@ setTimeout(() => process.exit(0), 200);
     }
   });
 });
+
+describe("crush driver", () => {
+  // Fake crush: `run --quiet` prints text; `session list --json` returns [] the
+  // first time (the pre-spawn baseline) and a session afterwards; `session show
+  // --json` returns that session's meta with cost + tokens.
+  const FAKE_CRUSH = `#!/usr/bin/env node
+const fs = require("fs");
+const args = process.argv.slice(2);
+if (process.env.REPOOS_CRUSH_LOG) fs.appendFileSync(process.env.REPOOS_CRUSH_LOG, JSON.stringify(args) + "\\n");
+if (args[0] === "run") {
+  process.stdout.write("crush output line\\n");
+  process.exit(0);
+}
+if (args[0] === "session" && args[1] === "list") {
+  const state = process.env.REPOOS_CRUSH_STATE;
+  if (state && fs.existsSync(state)) {
+    process.stdout.write(JSON.stringify([{ id: "crush-sess-1", modified: "2026-09-29T12:00:00Z" }]) + "\\n");
+  } else {
+    if (state) fs.writeFileSync(state, "1");
+    process.stdout.write("[]\\n");
+  }
+  process.exit(0);
+}
+if (args[0] === "session" && args[1] === "show") {
+  process.stdout.write(JSON.stringify({ meta: { cost: 0.25, prompt_tokens: 13642, completion_tokens: 7, total_tokens: 13649 } }) + "\\n");
+  process.exit(0);
+}
+process.exit(1);
+`;
+
+  it("captures the session id by before/after diff and ingests usage from session show", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-crush-"));
+    const bin = join(root, "bin");
+    mkdirSync(bin, { recursive: true });
+    writeFileSync(join(bin, "crush"), FAKE_CRUSH, { mode: 0o755 });
+    const log = join(root, "crush.log");
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${bin}:${oldPath}`;
+    process.env.REPOOS_CRUSH_LOG = log;
+    process.env.REPOOS_CRUSH_STATE = join(root, "state");
+    try {
+      const runner = new AgentRunner(config(bin), () => {});
+      const cwd = join(root, "wt");
+      mkdirSync(cwd, { recursive: true });
+      const start = runner.start(TASK, "feat/x", agent("crush"), { cwd });
+      expect(start.ok).toBe(true);
+
+      await waitFor(() => (runner.output("0001")?.lines.length ?? 0) > 0, "crush output");
+      expect(runner.output("0001")!.lines.map(dOf)).toContain("crush output line");
+
+      await waitFor(() => !runner.isRunning("0001"), "crush turn exit");
+      const session = runner.output("0001")!;
+      expect(session.sessionId).toBe("crush-sess-1");
+      // Usage came from `session show --json`, classified as real cost (USD).
+      expect(session.costUsd).toBe(0.25);
+      expect(session.inputTokens).toBe(13642);
+      expect(session.outputTokens).toBe(7);
+      expect(session.tokens).toBe(13649);
+
+      const argv = readFileSync(log, "utf8")
+        .trim()
+        .split("\n")
+        .map((l) => JSON.parse(l) as string[]);
+      expect(argv.find((a) => a[0] === "run")).toContain("--quiet");
+      expect(argv.find((a) => a[0] === "session" && a[1] === "show")).toContain("crush-sess-1");
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_CRUSH_LOG;
+      delete process.env.REPOOS_CRUSH_STATE;
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
