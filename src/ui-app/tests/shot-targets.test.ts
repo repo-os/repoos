@@ -47,6 +47,13 @@ describe("splitAreas", () => {
     expect(splitAreas("")).toEqual([]);
     expect(splitAreas(null)).toEqual([]);
   });
+
+  it("delegates to the canonical parser — a `+` without spaces is one value (#0587)", () => {
+    // The old local `/[+,]/` splitter broke "c++"; consuming `parseTaskAreas`
+    // keeps preview routing and the board agreeing on the same rule.
+    expect(splitAreas("c++")).toEqual(["c++"]);
+    expect(splitAreas("server+ui-app")).toEqual(["server+ui-app"]);
+  });
 });
 
 describe("glob matching", () => {

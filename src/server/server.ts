@@ -136,7 +136,7 @@ import {
   runPrompt,
 } from "./agents.js";
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
-import { migrateTaskAreas } from "./area-migration.js";
+import { runAreaMigrationPass } from "./area-migration.js";
 import { FreeformRunManager } from "./freeform-runs.js";
 import { pmChatSessionTaskId, clearPmChatSession, isPmWorking } from "./pm-runs.js";
 import { attachPendingPmImages } from "./pm-attachments.js";
@@ -1650,17 +1650,28 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       // Non-test processes that want the pass suppressed (a one-off tool) can
       // set REPOOS_SKIP_AREA_MIGRATION=1 explicitly.
       if (process.env.REPOOS_SKIP_AREA_MIGRATION === "1") return;
-      const result = migrateTaskAreas(config);
-      if (!result.updated.length) return;
-      commitFiles(
-        config.root,
-        result.rewrittenAbsPaths ?? [],
-        "docs: migrate legacy area values to comma list form (#0583)",
+      const outcome = runAreaMigrationPass(config, (absPaths) =>
+        commitFiles(
+          config.root,
+          absPaths,
+          "docs: migrate legacy area values to comma list form (#0583)",
+        ),
       );
-      logger.system("info", "area-format migration (#0583)", {
-        rewritten: result.updated.length,
-        scanned: result.scanned,
-      });
+      if (!outcome.attempted) return;
+      if (!outcome.committed) {
+        // The rewrite landed on disk but the commit did not: main is dirty and
+        // the next boot retries the paths recorded in the pending marker
+        // (#0587). Never silent — a dirty main is otherwise invisible.
+        logger.system("warn", "area-format migration (#0583): commit failed; will retry on boot", {
+          rewritten: outcome.rewritten,
+          retried: outcome.retried,
+        });
+      } else {
+        logger.system("info", "area-format migration (#0583)", {
+          rewritten: outcome.rewritten,
+          retried: outcome.retried,
+        });
+      }
       // The index holds pre-migration parses; refresh so boards and searches
       // see the canonical `areas` values right away.
       index.refreshAll();

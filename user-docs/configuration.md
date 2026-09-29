@@ -423,13 +423,15 @@ form by the one-time migration at server boot.
 The **effective vocabulary** the task drawer's area multi-select — and the PM
 agent's task-authoring prompt — offers is the `[[areas]]` names merged with
 every `[[preview.targets]].areas` value, so a repo that has only configured
-previews already gets sensible options. Editing either source updates the
-picker live; **Settings → General → "Areas"** edits the declared list
-(descriptions are TOML-only extras). When a source shrinks, tasks whose areas
-no longer sit in the vocabulary get an advisory log warning — never an error,
-because new areas typed in the picker always stay allowed. Save an area first
-used as free text ("add 'x' to repoos areas") in the picker to adopt it into
-the declared list.
+previews already gets sensible options. The **first** entry is what a New task
+starts on; with no vocabulary at all the field starts empty and is free text.
+Editing either source updates the picker live; **Settings → General → "Areas"**
+edits the declared list (descriptions are TOML-only extras). When a source
+shrinks — through Settings, the raw `repoos.toml` editor, or a direct file
+edit followed by a reload — tasks whose areas no longer sit in the vocabulary
+get an advisory log warning, never an error, because new areas typed in the
+picker always stay allowed. Save an area first used as free text ("add 'x' to
+repoos areas") in the picker to adopt it into the declared list.
 
 With no `[[areas]]` rows and no preview targets, the area field is free text
 only — the picker degrades to its type-an-entry mode, not a blocking select.
