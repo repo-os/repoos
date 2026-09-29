@@ -34,3 +34,6 @@ dist/
 # that ARE product assets (UI, icons, docs) live elsewhere and stay tracked.
 work/.attachments/
 inputs/.attachments/
+
+# Crush CLI local data dir
+.crush/
