@@ -201,6 +201,17 @@ describe("agent compatibility contracts", () => {
     expect(kiro.status).toBe("not_probed");
   });
 
+  it("walks Crush's pre-1.0 ladder: in-range is unprobed, below range unsupported, 1.x newer", () => {
+    const at = (version: string) =>
+      compatibilityForAgent({ cli: "crush", version, drivable: true });
+    // v0.97.x is inside `>=0.97.0 <0.98.0`, but nothing is certified yet.
+    expect(at("crush version v0.97.1").status).toBe("not_probed");
+    // A whole minor line is a potential break for a pre-1.0 harness.
+    expect(at("crush version v0.96.0").status).toBe("unsupported");
+    // A newer major is never a hard block — visible uncertainty plus a probe.
+    expect(at("crush version v1.0.0").status).toBe("newer_than_verified");
+  });
+
   describe("built dist artifact", () => {
     // Vitest's import.meta.url is not a file: URL, so resolve the worktree's
     // dist/ from cwd (tests always run from the repo root).

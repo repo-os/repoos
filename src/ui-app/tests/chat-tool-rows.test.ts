@@ -675,6 +675,9 @@ const AGENT_STREAMS: Record<string, EventLine[]> = {
   // still has to render what the transcript does contain, which is all this
   // case checks.
   kiro: [{ status: "COMPLETED", response: "Checking the repository." }],
+  // Crush is the same shape: plain assistant text on stdout, no structured
+  // events, no session id, no tool cards.
+  crush: [{ role: "assistant", parts: [{ type: "text", text: "Checking the repository." }] }],
 };
 
 interface PendingTool {
@@ -806,7 +809,7 @@ describe("grouping is identical for every agent", () => {
   it("drives each CLI's real parser into the same two rows", () => {
     for (const cli of AGENT_CLIS) {
       const rows = toDisplayRows(normalizedEntries(cli, AGENT_STREAMS[cli]));
-      if (cli === "kiro") {
+      if (cli === "kiro" || cli === "crush") {
         // A plain line, not a text bubble: the one case where a driver's
         // transcript carries no structured entries at all.
         expect(
