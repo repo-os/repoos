@@ -92,8 +92,11 @@
   --vp-custom-block-danger-text: #0c1424;
   --vp-custom-block-danger-code-bg: rgba(194, 49, 70, 0.12);
 
-  /* chrome */
-  --vp-nav-bg-color: rgba(255, 255, 255, 0.85);
+  /* chrome. The nav colours are opaque on purpose: the bar paints its own
+     background edge to edge (#0581), and a translucent token would stack with
+     VitePress's inner .content-body layer and drift from the page behind it. */
+  --vp-nav-bg-color: #ffffff;
+  --vp-nav-screen-bg-color: var(--vp-nav-bg-color);
   --vp-sidebar-bg-color: #eaeff8;
   --vp-footer-bg-color: transparent;
   --vp-local-search-bg: #eaeff8;
@@ -151,8 +154,8 @@
   --vp-custom-block-danger-text: #e7ecf7;
   --vp-custom-block-danger-code-bg: rgba(255, 107, 125, 0.12);
 
-  /* chrome */
-  --vp-nav-bg-color: rgba(7, 10, 18, 0.85);
+  /* chrome — opaque, see the light block's note (#0581) */
+  --vp-nav-bg-color: #070a12;
   --vp-sidebar-bg-color: #0b1020;
   --vp-local-search-bg: #0b1020;
   --vp-c-scrollbar-thumb: rgba(120, 140, 200, 0.2);
@@ -510,6 +513,78 @@ html[data-ui-theme="gruvbox"] .release-notice {
   margin-top: 0.5rem;
 }
 
+/* ---------- top bar (#0581) ----------
+ *
+ * Two states, one breakpoint:
+ *   >= 1280px  the full bar — nav items, search, GitHub, theme controls.
+ *   <  1280px  the hamburger + nav screen, which is where VitePress already
+ *              puts it below 768px.
+ *
+ * The full bar's min-content width is ~900px (six nav items, the long
+ * "Environment & secrets" among them, plus search, GitHub and the theme
+ * controls) and it sits beside a 272px sidebar with a 32px gutter, so from
+ * 768px up VitePress's own layout ran the row past the viewport edge and
+ * clipped it. Collapsing earlier keeps every width either complete or folded.
+ */
+@media (max-width: 1279px) {
+  .VPNav .VPNavBar .menu {
+    display: none;
+  }
+
+  .VPNav .VPNavBar .extra {
+    display: none;
+  }
+
+  .VPNav .VPNavBar .hamburger {
+    display: flex;
+  }
+
+  /* VitePress hides the screen from 768px up; below 1280px it IS the menu. */
+  #VPNavScreen {
+    display: block;
+  }
+}
+
+/* Full-bleed colour. VitePress paints .content-body, which is inset by the
+ * sidebar padding and the right gutter — so on wide screens the bar stopped
+ * short of the viewport edge and the corner showed the page colour instead.
+ * The nav element already spans the viewport, and --vp-nav-bg-color is opaque,
+ * so painting it reads as one uniform bar edge to edge, in every theme. */
+@media (min-width: 960px) {
+  .VPNav .VPNavBar:not(.home) {
+    background-color: var(--vp-nav-bg-color);
+  }
+}
+
+/* VitePress draws the divider between the nav menu and the GitHub icon
+ * (`.menu + .social-links::before`). It belongs between GitHub and the theme
+ * controls instead, so it is painted in front of the bar theme controls. */
+.VPNav .VPNavBar .menu + .social-links::before {
+  content: none;
+}
+
+.VPNav .VPNavBar .docs-theme-controls--bar::before {
+  content: "";
+  flex: none;
+  width: 1px;
+  height: 24px;
+  margin: 0 8px 0 16px;
+  background-color: var(--vp-c-divider);
+}
+
+/* 8px less padding per nav link: the room the full bar needs at 1280px. */
+.VPNav .VPNavBar .VPNavBarMenuLink {
+  padding: 0 8px;
+}
+
+/* The ⌘K hint is the widest part of the search pill; dropping it below 1440px
+ * is what keeps the bar's right gutter between 1280px and 1439px. */
+@media (max-width: 1439px) {
+  .VPNavBar .DocSearch-Button-Keys {
+    display: none;
+  }
+}
+
 /* ---------- theme switcher (navbar + mobile nav screen) ---------- */
 .docs-theme-controls {
   display: none;
@@ -522,34 +597,33 @@ html[data-ui-theme="gruvbox"] .release-notice {
   display: none;
 }
 
-/* VitePress hides VPNavScreen (and the screen theme row) from 768px up; match
-   VPNavBarExtra / menu visibility so tablets still get the bar variant. */
-@media (min-width: 768px) {
+/* The bar variant belongs to the full desktop bar (breakpoint above). */
+@media (min-width: 1280px) {
   .docs-theme-controls--bar {
     display: inline-flex;
   }
 }
 
+/* Last row of the mobile menu, mirroring landing's .theme-menu-row: the label
+ * sits left, the controls right, and the row closes the list. */
 .docs-theme-controls--screen {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  padding: 12px 0 8px;
-  margin-top: 8px;
-  border-top: 1px solid var(--vp-c-divider);
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--vp-c-divider);
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1280px) {
   .docs-theme-controls--screen {
     display: none;
   }
 }
 
 .docs-theme-screen-label {
-  flex: 1 1 100%;
-  font-size: 13px;
-  font-weight: 500;
+  flex: 1;
+  font-size: 14px;
+  font-weight: 400;
   color: var(--vp-c-text-2);
 }
 
@@ -665,4 +739,61 @@ html[data-ui-theme="gruvbox"] .release-notice {
 .docs-theme-toggle-icon {
   width: 16px;
   height: 16px;
+}
+
+/* ---------- mobile nav screen (the menu below 1280px, #0581) ----------
+ *
+ * Mirrors landing's .nav-menu (landing/src/App.vue and landing/src/style.css),
+ * adapted to the docs nav: one left-aligned list of rows with thin dividers —
+ * Get started, Agents, CLI, Configuration, Environment & secrets, repoos.org,
+ * GitHub — and the Theme row last. VitePress's own screen menu links already
+ * are that row style, so only the container, the social links and our theme
+ * row need work.
+ *
+ * These use #VPNavScreen (the element's own id) because VitePress styles the
+ * same properties with scoped selectors of equal class count; an id keeps the
+ * overrides from depending on stylesheet order.
+ */
+@media (max-width: 767px) {
+  /* Match the bar's left gutter so rows line up with the wordmark. */
+  #VPNavScreen {
+    padding: 0 24px;
+  }
+}
+
+#VPNavScreen .container {
+  max-width: none;
+  margin: 0;
+}
+
+/* GitHub joins the list as an ordinary left-aligned row: icon + label. The
+ * label is the link's aria-label (socialLinks in config.mts), so a second
+ * social link would pick up its own name instead of this one. */
+#VPNavScreen .social-links {
+  display: block;
+  margin-top: 0;
+}
+
+#VPNavScreen .social-links .VPSocialLink {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  height: auto;
+  padding: 12px 0 11px;
+  border-bottom: 1px solid var(--vp-c-divider);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 24px;
+  color: var(--vp-c-text-1);
+  transition: color 0.25s;
+}
+
+#VPNavScreen .social-links .VPSocialLink::after {
+  content: attr(aria-label);
+}
+
+#VPNavScreen .social-links .VPSocialLink:hover {
+  color: var(--vp-c-brand-1);
 }

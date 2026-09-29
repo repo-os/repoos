@@ -8,7 +8,7 @@ local server that reads them.
 
 Choose one:
 
-### curl — standalone build
+### curl — preferred
 
 <div class="install-command">
 
@@ -17,6 +17,12 @@ curl -fsSL https://repoos.org/install | bash
 ```
 
 </div>
+
+::: tip Why curl
+- **Easiest to update and uninstall** — `repoos upgrade` and `repoos uninstall`,
+  no package manager involved.
+- **Only method with release channels** — `repoos upgrade --channel beta|rc|canary`.
+:::
 
 ### Homebrew
 
@@ -90,8 +96,8 @@ matching command when it can identify the source.
 | mise | `mise upgrade npm:@repo-os/repoos` |
 
 `repoos upgrade --channel beta`, `--channel canary`, and `--channel rc` are
-available only for the standalone curl install. Package-manager installs follow
-their package manager's stable release channel.
+available only for the curl install. Package-manager installs follow their
+package manager's stable release channel.
 
 RepoOS runs on **Bun** when it's available and falls back to **Node ≥ 20**
 otherwise — see
