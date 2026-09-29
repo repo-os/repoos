@@ -3,6 +3,9 @@ id: "0583"
 title: Define areas as a per-repo vocabulary with a multi-select picker
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/define-areas-as-a-per-repo-vocabulary-wi
 model_override: opencode-go/glm-5.3-flash
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-29T11:31:44Z"
-updated_at: "2026-09-29T18:24:06Z"
+updated_at: "2026-09-29T18:28:19Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -71,3 +74,4 @@ Automatically inferring areas from changed paths (#0582's `paths` globs cover th
 - 2026-09-29T18:10:04Z · status active→review
 - 2026-09-29T18:14:15Z · status review→active
 - 2026-09-29T18:24:06Z · status active→review
+- 2026-09-29T18:28:19Z · needs_input
