@@ -1,4 +1,5 @@
 ---
+merge_conflict_retry_count: 1
 updated_at: "2026-09-29T20:32:17Z"
 review_passes: 1
 id: "0586"
@@ -44,4 +45,5 @@ In a fresh `repoos init` (default `repoos/` namespace), a user dropped project c
 - 2026-09-29T20:15:26Z · status inbox→ready
 - 2026-09-29T20:18:43Z · status ready→active
 - 2026-09-29T20:31:10Z · status active→review
+
 
