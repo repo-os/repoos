@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p2
 area: general
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-29T09:55:42Z"
-updated_at: "2026-09-29T09:55:42Z"
+updated_at: "2026-09-29T09:56:30Z"
 ---
 ## Goal
 
@@ -81,3 +82,4 @@ Mirror the style and layout of the repoos.org mobile menu (the landing site in
 ## Activity
 
 - 2026-09-29T09:55:42Z · created · unknown
+- 2026-09-29T09:56:30Z · model_override
