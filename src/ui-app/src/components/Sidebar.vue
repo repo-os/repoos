@@ -14,6 +14,7 @@ const config = useConfigStore();
 const { connected, eventCount, total, health } = storeToRefs(repo);
 
 const canaryDigit = computed(() => health.value?.canaryCounter ?? 0);
+const canaryPath = computed(() => health.value?.canaryPath ?? ".repoos/canary.txt");
 const canaryRunning = ref(false);
 const canaryOpen = ref(false);
 async function runCanary(): Promise<void> {
@@ -114,6 +115,7 @@ const buildTitle = computed(() =>
     <CanaryConfirmDialog
       :open="canaryOpen"
       :busy="canaryRunning"
+      :canary-path="canaryPath"
       @update:open="canaryOpen = $event"
       @confirm="runCanary"
     />

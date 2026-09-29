@@ -185,6 +185,13 @@ SSE stream, and renders the dashboard / work board / context viewer.
 Responsive: sidebar on desktop, bottom tabs on mobile. Vite builds it into
 `dist/ui/`.
 
+The sidebar **canary** digit (0–9) is a hidden smoke-test trigger: it creates a
+freeform task whose only code change is incrementing the digit in
+`.repoos/canary.txt` (tracked via a gitignore exception inside `cacheDir`).
+`GET /api/health` reads that file from the managed repo root, not from RepoOS's
+own build. `repoos init` seeds the file; older repos get it on first canary
+run, committed to `main` before the task is created.
+
 ## Data flow
 
 - Read: UI/CLI -> facade (or server's live-index) -> parse `work/*.md` ->

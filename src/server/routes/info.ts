@@ -7,7 +7,8 @@ import { sampleSystem } from "../system.js";
 import { resolveRepoGuide, REPO_GUIDE_SESSION_ID } from "../agents.js";
 import { withPmWorking } from "../pm-runs.js";
 import { previewTargetOptions } from "../preview.js";
-import { CANARY_COUNTER } from "../../core/canary.js";
+import { canaryRelPath } from "../../core/canary.js";
+import { readCanaryCounter } from "../../core/canary-repo.js";
 import { projectDisplayName, projectDisplayBranch } from "../../core/config.js";
 
 // These will be passed via context in server.ts during integration
@@ -52,7 +53,8 @@ export const health: RouteHandler = (ctx, req, res) => {
     serverStartedAt: new Date(Date.now() - process.uptime() * 1000).toISOString(),
     isPreviewBuild: process.env.REPOOS_PREVIEW_CHILD === "1",
     copyInspectorAvailable: copyInspectorApiEnabled(ctx.config.root),
-    canaryCounter: CANARY_COUNTER,
+    canaryCounter: readCanaryCounter(ctx.config.root, ctx.config.cacheDir),
+    canaryPath: canaryRelPath(ctx.config.cacheDir),
     ...(handshake ? { reloadHandshake: true } : {}),
   });
 };
