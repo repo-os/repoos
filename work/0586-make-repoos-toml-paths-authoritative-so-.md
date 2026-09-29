@@ -2,14 +2,14 @@
 id: "0586"
 title: Make repoos.toml paths authoritative so agents never relocate docs/work dirs
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: agents
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-29T18:59:05Z"
-updated_at: "2026-09-29T18:59:05Z"
+updated_at: "2026-09-29T19:19:50Z"
 ---
 ## Problem
 
@@ -34,3 +34,4 @@ In a fresh `repoos init` (default `repoos/` namespace), a user dropped project c
 ## Activity
 
 - 2026-09-29T18:59:05Z · created · unknown
+- 2026-09-29T19:19:50Z · status inbox→ready
