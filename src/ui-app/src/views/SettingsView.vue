@@ -571,6 +571,9 @@ const THEME_SWATCHES: Record<string, { bg: string; a: string; b: string }> = {
   // previews the dark flavour; picking the theme and then choosing Light in
   // the dark/light control gives Latte.
   catppuccin: { bg: "#1e1e2e", a: "#89b4fa", b: "#cba6f7" },
+  // Hypercolor's tape-black ground with its two signature neons: the magenta
+  // primary and the cyan ghost.
+  hypercolor: { bg: "#0a0713", a: "#ff4d8d", b: "#5ff2ff" },
 };
 function swatchFor(id: string): { bg: string; a: string; b: string } {
   return THEME_SWATCHES[id] ?? { bg: "var(--panel-solid)", a: "var(--cyan)", b: "var(--violet)" };

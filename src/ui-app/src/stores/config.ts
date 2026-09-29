@@ -47,6 +47,10 @@ export const DESIGN_THEMES: DesignTheme[] = [
   // control switches between them and `repoos check` checks both. See the
   // catppuccin block in style.css for why the two differ in more than hue.
   { id: "catppuccin", label: "Catppuccin" },
+  // Hypercolor is Charm/Crush-flavoured: neon ink on tape-black, an animated
+  // gradient wordmark, and a faint scanline. Dark is the intended appearance;
+  // light is the daylight variant the theme-contrast guard also checks.
+  { id: "hypercolor", label: "Hypercolor" },
 ];
 
 /** How many themes a user may star as favorites (#0255). */

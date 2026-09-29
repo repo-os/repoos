@@ -290,6 +290,16 @@ selector = ':root[data-ui-theme="catppuccin"][data-theme="light"]'
 name = "catppuccin-light"
 inherits = ["classic-dark", "catppuccin-dark", "catppuccin-light"]
 
+[[check.themeScopes]]
+selector = ':root[data-ui-theme="hypercolor"]'
+name = "hypercolor-dark"
+inherits = ["classic-dark", "hypercolor-dark"]
+
+[[check.themeScopes]]
+selector = ':root[data-ui-theme="hypercolor"][data-theme="light"]'
+name = "hypercolor-light"
+inherits = ["classic-dark", "hypercolor-dark", "hypercolor-light"]
+
 # (fg token, bg token) pairs checked for ≥3:1 WCAG contrast in every scope.
 [[check.contrastPairs]]
 fg = "--txt"

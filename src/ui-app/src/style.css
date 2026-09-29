@@ -9333,6 +9333,254 @@
   }
 }
 
+/* hypercolor: tape-black CRT with Charm's neon duo — magenta primary, cyan
+ * ghost — and a gradient wordmark that drifts hue like a heat-reactive shirt.
+ * Dark is the intended appearance; light is the daylight variant. */
+:root[data-ui-theme="hypercolor"] {
+  --bg: #0a0713;
+  --bg-2: #120c1f;
+  --panel: #1a1130cc;
+  --panel-solid: #1a1130;
+  --border: rgba(169, 123, 255, 0.2);
+  --border-bright: rgba(255, 77, 141, 0.45);
+  --txt: #f4ecff;
+  --txt-dim: #b9a6d9;
+  --txt-faint: #7e6ba3;
+  --cyan: #5ff2ff;
+  --cyan-dim: rgba(95, 242, 255, 0.14);
+  --violet: #a97bff;
+  --violet-dim: rgba(169, 123, 255, 0.16);
+  --green: #52ffa8;
+  --red: #ff4d8d;
+  --amber: #ffc857;
+  --body-gradient:
+    radial-gradient(760px 520px at 8% -10%, rgba(255, 77, 141, 0.18), transparent 62%),
+    radial-gradient(820px 560px at 104% -6%, rgba(95, 242, 255, 0.16), transparent 58%),
+    radial-gradient(900px 620px at 50% 124%, rgba(169, 123, 255, 0.14), transparent 62%);
+  --topbar-bg: linear-gradient(180deg, rgba(26, 17, 48, 0.9), rgba(10, 7, 19, 0.6));
+  --logo-shadow: 0 0 20px -2px rgba(255, 77, 141, 0.55), 0 6px 22px -8px rgba(95, 242, 255, 0.45);
+  --card-glow: 0 0 0 1px rgba(169, 123, 255, 0.2), 0 0 22px -12px rgba(255, 77, 141, 0.5);
+  --nav-hover-bg: rgba(169, 123, 255, 0.1);
+  --nav-active-bg: linear-gradient(90deg, rgba(255, 77, 141, 0.28), rgba(95, 242, 255, 0.14));
+  --nav-active-color: #fff3ff;
+  --overlay-bg: rgba(6, 3, 14, 0.66);
+  --panel-gradient: linear-gradient(180deg, #1a1130, #120c1f);
+  --drawer-shadow: -24px 0 60px -24px rgba(0, 0, 0, 0.8);
+  --btn-primary-bg: linear-gradient(135deg, #ff4d8d, #a97bff 55%, #5ff2ff);
+  --btn-primary-color: #0a0713;
+  --ai-chat-send-bg: linear-gradient(135deg, #ff4d8d, #5ff2ff);
+  --ai-chat-send-color: #0a0713;
+  --btn-new-bg: linear-gradient(135deg, rgba(255, 77, 141, 0.26), rgba(169, 123, 255, 0.24));
+  --btn-new-color: #ffd9ef;
+  --status-on-bg: linear-gradient(135deg, rgba(82, 255, 168, 0.24), rgba(95, 242, 255, 0.2));
+  --status-on-color: #d9fff0;
+  --md-body-bg: rgba(255, 255, 255, 0.04);
+  --tabbar-bg: linear-gradient(180deg, rgba(18, 12, 31, 0.85), rgba(10, 7, 19, 0.97));
+  --scrollbar-thumb: rgba(169, 123, 255, 0.28);
+  --doc-row-sel-bg: rgba(169, 123, 255, 0.24);
+  --doc-row-sel-color: #f0e6ff;
+  --green-tint: rgba(82, 255, 168, 0.12);
+  --green-border-tint: rgba(82, 255, 168, 0.3);
+  --red-tint: rgba(255, 77, 141, 0.14);
+  --red-border-tint: rgba(255, 77, 141, 0.32);
+  --amber-tint: rgba(255, 200, 87, 0.14);
+  --amber-border-tint: rgba(255, 200, 87, 0.3);
+  --violet-tint: var(--violet-dim);
+  --violet-border-tint: rgba(169, 123, 255, 0.32);
+  --tag-stream-bg: linear-gradient(135deg, rgba(95, 242, 255, 0.24), rgba(169, 123, 255, 0.2));
+  --tag-stream-color: #c8f6ff;
+  --tag-reconnect-bg: rgba(255, 77, 141, 0.18);
+  --tag-reconnect-color: #ffc2da;
+  --chip-bg: rgba(169, 123, 255, 0.12);
+  --dot-glow: 0 0 9px currentColor;
+  --background: #0a0713;
+  --foreground: #f4ecff;
+  --card: #1a1130cc;
+  --card-foreground: #f4ecff;
+  --popover: #1a1130;
+  --popover-foreground: #f4ecff;
+  --primary: #a97bff;
+  --primary-foreground: #0a0713;
+  --secondary: rgba(169, 123, 255, 0.12);
+  --secondary-foreground: #f4ecff;
+  --muted: #120c1f;
+  --muted-foreground: #b9a6d9;
+  --accent: rgba(255, 77, 141, 0.16);
+  --accent-foreground: #ffd9ef;
+  --destructive: #ff4d8d;
+  --destructive-foreground: #0a0713;
+  --input: rgba(169, 123, 255, 0.24);
+  --ring: #5ff2ff;
+  --radius: 0.875rem;
+}
+:root[data-ui-theme="hypercolor"][data-theme="light"] {
+  --bg: #f7f2ff;
+  --bg-2: #efe6ff;
+  --panel: #ffffff;
+  --panel-solid: #ffffff;
+  --border: rgba(74, 32, 130, 0.14);
+  --border-bright: rgba(74, 32, 130, 0.3);
+  --txt: #1b1030;
+  --txt-dim: #5a4a7a;
+  --txt-faint: #8b7aa8;
+  --cyan: #0089a8;
+  --cyan-dim: rgba(0, 137, 168, 0.1);
+  --violet: #6d3fe0;
+  --violet-dim: rgba(109, 63, 224, 0.1);
+  --green: #0f9d63;
+  --red: #d61f7a;
+  --amber: #b06a00;
+  --body-gradient:
+    radial-gradient(760px 520px at 8% -10%, rgba(214, 31, 122, 0.1), transparent 62%),
+    radial-gradient(820px 560px at 104% -6%, rgba(0, 137, 168, 0.1), transparent 58%),
+    radial-gradient(900px 620px at 50% 124%, rgba(109, 63, 224, 0.08), transparent 62%);
+  --topbar-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(247, 242, 255, 0.88));
+  --logo-shadow: 0 0 16px -4px rgba(214, 31, 122, 0.35), 0 6px 18px -10px rgba(0, 137, 168, 0.32);
+  --card-glow: 0 0 0 1px rgba(109, 63, 224, 0.14), 0 7px 16px -11px rgba(214, 31, 122, 0.32);
+  --nav-hover-bg: rgba(27, 16, 48, 0.05);
+  --nav-active-bg: linear-gradient(90deg, rgba(214, 31, 122, 0.14), rgba(109, 63, 224, 0.1));
+  --nav-active-color: #1b1030;
+  --overlay-bg: rgba(27, 16, 48, 0.3);
+  --panel-gradient: linear-gradient(180deg, #ffffff, #f7f2ff);
+  --drawer-shadow: -24px 0 60px -32px rgba(27, 16, 48, 0.35);
+  --btn-primary-bg: linear-gradient(135deg, #d61f7a, #6d3fe0 55%, #0089a8);
+  --btn-primary-color: #ffffff;
+  --ai-chat-send-bg: linear-gradient(135deg, #d61f7a, #0089a8);
+  --ai-chat-send-color: #ffffff;
+  --btn-new-bg: linear-gradient(135deg, rgba(214, 31, 122, 0.12), rgba(109, 63, 224, 0.12));
+  --btn-new-color: #a01060;
+  --status-on-bg: linear-gradient(135deg, rgba(15, 157, 99, 0.14), rgba(0, 137, 168, 0.12));
+  --status-on-color: #0b6b45;
+  --md-body-bg: rgba(27, 16, 48, 0.03);
+  --tabbar-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.98));
+  --scrollbar-thumb: rgba(27, 16, 48, 0.18);
+  --doc-row-sel-bg: rgba(109, 63, 224, 0.12);
+  --doc-row-sel-color: #1b1030;
+  --green-tint: rgba(15, 157, 99, 0.1);
+  --green-border-tint: rgba(15, 157, 99, 0.26);
+  --red-tint: rgba(214, 31, 122, 0.1);
+  --red-border-tint: rgba(214, 31, 122, 0.26);
+  --amber-tint: rgba(176, 106, 0, 0.1);
+  --amber-border-tint: rgba(176, 106, 0, 0.26);
+  --violet-tint: var(--violet-dim);
+  --violet-border-tint: rgba(109, 63, 224, 0.26);
+  --tag-stream-bg: rgba(0, 137, 168, 0.1);
+  --tag-stream-color: #006b84;
+  --tag-reconnect-bg: rgba(214, 31, 122, 0.1);
+  --tag-reconnect-color: #a01060;
+  --chip-bg: rgba(27, 16, 48, 0.06);
+  --dot-glow: 0 0 6px currentColor;
+  --background: #f7f2ff;
+  --foreground: #1b1030;
+  --card: #ffffff;
+  --card-foreground: #1b1030;
+  --popover: #ffffff;
+  --popover-foreground: #1b1030;
+  --primary: #6d3fe0;
+  --primary-foreground: #ffffff;
+  --secondary: rgba(27, 16, 48, 0.06);
+  --secondary-foreground: #1b1030;
+  --muted: #efe6ff;
+  --muted-foreground: #5a4a7a;
+  --accent: rgba(214, 31, 122, 0.1);
+  --accent-foreground: #a01060;
+  --destructive: #d61f7a;
+  --destructive-foreground: #ffffff;
+  --input: rgba(27, 16, 48, 0.18);
+  --ring: #6d3fe0;
+  --radius: 0.875rem;
+}
+[data-ui-theme="hypercolor"] .glass,
+[data-ui-theme="hypercolor"] .topbar,
+[data-ui-theme="hypercolor"] .tabbar {
+  backdrop-filter: blur(14px) saturate(1.25);
+}
+[data-ui-theme="hypercolor"] .glass {
+  border-radius: 14px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 1px rgba(169, 123, 255, 0.14),
+    0 16px 40px -26px rgba(255, 77, 141, 0.45);
+}
+[data-ui-theme="hypercolor"] .task-card {
+  border-radius: 12px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 0 20px -14px rgba(95, 242, 255, 0.55);
+}
+[data-ui-theme="hypercolor"] .task-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-bright);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 26px -10px rgba(169, 123, 255, 0.6);
+}
+[data-ui-theme="hypercolor"] .md-body,
+[data-ui-theme="hypercolor"] .meta-grid {
+  border-radius: 12px;
+}
+[data-ui-theme="hypercolor"] .btn,
+[data-ui-theme="hypercolor"] .new-btn,
+[data-ui-theme="hypercolor"] .status-btn,
+[data-ui-theme="hypercolor"] .close-x {
+  border-radius: 10px;
+}
+[data-ui-theme="hypercolor"] .btn:active,
+[data-ui-theme="hypercolor"] .new-btn:active,
+[data-ui-theme="hypercolor"] .status-btn:active {
+  transform: translateY(1px) scale(0.99);
+}
+/* The signature: the wordmark carries the magenta→violet→cyan ink, drifting. */
+[data-ui-theme="hypercolor"] .brand {
+  background-image: linear-gradient(90deg, #ff4d8d, #a97bff 45%, #5ff2ff);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: hypercolor-ink 9s ease-in-out infinite;
+}
+/* The active-nav rail is the app's existing block cursor; give it the neon. */
+[data-ui-theme="hypercolor"] .nav-item.active::before {
+  background: linear-gradient(180deg, #ff4d8d, #5ff2ff);
+  box-shadow: 0 0 10px -1px rgba(255, 77, 141, 0.8);
+}
+/* A faint CRT scanline over the backdrop — dark appearance only, and it never
+ * takes a pointer event. */
+[data-ui-theme="hypercolor"]:not([data-theme="light"]) body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.045) 0 1px,
+    transparent 1px 3px
+  );
+}
+@keyframes hypercolor-ink {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+/* hypercolor: no drifting ink or press nudge for reduced-motion users */
+@media (prefers-reduced-motion: reduce) {
+  [data-ui-theme="hypercolor"] .brand {
+    animation: none;
+  }
+  [data-ui-theme="hypercolor"] .btn:active,
+  [data-ui-theme="hypercolor"] .new-btn:active,
+  [data-ui-theme="hypercolor"] .status-btn:active,
+  [data-ui-theme="hypercolor"] .task-card:hover {
+    transform: none;
+  }
+}
+
 /* design-theme switch (sidebar) */
 .theme-switch {
   margin-top: 9px;
