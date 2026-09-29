@@ -10,8 +10,9 @@ created_by: ""
 branch: ""
 cli_override: cursor
 model_override: composer-2.5
+review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-29T20:19:16Z"
-updated_at: "2026-09-29T20:19:54Z"
+updated_at: "2026-09-29T20:19:59Z"
 ---
 ## Problem
 
@@ -44,3 +45,4 @@ The canary smoke test (draft → inbox → ready → active → review → merge
 - 2026-09-29T20:19:16Z · created · unknown
 - 2026-09-29T20:19:52Z · cli_override
 - 2026-09-29T20:19:54Z · model_override
+- 2026-09-29T20:19:59Z · review_model_override
