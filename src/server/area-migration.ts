@@ -10,18 +10,23 @@
  *
  * Scope, deliberately narrow: only tasks whose parsed `area` value differs
  * from its canonical written form change. Renaming or reordering values is
- * NOT migration work ("Out of scope" in the task). Every patch goes through
- * `patchTaskFile` — the same writer the PATCH route uses, with re-read-before-
- * write and the common activity entry — so the migration never stomps a
- * concurrent task edit and never bypasses the formatting the API produces.
- * Committing is the caller's decision: the boot path commits the whole
- * rewrite in ONE `commitFiles` pass so board files never leave `main` dirty;
- * tests and dry runs skip it.
+ * NOT migration work ("Out of scope" in the task). Every revision is a
+ * mechanical parse → serialize round trip through the SAME task engine every
+ * normal write uses (`parseTask` → `serializeTask`), so formatting and
+ * unknown frontmatter behave exactly like any planned update — but:
+ *
+ * - NO `updated_at` stamp and NO activity entry: the migration is a storage
+ *   format rewrite, not a task edit; nothing about the task is "newer".
+ * - NO per-file git commit: the CALLER owns the git step and commits the
+ *   whole rewrite in ONE pass (`commitFiles`, from server.ts), so a migrated
+ *   board lands as a single reviewable migration commit and `main` never
+ *   sits dirty — rather than one `docs(<id>): update task` commit per file
+ *   with the caller's pass a no-op.
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { extname, join, relative } from "node:path";
 import type { RepoOSConfig } from "../core/types.js";
-import { patchTaskFile } from "./write.js";
+import { parseTask, serializeTask } from "../core/task.js";
 import { parseDocument } from "../core/frontmatter.js";
 import { formatTaskAreas, parseTaskAreas } from "../core/areas.js";
 
@@ -31,7 +36,7 @@ export interface MigrateAreasResult {
   /** Files read, for the summary line. */
   scanned: number;
   /** Absolute paths actually rewritten — for the caller's single git commit. */
-  rewrittenAbsPaths?: string[];
+  rewrittenAbsPaths: string[];
 }
 
 /**
@@ -54,15 +59,40 @@ function canonicalDisplay(raw: unknown): string {
   return formatTaskAreas(parseTaskAreas(raw));
 }
 
-/** Task file extensions, mirroring the indexer's walk. */
+/**
+ * Task file extensions, mirroring the indexer's walk. Per-entry try: a file
+ * vanishing between readdir and stat is a best-effort skip, not a reason to
+ * abort the whole pass.
+ */
 function walkTaskFiles(dir: string, exts: string[]): string[] {
-  if (!statSync(dir, { throwIfNoEntry: false })?.isDirectory()) return [];
   const out: string[] = [];
-  for (const entry of readdirSync(dir)) {
-    const full = join(dir, entry);
-    if (statSync(full).isDirectory()) out.push(...walkTaskFiles(full, exts));
-    else if (exts.includes(extname(entry))) out.push(full);
-  }
+  const visit = (dir: string): void => {
+    let st;
+    try {
+      st = statSync(dir, { throwIfNoEntry: false });
+    } catch {
+      return;
+    }
+    if (!st?.isDirectory()) return;
+    let entries: string[];
+    try {
+      entries = readdirSync(dir);
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      const full = join(dir, entry);
+      let est;
+      try {
+        est = statSync(full);
+      } catch {
+        continue; // vanished mid-walk — skip, don't abort
+      }
+      if (est.isDirectory()) visit(full);
+      else if (exts.includes(extname(entry))) out.push(full);
+    }
+  };
+  visit(dir);
   return out;
 }
 
@@ -82,13 +112,21 @@ export function migrateTaskAreas(config: RepoOSConfig): MigrateAreasResult {
     try {
       const raw = parseDocument(readFileSync(absPath, "utf8")).data.area;
       if (!areaValueNeedsRewrite(raw)) continue;
-      // Via the same safe writer every API patch uses: the on-disk truth is
-      // re-read inside patchTaskFile, so a file change landing in between is
-      // respected rather than stomped, and serializeTask emits the canonical
-      // scalar-or-list form.
-      const next = patchTaskFile(config, absPath, { area: canonicalDisplay(raw) });
-      rewrittenAbsPaths.push(next.absPath);
-      updated.push(relative(config.root, next.absPath));
+      // Mechanical storage rewrite: parse whole, swap ONLY the two area
+      // fields, serialize. serializeTask owns the canonical scalar-or-list
+      // written form; timestamps and the body are left exactly as parsed.
+      const task = parseTask({
+        content: readFileSync(absPath, "utf8"),
+        absPath,
+        root: config.root,
+        defaultStatus: config.defaultStatus,
+        defaultAssignee: config.defaultAssignee,
+      });
+      task.areas = parseTaskAreas(raw);
+      task.area = canonicalDisplay(raw);
+      writeFileSync(absPath, serializeTask(task));
+      rewrittenAbsPaths.push(absPath);
+      updated.push(relative(config.root, absPath));
     } catch {
       /* one unreadable/mid-edit file must not stop the migration */
     }

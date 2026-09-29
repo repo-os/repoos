@@ -168,6 +168,26 @@ describe("unresolvedAreaReport — vocabulary drift is advisory", () => {
       ),
     ).toEqual([]);
   });
+
+  it("never counts the parser's synthesized 'general' fallback as unresolved", () => {
+    // An area-LESS task reads as `areas: ["general"]` (parseTask's own
+    // fallback); it must not become noise the moment a repo declares a
+    // vocabulary without `general`.
+    expect(unresolvedAreaReport([{ id: "1", area: "general" }], ["web"])).toEqual([]);
+    expect(unresolvedAreaReport([{ id: "1", areas: ["general"] }], [])).toEqual([]);
+  });
+});
+
+describe("effectiveAreaVocabulary — raw entry shapes", () => {
+  it("accepts plain strings next to {name} rows without throwing", () => {
+    // safeConfigForBrowser-style payloads can carry string entries; the
+    // exported helper must never crash on a half-normalized record.
+    expect(
+      effectiveAreaNames({
+        areas: ["web", { name: "core", description: "d" }] as never,
+      }),
+    ).toEqual(["web", "core"]);
+  });
 });
 
 describe("[areas] configuration", () => {
