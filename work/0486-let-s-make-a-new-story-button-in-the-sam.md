@@ -4,7 +4,7 @@ title: Add New story flow with PM-assisted story definitions
 type: feature
 status: done
 priority: p2
-area: web + core + server
+area: [web, core, server]
 story: Story numbers and deep links
 assigned_to: ai
 created_by: hello@repoos.org
