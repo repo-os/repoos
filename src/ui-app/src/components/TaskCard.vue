@@ -39,6 +39,16 @@ const repo = useRepoStore();
 const config = useConfigStore();
 
 /**
+ * One chip per area (#0583). The parsed board payload carries `areas`;
+ * older servers (or locally-constructed tasks) fall back to splitting the
+ * joined `area` string on the canonical comma.
+ */
+const taskAreaChips = computed<string[]>(() => {
+  if (Array.isArray(props.task.areas) && props.task.areas.length) return props.task.areas;
+  return props.task.area ? props.task.area.split(",").map((s) => s.trim()) : [];
+});
+
+/**
  * Effective per-task agent/model assignments shown by the card's robot toggle.
  * The compact board snapshot carries the lightweight overrides so this need
  * not fetch or open the task drawer first.
@@ -823,7 +833,16 @@ async function openDebuggerFromError(): Promise<void> {
       </h3>
 
       <div class="mt-[11px] flex flex-wrap items-center gap-[6px]">
+        <template v-if="taskAreaChips.length">
+          <span
+            v-for="a in taskAreaChips"
+            :key="a.toLowerCase()"
+            class="rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
+            >{{ a }}</span
+          >
+        </template>
         <span
+          v-else
           class="rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
           >{{ task.area }}</span
         >

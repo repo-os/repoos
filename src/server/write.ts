@@ -28,6 +28,7 @@ import {
   SCREENSHOTS_HEADING,
   ORIGINAL_PROMPT_HEADING,
 } from "../core/task.js";
+import { formatTaskAreas, parseTaskAreas } from "../core/areas.js";
 import { normalizeStoryName } from "../core/stories.js";
 import { commitTaskFile } from "../core/git.js";
 import { appendScreenshotsSection, type ScreenshotMeta } from "./attachments.js";
@@ -66,7 +67,12 @@ export interface TaskPatch {
   status?: Status;
   title?: string;
   priority?: string;
-  area?: string;
+  /**
+   * One area, a comma-separated string ("web, core"), or a list of them
+   * (#0583). Normalized through the shared `parseTaskAreas` helper; legacy
+   * "a + b" values are accepted too.
+   */
+  area?: string | string[];
   /** Cross-area delivery slice (a "story"), or empty string to clear it. */
   story?: string;
   assignedTo?: string;
@@ -142,6 +148,18 @@ export class WriteError extends Error {}
 
 /** Thrown when a delete target resolves outside the configured work dir. */
 export class PathGuardError extends WriteError {}
+
+/**
+ * Normalize an area PATCH/collection input (#0583): string or list, comma-
+ * separated (canonical) or legacy `+` spellings, into the canonical pair the
+ * Task carries — the list plus the comma-joined display form.
+ */
+function normalizePatchArea(raw: string | string[]): { area: string; areas: string[] } {
+  const parsed = parseTaskAreas(raw as unknown);
+  return parsed.length
+    ? { areas: parsed, area: formatTaskAreas(parsed) }
+    : { areas: ["general"], area: "general" };
+}
 
 /**
  * Apply a patch to a task file safely. `absPath` is the file to edit. Returns
@@ -229,8 +247,14 @@ export function patchTaskFile(
     current.priority = patch.priority;
   }
   if (patch.area !== undefined) {
-    if (patch.area !== current.area) changes.push("area");
-    current.area = patch.area;
+    // #0583: accept a string ("web", "web, core", legacy "web + core") or a
+    // list; normalize through the shared parser so storage has one canonical
+    // shape. Compare the canonical JOINED forms, so a re-order or case-only
+    // change still records itself but no-op values never write.
+    const next = normalizePatchArea(patch.area);
+    if (next.area !== current.area) changes.push("area");
+    current.area = next.area;
+    current.areas = next.areas;
   }
   if (patch.story !== undefined) {
     // Whitespace-normalize on write, same as parse, so " Email  launch "

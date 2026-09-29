@@ -16,6 +16,9 @@ import {
   saveBuiltInAgentsConfig,
   resolveColumnLabels,
 } from "../../core/config.js";
+import { effectiveAreaVocabulary } from "../../core/areas.js";
+import { effectiveAreaNames, unresolvedAreaReport } from "../../core/areas.js";
+import type { RepoOSConfig } from "../../core/types.js";
 import { resolveRemoteHosts } from "../../core/remote-hosts.js";
 import { formatTomlError, validateToml } from "../../core/toml-validate.js";
 import { stripTomlComment } from "../../core/toml-line.js";
@@ -40,8 +43,17 @@ export function safeConfigForBrowser(config: Record<string, unknown>): Record<st
     whisper: _ignoredWhisper,
     theme: _ignoredTheme,
     uiTheme: _ignoredUiTheme,
+    areas: _rawAreas,
     ...rest
   } = config;
+  // The declared area vocabulary (#0583) is exposed to the browser as plain
+  // names (the Settings form edits names; descriptions stay TOML-only) plus a
+  // computed `areaVocabulary` that merges the preview targets in.
+  const declaredNames = Array.isArray(config.areas)
+    ? config.areas
+        .map((a) => (typeof a === "string" ? a : (a as { name?: unknown }).name))
+        .filter((n): n is string => typeof n === "string" && !!n.trim())
+    : [];
   // Strip auth secrets
   const authRaw = rest.auth as Record<string, unknown> | undefined;
   let safeAuth: Record<string, unknown> | undefined;
@@ -66,10 +78,18 @@ export function safeConfigForBrowser(config: Record<string, unknown>): Record<st
     auth: safeAuth,
     "whisper.provider": whisper.provider ?? "none",
     whisperEnabled,
+    areas: declaredNames,
     board: {
       ...((rest as Record<string, unknown>).board as Record<string, unknown> | undefined),
       columns: resolveColumnLabels(rest.boardColumns as Record<string, string> | undefined),
     },
+    /**
+     * The effective area vocabulary (#0583): `[areas]` declarations merged
+     * with every `[[preview.targets]].areas` value. Consumed by the task
+     * drawer's and New task's area multi-select. Computed here rather than
+     * storing the merged list, so editing either source updates it live.
+     */
+    areaVocabulary: effectiveAreaVocabulary(config as Pick<RepoOSConfig, "areas" | "preview">),
   };
 }
 
@@ -339,6 +359,29 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
           ? Number(val)
           : val;
     } else if (field.type === "array") {
+      // The area vocabulary (#0583) tolerates an EMPTY list: clearing it is the
+      // deliberate "free text only" state, not a validation failure. Entries
+      // still must be non-empty strings when present.
+      if (field.key === "areas") {
+        if (!Array.isArray(val)) {
+          return json(res, 400, { error: `${field.label} must be an array of names` });
+        }
+        if (val.some((item) => typeof item !== "string" || !item.trim())) {
+          return json(res, 400, { error: `${field.label} entries must be non-empty strings` });
+        }
+        // The Settings form edits names only. Carry a previously-declared
+        // area's description forward untouched so a rename-free save never
+        // erases hand-written documentation in repoos.toml rows.
+        const descriptions = new Map(
+          (repoos.config.areas ?? []).map((a) => [a.name.toLowerCase(), a.description] as const),
+        );
+        patch[field.key] = (val as string[]).map((s) => {
+          const name = s.trim();
+          const description = descriptions.get(name.toLowerCase());
+          return description ? { name, description } : { name };
+        });
+        continue;
+      }
       if (
         field.key === "remoteValidation.tailscaleHosts" &&
         (Array.isArray(val) || typeof val === "string")
@@ -467,6 +510,27 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
 
   Object.assign(repoos.config, loadConfig(config.root));
   ctx.remoteValidator?.applyConfig?.();
+
+  // Advisory drift warning (#0583): when the area SOURCES were just edited
+  // (declared `[areas]` or preview targets), surface tasks whose areas no
+  // longer sit in the effective vocabulary. Log warnings only — free text is
+  // always allowed, this is cleanup guidance, not a hard error.
+  const touchedAreaSources =
+    patch.areas !== undefined || Object.keys(patch).some((k) => k.startsWith("preview."));
+  if (
+    touchedAreaSources &&
+    typeof ctx.logger?.system === "function" &&
+    typeof index.getTasks === "function"
+  ) {
+    const unresolved = unresolvedAreaReport(index.getTasks(), effectiveAreaNames(repoos.config));
+    for (const u of unresolved) {
+      ctx.logger.system(
+        "warn",
+        `area "${u.area}" no longer resolves to the declared vocabulary (#0583)`,
+        { tasks: u.taskIds.join(", ") },
+      );
+    }
+  }
 
   if (patch.workDir || patch.cacheDir || patch.taskExtensions) {
     index.refreshAll();

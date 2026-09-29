@@ -7,6 +7,7 @@
  */
 import type { Agent } from "../core/types.js";
 import { FM_DELIM, parseDocument } from "../core/frontmatter.js";
+import { parseTaskAreas } from "../core/areas.js";
 
 /** Fields extracted from the agent's generated file, fed to createTask. */
 export interface GeneratedTaskInput {
@@ -146,7 +147,13 @@ export function parseGeneratedTask(rawOutput: string): GeneratedTaskInput {
       title: rawTitle || explanationTitle(body),
       type: firstMatch(data.type, TASK_TYPES),
       priority: firstMatch(data.priority, PRIORITIES),
-      area: typeof data.area === "string" && data.area.trim() ? data.area.trim() : undefined,
+      // #0583: accept a single area or a comma/list form; the task layer
+      // normalizes it again, so a PM that writes `area: [web, server]`
+      // works exactly like `area: web, server`.
+      area: (() => {
+        const areas = parseTaskAreas(data.area);
+        return areas.length ? areas.join(", ") : undefined;
+      })(),
       story: typeof data.story === "string" && data.story.trim() ? data.story.trim() : undefined,
       assignedTo:
         typeof data.assigned_to === "string" && data.assigned_to.trim()
@@ -176,36 +183,45 @@ function unwrapWholeCodeFence(output: string): string {
   return match ? match[2]! : output;
 }
 
-/** The task-file conventions the PM agent must follow, inlined into its prompt. */
-const TASK_CONVENTIONS = [
-  "Task files are markdown with YAML frontmatter, like:",
-  "---",
-  'id: "0001"        # assigned by the system — do NOT include',
-  "title: Short imperative title",
-  "type: feature     # feature | bug | chore | spec | refactor",
-  "status: inbox     # assigned by the system — do NOT include",
-  "priority: p2      # p0 | p1 | p2 | p3",
-  "area: web         # the part of the product, e.g. web, core, cli, ui, api",
-  "assigned_to: ai   # ai | human | unassigned",
-  "branch: feat/slug # derived from the title — do NOT include",
-  "created_at: ...   # assigned by the system — do NOT include",
-  "updated_at: ...   # assigned by the system — do NOT include",
-  "---",
-  "",
-  "The body follows with markdown sections, in order:",
-  "- ## Problem — what's broken or missing, why it matters",
-  "- ## Desired UX — what the end experience should be",
-  "- ## Acceptance criteria — a concrete checkbox list (- [ ] ...)",
-  "- ## Notes for AI — constraints, files to touch, things NOT to do",
-  "- ## Scope (optional) — what this task covers and what is deferred",
-  "- ## Related (optional) — related task ids or docs",
-  "- ## Activity — leave it out; the system appends entries",
-  "",
-  "Flesh out each section with concrete detail drawn ONLY from the explanation.",
-  "Do not invent requirements the user did not imply. When a detail is genuinely",
-  "ambiguous, pick a reasonable default and state the assumption in Notes for AI.",
-  "Do not ask clarifying questions.",
-].join("\n");
+/** The task-file conventions the PM agent must follow, inlined into its prompt.
+ * Parameterized by the repo's area vocabulary (#0583) so the PM picks from it
+ * (or proposes a new one explicitly) instead of inventing free-text values. */
+function taskConventions(areas?: string[]): string {
+  const areaLine = areas?.length
+    ? `area: web         # the part of the product — CHOOSE from: ${areas.join(", ")}. ` +
+      "If none fits, say so in Notes for AI with a proposed new area; use a comma " +
+      "list (area: web, server) when the task spans several"
+    : "area: web         # the part of the product (a short lowercase handle; a comma list when it spans several)";
+  return [
+    "Task files are markdown with YAML frontmatter, like:",
+    "---",
+    'id: "0001"        # assigned by the system — do NOT include',
+    "title: Short imperative title",
+    "type: feature     # feature | bug | chore | spec | refactor",
+    "status: inbox     # assigned by the system — do NOT include",
+    "priority: p2      # p0 | p1 | p2 | p3",
+    areaLine,
+    "assigned_to: ai   # ai | human | unassigned",
+    "branch: feat/slug # derived from the title — do NOT include",
+    "created_at: ...   # assigned by the system — do NOT include",
+    "updated_at: ...   # assigned by the system — do NOT include",
+    "---",
+    "",
+    "The body follows with markdown sections, in order:",
+    "- ## Problem — what's broken or missing, why it matters",
+    "- ## Desired UX — what the end experience should be",
+    "- ## Acceptance criteria — a concrete checkbox list (- [ ] ...)",
+    "- ## Notes for AI — constraints, files to touch, things NOT to do",
+    "- ## Scope (optional) — what this task covers and what is deferred",
+    "- ## Related (optional) — related task ids or docs",
+    "- ## Activity — leave it out; the system appends entries",
+    "",
+    "Flesh out each section with concrete detail drawn ONLY from the explanation.",
+    "Do not invent requirements the user did not imply. When a detail is genuinely",
+    "ambiguous, pick a reasonable default and state the assumption in Notes for AI.",
+    "Do not ask clarifying questions.",
+  ].join("\n");
+}
 
 /**
  * Build the PM agent's prompt from a raw explanation.
@@ -213,8 +229,11 @@ const TASK_CONVENTIONS = [
  * The system already persists the raw explanation under a `## Original prompt`
  * section before the PM runs, so the PM is told not to duplicate it. It should
  * still end with the structured body only; the system re-ensures the section.
+ * #0583: when the repo declares an area vocabulary (`[areas]` plus preview
+ * target areas), the PM is told to choose from it — or propose a new one
+ * explicitly — instead of inventing values.
  */
-export function pmPrompt(explanation: string): string {
+export function pmPrompt(explanation: string, areaVocabulary?: string[]): string {
   return [
     "You are the PM agent for RepoOS. Turn the user's rough explanation into a",
     "complete, well-formed task file that drops straight into the repo's work/ dir.",
@@ -231,7 +250,7 @@ export function pmPrompt(explanation: string): string {
     "",
     "Task-file conventions (follow them exactly):",
     "",
-    TASK_CONVENTIONS,
+    taskConventions(areaVocabulary),
     "",
     "Respond with ONLY the markdown file content, starting with the opening '---'",
     "line and with no preamble, commentary, or code fences.",

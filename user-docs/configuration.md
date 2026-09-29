@@ -118,6 +118,13 @@ autoTransition = true
 provider = "none"  # none | groq | openai
 # apiKey = "..."   # a secret — prefer REPOOS_WHISPER_KEY in .env
 
+# ── Areas (optional task-area vocabulary) ─────────────────────────────────
+[[areas]]
+name = "web"
+description = "The main web app"
+[[areas]]
+name = "cli"
+
 # ── Task previews ────────────────────────────────────────────────────────
 [preview]
 command = "bun run dev --port {port}"
@@ -378,6 +385,48 @@ from the **Agents** page. Prefer the UI over hand-editing them. See
 [Agents](/agents) for the supported CLIs and roles.
 
 The built-in supervisor is not exposed as a `repoos.toml` key.
+
+## Areas
+
+```toml
+[[areas]]
+name = "web"
+description = "The main web app"
+
+[[areas]]
+name = "cli"
+```
+
+```toml
+areas = ["web", "core"]
+```
+
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `areas.name` | string | none | yes | One declared area name (`[[areas]] name = "…"`). Required on a row; unusable rows are dropped. |
+| `areas.description` | string | none | yes | Optional one-liner shown in the area picker and given to the PM agent. |
+| `areas` | array of strings | `[]` | yes | Flat shorthand for declaring names without descriptions. |
+
+A task's `area` is the part of the product its work lands in (`web`, `server`,
+`core`, …), and a task can carry **several** — `area: [web, core]` in
+frontmatter, shown as one chip per area in the UI and `web, core` in plain
+text. Legacy `server + ui-app` values keep parsing (the `+` spelling is
+accepted forever), and any file still carrying it is rewritten to the comma
+form by the one-time migration at server boot.
+
+The **effective vocabulary** the task drawer's area multi-select — and the PM
+agent's task-authoring prompt — offers is the `[[areas]]` names merged with
+every `[[preview.targets]].areas` value, so a repo that has only configured
+previews already gets sensible options. Editing either source updates the
+picker live; **Settings → General → "Areas"** edits the declared list
+(descriptions are TOML-only extras). When a source shrinks, tasks whose areas
+no longer sit in the vocabulary get an advisory log warning — never an error,
+because new areas typed in the picker always stay allowed. Save an area first
+used as free text ("add 'x' to repoos areas") in the picker to adopt it into
+the declared list.
+
+With no `[[areas]]` rows and no preview targets, the area field is free text
+only — the picker degrades to its type-an-entry mode, not a blocking select.
 
 ## Previews and checks
 

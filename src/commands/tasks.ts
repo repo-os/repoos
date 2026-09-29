@@ -368,7 +368,7 @@ const UPDATE_FLAGS: Record<string, keyof TaskPatch> = {
 export function cmdUpdate(args: string[]): void {
   const [id, ...rest] = args;
   const usage =
-    '  Usage: repoos update <id> [--title "..."] [--area a] [--story "Delivery slice"] [--priority p] [--type t] [--body "..."|-] [--branch b] [--assigned-to ai|human] [--needs-input true|false] [--questions "Question one\\nQuestion two"] [--clear-questions]';
+    '  Usage: repoos update <id> [--title "..."] [--area a,b] [--story "Delivery slice"] [--priority p] [--type t] [--body "..."|-] [--branch b] [--assigned-to ai|human] [--needs-input true|false] [--questions "Question one\\nQuestion two"] [--clear-questions]';
   if (!id) {
     console.error(c.red(usage));
     process.exitCode = 1;
@@ -467,7 +467,7 @@ function parseQuestions(raw: string): string[] {
 /** `repoos new <title> [--ai] [--needs-input true] [--questions "..."]` */
 export function cmdNew(args: string[]): void {
   const usage =
-    '  Usage: repoos new "Task title" [--ai] [--type bug] [--area web] [--story "Delivery slice"] [--priority p1] [--body "..."|-] [--needs-input true|false] [--questions "Question one\\nQuestion two"]';
+    '  Usage: repoos new "Task title" [--ai] [--type bug] [--area web,core] [--story "Delivery slice"] [--priority p1] [--body "..."|-] [--needs-input true|false] [--questions "Question one\\nQuestion two"]';
   const flags: Record<string, string | boolean> = {};
   const positional: string[] = [];
   for (let i = 0; i < args.length; i++) {
