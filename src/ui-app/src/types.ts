@@ -218,8 +218,10 @@ export interface Health {
   copyInspectorAvailable?: boolean;
   /** True when this server is a preview instance serving a specific task's worktree. */
   isPreviewBuild: boolean;
-  /** Canary flow-test counter (0-9) — from `.repoos/canary.txt` in the managed repo. */
+  /** Canary flow-test counter (0-9) — from the managed repo's canary file. */
   canaryCounter: number;
+  /** Repo-relative path to the canary counter file (respects `cacheDir`). */
+  canaryPath: string;
 }
 
 declare global {
