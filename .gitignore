@@ -1,5 +1,6 @@
-# RepoOS derived index cache
-.repoos/
+# RepoOS derived index cache (canary.txt is tracked — see canary-repo.ts)
+.repoos/*
+!.repoos/canary.txt
 node_modules/
 coverage/
 

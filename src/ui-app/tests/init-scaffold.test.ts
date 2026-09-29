@@ -159,6 +159,16 @@ describe("scaffoldInto starter tasks", () => {
     expect(existsSync(join(root, "repoos/work/0002-flesh-out-the-vision.md"))).toBe(true);
   });
 
+  it("scaffolds the canary counter file and gitignore exception", () => {
+    const root = scratch();
+    const { created } = scaffoldInto(root, "", "", "new");
+    expect(created).toContain(".repoos/canary.txt");
+    expect(readFileSync(join(root, ".repoos/canary.txt"), "utf8")).toBe("0");
+    const gi = readFileSync(join(root, ".gitignore"), "utf8");
+    expect(gi).toContain(".repoos/*");
+    expect(gi).toContain("!.repoos/canary.txt");
+  });
+
   it("is idempotent — a re-run creates nothing", () => {
     const root = scratch();
     scaffoldInto(root, "desc", "", "new");
