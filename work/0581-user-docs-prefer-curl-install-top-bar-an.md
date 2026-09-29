@@ -2,7 +2,7 @@
 id: "0581"
 title: "User docs: prefer curl install, top bar and mobile menu fixes"
 type: feature
-status: active
+status: review
 priority: p2
 area: general
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/user-docs-prefer-curl-install-top-bar-an
 model_override: opencode-go/mimo-v2.6-flash
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-29T09:55:42Z"
-updated_at: "2026-09-29T10:07:21Z"
+updated_at: "2026-09-29T10:54:29Z"
 dev_error_count: 1
 ---
 ## Goal
@@ -90,3 +90,4 @@ Mirror the style and layout of the repoos.org mobile menu (the landing site in
 - 2026-09-29T09:56:58Z · status ready→active, branch
 - 2026-09-29T10:05:48Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-09-29T10:07:21Z · needs_input
+- 2026-09-29T10:54:29Z · status active→review
