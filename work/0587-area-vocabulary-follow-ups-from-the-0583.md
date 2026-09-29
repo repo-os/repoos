@@ -5,11 +5,12 @@ type: chore
 status: inbox
 priority: p3
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-29T19:27:29Z"
-updated_at: "2026-09-29T19:27:29Z"
+updated_at: "2026-09-29T20:42:11Z"
 ---
 ## Context
 
@@ -32,3 +33,4 @@ Follow-ups from the #0583 (area vocabulary) review, deliberately left out of tha
 ## Activity
 
 - 2026-09-29T19:27:29Z · created · unknown
+- 2026-09-29T20:42:11Z · review_model_override
