@@ -18,7 +18,7 @@
 import { basename } from "node:path";
 import { c } from "../cli/colors.js";
 import { findRepoRoot, loadConfig, mainCheckoutRoot, resolveServePort } from "../core/config.js";
-import { currentBranch } from "../core/git.js";
+import { changedPathsVsBase, currentBranch } from "../core/git.js";
 import { createRepoOS } from "../core/repoos.js";
 import {
   formatTargetList,
@@ -26,16 +26,20 @@ import {
   type ShotTargetSource,
 } from "../core/shot-targets.js";
 import type { Task } from "../core/types.js";
-import { changedPathsSince } from "./check.js";
+import { readServeLocks } from "./status.js";
 import { readLocalCliToken } from "../server/local-token.js";
 import { launchWebkit, type SmokeBrowser, type SmokeContext } from "./ui-harness.js";
 
-/** A Playwright page with the two methods capture needs beyond the smoke harness. */
+/** A Playwright page with the methods capture needs beyond the smoke harness. */
 interface ShotPage {
   goto(url: string, options: { waitUntil: string; timeout: number }): Promise<unknown>;
+  waitForLoadState(state: string, options?: { timeout?: number }): Promise<void>;
+  waitForTimeout(ms: number): Promise<void>;
   setViewportSize(viewport: { width: number; height: number }): Promise<void>;
   screenshot(options?: { fullPage?: boolean }): Promise<Buffer>;
-  locator(selector: string): { screenshot(options?: { fullPage?: boolean }): Promise<Buffer> };
+  locator(selector: string): {
+    screenshot(options?: { fullPage?: boolean; timeout?: number }): Promise<Buffer>;
+  };
   close(): Promise<void>;
 }
 
@@ -52,12 +56,21 @@ interface CmdShotOptions {
   selector?: string;
   taskId?: string;
   base: string;
+  waitMs: number;
   viewport: { width: number; height: number };
   fullPage: boolean;
+  /** Set when an argument is unknown or malformed; cmdShot prints and exits. */
+  error?: string;
+  /** Set for `-h`/`--help`; cmdShot prints usage and exits 0. */
+  help?: boolean;
 }
 
 const VIEWPORT = { width: 1280, height: 800 };
 const NAV_TIMEOUT_MS = 30_000;
+/** How long Playwright waits for a selector before giving up (avoids a 30s hang). */
+const SELECTOR_TIMEOUT_MS = 5_000;
+/** Default settle after load, so a dev server's client mount finishes first. */
+const DEFAULT_SETTLE_MS = 900;
 const INSTALL_ADVICE = "Install: bun add -d @playwright/test && bunx playwright install webkit";
 
 /**
@@ -75,20 +88,73 @@ export function isShotCaptureUnavailable(err: unknown): boolean {
   );
 }
 
-/** Parse `repoos shot [<route|url>] [flags]`. */
-function parseArgs(args: string[]): CmdShotOptions {
-  const opts: CmdShotOptions = { base: "main", viewport: { ...VIEWPORT }, fullPage: false };
-  for (let i = 0; i < args.length; i++) {
+/** Parse `repoos shot [<route|url>] [flags]`; unknown/malformed args set `error`. */
+export function parseShotArgs(args: string[]): CmdShotOptions {
+  const opts: CmdShotOptions = {
+    base: "main",
+    waitMs: DEFAULT_SETTLE_MS,
+    viewport: { ...VIEWPORT },
+    fullPage: false,
+  };
+  let i = 0;
+  const value = (flag: string): string | undefined => {
+    const v = args[++i];
+    if (v === undefined || (v.startsWith("-") && !/^-\d/.test(v))) {
+      opts.error = `${flag} requires a value`;
+      return undefined;
+    }
+    return v;
+  };
+  for (; i < args.length; i++) {
     const a = args[i];
-    if (a === "--target") opts.target = args[++i];
-    else if (a === "--selector") opts.selector = args[++i];
-    else if (a === "--task") opts.taskId = args[++i];
-    else if (a === "--base") opts.base = args[++i] ?? "main";
-    else if (a === "--full-page") opts.fullPage = true;
-    else if (a === "--viewport") {
-      const m = /^(\d+)x(\d+)$/.exec(args[++i] ?? "");
-      if (m) opts.viewport = { width: Number(m[1]), height: Number(m[2]) };
-    } else if (!a.startsWith("-") && opts.route === undefined) opts.route = a;
+    if (a === "--target") {
+      const v = value(a);
+      if (v === undefined) return opts;
+      opts.target = v;
+    } else if (a === "--selector") {
+      const v = value(a);
+      if (v === undefined) return opts;
+      opts.selector = v;
+    } else if (a === "--task") {
+      const v = value(a);
+      if (v === undefined) return opts;
+      opts.taskId = v;
+    } else if (a === "--base") {
+      const v = value(a);
+      if (v === undefined) return opts;
+      opts.base = v;
+    } else if (a === "--wait") {
+      const v = value(a);
+      if (v === undefined) return opts;
+      const ms = Number(v);
+      if (!Number.isFinite(ms) || ms < 0) {
+        opts.error = `--wait expects milliseconds, got "${v}"`;
+        return opts;
+      }
+      opts.waitMs = ms;
+    } else if (a === "--full-page") {
+      opts.fullPage = true;
+    } else if (a === "--help" || a === "-h") {
+      opts.help = true;
+      return opts;
+    } else if (a === "--viewport") {
+      const v = value(a);
+      if (v === undefined) return opts;
+      const m = /^(\d+)x(\d+)$/.exec(v);
+      if (!m) {
+        opts.error = `--viewport expects WIDTHxHEIGHT, got "${v}"`;
+        return opts;
+      }
+      opts.viewport = { width: Number(m[1]), height: Number(m[2]) };
+    } else if (a.startsWith("-")) {
+      opts.error = `unknown flag "${a}"`;
+      return opts;
+    } else if (opts.route === undefined) {
+      opts.route = a;
+    } else {
+      opts.error = `unexpected argument "${a}"`;
+      return opts;
+    }
   }
   return opts;
 }
@@ -115,15 +181,29 @@ function findTask(
   return index.tasks.find((t) => t.branch === branch);
 }
 
-/** Base64 PNG bytes for one capture, or a thrown error Playwright reports. */
+/**
+ * Capture one page. `waitUntil: "load"` fires before a dev server's client
+ * bundle hydrates/mounts, so screenshotting immediately catches a spinner; we
+ * then best-effort wait for network quiet and a short settle, so the frame
+ * `repoos shot` records is the mounted UI, not its loading state.
+ */
 async function capture(
   page: ShotPage,
   url: string,
   selector: string | undefined,
   fullPage: boolean,
+  waitMs: number,
 ): Promise<Buffer> {
   await page.goto(url, { waitUntil: "load", timeout: NAV_TIMEOUT_MS });
-  if (selector) return page.locator(selector).screenshot({ fullPage });
+  try {
+    await page.waitForLoadState("networkidle", { timeout: 10_000 });
+  } catch {
+    /* a dev server with HMR may never go idle — the settle below still applies */
+  }
+  if (waitMs > 0) await page.waitForTimeout(waitMs);
+  if (selector) {
+    return page.locator(selector).screenshot({ fullPage, timeout: SELECTOR_TIMEOUT_MS });
+  }
   return page.screenshot({ fullPage });
 }
 
@@ -218,7 +298,34 @@ async function uploadShot(
  * clean skip has already been reported), 1 on a real failure.
  */
 export async function cmdShot(args: string[]): Promise<number> {
-  const opts = parseArgs(args);
+  const opts = parseShotArgs(args);
+  if (opts.help) {
+    console.log(`  repoos shot [<route|url>] [flags]
+
+  Capture screenshots of this task's managed preview into
+  work/.attachments/<taskId>/shots/ (gitignored), shown in the task drawer.
+
+  Arguments:
+    <route|url>        Route to capture on the preview (default "/"), or an
+                       absolute http(s) URL to capture directly.
+
+  Flags:
+    --target <name>    Preview target to capture (overrides path/area resolution)
+    --selector <css>   Capture one element instead of the whole page
+    --task <id>        Task to shoot (defaults to the current worktree's branch)
+    --base <ref>       Base branch for changed-path resolution (default "main")
+    --wait <ms>        Settle time after load before capturing (default 900)
+    --full-page        Capture the full scrollable page
+    --viewport <WxH>   Viewport size (default 1280x800)`);
+    return 0;
+  }
+  if (opts.error) {
+    console.error(c.red("  ✗ ") + opts.error);
+    console.error(
+      c.dim("    usage: repoos shot [<route|url>] [--target <name>] [--selector <css>]"),
+    );
+    return 1;
+  }
   const cwdRoot = findRepoRoot();
   const mainRoot = mainCheckoutRoot(cwdRoot) ?? cwdRoot;
   const worktreeRoot = cwdRoot;
@@ -251,7 +358,14 @@ export async function cmdShot(args: string[]): Promise<number> {
     targets = [opts.target ?? `url:${basename(new URL(opts.route as string).pathname) || "/"}`];
     source = "target";
   } else {
-    const changed = changedPathsSince(worktreeRoot, opts.base) ?? [];
+    const changed = changedPathsVsBase(worktreeRoot, opts.base);
+    if (changed === null) {
+      // A typo'd base ref must fail loudly, not look like "nothing changed".
+      console.error(
+        c.red("  ✗ ") + `Base ref "${opts.base}" is not a commit — cannot resolve changed paths.`,
+      );
+      return 1;
+    }
     const resolution = resolveShotTargets(worktreeConfig.preview, task.area, changed, opts.target);
     if (resolution.names.length === 0) {
       console.error(c.red("  ✗ ") + (resolution.reason ?? "No preview target resolved."));
@@ -267,10 +381,23 @@ export async function cmdShot(args: string[]): Promise<number> {
         c.cyan(formatTargetList(targets)) +
         c.dim(` (from ${source === "paths" ? "changed paths" : source})`),
     );
+    if (targets.length > 1) {
+      console.log(
+        c.dim(
+          "  note: only one preview runs at a time — each target restarts the preview, so a preview you were watching will stop.",
+        ),
+      );
+    }
   }
 
-  // Preview lifecycle is server-owned; the CLI only reaches it over HTTP.
-  const port = resolveServePort(mainRoot, mainConfig);
+  // Preview lifecycle is server-owned; the CLI only reaches it over HTTP. Prefer
+  // the live serve lock over the configured port, like `repoos status` does, so
+  // a running server on a non-default port is still found.
+  const configuredPort = resolveServePort(mainRoot, mainConfig);
+  const liveLock = readServeLocks(mainRoot, mainConfig.cacheDir).find(
+    (l) => l.alive && (l.port ?? configuredPort) > 0,
+  );
+  const port = liveLock?.port ?? configuredPort;
   const baseUrl = `http://127.0.0.1:${port}`;
   // When the server has auth enabled, a browser-less CLI authenticates with the
   // loopback token it wrote (#0582); with auth off there is no token and none
@@ -326,9 +453,10 @@ export async function cmdShot(args: string[]): Promise<number> {
       let png: Buffer;
       try {
         await page.setViewportSize(opts.viewport);
-        png = await capture(page, pageUrl, opts.selector, opts.fullPage);
+        png = await capture(page, pageUrl, opts.selector, opts.fullPage, opts.waitMs);
       } catch (err) {
-        console.error(c.red("  ✗ ") + `capture of ${pageUrl} failed: ${(err as Error).message}`);
+        const what = opts.selector ? `selector "${opts.selector}" on ${pageUrl}` : pageUrl;
+        console.error(c.red("  ✗ ") + `capture of ${what} failed: ${(err as Error).message}`);
         await page.close();
         return 1;
       }

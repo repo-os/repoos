@@ -5,7 +5,7 @@
  * in `core/shot-targets.ts` stays testable without git or a repo.
  */
 import type { RepoOSConfig, Task } from "../core/types.js";
-import { branchChangesSinceBase, currentBranch, worktreePathForBranch } from "../core/git.js";
+import { changedPathsVsBase, currentBranch, worktreePathForBranch } from "../core/git.js";
 import { shotTargetMismatchWarning, targetsForPaths } from "../core/shot-targets.js";
 
 export interface TaskShotContext {
@@ -30,7 +30,7 @@ export function computeTaskShotContext(config: RepoOSConfig, task: Task): TaskSh
   const base = currentBranch(config.root) ?? "main";
   let changedPaths: string[] = [];
   try {
-    changedPaths = branchChangesSinceBase(worktree, base).paths;
+    changedPaths = changedPathsVsBase(worktree, base) ?? [];
   } catch {
     return empty;
   }

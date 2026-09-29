@@ -2718,11 +2718,13 @@ watch(
 /**
  * Load captured preview shots (#0582) whenever the drawer's task changes — not
  * just when the Changes tab opens, so the area/target mismatch warning is
- * available next to the preview control too.
+ * available next to the preview control too. Re-loading on a tab switch means a
+ * shot captured while the drawer was open appears when you return to Changes.
  */
 watch(
-  () => ui.active?.id,
-  (id) => {
+  () => [ui.active?.id, ui.activeTab],
+  () => {
+    const id = ui.active?.id;
     if (id) void repo.loadShots(id);
   },
   { immediate: true },

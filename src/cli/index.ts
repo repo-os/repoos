@@ -108,7 +108,7 @@ function help(): void {
     cmdRow("check --print-plan", "Print the resolved plan as [[check.steps]] TOML to commit"),
     cmdRow(
       "shot [<route|url>]",
-      `Capture preview screenshots into the task's shots folder   ${c.dim("flags: --target --selector --task --base --full-page")}`,
+      `Capture preview screenshots into the task's shots folder   ${c.dim("flags: --target --selector --task --base --wait --full-page")}`,
     ),
     cmdRow(
       "init [name]",

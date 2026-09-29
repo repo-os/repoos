@@ -212,16 +212,24 @@ repoos shot                          # capture the preview root for this task
 repoos shot /repo/commits/abc123     # capture one route
 repoos shot --target "Docs site"     # force a target (skip path/area resolution)
 repoos shot --selector ".sidebar"    # capture one element instead of the page
+repoos shot --wait 2000              # wait longer before capturing (default 900ms)
 repoos shot https://example.test/x   # capture an arbitrary URL
 ```
+
+After the page loads, `repoos shot` waits for network quiet (best-effort) and a
+short settle before capturing, so a dev server's client-mount spinner is not
+what gets recorded. Raise `--wait <ms>` for a page that renders slower than
+that.
 
 Which target(s) to capture is decided from the files the task changed, matched
 against `[[preview.targets]].paths` globs in `repoos.toml` — not the task's
 up-front `area:`. If nothing matches, it falls back to area resolution;
 `--target` overrides. Each shot records its resolved target name. The drawer
-warns when the changed paths touch a target the task's `area` does not resolve
-to, so a mislabeled area becomes visible rather than silently screenshotting
-the wrong app.
+warns whenever the changed paths touch a target the task's `area` does not
+resolve to, so a mislabeled area becomes visible rather than silently
+screenshotting the wrong app. Only one preview runs per task, so a multi-target
+capture restarts the preview between targets (stopping one you may be watching)
+— the command prints a note when it will do that.
 
 Playwright/WebKit is optional (a dev dependency). When it is missing, `repoos
 shot` prints install advice and exits non-zero without touching anything:

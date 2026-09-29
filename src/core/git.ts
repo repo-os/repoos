@@ -932,12 +932,44 @@ export function branchChangesSinceBase(
   return { base, paths: [...new Set([...committed, ...uncommitted])] };
 }
 
+/**
+ * Paths the branch in `worktree` changed relative to `baseBranch`, matching the
+ * `repoos check --changed <ref>` semantics: the merge-base commit range plus
+ * staged, unstaged, and untracked files — so work not yet committed is
+ * included. This is the shared definition `repoos shot` and the drawer's
+ * area/target warning both use, so they can never disagree about what changed.
+ *
+ * Returns `null` when `baseBranch` does not resolve to a commit. Callers MUST
+ * treat that as an error, not an empty diff: a typo'd `--base` would otherwise
+ * silently look like "nothing changed" and fall back to area resolution.
+ */
+export function changedPathsVsBase(worktree: string, baseBranch: string): string[] | null {
+  const verify = gitCapture(worktree, [
+    "rev-parse",
+    "--verify",
+    "--quiet",
+    `${baseBranch}^{commit}`,
+  ]);
+  if (verify.status !== 0) return null;
+  const baseFull = git(worktree, ["merge-base", baseBranch, "HEAD"]);
+  const run = (args: string[]): string[] =>
+    (git(worktree, args) ?? "")
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  const paths = new Set<string>();
+  if (baseFull) for (const p of run(["diff", "--name-only", baseFull, "HEAD"])) paths.add(p);
+  for (const p of run(["diff", "--cached", "--name-only"])) paths.add(p);
+  for (const p of run(["diff", "--name-only"])) paths.add(p);
+  for (const p of run(["ls-files", "--others", "--exclude-standard"])) paths.add(p);
+  return [...paths];
+}
+
 export interface DiffStats {
   filesChanged: number;
   additions: number;
   deletions: number;
 }
-
 export interface DiffResult {
   patch: string;
   truncated: boolean;
