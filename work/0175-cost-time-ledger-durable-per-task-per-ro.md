@@ -4,7 +4,7 @@ title: "Cost & time ledger: durable per-task/per-round usage tracking with a que
 type: feature
 status: done
 priority: p2
-area: server + ui-app
+area: [server, ui-app]
 assigned_to: ai
 created_by: ""
 branch: feat/cost-time-ledger-durable-per-task-per-ro

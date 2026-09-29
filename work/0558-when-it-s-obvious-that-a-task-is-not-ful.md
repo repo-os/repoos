@@ -4,7 +4,7 @@ title: "Flag under-specified tasks as needing input, with a Send to PM action"
 type: feature
 status: done
 priority: p2
-area: server + ui
+area: [server, ui]
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/flag-under-specified-tasks-as-needing-in

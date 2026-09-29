@@ -4,7 +4,7 @@ title: Fix mobile horizontal overflow on the landing page and VitePress docs sit
 type: bug
 status: done
 priority: p2
-area: "landing, user-docs"
+area: [landing, user-docs]
 assigned_to: ai
 created_by: ""
 branch: feat/fix-mobile-horizontal-overflow-on-the-la

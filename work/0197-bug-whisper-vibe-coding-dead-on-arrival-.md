@@ -5,7 +5,7 @@ type: bug
 status: done
 needs_merge: true
 priority: p1
-area: server + ui-app
+area: [server, ui-app]
 assigned_to: ai
 created_by: ""
 branch: feat/bug-whisper-vibe-coding-dead-on-arrival-
