@@ -10,8 +10,9 @@ created_by: ""
 branch: ""
 cli_override: cursor
 model_override: composer-2.5
+review_model_override: opencode-go/hy3
 created_at: "2026-09-30T05:01:26Z"
-updated_at: "2026-09-30T05:53:57Z"
+updated_at: "2026-09-30T05:54:21Z"
 ---
 Follow-up to #0594. After #0594's handoff, four files were edited in its worktree during close-out and never committed, so they didn't land (see the close-out 'kept a worktree with uncommitted changes' note). They are committed on branch feat/repoos-shot-capture-the-app-target-for-m as 2849bdf0. Cherry-pick that commit onto this task's branch (`git cherry-pick 2849bdf0`), run `bun run fmt` and `repoos check --changed main`, then hand off. Do not re-derive the changes.
 
@@ -30,3 +31,4 @@ Follow-up to #0594. After #0594's handoff, four files were edited in its worktre
 - 2026-09-30T05:01:26Z · created · unknown
 - 2026-09-30T05:53:56Z · cli_override, model_override
 - 2026-09-30T05:53:57Z · model_override
+- 2026-09-30T05:54:21Z · review_model_override
