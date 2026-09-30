@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p2
 area: [core, web]
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-30T00:01:23Z"
-updated_at: "2026-09-30T00:01:23Z"
+updated_at: "2026-09-30T00:03:43Z"
 ---
 ## Problem
 
@@ -58,3 +59,4 @@ Update `user-docs/check.md` (the "Bootstrapping a plan" paragraph and "When a re
 ## Activity
 
 - 2026-09-30T00:01:23Z · created · unknown
+- 2026-09-30T00:03:43Z · model_override
