@@ -2,14 +2,14 @@
 id: "0608"
 title: Match New task screenshot uploads to New input panel
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-30T15:27:25Z"
-updated_at: "2026-09-30T15:27:48Z"
+updated_at: "2026-09-30T15:28:58Z"
 ---
 ## Problem
 
@@ -64,3 +64,4 @@ Uploaded screenshots layout and styling not the same on "new task" panel as it i
 - 2026-09-30T15:27:26Z · screenshots
 - 2026-09-30T15:27:26Z · screenshots
 - 2026-09-30T15:27:48Z · status draft→inbox, title, area, type, body
+- 2026-09-30T15:28:58Z · status inbox→ready
