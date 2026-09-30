@@ -271,3 +271,43 @@ describe("DoneErrorCard (auto-repair in flight — #0385)", () => {
     expect(fix.attributes("title")).toBeUndefined();
   });
 });
+
+describe("DoneErrorCard (panel mode — collapse and copy)", () => {
+  const props = {
+    mode: "panel" as const,
+    message: "check failed",
+    step: "check",
+    detail: "FAIL tests/a.test.ts:1\nboom",
+    taskId: "0589",
+    taskTitle: "Some task",
+  };
+
+  it("folds the whole card to a single headline line and back", async () => {
+    const wrapper = mount(DoneErrorCard, { props });
+    expect(wrapper.find(".done-error-detail").exists()).toBe(true);
+    expect(wrapper.find(".done-error-fix").exists()).toBe(true);
+
+    await wrapper.find('button[aria-label="Collapse error"]').trigger("click");
+    expect(wrapper.find(".done-error-detail").exists()).toBe(false);
+    expect(wrapper.find(".done-error-fix").exists()).toBe(false);
+    expect(wrapper.find(".done-error-msg").classes()).toContain("oneline");
+
+    await wrapper.find('button[aria-label="Expand error"]').trigger("click");
+    expect(wrapper.find(".done-error-detail").exists()).toBe(true);
+  });
+
+  it("copies the headline, phase and full output in one click", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { clipboard: { writeText } });
+    const wrapper = mount(DoneErrorCard, { props });
+
+    await wrapper.find('button[aria-label="Copy error"]').trigger("click");
+    await flush();
+
+    const text = writeText.mock.calls[0][0] as string;
+    expect(text).toContain("task #0589");
+    expect(text).toContain("Phase: check");
+    expect(text).toContain("FAIL tests/a.test.ts:1\nboom");
+    expect(wrapper.find('button[aria-label="Copied"]').exists()).toBe(true);
+  });
+});

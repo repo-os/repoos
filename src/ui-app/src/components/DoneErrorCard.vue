@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, useId } from "vue";
-import { CircleAlert, ChevronDown, Wrench, LifeBuoy } from "lucide-vue-next";
+import { CircleAlert, ChevronDown, Wrench, LifeBuoy, Copy, Check } from "lucide-vue-next";
 import { api, JSON_OPTS } from "../api";
 import type { RetryHint } from "../lib/retryHints";
+import { copyToClipboard } from "../lib/clipboard";
 import { fmtTime } from "../lib/time";
 import ActivityIndicator from "./ActivityIndicator.vue";
 
@@ -109,6 +110,30 @@ const msgEl = ref<HTMLElement | null>(null);
 // but it can run to hundreds of lines. It collapses automatically after a
 // debugger handoff, while remaining available on demand.
 const outputOpen = ref(true);
+
+// Panel mode: the whole card folds to its one-line headline so the tabs and
+// actions below get the vertical space back. Independent of `outputOpen`,
+// which only folds the raw output inside an expanded card.
+const collapsed = ref(false);
+
+// One-click hand-off of the failure to an agent: headline, phase, and the full
+// output (the headline is capped; the detail is where the failing test lives).
+const copied = ref(false);
+let copiedTimer: ReturnType<typeof setTimeout> | undefined;
+async function copyError(): Promise<void> {
+  const text = [
+    props.taskId ? `Move to done failed for task #${props.taskId}` : "Move to done failed",
+    ...(props.taskTitle ? [`Task: ${props.taskTitle}`] : []),
+    ...(props.step ? [`Phase: ${props.step}`] : []),
+    `Error: ${props.message}`,
+    ...(props.detail ? [`Full output:\n${props.detail}`] : []),
+    ...(props.logPath ? [`Full log: ${props.logPath}`] : []),
+  ].join("\n");
+  copied.value = await copyToClipboard(text);
+  clearTimeout(copiedTimer);
+  if (copied.value) copiedTimer = setTimeout(() => (copied.value = false), 1600);
+}
+onBeforeUnmount(() => clearTimeout(copiedTimer));
 </script>
 
 <template>
@@ -126,7 +151,27 @@ const outputOpen = ref(true);
     </button>
     <div v-else class="done-error-static">
       <CircleAlert class="done-error-ico" aria-hidden="true" />
-      <span ref="msgEl" class="done-error-msg">{{ message }}</span>
+      <span ref="msgEl" class="done-error-msg" :class="{ oneline: collapsed }">{{ message }}</span>
+      <button
+        type="button"
+        class="done-error-icon-btn"
+        :title="copied ? 'Copied' : 'Copy the full error to the clipboard'"
+        :aria-label="copied ? 'Copied' : 'Copy error'"
+        @click="copyError"
+      >
+        <Check v-if="copied" class="size-3.5" />
+        <Copy v-else class="size-3.5" />
+      </button>
+      <button
+        type="button"
+        class="done-error-icon-btn"
+        :title="collapsed ? 'Expand the error' : 'Collapse the error to one line'"
+        :aria-label="collapsed ? 'Expand error' : 'Collapse error'"
+        :aria-expanded="!collapsed"
+        @click="collapsed = !collapsed"
+      >
+        <ChevronDown class="size-3.5 done-error-chev-flip" :class="{ open: !collapsed }" />
+      </button>
     </div>
 
     <!-- Panel mode only: the board card already renders this same hint as its
@@ -134,7 +179,7 @@ const outputOpen = ref(true);
          would be noise. The drawer has no such chip, so the banner carries the
          framing there (#0385). -->
     <div
-      v-if="retryHint && mode === 'panel'"
+      v-if="retryHint && mode === 'panel' && !collapsed"
       class="done-error-retry"
       role="status"
       :title="retryHint.title"
@@ -146,7 +191,7 @@ const outputOpen = ref(true);
       </span>
     </div>
 
-    <div v-if="mode === 'panel'" :id="detailId" class="done-error-detail">
+    <div v-if="mode === 'panel' && !collapsed" :id="detailId" class="done-error-detail">
       <div class="done-error-head" :title="headlineTitle">
         Move to done failed
         <span v-if="step" class="done-error-step">at {{ step }}</span
@@ -187,7 +232,7 @@ const outputOpen = ref(true);
     </div>
 
     <button
-      v-if="taskId"
+      v-if="taskId && !collapsed"
       type="button"
       class="done-error-fix"
       :disabled="fixing || fixSent"

@@ -4258,6 +4258,40 @@
 .done-error-toggle .done-error-msg {
   color: var(--txt);
 }
+.done-error-msg.oneline {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.done-error-icon-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: none;
+  color: var(--red);
+  cursor: pointer;
+}
+.done-error-icon-btn:hover {
+  background: var(--red-border-tint);
+}
+.done-error-icon-btn:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 1px;
+}
+.done-error-chev-flip {
+  transition: transform 0.15s;
+}
+.done-error-chev-flip.open {
+  transform: rotate(180deg);
+}
 .done-error-msg.clamped {
   display: -webkit-box;
   -webkit-line-clamp: 2;
