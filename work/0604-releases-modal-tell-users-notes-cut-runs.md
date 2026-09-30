@@ -12,7 +12,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: opencode-go/hy3
 created_at: "2026-09-30T13:42:54Z"
-updated_at: "2026-09-30T18:25:34Z"
+updated_at: "2026-09-30T18:25:40Z"
 last_check_failure: "repoos check at 2026-09-30T18:15:46.162Z: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
@@ -43,3 +43,4 @@ Server-tracked notes runs (separate task) and notifications (separate task).
 - 2026-09-30T17:54:20Z · status ready→active, branch
 - 2026-09-30T17:57:47Z · body
 - 2026-09-30T18:25:34Z · status active→review
+- 2026-09-30T18:25:40Z · note: shots: failed — capture of Cut a release modal — async timing hints on "default" failed: click: Error: strict mode violation: locator('button:has-text("Cut")') resolved to 2 elements:
