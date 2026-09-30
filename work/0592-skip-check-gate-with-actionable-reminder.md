@@ -3,9 +3,6 @@ id: "0592"
 title: Skip check gate (with actionable reminder) when a repo has no check plan
 type: feature
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -80,3 +77,4 @@ Update `user-docs/check.md` (the "Bootstrapping a plan" paragraph and "When a re
 - 2026-09-30T02:36:29Z · status active→review
 - 2026-09-30T02:49:16Z · needs_input
 - 2026-09-30T02:58:36Z · status review→active
+- 2026-09-30T02:58:36Z · needs_input
