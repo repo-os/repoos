@@ -5,11 +5,13 @@ type: feature
 status: inbox
 priority: p2
 area: [server, web]
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
+model_override: default
 created_at: "2026-09-29T22:14:45Z"
-updated_at: "2026-09-29T22:14:45Z"
+updated_at: "2026-09-30T00:26:57Z"
 ---
 ## Problem
 
@@ -32,3 +34,4 @@ Every failed check run in the history says which tests failed, whether it ran lo
 ## Activity
 
 - 2026-09-29T22:14:45Z · created · unknown
+- 2026-09-30T00:26:57Z · cli_override, model_override
