@@ -122,9 +122,13 @@ interactive sessions should treat the lock the same way.
 `POST /api/tasks/:id/done` compares the live worktree to that snapshot **before**
 enqueueing the close-out job. If `HEAD` moved or the tree is dirty after handoff, the
 request fails fast with `worktree changed after handoff: …` (file list and mtimes for
-attribution) — the merge gate does not run. The same check runs again at the start of
-`syncing` and immediately before publish; a change mid-close-out aborts before main is
-mutated and leaves the task in `review` with a failed job reason.
+attribution) — the merge gate does not run. **Exception (#0600):** commits after handoff
+that touch only `work/*.md` task files (RepoOS bookkeeping on the task branch, or
+`syncTaskBranch` merging main and bringing in another task's committed task file) do not
+count as implementation drift. Mixed drift (any source path, or a dirty non-bookkeeping
+tree) still fails. The same check runs again at the start of `syncing` and immediately
+before publish; a change mid-close-out aborts before main is mutated and leaves the task
+in `review` with a failed job reason.
 
 Resolutions: `POST /api/tasks/:id/worktree-handoff/discard` resets the feature
 worktree to the handoff commit, or send the task back to `active` through RepoOS and
