@@ -100,7 +100,7 @@ function formatFinding(f: DoctorFinding, width: number): string[] {
     out.push(...wrap(f.title, Math.max(1, inner), pre).split("\n"));
     out.push("      " + id);
   }
-  out.push(...wrap(f.detail, Math.max(1, width - 6), "      ").split("\n"));
+  out.push(...wrap(c.dim(f.detail), Math.max(1, width - 6), "      ").split("\n"));
   return out;
 }
 
@@ -108,7 +108,14 @@ function formatFinding(f: DoctorFinding, width: number): string[] {
  * The human `repoos doctor` report as a string. Pure (width and verbosity are
  * parameters), so tests can assert on it at fixed widths. Passing checks are
  * collapsed unless `verbose`; the summary and next steps use the serve
- * banner's warning-block shape, with failures listed first.
+ * banner's warning-block shape, with failures listed first. The report ends
+ * with the `--verbose` hint.
+ *
+ * Deviation from the "serve/status/doctor share `kv`" note: serve and status
+ * are label/value listings and use `kv`, but a doctor finding is a severity
+ * icon plus a right-aligned id plus a multi-line dim detail, and its summary is
+ * a one-line count — neither is a two-column table. They share the underlying
+ * width-aware primitive (`wrap`/`visibleWidth`) directly instead.
  */
 export function formatDoctor(report: DoctorReport, opts: DoctorRenderOptions = {}): string {
   const width = opts.width ?? termWidth();
@@ -146,19 +153,6 @@ export function formatDoctor(report: DoctorReport, opts: DoctorRenderOptions = {
     for (const f of rows) lines.push(...formatFinding(f, width));
   }
 
-  if (hidden > 0) {
-    lines.push("");
-    lines.push(
-      ...wrap(
-        c.dim(`… ${hidden} passing check${hidden === 1 ? "" : "s"} hidden — run `) +
-          c.cyan("repoos doctor --verbose") +
-          c.dim(" to show every check"),
-        Math.max(1, width - 2),
-        "  ",
-      ).split("\n"),
-    );
-  }
-
   const s = report.summary;
   const parts: string[] = [];
   if (s.fail) parts.push(c.red(`${s.fail} fail`));
@@ -183,6 +177,21 @@ export function formatDoctor(report: DoctorReport, opts: DoctorRenderOptions = {
       lines.push("    " + c.cyan("→") + " " + wrapped[0]);
       for (let i = 1; i < wrapped.length; i++) lines.push("      " + wrapped[i]);
     }
+  }
+
+  // Per spec, end with the pointer to `--verbose` rather than burying it above
+  // the summary and next steps.
+  if (hidden > 0) {
+    lines.push("");
+    lines.push(
+      ...wrap(
+        c.dim(`… ${hidden} passing check${hidden === 1 ? "" : "s"} hidden — run `) +
+          c.cyan("repoos doctor --verbose") +
+          c.dim(" to show every check"),
+        Math.max(1, width - 2),
+        "  ",
+      ).split("\n"),
+    );
   }
   lines.push("");
   return lines.join("\n");

@@ -84,6 +84,8 @@ describe("renderHelp", () => {
     // The full usage now lives behind `repoos <cmd> --help`, not in the table.
     expect(out).not.toContain("doctor [--json] [--verbose]");
     expect(out).not.toContain("check [--profile");
+    // `list` takes no flags — the usage must not claim a `--json` it ignores.
+    expect(out).not.toContain("list [status] [--json]");
     expect(out).toContain("repoos <command> --help");
   });
 
@@ -99,6 +101,21 @@ describe("commandUsage / printCommandHelp", () => {
       "doctor [--json] [--verbose] [--probe <cli>] [--binary <path>]",
     );
     expect(commandUsage("nope")).toBeNull();
+  });
+
+  it("resolves aliases to their canonical command", () => {
+    expect(commandUsage("ls")).toBe(commandUsage("list"));
+    expect(commandUsage("server")).toBe(commandUsage("serve"));
+    expect(commandUsage("move")).toBe(commandUsage("mv"));
+  });
+
+  it("prints help for an alias", () => {
+    const lines: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((...args: unknown[]) => {
+      lines.push(args.map(String).join(" "));
+    });
+    expect(printCommandHelp("ls", 80)).toBe(true);
+    expect(lines.join("\n")).toContain("repoos list [status]");
   });
 
   it("prints the usage, description and flags", () => {
@@ -130,6 +147,9 @@ describe("formatDoctor", () => {
     expect(out).not.toContain("Check plan configured");
     expect(out).toContain("2 passing checks hidden");
     expect(out).toContain("repoos doctor --verbose");
+    // The hint ends the report (spec), after the summary and next steps.
+    expect(out.indexOf("passing checks hidden")).toBeGreaterThan(out.indexOf("Next steps"));
+    expect(out.indexOf("passing checks hidden")).toBeGreaterThan(out.indexOf("1 fail"));
   });
 
   it("shows every check with verbose and drops the hidden hint", () => {

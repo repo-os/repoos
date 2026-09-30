@@ -17,10 +17,19 @@ describe("visibleWidth", () => {
     expect(visibleWidth("\x1b[1m\x1b[31mred\x1b[39m\x1b[22m")).toBe(3);
     expect(visibleWidth("\x1b[2mab\x1b[22m cd")).toBe(5);
   });
+
+  it("counts wide (CJK/emoji) characters as two columns", () => {
+    expect(visibleWidth("評価")).toBe(4); // two fullwidth ideographs
+    expect(visibleWidth("a評b")).toBe(4);
+    expect(visibleWidth("😀")).toBe(2);
+    // ANSI codes still contribute nothing next to wide text
+    expect(visibleWidth("\x1b[36m評価\x1b[39m")).toBe(4);
+  });
 });
 
 describe("termWidth", () => {
-  it("prefers the TTY width, capped at 100", () => {
+  it("prefers $COLUMNS when set, capped at 100", () => {
+    expect(termWidth({ COLUMNS: "60" }, 200)).toBe(60);
     expect(termWidth({}, 60)).toBe(60);
     expect(termWidth({}, 200)).toBe(100);
   });
@@ -76,6 +85,12 @@ describe("wrap", () => {
   it("treats explicit newlines as line breaks", () => {
     expect(wrap("one\ntwo", 40)).toBe("one\ntwo");
   });
+
+  it("wraps wide characters by display width, not code units", () => {
+    const out = wrap("評価評価評価評価", 8);
+    for (const line of out.split("\n")) expect(visibleWidth(line)).toBeLessThanOrEqual(8);
+    expect(out).toBe("評価評価\n評価評価");
+  });
 });
 
 describe("table", () => {
@@ -113,6 +128,11 @@ describe("table", () => {
       { indent: 2, gap: 2, width: 80 },
     ).split("\n");
     expect(out[0].indexOf("first")).toBe(out[1].indexOf("second"));
+  });
+
+  it("stacks label over description at a degenerate width", () => {
+    const out = table(rows, { indent: 4, gap: 2, width: 12 });
+    expect(Math.max(...lineWidths(out))).toBeLessThanOrEqual(12);
   });
 });
 
