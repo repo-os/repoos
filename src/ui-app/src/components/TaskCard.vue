@@ -617,15 +617,32 @@ const reviewReady = computed(() => {
 
 /** Full-width footer colors retain the board's action/status language. */
 const actionFooterClass = computed(() => {
+  // A disabled footer (review still running, engineer still coding, close-out
+  // in flight) must read as inert: dimmed, desaturated, no hover lift, and a
+  // not-allowed cursor — matching the shared Button in the task drawer.
+  const inert =
+    " disabled:cursor-not-allowed disabled:opacity-50 disabled:saturate-50 disabled:hover:brightness-100";
   switch (action.value?.variant) {
     case "start":
-      return "border-[var(--cyan-dim)] bg-[var(--cyan-dim)] text-[var(--cyan)] hover:brightness-125";
+      return (
+        "border-[var(--cyan-dim)] bg-[var(--cyan-dim)] text-[var(--cyan)] hover:brightness-125" +
+        inert
+      );
     case "pause":
-      return "border-[var(--amber-tint)] bg-[var(--amber-tint)] text-[var(--amber)] hover:brightness-110";
+      return (
+        "border-[var(--amber-tint)] bg-[var(--amber-tint)] text-[var(--amber)] hover:brightness-110" +
+        inert
+      );
     case "done":
-      return "border-[var(--green-border-tint)] bg-[var(--green-tint)] text-[var(--green)] hover:brightness-110";
+      return (
+        "border-[var(--green-border-tint)] bg-[var(--green-tint)] text-[var(--green)] hover:brightness-110" +
+        inert
+      );
     default:
-      return "border-border bg-[var(--panel)] text-[var(--txt-dim)] hover:border-[var(--border-bright)] hover:text-foreground";
+      return (
+        "border-border bg-[var(--panel)] text-[var(--txt-dim)] hover:border-[var(--border-bright)] hover:text-foreground" +
+        inert
+      );
   }
 });
 
