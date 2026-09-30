@@ -5,11 +5,13 @@ type: bug
 status: inbox
 priority: high
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
+model_override: default
 created_at: "2026-09-30T10:24:58Z"
-updated_at: "2026-09-30T10:24:58Z"
+updated_at: "2026-09-30T10:25:41Z"
 ---
 ## Problem
 
@@ -33,3 +35,4 @@ Incident: 2026-09-30, #0599 after #0598 landed.
 ## Activity
 
 - 2026-09-30T10:24:58Z · created · unknown
+- 2026-09-30T10:25:41Z · cli_override, model_override
