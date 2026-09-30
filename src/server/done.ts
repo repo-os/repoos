@@ -587,6 +587,8 @@ async function completeTaskLocked(
     }
     throw err;
   }
+  const cachePrefix = `${(config.cacheDir ?? ".repoos").replace(/\/+$/, "")}/`;
+  publishDirty = publishDirty.filter((path) => !path.startsWith(cachePrefix));
   if (publishDirty.length > 0) {
     return {
       ok: false,

@@ -310,6 +310,12 @@ export interface BoardTask {
   /** Preview targets this task's area resolves to (server-computed, #0379). */
   previewTargets?: PreviewTargetOption[];
   automaticReview?: AutomaticReview;
+  /** Advisory lock while the task is in review or close-out (#0598). */
+  worktreeReviewLock?: {
+    status: "review" | "closing-out";
+    sha: string;
+    at: string;
+  } | null;
   /** True while the PM agent is fleshing this draft out (0335). */
   pmWorking?: boolean;
   /** See Task.checkRetryCount. */

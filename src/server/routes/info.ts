@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import type { RouteHandler } from "./types.js";
+import { readWorktreeReviewLock } from "../worktree-handoff-guard.js";
 import { json, readBody } from "./utils.js";
 import { loadBuildInfo, listDocs, listSkills, repoGuideContext } from "./helpers.js";
 import { copyInspectorApiEnabled } from "./copy-inspector.js";
@@ -76,7 +77,7 @@ export const getCounts: RouteHandler = (ctx, _req, res) => {
 };
 
 export const getIndex: RouteHandler = async (ctx, _req, res) => {
-  const { index, reviews, indexReady } = ctx;
+  const { config, index, reviews, indexReady } = ctx;
   await indexReady;
   const snapshot = index.snapshot();
   const withReviewStatus = (t: any) => ({
@@ -85,6 +86,7 @@ export const getIndex: RouteHandler = async (ctx, _req, res) => {
       running: reviews.isRunning(t.id),
       enabled: reviews.enabled(),
     },
+    worktreeReviewLock: readWorktreeReviewLock(config.root, config.cacheDir, t.id),
   });
   return json(res, 200, {
     ...snapshot,
@@ -107,6 +109,7 @@ export const getBoard: RouteHandler = async (ctx, _req, res) => {
       running: reviews.isRunning(t.id),
       enabled: reviews.enabled(),
     },
+    worktreeReviewLock: readWorktreeReviewLock(config.root, config.cacheDir, t.id),
     // #0379: preview target identity/multiplicity, same as GET /api/tasks/:id.
     previewTargets: previewTargetOptions(config, t),
   });
