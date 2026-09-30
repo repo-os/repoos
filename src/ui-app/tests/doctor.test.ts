@@ -374,10 +374,18 @@ describe("doctor compatibility bridge and probe arguments", () => {
   });
 
   it("parses every live-probe argument shape, including a missing value", () => {
-    const base = { json: false, yes: false, probe: null, probeMissingValue: false, binary: null };
+    const base = {
+      json: false,
+      verbose: false,
+      yes: false,
+      probe: null,
+      probeMissingValue: false,
+      binary: null,
+    };
     expect(parseDoctorArgs(["doctor"])).toEqual(base);
     expect(parseDoctorArgs(["doctor", "--json", "--probe", "kiro"])).toEqual({
       json: true,
+      verbose: false,
       yes: false,
       probe: "kiro",
       probeMissingValue: false,
@@ -385,6 +393,7 @@ describe("doctor compatibility bridge and probe arguments", () => {
     });
     expect(parseDoctorArgs(["doctor", "--probe", "opencode", "--yes"])).toEqual({
       json: false,
+      verbose: false,
       yes: true,
       probe: "opencode",
       probeMissingValue: false,
@@ -395,11 +404,13 @@ describe("doctor compatibility bridge and probe arguments", () => {
     expect(parseDoctorArgs(["doctor", "--probe"])).toEqual({ ...base, probeMissingValue: true });
     expect(parseDoctorArgs(["doctor", "--probe", "--yes"])).toEqual({
       json: false,
+      verbose: false,
       yes: true,
       probe: null,
       probeMissingValue: true,
       binary: null,
     });
+    expect(parseDoctorArgs(["doctor", "--verbose"])).toEqual({ ...base, verbose: true });
   });
 
   it("adds a warn finding for an enabled harness that is not installed", async () => {

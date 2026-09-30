@@ -116,7 +116,7 @@ server belonging to a different repo.
 One-screen health snapshot: server, build freshness, board counts, worktrees,
 tunnel, and git state.
 
-### `repoos doctor [--json] [--probe <cli>]`
+### `repoos doctor [--json] [--verbose] [--probe <cli>] [--binary <path>]`
 
 A read-only readiness preflight for a real project. It checks the repository
 identity (root, git, linked worktree), parses and validates `repoos.toml`,
@@ -129,14 +129,21 @@ contract status (verified, upgrade recommended, newer than verified, unsupported
 or not yet probed).
 
 ```bash
-repoos doctor            # compact pass/warn/fail report with remediation
+repoos doctor            # warnings/failures, summary and next steps
+repoos doctor --verbose  # every check, including the passing ones
 repoos doctor --json     # the same findings, machine-readable
 ```
 
-The default run never initializes, rewrites config, installs, logs in, contacts
-a model provider, kills a process or mutates git, and it works offline. It exits
-non-zero when any finding is a failure, so it is usable in a script. Paste
-`repoos doctor` output into an issue to report a setup problem.
+By default the report **collapses passing checks** so a single failure isn't
+buried under ~25 green lines: only sections with warnings or failures are listed,
+followed by the summary and the next steps (failures first), and a closing hint
+that `--verbose` shows the whole checklist. `--json` is unaffected — it always
+emits every finding. Output is laid out for the terminal width and wraps cleanly
+when piped, so the default run never breaks its own indentation. The default run
+never initializes, rewrites config, installs, logs in, contacts a model provider,
+kills a process or mutates git, and it works offline. It exits non-zero when any
+finding is a failure, so it is usable in a script. Paste `repoos doctor` output
+into an issue to report a setup problem.
 
 ```bash
 repoos doctor --probe opencode --yes   # run the live adapter-contract probe

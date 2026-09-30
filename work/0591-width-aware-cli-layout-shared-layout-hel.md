@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-30T02:22:49Z"
-review_passes: 2
 id: "0591"
 title: "Width-aware CLI layout: shared layout helpers, tidy help and doctor"
 type: feature
@@ -12,7 +10,7 @@ created_by: ""
 branch: feat/width-aware-cli-layout-shared-layout-hel
 review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-29T23:34:54Z"
-review_rounds: 1
+updated_at: "2026-09-30T01:52:36Z"
 ---
 ## Problem
 `repoos help` and `repoos doctor` lay text out with fixed `padEnd` columns (`CMD_COL`, `EX_COL`) and never look at the terminal width. Long descriptions wrap back to column 0, breaking the hanging indent (help: doctor/certify/serve/tunnel rows; doctor: long detail lines such as the Cursor/OpenCode compatibility warnings). `doctor` also prints all ~25 passing checks, which buries the one failure.
@@ -54,6 +52,3 @@ Pure functions, unit-tested at fixed widths (60, 80, 140).
 - 2026-09-30T00:26:33Z · review_model_override
 - 2026-09-30T00:26:33Z · status ready→active, branch
 - 2026-09-30T01:52:36Z · status active→review
-- 2026-09-30T02:02:27Z · status review→active
-- 2026-09-30T02:11:49Z · status active→review
-
