@@ -470,7 +470,6 @@ export async function cmdShot(args: string[]): Promise<number> {
       try {
         await page.setViewportSize(opts.viewport);
         png = await captureShotPage(page, pageUrl, entry, {
-          viewport: opts.viewport,
           waitMs: opts.waitMs,
           fullPage: opts.fullPage,
         });
