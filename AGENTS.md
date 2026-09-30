@@ -133,8 +133,11 @@ who owns approval and merging:
   writes `.repoos/locks/<taskId>.json` while a task is in `review` or
   close-out (advisory — runners refuse to start there; external sessions
   should check it too). Move to done compares the worktree to the handoff
-  snapshot and refuses when HEAD moved or the tree is dirty after handoff.
-  Incident: 2026-09-30, #0594 — four files edited mid-close-out never landed.
+  snapshot and refuses when HEAD moved or the tree is dirty after handoff,
+  except commits that change only `work/*.md` task files (RepoOS bookkeeping or
+  a main sync bringing in other tasks' task files — #0600). Real source edits
+  still block close-out. Incident: 2026-09-30, #0594 — four files edited
+  mid-close-out never landed.
 - If explicitly taking over a newly created task, claim it through RepoOS
   directly as `active`, without leaving it in `ready` for auto-dispatch to grab.
   Managed starts should use RepoOS's Start action, which owns worktree setup.

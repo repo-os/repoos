@@ -377,6 +377,45 @@ describe("move-to-done dirty-WORKTREE guard (#0512)", () => {
     }
   });
 
+  it("enqueues when HEAD moved only for task-file bookkeeping commits (#0600)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wt = makeFeatureWorktree(root);
+      const handoffSha = gitIn(wt, "rev-parse HEAD");
+      writeHandoffSnapshot(root, ".repoos", {
+        taskId: "0211",
+        branch: "feat/0211",
+        sha: handoffSha,
+        at: "2026-09-30T00:00:00Z",
+        clean: true,
+      });
+      writeFileSync(
+        join(wt, "work", "0211-test.md"),
+        `---\nid: "0211"\ntitle: Test\nstatus: review\nbranch: feat/0211\n---\nBody\nactivity\n`,
+      );
+      writeFileSync(join(wt, "work", "0598-other.md"), "---\nid: 0598\n---\nfrom main sync\n");
+      gitIn(wt, "add work");
+      gitIn(wt, 'commit -m "docs(0211): update task"');
+      const enqueue = vi.fn(() => ({ taskId: "0211", phase: "queued", enqueuedAt: "now" }));
+      const res = makeRes();
+
+      await taskAction(
+        makeCtx(root, reviewTask(root), { onEnqueue: enqueue }),
+        makeReq(),
+        res as any,
+        {
+          param1: "0211",
+          param2: "done",
+        },
+      );
+
+      expect(res.statusCode).toBe(200);
+      expect(enqueue).toHaveBeenCalledTimes(1);
+    } finally {
+      clean();
+    }
+  });
+
   it("ignores generated and bookkeeping dirt in the worktree", async () => {
     // `dist/` and the task dir are RepoOS's own churn — a check that builds in
     // the worktree, a task-file stamp. Blocking close-out on those would make

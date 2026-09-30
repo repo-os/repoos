@@ -1475,6 +1475,37 @@ export function isGeneratedOrRuntimePath(path: string, filter: WorkFileFilter = 
   return false;
 }
 
+/** Repo-relative path is a committed task markdown file under `workDir` (board bookkeeping). */
+export function isTaskBookkeepingPath(path: string, filter: WorkFileFilter = {}): boolean {
+  const workDir = filter.workDir ?? "work";
+  const prefix = withTrailingSlash(workDir);
+  return path.startsWith(prefix) && path.endsWith(".md");
+}
+
+/**
+ * Repo-relative paths that differ between the trees at `fromSha` and `toSha`
+ * (two-commit diff, either order). Renames are reported as delete + add
+ * (`--no-renames`) so a source file moved into `work/*.md` cannot masquerade as
+ * bookkeeping-only drift. Returns null when git could not produce the diff.
+ */
+export async function pathsChangedBetweenCommits(
+  root: string,
+  fromSha: string,
+  toSha: string,
+): Promise<string[] | null> {
+  if (fromSha === toSha) return [];
+  const res = await runGit(
+    root,
+    ["-c", "core.quotepath=false", "diff", "--name-only", "--no-renames", fromSha, toSha],
+    15_000,
+  );
+  if (res.status !== 0) return null;
+  return res.stdout
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
 /**
  * The uncommitted files in a checkout that represent a task's OWN work —
  * `dirtyFiles` minus {@link isGeneratedOrRuntimePath}. Used for the task
