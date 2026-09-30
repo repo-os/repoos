@@ -2,7 +2,7 @@
 id: "0594"
 title: "repoos shot: capture the app target for mixed diffs, and let tasks declare which pages/states to shoot"
 type: bug
-status: review
+status: active
 priority: p2
 area: [cli, web]
 assigned_to: ai
@@ -48,3 +48,4 @@ Shots are captured for every UI-visible task without relying on the agent rememb
 - 2026-09-30T04:24:23Z · review_cli_override, review_model_override
 - 2026-09-30T04:24:24Z · review_model_override
 - 2026-09-30T04:24:40Z · status active→review
+- 2026-09-30T04:24:40Z · status review→active
