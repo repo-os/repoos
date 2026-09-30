@@ -9,6 +9,19 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/make-checks-page-use-full-main-content-w
 created_at: "2026-09-30T12:57:02Z"
+updated_at: "2026-09-30T15:33:50Z"
+---
+---
+id: "0602"
+title: Make Checks page use full main content width
+type: feature
+status: active
+priority: p2
+area: web
+assigned_to: ai
+created_by: hello@repoos.org
+branch: feat/make-checks-page-use-full-main-content-w
+created_at: "2026-09-30T12:57:02Z"
 updated_at: "2026-09-30T15:29:58Z"
 ---
 ## Problem
@@ -53,6 +66,17 @@ Also document for future implementers that **standard app pages should use full 
 
 Make the "Checks" page fill out the full width, like all the other pages (and tell future agents in agents.md or style guide somewhere that every page should use the full width, aesthetically.
 
+## Shots
+
+```json
+[
+  {"target": "default", "route": "/checks", "label": "Checks — plan tab, full width"},
+  {"target": "default", "route": "/checks?tab=runs", "label": "Checks — runs tab, full width"}
+]
+```
+
+Before/after reference is the #0602 screenshots in the task's original prompt; a reviewer comparing with Settings or Agents at the same window size should see the same usable width, with no narrow centered column on Checks.
+
 ## Screenshots
 
 ![Screenshot-2026-09-30-at-20.54.51](/api/tasks/0602/attachments/screenshot-1.png)
@@ -66,3 +90,4 @@ Make the "Checks" page fill out the full width, like all the other pages (and te
 - 2026-09-30T12:57:35Z · status draft→inbox, title, area, body
 - 2026-09-30T15:29:41Z · status inbox→ready
 - 2026-09-30T15:29:58Z · status ready→active, branch
+- 2026-09-30T15:33:50Z · body
