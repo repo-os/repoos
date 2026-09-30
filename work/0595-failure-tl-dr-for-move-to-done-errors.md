@@ -1,4 +1,6 @@
 ---
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-09-30T04:20:52.224Z: the worktree changed while the gate was running (HEAD moved from 08743609 to 23e6ec30) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 id: "0595"
 title: Failure tl;dr for Move-to-done errors
 type: feature
@@ -35,3 +37,6 @@ Notes:
 - 2026-09-30T03:47:09Z · status review→active
 - 2026-09-30T04:00:16Z · status active→review
 - 2026-09-30T04:07:39Z · status review→active
+
+
+
