@@ -11,9 +11,9 @@ created_by: ""
 branch: feat/convert-vue-sfcs-from-raw-css-to-tailwin
 model_override: default
 pm_model_override: default
-review_cli_override: codex
+review_cli_override: claude code
 created_at: "2026-08-14T16:06:37Z"
-updated_at: "2026-09-30T00:08:47Z"
+updated_at: "2026-09-30T00:08:48Z"
 review_passes: 1
 review_rounds: 1
 ---
@@ -276,3 +276,4 @@ No visible change. Styling is expressed in Tailwind v4 utility classes in `class
 - 2026-09-17T15:13:20Z · status inbox→draft
 - 2026-09-30T00:07:35Z · review_cli_override, review_model_override
 - 2026-09-30T00:08:47Z · review_cli_override
+- 2026-09-30T00:08:48Z · review_cli_override
