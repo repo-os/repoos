@@ -148,6 +148,7 @@ import { createRemoteValidator, type RemoteValidator } from "./remote-validation
 import { buildIntegrationSnapshot } from "./integration-status.js";
 import { resolvePipelineCheckPlan } from "./check-plan-info.js";
 import { createRepositoryLock, createRootLock } from "./repo-lock.js";
+import { clearWorktreeHandoffProtection } from "./worktree-handoff-guard.js";
 import {
   handoffTask,
   finalizeReviewHandoff,
@@ -280,6 +281,7 @@ import {
   getIntegrationPipeline,
   retryIntegration,
   cancelDone,
+  discardWorktreeHandoff,
   startPreview,
   stopPreview,
   getTaskReview,
@@ -1979,6 +1981,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     if (prev === "active" && next !== "active") runner.discardPendingHandoff(task.id);
     if (next === "done") runner.complete(task.id);
     if (prev !== "review" && next === "review") scheduleAutoShotCapture(task);
+    if (next === "done" || (prev === "review" && next !== "review")) {
+      clearWorktreeHandoffProtection(config.root, config.cacheDir, task.id);
+    }
   };
 
   /**
@@ -2660,6 +2665,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/integration/pipeline", getIntegrationPipeline);
   router.register("POST", /^\/api\/integration\/pipeline\/retry\/([^/]+)$/, retryIntegration);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/done\/cancel$/, cancelDone);
+  router.register(
+    "POST",
+    /^\/api\/tasks\/([^/]+)\/worktree-handoff\/discard$/,
+    discardWorktreeHandoff,
+  );
   router.register(
     "POST",
     /^\/api\/tasks\/([^/]+)\/(start|pause|message|done|sync|hotfix|abandon|reopen)$/,

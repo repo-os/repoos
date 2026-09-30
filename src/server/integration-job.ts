@@ -44,6 +44,11 @@ export interface IntegrationJob {
   baseMainSha: string | null;
   /** Feature branch SHA being merged */
   branchSha: string | null;
+  /**
+   * Feature-branch HEAD recorded at handoff when close-out was enqueued (#0598).
+   * Publish and sync re-check the live worktree against this before running the gate.
+   */
+  handoffSha?: string | null;
   /** Candidate merge result SHA (null until candidate is built) */
   candidateSha: string | null;
   /** Failure reason or recovery action (when phase is "failed") */
@@ -163,6 +168,7 @@ function readJob(root: string, taskId: string): IntegrationJob | null {
       startedAt: stored.startedAt,
       baseMainSha: stored.baseMainSha,
       branchSha: stored.branchSha,
+      handoffSha: stored.handoffSha ?? null,
       candidateSha: stored.candidateSha,
       reason: stored.reason,
       logPath: stored.logPath,

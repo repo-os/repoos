@@ -91,6 +91,12 @@ import {
   clearNeedsInputForReviewAgainOnTask,
   dismissNeedsInputOnTask,
 } from "../needs-input-dismiss.js";
+import {
+  discardWorktreeHandoffChanges,
+  readHandoffSnapshot,
+  verifyWorktreeHandoffIntegrity,
+  writeWorktreeReviewLock,
+} from "../worktree-handoff-guard.js";
 
 // Helper to add review status to tasks
 function withReviewStatus<T extends { id: string }>(
@@ -1240,6 +1246,27 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       }
     }
 
+    const handoffSnap =
+      !taskStillExists.hotfix && branch
+        ? readHandoffSnapshot(config.root, config.cacheDir, id)
+        : null;
+    if (handoffSnap && worktree) {
+      const integrity = await verifyWorktreeHandoffIntegrity(config, branch, handoffSnap.sha, {
+        handoffAt: handoffSnap.at,
+        taskId: id,
+      });
+      if (!integrity.ok) {
+        return json(res, 409, {
+          error: integrity.reason,
+          worktreeChangedAfterHandoff: true,
+          handoffSha: handoffSnap.sha,
+          attribution: integrity.attribution,
+          dirtyFiles: integrity.dirtyFiles,
+          resolutions: ["discard", "send-back"],
+        });
+      }
+    }
+
     // Reserve the close-out window before queueing: a reload may already have
     // drained the listener, so wait for it to abort and re-bind first.
     if (ctx.reload) await ctx.reload.prepareForCloseOut();
@@ -1249,6 +1276,15 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     if (!job) {
       ctx.reload?.releaseCloseOut();
       return json(res, 400, { error: `Task #${id} has no branch to merge` });
+    }
+
+    if (handoffSnap) {
+      ctx.jobCoordinator.updateJob(id, { handoffSha: handoffSnap.sha });
+      writeWorktreeReviewLock(config.root, config.cacheDir, id, {
+        status: "closing-out",
+        sha: handoffSnap.sha,
+        at: new Date().toISOString(),
+      });
     }
 
     // Reflect the new queue entry in the pinned status bar immediately (0207),
@@ -2041,8 +2077,23 @@ export const retryIntegration: RouteHandler = (ctx, _req, res, params) => {
  * left in `review` with its feature branch/worktree intact — nothing is merged
  * — so "Move to done" can be clicked again.
  */
+/** Discard post-handoff edits by resetting the feature worktree to the handoff SHA (#0598). */
+export const discardWorktreeHandoff: RouteHandler = async (ctx, _req, res, params) => {
+  const { config, index } = ctx;
+  const id = params.param1;
+  const task = index.getTask(id);
+  if (!task?.branch) {
+    return json(res, 404, { error: `Task #${id} not found` });
+  }
+  const result = await discardWorktreeHandoffChanges(config, id, task.branch);
+  if (!result.ok) {
+    return json(res, 400, { error: result.reason });
+  }
+  return json(res, 200, { ok: true });
+};
+
 export const cancelDone: RouteHandler = (ctx, _req, res, params) => {
-  const { jobCoordinator, index } = ctx;
+  const { jobCoordinator, index, config } = ctx;
   const id = params.param1;
   const task = index.getTask(id);
   if (!task) {
@@ -2072,6 +2123,16 @@ export const cancelDone: RouteHandler = (ctx, _req, res, params) => {
   // rather than leaving it for a future drain to pick up and cancel.
   if (job.phase === "queued") {
     jobCoordinator.removeJob(id);
+  }
+
+  const snap =
+    config.root && config.cacheDir ? readHandoffSnapshot(config.root, config.cacheDir, id) : null;
+  if (snap) {
+    writeWorktreeReviewLock(config.root, config.cacheDir, id, {
+      status: "review",
+      sha: snap.sha,
+      at: snap.at,
+    });
   }
 
   // The snapshot hides cancelled jobs, so this event drops the task out of the

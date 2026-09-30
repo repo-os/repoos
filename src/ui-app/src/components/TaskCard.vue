@@ -430,6 +430,14 @@ const hint = computed<CardHint | null>(() => {
     };
   }
   if (t.status === "review") {
+    if (t.worktreeReviewLock?.status === "review") {
+      return {
+        label: "locked: in review",
+        title:
+          "The feature worktree is frozen at the handoff commit — send back to the engineer or discard post-handoff edits before changing files here.",
+        cls: "tc-reviewing",
+      };
+    }
     if (inPipeline.value) {
       return {
         label: pipelineStage.value
