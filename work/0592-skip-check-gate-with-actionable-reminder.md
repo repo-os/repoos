@@ -2,7 +2,7 @@
 id: "0592"
 title: Skip check gate (with actionable reminder) when a repo has no check plan
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -12,7 +12,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-30T00:01:23Z"
-updated_at: "2026-09-30T03:36:23Z"
+updated_at: "2026-09-30T03:41:03Z"
 review_passes: 4
 review_rounds: 2
 last_check_failure: "repoos check at 2026-09-30T01:29:36.315Z: server-side finalization timed out (deadline exceeded)"
@@ -85,3 +85,4 @@ Update `user-docs/check.md` (the "Bootstrapping a plan" paragraph and "When a re
 - 2026-09-30T03:36:13Z · model_override
 - 2026-09-30T03:36:22Z · status review→active
 - 2026-09-30T03:36:23Z · needs_input
+- 2026-09-30T03:41:03Z · status active→review
