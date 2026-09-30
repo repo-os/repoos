@@ -2,7 +2,7 @@
 id: "0603"
 title: "Automatic shots: skip non-UI diffs, caption why, support highlights"
 type: bug
-status: review
+status: active
 priority: p2
 area: [server, web]
 assigned_to: ai
@@ -43,3 +43,4 @@ Automatic shot capture at handoff (#0594) produces screenshots that show nothing
 - 2026-09-30T19:33:02Z · status review→active
 - 2026-09-30T19:37:13Z · handoff failed · task-file handoff failed at check · repoos check failed: - rendering pages... · [32m✓[0m rendering pages... · build complete in 3.75s. · ⏭ landing-build  — skipped — no changed path matches landing/** · ⏭ telegram-manager-build  — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test  — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency  — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-icon-transparency.sh · 1 check(s) failed.
 - 2026-09-30T19:43:02Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · repoos check failed: - rendering pages... · [32m✓[0m rendering pages... · build complete in 3.75s. · ⏭ landing-build  — skipped — no changed path matches landing/** · ⏭ telegram-manager-build  — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test  — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency  — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-icon-transparency.sh · 1 check(s) failed. · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-09-30T19:43:02Z · status review→active
