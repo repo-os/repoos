@@ -381,10 +381,10 @@ const checkChip = computed(() => {
   const last = lastCheckRun.value;
   if (last) {
     // #0592: a skipped gate exits 0, so the exit code alone would read as a
-    // green pass — the server's explicit `skipped` flag identifies it (the
-    // output marker is the fallback, guarded by `passed` so a FAILED run
-    // that echoes the notice still reads as failed).
-    if (last.skipped === true || (last.passed === true && checkRunSkipped(last.output))) {
+    // green pass — treat as skipped only when the run passed; the server's
+    // `skipped` flag or the notice in output both require exit 0 so a FAILED
+    // run that echoes the notice (or a stale `skipped` flag) still reads failed.
+    if (last.passed === true && (last.skipped === true || checkRunSkipped(last.output))) {
       return {
         state: "skip" as const,
         label: "No checks configured",

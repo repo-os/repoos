@@ -147,7 +147,7 @@ export class TaskCheckManager {
         run.passed = code === 0;
         // Detected once here, on the completed output — not re-derived in the
         // UI from raw stdout on every render.
-        run.skipped = checkRunSkipped(run.output);
+        run.skipped = code === 0 && checkRunSkipped(run.output);
         onEvent(run, "done");
         // A non-null exit code means the CLI child exited on its own and
         // recorded its own durable row — record nothing here. code === null

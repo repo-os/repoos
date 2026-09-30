@@ -489,6 +489,7 @@ describe("task drawer check chip (#0564)", () => {
                 running: false,
                 passed: false, // a real failure…
                 code: 1,
+                skipped: true, // stale/wrong flag must not override failed
                 // …whose captured output happens to quote the notice.
                 output:
                   "expected output to contain: No check plan configured — nothing to verify.\n",
