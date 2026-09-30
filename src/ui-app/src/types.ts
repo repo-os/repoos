@@ -185,6 +185,11 @@ export interface ShotMeta {
   route?: string;
   /** Declared shot label (#0594), when the capture was captioned with one. */
   label?: string;
+  /**
+   * Why this shot exists (#0603), one line — "declared: <label>" or
+   * "auto: matched <glob>" — shown under the image in the Changes tab.
+   */
+  provenance?: string;
   /** Repo-relative path. */
   path: string;
   /** API URL the UI loads the image from. */

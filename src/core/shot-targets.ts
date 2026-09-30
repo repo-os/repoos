@@ -13,8 +13,13 @@
  * Pure and dependency-free (zero runtime deps): a tiny glob matcher instead of
  * pulling in minimatch, and no `preview.ts`/server imports so the CLI, the
  * server and the UI tests can all share it.
+ *
+ * #0603 added the test-artifact filter and the per-target match detail
+ * (`describeTargetPathMatches`): the automatic capture needs to know WHY a
+ * target matched (for its `auto: matched <glob>` caption) and whether the
+ * matched files are docs content only (no route can be inferred → skip).
  */
-import type { PreviewConfig, PreviewTargetConfig } from "./types.js";
+import type { PreviewConfig } from "./types.js";
 import { parseTaskAreas } from "./areas.js";
 
 /** Sentinel target name for the bare `[preview] command` (no `[[preview.targets]]`). */
@@ -92,10 +97,95 @@ export function matchGlob(pattern: string, path: string): boolean {
   return globToRegExp(pattern).test(path);
 }
 
-function targetMatchesPaths(target: PreviewTargetConfig, changedPaths: string[]): boolean {
-  const globs = target.paths ?? [];
-  if (globs.length === 0) return false;
-  return changedPaths.some((p) => globs.some((g) => matchGlob(g, p)));
+/**
+ * Changed paths that are NOT evidence of a UI change (#0603). #0600's review
+ * captured a default `/` shot because its diff added tests under
+ * `src/ui-app/tests/` — a `.test.ts` file inside a UI-path glob is evidence of
+ * behavior, not appearance, yet the plain glob matched it. These artifacts are
+ * filtered out before any target matching: a tests-only diff resolves no
+ * target and the automatic capture records a visible skip instead of shooting
+ * a frame that shows nothing about the change. Conservative list — test
+ * *files* and their snapshot/fixture directories only; real source under a
+ * test-adjacent path still counts.
+ */
+export function isTestArtifactPath(path: string): boolean {
+  return (
+    /(^|\/)(__tests__|__snapshots__)\//.test(path) ||
+    /\.test\.[cm]?[jt]sx?$/.test(path) ||
+    /\.spec\.[cm]?[jt]sx?$/.test(path) ||
+    path.endsWith(".snap")
+  );
+}
+
+/** `changedPaths` minus test artifacts (#0603). */
+export function nonTestPaths(changedPaths: string[]): string[] {
+  return changedPaths.filter((p) => !isTestArtifactPath(p));
+}
+
+/**
+ * Documentation-content files (`.md`/`.mdx`): a diff that only touches these
+ * matched a target's globs but the preview has no way to know which rendered
+ * route shows the change — the docs' root route shows its home page, not the
+ * edit. The automatic capture treats such a target as content-only and skips
+ * it unless the task declared a shot with a route.
+ */
+export function isDocsContentPath(path: string): boolean {
+  return /\.(md|mdx)$/i.test(path);
+}
+
+/** How one preview target was matched by the task's changed paths (#0603). */
+export interface TargetPathMatch {
+  /** Target name, in config order (the default target last, as before). */
+  target: string;
+  /** The matching globs, in the order they matched — drives the "auto: matched" caption. */
+  globs: string[];
+  /** True when every matched path is docs content — no route can be inferred. */
+  contentOnly: boolean;
+}
+
+/**
+ * Per-target detail behind `targetsForPaths` (#0603): for each resolved target,
+ * which of its globs matched which non-test changed paths, and whether the
+ * matched set is purely documentation content. Same resolution order and
+ * default-target rule as the plain name list — this is the rich form the
+ * automatic capture uses for its provenance captions and docs-route gate.
+ */
+export function describeTargetPathMatches(
+  preview: PreviewConfig | undefined,
+  changedPaths: string[],
+): TargetPathMatch[] {
+  const paths = nonTestPaths(changedPaths);
+  const out: TargetPathMatch[] = [];
+  const push = (target: string, globs: string[], hits: string[]): void => {
+    const matchedGlobs = [...new Set(globs.filter((g) => hits.some((p) => matchGlob(g, p))))];
+    if (matchedGlobs.length === 0) return;
+    out.push({
+      target,
+      globs: matchedGlobs,
+      contentOnly: hits.every((p) => isDocsContentPath(p)),
+    });
+  };
+  for (const t of preview?.targets ?? []) {
+    const globs = t.paths ?? [];
+    push(
+      t.name,
+      globs,
+      globs.length ? paths.filter((p) => globs.some((g) => matchGlob(g, p))) : [],
+    );
+  }
+  // Only the declared default COMMAND can be booted for the default target: a
+  // `paths`-only preview (no `[preview] command`) has nothing to serve, so it
+  // must not surface as a capturable target.
+  const defaultGlobs = preview?.paths ?? [];
+  const declaresDefault = Boolean(preview?.command?.trim());
+  if (declaresDefault) {
+    push(
+      DEFAULT_PREVIEW_TARGET,
+      defaultGlobs,
+      defaultGlobs.length ? paths.filter((p) => defaultGlobs.some((g) => matchGlob(g, p))) : [],
+    );
+  }
+  return out;
 }
 
 /**
@@ -108,25 +198,16 @@ function targetMatchesPaths(target: PreviewTargetConfig, changedPaths: string[])
  * NOT pull the default in implicitly (and never could: every task diff
  * contains the task's own `work/*.md`, which is no evidence about the UI), so
  * the default participates only when the repo explicitly declares its globs.
+ * Test artifacts (`*.test.ts`, snapshots, `__tests__/`) are filtered out first
+ * (#0603): they are behavior evidence, not appearance, and used to make a
+ * tests-only or tests+work-note diff boot a preview and shoot a useless `/`
+ * frame (#0600).
  */
 export function targetsForPaths(
   preview: PreviewConfig | undefined,
   changedPaths: string[],
 ): string[] {
-  const targets = preview?.targets ?? [];
-  const out: string[] = [];
-  for (const t of targets) {
-    if (targetMatchesPaths(t, changedPaths)) out.push(t.name);
-  }
-  const defaultGlobs = preview?.paths ?? [];
-  // Only the declared default COMMAND can be booted for the default target: a
-  // `paths`-only preview (no `[preview] command`) has nothing to serve, so it
-  // must not surface as a capturable target.
-  const declaresDefault = Boolean(preview?.command?.trim());
-  if (declaresDefault && defaultGlobs.some((g) => changedPaths.some((p) => matchGlob(g, p)))) {
-    out.push(DEFAULT_PREVIEW_TARGET);
-  }
-  return out;
+  return describeTargetPathMatches(preview, nonTestPaths(changedPaths)).map((m) => m.target);
 }
 
 /**
