@@ -2,7 +2,7 @@
 id: "0601"
 title: Bump canary counter by 1
 type: chore
-status: review
+status: done
 priority: p2
 area: core
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-30T12:47:15Z"
-updated_at: "2026-09-30T12:58:02Z"
+updated_at: "2026-09-30T13:03:37Z"
 ---
 ## Problem
 
@@ -61,3 +61,4 @@ This is the RepoOS canary task: a deliberately trivial change used to smoke-test
 - 2026-09-30T12:53:44Z · status inbox→ready
 - 2026-09-30T12:53:46Z · status ready→active, branch
 - 2026-09-30T12:58:02Z · status active→review
+- 2026-09-30T13:03:37Z · status review→done, release:success
