@@ -2,27 +2,15 @@
 id: "0602"
 title: Make Checks page use full main content width
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/make-checks-page-use-full-main-content-w
 created_at: "2026-09-30T12:57:02Z"
-updated_at: "2026-09-30T15:33:50Z"
+updated_at: "2026-09-30T15:40:55Z"
 ---
----
-id: "0602"
-title: Make Checks page use full main content width
-type: feature
-status: active
-priority: p2
-area: web
-assigned_to: ai
-created_by: hello@repoos.org
-branch: feat/make-checks-page-use-full-main-content-w
-created_at: "2026-09-30T12:57:02Z"
-updated_at: "2026-09-30T15:29:58Z"
 ---
 ## Problem
 
@@ -91,3 +79,4 @@ Before/after reference is the #0602 screenshots in the task's original prompt; a
 - 2026-09-30T15:29:41Z · status inbox→ready
 - 2026-09-30T15:29:58Z · status ready→active, branch
 - 2026-09-30T15:33:50Z · body
+- 2026-09-30T15:40:55Z · status active→review
