@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-30T02:39:49Z"
+review_passes: 1
 id: "0589"
 title: Record failing test names for remote check runs
 type: feature
@@ -12,7 +14,6 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-29T22:14:45Z"
-updated_at: "2026-09-30T02:25:09Z"
 ---
 ## Problem
 
@@ -41,3 +42,4 @@ Every failed check run in the history says which tests failed, whether it ran lo
 - 2026-09-30T02:18:00Z · review_model_override
 - 2026-09-30T02:18:17Z · status ready→active, branch
 - 2026-09-30T02:25:09Z · status active→review
+
