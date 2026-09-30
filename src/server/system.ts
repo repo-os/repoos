@@ -175,11 +175,15 @@ export function parsePsOutput(output: string): PsRecord[] {
 }
 
 function machineInfo(): MachineInfo {
+  const freeMem = freemem();
   return {
     cpuCount: cpus().length,
     totalMem: totalmem(),
-    freeMem: freemem(),
-    availableMem: availableMemBytes(),
+    freeMem,
+    // Reclaimable memory includes free memory by definition, but the two are
+    // sampled a moment apart (and on Linux libuv's freemem() is itself
+    // MemAvailable), so a busy box can read available < free. Clamp.
+    availableMem: Math.max(availableMemBytes(), freeMem),
     loadavg: loadavg(),
     platform: platform(),
   };
