@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-30T05:01:09Z"
+review_passes: 3
 id: "0595"
 title: Failure tl;dr for Move-to-done errors
 type: feature
@@ -11,10 +13,8 @@ branch: feat/failure-tl-dr-for-move-to-done-errors
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-09-30T03:02:23Z"
-updated_at: "2026-09-30T04:55:24Z"
 last_check_failure: "repoos check at 2026-09-30T04:20:52.224Z: the worktree changed while the gate was running (HEAD moved from 08743609 to 23e6ec30) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
-review_passes: 2
 ---
 The failure tl;dr (#0570, src/server/debug-tldr.ts) only runs for needs-input reasons (review-failed, dev-error, check-failed-after-retries, watchdog-stuck). A failed Move to done is stored as a done error (repo.doneErrorFor, rendered by DoneErrorCard.vue in the task drawer and on the board card) and never reaches that path, so the drawer shows no 'tl;dr — what happened' for it. MTD errors are common and hard for humans to read (e.g. #0589: a vitest failure buried in remote-validation output).
 
@@ -40,3 +40,4 @@ Notes:
 - 2026-09-30T04:49:37Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-09-30T04:51:54Z · status active→review
 - 2026-09-30T04:51:54Z · note: shots: skipped — skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+
