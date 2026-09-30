@@ -42,6 +42,7 @@
  *   GET  /api/tasks/:id/review -> { ok, running, enabled, review, lines } the agent's
  *                                 review report + reviewer conversation for a task in `review`
  *   POST /api/tasks/:id/review/again   -> start a fresh review run against the current worktree
+ *   POST /api/tasks/:id/clear-worktree -> force-remove a worktree close-out kept, delete its merged branch, clear the flag
  *   POST /api/tasks/:id/needs-input/dismiss -> clear needs_input (flag, reason, detail, questions) and log who dismissed it
  *   POST /api/tasks/:id/review/message -> send a follow-up to the reviewer (its own session)
  *   DELETE /api/tasks/:id      -> remove  the task file (emits task.deleted)
@@ -286,6 +287,7 @@ import {
   stopPreview,
   getTaskReview,
   dismissNeedsInput,
+  clearKeptWorktree,
   reviewAgain,
   reviewMessage,
   getCTO,
@@ -2690,6 +2692,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", /^\/api\/tasks\/([^/]+)\/preview\/stop$/, stopPreview);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/review$/, getTaskReview);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/needs-input\/dismiss$/, dismissNeedsInput);
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/clear-worktree$/, clearKeptWorktree);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/review\/again$/, reviewAgain);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/review\/message$/, reviewMessage);
   router.register("GET", "/api/cto", getCTO);

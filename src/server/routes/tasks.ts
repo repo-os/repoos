@@ -69,6 +69,10 @@ import {
   GitDirtyCheckError,
   ensureHotfix,
   agentTouchedFiles,
+  isAncestor,
+  removeWorktree,
+  deleteBranch,
+  pruneWorktrees,
 } from "../../core/git.js";
 import { guardReviewTransition } from "../review-guard.js";
 import { checkGenericStatusPatch } from "../task-transitions.js";
@@ -1631,6 +1635,55 @@ export const dismissNeedsInput: RouteHandler = async (ctx, req, res, params) => 
   const user = getCurrentUser(req, config)?.email ?? "human";
   try {
     const updated = dismissNeedsInputOnTask(config, existing.absPath, user);
+    index.applyFileChange(updated.absPath, { guarded: true });
+    return json(res, 200, index.getTask(updated.id));
+  } catch (err) {
+    if (err instanceof WriteError) {
+      return json(res, 400, { error: err.message });
+    }
+    throw err;
+  }
+};
+
+/**
+ * Clear a worktree that close-out kept (`closeout-worktree-dirty`): force-remove
+ * it, delete its branch, and dismiss the flag. Only for a `done` task whose
+ * branch is already an ancestor of main, so the only thing lost is bytes the
+ * merge did not carry — which the human has just chosen to discard.
+ */
+export const clearKeptWorktree: RouteHandler = async (ctx, req, res, params) => {
+  const { config, index } = ctx;
+  const id = params.param1;
+  const existing = index.getTask(id);
+  if (!existing) {
+    return json(res, 404, { error: `Task #${id} not found` });
+  }
+  if (existing.needsInputReason !== "closeout-worktree-dirty") {
+    return json(res, 400, { error: "Task has no kept close-out worktree to clear" });
+  }
+  const branch = existing.branch;
+  if (existing.status !== "done" || !branch) {
+    return json(res, 400, { error: "Only a done task with a recorded branch can be cleared" });
+  }
+  const root = config.root;
+  const mainBranch = ["main", "master"].find((name) => isAncestor(root, name, name) === true);
+  if (!mainBranch || isAncestor(root, branch, mainBranch) !== true) {
+    return json(res, 409, {
+      error: `Branch ${branch} is not merged into ${mainBranch ?? "main"} — refusing to discard its worktree`,
+    });
+  }
+  if (!removeWorktree(root, branch, { force: true })) {
+    return json(res, 500, { error: `Could not remove the worktree for ${branch}` });
+  }
+  pruneWorktrees(root);
+  deleteBranch(root, branch);
+  const user = getCurrentUser(req, config)?.email ?? "human";
+  try {
+    const updated = dismissNeedsInputOnTask(
+      config,
+      existing.absPath,
+      `${user} (cleared kept worktree)`,
+    );
     index.applyFileChange(updated.absPath, { guarded: true });
     return json(res, 200, index.getTask(updated.id));
   } catch (err) {

@@ -2731,6 +2731,24 @@ async function dismissNeedsInputFlag(): Promise<void> {
   }
 }
 
+const clearWorktreeBusy = ref(false);
+
+// Discards the kept worktree, so the button label names it; the server refuses
+// unless the task is done and its branch is already merged into main.
+async function clearKeptWorktree(): Promise<void> {
+  if (!ui.active || clearWorktreeBusy.value) return;
+  const task = ui.active;
+  clearWorktreeBusy.value = true;
+  try {
+    const updated = await repo.clearKeptWorktree(task.id);
+    ui.syncActive(updated);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    clearWorktreeBusy.value = false;
+  }
+}
+
 async function runNeedsInputPrimaryAction(): Promise<void> {
   if (!ui.active || !needsInputPrimary.value) return;
   const action = needsInputPrimary.value;
@@ -4133,6 +4151,16 @@ watch(
                         ? "Reviewing…"
                         : needsInputPrimary.label
                   }}
+                </Button>
+                <Button
+                  v-if="ui.active.needsInputReason === 'closeout-worktree-dirty'"
+                  variant="outline"
+                  size="sm"
+                  :disabled="ui.saving || clearWorktreeBusy || dismissNeedsInputBusy"
+                  @click="clearKeptWorktree"
+                >
+                  <ActivityIndicator v-if="clearWorktreeBusy" />
+                  {{ clearWorktreeBusy ? "Clearing…" : "Clear worktree" }}
                 </Button>
                 <Button
                   variant="ghost"

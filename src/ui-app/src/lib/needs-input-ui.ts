@@ -54,6 +54,8 @@ export const NEEDS_INPUT_SUGGESTION_LABELS: Record<string, string> = {
   "cto-escalation": "Open the PM tab and send a reply — the flag clears when your message is sent.",
   underspecified:
     "Send it to the PM agent to flesh it out, or write the missing sections yourself.",
+  "closeout-worktree-dirty":
+    "The merge already landed. Inspect the kept worktree if you want its uncommitted files, or Clear worktree to force-remove it and delete the merged branch.",
   questions: "Open the PM tab to answer — your reply is sent with the questions attached.",
 };
 

@@ -2618,6 +2618,14 @@ export const useRepoStore = defineStore("repo", () => {
     }
   }
 
+  /** Force-remove a worktree close-out kept, delete its merged branch, clear the flag. */
+  async function clearKeptWorktree(id: string): Promise<Task> {
+    const task = await api<Task>(`/api/tasks/${id}/clear-worktree`, { method: "POST" });
+    const i = tasks.value.findIndex((t) => t.id === id);
+    if (i >= 0) tasks.value[i] = task;
+    return task;
+  }
+
   /** Clear `needs_input` when the human handled the situation elsewhere (#0511). */
   async function dismissNeedsInput(id: string): Promise<Task> {
     const task = await api<Task>(`/api/tasks/${id}/needs-input/dismiss`, { method: "POST" });
@@ -3151,6 +3159,7 @@ export const useRepoStore = defineStore("repo", () => {
     sendMessage,
     reviewAgain,
     dismissNeedsInput,
+    clearKeptWorktree,
     sendReviewMessage,
     fetchRunning,
     fetchQueued,
