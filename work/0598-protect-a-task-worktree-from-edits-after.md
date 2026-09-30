@@ -3,9 +3,6 @@ id: "0598"
 title: Protect a task worktree from edits after handoff to review
 type: feat
 status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: the opencode agent timed out after 900s
 priority: p2
 area: server
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-30T05:01:28Z"
-updated_at: "2026-09-30T06:46:04Z"
+updated_at: "2026-09-30T06:46:08Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -59,3 +56,4 @@ chmod -R a-w or immutable flags on the worktree would block edits, but it breaks
 - 2026-09-30T06:45:21Z · needs_input
 - 2026-09-30T06:46:03Z · review_cli_override, review_model_override
 - 2026-09-30T06:46:04Z · review_model_override
+- 2026-09-30T06:46:08Z · needs_input (review-failed) cleared for review again by hello@repoos.org
