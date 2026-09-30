@@ -14,6 +14,7 @@ import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
 import type { CheckPlanStepView, CheckPlanView } from "../types";
 import NoCheckPlanReminder from "../components/NoCheckPlanReminder.vue";
+import { isGenuinelyEmptyPlan } from "../lib/check-setup";
 
 type ChecksTab = "plan" | "test-suite" | "runs" | "remote";
 
@@ -283,14 +284,22 @@ const RESULT_ICON: Record<string, string> = {
           </div>
           <p v-for="w in plan.warnings" :key="w" class="ck-warn">⚠ {{ w }}</p>
           <p v-for="e in plan.errors" :key="e" class="ck-error-line">✗ {{ e }}</p>
-          <!-- #0592: an empty plan is not a failure, but it is not green either
-               — remind with the two easy setup paths. -->
-          <NoCheckPlanReminder v-if="plan.source === 'empty' && plan.steps.length === 0" />
+          <!-- #0592: a genuine empty, error-free plan is not a failure, but
+               it is not green either — remind with the two easy setup paths.
+               A plan with errors fails red; the reminder is withheld. -->
+          <NoCheckPlanReminder v-if="isGenuinelyEmptyPlan(plan)" />
         </section>
 
-        <!-- Last run: the one fact a plan screen cannot show by resolving alone.
-             #0592: a skipped gate (no check plan) is never rendered as passed. -->
-        <section v-if="lastRun" class="ck-lastrun" :data-passed="lastRun.passed">
+        <!-- Last run: the one fact a plan screen cannot show by resolving
+             alone. #0592: a skipped gate (no check plan) is never rendered as
+             passed, and gets its own neutral/amber styling — not the red
+             failure tint. -->
+        <section
+          v-if="lastRun"
+          class="ck-lastrun"
+          :data-passed="lastRun.passed"
+          :data-outcome="lastRun.outcome"
+        >
           <div class="ck-lastrun-head">
             <span class="ck-lastrun-title">
               <template v-if="lastRun.outcome === 'skipped'"
@@ -585,6 +594,12 @@ const RESULT_ICON: Record<string, string> = {
 .ck-lastrun[data-passed="false"] {
   border-color: var(--red-border-tint);
   background: var(--red-tint);
+}
+/* #0592: the last run was SKIPPED — no check plan, nothing verified. Amber
+   neutral, not the red failure tint (same specificity, later wins). */
+.ck-lastrun[data-outcome="skipped"] {
+  border-color: var(--amber-border-tint);
+  background: var(--amber-tint);
 }
 .ck-lastrun-empty {
   color: var(--txt-dim);
