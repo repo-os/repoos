@@ -8,8 +8,10 @@ area: [cli, web]
 assigned_to: ai
 created_by: ""
 branch: feat/repoos-shot-capture-the-app-target-for-m
+review_cli_override: cursor
+review_model_override: composer-2.5
 created_at: "2026-09-30T02:44:14Z"
-updated_at: "2026-09-30T04:23:23Z"
+updated_at: "2026-09-30T04:24:40Z"
 ---
 ## Problem
 
@@ -43,5 +45,7 @@ Shots are captured for every UI-visible task without relying on the agent rememb
 - 2026-09-30T02:44:14Z · created · unknown
 - 2026-09-30T03:28:15Z · status inbox→ready
 - 2026-09-30T03:28:16Z · status ready→active, branch
-- 2026-09-30T04:23:23Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
-- 2026-09-30T04:23:23Z · status review→active
+- 2026-09-30T04:24:23Z · review_cli_override, review_model_override
+- 2026-09-30T04:24:24Z · review_model_override
+- 2026-09-30T04:24:40Z · status active→review
+- 2026-09-30T04:24:40Z · status review→active

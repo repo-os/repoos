@@ -1,11 +1,10 @@
 ---
+updated_at: "2026-09-30T04:23:29Z"
+review_passes: 5
 id: "0592"
 title: Skip check gate (with actionable reminder) when a repo has no check plan
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: the opencode agent timed out after 900s
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -13,10 +12,9 @@ created_by: ""
 branch: feat/skip-check-gate-with-actionable-reminder
 cli_override: cursor
 model_override: composer-2.5
-review_model_override: opencode-go/mimo-v2.6-flash
+review_cli_override: cursor
+review_model_override: composer-2.5
 created_at: "2026-09-30T00:01:23Z"
-updated_at: "2026-09-30T03:56:03Z"
-review_passes: 4
 review_rounds: 2
 last_check_failure: "repoos check at 2026-09-30T01:29:36.315Z: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
@@ -90,3 +88,15 @@ Update `user-docs/check.md` (the "Bootstrapping a plan" paragraph and "When a re
 - 2026-09-30T03:36:23Z · needs_input
 - 2026-09-30T03:41:03Z · status active→review
 - 2026-09-30T03:56:03Z · needs_input
+- 2026-09-30T04:21:51Z · review_cli_override, review_model_override
+- 2026-09-30T04:21:56Z · review_cli_override
+- 2026-09-30T04:21:57Z · review_cli_override
+- 2026-09-30T04:22:09Z · review_cli_override
+- 2026-09-30T04:22:11Z · review_cli_override
+- 2026-09-30T04:22:12Z · review_cli_override
+- 2026-09-30T04:22:14Z · review_cli_override, review_model_override
+- 2026-09-30T04:22:16Z · review_cli_override, review_model_override
+- 2026-09-30T04:22:18Z · review_cli_override
+- 2026-09-30T04:22:27Z · review_model_override
+- 2026-09-30T04:22:29Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+
