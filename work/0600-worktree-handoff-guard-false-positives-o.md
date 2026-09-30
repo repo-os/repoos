@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 cli_override: cursor
-model_override: default
+model_override: composer-2.5
 created_at: "2026-09-30T10:24:58Z"
-updated_at: "2026-09-30T10:25:41Z"
+updated_at: "2026-09-30T10:25:44Z"
 ---
 ## Problem
 
@@ -36,3 +36,4 @@ Incident: 2026-09-30, #0599 after #0598 landed.
 
 - 2026-09-30T10:24:58Z · created · unknown
 - 2026-09-30T10:25:41Z · cli_override, model_override
+- 2026-09-30T10:25:44Z · model_override
