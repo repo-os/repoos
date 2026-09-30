@@ -593,6 +593,7 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
 .rvr-tabs {
   display: flex;
   gap: 4px;
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   background: var(--bg-subtle, rgba(255, 255, 255, 0.04));
   border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
   border-radius: 8px;
@@ -615,12 +616,14 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
   color: var(--txt);
 }
 .rvr-tab.active {
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   background: var(--bg-card, rgba(255, 255, 255, 0.08));
   color: var(--txt);
 }
 .rvr-codeblock {
   margin-top: 6px;
   padding: 10px 12px;
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   border: 1px solid var(--border, #2a2a2a);
   border-radius: 8px;
   background: var(--bg-subtle, rgba(255, 255, 255, 0.03));
@@ -632,6 +635,7 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
   color: var(--txt, inherit);
 }
 .rvr-codeblock--fail {
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   border-color: var(--red, #e05c5c);
   color: var(--red, #e05c5c);
 }
@@ -647,6 +651,7 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
   align-items: center;
   gap: 8px 12px;
   padding: 7px 10px;
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   border: 1px solid var(--border, #2a2a2a);
   border-radius: 8px;
   background: var(--bg-subtle, rgba(255, 255, 255, 0.03));
@@ -658,6 +663,7 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
   color: var(--txt, inherit);
 }
 .rvr-host-meta {
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   color: var(--txt-dim, #8a8a8a);
 }
 .rvr-host-state {
@@ -665,12 +671,15 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
   font-weight: 500;
 }
 .rvr-host-state--ok {
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   color: var(--green, #3fb950);
 }
 .rvr-host-state--bad {
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   color: var(--red, #e05c5c);
 }
 .rvr-host-state--idle {
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   color: var(--txt-dim, #8a8a8a);
 }
 </style>

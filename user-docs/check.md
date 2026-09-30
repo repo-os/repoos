@@ -79,6 +79,7 @@ or a JS build:
 | `ui-smoke` | Runs your smoke command | You declared none |
 | `css-layers` | No unlayered universal/bare-element selectors | No `[check] uiStylesheet`, or it isn't Tailwind v4 |
 | `theme-contrast` | Button gradients valid; token pairs meet ≥3:1 | No `uiStylesheet`/`themeScopes` |
+| `hardcoded-colors` | No `#hex`/`rgba(255,…)` literals in component `<style>` blocks without a `/* hardcode-ok: <reason> */` marker | No `[check] hardcodedColorDirs` |
 | `bare-require` | No bare `require` in ESM source | The package isn't `"type": "module"`, or no source root |
 | `task-assets` | No committed binaries under your task/input dirs | Never — it reads `workDir`/`inputsDir` |
 
@@ -138,6 +139,49 @@ The **UI smoke test** is a command only you can know. Declare it either way:
 With neither, the step skips with a clear message rather than pretending your
 UI was tested. RepoOS's own repo dogfoods this same mechanism — it declares a
 `smoke` script instead of being special-cased.
+
+## Hard-coded colors and the rendered contrast audit
+
+Token pairs can't see a component that styles itself. Two guards catch that
+class of bug, both opt-in through `[check]`:
+
+**`hardcoded-colors` (source).** Declares its roots with
+`[check] hardcodedColorDirs = ["src/ui-app/src"]` and scans every component
+`<style>` block (`vue`/`svelte`/`astro`/`html`) for `#hex` and `rgba(255,…)`
+literals. A literal is allowed when the rule carries a marker comment —
+`/* hardcode-ok: <reason> */` on the offending line or above it — which
+exempts the rest of that rule block. One reason documents one rule; a literal
+with no marker fails the step. Stylesheets are deliberately out of scope:
+their literals are the theme token vocabulary, which `theme-contrast` already
+checks.
+
+**Rendered contrast (this repo's `contrast:audit` script).** Where
+`theme-contrast` measures nine token pairs, the rendered audit boots the built
+app in headless WebKit and measures what actually renders: for every
+`[[check.themeScopes]]` scope in both light and dark, it opens a fixed set of
+screens (board, drawer tabs, Agents, Settings, Context, the new-task drawer,
+toasts), walks every visible text node, composites translucent ancestor
+backgrounds down to the first opaque color, and fails anything under the WCAG
+floor — 4.5:1 for body text, 3:1 for large text. Gradients are judged on their
+worst stop (the same convention as `theme-contrast`); raster images and
+gradient-clip text report as *unchecked* rather than guessed at; disabled
+components and fully transparent text are skipped (WCAG exempts both). The
+allowlist is `[[check.contrastExempts]]` (selector + reason) or a
+`data-contrast-ok` attribute on the element — never scattered ignores.
+
+Add it as a plain command step (it needs the build, like the smoke test):
+
+```toml
+[[check.steps]]
+name = "rendered-contrast"
+command = "bun run contrast:audit"
+requires = ["bun"]
+whenChanged = ["src/ui-app/**"]
+dependsOn = ["check-fmt:check", "check-lint", "build"]
+```
+
+It skips with install advice when Playwright/WebKit is missing, exactly like
+the smoke step.
 
 ## Profiles
 

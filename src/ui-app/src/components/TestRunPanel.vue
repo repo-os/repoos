@@ -172,6 +172,7 @@ watch(
 
 <style scoped>
 .test-run-panel {
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   background: var(--panel-gradient, linear-gradient(180deg, #0c1222, #080c16));
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -294,6 +295,7 @@ watch(
 }
 
 .trp-failures {
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   border: 1px solid var(--red-border-tint, rgba(255, 107, 125, 0.25));
   background: var(--red-tint);
   border-radius: 8px;
@@ -311,6 +313,7 @@ watch(
 }
 .trp-failure {
   padding: 5px 0;
+  /* hardcode-ok: border/shadow tint — decoration, never a text color */
   border-top: 1px solid rgba(255, 107, 125, 0.15);
   font-size: 12px;
 }
@@ -329,6 +332,7 @@ watch(
 
 .trp-log {
   margin: 0;
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   background: var(--md-body-bg, #070a12);
   border: 1px solid var(--border);
   border-radius: 8px;

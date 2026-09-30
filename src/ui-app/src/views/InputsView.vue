@@ -702,18 +702,22 @@ function tryOpenInput(ref: string, attempt: number): void {
   color: var(--cyan);
 }
 .state-reviewing {
+  /* hardcode-ok: theme-independent accent/status text color, verified by the rendered audit (#0596 triage) */
   color: #ffb454;
 }
 .state-processed {
+  /* hardcode-ok: theme-independent accent/status text color, verified by the rendered audit (#0596 triage) */
   color: #4ef0a8;
 }
 .input-status.new {
   color: var(--cyan);
 }
 .input-status.reviewing {
+  /* hardcode-ok: theme-independent accent/status text color, verified by the rendered audit (#0596 triage) */
   color: #ffb454;
 }
 .input-status.processed {
+  /* hardcode-ok: theme-independent accent/status text color, verified by the rendered audit (#0596 triage) */
   color: #4ef0a8;
 }
 .status-select {

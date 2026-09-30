@@ -497,6 +497,7 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
 }
 
 .debug-sync {
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   background: var(--panel-gradient, linear-gradient(180deg, #0c1222, #080c16));
   border: 1px solid var(--cyan-dim);
   border-radius: 12px;
@@ -546,10 +547,12 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
   margin: 10px 0 0;
   font-size: 11.5px;
   line-height: 1.45;
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   color: var(--yellow, #e6b450);
 }
 
 .debug-live {
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   background: var(--panel-gradient, linear-gradient(180deg, #0c1222, #080c16));
   border: 1px solid var(--cyan-dim);
   border-radius: 12px;
@@ -584,6 +587,7 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
 
 .debug-log {
   margin: 8px 0 0;
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   background: var(--md-body-bg, #070a12);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -629,6 +633,7 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
   cursor: pointer;
 }
 .debug-filter-btn.active {
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   border-color: var(--red-border-tint, rgba(255, 107, 125, 0.4));
   background: var(--red-tint);
   color: var(--red);
@@ -708,6 +713,7 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
   white-space: nowrap;
 }
 .debug-event-chip-infra {
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   border-color: var(--red-border-tint, rgba(255, 107, 125, 0.4));
   background: var(--red-tint);
   color: var(--red);
@@ -728,9 +734,11 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
 }
 
 .debug-level-warn {
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   border-left-color: var(--yellow, #e6b450);
 }
 .debug-level-warn .debug-event-title {
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   color: var(--yellow, #e6b450);
 }
 .debug-level-error {

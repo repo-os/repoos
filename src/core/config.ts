@@ -1108,7 +1108,8 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     // A row without both halves is dropped rather than exempting silently: an
     // exemption nobody can explain is exactly what this allowlist exists to
     // prevent.
-    const checkContrastExempts = parsed["check.contrastExempts"] ?? parsed["checks.contrastExempts"];
+    const checkContrastExempts =
+      parsed["check.contrastExempts"] ?? parsed["checks.contrastExempts"];
     if (Array.isArray(checkContrastExempts)) {
       const exempts: CheckContrastExempt[] = [];
       for (const raw of checkContrastExempts) {

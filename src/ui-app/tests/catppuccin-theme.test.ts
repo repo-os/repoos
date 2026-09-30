@@ -20,7 +20,23 @@ import { spawnSync } from "node:child_process";
 import { useConfigStore, DESIGN_THEMES } from "../src/stores/config";
 import * as apiMod from "../src/api";
 import type { ConfigField } from "../src/types";
-import { CATPPUCCIN_LATTE, CATPPUCCIN_MOCHA } from "../../../scripts/catppuccin-palette.mjs";
+import {
+  CATPPUCCIN_LATTE,
+  CATPPUCCIN_MOCHA,
+  type CatppuccinRole,
+} from "../../../scripts/catppuccin-palette.mjs";
+import { latteWcagOverrides } from "../../../scripts/gen-catppuccin-theme.mjs";
+
+/**
+ * Latte's canonical ramp misses the 4.5:1 rendered floor on its own light
+ * surfaces (#0596), so the generator darkens these roles — hue preserved —
+ * before emitting the LIGHT block. Everything else stays canonical, and
+ * Mocha's slots stay one-for-one with the palette; the assertions below
+ * compare Latte against the adjusted value.
+ */
+const LATTE_ADJUST = latteWcagOverrides(CATPPUCCIN_LATTE);
+const latte = (role: CatppuccinRole): string =>
+  LATTE_ADJUST.get(CATPPUCCIN_LATTE[role].toLowerCase()) ?? CATPPUCCIN_LATTE[role];
 
 const api = vi.spyOn(apiMod, "api");
 
@@ -162,7 +178,7 @@ describe("the checked-in Catppuccin palette matches the shikijs source of truth"
     // The neutral ramp roles the token map actually binds to a token. Not the
     // whole 12-step ramp: subtext1 and surface0 have no token of their own in
     // the app's vocabulary (the same is true of gruvbox and classic).
-    const BOUND: [string, string][] = [
+    const BOUND: [string, CatppuccinRole][] = [
       ["--bg", "base"],
       ["--bg-2", "mantle"],
       ["--panel-solid", "mantle"],
@@ -183,8 +199,10 @@ describe("the checked-in Catppuccin palette matches the shikijs source of truth"
     for (const [selector, name, palette] of scopes) {
       const decls = readBlock(stylesheet, selector);
       expect(Object.keys(decls).length, `${name} block parsed`).toBeGreaterThan(50);
+      const isLatte = palette === CATPPUCCIN_LATTE;
       for (const [token, role] of BOUND) {
-        expect(decls[token], `${name} ${token} is ${role}`).toBe(palette[role]);
+        const expected = isLatte ? latte(role) : palette[role];
+        expect(decls[token], `${name} ${token} is ${role}`).toBe(expected);
       }
       // Borders come from the palette's own surface2, not a neutral gray —
       // that tint is Catppuccin's signature and the reason it reads as itself.
@@ -208,11 +226,11 @@ describe("the checked-in Catppuccin palette matches the shikijs source of truth"
     const dark = readBlock(stylesheet, ':root[data-ui-theme="catppuccin"]');
     const light = readBlock(stylesheet, ':root[data-ui-theme="catppuccin"][data-theme="light"]');
     expect(dark["--cyan"]).toBe(CATPPUCCIN_MOCHA.blue);
-    expect(light["--cyan"]).toBe(CATPPUCCIN_LATTE.blue);
+    expect(light["--cyan"]).toBe(latte("blue"));
     expect(dark["--violet"]).toBe(CATPPUCCIN_MOCHA.mauve);
-    expect(light["--violet"]).toBe(CATPPUCCIN_LATTE.mauve);
+    expect(light["--violet"]).toBe(latte("mauve"));
     expect(dark["--amber"]).toBe(CATPPUCCIN_MOCHA.peach);
-    expect(light["--amber"]).toBe(CATPPUCCIN_LATTE.peach);
+    expect(light["--amber"]).toBe(latte("peach"));
     expect(dark["--green"]).toBe(CATPPUCCIN_MOCHA.green);
     expect(dark["--red"]).toBe(CATPPUCCIN_MOCHA.red);
   });
