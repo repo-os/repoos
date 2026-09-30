@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/server-tracked-release-notes-generation-
 created_at: "2026-09-30T13:43:09Z"
-updated_at: "2026-09-30T17:55:00Z"
+updated_at: "2026-09-30T18:48:43Z"
 ---
 ## Problem
 `POST /api/release/notes` (`generateReleaseNotes` in `src/server/routes/release.ts`) is a single blocking HTTP request (1-3 min). If the user closes the modal or navigates away, the agent still finishes and caches the draft, but the UI gets no result, shows no in-progress state on return, and a second click starts a duplicate agent run.
@@ -31,9 +31,34 @@ Server: duplicate POST while running doesn't start a second run; failure state s
 - The same filtered list should feed the prompt, so bookkeeping commits do not show up in notes.
 - Test: adding a task-file-only commit keeps the cache hit; a source commit invalidates it.
 
+## Shots
+
+```json
+[
+  {
+    "target": "default",
+    "route": "/releases",
+    "label": "Releases page",
+    "steps": [{ "waitMs": 800 }]
+  },
+  {
+    "target": "default",
+    "route": "/releases",
+    "selector": ".release-modal",
+    "label": "Cut-a-release modal — optional notes field and Generate with AI (which now starts a server-tracked run)",
+    "steps": [{ "click": ".rel-next-release .rel-actions button" }, { "waitMs": 700 }]
+  }
+]
+```
+
+The mid-run "Drafting…" state and the auto-fill on completion are covered by
+store tests (`release-cut-next.test.ts`); we deliberately don't trigger a real
+agent run in the shot capture.
+
 ## Activity
 
 - 2026-09-30T13:43:09Z · created · unknown
 - 2026-09-30T14:04:51Z · assigned_to, body
 - 2026-09-30T17:54:59Z · status inbox→ready
 - 2026-09-30T17:55:00Z · status ready→active, branch
+- 2026-09-30T18:48:43Z · body
