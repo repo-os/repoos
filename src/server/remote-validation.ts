@@ -58,6 +58,7 @@ import {
   resolveRemoteHosts,
 } from "../core/remote-hosts.js";
 import type { Logger } from "../core/logger.js";
+import { remoteRunHistoryMeta } from "../core/check-failure-summary.js";
 import { getCheckStore, type CheckRunPhase } from "../core/check-store.js";
 import type { CheckSummary } from "./done.js";
 import { redactSecrets, stripAnsi } from "./done.js";
@@ -1166,6 +1167,7 @@ export class RemoteValidationRunner implements RemoteValidator {
         runMeta.machine,
         classifyRunOutcome(summary),
         summary.detail,
+        summary,
       );
       return summary;
     } finally {
@@ -2210,9 +2212,19 @@ function recordRemoteRunHistory(
   machine: string | null,
   outcome: "pass" | "fail" | "cancelled",
   detail?: string | null,
+  summary?: CheckSummary,
 ): void {
   try {
     const storeRoot = process.env.REPOOS_CHECK_STORE_ROOT?.trim() || config.root;
+    const meta = summary
+      ? remoteRunHistoryMeta(outcome, {
+          output: summary.output,
+          detail: detail ?? summary.detail,
+          transient: summary.transient,
+          configError: summary.configError,
+          cancelled: summary.cancelled,
+        })
+      : remoteRunHistoryMeta(outcome, { detail: detail ?? null });
     getCheckStore(storeRoot, config.cacheDir).record({
       taskId: /^\d+$/.test(opts.taskId) ? opts.taskId : null,
       phase: opts.phase ?? "pre-review",
@@ -2222,9 +2234,10 @@ function recordRemoteRunHistory(
       startedAt: new Date(startedAt).toISOString(),
       durationMs: outcome === "cancelled" ? null : Math.max(0, Date.now() - startedAt),
       outcome,
-      failedStep: outcome === "pass" ? null : "remote-validation",
+      failedStep: meta.failedStep,
       skippedSteps: [],
       detail: detail ?? null,
+      failedTests: meta.failedTests,
     });
   } catch {
     /* never fail the gate on a history write */
@@ -2441,6 +2454,7 @@ export class TailscaleRunner implements RemoteValidator {
         slot.host.host,
         classifyRunOutcome(summary),
         summary.detail,
+        summary,
       );
       return summary;
     } finally {

@@ -1,3 +1,5 @@
+import { parseCheckResults } from "./check-results.js";
+
 /**
  * Pull the useful, human-readable diagnosis out of a Vitest failure block.
  *
@@ -61,4 +63,52 @@ export function extractFailedTests(output: string): string[] {
     if (seen.size >= MAX_FAILED_TESTS) break;
   }
   return [...seen];
+}
+
+/** Fields written into `.repoos/checks.db` for a remote validation run (#0589). */
+export interface RemoteRunHistoryMeta {
+  failedStep: string | null;
+  failedTests: string[];
+}
+
+/**
+ * Derive `failedStep` and `failedTests` for a remote check-run history row.
+ * Dispatch, transport, and infra failures stay on `remote-validation`; a real
+ * gate failure from the runner names the step (e.g. `tests`) and lists Vitest
+ * failures when the output still carries them.
+ */
+export function remoteRunHistoryMeta(
+  outcome: "pass" | "fail" | "cancelled",
+  opts: {
+    output?: string;
+    detail?: string | null;
+    transient?: boolean;
+    configError?: boolean;
+    cancelled?: boolean;
+  },
+): RemoteRunHistoryMeta {
+  if (outcome === "pass") return { failedStep: null, failedTests: [] };
+
+  const combined = [opts.output, opts.detail].filter(Boolean).join("\n");
+
+  if (outcome === "cancelled" || opts.cancelled) {
+    return { failedStep: "remote-validation", failedTests: [] };
+  }
+  if (opts.transient || opts.configError) {
+    return { failedStep: "remote-validation", failedTests: extractFailedTests(combined) };
+  }
+
+  const failedTests = extractFailedTests(combined);
+  const parsed = parseCheckResults(combined);
+  if (parsed) {
+    const failed = parsed.filter((r) => r.status === "failed");
+    if (failed.length > 0) {
+      return { failedStep: failed[0]!.name, failedTests };
+    }
+  }
+  if (failedTests.length > 0) return { failedStep: "tests", failedTests };
+  if (/error TS\d+|Failed to compile|tsc.*(?:error|failed)|Build failed/i.test(combined)) {
+    return { failedStep: "build", failedTests: [] };
+  }
+  return { failedStep: "remote-validation", failedTests: [] };
 }
