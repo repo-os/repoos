@@ -36,6 +36,7 @@ import { describeCloseOutFailure, classifyFailure } from "../core/close-out-fail
 import { parseTask, serializeTask, utcTimestamp } from "../core/task.js";
 import { commitTaskFile } from "../core/git.js";
 import type { IntegrationJob } from "./integration-job.js";
+import { CANCEL_REASON } from "./integration-orchestrator.js";
 import { transcriptToText } from "./skill-suggestions.js";
 import { redactSecrets } from "./routes/debugger.js";
 import {
@@ -99,9 +100,7 @@ export function doneErrorTldrFingerprint(
   return `done-error\u0000${step}\u0000${message}\u0000${detail ?? ""}`;
 }
 
-const CLOSE_OUT_CANCELLED = "close-out cancelled by user";
-
-const DIAGNOSABLE_CLOSE_OUT_KINDS = new Set(["conflict", "validating", "timeout"]);
+const DIAGNOSABLE_CLOSE_OUT_KINDS = new Set(["conflict", "validating"]);
 
 /** Whether a failed close-out job reason is worth a Debugger one-shot (#0595). */
 export function isDiagnosableCloseOutFailure(
@@ -109,7 +108,7 @@ export function isDiagnosableCloseOutFailure(
   reason: string | undefined,
 ): boolean {
   const clean = reason?.trim() ?? "";
-  if (!clean || clean === CLOSE_OUT_CANCELLED) return false;
+  if (!clean || clean === CANCEL_REASON) return false;
   return DIAGNOSABLE_CLOSE_OUT_KINDS.has(classifyFailure(phase, clean));
 }
 
