@@ -1,7 +1,13 @@
 import { computed, reactive, ref, watch } from "vue";
 import { defineStore } from "pinia";
-import { api, ApiError, JSON_OPTS } from "../api";
-import type { Agent, AgentsMeta, ConfigField, ModelSourcesResponse } from "../types";
+import { api, ApiError, JSON_OPTS, MODEL_API_TIMEOUT_MS } from "../api";
+import type {
+  Agent,
+  AgentsMeta,
+  ConfigField,
+  ModelSourceResult,
+  ModelSourcesResponse,
+} from "../types";
 
 /** claude code takes model aliases, not the provider/model ids other CLIs use. */
 const CLAUDE_CODE_MODELS = ["default", "opus", "sonnet", "haiku"] as const;
@@ -27,6 +33,68 @@ export interface ConfigResponse {
   config: Record<string, unknown>;
   schema: ConfigField[];
   agentsMeta?: AgentsMeta;
+}
+
+// ---- Live model lists, one independent request per CLI (#0593) ----
+
+/** Lifecycle of one CLI's model list, tracked independently of the others. */
+export type ModelListStatus = "loading" | "loaded" | "failed";
+
+export interface ModelListState {
+  status: ModelListStatus;
+  /**
+   * Why the probe failed — the server-reported reason (binary not found on
+   * PATH, timed out, not signed in) or the transport error.
+   */
+  error?: string;
+  /** The visible list is the persisted/previous one, kept after a failure. */
+  stale?: boolean;
+}
+
+/** A user-facing notice for one CLI's model list (shown above the dropdown). */
+export interface ModelListNotice {
+  kind: "loading" | "failed";
+  text: string;
+  /** True when the shown list is saved-but-stale because a refresh failed. */
+  stale: boolean;
+}
+
+/** localStorage key of the last good model list per CLI. */
+const MODELS_CACHE_KEY = "repoos.models.byCli";
+
+/**
+ * Read the persisted last-good lists, defensively: private mode, quota and
+ * corrupted JSON all degrade to "no cache" rather than throwing (#0593).
+ */
+function readPersistedModels(): Record<string, string[]> {
+  try {
+    const raw = localStorage.getItem(MODELS_CACHE_KEY);
+    if (!raw) return {};
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return {};
+    const out: Record<string, string[]> = {};
+    for (const [cli, entry] of Object.entries(parsed as Record<string, unknown>)) {
+      const models = (entry as { models?: unknown } | null)?.models;
+      if (Array.isArray(models) && models.every((m) => typeof m === "string")) out[cli] = models;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Persist the last good lists, shaped like `readPersistedModels` expects so a
+ * reload can actually re-read them; storage failures leave it session-only.
+ */
+function writePersistedModels(byCli: Record<string, string[]>): void {
+  try {
+    const payload: Record<string, { models: string[]; at: number }> = {};
+    for (const [cli, models] of Object.entries(byCli)) payload[cli] = { models, at: Date.now() };
+    localStorage.setItem(MODELS_CACHE_KEY, JSON.stringify(payload));
+  } catch {
+    /* private mode / quota — session-only cache is fine */
+  }
 }
 
 /** A design theme (the `data-ui-theme` applied to <html>), with its display label. */
@@ -119,33 +187,133 @@ export const useConfigStore = defineStore("config", () => {
   const themeFavoritesNotice = ref("");
   const agents = ref<Agent[]>([]);
   const agentsMeta = ref<AgentsMeta>({ clis: [], models: [], defaults: [], skills: [] });
-  // Live model lists per CLI, probed from /api/models. Shared here rather than
-  // held per-view so the Agents page and the per-task pickers offer exactly
-  // the same options from one cache and one fetch.
-  const liveModelsByCli = ref<Record<string, string[]>>({});
-  const modelsLoaded = ref(false);
-  const modelsLoading = ref(false);
+  // Live model lists per CLI, fetched from /api/models with one independent
+  // request per CLI (#0593). Shared here rather than held per-view so the
+  // Agents page and the per-task pickers offer exactly the same options from
+  // one cache. The last good list per CLI is hydrated from localStorage at
+  // startup, so a reload shows saved models immediately while the
+  // revalidation runs in the background.
+  const liveModelsByCli = ref<Record<string, string[]>>({ ...readPersistedModels() });
+  /** Per-CLI status so one slow/failing CLI never blanks the other dropdowns. */
+  const modelStatesByCli = ref<Record<string, ModelListState>>({});
+  const modelsLoading = computed(() =>
+    Object.values(modelStatesByCli.value).some((s) => s.status === "loading"),
+  );
 
-  async function loadModels(refresh = false): Promise<void> {
-    modelsLoading.value = true;
+  /** Merge one probe result into the lists + states, keeping a good old list. */
+  function applyModelSource(cli: string, source: ModelSourceResult): void {
+    const hadList = Object.prototype.hasOwnProperty.call(liveModelsByCli.value, cli);
+    if (source.error) {
+      // Don't blank a good previous list with the failed probe's minimal
+      // answer — keep it (marked stale) and surface the reason instead.
+      if (!hadList) liveModelsByCli.value = { ...liveModelsByCli.value, [cli]: source.models };
+      modelStatesByCli.value = {
+        ...modelStatesByCli.value,
+        [cli]: { status: "failed", error: source.error, stale: hadList },
+      };
+      return;
+    }
+    liveModelsByCli.value = { ...liveModelsByCli.value, [cli]: source.models };
+    modelStatesByCli.value = { ...modelStatesByCli.value, [cli]: { status: "loaded" } };
+    writePersistedModels(liveModelsByCli.value);
+  }
+
+  /** Fetch one CLI's list. A failure affects only this CLI's state (#0593). */
+  async function loadCliModels(cli: string, refresh: boolean): Promise<void> {
+    modelStatesByCli.value = { ...modelStatesByCli.value, [cli]: { status: "loading" } };
     try {
-      const res = await api<ModelSourcesResponse>(`/api/models${refresh ? "?refresh=1" : ""}`);
-      liveModelsByCli.value = Object.fromEntries(
-        Object.entries(res.byCli).map(([cli, source]) => [cli, source.models]),
-      );
-      modelsLoaded.value = true;
-    } catch {
-      liveModelsByCli.value = {};
-      modelsLoaded.value = false;
-    } finally {
-      modelsLoading.value = false;
+      const qs = new URLSearchParams({ cli });
+      if (refresh) qs.set("refresh", "1");
+      const res = await api<ModelSourcesResponse>(`/api/models?${qs.toString()}`, {
+        timeoutMs: MODEL_API_TIMEOUT_MS,
+      });
+      const source = res.byCli[cli];
+      if (!source) {
+        // No adapter is registered for this CLI — there is no live list to
+        // wait for, so settle it and let the static fallback stand.
+        modelStatesByCli.value = { ...modelStatesByCli.value, [cli]: { status: "loaded" } };
+        return;
+      }
+      applyModelSource(cli, source);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      const hadList = Object.prototype.hasOwnProperty.call(liveModelsByCli.value, cli);
+      // Keep whatever list we already have (persisted or previous) and say
+      // "couldn't refresh" instead of silently emptying the dropdown (#0593).
+      modelStatesByCli.value = {
+        ...modelStatesByCli.value,
+        [cli]: { status: "failed", error: message, stale: hadList },
+      };
     }
   }
 
   /**
+   * Unfiltered fallback for when the config hasn't loaded yet (no CLI list to
+   * iterate): one request whose results are split into per-CLI states.
+   */
+  async function loadAllModels(refresh: boolean): Promise<void> {
+    try {
+      const res = await api<ModelSourcesResponse>(`/api/models${refresh ? "?refresh=1" : ""}`, {
+        timeoutMs: MODEL_API_TIMEOUT_MS,
+      });
+      for (const [cli, source] of Object.entries(res.byCli ?? {})) applyModelSource(cli, source);
+    } catch {
+      // No CLI list to attach the failure to — states stay as they are and
+      // the static fallback keeps the dropdowns usable.
+    }
+  }
+
+  /**
+   * (Re)load every CLI's model list, in parallel. Each dropdown fills as its
+   * own request lands; a slow or failing CLI only affects its own list.
+   * `refresh` bypasses both the server's TTL cache (`?refresh=1`) and, on
+   * success, overwrites the persisted browser copy.
+   */
+  async function loadModels(refresh = false): Promise<void> {
+    const clis = [...new Set(agentsMeta.value.clis)];
+    if (!clis.length) {
+      await loadAllModels(refresh);
+      return;
+    }
+    await Promise.all(clis.map((cli) => loadCliModels(cli, refresh)));
+  }
+
+  /**
+   * Retry one CLI's list after a failure. Always bypasses the server cache —
+   * a retry wants a fresh probe, not the cached reason it just failed with.
+   */
+  function refreshModelsForCli(cli: string): Promise<void> {
+    return loadCliModels(cli, true);
+  }
+
+  /**
+   * The visible notice for one CLI's list: "Loading models…" while the probe
+   * runs, a reason + Retry when it fails, "couldn't refresh … saved list"
+   * when a revalidation failed over a kept list. `null` once loaded (or for a
+   * CLI that was never requested, e.g. a legacy value with no probe at all).
+   */
+  function modelNoticeFor(cli: string): ModelListNotice | null {
+    const state = modelStatesByCli.value[cli];
+    if (!state) return null;
+    if (state.status === "loading")
+      return { kind: "loading", text: "Loading models…", stale: false };
+    if (state.status !== "failed") return null;
+    const reason = state.error ? ` (${state.error})` : "";
+    return state.stale
+      ? {
+          kind: "failed",
+          text: `Couldn't refresh models${reason} — showing your saved list.`,
+          stale: true,
+        }
+      : { kind: "failed", text: `Couldn't load models${reason}`, stale: false };
+  }
+
+  /**
    * The models offered for a CLI: its live-probed list, falling back to the
-   * static `agentsMeta.models` until the probe lands, plus `saved` so a value
-   * already on a task or agent is never silently dropped from its own dropdown.
+   * static `agentsMeta.models` while that CLI has no live answer yet, plus
+   * `saved` so a value already on a task or agent is never silently dropped
+   * from its own dropdown. The static fallback is only ever shown with a
+   * loading/failed notice attached (#0593) — never passed off as the live list.
    */
   function modelsFor(
     cli: string,
@@ -165,7 +333,10 @@ export const useConfigStore = defineStore("config", () => {
     }
     push("default");
     for (const m of liveModelsByCli.value[cli] ?? []) push(m);
-    if (!modelsLoaded.value) for (const m of agentsMeta.value.models) push(m);
+    const hasLiveList = cli in liveModelsByCli.value;
+    if (!hasLiveList && modelStatesByCli.value[cli]?.status !== "loaded") {
+      for (const m of agentsMeta.value.models) push(m);
+    }
     if (saved) push(saved);
     return out;
   }
@@ -174,12 +345,12 @@ export const useConfigStore = defineStore("config", () => {
    * Whether `model` is still a real option for `cli`. Unlike `modelsFor` this
    * deliberately ignores the `saved` fallback — it answers "can this CLI still
    * run this model?", used to decide if a remembered pin is safe to reapply
-   * (#0342). A probed CLI whose live list hasn't landed yet can't be judged, so
-   * it reports true rather than risk destroying a deliberate pin over a
-   * transient model-probe failure.
+   * (#0342). A CLI whose live list hasn't settled (still probing, or failed)
+   * can't be judged, so it reports true rather than risk destroying a
+   * deliberate pin over a transient model-probe failure.
    */
   function isKnownModelForCli(cli: string, model: string): boolean {
-    if (!modelsLoaded.value) return true;
+    if (modelStatesByCli.value[cli]?.status !== "loaded") return true;
     return modelsFor(cli).some((m) => m.value === model);
   }
   let themeAnimTimer: ReturnType<typeof setTimeout> | undefined;
@@ -652,9 +823,11 @@ export const useConfigStore = defineStore("config", () => {
     agents,
     agentsMeta,
     liveModelsByCli,
-    modelsLoaded,
+    modelStatesByCli,
+    modelNoticeFor,
     modelsLoading,
     loadModels,
+    refreshModelsForCli,
     modelsFor,
     isKnownModelForCli,
     columnLabels,

@@ -10318,6 +10318,52 @@
   font-family: "JetBrains Mono", monospace;
 }
 
+/* Per-CLI model list state (#0593): "Loading models…" while the probe runs,
+   or the reason it failed with a Retry. Rendered inside the (body-teleported)
+   Coding Agent + Model modal and next to the Agents page Refresh button. */
+.am-list-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 24px 0;
+  padding: 8px 12px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+.am-list-notice-loading {
+  border: 1px solid var(--border);
+  background: var(--panel-solid);
+  color: var(--txt-dim);
+}
+.am-list-notice-failed {
+  border: 1px solid var(--red-border-tint);
+  background: var(--red-tint);
+  color: var(--red);
+}
+.am-list-notice-text {
+  min-width: 0;
+}
+.am-list-notice-retry {
+  flex: none;
+  padding: 2px 10px;
+  border-radius: 7px;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.15s;
+}
+.am-list-notice-retry:hover {
+  background: var(--panel-solid);
+}
+/* Agents page strip: sits in the flow under the section header, not the modal. */
+.agents-model-failure {
+  margin: 4px 0 8px;
+}
+
 /* Model search */
 .am-model-search {
   padding: 14px 24px 0;

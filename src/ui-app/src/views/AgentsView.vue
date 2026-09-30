@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { Star } from "lucide-vue-next";
-import { useConfigStore } from "../stores/config";
+import { useConfigStore, type ModelListNotice } from "../stores/config";
 import { useDocsStore } from "../stores/docs";
 import { api, JSON_OPTS } from "../api";
 import { copyToClipboard } from "../lib/clipboard";
@@ -10,7 +10,6 @@ import type {
   Agent,
   AgentUpdate,
   DetectedAgent,
-  ModelSourcesResponse,
   ModelTestResponse,
   ModelTestResult,
 } from "../types";
@@ -177,11 +176,15 @@ const clis = computed(() =>
   config.agentsMeta.clis.map((c) => ({ value: c, label: CLI_LABELS[c] ?? c })),
 );
 
-// ---- Live model list (opencode) ----
-// Fetched on mount from /api/models; the dropdown shows the static fallback
-// (config.agentsMeta.models) plus whatever the live probe returned. A Refresh
-// button re-probes with --refresh. When the endpoint is unavailable the page
-// degrades to the static list exactly as before.
+// ---- Live model list per CLI (#0593) ----
+// The config store requests each CLI's list separately and in parallel from
+// /api/models?cli=<cli> and fills each dropdown as its result lands, so one
+// slow or failing CLI only affects its own list. Every picker shows its own
+// state (loading / failed with a reason and Retry) inside the Coding Agent +
+// Model modal; failed CLIs are also summarized next to Refresh models below.
+// Refresh models re-probes with ?refresh=1, bypassing the server's ~60s TTL
+// cache, and the last good list per CLI is persisted in the browser so a
+// reload shows saved models immediately while it revalidates.
 
 const modelTests = ref<Record<string, ModelTestResult>>({});
 const testing = ref<Record<string, boolean>>({});
@@ -189,6 +192,13 @@ const testing = ref<Record<string, boolean>>({});
 // per-task pickers in TaskDrawer offer identical options (0064).
 const modelsFor = config.modelsFor;
 const modelsLoading = computed(() => config.modelsLoading);
+
+/** CLIs whose model list failed, shown with a Retry next to Refresh (#0593). */
+const failedModelNotices = computed(() =>
+  config.agentsMeta.clis
+    .map((cli) => ({ cli, notice: config.modelNoticeFor(cli) }))
+    .filter((e): e is { cli: string; notice: ModelListNotice } => e.notice?.kind === "failed"),
+);
 
 function testKey(a: Agent): string {
   return `${a.name}\u0000${a.cli}\u0000${a.model}`;
@@ -702,11 +712,27 @@ onUnmounted(() => {
               size="sm"
               style="margin-left: auto"
               :disabled="modelsLoading"
-              title="Re-probe opencode's live model list (opencode models --refresh)"
+              title="Re-probe every CLI's live model list (bypasses the cache)"
               @click="loadModels(true)"
             >
               {{ modelsLoading ? "Refreshing…" : "Refresh models" }}
             </Button>
+          </div>
+          <div
+            v-for="f in failedModelNotices"
+            :key="f.cli"
+            class="am-list-notice am-list-notice-failed agents-model-failure"
+            role="status"
+            data-testid="agents-model-failure"
+          >
+            <span class="am-list-notice-text">{{ f.cli }}: {{ f.notice.text }}</span>
+            <button
+              type="button"
+              class="am-list-notice-retry"
+              @click="config.refreshModelsForCli(f.cli)"
+            >
+              Retry
+            </button>
           </div>
           <div class="agent-desc">
             Headless task-engine roles that run the roadmap. Toggle them on or off and pick their
