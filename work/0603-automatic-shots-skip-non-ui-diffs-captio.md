@@ -2,7 +2,7 @@
 id: "0603"
 title: "Automatic shots: skip non-UI diffs, caption why, support highlights"
 type: bug
-status: active
+status: ready
 priority: p2
 area: [server, web]
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/automatic-shots-skip-non-ui-diffs-captio
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-30T13:19:31Z"
-updated_at: "2026-09-30T17:53:23Z"
+updated_at: "2026-09-30T18:26:36Z"
 ---
 ## Problem
 
@@ -39,3 +39,4 @@ Automatic shot capture at handoff (#0594) produces screenshots that show nothing
 - 2026-09-30T17:53:21Z · review_model_override
 - 2026-09-30T17:53:21Z · status inbox→ready
 - 2026-09-30T17:53:23Z · status ready→active, branch
+- 2026-09-30T18:26:36Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
