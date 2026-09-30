@@ -2,16 +2,16 @@
 id: "0590"
 title: Add Cut Next shortcut and cache AI release notes in release modal
 type: feature
-status: ready
+status: active
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/add-cut-next-shortcut-and-cache-ai-relea
 model_override: opencode-go/mimo-v2.6-flash
 review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-29T23:25:13Z"
-updated_at: "2026-09-30T00:03:25Z"
+updated_at: "2026-09-30T00:03:27Z"
 ---
 ## Problem
 
@@ -101,3 +101,4 @@ It's annoying to always have to type the new version, but it is helpful to have 
 - 2026-09-29T23:26:16Z · status inbox→ready
 - 2026-09-30T00:03:21Z · model_override
 - 2026-09-30T00:03:25Z · review_model_override
+- 2026-09-30T00:03:27Z · status ready→active, branch
