@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-30T06:46:58Z"
+review_passes: 2
 id: "0598"
 title: Protect a task worktree from edits after handoff to review
 type: feat
@@ -13,9 +15,7 @@ model_override: composer-2.5
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-30T05:01:28Z"
-updated_at: "2026-09-30T06:46:08Z"
 review_rounds: 1
-review_passes: 1
 ---
 ## Problem
 #0594 was signed off (reviewer: good to go at 12:29) and Move to done started at 12:36. At 12:37 four source files in its worktree were edited by something outside the runner (engineer and reviewer logs are silent then). Close-out merged only the committed branch tip, kept the dirty worktree, and asked for input. The edits (real bug fixes) did not land and nobody noticed until cleanup. This has reportedly happened several times. Nothing stops writers to a task worktree once the task is in review, and close-out does not check that the tree it validated is the tree it publishes.
@@ -57,3 +57,4 @@ chmod -R a-w or immutable flags on the worktree would block edits, but it breaks
 - 2026-09-30T06:46:03Z · review_cli_override, review_model_override
 - 2026-09-30T06:46:04Z · review_model_override
 - 2026-09-30T06:46:08Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+
