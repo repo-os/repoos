@@ -2,7 +2,7 @@
 id: "0604"
 title: "Releases modal: tell users notes/cut runs can be left and revisited"
 type: chore
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -12,7 +12,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: opencode-go/hy3
 created_at: "2026-09-30T13:42:54Z"
-updated_at: "2026-09-30T19:17:16Z"
+updated_at: "2026-09-30T19:39:02Z"
 ---
 ## Problem
 In the Cut a release modal (`src/ui-app/src/views/ReleasesView.vue`) nothing says the user can leave while work continues.
@@ -42,3 +42,5 @@ Server-tracked notes runs (separate task) and notifications (separate task).
 - 2026-09-30T19:11:55Z · handoff failed · task-file handoff failed at check · repoos check failed: ⏭ tests  — skipped — test suite ran on the remote validation runner (REPOOS_SKIP_TESTS=1) · ✔ ui-smoke  — ran package.json smoke script · ⏭ user-docs-build  — skipped — no changed path matches user-docs/** · ⏭ landing-build  — skipped — no changed path matches landing/** · ⏭ telegram-manager-build  — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test  — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency  — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-icon-transparency.sh · 1 check(s) failed.
 - 2026-09-30T19:17:16Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · repoos check failed: ⏭ tests  — skipped — test suite ran on the remote validation runner (REPOOS_SKIP_TESTS=1) · ✔ ui-smoke  — ran package.json smoke script · ⏭ user-docs-build  — skipped — no changed path matches user-docs/** · ⏭ landing-build  — skipped — no changed path matches landing/** · ⏭ telegram-manager-build  — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test  — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency  — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-icon-transparency.sh · 1 check(s) failed. · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-09-30T19:17:16Z · status review→active
+- 2026-09-30T19:33:02Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-09-30T19:39:02Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · repoos check failed: ⏭ tests  — skipped — test suite ran on the remote validation runner (REPOOS_SKIP_TESTS=1) · ✔ ui-smoke  — ran package.json smoke script · ⏭ user-docs-build  — skipped — no changed path matches user-docs/** · ⏭ landing-build  — skipped — no changed path matches landing/** · ⏭ telegram-manager-build  — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test  — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency  — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-icon-transparency.sh · 1 check(s) failed. · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
