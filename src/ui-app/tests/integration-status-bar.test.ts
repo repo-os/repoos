@@ -124,6 +124,7 @@ describe("IntegrationStatusBar", () => {
       checkPlan: {
         source: "declared",
         defaultProfile: "full",
+        errors: [],
         steps: [
           {
             name: "go-build",
@@ -185,7 +186,7 @@ describe("IntegrationStatusBar", () => {
     const ui = useUiStore();
     repo.integration = {
       ...activeSnapshot(),
-      checkPlan: { source: "empty", defaultProfile: "default", steps: [] },
+      checkPlan: { source: "empty", defaultProfile: "default", steps: [], errors: [] },
     };
     ui.setIntegrationBarCollapsed(false);
     const fetchMock = vi.fn(async (_url: string, _init?: RequestInit): Promise<Response> => {
@@ -222,12 +223,38 @@ describe("IntegrationStatusBar", () => {
     const repo = useRepoStore();
     repo.integration = {
       ...idleSnapshot(),
-      checkPlan: { source: "empty", defaultProfile: "default", steps: [] },
+      checkPlan: { source: "empty", defaultProfile: "default", steps: [], errors: [] },
     };
     const wrapper = render();
     await nextTick();
     // Idle + auto-collapsed: the strip lives only in the expanded bar.
     expect(wrapper.find(".ibar-plan-empty").exists()).toBe(false);
+  });
+
+  it("withholds the no-checks strip when the plan is broken and says why in the tooltip (#0592)", async () => {
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    repo.integration = {
+      ...activeSnapshot(),
+      checkPlan: {
+        source: "empty",
+        defaultProfile: "default",
+        steps: [],
+        errors: ["[check] declares [[check.steps]] but no row is usable"],
+      },
+    };
+    ui.setIntegrationBarCollapsed(false);
+    const wrapper = render();
+    await nextTick();
+
+    // A broken declared plan fails red — it is NOT "no checks configured".
+    expect(wrapper.find(".ibar-plan-empty").exists()).toBe(false);
+
+    await wrapper.findAll(".stage")[3].trigger("mouseenter");
+    const text = wrapper.get(".stage-pane").text();
+    expect(text).toMatch(/plan is broken/);
+    expect(text).toContain("FAILS red");
+    expect(text).toContain("no row is usable");
   });
 
   it("shows a stage's description in the pane and hides it on mouseleave (#0460)", async () => {

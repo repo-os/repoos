@@ -775,6 +775,14 @@ export interface CheckPlanInfo {
   source: "declared" | "legacy" | "inferred" | "empty";
   defaultProfile: string;
   steps: CheckPlanStep[];
+  /**
+   * Plan-level problems (#0592): a plan whose rows are all unusable (or a
+   * schema version newer than this build) resolves to 0 steps WITH errors —
+   * the gate fails red for that, which is NOT the same state as "no checks
+   * configured". The bar shows its amber strip only for a genuinely empty
+   * error-free plan.
+   */
+  errors: string[];
 }
 
 /** One step of the Checks surface, with prerequisites and selection (#0447). */
@@ -820,6 +828,13 @@ export interface CheckRunRecord {
   finishedAt: string;
   durationMs: number;
   passed: boolean;
+  /**
+   * #0592: what the gate did — `passed` / `failed`, or `skipped` when the repo
+   * has no check plan and nothing was verified. Optional for records written
+   * before #0592 (they carry only `passed`); an absent outcome is inferred
+   * from `passed` by callers that need the distinction.
+   */
+  outcome?: "passed" | "failed" | "skipped";
   results: CheckRunStepResult[];
 }
 

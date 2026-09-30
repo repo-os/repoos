@@ -1,7 +1,10 @@
 import type { RepoCommit } from "../../../core/repo-log.js";
 
+/** `repoos check` outcomes for the HEAD-commit badge (#0592). */
+export type CheckBadgeOutcome = "passed" | "failed" | "skipped";
+
 export type HistoryCommit = RepoCommit & {
-  check?: { passed: boolean };
+  check?: { passed: boolean; outcome?: CheckBadgeOutcome };
 };
 
 export interface HistoryDayGroup {
