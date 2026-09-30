@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-30T02:22:49Z"
-review_passes: 2
 id: "0591"
 title: "Width-aware CLI layout: shared layout helpers, tidy help and doctor"
 type: feature
@@ -12,6 +10,8 @@ created_by: ""
 branch: feat/width-aware-cli-layout-shared-layout-hel
 review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-29T23:34:54Z"
+updated_at: "2026-09-30T03:06:15Z"
+review_passes: 2
 review_rounds: 1
 ---
 ## Problem
@@ -56,4 +56,4 @@ Pure functions, unit-tested at fixed widths (60, 80, 140).
 - 2026-09-30T01:52:36Z · status active→review
 - 2026-09-30T02:02:27Z · status review→active
 - 2026-09-30T02:11:49Z · status active→review
-
+- 2026-09-30T03:06:15Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
