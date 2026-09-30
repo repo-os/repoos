@@ -80,6 +80,7 @@ export type RepoEvent =
    *  drawer's subtle "diagnosing…" hint; `finished` clears it on every exit
    *  path so the hint can never get stuck. */
   | { type: "task.debugTldr"; id: string; state: "started" | "finished"; at: string }
+  | { type: "task.doneErrorTldr"; id: string; tldr: string; at: string }
   | { type: "index.rebuilt"; taskCount: number; at: string }
   /**
    * Repo root checkout git state for the sidebar indicator (#0584): branch,
@@ -96,6 +97,8 @@ export type RepoEvent =
       phase?: string;
       /** Repo-relative durable log of the failed check's full output (#0428). */
       logPath?: string;
+      /** Debugger tl;dr when already persisted on the failed job (#0595). */
+      tldr?: string;
     }
   | {
       type: "task.corrected";
