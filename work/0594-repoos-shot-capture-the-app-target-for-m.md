@@ -2,14 +2,14 @@
 id: "0594"
 title: "repoos shot: capture the app target for mixed diffs, and let tasks declare which pages/states to shoot"
 type: bug
-status: review
+status: done
 priority: p2
 area: [cli, web]
 assigned_to: ai
 created_by: ""
 branch: feat/repoos-shot-capture-the-app-target-for-m
 created_at: "2026-09-30T02:44:14Z"
-updated_at: "2026-09-30T04:18:18Z"
+updated_at: "2026-09-30T04:40:28Z"
 ---
 ## Problem
 
@@ -44,3 +44,4 @@ Shots are captured for every UI-visible task without relying on the agent rememb
 - 2026-09-30T03:28:15Z · status inbox→ready
 - 2026-09-30T03:28:16Z · status ready→active, branch
 - 2026-09-30T04:18:18Z · status active→review
+- 2026-09-30T04:40:28Z · status review→done, release:success
