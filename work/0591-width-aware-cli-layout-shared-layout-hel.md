@@ -2,12 +2,12 @@
 id: "0591"
 title: "Width-aware CLI layout: shared layout helpers, tidy help and doctor"
 type: feature
-status: ready
+status: active
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/width-aware-cli-layout-shared-layout-hel
 review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-29T23:34:54Z"
 updated_at: "2026-09-30T00:26:33Z"
@@ -50,3 +50,4 @@ Pure functions, unit-tested at fixed widths (60, 80, 140).
 - 2026-09-30T00:26:19Z · review_cli_override
 - 2026-09-30T00:26:24Z · review_cli_override, review_model_override
 - 2026-09-30T00:26:33Z · review_model_override
+- 2026-09-30T00:26:33Z · status ready→active, branch
