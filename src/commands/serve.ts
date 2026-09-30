@@ -153,11 +153,20 @@ export function renderServeBanner(
     const [problem, ...rest] = httpsWarning.split(" — ");
     const fixText = rest.join(" — ");
     const url = /https?:\/\/\S+/.exec(fixText)?.[0];
-    const fix = (url ? fixText.replace(url, "") : fixText).replace(/\s*\bat\s*$/, "").trim();
+    // A `backticked` span in the fix is a shell command: show it on its own line.
+    const command = /`([^`]+)`\s*$/.exec(fixText)?.[1];
+    let fix = fixText;
+    if (url) fix = fix.replace(url, "");
+    if (command) fix = fix.replace(/`[^`]+`\s*$/, "");
+    fix = fix
+      .replace(/\s*\bat\s*$/, "")
+      .replace(/:\s*$/, "")
+      .trim();
     out.push("", `  ${c.yellow("▲")} ${c.bold(c.yellow("Tailscale HTTPS unavailable"))}`);
     out.push(`    ${c.dim(problem ?? "")}`);
     if (fix) out.push(`    ${c.bold("Fix:")} ${fix}${url ? c.dim(" at") : ""}`);
     if (url) out.push(`         ${c.cyan(url)}`);
+    if (command) out.push(`         ${c.dim("$")} ${c.cyan(c.bold(command))}`);
     out.push(
       `    ${c.dim("or pass")} ${c.cyan("--no-tailscale-https")} ${c.dim("to silence this")}`,
     );

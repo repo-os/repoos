@@ -31,4 +31,14 @@ describe("renderServeBanner", () => {
     expect(out).toContain("all ports in use");
     expect(out).not.toContain("Fix:");
   });
+
+  it("shows a shell command from the fix on its own line", () => {
+    const out = renderServeBanner(
+      "1",
+      rows,
+      "this user isn't allowed to change Tailscale's serve config — run this once, then restart `repoos serve`: `sudo tailscale set --operator=$USER`",
+    );
+    expect(out).toContain("Fix: run this once, then restart `repoos serve`");
+    expect(out).toContain("$ sudo tailscale set --operator=$USER");
+  });
 });
