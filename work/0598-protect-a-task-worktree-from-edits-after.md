@@ -13,9 +13,10 @@ created_by: ""
 branch: feat/protect-a-task-worktree-from-edits-after
 cli_override: cursor
 model_override: composer-2.5
-review_model_override: opencode-go/glm-5.3-flash
+review_cli_override: cursor
+review_model_override: default
 created_at: "2026-09-30T05:01:28Z"
-updated_at: "2026-09-30T06:45:21Z"
+updated_at: "2026-09-30T06:46:03Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -56,3 +57,4 @@ chmod -R a-w or immutable flags on the worktree would block edits, but it breaks
 - 2026-09-30T06:16:12Z · status review→active
 - 2026-09-30T06:30:21Z · status active→review
 - 2026-09-30T06:45:21Z · needs_input
+- 2026-09-30T06:46:03Z · review_cli_override, review_model_override
