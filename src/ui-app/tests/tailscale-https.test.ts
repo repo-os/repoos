@@ -78,4 +78,14 @@ describe("ensureTailscaleHttps", () => {
     });
     expect(r.reason).toMatch(/boom/);
   });
+
+  it("explains the operator fix when serve config is denied", async () => {
+    const r = await ensureTailscaleHttps(7515, async (args) => {
+      if (args[0] === "serve" && args[1] === "--bg") {
+        throw new Error("sending serve config: Access denied: serve config denied");
+      }
+      return args[0] === "status" ? status() : "{}";
+    });
+    expect(r.reason).toMatch(/tailscale set --operator=\$USER/);
+  });
 });

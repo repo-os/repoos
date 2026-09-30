@@ -114,8 +114,17 @@ export async function ensureTailscaleHttps(
       reason: "HTTPS ports 443, 8443 and 10000 are all in use by other `tailscale serve` mappings",
     };
   } catch (e) {
+    const detail = (e as Error).message.split("\n")[0];
+    // Only root (or the configured operator) may change serve config — the
+    // usual first-run failure once the tailnet has HTTPS enabled. Say how to fix it.
+    if (/access denied|permission denied|serve config denied/i.test(detail ?? "")) {
+      return {
+        reason:
+          "this user isn't allowed to change Tailscale's serve config — run this once, then restart `repoos serve`: `sudo tailscale set --operator=$USER`",
+      };
+    }
     return {
-      reason: `couldn't set up \`tailscale serve\`: ${(e as Error).message.split("\n")[0]}`,
+      reason: `couldn't set up \`tailscale serve\`: ${detail}`,
     };
   }
 }
