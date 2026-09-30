@@ -5,11 +5,12 @@ type: bug
 status: inbox
 priority: p2
 area: [server, web]
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-30T13:19:31Z"
-updated_at: "2026-09-30T13:19:31Z"
+updated_at: "2026-09-30T17:53:21Z"
 ---
 ## Problem
 
@@ -35,3 +36,4 @@ Automatic shot capture at handoff (#0594) produces screenshots that show nothing
 ## Activity
 
 - 2026-09-30T13:19:31Z · created · unknown
+- 2026-09-30T17:53:21Z · review_model_override
