@@ -13,10 +13,10 @@ created_by: ""
 branch: feat/skip-check-gate-with-actionable-reminder
 cli_override: cursor
 model_override: composer-2.5
-review_cli_override: codex
+review_cli_override: cursor
 review_model_override: default
 created_at: "2026-09-30T00:01:23Z"
-updated_at: "2026-09-30T04:22:09Z"
+updated_at: "2026-09-30T04:22:11Z"
 review_passes: 4
 review_rounds: 2
 last_check_failure: "repoos check at 2026-09-30T01:29:36.315Z: server-side finalization timed out (deadline exceeded)"
@@ -95,3 +95,4 @@ Update `user-docs/check.md` (the "Bootstrapping a plan" paragraph and "When a re
 - 2026-09-30T04:21:56Z · review_cli_override
 - 2026-09-30T04:21:57Z · review_cli_override
 - 2026-09-30T04:22:09Z · review_cli_override
+- 2026-09-30T04:22:11Z · review_cli_override
