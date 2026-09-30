@@ -2,7 +2,7 @@
 id: "0600"
 title: Worktree handoff guard false-positives on RepoOS task-file bookkeeping commits
 type: bug
-status: active
+status: review
 priority: high
 area: core
 assigned_to: ai
@@ -43,4 +43,4 @@ Incident: 2026-09-30, #0599 after #0598 landed.
 - 2026-09-30T10:25:52Z · status ready→active, branch
 - 2026-09-30T10:34:14Z · status active→review
 - 2026-09-30T10:39:53Z · status review→active
-- 2026-09-30T10:49:59Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-09-30T10:49:59Z · status active→review
