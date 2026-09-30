@@ -72,9 +72,9 @@ function shotsSection(body: string): string | null {
   if (start === -1) return null;
   let end = lines.length;
   for (let i = start; i < lines.length; i++) {
-    // A following `##`/`#` heading ends the section; a `###` under it is
-    // section content, not the end.
-    if (/^#{1,2}\s/.test(lines[i])) {
+    // A following `##`/`#` heading ends the section (spacing tolerated, to
+    // match the start rule); a `###` under it is section content, not the end.
+    if (/^#{1,2}[^#]/.test(lines[i])) {
       end = i;
       break;
     }
@@ -109,8 +109,9 @@ function parseStep(raw: unknown, where: string): { step?: DeclaredStep; error?: 
   if (keys.length !== 1 || !STEP_KEYS.includes(keys[0] as (typeof STEP_KEYS)[number])) {
     return {
       error:
-        `${where}: a step needs exactly one of click/fill/waitFor/waitMs (` + keys.join(", ") ||
-        "none" + ")",
+        `${where}: a step needs exactly one of click/fill/waitFor/waitMs (` +
+        (keys.join(", ") || "none") +
+        ")",
     };
   }
   const key = keys[0];

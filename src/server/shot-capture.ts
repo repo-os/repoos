@@ -118,7 +118,7 @@ export async function runAutoShotCapture(
     detail: string,
     count?: number,
   ): ShotCaptureResult => {
-    const message = detail.startsWith("shots:") ? detail : `shots: ${status} — ${detail}`;
+    const message = status === "captured" ? `shots: ${detail}` : `shots: ${status} — ${detail}`;
     log(task.id, status === "captured" ? "info" : "warn", message);
     if (status !== "captured") {
       // Best-effort: the note is additive and commits fail-soft.
@@ -139,7 +139,7 @@ export async function runAutoShotCapture(
 
   const plan = planAutoCapture(config, task);
   if ("reason" in plan) {
-    return finish("skipped", `skipped — ${plan.reason}`);
+    return finish("skipped", plan.reason);
   }
   const entries = plan.entries;
   for (const error of plan.errors) {
@@ -159,12 +159,12 @@ export async function runAutoShotCapture(
       if (isShotCaptureUnavailable(err)) {
         return finish(
           "skipped",
-          `skipped — Playwright/WebKit unavailable (${(err as Error).message.split("\n")[0]}). ${INSTALL_ADVICE}`,
+          `Playwright/WebKit unavailable (${(err as Error).message.split("\n")[0]}). ${INSTALL_ADVICE}`,
         );
       }
       return finish(
         "failed",
-        `failed — could not launch the browser: ${(err as Error).message.split("\n")[0]}`,
+        `could not launch the browser: ${(err as Error).message.split("\n")[0]}`,
       );
     }
     for (const entry of entries) {
@@ -173,7 +173,7 @@ export async function runAutoShotCapture(
         if ("error" in started) {
           return finish(
             "failed",
-            `failed — preview for target "${entry.target}" did not start: ${started.error}`,
+            `preview for target "${entry.target}" did not start: ${started.error}`,
           );
         }
         currentUrl = started.url;
@@ -185,7 +185,6 @@ export async function runAutoShotCapture(
       try {
         await page.setViewportSize(AUTO_VIEWPORT);
         png = await captureShotPage(page, pageUrl, entry, {
-          viewport: AUTO_VIEWPORT,
           waitMs: AUTO_SETTLE_MS,
           fullPage: false,
         });
@@ -193,7 +192,7 @@ export async function runAutoShotCapture(
         await page.close().catch(() => {});
         return finish(
           "failed",
-          `failed — capture of ${entry.label ?? entry.route} on "${entry.target}" failed: ${(err as Error).message.split("\n")[0]}`,
+          `capture of ${entry.label ?? entry.route} on "${entry.target}" failed: ${(err as Error).message.split("\n")[0]}`,
         );
       }
       await page.close().catch(() => {});
@@ -204,7 +203,7 @@ export async function runAutoShotCapture(
         data: png.toString("base64"),
       });
       if ("error" in stored) {
-        return finish("failed", `failed — the shot store rejected the image: ${stored.error}`);
+        return finish("failed", `the shot store rejected the image: ${stored.error}`);
       }
       captured++;
     }
