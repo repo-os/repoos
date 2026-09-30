@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/notice-feed-and-top-bar-bell-for-release
 created_at: "2026-09-30T13:43:10Z"
-updated_at: "2026-09-30T18:49:01Z"
+updated_at: "2026-09-30T18:49:08Z"
 ---
 ## Problem
 Long-running release work (notes drafting ~1-3 min, cut ~5 min) finishes while the user is elsewhere and nothing tells them. The mission control 'Needs your attention' list (`NeedsYouPanel.vue`, `humanNeeds` in `src/ui-app/src/stores/repo.ts`) is task-only, and the browser-notification store (`src/ui-app/src/stores/notifications.ts`) only knows the task types review/paused/stuck/needsInput.
@@ -27,21 +27,10 @@ Server-tracked notes generation run (for the 'notes ready' event) and the modal 
 ## Tests
 Store tests for notice creation/dedup/dismiss, bell badge count, and that a finished release produces exactly one notice.
 
-## Shots
-
-```json
-[
-  {"target": "default", "route": "/", "label": "Top bar bell popover", "steps": [{"click": "button[data-test-id=\"notice-bell-trigger\"]"}, {"waitMs": 400}], "selector": "[data-test-id=\"notice-bell-popover\"]"},
-  {"target": "default", "route": "/", "label": "Needs-you panel with notice rows", "steps": [{"click": "button[data-test-id=\"notice-bell-trigger\"]"}, {"waitMs": 200}, {"click": "body"}], "selector": "main"},
-  {"target": "default", "route": "/settings?tab=notifications", "label": "Settings: release notification toggles", "steps": []}
-]
-```
-
-Sources: release-succeeded/failed notices derive from `/api/release/run`; the `releaseNotesReady` kind is wired end-to-end (type, toggles, settings rows, tests) and its source lands with the server-tracked notes run task (#0605).
-
 ## Activity
 
 - 2026-09-30T13:43:10Z · created · unknown
 - 2026-09-30T17:55:55Z · status inbox→ready
 - 2026-09-30T17:55:58Z · status ready→active, branch
 - 2026-09-30T18:49:01Z · body
+- 2026-09-30T18:49:08Z · body
