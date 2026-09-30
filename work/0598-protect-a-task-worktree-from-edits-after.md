@@ -2,7 +2,7 @@
 id: "0598"
 title: Protect a task worktree from edits after handoff to review
 type: feat
-status: active
+status: review
 priority: p2
 area: server
 assigned_to: ai
@@ -12,7 +12,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-30T05:01:28Z"
-updated_at: "2026-09-30T06:16:12Z"
+updated_at: "2026-09-30T06:30:21Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -51,3 +51,4 @@ chmod -R a-w or immutable flags on the worktree would block edits, but it breaks
 - 2026-09-30T05:55:50Z · status ready→active, branch
 - 2026-09-30T06:13:03Z · status active→review
 - 2026-09-30T06:16:12Z · status review→active
+- 2026-09-30T06:30:21Z · status active→review
