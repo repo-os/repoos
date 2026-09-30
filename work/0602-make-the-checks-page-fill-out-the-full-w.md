@@ -2,14 +2,14 @@
 id: "0602"
 title: Make Checks page use full main content width
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-30T12:57:02Z"
-updated_at: "2026-09-30T12:57:35Z"
+updated_at: "2026-09-30T15:29:41Z"
 ---
 ## Problem
 
@@ -64,3 +64,4 @@ Make the "Checks" page fill out the full width, like all the other pages (and te
 - 2026-09-30T12:57:03Z · screenshots
 - 2026-09-30T12:57:03Z · screenshots
 - 2026-09-30T12:57:35Z · status draft→inbox, title, area, body
+- 2026-09-30T15:29:41Z · status inbox→ready
