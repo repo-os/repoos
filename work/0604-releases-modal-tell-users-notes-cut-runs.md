@@ -2,7 +2,7 @@
 id: "0604"
 title: "Releases modal: tell users notes/cut runs can be left and revisited"
 type: chore
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -35,3 +35,4 @@ Server-tracked notes runs (separate task) and notifications (separate task).
 - 2026-09-30T17:54:19Z · status inbox→ready
 - 2026-09-30T17:54:20Z · status ready→active, branch
 - 2026-09-30T18:59:16Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-09-30T18:59:16Z · status review→active
