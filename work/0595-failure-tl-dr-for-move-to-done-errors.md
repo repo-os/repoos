@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-30T04:17:25Z"
+review_passes: 1
 id: "0595"
 title: Failure tl;dr for Move-to-done errors
 type: feature
@@ -11,7 +13,6 @@ branch: feat/failure-tl-dr-for-move-to-done-errors
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-09-30T03:02:23Z"
-updated_at: "2026-09-30T03:37:06Z"
 ---
 The failure tl;dr (#0570, src/server/debug-tldr.ts) only runs for needs-input reasons (review-failed, dev-error, check-failed-after-retries, watchdog-stuck). A failed Move to done is stored as a done error (repo.doneErrorFor, rendered by DoneErrorCard.vue in the task drawer and on the board card) and never reaches that path, so the drawer shows no 'tl;dr — what happened' for it. MTD errors are common and hard for humans to read (e.g. #0589: a vitest failure buried in remote-validation output).
 
@@ -30,3 +31,4 @@ Notes:
 - 2026-09-30T03:28:54Z · status inbox→ready
 - 2026-09-30T03:28:55Z · status ready→active, branch
 - 2026-09-30T03:37:06Z · status active→review
+
