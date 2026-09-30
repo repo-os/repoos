@@ -13,6 +13,7 @@ import SelectTrigger from "../components/ui/select/trigger.vue";
 import SelectValue from "../components/ui/select/value.vue";
 import SelectViewport from "../components/ui/select/viewport.vue";
 import type { CheckPlanStepView, CheckPlanView } from "../types";
+import NoCheckPlanReminder from "../components/NoCheckPlanReminder.vue";
 
 type ChecksTab = "plan" | "test-suite" | "runs" | "remote";
 
@@ -282,13 +283,20 @@ const RESULT_ICON: Record<string, string> = {
           </div>
           <p v-for="w in plan.warnings" :key="w" class="ck-warn">⚠ {{ w }}</p>
           <p v-for="e in plan.errors" :key="e" class="ck-error-line">✗ {{ e }}</p>
+          <!-- #0592: an empty plan is not a failure, but it is not green either
+               — remind with the two easy setup paths. -->
+          <NoCheckPlanReminder v-if="plan.source === 'empty' && plan.steps.length === 0" />
         </section>
 
-        <!-- Last run: the one fact a plan screen cannot show by resolving alone. -->
+        <!-- Last run: the one fact a plan screen cannot show by resolving alone.
+             #0592: a skipped gate (no check plan) is never rendered as passed. -->
         <section v-if="lastRun" class="ck-lastrun" :data-passed="lastRun.passed">
           <div class="ck-lastrun-head">
             <span class="ck-lastrun-title">
-              Last run {{ lastRun.passed ? "passed" : "failed" }}
+              <template v-if="lastRun.outcome === 'skipped'"
+                >No checks ran — plan not configured</template
+              >
+              <template v-else>Last run {{ lastRun.passed ? "passed" : "failed" }}</template>
             </span>
             <span class="ck-lastrun-meta">
               profile <strong>{{ lastRun.profile }}</strong> ·

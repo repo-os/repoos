@@ -17,7 +17,13 @@
  * plus a `themeScopes`/`contrastPairs`/`gradientTokens` vocabulary, so neither
  * guard carries a RepoOS-only path or token name.
  *
- * Exits non-zero on any failure. Designed for CI gates and agent pre-review.
+ * Exits non-zero on any failure. The one exception (#0592): a repo whose plan
+ * resolves to zero steps AND zero errors — no declared steps, no legacy keys,
+ * nothing inferable — SKIPS the gate (exit 0, outcome `skipped`, never green)
+ * with an actionable "no check plan" reminder, so task handoffs in an early
+ * planning-phase repo are not permanently blocked. Plan errors and an
+ * unresolvable `--changed` ref still exit non-zero. Designed for CI gates and
+ * agent pre-review.
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
@@ -40,6 +46,7 @@ import {
   type CheckPlan,
   type CheckStep,
 } from "../core/check-plan.js";
+import { NO_CHECK_PLAN_NOTICE, noCheckPlanReminderLines } from "../core/check-skip.js";
 import {
   detectRepoMarkers,
   missingBinaries,
@@ -1559,24 +1566,12 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   for (const w of plan.warnings) console.log(c.yellow(`  ⚠ ${w}`));
   for (const e of plan.errors) console.log(c.red(`  ✗ ${e}`));
 
-  // Default safe: a repo with no meaningful plan must never get an all-green
-  // definition of done. A gate that ran nothing is not a gate.
-  if (plan.steps.length === 0 || plan.errors.length > 0) {
-    const msg =
-      plan.errors[0] ??
-      "No check plan: this repo declares no [[check.steps]] and nothing could be inferred " +
-        "from it (no go.mod, Cargo.toml, gradlew/build.gradle, or package.json scripts). " +
-        "Declare what 'done' means for this repo under [[check.steps]] in repoos.toml — " +
-        "see user-docs/check.md — or run `repoos check --print-plan` for a starting point.";
-    console.log(c.red(`\n  ✗ ${msg}\n`));
-    process.exit(1);
-  }
-
   const changedPaths = changedRef ? changedPathsSince(repoRoot, changedRef) : undefined;
   if (changedRef && changedPaths === null) {
     // A ref git can't resolve is a mistake, not "nothing changed": scoping the
     // run to it would skip every `whenChanged` step and could go green having
-    // verified nothing.
+    // verified nothing. This stays fatal even for an empty plan (#0592),
+    // because a typo'd ref is the caller's mistake — not the repo's.
     console.log(
       c.red(
         `\n  ✗ Changed-path mode needs a git ref this repo can resolve: "${changedRef}" is not ` +
@@ -1592,6 +1587,56 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
           "(fast pre-review pass — close-out still runs the full plan)",
       ),
     );
+  }
+
+  // Plan errors always fail the gate: a malformed config or an unusable step
+  // is a real problem with the declared gate, never a "nothing to verify" case.
+  if (plan.errors.length > 0) {
+    console.log(c.red(`\n  ✗ ${plan.errors[0]}\n`));
+    process.exit(1);
+  }
+
+  // #0592: an EMPTY plan (no declared steps, no legacy keys, nothing
+  // inferable) with no errors is an explicit SKIP, not a failure. Handoffs in
+  // an early planning-phase repo used to block on this forever. The gate is
+  // still never green: the run records outcome `skipped` (not `passed`) and
+  // the summary says plainly that nothing was verified. A repo WITH a plan
+  // that resolves to nothing usable errors instead (handled above), and a
+  // `--changed` ref that cannot resolve kept its fatal path above too.
+  if (plan.steps.length === 0) {
+    const startedAt = new Date();
+    console.log(c.yellow(`\n  ⚠ ${NO_CHECK_PLAN_NOTICE}\n`));
+    for (const line of noCheckPlanReminderLines()) {
+      console.log(c.dim(`    ${line}`));
+    }
+    console.log();
+    writeCheckRun(
+      repoRoot,
+      {
+        profile,
+        source: plan.source,
+        changedRef,
+        startedAt: startedAt.toISOString(),
+        finishedAt: startedAt.toISOString(),
+        durationMs: 0,
+        passed: false,
+        outcome: "skipped",
+        results: [],
+      },
+      cfg.cacheDir,
+    );
+    recordRunHistoryRow({
+      root: checkStoreRoot,
+      cacheDir: cfg.cacheDir,
+      scope: changedRef ? `changed:${changedRef}` : "full",
+      startedAt: startedAt.toISOString(),
+      durationMs: 0,
+      outcome: "skipped",
+      failedStep: null,
+      skippedSteps: [],
+      detail: NO_CHECK_PLAN_NOTICE,
+    });
+    process.exit(0);
   }
 
   if (
@@ -1891,7 +1936,7 @@ function recordRunHistoryRow(row: {
   scope: string;
   startedAt: string;
   durationMs: number;
-  outcome: "pass" | "fail";
+  outcome: "pass" | "fail" | "skipped";
   failedStep: string | null;
   skippedSteps: string[];
   detail: string | null;

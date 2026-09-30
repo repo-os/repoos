@@ -101,9 +101,13 @@ const MAX_DETAIL_CHARS = 4000;
 
 export type CheckRunPhase = "pre-review" | "close-out" | "release" | "cli";
 
-export type CheckRunOutcome = "pass" | "fail" | "cancelled";
-
 /** One recorded check run, as stored and as the API returns it. */
+export type CheckRunOutcome = "pass" | "fail" | "cancelled" | "skipped";
+
+/**
+ * `skipped` (#0592): the gate ran nothing because this repo has no check plan
+ * and nothing could be inferred — exit 0, deliberately not recorded as `pass`.
+ */
 export interface CheckRunRow {
   id: number;
   /** null for bare CLI runs. */

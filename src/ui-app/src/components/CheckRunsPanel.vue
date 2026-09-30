@@ -59,11 +59,12 @@ function setSort(key: SortKey): void {
   }
 }
 
-/** Failures before cancellations before passes — severity, not alphabet. */
+/** Failures before cancellations before skips before passes — severity, not alphabet. */
 const OUTCOME_SEVERITY: Record<CheckRunRow["outcome"], number> = {
   fail: 0,
   cancelled: 1,
-  pass: 2,
+  skipped: 2,
+  pass: 3,
 };
 
 function sortValue(r: CheckRunRow, key: SortKey): string | number {
@@ -117,7 +118,14 @@ const machines = computed<MachineSummary[]>(() => {
   const out: MachineSummary[] = [];
   for (const [key, list] of byKey) {
     const full = list
-      .filter((r) => r.scope === "full" && r.outcome !== "cancelled" && r.durationMs != null)
+      .filter(
+        (r) =>
+          r.scope === "full" &&
+          r.outcome !== "cancelled" &&
+          // A skipped gate ran nothing (0ms) — it would drag the median down.
+          r.outcome !== "skipped" &&
+          r.durationMs != null,
+      )
       .map((r) => r.durationMs as number)
       .sort((a, b) => a - b);
     const median = full.length ? full[Math.floor(full.length / 2)] : null;
@@ -178,6 +186,7 @@ function outcomeTitle(r: CheckRunRow): string | undefined {
 function outcomeLabel(r: CheckRunRow): string {
   if (r.outcome === "pass") return "passed";
   if (r.outcome === "cancelled") return "cancelled";
+  if (r.outcome === "skipped") return "skipped · no checks configured";
   if (!r.failedStep) return "failed";
   const n = r.failedTests.length;
   return n > 0
