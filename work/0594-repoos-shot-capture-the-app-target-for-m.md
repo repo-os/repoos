@@ -3,6 +3,9 @@ id: "0594"
 title: "repoos shot: capture the app target for mixed diffs, and let tasks declare which pages/states to shoot"
 type: bug
 status: done
+needs_input: true
+needs_input_reason: closeout-worktree-dirty
+needs_input_detail: "the worktree for feat/repoos-shot-capture-the-app-target-for-m was kept because it had uncommitted changes the merge did not carry: src/commands/shot.ts, src/core/shot-page.ts, src/core/shot-plan.ts, src/server/shot-capture.ts"
 priority: p2
 area: [cli, web]
 assigned_to: ai
@@ -45,3 +48,5 @@ Shots are captured for every UI-visible task without relying on the agent rememb
 - 2026-09-30T03:28:16Z · status ready→active, branch
 - 2026-09-30T04:18:18Z · status active→review
 - 2026-09-30T04:40:28Z · status review→done, release:success
+- 2026-09-30T04:40:28Z · needs_input
+- 2026-09-30T04:40:28Z · note: close-out kept a worktree with uncommitted changes
