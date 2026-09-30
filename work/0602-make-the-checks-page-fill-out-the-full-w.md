@@ -1,16 +1,16 @@
 ---
-updated_at: "2026-09-30T15:44:03Z"
-review_passes: 1
 id: "0602"
 title: Make Checks page use full main content width
 type: feature
-status: review
+status: done
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/make-checks-page-use-full-main-content-w
 created_at: "2026-09-30T12:57:02Z"
+updated_at: "2026-09-30T15:51:14Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -68,4 +68,4 @@ Make the "Checks" page fill out the full width, like all the other pages (and te
 - 2026-09-30T15:29:41Z · status inbox→ready
 - 2026-09-30T15:29:58Z · status ready→active, branch
 - 2026-09-30T15:40:54Z · status active→review
-
+- 2026-09-30T15:51:14Z · status review→done, release:success
