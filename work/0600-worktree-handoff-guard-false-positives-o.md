@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-30T10:57:36Z"
+review_passes: 2
 id: "0600"
 title: Worktree handoff guard false-positives on RepoOS task-file bookkeeping commits
 type: bug
@@ -11,9 +13,7 @@ branch: feat/worktree-handoff-guard-false-positives-o
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-09-30T10:24:58Z"
-updated_at: "2026-09-30T10:49:59Z"
 review_rounds: 1
-review_passes: 1
 ---
 ## Problem
 
@@ -45,3 +45,4 @@ Incident: 2026-09-30, #0599 after #0598 landed.
 - 2026-09-30T10:39:53Z · status review→active
 - 2026-09-30T10:49:59Z · status active→review
 - 2026-09-30T10:49:59Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+
