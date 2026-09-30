@@ -360,6 +360,12 @@ cannot tell from the code alone:
   `ff-done`, `shot-dropzone`, `ff-notice`, `ff-error`, and related `ff-*`
   helpers — instead of bespoke colors, borders, or spacing in a component's
   `<style scoped>` block. Extend `style.css` when a variant is missing.
+- **Pages use the full main width.** Standard nav views (board, tasks,
+  checks, settings, …) span the whole `.main` pane — no page-level
+  `max-width` or centering margin on a view's root. Narrow/centered layouts
+  are for deliberate exceptions (login/auth, modals); keeping a readable
+  line length on inner prose (`max-width: NNch` on one paragraph) is fine.
+  See the `.main` comment in `src/ui-app/src/style.css` (#0602).
 - **Runtime: Bun. Node is only the fallback for machines without Bun.**
   Every `repoos` command re-execs under Bun when it's installed, `bunfig.toml`
   (`[run] bun = true`) runs `package.json` scripts and the Node-shebang tools

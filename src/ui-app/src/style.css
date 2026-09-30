@@ -1045,6 +1045,12 @@
   padding: 22px 26px 60px;
   min-width: 0;
 }
+/* Standard nav views span this pane's full width: do NOT add a page-level
+   max-width (or centering margin) to a page shell — wide tables, step output
+   and run history need the room, and inconsistent caps make pages look
+   narrower than their peers. Narrow/centered layouts are reserved for
+   deliberate exceptions (login/auth screens, modals) or inner prose blocks
+   (a readable `max-width: NNch` on one paragraph is fine). Rule #0602. */
 .page-title {
   font-size: 23px;
   font-weight: 800;

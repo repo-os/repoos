@@ -420,9 +420,8 @@ const RESULT_ICON: Record<string, string> = {
 </template>
 
 <style scoped>
-.ck-page {
-  max-width: 960px;
-}
+/* Standard app pages span the full main content width (see the page-layout
+   comment near .main in style.css); no page-level max-width here. */
 .ck-tabs {
   margin-bottom: 18px;
 }
