@@ -246,9 +246,48 @@ describe("remote run history rows (#0564)", () => {
       machine: "mini",
       remote: true,
       outcome: "fail",
-      failedStep: "remote-validation",
+      failedStep: "tests",
+      failedTests: ["tests/a.test.ts"],
     });
     expect(rows[0]!.detail ?? "").toContain("remote validation failed");
+  });
+
+  it("records a failed run with no Vitest names as remote-validation", async () => {
+    const root = tmpRoot();
+    const config = {
+      root,
+      cacheDir: ".repoos",
+      remoteValidation: {
+        enabled: true,
+        provider: "tailscale",
+        tailscaleHosts: [{ host: "mini" }],
+      },
+    } as unknown as RepoOSConfig;
+    const exec: RemoteExecDeps = {
+      bundleRepo: vi.fn(async () => ({ ok: true })),
+      uploadFile: vi.fn(async () => ({ ok: true })),
+      downloadDir: vi.fn(async () => {}),
+      probeTcp: vi.fn(async () => true),
+      runRemote: vi.fn(async (_host, cmd): Promise<RemoteExecResult> => {
+        if (cmd.includes(PREREQ_OK_TOKEN)) {
+          return { code: 0, output: PREREQ_OK_TOKEN, timedOut: false };
+        }
+        return {
+          code: 1,
+          output: "error TS2345: Argument of type 'string' is not assignable\nBuild failed",
+          timedOut: false,
+        };
+      }),
+    };
+    const runner = new TailscaleRunner(config, undefined, { exec });
+    expect(await runner.validate(opts("0564"))).toMatchObject({ ok: false });
+
+    const row = getCheckStore(root).list()[0]!;
+    expect(row).toMatchObject({
+      outcome: "fail",
+      failedStep: "build",
+      failedTests: [],
+    });
   });
 
   it("records a dispatch failure with no machine, and a caller-deadline cancel as cancelled", async () => {
