@@ -1109,6 +1109,15 @@ export interface PreviewTargetConfig {
 export interface PreviewConfig {
   /** Default preview command, used when no target matches the task's area. */
   command?: string;
+  /**
+   * Optional repo-relative glob list (#0594) declaring which files the DEFAULT
+   * (main-app) target serves, i.e. the `[preview] command`. Without it that
+   * target is only reachable through area resolution, so a diff touching the
+   * main app declined to resolve whenever another target's globs matched
+   * something too — a mixed app+docs diff was screenshotted as docs only.
+   * Same syntax as `PreviewTargetConfig.paths`.
+   */
+  paths?: string[];
   /** Default subdirectory to run `command` in, relative to the worktree root. */
   cwd?: string;
   /** Default readiness path for `command` (default `/`). */

@@ -87,21 +87,47 @@ web target exists (`areas = ["mobile", "web"]`).
 which files the diff actually changed. Each `[[preview.targets]]` may carry an
 optional `paths` glob list; a changed file matching any glob (via
 `src/core/shot-targets.ts`, a tiny dependency-free matcher) makes that target a
-candidate, independent of the task's `area:`. This is intentionally a
-*screenshot* concern, not a preview-routing one: the human's **Preview** button
-still resolves by `area` (the follow-up noted in #0582 would let the same map
-choose the default target there). Area resolves as the fallback, and `--target`
-overrides both.
+candidate, independent of the task's `area:`. The bare `[preview] command` can
+carry its own `paths` too (#0594) — with none declared the default target is
+only reachable through area resolution, which is how a mixed app+docs diff used
+to screenshot just the docs. Files matching no target's globs never imply the
+default: a task diff always contains the task's own `work/*.md`, which is no
+evidence about the UI. This is intentionally a *screenshot* concern, not a
+preview-routing one: the human's **Preview** button still resolves by `area`
+(the follow-up noted in #0582 would let the same map choose the default target
+there). Area resolves as the fallback, and `--target` overrides both.
 
 The same helper drives the drawer's area/target mismatch warning: whenever the
 changed paths touch a target the task's `area` does not resolve to — including
 when only one of several touched targets is unexplained — the warning names it,
 so a stale `area:` is surfaced rather than silently screenshotting the wrong
-app. `area` is also
+app. The default target never counts as an unexplained hit: it is the implicit
+main-app fallback, not something an area is expected to resolve to. `area` is
+also
 split on `+`/`,` (`splitAreas`) for both routing and the warning, so a value
 like `web + core + server` and the target areas are compared element-wise.
 Captured PNGs go under `work/.attachments/<taskId>/shots/` (gitignored, never
 referenced from the task body) and render in the drawer's Changes tab.
+
+## Automatic capture at handoff, and a task's `## Shots` list (#0594)
+
+Engineers do not have to remember to run `repoos shot` any more: when a task
+moves to `review` and its diff touches any target's `paths` globs, the SERVER
+runs the capture itself through the server-owned `PreviewManager` — the same
+page choreography as the CLI (`src/core/shot-page.ts`), never a parallel
+`serve`. A capture can never fail a handoff; skips and failures are recorded
+as visible `shots: skipped — <reason>` / `shots: failed — <reason>` entries in
+the task log and the activity log (missing Playwright is the common skip, and
+it links the install advice).
+
+What to shoot is declarative: a task body may carry a `## Shots` section with
+a fenced JSON list (`src/core/shot-plan.ts`), one entry per capture —
+`target`, `route`, optional `selector`, a human `label`, and optional ordered
+`steps` (`click` / `fill`+`text` / `waitFor` / `waitMs`, plain CSS selectors).
+Routes and selectors only — no framework knowledge. Without a declared list
+the fallback is `/` per resolved target. An engineer-made capture pre-empts
+the automatic one: shots already on disk stand down the auto pass, rather than
+duplicating or overwriting them.
 
 ## Target identity and multiple matches (#0379)
 

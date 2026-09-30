@@ -707,6 +707,9 @@ export function parsePreviewConfig(parsed: Record<string, unknown>): PreviewConf
   const readyTimeoutMs = normalizeReadyTimeoutMs(parsed["preview.readyTimeoutMs"]);
   if (readyTimeoutMs) preview.readyTimeoutMs = readyTimeoutMs;
 
+  const parsedPreviewConfigPath = normalizeStringList(parsed["preview.paths"]);
+  if (parsedPreviewConfigPath.length) preview.paths = parsedPreviewConfigPath;
+
   if (Array.isArray(parsed["preview.targets"])) {
     const targets: PreviewTargetConfig[] = [];
     // Target names are the pick/label key the UI and resolution use (#0379), so
@@ -778,7 +781,14 @@ function normalizeStringList(value: unknown): string[] {
  * feature's own settings. Any other `[preview.<path>]` table is a preview-only
  * override of the base configuration (#0464), not a preview setting.
  */
-const PREVIEW_FEATURE_KEYS = new Set(["command", "cwd", "readyPath", "readyTimeoutMs", "targets"]);
+const PREVIEW_FEATURE_KEYS = new Set([
+  "command",
+  "cwd",
+  "readyPath",
+  "readyTimeoutMs",
+  "paths",
+  "targets",
+]);
 
 export interface PreviewOverlay {
   /** Overridden base config paths (dotted, e.g. `"auth.enabled"`) -> value. */
@@ -1861,6 +1871,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "preview.cwd",
   "preview.readyPath",
   "preview.readyTimeoutMs",
+  "preview.paths",
   "preview.targets.name",
   "preview.targets.areas",
   "preview.targets.paths",
