@@ -293,9 +293,10 @@ export async function cmdShot(args: string[]): Promise<number> {
   waitFor, or waitMs, using plain CSS selectors; highlight is an optional
   selector outlined around the changed element before capture — say what
   changed). The same list drives the server's automatic capture at handoff.
-  Without it, this command captures "/" per resolved target, but the
-  automatic handoff capture stands down and records a visible skip
-  instead of shooting a home page that shows nothing about the change.
+  Without it, "/" is captured per resolved target — by this command when you
+  run it, and by the automatic capture only when the diff touches a UI
+  target's paths; diffs touching just tests or task notes stand down with a
+  visible "shots: skipped — no UI change to capture" note instead.
 
   Arguments:
     <route|url>        Route to capture on the preview (default "/"), or an

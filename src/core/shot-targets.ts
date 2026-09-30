@@ -104,13 +104,15 @@ export function matchGlob(pattern: string, path: string): boolean {
  * behavior, not appearance, yet the plain glob matched it. These artifacts are
  * filtered out before any target matching: a tests-only diff resolves no
  * target and the automatic capture records a visible skip instead of shooting
- * a frame that shows nothing about the change. Conservative list — test
- * *files* and their snapshot/fixture directories only; real source under a
- * test-adjacent path still counts.
+ * a frame that shows nothing about the change. Conservative list — test files
+ * (by suffix or by living in a `tests/`-style directory, which also covers the
+ * un-suffixed helpers `tests/setup/*.ts` and `tests/adoption/*` that a
+ * review flagged, #0603 review) and their snapshot directories only; real
+ * source elsewhere still counts.
  */
 export function isTestArtifactPath(path: string): boolean {
   return (
-    /(^|\/)(__tests__|__snapshots__)\//.test(path) ||
+    /(^|\/)(__tests__|__snapshots__|tests?)\//.test(path) ||
     /\.test\.[cm]?[jt]sx?$/.test(path) ||
     /\.spec\.[cm]?[jt]sx?$/.test(path) ||
     path.endsWith(".snap")

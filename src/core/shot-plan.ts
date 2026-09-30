@@ -351,7 +351,7 @@ export function buildCapturePlan(
     };
   }
   const entries: CaptureEntry[] = [];
-  const skippedTargets = new Set<string>();
+  const declaredTargeted = new Set<string>();
   for (let i = 0; i < declared.length; i++) {
     const shot = declared[i];
     const resolved = resolveEntryTarget(shot.target, targets);
@@ -360,15 +360,16 @@ export function buildCapturePlan(
       continue;
     }
     if (!resolved.target) continue;
+    declaredTargeted.add(resolved.target);
     if (shot.route === undefined && contentOnly.has(resolved.target)) {
       // Docs-content-only target (#0603): its globs matched *.md files, so no
       // route can name the page that changed. Skip visibly instead of
-      // captioning the docs home page.
+      // captioning the docs home page — this error is the one visible note for
+      // the entry; no separate skip is added below.
       errors.push(
         `shot #${i + 1}: "${resolved.target}" matched only documentation content; ` +
           "declared shots for docs targets need a route naming the changed page",
       );
-      skippedTargets.add(resolved.target);
       continue;
     }
     entries.push({
@@ -381,10 +382,16 @@ export function buildCapturePlan(
       provenance: { kind: "declared", ...(shot.label ? { label: shot.label } : {}) },
     });
   }
-  // A docs-content target no declared entry captured (routed ones elsewhere,
-  // or the whole list errored) gets one visible note instead of an unrelated `/`.
+  // A docs-content target NO declared entry even mentioned (the declarations
+  // cover other targets) gets one visible note instead of an unrelated `/`. A
+  // target the declarations named but rejected above is already covered by its
+  // error — near-duplicate notes would just blur the log (#0603 review).
   for (const target of targets) {
-    if (contentOnly.has(target) && !entries.some((e) => e.target === target)) {
+    if (
+      contentOnly.has(target) &&
+      !entries.some((e) => e.target === target) &&
+      !declaredTargeted.has(target)
+    ) {
       autoSkips.push(
         `${target} matched only documentation content, and no declared shot names a route — ` +
           "docs captures need a declared route, so this target was skipped",
