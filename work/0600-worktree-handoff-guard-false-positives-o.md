@@ -2,16 +2,16 @@
 id: "0600"
 title: Worktree handoff guard false-positives on RepoOS task-file bookkeeping commits
 type: bug
-status: ready
+status: active
 priority: high
 area: core
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/worktree-handoff-guard-false-positives-o
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-09-30T10:24:58Z"
-updated_at: "2026-09-30T10:25:49Z"
+updated_at: "2026-09-30T10:25:52Z"
 ---
 ## Problem
 
@@ -38,3 +38,4 @@ Incident: 2026-09-30, #0599 after #0598 landed.
 - 2026-09-30T10:25:41Z · cli_override, model_override
 - 2026-09-30T10:25:44Z · model_override
 - 2026-09-30T10:25:49Z · status inbox→ready
+- 2026-09-30T10:25:52Z · status ready→active, branch
