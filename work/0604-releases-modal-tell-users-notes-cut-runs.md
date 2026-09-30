@@ -1,0 +1,28 @@
+---
+id: "0604"
+title: "Releases modal: tell users notes/cut runs can be left and revisited"
+type: chore
+status: inbox
+priority: p2
+area: web
+assigned_to: ""
+created_by: ""
+branch: ""
+created_at: "2026-09-30T13:42:54Z"
+updated_at: "2026-09-30T13:42:54Z"
+---
+## Problem
+In the Cut a release modal (`src/ui-app/src/views/ReleasesView.vue`) nothing says the user can leave while work continues.
+
+- **Generate with AI**: `POST /api/release/notes` keeps running server-side if the modal closes, and a successful draft is cached (`src/server/release-notes-cache.ts`), so clicking Generate again later returns it instantly. Typical duration 1-3 minutes.
+- **Publish**: `POST /api/release` runs detached; state is polled from `GET /api/release/run` on page mount. Typical duration ~5 minutes; safe to navigate away.
+
+## Change
+Copy-only. Add hint text: notes drafting takes 1-3 minutes and you can close this and come back (re-clicking Generate reuses the saved draft); the cut takes about 5 minutes and is safe to leave, check status on the Releases page. Keep the existing 'usually takes a few minutes' line consistent with it.
+
+## Out of scope
+Server-tracked notes runs (separate task) and notifications (separate task).
+
+## Activity
+
+- 2026-09-30T13:42:54Z · created · unknown
