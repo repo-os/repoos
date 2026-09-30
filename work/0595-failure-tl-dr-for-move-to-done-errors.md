@@ -39,3 +39,4 @@ Notes:
 - 2026-09-30T04:35:13Z · handoff failed · check failed after 2 automatic retries · the worktree changed while the gate was running (HEAD moved from 4eaea8c9 to c0b3ce45) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
 - 2026-09-30T04:49:37Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-09-30T04:51:54Z · status active→review
+- 2026-09-30T04:51:54Z · note: shots: skipped — skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
