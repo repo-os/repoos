@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RepoOSConfig } from "../../core/types";
@@ -437,29 +437,29 @@ describe("AI-draftable release notes (#0361)", () => {
 // ── POST /api/release/notes, exercised directly against the route handler
 // (#0361 review: acceptance criterion #8 — usage recording — was previously
 // only verified by the reviewer's manual read, not pinned by a test).
-describe("POST /api/release/notes (route, #0361)", () => {
-  function realGit(root: string, args: string[]): void {
-    execFileSync("git", args, { cwd: root, stdio: "ignore" });
-  }
-  function makeRes(): { capture: { statusCode: number; body: any }; res: unknown } {
-    const capture = { statusCode: 0, body: undefined as any };
-    const res = {
-      writeHead: (status: number) => {
-        capture.statusCode = status;
-      },
-      end: (data?: string) => {
-        if (data) capture.body = JSON.parse(data);
-      },
-    };
-    return { capture, res };
-  }
-  const makeReq = (body: unknown = {}) =>
-    ({
-      [Symbol.asyncIterator]: async function* () {
-        yield Buffer.from(JSON.stringify(body), "utf8");
-      },
-    }) as unknown as never;
+function realGit(root: string, args: string[]): void {
+  execFileSync("git", args, { cwd: root, stdio: "ignore" });
+}
+function makeRes(): { capture: { statusCode: number; body: any }; res: unknown } {
+  const capture = { statusCode: 0, body: undefined as any };
+  const res = {
+    writeHead: (status: number) => {
+      capture.statusCode = status;
+    },
+    end: (data?: string) => {
+      if (data) capture.body = JSON.parse(data);
+    },
+  };
+  return { capture, res };
+}
+const makeReq = (body: unknown = {}) =>
+  ({
+    [Symbol.asyncIterator]: async function* () {
+      yield Buffer.from(JSON.stringify(body), "utf8");
+    },
+  }) as unknown as never;
 
+describe("POST /api/release/notes (route, #0361)", () => {
   afterEach(() => {
     vi.mocked(runPrompt).mockReset();
     // recordOneShotSession uses the process-global DB singleton (keyed by
@@ -537,5 +537,142 @@ describe("POST /api/release/notes (route, #0361)", () => {
     const row = db.getSessionTypeStats().find((r) => r.sessionType === "release-notes");
     expect(row).toBeDefined();
     db.close();
+  });
+});
+
+// ── The AI-draft cache (#0590): a cut that fails its checks and is retried
+// must not pay for the same release notes twice, and only a successful draft
+// may ever be stored.
+describe("POST /api/release/notes draft cache (#0590)", () => {
+  afterEach(() => {
+    vi.mocked(runPrompt).mockReset();
+    resetDbInstance();
+  });
+
+  /** A repo with `count` commits and no tags, so HEAD is the whole context. */
+  function repoWithCommits(count = 1): RepoOSConfig {
+    const cfg = config();
+    realGit(cfg.root, ["init", "-q"]);
+    realGit(cfg.root, ["config", "user.email", "t@example.com"]);
+    realGit(cfg.root, ["config", "user.name", "Test"]);
+    for (let i = 0; i < count; i++) {
+      realGit(cfg.root, ["commit", "--allow-empty", "-m", `change ${i}`]);
+    }
+    return cfg;
+  }
+
+  function cacheFile(cfg: RepoOSConfig): string {
+    return join(cfg.root, cfg.cacheDir, "release-notes.json");
+  }
+
+  function cachedEntries(cfg: RepoOSConfig): Record<string, { notes: string }> {
+    const parsed = JSON.parse(readFileSync(cacheFile(cfg), "utf8")) as {
+      entries: Record<string, { notes: string }>;
+    };
+    return parsed.entries;
+  }
+
+  function headOf(cfg: RepoOSConfig): string {
+    return execFileSync("git", ["rev-parse", "HEAD"], { cwd: cfg.root, encoding: "utf8" }).trim();
+  }
+
+  async function draft(cfg: RepoOSConfig) {
+    const { capture, res } = makeRes();
+    await generateReleaseNotes({ config: cfg } as never, makeReq(), res as never, {});
+    return capture;
+  }
+
+  function agentDrafts(): void {
+    vi.mocked(runPrompt).mockResolvedValue({
+      ok: true,
+      output: "- Fixed a thing",
+      elapsedMs: 500,
+      totalTokens: 400,
+      costUsd: 0.001,
+    });
+  }
+
+  it("stores a successful draft and serves it again without calling the agent", async () => {
+    const cfg = repoWithCommits();
+    agentDrafts();
+
+    const first = await draft(cfg);
+    expect(first.statusCode).toBe(200);
+    expect(first.body.cached).toBe(false);
+    expect(first.body.notes).toBe("- Fixed a thing");
+    expect(existsSync(cacheFile(cfg))).toBe(true);
+
+    const second = await draft(cfg);
+    expect(second.statusCode).toBe(200);
+    expect(second.body.cached).toBe(true);
+    expect(second.body.cachedAt).toBeTruthy();
+    expect(second.body.notes).toBe("- Fixed a thing");
+    // One agent call, one recorded session: a hit never reaches runPrompt.
+    expect(runPrompt).toHaveBeenCalledTimes(1);
+  });
+
+  it("regenerates once HEAD moves, then serves the new draft from cache", async () => {
+    const cfg = repoWithCommits();
+    agentDrafts();
+
+    await draft(cfg);
+    expect(runPrompt).toHaveBeenCalledTimes(1);
+
+    realGit(cfg.root, ["commit", "--allow-empty", "-m", "a genuinely new change"]);
+    const changed = await draft(cfg);
+    expect(changed.body.cached).toBe(false);
+    expect(runPrompt).toHaveBeenCalledTimes(2);
+
+    const reused = await draft(cfg);
+    expect(reused.body.cached).toBe(true);
+    expect(runPrompt).toHaveBeenCalledTimes(2);
+  });
+
+  it("regenerates when a new tag shortens the range under an unchanged HEAD", async () => {
+    const cfg = repoWithCommits(2);
+    agentDrafts();
+
+    const before = await draft(cfg);
+    expect(before.body.sinceTag).toBeNull();
+    expect(before.body.cached).toBe(false);
+
+    // Same HEAD, new range: tagging an ancestor moves `git describe`, so the
+    // old draft is stale even though no commit moved.
+    realGit(cfg.root, ["tag", "v0.9.0", "HEAD~1"]);
+    const after = await draft(cfg);
+    expect(after.body.sinceTag).toBe("v0.9.0");
+    expect(after.body.cached).toBe(false);
+    expect(runPrompt).toHaveBeenCalledTimes(2);
+
+    expect((await draft(cfg)).body.cached).toBe(true);
+    expect(runPrompt).toHaveBeenCalledTimes(2);
+  });
+
+  it("stores nothing for a failed or empty agent run", async () => {
+    const failed = repoWithCommits();
+    vi.mocked(runPrompt).mockResolvedValue({ ok: false, error: "mocked: agent timed out" });
+    expect((await draft(failed)).statusCode).toBe(502);
+    expect(existsSync(cacheFile(failed))).toBe(false);
+
+    const empty = repoWithCommits();
+    vi.mocked(runPrompt).mockResolvedValue({ ok: true, output: "", elapsedMs: 5 });
+    expect((await draft(empty)).statusCode).toBe(502);
+    expect(existsSync(cacheFile(empty))).toBe(false);
+  });
+
+  it("leaves a good entry in place when a later draft fails", async () => {
+    const cfg = repoWithCommits();
+    agentDrafts();
+    await draft(cfg);
+    const goodHead = headOf(cfg);
+
+    realGit(cfg.root, ["commit", "--allow-empty", "-m", "one more change"]);
+    vi.mocked(runPrompt).mockResolvedValue({ ok: false, error: "mocked: agent timed out" });
+    expect((await draft(cfg)).statusCode).toBe(502);
+
+    const entries = cachedEntries(cfg);
+    expect(Object.keys(entries)).toHaveLength(1);
+    expect(Object.keys(entries)[0].startsWith(goodHead)).toBe(true);
+    expect(entries[Object.keys(entries)[0]].notes).toBe("- Fixed a thing");
   });
 });
