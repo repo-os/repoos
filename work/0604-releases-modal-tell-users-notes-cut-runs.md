@@ -2,17 +2,17 @@
 id: "0604"
 title: "Releases modal: tell users notes/cut runs can be left and revisited"
 type: chore
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/releases-modal-tell-users-notes-cut-runs
 cli_override: cursor
 model_override: composer-2.5
 review_model_override: opencode-go/hy3
 created_at: "2026-09-30T13:42:54Z"
-updated_at: "2026-09-30T17:54:19Z"
+updated_at: "2026-09-30T17:54:20Z"
 ---
 ## Problem
 In the Cut a release modal (`src/ui-app/src/views/ReleasesView.vue`) nothing says the user can leave while work continues.
@@ -33,3 +33,4 @@ Server-tracked notes runs (separate task) and notifications (separate task).
 - 2026-09-30T17:54:05Z · model_override
 - 2026-09-30T17:54:16Z · review_model_override
 - 2026-09-30T17:54:19Z · status inbox→ready
+- 2026-09-30T17:54:20Z · status ready→active, branch
