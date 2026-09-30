@@ -190,6 +190,7 @@ function showDetails(): void {
   border: 1px solid var(--border-bright);
   border-radius: 16px;
   background: var(--panel-solid);
+  /* hardcode-ok: border/shadow tint — decoration, never a text color */
   box-shadow: 0 24px 70px -25px #000;
 }
 .release-update-modal-head {

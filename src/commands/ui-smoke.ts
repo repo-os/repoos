@@ -17,6 +17,7 @@ import { c } from "../cli/colors.js";
 import {
   startPreviewServer,
   launchWebkit,
+  isPlaywrightUnavailable,
   type SmokeBrowser,
   type SmokeContext,
 } from "./ui-harness.js";
@@ -266,15 +267,6 @@ async function runUISmokeTest(): Promise<void> {
     server.close();
     rmSync(fixture, { recursive: true, force: true });
   }
-}
-
-/** A missing @playwright/test install or WebKit binary — a skip, not a failure. */
-function isPlaywrightUnavailable(msg: string): boolean {
-  return (
-    msg.includes("Cannot find module") ||
-    msg.includes("not installed") ||
-    msg.includes("Executable doesn't exist")
-  );
 }
 
 /**

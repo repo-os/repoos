@@ -14,7 +14,7 @@
   --border-bright: rgba(120, 160, 255, 0.35);
   --txt: #e7ecf7;
   --txt-dim: #8a96b4;
-  --txt-faint: #566081;
+  --txt-faint: #79809b;
   --cyan: #39e0ff;
   --cyan-dim: rgba(57, 224, 255, 0.12);
   --violet: #9d7bff;
@@ -98,14 +98,14 @@
   --border-bright: rgba(60, 100, 200, 0.2);
   --txt: #1e2130;
   --txt-dim: #5d6880;
-  --txt-faint: #91a0bb;
-  --cyan: #0678b3;
+  --txt-faint: #626c7f;
+  --cyan: #066ca0;
   --cyan-dim: rgba(6, 120, 179, 0.08);
   --violet: #6b3fc0;
   --violet-dim: rgba(107, 63, 192, 0.08);
-  --green: #15865a;
-  --red: #c93a4e;
-  --amber: #b87a2a;
+  --green: #147e54;
+  --red: #c3384c;
+  --amber: #936122;
   --body-gradient:
     radial-gradient(1000px 600px at 8% -8%, rgba(6, 120, 179, 0.04), transparent 60%),
     radial-gradient(1000px 700px at 100% 0%, rgba(107, 63, 192, 0.05), transparent 55%);
@@ -140,9 +140,9 @@
   --amber-border-tint: rgba(184, 122, 42, 0.22);
   --violet-border-tint: rgba(107, 63, 192, 0.2);
   --tag-stream-bg: rgba(6, 120, 179, 0.06);
-  --tag-stream-color: #0678b3;
+  --tag-stream-color: #066ca0;
   --tag-reconnect-bg: rgba(201, 58, 78, 0.06);
-  --tag-reconnect-color: #c93a4e;
+  --tag-reconnect-color: #c3384c;
   --chip-bg: rgba(0, 0, 0, 0.04);
   --dot-glow: 0 0 4px currentColor;
   /* shadcn-vue semantic slots mapped onto the light design tokens */
@@ -152,18 +152,18 @@
   --card-foreground: #1e2130;
   --popover: #ffffff;
   --popover-foreground: #1e2130;
-  --primary: #0678b3;
+  --primary: #066ca0;
   --primary-foreground: #fff;
   --secondary: rgba(0, 0, 0, 0.04);
   --secondary-foreground: #1e2130;
   --muted: #eef0f6;
   --muted-foreground: #5d6880;
   --accent: rgba(6, 120, 179, 0.08);
-  --accent-foreground: #0678b3;
-  --destructive: #c93a4e;
+  --accent-foreground: #066ca0;
+  --destructive: #c3384c;
   --destructive-foreground: #fff;
   --input: rgba(0, 0, 0, 0.12);
-  --ring: #0678b3;
+  --ring: #066ca0;
   --radius: 0.75rem;
 }
 
@@ -8268,7 +8268,7 @@
   --border-bright: rgba(255, 255, 255, 0.18);
   --txt: #f1efe9;
   --txt-dim: #a7b0bd;
-  --txt-faint: #6b7480;
+  --txt-faint: #838a94;
   --cyan: #5fb8e6;
   --cyan-dim: rgba(95, 184, 230, 0.12);
   --violet: #9f8cf2;
@@ -8341,14 +8341,14 @@
   --border-bright: rgba(28, 30, 38, 0.18);
   --txt: #24272e;
   --txt-dim: #5b6470;
-  --txt-faint: #98a1ad;
-  --cyan: #0b7db8;
+  --txt-faint: #686e76;
+  --cyan: #0a70a5;
   --cyan-dim: rgba(11, 125, 184, 0.08);
   --violet: #6f5bd0;
   --violet-dim: rgba(111, 91, 208, 0.08);
-  --green: #1e9e6a;
-  --red: #d94a5b;
-  --amber: #b8792e;
+  --green: #198458;
+  --red: #c34352;
+  --amber: #996526;
   --body-gradient: none;
   --topbar-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(250, 249, 246, 0.85));
   --logo-shadow: 0 1px 2px rgba(28, 30, 38, 0.08), 0 6px 16px -8px rgba(11, 125, 184, 0.25);
@@ -8362,7 +8362,7 @@
   --btn-primary-bg: linear-gradient(135deg, #0c82bd, #0a6ea3);
   --btn-primary-color: #fff;
   --btn-new-bg: linear-gradient(180deg, rgba(11, 125, 184, 0.14), rgba(11, 125, 184, 0.06));
-  --btn-new-color: #0b7db8;
+  --btn-new-color: #0a74ab;
   --status-on-bg: rgba(11, 125, 184, 0.1);
   --status-on-color: #0b7db8;
   --md-body-bg: rgba(28, 30, 38, 0.025);
@@ -8379,9 +8379,9 @@
   --violet-tint: var(--violet-dim);
   --violet-border-tint: rgba(111, 91, 208, 0.22);
   --tag-stream-bg: rgba(11, 125, 184, 0.06);
-  --tag-stream-color: #0b7db8;
+  --tag-stream-color: #0a70a5;
   --tag-reconnect-bg: rgba(217, 74, 91, 0.06);
-  --tag-reconnect-color: #d94a5b;
+  --tag-reconnect-color: #c34352;
   --chip-bg: rgba(28, 30, 38, 0.045);
   --dot-glow: 0 0 4px currentColor;
   --background: #f6f5f1;
@@ -8390,18 +8390,18 @@
   --card-foreground: #24272e;
   --popover: #ffffff;
   --popover-foreground: #24272e;
-  --primary: #0b7db8;
+  --primary: #0a70a5;
   --primary-foreground: #fff;
   --secondary: rgba(28, 30, 38, 0.045);
   --secondary-foreground: #24272e;
   --muted: #efede7;
   --muted-foreground: #5b6470;
   --accent: rgba(11, 125, 184, 0.08);
-  --accent-foreground: #0b7db8;
-  --destructive: #d94a5b;
+  --accent-foreground: #0a70a5;
+  --destructive: #c34352;
   --destructive-foreground: #fff;
   --input: rgba(28, 30, 38, 0.14);
-  --ring: #0b7db8;
+  --ring: #0a70a5;
   --radius: 0.875rem;
 }
 
@@ -8588,7 +8588,7 @@
   --border-bright: rgba(255, 255, 255, 0.22);
   --txt: #fff7e9;
   --txt-dim: #b8a9d6;
-  --txt-faint: #7d6f9e;
+  --txt-faint: #958ab0;
   --cyan: #3ee8ff;
   --cyan-dim: rgba(62, 232, 255, 0.14);
   --violet: #b58cff;
@@ -8665,14 +8665,14 @@
   --border-bright: rgba(42, 30, 66, 0.22);
   --txt: #2a1e42;
   --txt-dim: #5d4b82;
-  --txt-faint: #8d7ba8;
-  --cyan: #0a7fbd;
+  --txt-faint: #77688e;
+  --cyan: #0975ae;
   --cyan-dim: rgba(10, 127, 189, 0.1);
   --violet: #7a48e8;
   --violet-dim: rgba(122, 72, 232, 0.1);
-  --green: #0f9d5f;
+  --green: #0d834f;
   --red: #d0344f;
-  --amber: #b8630a;
+  --amber: #a85b09;
   --font-display: "Bricolage Grotesque", "Baloo 2", "Space Grotesk", sans-serif;
   --body-gradient: none;
   --topbar-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(253, 246, 233, 0.85));
@@ -8704,7 +8704,7 @@
   --violet-tint: var(--violet-dim);
   --violet-border-tint: rgba(122, 72, 232, 0.24);
   --tag-stream-bg: rgba(10, 127, 189, 0.08);
-  --tag-stream-color: #0a7fbd;
+  --tag-stream-color: #0975ae;
   --tag-reconnect-bg: rgba(208, 52, 79, 0.08);
   --tag-reconnect-color: #d0344f;
   --chip-bg: rgba(42, 30, 66, 0.05);
@@ -8887,7 +8887,7 @@
   --border-bright: rgba(255, 255, 255, 0.26);
   --txt: #f2f7ff;
   --txt-dim: #a9c0e2;
-  --txt-faint: #718aa6;
+  --txt-faint: #8a9fb6;
   --cyan: #33e6c4;
   --cyan-dim: rgba(51, 230, 196, 0.16);
   --violet: #7f9bff;
@@ -8962,14 +8962,14 @@
   --border-bright: rgba(20, 60, 80, 0.24);
   --txt: #123b50;
   --txt-dim: #3f6f8c;
-  --txt-faint: #7fa3ba;
-  --cyan: #00a98f;
+  --txt-faint: #587181;
+  --cyan: #007c69;
   --cyan-dim: rgba(0, 169, 143, 0.1);
-  --violet: #5b6fd9;
+  --violet: #5466c8;
   --violet-dim: rgba(91, 111, 217, 0.1);
-  --green: #0fa568;
-  --red: #d6438c;
-  --amber: #b87623;
+  --green: #0c8453;
+  --red: #be3b7c;
+  --amber: #99621d;
   --body-gradient: none;
   --topbar-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(238, 247, 251, 0.88));
   --logo-shadow: 0 0 16px -6px rgba(0, 169, 143, 0.4), 0 6px 18px -10px rgba(214, 67, 140, 0.3);
@@ -8983,7 +8983,7 @@
   --btn-primary-bg: linear-gradient(135deg, #008a73, #3f59c9);
   --btn-primary-color: #fff;
   --btn-new-bg: linear-gradient(135deg, rgba(0, 169, 143, 0.14), rgba(214, 67, 140, 0.12));
-  --btn-new-color: #007a67;
+  --btn-new-color: #007663;
   --status-on-bg: linear-gradient(135deg, rgba(0, 169, 143, 0.16), rgba(91, 111, 217, 0.12));
   --status-on-color: #007a67;
   --md-body-bg: rgba(18, 59, 80, 0.03);
@@ -9000,9 +9000,9 @@
   --violet-tint: var(--violet-dim);
   --violet-border-tint: rgba(91, 111, 217, 0.24);
   --tag-stream-bg: rgba(0, 169, 143, 0.08);
-  --tag-stream-color: #007a67;
+  --tag-stream-color: #007663;
   --tag-reconnect-bg: rgba(214, 67, 140, 0.08);
-  --tag-reconnect-color: #d6438c;
+  --tag-reconnect-color: #be3b7c;
   --chip-bg: rgba(18, 59, 80, 0.05);
   --dot-glow: 0 0 5px currentColor;
   --background: #eef7fb;
@@ -9011,18 +9011,18 @@
   --card-foreground: #123b50;
   --popover: #ffffff;
   --popover-foreground: #123b50;
-  --primary: #00a98f;
+  --primary: #007c69;
   --primary-foreground: #fff;
   --secondary: rgba(18, 59, 80, 0.05);
   --secondary-foreground: #123b50;
   --muted: #e4f0f6;
   --muted-foreground: #3f6f8c;
   --accent: rgba(0, 169, 143, 0.1);
-  --accent-foreground: #007a67;
-  --destructive: #d6438c;
+  --accent-foreground: #007663;
+  --destructive: #be3b7c;
   --destructive-foreground: #fff;
   --input: rgba(18, 59, 80, 0.14);
-  --ring: #00a98f;
+  --ring: #007c69;
   --radius: 1.5rem;
 }
 
@@ -9169,13 +9169,13 @@
   --border-bright: rgba(146, 131, 116, 0.55);
   --txt: #ebdbb2;
   --txt-dim: #bdae93;
-  --txt-faint: #928374;
+  --txt-faint: #aea398;
   --cyan: #8ec07c;
   --cyan-dim: rgba(142, 192, 124, 0.16);
-  --violet: #d3869b;
+  --violet: #d791a4;
   --violet-dim: rgba(211, 134, 155, 0.16);
   --green: #b8bb26;
-  --red: #fb4934;
+  --red: #fc8172;
   --amber: #fabd2f;
   --bevel-hi: rgba(251, 241, 199, 0.07);
   --bevel-lo: rgba(29, 32, 33, 0.4);
@@ -9216,7 +9216,7 @@
   --tag-stream-bg: #689d6a38;
   --tag-stream-color: #8ec07c;
   --tag-reconnect-bg: #cc241d33;
-  --tag-reconnect-color: #fb4934;
+  --tag-reconnect-color: #fc8172;
   --chip-bg: rgba(146, 131, 116, 0.14);
   --dot-glow: 0 0 6px currentColor;
   --background: #282828;
@@ -9233,7 +9233,7 @@
   --muted-foreground: #bdae93;
   --accent: rgba(142, 192, 124, 0.16);
   --accent-foreground: #8ec07c;
-  --destructive: #fb4934;
+  --destructive: #fc8172;
   --destructive-foreground: #282828;
   --input: rgba(146, 131, 116, 0.26);
   --ring: #fabd2f;
@@ -9248,14 +9248,14 @@
   --border-bright: rgba(60, 56, 54, 0.34);
   --txt: #3c3836;
   --txt-dim: #665c54;
-  --txt-faint: #928374;
-  --cyan: #427b58;
+  --txt-faint: #675d52;
+  --cyan: #335f44;
   --cyan-dim: rgba(66, 123, 88, 0.1);
   --violet: #8f3f71;
   --violet-dim: rgba(143, 63, 113, 0.1);
-  --green: #79740e;
+  --green: #64610b;
   --red: #9d0006;
-  --amber: #b57614;
+  --amber: #82550e;
   --bevel-hi: rgba(255, 249, 228, 0.55);
   --bevel-lo: rgba(60, 56, 54, 0.14);
   --body-gradient:
@@ -9272,9 +9272,12 @@
   --drawer-shadow: -18px 0 48px -26px rgba(60, 56, 54, 0.35);
   --btn-primary-bg: linear-gradient(135deg, #427b58, #076678);
   --btn-primary-color: #fbf1c7;
-  --ai-chat-send-bg: linear-gradient(135deg, #b57614, #af3a03);
+  /* Accent gradient stops darkened to ≤0.15 luminance (#0596): cream text on
+     the old #b57614 stop rendered at 3.3:1, and no single colour can clear
+     4.5:1 across a mid-luminance gradient — the stops have to carry it. */
+  --ai-chat-send-bg: linear-gradient(135deg, #8a5809, #af3a03);
   --ai-chat-send-color: #fbf1c7;
-  --btn-new-bg: linear-gradient(135deg, #b57614, #af3a03);
+  --btn-new-bg: linear-gradient(135deg, #8a5809, #af3a03);
   --btn-new-color: #fbf1c7;
   --status-on-bg: linear-gradient(135deg, #8f3f71, #076678);
   --status-on-color: #fbf1c7;
@@ -9292,7 +9295,7 @@
   --violet-tint: var(--violet-dim);
   --violet-border-tint: rgba(143, 63, 113, 0.28);
   --tag-stream-bg: #427b581f;
-  --tag-stream-color: #427b58;
+  --tag-stream-color: #335f44;
   --tag-reconnect-bg: #9d00061a;
   --tag-reconnect-color: #9d0006;
   --chip-bg: rgba(60, 56, 54, 0.08);
@@ -9303,18 +9306,18 @@
   --card-foreground: #3c3836;
   --popover: #ebdbb2;
   --popover-foreground: #3c3836;
-  --primary: #427b58;
+  --primary: #335f44;
   --primary-foreground: #fbf1c7;
   --secondary: rgba(60, 56, 54, 0.08);
   --secondary-foreground: #3c3836;
   --muted: #f2e5bc;
   --muted-foreground: #665c54;
   --accent: rgba(66, 123, 88, 0.12);
-  --accent-foreground: #427b58;
+  --accent-foreground: #335f44;
   --destructive: #9d0006;
   --destructive-foreground: #fbf1c7;
   --input: rgba(60, 56, 54, 0.2);
-  --ring: #b57614;
+  --ring: #82550e;
   --radius: 0.5rem;
 }
 
@@ -9543,15 +9546,15 @@
   --border: #acb0be6b;
   --border-bright: #acb0beb8;
   --txt: #4c4f69;
-  --txt-dim: #6c6f85;
-  --txt-faint: #7c7f93;
-  --cyan: #1e66f5;
+  --txt-dim: #494c5b;
+  --txt-faint: #4a4c58;
+  --cyan: #1446a7;
   --cyan-dim: #1e66f529;
-  --violet: #8839ef;
+  --violet: #6329ae;
   --violet-dim: #8839ef29;
-  --green: #40a02b;
-  --red: #d20f39;
-  --amber: #fe640b;
+  --green: #235717;
+  --red: #9a0b2a;
+  --amber: #833406;
   --body-gradient:
     radial-gradient(1000px 620px at 6% -10%, #8839ef0d, transparent 60%),
     radial-gradient(1060px 700px at 102% -6%, #ea76cb0b, transparent 58%),
@@ -9587,9 +9590,9 @@
   --violet-tint: var(--violet-dim);
   --violet-border-tint: #8839ef5c;
   --tag-stream-bg: #1e66f51f;
-  --tag-stream-color: #1e66f5;
+  --tag-stream-color: #1446a7;
   --tag-reconnect-bg: #d20f391f;
-  --tag-reconnect-color: #d20f39;
+  --tag-reconnect-color: #9a0b2a;
   --chip-bg: #bcc0cc8c;
   --dot-glow: 0 0 6px currentColor;
   --background: #eff1f5;
@@ -9598,18 +9601,18 @@
   --card-foreground: #4c4f69;
   --popover: #e6e9ef;
   --popover-foreground: #4c4f69;
-  --primary: #1e66f5;
+  --primary: #1446a7;
   --primary-foreground: #4c4f69;
   --secondary: #bcc0cc8c;
   --secondary-foreground: #4c4f69;
   --muted: #e6e9ef;
-  --muted-foreground: #6c6f85;
+  --muted-foreground: #494c5b;
   --accent: #8839ef29;
-  --accent-foreground: #8839ef;
-  --destructive: #d20f39;
+  --accent-foreground: #6329ae;
+  --destructive: #9a0b2a;
   --destructive-foreground: #4c4f69;
   --input: #acb0be66;
-  --ring: #1e66f5;
+  --ring: #1446a7;
   --radius: 0.75rem;
 }
 
@@ -9719,7 +9722,7 @@
   --border-bright: rgba(255, 77, 141, 0.45);
   --txt: #f4ecff;
   --txt-dim: #b9a6d9;
-  --txt-faint: #7e6ba3;
+  --txt-faint: #8b7aac;
   --cyan: #5ff2ff;
   --cyan-dim: rgba(95, 242, 255, 0.14);
   --violet: #a97bff;
@@ -9796,14 +9799,14 @@
   --border-bright: rgba(74, 32, 130, 0.3);
   --txt: #1b1030;
   --txt-dim: #5a4a7a;
-  --txt-faint: #8b7aa8;
-  --cyan: #0089a8;
+  --txt-faint: #75678d;
+  --cyan: #007792;
   --cyan-dim: rgba(0, 137, 168, 0.1);
   --violet: #6d3fe0;
   --violet-dim: rgba(109, 63, 224, 0.1);
-  --green: #0f9d63;
-  --red: #d61f7a;
-  --amber: #b06a00;
+  --green: #0d8454;
+  --red: #ce1e75;
+  --amber: #9d5f00;
   --body-gradient:
     radial-gradient(760px 520px at 8% -10%, rgba(214, 31, 122, 0.1), transparent 62%),
     radial-gradient(820px 560px at 104% -6%, rgba(0, 137, 168, 0.1), transparent 58%),
@@ -9858,7 +9861,7 @@
   --muted-foreground: #5a4a7a;
   --accent: rgba(214, 31, 122, 0.1);
   --accent-foreground: #a01060;
-  --destructive: #d61f7a;
+  --destructive: #ce1e75;
   --destructive-foreground: #ffffff;
   --input: rgba(27, 16, 48, 0.18);
   --ring: #6d3fe0;
@@ -10116,7 +10119,11 @@
   border-radius: 52% 52% 58% 58%/58% 58% 52% 52%;
   border: 1px solid var(--border);
   background: var(--bg);
-  color: var(--txt-faint);
+  /* Full-strength text under the opacity below: the egg stays a quiet
+     affordance, but its count still clears 4.5:1 once faded (#0596 — at the
+     old 0.45 opacity even --txt rendered at 1.5–2.9:1 in light themes, i.e.
+     invisible; 0.85 keeps the fade and keeps the count readable). */
+  color: var(--txt);
   font-family: "JetBrains Mono", monospace;
   font-size: 9.5px;
   line-height: 1;
@@ -10124,7 +10131,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  opacity: 0.45;
+  opacity: 0.85;
   transition:
     opacity 0.15s ease,
     border-color 0.15s ease,

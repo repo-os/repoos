@@ -112,6 +112,11 @@ defaultProfile = "default"
 uiStylesheet = "src/ui-app/src/style.css"
 backdropToken = "--bg"
 gradientTokens = ["--btn-primary-bg", "--btn-new-bg"]
+# Component <style> blocks scanned by the `hardcoded-colors` guard (#0596) —
+# the source-level half of the contrast work. Stylesheets are deliberately
+# absent: their literals are the theme token vocabulary the `theme-contrast`
+# guard checks, not one-off component overrides.
+hardcodedColorDirs = ["src/ui-app/src"]
 
 # Source roots the bare-require guard scans (#0352). The guard's premise (a bare
 # require in a "type": "module" package breaks only in the compiled ESM output)
@@ -170,6 +175,26 @@ whenChanged = ["src/ui-app/**"]
 name = "theme-contrast"
 kind = "theme-contrast"
 whenChanged = ["src/ui-app/**"]
+
+# Source guard (#0596): flags hard-coded #hex / rgba(255,…) colors in
+# component <style> blocks unless annotated with `/* hardcode-ok: <reason> */`.
+# Static half of the contrast work — the rendered audit below catches what is
+# already on screen, this one stops the next regression at the source.
+[[check.steps]]
+name = "hardcoded-colors"
+kind = "hardcoded-colors"
+whenChanged = ["src/ui-app/**"]
+
+# Rendered audit (#0596): boots the built app in headless WebKit and measures
+# every visible text node's real foreground/background across every theme
+# scope × light/dark. Needs the build, like ui-smoke; skips cleanly when
+# Playwright/WebKit is not installed.
+[[check.steps]]
+name = "rendered-contrast"
+command = "bun run contrast:audit"
+requires = ["bun"]
+whenChanged = ["src/ui-app/**"]
+dependsOn = ["check-fmt:check", "check-lint", "build"]
 
 [[check.steps]]
 name = "bare-require"
@@ -336,6 +361,14 @@ bg = "--doc-row-sel-bg"
 [[check.contrastPairs]]
 fg = "--nav-active-color"
 bg = "--nav-active-bg"
+
+# Rendered-contrast exemptions (#0596): a selector deliberately allowed below
+# the WCAG floor, with the reason. Read by the `rendered-contrast` step (and
+# by any element marked `data-contrast-ok`); keep this list short — an
+# exemption without a reason is dropped by the parser.
+[[check.contrastExempts]]
+selector = ".board-col.collapsed .col-label, .board-col.collapsed .col-cap-count"
+reason = "Text layered on the per-column status colour band — a gradient whose colour varies by column and fades down the capsule, so no single colour clears 4.5:1 along its whole length; the count already picks its per-band colour in BoardColumn.vue (barTextColor). Redesign tracked in docs/contrast-audit-triage.md."
 
 # Product releases are opt-in. Push an annotated v<package version> tag from
 # clean main after repoos check; GitHub Actions then creates the GitHub Release.

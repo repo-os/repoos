@@ -106,6 +106,26 @@ function isBroadSelector(g: string): boolean {
   return /^[a-z][a-z0-9-]*([\s.#:\[>~+]|$)/.test(g);
 }
 
+/**
+ * Recursively list files under `dir` whose extension is in `exts`, skipping
+ * node_modules/dist/dotdirs.
+ */
+function walkFiles(dir: string, exts: string[], acc: string[] = []): string[] {
+  let entries;
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return acc;
+  }
+  for (const e of entries) {
+    if (e.name.startsWith(".") || e.name === "node_modules" || e.name === "dist") continue;
+    const full = join(dir, e.name);
+    if (e.isDirectory()) walkFiles(full, exts, acc);
+    else if (exts.some((x) => e.name.endsWith(x))) acc.push(full);
+  }
+  return acc;
+}
+
 /** Recursively list `.ts` files under `dir`, skipping node_modules/dist/dotdirs. */
 function walkTsFiles(dir: string, acc: string[] = []): string[] {
   let entries;
@@ -452,6 +472,123 @@ export function taskAssetOffenders(
   return trackedPaths.filter((p) => prefixes.some((pre) => p.startsWith(pre)) && IMG.test(p));
 }
 
+// ── Hard-coded-color source guard (#0596) ───────────────────────────────
+// The rendered contrast audit (`src/commands/ui-contrast-audit.ts`) catches
+// what a component's own colors actually look like on screen; this one catches
+// the regression at the source. A component `<style>` block that hard-codes
+// `#hex` or `rgba(255,…)` overrides the token-based rules in the theme
+// stylesheet, so a light hard-coded color silently wins in a light theme (the
+// task drawer's Changes-tab file header did exactly this: near-white on
+// near-white, unnoticed). Theme stylesheets are NOT scanned — their literals
+// are the token vocabulary the `theme-contrast` guard checks.
+
+/** Marker that allowlists a hard-coded color; must carry a reason. */
+export const HARDCODED_COLOR_MARKER = "hardcode-ok";
+
+/**
+ * File extensions whose style lives inside `<style>` blocks. Stylesheet
+ * extensions are deliberately absent: a stylesheet's literals are theme
+ * tokens, checked by `theme-contrast`, not one-off component overrides.
+ */
+export const STYLE_BLOCK_EXTENSIONS = [".vue", ".svelte", ".astro", ".html"];
+
+/** `hardcode-ok:` followed by a reason — the only accepted allowlist form. */
+const MARKER_RE = /hardcode-ok\s*:\s*\S/;
+
+/** A hex color literal (`#abc`, `#aabbcc`, 8-digit alpha forms). */
+const HEX_LITERAL_RE = /#[0-9a-fA-F]{3,8}(?![0-9a-fA-F\w])/;
+
+/**
+ * `rgba(255,…)`, `rgb(255, 255, 255)`, `rgb(255 255 255 / 4%)` — a white(or
+ * near-white-first-channel) literal, the shape translucent-white panels and
+ * near-white text are written in. Other channel triples (accent tints) are
+ * out of this guard's scope on purpose: they don't invert across themes the
+ * way white does.
+ */
+const WHITE_RGB_RE = /\brgba?\(\s*255(?=[\s,/(])/i;
+
+/**
+ * Strip `/* … *​/` comments from one line of a style block, given the
+ * in-comment carry-over state from previous lines. Comments are stripped
+ * BEFORE literal matching (so a `#0444` task id mentioned in prose never
+ * reads as a color) but after marker detection (the marker IS a comment).
+ */
+function stripStyleComments(line: string, state: { inComment: boolean }): string {
+  let out = "";
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (state.inComment) {
+      if (ch === "*" && line[i + 1] === "/") {
+        state.inComment = false;
+        i++;
+      }
+      continue;
+    }
+    if (ch === "/" && line[i + 1] === "*") {
+      state.inComment = true;
+      i++;
+      continue;
+    }
+    out += ch;
+  }
+  return out;
+}
+
+/**
+ * Hard-coded color literals in a source file's `<style>` blocks that carry no
+ * `hardcode-ok: <reason>` marker. Returns `path:line` strings with the
+ * offending declaration so a fix (use the theme token) or an allowlist
+ * (annotate with a reason) is a one-line decision.
+ *
+ * A marker exempts **the rule block it appears in** — the declaration line it
+ * sits on (or the line above it) plus the rest of that rule, and, when it
+ * sits between rules (at brace depth 0), the rule that follows. One reason
+ * covers one rule, not one literal, so a fixed-color block reads as a single
+ * documented decision instead of a marker on every line.
+ *
+ * `src` is the whole file; `path` is only used to prefix the results.
+ */
+export function hardcodedColorOffenders(src: string, path = "<file>"): string[] {
+  const out: string[] = [];
+  const blocks = [...src.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)];
+  for (const block of blocks) {
+    const body = block[1];
+    const startLine = src.slice(0, block.index ?? 0).split("\n").length;
+    const commentState = { inComment: false };
+    let depth = 0;
+    /** When set, every line at brace depth ≥ this is exempt (see above). */
+    let exemptFromDepth: number | null = null;
+    /**
+     * A marker BETWEEN rules (brace depth 0) exempts the rule that follows —
+     * including a one-line rule, whose declarations share the `{` line and so
+     * are still at depth 0 when the line is examined.
+     */
+    let pendingRule = false;
+    const lines = body.split("\n");
+    for (let i = 0; i < lines.length; i++) {
+      const raw = lines[i];
+      // The marker is a comment, so test it before stripping comments.
+      const marked = MARKER_RE.test(raw);
+      const code = stripStyleComments(raw, commentState);
+      const exempt =
+        marked || pendingRule || (exemptFromDepth !== null && depth >= exemptFromDepth);
+      if (marked) {
+        // Inside a rule → the rest of this rule; between rules → the next one.
+        exemptFromDepth = Math.max(exemptFromDepth ?? 0, depth === 0 ? 1 : depth);
+        if (depth === 0) pendingRule = true;
+      }
+      if (!exempt && (HEX_LITERAL_RE.test(code) || WHITE_RGB_RE.test(code))) {
+        out.push(`${path}:${startLine + i}  ${raw.trim()}`);
+      }
+      const opens = (code.match(/\{/g) ?? []).length;
+      if (pendingRule && opens > 0) pendingRule = false;
+      depth += opens - (code.match(/\}/g) ?? []).length;
+      if (exemptFromDepth !== null && depth < exemptFromDepth) exemptFromDepth = null;
+    }
+  }
+  return out;
+}
+
 /**
  * Scan a stylesheet for UNLAYERED universal/bare-element selectors.
  * With Tailwind v4 everything lives in cascade layers; an unlayered `*`
@@ -630,11 +767,17 @@ function channelLum(ch: number): number {
   return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
 }
 
-function luminance(c: { r: number; g: number; b: number }): number {
+/**
+ * WCAG relative luminance of an sRGB color. Exported (#0596): the rendered
+ * contrast audit judges real pixels with the SAME math the token guard uses,
+ * so the two can never drift into disagreeing about what a ratio means.
+ */
+export function luminance(c: { r: number; g: number; b: number }): number {
   return 0.2126 * channelLum(c.r) + 0.7152 * channelLum(c.g) + 0.0722 * channelLum(c.b);
 }
 
-function contrastRatio(a: number, b: number): number {
+/** WCAG contrast ratio between two luminances. Exported for #0596 as above. */
+export function contrastRatio(a: number, b: number): number {
   const [hi, lo] = a >= b ? [a, b] : [b, a];
   return (hi + 0.05) / (lo + 0.05);
 }
@@ -1096,6 +1239,56 @@ function cssSkipReason(ctx: StepContext): string {
   return `skipped — ${rel} does not exist`;
 }
 
+/**
+ * Hard-coded color literals in component `<style>` blocks (#0596). Reads its
+ * source roots from `[check] hardcodedColorDirs` like the bare-require guard
+ * reads `bareRequireDirs` — which trees hold component style blocks is a
+ * project fact, so nothing here assumes a Vue app or a `src/ui-app` path.
+ */
+async function stepHardcodedColors(ctx: StepContext): Promise<BuiltinOutcome> {
+  const dirs = ctx.cfg.check?.hardcodedColorDirs ?? [];
+  if (dirs.length === 0) return skipped("skipped — no [check] hardcodedColorDirs configured");
+
+  const offenders: string[] = [];
+  let scanned = 0;
+  for (const raw of dirs) {
+    const rel = normalizeGuardDir(raw);
+    if (!rel) continue;
+    const abs = join(ctx.repoRoot, rel);
+    if (!existsSync(abs)) continue;
+    for (const file of walkFiles(abs, STYLE_BLOCK_EXTENSIONS)) {
+      let src: string;
+      try {
+        src = readFileSync(file, "utf8");
+      } catch {
+        continue;
+      }
+      scanned++;
+      const relFile = relative(ctx.repoRoot, file).split(sep).join("/");
+      offenders.push(...hardcodedColorOffenders(src, relFile));
+    }
+  }
+  if (scanned === 0) {
+    return skipped(
+      `skipped — no style-block files (${STYLE_BLOCK_EXTENSIONS.join(", ")}) under ${dirs.join(", ")}`,
+    );
+  }
+  if (offenders.length === 0) return { status: "passed", detail: `scanned ${scanned} file(s)` };
+  const shown = offenders.slice(0, 12);
+  const rest =
+    offenders.length > shown.length ? `\n    …and ${offenders.length - shown.length} more` : "";
+  return {
+    status: "failed",
+    detail:
+      "Hard-coded colors in component <style> blocks — they override the theme's token rules and " +
+      "can invert across themes (near-white on near-white in light mode):\n    " +
+      shown.join("\n    ") +
+      rest +
+      `\n    Use the theme token instead, or allowlist an intentional literal with \`/* ${HARDCODED_COLOR_MARKER}: <reason> */\` ` +
+      "on the declaration (or just above the rule) — one reason covers the whole rule block.",
+  };
+}
+
 async function stepBareRequire(ctx: StepContext): Promise<BuiltinOutcome> {
   if (ctx.pkg.type !== "module") {
     return skipped('skipped — package.json is not "type": "module"');
@@ -1301,6 +1494,7 @@ const BUILTIN_HANDLERS: Record<BuiltinCheckKind, (ctx: StepContext) => Promise<B
   "ui-smoke": stepUiSmoke,
   "css-layers": stepCssLayers,
   "theme-contrast": stepThemeContrast,
+  "hardcoded-colors": stepHardcodedColors,
   "bare-require": stepBareRequire,
   "task-assets": stepTaskAssets,
 };

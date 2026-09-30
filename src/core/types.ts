@@ -927,6 +927,22 @@ export interface CheckConfig {
    * tsconfig instead, the tsconfig's own `exclude` list is used.
    */
   bareRequireExcludes?: string[];
+  /**
+   * Source roots the `hardcoded-colors` guard scans (#0596) for hard-coded
+   * color literals (`#hex`, `rgba(255,…)`) in component `<style>` blocks.
+   * The guard is generic, but which trees are component style blocks is not —
+   * a stylesheet's literals are theme tokens (checked by `theme-contrast`),
+   * a component's are one-off overrides the rendered audit then verifies in
+   * context. Absent means the guard skips with a clear message.
+   */
+  hardcodedColorDirs?: string[];
+  /**
+   * Selectors the rendered contrast audit (#0596) exempts, each with the
+   * reason it is intentionally off-contrast (e.g. a dark code pane that is
+   * dark in every theme). The audit's central allowlist — exemptions live
+   * here with a reason, never as scattered ignores in component styles.
+   */
+  contrastExempts?: CheckContrastExempt[];
 }
 
 /**
@@ -946,6 +962,7 @@ export type CheckStepKind =
   | "ui-smoke"
   | "css-layers"
   | "theme-contrast"
+  | "hardcoded-colors"
   | "bare-require"
   | "task-assets";
 
@@ -1049,6 +1066,17 @@ export interface CheckThemeScope {
 export interface CheckContrastPair {
   fg: string;
   bg: string;
+}
+
+/**
+ * One rendered-contrast exemption (#0596): a CSS selector whose text is
+ * deliberately allowed below the WCAG floor, plus why. Read by the rendered
+ * audit (`scripts/ui-contrast-audit.mjs` → `cmdContrastAudit`), which also
+ * honors `data-contrast-ok` on an element or an ancestor.
+ */
+export interface CheckContrastExempt {
+  selector: string;
+  reason: string;
 }
 
 /**

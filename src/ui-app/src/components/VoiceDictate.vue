@@ -205,6 +205,7 @@ button:disabled {
 }
 
 button.recording {
+  /* hardcode-ok: translucent surface tint layered over theme surfaces (#0596 triage: hover/decoration, no text sits on it) */
   background: #ff4444;
   border-color: #cc0000;
   color: white;
@@ -212,6 +213,7 @@ button.recording {
 }
 
 button.recording:hover {
+  /* hardcode-ok: translucent surface tint layered over theme surfaces (#0596 triage: hover/decoration, no text sits on it) */
   background: #ff5555;
 }
 

@@ -37,6 +37,7 @@
     "test:vitest": "vitest run --config src/ui-app/vite.config.ts",
     "test:coverage": "bun scripts/run-tests.mjs --coverage",
     "smoke": "bun scripts/ui-smoke.mjs",
+    "contrast:audit": "bun scripts/ui-contrast-audit.mjs",
     "prepublishOnly": "REPOOS_SHIP=1 bun run build"
   },
   "keywords": [

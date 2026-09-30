@@ -170,10 +170,11 @@ that is:
 - Build staleness check (`src/` vs `dist/`)
 - Lockfile sync (`bun.lock` vs `package.json`) and the zero-runtime-dependency guard
 - Formatting & lint (`oxfmt --check` + `oxlint`) — **if this fails, run `bun run fmt`, re-stage, and re-run `repoos check`**; build, tests and smoke are skipped until formatting is clean (they `dependsOn` it)
-- Full build (`tsc` + asset copy), CSS layering and theme-contrast guards, bare-`require()` guard, task-asset guard
+- Full build (`tsc` + asset copy), CSS layering and theme-contrast guards, hard-coded-color source guard (`hardcoded-colors`), bare-`require()` guard, task-asset guard
 - Test suite
 - Headless browser UI smoke test (WebKit) — verifies the app mounts, no unrendered mustache in the DOM, and zero console errors
-- The smoke test **skips with a clear message** if Playwright or the browser binary isn't installed
+- Rendered contrast audit (`bun run contrast:audit`, also headless WebKit) — every theme scope × light/dark across board, drawer tabs, Agents, Settings, Context and toasts; fails any visible text under the WCAG floor, with `[[check.contrastExempts]]` as the central allowlist (#0596, `docs/contrast-audit.md`)
+- The smoke test and the contrast audit **skip with a clear message** if Playwright or the browser binary isn't installed
 
 Change the gate by editing that plan in `repoos.toml`, not by editing
 `src/commands/check.ts`: a step is `name` + `command` (or a built-in `kind`),
