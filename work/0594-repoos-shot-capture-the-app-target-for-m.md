@@ -11,7 +11,7 @@ branch: feat/repoos-shot-capture-the-app-target-for-m
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-30T02:44:14Z"
-updated_at: "2026-09-30T04:24:24Z"
+updated_at: "2026-09-30T04:24:36Z"
 ---
 ## Problem
 
