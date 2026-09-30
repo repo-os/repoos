@@ -7,6 +7,8 @@ import { useRepoStore } from "../stores/repo";
 import {
   useNotificationsStore,
   NOTIFICATION_TYPE_LABELS,
+  NOTIFICATION_TYPE_DESCRIPTIONS,
+  NOTIFICATION_TYPES,
   PUSH_AVAILABILITY_HELP,
   type NotificationType,
 } from "../stores/notifications";
@@ -41,7 +43,9 @@ const config = useConfigStore();
 const ui = useUiStore();
 const repo = useRepoStore();
 const notifications = useNotificationsStore();
-const notificationTypes = ["review", "paused", "stuck", "needsInput"] as NotificationType[];
+// Canonical list from the store (0606): task attention types plus the
+// release-event kinds, each with its label + description defined beside it.
+const notificationTypes: NotificationType[] = NOTIFICATION_TYPES;
 const route = useRoute();
 const router = useRouter();
 
@@ -1263,17 +1267,7 @@ onUnmounted(() => {
             <div v-for="t in notificationTypes" :key="t" class="setting-row">
               <div class="setting-info">
                 <div class="setting-label">{{ NOTIFICATION_TYPE_LABELS[t] }}</div>
-                <div class="setting-desc">
-                  {{
-                    t === "review"
-                      ? "A task moved from active to review, ready for your sign-off."
-                      : t === "paused"
-                        ? "A running task was paused."
-                        : t === "stuck"
-                          ? "A task was surfaced as stuck (no progress detected)."
-                          : "A task explicitly needs your attention."
-                  }}
-                </div>
+                <div class="setting-desc">{{ NOTIFICATION_TYPE_DESCRIPTIONS[t] }}</div>
               </div>
               <div class="setting-input">
                 <Switch
