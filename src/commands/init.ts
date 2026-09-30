@@ -212,9 +212,11 @@ For a RepoOS-managed task runner:
 
 Interactive agents helping on a task use its same branch/worktree and the
 same review/close-out workflow. Coordinate with any live engineer/reviewer
-before editing. Outside a managed runner, \`repoos mv <id> review\` writes
-metadata that the server intercepts asynchronously; wait for finalization,
-not just the CLI command's return. Runner-only signals do not apply there.
+before editing. Do not edit a task's worktree while it is in \`review\` or
+close-out — check \`.repoos/locks/<id>.json\` if unsure. Outside a managed
+runner, \`repoos mv <id> review\` writes metadata that the server intercepts
+asynchronously; wait for finalization, not just the CLI command's return.
+Runner-only signals do not apply there.
 
 ## Review and sign-off
 

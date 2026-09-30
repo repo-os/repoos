@@ -42,6 +42,7 @@ import type { Logger } from "../core/logger.js";
 import { getRepoOSDb, type RepoOSDb, type UsageRange } from "../core/db.js";
 import { listSkills } from "./routes/helpers.js";
 import { readHandoffRequest, clearHandoffRequest } from "./handoff-request.js";
+import { worktreeReviewLockRefusal } from "./worktree-handoff-guard.js";
 import {
   recoverTruncatedJson,
   TRUNCATION_NOTICE_PREFIX,
@@ -4963,6 +4964,15 @@ export class AgentRunner {
   ): StartResult {
     const refusal = antigravityWorktreeRefusal(cmd, args, cwd, task);
     if (refusal) return { ok: false, reason: refusal };
+    const lockRefusal = worktreeReviewLockRefusal(
+      this.config.root,
+      this.cacheDir,
+      cwd,
+      task?.id,
+      task?.status,
+      branch ?? task?.branch,
+    );
+    if (lockRefusal) return { ok: false, reason: lockRefusal };
     if (this.entries.size < this.maxConcurrentAgents) {
       return this.spawnTurn(id, cmd, args, cwd, task, branch, opts);
     }

@@ -36,6 +36,7 @@ import type { AgentHandoffRequest, AgentRunner } from "./agents.js";
 import { resolveAgentForTask } from "./agents.js";
 import { patchTaskFile } from "./write.js";
 import { guardReviewTransition } from "./review-guard.js";
+import { recordWorktreeHandoffProtection } from "./worktree-handoff-guard.js";
 import type { TaskCheckManager, TaskCheckListener } from "./task-check.js";
 import type { RemoteValidator } from "./remote-validation.js";
 import {
@@ -611,6 +612,15 @@ async function runHandoffFinalization(
       return fail("main", `could not update the canonical task: ${(error as Error).message}`);
     }
   }
+
+  if (!isHotfix && task.branch) {
+    try {
+      await recordWorktreeHandoffProtection(config, task.id, task.branch, workdir);
+    } catch {
+      /* best-effort — close-out still has the dirty-worktree guards */
+    }
+  }
+
   onProgress?.("done");
   return { ok: true, step: "done" };
 }

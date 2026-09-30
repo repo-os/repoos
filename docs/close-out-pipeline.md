@@ -109,7 +109,31 @@ curl -s http://localhost:7171/api/integration-jobs   # every job in the queue
 ```
 
 Fields that matter: `phase`, `reason` (only present when `failed`), `baseMainSha`,
-`branchSha`, `candidateSha`.
+`branchSha`, `handoffSha` (feature HEAD at handoff, when recorded), `candidateSha`.
+
+## Handoff snapshot and worktree integrity (#0598)
+
+When a task lands in `review`, RepoOS records the feature branch HEAD and the fact
+that the worktree was clean under `.repoos/handoff-snapshots/<id>.json`, and writes an
+advisory lock at `.repoos/locks/<id>.json` (`status: review` or `closing-out` while
+Move to done runs). Agent runners refuse to start an engineer in a locked worktree;
+interactive sessions should treat the lock the same way.
+
+`POST /api/tasks/:id/done` compares the live worktree to that snapshot **before**
+enqueueing the close-out job. If `HEAD` moved or the tree is dirty after handoff, the
+request fails fast with `worktree changed after handoff: …` (file list and mtimes for
+attribution) — the merge gate does not run. The same check runs again at the start of
+`syncing` and immediately before publish; a change mid-close-out aborts before main is
+mutated and leaves the task in `review` with a failed job reason.
+
+Resolutions: `POST /api/tasks/:id/worktree-handoff/discard` resets the feature
+worktree to the handoff commit, or send the task back to `active` through RepoOS and
+hand off again after fixes.
+
+**Incident (#0594, 2026-09-30):** #0594 was approved and Move to done started; four
+source files were edited in its worktree during close-out (outside the runner). Close-out
+merged only the committed branch tip, kept the dirty worktree, and flagged
+`needs_input` — the fixes never landed on `main` until a follow-up cherry-pick.
 
 ## The five phases, what each one does, and what "stuck" looks like
 
