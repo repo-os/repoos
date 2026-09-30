@@ -2,14 +2,14 @@
 id: "0605"
 title: Server-tracked release-notes generation run
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: ""
 branch: feat/server-tracked-release-notes-generation-
 created_at: "2026-09-30T13:43:09Z"
-updated_at: "2026-09-30T18:48:43Z"
+updated_at: "2026-09-30T18:54:53Z"
 ---
 ## Problem
 `POST /api/release/notes` (`generateReleaseNotes` in `src/server/routes/release.ts`) is a single blocking HTTP request (1-3 min). If the user closes the modal or navigates away, the agent still finishes and caches the draft, but the UI gets no result, shows no in-progress state on return, and a second click starts a duplicate agent run.
@@ -62,3 +62,4 @@ agent run in the shot capture.
 - 2026-09-30T17:54:59Z · status inbox→ready
 - 2026-09-30T17:55:00Z · status ready→active, branch
 - 2026-09-30T18:48:43Z · body
+- 2026-09-30T18:54:53Z · status active→review
