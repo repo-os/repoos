@@ -2,7 +2,7 @@
 id: "0596"
 title: Rendered contrast audit across themes and screens (+ hardcoded-color source guard)
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -39,3 +39,4 @@ The theme-contrast check (`[[check.contrastPairs]]` in repoos.toml) only tests 9
 - 2026-09-30T03:27:49Z · status inbox→ready
 - 2026-09-30T03:27:50Z · status ready→active, branch
 - 2026-09-30T04:11:23Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-09-30T04:11:23Z · status review→active
