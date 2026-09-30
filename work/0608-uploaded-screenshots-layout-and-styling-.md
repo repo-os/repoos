@@ -1,17 +1,53 @@
 ---
 id: "0608"
-title: "Uploaded screenshots layout and styling not the same on \"…"
-type: feature
-status: draft
+title: Match New task screenshot uploads to New input panel
+type: bug
+status: inbox
 priority: p2
-area: general
+area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-09-30T15:27:25Z"
-updated_at: "2026-09-30T15:27:26Z"
+updated_at: "2026-09-30T15:27:48Z"
 ---
-Uploaded screenshots layout and styling not the same on "new task" panel as it is on "new input" panel. I prefer the style and layout on "new input", please update "new task" screenshots to match.
+## Problem
+
+On the **New task** side panel, the area where users add and preview uploaded screenshots uses a different layout and styling than the **New input** panel. Both flows support the same kind of attachment (pick, drop, preview, remove), but the visual treatment diverges. That inconsistency makes the product feel uneven and forces users to relearn controls between two similar creation flows.
+
+## Desired UX
+
+When creating a new task (Freeform or Manual), the Screenshots field should look and behave like the Screenshots field on **New input**: same dropzone presentation (already largely shared), and the same pending-attachment list layout—thumbnail placement, filename treatment, expand control, and remove control—so the two panels are visually aligned.
+
+## Acceptance criteria
+
+- [ ] With one or more screenshots attached on **New task**, the pending list matches **New input** in layout (grid/list structure, spacing, thumbnail size, filename row, expand and remove affordances).
+- [ ] With one or more screenshots attached on **New input**, appearance is unchanged (this task only brings New task up to that baseline).
+- [ ] Empty state, “add more” dropzone copy, drag-over highlight, click-to-file-picker, and remove/expand interactions still work on **New task** after the change.
+- [ ] Screenshots still upload correctly when the task is created (no regression in attach-on-create behavior).
+- [ ] After UI changes, `bun run build:ui` (or full build) is run so the served UI reflects the update.
+- [ ] Scoped check passes: `bun run fmt` and `repoos check --changed main` (or equivalent pre-review gate for this repo).
+
+## Notes for AI
+
+- **Reference implementation:** `src/ui-app/src/components/NewInputPanel.vue` — Screenshots field uses global classes `shot-dropzone`, `ff-pending-files`, `ff-pending-file`, `ff-pending-file-name`, `ff-pending-file-remove`, plus `ScreenshotExpandButton` for images.
+- **Change target:** `src/ui-app/src/components/TaskDrawer.vue` — new-task creation block currently renders pending shots with `shot-grid` / `shot-thumb` / `shot-remove` / `shot-name` (see ~3312–3367). Refactor that markup (and any drawer-local scoped styles tied to it) to reuse the same global patterns as New input rather than duplicating a second thumb grid.
+- **Shared styles:** Prefer extending `src/ui-app/src/style.css` if a small variant is needed; do not introduce bespoke colors/spacing in component `<style scoped>` blocks (see AGENTS.md drawer/form conventions).
+- **Assumption:** Matching applies to **uploaded pending screenshots** on the new-task form, not to captured preview shots on the Changes tab or PM chat attachments—leave those unless they accidentally share the same new-task-only markup.
+- **Format info control:** New task has an info button beside the Screenshots label (#0571); New input does not. Keep that control unless removing it is required for visual parity; the user asked specifically for uploaded-screenshot layout/styling parity.
+- **Do not** change attachment storage APIs, `ui.pendingScreenshots` semantics, or New input behavior except shared CSS extracted for reuse.
+- **Shots section:** If the diff is user-visible in the drawer, add or update a `## Shots` task declaration via `repoos update` when handing off (board convention)—compare both panels side by side.
+
+## Scope
+
+**In scope:** Visual and structural alignment of the New task pending screenshot list (and any New-task-only CSS) with New input.
+
+**Out of scope:** Redesigning both panels, changing accepted file types, moving the Screenshots field order relative to other fields, or unifying unrelated screenshot UIs (task Changes grid, PM chat, bug report).
+
+## Related
+
+- Global form/attachment helpers: `src/ui-app/src/style.css` (`shot-dropzone`, `ff-pending-*`).
+- Prior art: format hint beside New task label (#0571); shared dropzone copy aligns both panels already.
 
 ## Original prompt
 
@@ -27,3 +63,4 @@ Uploaded screenshots layout and styling not the same on "new task" panel as it i
 - 2026-09-30T15:27:25Z · created · hello@repoos.org
 - 2026-09-30T15:27:26Z · screenshots
 - 2026-09-30T15:27:26Z · screenshots
+- 2026-09-30T15:27:48Z · status draft→inbox, title, area, type, body
