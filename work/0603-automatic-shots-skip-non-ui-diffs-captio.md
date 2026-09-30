@@ -2,7 +2,7 @@
 id: "0603"
 title: "Automatic shots: skip non-UI diffs, caption why, support highlights"
 type: bug
-status: review
+status: active
 priority: p2
 area: [server, web]
 assigned_to: ai
@@ -40,3 +40,4 @@ Automatic shot capture at handoff (#0594) produces screenshots that show nothing
 - 2026-09-30T17:53:21Z · status inbox→ready
 - 2026-09-30T17:53:23Z · status ready→active, branch
 - 2026-09-30T19:33:02Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-09-30T19:33:02Z · status review→active
