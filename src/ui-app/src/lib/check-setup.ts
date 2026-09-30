@@ -57,3 +57,17 @@ export async function fileCheckSetupTask(): Promise<Task> {
     }),
   });
 }
+
+/**
+ * #0592: true ONLY for a genuinely empty, error-free plan — the state where
+ * `repoos check` SKIPS the gate and the amber reminder applies. A plan that
+ * resolves to zero steps WITH errors (unusable declared rows, newer schema)
+ * fails the gate red and must never read as "no checks configured".
+ */
+export function isGenuinelyEmptyPlan(plan: {
+  source: string;
+  steps: { length: number };
+  errors?: unknown[];
+}): boolean {
+  return plan.source === "empty" && plan.steps.length === 0 && (plan.errors?.length ?? 0) === 0;
+}

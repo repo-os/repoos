@@ -5,7 +5,7 @@ import { ChevronDown, ChevronUp } from "lucide-vue-next";
 import { useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { formatDuration } from "../lib/time";
-import { fileCheckSetupTask } from "../lib/check-setup";
+import { fileCheckSetupTask, isGenuinelyEmptyPlan } from "../lib/check-setup";
 import { api } from "../api";
 import {
   INTEGRATION_STAGES,
@@ -321,8 +321,7 @@ function stageClass(s: string, i: number): string {
  *  checks configured" and must not show the amber setup strip. */
 const planEmpty = computed(() => {
   const plan = snapshot.value?.checkPlan;
-  if (!plan) return false;
-  return plan.steps.length === 0 && (plan.errors?.length ?? 0) === 0;
+  return Boolean(plan) && isGenuinelyEmptyPlan(plan!);
 });
 
 const filingSetupTask = ref(false);
