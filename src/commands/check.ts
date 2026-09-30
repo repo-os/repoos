@@ -46,7 +46,11 @@ import {
   type CheckPlan,
   type CheckStep,
 } from "../core/check-plan.js";
-import { NO_CHECK_PLAN_NOTICE, noCheckPlanReminderLines } from "../core/check-skip.js";
+import {
+  NO_CHECK_PLAN_NOTICE,
+  noCheckPlanReminderLines,
+  planGateSkips,
+} from "../core/check-skip.js";
 import {
   detectRepoMarkers,
   missingBinaries,
@@ -1603,7 +1607,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   // the summary says plainly that nothing was verified. A repo WITH a plan
   // that resolves to nothing usable errors instead (handled above), and a
   // `--changed` ref that cannot resolve kept its fatal path above too.
-  if (plan.steps.length === 0) {
+  if (planGateSkips(plan)) {
     const startedAt = new Date();
     console.log(c.yellow(`\n  ⚠ ${NO_CHECK_PLAN_NOTICE}\n`));
     for (const line of noCheckPlanReminderLines()) {

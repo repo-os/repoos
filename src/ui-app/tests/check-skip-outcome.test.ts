@@ -58,6 +58,11 @@ beforeAll(() => {
 });
 
 afterEach(() => {
+  // Every runCheck() chdirs into a fixture; leaving the process there would
+  // make anything resolving paths from process.cwd() (later tests, the
+  // compiled-CLI parity test below) look inside a deleted tmp fixture instead
+  // of this repo. Restore BEFORE cleanup, while the directory still exists.
+  process.chdir(origCwd);
   logs = [];
   vi.restoreAllMocks();
   resetCheckStore();
@@ -164,13 +169,15 @@ describe("checkRunSkipped (#0592)", () => {
 
 /**
  * Guard against a regression where the compiled CLI (what the server actually
- * spawns) and the in-process path disagree. Skipped silently when dist/ is
- * not built in this environment.
+ * spawns) and the in-process path disagree. The repo root is resolved lazily
+ * inside the test — `afterEach` has already restored the cwd the cmdCheck
+ * tests left in a fixture — and an unbuilt dist/ produces a VISIBLE skip, not
+ * a silent pass (`repoos check` builds before testing, so it runs there).
  */
 describe("compiled CLI parity (#0592)", () => {
-  it("`repoos check` exits 0 and prints the notice when no plan can be resolved", () => {
+  it("`repoos check` exits 0 and prints the notice when no plan can be resolved", (ctx) => {
     const cli = join(findRepoRoot(process.cwd()), "dist", "cli", "index.js");
-    if (!existsSync(cli)) return;
+    if (!existsSync(cli)) return ctx.skip();
     const root = fixture();
     const out = spawnSync(process.execPath, [cli, "check"], { cwd: root, encoding: "utf8" });
     expect(out.error).toBeUndefined();

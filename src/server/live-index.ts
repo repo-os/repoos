@@ -197,6 +197,8 @@ export type RepoEvent =
       checkId: string;
       code: number | null;
       passed: boolean;
+      /** #0592: the gate skipped — this repo has no check plan. */
+      skipped: boolean;
       durationMs: number;
       scope: string;
       machine: string;

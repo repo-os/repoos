@@ -8,6 +8,7 @@
  */
 import { api } from "../api";
 import type { Task } from "../types";
+import { planGateSkips } from "../../../core/check-skip.js";
 
 /** The pre-filled title for the check-setup task. */
 export const CHECK_SETUP_TASK_TITLE = "Set up check.steps in repoos.toml";
@@ -63,11 +64,15 @@ export async function fileCheckSetupTask(): Promise<Task> {
  * `repoos check` SKIPS the gate and the amber reminder applies. A plan that
  * resolves to zero steps WITH errors (unusable declared rows, newer schema)
  * fails the gate red and must never read as "no checks configured".
+ *
+ * The steps/errors half is the shared `planGateSkips` predicate
+ * (src/core/check-skip.ts) — the same one the CLI and the close-out use — so
+ * the UI cannot drift from the gate on what counts as "empty".
  */
 export function isGenuinelyEmptyPlan(plan: {
   source: string;
   steps: { length: number };
   errors?: unknown[];
 }): boolean {
-  return plan.source === "empty" && plan.steps.length === 0 && (plan.errors?.length ?? 0) === 0;
+  return plan.source === "empty" && planGateSkips({ steps: plan.steps, errors: plan.errors ?? [] });
 }

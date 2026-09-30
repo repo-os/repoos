@@ -1226,6 +1226,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         checkId: run.id,
         code: run.code,
         passed: run.passed === true,
+        skipped: run.skipped,
         durationMs: run.durationMs ?? 0,
         scope: run.scope,
         machine: run.machine,

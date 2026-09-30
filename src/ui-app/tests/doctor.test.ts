@@ -215,7 +215,12 @@ describe("runDoctor", () => {
     expect(toml?.severity).toBe("pass");
     expect(toml?.detail).toContain("defaults");
     expect(findingById(report, "identity.git-repo")?.severity).toBe("pass");
-    expect(findingById(report, "gate.check-plan")?.severity).toBe("fail");
+    // #0592: an empty plan SKIPS the gate — advice (warn), not a failure.
+    const gate = findingById(report, "gate.check-plan");
+    expect(gate?.severity).toBe("warn");
+    expect(gate?.title).toBe("No check plan configured");
+    expect(gate?.detail).toContain("skips the gate");
+    expect(gate?.remediation).toContain("repoos check --print-plan");
   });
 
   it("identifies a linked worktree and its main checkout", async () => {

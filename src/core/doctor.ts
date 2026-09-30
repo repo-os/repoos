@@ -39,6 +39,7 @@ import {
   prereqDetail,
 } from "./check-runner.js";
 import { resolveCheckPlan, type CheckPlan } from "./check-plan.js";
+import { NO_CHECK_PLAN_CLI_HINT } from "./check-skip.js";
 import { isBun, preferBunForDevTasks } from "./runtime.js";
 import { detectPackageManager } from "./bootstrap.js";
 import { detectAgents, KNOWN_AGENTS } from "./detect.js";
@@ -1255,14 +1256,19 @@ function checkGate(plan: CheckPlan): DoctorFinding[] {
       ];
     case "empty":
     default:
+      // #0592: the gate SKIPS this state (outcome `skipped`, never green) —
+      // it no longer blocks anything, so it is advice, not a failure. Same
+      // copy as the CLI's reminder (src/core/check-skip.ts).
       return [
         finding(
           "gate.check-plan",
           "gate",
-          "fail",
-          "No usable check plan",
-          "`repoos check` cannot pass: there is no declared plan, no legacy config, and no recognisable stack to infer one from.",
-          "add [[check.steps]] to repoos.toml, or run `repoos check --print-plan` to generate one",
+          "warn",
+          "No check plan configured",
+          "`repoos check` skips the gate: nothing was verified because the repo declares no " +
+            "checks. That's fine while there is no code to build or test — set checks up once " +
+            "the repo is scaffolded enough.",
+          NO_CHECK_PLAN_CLI_HINT,
         ),
       ];
   }

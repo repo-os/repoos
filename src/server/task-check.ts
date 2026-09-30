@@ -18,6 +18,7 @@
  */
 
 import { getCheckStore, localMachineName, type CheckRunPhase } from "../core/check-store.js";
+import { checkRunSkipped } from "../core/check-skip.js";
 import { stripAnsi } from "./done.js";
 
 /** Cap on retained output per run so a very noisy check can't grow this
@@ -49,6 +50,13 @@ export interface TaskCheckRun {
   passed: boolean | null;
   code: number | null;
   output: string;
+  /**
+   * #0592: the gate SKIPPED — this repo has no check plan, so nothing was
+   * verified. Detected once, at completion, from the run's own output; the UI
+   * reads this instead of re-scanning stdout (where a failed run that happens
+   * to echo the notice must still read as failed).
+   */
+  skipped: boolean;
   /** 'full' or 'changed:<ref>' — what this invocation was scoped to (#0564). */
   scope: string;
   /** Short hostname of the machine the check runs on (this server's). */
@@ -110,6 +118,7 @@ export class TaskCheckManager {
       passed: null,
       code: null,
       output: "",
+      skipped: false,
       scope: meta.scope || "full",
       machine: localMachineName(),
     };
@@ -136,6 +145,9 @@ export class TaskCheckManager {
         run.durationMs = Math.max(0, Date.parse(run.finishedAt) - Date.parse(run.startedAt));
         run.code = code;
         run.passed = code === 0;
+        // Detected once here, on the completed output — not re-derived in the
+        // UI from raw stdout on every render.
+        run.skipped = checkRunSkipped(run.output);
         onEvent(run, "done");
         // A non-null exit code means the CLI child exited on its own and
         // recorded its own durable row — record nothing here. code === null
