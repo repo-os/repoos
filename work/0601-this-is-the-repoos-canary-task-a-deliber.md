@@ -2,18 +2,18 @@
 id: "0601"
 title: Bump canary counter by 1
 type: chore
-status: ready
+status: active
 priority: p2
 area: core
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/bump-canary-counter-by-1
 cli_override: cursor
 model_override: composer-2.5
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-30T12:47:15Z"
-updated_at: "2026-09-30T12:53:44Z"
+updated_at: "2026-09-30T12:53:46Z"
 ---
 ## Problem
 
@@ -59,3 +59,4 @@ This is the RepoOS canary task: a deliberately trivial change used to smoke-test
 - 2026-09-30T12:48:28Z · needs_input
 - 2026-09-30T12:49:07Z · title, area, type, body
 - 2026-09-30T12:53:44Z · status inbox→ready
+- 2026-09-30T12:53:46Z · status ready→active, branch
