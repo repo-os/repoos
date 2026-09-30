@@ -380,7 +380,7 @@ async function generateNotes(): Promise<void> {
 }
 
 async function release(): Promise<void> {
-  if (!newVersionValid.value || running.value) return;
+  if (!newVersionValid.value || running.value || generatingNotes.value) return;
   running.value = true;
   error.value = "";
   runLog.value = "";
@@ -849,7 +849,11 @@ onBeforeUnmount(() => {
               </div>
             </div>
             <div class="release-actions">
-              <Button variant="accent" :disabled="!newVersionValid || running" @click="release">
+              <Button
+                variant="accent"
+                :disabled="!newVersionValid || running || generatingNotes"
+                @click="release"
+              >
                 {{ running ? "Publishing…" : newTag ? `Publish ${newTag}` : "Publish" }}
               </Button>
               <DialogClose as-child
