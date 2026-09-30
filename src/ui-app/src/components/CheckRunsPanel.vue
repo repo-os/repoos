@@ -110,6 +110,10 @@ interface MachineSummary {
 const machines = computed<MachineSummary[]>(() => {
   const byKey = new Map<string, CheckRunRow[]>();
   for (const r of runs.value) {
+    // #0592: a skipped gate ran nothing and verified nothing — it would dip
+    // the "N% passed" summary below what real gate runs earned and drag the
+    // median down. Keep it visible in the table, out of the summary.
+    if (r.outcome === "skipped") continue;
     const key = r.remote ? `remote:${r.machine ?? "?"}` : `local:${r.machine ?? "?"}`;
     const list = byKey.get(key) ?? [];
     list.push(r);
@@ -118,14 +122,7 @@ const machines = computed<MachineSummary[]>(() => {
   const out: MachineSummary[] = [];
   for (const [key, list] of byKey) {
     const full = list
-      .filter(
-        (r) =>
-          r.scope === "full" &&
-          r.outcome !== "cancelled" &&
-          // A skipped gate ran nothing (0ms) — it would drag the median down.
-          r.outcome !== "skipped" &&
-          r.durationMs != null,
-      )
+      .filter((r) => r.scope === "full" && r.outcome !== "cancelled" && r.durationMs != null)
       .map((r) => r.durationMs as number)
       .sort((a, b) => a - b);
     const median = full.length ? full[Math.floor(full.length / 2)] : null;
@@ -428,6 +425,10 @@ function outcomeLabel(r: CheckRunRow): string {
   color: var(--green);
 }
 .cr-outcome[data-outcome="cancelled"] span {
+  color: var(--amber);
+}
+.cr-outcome[data-outcome="skipped"] span {
+  /* #0592: skipped = nothing verified (no check plan) — amber, not green. */
   color: var(--amber);
 }
 .cr-outcome[data-outcome="fail"] span {

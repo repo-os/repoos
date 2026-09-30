@@ -51,6 +51,13 @@ export interface PipelineCheckPlan {
   source: "declared" | "legacy" | "inferred" | "empty";
   defaultProfile: string;
   steps: PipelineCheckStep[];
+  /**
+   * Plan-level problems (#0592): an error-free empty plan SKIPS the gate and
+   * the bar shows its amber "no checks configured" strip; an empty plan WITH
+   * errors (unusable declared rows, newer schema) fails the gate red and must
+   * NOT read as "no checks configured".
+   */
+  errors: string[];
 }
 
 /**
@@ -87,6 +94,7 @@ export function resolvePipelineCheckPlan(config: RepoOSConfig): PipelineCheckPla
     return {
       source: plan.source,
       defaultProfile: plan.defaultProfile,
+      errors: [...plan.errors],
       steps: plan.steps.map((s) => ({
         name: s.name,
         kind: s.kind,
@@ -99,7 +107,7 @@ export function resolvePipelineCheckPlan(config: RepoOSConfig): PipelineCheckPla
       })),
     };
   } catch {
-    return { source: "empty", defaultProfile: "default", steps: [] };
+    return { source: "empty", defaultProfile: "default", errors: [], steps: [] };
   }
 }
 

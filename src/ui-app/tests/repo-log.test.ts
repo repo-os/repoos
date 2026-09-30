@@ -11,6 +11,7 @@ import { dirname, join } from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { RepoOSConfig } from "../../core/types";
 import type { RouteContext } from "../../server/routes/types";
+import { writeCheckRun } from "../../core/check-results-store";
 import { getRepoBranches, getRepoCommitRoute, getRepoLog } from "../../server/routes/repo-log";
 import {
   extractTaskId,
@@ -289,6 +290,38 @@ describe("GET /api/repo/log (#0514)", () => {
     expect(fake.status).toBe(200);
     expect(fake.payload.ok).toBe(false);
     expect(fake.payload.code).toBe("not-git");
+  });
+
+  it("carries the check outcome on the HEAD commit, so a skipped run is not a red failure (#0592)", async () => {
+    const root = initRepo();
+    dirs.push(root);
+    commitFile(root, "a.txt", "a\n", "feat(0592): seed");
+    const ctx = makeCtx(root);
+
+    // The most recent run was a no-plan SKIP: exit 0, never a pass.
+    writeCheckRun(
+      root,
+      {
+        profile: "full",
+        source: "empty",
+        startedAt: new Date().toISOString(),
+        finishedAt: new Date().toISOString(),
+        durationMs: 0,
+        passed: false,
+        outcome: "skipped",
+        results: [],
+      },
+      ".repoos",
+    );
+
+    const { res, fake } = makeRes();
+    await getRepoLog(ctx, makeReq("/api/repo/log?limit=10"), res, {});
+    const head = fake.payload.commits.find(
+      (c: { check?: unknown; refs?: string[] }) =>
+        (c.refs ?? []).some((r) => r === "HEAD") && c.check,
+    );
+    expect(head).toBeDefined();
+    expect(head.check).toEqual({ passed: false, outcome: "skipped" });
   });
 
   it("returns commit files for a sha and 400 for an invalid sha", async () => {
