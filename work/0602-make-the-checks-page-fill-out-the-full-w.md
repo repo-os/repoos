@@ -3,16 +3,13 @@ id: "0602"
 title: Make Checks page use full main content width
 type: feature
 status: done
-needs_input: true
-needs_input_reason: closeout-worktree-dirty
-needs_input_detail: "the worktree for feat/make-checks-page-use-full-main-content-w was kept because it had uncommitted changes the merge did not carry: .githooks/pre-commit, LICENSE.md, install.sh, justfile, landing/.gitignore, landing/README.md, landing/bun.lock, landing/index.html, …"
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/make-checks-page-use-full-main-content-w
 created_at: "2026-09-30T12:57:02Z"
-updated_at: "2026-09-30T15:51:14Z"
+updated_at: "2026-09-30T17:23:52Z"
 review_passes: 1
 ---
 ## Problem
@@ -74,3 +71,4 @@ Make the "Checks" page fill out the full width, like all the other pages (and te
 - 2026-09-30T15:51:14Z · status review→done, release:success
 - 2026-09-30T15:51:14Z · needs_input
 - 2026-09-30T15:51:14Z · note: close-out kept a worktree with uncommitted changes
+- 2026-09-30T17:23:52Z · needs_input (closeout-worktree-dirty) dismissed by hello@repoos.org (cleared kept worktree)
