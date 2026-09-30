@@ -2,7 +2,7 @@
 id: "0595"
 title: Failure tl;dr for Move-to-done errors
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, web]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/failure-tl-dr-for-move-to-done-errors
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-09-30T03:02:23Z"
-updated_at: "2026-09-30T03:47:09Z"
+updated_at: "2026-09-30T04:00:16Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -33,3 +33,4 @@ Notes:
 - 2026-09-30T03:28:55Z · status ready→active, branch
 - 2026-09-30T03:37:06Z · status active→review
 - 2026-09-30T03:47:09Z · status review→active
+- 2026-09-30T04:00:16Z · status active→review
