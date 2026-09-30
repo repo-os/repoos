@@ -49,6 +49,7 @@ import { renderMarkdown } from "../lib/markdown";
 import { fmtTime, formatDuration, relTime } from "../lib/time";
 import { fmtTokens } from "../lib/format";
 import { api, JSON_OPTS } from "../api";
+import { checkRunSkipped } from "../../../core/check-skip.js";
 import {
   needsInputBannerText,
   needsInputPrimaryAction,
@@ -379,6 +380,19 @@ const checkChip = computed(() => {
   // the gate's verdict, so lastDurableCheck prefers the local row.
   const last = lastCheckRun.value;
   if (last) {
+    // #0592: a skipped gate exits 0, so the exit code alone would read as a
+    // green pass — treat as skipped only when the run passed; the server's
+    // `skipped` flag or the notice in output both require exit 0 so a FAILED
+    // run that echoes the notice (or a stale `skipped` flag) still reads failed.
+    if (last.passed === true && (last.skipped === true || checkRunSkipped(last.output))) {
+      return {
+        state: "skip" as const,
+        label: "No checks configured",
+        title:
+          "The check gate was skipped — nothing was verified because this repo has no check " +
+          "plan. Open the Debug tab for the reminder and the setup task shortcut.",
+      };
+    }
     const dur = formatDuration(last.durationMs ?? 0);
     return last.passed
       ? { state: "pass" as const, label: `Checks passed · ${dur}`, title: "Open the Debug tab" }
@@ -389,6 +403,15 @@ const checkChip = computed(() => {
   if (Date.now() - Date.parse(row.startedAt) > DURABLE_CHIP_MAX_AGE_MS) return null;
   const dur = row.durationMs != null ? ` · ${formatDuration(row.durationMs)}` : "";
   const title = `Last recorded check run (${relTime(row.startedAt)}) — open the Debug tab`;
+  if (row.outcome === "skipped") {
+    return {
+      state: "skip" as const,
+      label: `No checks configured${dur}`,
+      title:
+        "The last recorded check run was skipped — this repo has no check plan, so nothing " +
+        "was verified. Open the Debug tab for the reminder.",
+    };
+  }
   return row.outcome === "pass"
     ? { state: "pass" as const, label: `Checks passed${dur}`, title }
     : { state: "fail" as const, label: `Checks failed${dur}`, title };

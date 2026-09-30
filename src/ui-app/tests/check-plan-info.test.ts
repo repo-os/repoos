@@ -5,7 +5,7 @@
  * with the plan defaults applied — and degrade to an empty plan (never throw)
  * when there is none.
  */
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -13,10 +13,28 @@ import { loadConfig } from "../../core/config.js";
 import { resolvePipelineCheckPlan } from "../../server/check-plan-info.js";
 import type { RepoOSConfig } from "../../core/types.js";
 
+/**
+ * Toggle so ONE test can make `resolveCheckPlan`'s inputs throw (fs/parse
+ * failure) — the state the resolver's last-resort catch guards (#0592). The
+ * wrapper is transparent for every other test.
+ */
+const runtimeMock = { throwOnBunPref: false };
+vi.mock("../../core/runtime.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../core/runtime.js")>();
+  return {
+    ...actual,
+    preferBunForDevTasks: (cwd?: string) => {
+      if (runtimeMock.throwOnBunPref) throw new Error("boom from test");
+      return actual.preferBunForDevTasks(cwd);
+    },
+  };
+});
+
 const roots: string[] = [];
 afterEach(() => {
   for (const r of roots) rmSync(r, { recursive: true, force: true });
   roots.length = 0;
+  runtimeMock.throwOnBunPref = false;
 });
 
 function tmpRepo(toml = ""): string {
@@ -70,6 +88,20 @@ required = false
     const plan = resolvePipelineCheckPlan({ root, check: undefined } as RepoOSConfig);
     expect(plan.source).toBe("empty");
     expect(plan.steps).toEqual([]);
+  });
+
+  it("reports an error, not a clean skip, when resolution itself throws (#0592)", () => {
+    // A throwing resolver used to degrade to { source: "empty", errors: [] },
+    // which the integration bar renders as the amber "no checks configured"
+    // strip while the real gate fails. The catch must mark the plan broken.
+    runtimeMock.throwOnBunPref = true;
+    const root = tmpRepo("");
+    const plan = resolvePipelineCheckPlan({ root, check: undefined } as RepoOSConfig);
+    expect(plan.source).toBe("empty");
+    expect(plan.steps).toEqual([]);
+    expect(plan.errors).toHaveLength(1);
+    expect(plan.errors[0]).toContain("could not be resolved");
+    expect(plan.errors[0]).toContain("boom from test");
   });
 
   it("re-reads the on-disk plan, so an edit mid-run is reflected (#0458)", () => {

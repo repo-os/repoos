@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mount } from "@vue/test-utils";
+import { mount, flushPromises } from "@vue/test-utils";
 import { createPinia, setActivePinia, type Pinia } from "pinia";
 import { nextTick } from "vue";
 import IntegrationStatusBar from "../src/components/IntegrationStatusBar.vue";
@@ -124,6 +124,7 @@ describe("IntegrationStatusBar", () => {
       checkPlan: {
         source: "declared",
         defaultProfile: "full",
+        errors: [],
         steps: [
           {
             name: "go-build",
@@ -164,14 +165,96 @@ describe("IntegrationStatusBar", () => {
     expect(text).not.toContain("1000+ tests");
   });
 
-  it("falls back to a generic check pane when no plan resolved", async () => {
+  it("falls back to the skipped-gate copy when no plan resolved (#0592)", async () => {
     const repo = useRepoStore();
     repo.integration = activeSnapshot();
     const wrapper = render();
     await nextTick();
 
     await wrapper.findAll(".stage")[3].trigger("mouseenter");
-    expect(wrapper.get(".stage-pane").text()).toContain("No check plan was resolved");
+    const text = wrapper.get(".stage-pane").text();
+    // #0592: nothing verifies here — the copy must say that plainly, offer
+    // the print-plan command, and never suggest a pass.
+    expect(text).toContain("nothing to verify");
+    expect(text).toContain("repoos check --print-plan");
+    expect(text).not.toContain("passed");
+    expect(text).not.toContain("No check plan was resolved");
+  });
+
+  it("shows the no-checks reminder strip with a file-a-task action (#0592)", async () => {
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    repo.integration = {
+      ...activeSnapshot(),
+      checkPlan: { source: "empty", defaultProfile: "default", steps: [], errors: [] },
+    };
+    ui.setIntegrationBarCollapsed(false);
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit): Promise<Response> => {
+      throw new Error("unexpected fetch: " + _url);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const wrapper = render();
+    await nextTick();
+
+    const strip = wrapper.get(".ibar-plan-empty");
+    expect(strip.text()).toContain("No checks configured");
+    expect(strip.text()).toContain("repoos check --print-plan");
+
+    // The one-click action goes through the normal task-creation endpoint.
+    fetchMock.mockImplementation(async (_url: string, init?: RequestInit) => {
+      expect(String(_url)).toBe("/api/tasks");
+      const body = JSON.parse(String(init?.body));
+      expect(body.title).toContain("check.steps");
+      expect(body.body).toContain("repoos check --print-plan");
+      return {
+        ok: true,
+        status: 201,
+        json: async () => ({ id: "0600", title: body.title, status: "inbox" }),
+      } as unknown as Response;
+    });
+    await wrapper.get(".ibar-plan-empty-btn").trigger("click");
+    await flushPromises();
+    await nextTick();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    vi.unstubAllGlobals();
+  });
+
+  it("hides the no-checks reminder strip while nothing is integrating (#0592)", async () => {
+    const repo = useRepoStore();
+    repo.integration = {
+      ...idleSnapshot(),
+      checkPlan: { source: "empty", defaultProfile: "default", steps: [], errors: [] },
+    };
+    const wrapper = render();
+    await nextTick();
+    // Idle + auto-collapsed: the strip lives only in the expanded bar.
+    expect(wrapper.find(".ibar-plan-empty").exists()).toBe(false);
+  });
+
+  it("withholds the no-checks strip when the plan is broken and says why in the tooltip (#0592)", async () => {
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    repo.integration = {
+      ...activeSnapshot(),
+      checkPlan: {
+        source: "empty",
+        defaultProfile: "default",
+        steps: [],
+        errors: ["[check] declares [[check.steps]] but no row is usable"],
+      },
+    };
+    ui.setIntegrationBarCollapsed(false);
+    const wrapper = render();
+    await nextTick();
+
+    // A broken declared plan fails red — it is NOT "no checks configured".
+    expect(wrapper.find(".ibar-plan-empty").exists()).toBe(false);
+
+    await wrapper.findAll(".stage")[3].trigger("mouseenter");
+    const text = wrapper.get(".stage-pane").text();
+    expect(text).toMatch(/plan is broken/);
+    expect(text).toContain("FAILS red");
+    expect(text).toContain("no row is usable");
   });
 
   it("shows a stage's description in the pane and hides it on mouseleave (#0460)", async () => {

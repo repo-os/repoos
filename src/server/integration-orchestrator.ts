@@ -59,6 +59,8 @@ import { markTaskReleased, patchTaskFile } from "./write.js";
 import { saveDiffSnapshot } from "./diff-snapshot.js";
 import { parseTask } from "../core/task.js";
 import { resolveCheckPlan } from "../core/check-plan.js";
+import { planGateSkips } from "../core/check-skip.js";
+import { getCheckStore, localMachineName } from "../core/check-store.js";
 import { detectRepoMarkers } from "../core/check-runner.js";
 import { DEFAULT_CONFIG, loadConfig } from "../core/config.js";
 import { summarizeCheckFailure } from "../core/check-failure-summary.js";
@@ -1521,8 +1523,10 @@ export class CloseOutOrchestrator {
       markers: detectRepoMarkers(wtPath),
     });
     const hasBuildStep = candidateCheckPlan.steps.some((step) => step.kind === "build");
-    const bootstrapWithoutPlan =
-      candidateCheckPlan.source === "empty" && candidateCheckPlan.errors.length === 0;
+    // #0592: one shared predicate (src/core/check-skip.ts) — zero steps AND
+    // zero errors — so the close-out skips on exactly the state the CLI's own
+    // `repoos check` skips on.
+    const bootstrapWithoutPlan = planGateSkips(candidateCheckPlan);
     const docsOnly = changedPaths !== null && isDocsOnlyChange(changedPaths, this.config.docsDir);
     if (docsOnly) {
       this.logger?.integration(
@@ -1656,11 +1660,31 @@ export class CloseOutOrchestrator {
       }
 
       if (bootstrapWithoutPlan) {
+        // #0592: the candidate's own `repoos check` would SKIP the gate (exit
+        // 0 with a "no check plan" reminder), so nothing runs here either —
+        // but the run is recorded as `skipped`, never as a pass.
         this.logger?.integration(
           job.taskId,
           "info",
-          "bootstrap candidate — no check plan or recognised build stack yet; skipping check gate",
+          "bootstrap candidate — no check plan or recognised stack yet; skipped (not passed) " +
+            "the check gate. Remind the user to file a task to set up [[check.steps]] once " +
+            "the repo can build or test (`repoos check --print-plan`, user-docs/check.md).",
         );
+        try {
+          getCheckStore(this.config.root, this.config.cacheDir).record({
+            taskId: job.taskId,
+            phase: "close-out",
+            machine: localMachineName(),
+            remote: false,
+            scope: "full",
+            startedAt: new Date().toISOString(),
+            durationMs: 0,
+            outcome: "skipped",
+            detail: "no check plan configured in the merged candidate — nothing verified",
+          });
+        } catch {
+          /* visibility only */
+        }
       } else {
         this.onProgress?.("check");
         // The candidate's OWN freshly-built CLI comes first, same as the legacy

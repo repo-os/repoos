@@ -167,6 +167,15 @@ the conflict there, let the branch re-validate), not in the candidate.
 ### 3. `validating` (build + check)
 Runs `bun run build` then `repoos check` in the candidate worktree. Both must succeed.
 
+**No-check-plan skip (#0592):** a candidate whose repo resolves to NO check plan (no declared
+`[[check.steps]]`, no legacy `[check]` keys, nothing inferable) and no errors skips the check gate
+instead of failing it — a repo in its early planning phase (stories/tasks/docs only) could
+otherwise never close anything out (`neung` canary report). The skip is recorded with outcome
+`skipped` — never `passed`, and the UIs show "No checks configured" with an actionable reminder
+(`repoos check --print-plan`, or the one-click file-a-setup-task action), never as green. Config
+`errors` in the plan keep failing exactly as before. See `src/core/check-skip.ts` and
+`user-docs/check.md`.
+
 **Docs-only fast path (#0355):** when the merged diff touches nothing but documentation, both
 steps are skipped. The predicate is literal and mechanical — every changed path must live under
 `docs/` or `user-docs/`, or end in `.md` (the task's own `work/<id>-*.md` is the common `.md`

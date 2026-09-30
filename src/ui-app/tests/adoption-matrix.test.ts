@@ -246,8 +246,9 @@ for (const fixture of ADOPTION_FIXTURES) {
           expect(plan.warnings.join(" ")).toMatch(/inferred/i);
         }
         if (fixture.expectedPlan.source === "empty") {
-          // The gate fails on this — see the "no check plan" guard in
-          // src/commands/check.ts — so an empty plan must stay empty.
+          // The gate SKIPS on this (#0592) — see src/commands/check.ts and
+          // src/core/check-skip.ts — so an empty plan must stay empty and
+          // error-free (errors would still fail the gate).
           expect(plan.steps).toEqual([]);
           expect(plan.errors).toEqual([]);
         }
@@ -400,16 +401,19 @@ describe("matrix integrity", () => {
     }
   });
 
-  it("a newly scaffolded empty repo has no inferred plan, so the gate cannot pass vacuously", () => {
+  it("a newly scaffolded empty repo resolves no plan, so the gate skips — never a vacuous pass", () => {
     const root = newFixtureDir("repoos-adopt-empty-gate-");
     roots.push(root);
     const fixture = fixtureById("empty-repo");
     materializeFixture(fixture.id, root);
     scaffoldInto(root, "a brand new project", "repoos", "new");
     const plan = resolveCheckPlan({ check: undefined, markers: detectRepoMarkers(root) });
-    // Still nothing recognisable: zero steps, which src/commands/check.ts turns
-    // into a hard failure rather than an all-green definition of done.
+    // Still nothing recognisable: zero steps and zero errors — the exact state
+    // src/core/check-skip.ts's planGateSkips() says to SKIP with the "no check
+    // plan configured" reminder (#0592). Never an all-green definition of
+    // done; any plan-level error must still fail the gate instead.
     expect(plan.steps).toEqual([]);
+    expect(plan.errors).toEqual([]);
   });
 });
 

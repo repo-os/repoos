@@ -11,6 +11,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { TaskCheckManager, type TaskCheckRun } from "../../server/task-check.js";
 import { CheckStore, resetCheckStore } from "../../core/check-store.js";
+import { NO_CHECK_PLAN_NOTICE } from "../../core/check-skip.js";
 
 const dirs: string[] = [];
 afterEach(() => {
@@ -83,5 +84,27 @@ describe("TaskCheckManager durable cancelled runs (#0564)", () => {
     h.done(0);
     expect(h.run.running).toBe(false);
     expect(h.run.passed).toBe(true);
+  });
+});
+
+describe("TaskCheckManager skipped flag (#0592)", () => {
+  it("sets skipped only when exit 0 and output carries the no-plan notice", () => {
+    const { m } = manager();
+    const events: TaskCheckRun[] = [];
+    const handle = m.start("0592", "handoff-finalize", (r) => events.push(r));
+    handle.chunk(`  ⚠ ${NO_CHECK_PLAN_NOTICE}\n`);
+    handle.done(0);
+    expect(events.at(-1)!.skipped).toBe(true);
+    expect(events.at(-1)!.passed).toBe(true);
+  });
+
+  it("does NOT set skipped when the run failed even if output echoes the notice", () => {
+    const { m } = manager();
+    const events: TaskCheckRun[] = [];
+    const handle = m.start("0592", "handoff-finalize", (r) => events.push(r));
+    handle.chunk(`expected output to contain: ${NO_CHECK_PLAN_NOTICE.trimEnd()}\n`);
+    handle.done(1);
+    expect(events.at(-1)!.skipped).toBe(false);
+    expect(events.at(-1)!.passed).toBe(false);
   });
 });

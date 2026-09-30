@@ -50,7 +50,13 @@ export const getRepoLog: RouteHandler = async (ctx, req, res) => {
   const commits = page.commits.map((c) => {
     const check =
       lastRun && headSha && c.sha.toLowerCase() === headSha
-        ? { passed: lastRun.passed }
+        ? {
+            passed: lastRun.passed,
+            // #0592: a no-plan skip exits 0 but is not a pass — carry the
+            // outcome so the badge renders "no checks configured", never a
+            // false red "checks failed".
+            outcome: lastRun.outcome ?? (lastRun.passed ? "passed" : "failed"),
+          }
         : undefined;
     return check ? { ...c, check } : c;
   });

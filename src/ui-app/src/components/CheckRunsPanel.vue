@@ -59,11 +59,12 @@ function setSort(key: SortKey): void {
   }
 }
 
-/** Failures before cancellations before passes — severity, not alphabet. */
+/** Failures before cancellations before skips before passes — severity, not alphabet. */
 const OUTCOME_SEVERITY: Record<CheckRunRow["outcome"], number> = {
   fail: 0,
   cancelled: 1,
-  pass: 2,
+  skipped: 2,
+  pass: 3,
 };
 
 function sortValue(r: CheckRunRow, key: SortKey): string | number {
@@ -109,6 +110,10 @@ interface MachineSummary {
 const machines = computed<MachineSummary[]>(() => {
   const byKey = new Map<string, CheckRunRow[]>();
   for (const r of runs.value) {
+    // #0592: a skipped gate ran nothing and verified nothing — it would dip
+    // the "N% passed" summary below what real gate runs earned and drag the
+    // median down. Keep it visible in the table, out of the summary.
+    if (r.outcome === "skipped") continue;
     const key = r.remote ? `remote:${r.machine ?? "?"}` : `local:${r.machine ?? "?"}`;
     const list = byKey.get(key) ?? [];
     list.push(r);
@@ -178,6 +183,7 @@ function outcomeTitle(r: CheckRunRow): string | undefined {
 function outcomeLabel(r: CheckRunRow): string {
   if (r.outcome === "pass") return "passed";
   if (r.outcome === "cancelled") return "cancelled";
+  if (r.outcome === "skipped") return "skipped · no checks configured";
   if (!r.failedStep) return "failed";
   const n = r.failedTests.length;
   return n > 0
@@ -419,6 +425,10 @@ function outcomeLabel(r: CheckRunRow): string {
   color: var(--green);
 }
 .cr-outcome[data-outcome="cancelled"] span {
+  color: var(--amber);
+}
+.cr-outcome[data-outcome="skipped"] span {
+  /* #0592: skipped = nothing verified (no check plan) — amber, not green. */
   color: var(--amber);
 }
 .cr-outcome[data-outcome="fail"] span {

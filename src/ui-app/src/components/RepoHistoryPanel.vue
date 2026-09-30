@@ -7,6 +7,7 @@ import {
   authorInitials,
   groupCommitsByDay,
   splitTaskSubject,
+  type CheckBadgeOutcome,
   type HistoryCommit,
 } from "../lib/repo-history";
 import { useRepoStore } from "../stores/repo";
@@ -73,6 +74,23 @@ let copiedTimer: ReturnType<typeof setTimeout> | undefined;
 const filtersReady = ref(false);
 
 const groups = computed(() => groupCommitsByDay(commits.value));
+
+/**
+ * The HEAD-commit badge (#0592): the check outcome, never mislabelled. A
+ * skipped run — the repo has no check plan and the gate exited 0 without
+ * verifying anything — is NEUTRAL "no checks configured", not a red failure
+ * and never a green pass. Records from before #0592 carry no outcome; `passed`
+ * then decides as before.
+ */
+function checkBadge(check: { passed: boolean; outcome?: CheckBadgeOutcome }): {
+  cls: string;
+  label: string;
+} {
+  if (check.outcome === "skipped") return { cls: "skip", label: "no checks configured" };
+  return check.passed
+    ? { cls: "pass", label: "checks passed" }
+    : { cls: "fail", label: "checks failed" };
+}
 
 onMounted(async () => {
   await loadBranches();
@@ -325,8 +343,8 @@ function openDiff(sha: string, file?: string): void {
                   :class="{ head: ref === 'HEAD' }"
                   >{{ ref }}</span
                 >
-                <span v-if="c.check" class="hist-badge" :class="c.check.passed ? 'pass' : 'fail'">{{
-                  c.check.passed ? "checks passed" : "checks failed"
+                <span v-if="c.check" class="hist-badge" :class="checkBadge(c.check).cls">{{
+                  checkBadge(c.check).label
                 }}</span>
               </span>
             </span>
@@ -608,6 +626,11 @@ function openDiff(sha: string, file?: string): void {
 .hist-badge.fail {
   color: var(--red);
   border-color: color-mix(in srgb, var(--red) 45%, var(--border));
+}
+/* #0592: the gate was skipped — no check plan configured. Neutral, never red. */
+.hist-badge.skip {
+  color: var(--amber);
+  border-color: color-mix(in srgb, var(--amber) 45%, var(--border));
 }
 .hist-aside {
   display: flex;

@@ -5,6 +5,7 @@ import { ChevronDown, ChevronUp } from "lucide-vue-next";
 import { useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { formatDuration } from "../lib/time";
+import { fileCheckSetupTask, isGenuinelyEmptyPlan } from "../lib/check-setup";
 import { api } from "../api";
 import {
   INTEGRATION_STAGES,
@@ -237,9 +238,17 @@ function stepLine(s: CheckPlanStep): string {
 const checkTooltip = computed<string>(() => {
   const plan = snapshot.value?.checkPlan;
   if (!plan || plan.steps.length === 0) {
+    // #0592: an error-free empty plan SKIPS the gate — nothing was verified,
+    // and this is deliberately not described as green. A broken plan (errors)
+    // fails red; the tooltip says so instead of the setup reminder.
+    if (plan && plan.errors?.length) {
+      return `Check: the declared check plan is broken and the gate FAILS red before any step runs — ${plan.errors.join("; ")}`;
+    }
     return (
-      "Check: running the repo's merge gate against the merged candidate — repoos check " +
-      "with the steps declared in repoos.toml. (No check plan was resolved for this repo.)"
+      "Check: nothing to verify — no check plan is configured in repoos.toml (the gate is " +
+      "skipped, never a pass). That's fine while there's no code to build or test. When there " +
+      "is: run `repoos check --print-plan` for a starting [[check.steps]] TOML, or file the " +
+      "setup task below. user-docs/check.md explains the gate."
     );
   }
   const intro =
@@ -301,6 +310,33 @@ function stageClass(s: string, i: number): string {
   if (i < currentIndex.value) return "done";
   if (i === currentIndex.value) return "current";
   return "todo";
+}
+
+// ── #0592: the repo has no check plan — the gate skips, never green ────────
+// Shown as a compact amber strip in the expanded bar with the one-click
+// "file the setup task" action, so the reminder is actionable right here.
+
+/** True when the repo's resolved check plan is genuinely empty and error-free
+ *  (#0592). An empty plan WITH errors fails the gate red — that is not "no
+ *  checks configured" and must not show the amber setup strip. */
+const planEmpty = computed(() => {
+  const plan = snapshot.value?.checkPlan;
+  return Boolean(plan) && isGenuinelyEmptyPlan(plan!);
+});
+
+const filingSetupTask = ref(false);
+
+async function fileSetupTask(): Promise<void> {
+  if (filingSetupTask.value) return;
+  filingSetupTask.value = true;
+  try {
+    await fileCheckSetupTask();
+    repo.pushToast("Task filed — set up check.steps in repoos.toml", "info");
+  } catch (err) {
+    repo.pushToast(err instanceof Error ? err.message : String(err), "error");
+  } finally {
+    filingSetupTask.value = false;
+  }
 }
 </script>
 
@@ -435,6 +471,24 @@ function stageClass(s: string, i: number): string {
         <span v-for="q in queue" :key="q" class="ibar-chip mono" :title="'#' + q + ' queued'"
           >#{{ q }}</span
         >
+      </div>
+
+      <!-- #0592: no check plan — the gate is skipped, never green. Amber
+           strip with the two easy paths: file the setup task, or follow the
+           CLI hint by hand. -->
+      <div v-if="planEmpty" class="ibar-plan-empty">
+        <span class="ibar-plan-empty-text">
+          <strong>No checks configured</strong> — nothing is verified in this pipeline. Run
+          <code>repoos check --print-plan</code> once the repo can build or test, or
+        </span>
+        <button
+          type="button"
+          class="ibar-plan-empty-btn"
+          :disabled="filingSetupTask"
+          @click="fileSetupTask"
+        >
+          {{ filingSetupTask ? "Filing…" : "file the setup task" }}
+        </button>
       </div>
     </div>
 
@@ -722,6 +776,56 @@ function stageClass(s: string, i: number): string {
 .queue-label {
   color: var(--txt-faint);
   font-size: 12px;
+}
+
+/* #0592: plain "no checks configured" strip — amber, informational, never green. */
+.ibar-plan-empty {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border);
+  border-bottom: none;
+  font-size: 12px;
+  background: transparent;
+}
+
+.ibar-plan-empty-text {
+  color: var(--amber);
+  min-width: 0;
+}
+
+.ibar-plan-empty-text strong {
+  font-weight: 700;
+}
+
+.ibar-plan-empty-text code {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+}
+
+.ibar-plan-empty-btn {
+  border: 1px solid var(--amber-border-tint);
+  color: var(--amber);
+  background: none;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 7px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: 0.15s;
+}
+
+.ibar-plan-empty-btn:hover:not(:disabled) {
+  background: var(--amber-tint);
+}
+
+.ibar-plan-empty-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 /* Queue segment yields space first (higher flex-shrink); label can still ellipsize. */
