@@ -110,6 +110,20 @@ describe("resolveShotTargets", () => {
     expect(r.detected).toEqual(["Docs site"]);
   });
 
+  it("accepts --target default for the bare [preview] command (#0593)", () => {
+    // The drawer's picker and shots.ts both label the default command
+    // "default"; without this a user-docs-touching diff could never shoot it.
+    const r = resolveShotTargets(PREVIEW, "web", ["user-docs/index.md"], "default");
+    expect(r.names).toEqual(["default"]);
+    expect(r.source).toBe("target");
+    expect(r.unknownTarget).toBeUndefined();
+
+    // But only when a default command actually exists.
+    const none = resolveShotTargets({ targets: [] }, "web", [], "default");
+    expect(none.names).toEqual([]);
+    expect(none.unknownTarget).toBe("default");
+  });
+
   it("reports an unknown --target instead of silently falling back", () => {
     const r = resolveShotTargets(PREVIEW, "web", [], "Nope");
     expect(r.names).toEqual([]);

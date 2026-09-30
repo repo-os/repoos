@@ -18,6 +18,15 @@ export class ApiError extends Error {
 
 export const API_TIMEOUT_MS = 15_000;
 
+/**
+ * Backstop timeout for model-list requests (#0593). Model probes spawn real
+ * CLIs server-side (Codex's account-aware app-server alone gets 15s), so the
+ * default GET budget would abort before the server could report which CLI
+ * failed — with per-CLI requests each call is short, but the longer ceiling
+ * keeps a slow one from being mistaken for a dead server.
+ */
+export const MODEL_API_TIMEOUT_MS = 30_000;
+
 export type ApiRequestInit = RequestInit & { timeoutMs?: number };
 
 export async function api<T = unknown>(path: string, opts?: ApiRequestInit): Promise<T> {

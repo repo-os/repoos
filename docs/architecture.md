@@ -65,8 +65,12 @@ Pure logic, no transport. Everything else calls into this.
   Qwen, Codex, GitHub Copilot CLI, and Antigravity CLI) and reports version,
   availability, auth state, and migration guidance for deprecated Gemini CLI.
 - `models.ts` — per-CLI model list adapters (e.g. sources `opencode models` and
-  `agy models` live for the Agents page dropdown). Copilot model discovery is not
-  stable, so it offers its default and supports per-model compatibility probes.
+  `agy models` live for the Agents page dropdown). Each adapter fails soft with
+  an `error` reason (binary missing, timed out, not signed in, spawn failed)
+  instead of a bare empty list, and `listModelSources` keeps a ~60s per-CLI
+  TTL cache that `refresh`/`?refresh=1` bypasses (#0593). Copilot model
+  discovery is not stable, so it offers its default and supports per-model
+  compatibility probes.
 - `build.ts` — build staleness check (hash of `src/` vs `dist/.build-info.json`,
   which holds `{ hash, version }` and is deterministic across rebuilds) plus
   `readBuildStamp()`, the single reader for the build timestamp in the

@@ -1,14 +1,21 @@
 /**
- * Tests for the per-CLI model sources (0060). Unit-tests the parser, exercises
- * the opencode adapter against a fake `opencode` binary that records its argv
- * (with and without `--refresh`), and verifies `/api/models` + the relaxed
- * save validation.
+ * Tests for the per-CLI model sources (0060, #0593). Unit-tests the parser,
+ * exercises the opencode adapter against a fake `opencode` binary that records
+ * its argv (with and without `--refresh`), and verifies `/api/models` (per-CLI
+ * `?cli=` filter, TTL cache + `?refresh=1` bypass), failure reasons, and the
+ * relaxed save validation.
  */
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
-import { parseLiveModels, MODEL_SOURCES, listModelSources } from "../../core/models";
+import {
+  parseLiveModels,
+  MODEL_SOURCES,
+  listModelSources,
+  clearModelSourceCache,
+  MODEL_CACHE_TTL_MS,
+} from "../../core/models";
 import { AGENT_MODELS } from "../../core/config";
 import { startServer } from "../../server/server";
 
@@ -31,12 +38,27 @@ process.stdin.on("data", (chunk) => {
 });
 `;
 
+/** Codex that refuses `model/list` (e.g. not signed in) with a JSON-RPC error. */
+const FAKE_CODEX_ERROR = `#!/usr/bin/env node
+let pending = "";
+process.stdin.on("data", (chunk) => {
+  pending += chunk;
+  if (!pending.includes('"model/list"')) return;
+  process.stdout.write(JSON.stringify({ id: 1, result: { userAgent: "fake" } }) + "\\n");
+  process.stdout.write(
+    JSON.stringify({ id: 2, error: { code: -32000, message: "not signed in" } }) + "\\n",
+  );
+  setTimeout(() => process.exit(0), 50);
+});
+`;
+
 const tmpRoots: string[] = [];
 afterEach(() => {
   for (const r of tmpRoots) rmSync(r, { recursive: true, force: true });
   tmpRoots.length = 0;
   delete process.env.REPOOS_FAKEBIN_LOG;
   delete process.env.REPOOS_FAKE_MODELS;
+  clearModelSourceCache();
 });
 
 function tmpDir(): string {
@@ -147,6 +169,86 @@ describe("codex adapter", () => {
       process.env.PATH = old;
     }
   });
+
+  it("surfaces a JSON-RPC error from model/list as the reason (#0593)", async () => {
+    const root = tmpDir();
+    const bin = join(root, "bin");
+    mkdirSync(bin, { recursive: true });
+    writeFileSync(join(bin, "codex"), FAKE_CODEX_ERROR, { mode: 0o755 });
+    const old = prependPath(bin);
+    try {
+      const res = await listModelSources({ clis: ["codex"], cwd: tmpDir() });
+      expect(res.codex.models).toEqual(["default"]);
+      expect(res.codex.error).toContain("not signed in");
+    } finally {
+      process.env.PATH = old;
+    }
+  });
+});
+
+describe("per-CLI TTL cache (#0593)", () => {
+  it("serves a repeat probe from cache; refresh bypasses and re-populates it", async () => {
+    const fx = makeFixture();
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const old = prependPath(fx.bin);
+    try {
+      const cwd = tmpDir();
+      const first = await listModelSources({ clis: ["opencode"], cwd });
+      const second = await listModelSources({ clis: ["opencode"], cwd });
+      expect(spawnArgs(fx)).toHaveLength(1);
+      expect(second.opencode).toEqual(first.opencode);
+
+      await listModelSources({ clis: ["opencode"], cwd, refresh: true });
+      expect(spawnArgs(fx)).toEqual([["models"], ["models", "--refresh"]]);
+
+      // The refreshed result re-populates the cache for the next plain read.
+      await listModelSources({ clis: ["opencode"], cwd });
+      expect(spawnArgs(fx)).toHaveLength(2);
+    } finally {
+      process.env.PATH = old;
+    }
+  });
+
+  it("keys the cache per CLI, so one CLI's probe doesn't re-probe another", async () => {
+    const fx = makeFixture();
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const old = prependPath(fx.bin);
+    try {
+      const cwd = tmpDir();
+      const first = await listModelSources({ clis: ["opencode"], cwd });
+      expect(first.opencode.models).toContain("opencode/big-pickle");
+
+      const second = await listModelSources({ clis: ["codex"], cwd });
+      expect(second.codex.models).toContain("gpt-5.6-sol");
+      expect(second.opencode).toBeUndefined();
+      // opencode was probed once; the codex request didn't touch it.
+      expect(spawnArgs(fx)).toEqual([["models"]]);
+    } finally {
+      process.env.PATH = old;
+    }
+  });
+
+  it("expires after MODEL_CACHE_TTL_MS", async () => {
+    const fx = makeFixture();
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const old = prependPath(fx.bin);
+    try {
+      const cwd = tmpDir();
+      await listModelSources({ clis: ["opencode"], cwd });
+      expect(spawnArgs(fx)).toHaveLength(1);
+
+      const realNow = Date.now();
+      vi.spyOn(Date, "now").mockReturnValue(realNow + MODEL_CACHE_TTL_MS + 1_000);
+      try {
+        await listModelSources({ clis: ["opencode"], cwd });
+      } finally {
+        vi.restoreAllMocks();
+      }
+      expect(spawnArgs(fx)).toHaveLength(2);
+    } finally {
+      process.env.PATH = old;
+    }
+  });
 });
 
 describe("opencode adapter", () => {
@@ -185,6 +287,8 @@ describe("opencode adapter", () => {
     try {
       const res = await listModelSources({ cwd: tmpDir() });
       expect(res.opencode.models).toEqual(["default"]);
+      // The reason travels with the empty list instead of a bare [] (#0593).
+      expect(res.opencode.error).toBe("opencode not found on PATH");
     } finally {
       process.env.PATH = old;
     }
@@ -194,11 +298,34 @@ describe("opencode adapter", () => {
     const root = tmpDir();
     const bin = join(root, "bin");
     mkdirSync(bin, { recursive: true });
-    writeFileSync(join(bin, "opencode"), "#!/bin/sh\nexec sleep 30\n", { mode: 0o755 });
+    writeFileSync(join(bin, "opencode"), "#!/bin/sh\nexec /bin/sleep 30\n", { mode: 0o755 });
     const old = withPath(bin);
     try {
-      const res = await listModelSources({ cwd: tmpDir() });
+      // Short override so the SIGKILL path is exercised without waiting out
+      // the production 12s ceiling.
+      const res = await listModelSources({ cwd: tmpDir(), timeoutMs: 500 });
       expect(res.opencode.models).toEqual(["default"]);
+      expect(res.opencode.error).toContain("timed out");
+    } finally {
+      process.env.PATH = old;
+    }
+  });
+
+  it("reports a non-zero exit with the CLI's own stderr as the reason", async () => {
+    const root = tmpDir();
+    const bin = join(root, "bin");
+    mkdirSync(bin, { recursive: true });
+    writeFileSync(
+      join(bin, "opencode"),
+      "#!/bin/sh\necho \"Not signed in — run 'opencode auth login'\" >&2\nexit 3\n",
+      { mode: 0o755 },
+    );
+    const old = prependPath(bin);
+    try {
+      const res = await listModelSources({ clis: ["opencode"], cwd: tmpDir() });
+      expect(res.opencode.models).toEqual(["default"]);
+      expect(res.opencode.error).toContain("exited with code 3");
+      expect(res.opencode.error).toContain("Not signed in");
     } finally {
       process.env.PATH = old;
     }
@@ -289,6 +416,65 @@ describe("GET /api/models", () => {
       }
     } finally {
       process.env.PATH = old;
+    }
+  });
+
+  it("filters to the requested CLI with ?cli= (#0593)", async () => {
+    const root = tmpDir();
+    const fx = makeFixture();
+    const old = prependPath(fx.bin);
+    try {
+      const server = await startServer({ root, host: "127.0.0.1", port: 0 });
+      try {
+        const res = await fetch(`${server.url}/api/models?cli=codex`);
+        expect(res.status).toBe(200);
+        const body = (await res.json()) as { byCli: Record<string, unknown> };
+        expect(Object.keys(body.byCli)).toEqual(["codex"]);
+        expect(body.byCli.codex).toEqual({
+          supported: true,
+          models: ["default", "gpt-5.6-sol", "gpt-5.6-terra"],
+          refreshable: true,
+        });
+      } finally {
+        await server.close();
+      }
+    } finally {
+      process.env.PATH = old;
+    }
+  });
+
+  it("accepts repeated and comma-separated ?cli= values, ignoring unknown ones", async () => {
+    const root = tmpDir();
+    const fx = makeFixture();
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const old = prependPath(fx.bin);
+    try {
+      const server = await startServer({ root, host: "127.0.0.1", port: 0 });
+      try {
+        const res = await fetch(
+          `${server.url}/api/models?cli=opencode,github%20copilot&cli=codex&cli=nosuchcli`,
+        );
+        expect(res.status).toBe(200);
+        const body = (await res.json()) as { byCli: Record<string, unknown> };
+        expect(Object.keys(body.byCli).sort()).toEqual(["codex", "github copilot", "opencode"]);
+      } finally {
+        await server.close();
+      }
+    } finally {
+      process.env.PATH = old;
+    }
+  });
+
+  it("an unknown ?cli= alone yields an empty byCli", async () => {
+    const root = tmpDir();
+    const server = await startServer({ root, host: "127.0.0.1", port: 0 });
+    try {
+      const res = await fetch(`${server.url}/api/models?cli=nosuchcli`);
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { byCli: Record<string, unknown> };
+      expect(body.byCli).toEqual({});
+    } finally {
+      await server.close();
     }
   });
 });

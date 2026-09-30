@@ -963,6 +963,12 @@ export interface ModelSourceResult {
   supported: boolean;
   models: string[];
   refreshable: boolean;
+  /**
+   * Why the list is empty or incomplete when the probe failed: binary not
+   * found on PATH, timed out, not signed in, spawn failed (#0593). Absent on
+   * success.
+   */
+  error?: string;
 }
 
 /** Response of GET /api/models, keyed by Agent.cli. */
