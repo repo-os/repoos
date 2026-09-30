@@ -31,6 +31,7 @@ import { checkBuild } from "../core/build.js";
 import { loadConfig } from "../core/config.js";
 import { reexecAfterStaleBuild, reexecUnderBunIfRequested } from "../core/runtime.js";
 import { c } from "./colors.js";
+import { commandUsage, printCommandHelp, printHelp, SELF_HELP_COMMANDS } from "./help.js";
 import { readVersion } from "../core/version.js";
 
 // node:sqlite (used by db.ts/auth-store.ts) is still marked experimental on
@@ -48,145 +49,6 @@ process.on("warning", (warning) => {
 });
 
 const VERSION = readVersion();
-
-// Column where COMMANDS descriptions start, measured from the start of the
-// command text (not counting the leading 4-space indent). Wide enough for
-// the longest single-line entry ("gc [--yes|--dry-run]", 21 chars) plus a
-// 2-space gap. Kept as one constant (rather than hand-counted spaces per
-// line) so every row stays aligned when an entry is added or renamed.
-const CMD_COL = 23;
-const CMD_INDENT = " ".repeat(4 + CMD_COL);
-
-/**
- * A COMMANDS row: `cmd` is plain text (for width math), `desc` may contain
- * ANSI codes. Callers join rows with `"\n    "` — the 4-space indent lives
- * in the join separator (and the template literal for the first row), not
- * here, so a row must not add its own leading indent.
- */
-function cmdRow(cmd: string, desc: string): string {
-  if (cmd.length >= CMD_COL) {
-    // Too long to share a line with its description — command on its own
-    // line, description indented to the same column as every other row.
-    return `${c.cyan(cmd)}\n${CMD_INDENT}${desc}`;
-  }
-  return `${c.cyan(cmd)}${" ".repeat(CMD_COL - cmd.length)}${desc}`;
-}
-
-// Column where trailing `# comment`s line up in the EXAMPLES block below.
-const EX_COL = 28;
-/** An EXAMPLES row; see cmdRow's doc comment re: indentation living in the join. */
-function exRow(cmd: string, comment?: string): string {
-  if (!comment) return `${c.dim("$")} ${cmd}`;
-  const pad = " ".repeat(Math.max(1, EX_COL - cmd.length));
-  return `${c.dim("$")} ${cmd}${pad}${c.dim("# " + comment)}`;
-}
-
-function help(): void {
-  const commandLines = [
-    cmdRow("check", "Definition-of-done gate: runs the check plan declared in repoos.toml"),
-    cmdRow(
-      "check --profile full",
-      "Run every declared step, including ones held back from a routine run",
-    ),
-    cmdRow("check --changed main", "Fast pre-review pass over steps affected by changed paths"),
-    cmdRow("check --print-plan", "Print the resolved plan as [[check.steps]] TOML to commit"),
-    cmdRow(
-      "shot [<route|url>]",
-      `Capture preview screenshots into the task's shots folder   ${c.dim("flags: --target --selector --task --base --wait --full-page")}`,
-    ),
-    cmdRow(
-      "init [name]",
-      "Scaffold work/, repoos.toml, AGENTS.md; outside a git repo runs a guided flow that can launch the web console",
-    ),
-    cmdRow(
-      "list [status]",
-      `Show the board (or one column: ${c.dim("inbox|ready|active|review|done")})`,
-    ),
-    cmdRow(
-      "status [--json]",
-      "One-screen health snapshot: server, build freshness, board, worktrees, tunnel, git",
-    ),
-    cmdRow(
-      "doctor [--json] [--probe <cli>] [--binary <path>]",
-      "Readiness preflight: identity, config, layout, tools, check plan, server, secrets (--probe runs a live contract check; --binary overrides PATH resolution)",
-    ),
-    cmdRow(
-      "certify <cli> [--yes] [--binary <path>]",
-      "Run the adapter contract suite and write certification evidence into agent-compatibility.json (--binary probes a specific binary)",
-    ),
-    cmdRow("support bundle", "Write a redacted, inspectable diagnostic bundle for failed setups"),
-    cmdRow("show <id>", "Show a task's full spec"),
-    cmdRow(
-      "mv <id> <status>",
-      `Move a task to a new status — never merges code   ${c.dim('flags: --note "...", --force-not-merged')}`,
-    ),
-    cmdRow('note <id> "<text>"', "Append a free-form note to a task's activity log"),
-    cmdRow(
-      "update <id>",
-      `Edit a task's metadata/body   ${c.dim("flags: --title --area --priority --type --body --branch --assigned-to")}`,
-    ),
-    cmdRow(
-      'new "<title>"',
-      `Create a task   ${c.dim("flags: --ai --type --area --priority --body")}`,
-    ),
-    cmdRow('new-doc "<desc>"', "Create a document from a description via PM agent"),
-    cmdRow("index [--json]", "Rebuild the derived index cache"),
-    cmdRow(
-      "gc [--yes|--dry-run]",
-      "Collect leaked task worktrees/branches (done/absent tasks, integrate candidates)",
-    ),
-    cmdRow(
-      "serve [--port N]",
-      `Start the local server (live API + SSE stream)   ${c.dim("flags: --host, --no-tailscale-https, --preview-overrides, --no-preview-overrides")}`,
-    ),
-    cmdRow("stop [--port N]", "Stop this repo's serve process (by its own lockfile)"),
-    cmdRow(
-      "service [sub]",
-      `Manage background services ${c.dim("list|status|install|start|stop|restart|enable|disable|remove")}`,
-    ),
-    cmdRow(
-      "tunnel <sub>",
-      `Publish local apps via Cloudflare Tunnel + Zero Trust ${c.dim("(setup|create|allow|deny|rename|destroy|start|install|stop|list|status)")}`,
-    ),
-    cmdRow(
-      "upgrade [--channel beta|canary|rc]",
-      `Self-update a standalone (curl-installed) repoos to the latest release\n${CMD_INDENT}(stable by default; --channel tracks a prerelease line instead)`,
-    ),
-    cmdRow("uninstall [--yes]", "Remove the standalone (curl-installed) repoos from this machine"),
-  ].join("\n    ");
-
-  const exampleLines = [
-    exRow("repoos init"),
-    exRow("repoos init myproject", "guided new-project flow outside a git repo"),
-    exRow('repoos new "Add company dashboard" --ai --type feature --area web,server --priority p1'),
-    exRow('repoos new-doc "API design doc for the payment system"'),
-    exRow("repoos mv 0012 active"),
-    exRow('repoos mv 0012 active --note "Fix the regression in checkout; see review"'),
-    exRow('repoos note 0012 "Handle the reviewer\'s suggestions before the next review"'),
-    exRow('repoos update 0012 --title "New title" --area web,core'),
-    exRow("repoos list ready"),
-    exRow("repoos shot", "screenshot the task preview for the current worktree"),
-    exRow("repoos shot /repo/commits/abc123", "capture one route"),
-    exRow("repoos shot --target 'Docs site' --selector '.sidebar'"),
-    exRow("repoos status", "one-screen health snapshot"),
-    exRow("repoos status --json", "machine-readable, for agents/tools"),
-    exRow("repoos index --json", "machine-readable, for agents/tools"),
-    exRow("repoos serve", "live API + SSE at http://127.0.0.1:7171"),
-  ].join("\n    ");
-
-  console.log(`
-  ${c.bold(c.cyan("RepoOS"))} ${c.dim("v" + VERSION)} — the repo is the operating system
-
-  ${c.bold("USAGE")}
-    repoos <command> [args]
-
-  ${c.bold("COMMANDS")}
-    ${commandLines}
-
-  ${c.bold("EXAMPLES")}
-    ${exampleLines}
-`);
-}
 
 function main(): void {
   const [cmd, ...rest] = process.argv.slice(2);
@@ -208,6 +70,21 @@ function main(): void {
   // only for the real `serve` command (cmdServe is also called mid-`init`,
   // where a re-exec would restart the whole guided flow). Display-only.
   if (cmd === "serve" || cmd === "server") setServeProcessTitle(serveProcessTitle());
+
+  // Per-command help (#0591): `repoos <cmd> --help` prints that command's full
+  // usage instead of running it. Only the *first* argument counts, so a literal
+  // value like `repoos mv 0012 active --note "--help"` still runs the command.
+  // Commands that already implement `--help` themselves keep their own, richer
+  // output; aliases (`ls`, `server`, …) resolve to their canonical entry.
+  if (
+    cmd &&
+    (rest[0] === "--help" || rest[0] === "-h") &&
+    !SELF_HELP_COMMANDS.has(cmd) &&
+    commandUsage(cmd) !== null
+  ) {
+    printCommandHelp(cmd);
+    return;
+  }
 
   // Staleness check — skip for version/help since those read no source, and
   // for `status`/`check` which report staleness themselves as first-class
@@ -344,11 +221,11 @@ function main(): void {
     case "help":
     case "--help":
     case "-h":
-      help();
+      printHelp();
       break;
     default:
       console.error(c.red(`  Unknown command: ${cmd}`));
-      help();
+      printHelp();
       process.exitCode = 1;
   }
 }
