@@ -2,7 +2,7 @@
 id: "0604"
 title: "Releases modal: tell users notes/cut runs can be left and revisited"
 type: chore
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -12,7 +12,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: opencode-go/hy3
 created_at: "2026-09-30T13:42:54Z"
-updated_at: "2026-09-30T17:54:20Z"
+updated_at: "2026-09-30T18:59:16Z"
 ---
 ## Problem
 In the Cut a release modal (`src/ui-app/src/views/ReleasesView.vue`) nothing says the user can leave while work continues.
@@ -34,3 +34,4 @@ Server-tracked notes runs (separate task) and notifications (separate task).
 - 2026-09-30T17:54:16Z · review_model_override
 - 2026-09-30T17:54:19Z · status inbox→ready
 - 2026-09-30T17:54:20Z · status ready→active, branch
+- 2026-09-30T18:59:16Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
