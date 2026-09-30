@@ -1,11 +1,12 @@
 /**
- * `repoos doctor [--json] [--probe <cli>] [--yes]` — human and machine
- * rendering of the readiness preflight built in `src/core/doctor.ts`.
+ * `repoos doctor [--json] [--verbose] [--probe <cli>] [--yes]` — human and
+ * machine rendering of the readiness preflight built in `src/core/doctor.ts`.
  *
  * The command adds no diagnostic logic of its own: it runs the engine, prints
  * it, and sets the exit code (non-zero when any finding is a `fail`, so it is
- * usable in scripts). `--json` emits the same `DoctorReport` the UI and the
- * support bundle (#0453) consume.
+ * usable in scripts). The default human report collapses passing checks (see
+ * `formatDoctor`); `--json` emits the unchanged, complete `DoctorReport` the UI
+ * and the support bundle (#0453) consume.
  *
  * `--probe <cli>` runs the live adapter contract suite for that harness
  * (`src/core/agent-contract.ts`) instead of the static report. It is opt-in
@@ -23,11 +24,14 @@ import {
   type DoctorReport,
 } from "../core/doctor.js";
 import { c } from "../cli/colors.js";
+import { termWidth, visibleWidth, wrap } from "../cli/layout.js";
 
 const ICON: Record<DoctorFinding["severity"], string> = { pass: "✔", warn: "⚠", fail: "✗" };
 
 export interface DoctorCliArgs {
   json: boolean;
+  /** Show every check, including passing ones (default: collapse passes). */
+  verbose: boolean;
   yes: boolean;
   /** Value passed to `--probe`, or null when the flag is absent. */
   probe: string | null;
@@ -44,16 +48,19 @@ export interface DoctorCliArgs {
  */
 export function parseDoctorArgs(argv: string[]): DoctorCliArgs {
   const json = argv.includes("--json");
+  const verbose = argv.includes("--verbose");
   const yes = argv.includes("--yes");
   const binaryIdx = argv.indexOf("--binary");
   const binary = binaryIdx !== -1 ? (argv[binaryIdx + 1] ?? null) : null;
   const probeArg = argv.indexOf("--probe");
-  if (probeArg === -1) return { json, yes, probe: null, probeMissingValue: false, binary };
+  if (probeArg === -1) {
+    return { json, verbose, yes, probe: null, probeMissingValue: false, binary };
+  }
   const value = argv[probeArg + 1];
   if (!value || value.startsWith("--")) {
-    return { json, yes, probe: null, probeMissingValue: true, binary };
+    return { json, verbose, yes, probe: null, probeMissingValue: true, binary };
   }
-  return { json, yes, probe: value, probeMissingValue: false, binary };
+  return { json, verbose, yes, probe: value, probeMissingValue: false, binary };
 }
 
 function severityColor(severity: DoctorFinding["severity"], text: string): string {
@@ -62,50 +69,139 @@ function severityColor(severity: DoctorFinding["severity"], text: string): strin
   return c.red(text);
 }
 
-export function renderDoctor(report: DoctorReport): void {
-  console.log("");
-  console.log("  " + c.bold(c.cyan("RepoOS doctor")) + c.dim(" — " + report.project.name));
-  console.log(c.dim("  " + report.project.root));
+const SEVERITY_RANK: Record<DoctorFinding["severity"], number> = { fail: 0, warn: 1, pass: 2 };
+
+export interface DoctorRenderOptions {
+  /** Show passing checks too; by default only warnings/failures are listed. */
+  verbose?: boolean;
+  /** Layout width (default `termWidth()`), for tests at fixed widths. */
+  width?: number;
+}
+
+function titleCase(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/**
+ * One finding: the title line with the stable id right-aligned — or, when the
+ * title leaves no room, the id on its own line so it can't push a long title
+ * out — followed by the detail wrapped with a hanging indent.
+ */
+function formatFinding(f: DoctorFinding, width: number): string[] {
+  const pre = "    " + severityColor(f.severity, ICON[f.severity]) + " ";
+  const id = c.dim(f.id);
+  const inner = width - visibleWidth(pre);
+  const titleW = visibleWidth(f.title);
+  const idW = visibleWidth(f.id);
+  const out: string[] = [];
+  if (titleW + 2 + idW <= inner) {
+    out.push(pre + f.title + " ".repeat(inner - titleW - idW) + id);
+  } else {
+    out.push(...wrap(f.title, Math.max(1, inner), pre).split("\n"));
+    out.push("      " + id);
+  }
+  out.push(...wrap(f.detail, Math.max(1, width - 6), "      ").split("\n"));
+  return out;
+}
+
+/**
+ * The human `repoos doctor` report as a string. Pure (width and verbosity are
+ * parameters), so tests can assert on it at fixed widths. Passing checks are
+ * collapsed unless `verbose`; the summary and next steps use the serve
+ * banner's warning-block shape, with failures listed first.
+ */
+export function formatDoctor(report: DoctorReport, opts: DoctorRenderOptions = {}): string {
+  const width = opts.width ?? termWidth();
+  const verbose = opts.verbose ?? false;
+  const lines: string[] = [
+    "",
+    ...wrap(
+      `${c.bold(c.cyan("RepoOS doctor"))} ${c.dim("— " + report.project.name)}`,
+      Math.max(1, width - 2),
+      "  ",
+    ).split("\n"),
+    ...wrap(c.dim(report.project.root), Math.max(1, width - 2), "  ").split("\n"),
+  ];
   if (report.project.fromWorktree) {
-    console.log(c.dim("  (linked worktree — project-wide checks report the main checkout)"));
+    lines.push(
+      ...wrap(
+        c.dim("(linked worktree — project-wide checks report the main checkout)"),
+        Math.max(1, width - 2),
+        "  ",
+      ).split("\n"),
+    );
   }
 
+  // Collapse passes by default so the one failure isn't buried under ~25 green
+  // lines; `--verbose` restores the full checklist.
+  const shown = report.findings.filter((f) => verbose || f.severity !== "pass");
+  const hidden = report.findings.length - shown.length;
   for (const category of DOCTOR_CATEGORIES) {
-    const rows = report.findings.filter((f) => f.category === category);
+    const rows = shown
+      .filter((f) => f.category === category)
+      .sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]);
     if (rows.length === 0) continue;
-    console.log("");
-    console.log("  " + c.bold(category));
-    for (const f of rows) {
-      console.log(
-        "    " +
-          severityColor(f.severity, ICON[f.severity]) +
-          " " +
-          f.title +
-          c.dim("  (" + f.id + ")"),
-      );
-      console.log("      " + c.dim(f.detail));
-    }
+    lines.push("");
+    lines.push("  " + c.bold(titleCase(category)));
+    for (const f of rows) lines.push(...formatFinding(f, width));
+  }
+
+  if (hidden > 0) {
+    lines.push("");
+    lines.push(
+      ...wrap(
+        c.dim(`… ${hidden} passing check${hidden === 1 ? "" : "s"} hidden — run `) +
+          c.cyan("repoos doctor --verbose") +
+          c.dim(" to show every check"),
+        Math.max(1, width - 2),
+        "  ",
+      ).split("\n"),
+    );
   }
 
   const s = report.summary;
-  const parts = [c.green(`${s.pass} pass`)];
-  if (s.warn) parts.push(c.yellow(`${s.warn} warn`));
+  const parts: string[] = [];
   if (s.fail) parts.push(c.red(`${s.fail} fail`));
-  console.log("");
-  console.log("  " + parts.join(c.dim(" · ")));
+  if (s.warn) parts.push(c.yellow(`${s.warn} warn`));
+  if (s.pass) parts.push(c.green(`${s.pass} pass`));
+  const worst = s.fail ? "fail" : s.warn ? "warn" : "pass";
+  const marker = worst === "fail" ? c.red("✗") : worst === "warn" ? c.yellow("▲") : c.green("✔");
+  lines.push("");
+  lines.push("  " + marker + " " + c.bold(parts.join(c.dim(" · "))));
 
-  const fixes = doctorRemediations(report);
+  const fixes = doctorRemediations({
+    ...report,
+    findings: [...report.findings].sort(
+      (a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity],
+    ),
+  });
   if (fixes.length) {
-    console.log("");
-    console.log("  " + c.bold("Next steps"));
-    for (const fix of fixes) console.log("    " + c.cyan("→") + " " + fix);
+    lines.push("");
+    lines.push("  " + c.yellow("▲") + " " + c.bold("Next steps"));
+    for (const fix of fixes) {
+      const wrapped = wrap(fix, Math.max(1, width - 6), "").split("\n");
+      lines.push("    " + c.cyan("→") + " " + wrapped[0]);
+      for (let i = 1; i < wrapped.length; i++) lines.push("      " + wrapped[i]);
+    }
   }
-  console.log("");
+  lines.push("");
+  return lines.join("\n");
 }
 
-/** `repoos doctor [--json] [--probe <cli>] [--yes]` */
+export function renderDoctor(report: DoctorReport, opts: DoctorRenderOptions = {}): void {
+  console.log(formatDoctor(report, opts));
+}
+
+/** `repoos doctor [--json] [--verbose] [--probe <cli>] [--yes]` */
 export async function cmdDoctor(argv: string[]): Promise<void> {
-  const { json: asJson, yes, probe: probeCli, probeMissingValue, binary } = parseDoctorArgs(argv);
+  const {
+    json: asJson,
+    yes,
+    probe: probeCli,
+    probeMissingValue,
+    binary,
+    verbose,
+  } = parseDoctorArgs(argv);
   if (probeMissingValue) {
     console.error(c.red("  repoos doctor --probe needs a harness id, e.g. `--probe opencode`."));
     process.exitCode = 1;
@@ -120,7 +216,7 @@ export async function cmdDoctor(argv: string[]): Promise<void> {
     if (asJson) {
       console.log(JSON.stringify(report, null, 2));
     } else {
-      renderDoctor(report);
+      renderDoctor(report, { verbose });
     }
     if (report.summary.fail > 0) process.exitCode = 1;
   } catch (e) {

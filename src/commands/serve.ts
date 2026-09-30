@@ -8,6 +8,7 @@ import { PREVIEW_REQUEST_SIGNAL } from "../server/agents.js";
 import { isBun } from "../core/runtime.js";
 import { findRepoRoot } from "../core/config.js";
 import { c, statusColor } from "../cli/colors.js";
+import { kv } from "../cli/layout.js";
 import type { RepoEvent } from "../server/live-index.js";
 import { readVersion } from "../core/version.js";
 import { detectTailscaleIPv4, ensureTailscaleHttps } from "../core/tailscale.js";
@@ -140,13 +141,17 @@ export function renderServeBanner(
   rows: readonly BannerRow[],
   httpsWarning?: string,
 ): string {
-  const width = Math.max(...rows.map((r) => r.label.length));
   const out: string[] = [
     "",
     `  ${c.bold(c.cyan("◆ RepoOS"))} ${c.dim("v" + version)}  ${c.green("● running")}`,
     "",
+    // Shared label/value layout (#0591) so long URLs wrap at the terminal width
+    // instead of running off the edge.
+    kv(
+      rows.map((r) => ({ label: c.dim(r.label), value: r.value })),
+      { indent: 2 },
+    ),
   ];
-  for (const r of rows) out.push(`  ${c.dim(r.label.padEnd(width))}  ${r.value}`);
   if (httpsWarning) {
     // Reasons read "<problem> — <fix> <url>": put the problem, the fix and the
     // link on their own lines so the actionable part isn't buried.
