@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-09-30T05:22:44Z"
-review_passes: 1
+updated_at: "2026-09-30T06:38:39Z"
+review_passes: 2
 id: "0596"
 title: Rendered contrast audit across themes and screens (+ hardcoded-color source guard)
 type: feature
@@ -52,4 +52,5 @@ The theme-contrast check (`[[check.contrastPairs]]` in repoos.toml) only tests 9
 - 2026-09-30T05:09:43Z · body
 - 2026-09-30T05:18:06Z · status active→review
 - 2026-09-30T05:18:47Z · note: shots: failed — failed — capture of Task drawer — meta grid, tabs, field labels on "default" failed: click: Error: strict mode violation: locator('.task-card') resolved to 548 elements:
+
 
