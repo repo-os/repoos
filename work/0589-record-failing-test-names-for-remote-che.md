@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 cli_override: cursor
-model_override: default
+model_override: composer-2.5
 created_at: "2026-09-29T22:14:45Z"
-updated_at: "2026-09-30T00:26:57Z"
+updated_at: "2026-09-30T00:26:58Z"
 ---
 ## Problem
 
@@ -35,3 +35,4 @@ Every failed check run in the history says which tests failed, whether it ran lo
 
 - 2026-09-29T22:14:45Z · created · unknown
 - 2026-09-30T00:26:57Z · cli_override, model_override
+- 2026-09-30T00:26:58Z · model_override
