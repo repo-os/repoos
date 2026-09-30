@@ -32,7 +32,12 @@ export interface SmokePage {
   close(): Promise<void>;
   goto(url: string, options: { waitUntil: string; timeout: number }): Promise<unknown>;
   title(): Promise<string>;
-  evaluate<R>(fn: () => R): Promise<R>;
+  /**
+   * Run `fn` in the page. Playwright serializes the function itself, so `fn`
+   * must be self-contained (no module-scope references) — that is exactly how
+   * the contrast audit ships its in-page probe (#0596).
+   */
+  evaluate<R, A = undefined>(fn: (arg: A) => R, arg?: A): Promise<R>;
   $(selector: string): Promise<unknown>;
   setViewportSize(viewport: { width: number; height: number }): Promise<void>;
   waitForFunction(fn: () => unknown, options?: { timeout?: number }): Promise<unknown>;
@@ -110,4 +115,17 @@ export async function launchWebkit(): Promise<SmokeBrowser> {
     throw new Error("Cannot find module @playwright/test (not installed)");
   }
   return playwright.webkit.launch({ headless: true });
+}
+
+/**
+ * A missing @playwright/test install or WebKit binary — a skip, not a failure.
+ * Shared by both Playwright callers (ui-smoke, the contrast audit #0596) so a
+ * machine without a browser reports the same way from either gate step.
+ */
+export function isPlaywrightUnavailable(msg: string): boolean {
+  return (
+    msg.includes("Cannot find module") ||
+    msg.includes("not installed") ||
+    msg.includes("Executable doesn't exist")
+  );
 }
