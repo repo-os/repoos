@@ -32,7 +32,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../core/types.js";
 import type { LogEntry, Logger } from "../core/logger.js";
-import { describeCloseOutFailure } from "../core/close-out-failure.js";
+import { describeCloseOutFailure, classifyFailure } from "../core/close-out-failure.js";
 import { parseTask, serializeTask, utcTimestamp } from "../core/task.js";
 import { commitTaskFile } from "../core/git.js";
 import type { IntegrationJob } from "./integration-job.js";
@@ -101,11 +101,16 @@ export function doneErrorTldrFingerprint(
 
 const CLOSE_OUT_CANCELLED = "close-out cancelled by user";
 
+const DIAGNOSABLE_CLOSE_OUT_KINDS = new Set(["conflict", "validating", "timeout"]);
+
 /** Whether a failed close-out job reason is worth a Debugger one-shot (#0595). */
-export function isDiagnosableCloseOutFailure(reason: string | undefined): boolean {
+export function isDiagnosableCloseOutFailure(
+  phase: string | undefined,
+  reason: string | undefined,
+): boolean {
   const clean = reason?.trim() ?? "";
   if (!clean || clean === CLOSE_OUT_CANCELLED) return false;
-  return true;
+  return DIAGNOSABLE_CLOSE_OUT_KINDS.has(classifyFailure(phase, clean));
 }
 
 export interface CloseOutFailureContext {
@@ -114,6 +119,19 @@ export interface CloseOutFailureContext {
   detail?: string;
   reason: string;
   logPath?: string;
+}
+
+/** Redact and cap close-out context for the Debugger prompt; fingerprints stay raw. */
+function closeOutContextForPrompt(ctx: CloseOutFailureContext): CloseOutFailureContext {
+  const message = redactSecrets(ctx.message).slice(0, DETAIL_CHARS);
+  const detailSource = ctx.detail?.trim() ? ctx.detail : ctx.reason;
+  const detail = redactSecrets(detailSource).slice(0, DETAIL_CHARS);
+  return {
+    ...ctx,
+    message,
+    detail: detail || undefined,
+    reason: redactSecrets(ctx.reason).slice(0, DETAIL_CHARS),
+  };
 }
 
 /**
@@ -155,7 +173,7 @@ export function buildCloseOutTldrPrompt(
 ): string {
   const detailBlock = ctx.detail?.trim()
     ? ctx.detail.trim().slice(0, DETAIL_CHARS)
-    : ctx.reason.trim().slice(0, DETAIL_CHARS) || "(none captured)";
+    : "(none captured)";
   return [
     `You are the Debugger for RepoOS task #${task.id} ("${task.title}"). Move to done`,
     "(close-out) just failed and the human is looking at raw logs. Write the ONE-LINE",
@@ -278,7 +296,12 @@ export class DebugTldrManager {
    */
   onCloseOutFailed(taskId: string): void {
     const job = this.deps.getCloseOutJob?.(taskId);
-    if (!job || job.phase !== "failed" || !isDiagnosableCloseOutFailure(job.reason)) return;
+    if (
+      !job ||
+      job.phase !== "failed" ||
+      !isDiagnosableCloseOutFailure(job.failedPhase, job.reason)
+    )
+      return;
     const mapped = describeCloseOutFailure(job.failedPhase, job.reason!);
     const ctx: CloseOutFailureContext = {
       step: mapped.step,
@@ -364,7 +387,7 @@ export class DebugTldrManager {
     const fingerprint = doneErrorTldrFingerprint(ctx.step, ctx.message, ctx.detail);
     const job = this.deps.getCloseOutJob(taskId);
     if (!job || job.phase !== "failed") return { ok: false, reason: "failure no longer current" };
-    if (!isDiagnosableCloseOutFailure(job.reason)) {
+    if (!isDiagnosableCloseOutFailure(job.failedPhase, job.reason)) {
       return { ok: false, reason: "failure not diagnosable" };
     }
     const currentMapped = describeCloseOutFailure(job.failedPhase, job.reason!);
@@ -389,11 +412,7 @@ export class DebugTldrManager {
     this.deps.onDiagnosisStarted?.(taskId);
     try {
       const excerpt = this.buildCloseOutExcerpt(taskId, currentCtx);
-      const detailForPrompt = currentCtx.detail
-        ? redactSecrets(currentCtx.detail).slice(0, DETAIL_CHARS)
-        : redactSecrets(currentCtx.reason).slice(0, DETAIL_CHARS);
-      const promptCtx = { ...currentCtx, detail: detailForPrompt || currentCtx.detail };
-      const prompt = buildCloseOutTldrPrompt(task, promptCtx, excerpt);
+      const prompt = buildCloseOutTldrPrompt(task, closeOutContextForPrompt(currentCtx), excerpt);
       const run = this.deps.run ?? ((a: Agent, p: string, cwd: string) => runPrompt(a, p, { cwd }));
       const result = await run(agent, prompt, this.deps.config.root);
       recordOneShotSession(this.deps.config.root, agent, result, {
@@ -474,7 +493,11 @@ export class DebugTldrManager {
     const getJob = this.deps.getCloseOutJob!;
     const updateJob = this.deps.updateCloseOutJob!;
     const job = getJob(taskId);
-    if (!job || job.phase !== "failed" || !isDiagnosableCloseOutFailure(job.reason)) {
+    if (
+      !job ||
+      job.phase !== "failed" ||
+      !isDiagnosableCloseOutFailure(job.failedPhase, job.reason)
+    ) {
       return { ok: false, reason: "failure cleared while diagnosing" };
     }
     const mapped = describeCloseOutFailure(job.failedPhase, job.reason!);
