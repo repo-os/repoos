@@ -1483,8 +1483,10 @@ export function isTaskBookkeepingPath(path: string, filter: WorkFileFilter = {})
 }
 
 /**
- * Repo-relative paths changed between two commits in `root` (inclusive range
- * `fromSha..toSha`). Returns null when git could not produce the diff.
+ * Repo-relative paths that differ between the trees at `fromSha` and `toSha`
+ * (two-commit diff, either order). Renames are reported as delete + add
+ * (`--no-renames`) so a source file moved into `work/*.md` cannot masquerade as
+ * bookkeeping-only drift. Returns null when git could not produce the diff.
  */
 export async function pathsChangedBetweenCommits(
   root: string,
@@ -1492,7 +1494,11 @@ export async function pathsChangedBetweenCommits(
   toSha: string,
 ): Promise<string[] | null> {
   if (fromSha === toSha) return [];
-  const res = await runGit(root, ["diff", "--name-only", fromSha, toSha], 15_000);
+  const res = await runGit(
+    root,
+    ["-c", "core.quotepath=false", "diff", "--name-only", "--no-renames", fromSha, toSha],
+    15_000,
+  );
   if (res.status !== 0) return null;
   return res.stdout
     .split("\n")

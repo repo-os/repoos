@@ -18,6 +18,7 @@ import { dirname, join } from "node:path";
 import type { RepoOSConfig } from "../core/types.js";
 import {
   GitDirtyCheckError,
+  isAncestor,
   isTaskBookkeepingPath,
   pathsChangedBetweenCommits,
   runGit,
@@ -266,14 +267,13 @@ export async function verifyWorktreeHandoffIntegrity(
     return { ok: true };
   }
   if (headMoved && dirtyFiles.length === 0) {
-    const filter = workFileFilter(config as RepoOSConfig);
-    const driftPaths = await pathsChangedBetweenCommits(wt, expectedSha, actualHead);
-    if (
-      driftPaths !== null &&
-      driftPaths.length > 0 &&
-      driftPaths.every((p) => isTaskBookkeepingPath(p, filter))
-    ) {
-      return { ok: true };
+    const handoffStillReachable = isAncestor(wt, expectedSha, actualHead);
+    if (handoffStillReachable === true) {
+      const filter = workFileFilter(config as RepoOSConfig);
+      const driftPaths = await pathsChangedBetweenCommits(wt, expectedSha, actualHead);
+      if (driftPaths !== null && driftPaths.every((p) => isTaskBookkeepingPath(p, filter))) {
+        return { ok: true };
+      }
     }
   }
   const attribution = attributeFiles(wt, dirtyFiles);
