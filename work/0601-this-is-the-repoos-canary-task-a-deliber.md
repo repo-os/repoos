@@ -2,7 +2,7 @@
 id: "0601"
 title: Bump canary counter by 1
 type: chore
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
@@ -60,4 +60,4 @@ This is the RepoOS canary task: a deliberately trivial change used to smoke-test
 - 2026-09-30T12:49:07Z · title, area, type, body
 - 2026-09-30T12:53:44Z · status inbox→ready
 - 2026-09-30T12:53:46Z · status ready→active, branch
-- 2026-09-30T12:58:03Z · note: shots: skipped — the diff (2 changed paths) touches no [[preview.paths]] globs — nothing here is a declared UI change
+- 2026-09-30T12:58:03Z · status active→review
