@@ -5305,25 +5305,6 @@
   object-fit: cover;
   background: var(--md-body-bg);
 }
-.shot-remove {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  border: 1px solid var(--border-bright);
-  background: var(--panel);
-  color: var(--txt-dim);
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-  transition: 0.15s;
-}
-.shot-remove:hover {
-  color: var(--red);
-  border-color: var(--red);
-}
 .shot-name {
   display: block;
   font-size: 10px;
