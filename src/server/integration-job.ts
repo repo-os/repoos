@@ -235,6 +235,7 @@ export function createJobCoordinator(root: string): JobCoordinator {
         // attempt's durable gate log keeps a distinct filename (#0428) instead
         // of the new run clobbering the failed one's `<id>-1.log`.
         checkAttempt: existing?.checkAttempt,
+        // debugTldr* must not carry over — a retry is a fresh failure episode (#0595).
       };
       writeJob(root, job);
       return job;

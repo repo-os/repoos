@@ -586,8 +586,59 @@ describe("done-error debug tl;dr (#0595)", () => {
   it("fingerprints step, message, and detail separately from needs-input keys", () => {
     const fp = doneErrorTldrFingerprint("check", "The validation check failed.", "assertion");
     expect(fp).not.toBe(tldrFingerprint("review-failed", "assertion"));
-    expect(isDiagnosableCloseOutFailure("check failed: x")).toBe(true);
-    expect(isDiagnosableCloseOutFailure("close-out cancelled by user")).toBe(false);
+    expect(isDiagnosableCloseOutFailure("validating", "check failed: x")).toBe(true);
+    expect(isDiagnosableCloseOutFailure(undefined, "close-out cancelled by user")).toBe(false);
+    expect(
+      isDiagnosableCloseOutFailure(
+        "publishing",
+        "Main's working tree has uncommitted changes that would be overwritten",
+      ),
+    ).toBe(false);
+  });
+
+  it("redacts secrets in the error headline before they reach the model", async () => {
+    const secret = "ghp_abcdefghijklmnopqrstuvwx";
+    const job = failedJob({
+      reason: `check failed: auth.test.ts failed with token=${secret}`,
+    });
+    const mapped = describeCloseOutFailure(job.failedPhase, job.reason!);
+    const h = closeOutHarness(job);
+    const manager = new DebugTldrManager(h.deps);
+    await manager.runCloseOut("0595", {
+      step: mapped.step,
+      message: mapped.message,
+      detail: mapped.detail,
+      reason: job.reason!,
+    });
+    const prompt = String(h.runMock.mock.calls[0]?.[1] ?? "");
+    expect(prompt).not.toContain(secret);
+    expect(prompt).toContain("***REDACTED***");
+    expect(prompt).toMatch(/Error headline:.*REDACTED/s);
+  });
+
+  it("skips the write when the close-out failure changes mid-run", async () => {
+    const job = failedJob();
+    const mapped = describeCloseOutFailure(job.failedPhase, job.reason!);
+    let stored: IntegrationJob = { ...job };
+    const h = closeOutHarness(job);
+    h.deps.getCloseOutJob = () => stored;
+    h.deps.updateCloseOutJob = (_id, update) => {
+      stored = { ...stored, ...update };
+      return stored;
+    };
+    h.deps.run = vi.fn(async () => {
+      stored = failedJob({ reason: "merge conflict in src/other.ts — resolve in worktree" });
+      return { ok: true, output: "Merge conflict — resolve src/other.ts and retry." };
+    }) as unknown as DebugTldrDeps["run"];
+    const manager = new DebugTldrManager(h.deps);
+    const result = await manager.runCloseOut("0595", {
+      step: mapped.step,
+      message: mapped.message,
+      detail: mapped.detail,
+      reason: job.reason!,
+    });
+    expect(result).toEqual({ ok: false, reason: "failure cleared while diagnosing" });
+    expect(stored.debugTldr).toBeUndefined();
   });
 
   it("persists tl;dr on the integration job and notifies the UI hook", async () => {
