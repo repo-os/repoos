@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 model_override: opencode-go/glm-5.3-flash
+review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-30T00:01:23Z"
-updated_at: "2026-09-30T00:03:43Z"
+updated_at: "2026-09-30T00:03:47Z"
 ---
 ## Problem
 
@@ -60,3 +61,4 @@ Update `user-docs/check.md` (the "Bootstrapping a plan" paragraph and "When a re
 
 - 2026-09-30T00:01:23Z · created · unknown
 - 2026-09-30T00:03:43Z · model_override
+- 2026-09-30T00:03:47Z · review_model_override
