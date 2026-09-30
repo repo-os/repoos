@@ -91,6 +91,21 @@ export interface DirtyCheckout {
  * until the user chooses, the task stays in review. Carries the dirty file list
  * and which checkout it is, so the modal can show and word them.
  */
+/** Move-to-done refused because the worktree diverged from the handoff snapshot (#0598). */
+export class WorktreeHandoffConflictError extends Error {
+  readonly taskId: string;
+  constructor(taskId: string, message: string) {
+    super(message);
+    this.name = "WorktreeHandoffConflictError";
+    this.taskId = taskId;
+  }
+}
+
+export interface WorktreeHandoffConflict {
+  message: string;
+  dirtyFiles?: string[];
+}
+
 export class DirtyCheckoutError extends Error {
   readonly taskId: string;
   readonly dirtyFiles: string[];
@@ -625,6 +640,7 @@ export const useRepoStore = defineStore("repo", () => {
    * modal reads this and the caller clears it via `clearDirtyCheckout` on
    * Cancel (or it is overwritten by the next run). */
   const dirtyCheckouts = ref<Record<string, DirtyCheckout>>({});
+  const worktreeHandoffConflicts = ref<Record<string, WorktreeHandoffConflict>>({});
   /** The review agent's report per task, hydrated on demand + via SSE. */
   const reviews = ref<Record<string, ReviewState>>({});
   /** The CTO board monitor (0174): live state hydrated from `/api/cto` + SSE. */
@@ -1032,6 +1048,38 @@ export const useRepoStore = defineStore("repo", () => {
     const next = { ...dirtyCheckouts.value };
     delete next[id];
     dirtyCheckouts.value = next;
+  }
+
+  function clearWorktreeHandoffConflict(id: string): void {
+    const next = { ...worktreeHandoffConflicts.value };
+    delete next[id];
+    worktreeHandoffConflicts.value = next;
+  }
+
+  function worktreeHandoffConflictFor(id: string): WorktreeHandoffConflict | null {
+    return worktreeHandoffConflicts.value[id] ?? null;
+  }
+
+  async function discardWorktreeHandoffEdits(t: Task): Promise<void> {
+    const r = await api<{ ok: boolean; error?: string }>(
+      `/api/tasks/${t.id}/worktree-handoff/discard`,
+      { method: "POST" },
+    );
+    if (!r.ok) {
+      const message = r.error ?? "could not discard post-handoff edits";
+      pushToast(message, "error");
+      throw new Error(message);
+    }
+    clearWorktreeHandoffConflict(t.id);
+  }
+
+  async function sendBackFromHandoffConflict(t: Task): Promise<void> {
+    await patchTask(t.id, {
+      status: "active",
+      note: "sent back after worktree changed post-handoff",
+    });
+    clearWorktreeHandoffConflict(t.id);
+    acknowledgeHumanTaskAction(t.id);
   }
 
   /**
@@ -2251,6 +2299,8 @@ export const useRepoStore = defineStore("repo", () => {
       dirtyFiles?: string[];
       dirtyScope?: DirtyScope;
       dirtyCheckFailed?: boolean;
+      worktreeChangedAfterHandoff?: boolean;
+      resolutions?: string[];
     } = {};
     try {
       body = (await raw.json()) as Partial<DoneResult> & {
@@ -2258,9 +2308,19 @@ export const useRepoStore = defineStore("repo", () => {
         dirtyFiles?: string[];
         dirtyScope?: DirtyScope;
         dirtyCheckFailed?: boolean;
+        worktreeChangedAfterHandoff?: boolean;
+        resolutions?: string[];
       };
     } catch {
       body = {};
+    }
+    if (raw.status === 409 && body.worktreeChangedAfterHandoff) {
+      const message = body.error ?? "worktree changed after handoff";
+      worktreeHandoffConflicts.value = {
+        ...worktreeHandoffConflicts.value,
+        [t.id]: { message, dirtyFiles: body.dirtyFiles },
+      };
+      throw new WorktreeHandoffConflictError(t.id, message);
     }
     // Dirty-checkout guard (0204/#0512): the server returns 409 + needsCommit
     // when a checkout has uncommitted files and the user has not opted in via
@@ -2909,7 +2969,13 @@ export const useRepoStore = defineStore("repo", () => {
     // would duplicate the visible error and detach it from the action. A
     // dirty-checkout guard (0204/#0512) is surfaced by the confirmation modal
     // instead.
-    if (err instanceof MoveToDoneError || err instanceof DirtyCheckoutError) return;
+    if (
+      err instanceof MoveToDoneError ||
+      err instanceof DirtyCheckoutError ||
+      err instanceof WorktreeHandoffConflictError
+    ) {
+      return;
+    }
     pushToast(message, "error");
   }
 
@@ -2974,6 +3040,10 @@ export const useRepoStore = defineStore("repo", () => {
     dirtyFilesFor,
     dirtyScopeFor,
     clearDirtyCheckout,
+    worktreeHandoffConflictFor,
+    clearWorktreeHandoffConflict,
+    discardWorktreeHandoffEdits,
+    sendBackFromHandoffConflict,
     reviews,
     sortOrder,
     storySortOrder,

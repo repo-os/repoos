@@ -129,9 +129,12 @@ who owns approval and merging:
   stops for input. To change a task in review, send it back to `active`
   through RepoOS first (then hand off again), or file a follow-up task. If you
   find you must fix something you spotted, commit it on the branch only as a
-  proposal and file a task for it; never leave it uncommitted. Incident:
-  2026-09-30, #0594 — four files edited in its worktree mid-close-out never
-  landed. Tracked by #0598, which will add a lock and a close-out check.
+  proposal and file a task for it; never leave it uncommitted. RepoOS also
+  writes `.repoos/locks/<taskId>.json` while a task is in `review` or
+  close-out (advisory — runners refuse to start there; external sessions
+  should check it too). Move to done compares the worktree to the handoff
+  snapshot and refuses when HEAD moved or the tree is dirty after handoff.
+  Incident: 2026-09-30, #0594 — four files edited mid-close-out never landed.
 - If explicitly taking over a newly created task, claim it through RepoOS
   directly as `active`, without leaving it in `ready` for auto-dispatch to grab.
   Managed starts should use RepoOS's Start action, which owns worktree setup.

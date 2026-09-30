@@ -19,7 +19,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { rmFixture } from "./helpers";
 import { ensureWorktree } from "../../core/git.js";
+import { createJobCoordinator } from "../../server/integration-job.js";
 import { taskAction, getWorktreeDirtyForTask } from "../../server/routes/tasks.js";
+import { readHandoffSnapshot, writeHandoffSnapshot } from "../../server/worktree-handoff-guard.js";
 import type { RouteContext } from "../../server/routes/types.js";
 import type { Task } from "../../core/types.js";
 
@@ -99,15 +101,27 @@ function makeRepo(): { root: string; clean: () => void } {
   git(["config", "user.email", "t@example.com"]);
   git(["config", "user.name", "Test"]);
   mkdirSync(join(root, "work"), { recursive: true });
+  writeFileSync(join(root, ".gitignore"), ".repoos/\n");
   writeFileSync(join(root, "README.md"), "hi\n");
-  git(["add", "README.md"]);
+  git(["add", ".gitignore", "README.md"]);
   git(["commit", "-m", "init"]);
   return { root, clean: () => rmFixture(root) };
 }
 
-function makeCtx(root: string, task: Task, opts: { onEnqueue?: () => void } = {}): RouteContext {
+function makeCtx(
+  root: string,
+  task: Task,
+  opts: { onEnqueue?: () => void; jobCoordinator?: RouteContext["jobCoordinator"] } = {},
+): RouteContext {
+  const jobCoordinator =
+    opts.jobCoordinator ??
+    ({
+      enqueue: opts.onEnqueue ?? (() => ({})),
+      allJobs: () => [],
+      updateJob: () => null,
+    } as any);
   return {
-    config: { root } as any,
+    config: { root, workDir: "work", cacheDir: ".repoos" } as any,
     index: { getTask: () => task } as any,
     indexReady: Promise.resolve(),
     runner: { isRunning: () => false, stop: () => {} } as any,
@@ -119,10 +133,7 @@ function makeCtx(root: string, task: Task, opts: { onEnqueue?: () => void } = {}
     emitEvent: () => {},
     closeOutLock: {} as any,
     rootLock: {} as any,
-    jobCoordinator: {
-      enqueue: opts.onEnqueue ?? (() => ({})),
-      allJobs: () => [],
-    } as any,
+    jobCoordinator,
     reportedStages: {},
     triggerJobProcessing: () => {},
     pendingReview: new Set(),
@@ -255,7 +266,7 @@ function makeFeatureWorktree(root: string, branch = "feat/0211"): string {
 }
 
 function gitIn(cwd: string, args: string): string {
-  return execSync(`git ${args}`, { cwd, encoding: "utf8" });
+  return execSync(`git ${args}`, { cwd, encoding: "utf8" }).trimEnd();
 }
 
 describe("move-to-done dirty-WORKTREE guard (#0512)", () => {
@@ -294,23 +305,73 @@ describe("move-to-done dirty-WORKTREE guard (#0512)", () => {
     const { root, clean } = makeRepo();
     try {
       const wt = makeFeatureWorktree(root);
+      const handoffSha = gitIn(wt, "rev-parse HEAD");
+      writeHandoffSnapshot(root, ".repoos", {
+        taskId: "0211",
+        branch: "feat/0211",
+        sha: handoffSha,
+        at: "2026-09-30T00:00:00Z",
+        clean: true,
+      });
       writeFileSync(join(wt, "src", "feature.ts"), "export const x = 2;\n// review fix\n");
-      const enqueue = vi.fn(() => ({ taskId: "0211", phase: "queued", enqueuedAt: "now" }));
+      const coordinator = createJobCoordinator(root);
       const res = makeRes();
 
       await taskAction(
-        makeCtx(root, reviewTask(root), { onEnqueue: enqueue }),
+        makeCtx(root, reviewTask(root), { jobCoordinator: coordinator }),
         makeReqWithBody({ commitDirty: true }),
         res as any,
         { param1: "0211", param2: "done" },
       );
 
       expect(res.statusCode).toBe(200);
-      expect(enqueue).toHaveBeenCalledTimes(1);
+      const head = gitIn(wt, "rev-parse HEAD");
+      const job = coordinator.getJob("0211");
+      expect(job?.handoffSha).toBe(head);
+      expect(head).not.toBe(handoffSha);
+      const snap = readHandoffSnapshot(root, ".repoos", "0211");
+      expect(snap?.sha).toBe(head);
       // The change landed on the task branch (which the merge gate then
       // validates) rather than being deleted with the worktree.
       expect(gitIn(wt, "status --porcelain")).toBe("");
       expect(gitIn(wt, "show HEAD:src/feature.ts")).toContain("review fix");
+    } finally {
+      clean();
+    }
+  });
+
+  it("returns 409 with handoff conflict when HEAD moved since the snapshot", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wt = makeFeatureWorktree(root);
+      const handoffSha = gitIn(wt, "rev-parse HEAD");
+      writeHandoffSnapshot(root, ".repoos", {
+        taskId: "0211",
+        branch: "feat/0211",
+        sha: handoffSha,
+        at: "2026-09-30T00:00:00Z",
+        clean: true,
+      });
+      writeFileSync(join(wt, "src", "extra.ts"), "export const y = 1;\n");
+      gitIn(wt, "add src/extra.ts");
+      gitIn(wt, 'commit -m "extra commit after handoff"');
+      const coordinator = createJobCoordinator(root);
+      const res = makeRes();
+
+      await taskAction(
+        makeCtx(root, reviewTask(root), { jobCoordinator: coordinator }),
+        makeReq(),
+        res as any,
+        {
+          param1: "0211",
+          param2: "done",
+        },
+      );
+
+      expect(res.statusCode).toBe(409);
+      expect(res.body.worktreeChangedAfterHandoff).toBe(true);
+      expect(res.body.resolutions).toEqual(["discard", "send-back"]);
+      expect(coordinator.getJob("0211")).toBeNull();
     } finally {
       clean();
     }

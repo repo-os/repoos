@@ -66,6 +66,13 @@ import { DEFAULT_CONFIG, loadConfig } from "../core/config.js";
 import { summarizeCheckFailure } from "../core/check-failure-summary.js";
 import { checkFailureSignature, summarizeCheckOutput } from "../core/check-results.js";
 import type { TaskCheckManager, TaskCheckListener } from "./task-check.js";
+import {
+  clearWorktreeHandoffProtection,
+  readHandoffSnapshot,
+  restoreWorktreeReviewLockAfterFailedCloseOut,
+  verifyWorktreeHandoffIntegrity,
+  WORKTREE_CHANGED_AFTER_HANDOFF_PREFIX,
+} from "./worktree-handoff-guard.js";
 
 // Candidate branch prefix. Must be a valid git refname: a leading dot is
 // rejected by git (`'.repoos/integrate/…' is not a valid branch name`), which
@@ -766,6 +773,33 @@ export class CloseOutOrchestrator {
   }
 
   /**
+   * Re-check the feature worktree against the handoff SHA (#0598). When the
+   * job has no `handoffSha` (legacy tasks or a race before enqueue wrote it),
+   * the check is skipped rather than blocking close-out.
+   */
+  private async assertHandoffWorktreeUnchanged(
+    job: IntegrationJob,
+  ): Promise<{ ok: true } | { ok: false; reason: string }> {
+    const expectedSha = job.handoffSha;
+    const branch = job.branch;
+    if (!expectedSha || !branch) return { ok: true };
+    const snap = readHandoffSnapshot(
+      this.config.root,
+      this.config.cacheDir ?? ".repoos",
+      job.taskId,
+    );
+    const check = await verifyWorktreeHandoffIntegrity(this.config, branch, expectedSha, {
+      handoffAt: snap?.at,
+      taskId: job.taskId,
+    });
+    if (check.ok) return { ok: true };
+    const reason =
+      check.reason ??
+      `${WORKTREE_CHANGED_AFTER_HANDOFF_PREFIX}: the feature worktree no longer matches the handoff snapshot`;
+    return { ok: false, reason };
+  }
+
+  /**
    * Absolute epoch-ms deadline for THIS close-out attempt (#0573):
    * `startedAt + closeOut.timeoutMs`, or `null` when the budget is disabled
    * (`timeoutMs = 0`) or the job has not left `queued` yet. `startedAt` is
@@ -857,6 +891,11 @@ export class CloseOutOrchestrator {
       failedPhase,
       reason,
     });
+    restoreWorktreeReviewLockAfterFailedCloseOut(
+      this.config.root,
+      this.config.cacheDir ?? ".repoos",
+      job.taskId,
+    );
     onRecorded?.();
     return { ok: false, reason };
   }
@@ -1166,6 +1205,11 @@ export class CloseOutOrchestrator {
     // Pipeline budget already spent (#0573) — abort before touching git.
     if (this.pipelineTimedOut(job)) {
       return this.timeoutResult();
+    }
+
+    const handoffGuard = await this.assertHandoffWorktreeUnchanged(job);
+    if (!handoffGuard.ok) {
+      return { ok: false, reason: handoffGuard.reason };
     }
 
     // Resolve the repository's actual default branch
@@ -2053,6 +2097,11 @@ export class CloseOutOrchestrator {
       // fills it; a hand-built fixture may not).
       const cachePrefix = `${(this.config.cacheDir ?? ".repoos").replace(/\/+$/, "")}/`;
       dirtyOnMain = dirtyOnMain.filter((path) => !path.startsWith(cachePrefix));
+      const handoffGuard = await this.assertHandoffWorktreeUnchanged(job);
+      if (!handoffGuard.ok) {
+        return { ok: false, reason: handoffGuard.reason };
+      }
+
       if (dirtyOnMain.length > 0) {
         // Auto-checkpoint routine, server-written churn instead of blocking
         // the merge on it (#0271 follow-up, confirmed live: #0293's close-out
@@ -2342,6 +2391,7 @@ export class CloseOutOrchestrator {
       log: (level, msg, meta) => this.logger?.integration(job.taskId, level, msg, meta),
     });
 
+    clearWorktreeHandoffProtection(root, this.config.cacheDir ?? ".repoos", job.taskId);
     return { ok: true };
   }
 }
