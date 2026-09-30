@@ -7,8 +7,13 @@
  *
  * Zero runtime deps: `node:child_process` only (binary resolution reuses
  * src/core/detect.ts). Everything is fail-soft: a missing binary, a hung
- * probe, or unparseable output must never throw — callers get
- * `{ models: [] }` and degrade to the static model list.
+ * probe, or unparseable output must never throw — callers get a result with an
+ * empty `models` list plus an `error` saying *why* (#0593), and degrade to the
+ * static model list with the reason visible instead of a silent empty dropdown.
+ *
+ * `listModelSources` keeps a short per-CLI TTL cache so a page full of
+ * dropdowns doesn't re-spawn every CLI on each request; `refresh: true`
+ * (surfaced as `?refresh=1` on GET /api/models) bypasses it.
  */
 import { spawn, type ChildProcess } from "node:child_process";
 import { resolveBinary, KNOWN_AGENTS } from "./detect.js";
@@ -28,6 +33,12 @@ export interface ModelSourceResult {
   models: string[];
   /** True when the source supports a cache-refreshing re-probe. */
   refreshable: boolean;
+  /**
+   * Why the list is empty or incomplete, when the probe failed: binary not
+   * found on PATH, timed out, spawn failed, non-zero exit (often "not signed
+   * in"), or a JSON-RPC error from the CLI. Absent on success (#0593).
+   */
+  error?: string;
 }
 
 /** Options handed to an adapter's `list`. */
@@ -38,6 +49,12 @@ export interface ListModelsOptions {
   cwd?: string;
   /** Optional Agent.cli allowlist; avoids probing unrelated installed CLIs. */
   clis?: string[];
+  /**
+   * Override the per-probe timeout ceiling (ms). Defaults to the adapter's
+   * own limit; tests use it to exercise the timed-out path without waiting
+   * out the production 12–15s.
+   */
+  timeoutMs?: number;
 }
 
 /** A per-CLI model source. `list` never throws — failures resolve empty. */
@@ -94,12 +111,46 @@ export function parseAntigravityModels(text: string): string[] {
   return [...seen];
 }
 
+/** Raw outcome of a spawned probe: stdout plus why it may be incomplete. */
+interface SpawnOutcome {
+  text: string;
+  /** Bounded stderr — the human-readable reason behind a non-zero exit. */
+  stderr: string;
+  /** Process exit code; null when it never exited normally. */
+  code: number | null;
+  timedOut: boolean;
+  spawnError: boolean;
+}
+
+/** Cap on collected stderr so a noisy failure can't balloon memory. */
+const MODELS_STDERR_MAX_BYTES = 4 * 1024;
+
+/**
+ * The reason a spawn-based probe failed, or undefined when it ran cleanly.
+ * The stderr first line is included because CLIs say "Not signed in" /
+ * "Authentication required" there — exactly the reason the dropdown needs.
+ */
+function probeError(bin: string, out: SpawnOutcome, timeoutMs: number): string | undefined {
+  if (out.spawnError) return `failed to run ${bin}`;
+  if (out.timedOut) return `${bin} timed out after ${Math.round(timeoutMs / 1000)}s`;
+  if (out.code !== null && out.code !== 0) {
+    const detail = out.stderr
+      .split("\n")
+      .find((l) => l.trim())
+      ?.trim();
+    return detail
+      ? `${bin} exited with code ${out.code}: ${detail}`
+      : `${bin} exited with code ${out.code}`;
+  }
+  return undefined;
+}
+
 /** Spawn `<bin> <args>` and collect stdout up to MODELS_MAX_BYTES. */
 function spawnModels(
   bin: string,
   args: string[],
   opts: { timeoutMs: number; cwd?: string },
-): Promise<string> {
+): Promise<SpawnOutcome> {
   return new Promise((resolve) => {
     let proc: ChildProcess;
     try {
@@ -108,16 +159,17 @@ function spawnModels(
         stdio: ["ignore", "pipe", "pipe"],
       });
     } catch {
-      resolve("");
+      resolve({ text: "", stderr: "", code: null, timedOut: false, spawnError: true });
       return;
     }
 
     let out = "";
+    let err = "";
     let settled = false;
-    const done = (text: string): void => {
+    const done = (outcome: SpawnOutcome): void => {
       if (settled) return;
       settled = true;
-      resolve(text);
+      resolve(outcome);
     };
     const timer = setTimeout(() => {
       try {
@@ -125,25 +177,35 @@ function spawnModels(
       } catch {
         /* already gone */
       }
-      done("");
+      done({ text: "", stderr: err, code: null, timedOut: true, spawnError: false });
     }, opts.timeoutMs);
 
     proc.stdout?.on("data", (c: Buffer) => {
       if (out.length < MODELS_MAX_BYTES) out += c.toString("utf8");
     });
+    proc.stderr?.on("data", (c: Buffer) => {
+      if (err.length < MODELS_STDERR_MAX_BYTES) err += c.toString("utf8");
+    });
     proc.on("error", () => {
       clearTimeout(timer);
-      done("");
+      done({ text: "", stderr: err, code: null, timedOut: false, spawnError: true });
     });
-    proc.on("exit", () => {
+    proc.on("exit", (code) => {
       clearTimeout(timer);
-      done(out);
+      done({ text: out, stderr: err, code, timedOut: false, spawnError: false });
     });
   });
 }
 
+/** Raw outcome of the Codex app-server probe. */
+interface CodexProbeOutcome {
+  models: string[];
+  /** Present when the probe failed (timeout, spawn, or JSON-RPC error). */
+  error?: string;
+}
+
 /** Query Codex's account-aware picker catalog through its stdio app-server. */
-function listCodexModels(bin: string, opts: ListModelsOptions): Promise<string[]> {
+function listCodexModels(bin: string, opts: ListModelsOptions): Promise<CodexProbeOutcome> {
   return new Promise((resolve) => {
     let proc: ChildProcess;
     try {
@@ -152,12 +214,13 @@ function listCodexModels(bin: string, opts: ListModelsOptions): Promise<string[]
         stdio: ["pipe", "pipe", "pipe"],
       });
     } catch {
-      resolve([]);
+      resolve({ models: [], error: `failed to run ${bin}` });
       return;
     }
     let pending = "";
     let settled = false;
-    const done = (models: string[]): void => {
+    const timeoutMs = opts.timeoutMs ?? CODEX_MODELS_TIMEOUT_MS;
+    const done = (outcome: CodexProbeOutcome): void => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
@@ -166,7 +229,7 @@ function listCodexModels(bin: string, opts: ListModelsOptions): Promise<string[]
       } catch {
         /* already exited */
       }
-      resolve(models);
+      resolve(outcome);
     };
     const timer = setTimeout(() => {
       try {
@@ -174,8 +237,11 @@ function listCodexModels(bin: string, opts: ListModelsOptions): Promise<string[]
       } catch {
         /* already exited */
       }
-      done([]);
-    }, CODEX_MODELS_TIMEOUT_MS);
+      done({
+        models: [],
+        error: `${bin} app-server timed out after ${Math.round(timeoutMs / 1000)}s`,
+      });
+    }, timeoutMs);
     proc.stdout?.on("data", (chunk: Buffer) => {
       pending += chunk.toString("utf8");
       const lines = pending.split("\n");
@@ -185,20 +251,37 @@ function listCodexModels(bin: string, opts: ListModelsOptions): Promise<string[]
           const message = JSON.parse(line) as {
             id?: number;
             result?: { data?: Array<{ model?: unknown }> };
+            error?: { message?: unknown } | string;
           };
-          if (message.id !== 2 || !Array.isArray(message.result?.data)) continue;
-          done(
-            message.result.data
+          if (message.id !== 2) continue;
+          // A JSON-RPC error (not signed in, account probe refused, …) is the
+          // reason the list is empty — surface it instead of a bare [].
+          if (message.error) {
+            const detail =
+              typeof message.error === "string"
+                ? message.error
+                : typeof message.error.message === "string"
+                  ? message.error.message
+                  : "model/list failed";
+            done({ models: [], error: `${bin}: ${detail}` });
+            return;
+          }
+          if (!Array.isArray(message.result?.data)) continue;
+          done({
+            models: message.result.data
               .map((entry) => entry.model)
               .filter((model): model is string => typeof model === "string" && model.length > 0),
-          );
+          });
+          return;
         } catch {
           /* notifications and malformed lines are irrelevant */
         }
       }
     });
-    proc.on("error", () => done([]));
-    proc.on("close", () => done([]));
+    proc.on("error", () => done({ models: [], error: `failed to run ${bin}` }));
+    proc.on("close", () =>
+      done({ models: [], error: `${bin} app-server closed before returning models` }),
+    );
     proc.stdin?.write(
       [
         JSON.stringify({
@@ -225,13 +308,26 @@ const opencodeAdapter: ModelSourceAdapter = {
   async list(opts: ListModelsOptions = {}): Promise<ModelSourceResult> {
     // "default" (the coding agent's own default) is always offered first.
     const bin = resolveBinary("opencode", process.env.PATH ?? "");
-    if (!bin) return { supported: true, models: ["default"], refreshable: true };
+    if (!bin)
+      return {
+        supported: true,
+        models: ["default"],
+        refreshable: true,
+        error: "opencode not found on PATH",
+      };
     const args = opts.refresh ? ["models", "--refresh"] : ["models"];
+    const timeoutMs = opts.timeoutMs ?? MODELS_TIMEOUT_MS;
     const out = await spawnModels(bin, args, {
-      timeoutMs: MODELS_TIMEOUT_MS,
+      timeoutMs,
       cwd: opts.cwd,
     });
-    return { supported: true, models: ["default", ...parseLiveModels(out)], refreshable: true };
+    const error = probeError(bin, out, timeoutMs);
+    return {
+      supported: true,
+      models: ["default", ...parseLiveModels(out.text)],
+      refreshable: true,
+      ...(error ? { error } : {}),
+    };
   },
 };
 
@@ -241,9 +337,20 @@ const codexAdapter: ModelSourceAdapter = {
   supported: true,
   async list(opts: ListModelsOptions = {}): Promise<ModelSourceResult> {
     const bin = resolveBinary("codex", process.env.PATH ?? "");
-    if (!bin) return { supported: true, models: ["default"], refreshable: true };
-    const models = await listCodexModels(bin, opts);
-    return { supported: true, models: ["default", ...new Set(models)], refreshable: true };
+    if (!bin)
+      return {
+        supported: true,
+        models: ["default"],
+        refreshable: true,
+        error: "codex not found on PATH",
+      };
+    const probe = await listCodexModels(bin, opts);
+    return {
+      supported: true,
+      models: ["default", ...new Set(probe.models)],
+      refreshable: true,
+      ...(probe.error ? { error: probe.error } : {}),
+    };
   },
 };
 
@@ -298,13 +405,25 @@ const kiroAdapter: ModelSourceAdapter = {
   supported: true,
   async list(opts: ListModelsOptions = {}): Promise<ModelSourceResult> {
     const bin = resolveBinary("kiro-cli", process.env.PATH ?? "");
-    if (!bin) return { supported: true, models: ["default"], refreshable: true };
+    if (!bin)
+      return {
+        supported: true,
+        models: ["default"],
+        refreshable: true,
+        error: "kiro-cli not found on PATH",
+      };
     const out = await spawnModels(bin, ["chat", "--list-models"], {
-      timeoutMs: MODELS_TIMEOUT_MS,
+      timeoutMs: opts.timeoutMs ?? MODELS_TIMEOUT_MS,
       cwd: opts.cwd,
     });
-    const models = parseKiroModels(out);
-    return { supported: true, models: ["default", ...models], refreshable: true };
+    const error = probeError(bin, out, opts.timeoutMs ?? MODELS_TIMEOUT_MS);
+    const models = parseKiroModels(out.text);
+    return {
+      supported: true,
+      models: ["default", ...models],
+      refreshable: true,
+      ...(error ? { error } : {}),
+    };
   },
 };
 
@@ -335,12 +454,24 @@ const cursorAdapter: ModelSourceAdapter = {
   supported: true,
   async list(opts: ListModelsOptions = {}): Promise<ModelSourceResult> {
     const bin = resolveBinary("cursor-agent", process.env.PATH ?? "");
-    if (!bin) return { supported: true, models: ["default"], refreshable: true };
+    if (!bin)
+      return {
+        supported: true,
+        models: ["default"],
+        refreshable: true,
+        error: "cursor-agent not found on PATH",
+      };
     const out = await spawnModels(bin, ["--list-models"], {
-      timeoutMs: MODELS_TIMEOUT_MS,
+      timeoutMs: opts.timeoutMs ?? MODELS_TIMEOUT_MS,
       cwd: opts.cwd,
     });
-    return { supported: true, models: ["default", ...parseCursorModels(out)], refreshable: true };
+    const error = probeError(bin, out, opts.timeoutMs ?? MODELS_TIMEOUT_MS);
+    return {
+      supported: true,
+      models: ["default", ...parseCursorModels(out.text)],
+      refreshable: true,
+      ...(error ? { error } : {}),
+    };
   },
 };
 
@@ -350,15 +481,23 @@ const antigravityAdapter: ModelSourceAdapter = {
   supported: true,
   async list(opts: ListModelsOptions = {}): Promise<ModelSourceResult> {
     const bin = resolveBinary("agy", process.env.PATH ?? "");
-    if (!bin) return { supported: true, models: ["default"], refreshable: false };
+    if (!bin)
+      return {
+        supported: true,
+        models: ["default"],
+        refreshable: false,
+        error: "agy not found on PATH",
+      };
     const out = await spawnModels(bin, ["models"], {
-      timeoutMs: MODELS_TIMEOUT_MS,
+      timeoutMs: opts.timeoutMs ?? MODELS_TIMEOUT_MS,
       cwd: opts.cwd,
     });
+    const error = probeError(bin, out, opts.timeoutMs ?? MODELS_TIMEOUT_MS);
     return {
       supported: true,
-      models: ["default", ...parseAntigravityModels(out)],
+      models: ["default", ...parseAntigravityModels(out.text)],
       refreshable: false,
+      ...(error ? { error } : {}),
     };
   },
 };
@@ -378,12 +517,24 @@ const crushAdapter: ModelSourceAdapter = {
   supported: true,
   async list(opts: ListModelsOptions = {}): Promise<ModelSourceResult> {
     const bin = resolveBinary("crush", process.env.PATH ?? "");
-    if (!bin) return { supported: true, models: ["default"], refreshable: false };
+    if (!bin)
+      return {
+        supported: true,
+        models: ["default"],
+        refreshable: false,
+        error: "crush not found on PATH",
+      };
     const out = await spawnModels(bin, ["models"], {
-      timeoutMs: MODELS_TIMEOUT_MS,
+      timeoutMs: opts.timeoutMs ?? MODELS_TIMEOUT_MS,
       cwd: opts.cwd,
     });
-    return { supported: true, models: ["default", ...parseLiveModels(out)], refreshable: false };
+    const error = probeError(bin, out, opts.timeoutMs ?? MODELS_TIMEOUT_MS);
+    return {
+      supported: true,
+      models: ["default", ...parseLiveModels(out.text)],
+      refreshable: false,
+      ...(error ? { error } : {}),
+    };
   },
 };
 
@@ -424,24 +575,96 @@ for (const known of KNOWN_AGENTS) {
 }
 
 /**
+ * How long one CLI's probe result is served from the in-process cache (#0593).
+ * Long enough that a page full of dropdowns (and repeated mounts of the Agents
+ * page) doesn't re-spawn every CLI, short enough that a newly installed or
+ * newly signed-in CLI shows up within a minute. `refresh: true` bypasses it.
+ */
+export const MODEL_CACHE_TTL_MS = 60_000;
+
+interface CachedModelResult {
+  at: number;
+  result: ModelSourceResult;
+}
+
+/** Keyed by cwd + `Agent.cli` — a probe's answer depends on both. */
+const modelResultCache = new Map<string, CachedModelResult>();
+/** In-flight probes, so concurrent requests for one CLI spawn it once. */
+const inflightModelProbes = new Map<string, Promise<ModelSourceResult>>();
+
+/** Drop every cached/in-flight probe result (tests, and `--refresh` internals). */
+export function clearModelSourceCache(): void {
+  modelResultCache.clear();
+  inflightModelProbes.clear();
+}
+
+function modelCacheKey(cli: string, cwd: string): string {
+  return `${cwd}\u0000${cli}`;
+}
+
+/**
  * Probe every registered model source, fail-soft. Never throws and never
- * hangs: a bad PATH, missing binary, or timeout resolves an empty result.
- * Returns results keyed by `Agent.cli` for `GET /api/models`.
+ * hangs: a bad PATH, missing binary, or timeout resolves an empty result with
+ * an `error` reason (#0593). Returns results keyed by `Agent.cli` for
+ * `GET /api/models`.
+ *
+ * Each CLI's result is cached for MODEL_CACHE_TTL_MS and probed at most once
+ * concurrently; pass `refresh: true` to bypass the cache (the CLI's own
+ * refresh flag is forwarded to the adapter, and the fresh result re-populates
+ * the cache).
  */
 export async function listModelSources(
   opts: ListModelsOptions = {},
 ): Promise<Record<string, ModelSourceResult>> {
   const out: Record<string, ModelSourceResult> = {};
+  const cwd = opts.cwd ?? process.cwd();
   const selected = opts.clis?.length
     ? Object.values(MODEL_SOURCES).filter((source) => opts.clis!.includes(source.cli))
     : Object.values(MODEL_SOURCES);
   await Promise.all(
     selected.map(async (src) => {
-      try {
-        out[src.cli] = await src.list(opts);
-      } catch {
-        out[src.cli] = { supported: src.supported, models: [], refreshable: src.supported };
+      const key = modelCacheKey(src.cli, cwd);
+      if (!opts.refresh) {
+        const hit = modelResultCache.get(key);
+        if (hit && Date.now() - hit.at < MODEL_CACHE_TTL_MS) {
+          out[src.cli] = hit.result;
+          return;
+        }
       }
+      // A refresh must not join a non-refresh probe already in flight: that
+      // one ran without the CLI's `--refresh` flag, which is the opposite of
+      // what the caller asked for.
+      let probe = opts.refresh ? undefined : inflightModelProbes.get(key);
+      if (!probe) {
+        const started: Promise<ModelSourceResult> = src
+          .list(opts)
+          .then((result) => {
+            modelResultCache.set(key, { at: Date.now(), result });
+            return result;
+          })
+          .catch((err: unknown) => {
+            // Adapters are contracted never to throw, but if one does the
+            // caller still needs a reason, not a bare empty list. Failures
+            // are cached too — re-probing a broken CLI on every request is
+            // exactly the load this cache exists to prevent.
+            const result: ModelSourceResult = {
+              supported: src.supported,
+              models: [],
+              refreshable: src.supported,
+              error: err instanceof Error ? err.message : String(err),
+            };
+            modelResultCache.set(key, { at: Date.now(), result });
+            return result;
+          });
+        if (!opts.refresh) {
+          inflightModelProbes.set(key, started);
+          void started.then(() => {
+            if (inflightModelProbes.get(key) === started) inflightModelProbes.delete(key);
+          });
+        }
+        probe = started;
+      }
+      out[src.cli] = await probe;
     }),
   );
   return out;

@@ -66,8 +66,10 @@ onMounted(async () => {
   await config.load();
   // The per-task pickers in the drawer need the live model list too, not just
   // the Agents page — without this they fall back to the static list and can
-  // offer models the selected CLI doesn't support (0064). Fire-and-forget: the
-  // dropdowns degrade to the static list until it lands.
+  // offer models the selected CLI doesn't support (0064). Fire-and-forget:
+  // each CLI's list loads independently (#0593), the persisted copy shows
+  // immediately, and each dropdown shows its own loading/failed state until
+  // its request lands.
   void config.loadModels();
 });
 

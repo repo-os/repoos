@@ -58,7 +58,7 @@ async function openNewTaskDrawer(): Promise<VueWrapper> {
     skills: [],
   };
   config.liveModelsByCli = { opencode: [PM_PIN] };
-  config.modelsLoaded = true;
+  config.modelStatesByCli = { opencode: { status: "loaded" } };
 
   const router = createRouter({ history: createMemoryHistory(), routes: [] });
   await router.push("/");

@@ -170,6 +170,14 @@ export function resolveShotTargets(
     if (all.some((t) => t.name === name)) {
       return { names: [name], source: "target", detected };
     }
+    // The bare `[preview] command` is a real target under its sentinel name:
+    // the drawer's picker and `shots.ts` both call it "default", so
+    // `--target default` must name it too. Without this, a diff that merely
+    // touches a `paths`-claimed dir (user-docs/, landing/) could never be
+    // shot against the main app at all (#0593 hit exactly that).
+    if (name === DEFAULT_PREVIEW_TARGET && preview?.command?.trim()) {
+      return { names: [name], source: "target", detected };
+    }
     return {
       names: [],
       source: "none",

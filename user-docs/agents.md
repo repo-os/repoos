@@ -83,11 +83,16 @@ The page is organised into tabs:
 
 Every role card lets you pick the coding agent and model, toggle the role on or
 off, edit its instructions, and **Test** the combination to see whether the CLI
-and model actually respond. For `opencode`, **Refresh models** re-probes the
-live model list (`opencode models --refresh`) — model names change often, so
-pick from live discovery rather than a hardcoded list. A model of `default`
-uses whatever the CLI itself defaults to, except for GitHub Copilot: it means
-**Auto · Efficiency**, the lowest-cost Auto tier.
+and model actually respond. **Refresh models** re-probes every CLI's live model
+list (`opencode models --refresh` for opencode, and the equivalent for each
+other installed CLI) — model names change often, so pick from live discovery
+rather than a hardcoded list. Each CLI loads independently: one slow or failing
+CLI never empties the other dropdowns, a failing one shows its reason (not
+found on PATH, timed out, not signed in…) with a **Retry**, and the last good
+list per CLI is saved in your browser so a reload shows it immediately while it
+revalidates. A model of `default` uses whatever the CLI itself defaults to,
+except for GitHub Copilot: it means **Auto · Efficiency**, the lowest-cost Auto
+tier.
 
 ### Codex engineering permissions
 

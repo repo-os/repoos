@@ -8,9 +8,22 @@ export const listModels: RouteHandler = async (ctx, req, res) => {
   const { config } = ctx;
   const url = new URL(req.url ?? "/", "http://localhost");
   const refresh = url.searchParams.get("refresh") === "1";
+  // Per-CLI filter (#0593): the UI fetches each dropdown's list separately and
+  // in parallel (`?cli=codex`, repeatable; comma-separated also accepted), so
+  // one slow or failing CLI only ever affects its own list. Without the param
+  // every source is probed in one response, as before.
+  const clis = url.searchParams
+    .getAll("cli")
+    .flatMap((value) => value.split(","))
+    .map((value) => value.trim())
+    .filter(Boolean);
   let byCli: Record<string, ModelSourceResult> = {};
   try {
-    byCli = await listModelSources({ refresh, cwd: config.root });
+    byCli = await listModelSources({
+      refresh,
+      cwd: config.root,
+      ...(clis.length ? { clis } : {}),
+    });
   } catch {
     byCli = {};
   }
