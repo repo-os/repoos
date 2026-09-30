@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/automatic-shots-skip-non-ui-diffs-captio
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-30T13:19:31Z"
-updated_at: "2026-09-30T19:50:31Z"
+updated_at: "2026-09-30T19:56:12Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-09-30T19:33:05.619Z: server-side finalization timed out (deadline exceeded)"
@@ -39,7 +39,7 @@ Automatic shot capture at handoff (#0594) produces screenshots that show nothing
 ## Shots
 
 ```json
-[{"target": "default", "route": "/", "label": "Board after the shot-caption change", "steps": [{"waitFor": ".board-col"}, {"waitMs": 300}]}]
+[{"target": "default", "route": "/", "label": "Dashboard after the shot-caption change", "steps": [{"waitFor": "#app"}, {"waitMs": 300}]}]
 ```
 
 ## Activity
@@ -52,3 +52,4 @@ Automatic shot capture at handoff (#0594) produces screenshots that show nothing
 - 2026-09-30T19:47:02Z · status active→review
 - 2026-09-30T19:47:14Z · note: shots: failed — capture of Board after the shot-caption change on "default" failed: waitFor: Timeout 5000ms exceeded.
 - 2026-09-30T19:50:31Z · status review→active
+- 2026-09-30T19:56:12Z · body
