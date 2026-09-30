@@ -27,7 +27,7 @@ It creates only what isn't already there:
 | `repoos/work/0001-set-up-repoos.md` | A worked example of a task file, marked `done` — it's not work to do. |
 | `repoos/work/0002-read-the-codebase.md` | A `ready` starter task: read this codebase and propose `repoos/docs/` + an initial task backlog. |
 | `.env.example` | Documents the secrets a fuller setup expects. |
-| `.gitignore` entries | Ignore the derived cache (`repoos/.repoos/`) and local secrets (`.env`). |
+| `.gitignore` entries | Ignore RepoOS runtime state — the derived cache (`repoos/.repoos/`), the root `.repoos/` runtime directory, and macOS `.DS_Store` files at any depth — plus local secrets (`.env`). |
 
 With the default layout, `repoos.toml` persists the configured paths:
 
@@ -37,8 +37,8 @@ docsDir  = "repoos/docs"
 cacheDir = "repoos/.repoos"
 ```
 
-If `.gitignore` already exists, it is only *appended* to if the two RepoOS
-ignore lines are missing. An existing `AGENTS.md` is never overwritten: in an
+If `.gitignore` already exists, it is only *appended* to for the RepoOS
+ignore lines that are missing. An existing `AGENTS.md` is never overwritten: in an
 interactive terminal, `repoos init` previews a small RepoOS guidance section
 and adds it only if you explicitly approve it. Non-interactive runs leave it
 unchanged. Re-running `repoos init` reports "already set up" and changes

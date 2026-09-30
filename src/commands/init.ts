@@ -507,6 +507,15 @@ function findStarter(root: string, workDir: string, slug: string): string | null
   }
 }
 
+/**
+ * True when the canary counter lives directly inside the root-level `.repoos/`
+ * runtime directory (cacheDir of ".repoos", or a cacheDir nested under it).
+ */
+export function canaryUnderRootRuntimeDir(cacheDir: string): boolean {
+  const base = cacheDir.replace(/\/+$/, "");
+  return base === ".repoos" || base.startsWith(".repoos/");
+}
+
 export function scaffoldInto(
   root: string,
   description: string,
@@ -596,7 +605,7 @@ export function scaffoldInto(
     created.push(canaryRelPath(config.cacheDir));
   }
 
-  // gitignore the derived cache and local secrets
+  // gitignore the derived cache, runtime state, and local secrets
   const giPath = join(root, ".gitignore");
   const ignoreLines = [
     { comment: "# RepoOS derived index cache", line: canaryGitignoreIgnore(config.cacheDir) },
@@ -605,6 +614,20 @@ export function scaffoldInto(
       line: canaryGitignoreNegation(config.cacheDir),
     },
     { comment: "# Local secrets — see .env.example", line: ".env" },
+    // Runtime state (repoos.db, logs/, serve locks, integration jobs) is
+    // hardcoded to a ROOT-level .repoos/ (src/core/db.ts, logger.ts,
+    // serve-reaper.ts) — which differs from config.cacheDir in the namespaced
+    // layout, so it shows up as untracked noise without its own rule. Skip it
+    // when the canary itself lives under that root directory (cacheDir of
+    // ".repoos" is already the rule above; a cacheDir inside ".repoos/" gets
+    // left alone because a blanket ignore would swallow the canary's parent
+    // directory and defeat the negation above).
+    ...(canaryUnderRootRuntimeDir(config.cacheDir)
+      ? []
+      : [{ comment: "# RepoOS runtime state", line: ".repoos/*" }]),
+    // No leading slash: a bare ".DS_Store" matches at any depth, unlike
+    // anchored patterns such as ".repoos/*" above.
+    { comment: "# macOS Finder metadata", line: ".DS_Store" },
   ];
   const existingLines = existsSync(giPath) ? readFileSync(giPath, "utf8").split(/\r?\n/) : [];
   const toAdd = ignoreLines.filter((l) => !existingLines.some((e) => e.trim() === l.line));
