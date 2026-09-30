@@ -8,8 +8,10 @@ read-only preflight over the repository identity, `repoos.toml`, the configured
 layout and task frontmatter, required tools and agent CLIs, the check plan, the
 local server, and auth/credential readiness. Each line carries a stable finding
 id (`identity.project-root`, `config.toml-syntax`, `runtime.check-tools`, …) and,
-for anything amber or red, the exact next command. `repoos doctor --json` emits
-the same findings for scripts and the UI.
+for anything amber or red, the exact next command. Passing checks are collapsed
+by default so the one failure stands out — `repoos doctor --verbose` lists every
+check. `repoos doctor --json` emits the full set of findings for scripts and the
+UI.
 
 ## Sharing a failed setup without pasting secrets
 
