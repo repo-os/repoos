@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/automatic-shots-skip-non-ui-diffs-captio
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-30T13:19:31Z"
-updated_at: "2026-09-30T17:53:23Z"
+updated_at: "2026-09-30T19:08:17Z"
 ---
 ## Problem
 
@@ -33,9 +33,16 @@ Automatic shot capture at handoff (#0594) produces screenshots that show nothing
 - Tests: `shot-plan.test.ts` plus capture/skip cases. Any new config key needs a Settings UI control per AGENTS.md.
 - Rebuild the UI after the change.
 
+## Shots
+
+```json
+[{"target": "default", "route": "/", "label": "Board after the shot-caption change", "steps": [{"waitFor": ".board-col"}, {"waitMs": 300}]}]
+```
+
 ## Activity
 
 - 2026-09-30T13:19:31Z · created · unknown
 - 2026-09-30T17:53:21Z · review_model_override
 - 2026-09-30T17:53:21Z · status inbox→ready
 - 2026-09-30T17:53:23Z · status ready→active, branch
+- 2026-09-30T19:08:17Z · body
