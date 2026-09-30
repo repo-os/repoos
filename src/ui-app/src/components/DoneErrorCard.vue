@@ -41,7 +41,11 @@ const props = withDefaults(
   { mode: "card" },
 );
 
-const displayLine = computed(() => props.tldr?.trim() || props.message);
+const displayLine = computed(() => {
+  const tldr = props.tldr?.trim();
+  if (tldr && (props.mode === "card" || collapsed.value)) return tldr;
+  return props.message;
+});
 
 const failedAtLabel = computed(() => fmtTime(props.failedAt));
 const headlineTitle = computed(() => {

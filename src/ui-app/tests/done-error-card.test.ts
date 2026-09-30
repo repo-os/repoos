@@ -273,7 +273,7 @@ describe("DoneErrorCard (auto-repair in flight — #0385)", () => {
 });
 
 describe("DoneErrorCard (panel mode — collapse and copy)", () => {
-  it("shows the Debugger tl;dr in the collapsed one-line headline (#0595)", async () => {
+  it("shows the Debugger tl;dr only in the collapsed one-line headline (#0595)", async () => {
     const wrapper = mount(DoneErrorCard, {
       props: {
         mode: "panel",
@@ -282,8 +282,14 @@ describe("DoneErrorCard (panel mode — collapse and copy)", () => {
       },
     });
     await flush();
+    expect(wrapper.find(".done-error-msg").text()).toContain("long raw headline");
+    expect(wrapper.find(".debug-tldr-sentence").text()).toContain("Vitest failed on foo.test.ts");
+
+    await wrapper.find('button[aria-label="Collapse error"]').trigger("click");
+    await flush();
     expect(wrapper.find(".done-error-msg").text()).toContain("Vitest failed on foo.test.ts");
     expect(wrapper.find(".done-error-msg").text()).not.toContain("long raw headline");
+    expect(wrapper.find(".done-error-tldr").exists()).toBe(false);
   });
 
   const props = {
