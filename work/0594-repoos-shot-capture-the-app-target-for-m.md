@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-30T04:29:34Z"
+review_passes: 1
 id: "0594"
 title: "repoos shot: capture the app target for mixed diffs, and let tasks declare which pages/states to shoot"
 type: bug
@@ -11,7 +13,6 @@ branch: feat/repoos-shot-capture-the-app-target-for-m
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-30T02:44:14Z"
-updated_at: "2026-09-30T04:28:38Z"
 ---
 ## Problem
 
@@ -50,3 +51,4 @@ Shots are captured for every UI-visible task without relying on the agent rememb
 - 2026-09-30T04:24:40Z · status active→review
 - 2026-09-30T04:24:40Z · status review→active
 - 2026-09-30T04:28:38Z · status active→review
+
