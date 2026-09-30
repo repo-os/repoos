@@ -2,16 +2,16 @@
 id: "0592"
 title: Skip check gate (with actionable reminder) when a repo has no check plan
 type: feature
-status: ready
+status: active
 priority: p2
 area: [core, web]
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/skip-check-gate-with-actionable-reminder
 model_override: opencode-go/glm-5.3-flash
 review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-30T00:01:23Z"
-updated_at: "2026-09-30T00:03:57Z"
+updated_at: "2026-09-30T00:04:03Z"
 ---
 ## Problem
 
@@ -63,3 +63,4 @@ Update `user-docs/check.md` (the "Bootstrapping a plan" paragraph and "When a re
 - 2026-09-30T00:03:43Z · model_override
 - 2026-09-30T00:03:47Z · review_model_override
 - 2026-09-30T00:03:57Z · status inbox→ready
+- 2026-09-30T00:04:03Z · status ready→active, branch
