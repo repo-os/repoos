@@ -1057,6 +1057,8 @@ async function openDebuggerFromError(): Promise<void> {
       :log-path="repo.doneErrorFor(task.id)!.logPath"
       :hint="repo.doneErrorFor(task.id)!.hint"
       :failed-at="repo.doneErrorFor(task.id)!.failedAt"
+      :tldr="repo.doneErrorFor(task.id)!.tldr"
+      :tldr-diagnosing="!repo.doneErrorFor(task.id)!.tldr && repo.debugTldrWorkingFor(task.id)"
       :retry-hint="doneErrorRetryHint"
       :task-id="task.id"
       :task-title="task.title"

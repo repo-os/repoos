@@ -55,6 +55,12 @@ export interface IntegrationJob {
    * at the untruncated transcript. Absent for non-check failures.
    */
   logPath?: string;
+  /** Debugger one-line tl;dr for this failure (#0595), cleared on retry. */
+  debugTldr?: string;
+  /** When {@link debugTldr} was generated (ISO-8601 UTC). */
+  debugTldrAt?: string;
+  /** Fingerprint of (step, message, detail) this tl;dr describes (#0595). */
+  debugTldrKey?: string;
   /**
    * How many gate-check runs this job has performed (#0428). Used to give each
    * attempt's durable log a distinct filename; carried across an explicit
@@ -166,6 +172,9 @@ function readJob(root: string, taskId: string): IntegrationJob | null {
       candidateSha: stored.candidateSha,
       reason: stored.reason,
       logPath: stored.logPath,
+      debugTldr: stored.debugTldr,
+      debugTldrAt: stored.debugTldrAt,
+      debugTldrKey: stored.debugTldrKey,
       checkAttempt: stored.checkAttempt,
       publishDriftCount: stored.publishDriftCount,
       validateDriftCount: stored.validateDriftCount,
