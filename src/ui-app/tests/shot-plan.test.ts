@@ -10,7 +10,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadConfig } from "../../core/config";
 import { buildCapturePlan, parseShotPlan } from "../../core/shot-plan";
-import { planAutoCapture } from "../../server/shot-capture";
+import { planAutoCapture, runAutoShotCapture } from "../../server/shot-capture";
+import type { PreviewManager } from "../../server/preview";
 import { localShotStore } from "../../server/shots";
 import type { RepoOSConfig, Task } from "../../core/types";
 import type { PreviewConfig } from "../../core/types";
@@ -74,6 +75,20 @@ describe("parseShotPlan", () => {
     const mixed = parseShotPlan(bodyWithShots('[{"route":"/ok"},{"label":42},{"steps":[{}]}]'));
     expect(mixed.shots).toEqual([{ route: "/ok" }]);
     expect(mixed.errors).toHaveLength(2);
+  });
+
+  it("reports step shape errors with (none) or the extra keys listed", () => {
+    const zeroKeys = parseShotPlan(bodyWithShots('[{"route":"/","steps":[{}]}]'));
+    expect(zeroKeys.errors).toEqual([
+      "shot #1 step #1: a step needs exactly one of click/fill/waitFor/waitMs (none)",
+    ]);
+
+    const multi = parseShotPlan(
+      bodyWithShots('[{"route":"/","steps":[{"click":"button","waitMs":100}]}]'),
+    );
+    expect(multi.errors).toEqual([
+      "shot #1 step #1: a step needs exactly one of click/fill/waitFor/waitMs (click, waitMs)",
+    ]);
   });
 
   it("reports a contentful section with no fenced list", () => {
@@ -171,5 +186,30 @@ describe("planAutoCapture gates (#0594)", () => {
     const root = repo();
     const plan = planAutoCapture(fixtureConfig(root), fakeTask());
     expect(plan).toMatchObject({ reason: expect.stringContaining("touches no") });
+  });
+});
+
+describe("runAutoShotCapture status prefix (#0597)", () => {
+  const temps: string[] = [];
+  afterEach(() => {
+    for (const t of temps.splice(0)) rmSync(t, { recursive: true, force: true });
+  });
+  const previews = {} as PreviewManager;
+
+  it("adds exactly one shots: skipped — prefix to skip outcomes", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-shot-prefix-"));
+    temps.push(root);
+    mkdirSync(join(root, "work"), { recursive: true });
+    const logs: string[] = [];
+    const result = await runAutoShotCapture(
+      fixtureConfig(root),
+      fakeTask({ id: "0597-skip", branch: undefined }),
+      previews,
+      (_id, _level, message) => logs.push(message),
+    );
+    const expected = "shots: skipped — the task has no branch yet";
+    expect(result).toMatchObject({ status: "skipped", detail: expected });
+    expect(logs).toEqual([expected]);
+    expect(result.detail).not.toMatch(/shots: skipped — skipped/);
   });
 });

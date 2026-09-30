@@ -32,8 +32,7 @@ export interface ShotDriverPage {
 }
 
 export interface ShotCaptureOptions {
-  viewport: { width: number; height: number };
-  /** Wait for the declared steps to have time to settle, too. */
+  /** Settle time after load (and between steps) before capturing. */
   waitMs: number;
   fullPage: boolean;
 }
