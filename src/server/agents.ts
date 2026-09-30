@@ -3196,6 +3196,16 @@ function missionFor(
     "If the preview fails, RepoOS records an actionable reason in your transcript. Leave the task active and stop so the same worktree/session can be resumed. Do NOT retry the request repeatedly, and never fall back to launching your own server.",
     "",
     "If this working directory has no build artifacts yet, build before relying on the `repoos` CLI — it warns when its build is stale.",
+    "",
+    "## Shots — declare what a review should see for a UI-visible change",
+    "",
+    "When your change is visible in the UI, add a `## Shots` section to the task body via `repoos` (never by hand-editing the task file): a fenced JSON list, one entry per screenshot, e.g.",
+    "",
+    "```json",
+    '[{"target": "default", "route": "/", "label": "Board", "steps": [{"click": "button[data-test-id=\\\"new-task\\\"]"}, {"waitMs": 300}]}]',
+    "```",
+    "",
+    "Entries take `target`, `route`, an optional `selector`, a human `label`, and ordered `steps` (`click` / `fill`+`text` / `waitFor` / `waitMs`, plain CSS selectors). Plain routes and selectors only — no framework knowledge. Keep it short: the shots a reviewer needs, usually 1–3. When the task is handed off to review, RepoOS captures these automatically through the managed preview (`repoos shot` by hand stays available), so writing the list is the whole job.",
   );
   return parts.join("\n");
 }

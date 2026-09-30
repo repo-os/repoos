@@ -20,6 +20,8 @@ import { c } from "../cli/colors.js";
 import { findRepoRoot, loadConfig, mainCheckoutRoot, resolveServePort } from "../core/config.js";
 import { changedPathsVsBase, currentBranch } from "../core/git.js";
 import { createRepoOS } from "../core/repoos.js";
+import { captureShotPage, type ShotDriverPage } from "../core/shot-page.js";
+import { buildCapturePlan, parseShotPlan, type CaptureEntry } from "../core/shot-plan.js";
 import {
   formatTargetList,
   resolveShotTargets,
@@ -30,21 +32,9 @@ import { readServeLocks } from "./status.js";
 import { readLocalCliToken } from "../server/local-token.js";
 import { launchWebkit, type SmokeBrowser, type SmokeContext } from "./ui-harness.js";
 
-/** A Playwright page with the methods capture needs beyond the smoke harness. */
-interface ShotPage {
-  goto(url: string, options: { waitUntil: string; timeout: number }): Promise<unknown>;
-  waitForLoadState(state: string, options?: { timeout?: number }): Promise<void>;
-  waitForTimeout(ms: number): Promise<void>;
-  setViewportSize(viewport: { width: number; height: number }): Promise<void>;
-  screenshot(options?: { fullPage?: boolean }): Promise<Buffer>;
-  locator(selector: string): {
-    screenshot(options?: { fullPage?: boolean; timeout?: number }): Promise<Buffer>;
-  };
-  close(): Promise<void>;
-}
-
 interface ShotResult {
   target: string;
+  label?: string;
   file: string;
   path: string;
   url: string;
@@ -66,9 +56,6 @@ interface CmdShotOptions {
 }
 
 const VIEWPORT = { width: 1280, height: 800 };
-const NAV_TIMEOUT_MS = 30_000;
-/** How long Playwright waits for a selector before giving up (avoids a 30s hang). */
-const SELECTOR_TIMEOUT_MS = 5_000;
 /** Default settle after load, so a dev server's client mount finishes first. */
 const DEFAULT_SETTLE_MS = 900;
 const INSTALL_ADVICE = "Install: bun add -d @playwright/test && bunx playwright install webkit";
@@ -181,32 +168,7 @@ function findTask(
   return index.tasks.find((t) => t.branch === branch);
 }
 
-/**
- * Capture one page. `waitUntil: "load"` fires before a dev server's client
- * bundle hydrates/mounts, so screenshotting immediately catches a spinner; we
- * then best-effort wait for network quiet and a short settle, so the frame
- * `repoos shot` records is the mounted UI, not its loading state.
- */
-async function capture(
-  page: ShotPage,
-  url: string,
-  selector: string | undefined,
-  fullPage: boolean,
-  waitMs: number,
-): Promise<Buffer> {
-  await page.goto(url, { waitUntil: "load", timeout: NAV_TIMEOUT_MS });
-  try {
-    await page.waitForLoadState("networkidle", { timeout: 10_000 });
-  } catch {
-    /* a dev server with HMR may never go idle — the settle below still applies */
-  }
-  if (waitMs > 0) await page.waitForTimeout(waitMs);
-  if (selector) {
-    return page.locator(selector).screenshot({ fullPage, timeout: SELECTOR_TIMEOUT_MS });
-  }
-  return page.screenshot({ fullPage });
-}
-
+/** Parse the server's error body into a human message. */
 async function readApiError(res: Response): Promise<string> {
   try {
     const body = (await res.json()) as { error?: string };
@@ -267,7 +229,7 @@ async function uploadShot(
   port: number,
   taskId: string,
   token: string | null,
-  input: { target: string; route: string; selector?: string; data: string },
+  input: { target: string; route: string; label?: string; selector?: string; data: string },
 ): Promise<
   { ok: true; shot: { name: string; path: string; url: string } } | { ok: false; error: string }
 > {
@@ -279,6 +241,7 @@ async function uploadShot(
       body: JSON.stringify({
         target: input.target,
         route: input.route,
+        ...(input.label ? { label: input.label } : {}),
         name: input.target,
         mime: "image/png",
         data: input.data,
@@ -304,6 +267,17 @@ export async function cmdShot(args: string[]): Promise<number> {
 
   Capture screenshots of this task's managed preview into
   work/.attachments/<taskId>/shots/ (gitignored), shown in the task drawer.
+
+  Which page or state to capture can be declared in the task body: a
+  "## Shots" section holding a fenced JSON list, one entry per shot:
+
+    {"target": "default", "route": "/board", "label": "Board",
+     "steps": [{"click": "button.new-task"}, {"waitMs": 300}]}
+
+  (target/route/selector/label/steps; steps are click, fill + text,
+  waitFor, or waitMs, using plain CSS selectors). The same list drives
+  the server's automatic capture at handoff. Without it, "/" is captured
+  per resolved target.
 
   Arguments:
     <route|url>        Route to capture on the preview (default "/"), or an
@@ -348,15 +322,24 @@ export async function cmdShot(args: string[]): Promise<number> {
   }
 
   const absolute = opts.route !== undefined && isAbsoluteUrl(opts.route);
-  const route = normalizedRoute(opts.route);
 
   // Resolve targets from the diff unless an absolute URL was supplied (then the
   // URL itself is the subject and no target resolution is needed).
   let targets: string[] = [];
   let source: ShotTargetSource = "none";
+  // What to capture (#0594): the task's declared `## Shots` list when present;
+  // explicit CLI flags override it; with neither, `/` per resolved target.
+  let plan: CaptureEntry[] = [];
   if (absolute) {
     targets = [opts.target ?? `url:${basename(new URL(opts.route as string).pathname) || "/"}`];
     source = "target";
+    plan = [
+      {
+        target: targets[0],
+        route: opts.route as string,
+        ...(opts.selector ? { selector: opts.selector } : {}),
+      },
+    ];
   } else {
     const changed = changedPathsVsBase(worktreeRoot, opts.base);
     if (changed === null) {
@@ -385,6 +368,33 @@ export async function cmdShot(args: string[]): Promise<number> {
       console.log(
         c.dim(
           "  note: only one preview runs at a time — each target restarts the preview, so a preview you were watching will stop.",
+        ),
+      );
+    }
+    // The task's own `## Shots` declaration wins when the CLI flags did not
+    // pin a route/selector — the engineer knows which page/state is visible.
+    const declared =
+      opts.route || opts.selector
+        ? { shots: [], errors: [] as string[] }
+        : parseShotPlan(task.body);
+    for (const error of declared.errors) {
+      console.error(c.yellow("  · ") + `declared shot list: ${error}`);
+    }
+    const built = buildCapturePlan(targets, declared.shots);
+    for (const error of built.errors) {
+      console.error(c.yellow("  · ") + error);
+    }
+    plan = built.entries.length
+      ? built.entries
+      : targets.map((target) => ({
+          target,
+          route: normalizedRoute(opts.route),
+          ...(opts.selector ? { selector: opts.selector } : {}),
+        }));
+    if (built.entries.length) {
+      console.log(
+        c.dim(
+          `  plan: ${built.entries.map((e) => `${e.target}${e.label ? ` – ${e.label}` : ""}`).join(", ")}`,
         ),
       );
     }
@@ -434,28 +444,38 @@ export async function cmdShot(args: string[]): Promise<number> {
       return 1;
     }
 
-    for (const target of targets) {
-      let pageUrl: string;
-      if (absolute) {
-        pageUrl = opts.route as string;
-      } else {
-        // Only one preview runs per task, so a different target must replace
-        // the running one before it can start (#0379/#0271).
+    let currentTarget: string | undefined;
+    let currentPreviewUrl = "";
+    for (const entry of plan) {
+      // Only one preview runs per task, so a different target must replace
+      // the running one before it can start (#0379/#0271). Same-target
+      // entries reuse the running preview — no restart, no churn.
+      if (entry.target !== currentTarget) {
         await stopPreview(port, task.id, token);
-        const started = await startPreview(port, task.id, target, token);
+        const started = await startPreview(port, task.id, entry.target, token);
         if (!started.ok) {
-          console.error(c.red("  ✗ ") + `preview for target "${target}" failed: ${started.error}`);
+          console.error(
+            c.red("  ✗ ") + `preview for target "${entry.target}" failed: ${started.error}`,
+          );
           return 1;
         }
-        pageUrl = `${started.url}${route}`;
+        currentPreviewUrl = started.url.replace(/\/$/, "");
+        currentTarget = entry.target;
       }
-      const page = (await context.newPage()) as unknown as ShotPage;
+      const pageUrl = absolute
+        ? entry.route
+        : `${currentPreviewUrl}${normalizedRoute(entry.route)}`;
+      const page = (await context.newPage()) as unknown as ShotDriverPage;
       let png: Buffer;
       try {
         await page.setViewportSize(opts.viewport);
-        png = await capture(page, pageUrl, opts.selector, opts.fullPage, opts.waitMs);
+        png = await captureShotPage(page, pageUrl, entry, {
+          viewport: opts.viewport,
+          waitMs: opts.waitMs,
+          fullPage: opts.fullPage,
+        });
       } catch (err) {
-        const what = opts.selector ? `selector "${opts.selector}" on ${pageUrl}` : pageUrl;
+        const what = entry.selector ? `selector "${entry.selector}" on ${pageUrl}` : pageUrl;
         console.error(c.red("  ✗ ") + `capture of ${what} failed: ${(err as Error).message}`);
         await page.close();
         return 1;
@@ -463,9 +483,9 @@ export async function cmdShot(args: string[]): Promise<number> {
       await page.close();
 
       const uploaded = await uploadShot(port, task.id, token, {
-        target,
-        route,
-        ...(opts.selector ? { selector: opts.selector } : {}),
+        target: entry.target,
+        route: entry.route.startsWith("/") ? normalizedRoute(entry.route) : entry.route,
+        ...(entry.label ? { label: entry.label } : {}),
         data: png.toString("base64"),
       });
       if (!uploaded.ok) {
@@ -473,14 +493,15 @@ export async function cmdShot(args: string[]): Promise<number> {
         return 1;
       }
       saved.push({
-        target,
+        target: entry.target,
+        ...(entry.label ? { label: entry.label } : {}),
         file: uploaded.shot.name,
         path: uploaded.shot.path,
         url: uploaded.shot.url,
       });
       console.log(
         c.green("  ✔ ") +
-          `${target} → ${c.cyan(uploaded.shot.path)} ${c.dim(`(${Math.round(png.length / 1024)} KB)`)}`,
+          `${entry.target}${entry.label ? ` – ${entry.label}` : ""} → ${c.cyan(uploaded.shot.path)} ${c.dim(`(${Math.round(png.length / 1024)} KB)`)}`,
       );
     }
     if (saved.length === 0) {

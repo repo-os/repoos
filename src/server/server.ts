@@ -156,6 +156,7 @@ import {
   type HandoffOrigin,
 } from "./handoff.js";
 import { PreviewManager, probePreview } from "./preview.js";
+import { runAutoShotCapture } from "./shot-capture.js";
 import { ReviewManager } from "./review.js";
 import { SkillSuggestionManager, markOriginTask } from "./skill-suggestions.js";
 import { DebugTldrManager } from "./debug-tldr.js";
@@ -1955,12 +1956,28 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     if (prev === "active" && next !== "active") void runner.stop(task.id);
   };
 
+  // Automatic shot capture on entry to review (#0594): fire-and-forget, and
+  // never allowed to fail or delay the transition that triggered it. The
+  // PreviewManager is the server-owned lifecycle (#0271/#0379), so this is the
+  // regular capture path `repoos shot` uses — nothing parallel to maintain.
+  const scheduleAutoShotCapture = (task: Task): void => {
+    if (!task.branch) return;
+    void runAutoShotCapture(config, task, previews, (id, level, message) =>
+      logger.task(id, level, message),
+    ).catch((err: unknown) => {
+      logger.system("warn", `automatic shot capture crashed for #${task.id}`, {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
+  };
+
   // Combined status-change hook, fired for every status change by any route.
   const onStatusChange = (task: Task, prev: Status, next: Status): void => {
     stopPreviewIfLeft(task, prev, next);
     stopAgentIfLeftActive(task, prev, next);
     if (prev === "active" && next !== "active") runner.discardPendingHandoff(task.id);
     if (next === "done") runner.complete(task.id);
+    if (prev !== "review" && next === "review") scheduleAutoShotCapture(task);
   };
 
   /**

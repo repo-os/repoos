@@ -28,6 +28,12 @@ export interface ShotMeta {
   target: string;
   /** Requested route or URL, when the caller supplied one. */
   route?: string;
+  /**
+   * Human label the capture was captioned with (#0594), from the task's
+   * declared shot list — e.g. "Task drawer open". Shown ahead of the target
+   * name in the drawer.
+   */
+  label?: string;
   /** Repo-relative path, e.g. "work/.attachments/0582/shots/docs-site-1.png". */
   path: string;
   /** API URL the UI loads the image from. */
@@ -43,6 +49,7 @@ interface ShotManifestEntry {
   name: string;
   target: string;
   route?: string;
+  label?: string;
   mime: string;
   size: number;
   capturedAt: string;
@@ -58,6 +65,7 @@ export interface ShotStore {
   save(input: {
     target: string;
     route?: string;
+    label?: string;
     mime?: string;
     name?: string;
     data: string;
@@ -140,6 +148,7 @@ export function localShotStore(config: RepoOSConfig, taskId: string): ShotStore 
         name: file,
         target: meta?.target ?? "unknown",
         ...(meta?.route ? { route: meta.route } : {}),
+        ...(meta?.label ? { label: meta.label } : {}),
         path: relPath(config, taskId, file),
         url: shotUrl(taskId, file),
         size,
@@ -191,6 +200,7 @@ export function localShotStore(config: RepoOSConfig, taskId: string): ShotStore 
         name: file,
         target,
         ...(input.route ? { route: input.route } : {}),
+        ...(input.label ? { label: input.label } : {}),
         mime,
         size: buf.length,
         capturedAt,
@@ -203,6 +213,7 @@ export function localShotStore(config: RepoOSConfig, taskId: string): ShotStore 
         name: file,
         target,
         ...(input.route ? { route: input.route } : {}),
+        ...(input.label ? { label: input.label } : {}),
         path: relPath(config, taskId, file),
         url: shotUrl(taskId, file),
         size: buf.length,

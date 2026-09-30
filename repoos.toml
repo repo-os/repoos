@@ -523,6 +523,12 @@ description = "Cross-cutting or unclassified work"
 # instead of a preview-only wrapper (scripts/preview-serve.mjs was deleted as
 # redundant with this change).
 command = "bun run build && bun dist/cli/index.js serve --port {port} --host {host}"
+# The default target's own paths (#0594). Without them the main app was only
+# reachable through area resolution, so a mixed diff (app files + one docs
+# file) screenshotted just the docs target. `src/ui-app/**` is what a
+# UI-visible change touches here; a server-only diff deliberately resolves
+# nothing — the automatic capture should not boot a browser for it.
+paths = ["src/ui-app/**"]
 # Needs the generous budget for the genuinely-cold-worktree case (a fresh
 # worktree has no dist/ at all — AGENTS.md) where the build does real work.
 # Matches the old ensureFreshBuild's 240s build allowance plus boot time
@@ -581,7 +587,7 @@ name = "engineer"
 cli = "opencode"
 model = "opencode-go/glm-5.3-flash"
 enabled = true
-instructions = "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status. Uses Bun, not Node: `bun`/`bunx`/`bun run`, never a new bare `node`/`npm`/`npx` call unless it is strictly a fallback for when Bun is missing (AGENTS.md, Conventions, Runtime). Explains what they're doing in chat as they work — reasoning, choices, progress updates."
+instructions = "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status. For a UI-visible change, also write a short `## Shots` section into the task body via `repoos update --body` declaring which pages/states to capture (RepoOS captures them automatically at handoff). Uses Bun, not Node: `bun`/`bunx`/`bun run`, never a new bare `node`/`npm`/`npx` call unless it is strictly a fallback for when Bun is missing (AGENTS.md, Conventions, Runtime). Explains what they're doing in chat as they work — reasoning, choices, progress updates."
 skills = ["frontend-design", "frontend-testing"]
 [[agents]]
 name = "reviewer"

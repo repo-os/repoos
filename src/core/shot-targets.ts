@@ -100,8 +100,14 @@ function targetMatchesPaths(target: PreviewTargetConfig, changedPaths: string[])
 
 /**
  * The target names whose `paths` globs match at least one changed file, in
- * `repoos.toml` target order. A target with no `paths` never matches here — it
- * is still reachable through area fallback or `--target`.
+ * `repoos.toml` target order, plus the default `[preview] command` target when
+ * the top-level `paths` globs match (#0594).
+ *
+ * A target with no `paths` never matches here — it is still reachable through
+ * area fallback or `--target`. Changed files that match NO target's globs do
+ * NOT pull the default in implicitly (and never could: every task diff
+ * contains the task's own `work/*.md`, which is no evidence about the UI), so
+ * the default participates only when the repo explicitly declares its globs.
  */
 export function targetsForPaths(
   preview: PreviewConfig | undefined,
@@ -111,6 +117,14 @@ export function targetsForPaths(
   const out: string[] = [];
   for (const t of targets) {
     if (targetMatchesPaths(t, changedPaths)) out.push(t.name);
+  }
+  const defaultGlobs = preview?.paths ?? [];
+  // Only the declared default COMMAND can be booted for the default target: a
+  // `paths`-only preview (no `[preview] command`) has nothing to serve, so it
+  // must not surface as a capturable target.
+  const declaresDefault = Boolean(preview?.command?.trim());
+  if (declaresDefault && defaultGlobs.some((g) => changedPaths.some((p) => matchGlob(g, p)))) {
+    out.push(DEFAULT_PREVIEW_TARGET);
   }
   return out;
 }
@@ -236,6 +250,11 @@ export function shotTargetMismatchWarning(
   // A target is "explained" when the task's area names it directly or one of
   // its `areas` matches the task's area.
   const unexplained = detected.filter((name) => {
+    // The default `[preview] command` is the implicit main-app fallback, not a
+    // target an area is expected to "resolve to" (#0594, once it can also be
+    // matched by top-level `paths`); warning about it would fire on nearly
+    // every diff and drown the real mismatches.
+    if (name === DEFAULT_PREVIEW_TARGET) return false;
     if (taskAreas.includes(name.trim().toLowerCase())) return false;
     const target = (preview?.targets ?? []).find((t) => t.name === name);
     return !target?.areas.some((a) => taskAreas.includes(a.trim().toLowerCase()));

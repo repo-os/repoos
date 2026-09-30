@@ -172,6 +172,67 @@ describe("shotTargetMismatchWarning", () => {
   });
 });
 
+// #0594 — the default (main-app) preview target declares its own `paths`, so a
+// diff touching app files resolves it and a mixed app+docs diff captures BOTH.
+const PREVIEW_WITH_DEFAULT_PATHS: PreviewConfig = {
+  command: "bun run dev --port {port}",
+  paths: ["src/ui-app/**"],
+  targets: [
+    { name: "Docs site", areas: ["docs"], paths: ["user-docs/**"], command: "bun dev" },
+    { name: "Landing page", areas: ["landing"], paths: ["landing/**"], command: "bun dev" },
+  ],
+};
+
+describe("the default target's own paths (#0594)", () => {
+  it("resolves the default target for a pure app diff", () => {
+    expect(targetsForPaths(PREVIEW_WITH_DEFAULT_PATHS, ["src/ui-app/src/Board.vue"])).toEqual([
+      "default",
+    ]);
+    const r = resolveShotTargets(PREVIEW_WITH_DEFAULT_PATHS, "web", ["src/ui-app/src/Board.vue"]);
+    expect(r.names).toEqual(["default"]);
+    expect(r.source).toBe("paths");
+  });
+
+  it("resolves every matching target on a mixed app + docs diff", () => {
+    const changed = [
+      "src/ui-app/src/components/TaskDrawer.vue",
+      "src/ui-app/src/style.css",
+      "user-docs/check.md",
+    ];
+    expect(targetsForPaths(PREVIEW_WITH_DEFAULT_PATHS, changed)).toEqual(["Docs site", "default"]);
+    const r = resolveShotTargets(PREVIEW_WITH_DEFAULT_PATHS, "web", changed);
+    expect(r.names).toEqual(["Docs site", "default"]);
+    expect(r.source).toBe("paths");
+  });
+
+  it("matches top-level paths across every segment, like target paths", () => {
+    expect(targetsForPaths(PREVIEW_WITH_DEFAULT_PATHS, ["src/ui-app/a/b/c.vue"])).toEqual([
+      "default",
+    ]);
+  });
+
+  it("does NOT pull the default in for files that match nothing (no implicit map)", () => {
+    // A work/*.md-only diff is not evidence about the UI — the default
+    // participates only when the repo explicitly declared its globs.
+    expect(targetsForPaths(PREVIEW_WITH_DEFAULT_PATHS, ["work/0599-x.md"])).toEqual([]);
+    expect(targetsForPaths(PREVIEW_WITH_DEFAULT_PATHS, ["src/server/agents.ts"])).toEqual([]);
+    // And without a default command there is nothing to map to anyway.
+    expect(
+      targetsForPaths({ targets: PREVIEW_WITH_DEFAULT_PATHS.targets, paths: ["src/ui-app/**"] }, [
+        "src/ui-app/x.vue",
+      ]),
+    ).toEqual([]);
+  });
+
+  it("never mislabels the always-reachable default as an area mismatch", () => {
+    const warning = shotTargetMismatchWarning(PREVIEW_WITH_DEFAULT_PATHS, "web", [
+      "src/ui-app/src/Board.vue",
+      "user-docs/check.md",
+    ]);
+    expect(warning).toBe(`This task's changes touch Docs site but its area is "web".`);
+  });
+});
+
 describe("formatTargetList", () => {
   it("reads naturally for one, two, and many", () => {
     expect(formatTargetList([])).toBe("(none)");

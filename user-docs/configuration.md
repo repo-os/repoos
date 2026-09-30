@@ -461,6 +461,7 @@ when a task is in `active` or `review`.
 | `preview.cwd` | string | worktree root | yes | Subdirectory of the worktree to run the default command in. |
 | `preview.readyPath` | string | `/` | yes | Path polled for readiness, relative to the preview URL. A missing leading slash is added. |
 | `preview.readyTimeoutMs` | number | `10000` | yes | How long to wait for the default command to answer before giving up. Raise it for a command that also builds first. |
+| `preview.paths` | array of strings | `[]` | yes | Repo-relative globs (see below) declaring which files the default (main-app) preview serves for shot resolution (#0594). |
 | `preview.targets[].name` | string | derived from `areas` | yes | Human label for diagnostics and the preview picker. |
 | `preview.targets[].areas` | array of strings | `[]` | yes | Task `area:` values this target serves, matched case-insensitively. |
 | `preview.targets[].paths` | array of strings | `[]` | yes | Repo-relative globs (see below). A changed file matching any glob selects this target for `repoos shot`, independent of the task's `area`. |
@@ -477,10 +478,13 @@ booting a random app. Previews are one-at-a-time and a new request evicts the
 previous preview.
 
 `preview.targets[].paths` drives `repoos shot`, which picks the target to
-screenshot from the task's changed files rather than its up-front `area:`. A
-glob uses `*` within one path segment, `**` across segments (including none),
-and `?` for one non-slash character — `landing/**` matches every changed file
-under `landing/`. When no target's globs match, `repoos shot` falls back to the
+screenshot from the task's changed files rather than its up-front `area:`.
+`preview.paths` does the same for the default target — without it the main
+app was reachable only through area resolution, and a mixed diff touching the
+app plus (say) one docs file screenshotted just the docs. A glob uses `*`
+within one path segment, `**` across segments (including none), and `?` for
+one non-slash character — `landing/**` matches every changed file under
+`landing/`. When no target's globs match, `repoos shot` falls back to the
 area match (then the default command); `--target` overrides either way.
 
 > **`[[preview.targets]]` is deliberately TOML-only.** The Settings UI is built

@@ -183,6 +183,8 @@ export interface ShotMeta {
   target: string;
   /** Requested route/URL, when the caller supplied one. */
   route?: string;
+  /** Declared shot label (#0594), when the capture was captioned with one. */
+  label?: string;
   /** Repo-relative path. */
   path: string;
   /** API URL the UI loads the image from. */
