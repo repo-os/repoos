@@ -278,19 +278,23 @@ between a reviewer reading "New-task drawer open" and squinting at a full
 page.
 
 `repoos shot` captures this list (unless a route/selector was passed
-explicitly), and the SERVER does too: when a task moves to review and its
-diff touches any target's `paths`, the server runs the capture itself
-through the managed preview — no agent action needed. The automatic capture
-is deliberately conservative (#0603): a fallback shot's caption records the
-glob that matched (`auto: matched src/ui-app/**`), a declared shot's caption
-records its label (`declared: New-task drawer open`); a diff touching only
-tests or task notes touches a glob but is not a UI change, so it captures
-nothing (test files are not UI evidence); and a docs target matched only by
-content files is skipped unless a declared shot names a route — the docs
-home page does not show a wording edit. Skips and failures are recorded in
-the task log and activity as `shots: skipped — <reason>` / `shots: failed — <reason>`,
-never as a failed handoff. An engineer-made capture pre-empts the
-automatic one.
+explicitly), and the SERVER does too: declared shots are captured
+automatically when a task moves to review, with targets resolved the same way
+the CLI resolves them — the diff's changed paths first, then the task's
+`area`, then the default `[preview] command`. The automatic capture is
+deliberately conservative when nothing is declared (#0603): a fallback
+shot's caption records the glob that matched (`auto: matched src/ui-app/**`),
+a declared shot's caption records its label (`declared: New-task drawer
+open`); a diff touching only tests or task notes touches a glob but is not a
+UI change, so nothing is captured without a declaration (test files are not
+UI evidence); and a docs target matched only by content files is skipped
+unless a declared shot names a route — the docs home page does not show a
+wording edit. (Repos whose UI is itself markdown-driven: a genuine UI change
+in a `.md` file counts as content, so declare the shot with its route.) Skips
+and failures are recorded in the task log and activity as
+`shots: skipped — <reason>` / `shots: failed — <reason>`, never as a failed
+handoff; skips that ride alongside a captured shot appear in the same note.
+An engineer-made capture pre-empts the automatic one.
 
 Playwright/WebKit is optional (a dev dependency). When it is missing, `repoos
 shot` prints install advice and exits non-zero without touching anything:

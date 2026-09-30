@@ -5316,12 +5316,13 @@
   text-overflow: ellipsis;
 }
 /* #0603: the one-line capture reason under each thumb — "declared: <label>"
- * or "auto: matched <glob>" — so a fallback shot is never anonymous. */
+ * or "auto: matched <glob>" — so a fallback shot is never anonymous. --txt-dim
+ * keeps 10px-adjacent text above the WCAG floor on --panel-solid; opacity
+ * would composite it below it (#0603 review round 2). */
 .shot-provenance {
   display: block;
   font-size: 9px;
-  color: var(--txt-faint);
-  opacity: 0.85;
+  color: var(--txt-dim);
   font-family: "JetBrains Mono", monospace;
   padding: 0 7px 5px;
   white-space: nowrap;

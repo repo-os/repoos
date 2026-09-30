@@ -140,7 +140,12 @@ target's paths with no declaration still gets one `/` shot per target —
 captioned `auto: matched <glob>` — but a diff whose only glob evidence is
 tests or task notes stands down with a visible skip instead of capturing a
 blind home page. The CLI keeps its `/` fallback: a human invoked it by hand.
-Every shot records its provenance in `shots.json` and the drawer — `declared:
+Declared `## Shots` resolve targets the way the CLI does (changed paths,
+then the task's `area`, then the default command), so an explicit declaration
+is honored even when the diff matches no glob; and repos whose UI is itself
+markdown-driven should know a UI-relevant `.md` change counts as content —
+declare the shot with its route. Every
+shot records its provenance in `shots.json` and the drawer — `declared:
 <label>` for a declared shot, `auto: matched <glob>` for the fallback, so
 a reviewer can tell what each capture claims to show.
 
