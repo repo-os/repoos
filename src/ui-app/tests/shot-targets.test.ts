@@ -236,6 +236,23 @@ describe("the default target's own paths (#0594)", () => {
         "work/0600-guard.md",
       ]),
     ).toEqual([]);
+    // Un-suffixed helper files under tests/ count as test artifacts too
+    // (#0603 review): tests/setup/web-storage.ts, tests/adoption/*.
+    expect(
+      targetsForPaths(PREVIEW_WITH_DEFAULT_PATHS, [
+        "src/ui-app/tests/setup/web-storage.ts",
+        "src/ui-app/tests/adoption/harness.ts",
+        "work/0603-note.md",
+      ]),
+    ).toEqual([]);
+    // A `test/`-named segment works as well, but only as a WHOLE segment —
+    // "latest/" or "contest/" must not trip the filter.
+    expect(targetsForPaths(PREVIEW_WITH_DEFAULT_PATHS, ["src/ui-app/test/fixtures.ts"])).toEqual(
+      [],
+    );
+    expect(targetsForPaths(PREVIEW_WITH_DEFAULT_PATHS, ["src/ui-app/src/latest/news.ts"])).toEqual([
+      "default",
+    ]);
     // Mixed: real UI code still resolves alongside the test file.
     expect(
       targetsForPaths(PREVIEW_WITH_DEFAULT_PATHS, [
@@ -292,9 +309,15 @@ describe("describeTargetPathMatches (#0603)", () => {
       ],
     };
     expect(describeTargetPathMatches(docs, ["user-docs/src/api.test.ts"])).toEqual([]);
-    // …and keeps the target when a real source file sits next to it.
+    // Un-suffixed helpers inside a tests/ directory too (#0603 review).
+    expect(describeTargetPathMatches(docs, ["user-docs/tests/helpers.ts"])).toEqual([]);
+    // …and keeps the target when a real source file sits next to them.
     expect(
-      describeTargetPathMatches(docs, ["user-docs/src/api.ts", "user-docs/src/api.test.ts"]),
+      describeTargetPathMatches(docs, [
+        "user-docs/src/api.ts",
+        "user-docs/tests/helpers.ts",
+        "user-docs/src/api.test.ts",
+      ]),
     ).toEqual([{ target: "Docs site", globs: ["user-docs/**"], contentOnly: false }]);
   });
 });

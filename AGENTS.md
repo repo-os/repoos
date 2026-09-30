@@ -452,8 +452,10 @@ cannot tell from the code alone:
   optional `highlight` CSS selector outlining what changed, and a human
   `label` naming the change), usually 1–3 entries showing the changed
   screens. Every shot is captioned with why it exists (`declared: <label>` /
-  `auto: matched <glob>`); with no declarations the capture stands down
-  rather than shoot `/`, and a docs-wording-only diff captures nothing (#0603).
+  `auto: matched <glob>`); without declarations, a diff touching a UI
+  target's paths still gets one captioned `/` fallback shot per target, while
+  a diff touching only tests or task notes — or a docs-wording-only diff —
+  captures nothing (#0603).
   Write it with
   `repoos new/update --body`, never a hand edit. Manual `repoos shot` remains the tool for checking your own work;
   an engineer-made capture pre-empts the automatic one.

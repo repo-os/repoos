@@ -121,9 +121,7 @@ export function planAutoCapture(
     }
     return {
       reason:
-        skips.length > 0
-          ? skips.join("; ")
-          : "no declared ## Shots — the automatic capture shoots only what a declaration names",
+        skips.length > 0 ? skips.join("; ") : "no captures were planned for the resolved targets",
     };
   }
   return { entries: built.entries, errors, skips };

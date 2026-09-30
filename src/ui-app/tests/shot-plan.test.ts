@@ -178,7 +178,22 @@ describe("buildCapturePlan", () => {
       docsContentOnly: new Set(["Docs site"]),
     });
     expect(routeless.entries).toEqual([]);
+    // One visible line, not an error plus a near-duplicate skip (#0603 review).
+    expect(routeless.errors).toHaveLength(1);
     expect(routeless.errors[0]).toMatch(/documentation content/);
+    expect(routeless.autoSkips).toEqual([]);
+  });
+
+  it("notes a docs-content target no declared entry even mentioned (#0603)", () => {
+    // Declarations cover `default` only; the matched Docs site is content-only
+    // and never named — one skip note explains why it is not captured.
+    const mixed = buildCapturePlan(["Docs site", "default"], [{ route: "/", label: "Board" }], {
+      docsContentOnly: new Set(["Docs site"]),
+    });
+    expect(mixed.entries.map((e) => e.target)).toEqual(["default"]);
+    expect(mixed.errors).toEqual([]);
+    expect(mixed.autoSkips).toHaveLength(1);
+    expect(mixed.autoSkips[0]).toMatch(/Docs site matched only documentation content/);
   });
 
   it("keeps multi-entry plans for the same target (one preview, many shots)", () => {

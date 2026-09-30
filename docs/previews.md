@@ -131,14 +131,17 @@ plain CSS selectors). Routes and selectors only — no framework knowledge.
 captured an unlabeled `/` frame that showed nothing about its change (its diff
 added tests under `src/ui-app/tests/`, which the plain `src/ui-app/**` glob
 matched): test artifacts (`*.test.ts`, `*.spec.ts`, `*.snap`, `__tests__/`,
-`__snapshots__/`) are filtered out before glob matching — they are behavior
-evidence, not appearance — a docs target matched only by content files
-(`*.md`/`*.mdx`) needs a declared route, since `/` would be the docs home page
-rather than the page that changed; and with no usable declaration at all the
-automatic pass stands down with a visible skip instead of capturing a blind
-home page. The CLI keeps its `/` fallback: a human invoked it by hand. Every
-shot records its provenance in `shots.json` and the drawer — `declared:
-<label>` for a declared shot, `auto: matched <glob>` for the rare fallback, so
+`__snapshots__/`, and any file under a `tests/`/`test/` directory) are
+filtered out before glob matching — they are behavior evidence, not
+appearance — a docs target matched only by content files (`*.md`/`*.mdx`)
+needs a declared route, since `/` would be the docs home page rather than the
+page that changed. The fallback is NOT abolished: a diff that touches a UI
+target's paths with no declaration still gets one `/` shot per target —
+captioned `auto: matched <glob>` — but a diff whose only glob evidence is
+tests or task notes stands down with a visible skip instead of capturing a
+blind home page. The CLI keeps its `/` fallback: a human invoked it by hand.
+Every shot records its provenance in `shots.json` and the drawer — `declared:
+<label>` for a declared shot, `auto: matched <glob>` for the fallback, so
 a reviewer can tell what each capture claims to show.
 
 An engineer-made capture pre-empts
