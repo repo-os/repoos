@@ -5,11 +5,13 @@ type: feature
 status: inbox
 priority: p2
 area: [server, web]
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
+model_override: default
 created_at: "2026-09-30T03:02:23Z"
-updated_at: "2026-09-30T03:02:23Z"
+updated_at: "2026-09-30T03:28:49Z"
 ---
 The failure tl;dr (#0570, src/server/debug-tldr.ts) only runs for needs-input reasons (review-failed, dev-error, check-failed-after-retries, watchdog-stuck). A failed Move to done is stored as a done error (repo.doneErrorFor, rendered by DoneErrorCard.vue in the task drawer and on the board card) and never reaches that path, so the drawer shows no 'tl;dr — what happened' for it. MTD errors are common and hard for humans to read (e.g. #0589: a vitest failure buried in remote-validation output).
 
@@ -23,3 +25,4 @@ Notes:
 ## Activity
 
 - 2026-09-30T03:02:23Z · created · unknown
+- 2026-09-30T03:28:49Z · cli_override, model_override
