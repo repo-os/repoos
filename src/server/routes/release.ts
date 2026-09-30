@@ -24,6 +24,11 @@ import {
 import type { Agent, RepoOSConfig } from "../../core/types.js";
 import { readBuildMeta } from "../../core/build.js";
 import { compareSemver } from "../../core/agent-updates.js";
+import {
+  readCachedReleaseNotes,
+  releaseNotesCacheKey,
+  writeCachedReleaseNotes,
+} from "../release-notes-cache.js";
 
 const STABLE_VERSION = /^v?(\d+)\.(\d+)\.(\d+)$/;
 const RELEASE_CACHE_MS = 10 * 60 * 1000;
@@ -234,6 +239,11 @@ export const runRelease: RouteHandler = async (ctx, req, res) => {
  * release — it only returns text for the modal to drop into its optional notes
  * field, where the operator can edit it before confirming the cut. A failure
  * here is reported to the caller and has no effect on the cut flow.
+ *
+ * A draft for an unchanged commit context is served from the disk cache
+ * (`<cacheDir>/release-notes.json`) without touching the agent, so retrying a
+ * cut that failed its checks doesn't cost another one to two minutes (#0590).
+ * `cached`/`cachedAt` tell the modal that the text was reused.
  */
 export const generateReleaseNotes: RouteHandler = async (ctx, req, res) => {
   const { config } = ctx;
@@ -247,10 +257,29 @@ export const generateReleaseNotes: RouteHandler = async (ctx, req, res) => {
     });
   }
 
-  const { commits, sinceTag, truncated } = await collectReleaseCommits(config);
+  const { commits, sinceTag, truncated, head } = await collectReleaseCommits(config);
   if (!commits.length) {
     // Nothing new to summarize is not an error: the cut can still proceed.
     return json(res, 200, { notes: "", sinceTag, commitCount: 0, truncated });
+  }
+
+  // The draft's identity is the commit context it was made from — see
+  // release-notes-cache.ts for why `sinceTag` is compounded onto `head`.
+  // A context we couldn't resolve (no readable HEAD) is never cached in
+  // either direction: an unkeyed entry could only ever be wrong.
+  const cacheKey = head ? releaseNotesCacheKey(head, sinceTag) : null;
+  if (cacheKey) {
+    const cached = readCachedReleaseNotes(config.root, config.cacheDir, cacheKey);
+    if (cached) {
+      return json(res, 200, {
+        notes: cached.notes,
+        sinceTag,
+        commitCount: commits.length,
+        truncated,
+        cached: true,
+        cachedAt: cached.createdAt || null,
+      });
+    }
   }
 
   const prompt = releaseNotesPrompt(commits, { sinceTag, version, truncated });
@@ -272,5 +301,17 @@ export const generateReleaseNotes: RouteHandler = async (ctx, req, res) => {
   if (!notes) {
     return json(res, 502, { error: "The agent returned no usable release notes." });
   }
-  return json(res, 200, { notes, sinceTag, commitCount: commits.length, truncated });
+  // Only a successful, non-empty draft reaches the cache, so a failed run can
+  // never overwrite a good entry.
+  if (head && cacheKey) {
+    writeCachedReleaseNotes(config.root, config.cacheDir, cacheKey, notes, { head, sinceTag });
+  }
+  return json(res, 200, {
+    notes,
+    sinceTag,
+    commitCount: commits.length,
+    truncated,
+    cached: false,
+    cachedAt: null,
+  });
 };

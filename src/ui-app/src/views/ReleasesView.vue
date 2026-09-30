@@ -82,6 +82,8 @@ const error = ref("");
 const notes = ref("");
 const generatingNotes = ref(false);
 const notesError = ref("");
+/** Short hint that a generate returned saved notes instead of a fresh draft. */
+const notesHint = ref("");
 /** Full command output from a failed release phase (repoos check log, build errors). */
 const runLog = ref("");
 const debuggerSending = ref(false);
@@ -309,6 +311,7 @@ function openConfirm(): void {
   newVersion.value = "";
   notes.value = "";
   notesError.value = "";
+  notesHint.value = "";
   generatingNotes.value = false;
   debuggerSent.value = false;
   debuggerErr.value = "";
@@ -316,10 +319,23 @@ function openConfirm(): void {
 }
 
 /**
+ * The shortcut path: apply the suggested next version without typing it. The
+ * field stays the single source of truth afterwards, so Publish, the tag
+ * preview and every validation rule behave exactly as if it had been typed —
+ * and a custom semver typed later simply replaces it.
+ */
+function cutNext(): void {
+  if (!suggestedVersion.value || running.value) return;
+  newVersion.value = suggestedVersion.value;
+}
+
+/**
  * Ask the server to draft notes from the commits since the last release and
  * drop the draft into the text area. Purely fills the field — it never cuts a
  * release, and a failure leaves whatever the operator typed untouched so the
- * cut can still proceed.
+ * cut can still proceed. When the server already holds a draft for this exact
+ * commit context it returns that instantly and `cached` marks it, so a retry
+ * after a failed cut doesn't wait on the agent again.
  */
 async function generateNotes(): Promise<void> {
   if (generatingNotes.value || running.value) return;
@@ -333,13 +349,24 @@ async function generateNotes(): Promise<void> {
   }
   generatingNotes.value = true;
   notesError.value = "";
+  notesHint.value = "";
   try {
-    const result = await api<{ notes: string; sinceTag: string | null; commitCount: number }>(
+    const result = await api<{
+      notes: string;
+      sinceTag: string | null;
+      commitCount: number;
+      cached?: boolean;
+      cachedAt?: string | null;
+    }>(
       "/api/release/notes",
       JSON_OPTS("POST", { version: newVersion.value || suggestedVersion.value || undefined }),
     );
     if (result.notes.trim()) {
       notes.value = result.notes;
+      if (result.cached) {
+        const age = result.cachedAt ? relativeTime(result.cachedAt) : "";
+        notesHint.value = `Reused saved notes${age ? ` (${age})` : ""} — no new AI run.`;
+      }
     } else {
       notesError.value = result.sinceTag
         ? `No commits since ${result.sinceTag} to draft from.`
@@ -747,23 +774,39 @@ onBeforeUnmount(() => {
                 </div>
               </div>
 
-              <label v-if="!running" class="rel-version-field">
-                <span class="rel-field-label">New version</span>
-                <div class="rel-version-input">
-                  <input
-                    v-model.trim="newVersion"
-                    :placeholder="suggestedVersion ?? '0.0.0'"
-                    inputmode="text"
-                    autocapitalize="none"
-                    autocorrect="off"
-                    spellcheck="false"
-                    autofocus
-                    @keyup.enter="release"
-                  />
-                  <span class="rel-version-tag" :class="{ dim: !newVersion, pre: newIsPrerelease }">
-                    → {{ newTag || `${tagPrefix}${suggestedVersion ?? "0.0.0"}` }}
-                    <template v-if="newIsPrerelease"> · prerelease</template>
-                  </span>
+              <div v-if="!running" class="rel-version-field">
+                <label class="rel-field-label" for="rel-version">New version</label>
+                <div class="rel-version-row">
+                  <div class="rel-version-input">
+                    <input
+                      id="rel-version"
+                      v-model.trim="newVersion"
+                      :placeholder="suggestedVersion ?? '0.0.0'"
+                      inputmode="text"
+                      autocapitalize="none"
+                      autocorrect="off"
+                      spellcheck="false"
+                      autofocus
+                      @keyup.enter="release"
+                    />
+                    <span
+                      class="rel-version-tag"
+                      :class="{ dim: !newVersion, pre: newIsPrerelease }"
+                    >
+                      → {{ newTag || `${tagPrefix}${suggestedVersion ?? "0.0.0"}` }}
+                      <template v-if="newIsPrerelease"> · prerelease</template>
+                    </span>
+                  </div>
+                  <span class="rel-version-or" aria-hidden="true">or</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    type="button"
+                    :disabled="!suggestedVersion"
+                    @click="cutNext"
+                  >
+                    Cut Next
+                  </Button>
                 </div>
                 <div class="rel-field-hint">
                   <span>Just the number — no “{{ tagPrefix }}”.</span>
@@ -776,7 +819,7 @@ onBeforeUnmount(() => {
                     <code>repoos upgrade --channel &lt;name&gt;</code>.
                   </span>
                 </div>
-              </label>
+              </div>
 
               <div v-if="!running" class="rel-notes-field">
                 <div class="rel-notes-head">
@@ -801,6 +844,7 @@ onBeforeUnmount(() => {
                   rows="6"
                   placeholder="What's in this release? Type it here, generate a draft from the commits since the last release, or leave empty."
                 ></textarea>
+                <div v-if="notesHint" class="rel-notes-hint">{{ notesHint }}</div>
                 <div v-if="notesError" class="rel-notes-error" role="alert">{{ notesError }}</div>
               </div>
             </div>
