@@ -461,10 +461,10 @@ when a task is in `active` or `review`.
 | `preview.cwd` | string | worktree root | yes | Subdirectory of the worktree to run the default command in. |
 | `preview.readyPath` | string | `/` | yes | Path polled for readiness, relative to the preview URL. A missing leading slash is added. |
 | `preview.readyTimeoutMs` | number | `10000` | yes | How long to wait for the default command to answer before giving up. Raise it for a command that also builds first. |
-| `preview.paths` | array of strings | `[]` | yes | Repo-relative globs (see below) declaring which files the default (main-app) preview serves for shot resolution (#0594). |
+| `preview.paths` | array of strings | `[]` | yes | Repo-relative globs (see below) declaring which files the default (main-app) preview serves for shot resolution (#0594). Test artifacts are never counted as UI evidence (#0603). |
 | `preview.targets[].name` | string | derived from `areas` | yes | Human label for diagnostics and the preview picker. |
 | `preview.targets[].areas` | array of strings | `[]` | yes | Task `area:` values this target serves, matched case-insensitively. |
-| `preview.targets[].paths` | array of strings | `[]` | yes | Repo-relative globs (see below). A changed file matching any glob selects this target for `repoos shot`, independent of the task's `area`. |
+| `preview.targets[].paths` | array of strings | `[]` | yes | Repo-relative globs (see below). A changed file matching any glob selects this target for `repoos shot`, independent of the task's `area`. Test artifacts are never counted as UI evidence (#0603). |
 | `preview.targets[].command` | string | required | yes | Command that boots the target. Rows without one are dropped. |
 | `preview.targets[].cwd` | string | worktree root | yes | Subdirectory of the worktree to run the command in. |
 | `preview.targets[].readyPath` | string | `/` | yes | Per-target readiness path (`ready_path` is also accepted). |

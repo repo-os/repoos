@@ -6,14 +6,23 @@
  * inside a drawer, a modal, or a filled form, and the engineer knows which
  * page/state shows it. So a task body may carry a `## Shots` section with a
  * JSON list of entries — target, route, optional selector, optional ordered
- * steps (click/fill/wait, plain CSS selectors or test ids), and a label. The
- * format is deliberately stack-agnostic: routes and CSS selectors only, no
- * framework knowledge — the same strings a Playwright page accepts.
+ * steps (click/fill/wait, plain CSS selectors or test ids), an optional
+ * `highlight` selector (#0603), and a label. The format is deliberately
+ * stack-agnostic: routes and CSS selectors only, no framework knowledge — the
+ * same strings a Playwright page accepts.
  *
- * Without a declared list, capture falls back to `/` per resolved target —
- * the pre-#0594 behavior. Parsing is pure (a string in, entries out) so the
- * CLI, the server and the tests can share it without touching git, a server
- * or Playwright.
+ * Without a declared list, printing the fallback is the CALLER's decision: the
+ * CLI still shoots `/` per resolved target (`repoos shot` is interactive — the
+ * human asked for it), while the server's automatic capture now stands down
+ * and records a visible skip when no route can be justified (#0603): a docs
+ * target matched only by content files, or a diff whose only glob evidence is
+ * closer to `/` than to a screen the reviewer needs. Every entry carries
+ * `provenance` — "declared: <label>" or "auto: matched <glob>" — so the
+ * Changes tab can caption WHY a shot exists, and a fallback caption is never
+ * blank.
+ *
+ * Parsing is pure (a string in, entries out) so the CLI, the server and the
+ * tests can share it without touching git, a server or Playwright.
  */
 import { DEFAULT_PREVIEW_TARGET as DEFAULT_FALLBACK_TARGET } from "./shot-targets.js";
 
@@ -34,6 +43,14 @@ export interface DeclaredShot {
   route?: string;
   /** CSS selector to capture one element instead of the page. */
   selector?: string;
+  /**
+   * CSS selector to outline before capture (#0603) — "this is what changed".
+   * Every matched element gets a visible outline and a soft highlight box,
+   * drawn before the screenshot and removed afterwards so the live app is
+   * untouched. Fallback (non-declared) shots cannot highlight: with no
+   * declaration there is no way to know which element the diff changed.
+   */
+  highlight?: string;
   /** Ordered steps to reach the state before capturing. */
   steps?: DeclaredStep[];
 }
@@ -46,14 +63,35 @@ export interface ParsedShotPlan {
 
 /**
  * One concrete thing to capture: a resolved target plus whatever the declared
- * entry (or the `/`-fallback) contributes.
+ * entry (or the server's documented fallback) contributes.
  */
 export interface CaptureEntry {
   target: string;
   route: string;
   selector?: string;
   label?: string;
+  /** Element(s) to outline before capture (#0603). Declared shots only. */
+  highlight?: string;
   steps?: DeclaredStep[];
+  /**
+   * Why this shot exists (#0603), recorded in `shots.json` and rendered in the
+   * Changes tab: a declared shot captions itself with its label ("declared:
+   * Task drawer open"), the server's fallback with the glob it matched
+   * ("auto: matched src/ui-app/**") — never blank. `globs` may be absent when
+   * the caller cannot attribute a match (e.g. a CLI-captured arbitrary URL).
+   */
+  provenance: { kind: "declared"; label?: string } | { kind: "auto"; globs?: string[] };
+}
+
+/** The rendered provenance caption for one capture, as stored and shown (#0603). */
+export function provenanceCaption(provenance: CaptureEntry["provenance"]): string {
+  return provenance.kind === "declared"
+    ? provenance.label
+      ? `declared: ${provenance.label}`
+      : "declared"
+    : provenance.globs?.length
+      ? `auto: matched ${provenance.globs.join(", ")}`
+      : "auto";
 }
 
 /** Find a `## Shots` heading's body: the lines until the next `#` heading. */
@@ -144,7 +182,7 @@ function parseShot(raw: unknown, index: number): { shot?: DeclaredShot; error?: 
   }
   const r = raw as Record<string, unknown>;
   const shot: DeclaredShot = {};
-  for (const key of ["label", "target", "route", "selector"] as const) {
+  for (const key of ["label", "target", "route", "selector", "highlight"] as const) {
     if (r[key] !== undefined) {
       if (typeof r[key] !== "string" || !r[key]) {
         return { error: `${where}: "${key}" expects a non-empty string` };
@@ -231,26 +269,89 @@ function resolveEntryTarget(
 
 /**
  * Turn the declared shot list (or the absence of one) into concrete capture
- * entries. Without any declared shots: one entry per resolved target, route
- * `/` — the pre-#0594 behavior. With declarations: only resolved targets are
- * captured; mis-targeted entries land in `errors`, which the caller should
+ * entries. With declarations: only resolved targets are captured;
+ * mis-targeted entries land in `errors`, which the caller should
  * surface (activity note / CLI output) instead of failing the whole capture.
+ * A docs-content-only target (#0603) needs an explicit `route` — `/` would be
+ * the docs home page, which does not show a wording edit — so a declaring-less
+ * or route-less entry for one is skipped with a note in `autoSkips`.
+ *
+ * Without any declared shots: one fallback entry per resolved target, route `/`
+ * (the pre-#0594 behavior; `repoos shot` invoked it by hand and the server's
+ * automatic capture still uses it when the diff touches a target's paths —
+ * #0600 taught the capture to get out of the way otherwise, in
+ * `server/shot-capture.ts`). The fallback is always captioned
+ * (`provenance` "auto: matched …", and a matching label) so a shot without a
+ * declared reason is never anonymous.
+ *
+ * `matchedGlobs` (#0603) supplies the per-target matching globs for the
+ * automatic capture's captions; `docsContentOnly` names targets whose matched
+ * files are all docs content.
  */
+export interface CapturePlanResult {
+  entries: CaptureEntry[];
+  errors: string[];
+  /** Visible skip notes for the automatic capture to record (#0603). */
+  autoSkips: string[];
+}
+
+export interface CapturePlanOptions {
+  /** Per-target matched globs, for the fallback's "auto: matched <glob>" caption. */
+  matchedGlobs?: ReadonlyMap<string, string[]>;
+  /** Target names whose matched files are docs content only (#0603). */
+  docsContentOnly?: ReadonlySet<string>;
+}
+
 export function buildCapturePlan(
   targets: string[],
   declared: DeclaredShot[],
-): { entries: CaptureEntry[]; errors: string[] } {
+  options: CapturePlanOptions = {},
+): CapturePlanResult {
   const errors: string[] = [];
+  const autoSkips: string[] = [];
+  const contentOnly = options.docsContentOnly ?? new Set<string>();
   if (declared.length === 0) {
     if (targets.length === 0) {
       return {
         entries: [],
         errors: ["no preview target was resolved for the task's changed paths"],
+        autoSkips,
       };
     }
-    return { entries: targets.map((target) => ({ target, route: "/" })), errors };
+    // Docs-content targets get no blind `/` capture #0603: their root route is
+    // the docs home page, not the page that changed.
+    const capturable = targets.filter((t) => !contentOnly.has(t));
+    for (const skipped of targets.filter((t) => contentOnly.has(t))) {
+      autoSkips.push(
+        `${skipped} matched only documentation content, and no declared shot names a route — ` +
+          "docs captures need a declared route, so this target was skipped",
+      );
+    }
+    if (capturable.length === 0) {
+      return { entries: [], errors, autoSkips };
+    }
+    return {
+      entries: capturable.map((target) => {
+        const globs = options.matchedGlobs?.get(target);
+        const provenance: CaptureEntry["provenance"] = {
+          kind: "auto",
+          ...(globs ? { globs } : {}),
+        };
+        return {
+          target,
+          route: "/",
+          // #0603: the fallback must always set a label — the provenance
+          // caption ("auto: matched src/ui-app/**"), not a bare target name.
+          label: provenanceCaption(provenance),
+          provenance,
+        };
+      }),
+      errors,
+      autoSkips,
+    };
   }
   const entries: CaptureEntry[] = [];
+  const skippedTargets = new Set<string>();
   for (let i = 0; i < declared.length; i++) {
     const shot = declared[i];
     const resolved = resolveEntryTarget(shot.target, targets);
@@ -259,13 +360,36 @@ export function buildCapturePlan(
       continue;
     }
     if (!resolved.target) continue;
+    if (shot.route === undefined && contentOnly.has(resolved.target)) {
+      // Docs-content-only target (#0603): its globs matched *.md files, so no
+      // route can name the page that changed. Skip visibly instead of
+      // captioning the docs home page.
+      errors.push(
+        `shot #${i + 1}: "${resolved.target}" matched only documentation content; ` +
+          "declared shots for docs targets need a route naming the changed page",
+      );
+      skippedTargets.add(resolved.target);
+      continue;
+    }
     entries.push({
       target: resolved.target,
       route: shot.route ?? "/",
       ...(shot.label ? { label: shot.label } : {}),
+      ...(shot.highlight ? { highlight: shot.highlight } : {}),
       ...(shot.selector ? { selector: shot.selector } : {}),
       ...(shot.steps?.length ? { steps: shot.steps } : {}),
+      provenance: { kind: "declared", ...(shot.label ? { label: shot.label } : {}) },
     });
   }
-  return { entries, errors };
+  // A docs-content target no declared entry captured (routed ones elsewhere,
+  // or the whole list errored) gets one visible note instead of an unrelated `/`.
+  for (const target of targets) {
+    if (contentOnly.has(target) && !entries.some((e) => e.target === target)) {
+      autoSkips.push(
+        `${target} matched only documentation content, and no declared shot names a route — ` +
+          "docs captures need a declared route, so this target was skipped",
+      );
+    }
+  }
+  return { entries, errors, autoSkips };
 }

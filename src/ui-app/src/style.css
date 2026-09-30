@@ -5315,6 +5315,19 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* #0603: the one-line capture reason under each thumb — "declared: <label>"
+ * or "auto: matched <glob>" — so a fallback shot is never anonymous. */
+.shot-provenance {
+  display: block;
+  font-size: 9px;
+  color: var(--txt-faint);
+  opacity: 0.85;
+  font-family: "JetBrains Mono", monospace;
+  padding: 0 7px 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 /* Captured preview shots (#0582) — the UI-changes section in the Changes tab
  * and the area/target mismatch warning shown near the preview control. */
 .ui-changes {
