@@ -120,6 +120,47 @@ describe("worktree handoff guard (#0598)", () => {
     }
   });
 
+  it("still fails when source was renamed into work/*.md (#0600 review)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const branch = "feat/rename-trick";
+      const wt = ensureWorktree(root, branch);
+      mkdirSync(join(wt.path, "src"), { recursive: true });
+      mkdirSync(join(wt.path, "work"), { recursive: true });
+      writeFileSync(join(wt.path, "src", "foo.ts"), "export const x = 1;\n");
+      git(wt.path, ["add", "src/foo.ts"]);
+      git(wt.path, ["commit", "-m", "handoff"]);
+      const sha = git(wt.path, ["rev-parse", "HEAD"]);
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+      git(wt.path, ["mv", "src/foo.ts", "work/foo.md"]);
+      git(wt.path, ["add", "-A"]);
+      git(wt.path, ["commit", "-m", "rename into work"]);
+      const check = await verifyWorktreeHandoffIntegrity(config, branch, sha);
+      expect(check.ok).toBe(false);
+      expect(check.headMoved).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("allows identical-tree HEAD moves (empty or reworded bookkeeping)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const branch = "feat/empty";
+      const wt = ensureWorktree(root, branch);
+      writeFileSync(join(wt.path, "f.txt"), "a\n");
+      git(wt.path, ["add", "f.txt"]);
+      git(wt.path, ["commit", "-m", "handoff"]);
+      const sha = git(wt.path, ["rev-parse", "HEAD"]);
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+      git(wt.path, ["commit", "--allow-empty", "-m", "docs: bookkeeping stamp"]);
+      const check = await verifyWorktreeHandoffIntegrity(config, branch, sha);
+      expect(check.ok).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
   it("still fails when HEAD drift mixes task files with source (#0600)", async () => {
     const { root, clean } = makeRepo();
     try {
