@@ -235,9 +235,11 @@ When a repo has no check plan yet, `repoos init` inspects its durable signals
 justfile) and writes a **proposal** to `repoos.check-plan.proposed.toml`. The
 proposal is not configuration: `repoos check` never reads it. Review and edit
 it, then move its `[[check.steps]]` into `repoos.toml` (interactive init offers
-to do this for you). Until then `repoos check` still fails with a "no check
-plan" diagnostic rather than passing vacuously — a starter plan that ran before
-anyone looked at it would make the gate lie.
+to do this for you). Until then `repoos check` **skips** the gate with a "No
+check plan configured — nothing to verify" reminder (exit 0, outcome
+`skipped` — never rendered as passed). A starter plan that ran before anyone
+looked at it would make the gate lie; a plan that resolves but contains errors
+still fails the gate.
 
 ## When a repo declares nothing
 
@@ -252,8 +254,19 @@ falls back, in order, to:
    test`; `package.json` scripts → the matching `format`/`lint`/`build`/`tests`
    /`ui-smoke` steps.
 3. **Nothing.** A repo with no recognisable stack gets no steps at all — and
-   that fails the gate with a diagnostic, because a gate that ran nothing is
-   not a green definition of done.
+   that **skips** the gate (exit 0, outcome `skipped`) with a reminder instead
+   of failing it: nothing was verified because there is nothing configured,
+   which is fine while a repo is still in its planning phase, but the gate is
+   never green — it is never recorded or displayed as "Checks passed".
+   Config mistakes (malformed rows, an unusable step) keep failing as errors,
+   and `--changed <ref>` with a ref git cannot resolve keeps exiting non-zero.
+
+The reminder is actionable: run `repoos check --print-plan` for a starting
+`[[check.steps]]` TOML once the repo has a `package.json`, `go.mod`,
+`Cargo.toml` or `gradlew`, commit the steps, and `repoos check` runs the gate
+again. The Checks page (and a task's Debug tab) offer the same as a one-click
+"file a task" shortcut that creates a pre-filled *Set up check.steps in
+repoos.toml* task through the normal task-creation route.
 
 Inference is a convenience, not a configuration: `repoos check` says so, and
 `repoos check --print-plan` prints the resolved plan as `[[check.steps]]` TOML

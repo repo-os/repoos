@@ -346,4 +346,223 @@ describe("task drawer check chip (#0564)", () => {
     expect(chip.classes()).toContain("ck-chip-fail");
     expect(chip.text()).toContain("Checks failed · 15s");
   });
+
+  it("shows the durable skipped gate as 'No checks configured', never as passed (#0592)", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    checkRunsPayload = [
+      row({
+        machine: "macbook",
+        remote: false,
+        startedAt: new Date(T0 - 3_600_000).toISOString(),
+        durationMs: 0,
+        // The CLI child exited 0, but this repo has no check plan.
+        outcome: "skipped",
+        detail: "No check plan configured — nothing to verify.",
+      }),
+    ];
+
+    class FakeES {
+      addEventListener(): void {}
+      close(): void {}
+      onopen: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+    }
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/check-runs")) return json({ ok: true, runs: checkRunsPayload });
+        if (url.includes("/api/health"))
+          return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+        if (url.includes("/api/index"))
+          return json({ tasks: [], counts: { ...EMPTY_COUNTS, active: 1 }, taskCount: 1 });
+        if (url.includes("/api/agents/running")) return json({ tasks: [] });
+        if (url.includes("/review"))
+          return json({ ok: true, running: false, enabled: true, review: null, lines: [] });
+        if (url.includes("/output")) return json({ ok: true, lines: [], stats: {} });
+        if (url.includes("/logs")) return json({ ok: true, logs: [] });
+        throw new Error("unexpected fetch: " + url);
+      }),
+    );
+
+    const wrapper = await mountDrawer(pinia, makeTask());
+    const chip = wrapper.find(".ck-chip");
+    expect(chip.exists()).toBe(true);
+    expect(chip.classes()).toContain("ck-chip-skip");
+    expect(chip.classes()).not.toContain("ck-chip-pass");
+    expect(chip.text()).toContain("No checks configured");
+  });
+
+  it("reads the skip from the in-memory run's output when the durable row has not landed yet (#0592)", async () => {
+    // A skipped gate exits 0 — the exit code alone would read as a pass, so
+    // the chip must consult the streamed output's notice.
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    checkRunsPayload = [];
+
+    class FakeES {
+      addEventListener(): void {}
+      close(): void {}
+      onopen: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+    }
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/check-runs")) return json({ ok: true, runs: [] });
+        if (url.includes("/api/health"))
+          return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+        if (url.includes("/api/index"))
+          return json({ tasks: [], counts: { ...EMPTY_COUNTS, active: 1 }, taskCount: 1 });
+        if (url.includes("/api/agents/running")) return json({ tasks: [] });
+        if (url.includes("/review"))
+          return json({ ok: true, running: false, enabled: true, review: null, lines: [] });
+        if (url.includes("/output")) return json({ ok: true, lines: [], stats: {} });
+        if (url.includes("/checks"))
+          return json({
+            ok: true,
+            runs: [
+              {
+                id: "0001-handoff-finalize-1",
+                taskId: "0001",
+                kind: "handoff-finalize",
+                startedAt: new Date(T0 - 10_000).toISOString(),
+                finishedAt: new Date(T0 - 9_000).toISOString(),
+                durationMs: 300,
+                running: false,
+                passed: true, // exit 0
+                code: 0,
+                output: "  ⚠ No check plan configured — nothing to verify.\n",
+                scope: "full",
+                machine: "macbook",
+              },
+            ],
+          });
+        if (url.includes("/logs")) return json({ ok: true, logs: [] });
+        throw new Error("unexpected fetch: " + url);
+      }),
+    );
+
+    const wrapper = await mountDrawer(pinia, makeTask());
+    const chip = wrapper.find(".ck-chip");
+    expect(chip.classes()).toContain("ck-chip-skip");
+    expect(chip.text()).toContain("No checks configured");
+  });
+
+  it("does NOT read a FAILED run as skipped just because its output echoes the notice (#0592)", async () => {
+    // A check step whose own output happens to contain the reminder text (e.g.
+    // a test asserting on it) must not turn a genuinely failed gate into "no
+    // checks configured" — the skip fallback requires passed === true.
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    checkRunsPayload = [];
+
+    class FakeES {
+      addEventListener(): void {}
+      close(): void {}
+      onopen: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+    }
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/check-runs")) return json({ ok: true, runs: [] });
+        if (url.includes("/api/health"))
+          return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+        if (url.includes("/api/index"))
+          return json({ tasks: [], counts: { ...EMPTY_COUNTS, active: 1 }, taskCount: 1 });
+        if (url.includes("/api/agents/running")) return json({ tasks: [] });
+        if (url.includes("/review"))
+          return json({ ok: true, running: false, enabled: true, review: null, lines: [] });
+        if (url.includes("/output")) return json({ ok: true, lines: [], stats: {} });
+        if (url.includes("/checks"))
+          return json({
+            ok: true,
+            runs: [
+              {
+                id: "0001-handoff-finalize-2",
+                taskId: "0001",
+                kind: "handoff-finalize",
+                startedAt: new Date(T0 - 10_000).toISOString(),
+                finishedAt: new Date(T0 - 9_000).toISOString(),
+                durationMs: 300,
+                running: false,
+                passed: false, // a real failure…
+                code: 1,
+                skipped: true, // stale/wrong flag must not override failed
+                // …whose captured output happens to quote the notice.
+                output:
+                  "expected output to contain: No check plan configured — nothing to verify.\n",
+                scope: "full",
+                machine: "macbook",
+              },
+            ],
+          });
+        if (url.includes("/logs")) return json({ ok: true, logs: [] });
+        throw new Error("unexpected fetch: " + url);
+      }),
+    );
+
+    const wrapper = await mountDrawer(pinia, makeTask());
+    const chip = wrapper.find(".ck-chip");
+    expect(chip.classes()).toContain("ck-chip-fail");
+    expect(chip.classes()).not.toContain("ck-chip-skip");
+    expect(chip.text()).toContain("Checks failed");
+  });
+
+  it("reads the server's explicit `skipped` flag without needing the output marker (#0592)", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    checkRunsPayload = [];
+
+    class FakeES {
+      addEventListener(): void {}
+      close(): void {}
+      onopen: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+    }
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/check-runs")) return json({ ok: true, runs: [] });
+        if (url.includes("/api/health"))
+          return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+        if (url.includes("/api/index"))
+          return json({ tasks: [], counts: { ...EMPTY_COUNTS, active: 1 }, taskCount: 1 });
+        if (url.includes("/api/agents/running")) return json({ tasks: [] });
+        if (url.includes("/review"))
+          return json({ ok: true, running: false, enabled: true, review: null, lines: [] });
+        if (url.includes("/output")) return json({ ok: true, lines: [], stats: {} });
+        if (url.includes("/checks"))
+          return json({
+            ok: true,
+            runs: [
+              {
+                id: "0001-handoff-finalize-3",
+                taskId: "0001",
+                kind: "handoff-finalize",
+                startedAt: new Date(T0 - 10_000).toISOString(),
+                finishedAt: new Date(T0 - 9_000).toISOString(),
+                durationMs: 300,
+                running: false,
+                passed: true,
+                code: 0,
+                // Output capped/rotated away — only the flag survives.
+                output: "",
+                skipped: true,
+                scope: "full",
+                machine: "macbook",
+              },
+            ],
+          });
+        if (url.includes("/logs")) return json({ ok: true, logs: [] });
+        throw new Error("unexpected fetch: " + url);
+      }),
+    );
+
+    const wrapper = await mountDrawer(pinia, makeTask());
+    const chip = wrapper.find(".ck-chip");
+    expect(chip.classes()).toContain("ck-chip-skip");
+    expect(chip.text()).toContain("No checks configured");
+  });
 });

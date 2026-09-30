@@ -51,6 +51,13 @@ export interface PipelineCheckPlan {
   source: "declared" | "legacy" | "inferred" | "empty";
   defaultProfile: string;
   steps: PipelineCheckStep[];
+  /**
+   * Plan-level problems (#0592): an error-free empty plan SKIPS the gate and
+   * the bar shows its amber "no checks configured" strip; an empty plan WITH
+   * errors (unusable declared rows, newer schema) fails the gate red and must
+   * NOT read as "no checks configured".
+   */
+  errors: string[];
 }
 
 /**
@@ -74,8 +81,9 @@ function currentCheckConfig(config: RepoOSConfig): CheckConfig | undefined {
 
 /**
  * Resolve the repo's check plan for display. Never throws: a plan that cannot
- * be read resolves to an empty one, and the tooltip falls back to a generic
- * description rather than blanking out.
+ * be READ resolves to an errors-marked empty one, so the integration bar shows
+ * its red broken-plan strip rather than the amber "no checks configured" one —
+ * an unresolved display plan must never read as a deliberate skip (#0592).
  */
 export function resolvePipelineCheckPlan(config: RepoOSConfig): PipelineCheckPlan {
   try {
@@ -87,6 +95,7 @@ export function resolvePipelineCheckPlan(config: RepoOSConfig): PipelineCheckPla
     return {
       source: plan.source,
       defaultProfile: plan.defaultProfile,
+      errors: [...plan.errors],
       steps: plan.steps.map((s) => ({
         name: s.name,
         kind: s.kind,
@@ -98,8 +107,20 @@ export function resolvePipelineCheckPlan(config: RepoOSConfig): PipelineCheckPla
         profiles: [...s.profiles],
       })),
     };
-  } catch {
-    return { source: "empty", defaultProfile: "default", steps: [] };
+  } catch (e) {
+    // Last-resort: the resolver itself threw (fs/parse failure nothing above
+    // caught). Reporting it as error-free-empty would render the amber skip
+    // strip while the real gate fails — say why instead, red.
+    const msg = e instanceof Error ? e.message : String(e);
+    return {
+      source: "empty",
+      defaultProfile: "default",
+      errors: [
+        `the check plan could not be resolved to display it (${msg}) — ` +
+          "the gate will fail on the same problem until it is fixed",
+      ],
+      steps: [],
+    };
   }
 }
 

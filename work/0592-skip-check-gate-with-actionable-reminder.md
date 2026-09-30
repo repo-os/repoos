@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-30T04:23:29Z"
-review_passes: 5
 id: "0592"
 title: Skip check gate (with actionable reminder) when a repo has no check plan
 type: feature
@@ -10,14 +8,10 @@ area: [core, web]
 assigned_to: ai
 created_by: ""
 branch: feat/skip-check-gate-with-actionable-reminder
-cli_override: cursor
-model_override: composer-2.5
-review_cli_override: cursor
-review_model_override: composer-2.5
+model_override: opencode-go/glm-5.3-flash
+review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-30T00:01:23Z"
-review_rounds: 2
-last_check_failure: "repoos check at 2026-09-30T01:29:36.315Z: server-side finalization timed out (deadline exceeded)"
-handoff_signal_retry_count: 1
+updated_at: "2026-09-30T00:46:33Z"
 ---
 ## Problem
 
@@ -71,32 +65,3 @@ Update `user-docs/check.md` (the "Bootstrapping a plan" paragraph and "When a re
 - 2026-09-30T00:03:57Z · status inbox→ready
 - 2026-09-30T00:04:03Z · status ready→active, branch
 - 2026-09-30T00:46:33Z · status active→review
-- 2026-09-30T00:46:34Z · status review→active
-- 2026-09-30T01:52:25Z · status active→review
-- 2026-09-30T02:02:17Z · status review→active
-- 2026-09-30T02:17:24Z · status active→review
-- 2026-09-30T02:28:14Z · status review→active
-- 2026-09-30T02:36:29Z · status active→review
-- 2026-09-30T02:49:16Z · needs_input
-- 2026-09-30T02:58:36Z · status review→active
-- 2026-09-30T02:58:36Z · needs_input
-- 2026-09-30T03:21:31Z · status active→review
-- 2026-09-30T03:33:43Z · needs_input
-- 2026-09-30T03:36:12Z · cli_override, model_override
-- 2026-09-30T03:36:13Z · model_override
-- 2026-09-30T03:36:22Z · status review→active
-- 2026-09-30T03:36:23Z · needs_input
-- 2026-09-30T03:41:03Z · status active→review
-- 2026-09-30T03:56:03Z · needs_input
-- 2026-09-30T04:21:51Z · review_cli_override, review_model_override
-- 2026-09-30T04:21:56Z · review_cli_override
-- 2026-09-30T04:21:57Z · review_cli_override
-- 2026-09-30T04:22:09Z · review_cli_override
-- 2026-09-30T04:22:11Z · review_cli_override
-- 2026-09-30T04:22:12Z · review_cli_override
-- 2026-09-30T04:22:14Z · review_cli_override, review_model_override
-- 2026-09-30T04:22:16Z · review_cli_override, review_model_override
-- 2026-09-30T04:22:18Z · review_cli_override
-- 2026-09-30T04:22:27Z · review_model_override
-- 2026-09-30T04:22:29Z · needs_input (review-failed) cleared for review again by hello@repoos.org
-

@@ -50,6 +50,13 @@ export interface CheckRunRecord {
   durationMs: number;
   /** True when every required step passed or was explicitly skipped. */
   passed: boolean;
+  /**
+   * #0592: what the gate did — `passed` / `failed`, or `skipped` when the repo
+   * has no check plan and nothing was verified. Optional so records written
+   * before #0592 (which carry only `passed`) still read; an absent outcome is
+   * inferred from `passed` by readers that need it.
+   */
+  outcome?: "passed" | "failed" | "skipped";
   results: StoredStepResult[];
 }
 

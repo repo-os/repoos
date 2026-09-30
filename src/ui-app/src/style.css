@@ -2630,6 +2630,13 @@
   border-color: var(--red-border-tint);
   background: var(--red-tint);
 }
+/* #0592: the gate was skipped — this repo has no check plan. Neutral/amber,
+   deliberately NOT the green pass colour. */
+.ck-chip-skip {
+  color: var(--amber);
+  border-color: var(--amber-border-tint);
+  background: var(--amber-tint);
+}
 .ck-chip-spin {
   width: 10px;
   height: 10px;
