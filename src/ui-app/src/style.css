@@ -4322,6 +4322,9 @@
   border-top: 1px solid var(--red-border-tint);
   font-size: 12px;
 }
+.done-error-tldr {
+  margin-bottom: 10px;
+}
 .done-error-head {
   display: flex;
   align-items: center;

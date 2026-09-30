@@ -128,6 +128,8 @@ export interface DoneError {
   logPath?: string;
   /** ISO 8601 time the failure was recorded (SSE `at` or client capture). */
   failedAt?: string;
+  /** Debugger one-line tl;dr for this failure (#0595). */
+  tldr?: string;
 }
 
 /**
@@ -1268,6 +1270,11 @@ export const useRepoStore = defineStore("repo", () => {
       // drawer can never get stuck.
       if (e.state === "started") markTldrDiagnosingLocal(e.id);
       else clearTldrDiagnosingLocal(e.id);
+    } else if (e.type === "task.doneErrorTldr") {
+      const existing = doneErrors.value[e.id];
+      if (existing) {
+        setDoneError(e.id, { ...existing, tldr: e.tldr });
+      }
     } else if (e.type === "agent.running") {
       if (!runningIds.value.includes(e.id)) {
         runningIds.value = [...runningIds.value, e.id];
@@ -1396,6 +1403,7 @@ export const useRepoStore = defineStore("repo", () => {
             ...describeCloseOutFailure(e.phase, e.detail),
             logPath: e.logPath,
             failedAt: e.at,
+            tldr: e.tldr,
           });
         }
       }

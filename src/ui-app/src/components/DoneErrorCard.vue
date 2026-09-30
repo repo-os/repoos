@@ -33,9 +33,19 @@ const props = withDefaults(
     mode?: "card" | "panel";
     /** ISO 8601 failure time; panel headline shows a local clock via `fmtTime`. */
     failedAt?: string;
+    /** Debugger one-line tl;dr (#0595). Shown in the collapsed line when set. */
+    tldr?: string;
+    /** True while the Debugger is generating `tldr`. */
+    tldrDiagnosing?: boolean;
   }>(),
   { mode: "card" },
 );
+
+const displayLine = computed(() => {
+  const tldr = props.tldr?.trim();
+  if (tldr && (props.mode === "card" || collapsed.value)) return tldr;
+  return props.message;
+});
 
 const failedAtLabel = computed(() => fmtTime(props.failedAt));
 const headlineTitle = computed(() => {
@@ -146,12 +156,14 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
       @click="showMore"
     >
       <CircleAlert class="done-error-ico" aria-hidden="true" />
-      <span ref="msgEl" class="done-error-msg clamped">{{ message }}</span>
+      <span ref="msgEl" class="done-error-msg clamped">{{ displayLine }}</span>
       <ChevronDown class="done-error-chev" aria-hidden="true" />
     </button>
     <div v-else class="done-error-static">
       <CircleAlert class="done-error-ico" aria-hidden="true" />
-      <span ref="msgEl" class="done-error-msg" :class="{ oneline: collapsed }">{{ message }}</span>
+      <span ref="msgEl" class="done-error-msg" :class="{ oneline: collapsed }">{{
+        displayLine
+      }}</span>
       <button
         type="button"
         class="done-error-icon-btn"
@@ -192,6 +204,13 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
     </div>
 
     <div v-if="mode === 'panel' && !collapsed" :id="detailId" class="done-error-detail">
+      <div v-if="tldr || tldrDiagnosing" class="debug-tldr done-error-tldr" role="status">
+        <div class="debug-tldr-body">
+          <div class="debug-tldr-label">tl;dr — what happened</div>
+          <div v-if="tldr" class="debug-tldr-sentence">{{ tldr }}</div>
+          <div v-else class="debug-tldr-diagnosing">Diagnosing…</div>
+        </div>
+      </div>
       <div class="done-error-head" :title="headlineTitle">
         Move to done failed
         <span v-if="step" class="done-error-step">at {{ step }}</span
