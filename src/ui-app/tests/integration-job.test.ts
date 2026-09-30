@@ -176,6 +176,27 @@ describe("integration jobs (0118)", () => {
     expect(interrupted).toHaveLength(0);
   });
 
+  it("drops debug tl;dr fields when a failed job is re-enqueued for retry (#0595)", () => {
+    const coordinator = createJobCoordinator(testRepo);
+    coordinator.enqueue({ id: "task1", branch: "feat/task1", status: "review" } as any);
+    coordinator.updateJob("task1", {
+      phase: "failed",
+      reason: "check failed: x",
+      debugTldr: "Vitest failed — fix and retry.",
+      debugTldrAt: "2026-09-30T00:00:00Z",
+      debugTldrKey: "done-error::check::headline::detail",
+    });
+    const fresh = coordinator.enqueue({
+      id: "task1",
+      branch: "feat/task1",
+      status: "review",
+    } as any);
+    expect(fresh!.phase).toBe("queued");
+    expect(fresh!.debugTldr).toBeUndefined();
+    expect(fresh!.debugTldrKey).toBeUndefined();
+    expect(coordinator.getJob("task1")?.debugTldr).toBeUndefined();
+  });
+
   it("should serialize repo lock across concurrent jobs", () => {
     const lock = createRepositoryLock(testRepo);
 

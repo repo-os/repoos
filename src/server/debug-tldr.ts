@@ -29,10 +29,14 @@
  * Zero runtime deps — node:fs only.
  */
 import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../core/types.js";
 import type { LogEntry, Logger } from "../core/logger.js";
+import { describeCloseOutFailure, classifyFailure } from "../core/close-out-failure.js";
 import { parseTask, serializeTask, utcTimestamp } from "../core/task.js";
 import { commitTaskFile } from "../core/git.js";
+import type { IntegrationJob } from "./integration-job.js";
+import { CANCEL_REASON } from "./integration-orchestrator.js";
 import { transcriptToText } from "./skill-suggestions.js";
 import { redactSecrets } from "./routes/debugger.js";
 import {
@@ -87,6 +91,48 @@ export function tldrFingerprint(reason: string, detail: string | undefined): str
   return `${reason}\u0000${detail ?? ""}`;
 }
 
+/** Stable fingerprint for a Move-to-done error card tl;dr (#0595). */
+export function doneErrorTldrFingerprint(
+  step: string,
+  message: string,
+  detail: string | undefined,
+): string {
+  return `done-error\u0000${step}\u0000${message}\u0000${detail ?? ""}`;
+}
+
+const DIAGNOSABLE_CLOSE_OUT_KINDS = new Set(["conflict", "validating"]);
+
+/** Whether a failed close-out job reason is worth a Debugger one-shot (#0595). */
+export function isDiagnosableCloseOutFailure(
+  phase: string | undefined,
+  reason: string | undefined,
+): boolean {
+  const clean = reason?.trim() ?? "";
+  if (!clean || clean === CANCEL_REASON) return false;
+  return DIAGNOSABLE_CLOSE_OUT_KINDS.has(classifyFailure(phase, clean));
+}
+
+export interface CloseOutFailureContext {
+  step: string;
+  message: string;
+  detail?: string;
+  reason: string;
+  logPath?: string;
+}
+
+/** Redact and cap close-out context for the Debugger prompt; fingerprints stay raw. */
+function closeOutContextForPrompt(ctx: CloseOutFailureContext): CloseOutFailureContext {
+  const message = redactSecrets(ctx.message).slice(0, DETAIL_CHARS);
+  const detailSource = ctx.detail?.trim() ? ctx.detail : ctx.reason;
+  const detail = redactSecrets(detailSource).slice(0, DETAIL_CHARS);
+  return {
+    ...ctx,
+    message,
+    detail: detail || undefined,
+    reason: redactSecrets(ctx.reason).slice(0, DETAIL_CHARS),
+  };
+}
+
 /**
  * The mission handed to the Debugger: one sentence, root cause + next action,
  * no preamble, no markdown, no restated logs.
@@ -114,6 +160,36 @@ export function buildDebugTldrPrompt(
     `Failure detail: ${detailBlock}`,
     "",
     "Recent task logs (newest first, secrets redacted):",
+    excerpt,
+  ].join("\n");
+}
+
+/** Prompt for a failed Move-to-done (#0595). */
+export function buildCloseOutTldrPrompt(
+  task: Pick<Task, "id" | "title">,
+  ctx: CloseOutFailureContext,
+  excerpt: string,
+): string {
+  const detailBlock = ctx.detail?.trim()
+    ? ctx.detail.trim().slice(0, DETAIL_CHARS)
+    : "(none captured)";
+  return [
+    `You are the Debugger for RepoOS task #${task.id} ("${task.title}"). Move to done`,
+    "(close-out) just failed and the human is looking at raw logs. Write the ONE-LINE",
+    "tl;dr for the error card.",
+    "",
+    "Answer with EXACTLY ONE sentence of plain text and nothing else: no markdown,",
+    "no quotes, no preamble, no bullet points, no restating raw log text. The",
+    "sentence must name the root cause and the concrete next action, e.g.:",
+    '"Vitest failed on auth.test.ts — fix the test in the task worktree, commit, and retry Move to done."',
+    "Keep it under 140 characters. If the excerpts leave the cause uncertain, give",
+    "the most probable cause and a safe next action (e.g. what to open or retry).",
+    "",
+    `Failed at stage: ${ctx.step}`,
+    `Error headline: ${ctx.message}`,
+    `Failure detail: ${detailBlock}`,
+    "",
+    "Recent task logs and close-out output (newest first, secrets redacted):",
     excerpt,
   ].join("\n");
 }
@@ -160,6 +236,11 @@ export interface DebugTldrDeps {
   /** SSE markers for the drawer's "diagnosing…" hint (started → finished). */
   onDiagnosisStarted?: (taskId: string) => void;
   onDiagnosisFinished?: (taskId: string) => void;
+  /** Failed close-out job for Move-to-done tl;dr (#0595). */
+  getCloseOutJob?: (taskId: string) => IntegrationJob | null;
+  updateCloseOutJob?: (taskId: string, update: Partial<IntegrationJob>) => IntegrationJob | null;
+  /** Called after a done-error tl;dr is persisted (SSE to the UI). */
+  onDoneErrorTldr?: (taskId: string, tldr: string) => void;
   logger?: Logger;
   /** Injectable one-shot runner; defaults to the real `runPrompt`. */
   run?: (agent: Agent, prompt: string, cwd: string) => Promise<PromptResult>;
@@ -203,6 +284,33 @@ export class DebugTldrManager {
     if (!isDiagnosableReason(reason)) return;
     void this.run(taskId, reason).catch((err) => {
       this.deps.logger?.task(taskId, "warn", "debug tl;dr pass threw", {
+        error: (err as Error).message,
+      });
+    });
+  }
+
+  /**
+   * Fire-and-forget when a close-out job reaches `failed` (#0595). Uses the
+   * integration job record for dedupe and persistence — cleared on retry.
+   */
+  onCloseOutFailed(taskId: string): void {
+    const job = this.deps.getCloseOutJob?.(taskId);
+    if (
+      !job ||
+      job.phase !== "failed" ||
+      !isDiagnosableCloseOutFailure(job.failedPhase, job.reason)
+    )
+      return;
+    const mapped = describeCloseOutFailure(job.failedPhase, job.reason!);
+    const ctx: CloseOutFailureContext = {
+      step: mapped.step,
+      message: mapped.message,
+      detail: mapped.detail,
+      reason: job.reason!,
+      logPath: job.logPath,
+    };
+    void this.runCloseOut(taskId, ctx).catch((err) => {
+      this.deps.logger?.task(taskId, "warn", "done-error debug tl;dr pass threw", {
         error: (err as Error).message,
       });
     });
@@ -257,6 +365,64 @@ export class DebugTldrManager {
       const sentence = sanitizeTldrAnswer(agent.cli, result.output ?? "");
       if (!sentence) return { ok: false, reason: "empty answer" };
       return this.persist(absPath, fingerprint, sentence);
+    } finally {
+      this.inFlight.delete(taskId);
+      this.deps.onDiagnosisFinished?.(taskId);
+    }
+  }
+
+  /**
+   * Move-to-done failure tl;dr (#0595). Persists on the integration job, not
+   * task frontmatter — the error itself lives there too.
+   */
+  async runCloseOut(taskId: string, ctx: CloseOutFailureContext): Promise<DebugTldrRunResult> {
+    if (!this.enabled()) return { ok: false, reason: "debugger disabled" };
+    if (!this.deps.getCloseOutJob || !this.deps.updateCloseOutJob) {
+      return { ok: false, reason: "close-out job hooks missing" };
+    }
+    const task = this.deps.getTask(taskId);
+    if (!task) return { ok: false, reason: "task not found" };
+
+    const fingerprint = doneErrorTldrFingerprint(ctx.step, ctx.message, ctx.detail);
+    const job = this.deps.getCloseOutJob(taskId);
+    if (!job || job.phase !== "failed") return { ok: false, reason: "failure no longer current" };
+    if (!isDiagnosableCloseOutFailure(job.failedPhase, job.reason)) {
+      return { ok: false, reason: "failure not diagnosable" };
+    }
+    const currentMapped = describeCloseOutFailure(job.failedPhase, job.reason!);
+    const currentCtx: CloseOutFailureContext = {
+      step: currentMapped.step,
+      message: currentMapped.message,
+      detail: currentMapped.detail,
+      reason: job.reason!,
+      logPath: job.logPath,
+    };
+    if (
+      doneErrorTldrFingerprint(currentCtx.step, currentCtx.message, currentCtx.detail) !==
+      fingerprint
+    ) {
+      return { ok: false, reason: "failure no longer current" };
+    }
+    if (job.debugTldrKey === fingerprint) return { ok: false, reason: "tl;dr already current" };
+    if (this.inFlight.has(taskId)) return { ok: false, reason: "already running" };
+
+    const agent = debuggerAgent(fromPersistedState(this.deps.config));
+    this.inFlight.add(taskId);
+    this.deps.onDiagnosisStarted?.(taskId);
+    try {
+      const excerpt = this.buildCloseOutExcerpt(taskId, currentCtx);
+      const prompt = buildCloseOutTldrPrompt(task, closeOutContextForPrompt(currentCtx), excerpt);
+      const run = this.deps.run ?? ((a: Agent, p: string, cwd: string) => runPrompt(a, p, { cwd }));
+      const result = await run(agent, prompt, this.deps.config.root);
+      recordOneShotSession(this.deps.config.root, agent, result, {
+        sessionType: "debugger",
+        taskId,
+      });
+      if (!result.ok) return { ok: false, reason: result.error ?? "diagnosis failed" };
+
+      const sentence = sanitizeTldrAnswer(agent.cli, result.output ?? "");
+      if (!sentence) return { ok: false, reason: "empty answer" };
+      return this.persistCloseOut(taskId, fingerprint, sentence);
     } finally {
       this.inFlight.delete(taskId);
       this.deps.onDiagnosisFinished?.(taskId);
@@ -318,6 +484,38 @@ export class DebugTldrManager {
     return { ok: true, tldr: sentence };
   }
 
+  private persistCloseOut(
+    taskId: string,
+    fingerprint: string,
+    sentence: string,
+  ): DebugTldrRunResult {
+    const getJob = this.deps.getCloseOutJob!;
+    const updateJob = this.deps.updateCloseOutJob!;
+    const job = getJob(taskId);
+    if (
+      !job ||
+      job.phase !== "failed" ||
+      !isDiagnosableCloseOutFailure(job.failedPhase, job.reason)
+    ) {
+      return { ok: false, reason: "failure cleared while diagnosing" };
+    }
+    const mapped = describeCloseOutFailure(job.failedPhase, job.reason!);
+    const fp = doneErrorTldrFingerprint(mapped.step, mapped.message, mapped.detail);
+    if (fp !== fingerprint) return { ok: false, reason: "failure cleared while diagnosing" };
+
+    const updated = updateJob(taskId, {
+      debugTldr: sentence,
+      debugTldrAt: utcTimestamp(),
+      debugTldrKey: fingerprint,
+    });
+    if (!updated) return { ok: false, reason: "persist failed" };
+    this.deps.logger?.task(taskId, "info", "done-error debug tl;dr generated", {
+      tldr: sentence,
+    });
+    this.deps.onDoneErrorTldr?.(taskId, sentence);
+    return { ok: true, tldr: sentence };
+  }
+
   /**
    * Bounded, redacted failure context: the task's recent logs plus — when the
    * reason has one — the tail of the transcript that actually failed. The
@@ -352,6 +550,31 @@ export class DebugTldrManager {
     // under "Failure detail:", redacted at the call site. Everything in this
     // excerpt is already redacted (and every slice is taken after redaction),
     // so nothing reaches the model unredacted.
+    return parts.join("\n\n").trim() || "(no context captured)";
+  }
+
+  private buildCloseOutExcerpt(taskId: string, ctx: CloseOutFailureContext): string {
+    const parts: string[] = [];
+    const logs = this.deps.getTaskLogs(taskId, 40);
+    if (logs.length) {
+      const joined = redactSecrets(
+        logs.map((l) => `[${l.timestamp}] ${l.level}: ${l.message}`).join("\n"),
+      );
+      parts.push(joined.slice(0, LOG_CHARS));
+    }
+    if (ctx.logPath) {
+      try {
+        const raw = readFileSync(join(this.deps.config.root, ctx.logPath), "utf8");
+        const tail = redactSecrets(raw).slice(-TRANSCRIPT_CHARS);
+        if (tail.trim()) parts.push(`Close-out check log tail:\n${tail}`);
+      } catch {
+        /* best-effort */
+      }
+    } else if (ctx.detail) {
+      parts.push(
+        `Close-out failure detail:\n${redactSecrets(ctx.detail).slice(-TRANSCRIPT_CHARS)}`,
+      );
+    }
     return parts.join("\n\n").trim() || "(no context captured)";
   }
 }
