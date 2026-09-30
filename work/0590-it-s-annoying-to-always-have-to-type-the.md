@@ -2,7 +2,7 @@
 id: "0590"
 title: Add Cut Next shortcut and cache AI release notes in release modal
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "✗ Server finalization stopped at check: server-side finalization timed out (deadline exceeded). The same worktree can be resumed and retried."
@@ -14,8 +14,7 @@ branch: feat/add-cut-next-shortcut-and-cache-ai-relea
 model_override: opencode-go/mimo-v2.6-flash
 review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-29T23:25:13Z"
-updated_at: "2026-09-30T01:58:37Z"
-check_retry_count: 1
+updated_at: "2026-09-30T02:03:56Z"
 last_check_failure: "repoos check at 2026-09-30T00:46:04.758Z: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
 ---
@@ -110,3 +109,4 @@ It's annoying to always have to type the new version, but it is helpful to have 
 - 2026-09-30T00:03:27Z · status ready→active, branch
 - 2026-09-30T01:47:11Z · agent exited with an error (opencode) · ✗ Server finalization stopped at check: server-side finalization timed out (deadline exceeded). The same worktree can be resumed and retried.
 - 2026-09-30T01:58:37Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-09-30T02:03:56Z · status active→review
