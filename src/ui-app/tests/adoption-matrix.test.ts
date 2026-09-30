@@ -246,8 +246,9 @@ for (const fixture of ADOPTION_FIXTURES) {
           expect(plan.warnings.join(" ")).toMatch(/inferred/i);
         }
         if (fixture.expectedPlan.source === "empty") {
-          // The gate fails on this — see the "no check plan" guard in
-          // src/commands/check.ts — so an empty plan must stay empty.
+          // The gate SKIPS on this (#0592) — see src/commands/check.ts and
+          // src/core/check-skip.ts — so an empty plan must stay empty and
+          // error-free (errors would still fail the gate).
           expect(plan.steps).toEqual([]);
           expect(plan.errors).toEqual([]);
         }

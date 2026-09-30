@@ -212,6 +212,27 @@ describe("trusted server-side handoff", () => {
     }
   });
 
+  it("finalizes the handoff when repoos check is skipped because no check plan is configured (#0592)", async () => {
+    // A planless repo's gate exits 0 with the "no check plan" notice; the
+    // handoff must treat that as a pass — the explicitly blocking failure
+    // (exit 1) is the test two doors up.
+    const fx = makeFixture(0);
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${oldPath}`;
+    try {
+      const notice = "No check plan configured — nothing to verify.";
+      writeFileSync(join(fx.bin, "repoos"), `#!/bin/sh\nprintf '  ⚠ ${notice}\\n'\nexit 0\n`, {
+        mode: 0o755,
+      });
+      const result = await handoffTask(fx.config, readTask(fx), request(fx));
+      expect(result).toMatchObject({ ok: true, step: "done" });
+      expect(readTask(fx).status).toBe("review");
+    } finally {
+      process.env.PATH = oldPath;
+      fx.clean();
+    }
+  });
+
   it("leaves the engineer's uncommitted edit byte-for-byte intact and commits it (#0512)", async () => {
     // The check runs in the worktree AFTER the implement commit, on the tree it
     // just committed. A green result must therefore describe exactly the bytes

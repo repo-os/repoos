@@ -681,7 +681,8 @@ export interface CheckRunRow {
   scope: string;
   startedAt: string;
   durationMs: number | null;
-  outcome: "pass" | "fail" | "cancelled";
+  /** `skipped` (#0592): the gate ran nothing — this repo has no check plan. */
+  outcome: "pass" | "fail" | "cancelled" | "skipped";
   failedStep: string | null;
   skippedSteps: string[];
   failedTests: string[];

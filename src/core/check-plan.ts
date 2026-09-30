@@ -32,8 +32,10 @@
  *    actionable migration warning.
  * 3. inferred from repo markers (`go.mod`, `Cargo.toml`, `gradlew`,
  *    `package.json` scripts) — meaningful, but warned about as uncommitted.
- * 4. nothing — an EMPTY plan. That is never green: the gate fails with a
- *    "no check plan" diagnostic rather than reporting a vacuous pass.
+ * 4. nothing — an EMPTY plan. That is never green: `repoos check` treats an
+ *    empty plan as outcome `skipped` (exit 0 with a pointed "nothing was
+ *    verified" reminder, never a pass — #0592), while a plan that RESOLVES
+ *    with `errors` still fails the gate.
  *
  * This module is pure (no fs, no subprocess) so plan resolution, profile
  * selection and changed-path selection are all unit-testable; the execution
@@ -616,8 +618,9 @@ const LEGACY_MIGRATION =
 
 /**
  * Resolve the plan for a repo. Never throws and never invents coverage: an
- * unrecognisable repo yields an EMPTY plan, which the gate must fail on
- * rather than report green.
+ * unrecognisable repo yields an EMPTY plan, which the gate skips with an
+ * actionable reminder (outcome `skipped`, never green, #0592) — plan-level
+ * `errors` are the caller's signal to keep failing.
  */
 export function resolveCheckPlan(input: ResolvePlanInput): CheckPlan {
   const { check, markers, bunRunner = false } = input;

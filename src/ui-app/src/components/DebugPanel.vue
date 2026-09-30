@@ -9,9 +9,11 @@ import { canCopyDebugEvent, copyTextForDebugEvent } from "../lib/debug-event-cop
 import { shouldCopyMessageOnClick } from "../lib/chat-message-copy";
 import { copyToClipboard } from "../lib/clipboard";
 import { summarizeCheckFailure } from "../../../core/check-failure-summary.js";
+import { checkRunSkipped } from "../../../core/check-skip.js";
 import Card from "./ui/card.vue";
 import Button from "./ui/button.vue";
 import TaskDebuggerChat from "./TaskDebuggerChat.vue";
+import NoCheckPlanReminder from "./NoCheckPlanReminder.vue";
 
 const props = defineProps<{ task: Task }>();
 const repo = useRepoStore();
@@ -138,14 +140,23 @@ const events = computed<DebugEvent[]>(() => {
     // a changed-path handoff check and a full merge-gate read very differently.
     const scopeTag = c.scope && c.scope !== "full" ? ` · ${c.scope}` : "";
     const machineTag = c.machine ? ` · on ${c.machine}` : "";
-    const title = c.running
-      ? `${label}${scopeTag}${machineTag} — running…`
-      : `${label}${scopeTag}${machineTag} — ${c.passed ? "passed" : "failed"} in ${fmtDuration(c.durationMs)}`;
+    // #0592: a skipped gate exits 0 — say "no checks configured", never "passed".
+    const skipped = checkRunSkipped(c.output);
+    const verdict = c.running
+      ? "running…"
+      : skipped
+        ? "no checks configured"
+        : c.passed
+          ? "passed"
+          : "failed";
+    const title = `${label}${scopeTag}${machineTag} — ${verdict}${
+      c.durationMs !== null ? ` in ${fmtDuration(c.durationMs)}` : ""
+    }`;
     out.push({
       key: `check-${c.id}`,
       at: c.startedAt,
       kind: "check",
-      level: c.running ? "info" : c.passed ? "info" : "error",
+      level: c.running ? "info" : skipped ? "warn" : c.passed ? "info" : "error",
       title,
       failureSummary:
         !c.running && c.passed === false
@@ -183,6 +194,18 @@ const filteredEvents = computed(() =>
 const runningCheck = computed<TaskCheckRun | undefined>(() =>
   (repo.taskChecks[props.task.id] ?? []).find((c) => c.running),
 );
+
+/**
+ * #0592 — the newest COMPLETED check run was skipped because the repo has no
+ * check plan. Drives the amber reminder (with the one-click setup task) above
+ * the event list. A skipped gate exits 0, so the guard is the notice in the
+ * run's own output, not the exit code.
+ */
+const skippedLatestCheck = computed<boolean>(() => {
+  const runs = repo.taskChecks[props.task.id] ?? [];
+  const last = runs.filter((c) => !c.running).at(-1);
+  return Boolean(last && checkRunSkipped(last.output));
+});
 
 /** Ticks once a second while a check is running, so its elapsed timer counts
  *  up live instead of freezing until the next output chunk (mirrors
@@ -357,6 +380,11 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
           runningCheck.output || "…"
         }}</pre>
       </Card>
+
+      <!-- #0592: the newest completed check was skipped — nothing verified --
+           because no check plan is configured. Amber reminder with the
+           one-click setup task, never a green pass. -->
+      <NoCheckPlanReminder v-if="skippedLatestCheck && !runningCheck" class="debug-skip-notice" />
 
       <div class="debug-filters">
         <select v-model="kindFilter" class="debug-select">
