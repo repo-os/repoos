@@ -122,6 +122,16 @@ who owns approval and merging:
 - Use RepoOS commands or HTTP APIs for task creation and metadata changes.
   For an existing task, use its recorded branch and existing worktree. Check
   for a live engineer or reviewer before editing; avoid concurrent writers.
+- **Do not edit a task's worktree while the task is in `review` or closing out
+  (Move to done running), even when no agent is live.** The branch tip is what
+  was reviewed and what close-out merges; anything written to the worktree
+  after handoff is not merged, and close-out then keeps the dirty worktree and
+  stops for input. To change a task in review, send it back to `active`
+  through RepoOS first (then hand off again), or file a follow-up task. If you
+  find you must fix something you spotted, commit it on the branch only as a
+  proposal and file a task for it; never leave it uncommitted. Incident:
+  2026-09-30, #0594 — four files edited in its worktree mid-close-out never
+  landed. Tracked by #0598, which will add a lock and a close-out check.
 - If explicitly taking over a newly created task, claim it through RepoOS
   directly as `active`, without leaving it in `ready` for auto-dispatch to grab.
   Managed starts should use RepoOS's Start action, which owns worktree setup.
