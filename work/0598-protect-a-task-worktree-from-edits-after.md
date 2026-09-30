@@ -2,7 +2,7 @@
 id: "0598"
 title: Protect a task worktree from edits after handoff to review
 type: feat
-status: inbox
+status: ready
 priority: p2
 area: server
 assigned_to: ai
@@ -45,3 +45,4 @@ chmod -R a-w or immutable flags on the worktree would block edits, but it breaks
 - 2026-09-30T05:55:43Z · cli_override, model_override
 - 2026-09-30T05:55:44Z · model_override
 - 2026-09-30T05:55:49Z · review_model_override
+- 2026-09-30T05:55:49Z · status inbox→ready
