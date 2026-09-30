@@ -31,6 +31,7 @@ import { countWorktrees, sweepStaleWorktrees } from "../core/worktree-gc.js";
 import { isOrphanServeCommand, isPortListening } from "../server/serve-reaper.js";
 import { STATUSES, type RepoOSConfig, type Status } from "../core/types.js";
 import { c } from "../cli/colors.js";
+import { kv } from "../cli/layout.js";
 
 // ── Snapshot shape (the documented, stable --json contract) ─────────────────
 
@@ -559,7 +560,9 @@ function truncate(s: string, n: number): string {
 const LABEL = 10;
 
 function row(label: string, text: string): void {
-  console.log("  " + c.dim(label.padEnd(LABEL)) + text);
+  // Shared label/value layout (#0591): values wrap at the terminal width with a
+  // hanging indent instead of running past the edge.
+  console.log(kv([{ label: c.dim(label), value: text }], { indent: 2, gap: 0, labelWidth: LABEL }));
 }
 
 function sub(text: string): void {
