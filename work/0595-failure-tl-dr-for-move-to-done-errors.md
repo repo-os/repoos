@@ -2,7 +2,7 @@
 id: "0595"
 title: Failure tl;dr for Move-to-done errors
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, web]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/failure-tl-dr-for-move-to-done-errors
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-09-30T03:02:23Z"
-updated_at: "2026-09-30T04:49:37Z"
+updated_at: "2026-09-30T04:51:54Z"
 last_check_failure: "repoos check at 2026-09-30T04:20:52.224Z: the worktree changed while the gate was running (HEAD moved from 08743609 to 23e6ec30) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
 review_passes: 2
@@ -38,3 +38,4 @@ Notes:
 - 2026-09-30T04:07:39Z · status review→active
 - 2026-09-30T04:35:13Z · handoff failed · check failed after 2 automatic retries · the worktree changed while the gate was running (HEAD moved from 4eaea8c9 to c0b3ce45) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
 - 2026-09-30T04:49:37Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-09-30T04:51:54Z · status active→review
