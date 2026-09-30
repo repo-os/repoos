@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/notice-feed-and-top-bar-bell-for-release
 created_at: "2026-09-30T13:43:10Z"
-updated_at: "2026-09-30T18:53:48Z"
+updated_at: "2026-09-30T18:54:25Z"
 ---
 ## Problem
 Long-running release work (notes drafting ~1-3 min, cut ~5 min) finishes while the user is elsewhere and nothing tells them. The mission control 'Needs your attention' list (`NeedsYouPanel.vue`, `humanNeeds` in `src/ui-app/src/stores/repo.ts`) is task-only, and the browser-notification store (`src/ui-app/src/stores/notifications.ts`) only knows the task types review/paused/stuck/needsInput.
@@ -48,3 +48,4 @@ Sources: release-succeeded/failed notices derive from `/api/release/run`; the `r
 - 2026-09-30T18:49:08Z · body
 - 2026-09-30T18:49:19Z · body
 - 2026-09-30T18:53:48Z · status active→review
+- 2026-09-30T18:54:25Z · note: shots: failed — capture of Needs-you panel with notice rows on "default" failed: goto: Timeout 30000ms exceeded.
