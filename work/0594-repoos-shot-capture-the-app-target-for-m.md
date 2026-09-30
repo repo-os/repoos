@@ -1,18 +1,18 @@
 ---
-updated_at: "2026-09-30T04:35:15Z"
-review_passes: 2
 id: "0594"
 title: "repoos shot: capture the app target for mixed diffs, and let tasks declare which pages/states to shoot"
 type: bug
-status: review
+status: done
+needs_input: true
+needs_input_reason: closeout-worktree-dirty
+needs_input_detail: "the worktree for feat/repoos-shot-capture-the-app-target-for-m was kept because it had uncommitted changes the merge did not carry: src/commands/shot.ts, src/core/shot-page.ts, src/core/shot-plan.ts, src/server/shot-capture.ts"
 priority: p2
 area: [cli, web]
 assigned_to: ai
 created_by: ""
 branch: feat/repoos-shot-capture-the-app-target-for-m
-review_cli_override: cursor
-review_model_override: composer-2.5
 created_at: "2026-09-30T02:44:14Z"
+updated_at: "2026-09-30T04:40:28Z"
 ---
 ## Problem
 
@@ -46,10 +46,7 @@ Shots are captured for every UI-visible task without relying on the agent rememb
 - 2026-09-30T02:44:14Z · created · unknown
 - 2026-09-30T03:28:15Z · status inbox→ready
 - 2026-09-30T03:28:16Z · status ready→active, branch
-- 2026-09-30T04:24:23Z · review_cli_override, review_model_override
-- 2026-09-30T04:24:24Z · review_model_override
-- 2026-09-30T04:24:40Z · status active→review
-- 2026-09-30T04:24:40Z · status review→active
-- 2026-09-30T04:28:38Z · status active→review
-- 2026-09-30T04:34:23Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
-
+- 2026-09-30T04:18:18Z · status active→review
+- 2026-09-30T04:40:28Z · status review→done, release:success
+- 2026-09-30T04:40:28Z · needs_input
+- 2026-09-30T04:40:28Z · note: close-out kept a worktree with uncommitted changes
