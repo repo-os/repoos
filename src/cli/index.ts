@@ -72,11 +72,13 @@ function main(): void {
   if (cmd === "serve" || cmd === "server") setServeProcessTitle(serveProcessTitle());
 
   // Per-command help (#0591): `repoos <cmd> --help` prints that command's full
-  // usage instead of running it, so the top-level help can stay short. Commands
-  // that already implement `--help` themselves keep their own, richer output.
+  // usage instead of running it. Only the *first* argument counts, so a literal
+  // value like `repoos mv 0012 active --note "--help"` still runs the command.
+  // Commands that already implement `--help` themselves keep their own, richer
+  // output; aliases (`ls`, `server`, …) resolve to their canonical entry.
   if (
     cmd &&
-    (rest.includes("--help") || rest.includes("-h")) &&
+    (rest[0] === "--help" || rest[0] === "-h") &&
     !SELF_HELP_COMMANDS.has(cmd) &&
     commandUsage(cmd) !== null
   ) {

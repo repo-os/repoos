@@ -58,9 +58,8 @@ const GROUPS: readonly CommandGroup[] = [
     commands: [
       {
         name: "list",
-        usage: "list [status] [--json]",
-        desc: "Show the board, or one status column",
-        flags: "positional: inbox|ready|active|review|done · --json",
+        usage: "list [status]",
+        desc: "Show the board, or one status column (inbox|ready|active|review|done)",
       },
       { name: "show", usage: "show <id>", desc: "Show a task's full spec" },
       {
@@ -164,9 +163,10 @@ const GROUPS: readonly CommandGroup[] = [
       },
       {
         name: "tunnel",
-        usage: "tunnel <sub> [--config <path>] [--output <path>] [--overwrite-dns]",
+        usage: "tunnel <sub>",
         desc: "Publish local apps via Cloudflare Tunnel + Zero Trust",
-        flags: "setup|create|allow|deny|rename|destroy|start|install|stop|list|status",
+        flags:
+          "setup|create|destroy|rename|allow|deny|start|install|stop|list|status · create: --port --domain --allow --no-access",
       },
       {
         name: "shot",
@@ -205,10 +205,26 @@ const EXAMPLES: readonly Example[] = [
   { cmd: "repoos serve", comment: "live API + SSE at http://127.0.0.1:7171" },
 ];
 
-/** Full usage for a command (without the leading `repoos`), or null. */
+/** Command aliases accepted by the dispatcher (`src/cli/index.ts`). */
+const ALIASES: Record<string, string> = {
+  ls: "list",
+  cat: "show",
+  move: "mv",
+  add: "new",
+  reindex: "index",
+  server: "serve",
+};
+
+/** Resolve an alias to its canonical command name (identity when not an alias). */
+export function canonicalCommand(name: string): string {
+  return ALIASES[name] ?? name;
+}
+
+/** Full usage for a command (or alias), without the leading `repoos`, or null. */
 export function commandUsage(name: string): string | null {
+  const canonical = canonicalCommand(name);
   for (const group of GROUPS) {
-    for (const cmd of group.commands) if (cmd.name === name) return cmd.usage;
+    for (const cmd of group.commands) if (cmd.name === canonical) return cmd.usage;
   }
   return null;
 }
@@ -281,8 +297,9 @@ export function printHelp(width: number = termWidth()): void {
  * command (so the caller can fall through to its normal dispatch).
  */
 export function printCommandHelp(name: string, width: number = termWidth()): boolean {
+  const canonical = canonicalCommand(name);
   for (const group of GROUPS) {
-    const cmd = group.commands.find((entry) => entry.name === name);
+    const cmd = group.commands.find((entry) => entry.name === canonical);
     if (!cmd) continue;
     const lines: string[] = [""];
     lines.push(...wrap(c.bold("repoos") + " " + cmd.usage, width - 2, "  ").split("\n"));
