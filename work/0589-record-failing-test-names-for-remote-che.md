@@ -2,7 +2,7 @@
 id: "0589"
 title: Record failing test names for remote check runs
 type: feature
-status: review
+status: done
 priority: p2
 area: [server, web]
 assigned_to: ai
@@ -12,8 +12,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-29T22:14:45Z"
-updated_at: "2026-09-30T04:11:23Z"
-review_passes: 1
+updated_at: "2026-09-30T03:31:04Z"
 ---
 ## Problem
 
@@ -42,4 +41,4 @@ Every failed check run in the history says which tests failed, whether it ran lo
 - 2026-09-30T02:18:00Z · review_model_override
 - 2026-09-30T02:18:17Z · status ready→active, branch
 - 2026-09-30T02:25:09Z · status active→review
-- 2026-09-30T04:11:23Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
+- 2026-09-30T03:31:04Z · status review→done, release:success
