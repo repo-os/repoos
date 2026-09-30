@@ -51,6 +51,28 @@ Tags with a suffix — `v1.2.0-beta.1`, `v1.2.0-rc.1` — are treated as
 never hands a prerelease to a stable user, and they don't hide the last stable
 tag in the UI.
 
+### The Cut a release modal
+
+The modal states **Currently published** and **Suggested next**, then offers
+one band with two ways to pick the version:
+
+- **OR · Cut Next** applies the suggested version for you — the everyday
+  "next patch" release needs no typing at all. Publish then behaves exactly as
+  if you had typed that version, tag prefix and prerelease rules included.
+- Typing into **New version** stays the path for everything else (`1.4.0`,
+  `2.0.0-rc.1`, `1.4.0-beta.1`, …); the `→` preview always shows the exact tag
+  that will be pushed. Cut Next is a shortcut, never a requirement.
+
+**Release notes** are optional. **Generate with AI** drafts them from the
+commits since the last release and drops them into an editable text area.
+Successful drafts are saved to `<cacheDir>/release-notes.json`
+(`.repoos/release-notes.json` by default — derived state, gitignored, safe to
+delete) keyed by the commit they summarize. Generate again after a failed cut
+and, while no commit or release tag has changed, RepoOS reuses the saved text
+instantly instead of spending another minute or two on the agent — the modal
+says **Reused saved notes**. Any new commit or tag, or deleting the file,
+simply means the next generate runs the agent again.
+
 ### Distribution destinations: "Published to"
 
 A release is one versioned artifact; the places users install it from are its
