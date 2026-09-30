@@ -2,10 +2,7 @@
 id: "0598"
 title: Protect a task worktree from edits after handoff to review
 type: feat
-status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: the opencode agent timed out after 900s
+status: done
 priority: p2
 area: server
 assigned_to: ai
@@ -15,7 +12,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-09-30T05:01:28Z"
-updated_at: "2026-09-30T06:45:25Z"
+updated_at: "2026-09-30T06:51:55Z"
 ---
 ## Problem
 #0594 was signed off (reviewer: good to go at 12:29) and Move to done started at 12:36. At 12:37 four source files in its worktree were edited by something outside the runner (engineer and reviewer logs are silent then). Close-out merged only the committed branch tip, kept the dirty worktree, and asked for input. The edits (real bug fixes) did not land and nobody noticed until cleanup. This has reportedly happened several times. Nothing stops writers to a task worktree once the task is in review, and close-out does not check that the tree it validated is the tree it publishes.
@@ -52,3 +49,4 @@ chmod -R a-w or immutable flags on the worktree would block edits, but it breaks
 - 2026-09-30T05:55:50Z · status ready→active, branch
 - 2026-09-30T06:13:02Z · status active→review
 - 2026-09-30T06:45:25Z · needs_input
+- 2026-09-30T06:51:55Z · status review→done, release:success
