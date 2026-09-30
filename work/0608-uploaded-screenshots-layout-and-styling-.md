@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-30T17:38:46Z"
+review_passes: 1
 id: "0608"
 title: Match New task screenshot uploads to New input panel
 type: bug
@@ -10,7 +12,6 @@ created_by: hello@repoos.org
 branch: feat/match-new-task-screenshot-uploads-to-new
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-30T15:27:25Z"
-updated_at: "2026-09-30T17:35:03Z"
 ---
 ## Problem
 
@@ -92,3 +93,4 @@ Uploaded screenshots layout and styling not the same on "new task" panel as it i
 - 2026-09-30T17:29:59Z · body
 - 2026-09-30T17:34:20Z · status active→review
 - 2026-09-30T17:35:03Z · note: shots: failed — capture of New input — Screenshots field on "default" failed: goto: Timeout 30000ms exceeded.
+
