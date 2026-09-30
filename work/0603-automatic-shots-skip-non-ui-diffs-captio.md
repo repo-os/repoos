@@ -2,7 +2,7 @@
 id: "0603"
 title: "Automatic shots: skip non-UI diffs, caption why, support highlights"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: [server, web]
 assigned_to: ai
@@ -37,3 +37,4 @@ Automatic shot capture at handoff (#0594) produces screenshots that show nothing
 
 - 2026-09-30T13:19:31Z · created · unknown
 - 2026-09-30T17:53:21Z · review_model_override
+- 2026-09-30T17:53:21Z · status inbox→ready
