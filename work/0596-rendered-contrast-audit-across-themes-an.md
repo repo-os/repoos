@@ -11,7 +11,7 @@ branch: feat/rendered-contrast-audit-across-themes-an
 model_override: opencode-go/mimo-v2.6-flash
 review_model_override: opencode-go/hy3
 created_at: "2026-09-30T03:04:34Z"
-updated_at: "2026-09-30T03:27:50Z"
+updated_at: "2026-09-30T05:09:43Z"
 ---
 ## Problem
 The theme-contrast check (`[[check.contrastPairs]]` in repoos.toml) only tests 9 named token pairs per theme scope, so it cannot see a component that hard-codes its own colors. Example (fixed on main): the task drawer's Changes tab file header set `background: rgba(255,255,255,0.04)` and `color: #c9d1d9` in a scoped style block, overriding the token-based rules in style.css. It was near-white on near-white in light themes and went unnoticed. Other themes/modes and screens likely have the same class of bug (a first grep found ~8 translucent-white backgrounds and ~6 hard-coded light text colors in components/views; some are intentional, e.g. the dark code panes).
@@ -31,6 +31,16 @@ The theme-contrast check (`[[check.contrastPairs]]` in repoos.toml) only tests 9
 - Existing offenders are either fixed or explicitly allowlisted with a reason (triage findings in this task; file follow-ups for large clusters).
 - Runs in a reasonable time budget (state the measured runtime in the handoff).
 
+## Shots
+
+```json
+[
+  {"route": "/work", "label": "Board — raised faint/dim tokens, canary-egg count, priority chips"},
+  {"route": "/work", "steps": [{"click": ".task-card"}, {"waitFor": ".drawer-body"}, {"waitMs": 600}], "label": "Task drawer — meta grid, tabs, field labels"},
+  {"route": "/settings", "label": "Settings — description text, theme list, restart badges"}
+]
+```
+
 ## Activity
 
 - 2026-09-30T03:04:34Z · created · unknown
@@ -38,3 +48,4 @@ The theme-contrast check (`[[check.contrastPairs]]` in repoos.toml) only tests 9
 - 2026-09-30T03:27:48Z · review_model_override
 - 2026-09-30T03:27:49Z · status inbox→ready
 - 2026-09-30T03:27:50Z · status ready→active, branch
+- 2026-09-30T05:09:43Z · body
