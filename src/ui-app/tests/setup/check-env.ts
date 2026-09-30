@@ -12,3 +12,15 @@
  * touched src/core/config.ts).
  */
 delete process.env.REPOOS_CHECK_CHANGED;
+
+/**
+ * Likewise drop the check-history routing vars the server exports to gates
+ * (release.ts, handoff.ts, integration-orchestrator.ts). With
+ * `REPOOS_CHECK_STORE_ROOT` inherited, a test's `runCheck(..., fixtureRoot)`
+ * wrote its row into the REAL repo's `.repoos/checks.db` and then found its own
+ * fixture store empty — deterministic failure only inside a gate (#0607), plus
+ * fake "skipped" rows polluting the real history.
+ */
+delete process.env.REPOOS_CHECK_STORE_ROOT;
+delete process.env.REPOOS_CHECK_PHASE;
+delete process.env.REPOOS_TASK_ID;
