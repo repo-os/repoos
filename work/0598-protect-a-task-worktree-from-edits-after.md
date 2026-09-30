@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 cli_override: cursor
-model_override: default
+model_override: composer-2.5
 created_at: "2026-09-30T05:01:28Z"
-updated_at: "2026-09-30T05:55:43Z"
+updated_at: "2026-09-30T05:55:44Z"
 ---
 ## Problem
 #0594 was signed off (reviewer: good to go at 12:29) and Move to done started at 12:36. At 12:37 four source files in its worktree were edited by something outside the runner (engineer and reviewer logs are silent then). Close-out merged only the committed branch tip, kept the dirty worktree, and asked for input. The edits (real bug fixes) did not land and nobody noticed until cleanup. This has reportedly happened several times. Nothing stops writers to a task worktree once the task is in review, and close-out does not check that the tree it validated is the tree it publishes.
@@ -42,3 +42,4 @@ chmod -R a-w or immutable flags on the worktree would block edits, but it breaks
 - 2026-09-30T05:01:28Z · created · unknown
 - 2026-09-30T05:05:15Z · body
 - 2026-09-30T05:55:43Z · cli_override, model_override
+- 2026-09-30T05:55:44Z · model_override
