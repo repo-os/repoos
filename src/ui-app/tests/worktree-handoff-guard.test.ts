@@ -3,7 +3,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { rmFixture } from "./helpers";
@@ -90,6 +90,52 @@ describe("worktree handoff guard (#0598)", () => {
       git(wt.path, ["add", "f.txt"]);
       git(wt.path, ["commit", "-m", "after handoff"]);
       check = await verifyWorktreeHandoffIntegrity(config, branch, sha);
+      expect(check.ok).toBe(false);
+      expect(check.headMoved).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("allows HEAD drift when only task markdown bookkeeping changed (#0600)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const branch = "feat/bookkeeping";
+      const wt = ensureWorktree(root, branch);
+      mkdirSync(join(wt.path, "work"), { recursive: true });
+      writeFileSync(join(wt.path, "f.txt"), "a\n");
+      writeFileSync(join(wt.path, "work", "0599-self.md"), "---\nid: 0599\n---\n");
+      git(wt.path, ["add", "f.txt", "work/0599-self.md"]);
+      git(wt.path, ["commit", "-m", "handoff"]);
+      const sha = git(wt.path, ["rev-parse", "HEAD"]);
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+      writeFileSync(join(wt.path, "work", "0599-self.md"), "---\nid: 0599\nstatus: review\n---\n");
+      writeFileSync(join(wt.path, "work", "0598-other.md"), "---\nid: 0598\n---\nfrom sync\n");
+      git(wt.path, ["add", "work"]);
+      git(wt.path, ["commit", "-m", "docs(0599): update task"]);
+      const check = await verifyWorktreeHandoffIntegrity(config, branch, sha);
+      expect(check.ok).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("still fails when HEAD drift mixes task files with source (#0600)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const branch = "feat/mixed";
+      const wt = ensureWorktree(root, branch);
+      mkdirSync(join(wt.path, "work"), { recursive: true });
+      writeFileSync(join(wt.path, "f.txt"), "a\n");
+      git(wt.path, ["add", "f.txt"]);
+      git(wt.path, ["commit", "-m", "handoff"]);
+      const sha = git(wt.path, ["rev-parse", "HEAD"]);
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+      writeFileSync(join(wt.path, "work", "0600-x.md"), "---\nid: 0600\n---\n");
+      writeFileSync(join(wt.path, "f.txt"), "b\n");
+      git(wt.path, ["add", "-A"]);
+      git(wt.path, ["commit", "-m", "mixed"]);
+      const check = await verifyWorktreeHandoffIntegrity(config, branch, sha);
       expect(check.ok).toBe(false);
       expect(check.headMoved).toBe(true);
     } finally {

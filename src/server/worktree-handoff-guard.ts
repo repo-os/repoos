@@ -18,6 +18,8 @@ import { dirname, join } from "node:path";
 import type { RepoOSConfig } from "../core/types.js";
 import {
   GitDirtyCheckError,
+  isTaskBookkeepingPath,
+  pathsChangedBetweenCommits,
   runGit,
   uncommittedWorkFiles,
   workFileFilter,
@@ -262,6 +264,17 @@ export async function verifyWorktreeHandoffIntegrity(
   const headMoved = actualHead !== expectedSha;
   if (!headMoved && dirtyFiles.length === 0) {
     return { ok: true };
+  }
+  if (headMoved && dirtyFiles.length === 0) {
+    const filter = workFileFilter(config as RepoOSConfig);
+    const driftPaths = await pathsChangedBetweenCommits(wt, expectedSha, actualHead);
+    if (
+      driftPaths !== null &&
+      driftPaths.length > 0 &&
+      driftPaths.every((p) => isTaskBookkeepingPath(p, filter))
+    ) {
+      return { ok: true };
+    }
   }
   const attribution = attributeFiles(wt, dirtyFiles);
   return {
