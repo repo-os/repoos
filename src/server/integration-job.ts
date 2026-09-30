@@ -97,7 +97,7 @@ export interface JobCoordinator {
    * Enqueue a close-out job for the task. Returns the job if enqueued/already queued,
    * or null if the task doesn't have a branch. Idempotent per task ID.
    */
-  enqueue(task: Task): IntegrationJob | null;
+  enqueue(task: Task, opts?: { handoffSha?: string | null }): IntegrationJob | null;
 
   /**
    * Get the current job for a task ID, or null if no job exists.
@@ -194,7 +194,7 @@ function writeJob(root: string, job: IntegrationJob): void {
  */
 export function createJobCoordinator(root: string): JobCoordinator {
   return {
-    enqueue(task: Task): IntegrationJob | null {
+    enqueue(task: Task, opts?: { handoffSha?: string | null }): IntegrationJob | null {
       if (!task.branch) return null;
 
       const existing = readJob(root, task.id);
@@ -216,6 +216,11 @@ export function createJobCoordinator(root: string): JobCoordinator {
       // and a fresh "Move to done" must enqueue a brand-new run rather than
       // hand back the cancelled record and refuse to start.
       if (existing && existing.phase !== "failed" && !existing.cancelled && !staleDoneJob) {
+        if (opts?.handoffSha && !existing.handoffSha) {
+          const patched = { ...existing, handoffSha: opts.handoffSha };
+          writeJob(root, patched);
+          return patched;
+        }
         return existing;
       }
 
@@ -227,6 +232,7 @@ export function createJobCoordinator(root: string): JobCoordinator {
         startedAt: null,
         baseMainSha: null,
         branchSha: null,
+        handoffSha: opts?.handoffSha ?? null,
         candidateSha: null,
         // Continue the attempt counter across an explicit retry so each
         // attempt's durable gate log keeps a distinct filename (#0428) instead

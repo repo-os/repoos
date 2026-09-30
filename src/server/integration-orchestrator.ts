@@ -69,6 +69,7 @@ import type { TaskCheckManager, TaskCheckListener } from "./task-check.js";
 import {
   clearWorktreeHandoffProtection,
   readHandoffSnapshot,
+  restoreWorktreeReviewLockAfterFailedCloseOut,
   verifyWorktreeHandoffIntegrity,
   WORKTREE_CHANGED_AFTER_HANDOFF_PREFIX,
 } from "./worktree-handoff-guard.js";
@@ -772,8 +773,9 @@ export class CloseOutOrchestrator {
   }
 
   /**
-   * Re-check the feature worktree against the handoff SHA (#0598). Fails
-   * closed when the job has no recorded SHA (legacy tasks) by skipping.
+   * Re-check the feature worktree against the handoff SHA (#0598). When the
+   * job has no `handoffSha` (legacy tasks or a race before enqueue wrote it),
+   * the check is skipped rather than blocking close-out.
    */
   private async assertHandoffWorktreeUnchanged(
     job: IntegrationJob,
@@ -889,6 +891,11 @@ export class CloseOutOrchestrator {
       failedPhase,
       reason,
     });
+    restoreWorktreeReviewLockAfterFailedCloseOut(
+      this.config.root,
+      this.config.cacheDir ?? ".repoos",
+      job.taskId,
+    );
     onRecorded?.();
     return { ok: false, reason };
   }

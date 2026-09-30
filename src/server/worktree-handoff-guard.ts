@@ -316,6 +316,68 @@ export async function recordWorktreeHandoffProtection(
   });
 }
 
+/**
+ * Re-record the handoff snapshot at the worktree's current HEAD after a
+ * human-approved close-out commit (#0598). Keeps advisory lock status but
+ * updates its SHA so the integrity check matches what will be merged.
+ */
+export async function refreshHandoffSnapshotFromWorktree(
+  config: RepoOSConfig,
+  taskId: string,
+  branch: string,
+  workdir: string,
+): Promise<{ ok: true; sha: string } | { ok: false; reason: string }> {
+  const headRes = await runGit(workdir, ["rev-parse", "HEAD"], 10_000);
+  if (headRes.status !== 0) {
+    return { ok: false, reason: "could not read HEAD after close-out commit" };
+  }
+  const sha = headRes.stdout.trim();
+  let dirty: string[] = [];
+  try {
+    dirty = await uncommittedWorkFiles(workdir, workFileFilter(config));
+  } catch (err) {
+    const message = err instanceof GitDirtyCheckError ? err.message : String(err);
+    return { ok: false, reason: `worktree not clean after close-out commit (${message})` };
+  }
+  if (dirty.length > 0) {
+    return {
+      ok: false,
+      reason: `worktree still has uncommitted files after close-out commit: ${dirty.join(", ")}`,
+    };
+  }
+  const at = new Date().toISOString();
+  const cacheDir = config.cacheDir ?? ".repoos";
+  writeHandoffSnapshot(config.root, cacheDir, {
+    taskId,
+    branch,
+    sha,
+    at,
+    clean: true,
+  });
+  const lock = readWorktreeReviewLock(config.root, cacheDir, taskId);
+  writeWorktreeReviewLock(config.root, cacheDir, taskId, {
+    status: lock?.status === "closing-out" ? "closing-out" : "review",
+    sha,
+    at,
+  });
+  return { ok: true, sha };
+}
+
+/** After a failed close-out, drop the lock back to `review` (not `closing-out`). */
+export function restoreWorktreeReviewLockAfterFailedCloseOut(
+  root: string,
+  cacheDir: string,
+  taskId: string,
+): void {
+  const snap = readHandoffSnapshot(root, cacheDir, taskId);
+  if (!snap) return;
+  writeWorktreeReviewLock(root, cacheDir, taskId, {
+    status: "review",
+    sha: snap.sha,
+    at: snap.at,
+  });
+}
+
 /** Reset the feature worktree to the handoff snapshot SHA (discard post-handoff edits). */
 export async function discardWorktreeHandoffChanges(
   config: RepoOSConfig,

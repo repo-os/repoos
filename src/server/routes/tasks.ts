@@ -94,6 +94,7 @@ import {
 import {
   discardWorktreeHandoffChanges,
   readHandoffSnapshot,
+  refreshHandoffSnapshotFromWorktree,
   verifyWorktreeHandoffIntegrity,
   writeWorktreeReviewLock,
 } from "../worktree-handoff-guard.js";
@@ -1203,6 +1204,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         dirtyFiles: worktreeDirty,
       });
     }
+    let worktreeCommittedForCloseOut = false;
     if (worktreeDirty.length > 0 && commitDirty) {
       // "Commit & continue" for the worktree commits through the SAME path the
       // handoff uses, so a human-approved commit lands exactly what a handoff
@@ -1218,6 +1220,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
           dirtyFiles: worktreeDirty,
         });
       }
+      worktreeCommittedForCloseOut = true;
     }
     if (dirty.length > 0 && commitDirty) {
       let committed: string[];
@@ -1246,24 +1249,37 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       }
     }
 
-    const handoffSnap =
-      !taskStillExists.hotfix && branch
-        ? readHandoffSnapshot(config.root, config.cacheDir, id)
-        : null;
-    if (handoffSnap && worktree) {
-      const integrity = await verifyWorktreeHandoffIntegrity(config, branch, handoffSnap.sha, {
-        handoffAt: handoffSnap.at,
-        taskId: id,
-      });
-      if (!integrity.ok) {
-        return json(res, 409, {
-          error: integrity.reason,
-          worktreeChangedAfterHandoff: true,
-          handoffSha: handoffSnap.sha,
-          attribution: integrity.attribution,
-          dirtyFiles: integrity.dirtyFiles,
-          resolutions: ["discard", "send-back"],
-        });
+    let handoffSha: string | null = null;
+    if (!taskStillExists.hotfix && branch && worktree) {
+      if (worktreeCommittedForCloseOut) {
+        const refreshed = await refreshHandoffSnapshotFromWorktree(config, id, branch, worktree);
+        if (!refreshed.ok) {
+          return json(res, 500, {
+            error: refreshed.reason,
+            needsCommit: true,
+            dirtyScope: "worktree",
+          });
+        }
+        handoffSha = refreshed.sha;
+      } else {
+        const handoffSnap = readHandoffSnapshot(config.root, config.cacheDir, id);
+        if (handoffSnap) {
+          const integrity = await verifyWorktreeHandoffIntegrity(config, branch, handoffSnap.sha, {
+            handoffAt: handoffSnap.at,
+            taskId: id,
+          });
+          if (!integrity.ok) {
+            return json(res, 409, {
+              error: integrity.reason,
+              worktreeChangedAfterHandoff: true,
+              handoffSha: handoffSnap.sha,
+              attribution: integrity.attribution,
+              dirtyFiles: integrity.dirtyFiles,
+              resolutions: ["discard", "send-back"],
+            });
+          }
+          handoffSha = handoffSnap.sha;
+        }
       }
     }
 
@@ -1272,17 +1288,16 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     if (ctx.reload) await ctx.reload.prepareForCloseOut();
 
     // Enqueue the close-out job (idempotent per task).
-    const job = ctx.jobCoordinator.enqueue(taskStillExists);
+    const job = ctx.jobCoordinator.enqueue(taskStillExists, { handoffSha });
     if (!job) {
       ctx.reload?.releaseCloseOut();
       return json(res, 400, { error: `Task #${id} has no branch to merge` });
     }
 
-    if (handoffSnap) {
-      ctx.jobCoordinator.updateJob(id, { handoffSha: handoffSnap.sha });
+    if (handoffSha) {
       writeWorktreeReviewLock(config.root, config.cacheDir, id, {
         status: "closing-out",
-        sha: handoffSnap.sha,
+        sha: handoffSha,
         at: new Date().toISOString(),
       });
     }

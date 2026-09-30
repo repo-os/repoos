@@ -73,6 +73,7 @@ import { useCopyChatMessage } from "../composables/useCopyChatMessage";
 import { bubbleRole, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyCheckoutDialog from "./DirtyCheckoutDialog.vue";
+import WorktreeHandoffConflictDialog from "./WorktreeHandoffConflictDialog.vue";
 import HotfixConfirmDialog from "./HotfixConfirmDialog.vue";
 import ReviewConfirmDialog from "./ReviewConfirmDialog.vue";
 import SendToEngineerDialog from "./SendToEngineerDialog.vue";
@@ -1182,6 +1183,10 @@ async function moveToDone(): Promise<void> {
       dirtyTask.value = ui.active;
       return;
     }
+    if (err instanceof Error && err.name === "WorktreeHandoffConflictError") {
+      handoffConflictTask.value = ui.active;
+      return;
+    }
     // The failure is rendered inline below the button via the store's
     // per-task doneErrorFor; no global toast for this action.
     repo.onError(err);
@@ -1240,12 +1245,63 @@ async function confirmCommitDirty(): Promise<void> {
       dirtyTask.value = t;
       return;
     }
+    if (err instanceof Error && err.name === "WorktreeHandoffConflictError") {
+      handoffConflictTask.value = t;
+      return;
+    }
     repo.onError(err);
   } finally {
     doingDone.value = false;
     stopDoneTimer();
     ui.saving = false;
   }
+}
+
+const handoffConflictTask = ref<Task | null>(null);
+const handoffConflictMessage = computed(() =>
+  handoffConflictTask.value
+    ? (repo.worktreeHandoffConflictFor(handoffConflictTask.value.id)?.message ?? "")
+    : "",
+);
+const handoffConflictFiles = computed(() =>
+  handoffConflictTask.value
+    ? (repo.worktreeHandoffConflictFor(handoffConflictTask.value.id)?.dirtyFiles ?? [])
+    : [],
+);
+
+async function discardHandoffConflict(): Promise<void> {
+  const t = handoffConflictTask.value;
+  handoffConflictTask.value = null;
+  if (!t) return;
+  ui.saving = true;
+  try {
+    await repo.discardWorktreeHandoffEdits(t);
+    repo.pushToast("Post-handoff edits discarded — retry Move to done when ready.", "info");
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    ui.saving = false;
+  }
+}
+
+async function sendBackHandoffConflict(): Promise<void> {
+  const t = handoffConflictTask.value;
+  handoffConflictTask.value = null;
+  if (!t) return;
+  ui.saving = true;
+  try {
+    await repo.sendBackFromHandoffConflict(t);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    ui.saving = false;
+  }
+}
+
+function cancelHandoffConflict(): void {
+  const id = handoffConflictTask.value?.id ?? ui.active?.id;
+  if (id) repo.clearWorktreeHandoffConflict(id);
+  handoffConflictTask.value = null;
 }
 
 function cancelDirty(): void {
@@ -5246,6 +5302,15 @@ watch(
     :scope="dirtyScope"
     @commit="confirmCommitDirty"
     @cancel="cancelDirty"
+  />
+
+  <WorktreeHandoffConflictDialog
+    :task="handoffConflictTask"
+    :message="handoffConflictMessage"
+    :dirty-files="handoffConflictFiles"
+    @discard="discardHandoffConflict"
+    @send-back="sendBackHandoffConflict"
+    @cancel="cancelHandoffConflict"
   />
 
   <HotfixConfirmDialog

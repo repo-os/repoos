@@ -5032,6 +5032,17 @@ export class AgentRunner {
     // linked task worktree.
     const refusal = antigravityWorktreeRefusal(cmd, args, cwd, task);
     if (refusal) return { ok: false, reason: refusal };
+    if (!opts.review) {
+      const lockRefusal = worktreeReviewLockRefusal(
+        this.config.root,
+        this.cacheDir,
+        cwd,
+        task?.id ?? taskId,
+        task?.status,
+        branch ?? task?.branch,
+      );
+      if (lockRefusal) return { ok: false, reason: lockRefusal };
+    }
     const runId = randomUUID();
     // A new turn means the task is active again — a human restarted a paused
     // task, or sent a follow-up — so the pause marker no longer applies.
