@@ -1,3 +1,4 @@
+import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -5,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   REPOOS_AGENTS_SECTION_MARKER,
   areaVocabularyTomlAddition,
+  canaryUnderRootRuntimeDir,
   quoteBlock,
   repoOSAgentsSectionAddition,
   scaffoldInto,
@@ -286,6 +288,122 @@ describe("scaffoldInto starter tasks", () => {
     } finally {
       process.exitCode = prevExitCode;
     }
+  });
+});
+
+describe("scaffoldInto gitignore — runtime state and .DS_Store (#0599)", () => {
+  function git(root: string, args: string[]): string {
+    return execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
+  }
+
+  /** git check-ignore -q: exit 0 = ignored, 1 = not ignored. */
+  function isIgnored(root: string, path: string): boolean {
+    return spawnSync("git", ["check-ignore", "-q", path], { cwd: root }).status === 0;
+  }
+
+  function gitScratch(): string {
+    const root = scratch();
+    git(root, ["init", "-q", "-b", "main"]);
+    git(root, ["config", "user.email", "t@example.com"]);
+    git(root, ["config", "user.name", "Test"]);
+    return root;
+  }
+
+  function gitignoreLines(root: string): string[] {
+    return readFileSync(join(root, ".gitignore"), "utf8")
+      .split(/\r?\n/)
+      .map((l) => l.trim());
+  }
+
+  it("keeps the root-layout canary pairing verbatim and does not duplicate the ignore", () => {
+    const root = scratch();
+    scaffoldInto(root, "", "", "new");
+    expect(canaryUnderRootRuntimeDir(".repoos")).toBe(true);
+    const lines = gitignoreLines(root);
+    expect(lines).toContain(".repoos/*");
+    expect(lines).toContain("!.repoos/canary.txt");
+    // The cache-dir rule IS the root-runtime rule here; the extra entry must
+    // not be appended on top of it.
+    expect(lines.filter((l) => l === ".repoos/*")).toHaveLength(1);
+    expect(lines).toContain(".DS_Store");
+  });
+
+  it("namespaced init also ignores the root .repoos/ runtime directory", () => {
+    const root = scratch();
+    scaffoldInto(root, "", "repoos", "new");
+    expect(canaryUnderRootRuntimeDir("repoos/.repoos")).toBe(false);
+    const lines = gitignoreLines(root);
+    // Canary pairing intact, plus the root runtime dir and macOS metadata.
+    expect(lines).toContain("repoos/.repoos/*");
+    expect(lines).toContain("!repoos/.repoos/canary.txt");
+    expect(lines).toContain(".repoos/*");
+    expect(lines).toContain(".DS_Store");
+  });
+
+  it("skips the root runtime ignore when the cache dir lives inside root .repoos/", () => {
+    // Namespace ".repoos" puts the cache dir at .repoos/.repoos — a blanket
+    // root ignore would swallow the canary's parent directory and defeat the
+    // negation, so init leaves that layout's pairing alone.
+    const root = scratch();
+    scaffoldInto(root, "", ".repoos", "new");
+    const lines = gitignoreLines(root);
+    expect(lines).toContain(".repoos/.repoos/*");
+    expect(lines).toContain("!.repoos/.repoos/canary.txt");
+    expect(lines).not.toContain(".repoos/*");
+    expect(lines).toContain(".DS_Store");
+  });
+
+  it("fresh namespaced init: runtime db, logs and nested .DS_Store never reach git status; canary stays tracked", () => {
+    const root = gitScratch();
+    scaffoldInto(root, "", "repoos", "new");
+
+    // Commit the scaffold so the tree starts clean; the canary counter ships
+    // tracked because init's gitignore negation re-includes it.
+    git(root, ["add", "-A"]);
+    git(root, ["commit", "-q", "-m", "init"]);
+    expect(git(root, ["status", "--porcelain"])).toBe("");
+
+    // Simulate serving RepoOS here + Finder metadata on macOS: the runtime
+    // database under the configured cacheDir, hardcoded root-level runtime
+    // state, and .DS_Store files at arbitrary depth.
+    writeFileSync(join(root, "repoos/.repoos/repoos.db"), "");
+    mkdirSync(join(root, ".repoos"), { recursive: true });
+    writeFileSync(join(root, ".repoos/repoos.db"), "");
+    mkdirSync(join(root, ".repoos/logs"), { recursive: true });
+    writeFileSync(join(root, ".repoos/logs/system.log"), "");
+    writeFileSync(join(root, ".DS_Store"), "");
+    writeFileSync(join(root, "repoos/work/.DS_Store"), "");
+
+    expect(git(root, ["status", "--porcelain"])).toBe("");
+    expect(isIgnored(root, "repoos/.repoos/repoos.db")).toBe(true);
+    expect(isIgnored(root, ".repoos/repoos.db")).toBe(true);
+    expect(isIgnored(root, ".repoos/logs/system.log")).toBe(true);
+    expect(isIgnored(root, "repoos/work/.DS_Store")).toBe(true);
+    // The canary exception still outranks both ignore globs.
+    expect(isIgnored(root, "repoos/.repoos/canary.txt")).toBe(false);
+    expect(git(root, ["ls-files", "--", "repoos/.repoos/canary.txt"])).toBe(
+      "repoos/.repoos/canary.txt",
+    );
+  });
+
+  it("fresh root-layout init: runtime db and nested .DS_Store ignored; canary stays tracked", () => {
+    const root = gitScratch();
+    scaffoldInto(root, "", "", "new");
+
+    git(root, ["add", "-A"]);
+    git(root, ["commit", "-q", "-m", "init"]);
+    expect(git(root, ["status", "--porcelain"])).toBe("");
+
+    writeFileSync(join(root, ".repoos/repoos.db"), "");
+    writeFileSync(join(root, ".repoos/.DS_Store"), "");
+    writeFileSync(join(root, "work/.DS_Store"), "");
+
+    expect(git(root, ["status", "--porcelain"])).toBe("");
+    expect(isIgnored(root, ".repoos/repoos.db")).toBe(true);
+    expect(isIgnored(root, ".repoos/.DS_Store")).toBe(true);
+    expect(isIgnored(root, "work/.DS_Store")).toBe(true);
+    expect(isIgnored(root, ".repoos/canary.txt")).toBe(false);
+    expect(git(root, ["ls-files", "--", ".repoos/canary.txt"])).toBe(".repoos/canary.txt");
   });
 });
 
