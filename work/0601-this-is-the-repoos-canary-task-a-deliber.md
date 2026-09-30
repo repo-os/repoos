@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-30T12:47:15Z"
-updated_at: "2026-09-30T12:53:46Z"
+updated_at: "2026-09-30T12:58:03Z"
 ---
 ## Problem
 
@@ -60,3 +60,4 @@ This is the RepoOS canary task: a deliberately trivial change used to smoke-test
 - 2026-09-30T12:49:07Z · title, area, type, body
 - 2026-09-30T12:53:44Z · status inbox→ready
 - 2026-09-30T12:53:46Z · status ready→active, branch
+- 2026-09-30T12:58:03Z · note: shots: skipped — the diff (2 changed paths) touches no [[preview.paths]] globs — nothing here is a declared UI change
