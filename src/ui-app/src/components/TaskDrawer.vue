@@ -15,6 +15,7 @@ import {
   RotateCcw,
   ImagePlus,
   Info,
+  Paperclip,
   FileText,
   MessageSquare,
   Bot,
@@ -80,7 +81,7 @@ import SendToEngineerDialog from "./SendToEngineerDialog.vue";
 import SpecEditModal from "./SpecEditModal.vue";
 import ScreenshotViewer from "./ScreenshotViewer.vue";
 import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
-import { pendingToShots, type ScreenshotShot } from "../lib/screenshot-viewer";
+import { isImageMime, pendingToShots, type ScreenshotShot } from "../lib/screenshot-viewer";
 import DoneErrorCard from "./DoneErrorCard.vue";
 import DebugPanel from "./DebugPanel.vue";
 import StopWorkConfirmModal from "./StopWorkConfirmModal.vue";
@@ -3367,20 +3368,38 @@ watch(
                 @click.stop
               />
             </div>
-            <div v-if="ui.pendingScreenshots.length" class="shot-grid">
-              <div v-for="(s, i) in ui.pendingScreenshots" :key="s.name + i" class="shot-thumb">
-                <img :src="s.dataUrl" :alt="s.name" @click="openPendingViewer(i)" />
-                <ScreenshotExpandButton :name="s.name" @click="openPendingViewer(i)" />
+            <div
+              v-if="ui.pendingScreenshots.length"
+              class="ff-pending-files"
+              aria-label="Selected attachments"
+            >
+              <div
+                v-for="(s, i) in ui.pendingScreenshots"
+                :key="s.name + s.size + i"
+                class="ff-pending-file"
+              >
+                <img
+                  v-if="isImageMime(s.mime)"
+                  :src="s.dataUrl"
+                  :alt="s.name"
+                  @click="openPendingViewer(i)"
+                />
+                <div v-else class="ff-pending-file-icon"><Paperclip class="size-4" /></div>
+                <span class="ff-pending-file-name" :title="s.name">{{ s.name }}</span>
+                <ScreenshotExpandButton
+                  v-if="isImageMime(s.mime)"
+                  :name="s.name"
+                  @click="openPendingViewer(i)"
+                />
                 <button
                   type="button"
-                  class="shot-remove"
+                  class="ff-pending-file-remove"
                   :aria-label="`Remove ${s.name}`"
-                  title="Remove screenshot"
+                  title="Remove attachment"
                   @click.stop="ui.removeScreenshot(i)"
                 >
                   <X class="size-3.5" />
                 </button>
-                <span class="shot-name" :title="s.name">{{ s.name }}</span>
               </div>
             </div>
           </div>

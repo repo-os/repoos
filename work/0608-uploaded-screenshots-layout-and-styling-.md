@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-30T17:38:46Z"
-review_passes: 1
 id: "0608"
 title: Match New task screenshot uploads to New input panel
 type: bug
@@ -12,6 +10,7 @@ created_by: hello@repoos.org
 branch: feat/match-new-task-screenshot-uploads-to-new
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-30T15:27:25Z"
+updated_at: "2026-09-30T17:34:19Z"
 ---
 ## Problem
 
@@ -51,27 +50,6 @@ When creating a new task (Freeform or Manual), the Screenshots field should look
 - Global form/attachment helpers: `src/ui-app/src/style.css` (`shot-dropzone`, `ff-pending-*`).
 - Prior art: format hint beside New task label (#0571); shared dropzone copy aligns both panels already.
 
-## Shots
-
-The capture step DSL cannot attach files, so these open each creation panel on its Screenshots field (the changed markup is shared with New input and is also asserted by the screenshot-viewer wiring test). Attach one or more images in the panel to see the matched pending list.
-
-```json
-[
-  {
-    "target": "default",
-    "route": "/work?task=new",
-    "label": "New task — Screenshots field",
-    "steps": [{ "waitMs": 400 }]
-  },
-  {
-    "target": "default",
-    "route": "/inputs",
-    "label": "New input — Screenshots field",
-    "steps": [{ "click": "button.new-btn" }, { "waitMs": 400 }]
-  }
-]
-```
-
 ## Original prompt
 
 Uploaded screenshots layout and styling not the same on "new task" panel as it is on "new input" panel. I prefer the style and layout on "new input", please update "new task" screenshots to match.
@@ -90,7 +68,4 @@ Uploaded screenshots layout and styling not the same on "new task" panel as it i
 - 2026-09-30T15:28:58Z · status inbox→ready
 - 2026-09-30T17:25:17Z · model_override
 - 2026-09-30T17:25:24Z · status ready→active, branch
-- 2026-09-30T17:29:59Z · body
-- 2026-09-30T17:34:20Z · status active→review
-- 2026-09-30T17:35:03Z · note: shots: failed — capture of New input — Screenshots field on "default" failed: goto: Timeout 30000ms exceeded.
-
+- 2026-09-30T17:34:19Z · status active→review
