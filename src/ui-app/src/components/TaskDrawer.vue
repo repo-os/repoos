@@ -2664,6 +2664,11 @@ async function runNeedsInputPrimaryAction(): Promise<void> {
     await reviewAgain();
     return;
   }
+  if (action.kind === "send-engineer") {
+    ui.activeTab = "review";
+    await sendToEngineer();
+    return;
+  }
   if (action.kind === "send-pm") {
     if (!pmAgentEnabled.value) {
       repo.onError(new Error("PM agent is not configured — enable it on the Agents page"));
@@ -4019,6 +4024,8 @@ watch(
                     reviewBusy ||
                     review?.running ||
                     dismissNeedsInputBusy ||
+                    (needsInputPrimary.kind === 'send-engineer' &&
+                      (sendingToEngineer || reviewStale || !review?.report)) ||
                     (needsInputPrimary.kind === 'send-pm' &&
                       (!pmAgentEnabled || pmBusy || pmSubmitting))
                   "

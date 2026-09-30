@@ -65,18 +65,21 @@ describe("needsInputPrimaryAction (#0511)", () => {
     });
   });
 
-  it("names review-rounds-exhausted and offers Review again on a review task", () => {
+  it("names review-rounds-exhausted and offers Send to engineer (not Review again) on a review task", () => {
     expect(needsInputStatusLabel("review-rounds-exhausted")).toBe("Review still finding issues");
     expect(needsInputBannerText("review-rounds-exhausted")).toContain("sent this back");
     expect(needsInputBannerText("review-rounds-exhausted")).toContain(
       `${MAX_AUTO_REVIEW_ROUNDS} times`,
     );
-    expect(needsInputSuggestionText("review-rounds-exhausted")).toContain("send it back");
+    expect(needsInputSuggestionText("review-rounds-exhausted")).toContain(
+      "send it to the engineer",
+    );
     expect(
       needsInputPrimaryAction("review-rounds-exhausted", false, {
         status: "review",
         agentRunning: false,
-      })?.kind,
-    ).toBe("review");
+      }),
+    ).toEqual({ kind: "send-engineer", label: "Send to engineer" });
+    expect(needsInputSuggestionText("review-rounds-exhausted")).not.toContain("Review again hides");
   });
 });

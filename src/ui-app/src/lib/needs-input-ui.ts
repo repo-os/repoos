@@ -44,7 +44,7 @@ export const NEEDS_INPUT_SUGGESTION_LABELS: Record<string, string> = {
   "review-failed":
     "Try Review again from the Review tab (or Restart work if the task is back in active). If it keeps failing, check the CLI/model picker there — an invalid pairing (e.g. after switching CLI) causes exactly this.",
   "review-rounds-exhausted":
-    "Read the latest review report, then send it back to the engineer, fix it yourself, or move to done if the remaining findings are acceptable. Review again hides this banner while a fresh review runs; it stays cleared if the review comes back clean.",
+    "Read the latest review report, then send it to the engineer, fix it yourself, or move to done if the remaining findings are acceptable. A review already finished with findings, so re-reviewing the same code would just repeat it — review again after the fixes.",
   "dev-error":
     "Restart work to resume the agent, or reply below with more context first. If it keeps failing on the same error, check the coding agent/model picker above — a CLI switch without a matching model pin causes exactly this.",
   "check-failed-after-retries":
@@ -57,7 +57,12 @@ export const NEEDS_INPUT_SUGGESTION_LABELS: Record<string, string> = {
   questions: "Open the PM tab to answer — your reply is sent with the questions attached.",
 };
 
-export type NeedsInputPrimaryActionKind = "restart" | "review" | "answer" | "send-pm";
+export type NeedsInputPrimaryActionKind =
+  | "restart"
+  | "review"
+  | "send-engineer"
+  | "answer"
+  | "send-pm";
 
 export interface NeedsInputPrimaryAction {
   kind: NeedsInputPrimaryActionKind;
@@ -73,6 +78,11 @@ export interface NeedsInputActionContext {
 const REVIEW_AGAIN_ACTION: NeedsInputPrimaryAction = {
   kind: "review",
   label: "Review again (clears this)",
+};
+
+const SEND_ENGINEER_ACTION: NeedsInputPrimaryAction = {
+  kind: "send-engineer",
+  label: "Send to engineer",
 };
 
 const RESTART_ACTION: NeedsInputPrimaryAction = {
@@ -144,7 +154,9 @@ export function needsInputPrimaryAction(
       if (ctx.status === "review") return REVIEW_AGAIN_ACTION;
       return canRestartWork(ctx) ? RESTART_ACTION : null;
     case "review-rounds-exhausted":
-      return ctx.status === "review" ? REVIEW_AGAIN_ACTION : null;
+      // A review already finished with findings: the next step is acting on
+      // them, not paying for another review of the same code.
+      return ctx.status === "review" ? SEND_ENGINEER_ACTION : null;
     case "watchdog-stuck":
       if (ctx.status === "review") return REVIEW_AGAIN_ACTION;
       return canRestartWork(ctx) ? RESTART_ACTION : null;
