@@ -12,7 +12,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: opencode-go/hy3
 created_at: "2026-09-30T13:42:54Z"
-updated_at: "2026-09-30T17:54:20Z"
+updated_at: "2026-09-30T17:57:47Z"
 ---
 ## Problem
 In the Cut a release modal (`src/ui-app/src/views/ReleasesView.vue`) nothing says the user can leave while work continues.
@@ -26,6 +26,12 @@ Copy-only. Add hint text: notes drafting takes 1-3 minutes and you can close thi
 ## Out of scope
 Server-tracked notes runs (separate task) and notifications (separate task).
 
+## Shots
+
+```json
+[{"target": "default", "route": "/releases", "label": "Cut a release modal — async timing hints", "steps": [{"click": "button:has-text(\"Cut\")"}, {"waitMs": 400}]}]
+```
+
 ## Activity
 
 - 2026-09-30T13:42:54Z · created · unknown
@@ -34,3 +40,4 @@ Server-tracked notes runs (separate task) and notifications (separate task).
 - 2026-09-30T17:54:16Z · review_model_override
 - 2026-09-30T17:54:19Z · status inbox→ready
 - 2026-09-30T17:54:20Z · status ready→active, branch
+- 2026-09-30T17:57:47Z · body
