@@ -2,7 +2,7 @@
 id: "0608"
 title: Match New task screenshot uploads to New input panel
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/match-new-task-screenshot-uploads-to-new
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-30T15:27:25Z"
-updated_at: "2026-09-30T17:29:59Z"
+updated_at: "2026-09-30T17:34:20Z"
 ---
 ## Problem
 
@@ -90,3 +90,4 @@ Uploaded screenshots layout and styling not the same on "new task" panel as it i
 - 2026-09-30T17:25:17Z · model_override
 - 2026-09-30T17:25:24Z · status ready→active, branch
 - 2026-09-30T17:29:59Z · body
+- 2026-09-30T17:34:20Z · status active→review
