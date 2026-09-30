@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractFailedTests } from "../../core/check-failure-summary.js";
+import { extractFailedTests, remoteRunHistoryMeta } from "../../core/check-failure-summary.js";
 
 describe("extractFailedTests", () => {
   it("lists each distinct failing test, ignoring colour codes and repeats", () => {
@@ -18,5 +18,24 @@ describe("extractFailedTests", () => {
 
   it("returns nothing for a passing run", () => {
     expect(extractFailedTests(" ✓ tests/a.test.ts (3 tests)\n Tests 3 passed")).toEqual([]);
+  });
+});
+
+describe("remoteRunHistoryMeta", () => {
+  it("names tests and lists Vitest failures from remote output", () => {
+    const output = " FAIL  src/foo.test.ts > suite > case\nAssertionError: nope";
+    expect(remoteRunHistoryMeta("fail", { output, transient: false })).toEqual({
+      failedStep: "tests",
+      failedTests: ["src/foo.test.ts > suite > case"],
+    });
+  });
+
+  it("keeps dispatch failures on remote-validation with no test names", () => {
+    expect(remoteRunHistoryMeta("fail", { detail: "remote validation is disabled" })).toMatchObject(
+      {
+        failedStep: "remote-validation",
+        failedTests: [],
+      },
+    );
   });
 });
