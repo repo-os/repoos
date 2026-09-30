@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-30T12:58:22Z"
+review_passes: 1
 id: "0601"
 title: Bump canary counter by 1
 type: chore
@@ -13,7 +15,6 @@ model_override: composer-2.5
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-09-30T12:47:15Z"
-updated_at: "2026-09-30T12:58:03Z"
 ---
 ## Problem
 
@@ -62,3 +63,4 @@ This is the RepoOS canary task: a deliberately trivial change used to smoke-test
 - 2026-09-30T12:53:46Z · status ready→active, branch
 - 2026-09-30T12:58:03Z · status active→review
 - 2026-09-30T12:58:03Z · note: shots: skipped — the diff (2 changed paths) touches no [[preview.paths]] globs — nothing here is a declared UI change
+
