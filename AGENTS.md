@@ -440,11 +440,13 @@ cannot tell from the code alone:
   as a routine part of finishing a task (#0268).
 - **`repoos shot` is the one sanctioned use of the managed preview by the
   engineer**, and only for a UI-visible change. But the engineer no longer has
-  to remember to run it (#0594): when a task hands off to review and its diff
-  touches any preview target's `[[preview.paths]]` globs (test files are not
-  UI evidence, #0603), the server captures the shots itself through the
-  managed preview and records the result (a missing Playwright shows up as a
-  visible `shots: skipped` note, never a failed handoff). The engineer's job
+  to remember to run it (#0594): at handoff the server captures declared
+  `## Shots` itself (targets resolve like the CLI: changed paths, then area,
+  then the default command), and without declarations it still captures one
+  captioned `/` shot per target the diff's paths touch (test files are not
+  UI evidence, #0603) — a tests-only or task-note diff records a visible
+  `shots: skipped` instead, and a missing Playwright shows up as a visible
+  `shots: skipped` note, never a failed handoff. The engineer's job
   is to DECLARE what a review should see — write a `## Shots` section into
   the task body via `repoos` (a fenced JSON list: `target`, `route`, optional
   `selector`, optional ordered `steps`
@@ -452,10 +454,8 @@ cannot tell from the code alone:
   optional `highlight` CSS selector outlining what changed, and a human
   `label` naming the change), usually 1–3 entries showing the changed
   screens. Every shot is captioned with why it exists (`declared: <label>` /
-  `auto: matched <glob>`); without declarations, a diff touching a UI
-  target's paths still gets one captioned `/` fallback shot per target, while
-  a diff touching only tests or task notes — or a docs-wording-only diff —
-  captures nothing (#0603).
+  `auto: matched <glob>`); a docs-wording-only diff captures nothing without
+  a declared route (#0603).
   Write it with
   `repoos new/update --body`, never a hand edit. Manual `repoos shot` remains the tool for checking your own work;
   an engineer-made capture pre-empts the automatic one.

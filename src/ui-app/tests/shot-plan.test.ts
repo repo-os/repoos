@@ -272,6 +272,34 @@ describe("planAutoCapture gates (#0594)", () => {
     expect(plan).toMatchObject({ reason: expect.stringContaining("touches no") });
   });
 
+  it("captures declared shots even when the diff matches no glob (#0603 review)", () => {
+    // Declared shots resolve targets the way the CLI does — paths, then area,
+    // then the default command — so an explicit declaration is honored even
+    // with an unreadable (here: non-git) diff.
+    const root = repo();
+    writeFileSync(join(root, "repoos.toml"), '[preview]\ncommand = "bun dev"\n');
+    const config = fixtureConfig(root);
+    const plan = planAutoCapture(
+      config,
+      fakeTask({
+        branch: "feat/x",
+        body: bodyWithShots('[{"route": "/settings", "label": "Settings"}]'),
+      }),
+    );
+    expect(plan).toEqual({
+      entries: [
+        {
+          target: "default",
+          route: "/settings",
+          label: "Settings",
+          provenance: { kind: "declared", label: "Settings" },
+        },
+      ],
+      errors: [],
+      skips: [],
+    });
+  });
+
   it("stands down for a tests-only diff inside a UI glob (#0603, the #0600 shape)", () => {
     // #0600's real diff was work-note + test files under src/ui-app/tests/.
     // planAutoCapture delegates the target set to computeTaskShotContext; the
@@ -321,6 +349,39 @@ describe("runAutoShotCapture status prefix (#0597)", () => {
     expect(result).toMatchObject({ status: "skipped", detail: expected });
     expect(logs).toEqual([expected]);
     expect(result.detail).not.toMatch(/shots: skipped — skipped/);
+  });
+
+  it("records the spec'd no-UI-change skip for a diff with no glob evidence", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-shot-noui-"));
+    temps.push(root);
+    mkdirSync(join(root, "work"), { recursive: true });
+    const logs: string[] = [];
+    const result = await runAutoShotCapture(
+      fixtureConfig(root),
+      fakeTask({ id: "0603-noui" }),
+      previews,
+      (_id, _level, message) => logs.push(message),
+    );
+    expect(result.status).toBe("skipped");
+    // The wording scope 1 mandates, visible in log + activity.
+    expect(result.detail).toMatch(/^shots: skipped — .*no UI change to capture/);
+    expect(logs).toEqual([result.detail]);
+  });
+
+  it("skips with a resolution reason when declared shots cannot resolve a target", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-shot-decl-"));
+    temps.push(root);
+    mkdirSync(join(root, "work"), { recursive: true });
+    const logs: string[] = [];
+    const result = await runAutoShotCapture(
+      fixtureConfig(root),
+      fakeTask({ id: "0603-decl", body: bodyWithShots('[{"route": "/", "label": "Board"}]') }),
+      previews,
+      (_id, _level, message) => logs.push(message),
+    );
+    expect(result.status).toBe("skipped");
+    expect(result.detail).toMatch(/^shots: skipped — the declared shots could not resolve/);
+    expect(logs).toEqual([result.detail]);
   });
 });
 

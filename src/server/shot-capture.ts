@@ -25,7 +25,7 @@ import {
   provenanceCaption,
   type CaptureEntry,
 } from "../core/shot-plan.js";
-import { describeTargetPathMatches } from "../core/shot-targets.js";
+import { describeTargetPathMatches, resolveShotTargets } from "../core/shot-targets.js";
 import type { LogLevel } from "../core/logger.js";
 import { captureShotPage, type ShotDriverPage } from "../core/shot-page.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
@@ -89,10 +89,30 @@ export function planAutoCapture(
     };
   }
   const context = computeTaskShotContext(config, task);
-  if (context.detected.length === 0) {
-    return {
-      reason: `the diff (${context.changedPaths.length} changed paths) touches no [[preview.paths]] globs — no UI change to capture`,
-    };
+  const declared = parseShotPlan(task.body);
+  // #0603 review round 2: declared shots resolve targets the way `repoos shot`
+  // does — changed paths, then the task's area, then the default command — so
+  // an explicit declaration is honored even when the diff matches no glob.
+  // Without declarations the capture stays strict (scope 1): only targets the
+  // diff's paths actually matched count as UI evidence.
+  let targets: string[];
+  if (declared.shots.length > 0) {
+    const resolution = resolveShotTargets(config.preview, task.area, context.changedPaths);
+    if (resolution.names.length === 0) {
+      return {
+        reason:
+          `the declared shots could not resolve a preview target — ` +
+          `${resolution.reason ?? "no target matched the diff or the task's area"}`,
+      };
+    }
+    targets = resolution.names;
+  } else {
+    targets = context.detected;
+    if (targets.length === 0) {
+      return {
+        reason: `the diff (${context.changedPaths.length} changed paths) touches no [[preview.paths]] globs — no UI change to capture`,
+      };
+    }
   }
   // #0603: the per-target match detail behind `detected` — which globs matched
   // (fallback captions) and which targets matched docs content only (no
@@ -103,8 +123,7 @@ export function planAutoCapture(
     matchedGlobs.set(match.target, match.globs);
     if (match.contentOnly) docsContentOnly.add(match.target);
   }
-  const declared = parseShotPlan(task.body);
-  const built = buildCapturePlan(context.detected, declared.shots, {
+  const built = buildCapturePlan(targets, declared.shots, {
     matchedGlobs,
     docsContentOnly,
   });
@@ -244,7 +263,10 @@ export async function runAutoShotCapture(
     return finish(
       "captured",
       `${captured} shot${captured === 1 ? "" : "s"} captured automatically ` +
-        `(${entries.map((e) => `${e.target}${e.highlight ? " · highlighted" : ""}${e.label ? ` – ${e.label}` : ""}`).join(", ")})`,
+        `(${entries.map((e) => `${e.target}${e.highlight ? " · highlighted" : ""}${e.label ? ` – ${e.label}` : ""}`).join(", ")})` +
+        // #0603 review round 2: partial skips ride in the captured note too —
+        // activity is where a reviewer actually looks, not the task log.
+        (plan.skips.length > 0 ? `; skipped: ${plan.skips.join("; ")}` : ""),
       captured,
     );
   } finally {

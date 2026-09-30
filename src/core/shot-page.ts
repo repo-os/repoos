@@ -19,6 +19,14 @@ export interface ShotLocator {
   click(options?: { timeout?: number }): Promise<unknown>;
   fill(text: string, options?: { timeout?: number }): Promise<unknown>;
   waitFor(options?: { timeout?: number }): Promise<unknown>;
+  /**
+   * First match of the locator, when the driver supports it (Playwright does).
+   * A declared `waitFor` means "wait until this exists", not "assert exactly
+   * one" — teleported overlays and layout shells can legitimately duplicate an
+   * id, and strict mode turned that into a fragile capture abort (#0603
+   * review: "#app resolved to 2 elements").
+   */
+  first?(): ShotLocator;
 }
 
 export interface ShotDriverPage {
@@ -128,7 +136,10 @@ async function runStep(
     return;
   }
   if (typeof step.waitFor === "string") {
-    await page.locator(step.waitFor).waitFor({ timeout: SHOT_SELECTOR_TIMEOUT_MS });
+    const base = page.locator(step.waitFor);
+    // Wait for EXISTENCE, tolerating duplicates — see ShotLocator.first.
+    const target = typeof base.first === "function" ? base.first() : base;
+    await target.waitFor({ timeout: SHOT_SELECTOR_TIMEOUT_MS });
     return;
   }
   if (typeof step.waitMs === "number") await page.waitForTimeout(step.waitMs);
