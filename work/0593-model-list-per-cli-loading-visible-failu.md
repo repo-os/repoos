@@ -2,7 +2,7 @@
 id: "0593"
 title: "Model list: per-CLI loading, visible failures, caching"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: ""
 model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-30T02:15:29Z"
-updated_at: "2026-09-30T02:23:37Z"
+updated_at: "2026-09-30T02:23:52Z"
 ---
 ## Problem
 `GET /api/models` probes every coding-agent CLI in parallel and waits for the slowest (`listModelSources`, src/core/models.ts). The browser wraps every GET in a 15s abort (`API_TIMEOUT_MS`, src/ui-app/src/api.ts) — the same as the longest per-CLI server limit (Codex 15s, others 12s), so almost no margin. On abort, `loadModels` (src/ui-app/src/stores/config.ts) swallows the error, sets every list to empty and `modelsLoaded=false`, and the dropdowns silently fall back to `default` plus the static `agentsMeta.models` list. One slow CLI (or a slow network — Codex's `model/list` is account-aware) discards every CLI's list, and nothing tells the user. Adapters also return `[]` for a missing binary, timeout or auth problem, so even a successful response can't say *why* a list is empty.
@@ -34,3 +34,4 @@ Reported on a ThinkPad running `repoos serve` under Node 25: Codex models missin
 
 - 2026-09-30T02:15:29Z · created · unknown
 - 2026-09-30T02:23:37Z · model_override
+- 2026-09-30T02:23:52Z · status inbox→ready
