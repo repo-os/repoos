@@ -2,7 +2,7 @@
 id: "0593"
 title: "Model list: per-CLI loading, visible failures, caching"
 type: bug
-status: review
+status: active
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -37,3 +37,4 @@ Reported on a ThinkPad running `repoos serve` under Node 25: Codex models missin
 - 2026-09-30T02:23:52Z · status inbox→ready
 - 2026-09-30T02:23:54Z · status ready→active, branch
 - 2026-09-30T05:19:07Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-09-30T05:19:07Z · status review→active
