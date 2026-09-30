@@ -8,8 +8,9 @@ area: [web, server]
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-29T23:25:13Z"
-updated_at: "2026-09-29T23:26:16Z"
+updated_at: "2026-09-30T00:03:21Z"
 ---
 ## Problem
 
@@ -97,3 +98,4 @@ It's annoying to always have to type the new version, but it is helpful to have 
 - 2026-09-29T23:25:13Z · screenshots
 - 2026-09-29T23:25:50Z · status draft→inbox, title, area, body
 - 2026-09-29T23:26:16Z · status inbox→ready
+- 2026-09-30T00:03:21Z · model_override
