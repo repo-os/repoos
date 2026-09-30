@@ -2,14 +2,14 @@
 id: "0591"
 title: "Width-aware CLI layout: shared layout helpers, tidy help and doctor"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-09-29T23:34:54Z"
-updated_at: "2026-09-29T23:34:54Z"
+updated_at: "2026-09-30T00:11:06Z"
 ---
 ## Problem
 `repoos help` and `repoos doctor` lay text out with fixed `padEnd` columns (`CMD_COL`, `EX_COL`) and never look at the terminal width. Long descriptions wrap back to column 0, breaking the hanging indent (help: doctor/certify/serve/tunnel rows; doctor: long detail lines such as the Cursor/OpenCode compatibility warnings). `doctor` also prints all ~25 passing checks, which buries the one failure.
@@ -43,3 +43,4 @@ Pure functions, unit-tested at fixed widths (60, 80, 140).
 ## Activity
 
 - 2026-09-29T23:34:54Z · created · unknown
+- 2026-09-30T00:11:06Z · status inbox→ready
