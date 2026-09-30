@@ -21,6 +21,7 @@ import {
 } from "../lib/needs-input-ui";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyCheckoutDialog from "./DirtyCheckoutDialog.vue";
+import WorktreeHandoffConflictDialog from "./WorktreeHandoffConflictDialog.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
 import CopyableNumber from "./CopyableNumber.vue";
@@ -724,6 +725,10 @@ async function runAction(): Promise<void> {
       dirtyTask.value = props.task;
       return;
     }
+    if (err instanceof Error && err.name === "WorktreeHandoffConflictError") {
+      handoffConflictTask.value = props.task;
+      return;
+    }
     repo.onError(err);
   } finally {
     busy.value = false;
@@ -734,8 +739,19 @@ async function runAction(): Promise<void> {
  *  needs the user to decide whether to commit a dirty `main` (it would abort
  *  the merge) or a dirty task worktree (close-out would delete it) first. */
 const dirtyTask = ref<Task | null>(null);
+const handoffConflictTask = ref<Task | null>(null);
 
 const dirtyFiles = computed(() => (dirtyTask.value ? repo.dirtyFilesFor(dirtyTask.value.id) : []));
+const handoffConflictMessage = computed(() =>
+  handoffConflictTask.value
+    ? (repo.worktreeHandoffConflictFor(handoffConflictTask.value.id)?.message ?? "")
+    : "",
+);
+const handoffConflictFiles = computed(() =>
+  handoffConflictTask.value
+    ? (repo.worktreeHandoffConflictFor(handoffConflictTask.value.id)?.dirtyFiles ?? [])
+    : [],
+);
 const dirtyScope = computed(() =>
   dirtyTask.value ? repo.dirtyScopeFor(dirtyTask.value.id) : ("main" as const),
 );
@@ -752,10 +768,48 @@ async function confirmCommitDirty(): Promise<void> {
       dirtyTask.value = t;
       return;
     }
+    if (err instanceof Error && err.name === "WorktreeHandoffConflictError") {
+      handoffConflictTask.value = t;
+      return;
+    }
     repo.onError(err);
   } finally {
     busy.value = false;
   }
+}
+
+async function discardHandoffConflict(): Promise<void> {
+  const t = handoffConflictTask.value;
+  handoffConflictTask.value = null;
+  if (!t) return;
+  busy.value = true;
+  try {
+    await repo.discardWorktreeHandoffEdits(t);
+    repo.pushToast("Post-handoff edits discarded — retry Move to done when ready.", "info");
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    busy.value = false;
+  }
+}
+
+async function sendBackHandoffConflict(): Promise<void> {
+  const t = handoffConflictTask.value;
+  handoffConflictTask.value = null;
+  if (!t) return;
+  busy.value = true;
+  try {
+    await repo.sendBackFromHandoffConflict(t);
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    busy.value = false;
+  }
+}
+
+function cancelHandoffConflict(): void {
+  if (handoffConflictTask.value) repo.clearWorktreeHandoffConflict(handoffConflictTask.value.id);
+  handoffConflictTask.value = null;
 }
 
 function cancelDirty(): void {
@@ -1081,6 +1135,14 @@ async function openDebuggerFromError(): Promise<void> {
     :scope="dirtyScope"
     @commit="confirmCommitDirty"
     @cancel="cancelDirty"
+  />
+  <WorktreeHandoffConflictDialog
+    :task="handoffConflictTask"
+    :message="handoffConflictMessage"
+    :dirty-files="handoffConflictFiles"
+    @discard="discardHandoffConflict"
+    @send-back="sendBackHandoffConflict"
+    @cancel="cancelHandoffConflict"
   />
   <AgentModelModal
     :open="assignmentModalOpen"
