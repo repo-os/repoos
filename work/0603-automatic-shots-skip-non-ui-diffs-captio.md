@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-09-30T20:15:12Z"
-review_passes: 2
+updated_at: "2026-09-30T20:37:55Z"
+review_passes: 3
 id: "0603"
 title: "Automatic shots: skip non-UI diffs, caption why, support highlights"
 type: bug
@@ -41,5 +41,6 @@ Automatic shot capture at handoff (#0594) produces screenshots that show nothing
 - 2026-09-30T17:53:21Z · status inbox→ready
 - 2026-09-30T17:53:23Z · status ready→active, branch
 - 2026-09-30T19:47:02Z · status active→review
+
 
 
