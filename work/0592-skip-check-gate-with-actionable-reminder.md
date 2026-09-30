@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-09-30T03:14:17Z"
+review_passes: 2
 id: "0592"
 title: Skip check gate (with actionable reminder) when a repo has no check plan
 type: feature
@@ -11,9 +13,7 @@ branch: feat/skip-check-gate-with-actionable-reminder
 model_override: opencode-go/glm-5.3-flash
 review_model_override: opencode-go/mimo-v2.6-flash
 created_at: "2026-09-30T00:01:23Z"
-updated_at: "2026-09-30T02:17:24Z"
 review_rounds: 1
-review_passes: 1
 last_check_failure: "repoos check at 2026-09-30T01:29:36.315Z: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
 ---
@@ -73,3 +73,4 @@ Update `user-docs/check.md` (the "Bootstrapping a plan" paragraph and "When a re
 - 2026-09-30T01:52:25Z · status active→review
 - 2026-09-30T02:02:17Z · status review→active
 - 2026-09-30T02:17:24Z · status active→review
+
