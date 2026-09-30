@@ -12,8 +12,28 @@ import { defineStore } from "pinia";
  * choices survive a page reload.
  */
 
-/** The monitorable "attention" event types. */
-export type NotificationType = "review" | "paused" | "stuck" | "needsInput";
+/** The monitorable event types: task attention events (0100) plus the
+ * release-event kinds fed by the notices store (#0606). Adding a type here
+ * lights up its per-type toggle everywhere — no other list to maintain. */
+export type NotificationType =
+  | "review"
+  | "paused"
+  | "stuck"
+  | "needsInput"
+  | "releaseNotesReady"
+  | "releaseSucceeded"
+  | "releaseFailed";
+
+/** Every monitorable type, in Settings display order. */
+export const NOTIFICATION_TYPES: NotificationType[] = [
+  "review",
+  "paused",
+  "stuck",
+  "needsInput",
+  "releaseNotesReady",
+  "releaseSucceeded",
+  "releaseFailed",
+];
 
 const STORAGE_KEY = "repoos.notifications";
 
@@ -23,11 +43,29 @@ interface PersistedSettings {
   types: Record<NotificationType, boolean>;
 }
 
+/** All-per-type record built from the canonical list — no key left behind. */
+function allTypesOff(): Record<NotificationType, boolean> {
+  return Object.fromEntries(NOTIFICATION_TYPES.map((t) => [t, false])) as Record<
+    NotificationType,
+    boolean
+  >;
+}
+
+/** Robust per-type reconstruction from persisted JSON: unknown types default
+ * to off, and a missing older key stays off (never accidentally enabled). */
+function readTypes(parsed: Partial<PersistedSettings>): Record<NotificationType, boolean> {
+  const out = allTypesOff();
+  for (const t of NOTIFICATION_TYPES) {
+    out[t] = !!parsed.types?.[t];
+  }
+  return out;
+}
+
 /** Sensible default: everything off. */
 const DEFAULT_SETTINGS: PersistedSettings = {
   soundEnabled: false,
   pushEnabled: false,
-  types: { review: false, paused: false, stuck: false, needsInput: false },
+  types: allTypesOff(),
 };
 
 function readSettings(): PersistedSettings {
@@ -38,12 +76,7 @@ function readSettings(): PersistedSettings {
     return {
       soundEnabled: !!parsed.soundEnabled,
       pushEnabled: !!parsed.pushEnabled,
-      types: {
-        review: !!parsed.types?.review,
-        paused: !!parsed.types?.paused,
-        stuck: !!parsed.types?.stuck,
-        needsInput: !!parsed.types?.needsInput,
-      },
+      types: readTypes(parsed),
     };
   } catch {
     /* corrupt / privacy-mode storage — fall back to all-off */
@@ -176,18 +209,27 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   paused: "Paused",
   stuck: "Stuck",
   needsInput: "Needs attention",
+  releaseNotesReady: "Release notes ready",
+  releaseSucceeded: "Release succeeded",
+  releaseFailed: "Release failed",
+};
+
+/** One-line Settings description per type; keyed like the labels. */
+export const NOTIFICATION_TYPE_DESCRIPTIONS: Record<NotificationType, string> = {
+  review: "A task moved from active to review, ready for your sign-off.",
+  paused: "A running task was paused.",
+  stuck: "A task was surfaced as stuck (no progress detected).",
+  needsInput: "A task explicitly needs your attention.",
+  releaseNotesReady: "A release-notes draft finished generating.",
+  releaseSucceeded: "A release cut finished successfully.",
+  releaseFailed: "A release cut failed.",
 };
 
 export const useNotificationsStore = defineStore("notifications", () => {
   const loaded = ref(false);
   const soundEnabled = ref(false);
   const pushEnabled = ref(false);
-  const types = reactive<Record<NotificationType, boolean>>({
-    review: false,
-    paused: false,
-    stuck: false,
-    needsInput: false,
-  });
+  const types = reactive(allTypesOff());
   /** Why browser push is / isn't available right now (diagnostic, #0316). */
   const availability = ref<PushAvailability>("default");
   /** Outcome of the last "send test notification" click, shown inline. */
@@ -200,10 +242,9 @@ export const useNotificationsStore = defineStore("notifications", () => {
     const s = readSettings();
     soundEnabled.value = s.soundEnabled;
     pushEnabled.value = s.pushEnabled;
-    types.review = s.types.review;
-    types.paused = s.types.paused;
-    types.stuck = s.types.stuck;
-    types.needsInput = s.types.needsInput;
+    for (const t of NOTIFICATION_TYPES) {
+      types[t] = s.types[t];
+    }
     loaded.value = true;
     refreshAvailability();
   }
