@@ -51,6 +51,18 @@ const {
 const { remember, recall } = useModelMemory();
 const config = useConfigStore();
 
+/**
+ * Loading/failed state of the currently selected CLI's model list (#0593).
+ * Rendered above the list so a slow or failing probe is visible instead of
+ * the static fallback passing itself off as the live list. Retry re-probes
+ * with `?refresh=1`, bypassing the server's short TTL cache.
+ */
+const listNotice = computed(() => config.modelNoticeFor(props.cli));
+
+function retryModelList(): void {
+  void config.refreshModelsForCli(props.cli);
+}
+
 const { isAgentFavorite, hasAgentFavorites } = useAgentFavorites();
 
 /**
@@ -199,6 +211,25 @@ watch(
         <div v-if="resetNotice" class="am-reset-notice" role="status" data-testid="am-reset-notice">
           <span class="am-reset-notice-title">Model reset to default</span>
           <span class="am-reset-notice-detail">— was {{ resetNotice }}</span>
+        </div>
+
+        <div
+          v-if="listNotice"
+          class="am-list-notice"
+          :class="listNotice.kind === 'failed' ? 'am-list-notice-failed' : 'am-list-notice-loading'"
+          role="status"
+          data-testid="am-model-list-notice"
+        >
+          <span class="am-list-notice-text">{{ listNotice.text }}</span>
+          <button
+            v-if="listNotice.kind === 'failed'"
+            type="button"
+            class="am-list-notice-retry"
+            data-testid="am-model-list-retry"
+            @click="retryModelList"
+          >
+            Retry
+          </button>
         </div>
 
         <div class="am-model-search">

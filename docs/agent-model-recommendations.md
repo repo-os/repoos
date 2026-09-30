@@ -189,7 +189,7 @@ For users setting up RepoOS for the first time, or for any category where eviden
 ## Model volatility
 
 - Model names and availability change. The exact model IDs listed in this guide are as last verified and may not match current live discovery results.
-- Always check live model discovery on the Agents page before selecting a model. The `Refresh models` button probes `opencode models --refresh` and updates available options.
+- Always check live model discovery on the Agents page before selecting a model. The `Refresh models` button re-probes every CLI's live list (`opencode models --refresh` for opencode) and updates the available options; a CLI that fails shows its reason with a Retry.
 - Compatibility with one account/provider does not guarantee compatibility with another. Model access is account-dependent.
 
 ## Known failure modes

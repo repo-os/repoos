@@ -78,10 +78,11 @@ beforeEach(() => {
   localStorage.clear();
   setActivePinia(createPinia());
   // The modal validates a recalled pin against the CLI's real option list
-  // (`config.modelsFor`), so give opencode a live list containing the pin.
+  // (`config.modelsFor`), so give opencode a live list containing the pin —
+  // and settle both CLIs' states so the per-CLI validation path runs (#0593).
   const config = useConfigStore();
   config.liveModelsByCli = { opencode: [PIN] };
-  config.modelsLoaded = true;
+  config.modelStatesByCli = { opencode: { status: "loaded" }, "claude code": { status: "loaded" } };
 });
 
 afterEach(() => {
@@ -128,7 +129,14 @@ describe("isKnownModelForCli", () => {
 
   it("trusts a pin when the live list hasn't loaded", () => {
     const config = useConfigStore();
-    config.modelsLoaded = false;
+    config.modelStatesByCli = { opencode: { status: "loading" } };
+    expect(config.isKnownModelForCli("opencode", "ghost")).toBe(true);
+  });
+
+  it("trusts a pin when the CLI's list failed to load", () => {
+    // A failed probe can't prove a model is gone — never wipe a pin over it.
+    const config = useConfigStore();
+    config.modelStatesByCli = { opencode: { status: "failed", error: "timed out" } };
     expect(config.isKnownModelForCli("opencode", "ghost")).toBe(true);
   });
 });
