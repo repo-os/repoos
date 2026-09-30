@@ -5585,14 +5585,14 @@ watch(
   gap: 7px;
   padding: 7px 12px;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--panel-solid);
   border: 1px solid var(--border);
   border-radius: 8px;
   user-select: none;
 }
 
 .diff-section-header:hover {
-  background: rgba(255, 255, 255, 0.07);
+  background: color-mix(in srgb, var(--txt) 6%, var(--panel-solid));
 }
 
 .diff-section-chevron {
@@ -5641,7 +5641,7 @@ watch(
   text-overflow: ellipsis;
   white-space: nowrap;
   font: 12px/1.4 var(--font-mono);
-  color: #c9d1d9;
+  color: var(--txt);
 }
 
 .diff-section-content {
