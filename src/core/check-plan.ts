@@ -81,6 +81,7 @@ export const BUILTIN_CHECK_KINDS = [
   "ui-smoke",
   "css-layers",
   "theme-contrast",
+  "hardcoded-colors",
   "bare-require",
   "task-assets",
 ] as const;
@@ -370,7 +371,8 @@ export function hasLegacyCheckConfig(check: CheckConfig | undefined): boolean {
     check.contrastPairs?.length ||
     check.gradientTokens?.length ||
     check.bareRequireDirs?.length ||
-    check.bareRequireExcludes?.length,
+    check.bareRequireExcludes?.length ||
+    check.hardcodedColorDirs?.length,
   );
 }
 
@@ -903,6 +905,9 @@ export function formatPlanToml(plan: CheckPlan, check?: CheckConfig): string {
   if (check?.bareRequireExcludes?.length) {
     lines.push(`bareRequireExcludes = ${tomlList(check.bareRequireExcludes)}`);
   }
+  if (check?.hardcodedColorDirs?.length) {
+    lines.push(`hardcodedColorDirs = ${tomlList(check.hardcodedColorDirs)}`);
+  }
   if (check?.uiSmoke) lines.push(`uiSmoke = ${tomlString(check.uiSmoke)}`);
 
   for (const s of plan.steps) {
@@ -929,6 +934,10 @@ export function formatPlanToml(plan: CheckPlan, check?: CheckConfig): string {
   for (const pair of check?.contrastPairs ?? []) {
     lines.push("", "[[check.contrastPairs]]", `fg = ${tomlString(pair.fg)}`);
     lines.push(`bg = ${tomlString(pair.bg)}`);
+  }
+  for (const exempt of check?.contrastExempts ?? []) {
+    lines.push("", "[[check.contrastExempts]]", `selector = ${tomlString(exempt.selector)}`);
+    lines.push(`reason = ${tomlString(exempt.reason)}`);
   }
 
   return `${lines.join("\n")}\n`;
