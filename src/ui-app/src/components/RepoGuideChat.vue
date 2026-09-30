@@ -552,6 +552,7 @@ watch(
   height: 18px;
 }
 .guide-compose button.guide-stop {
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   background: color-mix(in srgb, var(--red, #ef5b5b) 16%, var(--btn-primary-bg));
   color: var(--red, #ef5b5b);
 }

@@ -104,6 +104,7 @@ const COLORS: Record<string, { bg: string; border: string; icon: string }> = {
 }
 .toast-close:hover {
   color: var(--txt);
+  /* hardcode-ok: translucent surface tint layered over theme surfaces (#0596 triage: hover/decoration, no text sits on it) */
   background: rgba(255, 255, 255, 0.08);
 }
 .toast-enter-active,

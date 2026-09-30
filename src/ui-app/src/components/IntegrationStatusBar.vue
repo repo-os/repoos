@@ -759,6 +759,7 @@ async function fileSetupTask(): Promise<void> {
 
 .bar-btn:hover {
   background: var(--red);
+  /* hardcode-ok: theme-independent accent/status text color, verified by the rendered audit (#0596 triage) */
   color: #fff;
 }
 

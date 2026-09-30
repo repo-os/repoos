@@ -59,7 +59,10 @@ async function copyLink(event: MouseEvent): Promise<void> {
 .copyable-number:focus-visible {
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 22%, var(--chip-bg));
-  color: var(--accent);
+  /* `--accent` is a translucent tint — as a text color it rendered at
+     contrast 1.00 (the glyph color WAS the background). The readable
+     counterpart is --accent-foreground (#0596). */
+  color: var(--accent-foreground);
 }
 .copyable-number:focus-visible {
   outline: 2px solid var(--border-focus);

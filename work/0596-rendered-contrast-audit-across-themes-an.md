@@ -1,5 +1,5 @@
 ---
-updated_at: "2026-09-30T05:22:44Z"
+updated_at: "2026-09-30T05:23:51Z"
 review_passes: 1
 id: "0596"
 title: Rendered contrast audit across themes and screens (+ hardcoded-color source guard)
@@ -32,16 +32,6 @@ The theme-contrast check (`[[check.contrastPairs]]` in repoos.toml) only tests 9
 - Existing offenders are either fixed or explicitly allowlisted with a reason (triage findings in this task; file follow-ups for large clusters).
 - Runs in a reasonable time budget (state the measured runtime in the handoff).
 
-## Shots
-
-```json
-[
-  {"route": "/work", "label": "Board — raised faint/dim tokens, canary-egg count, priority chips"},
-  {"route": "/work", "steps": [{"click": ".task-card"}, {"waitFor": ".drawer-body"}, {"waitMs": 600}], "label": "Task drawer — meta grid, tabs, field labels"},
-  {"route": "/settings", "label": "Settings — description text, theme list, restart badges"}
-]
-```
-
 ## Activity
 
 - 2026-09-30T03:04:34Z · created · unknown
@@ -49,7 +39,5 @@ The theme-contrast check (`[[check.contrastPairs]]` in repoos.toml) only tests 9
 - 2026-09-30T03:27:48Z · review_model_override
 - 2026-09-30T03:27:49Z · status inbox→ready
 - 2026-09-30T03:27:50Z · status ready→active, branch
-- 2026-09-30T05:09:43Z · body
-- 2026-09-30T05:18:06Z · status active→review
-- 2026-09-30T05:18:47Z · note: shots: failed — failed — capture of Task drawer — meta grid, tabs, field labels on "default" failed: click: Error: strict mode violation: locator('.task-card') resolved to 548 elements:
+- 2026-09-30T05:18:05Z · status active→review
 

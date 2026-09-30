@@ -58,6 +58,7 @@ const detail = computed(() => {
   align-items: flex-start;
   gap: 12px;
   padding: 13px 16px;
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   border: 1px solid var(--orange, #f0a35b);
   border-radius: 12px;
   background: var(--panel-solid, #171b2b);
@@ -81,6 +82,7 @@ const detail = computed(() => {
   overflow-wrap: anywhere;
 }
 .ui-recovery-copy small {
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   color: var(--txt-muted, #b7bdd1);
   font-size: 12px;
   line-height: 1.35;

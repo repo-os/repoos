@@ -18,6 +18,7 @@ import type {
   AuthConfig,
   BuiltInAgentConfig,
   BuiltInAgentSchedule,
+  CheckContrastExempt,
   CheckContrastPair,
   CheckThemeScope,
   DevInspectorConfig,
@@ -1102,6 +1103,34 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
         .map((v) => v.trim());
       if (excludes.length) cfg.check = { ...cfg.check, bareRequireExcludes: excludes };
     }
+    // [check] hard-coded-color source guard roots (#0596). Component style
+    // blocks only — a stylesheet's literals are theme tokens, checked by the
+    // theme-contrast guard instead.
+    const checkHardcodedColorDirs =
+      parsed["check.hardcodedColorDirs"] ?? parsed["checks.hardcodedColorDirs"];
+    if (Array.isArray(checkHardcodedColorDirs)) {
+      const dirs = checkHardcodedColorDirs
+        .filter((v): v is string => typeof v === "string" && v.trim() !== "")
+        .map((v) => v.trim());
+      if (dirs.length) cfg.check = { ...cfg.check, hardcodedColorDirs: dirs };
+    }
+    // [check] rendered-contrast exemptions (#0596) — selector + reason rows.
+    // A row without both halves is dropped rather than exempting silently: an
+    // exemption nobody can explain is exactly what this allowlist exists to
+    // prevent.
+    const checkContrastExempts =
+      parsed["check.contrastExempts"] ?? parsed["checks.contrastExempts"];
+    if (Array.isArray(checkContrastExempts)) {
+      const exempts: CheckContrastExempt[] = [];
+      for (const raw of checkContrastExempts) {
+        if (typeof raw !== "object" || raw === null || Array.isArray(raw)) continue;
+        const r = raw as Record<string, unknown>;
+        if (typeof r.selector !== "string" || !r.selector.trim()) continue;
+        if (typeof r.reason !== "string" || !r.reason.trim()) continue;
+        exempts.push({ selector: r.selector.trim(), reason: r.reason.trim() });
+      }
+      if (exempts.length) cfg.check = { ...cfg.check, contrastExempts: exempts };
+    }
     // [check] declarative plan (#0446) — `version`, `defaultProfile` and the
     // [[check.steps]] rows. When a repo declares steps, `repoos check` runs
     // exactly those, for any stack; without them it falls back to the legacy
@@ -1892,11 +1921,15 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "check.backdropToken",
   "check.bareRequireDirs",
   "check.bareRequireExcludes",
+  "check.hardcodedColorDirs",
+  "check.contrastExempts",
   "check.themeScopes.selector",
   "check.themeScopes.name",
   "check.themeScopes.inherits",
   "check.contrastPairs.fg",
   "check.contrastPairs.bg",
+  "check.contrastExempts.selector",
+  "check.contrastExempts.reason",
   // Authentication
   "auth.enabled",
   "auth.sessionMaxAge",
