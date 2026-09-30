@@ -5,11 +5,13 @@ type: chore
 status: inbox
 priority: p2
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: cursor
+model_override: default
 created_at: "2026-09-30T13:42:54Z"
-updated_at: "2026-09-30T13:42:54Z"
+updated_at: "2026-09-30T17:53:46Z"
 ---
 ## Problem
 In the Cut a release modal (`src/ui-app/src/views/ReleasesView.vue`) nothing says the user can leave while work continues.
@@ -26,3 +28,4 @@ Server-tracked notes runs (separate task) and notifications (separate task).
 ## Activity
 
 - 2026-09-30T13:42:54Z · created · unknown
+- 2026-09-30T17:53:46Z · cli_override, model_override
