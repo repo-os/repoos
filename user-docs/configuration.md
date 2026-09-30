@@ -604,6 +604,10 @@ than reporting green. (`[checks]` is accepted as an alias for `[check]`.)
 | `check.backdropToken` | string | unset | yes | Token to composite semi-transparent colors over before measuring luminance. |
 | `check.bareRequireDirs` | array of strings | tsconfig `include` | yes | Source roots the bare-`require()` guard scans. Absent, it uses the repo's tsconfig `include`/`files` minus `exclude`. |
 | `check.bareRequireExcludes` | array of strings | tsconfig `exclude` | yes | Paths or globs the bare-`require()` guard skips. Consulted only with `bareRequireDirs`. |
+| `check.hardcodedColorDirs` | array of strings | unset | yes | Source roots the `hardcoded-colors` guard scans for `#hex` / `rgba(255,…)` literals in component `<style>` blocks. Stylesheets are deliberately out of scope — their literals are theme tokens, checked by `theme-contrast`. |
+| `check.contrastExempts` | array of tables | unset | yes | Selectors the rendered-contrast audit allows below the WCAG floor, each with a reason. Rows missing either half are dropped. |
+| `check.contrastExempts.selector` | string | required | yes | CSS selector to exempt (matched against the text's element and its ancestors), e.g. `.code-pane`. |
+| `check.contrastExempts.reason` | string | required | yes | Why the block is intentionally off-contrast — this is what makes the exemption reviewable. |
 
 See [Checks before merge](/check) for what each step does and when it runs.
 

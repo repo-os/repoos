@@ -15,7 +15,7 @@
  * all checked here rather than eyeballed in a 300-line CSS diff.
  */
 import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CATPPUCCIN_LATTE, CATPPUCCIN_MOCHA } from "./catppuccin-palette.mjs";
 
@@ -56,6 +56,66 @@ function flatten(value, base) {
   return over(rgb(value), hasAlpha ? parseInt(value.slice(7, 9), 16) / 255 : 1, base);
 }
 const MIN_CONTRAST = 3;
+
+// ── The WCAG floor for Latte's text slots (#0596) ──────────────────────
+// Catppuccin's canonical ramp is a design palette, not an accessibility one:
+// as rendered on Latte's own surfaces, subtext0 measures 4.06:1, overlay2
+// 3.25:1 and peach 2.45:1 — all below the 4.5:1 body-text floor the rendered
+// contrast audit enforces on every theme. Mocha's slots are pastels over a
+// near-black base and clear the floor as-is; Latte's mid-dark accents on a
+// near-white base do not. So the LIGHT variant's text-carrying roles are
+// darkened here — hue preserved, solved against Latte's surface1 (the
+// darkest surface Latte text renders on; see `latteWcagOverrides`) — and
+// everything else stays canonical. The value map is keyed by
+// the palette hex, so every slot that carries the role (aliased tokens like
+// --primary/--ring/--tag-stream-color included) moves together, and a
+// shikijs upgrade re-solves instead of drifting.
+export const LATTE_TEXT_ROLES = ["subtext0", "overlay2", "blue", "mauve", "green", "red", "peach"];
+
+/** Darken `hex` toward black (hue-preserving per channel) until it clears
+ *  `target` against `bgHex`. Mirrors the audit's solver, same maths. */
+export function wcagDarken(hex, bgHex, target = 4.7) {
+  const fg0 = rgb(hex);
+  const bg = rgb(bgHex);
+  const at = (t) => ({ r: fg0.r * (1 - t), g: fg0.g * (1 - t), b: fg0.b * (1 - t) });
+  if (ratio(at(1), bg) < target) return hex; // even black can't — leave canonical
+  let lo = 0;
+  let hi = 1;
+  for (let i = 0; i < 40; i++) {
+    const t = (lo + hi) / 2;
+    if (ratio(at(t), bg) >= target) hi = t;
+    else lo = t;
+  }
+  const c = at(hi);
+  const h = (v) =>
+    Math.max(0, Math.min(255, Math.round(v)))
+      .toString(16)
+      .padStart(2, "0");
+  return `#${h(c.r)}${h(c.g)}${h(c.b)}`;
+}
+
+/** original palette hex → WCAG-adjusted hex, for LATTE_TEXT_ROLES. */
+export function latteWcagOverrides(palette = CATPPUCCIN_LATTE) {
+  const out = new Map();
+  for (const role of LATTE_TEXT_ROLES) {
+    const orig = palette[role];
+    // surface1, not base: for DARK text the DARKEST surface it renders on is
+    // the worst case (base #eff1f5 gives mauve 4.79:1, surface0 4.29:1), and
+    // surface1 also conservatively covers the chip/accent mixes (#d1d1e0).
+    if (orig) out.set(orig.toLowerCase(), wcagDarken(orig, palette.surface1));
+  }
+  return out;
+}
+
+/** Rewrite a LIGHT token map's text-role hexes to their WCAG-adjusted values. */
+function applyLatteFloor(map, palette) {
+  const overrides = latteWcagOverrides(palette);
+  for (const [key, value] of Object.entries(map)) {
+    const norm = String(value).toLowerCase();
+    if (/^#[0-9a-f]{6}$/.test(norm) && overrides.has(norm)) map[key] = overrides.get(norm);
+  }
+  return map;
+}
 
 /**
  * The token map. Every value is derived from the palette — no hand-typed hex.
@@ -258,33 +318,43 @@ function verify(label, map) {
   });
 }
 
-const dark = tokens(CATPPUCCIN_MOCHA, "dark");
-const light = tokens(CATPPUCCIN_LATTE, "light");
-for (const [label, map] of [
-  ["catppuccin-dark", dark],
-  ["catppuccin-light", light],
-]) {
-  const rows = verify(label, map);
-  console.error(`# ${label}: all ${rows.length} contrast pairs pass`);
-  for (const r of rows) console.error(`#   ${r.worst.toFixed(2).padStart(6)}  ${r.pair}`);
-}
+// Importing this module (the tests read `latteWcagOverrides` from it) must not
+// print CSS or exit — only running it should.
+const isMainRun = process.argv[1]
+  ? resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+  : false;
 
-const blocks = [
-  render(':root[data-ui-theme="catppuccin"]', dark),
-  render(':root[data-ui-theme="catppuccin"][data-theme="light"]', light),
-];
+if (isMainRun) main();
 
-if (process.argv.includes("--check")) {
-  const css = readFileSync(join(repoRoot, "src/ui-app/src/style.css"), "utf8");
-  const missing = blocks.filter((b) => !css.includes(b));
-  if (missing.length) {
-    console.error(
-      `style.css is out of date with scripts/gen-catppuccin-theme.mjs (${missing.length} block(s) differ).\n` +
-        `Run: bun scripts/gen-catppuccin-theme.mjs   and paste the output into style.css.`,
-    );
-    process.exit(1);
+function main() {
+  const dark = tokens(CATPPUCCIN_MOCHA, "dark");
+  const light = applyLatteFloor(tokens(CATPPUCCIN_LATTE, "light"), CATPPUCCIN_LATTE);
+  for (const [label, map] of [
+    ["catppuccin-dark", dark],
+    ["catppuccin-light", light],
+  ]) {
+    const rows = verify(label, map);
+    console.error(`# ${label}: all ${rows.length} contrast pairs pass`);
+    for (const r of rows) console.error(`#   ${r.worst.toFixed(2).padStart(6)}  ${r.pair}`);
   }
-  console.error("style.css matches the generated Catppuccin blocks.");
-} else {
-  console.log(blocks.join("\n"));
+
+  const blocks = [
+    render(':root[data-ui-theme="catppuccin"]', dark),
+    render(':root[data-ui-theme="catppuccin"][data-theme="light"]', light),
+  ];
+
+  if (process.argv.includes("--check")) {
+    const css = readFileSync(join(repoRoot, "src/ui-app/src/style.css"), "utf8");
+    const missing = blocks.filter((b) => !css.includes(b));
+    if (missing.length) {
+      console.error(
+        `style.css is out of date with scripts/gen-catppuccin-theme.mjs (${missing.length} block(s) differ).\n` +
+          `Run: bun scripts/gen-catppuccin-theme.mjs   and paste the output into style.css.`,
+      );
+      process.exit(1);
+    }
+    console.error("style.css matches the generated Catppuccin blocks.");
+  } else {
+    console.log(blocks.join("\n"));
+  }
 }

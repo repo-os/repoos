@@ -397,6 +397,7 @@ onUnmounted(() => {
   height: 28px;
   padding: 0 10px 0 8px;
   border-radius: 999px;
+  /* hardcode-ok: fixed dark code-pane palette — deliberately dark in every theme */
   border: 1px solid rgba(255, 255, 255, 0.55);
   background: #111827;
   color: #ffffff;
@@ -415,6 +416,7 @@ onUnmounted(() => {
   position: fixed;
   z-index: 199;
   pointer-events: none;
+  /* hardcode-ok: fixed dark code-pane palette — deliberately dark in every theme */
   border: 2px dashed #f97316;
   border-radius: 4px;
   background: rgba(249, 115, 22, 0.14);
@@ -434,6 +436,7 @@ onUnmounted(() => {
   flex: none;
   padding: 1px 5px;
   border-radius: 4px;
+  /* hardcode-ok: fixed dark code-pane palette — deliberately dark in every theme */
   border: 1px solid rgba(255, 255, 255, 0.45);
   font: inherit;
   font-size: 11px;
@@ -442,6 +445,7 @@ onUnmounted(() => {
 
 .copy-inspector-affordance-icon {
   flex: none;
+  /* hardcode-ok: fixed dark code-pane palette — deliberately dark in every theme */
   color: #fb923c;
 }
 

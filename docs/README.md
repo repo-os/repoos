@@ -39,6 +39,10 @@ can't assume any.
   known close-out failure classes with the guards that exist for them.
 - `debugging-check-failures.md` — triage order for a `repoos check` failure you
   can't explain. Read before assuming "flake".
+- `contrast-audit.md` — the rendered contrast gate (#0596): how every theme
+  scope × light/dark is measured in headless WebKit, the judgment calls
+  (gradient worst-stops, WCAG incidental exemptions, the config-load barrier),
+  and what the first full triage changed in the product.
 - `adr/` — Architecture Decision Records. Immutable once accepted: a changed
   decision gets a new ADR, not an edit.
 - `native-auth.md`, `remote-validation.md`, `tunnel-registry.md`, `releases.md` —

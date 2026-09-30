@@ -547,21 +547,31 @@ export function hardcodedColorOffenders(src: string, path = "<file>"): string[] 
     let depth = 0;
     /** When set, every line at brace depth ≥ this is exempt (see above). */
     let exemptFromDepth: number | null = null;
+    /**
+     * A marker BETWEEN rules (brace depth 0) exempts the rule that follows —
+     * including a one-line rule, whose declarations share the `{` line and so
+     * are still at depth 0 when the line is examined.
+     */
+    let pendingRule = false;
     const lines = body.split("\n");
     for (let i = 0; i < lines.length; i++) {
       const raw = lines[i];
       // The marker is a comment, so test it before stripping comments.
       const marked = MARKER_RE.test(raw);
       const code = stripStyleComments(raw, commentState);
-      const exempt = marked || (exemptFromDepth !== null && depth >= exemptFromDepth);
+      const exempt =
+        marked || pendingRule || (exemptFromDepth !== null && depth >= exemptFromDepth);
       if (marked) {
         // Inside a rule → the rest of this rule; between rules → the next one.
         exemptFromDepth = Math.max(exemptFromDepth ?? 0, depth === 0 ? 1 : depth);
+        if (depth === 0) pendingRule = true;
       }
       if (!exempt && (HEX_LITERAL_RE.test(code) || WHITE_RGB_RE.test(code))) {
         out.push(`${path}:${startLine + i}  ${raw.trim()}`);
       }
-      depth += (code.match(/\{/g) ?? []).length - (code.match(/\}/g) ?? []).length;
+      const opens = (code.match(/\{/g) ?? []).length;
+      if (pendingRule && opens > 0) pendingRule = false;
+      depth += opens - (code.match(/\}/g) ?? []).length;
       if (exemptFromDepth !== null && depth < exemptFromDepth) exemptFromDepth = null;
     }
   }
@@ -1254,7 +1264,8 @@ async function stepHardcodedColors(ctx: StepContext): Promise<BuiltinOutcome> {
   }
   if (offenders.length === 0) return { status: "passed", detail: `scanned ${scanned} file(s)` };
   const shown = offenders.slice(0, 12);
-  const rest = offenders.length > shown.length ? `\n    …and ${offenders.length - shown.length} more` : "";
+  const rest =
+    offenders.length > shown.length ? `\n    …and ${offenders.length - shown.length} more` : "";
   return {
     status: "failed",
     detail:

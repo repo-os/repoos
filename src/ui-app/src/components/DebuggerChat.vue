@@ -595,6 +595,7 @@ watch(
   flex-direction: column;
   gap: 7px;
   padding: 10px 11px;
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   border: 1px solid var(--red, #ef5b5b);
   border-radius: 10px;
   background: color-mix(in srgb, var(--red, #ef5b5b) 10%, var(--panel));
@@ -675,6 +676,7 @@ watch(
   padding: 0;
   display: grid;
   place-items: center;
+  /* hardcode-ok: var() fallback for a theme token — renders only when that token is undefined */
   color: var(--red, #ef5b5b);
   background: color-mix(in srgb, var(--red, #ef5b5b) 16%, var(--btn-primary-bg));
 }

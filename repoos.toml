@@ -362,6 +362,14 @@ bg = "--doc-row-sel-bg"
 fg = "--nav-active-color"
 bg = "--nav-active-bg"
 
+# Rendered-contrast exemptions (#0596): a selector deliberately allowed below
+# the WCAG floor, with the reason. Read by the `rendered-contrast` step (and
+# by any element marked `data-contrast-ok`); keep this list short — an
+# exemption without a reason is dropped by the parser.
+[[check.contrastExempts]]
+selector = ".board-col.collapsed .col-label, .board-col.collapsed .col-cap-count"
+reason = "Text layered on the per-column status colour band — a gradient whose colour varies by column and fades down the capsule, so no single colour clears 4.5:1 along its whole length; the count already picks its per-band colour in BoardColumn.vue (barTextColor). Redesign tracked in docs/contrast-audit-triage.md."
+
 # Product releases are opt-in. Push an annotated v<package version> tag from
 # clean main after repoos check; GitHub Actions then creates the GitHub Release.
 # Prerelease channels (beta/canary/rc) and the full flow: docs/releases.md

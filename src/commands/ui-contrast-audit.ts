@@ -27,6 +27,7 @@
  * rather than judged — a ratio against an unknown pixel is a lie.
  */
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { c } from "../cli/colors.js";
@@ -92,7 +93,13 @@ export function parseCssColor(raw: string): RGBA | null {
   if (s.startsWith("#")) {
     const h = s.slice(1);
     if (h.length === 3 || h.length === 4) {
-      return parseCssColor("#" + h.split("").map((ch) => ch + ch).join(""));
+      return parseCssColor(
+        "#" +
+          h
+            .split("")
+            .map((ch) => ch + ch)
+            .join(""),
+      );
     }
     if (h.length === 6 || h.length === 8) {
       const n = parseInt(h.slice(0, 6), 16);
@@ -151,7 +158,9 @@ export function requiredRatio(fontSizePx: number, fontWeight: number): number {
 
 function toHex(c: RGBA): string {
   const h = (n: number): string =>
-    Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, "0");
+    Math.max(0, Math.min(255, Math.round(n)))
+      .toString(16)
+      .padStart(2, "0");
   return `#${h(c.r)}${h(c.g)}${h(c.b)}`;
 }
 
@@ -167,10 +176,18 @@ export interface ProbeSample {
   text: string;
   /** The element's computed `color`, verbatim. */
   fg: string;
-  /** Composited background candidates, TOPMOST first (element → root). */
-  bgChain: string[];
-  /** True when an image/gradient sits behind the text before an opaque bg. */
-  imageBackdrop: boolean;
+  /**
+   * Backdrop layers, TOPMOST first (text's own element → root): each entry is
+   * a computed `background-color` or `background-image` value. Within one
+   * element the image entry precedes its color (CSS paints image over color),
+   * and the walk stops recording at the first opaque color — everything below
+   * it is invisible to the text.
+   */
+  bgLayers: string[];
+  /** True when a raster image (`url(…)`) sits behind the text — unjudgeable. */
+  photoBackdrop: boolean;
+  /** True when the element paints its background INTO the glyphs (logo text). */
+  clipText: boolean;
   fontSize: number;
   fontWeight: number;
   /** Product of ancestor `opacity` values (1 when fully opaque). */
@@ -188,6 +205,10 @@ export interface ProbeResult {
   examined: number;
   /** Text nodes skipped because they or an ancestor are exempt. */
   exempted: number;
+  /** Skipped as inactive UI (WCAG 1.4.3 exempts disabled components). */
+  disabled: number;
+  /** Skipped because they render with zero effective opacity. */
+  invisible: number;
   /** How many roots were walked: open dialogs, or the whole body. */
   roots: number;
 }
@@ -197,6 +218,8 @@ export function contrastProbe(arg: ProbeArg): ProbeResult {
   const done = new Set<Element>();
   let examined = 0;
   let exempted = 0;
+  let disabled = 0;
+  let invisible = 0;
 
   // When a dialog is open it owns the screen (the board behind a scrim would
   // otherwise be judged against colors the user cannot see). Each dialog state
@@ -208,12 +231,7 @@ export function contrastProbe(arg: ProbeArg): ProbeResult {
     const seg = (e: Element): string => {
       const tag = e.tagName.toLowerCase();
       const id = e.id ? "#" + e.id : "";
-      const cls =
-        e.classList.length > 0
-          ? "." + Array.from(e.classList)
-              .slice(0, 2)
-              .join(".")
-          : "";
+      const cls = e.classList.length > 0 ? "." + Array.from(e.classList).slice(0, 2).join(".") : "";
       return tag + id + cls;
     };
     const parts = [seg(el)];
@@ -255,6 +273,13 @@ export function contrastProbe(arg: ProbeArg): ProbeResult {
       const rect = el.getBoundingClientRect();
       if (rect.width <= 0 || rect.height <= 0) continue;
       examined++;
+      // WCAG 1.4.3 exempts inactive components: a disabled button's dimmed
+      // label is not a contrast defect (and this app's disabled state is a
+      // deliberate `disabled:opacity-50`).
+      if (el.matches(":disabled") || el.closest('[aria-disabled="true"], :disabled')) {
+        disabled++;
+        continue;
+      }
       if (isExempt(el)) {
         exempted++;
         continue;
@@ -265,12 +290,33 @@ export function contrastProbe(arg: ProbeArg): ProbeResult {
       const cs = getComputedStyle(el);
       if (cs.visibility === "hidden" || cs.display === "none") continue;
 
-      const bgChain: string[] = [];
-      let imageBackdrop = false;
+      const bgLayers: string[] = [];
+      let photoBackdrop = false;
+      let clipText = false;
       let opaque = false;
       let opacity = 1;
       let hidden = false;
       let n: Element | null = el;
+      // Alpha of a computed background color — WebKit serializes color-mix()
+      // as `color(srgb r g b / a)`, which a legacy rgba()-only match misses
+      // and then wrongly reads as opaque (a=1), truncating the chain and
+      // compositing the rest over white — phantom light backgrounds in dark
+      // themes (#0596). Unknown formats read as NaN → keep walking; the
+      // Node-side judge then reports them as unparsed rather than guessing.
+      const alphaOf = (css: string): number => {
+        if (css === "transparent") return 0;
+        const rgb = /^rgba?\(([^)]*)\)$/.exec(css);
+        if (rgb) {
+          const p = rgb[1].split(/[,/\s]+/).filter(Boolean);
+          return p.length > 3 ? parseFloat(p[3]) : 1;
+        }
+        const srgb = /^color\(\s*srgb\s+([^)]*)\)$/.exec(css);
+        if (srgb) {
+          const p = srgb[1].split(/[/\s]+/).filter(Boolean);
+          return p.length > 3 ? parseFloat(p[3]) : 1;
+        }
+        return Number.NaN;
+      };
       while (n) {
         const s = getComputedStyle(n);
         if (s.visibility === "hidden") {
@@ -279,32 +325,44 @@ export function contrastProbe(arg: ProbeArg): ProbeResult {
         }
         const op = parseFloat(s.opacity);
         if (Number.isFinite(op)) opacity *= op;
-        if (!opaque && !imageBackdrop) {
-          if (s.backgroundImage && s.backgroundImage !== "none") {
-            // An image or gradient paints behind this text before any opaque
-            // color reaches it: the real pixel is unknowable from the DOM.
-            imageBackdrop = true;
-          } else {
-            const bg = s.backgroundColor;
-            if (bg && bg !== "transparent" && bg !== "rgba(0, 0, 0, 0)") {
-              bgChain.push(bg);
-              const m = /rgba?\(([^)]*)\)/.exec(bg);
-              const parts = m ? m[1].split(/[,/\s]+/).filter(Boolean) : [];
-              const a = parts.length > 3 ? parseFloat(parts[3]) : 1;
-              if (!Number.isFinite(a) || a >= 1) opaque = true;
-            }
+        const inline = s as unknown as Record<string, string>;
+        if (inline.backgroundClip === "text" || inline.webkitBackgroundClip === "text") {
+          // Gradient text (the hypercolor wordmark): the "background" paints
+          // INSIDE the glyphs, so no backdrop ratio means anything.
+          clipText = true;
+        }
+        if (!opaque) {
+          const img = s.backgroundImage;
+          if (img && img !== "none") {
+            bgLayers.push(img);
+            if (/\burl\(|image-set\(|cross-fade\(|\belement\(/.test(img)) photoBackdrop = true;
+          }
+          const bg = s.backgroundColor;
+          if (bg && bg !== "transparent" && bg !== "rgba(0, 0, 0, 0)") {
+            bgLayers.push(bg);
+            const a = alphaOf(bg);
+            // Opaque color: nothing beneath it reaches this text — but keep
+            // walking for ancestor visibility/opacity above it.
+            if (Number.isFinite(a) && a >= 1) opaque = true;
           }
         }
         n = n.parentElement;
       }
       if (hidden) continue;
+      // Fully transparent text (a toast mid-entrance, an opacity-0 decoration)
+      // renders nothing — measuring it would report fg == bg every time.
+      if (opacity < 0.05) {
+        invisible++;
+        continue;
+      }
 
       samples.push({
         selector: shortSelector(el),
         text: text.slice(0, 60),
         fg: cs.color,
-        bgChain,
-        imageBackdrop,
+        bgLayers,
+        photoBackdrop,
+        clipText,
         fontSize: parseFloat(cs.fontSize) || 0,
         fontWeight: parseInt(cs.fontWeight, 10) || 400,
         opacity: Number.isFinite(opacity) ? opacity : 1,
@@ -312,7 +370,7 @@ export function contrastProbe(arg: ProbeArg): ProbeResult {
     }
   }
 
-  return { samples, examined, exempted, roots: roots.length };
+  return { samples, examined, exempted, disabled, invisible, roots: roots.length };
 }
 
 // ── Judging a sample ────────────────────────────────────────────────────
@@ -337,38 +395,131 @@ export interface JudgeResult {
   /** Why the sample could not be judged (kind === "unchecked"). */
   reason?: string;
   finding?: ContrastFinding;
+  /** True when a gradient sat behind the text (judged on its worst stop). */
+  viaGradient?: boolean;
 }
 
-/** Judge one probe sample: composite → ratio → WCAG floor. */
+const COLOR_LITERAL_RE =
+  /#[0-9a-fA-F]{3,8}(?![0-9a-fA-F\w])|rgba?\([^)]*\)|color\([^)]*\)|\btransparent\b/g;
+
+function trimCss(v: string): string {
+  return v.length > 60 ? v.slice(0, 60) + "…" : v;
+}
+
+/**
+ * Split a computed `background-image` into its paint layers, topmost first —
+ * one element may hold several comma-separated layers, and the first paints
+ * over the rest.
+ */
+function imageLayers(value: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let cur = "";
+  for (const ch of value) {
+    if (ch === "(") depth++;
+    if (ch === ")") depth--;
+    if (ch === "," && depth === 0) {
+      parts.push(cur.trim());
+      cur = "";
+    } else {
+      cur += ch;
+    }
+  }
+  if (cur.trim()) parts.push(cur.trim());
+  // A computed `background-image` list can end in a literal `none` layer (this
+  // app's `body` serializes as `…, none`) — a `none` layer paints nothing.
+  return parts.filter((p) => p && p !== "none");
+}
+
+/** Every color stop a gradient literal exposes to a literal parse, in order. */
+function extractStops(css: string): RGBA[] {
+  const out: RGBA[] = [];
+  for (const m of css.matchAll(COLOR_LITERAL_RE)) {
+    const parsed = parseCssColor(m[0]);
+    if (!parsed) return []; // one unreadable stop makes the layer unjudgeable
+    out.push(parsed);
+  }
+  return out;
+}
+
+function dedupeRgba(list: RGBA[]): RGBA[] {
+  const seen = new Set<string>();
+  const out: RGBA[] = [];
+  for (const c of list) {
+    const key = `${Math.round(c.r)},${Math.round(c.g)},${Math.round(c.b)},${Math.round(c.a * 1000)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(c);
+  }
+  return out;
+}
+
+/**
+ * Judge one probe sample: fold its backdrop layers bottom-up and measure the
+ * worst resulting ratio against the WCAG floor.
+ *
+ * Gradients are judged on their **worst stop** — the same convention
+ * `user-docs/check.md` documents for the static token guard — because a
+ * gradient-backed element (this app's `body`, the task drawer) is the rule,
+ * not the exception, and skipping those would blind the audit exactly where
+ * the Changes-tab header bug lived. A raster `url(…)` backdrop stays
+ * unchecked: no DOM value can say what pixel sits behind the text.
+ */
 export function judgeSample(s: ProbeSample): JudgeResult {
-  if (s.imageBackdrop) {
-    return { kind: "unchecked", reason: "gradient/image behind text" };
-  }
+  if (s.photoBackdrop) return { kind: "unchecked", reason: "raster image behind text" };
+  if (s.clipText) return { kind: "unchecked", reason: "background-clip: text (gradient logo)" };
   const fgRaw = parseCssColor(s.fg);
-  if (!fgRaw) return { kind: "unchecked", reason: `unparsed text color "${s.fg}"` };
+  if (!fgRaw) return { kind: "unchecked", reason: `unparsed text color "${trimCss(s.fg)}"` };
 
-  let bg: RGBA | null = null;
-  for (const layer of s.bgChain) {
-    const parsed = parseCssColor(layer);
-    if (!parsed) return { kind: "unchecked", reason: `unparsed background "${layer}"` };
-    bg = bg ? over(bg, parsed) : parsed;
+  const flat: string[] = [];
+  for (const entry of s.bgLayers) flat.push(...imageLayers(entry));
+  const viaGradient = flat.some((v) => /gradient\(/.test(v));
+
+  // Fold the top→bottom list bottom-up: each entry paints ABOVE everything
+  // folded so far, so a step composites the layer over the accumulated
+  // candidate. A gradient branches (one candidate per stop); the worst
+  // candidate decides the verdict.
+  let candidates: RGBA[] = [{ r: 0, g: 0, b: 0, a: 0 }];
+  for (let i = flat.length - 1; i >= 0; i--) {
+    const v = flat[i];
+    if (/gradient\(/.test(v)) {
+      const stops = extractStops(v);
+      if (stops.length === 0) {
+        return { kind: "unchecked", reason: `unparsed gradient "${trimCss(v)}"` };
+      }
+      const next: RGBA[] = [];
+      for (const cand of candidates) for (const stop of stops) next.push(over(stop, cand));
+      candidates = dedupeRgba(next).slice(0, 48);
+    } else {
+      const c = parseCssColor(v);
+      if (!c) return { kind: "unchecked", reason: `unparsed background "${trimCss(v)}"` };
+      candidates = candidates.map((cand) => over(c, cand));
+    }
   }
-  if (!bg) bg = CANVAS;
-  if (bg.a < 1) bg = over(bg, CANVAS);
+  const backgrounds = candidates.map((bg) => (bg.a < 1 ? over(bg, CANVAS) : bg));
 
-  const fg = over({ ...fgRaw, a: fgRaw.a * (s.opacity < 1 ? s.opacity : 1) }, bg);
-  const ratio = contrastRatio(luminance(fg), luminance(bg));
+  const fg = { ...fgRaw, a: fgRaw.a * (s.opacity < 1 ? s.opacity : 1) };
   const need = requiredRatio(s.fontSize, s.fontWeight);
+  let worst: { ratio: number; bg: RGBA } | null = null;
+  for (const bg of backgrounds) {
+    const composited = over(fg, bg);
+    const ratio = contrastRatio(luminance(composited), luminance(bg));
+    if (!worst || ratio < worst.ratio) worst = { ratio, bg };
+  }
+  if (!worst) return { kind: "unchecked", reason: "no background could be resolved" };
   const finding: ContrastFinding = {
     selector: s.selector,
     text: s.text,
-    fg: toHex(fg),
-    bg: toHex(bg),
-    ratio,
+    fg: toHex(over(fg, worst.bg)),
+    bg: toHex(worst.bg),
+    ratio: worst.ratio,
     need,
     fontSize: s.fontSize,
   };
-  return ratio < need ? { kind: "fail", finding } : { kind: "pass", finding };
+  const result: JudgeResult =
+    worst.ratio < need ? { kind: "fail", finding } : { kind: "pass", finding };
+  if (viaGradient) result.viaGradient = true;
+  return result;
 }
 
 // ── Fixture ─────────────────────────────────────────────────────────────
@@ -388,7 +539,7 @@ priority: p2
 area: web
 assigned_to: ai
 created_by: human
-branch: ""
+branch: "main"
 created_at: "2026-09-01T00:00:00Z"
 updated_at: "2026-09-01T00:00:00Z"
 ---
@@ -434,6 +585,26 @@ function makeAuditFixture(): string {
   writeFileSync(join(root, "repoos.toml"), 'theme = "dark"\nuiTheme = "classic"\n');
   writeFileSync(join(root, "work", "0001-fixture-task.md"), FIXTURE_TASK_A);
   writeFileSync(join(root, "work", "0002-fixture-done.md"), FIXTURE_TASK_B);
+  // A real git repo with one uncommitted change, so the drawer's Changes tab
+  // renders actual file rows (and their +/- backgrounds) instead of an empty
+  // state — the Changes tab is exactly where the hard-coded header bug this
+  // audit exists for lived (#0596).
+  try {
+    const git = (args: string[]): void => {
+      execFileSync("git", args, { cwd: root, stdio: "ignore" });
+    };
+    git(["init", "-q", "-b", "main"]);
+    git(["config", "user.email", "contrast-audit@repoos.test"]);
+    git(["config", "user.name", "RepoOS contrast audit"]);
+    git(["config", "commit.gpgsign", "false"]);
+    writeFileSync(join(root, "README.md"), "fixture line one\n");
+    git(["add", "."]);
+    git(["commit", "-q", "-m", "fixture baseline"]);
+    writeFileSync(join(root, "README.md"), "fixture line one\nfixture line two (the diff)\n");
+  } catch {
+    // git unavailable → the Changes tab shows its empty state; the audit still
+    // runs, it just covers less of that screen.
+  }
   return root;
 }
 
@@ -447,10 +618,9 @@ interface ScreenState {
 /** Navigate and wait for the SPA to render with its theme applied. */
 async function gotoApp(page: SmokePage, url: string, path: string): Promise<void> {
   await page.goto(url + path, { waitUntil: "load", timeout: 20_000 });
-  await page.waitForFunction(
-    () => Boolean(document.querySelector("#app")?.textContent?.trim()),
-    { timeout: 10_000 },
-  );
+  await page.waitForFunction(() => Boolean(document.querySelector("#app")?.textContent?.trim()), {
+    timeout: 10_000,
+  });
   // `data-ui-theme` is written ONLY by the config store's async `load()`
   // (index.html sets `data-theme` pre-paint but never the ui theme), so its
   // presence means the app's own theme application has finished. Without this
@@ -521,7 +691,11 @@ function makeScreens(url: string): ScreenState[] {
       const card = document.querySelector<HTMLElement>(".task-card");
       if (card) card.click();
     });
-    await waitFor(page, () => document.querySelectorAll('[role="dialog"] .drawer-tabs').length > 0, 5000);
+    await waitFor(
+      page,
+      () => document.querySelectorAll('[role="dialog"] .drawer-tabs').length > 0,
+      5000,
+    );
   };
   return [
     { name: "dashboard", prepare: (p) => gotoApp(p, url, "/") },
@@ -595,7 +769,11 @@ function makeScreens(url: string): ScreenState[] {
         await gotoApp(p, url, "/work");
         const raised = await raiseToast(p);
         if (!raised) throw new Error("toast store unreachable");
-        const ok = await waitFor(p, () => document.querySelectorAll(".toast-item").length > 0, 3000);
+        const ok = await waitFor(
+          p,
+          () => document.querySelectorAll(".toast-item").length > 0,
+          3000,
+        );
         if (!ok) throw new Error("toast did not render");
       },
     },
@@ -612,12 +790,21 @@ interface FailureRow extends ContrastFinding {
 interface AuditStats {
   examined: number;
   exempted: number;
+  disabled: number;
+  invisible: number;
   unchecked: Map<string, number>;
+  /** Samples whose backdrop included a gradient (judged on the worst stop). */
+  gradientJudged: number;
   screens: number;
   scopes: number;
 }
 
-function addFailure(rows: Map<string, FailureRow>, scope: string, screen: string, f: ContrastFinding): void {
+function addFailure(
+  rows: Map<string, FailureRow>,
+  scope: string,
+  screen: string,
+  f: ContrastFinding,
+): void {
   const key = `${scope}|${f.selector}|${f.fg}|${f.bg}|${f.ratio.toFixed(2)}`;
   const existing = rows.get(key);
   if (existing) {
@@ -635,7 +822,21 @@ function printReport(rows: Map<string, FailureRow>, stats: AuditStats, warnings:
     ),
   );
   if (stats.exempted > 0) {
-    console.log(c.dim(`  · ${stats.exempted} text run(s) exempt (contrastExempts / data-contrast-ok)`));
+    console.log(
+      c.dim(`  · ${stats.exempted} text run(s) exempt (contrastExempts / data-contrast-ok)`),
+    );
+  }
+  if (stats.disabled > 0 || stats.invisible > 0) {
+    console.log(
+      c.dim(
+        `  · ${stats.disabled} disabled-component run(s) + ${stats.invisible} invisible run(s) skipped (WCAG-exempt)`,
+      ),
+    );
+  }
+  if (stats.gradientJudged > 0) {
+    console.log(
+      c.dim(`  · ${stats.gradientJudged} text run(s) judged against a gradient's worst stop`),
+    );
   }
   if (stats.unchecked.size > 0) {
     const parts = [...stats.unchecked.entries()]
@@ -701,7 +902,10 @@ async function runAudit(): Promise<{
   const stats: AuditStats = {
     examined: 0,
     exempted: 0,
+    disabled: 0,
+    invisible: 0,
     unchecked: new Map(),
+    gradientJudged: 0,
     screens: 0,
     scopes: scopes.length,
   };
@@ -747,30 +951,13 @@ async function runAudit(): Promise<{
           document.documentElement.dataset.uiTheme = a.uiTheme;
         }, attrs);
         const probe = await page.evaluate(contrastProbe, { exemptSelectors });
-        if (
-          process.env.CONTRAST_DEBUG === "1" &&
-          screen.name === "settings" &&
-          scope.name === "classic-dark"
-        ) {
-          const dbg = await page.evaluate(() => {
-            const el = document.querySelector("#setting-areas .setting-label");
-            const root = getComputedStyle(document.documentElement);
-            return {
-              attrs: { ...document.documentElement.dataset },
-              txt: root.getPropertyValue("--txt").trim(),
-              card: root.getPropertyValue("--card").trim(),
-              labelColor: el ? getComputedStyle(el).color : "missing",
-              bodyImg: getComputedStyle(document.body).backgroundImage.slice(0, 40),
-            };
-          });
-          console.log("CONTRAST-DEBUG " + JSON.stringify(dbg));
-          const sample = probe.samples.find((s) => s.selector.includes("setting-label"));
-          if (sample) console.log("CONTRAST-DEBUG sample " + JSON.stringify(sample));
-        }
         stats.examined += probe.examined;
         stats.exempted += probe.exempted;
+        stats.disabled += probe.disabled;
+        stats.invisible += probe.invisible;
         for (const sample of probe.samples) {
           const verdict = judgeSample(sample);
+          if (verdict.viaGradient) stats.gradientJudged++;
           if (verdict.kind === "unchecked") {
             const reason = verdict.reason ?? "unknown";
             stats.unchecked.set(reason, (stats.unchecked.get(reason) ?? 0) + 1);
@@ -800,7 +987,7 @@ export async function cmdContrastAudit(): Promise<number> {
   const started = Date.now();
   try {
     const cfg = loadConfig(findRepoRoot());
-    if (!(cfg.check?.themeScopes?.length)) {
+    if (!cfg.check?.themeScopes?.length) {
       console.log(c.dim("  · no [check] themeScopes configured — rendered contrast audit skipped"));
       return 0;
     }
