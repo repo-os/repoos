@@ -144,7 +144,7 @@ const events = computed<DebugEvent[]>(() => {
     // "passed". Prefer the server's explicit flag; the output marker is only
     // a fallback, guarded by `passed` so a FAILED run that happens to echo
     // the notice still reads as failed.
-    const skipped = c.skipped === true || (c.passed === true && checkRunSkipped(c.output));
+    const skipped = c.passed === true && (c.skipped === true || checkRunSkipped(c.output));
     const verdict = c.running
       ? "running…"
       : skipped
@@ -209,7 +209,7 @@ const skippedLatestCheck = computed<boolean>(() => {
   const runs = repo.taskChecks[props.task.id] ?? [];
   const last = runs.filter((c) => !c.running).at(-1);
   if (!last) return false;
-  return last.skipped === true || (last.passed === true && checkRunSkipped(last.output));
+  return last.passed === true && (last.skipped === true || checkRunSkipped(last.output));
 });
 
 /** Ticks once a second while a check is running, so its elapsed timer counts
