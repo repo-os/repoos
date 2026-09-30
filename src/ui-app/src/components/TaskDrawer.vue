@@ -3792,6 +3792,10 @@ watch(
             :log-path="repo.doneErrorFor(ui.active.id)!.logPath"
             :hint="repo.doneErrorFor(ui.active.id)!.hint"
             :failed-at="repo.doneErrorFor(ui.active.id)!.failedAt"
+            :tldr="repo.doneErrorFor(ui.active.id)!.tldr"
+            :tldr-diagnosing="
+              !repo.doneErrorFor(ui.active.id)!.tldr && repo.debugTldrWorkingFor(ui.active.id)
+            "
             :retry-hint="autoRepairRetryHint"
             :task-id="ui.active.id"
             :task-title="ui.active.title"

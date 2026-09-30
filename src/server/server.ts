@@ -1322,8 +1322,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             detail: result.reason,
             phase: failedJob?.failedPhase,
             logPath: failedJob?.logPath,
+            tldr: failedJob?.debugTldr,
             at: new Date().toISOString(),
           });
+          debugTldr?.onCloseOutFailed(jobBefore.taskId);
         }
         // Keep the live index in sync: the orchestrator writes the task file
         // (markTaskReleased) and merges the branch directly, bypassing the
@@ -1738,6 +1740,15 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     getTranscript: (sessionId) => runner.output(sessionId)?.lines ?? [],
     getTaskLogs: (taskId, limit) => logger.getTaskLogs(taskId, limit),
     onTaskFileChanged: (absPath) => index.applyFileChange(absPath),
+    getCloseOutJob: (taskId) => jobCoordinator.getJob(taskId),
+    updateCloseOutJob: (taskId, update) => jobCoordinator.updateJob(taskId, update),
+    onDoneErrorTldr: (taskId, tldr) =>
+      emitEvent({
+        type: "task.doneErrorTldr",
+        id: taskId,
+        tldr,
+        at: new Date().toISOString(),
+      }),
     onDiagnosisStarted: (taskId) =>
       emitEvent({
         type: "task.debugTldr",
