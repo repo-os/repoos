@@ -234,13 +234,50 @@ that.
 
 Which target(s) to capture is decided from the files the task changed, matched
 against `[[preview.targets]].paths` globs in `repoos.toml` — not the task's
-up-front `area:`. If nothing matches, it falls back to area resolution;
-`--target` overrides. Each shot records its resolved target name. The drawer
-warns whenever the changed paths touch a target the task's `area` does not
-resolve to, so a mislabeled area becomes visible rather than silently
-screenshotting the wrong app. Only one preview runs per task, so a multi-target
-capture restarts the preview between targets (stopping one you may be watching)
-— the command prints a note when it will do that.
+up-front `area:`. The default (main-app) preview can declare its own globs as
+`paths` under `[preview]` (this repo: `src/ui-app/**`), so an app diff resolves
+it too and a mixed app+docs diff captures both. If nothing matches, it falls
+back to area resolution; `--target` overrides. Each shot records its resolved
+target name. The drawer warns whenever the changed paths touch a target the
+task's `area` does not resolve to, so a mislabeled area becomes visible rather
+than silently screenshotting the wrong app. Only one preview runs per task, so
+a multi-target capture restarts the preview between targets (stopping one you
+may be watching) — the command prints a note when it will do that.
+
+#### The task's `## Shots` list
+
+A change inside a drawer, modal or filled form is not visible from `/`, and you
+are the one who knows which page/state shows it. Declare it in the task body —
+a `## Shots` section holding a fenced JSON list, one entry per shot:
+
+```json
+[
+  {
+    "target": "default",
+    "route": "/",
+    "label": "New-task drawer open",
+    "steps": [
+      { "click": "button[data-test-id='new-task']" },
+      { "waitMs": 300 }
+    ]
+  }
+]
+```
+
+Each entry takes `target` (a resolved preview target name; omitted means the
+default target), `route` (default `/`), an optional `selector` (capture one
+element), a human `label` shown as the shot's caption in the Changes tab, and
+optional ordered `steps` — `{ "click": "<selector>" }`, `{ "fill":
+"<selector>", "text": "..." }`, `{ "waitFor": "<selector>" }` or `{ "waitMs":
+300 }` — using plain CSS selectors or test ids, no framework knowledge.
+
+`repoos shot` captures this list (unless a route/selector was passed
+explicitly), and the SERVER does too: when a task moves to review and its diff
+touches any target's `paths`, the server runs the capture itself through the
+managed preview — no agent action needed. Failures and missing Playwright are
+recorded in the task log and activity as `shots: skipped — <reason>` /
+`shots: failed — <reason>`, never as a failed handoff. An engineer-made
+capture pre-empts the automatic one.
 
 Playwright/WebKit is optional (a dev dependency). When it is missing, `repoos
 shot` prints install advice and exits non-zero without touching anything:

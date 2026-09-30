@@ -4746,9 +4746,11 @@ watch(
             <div class="changes-summary-title">UI changes</div>
             <div class="shot-grid">
               <div v-for="(s, i) in taskShots" :key="s.name" class="shot-thumb">
-                <img :src="s.url" :alt="s.name" @click="openShotsViewer(i)" />
-                <ScreenshotExpandButton :name="s.name" @click="openShotsViewer(i)" />
-                <span class="shot-name" :title="s.target">{{ s.target }}</span>
+                <img :src="s.url" :alt="s.label || s.name" @click="openShotsViewer(i)" />
+                <ScreenshotExpandButton :name="s.label || s.name" @click="openShotsViewer(i)" />
+                <span class="shot-name" :title="s.route ? `${s.target} · ${s.route}` : s.target">{{
+                  s.label || s.target
+                }}</span>
               </div>
             </div>
           </section>

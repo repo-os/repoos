@@ -856,6 +856,7 @@ export const uploadTaskShot: RouteHandler = async (ctx, req, res, params) => {
   const body = (await readBody(req)) as {
     target?: unknown;
     route?: unknown;
+    label?: unknown;
     mime?: unknown;
     name?: unknown;
     data?: unknown;
@@ -865,6 +866,7 @@ export const uploadTaskShot: RouteHandler = async (ctx, req, res, params) => {
   const result = localShotStore(config, taskId).save({
     target,
     ...(typeof body?.route === "string" && body.route ? { route: body.route } : {}),
+    ...(typeof body?.label === "string" && body.label ? { label: body.label } : {}),
     ...(typeof body?.mime === "string" && body.mime ? { mime: body.mime } : {}),
     ...(typeof body?.name === "string" && body.name ? { name: body.name } : {}),
     data: typeof body?.data === "string" ? body.data : "",

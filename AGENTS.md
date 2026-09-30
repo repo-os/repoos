@@ -416,14 +416,18 @@ cannot tell from the code alone:
   verify it — previews are on request from the human, not something you spin up
   as a routine part of finishing a task (#0268).
 - **`repoos shot` is the one sanctioned use of the managed preview by the
-  engineer**, and only for a UI-visible change: once, before handoff, capture
-  the changed screens into the task's `shots/` folder so the reviewer and human
-  see visual evidence instead of "it looked fine" (#0582). It starts the task's
-  server-owned preview itself (never `repoos serve`) but does not open a preview
-  for the human to browse, and it is skipped for non-UI changes. If Playwright
-  is unavailable or the shot fails, fall back to text verification and say so in
-  the handoff. This exception does not change the rule above: the *human* still
-  owns preview requests, and the engineer still does not auto-request one.
+  engineer**, and only for a UI-visible change. But the engineer no longer has
+  to remember to run it (#0594): when a task hands off to review and its diff
+  touches any preview target's `[[preview.paths]]` globs, the server captures
+  the shots itself through the managed preview and records the result (a
+  missing Playwright shows up as a visible `shots: skipped` note, never a
+  failed handoff). The engineer's job is to DECLARE what a review should see —
+  write a `## Shots` section into the task body via `repoos` (a fenced JSON
+  list: `target`, `route`, optional `selector`, optional ordered `steps`
+  (`click`/`fill`+`text`/`waitFor`/`waitMs`, plain CSS selectors), and a human
+  `label`), usually 1–3 entries showing the changed screens. Write it with
+  `repoos new/update --body`, never a hand edit. Manual `repoos shot` remains the tool for checking your own work;
+  an engineer-made capture pre-empts the automatic one.
 - **Previews are server-owned — never run `repoos serve` yourself.** RepoOS owns
   the control-plane port and every preview port. Preview requests are the
   human's to make: the human requests a preview manually from the UI when they
