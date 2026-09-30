@@ -3,6 +3,9 @@ id: "0601"
 title: "This is the RepoOS canary task: a deliberately trivial ch…"
 type: feature
 status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI"
 priority: p2
 area: general
 assigned_to: ai
@@ -29,3 +32,4 @@ This is the RepoOS canary task: a deliberately trivial change used to smoke-test
 - 2026-09-30T12:47:25Z · review_cli_override
 - 2026-09-30T12:47:26Z · review_model_override
 - 2026-09-30T12:47:27Z · status draft→inbox
+- 2026-09-30T12:47:27Z · needs_input
