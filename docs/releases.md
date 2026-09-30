@@ -44,6 +44,13 @@ currently-published version and the suggested next one (a patch bump, or the
 stable graduation of a prerelease), you type the new version — **just the
 number, no `v`** — and hit **Publish v\<x\>**.
 
+Typing is optional for the common case. Beside the field sits **OR · Cut
+Next**, which fills the field with the suggested version, after which Publish,
+the `→` tag preview and every validation rule behave exactly as if you had
+typed it. Type a version yourself for everything else — a prerelease channel
+(`0.6.0-rc.1`), or any other custom semver — the shortcut never replaces the
+input.
+
 The modal also has an **optional release-notes text area**. Type notes by hand,
 or click **Generate with AI** to draft them from the commits since the last
 release tag (or the full history when there is no previous release) and fill
@@ -131,6 +138,19 @@ confirmation before replacing it. On failure the modal shows the error and
 whatever you already typed is preserved. The one-shot call is recorded in the
 `sessions` table (`sessionType: "release-notes"`, `taskId: null`) like every
 other LLM call site.
+
+Successful drafts are also written to `<cacheDir>/release-notes.json`
+(`.repoos/release-notes.json` by default — derived, gitignored, safe to delete;
+`src/server/release-notes-cache.ts`). The entry is keyed by **HEAD's full SHA
+plus `sinceTag`**, i.e. the exact commit range the draft was made from:
+`sinceTag` is compounded in because tagging an ancestor moves `git describe`
+(and so the range) without a commit moving anywhere. A repeat request for the
+same context returns the stored text **before** `runPrompt` is consulted — so a
+cut that failed its checks can be retried without another one to two minutes of
+generation — and the modal fills instantly with a "Reused saved notes" hint.
+Any new commit or tag produces a new key; a failed or empty agent run is never
+written, so it cannot overwrite a good entry. Cache hits record no session,
+because no LLM call happens.
 
 Notes are committed into the tag, so keep them reasonable in size — GitHub caps
 a release body at ~125,000 characters. The commit list fed to the model is
@@ -311,7 +331,7 @@ yet.
 | `GET /api/release/distribution` | `DistributionSummary` — each configured channel's published version/state for the release being viewed. Separate from `/api/release` so a slow registry can't delay or fail the page. |
 | `GET /api/release/run`   | `ReleaseRun` — `state` / `phase` / `message` / timestamps for the current or most recent run (in-memory, resets on restart) |
 | `POST /api/release`      | `{ version, confirmTag, notes? }` → starts a run; `409` if one is already running |
-| `POST /api/release/notes` | `{ version? }` → drafts release notes from commits since the last tag and returns `{ notes, sinceTag, commitCount, truncated }`; never cuts a release |
+| `POST /api/release/notes` | `{ version? }` → drafts release notes from commits since the last tag and returns `{ notes, sinceTag, commitCount, truncated, cached, cachedAt }`; `cached: true` means the text came from `<cacheDir>/release-notes.json` for an unchanged commit context instead of the agent; never cuts a release |
 
 `confirmTag` must exactly equal `tagPrefix + version` — a guard against a
 malformed request cutting the wrong tag.
