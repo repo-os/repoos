@@ -630,6 +630,8 @@ export type RepoEvent =
       checkId: string;
       code: number | null;
       passed: boolean;
+      /** #0592: the gate skipped — this repo has no check plan. */
+      skipped: boolean;
       durationMs: number;
       scope: string;
       machine: string;
@@ -661,6 +663,12 @@ export interface TaskCheckRun {
   passed: boolean | null;
   code: number | null;
   output: string;
+  /**
+   * #0592: the gate skipped — this repo has no check plan. The server detects
+   * it once at completion and sends the flag; optional so older payloads (or
+   * test fixtures) without it still work via the output-marker fallback.
+   */
+  skipped?: boolean;
   /** 'full' or 'changed:<ref>' — what the run covers (#0564). */
   scope: string;
   /** Short hostname of the machine the check runs on (#0564). */

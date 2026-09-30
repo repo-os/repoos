@@ -59,6 +59,7 @@ import { markTaskReleased, patchTaskFile } from "./write.js";
 import { saveDiffSnapshot } from "./diff-snapshot.js";
 import { parseTask } from "../core/task.js";
 import { resolveCheckPlan } from "../core/check-plan.js";
+import { planGateSkips } from "../core/check-skip.js";
 import { getCheckStore, localMachineName } from "../core/check-store.js";
 import { detectRepoMarkers } from "../core/check-runner.js";
 import { DEFAULT_CONFIG, loadConfig } from "../core/config.js";
@@ -1522,8 +1523,10 @@ export class CloseOutOrchestrator {
       markers: detectRepoMarkers(wtPath),
     });
     const hasBuildStep = candidateCheckPlan.steps.some((step) => step.kind === "build");
-    const bootstrapWithoutPlan =
-      candidateCheckPlan.source === "empty" && candidateCheckPlan.errors.length === 0;
+    // #0592: one shared predicate (src/core/check-skip.ts) — zero steps AND
+    // zero errors — so the close-out skips on exactly the state the CLI's own
+    // `repoos check` skips on.
+    const bootstrapWithoutPlan = planGateSkips(candidateCheckPlan);
     const docsOnly = changedPaths !== null && isDocsOnlyChange(changedPaths, this.config.docsDir);
     if (docsOnly) {
       this.logger?.integration(

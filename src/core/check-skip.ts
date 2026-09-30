@@ -33,6 +33,20 @@ export function noCheckPlanReminderLines(): string[] {
 }
 
 /**
+ * The single predicate for "the gate has nothing to run and nothing is wrong"
+ * (#0592): zero steps AND zero errors. The CLI, the close-out pipeline and the
+ * UI all skip on exactly this state — keep them on one helper so the three
+ * surfaces cannot drift apart. (`resolveCheckPlan` only ever returns zero steps
+ * with source "empty", so no separate source check is needed.)
+ */
+export function planGateSkips(plan: {
+  steps: { length: number };
+  errors: { length: number };
+}): boolean {
+  return plan.steps.length === 0 && plan.errors.length === 0;
+}
+
+/**
  * Detect a skipped (no-plan) run in a check's captured output. Streamed output
  * is colour-stripped (`stripAnsi`) before it reaches the UI, so the plain
  * marker matches; a run without output cannot be identified and reads green,

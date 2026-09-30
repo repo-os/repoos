@@ -1503,6 +1503,7 @@ export const useRepoStore = defineStore("repo", () => {
         run.durationMs = e.durationMs;
         run.code = e.code;
         run.passed = e.passed;
+        run.skipped = e.skipped;
         run.scope = e.scope;
         run.machine = e.machine;
       }
