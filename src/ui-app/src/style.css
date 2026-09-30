@@ -10879,6 +10879,20 @@
   color: var(--txt-dim);
   font-size: 12.5px;
 }
+/* One band: type a version and read its tag, or skip both with Cut Next. The
+   input stays authoritative — Cut Next only fills it with the suggested
+   version, so prerelease typing keeps working exactly as before. */
+.rel-version-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.rel-version-or {
+  flex-shrink: 0;
+  color: var(--txt-faint);
+  font-size: 12.5px;
+}
 .rel-version-input {
   display: flex;
   align-items: center;
@@ -10973,6 +10987,12 @@
 }
 .rel-notes-error {
   color: var(--red);
+  font-size: 12px;
+  line-height: 1.45;
+}
+/* Reused a cached draft for this commit — not an error, just why it was instant. */
+.rel-notes-hint {
+  color: var(--txt-faint);
   font-size: 12px;
   line-height: 1.45;
 }

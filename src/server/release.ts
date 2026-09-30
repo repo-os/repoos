@@ -282,6 +282,12 @@ export async function getReleaseStatus(
 export interface ReleaseCommits {
   /** Tag the range starts after, or null when no previous release exists. */
   sinceTag: string | null;
+  /**
+   * Full SHA of HEAD while the range was collected, or null when it couldn't
+   * be read. Together with `sinceTag` this is the "commit context" a draft is
+   * made from — the cache key for AI release notes (#0590).
+   */
+  head: string | null;
   /** `git log` subject lines, newest first. */
   commits: string[];
   /** True when more commits existed than `limit` and the oldest were dropped. */
@@ -293,13 +299,17 @@ export interface ReleaseCommits {
  * everything since the last reachable tag, or the whole history when no
  * release has been cut yet (task #0361's stated fallback). Capped at `limit`
  * so a long history can't blow the prompt; the newest commits win, and
- * `truncated` tells the caller the oldest were dropped.
+ * `truncated` tells the caller the oldest were dropped. `head` is resolved
+ * alongside the range so a caller can key a cache on the exact commit context
+ * the draft was made from (#0590).
  */
 export async function collectReleaseCommits(
   config: RepoOSConfig,
   exec: Run = run,
   limit = 300,
 ): Promise<ReleaseCommits> {
+  const headRes = await exec("git", ["rev-parse", "HEAD"], config.root);
+  const head = headRes.code === 0 ? headRes.stdout.trim() || null : null;
   const latest = await exec("git", ["describe", "--tags", "--abbrev=0"], config.root);
   const sinceTag = latest.code === 0 ? latest.stdout.trim() || null : null;
   const range = sinceTag ? `${sinceTag}..HEAD` : "HEAD";
@@ -310,7 +320,7 @@ export async function collectReleaseCommits(
   );
   const lines = res.code === 0 ? res.stdout.split("\n").filter((l) => l.trim()) : [];
   const truncated = lines.length > limit;
-  return { sinceTag, commits: truncated ? lines.slice(0, limit) : lines, truncated };
+  return { head, sinceTag, commits: truncated ? lines.slice(0, limit) : lines, truncated };
 }
 
 /**
