@@ -20,8 +20,10 @@ Make the "Checks" page fill out the full width, like all the other pages (and te
 ## Screenshots
 
 ![Screenshot-2026-09-30-at-20.54.51](/api/tasks/0602/attachments/screenshot-1.png)
+![Screenshot-2026-09-30-at-20.54.59](/api/tasks/0602/attachments/screenshot-2.png)
 
 ## Activity
 
 - 2026-09-30T12:57:02Z · created · hello@repoos.org
+- 2026-09-30T12:57:03Z · screenshots
 - 2026-09-30T12:57:03Z · screenshots
