@@ -130,27 +130,45 @@ supplied the extracted body is empty and GitHub's auto-generated notes are used
 exactly as before.
 
 **Generate with AI** calls `POST /api/release/notes`, which resolves the enabled
-PM agent (falling back to the engineer), collects commit subjects since the last
-reachable tag, and runs one `runPrompt` turn. The request never cuts anything:
-it returns the draft for the modal to place in the text area, where it stays
-editable. Clicking Generate when the field already has text asks for
+PM agent (falling back to the engineer), collects the release-relevant commit
+subjects since the last reachable tag, and runs one `runPrompt` turn. The
+request never cuts anything: the draft is placed in the text area, where it
+stays editable. Clicking Generate when the field already has text asks for
 confirmation before replacing it. On failure the modal shows the error and
 whatever you already typed is preserved. The one-shot call is recorded in the
 `sessions` table (`sessionType: "release-notes"`, `taskId: null`) like every
 other LLM call site.
 
+The generation is a **server-tracked run** (#0605), shaped like the cut
+itself: the POST starts the agent detached and returns `202` with the run
+state, and the modal polls `GET /api/release/notes/run` until the draft
+lands or the run fails. Closing the modal mid-draft therefore loses nothing
+— the run finishes server-side, the field shows "Drafting…" when the modal
+is reopened, and the pick-up fills the field when the run lands. A second
+Generate click while a run is in flight returns the existing run instead of
+starting a duplicate agent. The run state is in memory and resets on server
+restart, like the release-run state; a server-run `release.notesRun` event
+is emitted on start and completion for the notice feed (#0606) to consume.
+
 Successful drafts are also written to `<cacheDir>/release-notes.json`
 (`.repoos/release-notes.json` by default — derived, gitignored, safe to delete;
-`src/server/release-notes-cache.ts`). The entry is keyed by **HEAD's full SHA
-plus `sinceTag`**, i.e. the exact commit range the draft was made from:
-`sinceTag` is compounded in because tagging an ancestor moves `git describe`
-(and so the range) without a commit moving anywhere. A repeat request for the
-same context returns the stored text **before** `runPrompt` is consulted — so a
-cut that failed its checks can be retried without another one to two minutes of
+`src/server/release-notes-cache.ts`). The entry is keyed by the
+**release-relevant commit context** — a hash of the SHAs of non-bookkeeping
+commits in the range, plus `sinceTag` (#0605). Commits whose file changes all
+sit under the work dir are RepoOS's own task bookkeeping (`docs(NNNN): add
+task`, status flips, checkpoints): they describe no release content and land
+on main constantly, so they are **dropped from the commit list the prompt
+sees** and **don't move the key** — a saved draft survives them. Any source
+commit gives the range a new key. `sinceTag` is compounded in because tagging
+an ancestor moves `git describe` (and so the range) without the relevant
+commits moving anywhere. The old HEAD-keyed scheme (#0590) is gone; the cache
+file's format moved to `version: 2`, so pre-existing entries under the old key
+shape simply regenerate once. A repeat request for the same context
+returns the stored text **before** `runPrompt` is consulted — so a cut that
+failed its checks can be retried without another one to two minutes of
 generation — and the modal fills instantly with a "Reused saved notes" hint.
-Any new commit or tag produces a new key; a failed or empty agent run is never
-written, so it cannot overwrite a good entry. Cache hits record no session,
-because no LLM call happens.
+A failed or empty agent run is never written, so it cannot overwrite a good
+entry. Cache hits record no session, because no LLM call happens.
 
 Notes are committed into the tag, so keep them reasonable in size — GitHub caps
 a release body at ~125,000 characters. The commit list fed to the model is
@@ -331,7 +349,8 @@ yet.
 | `GET /api/release/distribution` | `DistributionSummary` — each configured channel's published version/state for the release being viewed. Separate from `/api/release` so a slow registry can't delay or fail the page. |
 | `GET /api/release/run`   | `ReleaseRun` — `state` / `phase` / `message` / timestamps for the current or most recent run (in-memory, resets on restart) |
 | `POST /api/release`      | `{ version, confirmTag, notes? }` → starts a run; `409` if one is already running |
-| `POST /api/release/notes` | `{ version? }` → drafts release notes from commits since the last tag and returns `{ notes, sinceTag, commitCount, truncated, cached, cachedAt }`; `cached: true` means the text came from `<cacheDir>/release-notes.json` for an unchanged commit context instead of the agent; never cuts a release |
+| `POST /api/release/notes` | `{ version? }` → starts the AI draft detached (#0605) and returns `202` with `{ run }`; synchronous short-circuits stay instant: `200` + `{ notes, sinceTag, commitCount, truncated, cached, cachedAt }` when there's nothing to summarize or a cached draft hits for this commit context, `400` when no agent is enabled. A second POST while the run is in flight returns the same run with `202` instead of starting a duplicate agent; never cuts a release |
+| `GET /api/release/notes/run` | `ReleaseNotesRun` — the draft run's `state` (`idle`/`running`/`succeeded`/`failed`), `startedAt`, `error`, commit-context `key`, and the `notes` draft when succeeded (in-memory, resets on restart) |
 
 `confirmTag` must exactly equal `tagPrefix + version` — a guard against a
 malformed request cutting the wrong tag.

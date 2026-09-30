@@ -71,6 +71,18 @@ function answer(path: string, status: Record<string, unknown>, notes: unknown): 
       updatedAt: null,
     });
   if (path === "/api/release/notes") return Promise.resolve(notes);
+  if (path === "/api/release/notes/run")
+    return Promise.resolve({
+      state: "idle",
+      startedAt: null,
+      updatedAt: null,
+      error: null,
+      key: null,
+      notes: null,
+      sinceTag: null,
+      commitCount: 0,
+      truncated: false,
+    });
   return Promise.reject(new Error(`unexpected api call: ${path}`));
 }
 
@@ -218,15 +230,160 @@ describe("AI release notes cache reuse (#0590)", () => {
     expect(hint?.textContent ?? "").toContain("no new AI run");
     expect(modal.querySelector(".rel-notes-error")).toBeNull();
   });
+});
 
-  it("shows no reuse hint for a freshly generated draft", async () => {
-    await mountView();
+/**
+ * The server-tracked draft run (#0605): Generate starts the run and the view
+ * polls `GET /api/release/notes/run` until the draft lands — so "Drafting…"
+ * survives closing the modal, picks up on reopen, and fills the field the
+ * moment the run (the mock in these tests) settles. The pickups are driven
+ * by the view's 1s poll tick, so these suites use fake timers.
+ */
+describe("AI release notes tracked run (#0605)", () => {
+  let draftingState: Record<string, unknown>;
+
+  function idleRun(): Record<string, unknown> {
+    return {
+      state: "idle",
+      startedAt: null,
+      updatedAt: null,
+      error: null,
+      key: null,
+      notes: null,
+      sinceTag: "v0.5.58",
+      commitCount: 0,
+      truncated: false,
+    };
+  }
+
+  function apiWithNotesRun(post: unknown): void {
+    api.mockImplementation((path: string) => {
+      if (path === "/api/release") return Promise.resolve(releaseStatus());
+      if (path === "/api/release/distribution")
+        return Promise.resolve({ channels: [], releaseVersion: null, releaseTag: null });
+      if (path === "/api/release/run")
+        return Promise.resolve({
+          state: "idle",
+          phase: null,
+          message: "",
+          startedAt: null,
+          updatedAt: null,
+        });
+      if (path === "/api/release/notes") return Promise.resolve(post);
+      if (path === "/api/release/notes/run") return Promise.resolve(draftingState);
+      return Promise.reject(new Error(`unexpected api call: ${path}`));
+    });
+  }
+
+  beforeEach(() => {
+    draftingState = idleRun();
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function runningRun(): Record<string, unknown> {
+    return { ...idleRun(), state: "running", key: "k-run", startedAt: new Date().toISOString() };
+  }
+
+  function succeededRun(notes = "## Highlights\n- Shiny"): Record<string, unknown> {
+    return {
+      ...idleRun(),
+      state: "succeeded",
+      key: "k-run",
+      notes,
+      commitCount: 3,
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
+  it("shows Drafting… while the run executes and fills the field when it lands", async () => {
+    apiWithNotesRun({
+      run: runningRun(),
+    });
+    wrapper = mount(ReleasesView, { attachTo: document.body });
+    await flushPromises();
     const modal = await openModal();
 
     button(modal, "Generate with AI")!.click();
     await flushPromises();
 
+    // The tracked run is in flight: Drafting state on and the poll alive.
+    expect(button(modal, "Drafting…")!.disabled).toBe(true);
+    expect(button(modal, "Publish")!.disabled).toBe(true);
+    expect(modal.querySelector(".rel-notes-drafting")).toBeTruthy();
+
+    draftingState = succeededRun();
+    await vi.advanceTimersByTimeAsync(1000);
+    await flushPromises();
+
     expect(modal.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toContain("Highlights");
-    expect(modal.querySelector(".rel-notes-hint")).toBeNull();
+    expect(modal.querySelector(".rel-notes-drafting")).toBeNull();
+    expect(button(modal, "Generate with AI")).toBeTruthy();
+    expect(modal.querySelector(".rel-notes-error")).toBeNull();
+  });
+
+  it("reopening mid-run shows Drafting… and picks up the result when it lands", async () => {
+    draftingState = runningRun();
+    apiWithNotesRun({ run: draftingState });
+    wrapper = mount(ReleasesView, { attachTo: document.body });
+    await flushPromises();
+    let modal = await openModal();
+
+    // Click Generate, close, and reopen while the run is still going. (The
+    // GET already reported a run in flight on mount, so the button reads
+    // "Drafting…" from the start — that's the reopen pickup doing its job.)
+    button(modal, "Drafting…")!.click();
+    await flushPromises();
+    button(document.body, "Cancel")!.click();
+    await flushPromises();
+    expect(document.querySelector(".release-modal")).toBeNull();
+
+    modal = await openModal();
+    expect(button(modal, "Drafting…")).toBeTruthy();
+    expect(modal.querySelector(".rel-notes-drafting")).toBeTruthy();
+    expect(modal.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toBe("");
+
+    draftingState = succeededRun();
+    await vi.advanceTimersByTimeAsync(1000);
+    await flushPromises();
+
+    expect(modal.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toContain("Highlights");
+  });
+
+  it("never backfills from a finished run this session did not watch", async () => {
+    // A pre-existing succeeded run from before this page load, with a key the
+    // session never observed: reopening must leave the field empty.
+    draftingState = succeededRun("Stale pre-existing draft");
+    apiWithNotesRun({ run: runningRun() });
+    wrapper = mount(ReleasesView, { attachTo: document.body });
+    await flushPromises();
+    const modal = await openModal();
+
+    expect(modal.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toBe("");
+    expect(button(modal, "Generate with AI")).toBeTruthy();
+    expect(button(modal, "Drafting…")).toBeUndefined();
+    expect(modal.querySelector(".rel-notes-drafting")).toBeNull();
+  });
+
+  it("surfaces the run's failure on the field instead of a silent nothing", async () => {
+    apiWithNotesRun({ run: runningRun() });
+    wrapper = mount(ReleasesView, { attachTo: document.body });
+    await flushPromises();
+    const modal = await openModal();
+
+    button(modal, "Generate with AI")!.click();
+    await flushPromises();
+
+    draftingState = { ...idleRun(), state: "failed", error: "The agent returned nothing usable." };
+    await vi.advanceTimersByTimeAsync(1000);
+    await flushPromises();
+
+    const err = modal.querySelector(".rel-notes-error");
+    expect(err?.textContent ?? "").toContain("nothing usable");
+    expect(modal.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toBe("");
+    expect(button(modal, "Generate with AI")).toBeTruthy();
   });
 });

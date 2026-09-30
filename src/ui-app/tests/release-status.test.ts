@@ -1,13 +1,17 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RepoOSConfig } from "../../core/types";
 import type { RemoteValidator, CheckSummary } from "../../server/remote-validation";
 import { cutNewRelease, getReleaseStatus, type ReleaseCommandRunner } from "../../server/release";
 import { collectReleaseCommits, releaseNotesPrompt } from "../../server/release";
-import { generateReleaseNotes } from "../../server/routes/release.js";
+import {
+  generateReleaseNotes,
+  getReleaseNotesRun,
+  whenNotesRunSettles,
+} from "../../server/routes/release.js";
 import { runPrompt } from "../../server/agents.js";
 import { RepoOSDb, resetDbInstance } from "../../core/db.js";
 
@@ -327,19 +331,41 @@ describe("git-tag release status", () => {
   });
 });
 
+/** A `%x1e%H%x1f%h%x1f%s` + --name-only log chunk, one commit per record. */
+function logChunk(
+  entries: { sha: string; short: string; subject: string; paths?: string[] }[],
+): string {
+  return entries
+    .map(
+      (e) =>
+        `\x1e${e.sha}\x1f${e.short}\x1f${e.subject}\n${(e.paths ?? []).map((p) => `${p}\n`).join("")}`,
+    )
+    .join("");
+}
+
 describe("AI-draftable release notes (#0361)", () => {
   it("collects commit subjects since the last reachable tag", async () => {
     const cfg = config();
     const runner: ReleaseCommandRunner = async (_command, args) => {
       const key = args.join(" ");
+      if (key === "rev-parse HEAD") return { code: 0, stdout: "ffff0000\n", stderr: "" };
       if (key === "describe --tags --abbrev=0") return { code: 0, stdout: "v1.2.2\n", stderr: "" };
       if (key.startsWith("log v1.2.2..HEAD"))
-        return { code: 0, stdout: "abc123 fix a thing\ndef456 add a feature\n", stderr: "" };
+        return {
+          code: 0,
+          stdout: logChunk([
+            { sha: "aaaa0002", short: "ab1", subject: "add a feature", paths: ["src/b.ts"] },
+            { sha: "aaaa0001", short: "cd1", subject: "fix a thing", paths: ["src/a.ts"] },
+          ]),
+          stderr: "",
+        };
       return { code: 1, stdout: "", stderr: "" };
     };
     const result = await collectReleaseCommits(cfg, runner);
     expect(result.sinceTag).toBe("v1.2.2");
-    expect(result.commits).toEqual(["abc123 fix a thing", "def456 add a feature"]);
+    expect(result.head).toBe("ffff0000");
+    expect(result.commits).toEqual(["ab1 add a feature", "cd1 fix a thing"]);
+    expect(result.relevantShas).toEqual(["aaaa0002", "aaaa0001"]);
     expect(result.truncated).toBe(false);
   });
 
@@ -350,26 +376,100 @@ describe("AI-draftable release notes (#0361)", () => {
       if (key === "describe --tags --abbrev=0")
         return { code: 128, stdout: "", stderr: "No names found" };
       if (key.startsWith("log HEAD"))
-        return { code: 0, stdout: "aaa initial commit\n", stderr: "" };
+        return {
+          code: 0,
+          stdout: logChunk([{ sha: "aaaa0003", short: "aa1", subject: "initial commit" }]),
+          stderr: "",
+        };
       return { code: 1, stdout: "", stderr: "" };
     };
     const result = await collectReleaseCommits(cfg, runner);
     expect(result.sinceTag).toBeNull();
-    expect(result.commits).toEqual(["aaa initial commit"]);
+    expect(result.commits).toEqual(["aa1 initial commit"]);
+    expect(result.relevantShas).toEqual(["aaaa0003"]);
   });
 
   it("caps the commit list and flags truncation", async () => {
     const cfg = config();
-    const many = Array.from({ length: 5 }, (_, i) => `c${i} subject ${i}`).join("\n");
+    const many = Array.from({ length: 5 }, (_, i) => ({
+      sha: `sha${i}000${i}`,
+      short: `c${i}`,
+      subject: `subject ${i}`,
+      paths: [`src/f${i}`],
+    }));
     const runner: ReleaseCommandRunner = async (_command, args) => {
       const key = args.join(" ");
       if (key === "describe --tags --abbrev=0") return { code: 0, stdout: "v1.0.0\n", stderr: "" };
-      if (key.startsWith("log v1.0.0..HEAD")) return { code: 0, stdout: `${many}\n`, stderr: "" };
+      if (key.startsWith("log v1.0.0..HEAD"))
+        return { code: 0, stdout: logChunk(many), stderr: "" };
       return { code: 1, stdout: "", stderr: "" };
     };
     const result = await collectReleaseCommits(cfg, runner, 3);
     expect(result.commits).toHaveLength(3);
+    expect(result.relevantShas).toHaveLength(3);
     expect(result.truncated).toBe(true);
+  });
+
+  it("drops work-dir-only bookkeeping commits from the summary and the key (#0605)", async () => {
+    const cfg = config(); // workDir: "work"
+    const runner: ReleaseCommandRunner = async (_command, args) => {
+      const key = args.join(" ");
+      if (key === "describe --tags --abbrev=0") return { code: 0, stdout: "v1.2.2\n", stderr: "" };
+      if (key.startsWith("log v1.2.2..HEAD"))
+        return {
+          code: 0,
+          stdout: logChunk([
+            // Newest first, as `git log` yields them. The two work-only
+            // commits must vanish; the mixed one stays.
+            {
+              sha: "aaaa0005",
+              short: "bk2",
+              subject: "status flip",
+              paths: ["work/other.md", "work/one/two.md"],
+            },
+            {
+              sha: "aaaa0004",
+              short: "mx1",
+              subject: "moved task file + touched src",
+              paths: ["work/0605.md", "src/b.ts"],
+            },
+            {
+              sha: "aaaa0003",
+              short: "bk1",
+              subject: "docs(0605): add task",
+              paths: ["work/0605.md"],
+            },
+            { sha: "aaaa0002", short: "ab1", subject: "feat: real change", paths: ["src/a.ts"] },
+          ]),
+          stderr: "",
+        };
+      return { code: 1, stdout: "", stderr: "" };
+    };
+    const result = await collectReleaseCommits(cfg, runner);
+    // Newest first; the two work-only commits are gone.
+    expect(result.commits).toEqual(["mx1 moved task file + touched src", "ab1 feat: real change"]);
+    expect(result.relevantShas).toEqual(["aaaa0004", "aaaa0002"]);
+  });
+
+  it("keeps empty commits (they touch nothing, so they are not bookkeeping)", async () => {
+    const cfg = config();
+    const runner: ReleaseCommandRunner = async (_command, args) => {
+      const key = args.join(" ");
+      if (key === "describe --tags --abbrev=0") return { code: 1, stdout: "", stderr: "no tags" };
+      if (key.startsWith("log HEAD"))
+        return {
+          code: 0,
+          stdout: logChunk([
+            { sha: "aaaa0007", short: "st1", subject: "real commit", paths: ["README.md"] },
+            { sha: "aaaa0006", short: "em1", subject: "checkpoint marker" },
+          ]),
+          stderr: "",
+        };
+      return { code: 1, stdout: "", stderr: "" };
+    };
+    const result = await collectReleaseCommits(cfg, runner);
+    expect(result.commits).toEqual(["st1 real commit", "em1 checkpoint marker"]);
+    expect(result.relevantShas).toEqual(["aaaa0007", "aaaa0006"]);
   });
 
   it("builds a prompt naming the version, the range, and the commits", () => {
@@ -459,9 +559,15 @@ const makeReq = (body: unknown = {}) =>
     },
   }) as unknown as never;
 
+/** Route ctx with an emitEvent no-op (#0605 events aren't asserted here). */
+const notesCtx = (cfg: RepoOSConfig) => ({ config: cfg, emitEvent: () => {} }) as unknown as never;
+
 describe("POST /api/release/notes (route, #0361)", () => {
-  afterEach(() => {
+  afterEach(async () => {
     vi.mocked(runPrompt).mockReset();
+    // Drain any detached draft run before the next test's fresh tmp root
+    // (and its DB instance) takes over.
+    await whenNotesRunSettles();
     // recordOneShotSession uses the process-global DB singleton (keyed by
     // whichever root first initialized it, ignoring the root on later
     // calls) — reset it so each test's fresh tmp root gets its own instance.
@@ -478,22 +584,22 @@ describe("POST /api/release/notes (route, #0361)", () => {
     };
     const cfg = { ...config(), agents: [disabled, disabledEngineer] } as RepoOSConfig;
     const { capture, res } = makeRes();
-    await generateReleaseNotes({ config: cfg } as never, makeReq(), res as never, {});
+    await generateReleaseNotes(notesCtx(cfg), makeReq(), res as never, {});
     expect(capture.statusCode).toBe(400);
     expect(capture.body.error).toContain("No agent is enabled");
     expect(runPrompt).not.toHaveBeenCalled();
   });
 
   it("responds 200 with empty notes without calling the agent when there are no commits", async () => {
-    const cfg = config(); // fresh temp dir, no .git — git commands fail, commits: []
+    const cfg = config(); // fresh temp dir, no .git — git commands fail, relevant: []
     const { capture, res } = makeRes();
-    await generateReleaseNotes({ config: cfg } as never, makeReq(), res as never, {});
+    await generateReleaseNotes(notesCtx(cfg), makeReq(), res as never, {});
     expect(capture.statusCode).toBe(200);
     expect(capture.body).toEqual({ notes: "", sinceTag: null, commitCount: 0, truncated: false });
     expect(runPrompt).not.toHaveBeenCalled();
   });
 
-  it("records the one-shot session usage under sessionType release-notes with a null taskId", async () => {
+  it("accepts the request with 202 + a running state, then the run succeeds and the draft is served", async () => {
     const cfg = config();
     realGit(cfg.root, ["init", "-q"]);
     realGit(cfg.root, ["config", "user.email", "t@example.com"]);
@@ -507,13 +613,25 @@ describe("POST /api/release/notes (route, #0361)", () => {
       costUsd: 0.001,
     });
 
-    const { capture, res } = makeRes();
-    await generateReleaseNotes({ config: cfg } as never, makeReq(), res as never, {});
+    const post = makeRes();
+    await generateReleaseNotes(notesCtx(cfg), makeReq(), post.res as never, {});
+    expect(post.capture.statusCode).toBe(202);
+    expect(post.capture.body.run).toMatchObject({ state: "running", notes: null, error: null });
 
-    expect(capture.statusCode).toBe(200);
-    expect(capture.body.notes).toBe("- Fixed a thing");
-    expect(runPrompt).toHaveBeenCalledTimes(1);
+    await whenNotesRunSettles();
+    const get = makeRes();
+    await getReleaseNotesRun(notesCtx(cfg), makeReq(), get.res as never, {});
+    expect(get.capture.statusCode).toBe(200);
+    expect(get.capture.body).toMatchObject({
+      state: "succeeded",
+      notes: "- Fixed a thing",
+      sinceTag: null,
+      truncated: false,
+      error: null,
+    });
 
+    // House rule: the one-shot call is recorded under sessionType
+    // release-notes with a null taskId even from the detached run.
     const db = new RepoOSDb(cfg.root);
     const row = db.getSessionTypeStats().find((r) => r.sessionType === "release-notes");
     expect(row).toBeDefined();
@@ -521,7 +639,7 @@ describe("POST /api/release/notes (route, #0361)", () => {
     db.close();
   });
 
-  it("still records the session (as errored) and responds 502 when the agent run fails", async () => {
+  it("surfaces the agent failure through the run state (and still records the session)", async () => {
     const cfg = config();
     realGit(cfg.root, ["init", "-q"]);
     realGit(cfg.root, ["config", "user.email", "t@example.com"]);
@@ -529,23 +647,68 @@ describe("POST /api/release/notes (route, #0361)", () => {
     realGit(cfg.root, ["commit", "--allow-empty", "-m", "fix a thing"]);
     vi.mocked(runPrompt).mockResolvedValue({ ok: false, error: "mocked: agent timed out" });
 
-    const { capture, res } = makeRes();
-    await generateReleaseNotes({ config: cfg } as never, makeReq(), res as never, {});
+    const post = makeRes();
+    await generateReleaseNotes(notesCtx(cfg), makeReq(), post.res as never, {});
+    expect(post.capture.statusCode).toBe(202);
 
-    expect(capture.statusCode).toBe(502);
+    await whenNotesRunSettles();
+    const get = makeRes();
+    await getReleaseNotesRun(notesCtx(cfg), makeReq(), get.res as never, {});
+    expect(get.capture.body).toMatchObject({
+      state: "failed",
+      error: "mocked: agent timed out",
+      notes: null,
+    });
+
     const db = new RepoOSDb(cfg.root);
     const row = db.getSessionTypeStats().find((r) => r.sessionType === "release-notes");
     expect(row).toBeDefined();
     db.close();
   });
+
+  it("returns the existing run instead of spawning a second agent while one is in flight", async () => {
+    const cfg = config();
+    realGit(cfg.root, ["init", "-q"]);
+    realGit(cfg.root, ["config", "user.email", "t@example.com"]);
+    realGit(cfg.root, ["config", "user.name", "Test"]);
+    realGit(cfg.root, ["commit", "--allow-empty", "-m", "fix a thing"]);
+    let release!: (result: unknown) => void;
+    vi.mocked(runPrompt).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          release = resolve as (result: unknown) => void;
+        }),
+    );
+
+    const first = makeRes();
+    await generateReleaseNotes(notesCtx(cfg), makeReq(), first.res as never, {});
+    expect(first.capture.statusCode).toBe(202);
+
+    const second = makeRes();
+    await generateReleaseNotes(notesCtx(cfg), makeReq(), second.res as never, {});
+    // Same run handed back — one POST, one agent, one draft.
+    expect(second.capture.statusCode).toBe(202);
+    expect(second.capture.body.run.state).toBe("running");
+    expect(runPrompt).toHaveBeenCalledTimes(1);
+
+    release({ ok: true, output: "- Fixed a thing", elapsedMs: 5, totalTokens: 10, costUsd: 0 });
+    await whenNotesRunSettles();
+    const get = makeRes();
+    await getReleaseNotesRun(notesCtx(cfg), makeReq(), get.res as never, {});
+    expect(get.capture.body.state).toBe("succeeded");
+    expect(runPrompt).toHaveBeenCalledTimes(1);
+  });
 });
 
 // ── The AI-draft cache (#0590): a cut that fails its checks and is retried
-// must not pay for the same release notes twice, and only a successful draft
-// may ever be stored.
-describe("POST /api/release/notes draft cache (#0590)", () => {
-  afterEach(() => {
+// must not pay for the same release notes twice, only a successful draft may
+// ever be stored — and (since #0605) bookkeeping-only commits on main must
+// not invalidate a saved draft.
+
+describe("POST /api/release/notes draft cache (#0590, #0605)", () => {
+  afterEach(async () => {
     vi.mocked(runPrompt).mockReset();
+    await whenNotesRunSettles();
     resetDbInstance();
   });
 
@@ -565,9 +728,9 @@ describe("POST /api/release/notes draft cache (#0590)", () => {
     return join(cfg.root, cfg.cacheDir, "release-notes.json");
   }
 
-  function cachedEntries(cfg: RepoOSConfig): Record<string, { notes: string }> {
+  function cachedEntries(cfg: RepoOSConfig): Record<string, { notes: string; head: string }> {
     const parsed = JSON.parse(readFileSync(cacheFile(cfg), "utf8")) as {
-      entries: Record<string, { notes: string }>;
+      entries: Record<string, { notes: string; head: string }>;
     };
     return parsed.entries;
   }
@@ -576,10 +739,21 @@ describe("POST /api/release/notes draft cache (#0590)", () => {
     return execFileSync("git", ["rev-parse", "HEAD"], { cwd: cfg.root, encoding: "utf8" }).trim();
   }
 
+  /** Fire the POST, then settle the detached run and read the tracked state. */
   async function draft(cfg: RepoOSConfig) {
-    const { capture, res } = makeRes();
-    await generateReleaseNotes({ config: cfg } as never, makeReq(), res as never, {});
-    return capture;
+    const post = makeRes();
+    await generateReleaseNotes(notesCtx(cfg), makeReq(), post.res as never, {});
+    await whenNotesRunSettles();
+    const get = makeRes();
+    await getReleaseNotesRun(notesCtx(cfg), makeReq(), get.res as never, {});
+    return { post: post.capture, run: get.capture.body as Record<string, unknown> };
+  }
+
+  /** Instant re-request — expects the synchronous cache-hit response. */
+  async function recache(cfg: RepoOSConfig) {
+    const post = makeRes();
+    await generateReleaseNotes(notesCtx(cfg), makeReq(), post.res as never, {});
+    return post.capture;
   }
 
   function agentDrafts(): void {
@@ -597,12 +771,11 @@ describe("POST /api/release/notes draft cache (#0590)", () => {
     agentDrafts();
 
     const first = await draft(cfg);
-    expect(first.statusCode).toBe(200);
-    expect(first.body.cached).toBe(false);
-    expect(first.body.notes).toBe("- Fixed a thing");
+    expect(first.post.statusCode).toBe(202);
+    expect(first.run).toMatchObject({ state: "succeeded", notes: "- Fixed a thing" });
     expect(existsSync(cacheFile(cfg))).toBe(true);
 
-    const second = await draft(cfg);
+    const second = await recache(cfg);
     expect(second.statusCode).toBe(200);
     expect(second.body.cached).toBe(true);
     expect(second.body.cachedAt).toBeTruthy();
@@ -611,7 +784,7 @@ describe("POST /api/release/notes draft cache (#0590)", () => {
     expect(runPrompt).toHaveBeenCalledTimes(1);
   });
 
-  it("regenerates once HEAD moves, then serves the new draft from cache", async () => {
+  it("regenerates once a source commit moves the relevant context, then serves the new draft from cache", async () => {
     const cfg = repoWithCommits();
     agentDrafts();
 
@@ -620,12 +793,52 @@ describe("POST /api/release/notes draft cache (#0590)", () => {
 
     realGit(cfg.root, ["commit", "--allow-empty", "-m", "a genuinely new change"]);
     const changed = await draft(cfg);
-    expect(changed.body.cached).toBe(false);
+    expect(changed.run.state).toBe("succeeded");
+    expect((await recache(cfg)).body.cached).toBe(true);
     expect(runPrompt).toHaveBeenCalledTimes(2);
+  });
 
-    const reused = await draft(cfg);
+  it("keeps the cached draft when a task-file-only commit lands on main (#0605)", async () => {
+    const cfg = repoWithCommits();
+    agentDrafts();
+    await draft(cfg);
+    expect(runPrompt).toHaveBeenCalledTimes(1);
+
+    // The exact churn that used to force a regeneration: a `docs(NNNN): add
+    // task` bookkeeping commit under the work dir moves HEAD but describes no
+    // release content.
+    mkdirSync(join(cfg.root, "work"), { recursive: true });
+    writeFileSync(join(cfg.root, "work", "0605-x.md"), "task file\n");
+    realGit(cfg.root, ["add", "work"]);
+    realGit(cfg.root, ["commit", "-m", "docs(0605): add task"]);
+
+    const reused = await recache(cfg);
+    expect(reused.statusCode).toBe(200);
     expect(reused.body.cached).toBe(true);
+    expect(reused.body.notes).toBe("- Fixed a thing");
+    expect(runPrompt).toHaveBeenCalledTimes(1);
+  });
+
+  it("invalidates the draft when a source commit moves the context even after bookkeeping", async () => {
+    const cfg = repoWithCommits();
+    agentDrafts();
+    await draft(cfg);
+
+    mkdirSync(join(cfg.root, "work"), { recursive: true });
+    writeFileSync(join(cfg.root, "work", "0605-x.md"), "task file\n");
+    realGit(cfg.root, ["add", "work"]);
+    realGit(cfg.root, ["commit", "-m", "docs(0605): add task"]);
+    expect((await recache(cfg)).body.cached).toBe(true);
+
+    // One real source commit flips the key and pays for a fresh draft.
+    writeFileSync(join(cfg.root, "src.ts"), "export {}\n");
+    realGit(cfg.root, ["add", "src.ts"]);
+    realGit(cfg.root, ["commit", "-m", "feat: the actual change"]);
+
+    const fresh = await draft(cfg);
+    expect(fresh.post.statusCode).toBe(202);
     expect(runPrompt).toHaveBeenCalledTimes(2);
+    expect((await recache(cfg)).body.cached).toBe(true);
   });
 
   it("regenerates when a new tag shortens the range under an unchanged HEAD", async () => {
@@ -633,30 +846,33 @@ describe("POST /api/release/notes draft cache (#0590)", () => {
     agentDrafts();
 
     const before = await draft(cfg);
-    expect(before.body.sinceTag).toBeNull();
-    expect(before.body.cached).toBe(false);
+    expect(before.run.sinceTag).toBeNull();
 
-    // Same HEAD, new range: tagging an ancestor moves `git describe`, so the
-    // old draft is stale even though no commit moved.
+    // Same HEAD (no new source commit — the tag itself is the only change):
+    // new range, so the old draft is stale even though the key's shas changed
+    // only via the tag movement.
     realGit(cfg.root, ["tag", "v0.9.0", "HEAD~1"]);
     const after = await draft(cfg);
-    expect(after.body.sinceTag).toBe("v0.9.0");
-    expect(after.body.cached).toBe(false);
+    expect(after.run.sinceTag).toBe("v0.9.0");
     expect(runPrompt).toHaveBeenCalledTimes(2);
 
-    expect((await draft(cfg)).body.cached).toBe(true);
+    expect((await recache(cfg)).body.cached).toBe(true);
     expect(runPrompt).toHaveBeenCalledTimes(2);
   });
 
   it("stores nothing for a failed or empty agent run", async () => {
     const failed = repoWithCommits();
     vi.mocked(runPrompt).mockResolvedValue({ ok: false, error: "mocked: agent timed out" });
-    expect((await draft(failed)).statusCode).toBe(502);
+    const failedDraft = await draft(failed);
+    expect(failedDraft.post.statusCode).toBe(202);
+    expect(failedDraft.run.state).toBe("failed");
     expect(existsSync(cacheFile(failed))).toBe(false);
 
     const empty = repoWithCommits();
     vi.mocked(runPrompt).mockResolvedValue({ ok: true, output: "", elapsedMs: 5 });
-    expect((await draft(empty)).statusCode).toBe(502);
+    const emptyDraft = await draft(empty);
+    expect(emptyDraft.run.state).toBe("failed");
+    expect(emptyDraft.run.error).toContain("no release notes");
     expect(existsSync(cacheFile(empty))).toBe(false);
   });
 
@@ -668,11 +884,12 @@ describe("POST /api/release/notes draft cache (#0590)", () => {
 
     realGit(cfg.root, ["commit", "--allow-empty", "-m", "one more change"]);
     vi.mocked(runPrompt).mockResolvedValue({ ok: false, error: "mocked: agent timed out" });
-    expect((await draft(cfg)).statusCode).toBe(502);
+    expect((await draft(cfg)).run.state).toBe("failed");
 
     const entries = cachedEntries(cfg);
     expect(Object.keys(entries)).toHaveLength(1);
-    expect(Object.keys(entries)[0].startsWith(goodHead)).toBe(true);
+    // The stored draft still points at the commit context it was made from.
+    expect(entries[Object.keys(entries)[0]].head).toBe(goodHead);
     expect(entries[Object.keys(entries)[0]].notes).toBe("- Fixed a thing");
   });
 });

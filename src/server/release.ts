@@ -278,30 +278,58 @@ export async function getReleaseStatus(
   };
 }
 
-/** Commit subjects to draft release notes from, and the range they cover. */
+/**
+ * Commit subjects to draft release notes from, and the range they cover.
+ */
 export interface ReleaseCommits {
   /** Tag the range starts after, or null when no previous release exists. */
   sinceTag: string | null;
   /**
    * Full SHA of HEAD while the range was collected, or null when it couldn't
-   * be read. Together with `sinceTag` this is the "commit context" a draft is
-   * made from — the cache key for AI release notes (#0590).
+   * be read. Kept as metadata for the release-notes cache entry.
    */
   head: string | null;
-  /** `git log` subject lines, newest first. */
+  /**
+   * `git log` subject lines, newest first — **release-relevant commits only**
+   * (#0605): commits whose file changes all sit under the work dir are
+   * RepoOS's own task bookkeeping, not product changes, so they are dropped
+   * from the notes' input (and from the draft's cache key) and the "new
+   * commit is on main" feeling they'd otherwise cause every time a task
+   * moves. Empty commits (no file changes at all) are never classified
+   * bookkeeping — an empty commit touched nothing, so it can't be assumed
+   * churn.
+   */
   commits: string[];
+  /**
+   * Full SHAs backing `commits`, in the same order (newest first). The
+   * release-notes cache key hashes this list with `sinceTag`: adding a
+   * bookkeeping-only commit leaves it unchanged, so the saved draft still
+   * hits, while any source commit changes it (task #0605).
+   */
+  relevantShas: string[];
   /** True when more commits existed than `limit` and the oldest were dropped. */
   truncated: boolean;
+}
+
+/**
+ * True when a commit's file changes are all RepoOS bookkeeping under the work
+ * dir — the task files the board writes itself. Only commits WITH files can
+ * be bookkeeping: an empty commit changed nothing, so it stays.
+ */
+function isWorkDirOnly(paths: string[], workDir: string): boolean {
+  if (paths.length === 0) return false;
+  const prefix = `${workDir}/`;
+  return paths.every((p) => p === workDir || p.startsWith(prefix));
 }
 
 /**
  * Collect the commit subjects an AI draft of release notes should summarize:
  * everything since the last reachable tag, or the whole history when no
  * release has been cut yet (task #0361's stated fallback). Capped at `limit`
- * so a long history can't blow the prompt; the newest commits win, and
- * `truncated` tells the caller the oldest were dropped. `head` is resolved
- * alongside the range so a caller can key a cache on the exact commit context
- * the draft was made from (#0590).
+ * raw commits so a long history can't blow the prompt; the newest commits
+ * win, and `truncated` tells the caller the oldest were dropped. `head` is
+ * resolved alongside the range; `relevantShas` carries the release-relevant
+ * subset a draft's cache key is built from (#0590, #0605).
  */
 export async function collectReleaseCommits(
   config: RepoOSConfig,
@@ -313,14 +341,48 @@ export async function collectReleaseCommits(
   const latest = await exec("git", ["describe", "--tags", "--abbrev=0"], config.root);
   const sinceTag = latest.code === 0 ? latest.stdout.trim() || null : null;
   const range = sinceTag ? `${sinceTag}..HEAD` : "HEAD";
+  // One atomic call. Each record starts with `\x1e` so the record boundary is
+  // unambiguous regardless of how git spaces the `--name-only` path lines
+  // that follow the one-line `%H \x1f %h \x1f %s` header; the paths that
+  // follow belong to the record just ended, not the next one.
   const res = await exec(
     "git",
-    ["log", range, "-n", String(limit + 1), "--pretty=format:%h %s"],
+    ["log", range, "-n", String(limit + 1), "--pretty=format:%x1e%H%x1f%h%x1f%s", "--name-only"],
     config.root,
   );
-  const lines = res.code === 0 ? res.stdout.split("\n").filter((l) => l.trim()) : [];
-  const truncated = lines.length > limit;
-  return { head, sinceTag, commits: truncated ? lines.slice(0, limit) : lines, truncated };
+  const raw = res.code === 0 ? res.stdout : "";
+  interface Record {
+    sha: string;
+    shortSha: string;
+    subject: string;
+    paths: string[];
+  }
+  const records: Record[] = [];
+  for (const block of raw.split("\x1e")) {
+    const lines = block.split("\n");
+    const header = lines[0] ?? "";
+    const [sha, shortSha, subject] = header.split("\x1f");
+    if (!sha?.trim()) continue;
+    records.push({
+      sha: sha.trim(),
+      shortSha: shortSha?.trim() || sha.trim().slice(0, 7),
+      subject: (subject ?? "").trim(),
+      paths: lines
+        .slice(1)
+        .map((l) => l.trim())
+        .filter((p) => p !== ""),
+    });
+  }
+  const truncated = records.length > limit;
+  const inScope = truncated ? records.slice(0, limit) : records;
+  const relevant = inScope.filter((r) => !isWorkDirOnly(r.paths, config.workDir));
+  return {
+    head,
+    sinceTag,
+    commits: relevant.map((r) => `${r.shortSha} ${r.subject}`),
+    relevantShas: relevant.map((r) => r.sha),
+    truncated,
+  };
 }
 
 /**

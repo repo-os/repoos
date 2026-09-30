@@ -221,6 +221,18 @@ export type RepoEvent =
       taskId: string | null;
       runDoc: string | null;
       at: string;
+    }
+  /**
+   * Lifecycle of the server-tracked AI release-notes draft run (#0605):
+   * emitted on start and when the draft lands or fails, so a notice feed
+   * (#0606) can surface "notes ready" without polling. The draft itself lives
+   * on `GET /api/release/notes/run`.
+   */
+  | {
+      type: "release.notesRun";
+      state: "running" | "succeeded" | "failed";
+      error?: string;
+      at: string;
     };
 
 type Listener = (e: RepoEvent) => void;
