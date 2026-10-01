@@ -76,6 +76,21 @@ afterAll(() => {
 /** Run cmdCheck in the fixture root, stubbing process.exit; returns its exit code. */
 async function runCheck(args: string[], root: string): Promise<number | undefined> {
   logs = [];
+  // Defense in depth for the global scrub in tests/setup/check-env.ts: a
+  // gate-exported routing var (STORE_ROOT/PHASE/TASK_ID) must never redirect
+  // a fixture run into the live history, even if the setup file regresses.
+  const savedEnv: Record<string, string | undefined> = {
+    REPOOS_CHECK_STORE_ROOT: process.env.REPOOS_CHECK_STORE_ROOT,
+    REPOOS_CHECK_PHASE: process.env.REPOOS_CHECK_PHASE,
+    REPOOS_CHECK_TASK_ID: process.env.REPOOS_CHECK_TASK_ID,
+    REPOOS_TASK_ID: process.env.REPOOS_TASK_ID,
+    REPOOS_CHECK_CHANGED: process.env.REPOOS_CHECK_CHANGED,
+  };
+  delete process.env.REPOOS_CHECK_STORE_ROOT;
+  delete process.env.REPOOS_CHECK_PHASE;
+  delete process.env.REPOOS_CHECK_TASK_ID;
+  delete process.env.REPOOS_TASK_ID;
+  delete process.env.REPOOS_CHECK_CHANGED;
   const spy = vi.spyOn(console, "log").mockImplementation((...parts: unknown[]) => {
     logs.push(parts.map(String).join(" "));
   });
@@ -92,6 +107,10 @@ async function runCheck(args: string[], root: string): Promise<number | undefine
   } finally {
     spy.mockRestore();
     exitSpy.mockRestore();
+    for (const [k, v] of Object.entries(savedEnv)) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
   }
 }
 
@@ -155,6 +174,31 @@ describe("cmdCheck — the skipped outcome (#0592)", () => {
     const rows = getCheckStore(root).list({ limit: 5 });
     expect(rows.length).toBeGreaterThan(0);
     expect(rows[0]?.outcome).toBe("skipped");
+  });
+
+  it("never writes to an inherited REPOOS_CHECK_STORE_ROOT (#0607)", async () => {
+    // A gate-exported STORE_ROOT (release/handoff/close-out) used to redirect
+    // this fixture's row into the REAL repo's checks.db, leaving the fixture
+    // store empty. runCheck scrubs the routing env, so the foreign dir stays
+    // untouched and the fixture owns its row.
+    const other = mkdtempSync(join(tmpdir(), "repoos-check-skip-env-"));
+    cleanups.push(other);
+    process.env.REPOOS_CHECK_STORE_ROOT = other;
+    process.env.REPOOS_CHECK_PHASE = "pre-review";
+    process.env.REPOOS_CHECK_TASK_ID = "0607";
+    try {
+      const root = fixture();
+      const code = await runCheck([], root);
+      expect(code).toBe(0);
+      expect(existsSync(join(other, ".repoos", "checks.db"))).toBe(false);
+      const rows = getCheckStore(root).list({ limit: 5 });
+      expect(rows.length).toBeGreaterThan(0);
+      expect(rows[0]?.outcome).toBe("skipped");
+    } finally {
+      delete process.env.REPOOS_CHECK_STORE_ROOT;
+      delete process.env.REPOOS_CHECK_PHASE;
+      delete process.env.REPOOS_CHECK_TASK_ID;
+    }
   });
 });
 
