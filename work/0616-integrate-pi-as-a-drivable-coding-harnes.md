@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-01T17:23:58Z"
+review_passes: 2
 id: "0616"
 title: Integrate pi as a drivable coding harness
 type: feature
@@ -9,8 +11,6 @@ assigned_to: ai
 created_by: ""
 branch: feat/integrate-pi-as-a-drivable-coding-harnes
 created_at: "2026-10-01T16:34:17Z"
-updated_at: "2026-10-01T17:23:17Z"
-review_passes: 1
 ---
 ## Context
 
@@ -112,3 +112,4 @@ uses: `version`, `help`, `model-discovery`, `headless-one-shot`,
 - 2026-10-01T17:19:22Z · status review→active
 - 2026-10-01T17:23:17Z · status active→review
 - 2026-10-01T17:23:17Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+
