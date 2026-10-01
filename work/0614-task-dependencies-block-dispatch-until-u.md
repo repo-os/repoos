@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-01T12:33:39Z"
+review_passes: 1
 id: "0614"
 title: "Task dependencies: block dispatch until upstream tasks are merged to main"
 type: feature
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: ""
 branch: feat/task-dependencies-block-dispatch-until-u
 created_at: "2026-10-01T11:04:57Z"
-updated_at: "2026-10-01T12:32:11Z"
 ---
 ## Problem
 
@@ -62,3 +63,4 @@ Relevant code: `src/server/auto-engineering.ts` (ready filter), `src/core/types.
 - 2026-10-01T12:12:27Z · status ready→active, branch
 - 2026-10-01T12:24:23Z · body
 - 2026-10-01T12:32:11Z · status active→review
+
