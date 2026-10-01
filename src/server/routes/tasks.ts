@@ -92,6 +92,7 @@ import { buildIntegrationSnapshot } from "../integration-status.js";
 import { resolvePipelineCheckPlan } from "../check-plan-info.js";
 import { loadDiffSnapshot } from "../diff-snapshot.js";
 import { previewTargetOptions, type PreviewTargetOption } from "../preview.js";
+import { assessTaskUnderspecified } from "../../core/task-underspecified.js";
 import {
   clearNeedsInputForReviewAgainOnTask,
   dismissNeedsInputOnTask,
@@ -1069,11 +1070,15 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     // It does not block start; it records a visible activity note.
     const startedTask = index.getTask(updated.id);
     if (startedTask) {
+      const assessment = assessTaskUnderspecified(startedTask.body);
       const flagged = flagUnderspecifiedIfNeeded(config, startedTask);
       if (flagged) {
         index.applyFileChange(flagged.absPath, { guarded: true });
-        logger.task(id, "warn", "Task body is underspecified — needs_input raised on start", {
-          detail: flagged.needsInputDetail ?? undefined,
+      }
+      if (assessment.underspecified) {
+        logger.task(id, "warn", "Task body is underspecified at start", {
+          detail: assessment.detail,
+          needsInputRaised: flagged !== null,
         });
       }
     }

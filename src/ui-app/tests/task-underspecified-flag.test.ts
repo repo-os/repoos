@@ -188,8 +188,8 @@ describe("underspecified flag on task start (#0613)", () => {
       expect(ctx.logger.task).toHaveBeenCalledWith(
         "0558",
         "warn",
-        "Task body is underspecified — needs_input raised on start",
-        expect.objectContaining({ detail: expect.any(String) }),
+        "Task body is underspecified at start",
+        expect.objectContaining({ detail: expect.any(String), needsInputRaised: true }),
       );
     } finally {
       fx.clean();
@@ -211,6 +211,12 @@ describe("underspecified flag on task start (#0613)", () => {
         needsInput: true,
         needsInputReason: "dev-error",
       });
+      expect(ctx.logger.task).toHaveBeenCalledWith(
+        "0558",
+        "warn",
+        "Task body is underspecified at start",
+        expect.objectContaining({ detail: expect.any(String), needsInputRaised: false }),
+      );
     } finally {
       fx.clean();
     }
