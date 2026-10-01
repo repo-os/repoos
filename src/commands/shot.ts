@@ -302,6 +302,7 @@ async function uploadShot(
     provenance?: string;
     selector?: string;
     data: string;
+    warnings?: string[];
   },
 ): Promise<
   { ok: true; shot: { name: string; path: string; url: string } } | { ok: false; error: string }
@@ -319,6 +320,7 @@ async function uploadShot(
         name: input.target,
         mime: "image/png",
         data: input.data,
+        ...(input.warnings?.length ? { warnings: input.warnings } : {}),
       }),
     });
   } catch (err) {
@@ -573,6 +575,7 @@ export async function cmdShot(args: string[]): Promise<number> {
         : `${currentPreviewUrl}${normalizedRoute(entry.route)}`;
       const page = (await context.newPage()) as unknown as ShotDriverPage;
       let png: Buffer;
+      const warnings: string[] = [];
       try {
         await page.setViewportSize(opts.viewport);
         png = await captureShotPage(
@@ -581,12 +584,14 @@ export async function cmdShot(args: string[]): Promise<number> {
           entry,
           { waitMs: opts.waitMs, fullPage: opts.fullPage },
           (selector, route) => {
+            warnings.push(`highlight ${selector} matched nothing on ${route}`);
             console.error(
               c.yellow("  · ") +
                 `highlight "${selector}" matched nothing on ${route} — capture went ahead unhighlighted`,
             );
           },
           (selector, route) => {
+            warnings.push(`selector ${selector} matched nothing on ${route}`);
             console.error(
               c.yellow("  · ") +
                 `selector "${selector}" matched nothing on ${route} — capture used the whole window`,
@@ -607,6 +612,7 @@ export async function cmdShot(args: string[]): Promise<number> {
         ...(entry.label ? { label: entry.label } : {}),
         provenance: provenanceCaption(entry.provenance),
         data: png.toString("base64"),
+        ...(warnings.length ? { warnings } : {}),
       });
       if (!uploaded.ok) {
         console.error(c.red("  ✗ ") + `storing the shot failed: ${uploaded.error}`);
