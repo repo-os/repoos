@@ -2,14 +2,14 @@
 id: "0612"
 title: Align detected-agent driver column and compatibility icons
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-01T09:01:31Z"
-updated_at: "2026-10-01T09:02:02Z"
+updated_at: "2026-10-01T09:02:14Z"
 ---
 ## Problem
 
@@ -67,3 +67,4 @@ Align the info/question mark/check icon to come right after the "repoos driver" 
 - 2026-10-01T09:01:31Z · created · hello@repoos.org
 - 2026-10-01T09:01:32Z · screenshots
 - 2026-10-01T09:02:02Z · status draft→inbox, title, area, body
+- 2026-10-01T09:02:14Z · status inbox→ready
