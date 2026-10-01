@@ -7,11 +7,13 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+  contrastProbe,
   judgeSample,
   parseCssColor,
   requiredRatio,
   scopeAttributes,
   scopeSettleWarning,
+  settleScopeInPage,
   type ProbeSample,
 } from "../../commands/ui-contrast-audit.js";
 
@@ -72,6 +74,35 @@ describe("scopeSettleWarning (#0617)", () => {
     expect(
       scopeSettleWarning("clear-light", { theme: null, uiTheme: "clear" }, attrs),
     ).not.toBeNull();
+  });
+});
+
+describe("theme-flip settling (#0617)", () => {
+  it("contrastProbe re-asserts the intended scope inside its own walk", () => {
+    // A late config-store apply flipped the page to a different scope; the
+    // probe must reclaim the requested one before it reads any styles.
+    document.documentElement.dataset.theme = "dark";
+    document.documentElement.dataset.uiTheme = "classic";
+    localStorage.setItem("repoos.theme", "dark");
+    localStorage.setItem("repoos.uiTheme", "classic");
+
+    contrastProbe({
+      exemptSelectors: [],
+      scope: { uiTheme: "clear", mode: "light" },
+    });
+
+    expect(document.documentElement.dataset.theme).toBe("light");
+    expect(document.documentElement.dataset.uiTheme).toBe("clear");
+    expect(localStorage.getItem("repoos.theme")).toBe("light");
+    expect(localStorage.getItem("repoos.uiTheme")).toBe("clear");
+  });
+
+  it("settleScopeInPage resolves only after the scope is stable across frames", async () => {
+    const settled = await settleScopeInPage({ uiTheme: "gruvbox", mode: "light" });
+    expect(settled.theme).toBe("light");
+    expect(settled.uiTheme).toBe("gruvbox");
+    expect(document.documentElement.dataset.theme).toBe("light");
+    expect(document.documentElement.dataset.uiTheme).toBe("gruvbox");
   });
 });
 
