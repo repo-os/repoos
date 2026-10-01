@@ -2,7 +2,7 @@
 id: "0613"
 title: Protect task bodies from clobbering and tighten shot capture
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
@@ -16,7 +16,7 @@ model_override: composer-2.5
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-01T09:30:31Z"
-updated_at: "2026-10-01T18:45:19Z"
+updated_at: "2026-10-01T18:45:37Z"
 review_passes: 11
 review_rounds: 2
 dev_error_count: 1
@@ -137,3 +137,4 @@ Follow-up to #0612: add a section-replace/append form for task bodies (so declar
 - 2026-10-01T18:42:51Z · needs_input
 - 2026-10-01T18:45:18Z · review_cli_override, review_model_override
 - 2026-10-01T18:45:19Z · review_model_override
+- 2026-10-01T18:45:37Z · status review→active
