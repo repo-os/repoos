@@ -129,3 +129,4 @@ Stream at *completed text block* granularity instead of per token:
 - 2026-10-01T23:45:06Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Notes for AI
 - 2026-10-01T23:46:02Z · status review→active
 - 2026-10-01T23:55:24Z · status active→review
+- 2026-10-01T23:55:24Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
