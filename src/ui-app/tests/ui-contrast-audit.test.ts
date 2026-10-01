@@ -11,6 +11,7 @@ import {
   parseCssColor,
   requiredRatio,
   scopeAttributes,
+  scopeSettleWarning,
   type ProbeSample,
 } from "../../commands/ui-contrast-audit.js";
 
@@ -50,6 +51,27 @@ describe("scopeAttributes (#0596)", () => {
     expect(scopeAttributes({ selector: ":root", name: "jelly-light" }).mode).toBe("light");
     expect(scopeAttributes({ selector: "html", name: "custom" }).mode).toBe("dark");
     expect(scopeAttributes({ selector: "html", name: "custom" }).uiTheme).toBe("classic");
+  });
+});
+
+describe("scopeSettleWarning (#0617)", () => {
+  const attrs = { uiTheme: "clear", mode: "light" };
+
+  it("is silent when the flip landed on the requested scope", () => {
+    expect(
+      scopeSettleWarning("clear-light", { theme: "light", uiTheme: "clear" }, attrs),
+    ).toBeNull();
+  });
+
+  it("warns (and never silently probes) when the flip did not settle", () => {
+    const warn = scopeSettleWarning("clear-light", { theme: "dark", uiTheme: "classic" }, attrs);
+    expect(warn).toContain("clear-light");
+    expect(warn).toContain('wanted data-theme="light" data-ui-theme="clear"');
+    expect(warn).toContain('got data-theme="dark" data-ui-theme="classic"');
+    // A missing attribute must not read as a match either.
+    expect(
+      scopeSettleWarning("clear-light", { theme: null, uiTheme: "clear" }, attrs),
+    ).not.toBeNull();
   });
 });
 
