@@ -435,6 +435,13 @@ Old UX.
   it("refuses to replace the append-only Activity section", () => {
     expect(() => replaceSection(body, "Activity", "rewritten")).toThrow(/append-only/);
   });
+
+  it("rejects a ### heading instead of mangling it into `## ### Foo` (#0613)", () => {
+    expect(() => replaceSection(body, "### Foo", "x")).toThrow(/single ## heading/);
+    expect(() => replaceSection(body, "## ### Foo", "x")).toThrow(/single ## heading/);
+    expect(() => replaceSection(body, "Foo\nBar", "x")).toThrow(/single ## heading/);
+    expect(replaceSection(body, "Foo", "x")).toContain("## Foo");
+  });
 });
 
 const WITH_SPEC = `---

@@ -86,7 +86,12 @@ import { mimeForExtension, resolveScreenshot, saveScreenshot } from "../attachme
 import { localShotStore } from "../shots.js";
 import { computeTaskShotContext } from "../shot-context.js";
 import { STATUSES } from "../../core/types.js";
-import { ACTIVITY_HEADING, normalizeSectionHeading, parseTask } from "../../core/task.js";
+import {
+  ACTIVITY_HEADING,
+  isSectionHeading,
+  normalizeSectionHeading,
+  parseTask,
+} from "../../core/task.js";
 import type { UsageRange } from "../../core/db.js";
 import { buildIntegrationSnapshot } from "../integration-status.js";
 import { resolvePipelineCheckPlan } from "../check-plan-info.js";
@@ -695,8 +700,10 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
       });
     }
     const heading = normalizeSectionHeading(section.heading);
-    if (!/^## [^\r\n]+$/.test(heading)) {
-      return json(res, 400, { error: "section heading must be a single ## heading" });
+    if (!isSectionHeading(heading)) {
+      return json(res, 400, {
+        error: "section heading must be a single ## heading (not ### or deeper)",
+      });
     }
     if (heading === ACTIVITY_HEADING) {
       return json(res, 400, { error: "## Activity is append-only and cannot be edited" });
