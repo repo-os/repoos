@@ -46,6 +46,7 @@ import { withOriginalPromptSection } from "../../core/repoos.js";
 import {
   flagUnderspecifiedIfNeeded,
   needsInputClearsOnPmMessage,
+  UNDERSPECIFIED_NEEDS_INPUT_REASON,
 } from "../task-underspecified-flag.js";
 import {
   answeringQuestionsMatchTask,
@@ -85,7 +86,7 @@ import { mimeForExtension, resolveScreenshot, saveScreenshot } from "../attachme
 import { localShotStore } from "../shots.js";
 import { computeTaskShotContext } from "../shot-context.js";
 import { STATUSES } from "../../core/types.js";
-import { parseTask } from "../../core/task.js";
+import { ACTIVITY_HEADING, normalizeSectionHeading, parseTask } from "../../core/task.js";
 import type { UsageRange } from "../../core/db.js";
 import { buildIntegrationSnapshot } from "../integration-status.js";
 import { resolvePipelineCheckPlan } from "../check-plan-info.js";
@@ -134,6 +135,16 @@ function withPendingHandoff<T extends { id: string }>(
   runner: { hasPendingHandoff: (id: string) => boolean },
 ): T & { pendingHandoff: boolean } {
   return { ...task, pendingHandoff: runner.hasPendingHandoff(task.id) };
+}
+
+function isSectionPatch(value: unknown): value is { heading: string; content: string } {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    typeof (value as Record<string, unknown>).heading === "string" &&
+    typeof (value as Record<string, unknown>).content === "string"
+  );
 }
 
 export const getTasks: RouteHandler = (ctx, req, res) => {
@@ -675,6 +686,29 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
     /** #0507: which UI affordance asked, for the activity/progress record. */
     origin?: unknown;
   };
+  if (body.section !== undefined && body.section !== null) {
+    const section: unknown = body.section;
+    if (!isSectionPatch(section)) {
+      return json(res, 400, {
+        error: "section must contain string heading and content fields",
+      });
+    }
+    const heading = normalizeSectionHeading(section.heading);
+    if (!/^## [^\r\n]+$/.test(heading)) {
+      return json(res, 400, { error: "section heading must be a single ## heading" });
+    }
+    if (heading === ACTIVITY_HEADING) {
+      return json(res, 400, { error: "## Activity is append-only and cannot be edited" });
+    }
+    if (body.body !== undefined) {
+      return json(res, 400, {
+        error: "section and body are mutually exclusive — use section to edit one ## heading",
+      });
+    }
+  }
+  if (body.force !== undefined && typeof body.force !== "boolean") {
+    return json(res, 400, { error: "force must be a boolean" });
+  }
   const prevStatus = existing.status;
   if (body.status === "done" && prevStatus !== "done") {
     if (reviews.isRunning(existing.id)) {
@@ -1005,7 +1039,15 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       }
     }
     const isHotfix = existing.hotfix === true;
-    const patch: TaskPatch = { status: "active", needsInput: false };
+    const patch: TaskPatch = { status: "active" };
+    // Starting acknowledges ordinary question/underspecified flags, but must
+    // not erase a failure reason owned by another subsystem.
+    if (
+      !existing.needsInputReason ||
+      existing.needsInputReason === UNDERSPECIFIED_NEEDS_INPUT_REASON
+    ) {
+      patch.needsInput = false;
+    }
     if (!existing.branch) patch.branch = branch;
     // Patch (and commit) the task file in main BEFORE forking the worktree's
     // branch — ensureWorktree forks from main's current committed HEAD, so
