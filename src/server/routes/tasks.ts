@@ -730,6 +730,13 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
       ? patchTaskFile(config, existing.absPath, rest, { onStatusChange: onServerStatusChange })
       : existing;
     index.applyFileChange(updated.absPath, { guarded: true });
+    if (rest.body !== undefined || rest.section !== undefined) {
+      const current = index.getTask(updated.id);
+      if (current) {
+        const flagged = flagUnderspecifiedIfNeeded(config, current);
+        if (flagged) index.applyFileChange(flagged.absPath, { guarded: true });
+      }
+    }
     return json(res, 202, { ...index.getTask(updated.id), pendingHandoff: true });
   }
 

@@ -389,11 +389,24 @@ describe("section helpers", () => {
     expect(out).toContain("## Screenshots");
     expect(out).toContain("## Activity");
     expect(out).toContain("Spec text.");
+    expect(out.split("## Activity").length - 1).toBe(1);
+    expect(out.indexOf("## Shots")).toBeLessThan(out.indexOf("## Activity"));
   });
 
   it("replaceSection creates a missing section before Activity", () => {
     const out = replaceSection(body, "## Shots", "new");
     expect(out.indexOf("## Shots")).toBeLessThan(out.indexOf("## Activity"));
+    expect(out.split("## Activity").length - 1).toBe(1);
+  });
+
+  it("replaceSection on an existing section does not duplicate Activity", () => {
+    const out = replaceSection(body, "## Screenshots", "![b](y.png)");
+    expect(out.split("## Screenshots").length - 1).toBe(1);
+    expect(out.split("## Activity").length - 1).toBe(1);
+    expect(out).toContain("![b](y.png)");
+    expect(out).not.toContain("![a](x.png)");
+    expect(out.indexOf("## Screenshots")).toBeLessThan(out.indexOf("## Activity"));
+    expect(out).toContain("- 2026-01-01T00:00:00Z · created");
   });
 });
 
@@ -458,6 +471,21 @@ describe("spec section clobber guard (#0613)", () => {
       expect(updated.body).toContain("## Problem");
       expect(updated.body).toContain("## Shots");
       expect(updated.body).toContain("## Activity");
+      expect(updated.body.split("## Activity").length - 1).toBe(1);
+    } finally {
+      clean();
+    }
+  });
+
+  it("refuses a patch that sets both section and body", () => {
+    const { root, absPath, clean } = setupFile(WITH_SPEC);
+    try {
+      expect(() =>
+        patchTaskFile(config(root), absPath, {
+          section: { heading: "Shots", content: "x" },
+          body: "## Problem\n\nnope\n",
+        }),
+      ).toThrow(WriteError);
     } finally {
       clean();
     }
