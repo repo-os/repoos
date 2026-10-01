@@ -106,3 +106,4 @@ Stream at *completed text block* granularity instead of per token:
 - 2026-10-01T18:57:58Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
 - 2026-10-01T18:58:57Z · status review→active
 - 2026-10-01T19:13:25Z · status active→review
+- 2026-10-01T19:13:25Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
