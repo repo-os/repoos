@@ -82,6 +82,7 @@ import SpecEditModal from "./SpecEditModal.vue";
 import ScreenshotViewer from "./ScreenshotViewer.vue";
 import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
 import { isImageMime, pendingToShots, type ScreenshotShot } from "../lib/screenshot-viewer";
+import { shotRows } from "../lib/shot-rows";
 import DoneErrorCard from "./DoneErrorCard.vue";
 import DebugPanel from "./DebugPanel.vue";
 import StopWorkConfirmModal from "./StopWorkConfirmModal.vue";
@@ -802,6 +803,13 @@ function openPendingViewer(index: number): void {
 // ---- captured preview shots (#0582) ----
 /** Shots captured by `repoos shot`, listed from the task's `shots/` folder. */
 const taskShots = computed(() => (ui.active ? repo.shotsFor(ui.active.id) : []));
+/**
+ * The same shots as UI-changes rows (#0611): one per captured file, carrying the
+ * matching `## Shots` spec detail (label, target · route, selector, steps) that
+ * `ShotMeta` alone doesn't have. Order matches `taskShots`, so a row index is
+ * still the viewer's start index.
+ */
+const uiChangeRows = computed(() => shotRows(taskShots.value, ui.active?.body));
 /** Area/target mismatch warning for the open task, or undefined. */
 const shotWarning = computed(() => (ui.active ? repo.shotWarningFor(ui.active.id) : undefined));
 const shotsViewerOpen = ref(false);
@@ -4877,27 +4885,41 @@ watch(
               Pick the right target from the preview control above.
             </span>
           </div>
+          <!-- Captured preview shots (#0611). Same one-per-row shape as the New
+               task / New input pending attachments (ff-pending-*), because a
+               thumbnail grid had no room for the `## Shots` spec the reviewer
+               actually reads: label, target · route, selector, steps. -->
           <section
-            v-if="ui.active && taskShots.length"
+            v-if="ui.active && uiChangeRows.length"
             class="changes-summary ui-changes"
             aria-label="UI changes"
           >
             <div class="changes-summary-title">UI changes</div>
-            <div class="shot-grid">
-              <div v-for="(s, i) in taskShots" :key="s.name" class="shot-thumb">
-                <img :src="s.url" :alt="s.label || s.name" @click="openShotsViewer(i)" />
-                <ScreenshotExpandButton :name="s.label || s.name" @click="openShotsViewer(i)" />
-                <span class="shot-name" :title="s.route ? `${s.target} · ${s.route}` : s.target">{{
-                  s.label || s.target
-                }}</span>
-                <!-- #0603: why this shot exists — a declared label captions the
-                     shot, a fallback shot shows the glob it matched; never blank. -->
-                <span
-                  v-if="s.provenance && s.provenance !== s.label"
-                  class="shot-provenance"
-                  :title="s.provenance"
-                  >{{ s.provenance }}</span
-                >
+            <div class="ff-pending-files shot-rows" aria-label="Captured preview shots">
+              <div
+                v-for="(row, i) in uiChangeRows"
+                :key="row.meta.name"
+                class="ff-pending-file shot-row"
+              >
+                <img :src="row.meta.url" :alt="row.title" @click="openShotsViewer(i)" />
+                <div class="shot-row-text">
+                  <span class="ff-pending-file-name" :title="row.title">{{ row.title }}</span>
+                  <span v-if="row.context" class="shot-row-detail" :title="row.context">
+                    {{ row.context }}
+                  </span>
+                  <!-- #0603's "why this shot exists" caption, carried onto the
+                       row rather than left behind on the old thumbnail grid. -->
+                  <span v-if="row.provenance" class="shot-row-detail" :title="row.provenance">{{
+                    row.provenance
+                  }}</span>
+                  <span v-if="row.selector" class="shot-row-detail" :title="row.selector">
+                    <span class="shot-row-key">selector</span>{{ row.selector }}
+                  </span>
+                  <span v-if="row.stepsText" class="shot-row-detail" :title="row.stepsText">
+                    <span class="shot-row-key">steps</span>{{ row.stepsText }}
+                  </span>
+                </div>
+                <ScreenshotExpandButton :name="row.title" @click="openShotsViewer(i)" />
               </div>
             </div>
           </section>
