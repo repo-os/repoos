@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-09-30T20:37:55Z"
-review_passes: 3
 id: "0603"
 title: "Automatic shots: skip non-UI diffs, caption why, support highlights"
 type: bug
-status: review
+status: done
 priority: p2
 area: [server, web]
 assigned_to: ai
@@ -12,6 +10,8 @@ created_by: ""
 branch: feat/automatic-shots-skip-non-ui-diffs-captio
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-30T13:19:31Z"
+updated_at: "2026-10-01T04:47:54Z"
+review_passes: 3
 ---
 ## Problem
 
@@ -41,6 +41,4 @@ Automatic shot capture at handoff (#0594) produces screenshots that show nothing
 - 2026-09-30T17:53:21Z · status inbox→ready
 - 2026-09-30T17:53:23Z · status ready→active, branch
 - 2026-09-30T19:47:02Z · status active→review
-
-
-
+- 2026-10-01T04:47:54Z · status review→done, release:success
