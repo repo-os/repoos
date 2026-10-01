@@ -70,3 +70,4 @@ Follow-up to #0612: add a section-replace/append form for task bodies (so declar
 - 2026-10-01T11:41:50Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-01T11:42:24Z · status review→active
 - 2026-10-01T12:13:51Z · status active→review
+- 2026-10-01T12:13:51Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
