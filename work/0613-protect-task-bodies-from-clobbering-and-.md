@@ -139,3 +139,4 @@ Follow-up to #0612: add a section-replace/append form for task bodies (so declar
 - 2026-10-01T18:45:19Z · review_model_override
 - 2026-10-01T18:45:37Z · status review→active
 - 2026-10-01T18:45:42Z · status active→review
+- 2026-10-01T18:45:42Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
