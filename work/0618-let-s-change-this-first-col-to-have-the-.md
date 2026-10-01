@@ -1,18 +1,52 @@
 ---
 id: "0618"
-title: "Let's change this first col to have the name \"Draft\" by d…"
+title: "Default first board column label to \"Draft\""
 type: feature
-status: draft
+status: inbox
 priority: p2
-area: general
+area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 cli_override: pi
 created_at: "2026-10-01T18:08:13Z"
-updated_at: "2026-10-01T18:08:22Z"
+updated_at: "2026-10-01T18:08:40Z"
 ---
-Let's change this first col to have the name "Draft" by default. I like short and succinct and user can rename in their toml anywan.
+## Problem
+
+The leftmost board column (`draft` status) ships with the default display label **Proposed / Drafts**. That string is long for a column header and does not match the succinct tone we want on the work board. Teams who want a different name can already override labels in `repoos.toml` under `[board.columns]`; the built-in default should be short.
+
+## Desired UX
+
+- On a fresh install (or any repo without a `board.columns.draft` override), the first column header reads **Draft**.
+- Settings still exposes the same `board.columns.draft` control; saving a custom label continues to override the default.
+- No change to status IDs, column order, or drag-and-drop behavior — display text only.
+
+## Acceptance criteria
+
+- [ ] `DEFAULT_COLUMN_LABELS.draft` in core config is **Draft** (not "Proposed / Drafts").
+- [ ] UI fallbacks that hard-code the old default (e.g. store helpers, dashboard copy) use **Draft** so the board matches without a TOML override.
+- [ ] Settings schema default/description for `board.columns.draft` reflects the new default.
+- [ ] Tests that assert the draft column label expect **Draft** where they currently expect "Proposed / Drafts".
+- [ ] `user-docs/configuration.md` (or other user-facing docs that list the default column labels) lists **Draft** for the first column.
+- [ ] Existing repos that already set `board.columns.draft` in `repoos.toml` are unchanged (override still wins).
+
+## Notes for AI
+
+- Canonical default lives in `src/core/config.ts` (`DEFAULT_COLUMN_LABELS`); keep `src/ui-app/src/stores/config.ts` defaults in sync (duplicate today).
+- Check `src/ui-app/src/stores/repo.ts`, `DashboardView.vue`, and `TaskDrawer.vue` — the drawer may special-case the old default string when showing a shorter "Draft" label; simplify or update that logic so it stays correct after the default changes.
+- Do not rename the `draft` status ID, change `defaultStatus`, or reorder columns.
+- Do not change this repo's `repoos.toml` `[board.columns]` unless needed for tests; local overrides are independent of code defaults.
+- Run `bun run fmt` and scoped `repoos check --changed main` before handoff.
+
+## Scope
+
+- In scope: code defaults, UI fallbacks, tests, and user-docs for default column labels.
+- Out of scope: renaming other columns, empty-state hint copy in `BoardColumn.vue`, or migrating every managed repo's `repoos.toml`.
+
+## Related
+
+- Prior column-label work: task #0396 / configurable `[board.columns]` (#0396).
 
 ## Original prompt
 
@@ -27,3 +61,4 @@ Let's change this first col to have the name "Draft" by default. I like short an
 - 2026-10-01T18:08:13Z · created · hello@repoos.org
 - 2026-10-01T18:08:14Z · screenshots
 - 2026-10-01T18:08:22Z · cli_override
+- 2026-10-01T18:08:40Z · status draft→inbox, title, area, body
