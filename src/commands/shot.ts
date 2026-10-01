@@ -162,6 +162,66 @@ function normalizedRoute(route: string | undefined): string {
   return route.startsWith("/") ? route : `/${route}`;
 }
 
+/** Everything the capture plan for one `repoos shot` invocation depends on. */
+export interface CliShotPlanInput {
+  /** The task body, read for its `## Shots` declaration. */
+  body: string;
+  /** The positional route, when the caller typed one (not an absolute URL). */
+  route?: string;
+  /** `--selector`, when given. */
+  selector?: string;
+  /** Target names resolved from changed paths / the task's area / `--target`. */
+  targets: string[];
+  /** Per-target matched globs, for the fallback caption (#0603). */
+  matchedGlobs: ReadonlyMap<string, string[]>;
+  /** Targets whose matched files are docs content only (#0603). */
+  docsContentOnly: ReadonlySet<string>;
+}
+
+/** The plan plus the visible notes `cmdShot` prints alongside it. */
+export interface CliShotPlan {
+  entries: CaptureEntry[];
+  /** Problems with the task's declared `## Shots` list itself. */
+  declaredErrors: string[];
+  /** Per-entry problems the plan builder reported. */
+  errors: string[];
+  /** Visible skip notes (docs-content-only targets, …). */
+  skips: string[];
+}
+
+/**
+ * The capture plan for one `repoos shot` run, as a pure function of the task
+ * body, the CLI flags and the resolved targets (#0610). Pulled out of
+ * `cmdShot` so the wiring is testable without a server, git or a browser: the
+ * bug it fixes — a typed route losing to the `/` fallback — lived in the single
+ * line that picked between two candidate plans, so no plan-level test could
+ * reach it.
+ *
+ * Precedence, documented in `user-docs/cli.md` and `repoos shot --help`: an
+ * explicit route/selector replaces the WHOLE declared list. A declared entry
+ * carries steps, a highlight and a label authored for its own route, so
+ * re-pointing entry #2 at a route the engineer typed would click selectors that
+ * may not exist there. The flag says "shoot this", not "shoot this instead of
+ * that entry" — and the fallback then carries the requested route to every
+ * resolved target, which is what it always meant.
+ */
+export function buildCliShotPlan(input: CliShotPlanInput): CliShotPlan {
+  const pinned = Boolean(input.route || input.selector);
+  const declared = pinned ? { shots: [], errors: [] } : parseShotPlan(input.body);
+  const built = buildCapturePlan(input.targets, declared.shots, {
+    matchedGlobs: input.matchedGlobs,
+    docsContentOnly: input.docsContentOnly,
+    route: input.route,
+    selector: input.selector,
+  });
+  return {
+    entries: built.entries,
+    declaredErrors: declared.errors,
+    errors: built.errors,
+    skips: built.autoSkips,
+  };
+}
+
 /** The task on the main checkout's board whose branch is `branch`, or by id. */
 function findTask(
   mainRoot: string,
@@ -298,6 +358,12 @@ export async function cmdShot(args: string[]): Promise<number> {
   target's paths; diffs touching just tests or task notes stand down with a
   visible "shots: skipped — no UI change to capture" note instead.
 
+  An explicit <route> or --selector replaces the declared list outright, and
+  applies to every resolved target: declared entries carry steps, a highlight
+  and a label written for their own route, so they are never re-pointed at a
+  route you typed. A named route also counts as the justification a
+  docs-content-only target needs, so it is captured instead of skipped.
+
   Arguments:
     <route|url>        Route to capture on the preview (default "/"), or an
                        absolute http(s) URL to capture directly.
@@ -394,49 +460,47 @@ export async function cmdShot(args: string[]): Promise<number> {
     }
     // The task's own `## Shots` declaration wins when the CLI flags did not
     // pin a route/selector — the engineer knows which page/state is visible.
-    const declared =
-      opts.route || opts.selector
-        ? { shots: [], errors: [] as string[] }
-        : parseShotPlan(task.body);
-    for (const error of declared.errors) {
-      console.error(c.yellow("  · ") + `declared shot list: ${error}`);
-    }
     // Provenance + docs gate need the same match detail the server uses (#0603):
     // which globs matched per target, and which targets matched docs content
-    // only (for those, a route-less declared shot or the `/` fallback is skipped
-    // — a docs home page shows the site, not the change). The CLI keeps its
-    // `/` fallback for the remaining targets: a human asked for it by hand.
+    // only (for those, a route-less declared shot or the blind `/` fallback is
+    // skipped — a docs home page shows the site, not the change; a route the
+    // caller typed by hand is the justification that skip asks for, so it is
+    // captured).
     const matchedGlobs = new Map<string, string[]>();
     const docsContentOnly = new Set<string>();
     for (const match of describeTargetPathMatches(worktreeConfig.preview, changed)) {
       matchedGlobs.set(match.target, match.globs);
       if (match.contentOnly) docsContentOnly.add(match.target);
     }
-    const built = buildCapturePlan(targets, declared.shots, { matchedGlobs, docsContentOnly });
+    // #0610: the requested route/selector is part of the plan, not a separate
+    // candidate that lost to the fallback's `/`.
+    const built = buildCliShotPlan({
+      body: task.body,
+      route: opts.route,
+      selector: opts.selector,
+      targets,
+      matchedGlobs,
+      docsContentOnly,
+    });
+    for (const error of built.declaredErrors) {
+      console.error(c.yellow("  · ") + `declared shot list: ${error}`);
+    }
     for (const error of built.errors) {
       console.error(c.yellow("  · ") + error);
     }
-    for (const skip of built.autoSkips) {
+    for (const skip of built.skips) {
       console.error(c.yellow("  · ") + `skipped: ${skip}`);
     }
-    plan = built.entries.length
-      ? built.entries
-      : targets
-          .filter((target) => !docsContentOnly.has(target))
-          .map((target) => ({
-            target,
-            route: normalizedRoute(opts.route),
-            ...(opts.selector ? { selector: opts.selector } : {}),
-            // #0603: a CLI-invoked fallback is still captioned — never anonymous.
-            provenance: {
-              kind: "auto" as const,
-              ...(matchedGlobs.get(target)?.length ? { globs: matchedGlobs.get(target) } : {}),
-            },
-          }));
-    if (built.entries.length) {
+    plan = built.entries;
+    if (plan.length > 0) {
       console.log(
         c.dim(
-          `  plan: ${built.entries.map((e) => `${e.target}${e.label ? ` – ${e.label}` : ""}`).join(", ")}`,
+          `  plan: ${plan
+            .map(
+              (e) =>
+                `${e.target}${e.route === "/" ? "" : ` ${e.route}`}${e.label ? ` – ${e.label}` : ""}`,
+            )
+            .join(", ")}`,
         ),
       );
     }
