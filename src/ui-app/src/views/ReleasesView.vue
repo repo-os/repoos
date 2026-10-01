@@ -885,8 +885,9 @@ onBeforeUnmount(() => {
                   >Rebuilding so the check runs against fresh output.</small
                 >
                 <small v-else-if="run.phase === 'checking'"
-                  >Full verification usually takes 1–5 minutes.</small
+                  >Full verification usually takes a few minutes.</small
                 >
+                <small>You can leave this page — progress shows here when you return.</small>
               </div>
 
               <div v-if="error && !running" class="release-modal-error" role="alert">
@@ -988,6 +989,17 @@ onBeforeUnmount(() => {
                 </div>
                 <div v-if="notesHint" class="rel-notes-hint">{{ notesHint }}</div>
                 <div v-if="notesError" class="rel-notes-error" role="alert">{{ notesError }}</div>
+              </div>
+
+              <div v-if="!running" class="rel-field-hint rel-async-hint">
+                <span>
+                  <b>Generate with AI</b> usually takes 1–3 minutes. You can close this dialog and
+                  come back — clicking Generate again reuses the saved draft.
+                </span>
+                <span>
+                  <b>Publish</b> usually takes a few minutes (about 5). It's safe to leave while it
+                  runs; check progress on this Releases page.
+                </span>
               </div>
             </div>
             <div class="release-actions">
