@@ -14,7 +14,7 @@ branch: feat/protect-task-bodies-from-clobbering-and-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-01T09:30:31Z"
-updated_at: "2026-10-01T17:55:00Z"
+updated_at: "2026-10-01T17:58:31Z"
 review_passes: 8
 review_rounds: 2
 dev_error_count: 1
@@ -112,3 +112,5 @@ Follow-up to #0612: add a section-replace/append form for task bodies (so declar
 - 2026-10-01T17:46:20Z · needs_input
 - 2026-10-01T17:46:20Z · needs_input
 - 2026-10-01T17:55:00Z · status review→active
+- 2026-10-01T17:58:31Z · status active→review
+- 2026-10-01T17:58:31Z · status review→active
