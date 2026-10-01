@@ -1214,13 +1214,14 @@ interface PiEvent {
   /** The session header (`{"type":"session",…,"id":"<uuid>"}`). */
   id?: unknown;
   usage?: unknown;
-  message?: { role?: unknown; content?: unknown; usage?: unknown };
+  message?: { role?: unknown; content?: unknown; usage?: unknown; errorMessage?: unknown };
   toolCallId?: unknown;
   toolName?: unknown;
   args?: unknown;
   partialResult?: unknown;
   result?: unknown;
   isError?: unknown;
+  errorMessage?: unknown;
 }
 
 /**
@@ -1315,7 +1316,12 @@ export function parsePiEvent(raw: string): PiParseResult | null {
       // voiceless — swallowed, never dumped as raw JSON.
       if (role && role !== "assistant") return {};
       const text = piMessageText(msg.content);
-      return text ? { entry: { type: "text", text } } : {};
+      if (text) return { entry: { type: "text", text } };
+      // A failed assistant turn carries no content but an `errorMessage`
+      // (e.g. a provider auth error). Surface it as a system line so a run
+      // that produced nothing still says why, rather than looking empty.
+      const error = typeof msg.errorMessage === "string" ? msg.errorMessage.trim() : "";
+      return error ? { entry: { type: "sys", d: error } } : {};
     }
     case "tool_execution_start": {
       const id = typeof ev.toolCallId === "string" ? ev.toolCallId : "";
