@@ -319,6 +319,7 @@ interface Session {
     | "cursor"
     | "antigravity"
     | "crush"
+    | "pi"
     | "plain";
   /** Cumulative ms across completed turns — excludes any turn in flight (0080). */
   accumulatedMs: number;
@@ -382,6 +383,17 @@ interface Session {
     string,
     { tool: string; input?: string; output?: string; state?: "running" | "completed" | "error" }
   >;
+  /** pi tool calls whose start/update records are awaiting completion. */
+  piTools?: Record<
+    string,
+    { tool: string; input?: string; output?: string; state?: "running" | "completed" | "error" }
+  >;
+  /**
+   * pi stream only: whether the current assistant message's text was already
+   * streamed via `message_update` deltas, so the authoritative `message_end`
+   * text is not recorded a second time. Reset at each `message_end`.
+   */
+  piStreamedText?: boolean;
   /** The first permission denial seen this turn (detectPermissionDenial). */
   permissionDenial?: string;
   /**
@@ -571,20 +583,31 @@ export function extractUsage(raw: string): ExtractedUsage {
     const parsed: unknown = JSON.parse(raw);
     if (parsed && typeof parsed === "object") {
       const obj = parsed as Record<string, unknown>;
-      const inputTokens = inputTokensFromObject(obj);
-      if (inputTokens !== undefined) out.inputTokens = inputTokens;
-      const outputTokens = outputTokensFromObject(obj);
-      if (outputTokens !== undefined) out.outputTokens = outputTokens;
-      const totalTokens = tokensFromObject(obj);
-      if (totalTokens !== undefined) out.totalTokens = totalTokens;
-      const cost = costFromObject(obj);
-      if (cost !== undefined) out.costUsd = cost;
-      const cache = cacheTokensFromObject(obj);
-      if (cache.cacheReadTokens !== undefined) out.cacheReadTokens = cache.cacheReadTokens;
-      if (cache.cacheCreationTokens !== undefined)
-        out.cacheCreationTokens = cache.cacheCreationTokens;
-      const turns = turnsFromObject(obj);
-      if (turns !== undefined) out.turns = turns;
+      // pi's `message_update` carries a cumulative-for-response `usage` that is
+      // duplicated on the authoritative `message_end`; counting both would
+      // double every response. Only `message_end` usage is consumed (see
+      // findUsage's `input`/`totalTokens` normalization for pi's naming) and
+      // each message is summed as a per-response delta.
+      const piMessageUpdate = obj.type === "message_update";
+      if (!piMessageUpdate) {
+        const inputTokens = inputTokensFromObject(obj);
+        if (inputTokens !== undefined) out.inputTokens = inputTokens;
+        const outputTokens = outputTokensFromObject(obj);
+        if (outputTokens !== undefined) out.outputTokens = outputTokens;
+        const totalTokens = tokensFromObject(obj);
+        if (totalTokens !== undefined) out.totalTokens = totalTokens;
+        const cost = costFromObject(obj);
+        if (cost !== undefined) out.costUsd = cost;
+        const cache = cacheTokensFromObject(obj);
+        if (cache.cacheReadTokens !== undefined) out.cacheReadTokens = cache.cacheReadTokens;
+        if (cache.cacheCreationTokens !== undefined)
+          out.cacheCreationTokens = cache.cacheCreationTokens;
+        const turns = turnsFromObject(obj);
+        if (turns !== undefined) out.turns = turns;
+      }
+      // pi's per-message `usage` is that response's own total, not a running
+      // session total — sum message_end records across a tool loop.
+      if (obj.type === "message_end") out.deltas = true;
       // opencode emits one `step_finish` per model round-trip; its token/cost
       // figures are that step's delta, never a running total — fold by SUM.
       if (obj.type === "step_finish" || obj.type === "step-finish") out.deltas = true;
@@ -821,12 +844,37 @@ function outputTokensFromObject(obj: Record<string, unknown>): number | undefine
  * different field layout entirely, normalized here to the `input_tokens` /
  * `output_tokens` / `total_tokens` / `cost_usd` names the callers expect.
  */
+/**
+ * Normalize a harness's usage object onto the `input_tokens`/`output_tokens`/
+ * `total_tokens`/`cost_usd`/cache field names the extractors below read. pi
+ * reports `{ input, output, totalTokens, cacheRead, cacheWrite, cost: {…} }`;
+ * other engines already use the canonical names, so this is a no-op for them.
+ */
+function normalizeUsageShape(usage: Record<string, unknown>): Record<string, unknown> {
+  if (typeof usage.input_tokens === "number" || typeof usage.total_tokens === "number") {
+    return usage;
+  }
+  const out: Record<string, unknown> = { ...usage };
+  if (typeof usage.input === "number") out.input_tokens = usage.input;
+  if (typeof usage.output === "number") out.output_tokens = usage.output;
+  if (typeof usage.totalTokens === "number") out.total_tokens = usage.totalTokens;
+  if (typeof usage.cacheRead === "number") out.cache_read_input_tokens = usage.cacheRead;
+  if (typeof usage.cacheWrite === "number") out.cache_creation_input_tokens = usage.cacheWrite;
+  const cost = usage.cost;
+  if (cost && typeof cost === "object") {
+    const c = cost as Record<string, unknown>;
+    if (typeof c.total === "number") out.cost_usd = c.total;
+  }
+  return out;
+}
+
 function findUsage(obj: Record<string, unknown>): Record<string, unknown> | undefined {
-  if (obj.usage && typeof obj.usage === "object") return obj.usage as Record<string, unknown>;
+  if (obj.usage && typeof obj.usage === "object")
+    return normalizeUsageShape(obj.usage as Record<string, unknown>);
   if (obj.result && typeof obj.result === "object") {
     const result = obj.result as Record<string, unknown>;
     if (result.usage && typeof result.usage === "object")
-      return result.usage as Record<string, unknown>;
+      return normalizeUsageShape(result.usage as Record<string, unknown>);
   }
   if (obj.step_update && typeof obj.step_update === "object") {
     const step = obj.step_update as Record<string, unknown>;
@@ -835,7 +883,8 @@ function findUsage(obj: Record<string, unknown>): Record<string, unknown> | unde
   const msg = obj.message;
   if (msg && typeof msg === "object") {
     const m = msg as Record<string, unknown>;
-    if (m.usage && typeof m.usage === "object") return m.usage as Record<string, unknown>;
+    if (m.usage && typeof m.usage === "object")
+      return normalizeUsageShape(m.usage as Record<string, unknown>);
   }
   const part = obj.part;
   if (part && typeof part === "object") {
@@ -928,6 +977,8 @@ function cacheTokensFromObject(obj: Record<string, unknown>): {
  */
 function turnsFromObject(obj: Record<string, unknown>): number | undefined {
   if (obj.type === "step_finish" || obj.type === "step-finish") return 1;
+  // pi emits one `turn_end` per assistant turn (response + its tool calls).
+  if (obj.type === "turn_end") return 1;
   if (obj.type === "result" && typeof obj.num_turns === "number" && obj.num_turns >= 0) {
     return obj.num_turns;
   }
@@ -998,6 +1049,7 @@ function engineForCli(cli: string): Session["engine"] {
   if (cli === "cursor") return "cursor";
   if (cli === "antigravity") return "antigravity";
   if (cli === "crush") return "crush";
+  if (cli === "pi") return "pi";
   return "opencode";
 }
 
@@ -1160,6 +1212,190 @@ export function harnessChildEnv(cmd: string, env: NodeJS.ProcessEnv): NodeJS.Pro
  */
 export function engineCancelSignal(engine: string | undefined): NodeJS.Signals {
   return engine === "crush" ? "SIGINT" : "SIGTERM";
+}
+
+/** The `pi --mode json` event fields we consume. */
+interface PiEvent {
+  type?: unknown;
+  /** The session header (`{"type":"session",…,"id":"<uuid>"}`). */
+  id?: unknown;
+  usage?: unknown;
+  assistantMessageEvent?: unknown;
+  message?: { role?: unknown; content?: unknown; usage?: unknown; errorMessage?: unknown };
+  toolCallId?: unknown;
+  toolName?: unknown;
+  args?: unknown;
+  partialResult?: unknown;
+  result?: unknown;
+  isError?: unknown;
+  errorMessage?: unknown;
+}
+
+/**
+ * Flatten a pi message's `content` (an array of blocks, or a bare string) to
+ * its visible text. Thinking/tool-call blocks are skipped — the transcript
+ * surfaces assistant text and tool cards separately.
+ */
+function piMessageText(content: unknown): string | undefined {
+  if (typeof content === "string") return content.trim() ? content : undefined;
+  if (!Array.isArray(content)) return undefined;
+  const parts: string[] = [];
+  for (const block of content) {
+    if (!block || typeof block !== "object") continue;
+    const b = block as Record<string, unknown>;
+    if (typeof b.text === "string" && b.text.trim()) parts.push(b.text);
+  }
+  return parts.length ? parts.join("\n") : undefined;
+}
+
+/**
+ * Render a pi tool result/partial result to display text. pi wraps tool
+ * output as `{ content: [{ type: "text", text }], details }`; the text blocks
+ * are what a reader wants, so they win over a pretty-printed JSON dump of the
+ * whole envelope.
+ */
+function piToolText(value: unknown): string | undefined {
+  if (typeof value === "string") return value || undefined;
+  if (!value || typeof value !== "object") return undefined;
+  const content = (value as Record<string, unknown>).content;
+  if (Array.isArray(content)) {
+    const parts: string[] = [];
+    for (const block of content) {
+      if (typeof block === "string") {
+        if (block) parts.push(block);
+        continue;
+      }
+      if (!block || typeof block !== "object") continue;
+      const b = block as Record<string, unknown>;
+      if (typeof b.text === "string" && b.text) parts.push(b.text);
+    }
+    if (parts.length) return parts.join("\n");
+  }
+  return toolOutputText(value);
+}
+
+export interface PiParseResult {
+  entry?: AgentOutputEntry;
+  sessionID?: string;
+  /** A live `message_update` text delta (streaming transcript only). */
+  delta?: string;
+  /** True when this line is an assistant `message_end` (authoritative text). */
+  messageEnd?: boolean;
+  toolEvent?: {
+    phase: "start" | "partial" | "complete";
+    id: string;
+    tool?: string;
+    input?: string;
+    output?: string;
+    error?: boolean;
+  };
+}
+
+/**
+ * Parse one line of pi's `--mode json` stream. pi emits strict JSONL: a
+ * `session` header carrying the session id, then typed lifecycle, message,
+ * tool-execution, and usage events. Streaming `message_update` records are
+ * swallowed (their authoritative form arrives as `message_end`, and their
+ * cumulative `usage` is consumed by `extractUsage` on the raw line, not as a
+ * transcript entry); tool activity arrives as a `tool_execution_start` /
+ * `tool_execution_end` pair keyed by `toolCallId`. Returns `null` for
+ * non-JSON or an unrecognized event type so callers fall back to the plain-line
+ * path rather than dropping output silently.
+ */
+export function parsePiEvent(raw: string): PiParseResult | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== "object") return null;
+  const ev = parsed as PiEvent;
+  const type = typeof ev.type === "string" ? ev.type : "";
+  if (!type) return null;
+
+  switch (type) {
+    case "session": {
+      const id = typeof ev.id === "string" && ev.id ? ev.id : undefined;
+      return id ? { sessionID: id } : {};
+    }
+    case "message_update": {
+      // Live streaming: a text delta becomes a transcript text entry so long
+      // responses render as they arrive. The authoritative whole message also
+      // arrives at `message_end`; `appendPiLine` drops that duplicate when a
+      // delta was already streamed. `parseOneShotLine` ignores `delta` and uses
+      // the full `message_end` text, so one-shot report extraction is intact.
+      const inner = ev.assistantMessageEvent as Record<string, unknown> | undefined;
+      if (inner?.type === "text_delta" && typeof inner.delta === "string" && inner.delta) {
+        return { delta: inner.delta };
+      }
+      return {};
+    }
+    case "message_end": {
+      const msg = ev.message;
+      if (!msg || typeof msg !== "object") return { messageEnd: true };
+      const role = typeof msg.role === "string" ? msg.role : "";
+      // User echoes, tool-result messages, and empty assistant turns are
+      // voiceless — swallowed, never dumped as raw JSON.
+      if (role && role !== "assistant") return { messageEnd: true };
+      const text = piMessageText(msg.content);
+      if (text) return { entry: { type: "text", text }, messageEnd: true };
+      // A failed assistant turn carries no content but an `errorMessage`
+      // (e.g. a provider auth error). Surface it as a system line so a run
+      // that produced nothing still says why, rather than looking empty.
+      const error = typeof msg.errorMessage === "string" ? msg.errorMessage.trim() : "";
+      return { ...(error ? { entry: { type: "sys", d: error } } : {}), messageEnd: true };
+    }
+    case "tool_execution_start": {
+      const id = typeof ev.toolCallId === "string" ? ev.toolCallId : "";
+      if (!id) return {};
+      const input = toolInputText(ev.args);
+      return {
+        toolEvent: {
+          phase: "start",
+          id,
+          tool: typeof ev.toolName === "string" && ev.toolName ? ev.toolName : "tool",
+          ...(input ? { input } : {}),
+        },
+      };
+    }
+    case "tool_execution_update": {
+      const id = typeof ev.toolCallId === "string" ? ev.toolCallId : "";
+      if (!id) return {};
+      const output = piToolText(ev.partialResult);
+      return { toolEvent: { phase: "partial", id, ...(output ? { output } : {}) } };
+    }
+    case "tool_execution_end": {
+      const id = typeof ev.toolCallId === "string" ? ev.toolCallId : "";
+      if (!id) return {};
+      const output = piToolText(ev.result);
+      return {
+        toolEvent: {
+          phase: "complete",
+          id,
+          ...(typeof ev.toolName === "string" && ev.toolName ? { tool: ev.toolName } : {}),
+          ...(output !== undefined ? { output } : {}),
+          ...(ev.isError === true ? { error: true } : {}),
+        },
+      };
+    }
+    // Recognized-but-voiceless lifecycle: turn/agent boundaries, queue and
+    // compaction notices. Swallow them so the transcript stays readable.
+    case "agent_start":
+    case "agent_end":
+    case "agent_settled":
+    case "turn_start":
+    case "turn_end":
+    case "message_start":
+    case "queue_update":
+    case "thinking_level_changed":
+    case "session_info_changed":
+    case "compaction_start":
+    case "compaction_end":
+      return {};
+    default:
+      return null;
+  }
 }
 
 /** The opencode `--format json` event fields we consume. */
@@ -2511,6 +2747,18 @@ function modelArgs(cli: string, model: string): string[] {
     if (tier) return ["--model", "auto", "--auto-tier", tier];
   }
   if (!model || model === "default") return [];
+  if (cli === "pi") {
+    // pi selects a provider and a model separately: `--provider <name> --model
+    // <id>`. A RepoOS model id is provider-qualified (`provider/model`, e.g.
+    // `openrouter/openai/gpt-6-luna`), so split the first segment into the
+    // provider and pass the remainder as the model id. A bare id (no slash) is
+    // passed through as `--model` alone, letting pi use its default provider.
+    const slash = model.indexOf("/");
+    if (slash > 0 && slash < model.length - 1) {
+      return ["--provider", model.slice(0, slash), "--model", model.slice(slash + 1)];
+    }
+    return ["--model", model];
+  }
   return ["--model", model];
 }
 
@@ -2647,6 +2895,11 @@ export function engineerPermissionGaps(cli: string, args: readonly string[]): st
       return needFlag("--trust-all-tools");
     case "crush":
       // Approval is a property of the mode, not a flag — see the comment above.
+      return [];
+    case "pi":
+      // pi does not ask for approval before tool calls in a non-interactive
+      // run (`docs/security.md`), so no bypass flag exists or is needed. This
+      // mirrors crush: approval is a property of the mode.
       return [];
     case "cursor":
       return needFlag("--force");
@@ -2808,6 +3061,16 @@ function cliCommand(
       args: ["run", "--quiet", ...modelArgs(cli, model), mission],
     };
   }
+  if (cli === "pi") {
+    // `--mode json` runs the supplied prompts and exits, streaming strict JSONL
+    // to stdout. pi does not prompt for tool approval in a non-interactive run,
+    // so the launch carries no bypass flag and needs none (same model as
+    // crush). cwd is set via spawn options.
+    return {
+      cmd: "pi",
+      args: ["--mode", "json", ...modelArgs(cli, model), mission],
+    };
+  }
   // default: opencode's headless `run` mode. `--format json` streams one JSON
   // event per line (step_start / text / tool_use / step_finish / error) that
   // the runner parses into structured transcript entries. The process is spawned
@@ -2951,6 +3214,23 @@ function resumeCommand(
       args: [
         "run",
         "--quiet",
+        ...(sessionId ? ["--session", sessionId] : []),
+        ...modelArgs(cli, model),
+        text,
+      ],
+    };
+  }
+  if (cli === "pi") {
+    // Resume the EXACT session RepoOS captured from the `session` header.
+    // pi's `-c/--continue` attaches the most recent session in the cwd, which
+    // could belong to a different task, so when no id is known start a fresh
+    // session (the text still gets a real turn) rather than continuing
+    // unrelated work.
+    return {
+      cmd: "pi",
+      args: [
+        "--mode",
+        "json",
         ...(sessionId ? ["--session", sessionId] : []),
         ...modelArgs(cli, model),
         text,
@@ -3304,6 +3584,12 @@ export function promptCommand(agent: Agent, prompt: string): { cmd: string; args
     // to extract usage from, and no flag can restrict the tools a run may use.
     return { cmd: "crush", args: ["run", "--quiet", ...extra, prompt] };
   }
+  if (agent.cli === "pi") {
+    // JSONL one-shot so the final answer and any usage flow through
+    // extractOneShotReportText / extractUsage. No permission flag: pi does not
+    // prompt for tool approval in a non-interactive run.
+    return { cmd: "pi", args: ["--mode", "json", ...extra, prompt] };
+  }
   return { cmd: "opencode", args: ["run", ...extra, prompt] };
 }
 
@@ -3403,6 +3689,16 @@ export function pmCommand(
     // faked. Usage is not reported on stdout; it is captured post-run from
     // `crush session show --json` for streaming sessions only.
     return { cmd: "crush", args: ["run", "--quiet", ...extra, prompt] };
+  }
+  if (agent.cli === "pi") {
+    // pi's built-in tools are read/bash/edit/write; `--tools read` is the only
+    // read-only allowlist that is actually valid, so the PM can inspect files
+    // yet cannot write them or run commands. JSONL output carries its final
+    // answer and usage to extractOneShotReportText / extractUsage.
+    return {
+      cmd: "pi",
+      args: ["--mode", "json", "--tools", "read", ...extra, prompt],
+    };
   }
   // opencode: `--format json` separates the final answer from step-by-step
   // narration (0264 vs 0253) and its `step_finish` events carry per-call
@@ -3521,6 +3817,12 @@ export function reviewCommand(
     // confined to reads — the review boundary is RepoOS's, not the CLI's.
     return { cmd: "crush", args: ["run", "--quiet", ...extra, prompt] };
   }
+  if (agent.cli === "pi") {
+    // The reviewer must run `git diff` and read files. pi auto-approves those
+    // in a non-interactive run, so no flag is needed (same model as crush); it
+    // cannot be confined to reads — the review boundary is RepoOS's.
+    return { cmd: "pi", args: ["--mode", "json", ...extra, prompt] };
+  }
   return {
     cmd: "opencode",
     args: ["run", "--format", "json", ...extra, "--auto", prompt],
@@ -3590,6 +3892,10 @@ export function parseOneShotLine(cli: string, raw: string): AgentOutputEntry | n
   }
   if (cli === "antigravity") {
     const parsed = parseAntigravityEvent(raw, { surfaceResult: true });
+    return parsed?.entry ?? null;
+  }
+  if (cli === "pi") {
+    const parsed = parsePiEvent(raw);
     return parsed?.entry ?? null;
   }
   return { s: "out", d: raw };
@@ -5285,6 +5591,10 @@ export class AgentRunner {
       this.appendAntigravityLine(taskId, session, raw);
       return;
     }
+    if (stream === "out" && session.engine === "pi") {
+      this.appendPiLine(taskId, session, raw);
+      return;
+    }
     // Cursor surfaces auth/permission/version failures on stderr; map the
     // recognizable ones to an actionable recovery hint.
     if (stream === "err" && session.engine === "cursor") {
@@ -5509,6 +5819,77 @@ export class AgentRunner {
           state: merged.state,
         });
       }
+    } else if (parsed.entry) {
+      this.recordEntry(
+        taskId,
+        session,
+        "out",
+        this.applySignals(taskId, raw, parsed.entry, session),
+      );
+    }
+    this.lineTouched(taskId, session, raw);
+  }
+
+  /** pi's JSONL branch: structured tool start/end events stand alone. */
+  private appendPiLine(taskId: string, session: Session, raw: string): void {
+    const parsed = parsePiEvent(raw);
+    if (!parsed) {
+      const entry: AgentOutputEntry = { s: "out", d: raw };
+      this.tryExtractSessionId(raw, session);
+      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, entry, session));
+      this.lineTouched(taskId, session, raw);
+      return;
+    }
+    if (parsed.sessionID && !session.sessionId) session.sessionId = parsed.sessionID;
+    if (parsed.toolEvent) {
+      const event = parsed.toolEvent;
+      const tools = (session.piTools ??= {});
+      const current = tools[event.id];
+      if (event.phase === "start") {
+        tools[event.id] = {
+          tool: event.tool ?? "tool",
+          ...(event.input ? { input: event.input } : {}),
+          state: "running",
+        };
+      } else if (event.phase === "partial") {
+        tools[event.id] = {
+          ...(current ?? { tool: "tool" }),
+          ...(event.output !== undefined ? { output: event.output } : {}),
+          state: current?.state ?? "running",
+        };
+      } else {
+        const merged = {
+          ...(current ?? { tool: event.tool ?? "tool" }),
+          ...(event.tool ? { tool: event.tool } : {}),
+          ...(event.input ? { input: event.input } : {}),
+          ...(event.output !== undefined ? { output: event.output } : {}),
+          state: event.error ? ("error" as const) : ("completed" as const),
+        };
+        delete tools[event.id];
+        this.recordEntry(taskId, session, "out", {
+          type: "tool",
+          tool: merged.tool,
+          ...(merged.input ? { input: merged.input } : {}),
+          ...(merged.output !== undefined ? { output: merged.output } : {}),
+          state: merged.state,
+        });
+      }
+    } else if (parsed.delta) {
+      // Live streaming: render each text delta as it arrives. The full message
+      // still arrives at message_end; it is dropped below when deltas streamed.
+      session.piStreamedText = true;
+      this.recordEntry(taskId, session, "out", { type: "text", text: parsed.delta });
+    } else if (parsed.messageEnd) {
+      if (parsed.entry) {
+        // applySignals always runs on the authoritative whole message: a
+        // handoff/preview signal split across deltas is only whole here.
+        const surfaced = this.applySignals(taskId, raw, parsed.entry, session);
+        // Record the text only when it was not already streamed as deltas. A
+        // signal's confirmation line is likewise skipped in that case — the
+        // request itself was still recorded by applySignals above.
+        if (!session.piStreamedText) this.recordEntry(taskId, session, "out", surfaced);
+      }
+      session.piStreamedText = false;
     } else if (parsed.entry) {
       this.recordEntry(
         taskId,
@@ -6225,6 +6606,20 @@ export class AgentRunner {
       }
       session.copilotTools = undefined;
     }
+    // Same flush for pi: a `tool_execution_start` whose `_end` never arrived
+    // (cancel/crash) still gets its card, so a call is never silently invisible.
+    if (session?.engine === "pi" && session.piTools) {
+      for (const pending of Object.values(session.piTools)) {
+        this.recordEntry(taskId, session, "out", {
+          type: "tool",
+          tool: pending.tool,
+          ...(pending.input ? { input: pending.input } : {}),
+          ...(pending.output !== undefined ? { output: pending.output } : {}),
+          ...(pending.state && pending.state !== "running" ? { state: pending.state } : {}),
+        });
+      }
+      session.piTools = undefined;
+    }
     // Fold the finished turn's wall time into the running total (0080) — the
     // time-spent counter accumulates across turns rather than resetting each
     // time a follow-up message starts a fresh process.
@@ -6560,6 +6955,7 @@ export class AgentRunner {
           "cursor",
           "antigravity",
           "crush",
+          "pi",
           "plain",
         ].includes(value.engine as string) ||
         typeof value.updatedAt !== "string" ||

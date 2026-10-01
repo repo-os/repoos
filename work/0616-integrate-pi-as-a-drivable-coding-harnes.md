@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-01T17:54:42Z"
-review_passes: 4
 id: "0616"
 title: Integrate pi as a drivable coding harness
 type: feature
@@ -11,6 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/integrate-pi-as-a-drivable-coding-harnes
 created_at: "2026-10-01T16:34:17Z"
+updated_at: "2026-10-01T17:13:45Z"
 ---
 ## Context
 
@@ -101,30 +100,4 @@ uses: `version`, `help`, `model-discovery`, `headless-one-shot`,
 - 2026-10-01T16:51:17Z · branch
 - 2026-10-01T16:51:18Z · status inbox→ready
 - 2026-10-01T16:51:20Z · status ready→active
-- 2026-10-01T17:09:54Z · note: pi integrated as a drivable harness (interactive session, branch feat/integrate-pi-as-a-drivable-coding-harnes). Detection + AGENT_CLIS, a pi engine/parser for --mode json JSONL, engineering/PM/review/resume/one-shot command shapes, --session resume, no permission-bypass flag (approval is mode-scoped), usage normalized (message_update deduped), run errors surfaced as sys lines. Contract PI_CONTRACT + manifest entry (verifiedAt: null) + user-docs row + tests. repoos check --changed main green. Live adapter probe: 6/8 seams pass (version/help/models/structured-events/session-continuation/cancellation); headless one-shot and auto-permissions fail only because this machine has no valid default provider credentials for pi (OpenAI 401), so certification is intentionally left pending.
-- 2026-10-01T17:09:58Z · status active→review
-- 2026-10-01T17:09:58Z · status review→active
 - 2026-10-01T17:13:45Z · status active→review
-- 2026-10-01T17:13:45Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
-- 2026-10-01T17:15:21Z · status review→active
-- 2026-10-01T17:19:21Z · note: Round-2 fixes for reviewer findings: (1) readPersisted now accepts the pi engine, so a persisted pi session reloads with its transcript + session id (regression test added to session-persistence.test.ts). (2) pmCommand uses --tools read only (pi built-ins are read/bash/edit/write; the old list named nonexistent tools). (3) pi tools still running at turn exit are flushed so a cancelled tool call is not invisible. repoos check --changed main green; handing off for re-review.
-- 2026-10-01T17:19:22Z · status active→review
-- 2026-10-01T17:19:22Z · status review→active
-- 2026-10-01T17:23:17Z · status active→review
-- 2026-10-01T17:23:17Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
-- 2026-10-01T17:29:36Z · note: Round-3 fixes for reviewer findings: (1) pi message_update text_delta is now streamed as live text entries; the duplicate message_end text is dropped once deltas streamed, while applySignals still runs on the authoritative message_end so a handoff/preview signal split across deltas is detected. (2) provider-qualified model ids now map to --provider <name> --model <id>; bare ids pass through as --model. Tests added for both. repoos check --changed main green.
-- 2026-10-01T17:29:38Z · status review→active
-- 2026-10-01T17:29:45Z · status active→review
-- 2026-10-01T17:29:45Z · status review→active
-- 2026-10-01T17:33:32Z · handoff failed · task-file handoff failed at check · repoos check failed: - rendering pages... · [32m✓[0m rendering pages... · build complete in 3.05s. · ⏭ landing-build  — skipped — no changed path matches landing/** · ⏭ telegram-manager-build  — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test  — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency  — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-icon-transparency.sh · 1 check(s) failed.
-- 2026-10-01T17:42:41Z · status active→review
-- 2026-10-01T17:42:41Z · status review→active
-- 2026-10-01T17:46:59Z · status active→review
-- 2026-10-01T17:46:59Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
-- 2026-10-01T17:49:34Z · note: Round-4 fix: added a pi model-source adapter in src/core/models.ts that runs 'pi --list-models' and parses its provider/model table, so the Agents UI offers real runnable pi model ids instead of the generic fallback. repoos check green; re-requesting review.
-- 2026-10-01T17:49:35Z · status review→active
-- 2026-10-01T17:49:40Z · status active→review
-- 2026-10-01T17:49:40Z · status review→active
-- 2026-10-01T17:53:30Z · status active→review
-- 2026-10-01T17:53:31Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
-
