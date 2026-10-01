@@ -3,13 +3,16 @@ id: "0611"
 title: Row layout for task preview shots on Changes tab
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the opencode agent exited without output: error: Upstream request failed: Insufficient account funds"
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/row-layout-for-task-preview-shots-on-cha
 created_at: "2026-10-01T04:34:32Z"
-updated_at: "2026-10-01T05:03:36Z"
+updated_at: "2026-10-01T05:03:40Z"
 ---
 ## Problem
 
@@ -80,3 +83,4 @@ On the task panel ui changes sections where we show the shots taken by the task 
 - 2026-10-01T04:37:48Z · status inbox→ready
 - 2026-10-01T04:37:52Z · status ready→active, branch
 - 2026-10-01T05:03:36Z · status active→review
+- 2026-10-01T05:03:40Z · needs_input
