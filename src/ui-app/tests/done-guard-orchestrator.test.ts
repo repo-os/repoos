@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { rmFixture } from "./helpers";
@@ -368,6 +368,44 @@ describe("close-out cleanup keeps a dirty feature worktree (#0512)", () => {
       expect(readFileSync(join(root, "work", `${id}-cleanup.md`), "utf8")).not.toMatch(
         /needs_input: true/,
       );
+    } finally {
+      clean();
+    }
+  });
+
+  it("force-removes a merged worktree when only HEAD-present deletions remain (#0609)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const id = "0609a";
+      const branch = `feat/${id}`;
+      const path = taskFile(root, id);
+      const wt = ensureWorktree(root, branch);
+      expect(wt.ok).toBe(true);
+      writeFileSync(join(wt.path, "a.txt"), "a\n");
+      writeFileSync(join(wt.path, "b.txt"), "b\n");
+      git(wt.path, ["add", "a.txt", "b.txt"]);
+      git(wt.path, ["commit", "-m", "tracked"]);
+      git(root, ["merge", "--ff-only", branch]);
+      rmSync(join(wt.path, "a.txt"));
+      rmSync(join(wt.path, "b.txt"));
+
+      const coordinator = createJobCoordinator(root);
+      coordinator.enqueue({ id, branch } as any);
+      coordinator.updateJob(id, { phase: "cleanup", startedAt: new Date().toISOString() });
+
+      const orchestrator = new CloseOutOrchestrator(
+        { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
+        coordinator,
+        createRepositoryLock(root),
+        createRootLock(root),
+      );
+
+      const result = await orchestrator.processNext();
+
+      expect(result.ok).toBe(true);
+      expect(existsSync(wt.path)).toBe(false);
+      expect(listWorktrees(root).map((w) => w.branch)).not.toContain(branch);
+      expect(readFileSync(path, "utf8")).not.toMatch(/needs_input: true/);
     } finally {
       clean();
     }
