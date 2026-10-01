@@ -10,7 +10,9 @@ import {
   engineerLaunches,
   engineerPermissionGaps,
   engineCancelSignal,
+  extractOneShotReportText,
   extractUsage,
+  parseOneShotLine,
   parsePiEvent,
   pmCommand,
   promptCommand,
@@ -187,6 +189,24 @@ describe("pi event parsing", () => {
   it("returns null for non-JSON and unrecognized event types", () => {
     expect(parsePiEvent("not json")).toBeNull();
     expect(parsePiEvent(JSON.stringify({ type: "some_future_event" }))).toBeNull();
+  });
+});
+
+describe("pi one-shot transcript", () => {
+  it("ignores streamed text blocks and keeps the authoritative message_end answer once", () => {
+    const block = JSON.stringify({
+      type: "message_update",
+      assistantMessageEvent: { type: "text_end", contentIndex: 0, content: "hello world" },
+    });
+    const end = JSON.stringify({
+      type: "message_end",
+      message: { role: "assistant", content: [{ type: "text", text: "hello world" }] },
+    });
+    // The completed block is swallowed in the one-shot path; only message_end
+    // yields an entry, so the answer is not appended twice (#0619).
+    expect(parseOneShotLine("pi", block)).toBeNull();
+    expect(parseOneShotLine("pi", end)).toEqual({ type: "text", text: "hello world" });
+    expect(extractOneShotReportText("pi", `${block}\n${end}`)).toBe("hello world");
   });
 });
 
