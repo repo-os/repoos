@@ -7,10 +7,13 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+  contrastProbe,
   judgeSample,
   parseCssColor,
   requiredRatio,
   scopeAttributes,
+  scopeSettleWarning,
+  settleScopeInPage,
   type ProbeSample,
 } from "../../commands/ui-contrast-audit.js";
 
@@ -50,6 +53,108 @@ describe("scopeAttributes (#0596)", () => {
     expect(scopeAttributes({ selector: ":root", name: "jelly-light" }).mode).toBe("light");
     expect(scopeAttributes({ selector: "html", name: "custom" }).mode).toBe("dark");
     expect(scopeAttributes({ selector: "html", name: "custom" }).uiTheme).toBe("classic");
+  });
+});
+
+describe("scopeSettleWarning (#0617)", () => {
+  const attrs = { uiTheme: "clear", mode: "light" };
+
+  it("is silent when the flip landed on the requested scope", () => {
+    expect(
+      scopeSettleWarning("clear-light", { theme: "light", uiTheme: "clear" }, attrs),
+    ).toBeNull();
+  });
+
+  it("warns (and never silently probes) when the flip did not settle", () => {
+    const warn = scopeSettleWarning("clear-light", { theme: "dark", uiTheme: "classic" }, attrs);
+    expect(warn).toContain("clear-light");
+    expect(warn).toContain('wanted data-theme="light" data-ui-theme="clear"');
+    expect(warn).toContain('got data-theme="dark" data-ui-theme="classic"');
+    // A missing attribute must not read as a match either.
+    expect(
+      scopeSettleWarning("clear-light", { theme: null, uiTheme: "clear" }, attrs),
+    ).not.toBeNull();
+  });
+
+  it("warns when a transition was still running at the settle bound", () => {
+    const warn = scopeSettleWarning("clear-light", { theme: "light", uiTheme: "clear" }, attrs, 2);
+    expect(warn).toContain("2 CSS transition(s)");
+    expect(warn).toContain("mid-fade");
+  });
+});
+
+describe("theme-flip settling (#0617)", () => {
+  it("contrastProbe reclaims the scope when a delayed apply lands after the flip", () => {
+    // A late config-store apply flipped the page to a different scope; the
+    // probe must reclaim the requested one before it reads any styles.
+    document.documentElement.dataset.theme = "dark";
+    document.documentElement.dataset.uiTheme = "classic";
+    localStorage.setItem("repoos.theme", "dark");
+    localStorage.setItem("repoos.uiTheme", "classic");
+
+    contrastProbe({
+      exemptSelectors: [],
+      scope: { uiTheme: "clear", mode: "light" },
+    });
+
+    expect(document.documentElement.dataset.theme).toBe("light");
+    expect(document.documentElement.dataset.uiTheme).toBe("clear");
+    expect(localStorage.getItem("repoos.theme")).toBe("light");
+    expect(localStorage.getItem("repoos.uiTheme")).toBe("clear");
+  });
+
+  it("contrastProbe snaps an in-flight transition before walking", () => {
+    let finished = 0;
+    const transition = {
+      playState: "running",
+      transitionProperty: "background-color",
+      finish: () => {
+        finished++;
+      },
+    };
+    const original = (document as unknown as { getAnimations?: unknown }).getAnimations;
+    (document as unknown as { getAnimations?: () => unknown[] }).getAnimations = () => [transition];
+    try {
+      contrastProbe({ exemptSelectors: [], scope: { uiTheme: "classic", mode: "dark" } });
+      expect(finished).toBe(1);
+    } finally {
+      (document as unknown as { getAnimations?: unknown }).getAnimations = original;
+    }
+  });
+
+  it("settleScopeInPage resolves only after the scope is stable across frames", async () => {
+    const settled = await settleScopeInPage({ uiTheme: "gruvbox", mode: "light" });
+    expect(settled.theme).toBe("light");
+    expect(settled.uiTheme).toBe("gruvbox");
+    expect(document.documentElement.dataset.theme).toBe("light");
+    expect(document.documentElement.dataset.uiTheme).toBe("gruvbox");
+  });
+
+  it("settleScopeInPage waits out a running theme transition", async () => {
+    // `--txt-faint` is stable immediately, so without the transition check the
+    // settle would finish in ~3 frames while a 200ms theme-anim fade is still
+    // mid-flight (the review's #0617 finding).
+    let running = true;
+    const transition = { playState: "running", transitionProperty: "background-color" };
+    const original = (document as unknown as { getAnimations?: unknown }).getAnimations;
+    (document as unknown as { getAnimations?: () => unknown[] }).getAnimations = () =>
+      running ? [transition] : [];
+    try {
+      let resolved = false;
+      const promise = settleScopeInPage({ uiTheme: "jelly", mode: "dark" }).then((r) => {
+        resolved = true;
+        return r;
+      });
+      await new Promise((r) => setTimeout(r, 80)); // several frames while "fading"
+      expect(resolved).toBe(false);
+      running = false;
+      const settled = await promise;
+      expect(settled.theme).toBe("dark");
+      expect(settled.uiTheme).toBe("jelly");
+      expect(settled.pending).toBe(0);
+    } finally {
+      (document as unknown as { getAnimations?: unknown }).getAnimations = original;
+    }
   });
 });
 
