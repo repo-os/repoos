@@ -14,7 +14,7 @@ branch: feat/protect-task-bodies-from-clobbering-and-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-01T09:30:31Z"
-updated_at: "2026-10-01T15:16:39Z"
+updated_at: "2026-10-01T15:24:04Z"
 review_passes: 5
 review_rounds: 2
 dev_error_count: 1
@@ -91,3 +91,5 @@ Follow-up to #0612: add a section-replace/append form for task bodies (so declar
 - 2026-10-01T14:57:10Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-01T14:58:12Z · needs_input
 - 2026-10-01T15:16:39Z · status review→active
+- 2026-10-01T15:24:04Z · status active→review
+- 2026-10-01T15:24:04Z · status review→active
