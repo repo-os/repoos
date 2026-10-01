@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 cli_override: pi
+model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-01T18:08:13Z"
-updated_at: "2026-10-01T18:08:40Z"
+updated_at: "2026-10-01T18:08:49Z"
 ---
 ## Problem
 
@@ -62,3 +63,4 @@ Let's change this first col to have the name "Draft" by default. I like short an
 - 2026-10-01T18:08:14Z · screenshots
 - 2026-10-01T18:08:22Z · cli_override
 - 2026-10-01T18:08:40Z · status draft→inbox, title, area, body
+- 2026-10-01T18:08:49Z · model_override
