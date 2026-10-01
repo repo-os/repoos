@@ -82,8 +82,16 @@ uncommitted change** so the drawer's Changes tab renders actual file rows.
   sets `data-theme` pre-paint but nothing sets `data-ui-theme` until the config
   store's `load()` resolves — so the audit waits for that attribute as a
   barrier before flipping, and writes `localStorage` alongside the attributes
-  so both application paths converge. Without it, a probe can see *dark text on
-  a light card* (half-flipped state) and report failures no run reproduces.
+  so both application paths converge. That one-time barrier is not enough on
+  its own: the Node-side flip and the probe are two separate `page.evaluate`
+  round trips, so a config-store apply that lands between them could leave the
+  page half-flipped — dark text on a light card — and report failures no run
+  reproduces. #0617 closes the window with two layers: `settleScopeInPage`
+  re-asserts the scope on every animation frame until the `<html>` attributes
+  and the resolved `--txt-faint` are stable for two consecutive frames (and
+  warns if the requested scope never won), and `contrastProbe` re-asserts the
+  scope inside its own evaluate with a synchronous style flush, so the flip and
+  the reading happen in one task with no interleaving.
 - **One bar for everything: WCAG AA.** Faint/dim tokens that landed at
   2.6–4.0:1 were *raised*, not exempted — the audit measures the same floor
   everywhere so an exemption stays meaningful.

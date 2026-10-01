@@ -76,6 +76,83 @@ export function scopeAttributes(scope: CheckThemeScope): ScopeAttributes {
   return { uiTheme: ui ?? "classic", mode: mode ?? byName ?? "dark" };
 }
 
+/**
+ * The in-page flip + settle barrier (#0617). Re-runs `apply()` on every
+ * animation frame until the `<html>` attributes and the resolved `--txt-faint`
+ * have been identical for two consecutive frames — i.e. the app's async config
+ * load (if any) has finished and style recalc has caught up. A late
+ * `applyTheme()` from the config store reads `localStorage`, which this
+ * rewrites every frame, so it converges on the requested scope instead of
+ * racing it. Bounded at 30 frames (~0.5s) so a genuinely broken theme cannot
+ * hang the audit; the caller compares the result and warns on a mismatch rather
+ * than probing a half-flipped page silently.
+ */
+export function settleScopeInPage(a: ScopeAttributes): Promise<{
+  theme: string | null;
+  uiTheme: string | null;
+  txtFaint: string;
+}> {
+  const apply = (): void => {
+    try {
+      localStorage.setItem("repoos.theme", a.mode);
+      localStorage.setItem("repoos.uiTheme", a.uiTheme);
+    } catch {
+      /* storage unavailable: the attributes below still apply */
+    }
+    document.documentElement.dataset.theme = a.mode;
+    document.documentElement.dataset.uiTheme = a.uiTheme;
+  };
+  apply();
+  return new Promise((resolve) => {
+    let prev = "";
+    let stable = 0;
+    let frames = 0;
+    const tick = (): void => {
+      frames++;
+      apply();
+      void document.documentElement.offsetHeight; // force style+layout
+      const cs = getComputedStyle(document.documentElement);
+      const cur =
+        document.documentElement.dataset.theme +
+        "/" +
+        document.documentElement.dataset.uiTheme +
+        "|" +
+        cs.getPropertyValue("--txt-faint").trim();
+      if (cur === prev) stable++;
+      else stable = 0;
+      prev = cur;
+      if (stable >= 2 || frames >= 30) {
+        resolve({
+          theme: document.documentElement.dataset.theme ?? null,
+          uiTheme: document.documentElement.dataset.uiTheme ?? null,
+          txtFaint: cs.getPropertyValue("--txt-faint").trim(),
+        });
+      } else {
+        requestAnimationFrame(tick);
+      }
+    };
+    requestAnimationFrame(tick);
+  });
+}
+
+/**
+ * Whether a settled flip landed on the requested scope, or the warning text
+ * when it did not. Pure so the "never silently probe a half-flipped scope"
+ * contract is unit-testable (#0617).
+ */
+export function scopeSettleWarning(
+  scopeName: string,
+  settled: { theme: string | null; uiTheme: string | null },
+  attrs: ScopeAttributes,
+): string | null {
+  if (settled.theme === attrs.mode && settled.uiTheme === attrs.uiTheme) return null;
+  return (
+    `scope "${scopeName}" did not settle — wanted data-theme="${attrs.mode}" ` +
+    `data-ui-theme="${attrs.uiTheme}", got data-theme="${settled.theme}" ` +
+    `data-ui-theme="${settled.uiTheme}"`
+  );
+}
+
 // ── Color math (judged Node-side so it is unit-testable) ────────────────
 
 export interface RGBA {
@@ -202,6 +279,14 @@ export interface ProbeSample {
 export interface ProbeArg {
   /** `[[check.contrastExempts]]` selectors; matching exempts the subtree. */
   exemptSelectors: string[];
+  /**
+   * The scope this probe is meant to read, re-asserted at the top of the walk
+   * with a synchronous style flush (#0617). The Node-side flip is one evaluate
+   * and the probe is another, so an async config-store `applyTheme` can land in
+   * between and leave a half-flipped page; asserting here collapses the flip
+   * and the reading into a single task with no interleaving.
+   */
+  scope?: ScopeAttributes;
 }
 
 export interface ProbeResult {
@@ -225,6 +310,25 @@ export function contrastProbe(arg: ProbeArg): ProbeResult {
   let exempted = 0;
   let disabled = 0;
   let invisible = 0;
+
+  // Re-assert the intended scope inside this same evaluate and force a style
+  // flush, so the walk and the recalc cannot be split by an async config-store
+  // apply that landed after the Node-side flip (#0617). Without this the probe
+  // can sample the previous scope's text colour against the new scope's
+  // background — a half-flipped pair the theme can never actually render.
+  if (arg.scope) {
+    try {
+      localStorage.setItem("repoos.theme", arg.scope.mode);
+      localStorage.setItem("repoos.uiTheme", arg.scope.uiTheme);
+    } catch {
+      /* storage unavailable: the attributes below still apply */
+    }
+    document.documentElement.dataset.theme = arg.scope.mode;
+    document.documentElement.dataset.uiTheme = arg.scope.uiTheme;
+    // Reading a layout property forces style+layout before any
+    // getComputedStyle below, so no stale computed value survives the write.
+    void document.documentElement.offsetHeight;
+  }
 
   // When a dialog is open it owns the screen (the board behind a scrim would
   // otherwise be judged against colors the user cannot see). Each dialog state
@@ -980,19 +1084,15 @@ async function runAudit(): Promise<{
       stats.screens++;
       for (const scope of scopes) {
         const attrs = scopeAttributes(scope);
-        // Writing localStorage too means a late async config load re-applies
-        // OUR scope instead of racing it — both paths converge.
-        await page.evaluate((a: { uiTheme: string; mode: string }) => {
-          try {
-            localStorage.setItem("repoos.theme", a.mode);
-            localStorage.setItem("repoos.uiTheme", a.uiTheme);
-          } catch {
-            /* storage unavailable: attributes below still apply */
-          }
-          document.documentElement.dataset.theme = a.mode;
-          document.documentElement.dataset.uiTheme = a.uiTheme;
-        }, attrs);
-        const probe = await page.evaluate(contrastProbe, { exemptSelectors });
+        // Flip <html> to this scope and wait for the app + style recalc to
+        // settle before probing. Writing localStorage too means a late async
+        // config load re-applies OUR scope instead of racing it — both paths
+        // converge. The probe re-asserts the scope inside its own evaluate as
+        // well, closing the round-trip window entirely (#0617).
+        const settled = await page.evaluate(settleScopeInPage, attrs);
+        const warn = scopeSettleWarning(scope.name, settled, attrs);
+        if (warn) warnings.push(warn);
+        const probe = await page.evaluate(contrastProbe, { exemptSelectors, scope: attrs });
         stats.examined += probe.examined;
         stats.exempted += probe.exempted;
         stats.disabled += probe.disabled;
