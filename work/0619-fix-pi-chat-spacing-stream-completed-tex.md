@@ -5,11 +5,12 @@ type: bug
 status: inbox
 priority: p2
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: pi
 created_at: "2026-10-01T18:46:44Z"
-updated_at: "2026-10-01T18:46:44Z"
+updated_at: "2026-10-01T18:47:36Z"
 ---
 ## Symptom
 
@@ -91,3 +92,4 @@ Stream at *completed text block* granularity instead of per token:
 ## Activity
 
 - 2026-10-01T18:46:44Z · created · unknown
+- 2026-10-01T18:47:36Z · cli_override
