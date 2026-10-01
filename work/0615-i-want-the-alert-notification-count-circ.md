@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-01T15:28:04Z"
-updated_at: "2026-10-01T15:29:29Z"
+updated_at: "2026-10-01T15:29:35Z"
 ---
 ## Problem
 
@@ -67,3 +68,4 @@ I want the alert/notification count circles on the sidebar for each server to ap
 - 2026-10-01T15:28:05Z · screenshots
 - 2026-10-01T15:28:40Z · status draft→inbox, title, area, body
 - 2026-10-01T15:29:29Z · cli_override
+- 2026-10-01T15:29:35Z · model_override
