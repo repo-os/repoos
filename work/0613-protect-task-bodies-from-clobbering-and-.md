@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-01T18:42:52Z"
-review_passes: 11
 id: "0613"
 title: Protect task bodies from clobbering and tighten shot capture
 type: feature
@@ -16,6 +14,8 @@ branch: feat/protect-task-bodies-from-clobbering-and-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-01T09:30:31Z"
+updated_at: "2026-10-01T18:42:57Z"
+review_passes: 11
 review_rounds: 2
 dev_error_count: 1
 ---
