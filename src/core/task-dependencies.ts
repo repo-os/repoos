@@ -1,5 +1,5 @@
 import type { DependencyBlocker, Task } from "./types.js";
-import { branchCommit, isAncestor, localBranches } from "./git.js";
+import { branchCommit, commitExists, isAncestor, localBranches } from "./git.js";
 
 export class DependencyValidationError extends Error {}
 
@@ -72,11 +72,18 @@ function mainBranch(root: string): string | null {
   return branches.has("main") ? "main" : branches.has("master") ? "master" : null;
 }
 
-function isMergedDependency(root: string, upstream: Task, base: string | null): boolean {
-  if (upstream.status !== "done" || !base) return false;
+function dependencyMergeState(
+  root: string,
+  upstream: Task,
+  base: string | null,
+): "merged" | "waiting" | "cancelled" {
+  if (upstream.status !== "done") return "waiting";
   const commit =
     upstream.mergedCommit ?? (upstream.branch ? branchCommit(root, upstream.branch) : null);
-  return commit !== null && isAncestor(root, commit, base) === true;
+  if (!commit || !base || !commitExists(root, commit)) return "cancelled";
+  const ancestry = isAncestor(root, commit, base);
+  if (ancestry === true) return "merged";
+  return ancestry === false ? "waiting" : "cancelled";
 }
 
 /**
@@ -99,15 +106,8 @@ export function taskDependencyBlockers(
       blockers.push({ id, state: "cancelled" });
       continue;
     }
-    if (isMergedDependency(root, upstream, base)) continue;
-    const hasMergeProof =
-      upstream.mergedCommit !== null && upstream.mergedCommit !== undefined
-        ? true
-        : Boolean(upstream.branch && branchCommit(root, upstream.branch));
-    blockers.push({
-      id,
-      state: upstream.status === "done" && !hasMergeProof ? "cancelled" : "waiting",
-    });
+    const state = dependencyMergeState(root, upstream, base);
+    if (state !== "merged") blockers.push({ id, state });
   }
   return blockers;
 }

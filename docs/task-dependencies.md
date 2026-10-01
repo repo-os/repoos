@@ -19,6 +19,10 @@ blocked ready tasks before asking the PM to select work. Manual Start returns a
 confirmation, which sends a one-request override without changing the task's
 dependency metadata.
 
+When a prerequisite with dependents completes close-out, the server reruns
+auto-engineering reconciliation with the `dependency-merged` trigger, so newly
+eligible work is considered without a server restart.
+
 If an upstream task is deleted, or its completed branch has no verifiable
 merge commit, the dependent reports a cancelled prerequisite that needs human
 attention. A still-existing but unmerged branch remains an ordinary waiting
