@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-01T18:15:58Z"
-review_passes: 10
 id: "0613"
 title: Protect task bodies from clobbering and tighten shot capture
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
@@ -16,6 +14,8 @@ branch: feat/protect-task-bodies-from-clobbering-and-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-01T09:30:31Z"
+updated_at: "2026-10-01T18:26:04Z"
+review_passes: 10
 review_rounds: 2
 dev_error_count: 1
 ---
@@ -125,4 +125,4 @@ Follow-up to #0612: add a section-replace/append form for task bodies (so declar
 - 2026-10-01T18:14:35Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-01T18:15:58Z · needs_input
 - 2026-10-01T18:15:58Z · needs_input
-
+- 2026-10-01T18:26:04Z · status review→active
