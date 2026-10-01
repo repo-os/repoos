@@ -2302,12 +2302,14 @@ export class CloseOutOrchestrator {
     let removed = removeWorktree(root, featureBranch);
     let stuck = removed ? null : worktreePathForBranch(root, featureBranch);
     let keptDirtyFiles: string[] = [];
+    let couldNotReadWorktreeDirty = false;
     if (stuck) {
       try {
         keptDirtyFiles = await uncommittedWorkFiles(stuck, workFileFilter(this.config), {
           omitWorktreeDeletionsPresentAtRef: featureBranch,
         });
       } catch (err) {
+        couldNotReadWorktreeDirty = true;
         // Unknown ≠ clean. Keep the worktree anyway and say we could not read
         // it, rather than deleting it or pretending it was empty.
         this.logger?.integration(
@@ -2321,6 +2323,7 @@ export class CloseOutOrchestrator {
       // HEAD (#0609). After a successful merge that is not uncommitted work —
       // force-remove the registration instead of needs-input.
       if (
+        !couldNotReadWorktreeDirty &&
         keptDirtyFiles.length === 0 &&
         isAncestor(root, featureBranch, mainBranch) === true &&
         removeWorktree(root, featureBranch, { force: true })
