@@ -807,7 +807,9 @@ const shotWarning = computed(() => (ui.active ? repo.shotWarningFor(ui.active.id
 const shotsViewerOpen = ref(false);
 const shotsViewerStart = ref(0);
 const shotsViewerShots = computed<ScreenshotShot[]>(() =>
-  taskShots.value.map((s) => ({ src: s.url, name: s.name })),
+  // #0603: the viewer's caption carries the provenance ("declared: …" /
+  // "auto: matched …"), not the raw filename.
+  taskShots.value.map((s) => ({ src: s.url, name: s.provenance || s.label || s.name })),
 );
 function openShotsViewer(index: number): void {
   shotsViewerStart.value = index;
@@ -4888,6 +4890,14 @@ watch(
                 <span class="shot-name" :title="s.route ? `${s.target} · ${s.route}` : s.target">{{
                   s.label || s.target
                 }}</span>
+                <!-- #0603: why this shot exists — a declared label captions the
+                     shot, a fallback shot shows the glob it matched; never blank. -->
+                <span
+                  v-if="s.provenance && s.provenance !== s.label"
+                  class="shot-provenance"
+                  :title="s.provenance"
+                  >{{ s.provenance }}</span
+                >
               </div>
             </div>
           </section>

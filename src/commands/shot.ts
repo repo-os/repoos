@@ -21,8 +21,14 @@ import { findRepoRoot, loadConfig, mainCheckoutRoot, resolveServePort } from "..
 import { changedPathsVsBase, currentBranch } from "../core/git.js";
 import { createRepoOS } from "../core/repoos.js";
 import { captureShotPage, type ShotDriverPage } from "../core/shot-page.js";
-import { buildCapturePlan, parseShotPlan, type CaptureEntry } from "../core/shot-plan.js";
 import {
+  buildCapturePlan,
+  parseShotPlan,
+  provenanceCaption,
+  type CaptureEntry,
+} from "../core/shot-plan.js";
+import {
+  describeTargetPathMatches,
   formatTargetList,
   resolveShotTargets,
   type ShotTargetSource,
@@ -229,7 +235,14 @@ async function uploadShot(
   port: number,
   taskId: string,
   token: string | null,
-  input: { target: string; route: string; label?: string; selector?: string; data: string },
+  input: {
+    target: string;
+    route: string;
+    label?: string;
+    provenance?: string;
+    selector?: string;
+    data: string;
+  },
 ): Promise<
   { ok: true; shot: { name: string; path: string; url: string } } | { ok: false; error: string }
 > {
@@ -242,6 +255,7 @@ async function uploadShot(
         target: input.target,
         route: input.route,
         ...(input.label ? { label: input.label } : {}),
+        ...(input.provenance ? { provenance: input.provenance } : {}),
         name: input.target,
         mime: "image/png",
         data: input.data,
@@ -271,13 +285,18 @@ export async function cmdShot(args: string[]): Promise<number> {
   Which page or state to capture can be declared in the task body: a
   "## Shots" section holding a fenced JSON list, one entry per shot:
 
-    {"target": "default", "route": "/board", "label": "Board",
+    {"target": "default", "route": "/repository", "label": "Task drawer",
+     "highlight": ".drawer .task-title",
      "steps": [{"click": "button.new-task"}, {"waitMs": 300}]}
 
-  (target/route/selector/label/steps; steps are click, fill + text,
-  waitFor, or waitMs, using plain CSS selectors). The same list drives
-  the server's automatic capture at handoff. Without it, "/" is captured
-  per resolved target.
+  (target/route/selector/label/highlight/steps; steps are click, fill + text,
+  waitFor, or waitMs, using plain CSS selectors; highlight is an optional
+  selector outlined around the changed element before capture — say what
+  changed). The same list drives the server's automatic capture at handoff.
+  Without it, "/" is captured per resolved target — by this command when you
+  run it, and by the automatic capture only when the diff touches a UI
+  target's paths; diffs touching just tests or task notes stand down with a
+  visible "shots: skipped — no UI change to capture" note instead.
 
   Arguments:
     <route|url>        Route to capture on the preview (default "/"), or an
@@ -338,6 +357,8 @@ export async function cmdShot(args: string[]): Promise<number> {
         target: targets[0],
         route: opts.route as string,
         ...(opts.selector ? { selector: opts.selector } : {}),
+        // An absolute URL is the subject by construction; nothing to attribute.
+        provenance: { kind: "auto" },
       },
     ];
   } else {
@@ -380,17 +401,38 @@ export async function cmdShot(args: string[]): Promise<number> {
     for (const error of declared.errors) {
       console.error(c.yellow("  · ") + `declared shot list: ${error}`);
     }
-    const built = buildCapturePlan(targets, declared.shots);
+    // Provenance + docs gate need the same match detail the server uses (#0603):
+    // which globs matched per target, and which targets matched docs content
+    // only (for those, a route-less declared shot or the `/` fallback is skipped
+    // — a docs home page shows the site, not the change). The CLI keeps its
+    // `/` fallback for the remaining targets: a human asked for it by hand.
+    const matchedGlobs = new Map<string, string[]>();
+    const docsContentOnly = new Set<string>();
+    for (const match of describeTargetPathMatches(worktreeConfig.preview, changed)) {
+      matchedGlobs.set(match.target, match.globs);
+      if (match.contentOnly) docsContentOnly.add(match.target);
+    }
+    const built = buildCapturePlan(targets, declared.shots, { matchedGlobs, docsContentOnly });
     for (const error of built.errors) {
       console.error(c.yellow("  · ") + error);
     }
+    for (const skip of built.autoSkips) {
+      console.error(c.yellow("  · ") + `skipped: ${skip}`);
+    }
     plan = built.entries.length
       ? built.entries
-      : targets.map((target) => ({
-          target,
-          route: normalizedRoute(opts.route),
-          ...(opts.selector ? { selector: opts.selector } : {}),
-        }));
+      : targets
+          .filter((target) => !docsContentOnly.has(target))
+          .map((target) => ({
+            target,
+            route: normalizedRoute(opts.route),
+            ...(opts.selector ? { selector: opts.selector } : {}),
+            // #0603: a CLI-invoked fallback is still captioned — never anonymous.
+            provenance: {
+              kind: "auto" as const,
+              ...(matchedGlobs.get(target)?.length ? { globs: matchedGlobs.get(target) } : {}),
+            },
+          }));
     if (built.entries.length) {
       console.log(
         c.dim(
@@ -485,6 +527,7 @@ export async function cmdShot(args: string[]): Promise<number> {
         target: entry.target,
         route: entry.route.startsWith("/") ? normalizedRoute(entry.route) : entry.route,
         ...(entry.label ? { label: entry.label } : {}),
+        provenance: provenanceCaption(entry.provenance),
         data: png.toString("base64"),
       });
       if (!uploaded.ok) {
@@ -500,7 +543,7 @@ export async function cmdShot(args: string[]): Promise<number> {
       });
       console.log(
         c.green("  ✔ ") +
-          `${entry.target}${entry.label ? ` – ${entry.label}` : ""} → ${c.cyan(uploaded.shot.path)} ${c.dim(`(${Math.round(png.length / 1024)} KB)`)}`,
+          `${entry.target}${entry.highlight ? " · highlighted" : ""}${entry.label ? ` – ${entry.label}` : ""} → ${c.cyan(uploaded.shot.path)} ${c.dim(`(${Math.round(png.length / 1024)} KB)`)}`,
       );
     }
     if (saved.length === 0) {
