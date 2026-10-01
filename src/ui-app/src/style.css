@@ -8058,6 +8058,13 @@
   align-items: center;
   justify-content: center;
 }
+.detect-deprecated-slot {
+  flex: none;
+  width: 7.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 .detect-details {
   flex: 1;
   min-width: 0;
