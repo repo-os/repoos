@@ -55,6 +55,12 @@ if (path.basename(process.argv[1]) === "pi") {
     // Die after a signal-bearing text_end but before message_end: cleanup must
     // still surface the signal from the held blocks rather than flush it raw.
     setTimeout(() => process.exit(0), 50);
+  } else if (process.env.REPOOS_FAKEBIN_PI_ERROR_AFTER_BLOCK === "1") {
+    // A text block streamed, then the turn failed with no text: the provider
+    // error must still reach the transcript instead of being suppressed as a
+    // duplicate of the already-streamed text (#0619).
+    process.stdout.write(JSON.stringify({ type: "message_end", message: { role: "assistant", content: [], stopReason: "error", errorMessage: "OpenAI API error (401): Incorrect API key" } }) + "\\n");
+    process.exit(0);
   } else {
     process.stdout.write(JSON.stringify({ type: "message_end", message: { role: "assistant", content } }) + "\\n");
     process.stdout.write(JSON.stringify({ type: "turn_end" }) + "\\n");
@@ -634,6 +640,39 @@ describe("pi driver", () => {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;
       delete process.env.REPOOS_FAKEBIN_PI_NO_BLOCK;
+      fx.clean();
+    }
+  });
+
+  it("surfaces a provider error even after a text block streamed", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    process.env.REPOOS_FAKEBIN_PI_ERROR_AFTER_BLOCK = "1";
+    try {
+      const runner = new AgentRunner(config(fx.bin), () => {});
+      runner.start(TASK, "feat/x", agent("pi"), { cwd: fx.bin });
+      await waitFor(() => !runner.isRunning("0001"), "pi error-after-block turn exit");
+
+      const lines = runner.output("0001")!.lines;
+      const texts = lines
+        .filter((line) => (line as { type?: string }).type === "text")
+        .map((line) => (line as { text: string }).text);
+      // The streamed block is kept (not doubled), and the error is recorded
+      // alongside it — the backfill guard must not swallow the reason the turn
+      // stopped just because text already streamed (#0619).
+      expect(texts).toEqual(["Hello world"]);
+      expect(
+        lines.some(
+          (line) =>
+            (line as { type?: string }).type === "sys" &&
+            (line as { d?: string }).d === "OpenAI API error (401): Incorrect API key",
+        ),
+      ).toBe(true);
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      delete process.env.REPOOS_FAKEBIN_PI_ERROR_AFTER_BLOCK;
       fx.clean();
     }
   });
