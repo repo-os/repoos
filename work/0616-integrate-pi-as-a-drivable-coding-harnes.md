@@ -2,14 +2,15 @@
 id: "0616"
 title: Integrate pi as a drivable coding harness
 type: feature
-status: review
+status: done
 priority: p2
 area: [agent, core, server]
+merged_commit: bddb3b9b91ea2fff0e21e86a87c29cd9126366d8
 assigned_to: ai
 created_by: ""
 branch: feat/integrate-pi-as-a-drivable-coding-harnes
 created_at: "2026-10-01T16:34:17Z"
-updated_at: "2026-10-01T17:13:45Z"
+updated_at: "2026-10-01T18:05:39Z"
 ---
 ## Context
 
@@ -101,3 +102,4 @@ uses: `version`, `help`, `model-discovery`, `headless-one-shot`,
 - 2026-10-01T16:51:18Z · status inbox→ready
 - 2026-10-01T16:51:20Z · status ready→active
 - 2026-10-01T17:13:45Z · status active→review
+- 2026-10-01T18:05:39Z · status review→done, release:success
