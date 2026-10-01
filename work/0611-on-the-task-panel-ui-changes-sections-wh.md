@@ -5,11 +5,11 @@ type: feature
 status: draft
 priority: p2
 area: general
-assigned_to: ""
+assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-01T04:34:32Z"
-updated_at: "2026-10-01T04:34:32Z"
+updated_at: "2026-10-01T04:34:34Z"
 ---
 On the task panel ui changes sections where we show the shots taken by the task let's use the same styling/structure as we do on "new task" and "new input" screenshot upload, each screenshot it's own row. That way we have room on the row to show some of the relevant text content/description of what the shot is, e.g. the label, steps, selector which is in the task spec now:
 
@@ -29,6 +29,11 @@ On the task panel ui changes sections where we show the shots taken by the task 
   {"target": "default", "route": "/settings?tab=notifications", "label": "Settings: release notification toggles", "steps": []}
 ]
 
+## Screenshots
+
+![Screenshot-2026-10-01-at-12.24.16](/api/tasks/0611/attachments/screenshot-1.png)
+
 ## Activity
 
 - 2026-10-01T04:34:32Z · created · hello@repoos.org
+- 2026-10-01T04:34:34Z · screenshots
