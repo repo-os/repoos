@@ -2,7 +2,7 @@
 id: "0611"
 title: Row layout for task preview shots on Changes tab
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/row-layout-for-task-preview-shots-on-cha
 model_override: opencode-go/space-bunny-free
 created_at: "2026-10-01T04:34:32Z"
-updated_at: "2026-10-01T04:58:58Z"
+updated_at: "2026-10-01T05:03:37Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -94,3 +94,4 @@ On the task panel ui changes sections where we show the shots taken by the task 
 - 2026-10-01T04:38:10Z · model_override
 - 2026-10-01T04:38:13Z · needs_input
 - 2026-10-01T04:58:58Z · body
+- 2026-10-01T05:03:37Z · status active→review
