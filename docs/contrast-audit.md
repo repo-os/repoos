@@ -78,20 +78,28 @@ uncommitted change** so the drawer's Changes tab renders actual file rows.
   them as opaque, truncates the chain and composites the rest over white —
   phantom "light background in a dark theme" failures. That bug was the single
   most confusing hour of #0596; the unit tests now pin the format.
-- **Theme flips race the app's async config load otherwise.** `index.html`
-  sets `data-theme` pre-paint but nothing sets `data-ui-theme` until the config
-  store's `load()` resolves — so the audit waits for that attribute as a
-  barrier before flipping, and writes `localStorage` alongside the attributes
-  so both application paths converge. That one-time barrier is not enough on
-  its own: the Node-side flip and the probe are two separate `page.evaluate`
-  round trips, so a config-store apply that lands between them could leave the
-  page half-flipped — dark text on a light card — and report failures no run
-  reproduces. #0617 closes the window with two layers: `settleScopeInPage`
-  re-asserts the scope on every animation frame until the `<html>` attributes
-  and the resolved `--txt-faint` are stable for two consecutive frames (and
-  warns if the requested scope never won), and `contrastProbe` re-asserts the
-  scope inside its own evaluate with a synchronous style flush, so the flip and
-  the reading happen in one task with no interleaving.
+- **Theme flips race the app's async config load — and its 200ms cross-fade.**
+  `index.html` sets `data-theme` pre-paint but nothing sets `data-ui-theme`
+  until the config store's `load()` resolves — so the audit waits for that
+  attribute as a barrier before flipping, and writes `localStorage` alongside
+  the attributes so both application paths converge. That one-time barrier is
+  not enough on its own. The Node-side flip and the probe are two separate
+  `page.evaluate` round trips, so a config-store apply that lands between them
+  could leave the page half-flipped — dark text on a light card — and report
+  failures no run reproduces. And `--txt-faint` is a custom property that never
+  itself transitions, so the attributes can look settled in ~3 frames while the
+  app's `theme-anim` `transition` (200ms) is still mid-fade, letting a probe read
+  a color between themes. #0617 closes both windows:
+  - the audit's motion freeze uses **`transition: none !important`** (not just a
+    zero duration), so a scope flip is instant and no cross-fade can be sampled;
+  - `settleScopeInPage` re-asserts the scope on every animation frame until the
+    `<html>` attributes and the resolved `--txt-faint` are stable for two
+    consecutive frames **and** `document.getAnimations()` reports no running CSS
+    transitions (it waits out any fade that started before the freeze, bounded at
+    ~2s, and warns if transitions never settle); and
+  - `contrastProbe` re-asserts the scope inside its own evaluate, finishes any
+    still-running transition, and forces a synchronous style flush, so the flip
+    and the reading happen in one task with no interleaving.
 - **One bar for everything: WCAG AA.** Faint/dim tokens that landed at
   2.6–4.0:1 were *raised*, not exempted — the audit measures the same floor
   everywhere so an exemption stays meaningful.
