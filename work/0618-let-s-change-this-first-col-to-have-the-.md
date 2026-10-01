@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-01T18:24:11Z"
-review_passes: 1
 id: "0618"
 title: "Default first board column label to \"Draft\""
 type: feature
@@ -13,6 +11,8 @@ branch: feat/default-first-board-column-label-to-draf
 cli_override: pi
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-01T18:08:13Z"
+updated_at: "2026-10-01T18:24:26Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -75,4 +75,4 @@ Let's change this first col to have the name "Draft" by default. I like short an
 - 2026-10-01T18:09:06Z · status ready→active, branch
 - 2026-10-01T18:19:09Z · body
 - 2026-10-01T18:23:42Z · status active→review
-
+- 2026-10-01T18:24:26Z · note: shots: failed — capture of Settings draft column default reads Draft on "default" failed: goto: Timeout 30000ms exceeded.
