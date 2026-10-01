@@ -147,24 +147,37 @@ describe("targetsForArea", () => {
 
 describe("shotTargetMismatchWarning", () => {
   it("warns when the diff touches a target the area does not resolve to", () => {
-    const warning = shotTargetMismatchWarning(PREVIEW, "web", ["user-docs/index.md"]);
+    const warning = shotTargetMismatchWarning(PREVIEW, "web", ["user-docs/.vitepress/config.ts"]);
     expect(warning).toBe(`This task's changes touch Docs site but its area is "web".`);
   });
 
   it("stays quiet when the area already reaches the changed target", () => {
-    expect(shotTargetMismatchWarning(PREVIEW, "docs", ["user-docs/index.md"])).toBeUndefined();
+    expect(
+      shotTargetMismatchWarning(PREVIEW, "docs", ["user-docs/.vitepress/config.ts"]),
+    ).toBeUndefined();
     // Multi-area values count too.
     expect(
-      shotTargetMismatchWarning(PREVIEW, "web + docs", ["user-docs/index.md"]),
+      shotTargetMismatchWarning(PREVIEW, "web + docs", ["user-docs/.vitepress/config.ts"]),
     ).toBeUndefined();
   });
 
   it("warns about the unexplained target when only some touched targets are area-reachable", () => {
     const warning = shotTargetMismatchWarning(PREVIEW, "web + docs", [
-      "user-docs/index.md",
+      "user-docs/.vitepress/config.ts",
       "landing/index.html",
     ]);
     expect(warning).toBe(`This task's changes touch Landing page but its area is "web + docs".`);
+  });
+
+  it("ignores markdown-only changes: prose edits are content, not target code", () => {
+    expect(shotTargetMismatchWarning(PREVIEW, "web", ["user-docs/index.md"])).toBeUndefined();
+    // A real code change alongside the prose still warns.
+    expect(
+      shotTargetMismatchWarning(PREVIEW, "web", [
+        "user-docs/index.md",
+        "user-docs/.vitepress/config.ts",
+      ]),
+    ).toBe(`This task's changes touch Docs site but its area is "web".`);
   });
 
   it("stays quiet when no changed path matches a target", () => {
@@ -197,7 +210,7 @@ describe("the default target's own paths (#0594)", () => {
     const changed = [
       "src/ui-app/src/components/TaskDrawer.vue",
       "src/ui-app/src/style.css",
-      "user-docs/check.md",
+      "user-docs/.vitepress/theme/index.ts",
     ];
     expect(targetsForPaths(PREVIEW_WITH_DEFAULT_PATHS, changed)).toEqual(["Docs site", "default"]);
     const r = resolveShotTargets(PREVIEW_WITH_DEFAULT_PATHS, "web", changed);
@@ -227,7 +240,7 @@ describe("the default target's own paths (#0594)", () => {
   it("never mislabels the always-reachable default as an area mismatch", () => {
     const warning = shotTargetMismatchWarning(PREVIEW_WITH_DEFAULT_PATHS, "web", [
       "src/ui-app/src/Board.vue",
-      "user-docs/check.md",
+      "user-docs/.vitepress/theme/index.ts",
     ]);
     expect(warning).toBe(`This task's changes touch Docs site but its area is "web".`);
   });
