@@ -84,6 +84,29 @@ export function parseLiveModels(text: string): string[] {
 }
 
 /**
+ * Parse `pi --list-models` stdout into sorted, unique `provider/model` ids.
+ * pi prints an aligned table (`provider model context max-out thinking images`)
+ * rather than one id per line, so the first two whitespace-separated columns
+ * are combined. The header line and any short/malformed rows are dropped.
+ */
+export function parsePiModels(text: string): string[] {
+  const seen = new Set<string>();
+  for (const raw of text.split("\n")) {
+    const line = raw.trim();
+    if (!line) continue;
+    const cols = line.split(/\s+/);
+    if (cols.length < 2) continue;
+    const [provider, model] = cols;
+    if (!provider || !model) continue;
+    if (/^provider$/i.test(provider)) continue; // table header
+    const id = `${provider}/${model}`;
+    if (id.length > MODEL_ID_MAX_LEN) continue;
+    seen.add(id);
+  }
+  return [...seen].sort();
+}
+
+/**
  * Parse the documented `agy models` table. The first whitespace-delimited
  * token is the model slug; human-readable labels and headers are ignored.
  * This intentionally accepts only slug-shaped rows so login/help diagnostics
@@ -538,6 +561,40 @@ const crushAdapter: ModelSourceAdapter = {
   },
 };
 
+/**
+ * pi adapter: parses `pi --list-models`, an aligned table whose first two
+ * columns are the provider and model. There is no `--json` and no refresh
+ * flag; the list is account/provider-wide, so the picker may offer models a
+ * given key cannot run — acceptable for a pin selector (the run fails with a
+ * clear CLI error).
+ */
+const piAdapter: ModelSourceAdapter = {
+  id: "pi",
+  cli: "pi",
+  supported: true,
+  async list(opts: ListModelsOptions = {}): Promise<ModelSourceResult> {
+    const bin = resolveBinary("pi", process.env.PATH ?? "");
+    if (!bin)
+      return {
+        supported: true,
+        models: ["default"],
+        refreshable: false,
+        error: "pi not found on PATH",
+      };
+    const out = await spawnModels(bin, ["--list-models"], {
+      timeoutMs: opts.timeoutMs ?? MODELS_TIMEOUT_MS,
+      cwd: opts.cwd,
+    });
+    const error = probeError(bin, out, opts.timeoutMs ?? MODELS_TIMEOUT_MS);
+    return {
+      supported: true,
+      models: ["default", ...parsePiModels(out.text)],
+      refreshable: false,
+      ...(error ? { error } : {}),
+    };
+  },
+};
+
 /** Placeholder adapter for CLIs with no machine-readable model list. */
 function unsupported(id: string, cli: string): ModelSourceAdapter {
   return {
@@ -559,6 +616,7 @@ export const MODEL_SOURCES: Record<string, ModelSourceAdapter> = {
   cursor: cursorAdapter,
   antigravity: antigravityAdapter,
   crush: crushAdapter,
+  pi: piAdapter,
 };
 for (const known of KNOWN_AGENTS) {
   if (
@@ -568,7 +626,8 @@ for (const known of KNOWN_AGENTS) {
     known.id === "kiro" ||
     known.id === "cursor" ||
     known.id === "antigravity" ||
-    known.id === "crush"
+    known.id === "crush" ||
+    known.id === "pi"
   )
     continue;
   MODEL_SOURCES[known.name] = unsupported(known.id, known.name);

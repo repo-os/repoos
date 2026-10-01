@@ -11,6 +11,7 @@ import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import {
   parseLiveModels,
+  parsePiModels,
   MODEL_SOURCES,
   listModelSources,
   clearModelSourceCache,
@@ -121,6 +122,23 @@ describe("parseLiveModels", () => {
 
   it("drops overlong ids", () => {
     expect(parseLiveModels(`opencode/${"x".repeat(200)}\nopencode/ok\n`)).toEqual(["opencode/ok"]);
+  });
+});
+
+describe("parsePiModels", () => {
+  it("combines the provider and model columns of pi's table", () => {
+    expect(
+      parsePiModels(
+        "provider    model                 context  max-out\n" +
+          "openai      gpt-4.1               1.0M     32.8K\n" +
+          "openrouter  openai/gpt-6-luna     200K     8K\n" +
+          "openai      gpt-4.1               1.0M     32.8K\n",
+      ),
+    ).toEqual(["openai/gpt-4.1", "openrouter/openai/gpt-6-luna"]);
+  });
+
+  it("drops the header and malformed rows", () => {
+    expect(parsePiModels("provider model\n\nnot-a-row\n")).toEqual([]);
   });
 });
 
@@ -360,6 +378,43 @@ describe("crush adapter", () => {
     try {
       const res = await listModelSources({ cwd: tmpDir() });
       expect(res.crush.models).toEqual(["default"]);
+    } finally {
+      process.env.PATH = old;
+    }
+  });
+});
+
+describe("pi adapter", () => {
+  it("spawns `pi --list-models` and returns 'default' + parsed models", async () => {
+    const root = tmpDir();
+    const bin = join(root, "bin");
+    mkdirSync(bin, { recursive: true });
+    writeFileSync(join(bin, "pi"), FAKEBIN, { mode: 0o755 });
+    const fx = { bin, log: join(root, "spawns.log") };
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    process.env.REPOOS_FAKE_MODELS =
+      "provider    model                 context\n" +
+      "openai      gpt-4.1               1.0M\n" +
+      "openrouter  openai/gpt-6-luna     200K\n";
+    const old = prependPath(fx.bin);
+    try {
+      const res = await listModelSources({ cwd: tmpDir() });
+      expect(res.pi).toEqual({
+        supported: true,
+        models: ["default", "openai/gpt-4.1", "openrouter/openai/gpt-6-luna"],
+        refreshable: false,
+      });
+      expect(spawnArgs(fx)).toContainEqual(["--list-models"]);
+    } finally {
+      process.env.PATH = old;
+    }
+  });
+
+  it("returns only 'default' (fail-soft) when pi is missing", async () => {
+    const old = withPath(join(tmpDir(), "empty"));
+    try {
+      const res = await listModelSources({ cwd: tmpDir() });
+      expect(res.pi.models).toEqual(["default"]);
     } finally {
       process.env.PATH = old;
     }
