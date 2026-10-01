@@ -10,8 +10,10 @@ created_by: ""
 branch: ""
 cli_override: pi
 model_override: openrouter/deepseek/deepseek-v4.1-flash
+review_cli_override: github copilot
+review_model_override: default
 created_at: "2026-10-01T18:46:44Z"
-updated_at: "2026-10-01T18:47:38Z"
+updated_at: "2026-10-01T18:47:44Z"
 ---
 ## Symptom
 
@@ -95,3 +97,4 @@ Stream at *completed text block* granularity instead of per token:
 - 2026-10-01T18:46:44Z · created · unknown
 - 2026-10-01T18:47:36Z · cli_override
 - 2026-10-01T18:47:38Z · model_override
+- 2026-10-01T18:47:44Z · review_cli_override, review_model_override
