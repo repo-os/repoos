@@ -2,16 +2,16 @@
 id: "0617"
 title: Fix rendered-contrast audit half-flipped theme race
 type: bug
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/fix-rendered-contrast-audit-half-flipped
 cli_override: opencode
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-01T17:54:57Z"
-updated_at: "2026-10-01T18:02:33Z"
+updated_at: "2026-10-01T18:02:34Z"
 ---
 ## What
 
@@ -73,3 +73,4 @@ the intended mode.
 - 2026-10-01T18:01:49Z · cli_override
 - 2026-10-01T18:02:25Z · model_override
 - 2026-10-01T18:02:33Z · status inbox→ready
+- 2026-10-01T18:02:34Z · status ready→active, branch
