@@ -2163,14 +2163,12 @@
   width: 15px;
   height: 15px;
 }
-.tc-lock-pop {
+/* Global tooltip (lib/tooltip.ts): one fixed, body-level popup for every title. */
+.app-tooltip {
+  position: fixed;
+  z-index: 200;
   display: none;
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 6px);
-  z-index: 30;
-  /* The card clips overflow, so stay inside its width. */
-  width: 190px;
+  max-width: 240px;
   padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -2179,9 +2177,9 @@
   font-size: 11px;
   line-height: 1.4;
   box-shadow: 0 6px 18px rgb(0 0 0 / 18%);
+  pointer-events: none;
 }
-.tc-lock:hover .tc-lock-pop,
-.tc-lock:focus-visible .tc-lock-pop {
+.app-tooltip.show {
   display: block;
 }
 .tc-agent-panel-enter-active,

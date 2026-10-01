@@ -947,6 +947,7 @@ async function openDebuggerFromError(): Promise<void> {
           tabindex="0"
           role="img"
           aria-label="Worktree locked while in review"
+          data-tip="Code locked on purpose. This task is in review, so its worktree is frozen at the handoff commit — that way what was reviewed is exactly what lands. To change code, send it back to the engineer (or discard post-handoff edits) first."
           @click.stop
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
@@ -966,11 +967,6 @@ async function openDebuggerFromError(): Promise<void> {
               stroke-linecap="round"
             />
           </svg>
-          <span class="tc-lock-pop" role="tooltip">
-            <b>Code locked on purpose.</b> This task is in review, so its worktree is frozen at the
-            handoff commit — that way what was reviewed is exactly what lands. To change code, send
-            it back to the engineer (or discard post-handoff edits) first.
-          </span>
         </span>
         <button
           type="button"
