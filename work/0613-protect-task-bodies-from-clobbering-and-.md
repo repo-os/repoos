@@ -2,7 +2,7 @@
 id: "0613"
 title: Protect task bodies from clobbering and tighten shot capture
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -64,4 +64,4 @@ Follow-up to #0612: add a section-replace/append form for task bodies (so declar
 - 2026-10-01T11:02:39Z · model_override
 - 2026-10-01T11:09:22Z · needs_input
 - 2026-10-01T11:09:38Z · needs_input (underspecified) dismissed by hello@repoos.org
-- 2026-10-01T11:41:49Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-01T11:41:49Z · status active→review
