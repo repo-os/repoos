@@ -54,6 +54,7 @@ import {
   type PromptResult,
 } from "./agents.js";
 import { NEEDS_INPUT_DISMISSED_LINE_RE } from "./needs-input-dismiss.js";
+import { UNDERSPECIFIED_NEEDS_INPUT_REASON } from "./task-underspecified-flag.js";
 import { patchTaskFile } from "./write.js";
 import { createLogger, type Logger } from "../core/logger.js";
 import { getRepoOSDb, type RepoOSDb } from "../core/db.js";
@@ -1400,8 +1401,14 @@ export class ReviewManager {
       }
       // Nothing is running or retrying from here on, so say so on the task
       // instead of leaving it silently parked in review. Preserve any current
-      // needs_input flag with a different cause.
-      if (!current.needsInput || needsInputClearsOnSuccessfulReview(current)) {
+      // needs_input flag with a different cause. An underspecified flag is a
+      // body-quality signal, not a review-episode signal — let exhausted rounds
+      // take priority.
+      if (
+        !current.needsInput ||
+        needsInputClearsOnSuccessfulReview(current) ||
+        current.needsInputReason === UNDERSPECIFIED_NEEDS_INPUT_REASON
+      ) {
         try {
           patchTaskFile(this.config, task.absPath, {
             needsInput: true,

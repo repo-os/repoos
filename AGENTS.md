@@ -455,10 +455,19 @@ cannot tell from the code alone:
   `label` naming the change), usually 1–3 entries showing the changed
   screens. Every shot is captioned with why it exists (`declared: <label>` /
   `auto: matched <glob>`); a docs-wording-only diff captures nothing without
-  a declared route (#0603).
-  Write it with
-  `repoos new/update --body`, never a hand edit. Manual `repoos shot` remains the tool for checking your own work;
-  an engineer-made capture pre-empts the automatic one.
+  a declared route (#0603). **Shot hygiene (#0613):** a declared `highlight` or
+  `selector` that matches nothing records a visible warning; duplicates with
+  the same target/route/steps/selector collapse to one capture. **Whole-window
+  default (#0613):** declared shots capture the whole visible viewport
+  (`fullPage: false`) with changed elements outlined via `highlight`;
+  `selector` (element crop) is the exception, `fullPage` stays off. For tabbed
+  views prefer `?tab=<id>` routes (e.g. `/agents?tab=detected`) over click
+  steps. Write it with
+  `repoos update <id> --section "<heading>" --section-body "..."` to edit one
+  section without clobbering the body; a full `--body` replace that drops
+  Problem / Desired UX / Acceptance criteria / Notes for AI is refused unless
+  `--force` is passed. Manual `repoos shot` remains the tool for checking
+  your own work; an engineer-made capture pre-empts the automatic one.
 - **Previews are server-owned — never run `repoos serve` yourself.** RepoOS owns
   the control-plane port and every preview port. Preview requests are the
   human's to make: the human requests a preview manually from the UI when they

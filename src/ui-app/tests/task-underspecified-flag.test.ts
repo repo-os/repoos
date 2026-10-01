@@ -10,10 +10,19 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseTask } from "../../core/task.js";
 import type { RepoOSConfig } from "../../core/types.js";
-import { patchTask, pmMessage } from "../../server/routes/tasks.js";
+import { patchTask, pmMessage, taskAction } from "../../server/routes/tasks.js";
 import { flagUnderspecifiedIfNeeded } from "../../server/task-underspecified-flag.js";
 import type { Agent } from "../../core/types.js";
 import type { RouteContext } from "../../server/routes/types.js";
+
+vi.mock("../../core/bootstrap.js", () => ({
+  bootstrap: vi.fn(async () => ({
+    ok: false,
+    reason: "test stop after task activation",
+    durationMs: 1,
+    steps: [],
+  })),
+}));
 
 function git(cwd: string, args: string[]): string {
   return execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
@@ -110,6 +119,11 @@ const PM_AGENT: Agent = {
   enabled: true,
 };
 
+const ENGINEER_AGENT: Agent = {
+  ...PM_AGENT,
+  name: "engineer",
+};
+
 function makeCtx(
   fx: ReturnType<typeof makeFixture>,
   runnerOverrides: Record<string, unknown> = {},
@@ -118,7 +132,9 @@ function makeCtx(
     config: { ...fx.config, agents: [PM_AGENT] },
     index: {
       getTask: () => readTaskFile(fx),
+      getTasks: () => [readTaskFile(fx)],
       applyFileChange: () => {},
+      refreshBranches: () => {},
     } as any,
     indexReady: Promise.resolve(),
     reviews: { isRunning: () => false, cancel: vi.fn() } as any,
@@ -143,7 +159,7 @@ function makeCtx(
     uiDir: null,
     reload: null,
     logger: {
-      task: () => {},
+      task: vi.fn(),
       system: () => {},
       agent: () => {},
       getTaskLogs: () => [],
@@ -155,6 +171,58 @@ function makeCtx(
     syncTaskBranch: async () => ({ ok: true, conflicts: [] }),
   };
 }
+
+describe("underspecified flag on task start (#0613)", () => {
+  it("raises the flag and logs a visible warning when an underspecified task starts", async () => {
+    const fx = makeFixture("ready", "hotfix: true\n");
+    try {
+      const ctx = makeCtx(fx);
+      ctx.config.agents = [ENGINEER_AGENT];
+      const { res, fake } = makeRes();
+      await taskAction(ctx, makeReq(), res, { param1: "0558", param2: "start" });
+      expect(fake.status).toBe(500);
+      expect(readTaskFile(fx)).toMatchObject({
+        status: "active",
+        needsInput: true,
+        needsInputReason: "underspecified",
+      });
+      expect(ctx.logger.task).toHaveBeenCalledWith(
+        "0558",
+        "warn",
+        "Task body is underspecified at start",
+        expect.objectContaining({ detail: expect.any(String), needsInputRaised: true }),
+      );
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("preserves an unrelated needs_input reason during start", async () => {
+    const fx = makeFixture(
+      "ready",
+      "hotfix: true\nneeds_input: true\nneeds_input_reason: dev-error\n",
+    );
+    try {
+      const ctx = makeCtx(fx);
+      ctx.config.agents = [ENGINEER_AGENT];
+      const { res } = makeRes();
+      await taskAction(ctx, makeReq(), res, { param1: "0558", param2: "start" });
+      expect(readTaskFile(fx)).toMatchObject({
+        status: "active",
+        needsInput: true,
+        needsInputReason: "dev-error",
+      });
+      expect(ctx.logger.task).toHaveBeenCalledWith(
+        "0558",
+        "warn",
+        "Task body is underspecified at start",
+        expect.objectContaining({ detail: expect.any(String), needsInputRaised: false }),
+      );
+    } finally {
+      fx.clean();
+    }
+  });
+});
 
 describe("underspecified flag on draft exit (#0558)", () => {
   it("raises needs_input after draft → inbox and keeps the status change", async () => {
@@ -182,6 +250,163 @@ describe("underspecified flag on draft exit (#0558)", () => {
       const onDisk = readTaskFile(fx);
       expect(onDisk.status).toBe("inbox");
       expect(onDisk.needsInputReason).toBe("dev-error");
+    } finally {
+      fx.clean();
+    }
+  });
+});
+
+describe("underspecified flag on body edit (#0613)", () => {
+  const WELL_SPECIFIED = `## Problem
+
+${"Substantive problem description that is long enough to avoid the short-body heuristic. ".repeat(8)}
+
+## Desired UX
+
+${"Substantive UX description that is long enough to avoid the short-body heuristic. ".repeat(8)}
+
+## Acceptance criteria
+
+- [ ] Users can complete the flow end to end
+
+## Notes for AI
+
+${"Substantive notes that are long enough to avoid the short-body heuristic. ".repeat(6)}
+
+## Activity
+
+- 2026-01-01T00:00:00Z · created
+`;
+
+  it("raises needs_input when body and review transition share one PATCH (#0613)", async () => {
+    const fx = makeFixture("active");
+    try {
+      writeFileSync(fx.taskPath, taskText("active", "").replace(STUB_BODY, WELL_SPECIFIED));
+      const gutted = WELL_SPECIFIED.replace(
+        /## Problem\n\n[\s\S]*?\n\n## Desired UX/,
+        "## Problem\n\n\n## Desired UX",
+      );
+      const { res, fake } = makeRes();
+      const ctx = makeCtx(fx);
+      ctx.startUnifiedHandoff = () => ({ started: true });
+      await patchTask(ctx, makeReq({ status: "review", body: gutted, skipChecks: true }), res, {
+        param1: "0558",
+      });
+      expect(fake.status).toBe(202);
+      const onDisk = readTaskFile(fx);
+      expect(onDisk.needsInput).toBe(true);
+      expect(onDisk.needsInputReason).toBe("underspecified");
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("does not start the handoff when the body patch is rejected (#0613)", async () => {
+    const fx = makeFixture("active");
+    try {
+      writeFileSync(fx.taskPath, taskText("active", "").replace(STUB_BODY, WELL_SPECIFIED));
+      const before = readFileSync(fx.taskPath, "utf8");
+      const { res } = makeRes();
+      const ctx = makeCtx(fx);
+      const start = vi.fn(() => ({ started: true }) as const);
+      ctx.startUnifiedHandoff = start;
+      // A full replace that drops every spec heading is refused by the guard.
+      await expect(
+        patchTask(ctx, makeReq({ status: "review", body: "just a stub", skipChecks: true }), res, {
+          param1: "0558",
+        }),
+      ).rejects.toThrow();
+      expect(start).not.toHaveBeenCalled();
+      expect(readFileSync(fx.taskPath, "utf8")).toBe(before);
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("raises needs_input when a later body edit leaves spec sections empty", async () => {
+    const fx = makeFixture("active");
+    try {
+      writeFileSync(fx.taskPath, taskText("active", "").replace(STUB_BODY, WELL_SPECIFIED));
+      const gutted = WELL_SPECIFIED.replace(
+        /## Problem\n\n[\s\S]*?\n\n## Desired UX/,
+        "## Problem\n\n\n## Desired UX",
+      );
+      const { res, fake } = makeRes();
+      await patchTask(makeCtx(fx), makeReq({ body: gutted }), res, { param1: "0558" });
+      expect(fake.status).toBe(200);
+      const onDisk = readTaskFile(fx);
+      expect(onDisk.needsInput).toBe(true);
+      expect(onDisk.needsInputReason).toBe("underspecified");
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("rejects a ### section heading with a client error (#0613)", async () => {
+    const fx = makeFixture("active");
+    try {
+      const originalBody = readTaskFile(fx).body;
+      const { res, fake } = makeRes();
+      await patchTask(
+        makeCtx(fx),
+        makeReq({ section: { heading: "### Foo", content: "x" } }),
+        res,
+        { param1: "0558" },
+      );
+      expect(fake.status).toBe(400);
+      expect((fake.payload as { error: string }).error).toContain("single ## heading");
+      expect(readTaskFile(fx).body).toBe(originalBody);
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("returns a client error for a malformed section patch", async () => {
+    const fx = makeFixture("active");
+    try {
+      const originalBody = readTaskFile(fx).body;
+      const { res, fake } = makeRes();
+      await patchTask(makeCtx(fx), makeReq({ section: "Shots" }), res, { param1: "0558" });
+      expect(fake.status).toBe(400);
+      expect((fake.payload as { error: string }).error).toContain(
+        "section must contain string heading and content fields",
+      );
+      expect(readTaskFile(fx).body).toBe(originalBody);
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("clears underspecified needs_input when the body is fleshed out again", () => {
+    const fx = makeFixture("active", "needs_input: true\nneeds_input_reason: underspecified\n");
+    try {
+      writeFileSync(
+        fx.taskPath,
+        taskText("active", "needs_input: true\nneeds_input_reason: underspecified\n").replace(
+          STUB_BODY,
+          WELL_SPECIFIED,
+        ),
+      );
+      const task = readTaskFile(fx);
+      const cleared = flagUnderspecifiedIfNeeded(fx.config, task);
+      expect(cleared).not.toBeNull();
+      expect(cleared!.needsInput).toBe(false);
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("drops a stale underspecified reason but keeps needs_input while questions remain (#0613)", () => {
+    const extra =
+      'needs_input: true\nneeds_input_reason: underspecified\nneeds_input_detail: "stub"\nquestions:\n  - "Which API?"\n';
+    const fx = makeFixture("active", extra);
+    try {
+      writeFileSync(fx.taskPath, taskText("active", extra).replace(STUB_BODY, WELL_SPECIFIED));
+      const updated = flagUnderspecifiedIfNeeded(fx.config, readTaskFile(fx));
+      expect(updated).not.toBeNull();
+      expect(updated!.needsInput).toBe(true);
+      expect(updated!.needsInputReason).toBeUndefined();
+      expect(updated!.questions).toEqual(["Which API?"]);
     } finally {
       fx.clean();
     }
