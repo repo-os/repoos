@@ -390,8 +390,9 @@ interface Session {
   >;
   /**
    * pi stream only: whether the current assistant message's text was already
-   * streamed via `message_update` deltas, so the authoritative `message_end`
-   * text is not recorded a second time. Reset at each `message_end`.
+   * streamed via completed `message_update` text blocks, so the authoritative
+   * `message_end` text is not recorded a second time. Reset at each
+   * `message_end`.
    */
   piStreamedText?: boolean;
   /** The first permission denial seen this turn (detectPermissionDenial). */
@@ -1277,8 +1278,13 @@ function piToolText(value: unknown): string | undefined {
 export interface PiParseResult {
   entry?: AgentOutputEntry;
   sessionID?: string;
-  /** A live `message_update` text delta (streaming transcript only). */
-  delta?: string;
+  /**
+   * A completed `message_update` text block (pi's `text_end`), streamed to the
+   * transcript as a whole paragraph. `appendPiLine` records it through
+   * `applySignals` and marks the message's text as streamed, so the
+   * authoritative `message_end` copy is not recorded a second time.
+   */
+  textBlock?: boolean;
   /** True when this line is an assistant `message_end` (authoritative text). */
   messageEnd?: boolean;
   toolEvent?: {
@@ -1294,11 +1300,15 @@ export interface PiParseResult {
 /**
  * Parse one line of pi's `--mode json` stream. pi emits strict JSONL: a
  * `session` header carrying the session id, then typed lifecycle, message,
- * tool-execution, and usage events. Streaming `message_update` records are
- * swallowed (their authoritative form arrives as `message_end`, and their
- * cumulative `usage` is consumed by `extractUsage` on the raw line, not as a
- * transcript entry); tool activity arrives as a `tool_execution_start` /
- * `tool_execution_end` pair keyed by `toolCallId`. Returns `null` for
+ * tool-execution, and usage events. A `message_update` carrying a completed
+ * `text_end` block is surfaced as one paragraph-sized text entry — streaming
+ * per token would make the UI render a blank line between every fragment
+ * (#0619). `text_delta`/`thinking_*` updates are swallowed, as is the block's
+ * cumulative `usage` (consumed by `extractUsage` on the raw line, not as a
+ * transcript entry); the authoritative whole message still arrives at
+ * `message_end` and is used as a backfill only when no block streamed. Tool
+ * activity arrives as a `tool_execution_start` / `tool_execution_end` pair
+ * keyed by `toolCallId`. Returns `null` for
  * non-JSON or an unrecognized event type so callers fall back to the plain-line
  * path rather than dropping output silently.
  */
@@ -1320,14 +1330,16 @@ export function parsePiEvent(raw: string): PiParseResult | null {
       return id ? { sessionID: id } : {};
     }
     case "message_update": {
-      // Live streaming: a text delta becomes a transcript text entry so long
-      // responses render as they arrive. The authoritative whole message also
-      // arrives at `message_end`; `appendPiLine` drops that duplicate when a
-      // delta was already streamed. `parseOneShotLine` ignores `delta` and uses
-      // the full `message_end` text, so one-shot report extraction is intact.
+      // Live streaming: a completed `text_end` block becomes one transcript
+      // text entry so responses render as they arrive. Streaming each token
+      // delta instead made the UI draw every fragment as its own paragraph
+      // (#0619). The authoritative whole message also arrives at
+      // `message_end`; `appendPiLine` backfills it only when no block
+      // streamed. `parseOneShotLine` ignores `textBlock` and uses the full
+      // `message_end` text, so one-shot report extraction is intact.
       const inner = ev.assistantMessageEvent as Record<string, unknown> | undefined;
-      if (inner?.type === "text_delta" && typeof inner.delta === "string" && inner.delta) {
-        return { delta: inner.delta };
+      if (inner?.type === "text_end" && typeof inner.content === "string" && inner.content) {
+        return { entry: { type: "text", text: inner.content }, textBlock: true };
       }
       return {};
     }
@@ -5874,19 +5886,26 @@ export class AgentRunner {
           state: merged.state,
         });
       }
-    } else if (parsed.delta) {
-      // Live streaming: render each text delta as it arrives. The full message
-      // still arrives at message_end; it is dropped below when deltas streamed.
+    } else if (parsed.textBlock) {
+      // Live streaming: render each completed text block as it arrives, so a
+      // reply arrives paragraph by paragraph rather than fragment by fragment.
+      // The full message still arrives at message_end; it is backfilled below
+      // only when no block streamed.
       session.piStreamedText = true;
-      this.recordEntry(taskId, session, "out", { type: "text", text: parsed.delta });
+      if (parsed.entry) {
+        this.recordEntry(
+          taskId,
+          session,
+          "out",
+          this.applySignals(taskId, raw, parsed.entry, session),
+        );
+      }
     } else if (parsed.messageEnd) {
       if (parsed.entry) {
         // applySignals always runs on the authoritative whole message: a
-        // handoff/preview signal split across deltas is only whole here.
+        // handoff/preview signal split across blocks is only whole here.
         const surfaced = this.applySignals(taskId, raw, parsed.entry, session);
-        // Record the text only when it was not already streamed as deltas. A
-        // signal's confirmation line is likewise skipped in that case — the
-        // request itself was still recorded by applySignals above.
+        // Record the text only when it was not already streamed as blocks.
         if (!session.piStreamedText) this.recordEntry(taskId, session, "out", surfaced);
       }
       session.piStreamedText = false;

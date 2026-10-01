@@ -31,9 +31,13 @@ fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args, cwd: pr
 if (path.basename(process.argv[1]) === "pi") {
   process.stdout.write(JSON.stringify({ type: "session", version: 3, id: "sess-pi" }) + "\\n");
   process.stdout.write(JSON.stringify({ type: "turn_start" }) + "\\n");
-  process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_delta", delta: "Hello " } }) + "\\n");
-  process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_delta", delta: "world" } }) + "\\n");
-  process.stdout.write(JSON.stringify({ type: "message_end", message: { role: "assistant", content: [{ type: "text", text: "Hello world" }] } }) + "\\n");
+  const text = process.env.REPOOS_FAKEBIN_PI_HANDOFF === "1"
+    ? "Finished.\\n\\n${HANDOFF_READY_SIGNAL}"
+    : "Hello world";
+  process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_start", contentIndex: 0 } }) + "\\n");
+  process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_delta", contentIndex: 0, delta: text } }) + "\\n");
+  process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_end", contentIndex: 0, content: text } }) + "\\n");
+  process.stdout.write(JSON.stringify({ type: "message_end", message: { role: "assistant", content: [{ type: "text", text }] } }) + "\\n");
   process.stdout.write(JSON.stringify({ type: "turn_end" }) + "\\n");
   process.exit(0);
 }
@@ -170,6 +174,7 @@ afterEach(() => {
   delete process.env.REPOOS_FAKEBIN_HANDOFF;
   delete process.env.REPOOS_FAKEBIN_CODEX_HANDOFF;
   delete process.env.REPOOS_FAKEBIN_OPENCODE_HANDOFF;
+  delete process.env.REPOOS_FAKEBIN_PI_HANDOFF;
   delete process.env.REPOOS_FAKEBIN_FAIL;
 });
 
@@ -557,7 +562,7 @@ describe("claude code driver", () => {
 });
 
 describe("pi driver", () => {
-  it("streams text deltas and does not duplicate the message_end text", async () => {
+  it("streams completed text blocks and does not duplicate the message_end text", async () => {
     const fx = makeFixture();
     const oldPath = withFakePath(fx);
     process.env.REPOOS_FAKEBIN_LOG = fx.log;
@@ -571,10 +576,10 @@ describe("pi driver", () => {
         .output("0001")!
         .lines.filter((line) => (line as { type?: string }).type === "text")
         .map((line) => (line as { text: string }).text);
-      // Each delta is its own text entry (the UI groups them); the authoritative
-      // message_end text is dropped because its deltas already streamed.
-      expect(texts).toEqual(["Hello ", "world"]);
-      expect(texts.join("")).toBe("Hello world");
+      // The completed text block streams as one paragraph-sized entry; the
+      // authoritative message_end text is dropped because the block already
+      // streamed. Per-token deltas are swallowed (#0619).
+      expect(texts).toEqual(["Hello world"]);
 
       const [run] = spawns(fx);
       expect(run.args).toEqual(expect.arrayContaining(["--mode", "json"]));
@@ -790,6 +795,43 @@ describe("structured runner handoff (#0094)", () => {
       });
       runner.start(TASK, "feat/x", agent("opencode"), { cwd: fx.bin });
       await waitFor(() => requests.length === 1, "OpenCode JSON handoff request");
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
+  it("recognizes a pi handoff inside a completed text block and never shows it raw", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    process.env.REPOOS_FAKEBIN_PI_HANDOFF = "1";
+    try {
+      const requests: unknown[] = [];
+      const runner = new AgentRunner(config(fx.bin), () => {}, {
+        onHandoff: (request) => {
+          requests.push(request);
+        },
+      });
+      runner.start(TASK, "feat/x", agent("pi"), { cwd: fx.bin });
+      await waitFor(() => requests.length === 1, "pi JSON handoff request");
+
+      const lines = runner.output("0001")!.lines;
+      const texts = lines
+        .filter((line) => (line as { type?: string }).type === "text")
+        .map((line) => (line as { text: string }).text);
+      // The signal block streams through applySignals, so the transcript carries
+      // the trusted confirmation line instead of the raw signal text.
+      expect(texts).not.toContain(HANDOFF_READY_SIGNAL);
+      expect(texts.some((text) => text.includes(HANDOFF_READY_SIGNAL))).toBe(false);
+      expect(
+        lines.some(
+          (line) =>
+            (line as { s?: string }).s === "sys" &&
+            (line as { d?: string }).d === "✓ agent requested server-side handoff",
+        ),
+      ).toBe(true);
     } finally {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;

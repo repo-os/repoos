@@ -79,7 +79,9 @@ if (args.includes("--list-models")) { process.stdout.write("google/gemini-2.5-pr
 if (args.includes("--mode")) {
   process.stdout.write(JSON.stringify({ type: "session", version: 3, id: "sess-123" }) + "\\n");
   process.stdout.write(JSON.stringify({ type: "turn_start" }) + "\\n");
-  process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_delta", delta: "OK" } }) + "\\n");
+  process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_start", contentIndex: 0 } }) + "\\n");
+  process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_delta", contentIndex: 0, delta: "OK" } }) + "\\n");
+  process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_end", contentIndex: 0, content: "OK" } }) + "\\n");
   process.stdout.write(JSON.stringify({ type: "message_end", message: { role: "assistant", content: [{ type: "text", text: "OK" }] } }) + "\\n");
   process.stdout.write(JSON.stringify({ type: "turn_end" }) + "\\n");
   // Stay alive briefly so the cancellation probe can SIGTERM us mid-run.
