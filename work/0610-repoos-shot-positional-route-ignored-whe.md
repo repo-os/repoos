@@ -3,6 +3,9 @@ id: "0610"
 title: "repoos shot: positional route ignored when a declared plan or fallback resolves"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the opencode agent exited without output: error: Upstream request failed: Insufficient account funds"
 priority: p3
 area: [cli, server]
 assigned_to: ai
@@ -10,7 +13,7 @@ created_by: ""
 branch: feat/repoos-shot-positional-route-ignored-whe
 model_override: opencode-go/space-bunny-free
 created_at: "2026-09-30T19:56:49Z"
-updated_at: "2026-10-01T07:58:18Z"
+updated_at: "2026-10-01T07:58:19Z"
 ---
 ## Problem
 
@@ -35,3 +38,4 @@ When the caller passes a positional route (or `--selector`), the CLI's plan shou
 - 2026-10-01T07:21:39Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-01T07:58:18Z · status active→review
 - 2026-10-01T07:58:18Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-01T07:58:19Z · needs_input
