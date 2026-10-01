@@ -575,10 +575,24 @@ export async function cmdShot(args: string[]): Promise<number> {
       let png: Buffer;
       try {
         await page.setViewportSize(opts.viewport);
-        png = await captureShotPage(page, pageUrl, entry, {
-          waitMs: opts.waitMs,
-          fullPage: opts.fullPage,
-        });
+        png = await captureShotPage(
+          page,
+          pageUrl,
+          entry,
+          { waitMs: opts.waitMs, fullPage: opts.fullPage },
+          (selector, route) => {
+            console.error(
+              c.yellow("  · ") +
+                `highlight "${selector}" matched nothing on ${route} — capture went ahead unhighlighted`,
+            );
+          },
+          (selector, route) => {
+            console.error(
+              c.yellow("  · ") +
+                `selector "${selector}" matched nothing on ${route} — capture used the whole window`,
+            );
+          },
+        );
       } catch (err) {
         const what = entry.selector ? `selector "${entry.selector}" on ${pageUrl}` : pageUrl;
         console.error(c.red("  ✗ ") + `capture of ${what} failed: ${(err as Error).message}`);

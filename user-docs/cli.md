@@ -89,6 +89,16 @@ done** in the UI, or merge the branch yourself first.
 Edits a task's metadata or body: `--title`, `--area`, `--priority`, `--type`,
 `--body`, `--branch`, `--assigned-to`.
 
+To replace only one `## Section` in the body (create it if absent) without
+touching the rest — including the Activity log — use `--section "<heading>"`
+with `--section-body "..."`:
+
+    repoos update 0612 --section "Shots" --section-body '[{"target":"default","route":"/agents?tab=detected","label":"Detected tab","highlight":".detect-row"}]'
+
+A full `--body` replace that would drop Problem / Desired UX / Acceptance
+criteria / Notes for AI is refused unless `--force` is passed; the error points
+at the `--section` form.
+
 ### `repoos note <id> "<text>"`
 
 Appends a free-form note to the task's activity log. Useful for leaving context

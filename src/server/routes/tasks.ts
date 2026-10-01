@@ -747,6 +747,17 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
   // Guarded: the #0210 gate already ran above for transitions into review.
   index.applyFileChange(updated.absPath, { guarded: true });
 
+  // Re-run the underspecified check on every body change (#0613) — not only
+  // draft promotion. If the body becomes well-specified again the flag clears;
+  // clearing when underspecified persists is handled inside flagUnderspecifiedIfNeeded.
+  if (body.body !== undefined || body.section !== undefined) {
+    const current = index.getTask(updated.id);
+    if (current) {
+      const flagged = flagUnderspecifiedIfNeeded(config, current);
+      if (flagged) index.applyFileChange(flagged.absPath, { guarded: true });
+    }
+  }
+
   if (prevStatus === "draft" && updated.status !== "draft") {
     const current = index.getTask(updated.id);
     if (current) {
@@ -915,7 +926,8 @@ export const getTaskOutput: RouteHandler = (ctx, _req, res, params) => {
 
 // Task actions: start, pause, message, done, sync
 export const taskAction: RouteHandler = async (ctx, req, res, params) => {
-  const { config, index, runner, previews, reviews, syncTaskBranch, onServerStatusChange } = ctx;
+  const { config, index, runner, previews, reviews, syncTaskBranch, onServerStatusChange, logger } =
+    ctx;
   const id = params.param1;
   const action = params.param2;
   let existing = index.getTask(id);
@@ -1002,6 +1014,20 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       : ensureWorktree(config.root, branch);
     index.applyFileChange(updated.absPath);
     index.refreshBranches();
+
+    // #0613: surface the underspecified flag at start — the task is now live,
+    // so a stub body must be visible to the engineer, not silently carried.
+    // It does not block start; it records a visible activity note.
+    const startedTask = index.getTask(updated.id);
+    if (startedTask) {
+      const flagged = flagUnderspecifiedIfNeeded(config, startedTask);
+      if (flagged) {
+        index.applyFileChange(flagged.absPath, { guarded: true });
+        logger.task(id, "warn", "Task body is underspecified — needs_input raised on start", {
+          detail: flagged.needsInputDetail ?? undefined,
+        });
+      }
+    }
     const cwd = wtRes.ok ? wtRes.path : config.root;
 
     const taskForLaunch = index.getTask(updated.id) ?? updated;

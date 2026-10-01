@@ -251,7 +251,16 @@ docs-wording-only diff, missing Playwright, a preview that would not boot)
 is information, not an error: it is recorded as a visible note in the task
 log and activity, never a failed handoff. An engineer-made capture with
 [`repoos shot`](/cli#repoos-shot) before handoff pre-empts the automatic one.
-The PNGs are stored gitignored under `work/.attachments/<taskId>/shots/` and
+**Shot hygiene (#0613):** a declared `highlight` or `selector` that matches
+nothing at capture time records a visible warning (`highlight `.x` matched
+nothing on /route`) — capture still succeeds. Duplicate declarations with the
+same target, route, steps, and selector collapse to one capture with merged
+highlights. **Whole-window default (#0613):** declared shots capture the whole
+visible viewport (`fullPage: false`) with changed elements outlined via
+`highlight`; `selector` (element crop) is the exception, and `fullPage` stays
+off. For tabbed views, prefer `?tab=<id>` routes (e.g. `/agents?tab=detected`)
+over click steps to reach the right tab, and always `highlight` the changed
+elements. The PNGs are stored gitignored under `work/.attachments/<taskId>/shots/` and
 appear as the **UI changes** section of the task drawer's Changes tab, so you
 see what actually rendered rather than only the diff. `repoos shot` picks its
 target from the task's changed files (`[[preview.targets]].paths`, plus the

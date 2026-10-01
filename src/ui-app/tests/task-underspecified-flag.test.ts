@@ -188,6 +188,67 @@ describe("underspecified flag on draft exit (#0558)", () => {
   });
 });
 
+describe("underspecified flag on body edit (#0613)", () => {
+  const WELL_SPECIFIED = `## Problem
+
+${"Substantive problem description that is long enough to avoid the short-body heuristic. ".repeat(8)}
+
+## Desired UX
+
+${"Substantive UX description that is long enough to avoid the short-body heuristic. ".repeat(8)}
+
+## Acceptance criteria
+
+- [ ] Users can complete the flow end to end
+
+## Notes for AI
+
+${"Substantive notes that are long enough to avoid the short-body heuristic. ".repeat(6)}
+
+## Activity
+
+- 2026-01-01T00:00:00Z · created
+`;
+
+  it("raises needs_input when a later body edit leaves spec sections empty", async () => {
+    const fx = makeFixture("active");
+    try {
+      writeFileSync(fx.taskPath, taskText("active", "").replace(STUB_BODY, WELL_SPECIFIED));
+      const gutted = WELL_SPECIFIED.replace(
+        /## Problem\n\n[\s\S]*?\n\n## Desired UX/,
+        "## Problem\n\n\n## Desired UX",
+      );
+      const { res, fake } = makeRes();
+      await patchTask(makeCtx(fx), makeReq({ body: gutted }), res, { param1: "0558" });
+      expect(fake.status).toBe(200);
+      const onDisk = readTaskFile(fx);
+      expect(onDisk.needsInput).toBe(true);
+      expect(onDisk.needsInputReason).toBe("underspecified");
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("clears underspecified needs_input when the body is fleshed out again", () => {
+    const fx = makeFixture("active", "needs_input: true\nneeds_input_reason: underspecified\n");
+    try {
+      writeFileSync(
+        fx.taskPath,
+        taskText("active", "needs_input: true\nneeds_input_reason: underspecified\n").replace(
+          STUB_BODY,
+          WELL_SPECIFIED,
+        ),
+      );
+      const task = readTaskFile(fx);
+      const cleared = flagUnderspecifiedIfNeeded(fx.config, task);
+      expect(cleared).not.toBeNull();
+      expect(cleared!.needsInput).toBe(false);
+    } finally {
+      fx.clean();
+    }
+  });
+});
+
 describe("flagUnderspecifiedIfNeeded guards (#0558)", () => {
   it("does not replace needs_input that only has agent questions", () => {
     const fx = makeFixture("draft");

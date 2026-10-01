@@ -122,6 +122,13 @@ export function extractSection(body: string, heading: string): string | null {
  * collapsing the blank lines it leaves behind. Unchanged when the heading is
  * absent.
  */
+/** Normalize a section title to the exact `## Heading` line `replaceSection` expects. */
+export function normalizeSectionHeading(heading: string): string {
+  const trimmed = heading.trim();
+  if (trimmed.startsWith("## ")) return trimmed;
+  return `## ${trimmed}`;
+}
+
 export function removeSection(body: string, heading: string): string {
   const lines = body.split("\n");
   const start = sectionStart(lines, heading);
@@ -130,6 +137,47 @@ export function removeSection(body: string, heading: string): string {
   const before = lines.slice(0, start).join("\n").replace(/\s+$/, "");
   const after = lines.slice(end).join("\n").replace(/^\s+/, "");
   return [before, after].filter(Boolean).join("\n\n");
+}
+
+/**
+ * Replace a single `## Heading` section's content without touching the rest
+ * of the body. When the heading is absent, it is created at the end (before
+ * `## Activity` if present) with a blank line before it. The section content
+ * is the heading line plus the provided `content` (which may itself span
+ * multiple lines). All other sections — including `## Activity` — are preserved
+ * verbatim.
+ */
+export function replaceSection(body: string, heading: string, content: string): string {
+  const lines = body.split("\n");
+  const start = sectionStart(lines, heading);
+  const bodyTrimmed = body.replace(/\s+$/, "");
+
+  // Activity always lives at the end. Preserve it and its preceding blank
+  // line by temporarily stripping it, then re-applying after the edit.
+  const activityStart = bodyTrimmed.lastIndexOf(`\n${ACTIVITY_HEADING}\n`);
+  let withoutActivity = bodyTrimmed;
+  let activitySuffix = "";
+  if (activityStart !== -1) {
+    withoutActivity = bodyTrimmed.slice(0, activityStart);
+    activitySuffix = bodyTrimmed.slice(activityStart);
+  }
+
+  if (start === -1) {
+    // Create the section: append with a blank line before it (unless the
+    // body is empty), then re-attach Activity after it.
+    const section = `\n${heading}\n${content}`;
+    const base = withoutActivity ? `${withoutActivity}${section}` : `${heading}\n${content}`;
+    return [base, activitySuffix].filter(Boolean).join("\n\n");
+  }
+
+  const end = nextSection(lines, start + 1);
+  const before = lines.slice(0, start).join("\n").replace(/\s+$/, "");
+  const after = lines.slice(end).join("\n").replace(/^\s+/, "");
+  const rest = [before, after].filter(Boolean).join("\n\n");
+  const section = `${heading}\n${content}`;
+  return (
+    [rest, section].filter(Boolean).join("\n\n") + (activitySuffix ? `\n\n${activitySuffix}` : "")
+  );
 }
 
 /**
