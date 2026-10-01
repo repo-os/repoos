@@ -3936,7 +3936,11 @@ export function parseOneShotLine(cli: string, raw: string): AgentOutputEntry | n
   }
   if (cli === "pi") {
     const parsed = parsePiEvent(raw);
-    return parsed?.entry ?? null;
+    // One-shot consumers append every entry; surfacing each completed block
+    // and then the authoritative message_end answer would duplicate the reply
+    // (#0619). The message_end text is the whole answer, so ignore the
+    // streaming blocks here.
+    return parsed?.textBlock ? null : (parsed?.entry ?? null);
   }
   return { s: "out", d: raw };
 }
