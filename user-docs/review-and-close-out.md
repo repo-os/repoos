@@ -252,8 +252,8 @@ is information, not an error: it is recorded as a visible note in the task
 log and activity, never a failed handoff. An engineer-made capture with
 [`repoos shot`](/cli#repoos-shot) before handoff pre-empts the automatic one.
 **Shot hygiene (#0613):** a declared `highlight` or `selector` that matches
-nothing at capture time records a visible warning (`highlight `.x` matched
-nothing on /route`) — capture still succeeds. Duplicate declarations with the
+nothing at capture time records a visible warning (for example: highlight `.x` matched
+nothing on /route) — capture still succeeds. Duplicate declarations with the
 same target, route, steps, and selector collapse to one capture with merged
 highlights. **Whole-window default (#0613):** declared shots capture the whole
 visible viewport (`fullPage: false`) with changed elements outlined via

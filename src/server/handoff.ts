@@ -617,7 +617,24 @@ async function runHandoffFinalization(
   // #0613: at handoff-to-review, surface an underspecified body as a visible
   // activity note — never needs_input here (that would fight review dismissals
   // and close-out). Start and body PATCH use the full flag instead.
-  const { underspecified, detail } = assessTaskUnderspecified(worktreeTask.body);
+  // Body edits land on the canonical board copy only; the worktree task file
+  // can lag, so assess `task.body` (what the caller loaded from main), not
+  // `worktreeTask.body`.
+  // Reload the canonical task right before assessing so a body edit that raced
+  // with this handoff is not judged from the stale in-memory copy.
+  let canonicalBody = task.body;
+  try {
+    canonicalBody = parseTask({
+      content: readFileSync(task.absPath, "utf8"),
+      absPath: task.absPath,
+      root: config.root,
+      defaultStatus: config.defaultStatus,
+      defaultAssignee: config.defaultAssignee,
+    }).body;
+  } catch {
+    /* keep the caller's copy */
+  }
+  const { underspecified, detail } = assessTaskUnderspecified(canonicalBody);
   if (underspecified) {
     try {
       patchTaskFile(config, task.absPath, {

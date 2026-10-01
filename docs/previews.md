@@ -129,7 +129,7 @@ plain CSS selectors). Routes and selectors only — no framework knowledge.
 
 **Shot hygiene (#0613).** When a declared `highlight` or `selector` matches
 zero elements at capture time, a visible warning is recorded on the task
-(`highlight `.x` matched nothing on /route`) — capture still succeeds.
+(for example: highlight `.x` matched nothing on /route) — capture still succeeds.
 Declared shots with the same `target` + `route` + `steps` + `selector` are
 collapsed to one capture, with `highlight` selectors merged (comma-joined),
 so near-duplicates become one capture.
