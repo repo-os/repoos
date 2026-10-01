@@ -5973,6 +5973,7 @@ export class AgentRunner {
         authoritativeText,
         heldText,
       ]);
+      const entryIsText = !!parsed.entry && "type" in parsed.entry && parsed.entry.type === "text";
       if (matched && surfaced) {
         // Keep the prose around the signal; only its own line is replaced by
         // the confirmation. The held concatenation is preferred when any
@@ -5983,9 +5984,27 @@ export class AgentRunner {
         this.recordEntry(taskId, session, "out", surfaced);
       } else if (pending.length) {
         for (const entry of pending) this.recordEntry(taskId, session, "out", entry);
-      } else if (parsed.entry && !session.piStreamedText) {
+      } else if (
+        parsed.entry &&
+        "type" in parsed.entry &&
+        parsed.entry.type === "text" &&
+        !session.piStreamedText
+      ) {
         // Backfill the authoritative text when no block streamed.
         this.recordEntry(taskId, session, "out", parsed.entry);
+      }
+      // A non-text `message_end` entry is not a duplicate of streamed assistant
+      // text — a failed turn surfaces its `errorMessage` as a system line.
+      // The backfill guard above suppresses only the duplicate text, so surface
+      // the failure regardless of whether a text block already streamed, or a
+      // partial reply is left with no explanation of why it stopped (#0619).
+      if (parsed.entry && !entryIsText) {
+        this.recordEntry(
+          taskId,
+          session,
+          "out",
+          this.applySignals(taskId, raw, parsed.entry, session),
+        );
       }
       session.piStreamedText = false;
     } else if (parsed.entry) {
