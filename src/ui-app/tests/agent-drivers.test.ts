@@ -31,12 +31,17 @@ fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args, cwd: pr
 if (path.basename(process.argv[1]) === "pi") {
   process.stdout.write(JSON.stringify({ type: "session", version: 3, id: "sess-pi" }) + "\\n");
   process.stdout.write(JSON.stringify({ type: "turn_start" }) + "\\n");
-  const text = process.env.REPOOS_FAKEBIN_PI_HANDOFF === "1"
-    ? "Finished.\\n\\n${HANDOFF_READY_SIGNAL}"
-    : "Hello world";
+  const split = process.env.REPOOS_FAKEBIN_PI_SPLIT_HANDOFF === "1";
+  const wantsHandoff = process.env.REPOOS_FAKEBIN_PI_HANDOFF === "1" || split;
+  const text = wantsHandoff ? "Finished.\\n\\n${HANDOFF_READY_SIGNAL}" : "Hello world";
+  // A split signal arrives as two completed text blocks; only the later one
+  // completes it, so the driver must hold the first rather than flush it raw.
+  const blocks = split ? ["Finished.\\n\\n::repoos-hand", "off-ready::"] : [text];
   process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_start", contentIndex: 0 } }) + "\\n");
-  process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_delta", contentIndex: 0, delta: text } }) + "\\n");
-  process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_end", contentIndex: 0, content: text } }) + "\\n");
+  for (const block of blocks) {
+    process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_delta", contentIndex: 0, delta: block } }) + "\\n");
+    process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_end", contentIndex: 0, content: block } }) + "\\n");
+  }
   process.stdout.write(JSON.stringify({ type: "message_end", message: { role: "assistant", content: [{ type: "text", text }] } }) + "\\n");
   process.stdout.write(JSON.stringify({ type: "turn_end" }) + "\\n");
   process.exit(0);
@@ -175,6 +180,7 @@ afterEach(() => {
   delete process.env.REPOOS_FAKEBIN_CODEX_HANDOFF;
   delete process.env.REPOOS_FAKEBIN_OPENCODE_HANDOFF;
   delete process.env.REPOOS_FAKEBIN_PI_HANDOFF;
+  delete process.env.REPOOS_FAKEBIN_PI_SPLIT_HANDOFF;
   delete process.env.REPOOS_FAKEBIN_FAIL;
 });
 
@@ -825,6 +831,41 @@ describe("structured runner handoff (#0094)", () => {
       // the trusted confirmation line instead of the raw signal text.
       expect(texts).not.toContain(HANDOFF_READY_SIGNAL);
       expect(texts.some((text) => text.includes(HANDOFF_READY_SIGNAL))).toBe(false);
+      expect(
+        lines.some(
+          (line) =>
+            (line as { s?: string }).s === "sys" &&
+            (line as { d?: string }).d === "✓ agent requested server-side handoff",
+        ),
+      ).toBe(true);
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
+  it("surfaces a pi handoff split across two text blocks as one confirmation", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    process.env.REPOOS_FAKEBIN_PI_SPLIT_HANDOFF = "1";
+    try {
+      const requests: unknown[] = [];
+      const runner = new AgentRunner(config(fx.bin), () => {}, {
+        onHandoff: (request) => {
+          requests.push(request);
+        },
+      });
+      runner.start(TASK, "feat/x", agent("pi"), { cwd: fx.bin });
+      await waitFor(() => requests.length === 1, "split pi JSON handoff request");
+
+      const lines = runner.output("0001")!.lines;
+      const texts = lines
+        .filter((line) => (line as { type?: string }).type === "text")
+        .map((line) => (line as { text: string }).text);
+      // Neither the first raw fragment nor the second reaches the transcript.
+      expect(texts).toEqual([]);
       expect(
         lines.some(
           (line) =>

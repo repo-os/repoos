@@ -395,6 +395,14 @@ interface Session {
    * `message_end`.
    */
   piStreamedText?: boolean;
+  /**
+   * pi stream only: completed `message_update` text blocks held back because
+   * they might contain or complete a handoff/preview signal. A signal split
+   * across two blocks is only whole once the later block arrives, so holding
+   * them until `message_end` keeps the raw fragments out of the transcript
+   * (#0619). Flushed at `message_end`, or at process cleanup on a crash.
+   */
+  piPendingText?: AgentOutputEntry[];
   /** The first permission denial seen this turn (detectPermissionDenial). */
   permissionDenial?: string;
   /**
@@ -1273,6 +1281,26 @@ function piToolText(value: unknown): string | undefined {
     if (parts.length) return parts.join("\n");
   }
   return toolOutputText(value);
+}
+
+/**
+ * Could this accumulated pi text contain, or still complete, a runner signal?
+ *
+ * A line that is a prefix of a signal (`::repoos-handoff`) may be completed by
+ * a later block, and a line that starts with a signal is already one — either
+ * way the blocks are held until `message_end`, so a signal split across blocks
+ * is recognized as a whole instead of reaching the transcript as raw
+ * fragments (#0619). A plain block with no signal-like line streams at once.
+ */
+function piTextHoldsSignal(text: string): boolean {
+  for (const line of text.split("\n")) {
+    const trimmed = line.trimStart();
+    if (!trimmed) continue;
+    for (const signal of [HANDOFF_READY_SIGNAL, PREVIEW_REQUEST_SIGNAL]) {
+      if (signal.startsWith(trimmed) || trimmed.startsWith(signal)) return true;
+    }
+  }
+  return false;
 }
 
 export interface PiParseResult {
@@ -5889,24 +5917,50 @@ export class AgentRunner {
     } else if (parsed.textBlock) {
       // Live streaming: render each completed text block as it arrives, so a
       // reply arrives paragraph by paragraph rather than fragment by fragment.
-      // The full message still arrives at message_end; it is backfilled below
-      // only when no block streamed.
-      session.piStreamedText = true;
+      // A block whose text could contain or complete a signal is held instead
+      // — a split signal is only whole once the later block arrives, and its
+      // raw fragments must never reach the transcript (#0619). The full
+      // message still arrives at message_end; it is backfilled below only when
+      // no block streamed.
       if (parsed.entry) {
-        this.recordEntry(
-          taskId,
-          session,
-          "out",
-          this.applySignals(taskId, raw, parsed.entry, session),
-        );
+        session.piStreamedText = true;
+        const pending = (session.piPendingText ??= []);
+        pending.push(parsed.entry);
+        const combined = pending
+          .map((entry) => ("type" in entry && entry.type === "text" ? entry.text : ""))
+          .join("\n");
+        if (!piTextHoldsSignal(combined)) {
+          for (const entry of pending) this.recordEntry(taskId, session, "out", entry);
+          session.piPendingText = undefined;
+        }
       }
     } else if (parsed.messageEnd) {
-      if (parsed.entry) {
-        // applySignals always runs on the authoritative whole message: a
-        // handoff/preview signal split across blocks is only whole here.
-        const surfaced = this.applySignals(taskId, raw, parsed.entry, session);
-        // Record the text only when it was not already streamed as blocks.
-        if (!session.piStreamedText) this.recordEntry(taskId, session, "out", surfaced);
+      const pending = session.piPendingText ?? [];
+      session.piPendingText = undefined;
+      // applySignals always runs on the authoritative whole message: a
+      // handoff/preview signal split across streamed blocks is whole here, and
+      // its confirmation line replaces every held raw fragment. When the
+      // message_end carries no text entry, the held blocks are the only copy.
+      const authoritative =
+        parsed.entry ??
+        (pending.length
+          ? {
+              type: "text" as const,
+              text: pending
+                .map((entry) => ("type" in entry && entry.type === "text" ? entry.text : ""))
+                .join(""),
+            }
+          : undefined);
+      const surfaced = authoritative
+        ? this.applySignals(taskId, raw, authoritative, session)
+        : undefined;
+      if (surfaced && "s" in surfaced && surfaced.s === "sys") {
+        this.recordEntry(taskId, session, "out", surfaced);
+      } else if (pending.length) {
+        for (const entry of pending) this.recordEntry(taskId, session, "out", entry);
+      } else if (surfaced && !session.piStreamedText) {
+        // Backfill the authoritative text when no block streamed.
+        this.recordEntry(taskId, session, "out", surfaced);
       }
       session.piStreamedText = false;
     } else if (parsed.entry) {
@@ -6567,6 +6621,14 @@ export class AgentRunner {
       const line = session.pending.trimEnd();
       this.appendLine(taskId, "out", line);
       session.pending = "";
+    }
+    // pi holds completed text blocks until its message_end so a signal split
+    // across them is surfaced whole (#0619). A process that dies mid-message
+    // never sent that message_end, so flush what was held rather than lose the
+    // assistant text.
+    if (session?.engine === "pi" && session.piPendingText?.length) {
+      for (const entry of session.piPendingText) this.recordEntry(taskId, session, "out", entry);
+      session.piPendingText = undefined;
     }
     // A zero exit is not success for Antigravity unless the stream ended with
     // a SUCCESS `result` record. A malformed or changed protocol (only unknown
