@@ -273,5 +273,9 @@ export async function runAutoShotCapture(
     inFlight.delete(task.id);
     await context?.close().catch(() => {});
     await browser?.close().catch(() => {});
+    // The capture owns the preview it started: previews are on-demand only
+    // (#0271), so leaving one running after a success OR a failure would hold
+    // the single preview slot until the task leaves review.
+    if (currentTarget !== undefined) await previews.stop(task.id).catch(() => {});
   }
 }
