@@ -87,6 +87,12 @@ export interface Task {
   areas?: string[];
   /** Optional cross-area delivery slice; empty string means untagged. */
   story?: string;
+  /** Prerequisite task ids. */
+  dependsOn?: string[];
+  /** Exact branch commit captured at close-out for Git ancestry checks. */
+  mergedCommit?: string | null;
+  /** Live Git-verified prerequisites that are still blocking this task. */
+  blockedBy?: DependencyBlocker[];
   assignee: "ai" | "human" | "unassigned";
   assignedTo: string;
   createdBy: string;
@@ -155,6 +161,11 @@ export interface Task {
    *  exited without a clean handoff (capped at 2, #0271 follow-up). Unlike
    *  the other two, the task stays `active` throughout. */
   handoffSignalRetryCount?: number;
+}
+
+export interface DependencyBlocker {
+  id: string;
+  state: "waiting" | "cancelled";
 }
 
 /** One persisted screenshot attached to a task (0123). */
@@ -277,6 +288,9 @@ export interface BoardTask {
   areas?: string[];
   /** Optional cross-area delivery slice; empty string means untagged. */
   story?: string;
+  dependsOn?: string[];
+  mergedCommit?: string | null;
+  blockedBy?: DependencyBlocker[];
   assignee: "ai" | "human" | "unassigned";
   assignedTo: string;
   createdBy: string;
@@ -766,7 +780,12 @@ export interface RemoteValidationEvent {
 /** Latest auto-engineering reconcile decision (mirrors the server shape). */
 export interface AutoEngineeringDecision {
   timestamp: string;
-  trigger: "active-to-review" | "inbox-to-ready" | "config-change" | "startup";
+  trigger:
+    | "active-to-review"
+    | "inbox-to-ready"
+    | "dependency-merged"
+    | "config-change"
+    | "startup";
   outcome: "selected" | "no-capacity" | "no-ready-work" | "pm-unavailable" | "pm-failed";
   activeCount: number;
   maxActiveTasks: number;

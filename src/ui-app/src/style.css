@@ -3632,6 +3632,20 @@
   text-overflow: ellipsis;
   color: var(--txt);
 }
+.story-panel-task-blocker {
+  flex: none;
+  max-width: 145px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 2px 6px;
+  border: 1px solid var(--amber-tint);
+  border-radius: 6px;
+  background: var(--amber-tint);
+  color: var(--amber);
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 9px;
+}
 .story-panel-task-status {
   flex: none;
   font-size: 10.5px;
@@ -5123,6 +5137,26 @@
   font-size: 12px;
   font-weight: 600;
   color: var(--txt);
+}
+.md-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 12.5px;
+  color: var(--txt-faint);
+}
+.md-loading-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .md-loading-dot {
+    animation: none;
+  }
 }
 .diff-stats-loading {
   font-size: 12.5px;

@@ -10,6 +10,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   AgentRunner,
+  isBlankOpencodeTextEvent,
   parseClaudeEvent,
   parseCodexEvent,
   parseCopilotEvent,
@@ -157,6 +158,16 @@ describe("parseJsonEvent", () => {
     expect(
       parseJsonEvent('{"type":"text","sessionID":"ses_abc","part":{"type":"text","text":"  "}}'),
     ).toBeNull();
+  });
+
+  it("flags blank text events so they are dropped instead of echoed as raw JSON", () => {
+    const blank = (text: string) =>
+      `{"type":"text","sessionID":"ses_abc","part":{"type":"text","text":${JSON.stringify(text)}}}`;
+    expect(isBlankOpencodeTextEvent(blank("\n"))).toEqual({ sessionID: "ses_abc" });
+    expect(isBlankOpencodeTextEvent(blank("\n\n  "))).toEqual({ sessionID: "ses_abc" });
+    expect(isBlankOpencodeTextEvent(blank("hello"))).toBeNull();
+    expect(isBlankOpencodeTextEvent('{"type":"title","part":{"text":" "}}')).toBeNull();
+    expect(isBlankOpencodeTextEvent("not json")).toBeNull();
   });
 });
 

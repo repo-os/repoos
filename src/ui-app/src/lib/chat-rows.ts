@@ -235,7 +235,7 @@ export function toDisplayRows(entries: readonly AgentOutputEntry[]): DisplayRow[
     if (isDisplayEmptyText(rawText)) continue;
     // Assistant stream only — humans may send a literal `---` on purpose.
     if (shouldDropThematicSeparatorRow(entry, rawText)) continue;
-    const text = isAssistantText ? rawText : displayPlainText(rawText);
+    const text = isAssistantText ? rawText.replace(/\s+$/u, "") : displayPlainText(rawText);
 
     const last = rows[rows.length - 1];
     // stderr arrives one line at a time. Keep a diagnostic together, but split

@@ -72,6 +72,7 @@ import ChatToolCallRow from "./ChatToolCallRow.vue";
 import { useChatScroll } from "../composables/useChatScroll";
 import { useCopyChatMessage } from "../composables/useCopyChatMessage";
 import { bubbleRole, toDisplayRows, type DisplayRow } from "../lib/chat-rows";
+import { confirmDependencyOverride, dependencyBlockerLabel } from "../lib/task-dependencies";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyCheckoutDialog from "./DirtyCheckoutDialog.vue";
 import WorktreeHandoffConflictDialog from "./WorktreeHandoffConflictDialog.vue";
@@ -140,6 +141,7 @@ function modelForCliSwitch(memoryKey: string, cli: string): string {
 
 /** Task whose dirty-worktree restart choice is awaiting an answer. */
 const restartTask = ref<Task | null>(null);
+const restartOverrideDependencies = ref(false);
 
 /**
  * A clock for the auto-repair hint's "stuck · silent Ns" variant (#0385):
@@ -197,7 +199,7 @@ const allStatuses = computed(() => {
   return [
     {
       id: "draft",
-      label: draftLabel !== "Proposed / Drafts" ? draftLabel : "Draft",
+      label: draftLabel,
       color: statusColor("draft"),
     },
     ...columnsWithLabels(config.columnLabels),
@@ -910,23 +912,26 @@ async function setStatus(status: string): Promise<void> {
 
 async function startWork(): Promise<void> {
   if (!ui.active) return;
+  const overrideDependencies = confirmDependencyOverride(ui.active.blockedBy);
+  if (ui.active.blockedBy?.length && !overrideDependencies) return;
   // A dirty worktree means restarting would either resume prior work or
   // discard it — surface that choice instead of starting silently.
   if (ui.active.git?.dirty) {
     restartTask.value = ui.active;
+    restartOverrideDependencies.value = overrideDependencies;
     return;
   }
-  await startWorkIn(ui.active);
+  await startWorkIn(ui.active, overrideDependencies);
 }
 
 /** True while the Start-work request (engineer agent launch) is in flight. */
 const startingWork = ref(false);
 
-async function startWorkIn(t: Task): Promise<void> {
+async function startWorkIn(t: Task, overrideDependencies = false): Promise<void> {
   ui.saving = true;
   startingWork.value = true;
   try {
-    await repo.startWork(t);
+    await repo.startWork(t, "resume", undefined, overrideDependencies);
     ui.activeTab = "agent";
   } catch (err) {
     repo.onError(err);
@@ -1091,13 +1096,15 @@ function cancelDelete(): void {
 async function startHotfix(target: "branch" | "main"): Promise<void> {
   const task = hotfixTask.value ?? ui.active;
   if (!task) return;
+  const overrideDependencies = confirmDependencyOverride(task.blockedBy);
+  if (task.blockedBy?.length && !overrideDependencies) return;
   ui.saving = true;
   try {
     await repo.activateHotfix(task, target);
     // Selecting a hotfix target is the start action, not merely a mode
     // setting. Launch the engineer immediately so the user sees the task
     // enter active state and its progress tab without a second click.
-    await repo.startWork(task);
+    await repo.startWork(task, "resume", undefined, overrideDependencies);
     confirmHotfix.value = false;
     // Opening the confirm dialog dismissed the drawer; bring it back on the
     // agent tab where the engineer is now streaming.
@@ -2142,6 +2149,8 @@ async function confirmSendToEngineer(note: string): Promise<void> {
     );
     return;
   }
+  const overrideDependencies = confirmDependencyOverride(task.blockedBy);
+  if (task.blockedBy?.length && !overrideDependencies) return;
   engineerNoteOpen.value = false;
 
   const parts = [
@@ -2156,7 +2165,7 @@ async function confirmSendToEngineer(note: string): Promise<void> {
   sendingToEngineer.value = true;
   try {
     await repo.setStatus(task, "active", note);
-    await repo.startWork(task, "resume", instruction);
+    await repo.startWork(task, "resume", instruction, overrideDependencies);
     // Opening the note dialog dismissed the drawer (see above), so bring it
     // back on the agent tab where the resumed engineer is now streaming.
     ui.open(repo.tasks.find((t) => t.id === task.id) ?? task);
@@ -2873,7 +2882,7 @@ watch(
   () => [ui.active?.id, ui.active?.status, ui.active?.branch],
   () => {
     if (!ui.active) return;
-    void repo.loadDiffStats(ui.active.id);
+    void repo.loadDiffStats(ui.active.id, { priority: true });
   },
   { immediate: true },
 );
@@ -3649,6 +3658,13 @@ watch(
                 :path="`/work?task=${encodeURIComponent(ui.active.id)}`"
                 :aria-label="`Copy link to task ${ui.active.id}`"
               />
+              <span
+                v-for="blocker in ui.active.blockedBy"
+                :key="blocker.id"
+                class="rs-chip"
+                :title="dependencyBlockerLabel(blocker)"
+                >{{ dependencyBlockerLabel(blocker) }}</span
+              >
               <span class="tc-id mono">{{ ui.active.path }}</span>
               <span
                 v-if="reviewSubstate"
@@ -4428,7 +4444,18 @@ watch(
               @keydown.space.prevent="openSpecModal"
             >
               <div v-if="specHtml" class="md-rendered" v-html="specHtml"></div>
-              <div v-else class="md-card-body">No spec yet — click to add.</div>
+              <div v-else-if="!ui.activeDetailLoading" class="md-card-body">
+                No spec yet — click to add.
+              </div>
+              <div
+                v-if="ui.activeDetailLoading"
+                class="md-loading"
+                role="status"
+                data-testid="spec-loading"
+              >
+                <span class="md-loading-dot" aria-hidden="true"></span>
+                Loading full spec…
+              </div>
             </div>
           </div>
           <div class="md-h" style="margin-top: 4px">meta</div>
@@ -5380,7 +5407,13 @@ watch(
 
   <RestartTaskDialog
     :task="restartTask"
-    @close="restartTask = null"
+    :override-dependencies="restartOverrideDependencies"
+    @close="
+      () => {
+        restartTask = null;
+        restartOverrideDependencies = false;
+      }
+    "
     @started="ui.activeTab = 'agent'"
   />
 

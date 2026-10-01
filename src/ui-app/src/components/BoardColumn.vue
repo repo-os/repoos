@@ -7,6 +7,7 @@ import { useConfigStore } from "../stores/config";
 import TaskCard from "./TaskCard.vue";
 import RestartTaskDialog from "./RestartTaskDialog.vue";
 import ReviewConfirmDialog from "./ReviewConfirmDialog.vue";
+import { confirmDependencyOverride } from "../lib/task-dependencies";
 import {
   applyCollapseDefaults,
   isColumnCollapsed,
@@ -185,6 +186,7 @@ function onDragLeave(): void {
  *  ready onto active behaves identically instead of silently picking
  *  resume-or-clean on the human's behalf. */
 const restartTask = ref<Task | null>(null);
+const restartOverrideDependencies = ref(false);
 
 /**
  * #0507: a task dragged into the review column, awaiting the same
@@ -232,10 +234,13 @@ async function onDrop(e: DragEvent): Promise<void> {
       // Same as clicking Start work — provisions the worktree/branch and
       // spawns the agent, not a bare status write, so it needs the real
       // action rather than repo.setStatus.
+      const overrideDependencies = confirmDependencyOverride(task.blockedBy);
+      if (task.blockedBy?.length && !overrideDependencies) return;
       if (task.git?.dirty) {
         restartTask.value = task;
+        restartOverrideDependencies.value = overrideDependencies;
       } else {
-        await repo.startWork(task);
+        await repo.startWork(task, "resume", undefined, overrideDependencies);
       }
     } else if (props.col.id === "review" && task.status === "active" && repo.isRunning(task.id)) {
       throw new Error("The agent is still coding — Review becomes available when the turn ends.");
@@ -353,7 +358,16 @@ const unackedBadge = computed(() =>
       <div v-if="!repo.byStatus(col.id).length" class="col-empty">{{ displayEmpty }}</div>
     </div>
   </div>
-  <RestartTaskDialog :task="restartTask" @close="restartTask = null" />
+  <RestartTaskDialog
+    :task="restartTask"
+    :override-dependencies="restartOverrideDependencies"
+    @close="
+      () => {
+        restartTask = null;
+        restartOverrideDependencies = false;
+      }
+    "
+  />
 
   <!-- #0507: a drag into the review column asks the same question the
        drawer's Review button does. Both call repo.requestReview, which is the

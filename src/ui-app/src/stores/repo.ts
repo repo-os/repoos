@@ -257,7 +257,7 @@ export function columnsWithLabels(labels: Record<string, string>): Column[] {
 
 /** Build the draft column with its label from config. */
 export function draftColumnWithLabel(labels: Record<string, string>): Column {
-  return { id: "draft", label: labels.draft ?? "Proposed / Drafts", color: STATUS_COLORS.draft };
+  return { id: "draft", label: labels.draft ?? "Draft", color: STATUS_COLORS.draft };
 }
 
 /** Sort modes for work-page task columns. "recent" sorts by updated_at desc,
@@ -1178,6 +1178,7 @@ export const useRepoStore = defineStore("repo", () => {
     if (e.type === "task.created") {
       if (!tasks.value.find((t) => t.id === e.task.id)) tasks.value.push(e.task);
       recount();
+      if (e.task.dependsOn?.length) void refresh().catch(onError);
       pushFeed(`<b>created</b> #${e.task.id} ${e.task.title}`, "#4ef0a8", "task.created");
       flash(e.task.id);
     } else if (e.type === "task.updated") {
@@ -1200,6 +1201,7 @@ export const useRepoStore = defineStore("repo", () => {
       const merged = {
         ...e.task,
         preview: e.task.preview ?? before?.preview ?? null,
+        blockedBy: e.task.blockedBy ?? before?.blockedBy ?? [],
         // Preview target candidates are attached by GET /api/board and
         // /api/tasks/:id, not the SSE payload — carry them across updates so
         // the drawer's picker doesn't vanish on a background task.updated (#0379).
@@ -1249,6 +1251,12 @@ export const useRepoStore = defineStore("repo", () => {
       if (statusChanged) {
         startTransition(e.task.id, prevStatus!, e.task.status);
       }
+      if (
+        (statusChanged && (prevStatus === "done" || e.task.status === "done")) ||
+        e.prev?.dependsOn !== undefined
+      ) {
+        void refresh().catch(onError);
+      }
       // Attention notifications (0100): only on a genuine transition, never on
       // page load for a task that already sits in a monitored state.
       //
@@ -1283,6 +1291,7 @@ export const useRepoStore = defineStore("repo", () => {
       setDoneError(e.id, null);
       clearPmWorkingLocal(e.id);
       recount();
+      void refresh().catch(onError);
       pushFeed(`<b>deleted</b> #${e.id}`, "#ff6b7d", "task.deleted");
     } else if (e.type === "task.aiCreateFailed") {
       // The PM flesh-out for a freeform create failed server-side (0320
@@ -2205,10 +2214,11 @@ export const useRepoStore = defineStore("repo", () => {
     t: Task,
     mode: "resume" | "fresh" | "clean" = "resume",
     instruction?: string,
+    overrideDependencies = false,
   ): Promise<void> {
     const r = await api<{ ok: boolean; reason?: string }>(
       `/api/tasks/${t.id}/start`,
-      JSON_OPTS("POST", { mode, instruction }),
+      JSON_OPTS("POST", { mode, instruction, overrideDependencies }),
     );
     if (!r.ok) {
       const message = r.reason ?? "could not start work";
@@ -2438,8 +2448,19 @@ export const useRepoStore = defineStore("repo", () => {
     }
   }
 
-  /** Load diff statistics for a task. Best-effort. */
-  async function loadDiffStats(id: string): Promise<void> {
+  // A board mounts one card per task, and each card asks for its diff stats —
+  // 500+ concurrent requests, each possibly a git spawn on the server. They
+  // saturate the browser's per-host connection limit, so the request that
+  // matters (the drawer's full task fetch) queued behind them for seconds
+  // after a reload. Run card requests through a small pool instead, and let the
+  // drawer's own request jump the line.
+  const DIFF_STATS_CONCURRENCY = 3;
+  const diffStatsQueue: string[] = [];
+  /** Ids queued OR in flight — a repeat request for either is redundant. */
+  const diffStatsQueued = new Set<string>();
+  let diffStatsRunning = 0;
+
+  async function fetchDiffStats(id: string): Promise<void> {
     try {
       const r = await api<{
         ok: boolean;
@@ -2456,6 +2477,39 @@ export const useRepoStore = defineStore("repo", () => {
     } catch {
       /* endpoint unavailable — diff stats are nice-to-have */
     }
+  }
+
+  function pumpDiffStats(): void {
+    while (diffStatsRunning < DIFF_STATS_CONCURRENCY && diffStatsQueue.length > 0) {
+      const id = diffStatsQueue.shift() as string;
+      diffStatsRunning++;
+      void fetchDiffStats(id).finally(() => {
+        diffStatsQueued.delete(id);
+        diffStatsRunning--;
+        pumpDiffStats();
+      });
+    }
+  }
+
+  /**
+   * Load diff statistics for a task. Best-effort. Requests are pooled; pass
+   * `priority` (the open drawer's task) to run next instead of waiting behind
+   * the board's cards.
+   */
+  function loadDiffStats(id: string, opts: { priority?: boolean } = {}): Promise<void> {
+    if (diffStatsQueued.has(id)) {
+      const at = diffStatsQueue.indexOf(id);
+      if (opts.priority && at > 0) {
+        diffStatsQueue.splice(at, 1);
+        diffStatsQueue.unshift(id);
+      }
+      return Promise.resolve();
+    }
+    diffStatsQueued.add(id);
+    if (opts.priority) diffStatsQueue.unshift(id);
+    else diffStatsQueue.push(id);
+    pumpDiffStats();
+    return Promise.resolve();
   }
 
   /** Get diff stats for a task, or undefined if not yet fetched. */
