@@ -365,7 +365,19 @@ restart:
     deadline=$((SECONDS + 60))
     while (( SECONDS < deadline )); do
         if health=$(curl -fsS --max-time 2 "http://127.0.0.1:$port/api/health" 2>/dev/null); then
-            echo "    health: $health"
+            echo
+            echo "$health" | bun -e '
+              const h = JSON.parse(await Bun.stdin.text());
+              const rows = [
+                ["project", h.projectName + " v" + h.version],
+                ["root", h.root],
+                ["tasks", h.taskCount],
+                ["build", String(h.buildHash).slice(0, 12) + " @ " + h.buildAt],
+                ["started", h.serverStartedAt],
+              ];
+              for (const [k, v] of rows) console.log("    " + k.padEnd(8) + v);
+              if (h.buildAvailableHash) console.log("    note    newer build available (" + String(h.buildAvailableHash).slice(0, 12) + ")");
+            ' 2>/dev/null || echo "    health: $health"
             echo "==> RepoOS ready in $((SECONDS - started_at))s"
             exit 0
         fi
