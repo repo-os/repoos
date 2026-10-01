@@ -5,11 +5,12 @@ type: bug
 status: inbox
 priority: p3
 area: [cli, server]
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+model_override: opencode-go/space-bunny-free
 created_at: "2026-09-30T19:56:49Z"
-updated_at: "2026-09-30T19:56:49Z"
+updated_at: "2026-10-01T07:00:33Z"
 ---
 ## Problem
 
@@ -28,3 +29,4 @@ When the caller passes a positional route (or `--selector`), the CLI's plan shou
 ## Activity
 
 - 2026-09-30T19:56:49Z · created · unknown
+- 2026-10-01T07:00:33Z · model_override
