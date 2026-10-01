@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-01T18:34:28Z"
-review_passes: 3
 id: "0617"
 title: Fix rendered-contrast audit half-flipped theme race
 type: bug
@@ -13,7 +11,7 @@ branch: feat/fix-rendered-contrast-audit-half-flipped
 cli_override: opencode
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-01T17:54:57Z"
-review_rounds: 2
+updated_at: "2026-10-01T18:13:11Z"
 ---
 ## What
 
@@ -77,11 +75,3 @@ the intended mode.
 - 2026-10-01T18:02:33Z · status inbox→ready
 - 2026-10-01T18:02:34Z · status ready→active, branch
 - 2026-10-01T18:13:11Z · status active→review
-- 2026-10-01T18:13:12Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
-- 2026-10-01T18:13:54Z · status review→active
-- 2026-10-01T18:21:24Z · status active→review
-- 2026-10-01T18:21:24Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
-- 2026-10-01T18:22:52Z · status review→active
-- 2026-10-01T18:33:49Z · status active→review
-- 2026-10-01T18:33:51Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
-
