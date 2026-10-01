@@ -1303,6 +1303,23 @@ function piTextHoldsSignal(text: string): boolean {
   return false;
 }
 
+/**
+ * The assistant's prose in a pi text block, with any signal-bearing line
+ * removed. A signal is rendered in the transcript as the trusted confirmation
+ * line, but prose the assistant wrote around it must survive: for a reply like
+ * `Finished.\n\n::repoos-handoff-ready::` only the signal line is replaced
+ * (#0619).
+ */
+function piTextWithoutSignals(text: string): string {
+  const kept = text.split("\n").filter((line) => {
+    const trimmed = line.trimStart();
+    return !(
+      trimmed.startsWith(HANDOFF_READY_SIGNAL) || trimmed.startsWith(PREVIEW_REQUEST_SIGNAL)
+    );
+  });
+  return kept.join("\n").trim();
+}
+
 export interface PiParseResult {
   entry?: AgentOutputEntry;
   sessionID?: string;
@@ -5944,7 +5961,7 @@ export class AgentRunner {
       // A signal split across streamed blocks may be broken in the
       // authoritative text (pi joins content blocks with newlines) but whole
       // in the held blocks' concatenation, or vice versa — check both, and
-      // record the confirmation line in place of every held raw fragment.
+      // record the confirmation line in place of the signal itself.
       const authoritativeText =
         parsed.entry && "type" in parsed.entry && parsed.entry.type === "text"
           ? parsed.entry.text
@@ -5957,6 +5974,12 @@ export class AgentRunner {
         heldText,
       ]);
       if (matched && surfaced) {
+        // Keep the prose around the signal; only its own line is replaced by
+        // the confirmation. The held concatenation is preferred when any
+        // block was held, because the authoritative text joins blocks with
+        // newlines and can break a signal that spanned two blocks (#0619).
+        const prose = piTextWithoutSignals(pending.length ? heldText : authoritativeText);
+        if (prose) this.recordEntry(taskId, session, "out", { type: "text", text: prose });
         this.recordEntry(taskId, session, "out", surfaced);
       } else if (pending.length) {
         for (const entry of pending) this.recordEntry(taskId, session, "out", entry);
@@ -6196,7 +6219,9 @@ export class AgentRunner {
    * are checked, so a split signal is still recognized. Returns the surfaced
    * entry (the confirmation line when a signal matched, otherwise the joined
    * text entry) and whether a signal matched. `undefined` means there was no
-   * text at all.
+   * text at all. Recording the confirmation here would drop any surrounding
+   * prose, so callers extract the non-signal text with `piTextWithoutSignals`
+   * and record it alongside the confirmation (#0619).
    */
   private surfacePiText(
     taskId: string,
@@ -6659,6 +6684,8 @@ export class AgentRunner {
         .join("");
       const { surfaced, matched } = this.surfacePiText(taskId, "", session, [heldText]);
       if (matched && surfaced) {
+        const prose = piTextWithoutSignals(heldText);
+        if (prose) this.recordEntry(taskId, session, "out", { type: "text", text: prose });
         this.recordEntry(taskId, session, "out", surfaced);
       } else {
         for (const entry of pending) this.recordEntry(taskId, session, "out", entry);

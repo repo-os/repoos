@@ -41,10 +41,15 @@ if (path.basename(process.argv[1]) === "pi") {
   // with newlines, so the signal is broken there and only whole in the
   // streamed blocks' concatenation.
   const content = blocks.map((block) => ({ type: "text", text: block }));
-  process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_start", contentIndex: 0 } }) + "\\n");
-  for (const block of blocks) {
-    process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_delta", contentIndex: 0, delta: block } }) + "\\n");
-    process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_end", contentIndex: 0, content: block } }) + "\\n");
+  // Some providers deliver no streamed text blocks at all; the driver must
+  // then backfill from the authoritative message_end text exactly once.
+  const noBlock = process.env.REPOOS_FAKEBIN_PI_NO_BLOCK === "1";
+  if (!noBlock) {
+    process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_start", contentIndex: 0 } }) + "\\n");
+    for (const block of blocks) {
+      process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_delta", contentIndex: 0, delta: block } }) + "\\n");
+      process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_end", contentIndex: 0, content: block } }) + "\\n");
+    }
   }
   if (process.env.REPOOS_FAKEBIN_PI_EXIT_MID === "1") {
     // Die after a signal-bearing text_end but before message_end: cleanup must
@@ -192,6 +197,7 @@ afterEach(() => {
   delete process.env.REPOOS_FAKEBIN_PI_HANDOFF;
   delete process.env.REPOOS_FAKEBIN_PI_SPLIT_HANDOFF;
   delete process.env.REPOOS_FAKEBIN_PI_EXIT_MID;
+  delete process.env.REPOOS_FAKEBIN_PI_NO_BLOCK;
   delete process.env.REPOOS_FAKEBIN_FAIL;
 });
 
@@ -606,6 +612,31 @@ describe("pi driver", () => {
       fx.clean();
     }
   });
+
+  it("backfills the message_end text once when no text block streamed", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    process.env.REPOOS_FAKEBIN_PI_NO_BLOCK = "1";
+    try {
+      const runner = new AgentRunner(config(fx.bin), () => {});
+      runner.start(TASK, "feat/x", agent("pi"), { cwd: fx.bin });
+      await waitFor(() => !runner.isRunning("0001"), "pi no-block turn exit");
+
+      const texts = runner
+        .output("0001")!
+        .lines.filter((line) => (line as { type?: string }).type === "text")
+        .map((line) => (line as { text: string }).text);
+      // No text_end arrived, so the authoritative message_end text is the only
+      // source — recorded exactly once, not dropped and not doubled (#0619).
+      expect(texts).toEqual(["Hello world"]);
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      delete process.env.REPOOS_FAKEBIN_PI_NO_BLOCK;
+      fx.clean();
+    }
+  });
 });
 
 describe("runPrompt live streaming (0049)", () => {
@@ -839,7 +870,9 @@ describe("structured runner handoff (#0094)", () => {
         .filter((line) => (line as { type?: string }).type === "text")
         .map((line) => (line as { text: string }).text);
       // The signal block streams through applySignals, so the transcript carries
-      // the trusted confirmation line instead of the raw signal text.
+      // the trusted confirmation line instead of the raw signal text — and the
+      // assistant's prose before the signal is preserved (#0619).
+      expect(texts).toContain("Finished.");
       expect(texts).not.toContain(HANDOFF_READY_SIGNAL);
       expect(texts.some((text) => text.includes(HANDOFF_READY_SIGNAL))).toBe(false);
       expect(
@@ -875,8 +908,8 @@ describe("structured runner handoff (#0094)", () => {
       const texts = lines
         .filter((line) => (line as { type?: string }).type === "text")
         .map((line) => (line as { text: string }).text);
-      // Neither the first raw fragment nor the second reaches the transcript.
-      expect(texts).toEqual([]);
+      // The prose before the split signal survives; neither raw fragment does.
+      expect(texts).toEqual(["Finished."]);
       expect(
         lines.some(
           (line) =>
