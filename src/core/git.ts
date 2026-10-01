@@ -1518,12 +1518,44 @@ export async function pathsChangedBetweenCommits(
  * `GitDirtyCheckError` rather than reporting an empty list, so a caller cannot
  * treat "could not tell" as "nothing to lose".
  */
+/**
+ * Porcelain ` D`: deleted in the working tree, unchanged in the index. Shows up
+ * when tracked files vanish from disk without a `git rm` — including a worktree
+ * directory half-deleted during `git worktree remove`.
+ */
+function isWorktreeOnlyDeletion(status: string): boolean {
+  return status.length >= 2 && status[0] === " " && status[1] === "D";
+}
+
+export interface UncommittedWorkFilesOptions {
+  /**
+   * When set, ` D` entries for paths that still exist at this ref are omitted.
+   * Missing on disk but present at the ref is not uncommitted *content* work
+   * (#0609) — close-out uses this after a merged branch when removal stalled.
+   */
+  omitWorktreeDeletionsPresentAtRef?: string;
+}
+
 export async function uncommittedWorkFiles(
   root: string,
   filter: WorkFileFilter = {},
+  opts: UncommittedWorkFilesOptions = {},
 ): Promise<string[]> {
-  const files = await dirtyFiles(root);
-  return files.filter((p) => !isGeneratedOrRuntimePath(p, filter));
+  const ref = opts.omitWorktreeDeletionsPresentAtRef;
+  if (!ref) {
+    const files = await dirtyFiles(root);
+    return files.filter((p) => !isGeneratedOrRuntimePath(p, filter));
+  }
+  const entries = await dirtyFilesDetailed(root);
+  const out: string[] = [];
+  for (const e of entries) {
+    if (isWorktreeOnlyDeletion(e.status)) {
+      const atRef = gitCapture(root, ["cat-file", "-e", `${ref}:${e.path}`]);
+      if (atRef.status === 0) continue;
+    }
+    if (!isGeneratedOrRuntimePath(e.path, filter)) out.push(e.path);
+  }
+  return out;
 }
 
 /**
@@ -1961,7 +1993,20 @@ function worktreeHasNoUncommittedWork(path: string): boolean {
   if (!existsSync(path)) return true;
   const status = gitCapture(path, ["status", "--porcelain"]);
   // A non-zero exit means we could not tell — never delete on "unknown".
-  return status.status === 0 && status.stdout.trim() === "";
+  if (status.status !== 0) return false;
+  const entries = parsePorcelainStatus(status.stdout);
+  if (entries.length === 0) return true;
+  const head = gitCapture(path, ["rev-parse", "HEAD"]);
+  const headRef = head.status === 0 ? head.stdout.trim() : "";
+  if (!headRef) return false;
+  for (const e of entries) {
+    if (isWorktreeOnlyDeletion(e.status)) {
+      const atHead = gitCapture(path, ["cat-file", "-e", `${headRef}:${e.path}`]);
+      if (atHead.status === 0) continue;
+    }
+    return false;
+  }
+  return true;
 }
 
 export interface EnsureHotfixResult {
