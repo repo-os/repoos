@@ -10,6 +10,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadConfig } from "../../core/config";
 import { buildCapturePlan, parseShotPlan } from "../../core/shot-plan";
+import { describeTargetPathMatches, targetsForPaths } from "../../core/shot-targets";
+import { captureShotPage, type ShotDriverPage } from "../../core/shot-page";
 import { planAutoCapture, runAutoShotCapture } from "../../server/shot-capture";
 import type { PreviewManager } from "../../server/preview";
 import { localShotStore } from "../../server/shots";
@@ -62,6 +64,20 @@ describe("parseShotPlan", () => {
     ]);
   });
 
+  it("keeps a highlight selector like any other string key (#0603)", () => {
+    const { shots, errors } = parseShotPlan(
+      bodyWithShots('[{"route":"/","highlight":".new-badge","label":"New badge"}]'),
+    );
+    expect(errors).toEqual([]);
+    expect(shots[0]?.highlight).toBe(".new-badge");
+  });
+
+  it("rejects an empty highlight like other string keys (#0603)", () => {
+    const { shots, errors } = parseShotPlan(bodyWithShots('[{"route":"/","highlight":""}]'));
+    expect(shots).toEqual([]);
+    expect(errors[0]).toMatch(/"highlight" expects a non-empty string/);
+  });
+
   it("is case-tolerant on the heading and skips other sections", () => {
     expect(parseShotPlan("## shots\n\n```json\n[]\n```").shots).toEqual([]);
     expect(parseShotPlan("## Screenshots\n\n```json\n{}\n```").shots).toEqual([]);
@@ -99,21 +115,85 @@ describe("parseShotPlan", () => {
 });
 
 describe("buildCapturePlan", () => {
-  it("falls back to one '/' entry per resolved target with no declared list", () => {
-    const { entries, errors } = buildCapturePlan(["Docs site", "default"], []);
+  it("falls back to one '/' entry per resolved target, captioned as auto match", () => {
+    const { entries, errors } = buildCapturePlan(["Docs site", "default"], [], {
+      matchedGlobs: new Map([
+        ["Docs site", ["user-docs/**"]],
+        ["default", ["src/ui-app/**"]],
+      ]),
+    });
     expect(errors).toEqual([]);
+    // #0603: the fallback always captions itself — label + provenance.
     expect(entries).toEqual([
-      { target: "Docs site", route: "/" },
-      { target: "default", route: "/" },
+      {
+        target: "Docs site",
+        route: "/",
+        label: "auto: matched user-docs/**",
+        provenance: { kind: "auto", globs: ["user-docs/**"] },
+      },
+      {
+        target: "default",
+        route: "/",
+        label: "auto: matched src/ui-app/**",
+        provenance: { kind: "auto", globs: ["src/ui-app/**"] },
+      },
     ]);
+  });
+
+  it("labels a fallback with no known glob as plain auto", () => {
+    const { entries } = buildCapturePlan(["default"], []);
+    expect(entries[0]?.label).toBe("auto");
+    expect(entries[0]?.provenance).toEqual({ kind: "auto" });
+  });
+
+  it("skips a docs-content-only target on the fallback path (#0603)", () => {
+    const { entries, autoSkips } = buildCapturePlan(["Docs site", "default"], [], {
+      docsContentOnly: new Set(["Docs site"]),
+    });
+    expect(entries.map((e) => e.target)).toEqual(["default"]);
+    expect(autoSkips[0]).toMatch(/Docs site matched only documentation content/);
   });
 
   it("maps an omitted target to the default target or the sole resolution", () => {
     const one = buildCapturePlan(["default"], [{ route: "/board", label: "Board" }]);
     expect(one.entries[0].target).toBe("default");
+    expect(one.entries[0].provenance).toEqual({ kind: "declared", label: "Board" });
 
-    const sole = buildCapturePlan(["Docs site"], [{ route: "/" }]);
+    const sole = buildCapturePlan(["Docs site"], [{ route: "/", highlight: ".title" }]);
     expect(sole.entries[0].target).toBe("Docs site");
+    expect(sole.entries[0]).toMatchObject({ highlight: ".title" });
+  });
+
+  it("requires a declared route for a docs-content-only target (#0603)", () => {
+    // user-docs/*.md matched the Docs site glob, but the task declared no
+    // route: shooting `/` would caption the docs home page, not the edit.
+    const routed = buildCapturePlan(
+      ["Docs site"],
+      [{ route: "/configuration", label: "Config page" }],
+      { docsContentOnly: new Set(["Docs site"]) },
+    );
+    expect(routed.entries).toHaveLength(1);
+
+    const routeless = buildCapturePlan(["Docs site"], [{ label: "no route" }], {
+      docsContentOnly: new Set(["Docs site"]),
+    });
+    expect(routeless.entries).toEqual([]);
+    // One visible line, not an error plus a near-duplicate skip (#0603 review).
+    expect(routeless.errors).toHaveLength(1);
+    expect(routeless.errors[0]).toMatch(/documentation content/);
+    expect(routeless.autoSkips).toEqual([]);
+  });
+
+  it("notes a docs-content target no declared entry even mentioned (#0603)", () => {
+    // Declarations cover `default` only; the matched Docs site is content-only
+    // and never named — one skip note explains why it is not captured.
+    const mixed = buildCapturePlan(["Docs site", "default"], [{ route: "/", label: "Board" }], {
+      docsContentOnly: new Set(["Docs site"]),
+    });
+    expect(mixed.entries.map((e) => e.target)).toEqual(["default"]);
+    expect(mixed.errors).toEqual([]);
+    expect(mixed.autoSkips).toHaveLength(1);
+    expect(mixed.autoSkips[0]).toMatch(/Docs site matched only documentation content/);
   });
 
   it("keeps multi-entry plans for the same target (one preview, many shots)", () => {
@@ -126,6 +206,7 @@ describe("buildCapturePlan", () => {
     );
     expect(entries).toHaveLength(2);
     expect(entries[1].steps).toEqual([{ click: "button.new" }]);
+    expect(entries[0].provenance).toEqual({ kind: "declared", label: "Board" });
   });
 
   it("rejects a declared target the resolution missed, with an actionable error", () => {
@@ -135,7 +216,10 @@ describe("buildCapturePlan", () => {
   });
 
   it("errors — instead of capturing nothing or everything — when no target resolved", () => {
-    expect(buildCapturePlan([], []).errors[0]).toMatch(/no preview target/i);
+    const empty = buildCapturePlan([], []);
+    expect(empty.entries).toEqual([]);
+    expect(empty.errors[0]).toMatch(/no preview target/i);
+    expect(empty.autoSkips).toEqual([]);
   });
 });
 
@@ -187,6 +271,60 @@ describe("planAutoCapture gates (#0594)", () => {
     const plan = planAutoCapture(fixtureConfig(root), fakeTask());
     expect(plan).toMatchObject({ reason: expect.stringContaining("touches no") });
   });
+
+  it("captures declared shots even when the diff matches no glob (#0603 review)", () => {
+    // Declared shots resolve targets the way the CLI does — paths, then area,
+    // then the default command — so an explicit declaration is honored even
+    // with an unreadable (here: non-git) diff.
+    const root = repo();
+    writeFileSync(join(root, "repoos.toml"), '[preview]\ncommand = "bun dev"\n');
+    const config = fixtureConfig(root);
+    const plan = planAutoCapture(
+      config,
+      fakeTask({
+        branch: "feat/x",
+        body: bodyWithShots('[{"route": "/settings", "label": "Settings"}]'),
+      }),
+    );
+    expect(plan).toEqual({
+      entries: [
+        {
+          target: "default",
+          route: "/settings",
+          label: "Settings",
+          provenance: { kind: "declared", label: "Settings" },
+        },
+      ],
+      errors: [],
+      skips: [],
+    });
+  });
+
+  it("stands down for a tests-only diff inside a UI glob (#0603, the #0600 shape)", () => {
+    // #0600's real diff was work-note + test files under src/ui-app/tests/.
+    // planAutoCapture delegates the target set to computeTaskShotContext; the
+    // pure filter is pinned in shot-targets.test.ts. Here the point is: with
+    // detected empty (tests filtered), the plan is a skip, never entries.
+    const root = repo();
+    writeFileSync(
+      join(root, "repoos.toml"),
+      '[preview]\npaths = ["src/ui-app/**"]\ncommand = "bun dev"\n',
+    );
+    const config = fixtureConfig(root);
+    expect(
+      targetsForPaths(config.preview, [
+        "src/ui-app/tests/handoff-guard.test.ts",
+        "work/0600-note.md",
+      ]),
+    ).toEqual([]);
+    // The plan therefore has nothing to capture — a UI-glob touch that is all
+    // tests is not a UI change. buildCapturePlan-level proof:
+    const detail = describeTargetPathMatches(config.preview, [
+      "src/ui-app/tests/handoff-guard.test.ts",
+      "work/0600-note.md",
+    ]);
+    expect(detail).toEqual([]);
+  });
 });
 
 describe("runAutoShotCapture status prefix (#0597)", () => {
@@ -211,5 +349,137 @@ describe("runAutoShotCapture status prefix (#0597)", () => {
     expect(result).toMatchObject({ status: "skipped", detail: expected });
     expect(logs).toEqual([expected]);
     expect(result.detail).not.toMatch(/shots: skipped — skipped/);
+  });
+
+  it("records the spec'd no-UI-change skip for a diff with no glob evidence", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-shot-noui-"));
+    temps.push(root);
+    mkdirSync(join(root, "work"), { recursive: true });
+    const logs: string[] = [];
+    const result = await runAutoShotCapture(
+      fixtureConfig(root),
+      fakeTask({ id: "0603-noui" }),
+      previews,
+      (_id, _level, message) => logs.push(message),
+    );
+    expect(result.status).toBe("skipped");
+    // The wording scope 1 mandates, visible in log + activity.
+    expect(result.detail).toMatch(/^shots: skipped — .*no UI change to capture/);
+    expect(logs).toEqual([result.detail]);
+  });
+
+  it("skips with a resolution reason when declared shots cannot resolve a target", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-shot-decl-"));
+    temps.push(root);
+    mkdirSync(join(root, "work"), { recursive: true });
+    const logs: string[] = [];
+    const result = await runAutoShotCapture(
+      fixtureConfig(root),
+      fakeTask({ id: "0603-decl", body: bodyWithShots('[{"route": "/", "label": "Board"}]') }),
+      previews,
+      (_id, _level, message) => logs.push(message),
+    );
+    expect(result.status).toBe("skipped");
+    expect(result.detail).toMatch(/^shots: skipped — the declared shots could not resolve/);
+    expect(logs).toEqual([result.detail]);
+  });
+});
+
+describe("captureShotPage highlight (#0603)", () => {
+  interface RecordedEvaluate {
+    body: string;
+    arg: string;
+  }
+
+  /** Minimal ShotDriverPage fake that records evaluate calls in order. */
+  function fakePage(options: { evaluate?: boolean; matches?: number }) {
+    const evaluations: RecordedEvaluate[] = [];
+    const screenshots: number[] = [];
+    const page = {
+      async goto(): Promise<void> {},
+      async waitForLoadState(): Promise<void> {},
+      async waitForTimeout(): Promise<void> {},
+      async setViewportSize(): Promise<void> {},
+      locator(): unknown {
+        return {};
+      },
+      async screenshot(): Promise<Buffer> {
+        screenshots.push(evaluations.length);
+        return Buffer.from("png");
+      },
+      async close(): Promise<void> {},
+      ...(options.evaluate === false
+        ? {}
+        : {
+            async evaluate(body: string, arg: string): Promise<unknown> {
+              evaluations.push({ body, arg });
+              return options.matches ?? 0;
+            },
+          }),
+    } as unknown as ShotDriverPage & {
+      __evaluations: RecordedEvaluate[];
+      __screenshots: number[];
+    };
+    (page as unknown as Record<string, unknown>).__evaluations = evaluations;
+    (page as unknown as Record<string, unknown>).__screenshots = screenshots;
+    return page;
+  }
+
+  it("draws the highlight before capture and removes it after (#0603)", async () => {
+    const page = fakePage({ matches: 2 });
+    await captureShotPage(
+      page,
+      "http://x/",
+      { highlight: ".new-badge" },
+      {
+        waitMs: 0,
+        fullPage: false,
+      },
+    );
+    const evals = page.__evaluations;
+    expect(evals.length).toBe(2);
+    // Draw first, with the selector interpolated into the script.
+    expect(evals[0].body).toContain(".new-badge");
+    expect(evals[0].body).toContain("outline: 3px solid");
+    expect(evals[1].body).toContain("removeAttribute");
+    // The screenshot happened between draw and undo.
+    expect(page.__screenshots).toEqual([1]);
+  });
+
+  it("captures unhighlighted when the page cannot evaluate (#0603)", async () => {
+    const page = fakePage({ evaluate: false });
+    const png = await captureShotPage(
+      page,
+      "http://x/",
+      { highlight: ".x" },
+      {
+        waitMs: 0,
+        fullPage: false,
+      },
+    );
+    expect(png).toBeInstanceOf(Buffer);
+  });
+
+  it("skips the dance entirely without a highlight selector", async () => {
+    const page = fakePage({ matches: 0 });
+    await captureShotPage(page, "http://x/", { steps: [] }, { waitMs: 0, fullPage: false });
+    expect(page.__evaluations).toEqual([]);
+  });
+
+  it("still captures when the draw script throws (best-effort, #0603)", async () => {
+    const page = fakePage({ matches: 0 });
+    (page as unknown as { evaluate: () => Promise<void> }).evaluate = async () => {
+      throw new Error("execution context destroyed");
+    };
+    const png = await captureShotPage(
+      page,
+      "http://x/",
+      { highlight: ".x" },
+      {
+        waitMs: 0,
+        fullPage: false,
+      },
+    );
+    expect(png).toBeInstanceOf(Buffer);
   });
 });

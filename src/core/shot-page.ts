@@ -19,6 +19,14 @@ export interface ShotLocator {
   click(options?: { timeout?: number }): Promise<unknown>;
   fill(text: string, options?: { timeout?: number }): Promise<unknown>;
   waitFor(options?: { timeout?: number }): Promise<unknown>;
+  /**
+   * First match of the locator, when the driver supports it (Playwright does).
+   * A declared `waitFor` means "wait until this exists", not "assert exactly
+   * one" — teleported overlays and layout shells can legitimately duplicate an
+   * id, and strict mode turned that into a fragile capture abort (#0603
+   * review: "#app resolved to 2 elements").
+   */
+  first?(): ShotLocator;
 }
 
 export interface ShotDriverPage {
@@ -35,6 +43,79 @@ export interface ShotCaptureOptions {
   /** Settle time after load (and between steps) before capturing. */
   waitMs: number;
   fullPage: boolean;
+}
+
+/**
+ * The outline a declared shot's `highlight` selector draws (#0603): the box
+ * reads as "this is what changed" at a glance. Colors are inline because the
+ * highlight must be visible over ANY app/theme; the outline sits offset
+ * outside the element so it does not cover the content being pointed at.
+ */
+const HIGHLIGHT_COLOR = "#e0b252";
+
+/**
+ * Draw the highlight box on every element `selector` matches (#0603) and
+ * return the undo handle. Runs in the page via `page.evaluate`, exactly like
+ * Playwright's own test-failure highlighting; best-effort — an evaluateless
+ * driver or a selector matching nothing leaves the capture unhighlighted,
+ * never failed. The undo takes the same selector because the matching
+ * elements are tagged with a data attribute the script cleans up.
+ */
+type PageEvaluate = (body: string, arg: string) => Promise<unknown>;
+
+async function applyHighlight(
+  page: ShotDriverPage,
+  selector: string,
+): Promise<() => Promise<void>> {
+  const evaluatable = page as unknown as { evaluate?: PageEvaluate };
+  const evaluate = evaluatable.evaluate;
+  if (typeof evaluate !== "function") return async () => {};
+  const marker = "data-shot-highlight";
+  // One style node, tagged, plus per-element tagging — one query removes all
+  // of it, including on elements Playwright matched with its own selector
+  // engine but `document.querySelectorAll` would miss (Playwright selectors
+  // are supersets of CSS; a miss is tolerated by the cleanup's count check).
+  const draw =
+    `(() => {
+    const sel = ${JSON.stringify(selector)};
+    const skip = ${JSON.stringify(marker)};
+    let n = 0;
+    for (const el of document.querySelectorAll(sel)) {
+      if (el instanceof Element && !el.hasAttribute(skip)) {
+        el.setAttribute(skip, "");
+        n++;
+      }
+    }
+    if (document.getElementById("repoos-shot-highlight-style") === null) {
+      const style = document.createElement("style");
+      style.id = "repoos-shot-highlight-style";
+      style.textContent =
+        \`:where([$\{skip}]) { outline: 3px solid ${HIGHLIGHT_COLOR} !important; outline-offset: 2px !important; ` +
+    `box-shadow: 0 0 0 6px ${HIGHLIGHT_COLOR}40 !important; border-radius: 3px; }\`;
+      document.head.append(style);
+    }
+    return n;
+  })()`;
+  const undo = `(() => {
+    const sel = ${JSON.stringify(selector)};
+    const skip = ${JSON.stringify(marker)};
+    for (const el of document.querySelectorAll(sel)) {
+      if (el instanceof Element) el.removeAttribute(skip);
+    }
+    document.getElementById("repoos-shot-highlight-style")?.remove();
+  })()`;
+  try {
+    await evaluate.call(page, draw, selector);
+  } catch {
+    return async () => {};
+  }
+  return async () => {
+    try {
+      await evaluate.call(page, undo, selector);
+    } catch {
+      /* the page may already be closing — cleanup stays best-effort */
+    }
+  };
 }
 
 /**
@@ -55,7 +136,10 @@ async function runStep(
     return;
   }
   if (typeof step.waitFor === "string") {
-    await page.locator(step.waitFor).waitFor({ timeout: SHOT_SELECTOR_TIMEOUT_MS });
+    const base = page.locator(step.waitFor);
+    // Wait for EXISTENCE, tolerating duplicates — see ShotLocator.first.
+    const target = typeof base.first === "function" ? base.first() : base;
+    await target.waitFor({ timeout: SHOT_SELECTOR_TIMEOUT_MS });
     return;
   }
   if (typeof step.waitMs === "number") await page.waitForTimeout(step.waitMs);
@@ -70,7 +154,7 @@ async function runStep(
 export async function captureShotPage(
   page: ShotDriverPage,
   url: string,
-  entry: Pick<CaptureEntry, "selector" | "steps">,
+  entry: Pick<CaptureEntry, "selector" | "steps" | "highlight">,
   options: ShotCaptureOptions,
 ): Promise<Buffer> {
   await page.goto(url, { waitUntil: "load", timeout: SHOT_NAV_TIMEOUT_MS });
@@ -81,14 +165,24 @@ export async function captureShotPage(
   }
   if (options.waitMs > 0) await page.waitForTimeout(options.waitMs);
   for (const step of entry.steps ?? []) await runStep(page, step);
-  if (entry.selector) {
-    const element = page.locator(entry.selector) as unknown as {
-      screenshot(options: { fullPage?: boolean; timeout?: number }): Promise<Buffer>;
-    };
-    return element.screenshot({
-      fullPage: options.fullPage,
-      timeout: SHOT_SELECTOR_TIMEOUT_MS,
-    });
+  const removeHighlight = entry.highlight
+    ? await applyHighlight(page, entry.highlight)
+    : async () => {};
+  try {
+    if (entry.selector) {
+      const element = page.locator(entry.selector) as unknown as {
+        screenshot(options: { fullPage?: boolean; timeout?: number }): Promise<Buffer>;
+      };
+      return await element.screenshot({
+        fullPage: options.fullPage,
+        timeout: SHOT_SELECTOR_TIMEOUT_MS,
+      });
+    }
+    return await page.screenshot({ fullPage: options.fullPage });
+  } finally {
+    // The next navigation re-renders everything anyway, but the same page can
+    // serve multiple sequential captures (CLI loop) — undo promptly so a
+    // highlight meant for one shot never bleeds into the next.
+    await removeHighlight();
   }
-  return page.screenshot({ fullPage: options.fullPage });
 }

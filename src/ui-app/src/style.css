@@ -5621,6 +5621,11 @@
   font-size: 12px;
   color: var(--txt);
 }
+/* --txt-dim, not --txt-faint, for the same reason #0603's shot caption used
+ * it: at 10px-adjacent sizes --txt-faint sits below the WCAG floor on
+ * --panel-solid, and every one of these lines is now real content the reviewer
+ * reads (the old grid's caption was 9px grey on a photo-lit thumb). The audit
+ * gates them because it walks all text in the scope. */
 .shot-row-detail {
   display: block;
   min-width: 0;
@@ -5629,7 +5634,7 @@
   text-overflow: ellipsis;
   font-family: "JetBrains Mono", monospace;
   font-size: 10.5px;
-  color: var(--txt-faint);
+  color: var(--txt-dim);
 }
 .shot-row-key {
   display: inline-block;
@@ -11047,6 +11052,11 @@
   gap: 7px;
   margin-top: 18px;
 }
+.rel-async-hint {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
 .rel-notes-head {
   display: flex;
   align-items: center;
@@ -11090,6 +11100,12 @@
 /* Reused a cached draft for this commit — not an error, just why it was instant. */
 .rel-notes-hint {
   color: var(--txt-faint);
+  font-size: 12px;
+  line-height: 1.45;
+}
+/* A notes-draft run is in flight (possibly for a modal reopened mid-run, #0605). */
+.rel-notes-drafting {
+  color: var(--cyan);
   font-size: 12px;
   line-height: 1.45;
 }
