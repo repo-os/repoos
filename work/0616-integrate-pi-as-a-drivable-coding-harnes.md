@@ -5,11 +5,11 @@ type: feature
 status: inbox
 priority: p2
 area: [agent, core, server]
-assigned_to: ""
+assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/integrate-pi-as-a-drivable-coding-harnes
 created_at: "2026-10-01T16:34:17Z"
-updated_at: "2026-10-01T16:34:17Z"
+updated_at: "2026-10-01T16:51:17Z"
 ---
 ## Context
 
@@ -97,3 +97,4 @@ uses: `version`, `help`, `model-discovery`, `headless-one-shot`,
 ## Activity
 
 - 2026-10-01T16:34:17Z · created · unknown
+- 2026-10-01T16:51:17Z · branch
