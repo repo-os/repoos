@@ -79,18 +79,25 @@ export function scopeAttributes(scope: CheckThemeScope): ScopeAttributes {
 /**
  * The in-page flip + settle barrier (#0617). Re-runs `apply()` on every
  * animation frame until the `<html>` attributes and the resolved `--txt-faint`
- * have been identical for two consecutive frames — i.e. the app's async config
- * load (if any) has finished and style recalc has caught up. A late
- * `applyTheme()` from the config store reads `localStorage`, which this
- * rewrites every frame, so it converges on the requested scope instead of
- * racing it. Bounded at 30 frames (~0.5s) so a genuinely broken theme cannot
- * hang the audit; the caller compares the result and warns on a mismatch rather
- * than probing a half-flipped page silently.
+ * have been identical for two consecutive frames **and** no CSS transition is
+ * still running — i.e. the app's async config load (if any) has finished and
+ * style recalc has caught up. A late `applyTheme()` from the config store reads
+ * `localStorage`, which this rewrites every frame, so it converges on the
+ * requested scope instead of racing it.
+ *
+ * The transition check matters because `--txt-faint` is a custom property that
+ * never itself transitions: the attributes can look settled in ~3 frames while
+ * a 200ms `theme-anim` cross-fade is still mid-flight, so colors and
+ * backgrounds could be sampled between themes (review of #0617). Bounded at 120
+ * frames (~2s) so a genuinely broken theme cannot hang the audit; the caller
+ * compares the result and warns on a mismatch rather than probing a half-flipped
+ * page silently.
  */
 export function settleScopeInPage(a: ScopeAttributes): Promise<{
   theme: string | null;
   uiTheme: string | null;
   txtFaint: string;
+  pending: number;
 }> {
   const apply = (): void => {
     try {
@@ -104,6 +111,22 @@ export function settleScopeInPage(a: ScopeAttributes): Promise<{
   };
   apply();
   return new Promise((resolve) => {
+    // CSS transitions are the only animation class that can leave a computed
+    // color between themes, so count those specifically (a decorative infinite
+    // animation must not stall the settle). `transitionProperty` is present only
+    // on CSSTransition; guard for engines/test doubles without getAnimations.
+    const runningTransitions = (): number => {
+      const d = document as unknown as { getAnimations?: () => unknown[] };
+      if (typeof d.getAnimations !== "function") return 0;
+      try {
+        return d.getAnimations().filter((an) => {
+          const t = an as { playState?: string; transitionProperty?: unknown };
+          return t.playState === "running" && typeof t.transitionProperty === "string";
+        }).length;
+      } catch {
+        return 0;
+      }
+    };
     let prev = "";
     let stable = 0;
     let frames = 0;
@@ -118,14 +141,17 @@ export function settleScopeInPage(a: ScopeAttributes): Promise<{
         document.documentElement.dataset.uiTheme +
         "|" +
         cs.getPropertyValue("--txt-faint").trim();
+      const pending = runningTransitions();
       if (cur === prev) stable++;
       else stable = 0;
       prev = cur;
-      if (stable >= 2 || frames >= 30) {
+      const ready = stable >= 2 && pending === 0;
+      if (ready || frames >= 120) {
         resolve({
           theme: document.documentElement.dataset.theme ?? null,
           uiTheme: document.documentElement.dataset.uiTheme ?? null,
           txtFaint: cs.getPropertyValue("--txt-faint").trim(),
+          pending,
         });
       } else {
         requestAnimationFrame(tick);
@@ -137,14 +163,24 @@ export function settleScopeInPage(a: ScopeAttributes): Promise<{
 
 /**
  * Whether a settled flip landed on the requested scope, or the warning text
- * when it did not. Pure so the "never silently probe a half-flipped scope"
- * contract is unit-testable (#0617).
+ * when it did not. `pending` is the number of CSS transitions still running
+ * when the settle bound was reached: those can leave rendered colors between
+ * themes, so they are reported even though the attributes match. Pure so the
+ * "never silently probe a half-flipped scope" contract is unit-testable
+ * (#0617).
  */
 export function scopeSettleWarning(
   scopeName: string,
   settled: { theme: string | null; uiTheme: string | null },
   attrs: ScopeAttributes,
+  pending = 0,
 ): string | null {
+  if (pending > 0) {
+    return (
+      `scope "${scopeName}" still had ${pending} CSS transition(s) running after ` +
+      `settling — colors may be sampled mid-fade`
+    );
+  }
   if (settled.theme === attrs.mode && settled.uiTheme === attrs.uiTheme) return null;
   return (
     `scope "${scopeName}" did not settle — wanted data-theme="${attrs.mode}" ` +
@@ -325,8 +361,24 @@ export function contrastProbe(arg: ProbeArg): ProbeResult {
     }
     document.documentElement.dataset.theme = arg.scope.mode;
     document.documentElement.dataset.uiTheme = arg.scope.uiTheme;
-    // Reading a layout property forces style+layout before any
-    // getComputedStyle below, so no stale computed value survives the write.
+    // A scope flip that landed while a `theme-anim` cross-fade was in flight
+    // leaves computed colors between themes; finish every transition so the
+    // walk reads the end state, then force style+layout. Reading a layout
+    // property forces style+layout before any getComputedStyle below, so no
+    // stale computed value survives the write.
+    const d = document as unknown as { getAnimations?: () => unknown[] };
+    if (typeof d.getAnimations === "function") {
+      for (const an of d.getAnimations()) {
+        const t = an as { transitionProperty?: unknown; finish?: () => void };
+        if (typeof t.transitionProperty === "string" && typeof t.finish === "function") {
+          try {
+            t.finish();
+          } catch {
+            /* already finished/cancelled — nothing to snap */
+          }
+        }
+      }
+    }
     void document.documentElement.offsetHeight;
   }
 
@@ -770,12 +822,16 @@ async function gotoApp(page: SmokePage, url: string, path: string): Promise<void
   await page.evaluate(() => {
     // Freeze transitions/animations: a color mid-transition is neither the
     // before nor the after state, and waiting it out on every scope flip
-    // would dominate the audit's runtime.
+    // would dominate the audit's runtime. `transition: none` (not just a zero
+    // duration) is deliberate: the app's `theme-anim` cross-fade is 200ms, and
+    // a later scope flip inside that window could otherwise be sampled
+    // mid-fade (#0617). `animation-duration: 0s` keeps animations painting
+    // their final keyframe rather than reverting to the initial one.
     if (document.getElementById("contrast-audit-motion-fix")) return;
     const s = document.createElement("style");
     s.id = "contrast-audit-motion-fix";
     s.textContent =
-      "*,*::before,*::after{transition-duration:0s!important;animation-duration:0s!important}";
+      "*,*::before,*::after{transition:none!important;animation-duration:0s!important;animation-delay:0s!important}";
     document.head.appendChild(s);
   });
 }
@@ -1090,7 +1146,7 @@ async function runAudit(): Promise<{
         // converge. The probe re-asserts the scope inside its own evaluate as
         // well, closing the round-trip window entirely (#0617).
         const settled = await page.evaluate(settleScopeInPage, attrs);
-        const warn = scopeSettleWarning(scope.name, settled, attrs);
+        const warn = scopeSettleWarning(scope.name, settled, attrs, settled.pending);
         if (warn) warnings.push(warn);
         const probe = await page.evaluate(contrastProbe, { exemptSelectors, scope: attrs });
         stats.examined += probe.examined;
