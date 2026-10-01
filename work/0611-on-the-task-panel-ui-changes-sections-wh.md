@@ -2,14 +2,14 @@
 id: "0611"
 title: Row layout for task preview shots on Changes tab
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/row-layout-for-task-preview-shots-on-cha
 created_at: "2026-10-01T04:34:32Z"
-updated_at: "2026-10-01T04:37:48Z"
+updated_at: "2026-10-01T04:37:52Z"
 ---
 ## Problem
 
@@ -78,3 +78,4 @@ On the task panel ui changes sections where we show the shots taken by the task 
 - 2026-10-01T04:34:34Z · screenshots
 - 2026-10-01T04:35:12Z · status draft→inbox, title, area, body
 - 2026-10-01T04:37:48Z · status inbox→ready
+- 2026-10-01T04:37:52Z · status ready→active, branch
