@@ -162,7 +162,7 @@ async function runStep(
 export async function captureShotPage(
   page: ShotDriverPage,
   url: string,
-  entry: Pick<CaptureEntry, "selector" | "steps" | "highlight" | "route">,
+  entry: Pick<CaptureEntry, "selector" | "steps" | "highlight" | "highlights" | "route">,
   options: ShotCaptureOptions,
   onHighlightMiss?: (selector: string, route: string) => void,
   onSelectorMiss?: (selector: string, route: string) => void,
@@ -175,12 +175,21 @@ export async function captureShotPage(
   }
   if (options.waitMs > 0) await page.waitForTimeout(options.waitMs);
   for (const step of entry.steps ?? []) await runStep(page, step);
-  const removeHighlight = entry.highlight
-    ? await applyHighlight(page, entry.highlight)
-    : { matched: 1, undo: async () => {} };
+  // Merged duplicate declarations carry each selector separately: apply and
+  // miss-check them one by one, since a comma-joined list "matches" as soon as
+  // any member does (#0613).
+  const highlightSelectors = entry.highlights?.length
+    ? entry.highlights
+    : entry.highlight
+      ? [entry.highlight]
+      : [];
+  const applied: { selector: string; matched: number; undo: () => Promise<void> }[] = [];
+  for (const selector of highlightSelectors) {
+    applied.push({ selector, ...(await applyHighlight(page, selector)) });
+  }
   try {
-    if (removeHighlight.matched === 0 && onHighlightMiss && entry.highlight) {
-      onHighlightMiss(entry.highlight, entry.route);
+    for (const h of applied) {
+      if (h.matched === 0 && onHighlightMiss) onHighlightMiss(h.selector, entry.route);
     }
     if (entry.selector) {
       const element = page.locator(entry.selector) as unknown as {
@@ -204,6 +213,6 @@ export async function captureShotPage(
     // The next navigation re-renders everything anyway, but the same page can
     // serve multiple sequential captures (CLI loop) — undo promptly so a
     // highlight meant for one shot never bleeds into the next.
-    await removeHighlight.undo();
+    for (const h of applied) await h.undo();
   }
 }
