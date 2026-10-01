@@ -282,6 +282,7 @@ describe("buildCapturePlan", () => {
     );
     expect(entries).toHaveLength(1);
     expect(entries[0].highlight).toBe(".detect-row, .detect-deprecated-slot");
+    expect(entries[0].highlights).toEqual([".detect-row", ".detect-deprecated-slot"]);
     expect(collapsed).toEqual(["Slot"]);
   });
 
@@ -639,6 +640,22 @@ describe("captureShotPage highlight (#0603)", () => {
       (selector) => misses.push(selector),
     );
     expect(misses).toEqual([".missing"]);
+  });
+
+  it("reports a miss for each merged highlight individually (#0613)", async () => {
+    const page = fakePage({ matches: 0 });
+    // `.live` matches, `.stale` does not — a comma-joined check would hide it.
+    (page as unknown as { evaluate: unknown }).evaluate = async (body: string, arg: string) =>
+      body.includes("querySelectorAll(sel)") && arg === ".live" ? 1 : 0;
+    const misses: string[] = [];
+    await captureShotPage(
+      page,
+      "http://x/",
+      { highlight: ".live, .stale", highlights: [".live", ".stale"], route: "/board" },
+      { waitMs: 0, fullPage: false },
+      (selector) => misses.push(selector),
+    );
+    expect(misses).toEqual([".stale"]);
   });
 
   it("falls back to the whole window when selector matches nothing (#0613)", async () => {

@@ -72,6 +72,13 @@ export interface CaptureEntry {
   label?: string;
   /** Element(s) to outline before capture (#0603). Declared shots only. */
   highlight?: string;
+  /**
+   * The individual highlight selectors behind a merged `highlight` (#0613).
+   * Capture applies and miss-checks each one on its own, so a stale declaration
+   * is reported even when another merged selector matches. Absent when the
+   * entry was never merged — `highlight` alone is then the whole story.
+   */
+  highlights?: string[];
   steps?: DeclaredStep[];
   /**
    * Why this shot exists (#0603), recorded in `shots.json` and rendered in the
@@ -455,11 +462,10 @@ export function buildCapturePlan(
     );
     if (existing) {
       if (entry.highlight) {
-        if (!existing.highlight) {
-          existing.highlight = entry.highlight;
-        } else if (existing.highlight !== entry.highlight) {
-          existing.highlight = [existing.highlight, entry.highlight].join(", ");
-        }
+        const all = existing.highlights ?? (existing.highlight ? [existing.highlight] : []);
+        if (!all.includes(entry.highlight)) all.push(entry.highlight);
+        existing.highlights = all;
+        existing.highlight = all.join(", ");
       }
       collapsed.push(entry.label ?? `${entry.target}${entry.route}`);
     } else {
