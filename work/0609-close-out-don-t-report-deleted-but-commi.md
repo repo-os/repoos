@@ -2,7 +2,7 @@
 id: "0609"
 title: "Close-out: don't report deleted-but-committed files as uncommitted work"
 type: feature
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
@@ -12,7 +12,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: opencode-go/longcat-2.5-preview-free
 created_at: "2026-09-30T16:35:40Z"
-updated_at: "2026-10-01T06:57:12Z"
+updated_at: "2026-10-01T07:44:46Z"
 ---
 Observed on #0602 (2026-10-01, machine under heavy load): close-out's non-forced `removeWorktree` apparently started deleting the feature worktree and stopped partway. `uncommittedWorkFiles` (src/core/git.ts, called from `cleanup` in src/server/integration-orchestrator.ts) then reported ~100 tracked-but-deleted files (` D`) as 'uncommitted files the merge did not carry', raising a `closeout-worktree-dirty` needs-input even though the branch was fully merged and nothing was lost.
 
@@ -26,3 +26,4 @@ Do: (1) make close-out distinguish deleted-but-committed files (content identica
 - 2026-10-01T06:57:10Z · review_model_override
 - 2026-10-01T06:57:11Z · status inbox→ready
 - 2026-10-01T06:57:12Z · status ready→active, branch
+- 2026-10-01T07:44:46Z · status active→review
