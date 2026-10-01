@@ -914,6 +914,6 @@ describe("toDisplayRows — assistant text trailing whitespace", () => {
   it("trims trailing newlines from assistant text rows", () => {
     const rows = toDisplayRows([{ type: "text", text: "Let me check:\n\n\n\n  \n" }]);
     expect(rows).toHaveLength(1);
-    expect(rows[0].text).toBe("Let me check:");
+    expect(rows[0]).toMatchObject({ text: "Let me check:" });
   });
 });
