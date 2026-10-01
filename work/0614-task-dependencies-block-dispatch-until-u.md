@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/task-dependencies-block-dispatch-until-u
 created_at: "2026-10-01T11:04:57Z"
-updated_at: "2026-10-01T12:12:27Z"
+updated_at: "2026-10-01T12:24:23Z"
 ---
 ## Problem
 
@@ -49,8 +49,15 @@ Tasks in a story often depend on each other (e.g. Telegram story #0003: phase 4 
 
 Relevant code: `src/server/auto-engineering.ts` (ready filter), `src/core/types.ts` and `src/core/task.ts` (Task, parser/writer), `ensureWorktree` in `src/core/git.ts`, `src/ui-app` story Tasks tab.
 
+## Shots
+
+```json
+[{"target":"default","route":"/work?task=0614","label":"Task drawer dependency status"}]
+```
+
 ## Activity
 
 - 2026-10-01T11:04:57Z · created · unknown
 - 2026-10-01T12:12:15Z · status inbox→ready
 - 2026-10-01T12:12:27Z · status ready→active, branch
+- 2026-10-01T12:24:23Z · body
