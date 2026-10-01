@@ -2,7 +2,7 @@
 id: "0617"
 title: Fix rendered-contrast audit half-flipped theme race
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -82,4 +82,4 @@ the intended mode.
 - 2026-10-01T18:21:24Z · status active→review
 - 2026-10-01T18:21:24Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
 - 2026-10-01T18:22:52Z · status review→active
-- 2026-10-01T18:33:49Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-01T18:33:49Z · status active→review
