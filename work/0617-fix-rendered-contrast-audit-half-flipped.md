@@ -5,11 +5,12 @@ type: bug
 status: inbox
 priority: p2
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: opencode
 created_at: "2026-10-01T17:54:57Z"
-updated_at: "2026-10-01T17:54:57Z"
+updated_at: "2026-10-01T18:01:49Z"
 ---
 ## What
 
@@ -68,3 +69,4 @@ the intended mode.
 ## Activity
 
 - 2026-10-01T17:54:57Z · created · unknown
+- 2026-10-01T18:01:49Z · cli_override
