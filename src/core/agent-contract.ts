@@ -521,6 +521,95 @@ const CRUSH_CONTRACT: ContractCommandTemplates = {
 };
 
 /**
+ * pi (`pi --mode json`) event stream. The first record is a `session` header
+ * carrying `id`; assistant text arrives at `message_end` (and incrementally as
+ * `text_delta` inside `message_update`).
+ */
+function parsePiRun(stdout: string): RunParseResult {
+  const KNOWN = new Set([
+    "session",
+    "agent_start",
+    "agent_end",
+    "agent_settled",
+    "turn_start",
+    "turn_end",
+    "message_start",
+    "message_update",
+    "message_end",
+    "tool_execution_start",
+    "tool_execution_update",
+    "tool_execution_end",
+    "queue_update",
+    "session_info_changed",
+    "thinking_level_changed",
+    "compaction_start",
+    "compaction_end",
+  ]);
+  let sessionId: string | null = null;
+  let hasAnswer = false;
+  let recognized = 0;
+  let total = 0;
+  const contentText = (content: unknown): string => {
+    if (typeof content === "string") return content;
+    if (!Array.isArray(content)) return "";
+    const parts: string[] = [];
+    for (const block of content) {
+      if (block && typeof block === "object") {
+        const b = block as Record<string, unknown>;
+        if (typeof b.text === "string") parts.push(b.text);
+      }
+    }
+    return parts.join("\n");
+  };
+  for (const line of stdout.split("\n")) {
+    const t = line.trim();
+    if (!t) continue;
+    try {
+      const ev = JSON.parse(t) as Record<string, unknown>;
+      total++;
+      const type = typeof ev.type === "string" ? ev.type : "";
+      if (KNOWN.has(type)) recognized++;
+      if (type === "session" && typeof ev.id === "string" && ev.id) sessionId = ev.id;
+      if (type === "message_update") {
+        const inner = ev.assistantMessageEvent as Record<string, unknown> | undefined;
+        if (typeof inner?.delta === "string" && /OK/i.test(inner.delta)) hasAnswer = true;
+      }
+      if (type === "message_end") {
+        const msg = ev.message as Record<string, unknown> | undefined;
+        if (msg?.role === "assistant" && /OK/i.test(contentText(msg.content))) hasAnswer = true;
+      }
+    } catch {
+      /* skip malformed lines */
+    }
+  }
+  return {
+    sessionId,
+    hasAnswer,
+    recognized,
+    total,
+    detail:
+      total === 0
+        ? "no JSON lines in output"
+        : `${recognized}/${total} recognized events; answer found: ${hasAnswer}`,
+  };
+}
+
+/**
+ * pi (`pi --mode json`) — documented JSONL stream, `--session` resume, and no
+ * approval prompts in a non-interactive run. Auto-approval is a property of
+ * the mode, not a flag (`autoPermissions: "mode"`).
+ */
+const PI_CONTRACT: ContractCommandTemplates = {
+  version: () => ["--version"],
+  help: () => ["--help"],
+  models: () => ["--list-models"],
+  run: (_dir, prompt) => ["--mode", "json", prompt],
+  resume: (_dir, sessionId, prompt) => ["--mode", "json", "--session", sessionId, prompt],
+  parseRun: parsePiRun,
+  autoPermissions: "mode",
+};
+
+/**
  * GitHub Copilot CLI — `--output-format json` JSONL, session id on `event.sessionId`.
  * `--no-ask-user` suppresses approval prompts; `--allow-all-tools` for headless engineering.
  */
@@ -634,6 +723,7 @@ const CONTRACT_TEMPLATES: Record<string, (binary: string) => ContractCommandTemp
   antigravity: () => ANTIGRAVITY_CONTRACT,
   "github copilot": () => COPILOT_CONTRACT,
   crush: () => CRUSH_CONTRACT,
+  pi: () => PI_CONTRACT,
 };
 
 const DEFAULT_TIMEOUT_MS: Record<"fixture" | "live", number> = {
