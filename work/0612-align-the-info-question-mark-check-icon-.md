@@ -9,14 +9,14 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/align-detected-agent-driver-column-and-c
 created_at: "2026-10-01T09:01:31Z"
-updated_at: "2026-10-01T09:09:33Z"
+updated_at: "2026-10-01T09:10:29Z"
 review_rounds: 1
 review_passes: 1
 ---
 ## Shots
 
 ```json
-[{"target": "default", "route": "/agents", "label": "Detected tab — aligned driver column and compat icon", "highlight": ".detect-row", "steps": [{"waitMs": 500}]}, {"target": "default", "route": "/agents", "label": "Detected tab — row with compat icon and multi-binary dropdown", "highlight": ".detect-compat-icon", "steps": [{"waitMs": 500}]}]
+[{"target": "default", "route": "/agents", "label": "Detected tab — driver column and compat icon aligned", "highlight": ".detect-row", "steps": [{"waitMs": 500}]}, {"target": "default", "route": "/agents", "label": "Detected tab — deprecated badge and compat icon at fixed positions", "highlight": ".detect-deprecated-slot", "steps": [{"waitMs": 500}]}]
 ```
 
 ## Original prompt
@@ -37,3 +37,4 @@ Align the info/question mark/check icon to come right after the "repoos driver" 
 - 2026-10-01T09:04:42Z · body
 - 2026-10-01T09:09:02Z · status active→review
 - 2026-10-01T09:09:33Z · status review→active
+- 2026-10-01T09:10:29Z · body
