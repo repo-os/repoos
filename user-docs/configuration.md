@@ -302,7 +302,7 @@ unaffected.
 Constraints: a label is a string of at most 40 characters; blank labels,
 duplicates of another column's label, or over-length values fall back to that
 column's default. Any column you don't override keeps its default. The default
-labels are `Proposed / Drafts`, `Inbox`, `Ready`, `Active`, `Review`, `Done`.
+labels are `Draft`, `Inbox`, `Ready`, `Active`, `Review`, `Done`.
 
 ## Server and UI
 

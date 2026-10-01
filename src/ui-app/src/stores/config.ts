@@ -457,7 +457,7 @@ export const useConfigStore = defineStore("config", () => {
 
   /** Default column labels — must match DEFAULT_COLUMN_LABELS in core/config.ts. */
   const DEFAULT_COL_LABELS: Record<string, string> = {
-    draft: "Proposed / Drafts",
+    draft: "Draft",
     inbox: "Inbox",
     ready: "Ready",
     active: "Active",
