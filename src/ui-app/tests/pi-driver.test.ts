@@ -32,10 +32,17 @@ describe("pi invocation shapes", () => {
     });
   });
 
-  it("forwards an explicit model with --model", () => {
-    expect(promptCommand(agent("openai/gpt-5"), "ping")).toEqual({
+  it("maps a provider-qualified model id to --provider + --model", () => {
+    expect(promptCommand(agent("openrouter/openai/gpt-6-luna"), "ping")).toEqual({
       cmd: "pi",
-      args: ["--mode", "json", "--model", "openai/gpt-5", "ping"],
+      args: ["--mode", "json", "--provider", "openrouter", "--model", "openai/gpt-6-luna", "ping"],
+    });
+  });
+
+  it("passes a bare model id through as --model", () => {
+    expect(promptCommand(agent("gpt-5.5"), "ping")).toEqual({
+      cmd: "pi",
+      args: ["--mode", "json", "--model", "gpt-5.5", "ping"],
     });
   });
 
@@ -80,7 +87,10 @@ describe("pi event parsing", () => {
       type: "message_end",
       message: { role: "assistant", content: [{ type: "text", text: "hello" }] },
     });
-    expect(parsePiEvent(raw)).toEqual({ entry: { type: "text", text: "hello" } });
+    expect(parsePiEvent(raw)).toEqual({
+      entry: { type: "text", text: "hello" },
+      messageEnd: true,
+    });
   });
 
   it("surfaces a failed assistant turn's error instead of looking empty", () => {
@@ -95,16 +105,28 @@ describe("pi event parsing", () => {
     });
     expect(parsePiEvent(raw)).toEqual({
       entry: { type: "sys", d: "OpenAI API error (401): Incorrect API key" },
+      messageEnd: true,
     });
   });
 
-  it("swallows streaming deltas and lifecycle events rather than dumping JSON", () => {
+  it("surfaces a streaming text delta for live output", () => {
     expect(
       parsePiEvent(
         JSON.stringify({
           type: "message_update",
           usage: { input: 1, output: 1, totalTokens: 2 },
           assistantMessageEvent: { type: "text_delta", delta: "he" },
+        }),
+      ),
+    ).toEqual({ delta: "he" });
+  });
+
+  it("swallows non-text updates and lifecycle events rather than dumping JSON", () => {
+    expect(
+      parsePiEvent(
+        JSON.stringify({
+          type: "message_update",
+          assistantMessageEvent: { type: "thinking_delta", delta: "hmm" },
         }),
       ),
     ).toEqual({});
