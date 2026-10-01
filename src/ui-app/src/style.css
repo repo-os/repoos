@@ -11094,6 +11094,12 @@
   font-size: 12px;
   line-height: 1.45;
 }
+/* A notes-draft run is in flight (possibly for a modal reopened mid-run, #0605). */
+.rel-notes-drafting {
+  color: var(--cyan);
+  font-size: 12px;
+  line-height: 1.45;
+}
 
 .release-modal .release-actions {
   flex-shrink: 0;
