@@ -242,14 +242,19 @@ when a task moves to review and its diff touches any preview target's
 the managed preview — the engineer only writes a `## Shots` list into the task
 body declaring which pages/states to shoot (see [`repoos shot`](/cli#repoos-shot),
 especially if the interesting state is inside a drawer or modal that `/` does
-not show). A skip or failure — missing Playwright, a preview that would not
-boot — is recorded as a visible `shots: skipped` / `shots: failed` note in the
-task log and activity, never a failed handoff. An engineer-made capture with
+not show; a `highlight` selector outlines what changed). The capture is
+conservative by design (#0603): every shot is captioned with why it exists —
+`declared: <label>` for a declared shot, `auto: matched <glob>` for the
+rare fallback — test-only and task-note diffs capture nothing, and docs
+targets need a declared route. So a `shots: skipped` note (tests-only or
+docs-wording-only diff, missing Playwright, a preview that would not boot)
+is information, not an error: it is recorded as a visible note in the task
+log and activity, never a failed handoff. An engineer-made capture with
 [`repoos shot`](/cli#repoos-shot) before handoff pre-empts the automatic one.
 The PNGs are stored gitignored under `work/.attachments/<taskId>/shots/` and
 appear as the **UI changes** section of the task drawer's Changes tab, so you
 see what actually rendered rather than only the diff. `repoos shot` picks its
 target from the task's changed files (`[[preview.targets]].paths`, plus the
-default target's own `[preview] paths` for app diffs), and the drawer warns if
-the task's `area` disagrees — pick the right target from the preview dropdown
-if so.
+default target's own `[preview] paths` for app diffs; test files are not UI
+evidence), and the drawer warns if the task's `area` disagrees — pick the
+right target from the preview dropdown if so.

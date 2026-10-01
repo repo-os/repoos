@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { loadConfig, parsePreviewConfig } from "../../core/config";
 import { changedPathsVsBase } from "../../core/git";
 import {
+  describeTargetPathMatches,
   formatTargetList,
   matchGlob,
   resolveShotTargets,
@@ -147,24 +148,37 @@ describe("targetsForArea", () => {
 
 describe("shotTargetMismatchWarning", () => {
   it("warns when the diff touches a target the area does not resolve to", () => {
-    const warning = shotTargetMismatchWarning(PREVIEW, "web", ["user-docs/index.md"]);
+    const warning = shotTargetMismatchWarning(PREVIEW, "web", ["user-docs/.vitepress/config.ts"]);
     expect(warning).toBe(`This task's changes touch Docs site but its area is "web".`);
   });
 
   it("stays quiet when the area already reaches the changed target", () => {
-    expect(shotTargetMismatchWarning(PREVIEW, "docs", ["user-docs/index.md"])).toBeUndefined();
+    expect(
+      shotTargetMismatchWarning(PREVIEW, "docs", ["user-docs/.vitepress/config.ts"]),
+    ).toBeUndefined();
     // Multi-area values count too.
     expect(
-      shotTargetMismatchWarning(PREVIEW, "web + docs", ["user-docs/index.md"]),
+      shotTargetMismatchWarning(PREVIEW, "web + docs", ["user-docs/.vitepress/config.ts"]),
     ).toBeUndefined();
   });
 
   it("warns about the unexplained target when only some touched targets are area-reachable", () => {
     const warning = shotTargetMismatchWarning(PREVIEW, "web + docs", [
-      "user-docs/index.md",
+      "user-docs/.vitepress/config.ts",
       "landing/index.html",
     ]);
     expect(warning).toBe(`This task's changes touch Landing page but its area is "web + docs".`);
+  });
+
+  it("ignores markdown-only changes: prose edits are content, not target code", () => {
+    expect(shotTargetMismatchWarning(PREVIEW, "web", ["user-docs/index.md"])).toBeUndefined();
+    // A real code change alongside the prose still warns.
+    expect(
+      shotTargetMismatchWarning(PREVIEW, "web", [
+        "user-docs/index.md",
+        "user-docs/.vitepress/config.ts",
+      ]),
+    ).toBe(`This task's changes touch Docs site but its area is "web".`);
   });
 
   it("stays quiet when no changed path matches a target", () => {
@@ -197,7 +211,7 @@ describe("the default target's own paths (#0594)", () => {
     const changed = [
       "src/ui-app/src/components/TaskDrawer.vue",
       "src/ui-app/src/style.css",
-      "user-docs/check.md",
+      "user-docs/.vitepress/theme/index.ts",
     ];
     expect(targetsForPaths(PREVIEW_WITH_DEFAULT_PATHS, changed)).toEqual(["Docs site", "default"]);
     const r = resolveShotTargets(PREVIEW_WITH_DEFAULT_PATHS, "web", changed);
@@ -224,12 +238,100 @@ describe("the default target's own paths (#0594)", () => {
     ).toEqual([]);
   });
 
+  it("does not count test files as UI evidence (#0603, the #0600 shape)", () => {
+    // #0600's diff added a test under src/ui-app/tests/; the plain glob made a
+    // tests+work-note diff resolve the default target and a home-page `/` shot
+    // was captured for a Core-task review. Test artifacts are behavior
+    // evidence, not appearance.
+    expect(
+      targetsForPaths(PREVIEW_WITH_DEFAULT_PATHS, [
+        "src/ui-app/tests/worktree-handoff-guard.test.ts",
+        "work/0600-guard.md",
+      ]),
+    ).toEqual([]);
+    // Un-suffixed helper files under tests/ count as test artifacts too
+    // (#0603 review): tests/setup/web-storage.ts, tests/adoption/*.
+    expect(
+      targetsForPaths(PREVIEW_WITH_DEFAULT_PATHS, [
+        "src/ui-app/tests/setup/web-storage.ts",
+        "src/ui-app/tests/adoption/harness.ts",
+        "work/0603-note.md",
+      ]),
+    ).toEqual([]);
+    // A `test/`-named segment works as well, but only as a WHOLE segment —
+    // "latest/" or "contest/" must not trip the filter.
+    expect(targetsForPaths(PREVIEW_WITH_DEFAULT_PATHS, ["src/ui-app/test/fixtures.ts"])).toEqual(
+      [],
+    );
+    expect(targetsForPaths(PREVIEW_WITH_DEFAULT_PATHS, ["src/ui-app/src/latest/news.ts"])).toEqual([
+      "default",
+    ]);
+    // Mixed: real UI code still resolves alongside the test file.
+    expect(
+      targetsForPaths(PREVIEW_WITH_DEFAULT_PATHS, [
+        "src/ui-app/src/views/BoardView.vue",
+        "src/ui-app/tests/board.test.ts",
+      ]),
+    ).toEqual(["default"]);
+  });
+
   it("never mislabels the always-reachable default as an area mismatch", () => {
     const warning = shotTargetMismatchWarning(PREVIEW_WITH_DEFAULT_PATHS, "web", [
       "src/ui-app/src/Board.vue",
-      "user-docs/check.md",
+      "user-docs/.vitepress/theme/index.ts",
     ]);
     expect(warning).toBe(`This task's changes touch Docs site but its area is "web".`);
+  });
+});
+
+describe("describeTargetPathMatches (#0603)", () => {
+  it("reports the matching globs per target, for the auto caption", () => {
+    const changed = ["src/ui-app/src/Board.vue", "user-docs/check.md"];
+    const matches = describeTargetPathMatches(PREVIEW_WITH_DEFAULT_PATHS, changed);
+    expect(matches).toEqual([
+      { target: "Docs site", globs: ["user-docs/**"], contentOnly: true },
+      { target: "default", globs: ["src/ui-app/**"], contentOnly: false },
+    ]);
+  });
+
+  it("marks docs-content-only targets and filters test artifacts first", () => {
+    const matches = describeTargetPathMatches(PREVIEW_WITH_DEFAULT_PATHS, [
+      "user-docs/configuration.md",
+      "src/ui-app/tests/board.test.ts",
+    ]);
+    expect(matches).toEqual([{ target: "Docs site", globs: ["user-docs/**"], contentOnly: true }]);
+  });
+
+  it("keeps a contentOnly=false mark when code and docs both match one target", () => {
+    const matches = describeTargetPathMatches(PREVIEW_WITH_DEFAULT_PATHS, [
+      "user-docs/index.md",
+      "user-docs/src/sidebar.ts",
+    ]);
+    expect(matches[0]).toEqual({
+      target: "Docs site",
+      globs: ["user-docs/**"],
+      contentOnly: false,
+    });
+  });
+
+  it("drops test-only matches entirely, from any target's globs", () => {
+    const docs = {
+      command: "bun dev",
+      targets: [
+        { name: "Docs site", areas: ["docs"], paths: ["user-docs/**"], command: "bun dev" },
+      ],
+    };
+    expect(describeTargetPathMatches(docs, ["user-docs/src/api.test.ts"])).toEqual([]);
+    // Un-suffixed helpers inside a tests/ directory too (#0603 review).
+    expect(describeTargetPathMatches(docs, ["user-docs/tests/helpers.ts"])).toEqual([]);
+    // …and keeps the target when a real source file sits next to them.
+    expect(
+      describeTargetPathMatches(docs, [
+        "user-docs/src/api.ts",
+        "user-docs/tests/helpers.ts",
+        "user-docs/src/api.test.ts",
+      ]),
+    ).toEqual([{ target: "Docs site", globs: ["user-docs/**"], contentOnly: false }]);
   });
 });
 

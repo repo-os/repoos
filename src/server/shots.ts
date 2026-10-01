@@ -34,6 +34,13 @@ export interface ShotMeta {
    * name in the drawer.
    */
   label?: string;
+  /**
+   * Why this shot exists (#0603), one line: "declared: <label>" for a declared
+   * shot, "auto: matched <glob>" for the server's fallback, "auto" when the
+   * caller could not attribute a match. Rendered by the Changes tab; parallel
+   * to `label` so the caption is never blank even for legacy manifest entries.
+   */
+  provenance?: string;
   /** Repo-relative path, e.g. "work/.attachments/0582/shots/docs-site-1.png". */
   path: string;
   /** API URL the UI loads the image from. */
@@ -50,6 +57,8 @@ interface ShotManifestEntry {
   target: string;
   route?: string;
   label?: string;
+  /** One-line capture reason (#0603): "declared: <label>" / "auto: matched <glob>". */
+  provenance?: string;
   mime: string;
   size: number;
   capturedAt: string;
@@ -66,6 +75,8 @@ export interface ShotStore {
     target: string;
     route?: string;
     label?: string;
+    /** Why the shot exists (#0603), stored verbatim in the manifest. */
+    provenance?: string;
     mime?: string;
     name?: string;
     data: string;
@@ -149,6 +160,7 @@ export function localShotStore(config: RepoOSConfig, taskId: string): ShotStore 
         target: meta?.target ?? "unknown",
         ...(meta?.route ? { route: meta.route } : {}),
         ...(meta?.label ? { label: meta.label } : {}),
+        ...(meta?.provenance ? { provenance: meta.provenance } : {}),
         path: relPath(config, taskId, file),
         url: shotUrl(taskId, file),
         size,
@@ -201,6 +213,7 @@ export function localShotStore(config: RepoOSConfig, taskId: string): ShotStore 
         target,
         ...(input.route ? { route: input.route } : {}),
         ...(input.label ? { label: input.label } : {}),
+        ...(input.provenance ? { provenance: input.provenance } : {}),
         mime,
         size: buf.length,
         capturedAt,
@@ -214,6 +227,7 @@ export function localShotStore(config: RepoOSConfig, taskId: string): ShotStore 
         target,
         ...(input.route ? { route: input.route } : {}),
         ...(input.label ? { label: input.label } : {}),
+        ...(input.provenance ? { provenance: input.provenance } : {}),
         path: relPath(config, taskId, file),
         url: shotUrl(taskId, file),
         size: buf.length,

@@ -6,6 +6,7 @@ import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
 import { useAuthStore } from "../stores/auth";
 import SearchBar from "./SearchBar.vue";
+import NoticeBell from "./NoticeBell.vue";
 
 const repo = useRepoStore();
 const config = useConfigStore();
@@ -370,6 +371,7 @@ watch(repoName, () => {
       <Moon v-if="isDark" :size="15" :stroke-width="1.8" />
       <Sun v-else :size="15" :stroke-width="1.8" />
     </button>
+    <NoticeBell />
     <div class="help-menu-wrapper">
       <button
         ref="helpMenuTrigger"

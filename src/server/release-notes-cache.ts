@@ -7,19 +7,25 @@
  * `.repoos/` by default) — gitignored runtime state, safe to delete, never
  * committed and never a task file.
  *
- * ## Key: the commit context the draft was made from
+ * ## Key: the release-relevant commit context the draft was made from
  *
- * `releaseNotesCacheKey` compounds the two facts that decide what the notes
- * can say:
+ * `releaseNotesCacheKey` sands off everything that cannot change what the
+ * notes can say, so routine churn between clicks doesn't invalidate a draft:
  *
- * - **HEAD's full SHA** — the primary key. No new commits means the same
- *   content to summarize, which is the common retry case.
- * - **`sinceTag`** — kept because it can move while HEAD does not: tagging an
- *   ancestor reachable from HEAD changes `git describe`, i.e. the start of the
- *   `sinceTag..HEAD` range, without a new commit anywhere. Notes for the new
- *   (shorter) range would differ, so they must not hit the old entry. The
- *   converse — a tag landing *on* HEAD — empties the range, and that path
- *   returns empty notes before the cache is consulted.
+ * - **The relevant commit SHAs** — hashed (`#0605`). Commits whose file
+ *   changes all sit under the work dir are RepoOS's own task bookkeeping
+ *   (`docs(NNNN): add task`, status flips, checkpoints); they carry no
+ *   release content and land on main constantly, so keying on HEAD alone
+ *   (the #0590 scheme) re-ran the agent after every task move. The key is
+ *   now the hash of the non-bookkeeping SHAs in the range, so a
+ *   bookkeeping-only commit keeps the key — and the draft — while any
+ *   source commit makes a new one.
+ * - **`sinceTag`** — compounded outside the hash because it can move while
+ *   no commit does: tagging an ancestor reachable from HEAD changes `git
+ *   describe`, i.e. the start of the `sinceTag..HEAD` range. Notes for the
+ *   new (shorter) range would differ, so they must not hit the old entry.
+ *   The converse — a tag landing *on* HEAD — empties the range, and that
+ *   path returns empty notes before the cache is consulted.
  *
  * The requested version string is deliberately not part of the key: the draft
  * prompt asks for user-facing notes with no version heading, so the same
@@ -27,6 +33,7 @@
  * two-minute regeneration. The textarea stays freely editable either way —
  * this cache only avoids redundant generation, it never locks content.
  */
+import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
@@ -42,13 +49,20 @@ export interface ReleaseNotesCacheEntry {
 }
 
 interface ReleaseNotesCacheFile {
-  version: 1;
+  /** 2: the key moved from `head::sinceTag` to the hashed relevant SHA list (#0605). */
+  version: 2;
   entries: Record<string, ReleaseNotesCacheEntry>;
 }
 
-/** The cache key for a draft made from this commit context. */
-export function releaseNotesCacheKey(head: string, sinceTag: string | null): string {
-  return `${head}::${sinceTag ?? ""}`;
+/**
+ * The cache key for a draft made from these commits: a digest of the
+ * release-relevant SHAs (newest first; an empty list has its own stable
+ * digest, though callers never cache or consult that case) compounded with
+ * `sinceTag`.
+ */
+export function releaseNotesCacheKey(relevantShas: string[], sinceTag: string | null): string {
+  const digest = createHash("sha256").update(relevantShas.join("\n"), "utf8").digest("hex");
+  return `${digest}::${sinceTag ?? ""}`;
 }
 
 function cachePath(root: string, cacheDir: string): string {
@@ -61,8 +75,8 @@ function readCache(root: string, cacheDir: string): ReleaseNotesCacheFile | null
     const parsed = JSON.parse(
       readFileSync(cachePath(root, cacheDir), "utf8"),
     ) as Partial<ReleaseNotesCacheFile> | null;
-    if (!parsed || parsed.version !== 1 || typeof parsed.entries !== "object") return null;
-    return { version: 1, entries: parsed.entries ?? {} };
+    if (!parsed || parsed.version !== 2 || typeof parsed.entries !== "object") return null;
+    return { version: 2, entries: parsed.entries ?? {} };
   } catch {
     return null;
   }
@@ -112,7 +126,7 @@ export function writeCachedReleaseNotes(
         .sort(([, a], [, b]) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""))
         .slice(0, MAX_ENTRIES),
     );
-    const payload: ReleaseNotesCacheFile = { version: 1, entries: kept };
+    const payload: ReleaseNotesCacheFile = { version: 2, entries: kept };
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
   } catch {

@@ -815,7 +815,9 @@ const shotWarning = computed(() => (ui.active ? repo.shotWarningFor(ui.active.id
 const shotsViewerOpen = ref(false);
 const shotsViewerStart = ref(0);
 const shotsViewerShots = computed<ScreenshotShot[]>(() =>
-  taskShots.value.map((s) => ({ src: s.url, name: s.name })),
+  // #0603: the viewer's caption carries the provenance ("declared: …" /
+  // "auto: matched …"), not the raw filename.
+  taskShots.value.map((s) => ({ src: s.url, name: s.provenance || s.label || s.name })),
 );
 function openShotsViewer(index: number): void {
   shotsViewerStart.value = index;

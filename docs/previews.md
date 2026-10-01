@@ -122,10 +122,34 @@ it links the install advice).
 
 What to shoot is declarative: a task body may carry a `## Shots` section with
 a fenced JSON list (`src/core/shot-plan.ts`), one entry per capture —
-`target`, `route`, optional `selector`, a human `label`, and optional ordered
-`steps` (`click` / `fill`+`text` / `waitFor` / `waitMs`, plain CSS selectors).
-Routes and selectors only — no framework knowledge. Without a declared list
-the fallback is `/` per resolved target. An engineer-made capture pre-empts
+`target`, `route`, optional `selector`, an optional `highlight` CSS selector
+(outlines the changed element(s) in the capture, #0603), a human `label`, and
+optional ordered `steps` (`click` / `fill`+`text` / `waitFor` / `waitMs`,
+plain CSS selectors). Routes and selectors only — no framework knowledge.
+
+#0603 tightened what the automatic pass will shoot, because #0600's review
+captured an unlabeled `/` frame that showed nothing about its change (its diff
+added tests under `src/ui-app/tests/`, which the plain `src/ui-app/**` glob
+matched): test artifacts (`*.test.ts`, `*.spec.ts`, `*.snap`, `__tests__/`,
+`__snapshots__/`, and any file under a `tests/`/`test/` directory) are
+filtered out before glob matching — they are behavior evidence, not
+appearance — a docs target matched only by content files (`*.md`/`*.mdx`)
+needs a declared route, since `/` would be the docs home page rather than the
+page that changed. The fallback is NOT abolished: a diff that touches a UI
+target's paths with no declaration still gets one `/` shot per target —
+captioned `auto: matched <glob>` — but a diff whose only glob evidence is
+tests or task notes stands down with a visible skip instead of capturing a
+blind home page. The CLI keeps its `/` fallback: a human invoked it by hand.
+Declared `## Shots` resolve targets the way the CLI does (changed paths,
+then the task's `area`, then the default command), so an explicit declaration
+is honored even when the diff matches no glob; and repos whose UI is itself
+markdown-driven should know a UI-relevant `.md` change counts as content —
+declare the shot with its route. Every
+shot records its provenance in `shots.json` and the drawer — `declared:
+<label>` for a declared shot, `auto: matched <glob>` for the fallback, so
+a reviewer can tell what each capture claims to show.
+
+An engineer-made capture pre-empts
 the automatic one: shots already on disk stand down the auto pass, rather than
 duplicating or overwriting them.
 

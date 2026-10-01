@@ -1,18 +1,20 @@
 ---
+updated_at: "2026-10-01T05:22:41Z"
+review_passes: 1
 id: "0611"
 title: Row layout for task preview shots on Changes tab
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: "the opencode agent exited without output: error: Upstream request failed: Insufficient account funds"
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/row-layout-for-task-preview-shots-on-cha
+model_override: opencode-go/space-bunny-free
+review_cli_override: cursor
+review_model_override: composer-2.5
 created_at: "2026-10-01T04:34:32Z"
-updated_at: "2026-10-01T05:03:40Z"
+dev_error_count: 1
 ---
 ## Problem
 
@@ -69,6 +71,15 @@ On the task panel ui changes sections where we show the shots taken by the task 
   {"target": "default", "route": "/settings?tab=notifications", "label": "Settings: release notification toggles", "steps": []}
 ]
 
+## Shots
+
+```json
+[
+  {"target": "default", "route": "/", "label": "Task drawer Changes tab: one row per captured preview shot", "steps": [{"waitFor": ".board"}, {"waitMs": 400}]},
+  {"target": "default", "route": "/", "label": "New task screenshots: the attachment row the UI-changes rows now match", "steps": [{"click": ".new-btn"}, {"waitFor": ".shot-dropzone"}, {"waitMs": 400}]}
+]
+```
+
 ## Screenshots
 
 ![Screenshot-2026-10-01-at-12.24.16](/api/tasks/0611/attachments/screenshot-1.png)
@@ -82,5 +93,14 @@ On the task panel ui changes sections where we show the shots taken by the task 
 - 2026-10-01T04:35:12Z · status draft→inbox, title, area, body
 - 2026-10-01T04:37:48Z · status inbox→ready
 - 2026-10-01T04:37:52Z · status ready→active, branch
-- 2026-10-01T05:03:36Z · status active→review
-- 2026-10-01T05:03:40Z · needs_input
+- 2026-10-01T04:37:54Z · agent exited with an error (opencode) · error: Upstream request failed: Insufficient account funds
+- 2026-10-01T04:38:10Z · model_override
+- 2026-10-01T04:38:13Z · needs_input
+- 2026-10-01T04:58:58Z · body
+- 2026-10-01T05:03:37Z · status active→review
+- 2026-10-01T05:03:38Z · needs_input
+- 2026-10-01T05:03:48Z · note: shots: failed — capture of Task drawer Changes tab: one row per captured preview shot on "default" failed: waitFor: Timeout 5000ms exceeded.
+- 2026-10-01T05:22:08Z · review_cli_override, review_model_override
+- 2026-10-01T05:22:09Z · review_model_override
+- 2026-10-01T05:22:10Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+

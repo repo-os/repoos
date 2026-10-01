@@ -868,6 +868,7 @@ export const uploadTaskShot: RouteHandler = async (ctx, req, res, params) => {
     target?: unknown;
     route?: unknown;
     label?: unknown;
+    provenance?: unknown;
     mime?: unknown;
     name?: unknown;
     data?: unknown;
@@ -878,6 +879,9 @@ export const uploadTaskShot: RouteHandler = async (ctx, req, res, params) => {
     target,
     ...(typeof body?.route === "string" && body.route ? { route: body.route } : {}),
     ...(typeof body?.label === "string" && body.label ? { label: body.label } : {}),
+    ...(typeof body?.provenance === "string" && body.provenance
+      ? { provenance: body.provenance }
+      : {}),
     ...(typeof body?.mime === "string" && body.mime ? { mime: body.mime } : {}),
     ...(typeof body?.name === "string" && body.name ? { name: body.name } : {}),
     data: typeof body?.data === "string" ? body.data : "",

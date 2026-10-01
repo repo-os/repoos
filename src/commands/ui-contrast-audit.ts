@@ -34,6 +34,11 @@ import { c } from "../cli/colors.js";
 import { findRepoRoot, loadConfig } from "../core/config.js";
 import type { CheckThemeScope } from "../core/types.js";
 import { contrastRatio, luminance } from "./check.js";
+import { localShotStore } from "../server/shots.js";
+
+/** A 1x1 transparent PNG, base64-encoded — fixture shots the audit can caption. */
+const PNG_1PX =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
 import {
   startPreviewServer,
   launchWebkit,
@@ -605,6 +610,35 @@ function makeAuditFixture(): string {
     // git unavailable → the Changes tab shows its empty state; the audit still
     // runs, it just covers less of that screen.
   }
+  // Captured preview shots for BOTH fixture tasks (#0603 review round 2): the
+  // Changes tab then renders the real UI-changes list — one `.shot-row` per
+  // shot (#0611), each a title plus `.shot-row-detail` lines carrying the
+  // "why this shot exists" caption ("declared: …" / "auto: matched …") — so
+  // shot text is contrast-gated like everything else on the screen.
+  // (The 1x1 PNG keeps the fixture tiny; the audit reads text, not pixels.)
+  try {
+    const config = loadConfig(root);
+    for (const taskId of ["0001", "0002"]) {
+      localShotStore(config, taskId).save({
+        target: "default",
+        route: "/",
+        label: "Dashboard",
+        provenance: "declared: Dashboard",
+        data: PNG_1PX,
+        mime: "image/png",
+      });
+      localShotStore(config, taskId).save({
+        target: "default",
+        route: "/",
+        provenance: "auto: matched src/ui-app/**",
+        data: PNG_1PX,
+        mime: "image/png",
+      });
+    }
+  } catch {
+    // The shot store is disk-only and cannot realistically fail here; if it
+    // does, the Changes tab simply has no shots to audit.
+  }
   return root;
 }
 
@@ -712,6 +746,14 @@ function makeScreens(url: string): ScreenState[] {
       prepare: async (p) => {
         await openDrawer(p);
         await clickTab(p, "Changes");
+        // The fixture tasks carry captured shots (with provenance captions) so
+        // the UI-changes rows' text is contrast-gated too; the drawer fetches
+        // them asynchronously after the tab opens — wait for the fetch,
+        // best-effort (no shots → no rows to audit, same coverage as before
+        // #0603). `.shot-row` is the row itself (#0611), not one of its
+        // optional detail lines: a shot with no selector/steps still gates its
+        // title, which is the text a reviewer is guaranteed to read.
+        await waitFor(p, () => document.querySelectorAll(".shot-row").length > 0, 3000);
       },
     },
     {

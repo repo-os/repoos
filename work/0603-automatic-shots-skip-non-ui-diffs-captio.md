@@ -2,7 +2,7 @@
 id: "0603"
 title: "Automatic shots: skip non-UI diffs, caption why, support highlights"
 type: bug
-status: review
+status: done
 priority: p2
 area: [server, web]
 assigned_to: ai
@@ -10,10 +10,8 @@ created_by: ""
 branch: feat/automatic-shots-skip-non-ui-diffs-captio
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-30T13:19:31Z"
-updated_at: "2026-10-01T05:04:38Z"
+updated_at: "2026-10-01T04:47:54Z"
 review_passes: 3
-review_rounds: 2
-last_check_failure: "repoos check at 2026-09-30T19:33:05.619Z: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
 
@@ -36,26 +34,11 @@ Automatic shot capture at handoff (#0594) produces screenshots that show nothing
 - Tests: `shot-plan.test.ts` plus capture/skip cases. Any new config key needs a Settings UI control per AGENTS.md.
 - Rebuild the UI after the change.
 
-## Shots
-
-```json
-[{"target": "default", "route": "/", "label": "Dashboard after the shot-caption change", "steps": [{"waitFor": "#app"}, {"waitMs": 300}]}]
-```
-
 ## Activity
 
 - 2026-09-30T13:19:31Z · created · unknown
 - 2026-09-30T17:53:21Z · review_model_override
 - 2026-09-30T17:53:21Z · status inbox→ready
 - 2026-09-30T17:53:23Z · status ready→active, branch
-- 2026-09-30T19:08:17Z · body
 - 2026-09-30T19:47:02Z · status active→review
-- 2026-09-30T19:47:14Z · note: shots: failed — capture of Board after the shot-caption change on "default" failed: waitFor: Timeout 5000ms exceeded.
-- 2026-09-30T19:50:31Z · status review→active
-- 2026-09-30T19:56:12Z · body
-- 2026-09-30T20:09:10Z · status active→review
-- 2026-09-30T20:09:16Z · note: shots: failed — capture of Dashboard after the shot-caption change on "default" failed: waitFor: Error: strict mode violation: locator('#app') resolved to 2 elements:
-- 2026-09-30T20:14:13Z · status review→active
-- 2026-09-30T20:33:26Z · status active→review
-- 2026-09-30T20:33:32Z · note: shots: failed — capture of Dashboard after the shot-caption change on "default" failed: waitFor: Error: strict mode violation: locator('#app') resolved to 2 elements:
-- 2026-10-01T05:04:38Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
+- 2026-10-01T04:47:54Z · status review→done, release:success
