@@ -23,4 +23,5 @@ delete process.env.REPOOS_CHECK_CHANGED;
  */
 delete process.env.REPOOS_CHECK_STORE_ROOT;
 delete process.env.REPOOS_CHECK_PHASE;
+delete process.env.REPOOS_CHECK_TASK_ID;
 delete process.env.REPOOS_TASK_ID;
