@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/task-dependencies-block-dispatch-until-u
 created_at: "2026-10-01T11:04:57Z"
-updated_at: "2026-10-01T14:31:28Z"
+updated_at: "2026-10-01T14:42:53Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 1
@@ -73,3 +73,4 @@ Relevant code: `src/server/auto-engineering.ts` (ready filter), `src/core/types.
 - 2026-10-01T14:30:00Z · status active→review
 - 2026-10-01T14:30:00Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-01T14:31:28Z · status review→active
+- 2026-10-01T14:42:53Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
