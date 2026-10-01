@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-01T09:15:34Z"
+review_passes: 2
 id: "0612"
 title: Align detected-agent driver column and compatibility icons
 type: feature
@@ -9,9 +11,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/align-detected-agent-driver-column-and-c
 created_at: "2026-10-01T09:01:31Z"
-updated_at: "2026-10-01T09:14:46Z"
 review_rounds: 1
-review_passes: 1
 ---
 ## Shots
 
@@ -40,3 +40,4 @@ Align the info/question mark/check icon to come right after the "repoos driver" 
 - 2026-10-01T09:10:29Z · body
 - 2026-10-01T09:14:46Z · status active→review
 - 2026-10-01T09:14:46Z · note: shots: skipped — 2 shots already captured — an engineer-made capture pre-empts the automatic one
+
