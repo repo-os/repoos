@@ -34,3 +34,4 @@ When the caller passes a positional route (or `--selector`), the CLI's plan shou
 - 2026-10-01T07:00:35Z · status ready→active, branch
 - 2026-10-01T07:21:39Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-01T07:58:18Z · status active→review
+- 2026-10-01T07:58:18Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
