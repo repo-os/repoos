@@ -63,7 +63,9 @@ describe("pi invocation shapes", () => {
     const { cmd, args } = pmCommand(agent(), "author the body", "/tmp/wt");
     expect(cmd).toBe("pi");
     expect(args).toContain("--tools");
-    expect(args[args.indexOf("--tools") + 1]).toBe("read,grep,find,ls");
+    // pi's only read-only built-in tool is `read`; the others (bash/edit/write)
+    // must not be in the allowlist.
+    expect(args[args.indexOf("--tools") + 1]).toBe("read");
   });
 });
 

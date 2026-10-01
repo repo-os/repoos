@@ -3658,13 +3658,13 @@ export function pmCommand(
     return { cmd: "crush", args: ["run", "--quiet", ...extra, prompt] };
   }
   if (agent.cli === "pi") {
-    // pi has no read-only mode, but `--tools` restricts a run to the read-only
-    // discovery tools, so the PM can inspect the repo yet cannot write files or
-    // run commands. JSONL output carries its final answer and usage to
-    // extractOneShotReportText / extractUsage.
+    // pi's built-in tools are read/bash/edit/write; `--tools read` is the only
+    // read-only allowlist that is actually valid, so the PM can inspect files
+    // yet cannot write them or run commands. JSONL output carries its final
+    // answer and usage to extractOneShotReportText / extractUsage.
     return {
       cmd: "pi",
-      args: ["--mode", "json", "--tools", "read,grep,find,ls", ...extra, prompt],
+      args: ["--mode", "json", "--tools", "read", ...extra, prompt],
     };
   }
   // opencode: `--format json` separates the final answer from step-by-step
@@ -6557,6 +6557,20 @@ export class AgentRunner {
       }
       session.copilotTools = undefined;
     }
+    // Same flush for pi: a `tool_execution_start` whose `_end` never arrived
+    // (cancel/crash) still gets its card, so a call is never silently invisible.
+    if (session?.engine === "pi" && session.piTools) {
+      for (const pending of Object.values(session.piTools)) {
+        this.recordEntry(taskId, session, "out", {
+          type: "tool",
+          tool: pending.tool,
+          ...(pending.input ? { input: pending.input } : {}),
+          ...(pending.output !== undefined ? { output: pending.output } : {}),
+          ...(pending.state && pending.state !== "running" ? { state: pending.state } : {}),
+        });
+      }
+      session.piTools = undefined;
+    }
     // Fold the finished turn's wall time into the running total (0080) — the
     // time-spent counter accumulates across turns rather than resetting each
     // time a follow-up message starts a fresh process.
@@ -6892,6 +6906,7 @@ export class AgentRunner {
           "cursor",
           "antigravity",
           "crush",
+          "pi",
           "plain",
         ].includes(value.engine as string) ||
         typeof value.updatedAt !== "string" ||
