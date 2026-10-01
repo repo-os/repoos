@@ -42,3 +42,4 @@ A test that sets `REPOOS_CHECK_STORE_ROOT` to another directory and asserts that
 - 2026-10-01T07:37:11Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-10-01T07:39:53Z · needs_input
 - 2026-10-01T07:51:13Z · status active→review
+- 2026-10-01T07:51:13Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
