@@ -611,9 +611,10 @@ function makeAuditFixture(): string {
     // runs, it just covers less of that screen.
   }
   // Captured preview shots for BOTH fixture tasks (#0603 review round 2): the
-  // Changes tab then renders the real shot grid — `.shot-name` captions and
-  // the `.shot-provenance` reason lines ("declared: …" / "auto: matched …") —
-  // so shot-caption text is contrast-gated like everything else on the screen.
+  // Changes tab then renders the real UI-changes list — one `.shot-row` per
+  // shot (#0611), each a title plus `.shot-row-detail` lines carrying the
+  // "why this shot exists" caption ("declared: …" / "auto: matched …") — so
+  // shot text is contrast-gated like everything else on the screen.
   // (The 1x1 PNG keeps the fixture tiny; the audit reads text, not pixels.)
   try {
     const config = loadConfig(root);
@@ -746,10 +747,13 @@ function makeScreens(url: string): ScreenState[] {
         await openDrawer(p);
         await clickTab(p, "Changes");
         // The fixture tasks carry captured shots (with provenance captions) so
-        // the shot grid's text is contrast-gated too; the drawer fetches them
-        // asynchronously after the tab opens — wait for the fetch, best-effort
-        // (no shots → no captions to audit, same coverage as before #0603).
-        await waitFor(p, () => document.querySelectorAll(".shot-provenance").length > 0, 3000);
+        // the UI-changes rows' text is contrast-gated too; the drawer fetches
+        // them asynchronously after the tab opens — wait for the fetch,
+        // best-effort (no shots → no rows to audit, same coverage as before
+        // #0603). `.shot-row` is the row itself (#0611), not one of its
+        // optional detail lines: a shot with no selector/steps still gates its
+        // title, which is the text a reviewer is guaranteed to read.
+        await waitFor(p, () => document.querySelectorAll(".shot-row").length > 0, 3000);
       },
     },
     {
