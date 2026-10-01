@@ -129,6 +129,15 @@ export function normalizeSectionHeading(heading: string): string {
   return `## ${trimmed}`;
 }
 
+/**
+ * True for a single second-level heading line. Text that itself starts with
+ * `#` is rejected: `normalizeSectionHeading("### Foo")` would otherwise yield
+ * `## ### Foo`, a mangled heading instead of the deeper one the caller meant.
+ */
+export function isSectionHeading(heading: string): boolean {
+  return /^## [^#\s][^\r\n]*$/.test(heading);
+}
+
 export function removeSection(body: string, heading: string): string {
   const lines = body.split("\n");
   const start = sectionStart(lines, heading);
@@ -149,8 +158,8 @@ export function removeSection(body: string, heading: string): string {
  */
 export function replaceSection(body: string, heading: string, content: string): string {
   const normalizedHeading = normalizeSectionHeading(heading);
-  if (!/^## [^\r\n]+$/.test(normalizedHeading)) {
-    throw new Error("section heading must be a single ## heading");
+  if (!isSectionHeading(normalizedHeading)) {
+    throw new Error("section heading must be a single ## heading (not ### or deeper)");
   }
   if (normalizedHeading === ACTIVITY_HEADING) {
     throw new Error("## Activity is append-only and cannot be edited as a section");

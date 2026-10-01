@@ -319,6 +319,25 @@ ${"Substantive notes that are long enough to avoid the short-body heuristic. ".r
     }
   });
 
+  it("rejects a ### section heading with a client error (#0613)", async () => {
+    const fx = makeFixture("active");
+    try {
+      const originalBody = readTaskFile(fx).body;
+      const { res, fake } = makeRes();
+      await patchTask(
+        makeCtx(fx),
+        makeReq({ section: { heading: "### Foo", content: "x" } }),
+        res,
+        { param1: "0558" },
+      );
+      expect(fake.status).toBe(400);
+      expect((fake.payload as { error: string }).error).toContain("single ## heading");
+      expect(readTaskFile(fx).body).toBe(originalBody);
+    } finally {
+      fx.clean();
+    }
+  });
+
   it("returns a client error for a malformed section patch", async () => {
     const fx = makeFixture("active");
     try {
