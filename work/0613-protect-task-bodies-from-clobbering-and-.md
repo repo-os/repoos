@@ -3,9 +3,6 @@ id: "0613"
 title: Protect task bodies from clobbering and tighten shot capture
 type: feature
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -86,3 +83,4 @@ Follow-up to #0612: add a section-replace/append form for task bodies (so declar
 - 2026-10-01T14:34:35Z · needs_input
 - 2026-10-01T14:50:24Z · cli_override, model_override
 - 2026-10-01T14:50:35Z · status review→active
+- 2026-10-01T14:50:35Z · needs_input
