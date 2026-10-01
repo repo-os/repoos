@@ -207,9 +207,13 @@ export const KNOWN_AGENTS: KnownAgent[] = [
   {
     id: "pi",
     name: "pi",
+    cli: "pi",
     binary: "pi",
-    drivable: false,
+    drivable: true,
     installHint: "npm i -g @earendil-works/pi-coding-agent",
+    authHint:
+      "Run `pi` once to sign in, or configure provider credentials; `pi auth check` reports readiness.",
+    capability: "Strict JSONL event stream, documented session resume, and no approval prompts",
   },
   {
     id: "cursor",

@@ -62,6 +62,34 @@ process.stdout.write("unknown subcommand: " + args[0] + "\\n");
 process.exit(1);
 `;
 
+const FAKE_PI = `#!/usr/bin/env node
+// Fixture pi binary for the adapter contract suite. pi streams strict JSONL in
+// --mode json (session header, message, tool, usage events), lists models with
+// --list-models, and does not prompt for approval in a non-interactive run.
+// Cancellation probes SIGTERM, which node handles by terminating immediately.
+const fs = require("fs");
+const log = process.env.REPOOS_CONTRACT_LOG;
+const args = process.argv.slice(2);
+if (log) {
+  try { fs.appendFileSync(log, JSON.stringify(args) + "\\n"); } catch {}
+}
+if (args.includes("--version")) { process.stdout.write("0.99.2\\n"); process.exit(0); }
+if (args.includes("--help")) { process.stdout.write("Usage: pi [options] [messages...]\\n\\nOptions: --mode, --print, --session\\n"); process.exit(0); }
+if (args.includes("--list-models")) { process.stdout.write("google/gemini-2.5-pro\\nanthropic/claude-sonnet-4\\n"); process.exit(0); }
+if (args.includes("--mode")) {
+  process.stdout.write(JSON.stringify({ type: "session", version: 3, id: "sess-123" }) + "\\n");
+  process.stdout.write(JSON.stringify({ type: "turn_start" }) + "\\n");
+  process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_delta", delta: "OK" } }) + "\\n");
+  process.stdout.write(JSON.stringify({ type: "message_end", message: { role: "assistant", content: [{ type: "text", text: "OK" }] } }) + "\\n");
+  process.stdout.write(JSON.stringify({ type: "turn_end" }) + "\\n");
+  // Stay alive briefly so the cancellation probe can SIGTERM us mid-run.
+  setTimeout(() => process.exit(0), 1000);
+  return;
+}
+process.stdout.write("unknown subcommand: " + args[0] + "\\n");
+process.exit(1);
+`;
+
 interface Fixture {
   bin: string;
   dir: string;
@@ -89,6 +117,20 @@ function makeCrushFixture(): Fixture {
   const dir = mkdtempSync(join(tmpdir(), "repoos-contract-crush-"));
   const bin = join(dir, "crush");
   writeFileSync(bin, FAKE_CRUSH, { mode: 0o755 });
+  const fx: Fixture = {
+    bin,
+    dir,
+    log: join(dir, "argv.log"),
+    clean: () => rmSync(dir, { recursive: true, force: true }),
+  };
+  fixtures.push(fx);
+  return fx;
+}
+
+function makePiFixture(): Fixture {
+  const dir = mkdtempSync(join(tmpdir(), "repoos-contract-pi-"));
+  const bin = join(dir, "pi");
+  writeFileSync(bin, FAKE_PI, { mode: 0o755 });
   const fx: Fixture = {
     bin,
     dir,
@@ -199,6 +241,45 @@ describe("adapter contract suite", () => {
     // session-continuation is a documented skip, so the probe never resumes; the
     // real driver's resume shape is asserted in agent-drivers.test.ts.
     expect(argv.some((args) => args[0] === "run" && args.includes("--session"))).toBe(false);
+  });
+
+  it("passes every seam against a deterministic fixture pi binary", async () => {
+    const fx = makePiFixture();
+    process.env.REPOOS_CONTRACT_LOG = fx.log;
+    const result = await runAdapterContract({ cli: "pi", bin: fx.bin, mode: "fixture" });
+    delete process.env.REPOOS_CONTRACT_LOG;
+
+    expect(result.passed).toBe(true);
+    expect(result.evidence).toContain("adapter contract suite passed 8/8");
+    expect(result.detectedVersion).toEqual([0, 99, 2]);
+    const byId = new Map(result.capabilities.map((c) => [c.id, c]));
+    for (const cap of result.capabilities) {
+      expect(cap.ok, `${cap.id} should pass: ${cap.detail}`).toBe(true);
+    }
+    // pi's JSONL stream is first-class: structured events and session
+    // continuation are real probes, not skips.
+    expect(byId.get("structured-events")?.ok).toBe(true);
+    expect(byId.get("session-continuation")?.ok).toBe(true);
+    // Auto-approval is a property of the non-interactive mode, not a flag.
+    expect(byId.get("auto-permissions")?.detail).toMatch(/accepts no bypass flag/);
+  });
+
+  it("drives pi's documented invocation shapes (--mode json, --list-models, --session)", async () => {
+    const fx = makePiFixture();
+    process.env.REPOOS_CONTRACT_LOG = fx.log;
+    await runAdapterContract({ cli: "pi", bin: fx.bin, mode: "fixture" });
+    delete process.env.REPOOS_CONTRACT_LOG;
+
+    const argv = readSpawnLog(fx);
+    const firstRun = argv.find((args) => args.includes("--mode") && !args.includes("--session"));
+    expect(firstRun).toBeDefined();
+    expect(firstRun).toContain("json");
+    const resume = argv.find((args) => args.includes("--session"));
+    expect(resume).toBeDefined();
+    expect(resume).toContain("sess-123");
+    expect(argv.some((args) => args.includes("--list-models"))).toBe(true);
+    expect(argv.some((args) => args.includes("--version"))).toBe(true);
+    expect(argv.some((args) => args.includes("--help"))).toBe(true);
   });
 
   it("reports honest per-seam failures when the harness starts but streams garbage", async () => {
