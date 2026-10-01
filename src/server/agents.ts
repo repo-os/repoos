@@ -1220,6 +1220,27 @@ function toolOutputText(output: unknown): string | undefined {
 }
 
 /**
+ * True for an opencode `text` event whose text is blank (some models emit
+ * `"\n"` parts between tool calls). `parseJsonEvent` returns null for these,
+ * which is also its "not opencode JSON" signal, so callers use this to drop
+ * the line instead of echoing the raw JSON into the transcript.
+ */
+export function isBlankOpencodeTextEvent(raw: string): { sessionID?: string } | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (typeof parsed !== "object" || parsed === null) return null;
+  const ev = parsed as OpenCodeEvent;
+  if (ev.type !== "text") return null;
+  const text = ev.part?.text;
+  if (typeof text !== "string" || text.trim()) return null;
+  return { sessionID: typeof ev.sessionID === "string" && ev.sessionID ? ev.sessionID : undefined };
+}
+
+/**
  * Parse one line of opencode's `--format json` stream into a structured
  * transcript entry. Returns null for malformed lines and for event types we
  * don't surface (session-id, title, reasoning, …) — callers fall back to the
@@ -5273,6 +5294,14 @@ export class AgentRunner {
     }
 
     const parsed = stream === "out" && session.engine === "opencode" ? parseJsonEvent(raw) : null;
+    if (!parsed && stream === "out" && session.engine === "opencode") {
+      const blank = isBlankOpencodeTextEvent(raw);
+      if (blank) {
+        if (blank.sessionID && !session.sessionId) session.sessionId = blank.sessionID;
+        this.lineTouched(taskId, session, raw);
+        return;
+      }
+    }
     let entry: AgentOutputEntry;
     if (parsed) {
       if (parsed.sessionID && !session.sessionId) session.sessionId = parsed.sessionID;
