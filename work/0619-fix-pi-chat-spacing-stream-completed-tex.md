@@ -2,18 +2,18 @@
 id: "0619"
 title: "Fix pi chat spacing: stream completed text blocks, not per-token deltas"
 type: bug
-status: ready
+status: active
 priority: p2
 area: server
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/fix-pi-chat-spacing-stream-completed-tex
 cli_override: pi
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-01T18:46:44Z"
-updated_at: "2026-10-01T18:47:46Z"
+updated_at: "2026-10-01T18:47:47Z"
 ---
 ## Symptom
 
@@ -99,3 +99,4 @@ Stream at *completed text block* granularity instead of per token:
 - 2026-10-01T18:47:38Z · model_override
 - 2026-10-01T18:47:44Z · review_cli_override, review_model_override
 - 2026-10-01T18:47:46Z · status inbox→ready
+- 2026-10-01T18:47:47Z · status ready→active, branch
