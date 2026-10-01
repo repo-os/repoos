@@ -32,8 +32,10 @@ On the task panel ui changes sections where we show the shots taken by the task 
 ## Screenshots
 
 ![Screenshot-2026-10-01-at-12.24.16](/api/tasks/0611/attachments/screenshot-1.png)
+![Screenshot-2026-09-30-at-20.53.22](/api/tasks/0611/attachments/screenshot-2.png)
 
 ## Activity
 
 - 2026-10-01T04:34:32Z · created · hello@repoos.org
+- 2026-10-01T04:34:34Z · screenshots
 - 2026-10-01T04:34:34Z · screenshots
