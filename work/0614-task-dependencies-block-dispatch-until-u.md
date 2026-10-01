@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-01T14:31:28Z"
+review_passes: 2
 id: "0614"
 title: "Task dependencies: block dispatch until upstream tasks are merged to main"
 type: feature
@@ -9,11 +11,9 @@ assigned_to: ai
 created_by: ""
 branch: feat/task-dependencies-block-dispatch-until-u
 created_at: "2026-10-01T11:04:57Z"
-updated_at: "2026-10-01T14:30:00Z"
 handoff_signal_retry_count: 1
 last_check_failure: "repoos check at 2026-10-01T13:01:23.886Z: server-side finalization timed out (deadline exceeded)"
 review_rounds: 1
-review_passes: 1
 ---
 ## Problem
 
@@ -72,3 +72,4 @@ Relevant code: `src/server/auto-engineering.ts` (ready filter), `src/core/types.
 - 2026-10-01T14:16:38Z · status review→active
 - 2026-10-01T14:30:00Z · status active→review
 - 2026-10-01T14:30:00Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+
