@@ -388,6 +388,12 @@ interface Session {
     string,
     { tool: string; input?: string; output?: string; state?: "running" | "completed" | "error" }
   >;
+  /**
+   * pi stream only: whether the current assistant message's text was already
+   * streamed via `message_update` deltas, so the authoritative `message_end`
+   * text is not recorded a second time. Reset at each `message_end`.
+   */
+  piStreamedText?: boolean;
   /** The first permission denial seen this turn (detectPermissionDenial). */
   permissionDenial?: string;
   /**
@@ -1214,6 +1220,7 @@ interface PiEvent {
   /** The session header (`{"type":"session",…,"id":"<uuid>"}`). */
   id?: unknown;
   usage?: unknown;
+  assistantMessageEvent?: unknown;
   message?: { role?: unknown; content?: unknown; usage?: unknown; errorMessage?: unknown };
   toolCallId?: unknown;
   toolName?: unknown;
@@ -1270,6 +1277,10 @@ function piToolText(value: unknown): string | undefined {
 export interface PiParseResult {
   entry?: AgentOutputEntry;
   sessionID?: string;
+  /** A live `message_update` text delta (streaming transcript only). */
+  delta?: string;
+  /** True when this line is an assistant `message_end` (authoritative text). */
+  messageEnd?: boolean;
   toolEvent?: {
     phase: "start" | "partial" | "complete";
     id: string;
@@ -1308,20 +1319,32 @@ export function parsePiEvent(raw: string): PiParseResult | null {
       const id = typeof ev.id === "string" && ev.id ? ev.id : undefined;
       return id ? { sessionID: id } : {};
     }
+    case "message_update": {
+      // Live streaming: a text delta becomes a transcript text entry so long
+      // responses render as they arrive. The authoritative whole message also
+      // arrives at `message_end`; `appendPiLine` drops that duplicate when a
+      // delta was already streamed. `parseOneShotLine` ignores `delta` and uses
+      // the full `message_end` text, so one-shot report extraction is intact.
+      const inner = ev.assistantMessageEvent as Record<string, unknown> | undefined;
+      if (inner?.type === "text_delta" && typeof inner.delta === "string" && inner.delta) {
+        return { delta: inner.delta };
+      }
+      return {};
+    }
     case "message_end": {
       const msg = ev.message;
-      if (!msg || typeof msg !== "object") return {};
+      if (!msg || typeof msg !== "object") return { messageEnd: true };
       const role = typeof msg.role === "string" ? msg.role : "";
       // User echoes, tool-result messages, and empty assistant turns are
       // voiceless — swallowed, never dumped as raw JSON.
-      if (role && role !== "assistant") return {};
+      if (role && role !== "assistant") return { messageEnd: true };
       const text = piMessageText(msg.content);
-      if (text) return { entry: { type: "text", text } };
+      if (text) return { entry: { type: "text", text }, messageEnd: true };
       // A failed assistant turn carries no content but an `errorMessage`
       // (e.g. a provider auth error). Surface it as a system line so a run
       // that produced nothing still says why, rather than looking empty.
       const error = typeof msg.errorMessage === "string" ? msg.errorMessage.trim() : "";
-      return error ? { entry: { type: "sys", d: error } } : {};
+      return { ...(error ? { entry: { type: "sys", d: error } } : {}), messageEnd: true };
     }
     case "tool_execution_start": {
       const id = typeof ev.toolCallId === "string" ? ev.toolCallId : "";
@@ -1356,16 +1379,14 @@ export function parsePiEvent(raw: string): PiParseResult | null {
         },
       };
     }
-    // Recognized-but-voiceless lifecycle: streaming deltas (authoritative text
-    // arrives at message_end), turn/agent boundaries, queue and compaction
-    // notices. Swallow them so the transcript stays readable.
+    // Recognized-but-voiceless lifecycle: turn/agent boundaries, queue and
+    // compaction notices. Swallow them so the transcript stays readable.
     case "agent_start":
     case "agent_end":
     case "agent_settled":
     case "turn_start":
     case "turn_end":
     case "message_start":
-    case "message_update":
     case "queue_update":
     case "thinking_level_changed":
     case "session_info_changed":
@@ -2726,6 +2747,18 @@ function modelArgs(cli: string, model: string): string[] {
     if (tier) return ["--model", "auto", "--auto-tier", tier];
   }
   if (!model || model === "default") return [];
+  if (cli === "pi") {
+    // pi selects a provider and a model separately: `--provider <name> --model
+    // <id>`. A RepoOS model id is provider-qualified (`provider/model`, e.g.
+    // `openrouter/openai/gpt-6-luna`), so split the first segment into the
+    // provider and pass the remainder as the model id. A bare id (no slash) is
+    // passed through as `--model` alone, letting pi use its default provider.
+    const slash = model.indexOf("/");
+    if (slash > 0 && slash < model.length - 1) {
+      return ["--provider", model.slice(0, slash), "--model", model.slice(slash + 1)];
+    }
+    return ["--model", model];
+  }
   return ["--model", model];
 }
 
@@ -5841,6 +5874,22 @@ export class AgentRunner {
           state: merged.state,
         });
       }
+    } else if (parsed.delta) {
+      // Live streaming: render each text delta as it arrives. The full message
+      // still arrives at message_end; it is dropped below when deltas streamed.
+      session.piStreamedText = true;
+      this.recordEntry(taskId, session, "out", { type: "text", text: parsed.delta });
+    } else if (parsed.messageEnd) {
+      if (parsed.entry) {
+        // applySignals always runs on the authoritative whole message: a
+        // handoff/preview signal split across deltas is only whole here.
+        const surfaced = this.applySignals(taskId, raw, parsed.entry, session);
+        // Record the text only when it was not already streamed as deltas. A
+        // signal's confirmation line is likewise skipped in that case — the
+        // request itself was still recorded by applySignals above.
+        if (!session.piStreamedText) this.recordEntry(taskId, session, "out", surfaced);
+      }
+      session.piStreamedText = false;
     } else if (parsed.entry) {
       this.recordEntry(
         taskId,
