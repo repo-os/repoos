@@ -32,7 +32,7 @@ const dashLabel = (status: string) => {
   // otherwise keep the original dashboard label.
   const configured = labels.value[status];
   const boardDefaults: Record<string, string> = {
-    draft: "Proposed / Drafts",
+    draft: "Draft",
     inbox: "Inbox",
     ready: "Ready",
     active: "Active",
