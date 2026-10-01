@@ -2,14 +2,14 @@
 id: "0606"
 title: Notice feed and top-bar bell for release events
 type: feature
-status: review
+status: done
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: ""
 branch: feat/notice-feed-and-top-bar-bell-for-release
 created_at: "2026-09-30T13:43:10Z"
-updated_at: "2026-09-30T18:53:48Z"
+updated_at: "2026-10-01T04:43:49Z"
 ---
 ## Problem
 Long-running release work (notes drafting ~1-3 min, cut ~5 min) finishes while the user is elsewhere and nothing tells them. The mission control 'Needs your attention' list (`NeedsYouPanel.vue`, `humanNeeds` in `src/ui-app/src/stores/repo.ts`) is task-only, and the browser-notification store (`src/ui-app/src/stores/notifications.ts`) only knows the task types review/paused/stuck/needsInput.
@@ -33,3 +33,4 @@ Store tests for notice creation/dedup/dismiss, bell badge count, and that a fini
 - 2026-09-30T17:55:55Z · status inbox→ready
 - 2026-09-30T17:55:58Z · status ready→active, branch
 - 2026-09-30T18:53:48Z · status active→review
+- 2026-10-01T04:43:49Z · status review→done, release:success
