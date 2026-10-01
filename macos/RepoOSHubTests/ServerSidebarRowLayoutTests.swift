@@ -2,69 +2,33 @@ import XCTest
 @testable import RepoOSHub
 
 final class ServerSidebarRowLayoutTests: XCTestCase {
-    func testWideRowUsesStandardLayout() {
-        let badgesWidth = ServerSidebarRowLayout.badgesWidth(snapshot: snapshot(review: 2, needsInput: 1))
-        let minimum = ServerSidebarRowLayout.standardLayoutMinimumWidth(badgesWidth: badgesWidth)
-        let form = ServerSidebarRowLayout.layoutForm(
-            availableWidth: minimum + 20,
-            badgesWidth: badgesWidth
-        )
-        XCTAssertEqual(form, .standard)
-    }
-
-    func testNarrowRowUsesCompactLayout() {
-        let badgesWidth = ServerSidebarRowLayout.badgesWidth(snapshot: snapshot(review: 2, needsInput: 1))
-        let minimum = ServerSidebarRowLayout.standardLayoutMinimumWidth(badgesWidth: badgesWidth)
-        let form = ServerSidebarRowLayout.layoutForm(
-            availableWidth: minimum - 20,
-            badgesWidth: badgesWidth
-        )
-        XCTAssertEqual(form, .compact)
-    }
-
-    func testHysteresisKeepsCompactUntilWideEnough() {
-        let badgesWidth: CGFloat = 40
-        let minimum = ServerSidebarRowLayout.standardLayoutMinimumWidth(badgesWidth: badgesWidth)
-        let justBelowMinimum = minimum - 1
+    func testMinimumRowWidthReservesLeadingChromeAndNameOnly() {
+        let minimum = ServerSidebarRowLayout.minimumRowWidth()
         XCTAssertEqual(
-            ServerSidebarRowLayout.layoutForm(
-                availableWidth: justBelowMinimum,
-                badgesWidth: badgesWidth,
-                previousForm: .compact
-            ),
-            .compact
-        )
-        XCTAssertEqual(
-            ServerSidebarRowLayout.layoutForm(
-                availableWidth: minimum + ServerSidebarRowLayout.decisionHysteresis - 1,
-                badgesWidth: badgesWidth,
-                previousForm: .compact
-            ),
-            .compact
-        )
-        XCTAssertEqual(
-            ServerSidebarRowLayout.layoutForm(
-                availableWidth: minimum + ServerSidebarRowLayout.decisionHysteresis,
-                badgesWidth: badgesWidth,
-                previousForm: .compact
-            ),
-            .standard
+            minimum,
+            ServerSidebarRowLayout.leadingChromeWidth() + ServerSidebarRowLayout.minimumNameWidth
         )
     }
 
-    func testBadgeDigitChangeWithinHysteresisDoesNotFlipStandardLayout() {
-        let narrowBadge = ServerSidebarRowLayout.badgesWidth(snapshot: snapshot(review: 9))
-        let wideBadge = ServerSidebarRowLayout.badgesWidth(snapshot: snapshot(review: 10))
-        XCTAssertGreaterThan(wideBadge, narrowBadge)
+    func testBadgesWidthUsesInfoAffordanceWhenNoCounts() {
+        let width = ServerSidebarRowLayout.badgesWidth(snapshot: nil)
+        XCTAssertEqual(width, 14)
+    }
 
-        let availableWidth = ServerSidebarRowLayout.standardLayoutMinimumWidth(badgesWidth: narrowBadge) - 4
+    func testBadgesWidthGrowsWithMultipleBadges() {
+        let one = ServerSidebarRowLayout.badgesWidth(snapshot: snapshot(review: 2))
+        let three = ServerSidebarRowLayout.badgesWidth(snapshot: snapshot(review: 2, needsInput: 1, activeAgents: 3))
+        XCTAssertGreaterThan(three, one)
+    }
+
+    func testMinimumRowWidthIgnoresBadgeWidth() {
+        let manyBadges = ServerSidebarRowLayout.badgesWidth(
+            snapshot: snapshot(review: 10, needsInput: 10, activeAgents: 10)
+        )
+        XCTAssertGreaterThan(manyBadges, ServerSidebarRowLayout.badgesWidth(snapshot: nil))
         XCTAssertEqual(
-            ServerSidebarRowLayout.layoutForm(
-                availableWidth: availableWidth,
-                badgesWidth: wideBadge,
-                previousForm: .standard
-            ),
-            .standard
+            ServerSidebarRowLayout.minimumRowWidth(),
+            ServerSidebarRowLayout.leadingChromeWidth() + ServerSidebarRowLayout.minimumNameWidth
         )
     }
 
