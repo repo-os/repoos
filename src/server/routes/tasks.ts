@@ -755,7 +755,24 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
     // does not. Anything that wrote `status: review` here would be exactly the
     // unchecked route this task closed.
     const skipChecks = body.skipChecks === true;
-    const result = ctx.startUnifiedHandoff(existing, {
+    // Everything else in the body still applies (title, priority, assignee…),
+    // minus the status itself, which the finalization owns. Apply it BEFORE the
+    // fire-and-forget handoff starts: `patchTaskFile` can reject a body (the
+    // spec-heading guard, #0613), and a rejected request must not leave a
+    // handoff running against the old body.
+    const { status: _status, skipChecks: _skip, origin: _origin, ...rest } = body;
+    const updated = Object.keys(rest).length
+      ? patchTaskFile(config, existing.absPath, rest, { onStatusChange: onServerStatusChange })
+      : existing;
+    if (updated !== existing) index.applyFileChange(updated.absPath, { guarded: true });
+    if (rest.body !== undefined || rest.section !== undefined) {
+      const current = index.getTask(updated.id);
+      if (current) {
+        const flagged = flagUnderspecifiedIfNeeded(config, current);
+        if (flagged) index.applyFileChange(flagged.absPath, { guarded: true });
+      }
+    }
+    const result = ctx.startUnifiedHandoff(index.getTask(updated.id) ?? updated, {
       origin: body.origin === "board-drag" ? "board-drag" : "ui-review",
       skipChecks,
       actor: getCurrentUser(req, config)?.email ?? "human",
@@ -764,20 +781,6 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
       return json(res, 409, {
         error: `Cannot move task #${existing.id} to review: ${result.reason}`,
       });
-    }
-    // Everything else in the body still applies (title, priority, assignee…),
-    // minus the status itself, which the finalization owns.
-    const { status: _status, skipChecks: _skip, origin: _origin, ...rest } = body;
-    const updated = Object.keys(rest).length
-      ? patchTaskFile(config, existing.absPath, rest, { onStatusChange: onServerStatusChange })
-      : existing;
-    index.applyFileChange(updated.absPath, { guarded: true });
-    if (rest.body !== undefined || rest.section !== undefined) {
-      const current = index.getTask(updated.id);
-      if (current) {
-        const flagged = flagUnderspecifiedIfNeeded(config, current);
-        if (flagged) index.applyFileChange(flagged.absPath, { guarded: true });
-      }
     }
     return json(res, 202, { ...index.getTask(updated.id), pendingHandoff: true });
   }
