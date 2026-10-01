@@ -730,7 +730,8 @@ else process.stdout.write(${JSON.stringify(needsWorkReport)} + "\\n");
       writeFileSync(task.absPath, before.replace(/^---\n/, "---\nreview_rounds: 2\n"));
       await requestReview(server, task.id, task.absPath);
       await waitFor(
-        () => /^needs_input: true$/m.test(readFileSync(task.absPath, "utf8")),
+        () =>
+          /^needs_input_reason: review-rounds-exhausted$/m.test(readFileSync(task.absPath, "utf8")),
         "needs_input is raised when the round cap is hit",
       );
       const taskFile = readFileSync(task.absPath, "utf8");

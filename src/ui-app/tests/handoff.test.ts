@@ -22,7 +22,7 @@ function git(cwd: string, args: string[]): string {
   return execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
 }
 
-function taskText(status: string): string {
+function taskText(status: string, extraFrontmatter = ""): string {
   return `---
 id: "0001"
 title: Handoff fixture
@@ -32,19 +32,19 @@ priority: p2
 area: agent
 assigned_to: ai
 branch: feat/handoff
----
+${extraFrontmatter}---
 Body
 `;
 }
 
-function makeFixture(checkExit = 0): Fixture {
+function makeFixture(checkExit = 0, extraFrontmatter = ""): Fixture {
   const root = mkdtempSync(join(tmpdir(), "repoos-handoff-"));
   const worktree = `${root}-wt`;
   const bin = join(root, "fake-bin");
   const taskPath = join(root, "work", "0001-handoff.md");
   mkdirSync(join(root, "work"), { recursive: true });
   mkdirSync(bin, { recursive: true });
-  writeFileSync(taskPath, taskText("active"));
+  writeFileSync(taskPath, taskText("active", extraFrontmatter));
   writeFileSync(join(root, "source.txt"), "base\n");
   mkdirSync(join(root, "dist"), { recursive: true });
   writeFileSync(join(root, "dist", "app.js"), "built from main\n");
@@ -120,6 +120,7 @@ describe("trusted server-side handoff", () => {
       // tested is the tree that got committed — the whole point of the order.
       expect(steps).toEqual(["validate", "commit", "check", "review", "main", "done"]);
       expect(readTask(fx).status).toBe("review");
+      expect(readTask(fx).body).toContain("Task body is underspecified:");
       expect(readFileSync(join(fx.worktree, "work", "0001-handoff.md"), "utf8")).toContain(
         "status: review",
       );
@@ -129,6 +130,24 @@ describe("trusted server-side handoff", () => {
       const repeated = await handoffTask(fx.config, readTask(fx), request(fx));
       expect(repeated).toMatchObject({ ok: true, detail: "handoff was already finalized" });
       expect(Number(git(fx.worktree, ["rev-list", "--count", "HEAD"]))).toBe(count);
+    } finally {
+      process.env.PATH = oldPath;
+      fx.clean();
+    }
+  });
+
+  it("records the underspecified handoff note without replacing an unrelated needs_input reason", async () => {
+    const fx = makeFixture(0, "needs_input: true\nneeds_input_reason: dev-error\n");
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${oldPath}`;
+    try {
+      const result = await handoffTask(fx.config, readTask(fx), request(fx));
+      expect(result).toMatchObject({ ok: true, step: "done" });
+      expect(readTask(fx)).toMatchObject({
+        needsInput: true,
+        needsInputReason: "dev-error",
+      });
+      expect(readTask(fx).body).toContain("Task body is underspecified:");
     } finally {
       process.env.PATH = oldPath;
       fx.clean();

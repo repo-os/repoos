@@ -10,10 +10,19 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseTask } from "../../core/task.js";
 import type { RepoOSConfig } from "../../core/types.js";
-import { patchTask, pmMessage } from "../../server/routes/tasks.js";
+import { patchTask, pmMessage, taskAction } from "../../server/routes/tasks.js";
 import { flagUnderspecifiedIfNeeded } from "../../server/task-underspecified-flag.js";
 import type { Agent } from "../../core/types.js";
 import type { RouteContext } from "../../server/routes/types.js";
+
+vi.mock("../../core/bootstrap.js", () => ({
+  bootstrap: vi.fn(async () => ({
+    ok: false,
+    reason: "test stop after task activation",
+    durationMs: 1,
+    steps: [],
+  })),
+}));
 
 function git(cwd: string, args: string[]): string {
   return execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
@@ -110,6 +119,11 @@ const PM_AGENT: Agent = {
   enabled: true,
 };
 
+const ENGINEER_AGENT: Agent = {
+  ...PM_AGENT,
+  name: "engineer",
+};
+
 function makeCtx(
   fx: ReturnType<typeof makeFixture>,
   runnerOverrides: Record<string, unknown> = {},
@@ -119,6 +133,7 @@ function makeCtx(
     index: {
       getTask: () => readTaskFile(fx),
       applyFileChange: () => {},
+      refreshBranches: () => {},
     } as any,
     indexReady: Promise.resolve(),
     reviews: { isRunning: () => false, cancel: vi.fn() } as any,
@@ -143,7 +158,7 @@ function makeCtx(
     uiDir: null,
     reload: null,
     logger: {
-      task: () => {},
+      task: vi.fn(),
       system: () => {},
       agent: () => {},
       getTaskLogs: () => [],
@@ -155,6 +170,52 @@ function makeCtx(
     syncTaskBranch: async () => ({ ok: true, conflicts: [] }),
   };
 }
+
+describe("underspecified flag on task start (#0613)", () => {
+  it("raises the flag and logs a visible warning when an underspecified task starts", async () => {
+    const fx = makeFixture("ready", "hotfix: true\n");
+    try {
+      const ctx = makeCtx(fx);
+      ctx.config.agents = [ENGINEER_AGENT];
+      const { res, fake } = makeRes();
+      await taskAction(ctx, makeReq(), res, { param1: "0558", param2: "start" });
+      expect(fake.status).toBe(500);
+      expect(readTaskFile(fx)).toMatchObject({
+        status: "active",
+        needsInput: true,
+        needsInputReason: "underspecified",
+      });
+      expect(ctx.logger.task).toHaveBeenCalledWith(
+        "0558",
+        "warn",
+        "Task body is underspecified — needs_input raised on start",
+        expect.objectContaining({ detail: expect.any(String) }),
+      );
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("preserves an unrelated needs_input reason during start", async () => {
+    const fx = makeFixture(
+      "ready",
+      "hotfix: true\nneeds_input: true\nneeds_input_reason: dev-error\n",
+    );
+    try {
+      const ctx = makeCtx(fx);
+      ctx.config.agents = [ENGINEER_AGENT];
+      const { res } = makeRes();
+      await taskAction(ctx, makeReq(), res, { param1: "0558", param2: "start" });
+      expect(readTaskFile(fx)).toMatchObject({
+        status: "active",
+        needsInput: true,
+        needsInputReason: "dev-error",
+      });
+    } finally {
+      fx.clean();
+    }
+  });
+});
 
 describe("underspecified flag on draft exit (#0558)", () => {
   it("raises needs_input after draft → inbox and keeps the status change", async () => {
@@ -247,6 +308,22 @@ ${"Substantive notes that are long enough to avoid the short-body heuristic. ".r
       const onDisk = readTaskFile(fx);
       expect(onDisk.needsInput).toBe(true);
       expect(onDisk.needsInputReason).toBe("underspecified");
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("returns a client error for a malformed section patch", async () => {
+    const fx = makeFixture("active");
+    try {
+      const originalBody = readTaskFile(fx).body;
+      const { res, fake } = makeRes();
+      await patchTask(makeCtx(fx), makeReq({ section: "Shots" }), res, { param1: "0558" });
+      expect(fake.status).toBe(400);
+      expect((fake.payload as { error: string }).error).toContain(
+        "section must contain string heading and content fields",
+      );
+      expect(readTaskFile(fx).body).toBe(originalBody);
     } finally {
       fx.clean();
     }

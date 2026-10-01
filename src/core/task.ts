@@ -148,35 +148,23 @@ export function removeSection(body: string, heading: string): string {
  * verbatim.
  */
 export function replaceSection(body: string, heading: string, content: string): string {
-  const bodyTrimmed = body.replace(/\s+$/, "");
-
-  // Activity always lives at the end. Edit only the prefix before it so
-  // `after` never includes Activity twice (once in the slice, once in the
-  // re-attached suffix).
-  const activityStart = bodyTrimmed.lastIndexOf(`\n${ACTIVITY_HEADING}\n`);
-  let withoutActivity = bodyTrimmed;
-  let activitySuffix = "";
-  if (activityStart !== -1) {
-    withoutActivity = bodyTrimmed.slice(0, activityStart);
-    activitySuffix = bodyTrimmed.slice(activityStart);
+  const normalizedHeading = normalizeSectionHeading(heading);
+  if (!/^## [^\r\n]+$/.test(normalizedHeading)) {
+    throw new Error("section heading must be a single ## heading");
+  }
+  if (normalizedHeading === ACTIVITY_HEADING) {
+    throw new Error("## Activity is append-only and cannot be edited as a section");
   }
 
-  const lines = withoutActivity.split("\n");
-  const start = sectionStart(lines, heading);
-
-  if (start === -1) {
-    const section = `\n${heading}\n${content}`;
-    const base = withoutActivity ? `${withoutActivity}${section}` : `${heading}\n${content}`;
-    return [base, activitySuffix].filter(Boolean).join("\n\n");
-  }
-
-  const end = nextSection(lines, start + 1);
-  const before = lines.slice(0, start).join("\n").replace(/\s+$/, "");
-  const after = lines.slice(end).join("\n").replace(/^\s+/, "");
-  const rest = [before, after].filter(Boolean).join("\n\n");
-  const section = `${heading}\n${content}`;
-  const base = [rest, section].filter(Boolean).join("\n\n");
-  return activitySuffix ? `${base}\n\n${activitySuffix}` : base;
+  const lines = body.replace(/\s+$/, "").split("\n");
+  const start = sectionStart(lines, normalizedHeading);
+  const activityStart = sectionStart(lines, ACTIVITY_HEADING);
+  const insertAt = start === -1 ? (activityStart === -1 ? lines.length : activityStart) : start;
+  const end = start === -1 ? insertAt : nextSection(lines, start + 1);
+  const prefix = lines.slice(0, insertAt).join("\n").replace(/\s+$/, "");
+  const suffix = lines.slice(end).join("\n").replace(/^\s+/, "");
+  const section = `${normalizedHeading}\n${content}`;
+  return [prefix, section, suffix].filter(Boolean).join("\n\n");
 }
 
 /**

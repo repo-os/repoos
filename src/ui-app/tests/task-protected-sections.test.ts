@@ -408,6 +408,33 @@ describe("section helpers", () => {
     expect(out.indexOf("## Screenshots")).toBeLessThan(out.indexOf("## Activity"));
     expect(out).toContain("- 2026-01-01T00:00:00Z · created");
   });
+
+  it("replaces an existing section in place without reordering later sections", () => {
+    const ordered = `## Problem
+
+Problem text.
+
+## Desired UX
+
+Old UX.
+
+## Acceptance criteria
+
+- [ ] Done
+
+## Activity
+
+- 2026-01-01T00:00:00Z · created`;
+    const out = replaceSection(ordered, "Desired UX", "New UX.");
+    expect(out.indexOf("## Desired UX")).toBeLessThan(out.indexOf("## Acceptance criteria"));
+    expect(out).toContain("## Desired UX\nNew UX.");
+    expect(out).toContain("## Problem\n\nProblem text.");
+    expect(out).toContain("## Acceptance criteria\n\n- [ ] Done");
+  });
+
+  it("refuses to replace the append-only Activity section", () => {
+    expect(() => replaceSection(body, "Activity", "rewritten")).toThrow(/append-only/);
+  });
 });
 
 const WITH_SPEC = `---
@@ -472,6 +499,34 @@ describe("spec section clobber guard (#0613)", () => {
       expect(updated.body).toContain("## Shots");
       expect(updated.body).toContain("## Activity");
       expect(updated.body.split("## Activity").length - 1).toBe(1);
+    } finally {
+      clean();
+    }
+  });
+
+  it("section patch replaces an existing section without moving it", () => {
+    const { root, absPath, clean } = setupFile(WITH_SPEC);
+    try {
+      const updated = patchTaskFile(config(root), absPath, {
+        section: { heading: "Desired UX", content: "Updated UX." },
+      });
+      expect(updated.body.indexOf("## Desired UX")).toBeLessThan(
+        updated.body.indexOf("## Acceptance criteria"),
+      );
+      expect(updated.body).toContain("## Desired UX\nUpdated UX.");
+    } finally {
+      clean();
+    }
+  });
+
+  it("refuses section patches to append-only Activity", () => {
+    const { root, absPath, clean } = setupFile(WITH_SPEC);
+    try {
+      expect(() =>
+        patchTaskFile(config(root), absPath, {
+          section: { heading: "Activity", content: "rewritten log" },
+        }),
+      ).toThrow(WriteError);
     } finally {
       clean();
     }

@@ -319,10 +319,14 @@ export function patchTaskFile(
   }
   if (patch.section !== undefined && patch.section !== null) {
     // Section-level edit (#0613): replace only the named `## Section`,
-    // creating it if absent. All other sections — including `## Activity` —
-    // are preserved verbatim. Mutually exclusive with `body`.
+    // creating it if absent. All other sections are preserved verbatim;
+    // Activity is append-only. Mutually exclusive with `body`.
     const { heading, content } = patch.section;
-    const nextBody = replaceSection(current.body, normalizeSectionHeading(heading), content);
+    const normalizedHeading = normalizeSectionHeading(heading);
+    if (normalizedHeading === ACTIVITY_HEADING) {
+      throw new WriteError("## Activity is append-only and cannot be edited as a section");
+    }
+    const nextBody = replaceSection(current.body, normalizedHeading, content);
     if (nextBody !== current.body) changes.push(`body: section ${heading}`);
     current.body = nextBody;
   } else if (patch.body !== undefined) {
