@@ -2,14 +2,14 @@
 id: "0613"
 title: Protect task bodies from clobbering and tighten shot capture
 type: feature
-status: ready
+status: active
 priority: p2
 area: [core, server]
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/protect-task-bodies-from-clobbering-and-
 created_at: "2026-10-01T09:30:31Z"
-updated_at: "2026-10-01T09:35:09Z"
+updated_at: "2026-10-01T09:35:11Z"
 ---
 ## Problem
 
@@ -53,3 +53,4 @@ Follow-up to #0612: add a section-replace/append form for task bodies (so declar
 
 - 2026-10-01T09:30:31Z · created · unknown
 - 2026-10-01T09:35:09Z · status inbox→ready
+- 2026-10-01T09:35:11Z · status ready→active, branch
