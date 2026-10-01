@@ -4,10 +4,10 @@
  * retention, the env-based caller attribution, and fail-soft behavior
  * throughout — the store is for visibility, never a gate input.
  */
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
-import { realpathSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -163,6 +163,43 @@ describe("check-run store", () => {
     if (bogus.isAvailable()) return; // /proc writable? skip — fail-soft held either way
     expect(bogus.list()).toEqual([]);
     expect(() => bogus.record(row())).not.toThrow();
+  });
+
+  it("ignores REPOOS_CHECK_STORE_ROOT — an explicit root owns its rows (#0607)", () => {
+    // The store itself never reads the routing env; only callers
+    // (resolveCheckStoreRoot, recordRemoteRunHistory) do. A gate-exported
+    // STORE_ROOT must never redirect an explicitly-rooted store into the
+    // live history.
+    const other = mkdtempSync(join(tmpdir(), "repoos-checkstore-env-"));
+    dirs.push(other);
+    process.env.REPOOS_CHECK_STORE_ROOT = other;
+    try {
+      const { s } = store();
+      s.record(row());
+      expect(s.list()).toHaveLength(1);
+      expect(existsSync(join(other, ".repoos", "checks.db"))).toBe(false);
+    } finally {
+      delete process.env.REPOOS_CHECK_STORE_ROOT;
+    }
+  });
+
+  it("logs once when a history write fails instead of swallowing it (#0607)", () => {
+    const { s } = store();
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const db = (s as unknown as { db: { prepare: (sql: string) => unknown } }).db;
+      vi.spyOn(db, "prepare").mockImplementation(() => {
+        throw new Error("boom");
+      });
+      s.record(row());
+      s.record(row());
+      const hits = errSpy.mock.calls
+        .map((c) => c.map(String).join(" "))
+        .filter((m) => m.includes("check-run history write failed") && m.includes("boom"));
+      expect(hits).toHaveLength(1);
+    } finally {
+      errSpy.mockRestore();
+    }
   });
 });
 

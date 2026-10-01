@@ -26,6 +26,7 @@ let Database: any;
 let sqliteAvailable = false;
 let sqliteLoadAttempted = false;
 let warnedSqliteUnavailable = false;
+let warnedRecordFailed = false;
 // RepoOS is ESM, so the CommonJS global `require` is not available. Create a
 // local resolver for optional runtime builtins instead (same as db.ts).
 const runtimeRequire = createRequire(import.meta.url);
@@ -179,9 +180,11 @@ function clipDetail(detail: string | null | undefined): string | null {
 export class CheckStore {
   private db: any;
   private available: boolean;
+  private dbPath: string;
 
   constructor(repoRoot: string, cacheDir = ".repoos") {
     this.available = false;
+    this.dbPath = join(repoRoot, cacheDir, "checks.db");
     loadSqlite();
     if (!sqliteAvailable || !Database) return;
     try {
@@ -202,8 +205,7 @@ export class CheckStore {
       // Same rule as loadSqlite: a store that cannot open must say why once,
       // not let history vanish silently (0564 review).
       console.error(
-        `[repoos] check-run history unavailable (${join(repoRoot, cacheDir, "checks.db")}): ` +
-          `${(e as Error).message}`,
+        `[repoos] check-run history unavailable (${this.dbPath}): ` + `${(e as Error).message}`,
       );
     }
   }
@@ -256,8 +258,17 @@ export class CheckStore {
              (SELECT id FROM check_runs ORDER BY id DESC LIMIT ${MAX_ROWS})`,
         )
         .run();
-    } catch {
-      /* visibility only — never fail the gate on a store write */
+    } catch (e) {
+      // Visibility only — never fail the gate on a store write. But say so,
+      // once per process: silent history loss made #0607 hard to diagnose
+      // (fixture rows vanishing into a gate's live store with no trace).
+      if (!warnedRecordFailed) {
+        warnedRecordFailed = true;
+        console.error(
+          `[repoos] check-run history write failed (${this.dbPath}): ` +
+            `${(e as Error)?.message ?? String(e)}`,
+        );
+      }
     }
   }
 
@@ -339,9 +350,10 @@ export function getCheckStore(repoRoot: string, cacheDir = ".repoos"): CheckStor
   return store;
 }
 
-/** Reset the singleton (for tests). */
+/** Reset the singleton (for tests). Also resets the once-per-process write-failure warning so tests asserting it stay isolated. */
 export function resetCheckStore(): void {
   instances.clear();
+  warnedRecordFailed = false;
 }
 
 /**
