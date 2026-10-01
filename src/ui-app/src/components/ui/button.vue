@@ -13,6 +13,10 @@ const buttonVariants = cva(
           "border border-[var(--border-bright)] bg-[image:var(--btn-primary-bg)] text-[var(--btn-primary-color)] hover:brightness-110",
         accent:
           "border border-[var(--border-bright)] bg-[image:var(--btn-new-bg)] text-[var(--btn-new-color)] hover:brightness-110",
+        // Colored by the status the button moves a task to: callers set --tone.
+        // Text stays --txt (not the tone) so every status clears contrast in every theme.
+        status:
+          "border border-[color-mix(in_srgb,var(--tone)_55%,transparent)] bg-[color-mix(in_srgb,var(--tone)_18%,transparent)] text-[var(--txt)] hover:bg-[color-mix(in_srgb,var(--tone)_28%,transparent)] [&_svg]:text-[var(--tone)]",
         outline:
           "border border-[var(--border)] bg-[var(--panel)] text-[var(--txt)] hover:border-[var(--border-bright)]",
         ghost: "text-[var(--txt-dim)] hover:bg-[var(--nav-hover-bg)] hover:text-[var(--txt)]",

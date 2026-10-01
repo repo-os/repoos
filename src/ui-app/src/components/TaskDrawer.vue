@@ -3766,7 +3766,8 @@ watch(
             </span>
             <Button
               v-if="ui.active.status === 'draft'"
-              variant="outline"
+              variant="status"
+              :style="{ '--tone': statusColor('inbox') }"
               :disabled="ui.saving"
               @click="setStatus('inbox')"
             >
@@ -3775,7 +3776,8 @@ watch(
             </Button>
             <Button
               v-if="ui.active.status === 'inbox'"
-              variant="outline"
+              variant="status"
+              :style="{ '--tone': statusColor('ready') }"
               :disabled="ui.saving"
               @click="setStatus('ready')"
             >
@@ -3787,7 +3789,8 @@ watch(
                 (ui.active.status === 'ready' || ui.active.status === 'active') &&
                 (ui.active.status === 'ready' || !repo.isRunning(ui.active.id))
               "
-              variant="accent"
+              variant="status"
+              :style="{ '--tone': statusColor('active') }"
               :disabled="ui.saving"
               @click="startWork"
             >
@@ -3803,7 +3806,8 @@ watch(
             </Button>
             <Button
               v-if="ui.active.status === 'active' && !repo.isRunning(ui.active.id)"
-              variant="destructive"
+              variant="status"
+              :style="{ '--tone': statusColor('review') }"
               :disabled="ui.saving || handoffBusy"
               :title="
                 handoffBusy
@@ -3847,7 +3851,8 @@ watch(
             </Button>
             <Button
               v-if="ui.active.status === 'review'"
-              variant="default"
+              variant="status"
+              :style="{ '--tone': statusColor('done') }"
               :disabled="
                 ui.saving ||
                 review?.running ||
