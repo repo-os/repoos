@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct ServerSidebarView: View {
@@ -94,48 +95,18 @@ private struct SidebarEmptyHint: View {
     }
 }
 
-private struct ServerSidebarRowWidthKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
-}
-
-enum ServerSidebarRowLayoutForm: Equatable {
-    case standard
-    case compact
-}
-
 enum ServerSidebarRowLayout {
     static let columnSpacing: CGFloat = 10
     static let iconColumnWidth: CGFloat = 34
-    static let minimumNameWidthStandard: CGFloat = 40
-    /// Slack around the standard-layout width threshold so badge digit changes do not flip the form.
-    static let decisionHysteresis: CGFloat = 12
+    static let minimumNameWidth: CGFloat = 40
 
     static func leadingChromeWidth() -> CGFloat {
         iconColumnWidth + columnSpacing
     }
 
-    static func standardLayoutMinimumWidth(badgesWidth: CGFloat) -> CGFloat {
-        leadingChromeWidth() + minimumNameWidthStandard + columnSpacing + badgesWidth
-    }
-
-    static func layoutForm(
-        availableWidth: CGFloat,
-        badgesWidth: CGFloat,
-        previousForm: ServerSidebarRowLayoutForm? = nil
-    ) -> ServerSidebarRowLayoutForm {
-        let minimum = standardLayoutMinimumWidth(badgesWidth: badgesWidth)
-        if let previous = previousForm {
-            switch previous {
-            case .standard:
-                return availableWidth < minimum - decisionHysteresis ? .compact : .standard
-            case .compact:
-                return availableWidth >= minimum + decisionHysteresis ? .standard : .compact
-            }
-        }
-        return availableWidth >= minimum ? .standard : .compact
+    /// Minimum row width to keep the server name readable; badges sit on the subtitle row and are not reserved here.
+    static func minimumRowWidth() -> CGFloat {
+        leadingChromeWidth() + minimumNameWidth
     }
 
     static func badgesWidth(snapshot: ServerAttentionSnapshot?) -> CGFloat {
@@ -166,15 +137,9 @@ struct ServerSidebarRow: View {
     @EnvironmentObject private var appState: HubAppState
     let entry: ServerEntry
     @State private var isShowingDetails = false
-    @State private var layoutForm: ServerSidebarRowLayoutForm = .standard
-    @State private var measuredRowWidth: CGFloat = 0
 
     private var attentionSnapshot: ServerAttentionSnapshot? {
         appState.attentionSnapshot(for: entry.id)
-    }
-
-    private var badgesWidthForLayout: CGFloat {
-        ServerSidebarRowLayout.badgesWidth(snapshot: attentionSnapshot)
     }
 
     var body: some View {
@@ -188,18 +153,6 @@ struct ServerSidebarRow: View {
                         .offset(x: -(4 + ServerSidebarRowLayout.columnSpacing))
                         .accessibilityHidden(true)
                 }
-            }
-            .background {
-                GeometryReader { geometry in
-                    Color.clear.preference(key: ServerSidebarRowWidthKey.self, value: geometry.size.width)
-                }
-            }
-            .onPreferenceChange(ServerSidebarRowWidthKey.self) { width in
-                measuredRowWidth = width
-                updateLayoutForm(for: width)
-            }
-            .onChange(of: badgesWidthForLayout) { _ in
-                updateLayoutForm(for: measuredRowWidth)
             }
             .contentShape(Rectangle())
             .contextMenu {
@@ -221,41 +174,24 @@ struct ServerSidebarRow: View {
             }
     }
 
-    @ViewBuilder
     private var rowContent: some View {
         HStack(spacing: ServerSidebarRowLayout.columnSpacing) {
             ServerIconActionButton(entry: entry)
-            switch layoutForm {
-            case .standard:
-                standardTextColumn
-            case .compact:
-                compactTextColumn
-            }
+            serverTextColumn
         }
     }
 
-    private var standardTextColumn: some View {
+    private var serverTextColumn: some View {
         VStack(alignment: .leading, spacing: 2) {
+            Text(entry.name)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
             HStack(spacing: ServerSidebarRowLayout.columnSpacing) {
-                Text(entry.name)
-                    .lineLimit(1)
+                SidebarClippedSubtitleText(sidebarSubtitle)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 badgesTrigger
                     .fixedSize()
             }
-            Text(sidebarSubtitle)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private var compactTextColumn: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(entry.name)
-                .lineLimit(1)
-            badgesTrigger
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -265,19 +201,6 @@ struct ServerSidebarRow: View {
             snapshot: attentionSnapshot,
             isShowingDetails: $isShowingDetails
         )
-    }
-
-    private func updateLayoutForm(for availableWidth: CGFloat) {
-        guard availableWidth > 0 else { return }
-        let badgesWidth = badgesWidthForLayout
-        let next = ServerSidebarRowLayout.layoutForm(
-            availableWidth: availableWidth,
-            badgesWidth: badgesWidth,
-            previousForm: layoutForm
-        )
-        if next != layoutForm {
-            layoutForm = next
-        }
     }
 
     private var sidebarSubtitle: String {
@@ -371,6 +294,34 @@ private struct ServerIconActionButton: View {
         .help("Server actions")
         .accessibilityLabel("Actions for \(entry.name)")
         .accessibilityHint("Opens server settings and local service controls")
+    }
+}
+
+/// Subtitle under the server name: clip at the trailing edge (no ellipsis) so badges can overlap when space is tight.
+private struct SidebarClippedSubtitleText: NSViewRepresentable {
+    let text: String
+
+    init(_ text: String) {
+        self.text = text
+    }
+
+    func makeNSView(context: Context) -> NSTextField {
+        let field = NSTextField(labelWithString: text)
+        field.isBezeled = false
+        field.isEditable = false
+        field.isSelectable = false
+        field.drawsBackground = false
+        field.font = NSFont.preferredFont(forTextStyle: .caption1)
+        field.textColor = .secondaryLabelColor
+        field.lineBreakMode = .byClipping
+        field.maximumNumberOfLines = 1
+        field.cell?.truncatesLastVisibleLine = false
+        field.cell?.lineBreakMode = .byClipping
+        return field
+    }
+
+    func updateNSView(_ field: NSTextField, context: Context) {
+        field.stringValue = text
     }
 }
 

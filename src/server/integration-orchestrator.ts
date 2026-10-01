@@ -27,6 +27,7 @@ import type { RepositoryLock, RootLock } from "./repo-lock.js";
 import type { Logger } from "../core/logger.js";
 import {
   currentBranch,
+  branchCommit,
   isAncestor,
   runGit,
   worktreePathForBranch,
@@ -2283,6 +2284,7 @@ export class CloseOutOrchestrator {
   private async cleanup(job: IntegrationJob): Promise<{ ok: boolean; reason?: string }> {
     const root = this.config.root;
     const featureBranch = job.branch ?? job.taskId;
+    const mergedCommit = branchCommit(root, featureBranch);
 
     // Candidate worktree + throwaway branch.
     this.removeCandidate(job.taskId);
@@ -2366,7 +2368,7 @@ export class CloseOutOrchestrator {
         this.getTask?.(job.taskId)?.absPath ??
         findTaskFileById(root, this.config.workDir, job.taskId);
       if (absPath) {
-        markTaskReleased(this.config, absPath);
+        markTaskReleased(this.config, absPath, mergedCommit);
         // A worktree kept above holds uncommitted work the merge did NOT carry
         // (#0512). The close-out itself succeeded, so this is not a failure to
         // retry — it is a decision for a human, and the flag is how the board

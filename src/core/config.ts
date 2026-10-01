@@ -45,7 +45,7 @@ import { stripTomlComment, unquoteTomlString } from "./toml-line.js";
 
 /** Default display labels for board columns, keyed by canonical status ID. */
 export const DEFAULT_COLUMN_LABELS: Record<string, string> = {
-  draft: "Proposed / Drafts",
+  draft: "Draft",
   inbox: "Inbox",
   ready: "Ready",
   active: "Active",
@@ -64,6 +64,7 @@ export const AGENT_CLIS = [
   "cursor",
   "antigravity",
   "crush",
+  "pi",
 ] as const;
 /** Models an Agent can pin (or "default" for the coding agent's default). */
 export const AGENT_MODELS = ["default", "big pickle", "deepseek v4"] as const;

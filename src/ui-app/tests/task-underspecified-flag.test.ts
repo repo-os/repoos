@@ -132,6 +132,7 @@ function makeCtx(
     config: { ...fx.config, agents: [PM_AGENT] },
     index: {
       getTask: () => readTaskFile(fx),
+      getTasks: () => [readTaskFile(fx)],
       applyFileChange: () => {},
       refreshBranches: () => {},
     } as any,

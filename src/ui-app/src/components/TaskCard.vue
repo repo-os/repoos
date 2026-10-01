@@ -26,6 +26,7 @@ import ActivityIndicator from "./ActivityIndicator.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
 import CopyableNumber from "./CopyableNumber.vue";
 import AgentModelModal from "./AgentModelModal.vue";
+import { confirmDependencyOverride, dependencyBlockerLabel } from "../lib/task-dependencies";
 
 const props = withDefaults(
   defineProps<{ task: Task; dragEnabled?: boolean; highlighted?: boolean }>(),
@@ -250,7 +251,8 @@ const diffStats = computed(() => {
 
 /** Load diff stats when card is rendered. */
 onMounted(() => {
-  void repo.loadDiffStats(props.task.id);
+  // No branch means no diff — the server would only answer "noBranch".
+  if (props.task.branch) void repo.loadDiffStats(props.task.id);
 });
 
 function onDragStart(e: DragEvent): void {
@@ -274,6 +276,7 @@ function onDragEnd(): void {
 
 /** Task whose dirty-worktree restart choice is awaiting an answer. */
 const restartTask = ref<Task | null>(null);
+const restartOverrideDependencies = ref(false);
 
 interface CardAction {
   label: string;
@@ -688,10 +691,15 @@ function acknowledgeCreate(): void {
 async function runAction(): Promise<void> {
   if (busy.value || !action.value) return;
   if (props.task.status === "review" && repo.reviewFor(props.task.id)?.running) return;
+  const overrideDependencies = isLaunchAction.value
+    ? confirmDependencyOverride(props.task.blockedBy)
+    : false;
+  if (props.task.blockedBy?.length && !overrideDependencies && isLaunchAction.value) return;
   // A dirty worktree means restarting would either resume prior work or
   // discard it — surface that choice instead of starting silently.
   if (isLaunchAction.value && props.task.git?.dirty) {
     restartTask.value = props.task;
+    restartOverrideDependencies.value = overrideDependencies;
     return;
   }
   busy.value = true;
@@ -704,11 +712,11 @@ async function runAction(): Promise<void> {
         await repo.setStatus(props.task, "ready");
         break;
       case "ready":
-        await repo.startWork(props.task);
+        await repo.startWork(props.task, "resume", undefined, overrideDependencies);
         break;
       case "active":
         if (repo.isRunning(props.task.id)) await repo.pauseWork(props.task);
-        else await repo.startWork(props.task);
+        else await repo.startWork(props.task, "resume", undefined, overrideDependencies);
         break;
       case "review":
         await repo.completeTask(props.task);
@@ -922,6 +930,16 @@ async function openDebuggerFromError(): Promise<void> {
           class="rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
           >{{ task.area }}</span
         >
+        <span
+          v-for="blocker in task.blockedBy"
+          :key="blocker.id"
+          class="rounded-md border border-[var(--amber-tint)] bg-[var(--amber-tint)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--amber)]"
+          :title="dependencyBlockerLabel(blocker)"
+        >
+          {{
+            blocker.state === "cancelled" ? `Cancelled #${blocker.id}` : `Blocked by #${blocker.id}`
+          }}
+        </span>
         <span
           v-if="task.assignee !== 'ai'"
           class="rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
@@ -1154,7 +1172,16 @@ async function openDebuggerFromError(): Promise<void> {
     />
   </article>
 
-  <RestartTaskDialog :task="restartTask" @close="restartTask = null" />
+  <RestartTaskDialog
+    :task="restartTask"
+    :override-dependencies="restartOverrideDependencies"
+    @close="
+      () => {
+        restartTask = null;
+        restartOverrideDependencies = false;
+      }
+    "
+  />
   <DirtyCheckoutDialog
     :task="dirtyTask"
     :files="dirtyFiles"

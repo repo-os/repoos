@@ -10,6 +10,7 @@ import { STATUSES, type Task, type Status, type Assignee, type TaskGitInfo } fro
 import { emptyGitInfo } from "./git.js";
 import { normalizeStoryName } from "./stories.js";
 import { formatTaskAreas, parseTaskAreas } from "./areas.js";
+import { parseTaskDependencies } from "./task-dependencies.js";
 
 /** Canonical frontmatter key order, so writes produce tidy, stable diffs. */
 const KEY_ORDER = [
@@ -29,6 +30,8 @@ const KEY_ORDER = [
   "priority",
   "area",
   "story",
+  "depends_on",
+  "merged_commit",
   "assigned_to",
   "created_by",
   "branch",
@@ -346,6 +349,8 @@ export function parseTask(args: ParseTaskArgs): Task {
     // falls back to the historical "general" default.
     ...beforeAreaFields(data),
     story: normalizeStoryName(data.story),
+    dependsOn: parseTaskDependencies(data.depends_on),
+    mergedCommit: typeof data.merged_commit === "string" ? data.merged_commit : null,
     assignee,
     assignedTo: assignedTo || (assignee === "unassigned" ? "" : assignee),
     createdBy: String(data.created_by ?? ""),
@@ -394,6 +399,8 @@ export function serializeTask(task: Task): string {
   // Only ever write `story` when set — clearing it removes the key so an
   // untagged task parses back exactly as a task that never had one.
   if (task.story) data.story = task.story;
+  if (task.dependsOn?.length) data.depends_on = task.dependsOn;
+  if (task.mergedCommit) data.merged_commit = task.mergedCommit;
   if (task.tags.length) data.tags = task.tags;
   // Only ever write `needs_input` / `needs_merge` when true — false is the
   // default and is never persisted, so clearing the flag removes the key.

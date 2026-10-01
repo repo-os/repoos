@@ -194,6 +194,28 @@
       "verificationSource": null,
       "upgradeGuidance": "Crush is pre-1.0, so every minor release can change `run` flags; the supported range is deliberately narrow. Upgrade with `brew upgrade charmbracelet/tap/crush`, then run `repoos doctor --probe crush --yes` and update this contract only after a documented passing probe.",
       "officialUrl": "https://charm.sh/crush"
+    },
+    {
+      "cli": "pi",
+      "name": "pi",
+      "supportedMajor": 0,
+      "supportedRange": ">=0.99.0 <1.0.0",
+      "newestCertifiedVersion": null,
+      "knownIncompatibleRanges": [],
+      "requiredCapabilities": [
+        "version",
+        "help",
+        "model-discovery",
+        "headless-one-shot",
+        "structured-events",
+        "auto-permissions",
+        "session-continuation",
+        "cancellation"
+      ],
+      "verifiedAt": null,
+      "verificationSource": null,
+      "upgradeGuidance": "pi is pre-1.0, so `--mode json` and session flags can change between minor releases; the supported range is deliberately narrow. Upgrade with `npm i -g @earendil-works/pi-coding-agent`, then run `repoos doctor --probe pi --yes` and update this contract only after a documented passing probe.",
+      "officialUrl": "https://github.com/earendil-works/pi-coding-agent"
     }
   ]
 }

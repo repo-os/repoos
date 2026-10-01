@@ -34,6 +34,7 @@ import {
   parseCopilotEvent,
   parseCursorEvent,
   parseJsonEvent,
+  parsePiEvent,
   parseQwenEvent,
 } from "../../server/agents";
 import type { AgentOutputEntry } from "../src/types";
@@ -678,6 +679,43 @@ const AGENT_STREAMS: Record<string, EventLine[]> = {
   // Crush is the same shape: plain assistant text on stdout, no structured
   // events, no session id, no tool cards.
   crush: [{ role: "assistant", parts: [{ type: "text", text: "Checking the repository." }] }],
+  // pi: authoritative assistant text at message_end, then
+  // tool_execution_start/end pairs keyed by toolCallId.
+  pi: [
+    {
+      type: "message_end",
+      message: {
+        role: "assistant",
+        content: [{ type: "text", text: "Checking the repository." }],
+      },
+    },
+    {
+      type: "tool_execution_start",
+      toolCallId: "p1",
+      toolName: "bash",
+      args: { command: "ls" },
+    },
+    {
+      type: "tool_execution_end",
+      toolCallId: "p1",
+      toolName: "bash",
+      result: { content: [{ type: "text", text: "ok" }] },
+      isError: false,
+    },
+    {
+      type: "tool_execution_start",
+      toolCallId: "p2",
+      toolName: "read",
+      args: { path: "a.ts" },
+    },
+    {
+      type: "tool_execution_end",
+      toolCallId: "p2",
+      toolName: "read",
+      result: { content: [{ type: "text", text: "ENOENT" }] },
+      isError: true,
+    },
+  ],
 };
 
 interface PendingTool {
@@ -756,6 +794,15 @@ function normalizedEntries(cli: string, lines: EventLine[]): AgentOutputEntry[] 
     } else if (cli === "antigravity") {
       // Antigravity's tool steps are self-contained — no pending buffer.
       entry = parseAntigravityEvent(raw(line))?.entry;
+    } else if (cli === "pi") {
+      const parsed = parsePiEvent(raw(line));
+      entry = parsed?.entry;
+      const event = parsed?.toolEvent;
+      if (event?.phase === "start") {
+        started = { id: event.id, tool: event.tool ?? "tool", input: event.input };
+      } else if (event?.phase === "complete") {
+        finished = { id: event.id, output: event.output, error: event.error === true };
+      }
     } else {
       // Kiro has no structured-event parser: the runner's fall-through records
       // every line as a legacy plain entry, so there is nothing to normalize
@@ -907,5 +954,13 @@ describe("CLI diagnostic presentation", () => {
     const wrapper = mount(ChatDiagnosticRow, { props: { text: "Downloading browser…" } });
     expect(wrapper.find(".agent-diagnostic-label").text()).toBe("Diagnostic");
     expect(wrapper.find(".agent-diagnostic-label.error").exists()).toBe(false);
+  });
+});
+
+describe("toDisplayRows — assistant text trailing whitespace", () => {
+  it("trims trailing newlines from assistant text rows", () => {
+    const rows = toDisplayRows([{ type: "text", text: "Let me check:\n\n\n\n  \n" }]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ text: "Let me check:" });
   });
 });
