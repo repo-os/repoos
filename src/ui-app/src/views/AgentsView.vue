@@ -910,9 +910,11 @@ onUnmounted(() => {
                 >
                   {{ r.agent.drivable ? "RepoOS driver" : "detected only" }}
                 </span>
-                <span v-if="r.agent.deprecated" class="agent-badge detect-deprecated"
-                  >Deprecated</span
-                >
+                <span class="detect-deprecated-slot">
+                  <span v-if="r.agent.deprecated" class="agent-badge detect-deprecated"
+                    >Deprecated</span
+                  >
+                </span>
                 <span class="detect-compat-slot">
                   <button
                     v-if="r.agent.compatibility"
