@@ -244,7 +244,12 @@ export function shotTargetMismatchWarning(
   area: string | null | undefined,
   changedPaths: string[],
 ): string | undefined {
-  const detected = targetsForPaths(preview, changedPaths);
+  // Prose edits (`*.md`/`*.mdx`) are content, not code: nearly every task
+  // updates `user-docs/` pages, and that must not read as "touches the Docs
+  // site". Only non-markdown changes can make an area mismatch. (Shot target
+  // detection above still counts markdown, so docs pages remain shootable.)
+  const codePaths = changedPaths.filter((p) => !/\.mdx?$/i.test(p));
+  const detected = targetsForPaths(preview, codePaths);
   if (detected.length === 0) return undefined;
   const taskAreas = splitAreas(area);
   // A target is "explained" when the task's area names it directly or one of
