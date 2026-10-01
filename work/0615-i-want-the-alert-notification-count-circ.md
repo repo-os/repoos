@@ -72,3 +72,4 @@ I want the alert/notification count circles on the sidebar for each server to ap
 - 2026-10-01T15:29:39Z · status inbox→ready
 - 2026-10-01T15:29:40Z · status ready→active, branch
 - 2026-10-01T15:35:18Z · status active→review
+- 2026-10-01T15:35:18Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
