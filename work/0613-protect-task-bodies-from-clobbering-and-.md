@@ -3,13 +3,16 @@ id: "0613"
 title: Protect task bodies from clobbering and tighten shot capture
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p2
 area: [core, server]
 assigned_to: ai
 created_by: ""
 branch: feat/protect-task-bodies-from-clobbering-and-
 created_at: "2026-10-01T09:30:31Z"
-updated_at: "2026-10-01T14:33:03Z"
+updated_at: "2026-10-01T14:34:35Z"
 review_rounds: 2
 review_passes: 3
 dev_error_count: 1
@@ -78,3 +81,4 @@ Follow-up to #0612: add a section-replace/append form for task bodies (so declar
 - 2026-10-01T14:21:15Z · status review→active
 - 2026-10-01T14:33:03Z · status active→review
 - 2026-10-01T14:33:03Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-01T14:34:35Z · needs_input
