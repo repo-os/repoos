@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-09-30T20:38:34Z"
-review_passes: 3
 id: "0603"
 title: "Automatic shots: skip non-UI diffs, caption why, support highlights"
 type: bug
@@ -12,6 +10,8 @@ created_by: ""
 branch: feat/automatic-shots-skip-non-ui-diffs-captio
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-09-30T13:19:31Z"
+updated_at: "2026-10-01T05:04:38Z"
+review_passes: 3
 review_rounds: 2
 last_check_failure: "repoos check at 2026-09-30T19:33:05.619Z: server-side finalization timed out (deadline exceeded)"
 ---
@@ -58,4 +58,4 @@ Automatic shot capture at handoff (#0594) produces screenshots that show nothing
 - 2026-09-30T20:14:13Z · status review→active
 - 2026-09-30T20:33:26Z · status active→review
 - 2026-09-30T20:33:32Z · note: shots: failed — capture of Dashboard after the shot-caption change on "default" failed: waitFor: Error: strict mode violation: locator('#app') resolved to 2 elements:
-
+- 2026-10-01T05:04:38Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
