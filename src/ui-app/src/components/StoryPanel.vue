@@ -46,6 +46,7 @@ import SelectViewport from "./ui/select/viewport.vue";
 import Button from "./ui/button.vue";
 import { renderMarkdown } from "../lib/markdown";
 import { relTime } from "../lib/time";
+import { dependencyBlockerLabel } from "../lib/task-dependencies";
 import Dialog from "./ui/dialog/root.vue";
 import DialogClose from "./ui/dialog/close.vue";
 import DialogContent from "./ui/dialog/content.vue";
@@ -357,6 +358,17 @@ function startNewTask(): void {
               ></span>
               <span class="story-panel-task-id">#{{ task.id }}</span>
               <span class="story-panel-task-title">{{ task.title }}</span>
+              <span
+                v-for="blocker in task.blockedBy"
+                :key="blocker.id"
+                class="story-panel-task-blocker"
+                :title="dependencyBlockerLabel(blocker)"
+                >{{
+                  blocker.state === "cancelled"
+                    ? `Cancelled #${blocker.id}`
+                    : `Blocked by #${blocker.id}`
+                }}</span
+              >
               <span class="story-panel-task-status" :style="taskStatusStyle(task)">{{
                 config.columnLabels[task.status] ?? task.status
               }}</span>

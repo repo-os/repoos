@@ -118,6 +118,7 @@ import {
 } from "../core/remote-hosts.js";
 import { runBuiltInAgent, isDueForScheduledRun, builtInAgentLabel } from "./built-in-agents.js";
 import { LiveIndex, type RepoEvent } from "./live-index.js";
+import { AutoEngineeringOrchestrator } from "./auto-engineering.js";
 import { WorkWatcher } from "./watcher.js";
 import {
   patchTaskFile,
@@ -1160,6 +1161,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       .catch((e) => logger.system("warn", `boot worktree gc failed: ${(e as Error).message}`));
   }
 
+  const autoEngineering = new AutoEngineeringOrchestrator(
+    join(config.root, config.cacheDir ?? ".repoos"),
+  );
   let processingJob = false;
   let triggerJobProcessing: () => void = () => {}; // Initialized below
 
@@ -1345,6 +1349,33 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           if (doneTask) index.applyFileChange(doneTask.absPath);
         }
         index.refreshBranches();
+        if (
+          jobBefore &&
+          jobCoordinator.getJob(jobBefore.taskId)?.phase === "done" &&
+          index.getTasks().some((task) => task.dependsOn?.includes(jobBefore.taskId))
+        ) {
+          const result = await autoEngineering.reconcile(
+            config,
+            index.getTasks(),
+            "dependency-merged",
+          );
+          if (result.triggered) {
+            const activeCount = index.getTasks().filter((task) => task.status === "active").length;
+            const maxActiveTasks = config.maxActiveTasks ?? 3;
+            emitEvent({
+              type: "auto-engineering.state",
+              state: {
+                enabled: config.autoEngineeringMode ?? false,
+                maxActiveTasks,
+                activeCount,
+                availableSlots: Math.max(0, maxActiveTasks - activeCount),
+                reconciling: false,
+                decision: autoEngineering.getLastDecision(),
+              },
+              at: new Date().toISOString(),
+            });
+          }
+        }
         // Reflect the post-job pipeline state (job now done/failed, or the next
         // queued job becoming active) in the pinned status bar (0207).
         emitIntegration();

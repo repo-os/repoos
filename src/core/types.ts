@@ -96,6 +96,10 @@ export interface TaskFrontmatter {
    * story file or status — a story is derived entirely from its tagged tasks.
    */
   story?: string;
+  /** Other task ids that must be merged before this task can start. */
+  depends_on?: string[];
+  /** Exact task-branch commit recorded at successful close-out for ancestry checks. */
+  merged_commit?: string;
   assigned_to?: string;
   created_by?: string;
   branch?: string;
@@ -171,6 +175,12 @@ export interface Task {
   areas?: string[];
   /** Optional cross-area delivery slice; empty string means untagged. */
   story?: string;
+  /** Task ids that must be merged before this task can start. */
+  dependsOn?: string[];
+  /** Exact branch commit recorded at close-out so merge proof survives cleanup. */
+  mergedCommit?: string | null;
+  /** Live, Git-verified unmet prerequisites; absent from task frontmatter. */
+  blockedBy?: DependencyBlocker[];
   assignee: Assignee;
   /** Raw assigned_to value, e.g. "ai", "nick", "product". */
   assignedTo: string;
@@ -235,6 +245,13 @@ export interface TaskGitInfo {
    * Always false when no linked worktree exists.
    */
   dirty: boolean;
+}
+
+/** A prerequisite that currently prevents a task from starting. */
+export interface DependencyBlocker {
+  id: string;
+  /** Missing/removed upstream or an unprovable completed upstream needs a human. */
+  state: "waiting" | "cancelled";
 }
 
 /** An AI coding agent configurable on the Agents page. */
@@ -1351,6 +1368,12 @@ export interface BoardTask {
   areas?: string[];
   /** Optional cross-area delivery slice; empty string means untagged. */
   story?: string;
+  /** Task ids that must be merged before this task can start. */
+  dependsOn?: string[];
+  /** Git-verified unmet prerequisites, computed for the board response. */
+  blockedBy?: DependencyBlocker[];
+  /** Exact task-branch commit recorded at close-out for ancestry checks. */
+  mergedCommit?: string | null;
   assignee: Assignee;
   assignedTo: string;
   createdBy: string;
