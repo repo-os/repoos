@@ -85,7 +85,9 @@ async function applyHighlight(page: ShotDriverPage, selector: string): Promise<H
     const skip = ${JSON.stringify(marker)};
     let n = 0;
     for (const el of document.querySelectorAll(sel)) {
-      if (el instanceof Element && !el.hasAttribute(skip)) {
+      if (el instanceof Element) {
+        // Count every match, even an element an earlier overlapping selector
+        // already marked — otherwise it would read as "matched nothing".
         el.setAttribute(skip, "");
         n++;
       }
