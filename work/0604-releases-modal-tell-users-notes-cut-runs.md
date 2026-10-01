@@ -1,10 +1,11 @@
 ---
-updated_at: "2026-09-30T18:26:10Z"
-review_passes: 1
 id: "0604"
 title: "Releases modal: tell users notes/cut runs can be left and revisited"
 type: chore
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the opencode agent exited without output: error: Upstream request failed: Insufficient account funds"
 priority: p2
 area: web
 assigned_to: ai
@@ -14,6 +15,8 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: opencode-go/hy3
 created_at: "2026-09-30T13:42:54Z"
+updated_at: "2026-10-01T04:33:54Z"
+review_passes: 1
 last_check_failure: "repoos check at 2026-09-30T18:15:46.162Z: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
@@ -45,4 +48,4 @@ Server-tracked notes runs (separate task) and notifications (separate task).
 - 2026-09-30T17:57:47Z · body
 - 2026-09-30T18:25:34Z · status active→review
 - 2026-09-30T18:25:40Z · note: shots: failed — capture of Cut a release modal — async timing hints on "default" failed: click: Error: strict mode violation: locator('button:has-text("Cut")') resolved to 2 elements:
-
+- 2026-10-01T04:33:54Z · needs_input
