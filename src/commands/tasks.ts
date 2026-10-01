@@ -346,6 +346,7 @@ const UPDATE_FLAGS: Record<string, keyof TaskPatch> = {
   title: "title",
   area: "area",
   story: "story",
+  "depends-on": "dependsOn",
   priority: "priority",
   type: "type",
   body: "body",
@@ -358,7 +359,7 @@ const UPDATE_FLAGS: Record<string, keyof TaskPatch> = {
 /**
  * `repoos update <id> [--title ...] [--area ...] [--story ...] [--priority ...]
  *   [--type ...] [--body ... | --body -] [--branch ...] [--assigned-to ai|human]
- *   [--needs-input true|false] [--questions "Question one\nQuestion two"]`
+ *   [--needs-input true|false] [--questions "Question one\nQuestion two"] [--depends-on ids]`
  *
  * Writes directly via patchTaskFile (same path the server's PATCH route uses),
  * so it works with no HTTP round-trip and no session auth — this is the path
@@ -368,7 +369,7 @@ const UPDATE_FLAGS: Record<string, keyof TaskPatch> = {
 export function cmdUpdate(args: string[]): void {
   const [id, ...rest] = args;
   const usage =
-    '  Usage: repoos update <id> [--title "..."] [--area a,b] [--story "Delivery slice"] [--priority p] [--type t] [--body "..."|-] [--branch b] [--assigned-to ai|human] [--needs-input true|false] [--questions "Question one\\nQuestion two"] [--clear-questions]';
+    '  Usage: repoos update <id> [--title "..."] [--area a,b] [--story "Delivery slice"] [--depends-on 0542,0538] [--priority p] [--type t] [--body "..."|-] [--branch b] [--assigned-to ai|human] [--needs-input true|false] [--questions "Question one\\nQuestion two"] [--clear-questions]';
   if (!id) {
     console.error(c.red(usage));
     process.exitCode = 1;
@@ -409,6 +410,11 @@ export function cmdUpdate(args: string[]): void {
       patch.needsInput = raw === "true";
     } else if (field === "questions") {
       patch.questions = parseQuestions(raw);
+    } else if (field === "dependsOn") {
+      patch.dependsOn = raw
+        .split(",")
+        .map((dependency) => dependency.trim())
+        .filter(Boolean);
     } else {
       const value = field === "body" && raw === "-" ? readFileSync(0, "utf8") : raw;
       (patch[field] as string) = value;
@@ -443,6 +449,7 @@ const NEW_FLAGS = new Set([
   "type",
   "area",
   "story",
+  "depends-on",
   "priority",
   "body",
   "needs-input",
@@ -464,10 +471,10 @@ function parseQuestions(raw: string): string[] {
     .filter(Boolean);
 }
 
-/** `repoos new <title> [--ai] [--needs-input true] [--questions "..."]` */
+/** `repoos new <title> [--ai] [--needs-input true] [--questions "..."] [--depends-on ids]` */
 export function cmdNew(args: string[]): void {
   const usage =
-    '  Usage: repoos new "Task title" [--ai] [--type bug] [--area web,core] [--story "Delivery slice"] [--priority p1] [--body "..."|-] [--needs-input true|false] [--questions "Question one\\nQuestion two"]';
+    '  Usage: repoos new "Task title" [--ai] [--type bug] [--area web,core] [--story "Delivery slice"] [--depends-on 0542,0538] [--priority p1] [--body "..."|-] [--needs-input true|false] [--questions "Question one\\nQuestion two"]';
   const flags: Record<string, string | boolean> = {};
   const positional: string[] = [];
   for (let i = 0; i < args.length; i++) {
@@ -504,17 +511,31 @@ export function cmdNew(args: string[]): void {
   // task created from inside a worktree lands in that worktree's own work/
   // dir and is invisible to the real board entirely.
   const repoos = boardRepoOS();
-  const t = repoos.createTask({
-    title,
-    type: (flags.type as string) || undefined,
-    area: (flags.area as string) || undefined,
-    story: (flags.story as string) || undefined,
-    priority: (flags.priority as string) || undefined,
-    assignedTo: flags.ai ? "ai" : undefined,
-    body: (flags.body as string) || undefined,
-    needsInput: flags["needs-input"] === "true",
-    questions: flags.questions ? parseQuestions(flags.questions as string) : undefined,
-  });
+  let t: Task;
+  try {
+    t = repoos.createTask({
+      title,
+      type: (flags.type as string) || undefined,
+      area: (flags.area as string) || undefined,
+      story: (flags.story as string) || undefined,
+      dependsOn:
+        typeof flags["depends-on"] === "string"
+          ? flags["depends-on"]
+              .split(",")
+              .map((dependency) => dependency.trim())
+              .filter(Boolean)
+          : undefined,
+      priority: (flags.priority as string) || undefined,
+      assignedTo: flags.ai ? "ai" : undefined,
+      body: (flags.body as string) || undefined,
+      needsInput: flags["needs-input"] === "true",
+      questions: flags.questions ? parseQuestions(flags.questions as string) : undefined,
+    });
+  } catch (error) {
+    console.error(c.red(`  ${(error as Error).message}`));
+    process.exitCode = 1;
+    return;
+  }
   console.log(
     "  " + c.green("created ") + c.dim("#" + t.id) + "  " + t.title + c.dim("  → " + t.path),
   );

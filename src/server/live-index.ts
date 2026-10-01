@@ -46,6 +46,7 @@ import {
 } from "../core/indexer.js";
 import { isStoryPmWorking, listStoryDefinitions } from "../core/story-definition-files.js";
 import { patchTaskFile } from "./write.js";
+import { taskDependencyBlockers } from "../core/task-dependencies.js";
 
 export type RepoEvent =
   | { type: "task.created"; task: Task; at: string }
@@ -602,7 +603,10 @@ export class LiveIndex {
       generatedAt: now(),
       root: this.config.root,
       taskCount: tasks.length,
-      tasks: tasks.map(toBoardTask),
+      tasks: tasks.map((task) => ({
+        ...toBoardTask(task),
+        blockedBy: taskDependencyBlockers(this.config.root, task, tasks),
+      })),
       counts: this.counts(),
     };
     if (this.config.stories?.enabled === true) {
@@ -664,6 +668,8 @@ function toBoardTask(t: Task): BoardTask {
     area: t.area,
     areas: t.areas,
     story: t.story ?? "",
+    dependsOn: t.dependsOn ?? [],
+    mergedCommit: t.mergedCommit ?? null,
     assignee: t.assignee,
     assignedTo: t.assignedTo,
     createdBy: t.createdBy,
@@ -706,6 +712,8 @@ function diff(a: Task, b: Task): Partial<Task> {
     "priority",
     "area",
     "story",
+    "dependsOn",
+    "mergedCommit",
     "assignee",
     "assignedTo",
     "branch",
@@ -731,7 +739,9 @@ function diff(a: Task, b: Task): Partial<Task> {
   ];
   const out: Partial<Task> = {};
   for (const f of fields) {
-    if (a[f] !== b[f]) (out as Record<string, unknown>)[f] = a[f];
+    const changed =
+      f === "dependsOn" ? JSON.stringify(a[f]) !== JSON.stringify(b[f]) : a[f] !== b[f];
+    if (changed) (out as Record<string, unknown>)[f] = a[f];
   }
   // body change is common and worth signalling, but don't ship the whole body
   if (a.body !== b.body) (out as Record<string, unknown>).body = "(changed)";

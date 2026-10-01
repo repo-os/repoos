@@ -30,7 +30,9 @@ import {
 } from "../core/task.js";
 import { formatTaskAreas, parseTaskAreas } from "../core/areas.js";
 import { normalizeStoryName } from "../core/stories.js";
-import { commitTaskFile } from "../core/git.js";
+import { branchCommit, commitTaskFile, currentBranch } from "../core/git.js";
+import { buildIndex } from "../core/indexer.js";
+import { normalizeTaskDependencies, validateTaskDependencies } from "../core/task-dependencies.js";
 import { appendScreenshotsSection, type ScreenshotMeta } from "./attachments.js";
 
 /**
@@ -75,6 +77,8 @@ export interface TaskPatch {
   area?: string | string[];
   /** Cross-area delivery slice (a "story"), or empty string to clear it. */
   story?: string;
+  /** Upstream task ids that must be merged before this task can start. */
+  dependsOn?: string[];
   assignedTo?: string;
   branch?: string;
   type?: string;
@@ -263,6 +267,14 @@ export function patchTaskFile(
     if (story !== (current.story ?? "")) changes.push("story");
     current.story = story;
   }
+  if (patch.dependsOn !== undefined) {
+    const dependsOn = normalizeTaskDependencies(patch.dependsOn);
+    validateTaskDependencies(current.id, dependsOn, buildIndex(config).tasks);
+    if (dependsOn.join("\0") !== (current.dependsOn ?? []).join("\0")) {
+      changes.push("depends_on");
+    }
+    current.dependsOn = dependsOn;
+  }
   if (patch.branch !== undefined) {
     if (patch.branch !== current.branch) changes.push("branch");
     current.branch = patch.branch;
@@ -397,7 +409,11 @@ export function patchTaskFile(
  * append-only activity log. This is deliberately separate from TaskPatch so a
  * normal status edit cannot make an unmerged task appear in release history.
  */
-export function markTaskReleased(config: RepoOSConfig, absPath: string): Task {
+export function markTaskReleased(
+  config: RepoOSConfig,
+  absPath: string,
+  mergedCommit?: string | null,
+): Task {
   if (!existsSync(absPath)) throw new WriteError(`Task file not found: ${absPath}`);
 
   const task = parseTask({
@@ -422,6 +438,11 @@ export function markTaskReleased(config: RepoOSConfig, absPath: string): Task {
 
   const previousStatus = task.status;
   task.status = "done";
+  task.mergedCommit =
+    mergedCommit ??
+    branchCommit(config.root, task.branch || currentBranch(config.root) || "main") ??
+    task.mergedCommit ??
+    null;
   // A finished task is never "waiting on human input" — leaving a stale flag
   // here (e.g. from an earlier failed review that got fixed on retry) makes a
   // completed task show a permanent "needs input" badge for no reason (#0293

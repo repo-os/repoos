@@ -40,6 +40,7 @@ Creates a task.
 ```bash
 repoos new "Fix the login redirect loop" --type bug --area web --priority p1
 repoos new "Redesign the onboarding flow" --area "web, onboarding"
+repoos new "Build the settings screen" --depends-on 0542,0538
 ```
 
 | Flag | Values |
@@ -47,6 +48,7 @@ repoos new "Redesign the onboarding flow" --area "web, onboarding"
 | `--type` | `feature`, `bug`, `chore`, `spec`, `refactor` |
 | `--priority` | `p0`, `p1`, `p2`, `p3` |
 | `--area` | Free text, comma-separated for several (`--area web, core`). Areas a repo declares (`[[areas]]` in repoos.toml) appear in the task drawer's area picker; anything outside it stays allowed. |
+| `--depends-on` | Comma-separated task ids that must be completed and merged into `main` first. |
 | `--ai` | Assign to an AI agent |
 | `--body` | Task body; pass `-` to read from stdin |
 
@@ -86,8 +88,19 @@ done** in the UI, or merge the branch yourself first.
 
 ### `repoos update <id>`
 
-Edits a task's metadata or body: `--title`, `--area`, `--priority`, `--type`,
-`--body`, `--branch`, `--assigned-to`.
+Edits a task's metadata or body: `--title`, `--area`, `--story`,
+`--depends-on`, `--priority`, `--type`, `--body`, `--branch`, `--assigned-to`.
+
+```bash
+repoos update 0615 --depends-on 0542,0538
+repoos update 0615 --depends-on ""
+```
+
+Dependencies are satisfied only when the upstream task is `done` and Git
+confirms its merged commit is an ancestor of `main`. A blocked task cannot be
+started manually unless you explicitly confirm the override; missing or
+unverifiable upstream tasks are marked as needing a human. Unknown ids,
+self-dependencies, and cycles are rejected when written.
 
 ### `repoos note <id> "<text>"`
 

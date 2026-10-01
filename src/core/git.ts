@@ -1194,6 +1194,11 @@ export function isAncestor(root: string, ancestor: string, descendant: string): 
   return null;
 }
 
+/** Full commit id at a local branch ref, or null when it is unavailable. */
+export function branchCommit(root: string, branch: string): string | null {
+  return git(root, ["rev-parse", "--verify", `refs/heads/${branch}^{commit}`]);
+}
+
 export interface MergeBranchResult {
   /** Whether the branch was merged into the current checkout. */
   merged: boolean;

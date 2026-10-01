@@ -1178,6 +1178,7 @@ export const useRepoStore = defineStore("repo", () => {
     if (e.type === "task.created") {
       if (!tasks.value.find((t) => t.id === e.task.id)) tasks.value.push(e.task);
       recount();
+      if (e.task.dependsOn?.length) void refresh().catch(onError);
       pushFeed(`<b>created</b> #${e.task.id} ${e.task.title}`, "#4ef0a8", "task.created");
       flash(e.task.id);
     } else if (e.type === "task.updated") {
@@ -1200,6 +1201,7 @@ export const useRepoStore = defineStore("repo", () => {
       const merged = {
         ...e.task,
         preview: e.task.preview ?? before?.preview ?? null,
+        blockedBy: e.task.blockedBy ?? before?.blockedBy ?? [],
         // Preview target candidates are attached by GET /api/board and
         // /api/tasks/:id, not the SSE payload — carry them across updates so
         // the drawer's picker doesn't vanish on a background task.updated (#0379).
@@ -1249,6 +1251,12 @@ export const useRepoStore = defineStore("repo", () => {
       if (statusChanged) {
         startTransition(e.task.id, prevStatus!, e.task.status);
       }
+      if (
+        (statusChanged && (prevStatus === "done" || e.task.status === "done")) ||
+        e.prev?.dependsOn !== undefined
+      ) {
+        void refresh().catch(onError);
+      }
       // Attention notifications (0100): only on a genuine transition, never on
       // page load for a task that already sits in a monitored state.
       //
@@ -1283,6 +1291,7 @@ export const useRepoStore = defineStore("repo", () => {
       setDoneError(e.id, null);
       clearPmWorkingLocal(e.id);
       recount();
+      void refresh().catch(onError);
       pushFeed(`<b>deleted</b> #${e.id}`, "#ff6b7d", "task.deleted");
     } else if (e.type === "task.aiCreateFailed") {
       // The PM flesh-out for a freeform create failed server-side (0320
@@ -2205,10 +2214,11 @@ export const useRepoStore = defineStore("repo", () => {
     t: Task,
     mode: "resume" | "fresh" | "clean" = "resume",
     instruction?: string,
+    overrideDependencies = false,
   ): Promise<void> {
     const r = await api<{ ok: boolean; reason?: string }>(
       `/api/tasks/${t.id}/start`,
-      JSON_OPTS("POST", { mode, instruction }),
+      JSON_OPTS("POST", { mode, instruction, overrideDependencies }),
     );
     if (!r.ok) {
       const message = r.reason ?? "could not start work";

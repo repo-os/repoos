@@ -3632,6 +3632,20 @@
   text-overflow: ellipsis;
   color: var(--txt);
 }
+.story-panel-task-blocker {
+  flex: none;
+  max-width: 145px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 2px 6px;
+  border: 1px solid var(--amber-tint);
+  border-radius: 6px;
+  background: var(--amber-tint);
+  color: var(--amber);
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 9px;
+}
 .story-panel-task-status {
   flex: none;
   font-size: 10.5px;
