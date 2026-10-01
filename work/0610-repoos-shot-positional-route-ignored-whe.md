@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-01T08:06:07Z"
-review_passes: 1
 id: "0610"
 title: "repoos shot: positional route ignored when a declared plan or fallback resolves"
 type: bug
@@ -11,9 +9,8 @@ assigned_to: ai
 created_by: ""
 branch: feat/repoos-shot-positional-route-ignored-whe
 model_override: opencode-go/space-bunny-free
-review_cli_override: cursor
-review_model_override: composer-2.5
 created_at: "2026-09-30T19:56:49Z"
+updated_at: "2026-10-01T07:58:18Z"
 ---
 ## Problem
 
@@ -35,11 +32,4 @@ When the caller passes a positional route (or `--selector`), the CLI's plan shou
 - 2026-10-01T07:00:33Z · model_override
 - 2026-10-01T07:00:34Z · status inbox→ready
 - 2026-10-01T07:00:35Z · status ready→active, branch
-- 2026-10-01T07:21:39Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-01T07:58:18Z · status active→review
-- 2026-10-01T07:58:18Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
-- 2026-10-01T07:58:19Z · needs_input
-- 2026-10-01T08:05:10Z · review_cli_override
-- 2026-10-01T08:05:19Z · review_model_override
-- 2026-10-01T08:05:23Z · needs_input (review-failed) cleared for review again by hello@repoos.org
-

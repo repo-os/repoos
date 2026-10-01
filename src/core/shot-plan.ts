@@ -12,14 +12,14 @@
  * same strings a Playwright page accepts.
  *
  * Without a declared list, printing the fallback is the CALLER's decision: the
- * CLI still shoots `/` per resolved target (`repoos shot` is interactive — the
- * human asked for it), while the server's automatic capture now stands down
- * and records a visible skip when no route can be justified (#0603): a docs
- * target matched only by content files, or a diff whose only glob evidence is
- * closer to `/` than to a screen the reviewer needs. Every entry carries
- * `provenance` — "declared: <label>" or "auto: matched <glob>" — so the
- * Changes tab can caption WHY a shot exists, and a fallback caption is never
- * blank.
+ * CLI shoots the route it was given — `/` unless one was typed — per resolved
+ * target (`repoos shot` is interactive: the human asked for it), while the
+ * server's automatic capture stands down and records a visible skip when no
+ * route can be justified (#0603): a docs target matched only by content files,
+ * or a diff whose only glob evidence is closer to `/` than to a screen the
+ * reviewer needs. Every entry carries `provenance` — "declared: <label>" or
+ * "auto: matched <glob>" — so the Changes tab can caption WHY a shot exists,
+ * and a fallback caption is never blank.
  *
  * Parsing is pure (a string in, entries out) so the CLI, the server and the
  * tests can share it without touching git, a server or Playwright.
@@ -287,6 +287,12 @@ function resolveEntryTarget(
  * `matchedGlobs` (#0603) supplies the per-target matching globs for the
  * automatic capture's captions; `docsContentOnly` names targets whose matched
  * files are all docs content.
+ *
+ * `route`/`selector` are what an explicit caller request supplies (`repoos shot
+ * /some-route`, `repoos shot --selector .x`, #0610). They apply to the FALLBACK
+ * only: a declared entry always keeps its own route, selector, steps and
+ * highlight, because those were authored for that route. The server's automatic
+ * pass passes neither and keeps its blind `/` fallback.
  */
 export interface CapturePlanResult {
   entries: CaptureEntry[];
@@ -300,6 +306,24 @@ export interface CapturePlanOptions {
   matchedGlobs?: ReadonlyMap<string, string[]>;
   /** Target names whose matched files are docs content only (#0603). */
   docsContentOnly?: ReadonlySet<string>;
+  /**
+   * Route an explicit caller request supplies (`repoos shot /some-route`) — the
+   * fallback inherits it instead of the preview root (#0610). A non-empty value
+   * is also the justification the docs-content skip below asks for, so a
+   * requested route lifts it. Declared entries ignore this: they carry their own
+   * route.
+   */
+  route?: string;
+  /**
+   * CSS selector an explicit caller request supplies (`--selector`), applied to
+   * the fallback entries the same way `route` is. Declared entries ignore it.
+   */
+  selector?: string;
+}
+
+/** A caller-supplied route normalized for capture (always root-relative). */
+function normalizeRoute(route: string): string {
+  return route.startsWith("/") ? route : `/${route}`;
 }
 
 export function buildCapturePlan(
@@ -310,6 +334,10 @@ export function buildCapturePlan(
   const errors: string[] = [];
   const autoSkips: string[] = [];
   const contentOnly = options.docsContentOnly ?? new Set<string>();
+  // What the caller explicitly asked for, if anything (#0610). The CLI used to
+  // compute its own entries from these and then discard them, so a typed route
+  // lost to the `/` fallback below; the fallback honors it instead.
+  const requestedRoute = options.route ? normalizeRoute(options.route) : undefined;
   if (declared.length === 0) {
     if (targets.length === 0) {
       return {
@@ -319,9 +347,11 @@ export function buildCapturePlan(
       };
     }
     // Docs-content targets get no blind `/` capture #0603: their root route is
-    // the docs home page, not the page that changed.
-    const capturable = targets.filter((t) => !contentOnly.has(t));
-    for (const skipped of targets.filter((t) => contentOnly.has(t))) {
+    // the docs home page, not the page that changed. An explicit requested route
+    // IS the justification that skip asks for — a human naming the page by hand
+    // must not be answered with a skip (#0610).
+    const capturable = requestedRoute ? targets : targets.filter((t) => !contentOnly.has(t));
+    for (const skipped of targets.filter((t) => contentOnly.has(t) && !requestedRoute)) {
       autoSkips.push(
         `${skipped} matched only documentation content, and no declared shot names a route — ` +
           "docs captures need a declared route, so this target was skipped",
@@ -339,7 +369,10 @@ export function buildCapturePlan(
         };
         return {
           target,
-          route: "/",
+          route: requestedRoute ?? "/",
+          // #0610: a caller-requested selector narrows the capture just as it
+          // does for a declared entry.
+          ...(options.selector ? { selector: options.selector } : {}),
           // #0603: the fallback must always set a label — the provenance
           // caption ("auto: matched src/ui-app/**"), not a bare target name.
           label: provenanceCaption(provenance),
