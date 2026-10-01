@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 cli_override: pi
+model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-01T18:46:44Z"
-updated_at: "2026-10-01T18:47:36Z"
+updated_at: "2026-10-01T18:47:38Z"
 ---
 ## Symptom
 
@@ -93,3 +94,4 @@ Stream at *completed text block* granularity instead of per token:
 
 - 2026-10-01T18:46:44Z · created · unknown
 - 2026-10-01T18:47:36Z · cli_override
+- 2026-10-01T18:47:38Z · model_override
