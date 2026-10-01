@@ -1,10 +1,11 @@
 ---
-updated_at: "2026-10-01T05:22:41Z"
-review_passes: 1
 id: "0611"
 title: Row layout for task preview shots on Changes tab
 type: feature
 status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p2
 area: web
 assigned_to: ai
@@ -14,7 +15,10 @@ model_override: opencode-go/space-bunny-free
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-01T04:34:32Z"
-dev_error_count: 1
+updated_at: "2026-10-01T06:21:18Z"
+merge_conflict_retry_count: 1
+review_passes: 1
+dev_error_count: 2
 ---
 ## Problem
 
@@ -103,4 +107,4 @@ On the task panel ui changes sections where we show the shots taken by the task 
 - 2026-10-01T05:22:08Z · review_cli_override, review_model_override
 - 2026-10-01T05:22:09Z · review_model_override
 - 2026-10-01T05:22:10Z · needs_input (review-failed) cleared for review again by hello@repoos.org
-
+- 2026-10-01T06:21:18Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
