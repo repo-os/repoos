@@ -63,15 +63,22 @@ one band with two ways to pick the version:
   `2.0.0-rc.1`, `1.4.0-beta.1`, …); the `→` preview always shows the exact tag
   that will be pushed. Cut Next is a shortcut, never a requirement.
 
-**Release notes** are optional. **Generate with AI** drafts them from the
-commits since the last release and drops them into an editable text area.
+**Release notes** are optional. **Generate with AI** starts a **tracked
+draft run**: the button returns at once and the field shows "Drafting…" while
+the agent works, so closing the modal mid-run loses nothing — reopening shows
+the draft in progress, and the draft is dropped into the editable text area
+the moment the run finishes. Clicking Generate while a draft is already being
+generated can't start a duplicate run.
+
 Successful drafts are saved to `<cacheDir>/release-notes.json`
 (`.repoos/release-notes.json` by default — derived state, gitignored, safe to
-delete) keyed by the commit they summarize. Generate again after a failed cut
-and, while no commit or release tag has changed, RepoOS reuses the saved text
-instantly instead of spending another minute or two on the agent — the modal
-says **Reused saved notes**. Any new commit or tag, or deleting the file,
-simply means the next generate runs the agent again.
+delete), keyed by the **release-relevant commits** in the range. Task-file
+bookkeeping commits (`docs(NNNN): add task`, status flips) touch only the work
+dir, so they don't count: a saved draft survives them and Generate stays
+instant. Generate again after a failed cut and RepoOS reuses that saved text
+instead of spending another minute or two on the agent — the modal says
+**Reused saved notes**. A source commit, a new release tag, or deleting the
+file simply means the next generate runs the agent again.
 
 ### Distribution destinations: "Published to"
 

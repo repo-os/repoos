@@ -91,6 +91,34 @@ const debuggerSent = ref(false);
 const debuggerErr = ref("");
 const run = ref<ReleaseRun | null>(null);
 const now = ref(Date.now());
+
+/**
+ * Server-tracked AI-draft run (#0605): the generate button starts the run and
+ * the view polls `GET /api/release/notes/run` while it's in flight, so
+ * closing the modal mid-draft no longer loses the result and a second click
+ * can't spawn a duplicate agent run.
+ */
+interface ReleaseNotesRun {
+  state: "idle" | "running" | "succeeded" | "failed";
+  startedAt: string | null;
+  updatedAt: string | null;
+  error: string | null;
+  key: string | null;
+  notes: string | null;
+  sinceTag: string | null;
+  commitCount: number;
+  truncated: boolean;
+}
+const notesRun = ref<ReleaseNotesRun | null>(null);
+/**
+ * The draft run this page session owns: set while a run is observed running
+ * (live or via reopening during one). Only runs this session watched may
+ * backfill the notes field — a stale succeeded run from before the page even
+ * loaded must never silently fill fresh typing context.
+ */
+const observedNotesKey = ref<string | null>(null);
+/** The run that already placed a draft — blocks duplicate fills per poll tick. */
+const placedNotesKey = ref<string | null>(null);
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 
 /** "Published to" destinations for the release being viewed (empty when none). */
@@ -114,11 +142,24 @@ function stopPolling(): void {
   pollTimer = null;
 }
 
+/**
+ * One shared 1s tick for both tracked runs (release cut and notes draft).
+ * It keeps ticking while either run is in flight; otherwise it stops the
+ * loop — the same single-shot-after-mount behavior the release run had
+ * before the notes run joined the tick.
+ */
+function tickStopIfNeeded(): void {
+  if (run.value?.state === "running" || notesRun.value?.state === "running") return;
+  if (generatingNotes.value) return; // a POST may be in flight — don't drop polling
+  stopPolling();
+}
+
 function startPolling(): void {
   if (pollTimer) return;
   pollTimer = setInterval(() => {
     now.value = Date.now();
     void pollRun();
+    void pollNotesRun();
   }, 1000);
 }
 
@@ -312,10 +353,82 @@ function openConfirm(): void {
   notes.value = "";
   notesError.value = "";
   notesHint.value = "";
-  generatingNotes.value = false;
+  // Reset the draft placement so a re-open can place the same session's
+  // finished draft (the field just cleared); ownership itself is untouched.
+  placedNotesKey.value = null;
+  generatingNotes.value = notesRun.value?.state === "running";
   debuggerSent.value = false;
   debuggerErr.value = "";
   confirmOpen.value = true;
+  void syncNotesRunAtOpen();
+}
+
+/**
+ * First notes-run sync for a freshly opened modal: picks up a draft already
+ * in flight ("Drafting…" on reopen, #0605) and keeps polling until it
+ * lands, or, when this page session watched the run, backfills the finished
+ * draft or surfaces its failure.
+ */
+async function syncNotesRunAtOpen(): Promise<void> {
+  try {
+    const latest = await api<ReleaseNotesRun>("/api/release/notes/run");
+    applyNotesRun(latest);
+  } catch {
+    // Keep whatever was set optimistically; the next poll corrects it.
+  }
+}
+
+/**
+ * Apply a notes-run snapshot: drive the draft-in-progress flags, and on a
+ * terminal state watched by this session place (or offer) the draft.
+ */
+function applyNotesRun(next: ReleaseNotesRun): void {
+  const prev = notesRun.value;
+  notesRun.value = next;
+  if (next.state === "running") {
+    if (next.key) observedNotesKey.value = next.key;
+    generatingNotes.value = true;
+    notesError.value = "";
+    notesHint.value = "";
+    startPolling();
+    return;
+  }
+  generatingNotes.value = false;
+  const live = prev?.state === "running";
+  const owned =
+    !!next.key && next.key === observedNotesKey.value && next.key !== placedNotesKey.value;
+  if (next.state === "succeeded" && next.notes?.trim() && (live || owned)) {
+    placedNotesKey.value = next.key;
+    if (!notes.value.trim()) {
+      notes.value = next.notes;
+    } else {
+      // The operator typed while the draft ran — never drop it silently.
+      notesHint.value = "Your AI draft is ready — Generate with AI will replace what you've typed.";
+    }
+  } else if (next.state === "failed" && (live || owned)) {
+    notesError.value = next.error || "The agent returned no release notes.";
+  }
+  tickStopIfNeeded();
+}
+
+async function pollNotesRun(): Promise<void> {
+  try {
+    applyNotesRun(await api<ReleaseNotesRun>("/api/release/notes/run"));
+  } catch {
+    // Keep the current state visible through a short server hiccup.
+  }
+}
+
+/**
+ * Stop tracking a notes draft whose cut consumed it: once a release is
+ * started, the field's notes belong to that cut, and re-opening the modal
+ * afterwards must not backfill the same draft for the *next* cut — the range
+ * the notes describe has already shipped.
+ */
+function dropNotesRun(): void {
+  observedNotesKey.value = null;
+  placedNotesKey.value = null;
+  notesRun.value = null;
 }
 
 /**
@@ -330,17 +443,18 @@ function cutNext(): void {
 }
 
 /**
- * Ask the server to draft notes from the commits since the last release and
- * drop the draft into the text area. Purely fills the field — it never cuts a
- * release, and a failure leaves whatever the operator typed untouched so the
- * cut can still proceed. When the server already holds a draft for this exact
- * commit context it returns that instantly and `cached` marks it, so a retry
- * after a failed cut doesn't wait on the agent again.
+ * Start an AI draft of the notes from the commits since the last release.
+ * Never cuts a release. The server runs the draft detached (#0605): the POST
+ * returns the run state immediately, and the poll machinery above fills the
+ * field the moment the run succeeds — a failure surfaces in `notesError`
+ * with whatever the operator typed untouched. When the server already holds
+ * a draft for this exact commit context it answers synchronously with the
+ * stored text and `cached` marks it, so a retry after a failed cut doesn't
+ * wait on the agent again. Generation replaces the field, so confirm first
+ * when that would discard something the operator typed.
  */
 async function generateNotes(): Promise<void> {
   if (generatingNotes.value || running.value) return;
-  // Generation replaces the field, so confirm first when that would discard
-  // something the operator typed.
   if (
     notes.value.trim() &&
     !confirm("Replace the release notes you've typed with an AI-generated draft?")
@@ -350,24 +464,32 @@ async function generateNotes(): Promise<void> {
   generatingNotes.value = true;
   notesError.value = "";
   notesHint.value = "";
+  startPolling(); // the POST answers in milliseconds; keep the tick alive meanwhile
   try {
     const result = await api<{
-      notes: string;
-      sinceTag: string | null;
-      commitCount: number;
+      run?: ReleaseNotesRun;
+      notes?: string | null;
+      sinceTag?: string | null;
+      commitCount?: number;
       cached?: boolean;
       cachedAt?: string | null;
     }>(
       "/api/release/notes",
       JSON_OPTS("POST", { version: newVersion.value || suggestedVersion.value || undefined }),
     );
-    if (result.notes.trim()) {
+    if (result.run) {
+      // 202: the run is tracked server-side now — fill the field when it
+      // lands (the poll was started above and `applyNotesRun` re-arms it).
+      applyNotesRun(result.run);
+      return;
+    }
+    if (result.notes && result.notes.trim()) {
       notes.value = result.notes;
       if (result.cached) {
         const age = result.cachedAt ? relativeTime(result.cachedAt) : "";
         notesHint.value = `Reused saved notes${age ? ` (${age})` : ""} — no new AI run.`;
       }
-    } else {
+    } else if (result.run === undefined) {
       notesError.value = result.sinceTag
         ? `No commits since ${result.sinceTag} to draft from.`
         : "No commits to draft from.";
@@ -375,7 +497,10 @@ async function generateNotes(): Promise<void> {
   } catch (err) {
     notesError.value = err instanceof Error ? err.message : String(err);
   } finally {
-    generatingNotes.value = false;
+    if (notesRun.value?.state !== "running") {
+      generatingNotes.value = false;
+      tickStopIfNeeded();
+    }
   }
 }
 
@@ -385,6 +510,9 @@ async function release(): Promise<void> {
   error.value = "";
   runLog.value = "";
   notesError.value = "";
+  // Whatever draft this session produced is now the cut's payload — stop
+  // tracking the run so re-opening the modal can't backfill it again (#0605).
+  dropNotesRun();
   debuggerSent.value = false;
   debuggerErr.value = "";
   try {
@@ -425,28 +553,37 @@ function failureSummary(phaseName: string | null, msg: string): string {
 }
 
 async function pollRun(): Promise<void> {
+  let prev: ReleaseRun | null = null;
   try {
+    prev = run.value;
     const latest = await api<ReleaseRun>("/api/release/run");
+    const wasRunning = prev?.state === "running";
     run.value = latest;
     if (latest.state === "running") return;
-    stopPolling();
     running.value = false;
-    if (latest.state === "succeeded") {
-      message.value = latest.message;
-      confirmOpen.value = false;
-      await Promise.all([load(), loadDistribution()]);
-    } else if (latest.state === "failed" && latest.message) {
-      // A failed phase reports its full command output (repoos check log, build
-      // errors). Classify the common causes into the headline, then show the
-      // full log in a scrollable block.
-      const lines = latest.message.split("\n").filter((l) => l.trim());
-      error.value =
-        lines.length > 1 ? failureSummary(latest.phase, latest.message) : latest.message;
-      runLog.value = lines.length > 1 ? latest.message : "";
+    // Apply the outcome once — on the first observation (a finished run from
+    // before this page load owns the "survives until the next one" banner) or
+    // on a watched running→terminal transition — not on every tick.
+    if (prev === null || wasRunning) {
+      if (latest.state === "succeeded") {
+        message.value = latest.message;
+        confirmOpen.value = false;
+        dropNotesRun();
+        await Promise.all([load(), loadDistribution()]);
+      } else if (latest.state === "failed" && latest.message) {
+        // A failed phase reports its full command output (repoos check log, build
+        // errors). Classify the common causes into the headline, then show the
+        // full log in a scrollable block.
+        const lines = latest.message.split("\n").filter((l) => l.trim());
+        error.value =
+          lines.length > 1 ? failureSummary(latest.phase, latest.message) : latest.message;
+        runLog.value = lines.length > 1 ? latest.message : "";
+      }
     }
   } catch {
     // Keep the existing stage visible through a short server reload.
   }
+  tickStopIfNeeded();
 }
 
 /**
@@ -497,6 +634,7 @@ onMounted(() => {
   void load();
   void loadDistribution();
   void pollRun();
+  void pollNotesRun();
   startPolling();
 });
 onBeforeUnmount(() => {
@@ -844,6 +982,10 @@ onBeforeUnmount(() => {
                   rows="6"
                   placeholder="What's in this release? Type it here, generate a draft from the commits since the last release, or leave empty."
                 ></textarea>
+                <div v-if="generatingNotes" class="rel-notes-drafting" aria-live="polite">
+                  Drafting release notes from the commits since the last release… you can keep
+                  editing meanwhile.
+                </div>
                 <div v-if="notesHint" class="rel-notes-hint">{{ notesHint }}</div>
                 <div v-if="notesError" class="rel-notes-error" role="alert">{{ notesError }}</div>
               </div>
