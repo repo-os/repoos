@@ -64,6 +64,7 @@ export const AGENT_CLIS = [
   "cursor",
   "antigravity",
   "crush",
+  "pi",
 ] as const;
 /** Models an Agent can pin (or "default" for the coding agent's default). */
 export const AGENT_MODELS = ["default", "big pickle", "deepseek v4"] as const;
