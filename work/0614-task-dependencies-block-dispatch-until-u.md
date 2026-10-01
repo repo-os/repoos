@@ -2,7 +2,7 @@
 id: "0614"
 title: "Task dependencies: block dispatch until upstream tasks are merged to main"
 type: feature
-status: review
+status: active
 priority: p2
 area: [core, server, ui-app]
 assigned_to: ai
@@ -69,3 +69,4 @@ Relevant code: `src/server/auto-engineering.ts` (ready filter), `src/core/types.
 - 2026-10-01T12:33:39Z · status review→active
 - 2026-10-01T14:15:44Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-01T14:16:38Z · status active→review
+- 2026-10-01T14:16:38Z · status review→active
