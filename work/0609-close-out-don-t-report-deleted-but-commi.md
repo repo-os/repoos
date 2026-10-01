@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-01T07:49:07Z"
+review_passes: 1
 id: "0609"
 title: "Close-out: don't report deleted-but-committed files as uncommitted work"
 type: feature
@@ -15,7 +17,6 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: opencode-go/longcat-2.5-preview-free
 created_at: "2026-09-30T16:35:40Z"
-updated_at: "2026-10-01T07:44:46Z"
 last_check_failure: "repoos check at 2026-10-01T07:21:44.176Z: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 1
 ---
@@ -35,3 +36,4 @@ Do: (1) make close-out distinguish deleted-but-committed files (content identica
 - 2026-10-01T07:35:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-01T07:44:46Z · status active→review
 - 2026-10-01T07:44:46Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+
