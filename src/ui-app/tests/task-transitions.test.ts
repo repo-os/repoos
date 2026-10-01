@@ -188,6 +188,7 @@ function makeCtx(
     config: fx.config,
     index: {
       getTask: () => readTaskFile(fx),
+      getTasks: () => [readTaskFile(fx)],
       applyFileChange: () => {},
     } as any,
     indexReady: Promise.resolve(),
@@ -276,6 +277,43 @@ describe("PATCH /api/tasks/:id — generic status writes now gated", () => {
       await patchTask(makeCtx(fx), makeReq({ status: "active" }), res, { param1: "0296" });
       expect(fake.status).toBe(200);
       expect(readTaskFile(fx).status).toBe("active");
+    } finally {
+      fx.clean();
+    }
+  });
+});
+
+describe("POST /api/tasks/:id/start — dependency gate", () => {
+  it("returns a clear conflict for a missing prerequisite", async () => {
+    const fx = makeFixture("ready", 'depends_on: ["9999"]\n');
+    try {
+      const { res, fake } = makeRes();
+      await taskAction(makeCtx(fx), makeReq(), res, { param1: "0296", param2: "start" });
+      expect(fake.status).toBe(409);
+      expect((fake.payload as { reason: string }).reason).toMatch(
+        /Blocked by cancelled task #9999; needs a human/,
+      );
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("allows an explicit one-request override past the dependency gate", async () => {
+    const fx = makeFixture("ready", 'depends_on: ["9999"]\n');
+    try {
+      const { res, fake } = makeRes();
+      await taskAction(
+        makeCtx(fx, { runnerRunning: true }),
+        makeReq({ overrideDependencies: true }),
+        res,
+        {
+          param1: "0296",
+          param2: "start",
+        },
+      );
+      expect(fake.status).toBe(400);
+      expect((fake.payload as { error: string }).error).toMatch(/already running/);
+      expect(readTaskFile(fx).status).toBe("ready");
     } finally {
       fx.clean();
     }

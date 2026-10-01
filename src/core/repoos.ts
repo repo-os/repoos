@@ -25,6 +25,7 @@ import {
 import { STATUSES, type RepoOSConfig, type RepoIndex, type Task, type Status } from "./types.js";
 import { normalizeStoryName } from "./stories.js";
 import { formatTaskAreas, parseTaskAreas } from "./areas.js";
+import { normalizeTaskDependencies, validateTaskDependencies } from "./task-dependencies.js";
 
 export interface CreateTaskInput {
   title: string;
@@ -39,6 +40,8 @@ export interface CreateTaskInput {
   area?: string | string[];
   /** Optional cross-area delivery slice (a "story"). */
   story?: string;
+  /** Upstream task ids that must be merged before this task can start. */
+  dependsOn?: string[];
   assignedTo?: string;
   createdBy?: string;
   branch?: string;
@@ -240,6 +243,10 @@ export function createRepoOS(root?: string, loadOptions: LoadConfigOptions = {})
           : { areas: ["general"], area: "general" };
         Object.assign(patch as Record<string, unknown>, normalized);
       }
+      if (patch.dependsOn !== undefined) {
+        patch.dependsOn = normalizeTaskDependencies(patch.dependsOn);
+        validateTaskDependencies(id, patch.dependsOn, freshIndex().tasks);
+      }
       Object.assign(task, patch);
       const summary = changed.length ? `updated ${changed.join(", ")}` : "updated";
       return rewrite(task, [summary]);
@@ -259,6 +266,8 @@ export function createRepoOS(root?: string, loadOptions: LoadConfigOptions = {})
       const absPath = join(workDir, fileName);
 
       const ts = utcTimestamp();
+      const dependsOn = normalizeTaskDependencies(input.dependsOn ?? []);
+      validateTaskDependencies(id, dependsOn, idx.tasks);
       const task: Task = {
         id,
         title: input.title,
@@ -279,6 +288,8 @@ export function createRepoOS(root?: string, loadOptions: LoadConfigOptions = {})
             : { areas: ["general"], area: "general" };
         })(),
         story: normalizeStoryName(input.story),
+        dependsOn,
+        mergedCommit: null,
         assignee: (input.assignedTo ?? "").toLowerCase() === "ai" ? "ai" : "unassigned",
         assignedTo: input.assignedTo ?? "",
         createdBy: input.createdBy ?? "",
