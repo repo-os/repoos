@@ -1526,7 +1526,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     const updated = patchTaskFile(
       config,
       existing.absPath,
-      { status: "ready", needsInput: false },
+      { status: "ready", needsInput: false, note: "task abandoned" },
       { onStatusChange: onServerStatusChange },
     );
     index.applyFileChange(updated.absPath);

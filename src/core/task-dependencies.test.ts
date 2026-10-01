@@ -22,6 +22,7 @@ function task(
   branch = "",
   dependsOn: string[] = [],
   mergedCommit?: string,
+  body = "",
 ): Task {
   const absPath = join(root, "work", `${id}-task.md`);
   const content = [
@@ -36,6 +37,7 @@ function task(
     ...(mergedCommit ? [`merged_commit: ${mergedCommit}`] : []),
     "---",
     "",
+    body,
   ].join("\n");
   return parseTask({
     content,
@@ -226,6 +228,45 @@ describe("Git-verified task dependency state", () => {
           completedWithStaleProof,
         ]),
       ).toEqual([{ id: "0004", state: "cancelled" }]);
+    } finally {
+      clean();
+    }
+  });
+
+  it("marks dependents of an explicitly abandoned upstream as needing a human", () => {
+    const { root, clean } = makeRepo();
+    try {
+      const dependent = task(root, "0001", "ready", "", ["0002"]);
+      const abandoned = task(
+        root,
+        "0002",
+        "ready",
+        "feature/upstream",
+        [],
+        undefined,
+        [
+          "## Activity",
+          "",
+          "- 2026-10-01T20:00:00Z · status active→ready",
+          "- 2026-10-01T20:00:01Z · note: task abandoned",
+        ].join("\n"),
+      );
+      expect(taskDependencyBlockers(root, dependent, [dependent, abandoned])).toEqual([
+        { id: "0002", state: "cancelled" },
+      ]);
+
+      const restarted = task(
+        root,
+        "0002",
+        "ready",
+        "feature/upstream",
+        [],
+        undefined,
+        `${abandoned.body}\n- 2026-10-01T20:01:00Z · status ready→active\n`,
+      );
+      expect(taskDependencyBlockers(root, dependent, [dependent, restarted])).toEqual([
+        { id: "0002", state: "waiting" },
+      ]);
     } finally {
       clean();
     }

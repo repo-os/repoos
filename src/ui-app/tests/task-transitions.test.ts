@@ -332,7 +332,9 @@ describe("POST /api/tasks/:id/abandon", () => {
       });
       expect(fake.status).toBe(200);
       expect(stop).toHaveBeenCalledWith("0296");
-      expect(readTaskFile(fx).status).toBe("ready");
+      const abandoned = readTaskFile(fx);
+      expect(abandoned.status).toBe("ready");
+      expect(abandoned.body).toContain("note: task abandoned");
     } finally {
       fx.clean();
     }
