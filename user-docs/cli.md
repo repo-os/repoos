@@ -102,6 +102,20 @@ started manually unless you explicitly confirm the override; missing or
 unverifiable upstream tasks are marked as needing a human. Unknown ids,
 self-dependencies, and cycles are rejected when written.
 
+To replace only one `## Section` in the body (create it if absent) without
+touching the rest — including the Activity log — use `--section "<heading>"`
+with `--section-body "..."`:
+
+    repoos update 0612 --section "Shots" --section-body '```json
+    [{"target":"default","route":"/agents?tab=detected","label":"Detected tab","highlight":".detect-row"}]
+    ```'
+
+The section content for `Shots` must be a fenced JSON list, as shown above.
+
+A full `--body` replace that would drop Problem / Desired UX / Acceptance
+criteria / Notes for AI is refused unless `--force` is passed; the error points
+at the `--section` form.
+
 ### `repoos note <id> "<text>"`
 
 Appends a free-form note to the task's activity log. Useful for leaving context

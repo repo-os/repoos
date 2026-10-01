@@ -10,8 +10,13 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RepoOSConfig } from "../../core/types";
-import { extractSection, removeSection } from "../../core/task";
-import { patchTaskFile } from "../../server/write";
+import {
+  extractSection,
+  normalizeSectionHeading,
+  removeSection,
+  replaceSection,
+} from "../../core/task";
+import { patchTaskFile, WriteError } from "../../server/write";
 
 function config(root: string): RepoOSConfig {
   return {
@@ -370,5 +375,181 @@ describe("section helpers", () => {
     expect(out).toContain("Spec text.");
     expect(out).toContain("## Activity");
     expect(out).not.toMatch(/\n\n\n/);
+  });
+
+  it("normalizeSectionHeading accepts a bare title or a ## line", () => {
+    expect(normalizeSectionHeading("Shots")).toBe("## Shots");
+    expect(normalizeSectionHeading("## Shots")).toBe("## Shots");
+  });
+
+  it("replaceSection updates one section and preserves Activity", () => {
+    const out = replaceSection(body, "## Shots", "```json\n[]\n```");
+    expect(out).toContain("## Shots");
+    expect(out).toContain("```json");
+    expect(out).toContain("## Screenshots");
+    expect(out).toContain("## Activity");
+    expect(out).toContain("Spec text.");
+    expect(out.split("## Activity").length - 1).toBe(1);
+    expect(out.indexOf("## Shots")).toBeLessThan(out.indexOf("## Activity"));
+  });
+
+  it("replaceSection creates a missing section before Activity", () => {
+    const out = replaceSection(body, "## Shots", "new");
+    expect(out.indexOf("## Shots")).toBeLessThan(out.indexOf("## Activity"));
+    expect(out.split("## Activity").length - 1).toBe(1);
+  });
+
+  it("replaceSection on an existing section does not duplicate Activity", () => {
+    const out = replaceSection(body, "## Screenshots", "![b](y.png)");
+    expect(out.split("## Screenshots").length - 1).toBe(1);
+    expect(out.split("## Activity").length - 1).toBe(1);
+    expect(out).toContain("![b](y.png)");
+    expect(out).not.toContain("![a](x.png)");
+    expect(out.indexOf("## Screenshots")).toBeLessThan(out.indexOf("## Activity"));
+    expect(out).toContain("- 2026-01-01T00:00:00Z · created");
+  });
+
+  it("replaces an existing section in place without reordering later sections", () => {
+    const ordered = `## Problem
+
+Problem text.
+
+## Desired UX
+
+Old UX.
+
+## Acceptance criteria
+
+- [ ] Done
+
+## Activity
+
+- 2026-01-01T00:00:00Z · created`;
+    const out = replaceSection(ordered, "Desired UX", "New UX.");
+    expect(out.indexOf("## Desired UX")).toBeLessThan(out.indexOf("## Acceptance criteria"));
+    expect(out).toContain("## Desired UX\nNew UX.");
+    expect(out).toContain("## Problem\n\nProblem text.");
+    expect(out).toContain("## Acceptance criteria\n\n- [ ] Done");
+  });
+
+  it("refuses to replace the append-only Activity section", () => {
+    expect(() => replaceSection(body, "Activity", "rewritten")).toThrow(/append-only/);
+  });
+
+  it("rejects a ### heading instead of mangling it into `## ### Foo` (#0613)", () => {
+    expect(() => replaceSection(body, "### Foo", "x")).toThrow(/single ## heading/);
+    expect(() => replaceSection(body, "## ### Foo", "x")).toThrow(/single ## heading/);
+    expect(() => replaceSection(body, "Foo\nBar", "x")).toThrow(/single ## heading/);
+    expect(replaceSection(body, "Foo", "x")).toContain("## Foo");
+  });
+});
+
+const WITH_SPEC = `---
+id: "0613"
+title: Spec task
+type: feature
+status: active
+---
+## Problem
+
+Real problem.
+
+## Desired UX
+
+UX here.
+
+## Acceptance criteria
+
+- [ ] done
+
+## Notes for AI
+
+notes
+
+## Activity
+
+- 2026-01-01T00:00:00Z · created
+`;
+
+describe("spec section clobber guard (#0613)", () => {
+  it("refuses a full body replace that drops spec headings", () => {
+    const { root, absPath, clean } = setupFile(WITH_SPEC);
+    try {
+      expect(() =>
+        patchTaskFile(config(root), absPath, { body: "## Shots\n\n```json\n[]\n```\n" }),
+      ).toThrow(WriteError);
+    } finally {
+      clean();
+    }
+  });
+
+  it("allows the replace with --force", () => {
+    const { root, absPath, clean } = setupFile(WITH_SPEC);
+    try {
+      const updated = patchTaskFile(config(root), absPath, {
+        body: "## Shots only\n",
+        force: true,
+      });
+      expect(updated.body).toContain("## Shots only");
+    } finally {
+      clean();
+    }
+  });
+
+  it("section patch replaces only the named section", () => {
+    const { root, absPath, clean } = setupFile(WITH_SPEC);
+    try {
+      const updated = patchTaskFile(config(root), absPath, {
+        section: { heading: "Shots", content: "```json\n[]\n```" },
+      });
+      expect(updated.body).toContain("## Problem");
+      expect(updated.body).toContain("## Shots");
+      expect(updated.body).toContain("## Activity");
+      expect(updated.body.split("## Activity").length - 1).toBe(1);
+    } finally {
+      clean();
+    }
+  });
+
+  it("section patch replaces an existing section without moving it", () => {
+    const { root, absPath, clean } = setupFile(WITH_SPEC);
+    try {
+      const updated = patchTaskFile(config(root), absPath, {
+        section: { heading: "Desired UX", content: "Updated UX." },
+      });
+      expect(updated.body.indexOf("## Desired UX")).toBeLessThan(
+        updated.body.indexOf("## Acceptance criteria"),
+      );
+      expect(updated.body).toContain("## Desired UX\nUpdated UX.");
+    } finally {
+      clean();
+    }
+  });
+
+  it("refuses section patches to append-only Activity", () => {
+    const { root, absPath, clean } = setupFile(WITH_SPEC);
+    try {
+      expect(() =>
+        patchTaskFile(config(root), absPath, {
+          section: { heading: "Activity", content: "rewritten log" },
+        }),
+      ).toThrow(WriteError);
+    } finally {
+      clean();
+    }
+  });
+
+  it("refuses a patch that sets both section and body", () => {
+    const { root, absPath, clean } = setupFile(WITH_SPEC);
+    try {
+      expect(() =>
+        patchTaskFile(config(root), absPath, {
+          section: { heading: "Shots", content: "x" },
+          body: "## Problem\n\nnope\n",
+        }),
+      ).toThrow(WriteError);
+    } finally {
+      clean();
+    }
   });
 });

@@ -272,6 +272,32 @@ describe("buildCapturePlan", () => {
     expect(entries[0].provenance).toEqual({ kind: "declared", label: "Board" });
   });
 
+  it("collapses near-duplicate declared shots and merges highlights (#0613)", () => {
+    const { entries, collapsed } = buildCapturePlan(
+      ["default"],
+      [
+        { route: "/agents", highlight: ".detect-row", label: "Row" },
+        { route: "/agents", highlight: ".detect-deprecated-slot", label: "Slot" },
+      ],
+    );
+    expect(entries).toHaveLength(1);
+    expect(entries[0].highlight).toBe(".detect-row, .detect-deprecated-slot");
+    expect(entries[0].highlights).toEqual([".detect-row", ".detect-deprecated-slot"]);
+    expect(collapsed).toEqual(["Slot"]);
+  });
+
+  it("adopts a later highlight when the first duplicate had none (#0613)", () => {
+    const { entries } = buildCapturePlan(
+      ["default"],
+      [
+        { route: "/agents", label: "Row" },
+        { route: "/agents", highlight: ".detect-row", label: "Slot" },
+      ],
+    );
+    expect(entries).toHaveLength(1);
+    expect(entries[0].highlight).toBe(".detect-row");
+  });
+
   it("rejects a declared target the resolution missed, with an actionable error", () => {
     const { entries, errors } = buildCapturePlan(["Docs site"], [{ target: "Landing page" }]);
     expect(entries).toEqual([]);
@@ -428,6 +454,7 @@ describe("planAutoCapture gates (#0594)", () => {
       ],
       errors: [],
       skips: [],
+      collapsed: [],
     });
   });
 
@@ -561,7 +588,7 @@ describe("captureShotPage highlight (#0603)", () => {
     await captureShotPage(
       page,
       "http://x/",
-      { highlight: ".new-badge" },
+      { highlight: ".new-badge", route: "/" },
       {
         waitMs: 0,
         fullPage: false,
@@ -582,7 +609,7 @@ describe("captureShotPage highlight (#0603)", () => {
     const png = await captureShotPage(
       page,
       "http://x/",
-      { highlight: ".x" },
+      { highlight: ".x", route: "/" },
       {
         waitMs: 0,
         fullPage: false,
@@ -593,8 +620,99 @@ describe("captureShotPage highlight (#0603)", () => {
 
   it("skips the dance entirely without a highlight selector", async () => {
     const page = fakePage({ matches: 0 });
-    await captureShotPage(page, "http://x/", { steps: [] }, { waitMs: 0, fullPage: false });
+    await captureShotPage(
+      page,
+      "http://x/",
+      { steps: [], route: "/" },
+      { waitMs: 0, fullPage: false },
+    );
     expect(page.__evaluations).toEqual([]);
+  });
+
+  it("invokes onHighlightMiss when the highlight matches nothing (#0613)", async () => {
+    const page = fakePage({ matches: 0 });
+    const misses: string[] = [];
+    await captureShotPage(
+      page,
+      "http://x/",
+      { highlight: ".missing", route: "/board" },
+      { waitMs: 0, fullPage: false },
+      (selector) => misses.push(selector),
+    );
+    expect(misses).toEqual([".missing"]);
+  });
+
+  it("reports a miss for each merged highlight individually (#0613)", async () => {
+    const page = fakePage({ matches: 0 });
+    // `.live` matches, `.stale` does not — a comma-joined check would hide it.
+    (page as unknown as { evaluate: unknown }).evaluate = async (body: string, arg: string) =>
+      body.includes("querySelectorAll(sel)") && arg === ".live" ? 1 : 0;
+    const misses: string[] = [];
+    await captureShotPage(
+      page,
+      "http://x/",
+      { highlight: ".live, .stale", highlights: [".live", ".stale"], route: "/board" },
+      { waitMs: 0, fullPage: false },
+      (selector) => misses.push(selector),
+    );
+    expect(misses).toEqual([".stale"]);
+  });
+
+  it("counts a match even when an overlapping selector already marked the element (#0613)", async () => {
+    // Run the real draw script against a tiny DOM where `.item` and `div.item`
+    // hit the same element, so the second selector sees it pre-marked.
+    class FakeElement {
+      attrs = new Set<string>();
+      hasAttribute(name: string) {
+        return this.attrs.has(name);
+      }
+      setAttribute(name: string) {
+        this.attrs.add(name);
+      }
+      removeAttribute(name: string) {
+        this.attrs.delete(name);
+      }
+    }
+    const el = new FakeElement();
+    const doc = {
+      querySelectorAll: (sel: string) => (sel === ".item" || sel === "div.item" ? [el] : []),
+      getElementById: () => null,
+      createElement: () => ({ id: "", textContent: "" }),
+      head: { append() {} },
+    };
+    const page = fakePage({ matches: 0 });
+    (page as unknown as { evaluate: unknown }).evaluate = async (body: string) =>
+      new Function("document", "Element", `return ${body}`)(doc, FakeElement);
+    const misses: string[] = [];
+    await captureShotPage(
+      page,
+      "http://x/",
+      { highlight: ".item, div.item", highlights: [".item", "div.item"], route: "/board" },
+      { waitMs: 0, fullPage: false },
+      (selector) => misses.push(selector),
+    );
+    expect(misses).toEqual([]);
+  });
+
+  it("falls back to the whole window when selector matches nothing (#0613)", async () => {
+    const page = fakePage({ matches: 0 });
+    page.locator = () =>
+      ({
+        count: async () => 0,
+        screenshot: async () => Buffer.from("crop"),
+      }) as unknown as ReturnType<ShotDriverPage["locator"]>;
+    const misses: string[] = [];
+    const png = await captureShotPage(
+      page,
+      "http://x/",
+      { selector: ".missing", route: "/board" },
+      { waitMs: 0, fullPage: false },
+      undefined,
+      (selector) => misses.push(selector),
+    );
+    expect(misses).toEqual([".missing"]);
+    expect(png).toBeInstanceOf(Buffer);
+    expect(page.__screenshots).toEqual([0]);
   });
 
   it("still captures when the draw script throws (best-effort, #0603)", async () => {
@@ -605,7 +723,7 @@ describe("captureShotPage highlight (#0603)", () => {
     const png = await captureShotPage(
       page,
       "http://x/",
-      { highlight: ".x" },
+      { highlight: ".x", route: "/" },
       {
         waitMs: 0,
         fullPage: false,

@@ -125,6 +125,22 @@ export function extractSection(body: string, heading: string): string | null {
  * collapsing the blank lines it leaves behind. Unchanged when the heading is
  * absent.
  */
+/** Normalize a section title to the exact `## Heading` line `replaceSection` expects. */
+export function normalizeSectionHeading(heading: string): string {
+  const trimmed = heading.trim();
+  if (trimmed.startsWith("## ")) return trimmed;
+  return `## ${trimmed}`;
+}
+
+/**
+ * True for a single second-level heading line. Text that itself starts with
+ * `#` is rejected: `normalizeSectionHeading("### Foo")` would otherwise yield
+ * `## ### Foo`, a mangled heading instead of the deeper one the caller meant.
+ */
+export function isSectionHeading(heading: string): boolean {
+  return /^## [^#\s][^\r\n]*$/.test(heading);
+}
+
 export function removeSection(body: string, heading: string): string {
   const lines = body.split("\n");
   const start = sectionStart(lines, heading);
@@ -133,6 +149,34 @@ export function removeSection(body: string, heading: string): string {
   const before = lines.slice(0, start).join("\n").replace(/\s+$/, "");
   const after = lines.slice(end).join("\n").replace(/^\s+/, "");
   return [before, after].filter(Boolean).join("\n\n");
+}
+
+/**
+ * Replace a single `## Heading` section's content without touching the rest
+ * of the body. When the heading is absent, it is created at the end (before
+ * `## Activity` if present) with a blank line before it. The section content
+ * is the heading line plus the provided `content` (which may itself span
+ * multiple lines). All other sections — including `## Activity` — are preserved
+ * verbatim.
+ */
+export function replaceSection(body: string, heading: string, content: string): string {
+  const normalizedHeading = normalizeSectionHeading(heading);
+  if (!isSectionHeading(normalizedHeading)) {
+    throw new Error("section heading must be a single ## heading (not ### or deeper)");
+  }
+  if (normalizedHeading === ACTIVITY_HEADING) {
+    throw new Error("## Activity is append-only and cannot be edited as a section");
+  }
+
+  const lines = body.replace(/\s+$/, "").split("\n");
+  const start = sectionStart(lines, normalizedHeading);
+  const activityStart = sectionStart(lines, ACTIVITY_HEADING);
+  const insertAt = start === -1 ? (activityStart === -1 ? lines.length : activityStart) : start;
+  const end = start === -1 ? insertAt : nextSection(lines, start + 1);
+  const prefix = lines.slice(0, insertAt).join("\n").replace(/\s+$/, "");
+  const suffix = lines.slice(end).join("\n").replace(/^\s+/, "");
+  const section = `${normalizedHeading}\n${content}`;
+  return [prefix, section, suffix].filter(Boolean).join("\n\n");
 }
 
 /**
