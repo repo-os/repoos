@@ -3,6 +3,9 @@ id: "0611"
 title: Row layout for task preview shots on Changes tab
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the opencode agent exited without output: error: Upstream request failed: Insufficient account funds"
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +13,7 @@ created_by: hello@repoos.org
 branch: feat/row-layout-for-task-preview-shots-on-cha
 model_override: opencode-go/space-bunny-free
 created_at: "2026-10-01T04:34:32Z"
-updated_at: "2026-10-01T05:03:37Z"
+updated_at: "2026-10-01T05:03:38Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -95,3 +98,4 @@ On the task panel ui changes sections where we show the shots taken by the task 
 - 2026-10-01T04:38:13Z · needs_input
 - 2026-10-01T04:58:58Z · body
 - 2026-10-01T05:03:37Z · status active→review
+- 2026-10-01T05:03:38Z · needs_input
