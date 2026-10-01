@@ -2,7 +2,7 @@
 id: "0616"
 title: Integrate pi as a drivable coding harness
 type: feature
-status: active
+status: review
 priority: p2
 area: [agent, core, server]
 assigned_to: ai
@@ -125,4 +125,4 @@ uses: `version`, `help`, `model-discovery`, `headless-one-shot`,
 - 2026-10-01T17:49:35Z · status review→active
 - 2026-10-01T17:49:40Z · status active→review
 - 2026-10-01T17:49:40Z · status review→active
-- 2026-10-01T17:53:30Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-01T17:53:30Z · status active→review
