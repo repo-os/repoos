@@ -3,9 +3,6 @@ id: "0613"
 title: Protect task bodies from clobbering and tighten shot capture
 type: feature
 status: active
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Desired UX"
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/protect-task-bodies-from-clobbering-and-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-01T09:30:31Z"
-updated_at: "2026-10-01T11:09:22Z"
+updated_at: "2026-10-01T11:09:38Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -66,3 +63,4 @@ Follow-up to #0612: add a section-replace/append form for task bodies (so declar
 - 2026-10-01T11:02:38Z · cli_override, model_override
 - 2026-10-01T11:02:39Z · model_override
 - 2026-10-01T11:09:22Z · needs_input
+- 2026-10-01T11:09:38Z · needs_input (underspecified) dismissed by hello@repoos.org
