@@ -2,16 +2,16 @@
 id: "0618"
 title: "Default first board column label to \"Draft\""
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/default-first-board-column-label-to-draf
 cli_override: pi
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-01T18:08:13Z"
-updated_at: "2026-10-01T18:08:51Z"
+updated_at: "2026-10-01T18:09:06Z"
 ---
 ## Problem
 
@@ -65,3 +65,4 @@ Let's change this first col to have the name "Draft" by default. I like short an
 - 2026-10-01T18:08:40Z · status draft→inbox, title, area, body
 - 2026-10-01T18:08:49Z · model_override
 - 2026-10-01T18:08:51Z · status inbox→ready
+- 2026-10-01T18:09:06Z · status ready→active, branch
