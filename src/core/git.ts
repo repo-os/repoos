@@ -1199,6 +1199,12 @@ export function branchCommit(root: string, branch: string): string | null {
   return git(root, ["rev-parse", "--verify", `refs/heads/${branch}^{commit}`]);
 }
 
+/** Whether a commit object is available locally for ancestry verification. */
+export function commitExists(root: string, commit: string): boolean {
+  if (!/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/i.test(commit)) return false;
+  return git(root, ["cat-file", "-e", `${commit}^{commit}`]) !== null;
+}
+
 export interface MergeBranchResult {
   /** Whether the branch was merged into the current checkout. */
   merged: boolean;

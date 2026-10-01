@@ -204,10 +204,28 @@ describe("Git-verified task dependency state", () => {
     try {
       const dependent = task(root, "0001", "ready", "", ["0002", "0003"]);
       const completedWithoutProof = task(root, "0003", "done");
+      const completedWithStaleProof = task(root, "0004", "done", "", [], "f".repeat(40));
       expect(taskDependencyBlockers(root, dependent, [dependent, completedWithoutProof])).toEqual([
         { id: "0002", state: "cancelled" },
         { id: "0003", state: "cancelled" },
       ]);
+      expect(
+        taskDependencyBlockers(root, dependent, [
+          dependent,
+          completedWithoutProof,
+          completedWithStaleProof,
+        ]),
+      ).toEqual([
+        { id: "0002", state: "cancelled" },
+        { id: "0003", state: "cancelled" },
+      ]);
+      const dependentOnStaleProof = task(root, "0005", "ready", "", ["0004"]);
+      expect(
+        taskDependencyBlockers(root, dependentOnStaleProof, [
+          dependentOnStaleProof,
+          completedWithStaleProof,
+        ]),
+      ).toEqual([{ id: "0004", state: "cancelled" }]);
     } finally {
       clean();
     }
