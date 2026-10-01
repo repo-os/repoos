@@ -3,6 +3,9 @@ id: "0613"
 title: Protect task bodies from clobbering and tighten shot capture
 type: feature
 status: active
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Desired UX"
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -62,3 +65,4 @@ Follow-up to #0612: add a section-replace/append form for task bodies (so declar
 - 2026-10-01T10:37:09Z · needs_input (dev-error) dismissed by hello@repoos.org
 - 2026-10-01T11:02:38Z · cli_override, model_override
 - 2026-10-01T11:02:39Z · model_override
+- 2026-10-01T11:09:22Z · needs_input
