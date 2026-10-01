@@ -182,7 +182,7 @@ const REVIEW_SESSION_PREFIX = "review:";
 const CTO_SESSION_ID = "cto:board";
 
 export const STATUS_COLORS: Record<string, string> = {
-  draft: "#3a4055",
+  draft: "#a3a9bd",
   inbox: "#566081",
   ready: "#39e0ff",
   active: "#9d7bff",
@@ -248,7 +248,7 @@ export const COLUMNS: Column[] = [
 const COLUMN_COLORS: Record<string, string> = Object.fromEntries(
   COLUMNS.map((c) => [c.id, c.color]),
 );
-COLUMN_COLORS.draft = "var(--txt-faint)";
+COLUMN_COLORS.draft = STATUS_COLORS.draft;
 
 /** Build the COLUMNS array with labels applied from config. */
 export function columnsWithLabels(labels: Record<string, string>): Column[] {
@@ -257,7 +257,7 @@ export function columnsWithLabels(labels: Record<string, string>): Column[] {
 
 /** Build the draft column with its label from config. */
 export function draftColumnWithLabel(labels: Record<string, string>): Column {
-  return { id: "draft", label: labels.draft ?? "Proposed / Drafts", color: "var(--txt-faint)" };
+  return { id: "draft", label: labels.draft ?? "Proposed / Drafts", color: STATUS_COLORS.draft };
 }
 
 /** Sort modes for work-page task columns. "recent" sorts by updated_at desc,
