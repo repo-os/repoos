@@ -22,7 +22,24 @@ function git(cwd: string, args: string[]): string {
   return execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
 }
 
-function taskText(status: string): string {
+const WELL_SPECIFIED_BODY = `## Problem
+
+${"Substantive problem description that is long enough to avoid the short-body heuristic. ".repeat(8)}
+
+## Desired UX
+
+${"Substantive UX description that is long enough to avoid the short-body heuristic. ".repeat(8)}
+
+## Acceptance criteria
+
+- [ ] Users can complete the flow end to end
+
+## Notes for AI
+
+${"Substantive notes that are long enough to avoid the short-body heuristic. ".repeat(6)}
+`;
+
+function taskText(status: string, extraFrontmatter = "", body = "Body\n"): string {
   return `---
 id: "0001"
 title: Handoff fixture
@@ -32,19 +49,18 @@ priority: p2
 area: agent
 assigned_to: ai
 branch: feat/handoff
----
-Body
-`;
+${extraFrontmatter}---
+${body}`;
 }
 
-function makeFixture(checkExit = 0): Fixture {
+function makeFixture(checkExit = 0, extraFrontmatter = ""): Fixture {
   const root = mkdtempSync(join(tmpdir(), "repoos-handoff-"));
   const worktree = `${root}-wt`;
   const bin = join(root, "fake-bin");
   const taskPath = join(root, "work", "0001-handoff.md");
   mkdirSync(join(root, "work"), { recursive: true });
   mkdirSync(bin, { recursive: true });
-  writeFileSync(taskPath, taskText("active"));
+  writeFileSync(taskPath, taskText("active", extraFrontmatter));
   writeFileSync(join(root, "source.txt"), "base\n");
   mkdirSync(join(root, "dist"), { recursive: true });
   writeFileSync(join(root, "dist", "app.js"), "built from main\n");
@@ -120,6 +136,7 @@ describe("trusted server-side handoff", () => {
       // tested is the tree that got committed — the whole point of the order.
       expect(steps).toEqual(["validate", "commit", "check", "review", "main", "done"]);
       expect(readTask(fx).status).toBe("review");
+      expect(readTask(fx).body).toContain("Task body is underspecified:");
       expect(readFileSync(join(fx.worktree, "work", "0001-handoff.md"), "utf8")).toContain(
         "status: review",
       );
@@ -129,6 +146,59 @@ describe("trusted server-side handoff", () => {
       const repeated = await handoffTask(fx.config, readTask(fx), request(fx));
       expect(repeated).toMatchObject({ ok: true, detail: "handoff was already finalized" });
       expect(Number(git(fx.worktree, ["rev-list", "--count", "HEAD"]))).toBe(count);
+    } finally {
+      process.env.PATH = oldPath;
+      fx.clean();
+    }
+  });
+
+  it("records the underspecified handoff note without replacing an unrelated needs_input reason", async () => {
+    const fx = makeFixture(0, "needs_input: true\nneeds_input_reason: dev-error\n");
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${oldPath}`;
+    try {
+      const result = await handoffTask(fx.config, readTask(fx), request(fx));
+      expect(result).toMatchObject({ ok: true, step: "done" });
+      expect(readTask(fx)).toMatchObject({
+        needsInput: true,
+        needsInputReason: "dev-error",
+      });
+      expect(readTask(fx).body).toContain("Task body is underspecified:");
+    } finally {
+      process.env.PATH = oldPath;
+      fx.clean();
+    }
+  });
+
+  it("assesses underspecified from the canonical body when the worktree copy lags (#0613)", async () => {
+    const fx = makeFixture();
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${oldPath}`;
+    try {
+      writeFileSync(fx.taskPath, taskText("active", "", WELL_SPECIFIED_BODY));
+      const worktreeTaskPath = join(fx.worktree, "work", "0001-handoff.md");
+      expect(readFileSync(worktreeTaskPath, "utf8")).toContain("Body");
+
+      const result = await handoffTask(fx.config, readTask(fx), request(fx));
+      expect(result).toMatchObject({ ok: true, step: "done" });
+      expect(readTask(fx).body).not.toContain("Task body is underspecified:");
+    } finally {
+      process.env.PATH = oldPath;
+      fx.clean();
+    }
+  });
+
+  it("flags underspecified when only the canonical body is stale (#0613)", async () => {
+    const fx = makeFixture();
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${oldPath}`;
+    try {
+      const worktreeTaskPath = join(fx.worktree, "work", "0001-handoff.md");
+      writeFileSync(worktreeTaskPath, taskText("active", "", WELL_SPECIFIED_BODY));
+
+      const result = await handoffTask(fx.config, readTask(fx), request(fx));
+      expect(result).toMatchObject({ ok: true, step: "done" });
+      expect(readTask(fx).body).toContain("Task body is underspecified:");
     } finally {
       process.env.PATH = oldPath;
       fx.clean();

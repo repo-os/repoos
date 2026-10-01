@@ -127,6 +127,20 @@ a fenced JSON list (`src/core/shot-plan.ts`), one entry per capture —
 optional ordered `steps` (`click` / `fill`+`text` / `waitFor` / `waitMs`,
 plain CSS selectors). Routes and selectors only — no framework knowledge.
 
+**Shot hygiene (#0613).** When a declared `highlight` or `selector` matches
+zero elements at capture time, a visible warning is recorded on the task
+(for example: highlight `.x` matched nothing on /route) — capture still succeeds.
+Declared shots with the same `target` + `route` + `steps` + `selector` are
+collapsed to one capture, with `highlight` selectors merged (comma-joined),
+so near-duplicates become one capture.
+
+**Whole-window default (#0613).** Declared shots capture the whole visible
+viewport by default (`fullPage: false`) with changed elements outlined via
+`highlight`. `selector` (element crop) is the only exception; `fullPage`
+stays off. Prefer `?tab=<id>` routes (e.g. `/agents?tab=detected`) over click
+steps to reach the right tab in tabbed views, and always set `highlight` to
+the changed elements.
+
 #0603 tightened what the automatic pass will shoot, because #0600's review
 captured an unlabeled `/` frame that showed nothing about its change (its diff
 added tests under `src/ui-app/tests/`, which the plain `src/ui-app/**` glob

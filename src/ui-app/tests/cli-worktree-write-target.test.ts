@@ -96,6 +96,21 @@ describe("board-write commands resolve to the main checkout, not cwd (#0202)", (
     }
   });
 
+  it("cmdUpdate refuses --section-body without --section instead of dropping it (#0613)", async () => {
+    const { root, taskPath, clean } = makeRepoWithTask();
+    const prevExit = process.exitCode;
+    try {
+      await withCwd(root, () => {
+        cmdUpdate(["0001", "--title", "Should not apply", "--section-body", "orphaned content"]);
+      });
+      expect(process.exitCode).toBe(1);
+      expect(readFileSync(taskPath, "utf8")).not.toMatch(/Should not apply/);
+    } finally {
+      process.exitCode = prevExit;
+      clean();
+    }
+  });
+
   it("cmdNew run from inside a task worktree creates the task in the MAIN checkout's work/", async () => {
     const { root, clean } = makeRepoWithTask();
     try {

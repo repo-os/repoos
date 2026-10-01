@@ -354,22 +354,37 @@ const UPDATE_FLAGS: Record<string, keyof TaskPatch> = {
   "assigned-to": "assignedTo",
   "needs-input": "needsInput",
   questions: "questions",
+  section: "section",
 };
+
+/** Section headings a full `--body` replace must not silently drop (#0613). */
+const SPEC_SECTION_NAMES = new Set([
+  "Problem",
+  "Desired UX",
+  "Acceptance criteria",
+  "Notes for AI",
+]);
 
 /**
  * `repoos update <id> [--title ...] [--area ...] [--story ...] [--priority ...]
  *   [--type ...] [--body ... | --body -] [--branch ...] [--assigned-to ai|human]
- *   [--needs-input true|false] [--questions "Question one\nQuestion two"] [--depends-on ids]`
+ *   [--needs-input true|false] [--questions "Question one\nQuestion two"] [--depends-on ids]
+ *   [--section "<heading>"] [--section-body ... | --force]`
  *
  * Writes directly via patchTaskFile (same path the server's PATCH route uses),
  * so it works with no HTTP round-trip and no session auth — this is the path
  * agents/scripts should use to edit task metadata instead of hitting the API.
  * `--body -` reads the new body from stdin, for large/multiline bodies.
+ * `--section "<heading>" --section-body ...` replaces only that `## Section`
+ * (create it if absent) without touching the rest of the body — use this to
+ * declare `## Shots`. A full `--body` that drops spec headings (Problem /
+ * Desired UX / Acceptance criteria / Notes for AI) is refused unless `--force`
+ * is passed.
  */
 export function cmdUpdate(args: string[]): void {
   const [id, ...rest] = args;
   const usage =
-    '  Usage: repoos update <id> [--title "..."] [--area a,b] [--story "Delivery slice"] [--depends-on 0542,0538] [--priority p] [--type t] [--body "..."|-] [--branch b] [--assigned-to ai|human] [--needs-input true|false] [--questions "Question one\\nQuestion two"] [--clear-questions]';
+    '  Usage: repoos update <id> [--title "..."] [--area a,b] [--story "Delivery slice"] [--depends-on 0542,0538] [--priority p] [--type t] [--body "..."|-] [--branch b] [--assigned-to ai|human] [--needs-input true|false] [--questions "Question one\\nQuestion two"] [--clear-questions] [--section "<heading>"] [--section-body ...] [--force]';
   if (!id) {
     console.error(c.red(usage));
     process.exitCode = 1;
@@ -377,6 +392,8 @@ export function cmdUpdate(args: string[]): void {
   }
 
   const patch: TaskPatch = {};
+  let pendingSectionHeading: string | null = null;
+  let pendingSectionContent: string | undefined;
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i];
     if (!a.startsWith("--")) {
@@ -387,6 +404,35 @@ export function cmdUpdate(args: string[]): void {
     const key = a.slice(2);
     if (key === "clear-questions") {
       patch.questions = null;
+      continue;
+    }
+    if (key === "force") {
+      patch.force = true;
+      continue;
+    }
+    if (key === "section") {
+      if (pendingSectionHeading !== null) {
+        console.error(c.red("  --section takes a heading; repeat --section for a different one"));
+        process.exitCode = 1;
+        return;
+      }
+      const raw = rest[++i];
+      if (raw === undefined) {
+        console.error(c.red("  Missing value for --section"));
+        process.exitCode = 1;
+        return;
+      }
+      pendingSectionHeading = raw;
+      continue;
+    }
+    if (key === "section-body") {
+      const raw = rest[i + 1];
+      if (raw !== undefined && !raw.startsWith("--")) {
+        pendingSectionContent = raw === "-" ? readFileSync(0, "utf8") : raw;
+        i++;
+      } else {
+        pendingSectionContent = readFileSync(0, "utf8");
+      }
       continue;
     }
     const field = UPDATE_FLAGS[key];
@@ -419,6 +465,25 @@ export function cmdUpdate(args: string[]): void {
       const value = field === "body" && raw === "-" ? readFileSync(0, "utf8") : raw;
       (patch[field] as string) = value;
     }
+  }
+
+  if (pendingSectionHeading === null && pendingSectionContent !== undefined) {
+    console.error(c.red('  --section-body requires --section "<heading>"'));
+    process.exitCode = 1;
+    return;
+  }
+
+  if (pendingSectionHeading !== null) {
+    if (patch.body !== undefined) {
+      console.error(
+        c.red(
+          '  --section and --body are mutually exclusive; use --section "<heading>" --section-body "..."',
+        ),
+      );
+      process.exitCode = 1;
+      return;
+    }
+    patch.section = { heading: pendingSectionHeading, content: pendingSectionContent ?? "" };
   }
 
   if (Object.keys(patch).length === 0) {
