@@ -11,8 +11,7 @@ branch: feat/default-first-board-column-label-to-draf
 cli_override: pi
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-01T18:08:13Z"
-updated_at: "2026-10-01T18:24:26Z"
-review_passes: 1
+updated_at: "2026-10-01T18:23:42Z"
 ---
 ## Problem
 
@@ -54,12 +53,6 @@ The leftmost board column (`draft` status) ships with the default display label 
 
 Let's change this first col to have the name "Draft" by default. I like short and succinct and user can rename in their toml anywan.
 
-## Shots
-
-```json
-[{"target": "default", "route": "/work", "label": "Work board first column header reads Draft", "highlight": ".board-col:first-child .col-label"}, {"target": "default", "route": "/settings?tab=advanced", "label": "Settings draft column default reads Draft", "highlight": "#setting-board.columns.draft", "steps": [{"waitMs": 600}]}]
-```
-
 ## Screenshots
 
 ![Screenshot-2026-09-30-at-14.40.25](/api/tasks/0618/attachments/screenshot-1.png)
@@ -73,6 +66,4 @@ Let's change this first col to have the name "Draft" by default. I like short an
 - 2026-10-01T18:08:49Z · model_override
 - 2026-10-01T18:08:51Z · status inbox→ready
 - 2026-10-01T18:09:06Z · status ready→active, branch
-- 2026-10-01T18:19:09Z · body
 - 2026-10-01T18:23:42Z · status active→review
-- 2026-10-01T18:24:26Z · note: shots: failed — capture of Settings draft column default reads Draft on "default" failed: goto: Timeout 30000ms exceeded.
