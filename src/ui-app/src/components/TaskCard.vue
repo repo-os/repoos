@@ -415,6 +415,11 @@ const awaitingFreshReview = computed(() => {
   );
 });
 
+/** Review (or close-out) froze the feature worktree at the handoff commit. */
+const worktreeFrozen = computed(
+  () => props.task.status === "review" && !!props.task.worktreeReviewLock,
+);
+
 /** The three review substates: reviewing / coding / waiting for human. */
 const hint = computed<CardHint | null>(() => {
   const t = props.task;
@@ -431,14 +436,6 @@ const hint = computed<CardHint | null>(() => {
     };
   }
   if (t.status === "review") {
-    if (t.worktreeReviewLock?.status === "review") {
-      return {
-        label: "locked: in review",
-        title:
-          "The feature worktree is frozen at the handoff commit — send back to the engineer or discard post-handoff edits before changing files here.",
-        cls: "tc-reviewing",
-      };
-    }
     if (inPipeline.value) {
       return {
         label: pipelineStage.value
@@ -944,10 +941,41 @@ async function openDebuggerFromError(): Promise<void> {
           title="No code changes"
           >0 changes</span
         >
+        <span
+          v-if="worktreeFrozen"
+          class="tc-lock ml-auto"
+          tabindex="0"
+          role="img"
+          aria-label="Worktree locked while in review"
+          @click.stop
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+            <rect
+              x="5"
+              y="10.5"
+              width="14"
+              height="9.5"
+              rx="2.2"
+              stroke="currentColor"
+              stroke-width="1.8"
+            />
+            <path
+              d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            />
+          </svg>
+          <span class="tc-lock-pop" role="tooltip">
+            <b>Code locked on purpose.</b> This task is in review, so its worktree is frozen at the
+            handoff commit — that way what was reviewed is exactly what lands. To change code, send
+            it back to the engineer (or discard post-handoff edits) first.
+          </span>
+        </span>
         <button
           type="button"
-          class="tc-agent-btn ml-auto"
-          :class="{ open: agentPanelOpen }"
+          class="tc-agent-btn"
+          :class="{ open: agentPanelOpen, 'ml-auto': !worktreeFrozen, 'ml-1': worktreeFrozen }"
           :aria-expanded="agentPanelOpen"
           aria-label="Show or hide agent assignments for this task"
           title="Show agent assignments"
