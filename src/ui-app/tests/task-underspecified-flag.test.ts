@@ -300,6 +300,28 @@ ${"Substantive notes that are long enough to avoid the short-body heuristic. ".r
     }
   });
 
+  it("does not start the handoff when the body patch is rejected (#0613)", async () => {
+    const fx = makeFixture("active");
+    try {
+      writeFileSync(fx.taskPath, taskText("active", "").replace(STUB_BODY, WELL_SPECIFIED));
+      const before = readFileSync(fx.taskPath, "utf8");
+      const { res } = makeRes();
+      const ctx = makeCtx(fx);
+      const start = vi.fn(() => ({ started: true }) as const);
+      ctx.startUnifiedHandoff = start;
+      // A full replace that drops every spec heading is refused by the guard.
+      await expect(
+        patchTask(ctx, makeReq({ status: "review", body: "just a stub", skipChecks: true }), res, {
+          param1: "0558",
+        }),
+      ).rejects.toThrow();
+      expect(start).not.toHaveBeenCalled();
+      expect(readFileSync(fx.taskPath, "utf8")).toBe(before);
+    } finally {
+      fx.clean();
+    }
+  });
+
   it("raises needs_input when a later body edit leaves spec sections empty", async () => {
     const fx = makeFixture("active");
     try {

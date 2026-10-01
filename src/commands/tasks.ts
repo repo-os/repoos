@@ -461,6 +461,12 @@ export function cmdUpdate(args: string[]): void {
     }
   }
 
+  if (pendingSectionHeading === null && pendingSectionContent !== undefined) {
+    console.error(c.red('  --section-body requires --section "<heading>"'));
+    process.exitCode = 1;
+    return;
+  }
+
   if (pendingSectionHeading !== null) {
     if (patch.body !== undefined) {
       console.error(
