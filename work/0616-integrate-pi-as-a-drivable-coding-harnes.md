@@ -2,14 +2,14 @@
 id: "0616"
 title: Integrate pi as a drivable coding harness
 type: feature
-status: review
+status: active
 priority: p2
 area: [agent, core, server]
 assigned_to: ai
 created_by: ""
 branch: feat/integrate-pi-as-a-drivable-coding-harnes
 created_at: "2026-10-01T16:34:17Z"
-updated_at: "2026-10-01T17:49:34Z"
+updated_at: "2026-10-01T17:49:35Z"
 review_passes: 3
 ---
 ## Context
@@ -122,3 +122,4 @@ uses: `version`, `help`, `model-discovery`, `headless-one-shot`,
 - 2026-10-01T17:46:59Z · status active→review
 - 2026-10-01T17:46:59Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-01T17:49:34Z · note: Round-4 fix: added a pi model-source adapter in src/core/models.ts that runs 'pi --list-models' and parses its provider/model table, so the Agents UI offers real runnable pi model ids instead of the generic fallback. repoos check green; re-requesting review.
+- 2026-10-01T17:49:35Z · status review→active
