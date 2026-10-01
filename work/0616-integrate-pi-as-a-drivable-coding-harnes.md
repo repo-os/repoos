@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/integrate-pi-as-a-drivable-coding-harnes
 created_at: "2026-10-01T16:34:17Z"
-updated_at: "2026-10-01T17:15:21Z"
+updated_at: "2026-10-01T17:19:21Z"
 review_passes: 1
 ---
 ## Context
@@ -107,3 +107,4 @@ uses: `version`, `help`, `model-discovery`, `headless-one-shot`,
 - 2026-10-01T17:13:45Z · status active→review
 - 2026-10-01T17:13:45Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-01T17:15:21Z · status review→active
+- 2026-10-01T17:19:21Z · note: Round-2 fixes for reviewer findings: (1) readPersisted now accepts the pi engine, so a persisted pi session reloads with its transcript + session id (regression test added to session-persistence.test.ts). (2) pmCommand uses --tools read only (pi built-ins are read/bash/edit/write; the old list named nonexistent tools). (3) pi tools still running at turn exit are flushed so a cancelled tool call is not invisible. repoos check --changed main green; handing off for re-review.
