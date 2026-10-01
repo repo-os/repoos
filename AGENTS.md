@@ -463,7 +463,7 @@ cannot tell from the code alone:
   `selector` (element crop) is the exception, `fullPage` stays off. For tabbed
   views prefer `?tab=<id>` routes (e.g. `/agents?tab=detected`) over click
   steps. Write it with
-  `repoos new/update --section "<heading>" --section-body "..."` to edit one
+  `repoos update <id> --section "<heading>" --section-body "..."` to edit one
   section without clobbering the body; a full `--body` replace that drops
   Problem / Desired UX / Acceptance criteria / Notes for AI is refused unless
   `--force` is passed. Manual `repoos shot` remains the tool for checking

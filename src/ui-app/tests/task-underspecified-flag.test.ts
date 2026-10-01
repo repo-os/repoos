@@ -353,6 +353,22 @@ ${"Substantive notes that are long enough to avoid the short-body heuristic. ".r
       fx.clean();
     }
   });
+
+  it("drops a stale underspecified reason but keeps needs_input while questions remain (#0613)", () => {
+    const extra =
+      'needs_input: true\nneeds_input_reason: underspecified\nneeds_input_detail: "stub"\nquestions:\n  - "Which API?"\n';
+    const fx = makeFixture("active", extra);
+    try {
+      writeFileSync(fx.taskPath, taskText("active", extra).replace(STUB_BODY, WELL_SPECIFIED));
+      const updated = flagUnderspecifiedIfNeeded(fx.config, readTaskFile(fx));
+      expect(updated).not.toBeNull();
+      expect(updated!.needsInput).toBe(true);
+      expect(updated!.needsInputReason).toBeUndefined();
+      expect(updated!.questions).toEqual(["Which API?"]);
+    } finally {
+      fx.clean();
+    }
+  });
 });
 
 describe("flagUnderspecifiedIfNeeded guards (#0558)", () => {

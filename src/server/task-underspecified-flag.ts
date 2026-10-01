@@ -23,13 +23,11 @@ export function flagUnderspecifiedIfNeeded(config: RepoOSConfig, task: Task): Ta
 
   const { underspecified, detail } = assessTaskUnderspecified(task.body);
   if (!underspecified) {
-    if (
-      task.needsInput &&
-      task.needsInputReason === UNDERSPECIFIED_NEEDS_INPUT_REASON &&
-      (task.questions?.length ?? 0) === 0
-    ) {
+    if (task.needsInput && task.needsInputReason === UNDERSPECIFIED_NEEDS_INPUT_REASON) {
+      // Drop only the obsolete reason; agent questions keep the human blocked.
+      const hasQuestions = (task.questions?.length ?? 0) > 0;
       return patchTaskFile(config, task.absPath, {
-        needsInput: false,
+        needsInput: hasQuestions,
         needsInputReason: null,
         needsInputDetail: null,
       });

@@ -925,6 +925,7 @@ export const uploadTaskShot: RouteHandler = async (ctx, req, res, params) => {
     mime?: unknown;
     name?: unknown;
     data?: unknown;
+    warnings?: unknown;
   };
   const target =
     typeof body?.target === "string" && body.target.trim() ? body.target.trim() : "default";
@@ -941,6 +942,18 @@ export const uploadTaskShot: RouteHandler = async (ctx, req, res, params) => {
   });
   if ("error" in result) {
     return json(res, 400, { error: result.error });
+  }
+  // #0613: a manual `repoos shot` capture can pre-empt the automatic one, so
+  // persist its selector/highlight misses on the task, like handoff capture does.
+  if (Array.isArray(body?.warnings)) {
+    for (const warning of body.warnings) {
+      if (typeof warning !== "string" || !warning.trim()) continue;
+      try {
+        patchTaskFile(config, task.absPath, { note: warning.trim() });
+      } catch {
+        /* best-effort — the CLI already printed it */
+      }
+    }
   }
   return json(res, 201, { ok: true, shot: result });
 };
