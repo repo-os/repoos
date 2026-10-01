@@ -775,13 +775,12 @@ else process.stdout.write(${JSON.stringify(needsWorkReport)} + "\\n");
       }, "the initial engineer turn exits");
 
       const before = readFileSync(task.absPath, "utf8");
-      writeFileSync(
-        task.absPath,
-        before.replace(
-          /^---\n/,
-          "---\nreview_rounds: 2\nneeds_input: true\nneeds_input_reason: review-rounds-exhausted\n",
-        ),
-      );
+      writeFileSync(task.absPath, before.replace(/^---\n/, "---\nreview_rounds: 2\n"));
+      const flagExhausted = await api(server, "PATCH", `/api/tasks/${task.id}`, {
+        needsInput: true,
+        needsInputReason: "review-rounds-exhausted",
+      });
+      expect(flagExhausted.status).toBe(200);
       await requestReview(server, task.id, task.absPath);
       await waitForReviewRunning(server, task.id, true);
 

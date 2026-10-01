@@ -10,8 +10,13 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RepoOSConfig } from "../../core/types";
-import { extractSection, removeSection } from "../../core/task";
-import { patchTaskFile } from "../../server/write";
+import {
+  extractSection,
+  normalizeSectionHeading,
+  removeSection,
+  replaceSection,
+} from "../../core/task";
+import { patchTaskFile, WriteError } from "../../server/write";
 
 function config(root: string): RepoOSConfig {
   return {
@@ -370,5 +375,91 @@ describe("section helpers", () => {
     expect(out).toContain("Spec text.");
     expect(out).toContain("## Activity");
     expect(out).not.toMatch(/\n\n\n/);
+  });
+
+  it("normalizeSectionHeading accepts a bare title or a ## line", () => {
+    expect(normalizeSectionHeading("Shots")).toBe("## Shots");
+    expect(normalizeSectionHeading("## Shots")).toBe("## Shots");
+  });
+
+  it("replaceSection updates one section and preserves Activity", () => {
+    const out = replaceSection(body, "## Shots", "```json\n[]\n```");
+    expect(out).toContain("## Shots");
+    expect(out).toContain("```json");
+    expect(out).toContain("## Screenshots");
+    expect(out).toContain("## Activity");
+    expect(out).toContain("Spec text.");
+  });
+
+  it("replaceSection creates a missing section before Activity", () => {
+    const out = replaceSection(body, "## Shots", "new");
+    expect(out.indexOf("## Shots")).toBeLessThan(out.indexOf("## Activity"));
+  });
+});
+
+const WITH_SPEC = `---
+id: "0613"
+title: Spec task
+type: feature
+status: active
+---
+## Problem
+
+Real problem.
+
+## Desired UX
+
+UX here.
+
+## Acceptance criteria
+
+- [ ] done
+
+## Notes for AI
+
+notes
+
+## Activity
+
+- 2026-01-01T00:00:00Z · created
+`;
+
+describe("spec section clobber guard (#0613)", () => {
+  it("refuses a full body replace that drops spec headings", () => {
+    const { root, absPath, clean } = setupFile(WITH_SPEC);
+    try {
+      expect(() =>
+        patchTaskFile(config(root), absPath, { body: "## Shots\n\n```json\n[]\n```\n" }),
+      ).toThrow(WriteError);
+    } finally {
+      clean();
+    }
+  });
+
+  it("allows the replace with --force", () => {
+    const { root, absPath, clean } = setupFile(WITH_SPEC);
+    try {
+      const updated = patchTaskFile(config(root), absPath, {
+        body: "## Shots only\n",
+        force: true,
+      });
+      expect(updated.body).toContain("## Shots only");
+    } finally {
+      clean();
+    }
+  });
+
+  it("section patch replaces only the named section", () => {
+    const { root, absPath, clean } = setupFile(WITH_SPEC);
+    try {
+      const updated = patchTaskFile(config(root), absPath, {
+        section: { heading: "Shots", content: "```json\n[]\n```" },
+      });
+      expect(updated.body).toContain("## Problem");
+      expect(updated.body).toContain("## Shots");
+      expect(updated.body).toContain("## Activity");
+    } finally {
+      clean();
+    }
   });
 });

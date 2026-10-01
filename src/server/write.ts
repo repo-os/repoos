@@ -24,6 +24,8 @@ import {
   utcTimestamp,
   extractSection,
   removeSection,
+  replaceSection,
+  normalizeSectionHeading,
   ACTIVITY_HEADING,
   SCREENSHOTS_HEADING,
   ORIGINAL_PROMPT_HEADING,
@@ -62,6 +64,26 @@ const PROTECTED_SECTIONS = [
  * content via `repoos update --body` — must be able to set it.
  */
 const CALLER_OVERRIDABLE_SECTIONS: readonly string[] = [ORIGINAL_PROMPT_HEADING];
+
+/**
+ * Spec headings that a full `--body` replace must not silently drop. An
+ * engineer declaring `## Shots` with `--section` should never need `--body`;
+ * a `--body` that removes Problem / Desired UX / Acceptance criteria / Notes
+ * for AI is a clobbering attempt unless explicitly forced (#0613).
+ */
+const SPEC_SECTION_HEADINGS = [
+  "## Problem",
+  "## Desired UX",
+  "## Acceptance criteria",
+  "## Notes for AI",
+] as const;
+
+/** True when `newBody` drops a spec heading that existed in `currentBody`. */
+function bodyDropsSpecSections(currentBody: string, newBody: string): boolean {
+  return SPEC_SECTION_HEADINGS.some(
+    (h) => extractSection(currentBody, h) !== null && extractSection(newBody, h) === null,
+  );
+}
 
 export interface TaskPatch {
   status?: Status;
@@ -133,6 +155,19 @@ export interface TaskPatch {
    * whitespace-only note is ignored.
    */
   note?: string | null;
+  /**
+   * Replace only the named `## Section` in the body (create it if absent),
+   * leaving every other section — including `## Activity` — untouched. This is
+   * how engineers declare `## Shots` without risking a full-body clobber (#0613).
+   * Mutually exclusive with `body`.
+   */
+  section?: { heading: string; content: string } | null;
+  /**
+   * When true, allow a full `body` replacement that would drop spec headings
+   * (Problem / Desired UX / Acceptance criteria / Notes for AI). Without it,
+   * such a replace is refused with a message pointing at the `--section` form.
+   */
+  force?: boolean;
 }
 
 export interface PatchTaskOptions {
@@ -277,7 +312,22 @@ export function patchTaskFile(
     current.assignee =
       patch.assignedTo.toLowerCase() === "ai" ? "ai" : patch.assignedTo ? "human" : "unassigned";
   }
-  if (patch.body !== undefined) {
+  if (patch.section !== undefined && patch.section !== null) {
+    // Section-level edit (#0613): replace only the named `## Section`,
+    // creating it if absent. All other sections — including `## Activity` —
+    // are preserved verbatim. Mutually exclusive with `body`.
+    const { heading, content } = patch.section;
+    const nextBody = replaceSection(current.body, normalizeSectionHeading(heading), content);
+    if (nextBody !== current.body) changes.push(`body: section ${heading}`);
+    current.body = nextBody;
+  } else if (patch.body !== undefined) {
+    if (!patch.force && bodyDropsSpecSections(current.body, patch.body)) {
+      throw new WriteError(
+        "a full --body replace would drop spec sections (Problem / Desired UX / " +
+          'Acceptance criteria / Notes for AI) — use --section "<heading>" to edit ' +
+          "one section, or pass --force to override this guard",
+      );
+    }
     // Carry user-owned / append-only sections over from the on-disk copy so a
     // caller that replaced the whole body (freeform PM rewrites do) can't drop
     // them — UNLESS the caller's own body already includes that section and

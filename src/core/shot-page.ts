@@ -54,6 +54,13 @@ export interface ShotCaptureOptions {
 const HIGHLIGHT_COLOR = "#e0b252";
 
 /**
+ * The outcome of drawing a highlight: how many elements matched, and an undo
+ * handle. A zero count means the selector matched nothing — the caller should
+ * record a visible warning rather than silently capturing unhighlighted.
+ */
+type HighlightResult = { matched: number; undo: () => Promise<void> };
+
+/**
  * Draw the highlight box on every element `selector` matches (#0603) and
  * return the undo handle. Runs in the page via `page.evaluate`, exactly like
  * Playwright's own test-failure highlighting; best-effort — an evaluateless
@@ -63,13 +70,10 @@ const HIGHLIGHT_COLOR = "#e0b252";
  */
 type PageEvaluate = (body: string, arg: string) => Promise<unknown>;
 
-async function applyHighlight(
-  page: ShotDriverPage,
-  selector: string,
-): Promise<() => Promise<void>> {
+async function applyHighlight(page: ShotDriverPage, selector: string): Promise<HighlightResult> {
   const evaluatable = page as unknown as { evaluate?: PageEvaluate };
   const evaluate = evaluatable.evaluate;
-  if (typeof evaluate !== "function") return async () => {};
+  if (typeof evaluate !== "function") return { matched: 0, undo: async () => {} };
   const marker = "data-shot-highlight";
   // One style node, tagged, plus per-element tagging — one query removes all
   // of it, including on elements Playwright matched with its own selector
@@ -105,17 +109,21 @@ async function applyHighlight(
     document.getElementById("repoos-shot-highlight-style")?.remove();
   })()`;
   try {
-    await evaluate.call(page, draw, selector);
+    const matched = (await evaluate.call(page, draw, selector)) as number | undefined;
+    const n = typeof matched === "number" ? matched : 0;
+    return {
+      matched: n,
+      undo: async () => {
+        try {
+          await evaluate.call(page, undo, selector);
+        } catch {
+          /* best-effort */
+        }
+      },
+    };
   } catch {
-    return async () => {};
+    return { matched: 0, undo: async () => {} };
   }
-  return async () => {
-    try {
-      await evaluate.call(page, undo, selector);
-    } catch {
-      /* the page may already be closing — cleanup stays best-effort */
-    }
-  };
 }
 
 /**
@@ -154,8 +162,10 @@ async function runStep(
 export async function captureShotPage(
   page: ShotDriverPage,
   url: string,
-  entry: Pick<CaptureEntry, "selector" | "steps" | "highlight">,
+  entry: Pick<CaptureEntry, "selector" | "steps" | "highlight" | "route">,
   options: ShotCaptureOptions,
+  onHighlightMiss?: (selector: string, route: string) => void,
+  onSelectorMiss?: (selector: string, route: string) => void,
 ): Promise<Buffer> {
   await page.goto(url, { waitUntil: "load", timeout: SHOT_NAV_TIMEOUT_MS });
   try {
@@ -167,12 +177,23 @@ export async function captureShotPage(
   for (const step of entry.steps ?? []) await runStep(page, step);
   const removeHighlight = entry.highlight
     ? await applyHighlight(page, entry.highlight)
-    : async () => {};
+    : { matched: 1, undo: async () => {} };
   try {
+    if (removeHighlight.matched === 0 && onHighlightMiss && entry.highlight) {
+      onHighlightMiss(entry.highlight, entry.route);
+    }
     if (entry.selector) {
       const element = page.locator(entry.selector) as unknown as {
+        count?(): Promise<number>;
         screenshot(options: { fullPage?: boolean; timeout?: number }): Promise<Buffer>;
       };
+      if (typeof element.count === "function") {
+        const n = await element.count();
+        if (n === 0) {
+          if (onSelectorMiss) onSelectorMiss(entry.selector, entry.route);
+          return await page.screenshot({ fullPage: options.fullPage });
+        }
+      }
       return await element.screenshot({
         fullPage: options.fullPage,
         timeout: SHOT_SELECTOR_TIMEOUT_MS,
@@ -183,6 +204,6 @@ export async function captureShotPage(
     // The next navigation re-renders everything anyway, but the same page can
     // serve multiple sequential captures (CLI loop) — undo promptly so a
     // highlight meant for one shot never bleeds into the next.
-    await removeHighlight();
+    await removeHighlight.undo();
   }
 }

@@ -299,6 +299,12 @@ export interface CapturePlanResult {
   errors: string[];
   /** Visible skip notes for the automatic capture to record (#0603). */
   autoSkips: string[];
+  /**
+   * Declared entries that were collapsed into another entry because they shared
+   * the same target + route + steps + selector. Their highlights were merged
+   * into the surviving entry's selector (comma-joined). For transparency only.
+   */
+  collapsed: string[];
 }
 
 export interface CapturePlanOptions {
@@ -344,6 +350,7 @@ export function buildCapturePlan(
         entries: [],
         errors: ["no preview target was resolved for the task's changed paths"],
         autoSkips,
+        collapsed: [],
       };
     }
     // Docs-content targets get no blind `/` capture #0603: their root route is
@@ -358,7 +365,7 @@ export function buildCapturePlan(
       );
     }
     if (capturable.length === 0) {
-      return { entries: [], errors, autoSkips };
+      return { entries: [], errors, autoSkips, collapsed: [] };
     }
     return {
       entries: capturable.map((target) => {
@@ -381,6 +388,7 @@ export function buildCapturePlan(
       }),
       errors,
       autoSkips,
+      collapsed: [],
     };
   }
   const entries: CaptureEntry[] = [];
@@ -431,5 +439,29 @@ export function buildCapturePlan(
       );
     }
   }
-  return { entries, errors, autoSkips };
+
+  // Collapse near-duplicate declared shots (#0613): same target + route +
+  // steps + selector → one capture with merged highlights (comma-joined
+  // selector list). Near-duplicates arise when two declarations describe the
+  // same evidence (e.g. two shots for `/agents` both with no tab-opening step
+  // and the same selector). The surviving entry keeps the first label.
+  const collapsed: string[] = [];
+  const deduped: CaptureEntry[] = [];
+  for (const entry of entries) {
+    const key = `${entry.target}\0${entry.route}\0${entry.selector ?? ""}\0${JSON.stringify(entry.steps ?? [])}`;
+    const existing = deduped.find(
+      (d) =>
+        `${d.target}\0${d.route}\0${d.selector ?? ""}\0${JSON.stringify(d.steps ?? [])}` === key,
+    );
+    if (existing) {
+      if (entry.highlight && existing.highlight !== entry.highlight) {
+        existing.highlight = [existing.highlight, entry.highlight].join(", ");
+      }
+      collapsed.push(entry.label ?? `${entry.target}${entry.route}`);
+    } else {
+      deduped.push(entry);
+    }
+  }
+
+  return { entries: deduped, errors, autoSkips, collapsed };
 }
