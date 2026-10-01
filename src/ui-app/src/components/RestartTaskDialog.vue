@@ -4,7 +4,9 @@ import type { Task } from "../types";
 import { useRepoStore } from "../stores/repo";
 import Button from "./ui/button.vue";
 
-const props = defineProps<{ task: Task | null }>();
+const props = withDefaults(defineProps<{ task: Task | null; overrideDependencies?: boolean }>(), {
+  overrideDependencies: false,
+});
 const emit = defineEmits<{
   (e: "close"): void;
   (e: "started"): void;
@@ -53,7 +55,7 @@ async function choose(mode: "resume" | "fresh" | "clean"): Promise<void> {
   startError.value = "";
   busy.value = true;
   try {
-    await repo.startWork(props.task, mode);
+    await repo.startWork(props.task, mode, undefined, props.overrideDependencies);
     emit("started");
     emit("close");
   } catch (err) {

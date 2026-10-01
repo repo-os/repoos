@@ -11,6 +11,7 @@ import { previewTargetOptions } from "../preview.js";
 import { canaryRelPath } from "../../core/canary.js";
 import { readCanaryCounter } from "../../core/canary-repo.js";
 import { projectDisplayName, projectDisplayBranch } from "../../core/config.js";
+import { taskDependencyBlockers } from "../../core/task-dependencies.js";
 
 // These will be passed via context in server.ts during integration
 let loadedHash: string;
@@ -90,7 +91,10 @@ export const getIndex: RouteHandler = async (ctx, _req, res) => {
   });
   return json(res, 200, {
     ...snapshot,
-    tasks: snapshot.tasks.map(withReviewStatus),
+    tasks: snapshot.tasks.map((task) => ({
+      ...withReviewStatus(task),
+      blockedBy: taskDependencyBlockers(config.root, task, snapshot.tasks),
+    })),
   });
 };
 

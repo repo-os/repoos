@@ -8,6 +8,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { RepoOSConfig, Status, Task } from "../core/types.js";
 import { resolvePmAgent, runPrompt, recordOneShotSession } from "./agents.js";
+import { taskDependencyBlockers } from "../core/task-dependencies.js";
 
 /** Result of a reconciliation attempt. */
 export interface ReconciliationResult {
@@ -22,7 +23,12 @@ export interface ReconciliationResult {
 /** Persisted decision record for Control page hydration. */
 export interface AutoEngineeringDecision {
   timestamp: string;
-  trigger: "active-to-review" | "inbox-to-ready" | "config-change" | "startup";
+  trigger:
+    | "active-to-review"
+    | "inbox-to-ready"
+    | "dependency-merged"
+    | "config-change"
+    | "startup";
   outcome: ReconciliationResult["outcome"];
   activeCount: number;
   maxActiveTasks: number;
@@ -192,7 +198,12 @@ export class AutoEngineeringOrchestrator {
       };
     }
 
-    const readyTasks = allTasks.filter((t) => t.status === "ready" && !t.needsInput);
+    const readyTasks = allTasks.filter(
+      (task) =>
+        task.status === "ready" &&
+        !task.needsInput &&
+        taskDependencyBlockers(config.root, task, allTasks).length === 0,
+    );
 
     // No ready tasks.
     if (readyTasks.length === 0) {

@@ -95,8 +95,47 @@ describe("BoardColumn drop: ready -> active", () => {
     await wrapper.find(".board-col").trigger("drop", fakeDrop("0001"));
     await flush();
 
-    expect(startWork).toHaveBeenCalledWith(task);
+    expect(startWork).toHaveBeenCalledWith(task, "resume", undefined, false);
     expect(setStatus).not.toHaveBeenCalled();
+  });
+
+  it("asks before overriding dependency blockers on a clean worktree", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    const task = makeTask({
+      blockedBy: [{ id: "0002", state: "waiting" }],
+    });
+    repo.tasks = [task];
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const startWork = vi.spyOn(repo, "startWork").mockResolvedValue(undefined);
+
+    const wrapper = mountColumn(COL, pinia);
+    await wrapper.find(".board-col").trigger("drop", fakeDrop("0001"));
+    await flush();
+
+    expect(confirm).toHaveBeenCalledWith(
+      "Blocked by #0002\n\nStart anyway? The required changes may not be on main yet.",
+    );
+    expect(startWork).toHaveBeenCalledWith(task, "resume", undefined, true);
+  });
+
+  it("does not start a blocked task when the override is declined", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    const task = makeTask({
+      blockedBy: [{ id: "0002", state: "cancelled" }],
+    });
+    repo.tasks = [task];
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+    const startWork = vi.spyOn(repo, "startWork").mockResolvedValue(undefined);
+
+    const wrapper = mountColumn(COL, pinia);
+    await wrapper.find(".board-col").trigger("drop", fakeDrop("0001"));
+    await flush();
+
+    expect(startWork).not.toHaveBeenCalled();
   });
 
   it("redirects to the restart dialog instead of starting directly when the worktree is dirty", async () => {
@@ -114,6 +153,28 @@ describe("BoardColumn drop: ready -> active", () => {
     expect(startWork).not.toHaveBeenCalled();
     const dialog = wrapper.findComponent({ name: "RestartTaskDialog" });
     expect((dialog.props() as { task: Task | null }).task).toEqual(task);
+  });
+
+  it("carries a confirmed dependency override through the dirty-worktree dialog", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    const task = makeTask({
+      blockedBy: [{ id: "0002", state: "waiting" }],
+      git: { ...makeTask().git, dirty: true },
+    });
+    repo.tasks = [task];
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    const wrapper = mountColumn(COL, pinia);
+    await wrapper.find(".board-col").trigger("drop", fakeDrop("0001"));
+    await flush();
+
+    const dialog = wrapper.findComponent({ name: "RestartTaskDialog" });
+    expect(dialog.props()).toMatchObject({
+      task,
+      overrideDependencies: true,
+    });
   });
 });
 

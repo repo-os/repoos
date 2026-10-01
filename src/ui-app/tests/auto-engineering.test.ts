@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { tmpdir } from "node:os";
-import { rmSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { AutoEngineeringOrchestrator } from "../../server/auto-engineering.js";
 import { runPrompt } from "../../server/agents.js";
@@ -362,6 +363,46 @@ describe("AutoEngineeringOrchestrator — PM selection (0124)", () => {
 
     expect(result.outcome).toBe("pm-failed");
     expect(result.error).toContain("timeout after 30s");
+  });
+
+  it("excludes blocked tasks before PM selection and reconsiders them after the prerequisite merges", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-autoeng-dependencies-"));
+    const git = (...args: string[]) =>
+      execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
+    try {
+      mkdirSync(root, { recursive: true });
+      git("init", "-q", "-b", "main");
+      git("config", "user.email", "test@example.com");
+      git("config", "user.name", "RepoOS test");
+      writeFileSync(join(root, "base.txt"), "base\n");
+      git("add", "base.txt");
+      git("commit", "-m", "base");
+      git("checkout", "-q", "-b", "feat/upstream");
+      writeFileSync(join(root, "upstream.txt"), "upstream\n");
+      git("add", "upstream.txt");
+      git("commit", "-m", "upstream");
+      const mergedCommit = git("rev-parse", "HEAD");
+      git("checkout", "-q", "main");
+
+      const config = configWithPm(3);
+      config.root = root;
+      const upstream = { ...mockTask("001", "ready"), branch: "feat/upstream" };
+      const dependent = { ...mockTask("002", "ready"), dependsOn: ["001"] };
+
+      await orchestrator.reconcile(config, [upstream, dependent], "startup");
+      expect(orchestrator.getLastDecision()?.candidateIds).toEqual(["001"]);
+
+      git("merge", "--ff-only", "feat/upstream");
+      const releasedUpstream = {
+        ...upstream,
+        status: "done" as const,
+        mergedCommit,
+      };
+      await orchestrator.reconcile(config, [releasedUpstream, dependent], "dependency-merged");
+      expect(orchestrator.getLastDecision()?.candidateIds).toEqual(["002"]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("drops stale PM choices that are no longer in the ready pool", async () => {
