@@ -74,3 +74,4 @@ Relevant code: `src/server/auto-engineering.ts` (ready filter), `src/core/types.
 - 2026-10-01T14:30:00Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-01T14:31:28Z · status review→active
 - 2026-10-01T14:42:53Z · status active→review
+- 2026-10-01T14:42:53Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
