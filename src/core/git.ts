@@ -1507,18 +1507,6 @@ export async function pathsChangedBetweenCommits(
 }
 
 /**
- * The uncommitted files in a checkout that represent a task's OWN work —
- * `dirtyFiles` minus {@link isGeneratedOrRuntimePath}. Used for the task
- * worktree, where the question is "is there untested work a close-out would
- * silently delete" rather than "will git abort this merge" (the main checkout
- * needs that stricter, whole-tree answer, which is why it stays on
- * `dirtyFiles`).
- *
- * Fails closed exactly like `dirtyFiles`: an unreadable status throws
- * `GitDirtyCheckError` rather than reporting an empty list, so a caller cannot
- * treat "could not tell" as "nothing to lose".
- */
-/**
  * Porcelain ` D`: deleted in the working tree, unchanged in the index. Shows up
  * when tracked files vanish from disk without a `git rm` — including a worktree
  * directory half-deleted during `git worktree remove`.
@@ -1536,6 +1524,22 @@ export interface UncommittedWorkFilesOptions {
   omitWorktreeDeletionsPresentAtRef?: string;
 }
 
+/**
+ * The uncommitted files in a checkout that represent a task's OWN work —
+ * `dirtyFiles` minus {@link isGeneratedOrRuntimePath}. Used for the task
+ * worktree, where the question is "is there untested work a close-out would
+ * silently delete" rather than "will git abort this merge" (the main checkout
+ * needs that stricter, whole-tree answer, which is why it stays on
+ * `dirtyFiles`).
+ *
+ * Fails closed exactly like `dirtyFiles`: an unreadable status throws
+ * `GitDirtyCheckError` rather than reporting an empty list, so a caller cannot
+ * treat "could not tell" as "nothing to lose".
+ *
+ * {@link UncommittedWorkFilesOptions.omitWorktreeDeletionsPresentAtRef} is
+ * close-out only: it discounts half-removed worktree artifacts without changing
+ * the default answer for handoff and pre-merge guards.
+ */
 export async function uncommittedWorkFiles(
   root: string,
   filter: WorkFileFilter = {},
