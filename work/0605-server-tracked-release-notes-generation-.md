@@ -1,16 +1,19 @@
 ---
-updated_at: "2026-09-30T19:05:37Z"
-review_passes: 1
 id: "0605"
 title: Server-tracked release-notes generation run
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the opencode agent exited without output: error: Upstream request failed: Insufficient account funds"
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: ""
 branch: feat/server-tracked-release-notes-generation-
 created_at: "2026-09-30T13:43:09Z"
+updated_at: "2026-10-01T04:33:57Z"
+review_passes: 1
 ---
 ## Problem
 `POST /api/release/notes` (`generateReleaseNotes` in `src/server/routes/release.ts`) is a single blocking HTTP request (1-3 min). If the user closes the modal or navigates away, the agent still finishes and caches the draft, but the UI gets no result, shows no in-progress state on return, and a second click starts a duplicate agent run.
@@ -65,4 +68,4 @@ agent run in the shot capture.
 - 2026-09-30T18:48:43Z · body
 - 2026-09-30T18:54:53Z · status active→review
 - 2026-09-30T18:55:31Z · note: shots: failed — capture of Cut-a-release modal — optional notes field and Generate with AI (which now starts a server-tracked run) on "default" failed: goto: Timeout 30000ms exceeded.
-
+- 2026-10-01T04:33:57Z · needs_input
