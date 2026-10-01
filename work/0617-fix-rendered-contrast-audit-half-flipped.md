@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 cli_override: opencode
+model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-01T17:54:57Z"
-updated_at: "2026-10-01T18:01:49Z"
+updated_at: "2026-10-01T18:02:25Z"
 ---
 ## What
 
@@ -70,3 +71,4 @@ the intended mode.
 
 - 2026-10-01T17:54:57Z · created · unknown
 - 2026-10-01T18:01:49Z · cli_override
+- 2026-10-01T18:02:25Z · model_override
