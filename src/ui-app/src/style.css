@@ -8051,6 +8051,21 @@
   box-sizing: border-box;
   text-align: center;
 }
+.detect-compat-slot {
+  flex: none;
+  width: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.detect-details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
 @media (max-width: 760px) {
   /* Too narrow for four fixed columns: let version/update wrap below. */
   .detect-row {
