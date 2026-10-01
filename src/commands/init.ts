@@ -281,6 +281,37 @@ RepoOS validates the request against your live run, starts the preview from
 your worktree, probes it server-side, and records the preview URL and probe
 result in your task transcript. The preview is reaped when the task leaves
 active/review.
+
+## Declaring evidence shots (## Shots)
+
+A task body may carry a \`## Shots\` section with a fenced JSON list of capture
+entries (see \`src/core/shot-plan.ts\`). Each entry has \`target\`, \`route\`, an
+optional \`selector\` (element crop — the exception), an optional \`highlight\`
+CSS selector (outlines changed elements), a \`label\`, and optional ordered
+\`steps\` (click/fill/wait, plain CSS selectors). Use \`repoos update <id>
+--section "Shots" --section-body "..."\` to declare or edit only that section
+without touching the rest of the body — a full \`--body\` replace that drops
+Problem / Desired UX / Acceptance criteria / Notes for AI is refused unless
+\`--force\` is passed.
+
+For tabbed views (e.g. Agents), prefer \`?tab=<id>\` routes
+(\`/agents?tab=detected\`) over click steps to reach the right tab, and always
+set \`highlight\` to the changed elements. A declared \`highlight\` or \`selector\`
+that matches nothing at capture time records a visible warning — capture still
+succeeds. Declared shots default to the whole visible window (\`fullPage:
+false\`) with changed elements outlined via \`highlight\`; \`selector\` (element
+crop) is the exception and \`fullPage\` stays off.
+
+## Section body edits
+
+To replace a single \`## Section\` without touching the rest of the body (the
+Activity log is always preserved), use:
+
+    repoos update <id> --section "Section Name" --section-body "new content"
+
+A full \`--body\` replace that would drop Problem / Desired UX / Acceptance
+criteria / Notes for AI is refused unless \`--force\` is passed; the error
+message points at this section form.
 `;
 
 /** Marker makes the optional existing-repo addition safe to offer repeatedly. */

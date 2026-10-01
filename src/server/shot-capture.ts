@@ -78,7 +78,9 @@ async function startTargetPreview(
 export function planAutoCapture(
   config: RepoOSConfig,
   task: Task,
-): { entries: CaptureEntry[]; errors: string[]; skips: string[] } | { reason: string } {
+):
+  | { entries: CaptureEntry[]; errors: string[]; skips: string[]; collapsed: string[] }
+  | { reason: string } {
   if (!task.branch) return { reason: "the task has no branch yet" };
   const existing = localShotStore(config, task.id).list();
   if (existing.length > 0) {
@@ -143,7 +145,7 @@ export function planAutoCapture(
         skips.length > 0 ? skips.join("; ") : "no captures were planned for the resolved targets",
     };
   }
-  return { entries: built.entries, errors, skips };
+  return { entries: built.entries, errors, skips, collapsed: built.collapsed };
 }
 
 /**
@@ -197,6 +199,13 @@ export async function runAutoShotCapture(
   for (const error of plan.errors) {
     log(task.id, "warn", `shots: declared list problem — ${error}`);
   }
+  if (plan.collapsed.length > 0) {
+    log(
+      task.id,
+      "warn",
+      `shots: collapsed ${plan.collapsed.length} near-duplicate declaration(s) into one capture`,
+    );
+  }
 
   let browser: SmokeBrowser | undefined;
   let context: SmokeContext | undefined;
@@ -236,10 +245,33 @@ export async function runAutoShotCapture(
       let png: Buffer;
       try {
         await page.setViewportSize(AUTO_VIEWPORT);
-        png = await captureShotPage(page, pageUrl, entry, {
-          waitMs: AUTO_SETTLE_MS,
-          fullPage: false,
-        });
+        png = await captureShotPage(
+          page,
+          pageUrl,
+          entry,
+          {
+            waitMs: AUTO_SETTLE_MS,
+            fullPage: false,
+          },
+          (selector, route) => {
+            const msg = `highlight ${selector} matched nothing on ${route}`;
+            log(task.id, "warn", `shots: ${msg}`);
+            try {
+              patchTaskFile(config, task.absPath, { note: msg });
+            } catch {
+              /* the log line already recorded it */
+            }
+          },
+          (selector, route) => {
+            const msg = `selector ${selector} matched nothing on ${route}`;
+            log(task.id, "warn", `shots: ${msg}`);
+            try {
+              patchTaskFile(config, task.absPath, { note: msg });
+            } catch {
+              /* the log line already recorded it */
+            }
+          },
+        );
       } catch (err) {
         await page.close().catch(() => {});
         return finish(

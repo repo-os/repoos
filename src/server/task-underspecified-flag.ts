@@ -3,6 +3,7 @@ import {
   UNDERSPECIFIED_NEEDS_INPUT_REASON,
   assessTaskUnderspecified,
 } from "../core/task-underspecified.js";
+export { UNDERSPECIFIED_NEEDS_INPUT_REASON };
 import { patchTaskFile } from "./write.js";
 
 /**
@@ -22,6 +23,15 @@ export function flagUnderspecifiedIfNeeded(config: RepoOSConfig, task: Task): Ta
 
   const { underspecified, detail } = assessTaskUnderspecified(task.body);
   if (!underspecified) {
+    if (task.needsInput && task.needsInputReason === UNDERSPECIFIED_NEEDS_INPUT_REASON) {
+      // Drop only the obsolete reason; agent questions keep the human blocked.
+      const hasQuestions = (task.questions?.length ?? 0) > 0;
+      return patchTaskFile(config, task.absPath, {
+        needsInput: hasQuestions,
+        needsInputReason: null,
+        needsInputDetail: null,
+      });
+    }
     return null;
   }
 
