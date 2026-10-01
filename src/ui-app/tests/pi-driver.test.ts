@@ -109,16 +109,26 @@ describe("pi event parsing", () => {
     });
   });
 
-  it("surfaces a streaming text delta for live output", () => {
+  it("surfaces a completed text block, not its per-token deltas", () => {
     expect(
       parsePiEvent(
         JSON.stringify({
           type: "message_update",
           usage: { input: 1, output: 1, totalTokens: 2 },
-          assistantMessageEvent: { type: "text_delta", delta: "he" },
+          assistantMessageEvent: { type: "text_end", contentIndex: 0, content: "hello world" },
         }),
       ),
-    ).toEqual({ delta: "he" });
+    ).toEqual({ entry: { type: "text", text: "hello world" }, textBlock: true });
+    // A delta in the middle of the block stays swallowed; streaming only the
+    // completed block is what keeps the UI from drawing a paragraph per token.
+    expect(
+      parsePiEvent(
+        JSON.stringify({
+          type: "message_update",
+          assistantMessageEvent: { type: "text_delta", contentIndex: 0, delta: "hel" },
+        }),
+      ),
+    ).toEqual({});
   });
 
   it("swallows non-text updates and lifecycle events rather than dumping JSON", () => {
@@ -127,6 +137,14 @@ describe("pi event parsing", () => {
         JSON.stringify({
           type: "message_update",
           assistantMessageEvent: { type: "thinking_delta", delta: "hmm" },
+        }),
+      ),
+    ).toEqual({});
+    expect(
+      parsePiEvent(
+        JSON.stringify({
+          type: "message_update",
+          assistantMessageEvent: { type: "text_start", contentIndex: 0 },
         }),
       ),
     ).toEqual({});
@@ -204,7 +222,7 @@ describe("pi usage extraction", () => {
     const raw = JSON.stringify({
       type: "message_update",
       usage: { input: 100, output: 5, totalTokens: 105, cost: { total: 0.01 } },
-      assistantMessageEvent: { type: "text_delta", delta: "hi" },
+      assistantMessageEvent: { type: "text_end", contentIndex: 0, content: "hi" },
     });
     expect(extractUsage(raw)).toEqual({});
   });
