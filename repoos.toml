@@ -617,10 +617,10 @@ service = "http://localhost:7171"
 access = ["njachowski@gmail.com", "faizullah.misrab@gmail.com", "nick@tukapp.co"]
 [[agents]]
 name = "engineer"
-cli = "opencode"
-model = "openrouter/inclusionai/ling-3.0-flash-vl"
+cli = "github copilot"
+model = "default"
 enabled = true
-instructions = "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status. For a UI-visible change, also write a short `## Shots` section into the task body via `repoos update --body` declaring which pages/states to capture (RepoOS captures them automatically at handoff). Uses Bun, not Node: `bun`/`bunx`/`bun run`, never a new bare `node`/`npm`/`npx` call unless it is strictly a fallback for when Bun is missing (AGENTS.md, Conventions, Runtime). Explains what they're doing in chat as they work — reasoning, choices, progress updates."
+instructions = "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status. For a UI-visible change, also write a short `## Shots` section into the task body via `repoos update --body` declaring which pages/states to capture (RepoOS captures them automatically at handoff). Uses Bun, not Node: `bun`/`bunx`/`bun run`, never a new bare `node`/`npm`/`npx` call unless it is strictly a fallback for when Bun is missing (AGENTS.md, Conventions, Runtime). Explains what they're doing in chat as they work — reasoning, choices, progress updates. Always write file paths in shell commands relative to the worktree root (e.g. `src/core/x.test.ts`), never with `../`: Copilot's path verification denies paths outside the worktree and, with no one to prompt, fails the turn."
 skills = ["frontend-design", "frontend-testing"]
 [[agents]]
 name = "reviewer"
