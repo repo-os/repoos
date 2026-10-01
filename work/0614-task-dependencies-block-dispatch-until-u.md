@@ -2,14 +2,14 @@
 id: "0614"
 title: "Task dependencies: block dispatch until upstream tasks are merged to main"
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, server, ui-app]
 assigned_to: ai
 created_by: ""
 branch: feat/task-dependencies-block-dispatch-until-u
 created_at: "2026-10-01T11:04:57Z"
-updated_at: "2026-10-01T14:15:44Z"
+updated_at: "2026-10-01T14:16:38Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-01T13:01:23.886Z: server-side finalization timed out (deadline exceeded)"
 review_rounds: 1
@@ -68,3 +68,4 @@ Relevant code: `src/server/auto-engineering.ts` (ready filter), `src/core/types.
 - 2026-10-01T12:32:11Z · status active→review
 - 2026-10-01T12:33:39Z · status review→active
 - 2026-10-01T14:15:44Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-01T14:16:38Z · status active→review
