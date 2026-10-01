@@ -256,6 +256,7 @@ a `## Shots` section holding a fenced JSON list, one entry per shot:
     "target": "default",
     "route": "/",
     "label": "New-task drawer open",
+    "highlight": "form.new-task .title-input",
     "steps": [
       { "click": "button[data-test-id='new-task']" },
       { "waitMs": 300 }
@@ -266,18 +267,34 @@ a `## Shots` section holding a fenced JSON list, one entry per shot:
 
 Each entry takes `target` (a resolved preview target name; omitted means the
 default target), `route` (default `/`), an optional `selector` (capture one
-element), a human `label` shown as the shot's caption in the Changes tab, and
-optional ordered `steps` — `{ "click": "<selector>" }`, `{ "fill":
-"<selector>", "text": "..." }`, `{ "waitFor": "<selector>" }` or `{ "waitMs":
-300 }` — using plain CSS selectors or test ids, no framework knowledge.
+element), a human `label` shown as the shot's caption in the Changes tab, an
+optional `highlight` CSS selector — every element it matches is outlined in
+the capture, pointing the reviewer at what changed — and optional ordered
+`steps` — `{ "click": "<selector>" }`, `{ "fill": "<selector>", "text":
+"..." }`, `{ "waitFor": "<selector>" }` or `{ "waitMs": 300 }` — using plain
+CSS selectors or test ids, no framework knowledge. Say what changed: a label
+naming the change and a highlight on the changed element are the difference
+between a reviewer reading "New-task drawer open" and squinting at a full
+page.
 
 `repoos shot` captures this list (unless a route/selector was passed
-explicitly), and the SERVER does too: when a task moves to review and its diff
-touches any target's `paths`, the server runs the capture itself through the
-managed preview — no agent action needed. Failures and missing Playwright are
-recorded in the task log and activity as `shots: skipped — <reason>` /
-`shots: failed — <reason>`, never as a failed handoff. An engineer-made
-capture pre-empts the automatic one.
+explicitly), and the SERVER does too: declared shots are captured
+automatically when a task moves to review, with targets resolved the same way
+the CLI resolves them — the diff's changed paths first, then the task's
+`area`, then the default `[preview] command`. The automatic capture is
+deliberately conservative when nothing is declared (#0603): a fallback
+shot's caption records the glob that matched (`auto: matched src/ui-app/**`),
+a declared shot's caption records its label (`declared: New-task drawer
+open`); a diff touching only tests or task notes touches a glob but is not a
+UI change, so nothing is captured without a declaration (test files are not
+UI evidence); and a docs target matched only by content files is skipped
+unless a declared shot names a route — the docs home page does not show a
+wording edit. (Repos whose UI is itself markdown-driven: a genuine UI change
+in a `.md` file counts as content, so declare the shot with its route.) Skips
+and failures are recorded in the task log and activity as
+`shots: skipped — <reason>` / `shots: failed — <reason>`, never as a failed
+handoff; skips that ride alongside a captured shot appear in the same note.
+An engineer-made capture pre-empts the automatic one.
 
 Playwright/WebKit is optional (a dev dependency). When it is missing, `repoos
 shot` prints install advice and exits non-zero without touching anything:

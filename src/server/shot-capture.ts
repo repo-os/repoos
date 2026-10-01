@@ -19,7 +19,13 @@
  * resolved target, and `core/shot-page.ts` provides the page choreography both
  * paths share.
  */
-import { buildCapturePlan, parseShotPlan, type CaptureEntry } from "../core/shot-plan.js";
+import {
+  buildCapturePlan,
+  parseShotPlan,
+  provenanceCaption,
+  type CaptureEntry,
+} from "../core/shot-plan.js";
+import { describeTargetPathMatches, resolveShotTargets } from "../core/shot-targets.js";
 import type { LogLevel } from "../core/logger.js";
 import { captureShotPage, type ShotDriverPage } from "../core/shot-page.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
@@ -72,7 +78,7 @@ async function startTargetPreview(
 export function planAutoCapture(
   config: RepoOSConfig,
   task: Task,
-): { entries: CaptureEntry[]; errors: string[] } | { reason: string } {
+): { entries: CaptureEntry[]; errors: string[]; skips: string[] } | { reason: string } {
   if (!task.branch) return { reason: "the task has no branch yet" };
   const existing = localShotStore(config, task.id).list();
   if (existing.length > 0) {
@@ -83,21 +89,61 @@ export function planAutoCapture(
     };
   }
   const context = computeTaskShotContext(config, task);
-  if (context.detected.length === 0) {
+  const declared = parseShotPlan(task.body);
+  // #0603 review round 2: declared shots resolve targets the way `repoos shot`
+  // does — changed paths, then the task's area, then the default command — so
+  // an explicit declaration is honored even when the diff matches no glob.
+  // Without declarations the capture stays strict (scope 1): only targets the
+  // diff's paths actually matched count as UI evidence.
+  let targets: string[];
+  if (declared.shots.length > 0) {
+    const resolution = resolveShotTargets(config.preview, task.area, context.changedPaths);
+    if (resolution.names.length === 0) {
+      return {
+        reason:
+          `the declared shots could not resolve a preview target — ` +
+          `${resolution.reason ?? "no target matched the diff or the task's area"}`,
+      };
+    }
+    targets = resolution.names;
+  } else {
+    targets = context.detected;
+    if (targets.length === 0) {
+      return {
+        reason: `the diff (${context.changedPaths.length} changed paths) touches no [[preview.paths]] globs — no UI change to capture`,
+      };
+    }
+  }
+  // #0603: the per-target match detail behind `detected` — which globs matched
+  // (fallback captions) and which targets matched docs content only (no
+  // inferable route → the capture needs a declared route or skips visibly).
+  const matchedGlobs = new Map<string, string[]>();
+  const docsContentOnly = new Set<string>();
+  for (const match of describeTargetPathMatches(config.preview, context.changedPaths)) {
+    matchedGlobs.set(match.target, match.globs);
+    if (match.contentOnly) docsContentOnly.add(match.target);
+  }
+  const built = buildCapturePlan(targets, declared.shots, {
+    matchedGlobs,
+    docsContentOnly,
+  });
+  const errors = [...declared.errors, ...built.errors];
+  const skips = [...built.autoSkips];
+  if (built.entries.length === 0) {
+    // Stand down, with a reason the drawer can show. A declaration exists but
+    // produced nothing → its errors are the why; otherwise say plainly that
+    // without declarations the capture does not shoot.
+    if (declared.shots.length > 0 && errors.length > 0) {
+      return {
+        reason: `the declared shot list produced no captures: ${[...errors, ...skips].join("; ")}`,
+      };
+    }
     return {
-      reason: `the diff (${context.changedPaths.length} changed paths) touches no [[preview.paths]] globs — nothing here is a declared UI change`,
+      reason:
+        skips.length > 0 ? skips.join("; ") : "no captures were planned for the resolved targets",
     };
   }
-  const declared = parseShotPlan(task.body);
-  const built = buildCapturePlan(context.detected, declared.shots);
-  const errors = [...declared.errors, ...built.errors];
-  if (built.entries.length === 0) {
-    if (errors.length > 0) {
-      return { reason: `the declared shot list is unusable: ${errors.join("; ")}` };
-    }
-    return { reason: "no preview target was resolved for the task's changed paths" };
-  }
-  return { entries: built.entries, errors };
+  return { entries: built.entries, errors, skips };
 }
 
 /**
@@ -142,6 +188,12 @@ export async function runAutoShotCapture(
     return finish("skipped", plan.reason);
   }
   const entries = plan.entries;
+  // #0603: partial outcomes stay visible — a docs-content target that was
+  // skipped beside a captured one, or a declared entry that errored, is a note
+  // in the log + activity, not a silent drop of information.
+  for (const skip of plan.skips) {
+    log(task.id, "warn", `shots: skipped — ${skip}`);
+  }
   for (const error of plan.errors) {
     log(task.id, "warn", `shots: declared list problem — ${error}`);
   }
@@ -200,6 +252,7 @@ export async function runAutoShotCapture(
         target: entry.target,
         route: entry.route,
         ...(entry.label ? { label: entry.label } : {}),
+        provenance: provenanceCaption(entry.provenance),
         data: png.toString("base64"),
       });
       if ("error" in stored) {
@@ -210,7 +263,10 @@ export async function runAutoShotCapture(
     return finish(
       "captured",
       `${captured} shot${captured === 1 ? "" : "s"} captured automatically ` +
-        `(${entries.map((e) => `${e.target}${e.label ? ` – ${e.label}` : ""}`).join(", ")})`,
+        `(${entries.map((e) => `${e.target}${e.highlight ? " · highlighted" : ""}${e.label ? ` – ${e.label}` : ""}`).join(", ")})` +
+        // #0603 review round 2: partial skips ride in the captured note too —
+        // activity is where a reviewer actually looks, not the task log.
+        (plan.skips.length > 0 ? `; skipped: ${plan.skips.join("; ")}` : ""),
       captured,
     );
   } finally {
