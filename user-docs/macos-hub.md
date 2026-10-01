@@ -280,8 +280,11 @@ counts:
 
 ### Where attention appears
 
-- **Sidebar badges** — each server shows up to three small badges: blue =
-  in review, orange = needs input, purple = active agents (capped at `9+`).
+- **Sidebar badges** — on the subtitle row under each server name (origin URL or
+  repository label), trailing up to three small badges: blue = in review,
+  orange = needs input, purple = active agents (capped at `9+`). The server
+  name row stays badge-free; narrow sidebars may clip the subtitle before the
+  badges.
 - **Server details popover** — the exact counts, with a plain-language
   explanation of what each means.
 - **Native notifications** — fired when a count *increases* (a task lands in
