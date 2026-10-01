@@ -2,7 +2,7 @@
 id: "0609"
 title: "Close-out: don't report deleted-but-committed files as uncommitted work"
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh"
@@ -38,4 +38,4 @@ Do: (1) make close-out distinguish deleted-but-committed files (content identica
 - 2026-10-01T07:44:46Z · status active→review
 - 2026-10-01T07:44:46Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
 - 2026-10-01T07:49:07Z · status review→active
-- 2026-10-01T08:05:23Z · note: shots: skipped — the diff (6 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-01T08:05:23Z · status active→review
