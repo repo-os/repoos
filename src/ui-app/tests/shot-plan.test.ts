@@ -10,6 +10,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadConfig } from "../../core/config";
 import { buildCapturePlan, parseShotPlan } from "../../core/shot-plan";
+import {
+  buildCliShotPlan,
+  parseShotArgs,
+  type CliShotPlan,
+  type CliShotPlanInput,
+} from "../../commands/shot";
 import { describeTargetPathMatches, targetsForPaths } from "../../core/shot-targets";
 import { captureShotPage, type ShotDriverPage } from "../../core/shot-page";
 import { planAutoCapture, runAutoShotCapture } from "../../server/shot-capture";
@@ -154,6 +160,63 @@ describe("buildCapturePlan", () => {
     expect(autoSkips[0]).toMatch(/Docs site matched only documentation content/);
   });
 
+  it("inherits a caller-requested route into every fallback entry (#0610)", () => {
+    // The CLI used to build these entries itself and then discard them, so a
+    // typed route lost to the fallback's hardcoded `/`.
+    const { entries, autoSkips } = buildCapturePlan(["Docs site", "default"], [], {
+      route: "/repo/commits/abc123",
+      matchedGlobs: new Map([["default", ["src/ui-app/**"]]]),
+    });
+    expect(entries.map((e) => [e.target, e.route])).toEqual([
+      ["Docs site", "/repo/commits/abc123"],
+      ["default", "/repo/commits/abc123"],
+    ]);
+    // Still captioned (#0603): a request is not a declaration, but a shot with
+    // no reason is never anonymous.
+    expect(entries[1]?.label).toBe("auto: matched src/ui-app/**");
+    expect(autoSkips).toEqual([]);
+  });
+
+  it("normalizes a requested route without its leading slash (#0610)", () => {
+    const { entries } = buildCapturePlan(["default"], [], { route: "settings" });
+    expect(entries[0]?.route).toBe("/settings");
+  });
+
+  it("captures a docs-content-only target when a route was requested (#0610)", () => {
+    // The skip exists because `/` would be the docs home page. A route the
+    // caller named by hand is exactly the justification it asks for.
+    const requested = buildCapturePlan(["Docs site"], [], {
+      route: "/configuration",
+      docsContentOnly: new Set(["Docs site"]),
+    });
+    expect(requested.entries.map((e) => e.route)).toEqual(["/configuration"]);
+    expect(requested.autoSkips).toEqual([]);
+  });
+
+  it("applies a caller-requested selector to the fallback (#0610)", () => {
+    // `--selector` with no route used to be dropped too: it suppressed the
+    // declared list, then lost to the `/` entries built in its place.
+    const { entries } = buildCapturePlan(["default"], [], { selector: ".sidebar" });
+    expect(entries[0]).toMatchObject({ route: "/", selector: ".sidebar" });
+  });
+
+  it("leaves declared entries their own route/selector (#0610)", () => {
+    // Options only fill the fallback: a declared entry's steps/highlight/label
+    // were authored for its own route.
+    const { entries } = buildCapturePlan(
+      ["default"],
+      [{ route: "/board", selector: ".card", label: "Board" }],
+      { route: "/settings", selector: ".sidebar" },
+    );
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      route: "/board",
+      selector: ".card",
+      label: "Board",
+      provenance: { kind: "declared", label: "Board" },
+    });
+  });
+
   it("maps an omitted target to the default target or the sole resolution", () => {
     const one = buildCapturePlan(["default"], [{ route: "/board", label: "Board" }]);
     expect(one.entries[0].target).toBe("default");
@@ -220,6 +283,74 @@ describe("buildCapturePlan", () => {
     expect(empty.entries).toEqual([]);
     expect(empty.errors[0]).toMatch(/no preview target/i);
     expect(empty.autoSkips).toEqual([]);
+  });
+});
+
+describe("buildCliShotPlan (#0610)", () => {
+  /** A task declaring one shot, so precedence is observable. */
+  const BODY = bodyWithShots('[{"target":"default","route":"/board","label":"Board"}]');
+
+  function plan(args: string[], patch: Partial<CliShotPlanInput> = {}): CliShotPlan {
+    const opts = parseShotArgs(args);
+    expect(opts.error).toBeUndefined();
+    return buildCliShotPlan({
+      body: BODY,
+      route: opts.route,
+      selector: opts.selector,
+      targets: ["default"],
+      matchedGlobs: new Map([["default", ["src/ui-app/**"]]]),
+      docsContentOnly: new Set<string>(),
+      ...patch,
+    });
+  }
+
+  it("carries a typed positional route into the capture entry", () => {
+    // The reported bug: `repoos shot /repo/commits/abc123` captured `/`.
+    const built = plan(["/repo/commits/abc123"]);
+    expect(built.entries).toHaveLength(1);
+    expect(built.entries[0]).toMatchObject({
+      target: "default",
+      route: "/repo/commits/abc123",
+    });
+  });
+
+  it("replaces the declared list when a route or selector is pinned", () => {
+    const routed = plan(["/settings"]);
+    expect(routed.entries.map((e) => e.route)).toEqual(["/settings"]);
+    expect(routed.entries[0].provenance).toEqual({
+      kind: "auto",
+      globs: ["src/ui-app/**"],
+    });
+
+    const selector = plan(["--selector", ".sidebar"]);
+    expect(selector.entries[0]).toMatchObject({ route: "/", selector: ".sidebar" });
+    expect(selector.entries[0].provenance.kind).toBe("auto");
+  });
+
+  it("honors the declared list when no route or selector was pinned", () => {
+    const built = plan([]);
+    expect(built.entries).toHaveLength(1);
+    expect(built.entries[0]).toMatchObject({
+      route: "/board",
+      label: "Board",
+      provenance: { kind: "declared", label: "Board" },
+    });
+  });
+
+  it("surfaces declared-list problems and docs skips as visible notes", () => {
+    // A malformed list drops to no declarations, so the plan is the `/`
+    // fallback — with the parse error still reported, not swallowed.
+    const malformed = plan([], { body: bodyWithShots("not json") });
+    expect(malformed.declaredErrors[0]).toMatch(/does not parse/i);
+    expect(malformed.entries.map((e) => e.route)).toEqual(["/"]);
+
+    const docs = plan(["--target", "Docs site"], {
+      body: "## Problem\n\nProse only.",
+      targets: ["Docs site"],
+      docsContentOnly: new Set(["Docs site"]),
+    });
+    expect(docs.entries).toEqual([]);
+    expect(docs.skips[0]).toMatch(/Docs site matched only documentation content/);
   });
 });
 

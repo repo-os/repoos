@@ -277,10 +277,9 @@ naming the change and a highlight on the changed element are the difference
 between a reviewer reading "New-task drawer open" and squinting at a full
 page.
 
-`repoos shot` captures this list (unless a route/selector was passed
-explicitly), and the SERVER does too: declared shots are captured
-automatically when a task moves to review, with targets resolved the same way
-the CLI resolves them — the diff's changed paths first, then the task's
+`repoos shot` captures this list, and the SERVER does too: declared shots are
+captured automatically when a task moves to review, with targets resolved the
+same way the CLI resolves them — the diff's changed paths first, then the task's
 `area`, then the default `[preview] command`. The automatic capture is
 deliberately conservative when nothing is declared (#0603): a fallback
 shot's caption records the glob that matched (`auto: matched src/ui-app/**`),
@@ -295,6 +294,17 @@ and failures are recorded in the task log and activity as
 `shots: skipped — <reason>` / `shots: failed — <reason>`, never as a failed
 handoff; skips that ride alongside a captured shot appear in the same note.
 An engineer-made capture pre-empts the automatic one.
+
+Typing a route (or passing `--selector`) on the command line replaces the
+declared list for that run, and applies to every resolved target — a typed
+route is captured, not deferred to the `/` fallback (#0610). The declared
+entries are not re-pointed at it: each one carries `steps`, a `highlight` and
+a `label` written for its own route, so moving entry #2 to a route you just
+typed would click selectors that may not exist there. A route you name also
+counts as the justification the docs-content skip asks for, so
+`repoos shot /configuration --target "Docs site"` captures the page you asked
+for instead of standing down. The command prints the plan it will shoot
+(`plan: default /settings – …`) before it starts a browser.
 
 Playwright/WebKit is optional (a dev dependency). When it is missing, `repoos
 shot` prints install advice and exits non-zero without touching anything:
