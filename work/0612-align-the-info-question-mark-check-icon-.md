@@ -3,13 +3,16 @@ id: "0612"
 title: Align detected-agent driver column and compatibility icons
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the opencode agent exited without output: error: Upstream request failed: Insufficient account funds"
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/align-detected-agent-driver-column-and-c
 created_at: "2026-10-01T09:01:31Z"
-updated_at: "2026-10-01T09:09:02Z"
+updated_at: "2026-10-01T09:09:06Z"
 ---
 ## Problem
 
@@ -70,3 +73,4 @@ Align the info/question mark/check icon to come right after the "repoos driver" 
 - 2026-10-01T09:02:14Z · status inbox→ready
 - 2026-10-01T09:02:23Z · status ready→active, branch
 - 2026-10-01T09:09:02Z · status active→review
+- 2026-10-01T09:09:06Z · needs_input
