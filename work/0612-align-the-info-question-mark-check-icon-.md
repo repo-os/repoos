@@ -2,7 +2,7 @@
 id: "0612"
 title: Align detected-agent driver column and compatibility icons
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -38,4 +38,4 @@ Align the info/question mark/check icon to come right after the "repoos driver" 
 - 2026-10-01T09:09:02Z · status active→review
 - 2026-10-01T09:09:33Z · status review→active
 - 2026-10-01T09:10:29Z · body
-- 2026-10-01T09:14:46Z · note: shots: skipped — 2 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-01T09:14:46Z · status active→review
