@@ -14,9 +14,9 @@ branch: feat/protect-task-bodies-from-clobbering-and-
 cli_override: cursor
 model_override: composer-2.5
 review_cli_override: cursor
-review_model_override: default
+review_model_override: composer-2.5
 created_at: "2026-10-01T09:30:31Z"
-updated_at: "2026-10-01T18:45:18Z"
+updated_at: "2026-10-01T18:45:19Z"
 review_passes: 11
 review_rounds: 2
 dev_error_count: 1
@@ -136,3 +136,4 @@ Follow-up to #0612: add a section-replace/append form for task bodies (so declar
 - 2026-10-01T18:42:51Z · needs_input
 - 2026-10-01T18:42:51Z · needs_input
 - 2026-10-01T18:45:18Z · review_cli_override, review_model_override
+- 2026-10-01T18:45:19Z · review_model_override
