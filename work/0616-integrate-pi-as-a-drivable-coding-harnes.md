@@ -2,14 +2,14 @@
 id: "0616"
 title: Integrate pi as a drivable coding harness
 type: feature
-status: ready
+status: active
 priority: p2
 area: [agent, core, server]
 assigned_to: ai
 created_by: ""
 branch: feat/integrate-pi-as-a-drivable-coding-harnes
 created_at: "2026-10-01T16:34:17Z"
-updated_at: "2026-10-01T16:51:18Z"
+updated_at: "2026-10-01T16:51:20Z"
 ---
 ## Context
 
@@ -99,3 +99,4 @@ uses: `version`, `help`, `model-discovery`, `headless-one-shot`,
 - 2026-10-01T16:34:17Z · created · unknown
 - 2026-10-01T16:51:17Z · branch
 - 2026-10-01T16:51:18Z · status inbox→ready
+- 2026-10-01T16:51:20Z · status ready→active
