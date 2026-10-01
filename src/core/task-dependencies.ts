@@ -72,11 +72,24 @@ function mainBranch(root: string): string | null {
   return branches.has("main") ? "main" : branches.has("master") ? "master" : null;
 }
 
+function wasExplicitlyAbandoned(task: Task): boolean {
+  let abandoned = false;
+  for (const line of task.body.split(/\r?\n/)) {
+    if (/^-\s+\S+\s+·\s+status\s+\w+→\w+/.test(line)) {
+      abandoned = false;
+    } else if (/^-\s+\S+\s+·\s+note: task abandoned$/.test(line)) {
+      abandoned = true;
+    }
+  }
+  return abandoned && task.status === "ready";
+}
+
 function dependencyMergeState(
   root: string,
   upstream: Task,
   base: string | null,
 ): "merged" | "waiting" | "cancelled" {
+  if (wasExplicitlyAbandoned(upstream)) return "cancelled";
   if (upstream.status !== "done") return "waiting";
   const commit =
     upstream.mergedCommit ?? (upstream.branch ? branchCommit(root, upstream.branch) : null);

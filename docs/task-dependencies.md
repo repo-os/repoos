@@ -26,4 +26,6 @@ eligible work is considered without a server restart.
 If an upstream task is deleted, or its completed branch has no verifiable
 merge commit, the dependent reports a cancelled prerequisite that needs human
 attention. A still-existing but unmerged branch remains an ordinary waiting
-dependency.
+dependency. Explicitly abandoning an upstream also marks its dependents as
+needing human attention; starting that upstream again clears the abandoned
+state.
