@@ -250,7 +250,8 @@ const diffStats = computed(() => {
 
 /** Load diff stats when card is rendered. */
 onMounted(() => {
-  void repo.loadDiffStats(props.task.id);
+  // No branch means no diff — the server would only answer "noBranch".
+  if (props.task.branch) void repo.loadDiffStats(props.task.id);
 });
 
 function onDragStart(e: DragEvent): void {

@@ -2873,7 +2873,7 @@ watch(
   () => [ui.active?.id, ui.active?.status, ui.active?.branch],
   () => {
     if (!ui.active) return;
-    void repo.loadDiffStats(ui.active.id);
+    void repo.loadDiffStats(ui.active.id, { priority: true });
   },
   { immediate: true },
 );
@@ -4428,7 +4428,18 @@ watch(
               @keydown.space.prevent="openSpecModal"
             >
               <div v-if="specHtml" class="md-rendered" v-html="specHtml"></div>
-              <div v-else class="md-card-body">No spec yet — click to add.</div>
+              <div v-else-if="!ui.activeDetailLoading" class="md-card-body">
+                No spec yet — click to add.
+              </div>
+              <div
+                v-if="ui.activeDetailLoading"
+                class="md-loading"
+                role="status"
+                data-testid="spec-loading"
+              >
+                <span class="md-loading-dot" aria-hidden="true"></span>
+                Loading full spec…
+              </div>
             </div>
           </div>
           <div class="md-h" style="margin-top: 4px">meta</div>

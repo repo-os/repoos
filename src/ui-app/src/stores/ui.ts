@@ -47,6 +47,12 @@ const MAX_PENDING_SCREENSHOTS = 12;
 export const useUiStore = defineStore("ui", () => {
   /** Currently open drawer task, or null when closed. */
   const active = ref<Task | null>(null);
+  /**
+   * True while the open drawer shows the board's cut-down copy (body preview
+   * only) and the full task is still being fetched. Lets the drawer say so
+   * instead of presenting a truncated spec as if it were complete.
+   */
+  const activeDetailLoading = ref(false);
   /** True when the drawer shows the new-task form instead of a task. */
   const isNew = ref(false);
   const saving = ref(false);
@@ -400,6 +406,7 @@ export const useUiStore = defineStore("ui", () => {
   function open(t: Task): void {
     isNew.value = false;
     active.value = t;
+    activeDetailLoading.value = false;
     activeTab.value = defaultTabFor(t);
     debugView.value = "logs";
     debugCheckFocus.value = null;
@@ -430,6 +437,7 @@ export const useUiStore = defineStore("ui", () => {
    */
   async function openTask(t: Task): Promise<void> {
     open(t);
+    activeDetailLoading.value = true;
     try {
       const fresh = await api<Task>(`/api/tasks/${t.id}`);
       // The user may have closed the drawer or opened a different task while
@@ -437,6 +445,8 @@ export const useUiStore = defineStore("ui", () => {
       if (active.value?.id === t.id) active.value = fresh;
     } catch {
       /* keep the locally-known task — refresh is best-effort */
+    } finally {
+      if (active.value?.id === t.id) activeDetailLoading.value = false;
     }
   }
 
@@ -460,6 +470,7 @@ export const useUiStore = defineStore("ui", () => {
 
   function close(): void {
     active.value = null;
+    activeDetailLoading.value = false;
     isNew.value = false;
     isNewDoc.value = false;
     isNewSkill.value = false;
@@ -548,6 +559,7 @@ export const useUiStore = defineStore("ui", () => {
     syncActive,
     refreshActive,
     openTask,
+    activeDetailLoading,
     close,
     openTunnel,
     closeTunnel,

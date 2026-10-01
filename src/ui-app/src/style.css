@@ -5124,6 +5124,26 @@
   font-weight: 600;
   color: var(--txt);
 }
+.md-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 12.5px;
+  color: var(--txt-faint);
+}
+.md-loading-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .md-loading-dot {
+    animation: none;
+  }
+}
 .diff-stats-loading {
   font-size: 12.5px;
   color: var(--txt-faint);
