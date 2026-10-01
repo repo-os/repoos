@@ -144,7 +144,22 @@ Declared `## Shots` resolve targets the way the CLI does (changed paths,
 then the task's `area`, then the default command), so an explicit declaration
 is honored even when the diff matches no glob; and repos whose UI is itself
 markdown-driven should know a UI-relevant `.md` change counts as content —
-declare the shot with its route. Every
+declare the shot with its route.
+
+`repoos shot`'s own flags sit on top of that plan (#0610). `buildCliShotPlan`
+(`src/commands/shot.ts`) is a pure function of the task body, the flags and the
+resolved targets — it used to live inline in `cmdShot`, where a typed route
+built its own entries and then lost the `built.entries.length ? … : …` pick to
+the fallback's `/`, so `repoos shot /repo/commits/abc123` captured the preview
+root. Two rules, both documented in `user-docs/cli.md` and `repoos shot
+--help`: an explicit route/selector replaces the WHOLE declared list (a
+declared entry's steps/highlight/label belong to its own route, so they are
+never re-pointed), and `buildCapturePlan` now takes the requested
+route/selector so its fallback inherits them instead of hardcoding `/`. The
+same options lift the docs-content-only skip — a route named by hand is the
+justification that skip asks for. The server's automatic pass passes neither
+option, so its blind `/` fallback and its conservative gates are unchanged.
+Every
 shot records its provenance in `shots.json` and the drawer — `declared:
 <label>` for a declared shot, `auto: matched <glob>` for the fallback, so
 a reviewer can tell what each capture claims to show.
