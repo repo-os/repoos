@@ -3,6 +3,9 @@ id: "0619"
 title: "Fix pi chat spacing: stream completed text blocks, not per-token deltas"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p2
 area: server
 assigned_to: ai
@@ -121,4 +124,5 @@ Stream at *completed text block* granularity instead of per token:
 - 2026-10-01T23:33:43Z · status review→active
 - 2026-10-01T23:41:19Z · status active→review
 - 2026-10-01T23:41:19Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-01T23:43:01Z · needs_input
 - 2026-10-01T23:43:01Z · needs_input
