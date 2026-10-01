@@ -45,7 +45,7 @@ import { stripTomlComment, unquoteTomlString } from "./toml-line.js";
 
 /** Default display labels for board columns, keyed by canonical status ID. */
 export const DEFAULT_COLUMN_LABELS: Record<string, string> = {
-  draft: "Proposed / Drafts",
+  draft: "Draft",
   inbox: "Inbox",
   ready: "Ready",
   active: "Active",

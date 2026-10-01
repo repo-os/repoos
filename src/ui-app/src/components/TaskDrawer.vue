@@ -199,7 +199,7 @@ const allStatuses = computed(() => {
   return [
     {
       id: "draft",
-      label: draftLabel !== "Proposed / Drafts" ? draftLabel : "Draft",
+      label: draftLabel,
       color: statusColor("draft"),
     },
     ...columnsWithLabels(config.columnLabels),

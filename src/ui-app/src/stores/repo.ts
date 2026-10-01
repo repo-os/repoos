@@ -257,7 +257,7 @@ export function columnsWithLabels(labels: Record<string, string>): Column[] {
 
 /** Build the draft column with its label from config. */
 export function draftColumnWithLabel(labels: Record<string, string>): Column {
-  return { id: "draft", label: labels.draft ?? "Proposed / Drafts", color: STATUS_COLORS.draft };
+  return { id: "draft", label: labels.draft ?? "Draft", color: STATUS_COLORS.draft };
 }
 
 /** Sort modes for work-page task columns. "recent" sorts by updated_at desc,

@@ -82,7 +82,7 @@ function schemaField(key: string, defaultVal = ""): ConfigField {
 
 async function loadConfig(boardColumns?: Record<string, string>): Promise<void> {
   const labels = boardColumns ?? {
-    draft: "Proposed / Drafts",
+    draft: "Draft",
     inbox: "Inbox",
     ready: "Ready",
     active: "Active",
@@ -153,7 +153,7 @@ describe("config store columnLabels", () => {
     await loadConfig();
     const config = useConfigStore();
     expect(config.columnLabels).toEqual({
-      draft: "Proposed / Drafts",
+      draft: "Draft",
       inbox: "Inbox",
       ready: "Ready",
       active: "Active",
@@ -208,7 +208,7 @@ describe("WorkView board column labels", () => {
     const wrapper = mount(WorkView, { global: { stubs: WORK_STUBS } });
     await flushPromises();
     const boardCols = wrapper.findAllComponents({ name: "BoardColumn" });
-    expect(boardCols[0].props("col").label).toBe("Proposed / Drafts");
+    expect(boardCols[0].props("col").label).toBe("Draft");
     const inboxCol = boardCols.find((c) => c.props("col").id === "inbox");
     expect(inboxCol?.props("col").label).toBe("Inbox");
   });
@@ -246,7 +246,7 @@ describe("DashboardView column labels", () => {
 });
 
 const DEFAULT_LABELS = {
-  draft: "Proposed / Drafts",
+  draft: "Draft",
   inbox: "Inbox",
   ready: "Ready",
   active: "Active",
