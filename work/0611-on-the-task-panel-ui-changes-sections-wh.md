@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/row-layout-for-task-preview-shots-on-cha
 model_override: opencode-go/space-bunny-free
 created_at: "2026-10-01T04:34:32Z"
-updated_at: "2026-10-01T04:38:13Z"
+updated_at: "2026-10-01T04:58:58Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -68,6 +68,15 @@ On the task panel ui changes sections where we show the shots taken by the task 
   {"target": "default", "route": "/settings?tab=notifications", "label": "Settings: release notification toggles", "steps": []}
 ]
 
+## Shots
+
+```json
+[
+  {"target": "default", "route": "/", "label": "Task drawer Changes tab: one row per captured preview shot", "steps": [{"waitFor": ".board"}, {"waitMs": 400}]},
+  {"target": "default", "route": "/", "label": "New task screenshots: the attachment row the UI-changes rows now match", "steps": [{"click": ".new-btn"}, {"waitFor": ".shot-dropzone"}, {"waitMs": 400}]}
+]
+```
+
 ## Screenshots
 
 ![Screenshot-2026-10-01-at-12.24.16](/api/tasks/0611/attachments/screenshot-1.png)
@@ -84,3 +93,4 @@ On the task panel ui changes sections where we show the shots taken by the task 
 - 2026-10-01T04:37:54Z · agent exited with an error (opencode) · error: Upstream request failed: Insufficient account funds
 - 2026-10-01T04:38:10Z · model_override
 - 2026-10-01T04:38:13Z · needs_input
+- 2026-10-01T04:58:58Z · body
