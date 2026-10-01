@@ -657,6 +657,20 @@ never created and all work landed on `main`. Lessons:
 - Managed task worktree creation is RepoOS's job — use the Start action and
   do not hand-roll a second worktree for a task.
 
+### Edit the task worktree, not the checkout your tools start in
+
+A harness's file/edit tools and shell resolve relative paths against the
+session's working directory — and for a task session that is usually still the
+**main checkout**, even after RepoOS has demonstrably created and handed back
+the task's worktree. Relative-path edits then land on `main` while the task
+branch sits untouched, with no error. Two separate harnesses made this exact
+mistake on 2026-10-01.
+
+- Before your FIRST edit — not just your first commit — confirm where it will
+  land: run `pwd` for shell work, and prefer the worktree's **absolute path**
+  for every file/edit tool whose own working directory you don't control. A
+  `cd` is not enough when the tool's root is fixed at the session's start.
+
 ## Stuck-active incident (#0151): worktree missing its own task file
 
 A task can get permanently stuck `active`, failing finalization with
