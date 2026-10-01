@@ -2,14 +2,14 @@
 id: "0614"
 title: "Task dependencies: block dispatch until upstream tasks are merged to main"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [core, server, ui-app]
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-01T11:04:57Z"
-updated_at: "2026-10-01T11:04:57Z"
+updated_at: "2026-10-01T12:12:15Z"
 ---
 ## Problem
 
@@ -52,3 +52,4 @@ Relevant code: `src/server/auto-engineering.ts` (ready filter), `src/core/types.
 ## Activity
 
 - 2026-10-01T11:04:57Z · created · unknown
+- 2026-10-01T12:12:15Z · status inbox→ready
