@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/integrate-pi-as-a-drivable-coding-harnes
 created_at: "2026-10-01T16:34:17Z"
-updated_at: "2026-10-01T17:29:38Z"
+updated_at: "2026-10-01T17:29:45Z"
 review_passes: 2
 ---
 ## Context
@@ -114,3 +114,5 @@ uses: `version`, `help`, `model-discovery`, `headless-one-shot`,
 - 2026-10-01T17:23:17Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-01T17:29:36Z · note: Round-3 fixes for reviewer findings: (1) pi message_update text_delta is now streamed as live text entries; the duplicate message_end text is dropped once deltas streamed, while applySignals still runs on the authoritative message_end so a handoff/preview signal split across deltas is detected. (2) provider-qualified model ids now map to --provider <name> --model <id>; bare ids pass through as --model. Tests added for both. repoos check --changed main green.
 - 2026-10-01T17:29:38Z · status review→active
+- 2026-10-01T17:29:45Z · status active→review
+- 2026-10-01T17:29:45Z · status review→active
