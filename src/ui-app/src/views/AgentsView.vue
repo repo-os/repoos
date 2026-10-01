@@ -913,144 +913,148 @@ onUnmounted(() => {
                 <span v-if="r.agent.deprecated" class="agent-badge detect-deprecated"
                   >Deprecated</span
                 >
-                <span
-                  v-if="effectiveBinary(r.agent).version"
-                  class="detect-ver detect-ver-inline"
-                  >{{ effectiveBinary(r.agent).version }}</span
-                >
-                <!-- Multi-binary dropdown: shown when more than one copy exists on PATH -->
-                <Select
-                  v-if="r.agent.allBinaries && r.agent.allBinaries.length > 1"
-                  :model-value="String(selectedBinaryIdx[r.agent.id] ?? 0)"
-                  @update:model-value="(v) => selectBinary(r.agent.id, Number(v))"
-                >
-                  <SelectTrigger
-                    class="detect-binary-select"
-                    :title="`${r.agent.allBinaries.length} copies found on PATH`"
+                <span class="detect-compat-slot">
+                  <button
+                    v-if="r.agent.compatibility"
+                    type="button"
+                    class="detect-compat-icon"
+                    :class="{ active: openCompatId === r.agent.id }"
+                    :style="{ color: compatibilityColor(r.agent) }"
+                    :aria-label="`Compatibility details for ${r.agent.name}`"
+                    @click.stop="toggleCompat(r.agent.id)"
                   >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectViewport class="detect-binary-viewport">
-                      <SelectItem
-                        v-for="(bin, idx) in r.agent.allBinaries"
-                        :key="bin.path"
-                        :value="String(idx)"
-                        :text-value="`${bin.name} ${bin.version ?? '?'}`"
-                        class="detect-binary-item"
-                      >
-                        <span class="detect-binary-item-name">{{ bin.name }}</span>
-                        <span class="detect-binary-item-ver">{{ bin.version ?? "?" }}</span>
-                        <span class="detect-binary-item-path">{{ bin.path }}</span>
-                      </SelectItem>
-                    </SelectViewport>
-                  </SelectContent>
-                </Select>
-                <span
-                  v-if="detectPending.has(r.agent.id)"
-                  class="detect-row-spinner"
-                  title="Probing…"
-                ></span>
-                <button
-                  v-if="r.agent.compatibility"
-                  type="button"
-                  class="detect-compat-icon"
-                  :class="{ active: openCompatId === r.agent.id }"
-                  :style="{ color: compatibilityColor(r.agent) }"
-                  :aria-label="`Compatibility details for ${r.agent.name}`"
-                  @click.stop="toggleCompat(r.agent.id)"
-                >
-                  {{ compatibilityIcon(r.agent) }}
-                </button>
-                <details v-if="r.agent.installed && r.agent.update" class="detect-update-detail">
-                  <summary :style="{ color: updateColor(r.agent.update) }">
-                    {{ updateLabel(r.agent.update) }}
-                  </summary>
-                  <span class="detect-update-meta">
-                    <span v-if="r.agent.update.source">{{ r.agent.update.source }}</span>
-                    <span v-if="checkedLabel(r.agent.update)">{{
-                      checkedLabel(r.agent.update)
-                    }}</span>
-                    <span v-if="r.agent.update.error" class="detect-update-reason">{{
-                      r.agent.update.error
-                    }}</span>
-                    <button
-                      v-if="r.agent.update.updateCommand"
-                      class="detect-copy"
-                      @click="copyHint(r.agent.update.updateCommand)"
+                    {{ compatibilityIcon(r.agent) }}
+                  </button>
+                </span>
+                <div class="detect-details">
+                  <span
+                    v-if="effectiveBinary(r.agent).version"
+                    class="detect-ver detect-ver-inline"
+                    >{{ effectiveBinary(r.agent).version }}</span
+                  >
+                  <!-- Multi-binary dropdown: shown when more than one copy exists on PATH -->
+                  <Select
+                    v-if="r.agent.allBinaries && r.agent.allBinaries.length > 1"
+                    :model-value="String(selectedBinaryIdx[r.agent.id] ?? 0)"
+                    @update:model-value="(v) => selectBinary(r.agent.id, Number(v))"
+                  >
+                    <SelectTrigger
+                      class="detect-binary-select"
+                      :title="`${r.agent.allBinaries.length} copies found on PATH`"
                     >
-                      {{
-                        detectHintCopied === r.agent.update.updateCommand
-                          ? "copied"
-                          : "copy update command"
-                      }}
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      <SelectViewport class="detect-binary-viewport">
+                        <SelectItem
+                          v-for="(bin, idx) in r.agent.allBinaries"
+                          :key="bin.path"
+                          :value="String(idx)"
+                          :text-value="`${bin.name} ${bin.version ?? '?'}`"
+                          class="detect-binary-item"
+                        >
+                          <span class="detect-binary-item-name">{{ bin.name }}</span>
+                          <span class="detect-binary-item-ver">{{ bin.version ?? "?" }}</span>
+                          <span class="detect-binary-item-path">{{ bin.path }}</span>
+                        </SelectItem>
+                      </SelectViewport>
+                    </SelectContent>
+                  </Select>
+                  <span
+                    v-if="detectPending.has(r.agent.id)"
+                    class="detect-row-spinner"
+                    title="Probing…"
+                  ></span>
+                  <details v-if="r.agent.installed && r.agent.update" class="detect-update-detail">
+                    <summary :style="{ color: updateColor(r.agent.update) }">
+                      {{ updateLabel(r.agent.update) }}
+                    </summary>
+                    <span class="detect-update-meta">
+                      <span v-if="r.agent.update.source">{{ r.agent.update.source }}</span>
+                      <span v-if="checkedLabel(r.agent.update)">{{
+                        checkedLabel(r.agent.update)
+                      }}</span>
+                      <span v-if="r.agent.update.error" class="detect-update-reason">{{
+                        r.agent.update.error
+                      }}</span>
+                      <button
+                        v-if="r.agent.update.updateCommand"
+                        class="detect-copy"
+                        @click="copyHint(r.agent.update.updateCommand)"
+                      >
+                        {{
+                          detectHintCopied === r.agent.update.updateCommand
+                            ? "copied"
+                            : "copy update command"
+                        }}
+                      </button>
+                    </span>
+                  </details>
+                  <span v-if="r.status === 'auth'" class="detect-hint-inline">
+                    <code
+                      class="detect-hint-code"
+                      :title="r.agent.authHint || 'sign in with the CLI'"
+                      >{{ r.agent.authHint || "sign in with the CLI" }}</code
+                    >
+                    <button
+                      v-if="r.agent.authHint"
+                      class="detect-copy"
+                      @click="copyHint(r.agent.authHint!)"
+                    >
+                      {{ detectHintCopied === r.agent.authHint ? "copied" : "copy" }}
                     </button>
                   </span>
-                </details>
-                <span v-if="r.status === 'auth'" class="detect-hint-inline">
-                  <code
-                    class="detect-hint-code"
-                    :title="r.agent.authHint || 'sign in with the CLI'"
-                    >{{ r.agent.authHint || "sign in with the CLI" }}</code
-                  >
+                  <span v-else-if="r.status === 'desktop'" class="detect-hint-inline">
+                    <code class="detect-hint-code" :title="r.agent.installHint">{{
+                      r.agent.installHint
+                    }}</code>
+                    <button class="detect-copy" @click="copyHint(r.agent.installHint)">
+                      {{ detectHintCopied === r.agent.installHint ? "copied" : "copy" }}
+                    </button>
+                  </span>
+                  <span v-else-if="r.status === 'missing'" class="detect-hint-inline">
+                    <code class="detect-hint-code" :title="r.agent.installHint">{{
+                      r.agent.installHint
+                    }}</code>
+                    <button class="detect-copy" @click="copyHint(r.agent.installHint)">
+                      {{ detectHintCopied === r.agent.installHint ? "copied" : "copy" }}
+                    </button>
+                  </span>
+                  <span v-if="r.agent.deprecated" class="detect-migration-inline">
+                    {{ r.agent.installHint }}
+                    <a
+                      v-if="r.agent.migrationUrl"
+                      :href="r.agent.migrationUrl"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Official migration and auth docs
+                    </a>
+                    <span v-if="r.agent.migrationNote">{{ r.agent.migrationNote }}</span>
+                  </span>
                   <button
-                    v-if="r.agent.authHint"
-                    class="detect-copy"
-                    @click="copyHint(r.agent.authHint!)"
+                    type="button"
+                    class="detect-star-btn"
+                    :class="{ on: isAgentFavorite(favoriteKey(r.agent)) }"
+                    :aria-pressed="isAgentFavorite(favoriteKey(r.agent))"
+                    :aria-label="
+                      isAgentFavorite(favoriteKey(r.agent))
+                        ? `Remove ${r.agent.name} from favorites`
+                        : `Add ${r.agent.name} to favorites`
+                    "
+                    :title="
+                      isAgentFavorite(favoriteKey(r.agent))
+                        ? 'Remove from favorites'
+                        : 'Add to favorites'
+                    "
+                    @click="toggleAgentFavorite(favoriteKey(r.agent))"
                   >
-                    {{ detectHintCopied === r.agent.authHint ? "copied" : "copy" }}
+                    <Star
+                      class="size-3.5"
+                      :fill="isAgentFavorite(favoriteKey(r.agent)) ? 'currentColor' : 'none'"
+                    />
                   </button>
-                </span>
-                <span v-else-if="r.status === 'desktop'" class="detect-hint-inline">
-                  <code class="detect-hint-code" :title="r.agent.installHint">{{
-                    r.agent.installHint
-                  }}</code>
-                  <button class="detect-copy" @click="copyHint(r.agent.installHint)">
-                    {{ detectHintCopied === r.agent.installHint ? "copied" : "copy" }}
-                  </button>
-                </span>
-                <span v-else-if="r.status === 'missing'" class="detect-hint-inline">
-                  <code class="detect-hint-code" :title="r.agent.installHint">{{
-                    r.agent.installHint
-                  }}</code>
-                  <button class="detect-copy" @click="copyHint(r.agent.installHint)">
-                    {{ detectHintCopied === r.agent.installHint ? "copied" : "copy" }}
-                  </button>
-                </span>
-                <span v-if="r.agent.deprecated" class="detect-migration-inline">
-                  {{ r.agent.installHint }}
-                  <a
-                    v-if="r.agent.migrationUrl"
-                    :href="r.agent.migrationUrl"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Official migration and auth docs
-                  </a>
-                  <span v-if="r.agent.migrationNote">{{ r.agent.migrationNote }}</span>
-                </span>
-                <button
-                  type="button"
-                  class="detect-star-btn"
-                  :class="{ on: isAgentFavorite(favoriteKey(r.agent)) }"
-                  :aria-pressed="isAgentFavorite(favoriteKey(r.agent))"
-                  :aria-label="
-                    isAgentFavorite(favoriteKey(r.agent))
-                      ? `Remove ${r.agent.name} from favorites`
-                      : `Add ${r.agent.name} to favorites`
-                  "
-                  :title="
-                    isAgentFavorite(favoriteKey(r.agent))
-                      ? 'Remove from favorites'
-                      : 'Add to favorites'
-                  "
-                  @click="toggleAgentFavorite(favoriteKey(r.agent))"
-                >
-                  <Star
-                    class="size-3.5"
-                    :fill="isAgentFavorite(favoriteKey(r.agent)) ? 'currentColor' : 'none'"
-                  />
-                </button>
+                </div>
               </div>
               <div
                 v-if="r.agent.compatibility && openCompatId === r.agent.id"
