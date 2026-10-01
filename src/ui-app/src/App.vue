@@ -5,6 +5,7 @@ import { useRepoStore } from "./stores/repo";
 import { useDocsStore } from "./stores/docs";
 import { useConfigStore } from "./stores/config";
 import { useAuthStore } from "./stores/auth";
+import { useNoticesStore } from "./stores/notices";
 import TopBar from "./components/TopBar.vue";
 import Sidebar from "./components/Sidebar.vue";
 import MobileTabs from "./components/MobileTabs.vue";
@@ -26,6 +27,7 @@ const docs = useDocsStore();
 const config = useConfigStore();
 const auth = useAuthStore();
 const ui = useUiStore();
+const notices = useNoticesStore();
 
 // Routes marked `public` (currently just /login) render as a standalone
 // full-viewport screen with no app chrome — the visitor isn't authenticated
@@ -61,6 +63,9 @@ onMounted(async () => {
   // resolves, so it's normally already loaded by the time we mount.
   if (!auth.loaded) await auth.loadMe();
   await repo.init();
+  // Release-event notices (#0606): poll /api/release/run from anywhere in the
+  // app so the bell badge is live on every page, not just /releases.
+  notices.start();
   await docs.loadDocs();
   await docs.loadSkills();
   await config.load();
@@ -76,6 +81,7 @@ onMounted(async () => {
 onUnmounted(() => {
   window.removeEventListener("focus", checkUiBuild);
   window.removeEventListener("repoos:api-timeout", onApiTimeout);
+  notices.stop();
 });
 </script>
 

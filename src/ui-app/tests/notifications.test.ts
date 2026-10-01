@@ -8,6 +8,8 @@ import {
   pushAvailability,
   PUSH_AVAILABILITY_HELP,
   NOTIFICATION_TYPE_LABELS,
+  NOTIFICATION_TYPE_DESCRIPTIONS,
+  NOTIFICATION_TYPES,
 } from "../src/stores/notifications";
 import { useRepoStore } from "../src/stores/repo";
 import type { Task } from "../src/types";
@@ -94,11 +96,19 @@ afterEach(() => {
 });
 
 describe("notifications store defaults + persistence", () => {
-  it("defaults everything to off", () => {
+  it("defaults everything to off (task types + release kinds, 0606)", () => {
     const n = useNotificationsStore();
     expect(n.soundEnabled).toBe(false);
     expect(n.pushEnabled).toBe(false);
-    expect(n.types).toEqual({ review: false, paused: false, stuck: false, needsInput: false });
+    expect(n.types).toEqual({
+      review: false,
+      paused: false,
+      stuck: false,
+      needsInput: false,
+      releaseNotesReady: false,
+      releaseSucceeded: false,
+      releaseFailed: false,
+    });
     expect(n.isActive).toBe(false);
   });
 
@@ -288,13 +298,23 @@ describe("notify() gating", () => {
 });
 
 describe("NOTIFICATION_TYPE_LABELS", () => {
-  it("covers all four types", () => {
+  it("covers every monitorable type — task attention + release kinds (0606)", () => {
     expect(Object.keys(NOTIFICATION_TYPE_LABELS).sort()).toEqual([
       "needsInput",
       "paused",
+      "releaseFailed",
+      "releaseNotesReady",
+      "releaseSucceeded",
       "review",
       "stuck",
     ]);
+  });
+
+  it("the Settings rule: labels, descriptions and toggles line up for every type", () => {
+    for (const t of NOTIFICATION_TYPES) {
+      expect(NOTIFICATION_TYPE_LABELS[t].length).toBeGreaterThan(2);
+      expect(NOTIFICATION_TYPE_DESCRIPTIONS[t].length).toBeGreaterThan(10);
+    }
   });
 });
 
