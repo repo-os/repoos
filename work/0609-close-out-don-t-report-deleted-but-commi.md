@@ -34,3 +34,4 @@ Do: (1) make close-out distinguish deleted-but-committed files (content identica
 - 2026-10-01T07:21:46Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
 - 2026-10-01T07:35:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-01T07:44:46Z · status active→review
+- 2026-10-01T07:44:46Z · note: shots: skipped — the diff (4 changed paths) touches no [[preview.paths]] globs — no UI change to capture
