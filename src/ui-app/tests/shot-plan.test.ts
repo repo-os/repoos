@@ -658,6 +658,42 @@ describe("captureShotPage highlight (#0603)", () => {
     expect(misses).toEqual([".stale"]);
   });
 
+  it("counts a match even when an overlapping selector already marked the element (#0613)", async () => {
+    // Run the real draw script against a tiny DOM where `.item` and `div.item`
+    // hit the same element, so the second selector sees it pre-marked.
+    class FakeElement {
+      attrs = new Set<string>();
+      hasAttribute(name: string) {
+        return this.attrs.has(name);
+      }
+      setAttribute(name: string) {
+        this.attrs.add(name);
+      }
+      removeAttribute(name: string) {
+        this.attrs.delete(name);
+      }
+    }
+    const el = new FakeElement();
+    const doc = {
+      querySelectorAll: (sel: string) => (sel === ".item" || sel === "div.item" ? [el] : []),
+      getElementById: () => null,
+      createElement: () => ({ id: "", textContent: "" }),
+      head: { append() {} },
+    };
+    const page = fakePage({ matches: 0 });
+    (page as unknown as { evaluate: unknown }).evaluate = async (body: string) =>
+      new Function("document", "Element", `return ${body}`)(doc, FakeElement);
+    const misses: string[] = [];
+    await captureShotPage(
+      page,
+      "http://x/",
+      { highlight: ".item, div.item", highlights: [".item", "div.item"], route: "/board" },
+      { waitMs: 0, fullPage: false },
+      (selector) => misses.push(selector),
+    );
+    expect(misses).toEqual([]);
+  });
+
   it("falls back to the whole window when selector matches nothing (#0613)", async () => {
     const page = fakePage({ matches: 0 });
     page.locator = () =>
