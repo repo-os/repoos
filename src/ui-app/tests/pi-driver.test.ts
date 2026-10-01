@@ -81,6 +81,21 @@ describe("pi event parsing", () => {
     expect(parsePiEvent(raw)).toEqual({ entry: { type: "text", text: "hello" } });
   });
 
+  it("surfaces a failed assistant turn's error instead of looking empty", () => {
+    const raw = JSON.stringify({
+      type: "message_end",
+      message: {
+        role: "assistant",
+        content: [],
+        stopReason: "error",
+        errorMessage: "OpenAI API error (401): Incorrect API key",
+      },
+    });
+    expect(parsePiEvent(raw)).toEqual({
+      entry: { type: "sys", d: "OpenAI API error (401): Incorrect API key" },
+    });
+  });
+
   it("swallows streaming deltas and lifecycle events rather than dumping JSON", () => {
     expect(
       parsePiEvent(
