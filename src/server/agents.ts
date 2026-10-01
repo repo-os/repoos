@@ -5937,30 +5937,28 @@ export class AgentRunner {
     } else if (parsed.messageEnd) {
       const pending = session.piPendingText ?? [];
       session.piPendingText = undefined;
-      // applySignals always runs on the authoritative whole message: a
-      // handoff/preview signal split across streamed blocks is whole here, and
-      // its confirmation line replaces every held raw fragment. When the
-      // message_end carries no text entry, the held blocks are the only copy.
-      const authoritative =
-        parsed.entry ??
-        (pending.length
-          ? {
-              type: "text" as const,
-              text: pending
-                .map((entry) => ("type" in entry && entry.type === "text" ? entry.text : ""))
-                .join(""),
-            }
-          : undefined);
-      const surfaced = authoritative
-        ? this.applySignals(taskId, raw, authoritative, session)
-        : undefined;
-      if (surfaced && "s" in surfaced && surfaced.s === "sys") {
+      // A signal split across streamed blocks may be broken in the
+      // authoritative text (pi joins content blocks with newlines) but whole
+      // in the held blocks' concatenation, or vice versa — check both, and
+      // record the confirmation line in place of every held raw fragment.
+      const authoritativeText =
+        parsed.entry && "type" in parsed.entry && parsed.entry.type === "text"
+          ? parsed.entry.text
+          : "";
+      const heldText = pending
+        .map((entry) => ("type" in entry && entry.type === "text" ? entry.text : ""))
+        .join("");
+      const { surfaced, matched } = this.surfacePiText(taskId, raw, session, [
+        authoritativeText,
+        heldText,
+      ]);
+      if (matched && surfaced) {
         this.recordEntry(taskId, session, "out", surfaced);
       } else if (pending.length) {
         for (const entry of pending) this.recordEntry(taskId, session, "out", entry);
-      } else if (surfaced && !session.piStreamedText) {
+      } else if (parsed.entry && !session.piStreamedText) {
         // Backfill the authoritative text when no block streamed.
-        this.recordEntry(taskId, session, "out", surfaced);
+        this.recordEntry(taskId, session, "out", parsed.entry);
       }
       session.piStreamedText = false;
     } else if (parsed.entry) {
@@ -6183,6 +6181,29 @@ export class AgentRunner {
       out = { s: "sys", d: "✓ agent requested server-side handoff" };
     }
     return out;
+  }
+
+  /**
+   * Surface a runner signal from a pi message's text parts.
+   *
+   * The authoritative `message_end` joins content blocks with newlines
+   * (`piMessageText`), which can break a signal split across streamed blocks.
+   * The held blocks are therefore concatenated without separators too, and both
+   * are checked, so a split signal is still recognized. Returns the surfaced
+   * entry (the confirmation line when a signal matched, otherwise the joined
+   * text entry) and whether a signal matched. `undefined` means there was no
+   * text at all.
+   */
+  private surfacePiText(
+    taskId: string,
+    raw: string,
+    session: Session,
+    parts: readonly string[],
+  ): { surfaced?: AgentOutputEntry; matched: boolean } {
+    const text = parts.filter((part) => part).join("\n");
+    if (!text) return { matched: false };
+    const surfaced = this.applySignals(taskId, raw, { type: "text", text }, session);
+    return { surfaced, matched: "s" in surfaced && surfaced.s === "sys" };
   }
 
   /**
@@ -6624,11 +6645,20 @@ export class AgentRunner {
     }
     // pi holds completed text blocks until its message_end so a signal split
     // across them is surfaced whole (#0619). A process that dies mid-message
-    // never sent that message_end, so flush what was held rather than lose the
-    // assistant text.
+    // never sent that message_end, so surface any signal the held blocks
+    // contain (and fire its request) before flushing the rest.
     if (session?.engine === "pi" && session.piPendingText?.length) {
-      for (const entry of session.piPendingText) this.recordEntry(taskId, session, "out", entry);
+      const pending = session.piPendingText;
       session.piPendingText = undefined;
+      const heldText = pending
+        .map((entry) => ("type" in entry && entry.type === "text" ? entry.text : ""))
+        .join("");
+      const { surfaced, matched } = this.surfacePiText(taskId, "", session, [heldText]);
+      if (matched && surfaced) {
+        this.recordEntry(taskId, session, "out", surfaced);
+      } else {
+        for (const entry of pending) this.recordEntry(taskId, session, "out", entry);
+      }
     }
     // A zero exit is not success for Antigravity unless the stream ended with
     // a SUCCESS `result` record. A malformed or changed protocol (only unknown
