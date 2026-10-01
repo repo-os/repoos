@@ -14,7 +14,7 @@ branch: feat/protect-task-bodies-from-clobbering-and-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-01T09:30:31Z"
-updated_at: "2026-10-01T18:26:04Z"
+updated_at: "2026-10-01T18:33:54Z"
 review_passes: 10
 review_rounds: 2
 dev_error_count: 1
@@ -126,3 +126,4 @@ Follow-up to #0612: add a section-replace/append form for task bodies (so declar
 - 2026-10-01T18:15:58Z · needs_input
 - 2026-10-01T18:15:58Z · needs_input
 - 2026-10-01T18:26:04Z · status review→active
+- 2026-10-01T18:33:54Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
