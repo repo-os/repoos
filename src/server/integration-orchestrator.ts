@@ -27,6 +27,7 @@ import type { RepositoryLock, RootLock } from "./repo-lock.js";
 import type { Logger } from "../core/logger.js";
 import {
   currentBranch,
+  isAncestor,
   runGit,
   worktreePathForBranch,
   ensureWorktree,
@@ -2297,13 +2298,18 @@ export class CloseOutOrchestrator {
     // branch's COMMITS, so a refusal here means real bytes on disk that the
     // merge did not deliver. Keep the worktree, name the files, and ask a
     // human instead of deleting them silently.
-    const removed = removeWorktree(root, featureBranch);
-    const stuck = removed ? null : worktreePathForBranch(root, featureBranch);
+    const mainBranch = currentBranch(root) ?? "main";
+    let removed = removeWorktree(root, featureBranch);
+    let stuck = removed ? null : worktreePathForBranch(root, featureBranch);
     let keptDirtyFiles: string[] = [];
+    let couldNotReadWorktreeDirty = false;
     if (stuck) {
       try {
-        keptDirtyFiles = await uncommittedWorkFiles(stuck, workFileFilter(this.config));
+        keptDirtyFiles = await uncommittedWorkFiles(stuck, workFileFilter(this.config), {
+          omitWorktreeDeletionsPresentAtRef: featureBranch,
+        });
       } catch (err) {
+        couldNotReadWorktreeDirty = true;
         // Unknown ≠ clean. Keep the worktree anyway and say we could not read
         // it, rather than deleting it or pretending it was empty.
         this.logger?.integration(
@@ -2313,20 +2319,32 @@ export class CloseOutOrchestrator {
           { branch: featureBranch, reason: (err as Error).message },
         );
       }
-      const files = keptDirtyFiles.join(", ");
-      this.logger?.integration(
-        job.taskId,
-        "warn",
-        keptDirtyFiles.length > 0
-          ? "feature worktree kept — it has uncommitted files the merge did not carry"
-          : "feature worktree not removed at close-out",
-        { branch: featureBranch, path: stuck, files },
-      );
-      console.warn(
-        keptDirtyFiles.length > 0
-          ? `Close-out for ${job.taskId}: feature worktree ${stuck} kept — uncommitted files the merge did not carry: ${files}`
-          : `Close-out for ${job.taskId}: feature worktree for ${featureBranch} still registered (${stuck})`,
-      );
+      // Half-removed worktrees report many ` D` lines for files still at branch
+      // HEAD (#0609). After a successful merge that is not uncommitted work —
+      // force-remove the registration instead of needs-input.
+      if (
+        !couldNotReadWorktreeDirty &&
+        keptDirtyFiles.length === 0 &&
+        isAncestor(root, featureBranch, mainBranch) === true &&
+        removeWorktree(root, featureBranch, { force: true })
+      ) {
+        stuck = null;
+      } else {
+        const files = keptDirtyFiles.join(", ");
+        this.logger?.integration(
+          job.taskId,
+          "warn",
+          keptDirtyFiles.length > 0
+            ? "feature worktree kept — it has uncommitted files the merge did not carry"
+            : "feature worktree not removed at close-out",
+          { branch: featureBranch, path: stuck, files },
+        );
+        console.warn(
+          keptDirtyFiles.length > 0
+            ? `Close-out for ${job.taskId}: feature worktree ${stuck} kept — uncommitted files the merge did not carry: ${files}`
+            : `Close-out for ${job.taskId}: feature worktree for ${featureBranch} still registered (${stuck})`,
+        );
+      }
     }
     // git refuses to delete a branch that is still checked out, so skipping this
     // is what keeps the kept worktree attached to its branch and recoverable.

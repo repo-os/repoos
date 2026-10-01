@@ -22,6 +22,7 @@ import {
   removeWorktree,
   listWorktrees,
   dirtyFiles,
+  uncommittedWorkFiles,
   commitDirtyFiles,
   mergeBranch,
   GitDirtyCheckError,
@@ -589,6 +590,66 @@ describe("removeWorktree", () => {
       expect(removeWorktree(root, "feat/one")).toBe(false);
 
       expect(existsSync(join(wt.path, "leftover.txt"))).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("refuses a half-removed worktree with only HEAD-present deletions, then force removes (#0609)", () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wt = ensureWorktree(root, "feat/one");
+      for (const name of ["a.txt", "b.txt", "c.txt"]) {
+        writeFileSync(join(wt.path, name), `${name}\n`);
+        git(wt.path, ["add", name]);
+      }
+      git(wt.path, ["commit", "-m", "tracked files"]);
+      git(root, ["merge", "--no-ff", "-m", "merge feat/one", "feat/one"]);
+
+      rmSync(join(wt.path, "a.txt"));
+      rmSync(join(wt.path, "b.txt"));
+
+      expect(removeWorktree(root, "feat/one")).toBe(false);
+      expect(removeWorktree(root, "feat/one", { force: true })).toBe(true);
+      expect(listWorktrees(root).some((w) => w.branch === "feat/one")).toBe(false);
+    } finally {
+      clean();
+    }
+  });
+});
+
+describe("uncommittedWorkFiles (#0609)", () => {
+  it("omits worktree-only deletions for paths still at branch HEAD when asked", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wt = ensureWorktree(root, "feat/one");
+      writeFileSync(join(wt.path, "keep.txt"), "v1\n");
+      git(wt.path, ["add", "keep.txt"]);
+      git(wt.path, ["commit", "-m", "add keep"]);
+      rmSync(join(wt.path, "keep.txt"));
+
+      expect(await dirtyFiles(wt.path)).toContain("keep.txt");
+      expect(await uncommittedWorkFiles(wt.path)).toContain("keep.txt");
+      expect(
+        await uncommittedWorkFiles(wt.path, {}, { omitWorktreeDeletionsPresentAtRef: "feat/one" }),
+      ).toEqual([]);
+    } finally {
+      clean();
+    }
+  });
+
+  it("still reports a real modification when omitting HEAD deletions", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const wt = ensureWorktree(root, "feat/one");
+      writeFileSync(join(wt.path, "keep.txt"), "v1\n");
+      git(wt.path, ["add", "keep.txt"]);
+      git(wt.path, ["commit", "-m", "add keep"]);
+      writeFileSync(join(wt.path, "keep.txt"), "dirty\n");
+
+      expect(
+        await uncommittedWorkFiles(wt.path, {}, { omitWorktreeDeletionsPresentAtRef: "feat/one" }),
+      ).toContain("keep.txt");
     } finally {
       clean();
     }
