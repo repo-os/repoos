@@ -8,8 +8,10 @@ area: [core, server]
 assigned_to: ai
 created_by: ""
 branch: feat/protect-task-bodies-from-clobbering-and-
+cli_override: cursor
+model_override: default
 created_at: "2026-10-01T09:30:31Z"
-updated_at: "2026-10-01T11:02:27Z"
+updated_at: "2026-10-01T11:02:38Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -58,3 +60,4 @@ Follow-up to #0612: add a section-replace/append form for task bodies (so declar
 - 2026-10-01T10:02:51Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-10-01T10:10:52Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-01T10:37:09Z · needs_input (dev-error) dismissed by hello@repoos.org
+- 2026-10-01T11:02:38Z · cli_override, model_override
