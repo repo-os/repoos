@@ -5,11 +5,11 @@ type: feature
 status: draft
 priority: p2
 area: general
-assigned_to: ""
+assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-01T09:01:31Z"
-updated_at: "2026-10-01T09:01:31Z"
+updated_at: "2026-10-01T09:01:32Z"
 ---
 Align the info/question mark/check icon to come right after the "repoos driver" / "detected only" column, and make them all aligned so it's prettier. Anything else - version, install cmd, hints, dropdown select should come in the next column, also left aligned.
 
@@ -17,6 +17,11 @@ Align the info/question mark/check icon to come right after the "repoos driver" 
 
 Align the info/question mark/check icon to come right after the "repoos driver" / "detected only" column, and make them all aligned so it's prettier. Anything else - version, install cmd, hints, dropdown select should come in the next column, also left aligned.
 
+## Screenshots
+
+![Screenshot-2026-09-30-at-20.50.39](/api/tasks/0612/attachments/screenshot-1.png)
+
 ## Activity
 
 - 2026-10-01T09:01:31Z · created · hello@repoos.org
+- 2026-10-01T09:01:32Z · screenshots
