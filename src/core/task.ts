@@ -148,12 +148,11 @@ export function removeSection(body: string, heading: string): string {
  * verbatim.
  */
 export function replaceSection(body: string, heading: string, content: string): string {
-  const lines = body.split("\n");
-  const start = sectionStart(lines, heading);
   const bodyTrimmed = body.replace(/\s+$/, "");
 
-  // Activity always lives at the end. Preserve it and its preceding blank
-  // line by temporarily stripping it, then re-applying after the edit.
+  // Activity always lives at the end. Edit only the prefix before it so
+  // `after` never includes Activity twice (once in the slice, once in the
+  // re-attached suffix).
   const activityStart = bodyTrimmed.lastIndexOf(`\n${ACTIVITY_HEADING}\n`);
   let withoutActivity = bodyTrimmed;
   let activitySuffix = "";
@@ -162,9 +161,10 @@ export function replaceSection(body: string, heading: string, content: string): 
     activitySuffix = bodyTrimmed.slice(activityStart);
   }
 
+  const lines = withoutActivity.split("\n");
+  const start = sectionStart(lines, heading);
+
   if (start === -1) {
-    // Create the section: append with a blank line before it (unless the
-    // body is empty), then re-attach Activity after it.
     const section = `\n${heading}\n${content}`;
     const base = withoutActivity ? `${withoutActivity}${section}` : `${heading}\n${content}`;
     return [base, activitySuffix].filter(Boolean).join("\n\n");
@@ -175,9 +175,8 @@ export function replaceSection(body: string, heading: string, content: string): 
   const after = lines.slice(end).join("\n").replace(/^\s+/, "");
   const rest = [before, after].filter(Boolean).join("\n\n");
   const section = `${heading}\n${content}`;
-  return (
-    [rest, section].filter(Boolean).join("\n\n") + (activitySuffix ? `\n\n${activitySuffix}` : "")
-  );
+  const base = [rest, section].filter(Boolean).join("\n\n");
+  return activitySuffix ? `${base}\n\n${activitySuffix}` : base;
 }
 
 /**

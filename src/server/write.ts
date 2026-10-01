@@ -312,6 +312,11 @@ export function patchTaskFile(
     current.assignee =
       patch.assignedTo.toLowerCase() === "ai" ? "ai" : patch.assignedTo ? "human" : "unassigned";
   }
+  if (patch.section !== undefined && patch.section !== null && patch.body !== undefined) {
+    throw new WriteError(
+      "section and body are mutually exclusive — use section to edit one ## heading, or body for a full replace",
+    );
+  }
   if (patch.section !== undefined && patch.section !== null) {
     // Section-level edit (#0613): replace only the named `## Section`,
     // creating it if absent. All other sections — including `## Activity` —

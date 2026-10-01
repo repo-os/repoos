@@ -285,6 +285,18 @@ describe("buildCapturePlan", () => {
     expect(collapsed).toEqual(["Slot"]);
   });
 
+  it("adopts a later highlight when the first duplicate had none (#0613)", () => {
+    const { entries } = buildCapturePlan(
+      ["default"],
+      [
+        { route: "/agents", label: "Row" },
+        { route: "/agents", highlight: ".detect-row", label: "Slot" },
+      ],
+    );
+    expect(entries).toHaveLength(1);
+    expect(entries[0].highlight).toBe(".detect-row");
+  });
+
   it("rejects a declared target the resolution missed, with an actionable error", () => {
     const { entries, errors } = buildCapturePlan(["Docs site"], [{ target: "Landing page" }]);
     expect(entries).toEqual([]);

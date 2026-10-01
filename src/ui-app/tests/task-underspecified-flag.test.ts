@@ -210,6 +210,29 @@ ${"Substantive notes that are long enough to avoid the short-body heuristic. ".r
 - 2026-01-01T00:00:00Z · created
 `;
 
+  it("raises needs_input when body and review transition share one PATCH (#0613)", async () => {
+    const fx = makeFixture("active");
+    try {
+      writeFileSync(fx.taskPath, taskText("active", "").replace(STUB_BODY, WELL_SPECIFIED));
+      const gutted = WELL_SPECIFIED.replace(
+        /## Problem\n\n[\s\S]*?\n\n## Desired UX/,
+        "## Problem\n\n\n## Desired UX",
+      );
+      const { res, fake } = makeRes();
+      const ctx = makeCtx(fx);
+      ctx.startUnifiedHandoff = () => ({ started: true });
+      await patchTask(ctx, makeReq({ status: "review", body: gutted, skipChecks: true }), res, {
+        param1: "0558",
+      });
+      expect(fake.status).toBe(202);
+      const onDisk = readTaskFile(fx);
+      expect(onDisk.needsInput).toBe(true);
+      expect(onDisk.needsInputReason).toBe("underspecified");
+    } finally {
+      fx.clean();
+    }
+  });
+
   it("raises needs_input when a later body edit leaves spec sections empty", async () => {
     const fx = makeFixture("active");
     try {

@@ -454,8 +454,12 @@ export function buildCapturePlan(
         `${d.target}\0${d.route}\0${d.selector ?? ""}\0${JSON.stringify(d.steps ?? [])}` === key,
     );
     if (existing) {
-      if (entry.highlight && existing.highlight !== entry.highlight) {
-        existing.highlight = [existing.highlight, entry.highlight].join(", ");
+      if (entry.highlight) {
+        if (!existing.highlight) {
+          existing.highlight = entry.highlight;
+        } else if (existing.highlight !== entry.highlight) {
+          existing.highlight = [existing.highlight, entry.highlight].join(", ");
+        }
       }
       collapsed.push(entry.label ?? `${entry.target}${entry.route}`);
     } else {
