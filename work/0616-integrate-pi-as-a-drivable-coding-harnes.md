@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/integrate-pi-as-a-drivable-coding-harnes
 created_at: "2026-10-01T16:34:17Z"
-updated_at: "2026-10-01T17:09:58Z"
+updated_at: "2026-10-01T17:13:45Z"
 ---
 ## Context
 
@@ -103,3 +103,4 @@ uses: `version`, `help`, `model-discovery`, `headless-one-shot`,
 - 2026-10-01T17:09:54Z · note: pi integrated as a drivable harness (interactive session, branch feat/integrate-pi-as-a-drivable-coding-harnes). Detection + AGENT_CLIS, a pi engine/parser for --mode json JSONL, engineering/PM/review/resume/one-shot command shapes, --session resume, no permission-bypass flag (approval is mode-scoped), usage normalized (message_update deduped), run errors surfaced as sys lines. Contract PI_CONTRACT + manifest entry (verifiedAt: null) + user-docs row + tests. repoos check --changed main green. Live adapter probe: 6/8 seams pass (version/help/models/structured-events/session-continuation/cancellation); headless one-shot and auto-permissions fail only because this machine has no valid default provider credentials for pi (OpenAI 401), so certification is intentionally left pending.
 - 2026-10-01T17:09:58Z · status active→review
 - 2026-10-01T17:09:58Z · status review→active
+- 2026-10-01T17:13:45Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
