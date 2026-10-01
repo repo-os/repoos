@@ -28,6 +28,15 @@ const fs = require("fs");
 const path = require("path");
 const args = process.argv.slice(2);
 fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args, cwd: process.cwd(), agent: process.env.REPOOS_AGENT || "", task: process.env.REPOOS_TASK_ID || "", api: process.env.REPOOS_API_URL || "" }) + "\\n");
+if (path.basename(process.argv[1]) === "pi") {
+  process.stdout.write(JSON.stringify({ type: "session", version: 3, id: "sess-pi" }) + "\\n");
+  process.stdout.write(JSON.stringify({ type: "turn_start" }) + "\\n");
+  process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_delta", delta: "Hello " } }) + "\\n");
+  process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_delta", delta: "world" } }) + "\\n");
+  process.stdout.write(JSON.stringify({ type: "message_end", message: { role: "assistant", content: [{ type: "text", text: "Hello world" }] } }) + "\\n");
+  process.stdout.write(JSON.stringify({ type: "turn_end" }) + "\\n");
+  process.exit(0);
+}
 if (path.basename(process.argv[1]) === "copilot") {
   process.stdout.write(JSON.stringify({ type: "assistant.message", data: { content: "Copilot response" } }) + "\\n");
   process.stdout.write(JSON.stringify({ type: "tool.execution_start", data: { toolCallId: "call-1", toolName: "shell", arguments: { command: "git status" } } }) + "\\n");
@@ -76,7 +85,7 @@ function makeFixture(): Fixture {
   const root = mkdtempSync(join(tmpdir(), "repoos-drivers-"));
   const bin = join(root, "bin");
   mkdirSync(bin, { recursive: true });
-  for (const name of ["qwen", "codex", "claude", "opencode", "copilot"]) {
+  for (const name of ["qwen", "codex", "claude", "opencode", "copilot", "pi"]) {
     writeFileSync(join(bin, name), FAKEBIN, { mode: 0o755 });
   }
   return {
@@ -544,6 +553,36 @@ describe("claude code driver", () => {
         fx.clean();
       }
     });
+  });
+});
+
+describe("pi driver", () => {
+  it("streams text deltas and does not duplicate the message_end text", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    try {
+      const runner = new AgentRunner(config(fx.bin), () => {});
+      runner.start(TASK, "feat/x", agent("pi"), { cwd: fx.bin });
+      await waitFor(() => !runner.isRunning("0001"), "pi turn exit");
+
+      expect(runner.output("0001")!.sessionId).toBe("sess-pi");
+      const texts = runner
+        .output("0001")!
+        .lines.filter((line) => (line as { type?: string }).type === "text")
+        .map((line) => (line as { text: string }).text);
+      // Each delta is its own text entry (the UI groups them); the authoritative
+      // message_end text is dropped because its deltas already streamed.
+      expect(texts).toEqual(["Hello ", "world"]);
+      expect(texts.join("")).toBe("Hello world");
+
+      const [run] = spawns(fx);
+      expect(run.args).toEqual(expect.arrayContaining(["--mode", "json"]));
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
   });
 });
 

@@ -96,7 +96,7 @@ const agent: Agent = { name: "engineer", cli: "qwen code", model: "default", ena
 function saved(
   lines: unknown[],
   completedAt?: string,
-  engine: "opencode" | "claude" | "copilot" | "plain" = "plain",
+  engine: "opencode" | "claude" | "copilot" | "pi" | "plain" = "plain",
 ): string {
   return JSON.stringify({
     version: 1,
@@ -288,7 +288,7 @@ setInterval(() => {}, 1000);
     expect(cto.interrupt().stopped).toBe(false);
   });
 
-  it.each(["claude", "copilot"] as const)(
+  it.each(["claude", "copilot", "pi"] as const)(
     "reloads a persisted %s session with its resumable session id",
     (engine) => {
       const fx = fixture("done");
