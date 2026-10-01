@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-01T14:44:44Z"
-review_passes: 3
 id: "0614"
 title: "Task dependencies: block dispatch until upstream tasks are merged to main"
 type: feature
@@ -11,9 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/task-dependencies-block-dispatch-until-u
 created_at: "2026-10-01T11:04:57Z"
-review_rounds: 2
-handoff_signal_retry_count: 1
-last_check_failure: "repoos check at 2026-10-01T13:01:23.886Z: server-side finalization timed out (deadline exceeded)"
+updated_at: "2026-10-01T12:32:10Z"
 ---
 ## Problem
 
@@ -53,26 +49,9 @@ Tasks in a story often depend on each other (e.g. Telegram story #0003: phase 4 
 
 Relevant code: `src/server/auto-engineering.ts` (ready filter), `src/core/types.ts` and `src/core/task.ts` (Task, parser/writer), `ensureWorktree` in `src/core/git.ts`, `src/ui-app` story Tasks tab.
 
-## Shots
-
-```json
-[{"target":"default","route":"/work?task=0614","label":"Task drawer dependency status"}]
-```
-
 ## Activity
 
 - 2026-10-01T11:04:57Z · created · unknown
 - 2026-10-01T12:12:15Z · status inbox→ready
 - 2026-10-01T12:12:27Z · status ready→active, branch
-- 2026-10-01T12:24:23Z · body
-- 2026-10-01T12:32:11Z · status active→review
-- 2026-10-01T12:33:39Z · status review→active
-- 2026-10-01T14:15:44Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-01T14:16:38Z · status active→review
-- 2026-10-01T14:16:38Z · status review→active
-- 2026-10-01T14:30:00Z · status active→review
-- 2026-10-01T14:30:00Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
-- 2026-10-01T14:31:28Z · status review→active
-- 2026-10-01T14:42:53Z · status active→review
-- 2026-10-01T14:42:53Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
-
+- 2026-10-01T12:32:10Z · status active→review

@@ -86,6 +86,11 @@ import { localShotStore } from "../shots.js";
 import { computeTaskShotContext } from "../shot-context.js";
 import { STATUSES } from "../../core/types.js";
 import { parseTask } from "../../core/task.js";
+import {
+  DependencyValidationError,
+  normalizeTaskDependencies,
+  taskDependencyBlockers,
+} from "../../core/task-dependencies.js";
 import type { UsageRange } from "../../core/db.js";
 import { buildIntegrationSnapshot } from "../integration-status.js";
 import { resolvePipelineCheckPlan } from "../check-plan-info.js";
@@ -143,11 +148,16 @@ export const getTasks: RouteHandler = (ctx, req, res) => {
   if (status && !(STATUSES as readonly string[]).includes(status)) {
     return json(res, 400, { error: `Invalid status "${status}"` });
   }
-  const tasks = index
-    .getTasks(status ?? undefined)
-    .map((t) =>
+  const allTasks = index.getTasks();
+  const tasks = allTasks
+    .filter((task) => !status || task.status === status)
+    .map((task) => ({
+      ...task,
+      blockedBy: taskDependencyBlockers(config.root, task, allTasks),
+    }))
+    .map((task) =>
       withPmWorking(
-        withPendingHandoff(withReviewStatus(withPreviewTargets(t, config), reviews), runner),
+        withPendingHandoff(withReviewStatus(withPreviewTargets(task, config), reviews), runner),
       ),
     );
   return json(res, 200, tasks);
@@ -159,6 +169,19 @@ export const createTask: RouteHandler = async (ctx, req, res) => {
   if (!body.title || typeof body.title !== "string") {
     return json(res, 400, { error: "title is required" });
   }
+  let dependsOn: string[] | undefined;
+  if (body.dependsOn !== undefined && body.depends_on !== undefined) {
+    return json(res, 400, { error: "Use either dependsOn or depends_on, not both" });
+  }
+  if (body.dependsOn !== undefined || body.depends_on !== undefined) {
+    try {
+      dependsOn = normalizeTaskDependencies(body.dependsOn ?? body.depends_on);
+    } catch (error) {
+      if (error instanceof DependencyValidationError)
+        return json(res, 400, { error: error.message });
+      throw error;
+    }
+  }
   const taskBody = typeof body.body === "string" ? body.body : undefined;
   // The client-side "Save as draft" freeform path posts the raw prompt as the
   // body with status `draft` (no client change allowed, see #0251). Treat that
@@ -169,18 +192,25 @@ export const createTask: RouteHandler = async (ctx, req, res) => {
         ? body.originalPrompt
         : taskBody
       : undefined;
-  const created = repoos.createTask({
-    title: body.title,
-    type: body.type as string | undefined,
-    area: (body.area ?? undefined) as string | string[] | undefined,
-    story: body.story as string | undefined,
-    priority: body.priority as string | undefined,
-    assignedTo: body.assignedTo as string | undefined,
-    status: body.status as Status | undefined,
-    body: taskBody,
-    originalPrompt,
-    createdBy: getCurrentUser(req, config)?.email,
-  });
+  let created: Task;
+  try {
+    created = repoos.createTask({
+      title: body.title,
+      type: body.type as string | undefined,
+      area: (body.area ?? undefined) as string | string[] | undefined,
+      story: body.story as string | undefined,
+      dependsOn,
+      priority: body.priority as string | undefined,
+      assignedTo: body.assignedTo as string | undefined,
+      status: body.status as Status | undefined,
+      body: taskBody,
+      originalPrompt,
+      createdBy: getCurrentUser(req, config)?.email,
+    });
+  } catch (error) {
+    if (error instanceof DependencyValidationError) return json(res, 400, { error: error.message });
+    throw error;
+  }
   logger.task(created.id, "info", "Task created", {
     title: created.title,
     type: created.type,
@@ -657,6 +687,7 @@ export const getTask: RouteHandler = (ctx, _req, res, params) => {
         ...withPmWorking(
           withPendingHandoff(withReviewStatus(withPreviewTargets(t, config), reviews), runner),
         ),
+        blockedBy: taskDependencyBlockers(config.root, t, index.getTasks()),
         preview: previews.get(t.id) ?? null,
       })
     : json(res, 404, { error: `Task #${id} not found` });
@@ -670,11 +701,25 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
     return json(res, 404, { error: `Task #${id} not found` });
   }
   const body = (await readBody(req)) as TaskPatch & {
+    depends_on?: unknown;
     /** #0507: skip `repoos check`, keep the commit gate. Humans only. */
     skipChecks?: unknown;
     /** #0507: which UI affordance asked, for the activity/progress record. */
     origin?: unknown;
   };
+  if (body.depends_on !== undefined) {
+    if (body.dependsOn !== undefined) {
+      return json(res, 400, { error: "Use either dependsOn or depends_on, not both" });
+    }
+    try {
+      body.dependsOn = normalizeTaskDependencies(body.depends_on);
+    } catch (error) {
+      if (error instanceof DependencyValidationError)
+        return json(res, 400, { error: error.message });
+      throw error;
+    }
+    delete body.depends_on;
+  }
   const prevStatus = existing.status;
   if (body.status === "done" && prevStatus !== "done") {
     if (reviews.isRunning(existing.id)) {
@@ -726,16 +771,31 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
     // Everything else in the body still applies (title, priority, assignee…),
     // minus the status itself, which the finalization owns.
     const { status: _status, skipChecks: _skip, origin: _origin, ...rest } = body;
-    const updated = Object.keys(rest).length
-      ? patchTaskFile(config, existing.absPath, rest, { onStatusChange: onServerStatusChange })
-      : existing;
+    let updated = existing;
+    if (Object.keys(rest).length) {
+      try {
+        updated = patchTaskFile(config, existing.absPath, rest, {
+          onStatusChange: onServerStatusChange,
+        });
+      } catch (error) {
+        if (error instanceof DependencyValidationError)
+          return json(res, 400, { error: error.message });
+        throw error;
+      }
+    }
     index.applyFileChange(updated.absPath, { guarded: true });
     return json(res, 202, { ...index.getTask(updated.id), pendingHandoff: true });
   }
 
-  const updated = patchTaskFile(config, existing.absPath, body, {
-    onStatusChange: onServerStatusChange,
-  });
+  let updated: Task;
+  try {
+    updated = patchTaskFile(config, existing.absPath, body, {
+      onStatusChange: onServerStatusChange,
+    });
+  } catch (error) {
+    if (error instanceof DependencyValidationError) return json(res, 400, { error: error.message });
+    throw error;
+  }
 
   if (body.status && body.status !== prevStatus) {
     logger.task(id, "info", `Task status changed`, {
@@ -948,6 +1008,22 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         error: `Only ready or paused tasks can be started (#${id} is ${existing.status})`,
       });
     }
+    const body = (await readBody(req)) as {
+      mode?: unknown;
+      instruction?: unknown;
+      overrideDependencies?: unknown;
+    };
+    const blockers = taskDependencyBlockers(config.root, existing, index.getTasks());
+    if (blockers.length && body?.overrideDependencies !== true) {
+      const reason = blockers
+        .map((blocker) =>
+          blocker.state === "cancelled"
+            ? `Blocked by cancelled task #${blocker.id}; needs a human`
+            : `Blocked by #${blocker.id}`,
+        )
+        .join("; ");
+      return json(res, 409, { ok: false, error: reason, reason, blockedBy: blockers });
+    }
     if (runner.isRunning(id)) {
       return json(res, 400, { error: `Task #${id} is already running` });
     }
@@ -957,10 +1033,6 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         error: "No enabled engineer agent is configured on the Agents page",
       });
     }
-    const body = (await readBody(req)) as {
-      mode?: unknown;
-      instruction?: unknown;
-    };
     const mode = body?.mode;
     const clean = mode === "clean" && !existing.hotfix;
     const freshSession = mode === "fresh";
@@ -1454,7 +1526,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     const updated = patchTaskFile(
       config,
       existing.absPath,
-      { status: "ready", needsInput: false },
+      { status: "ready", needsInput: false, note: "task abandoned" },
       { onStatusChange: onServerStatusChange },
     );
     index.applyFileChange(updated.absPath);
