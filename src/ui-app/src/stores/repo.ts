@@ -2438,8 +2438,19 @@ export const useRepoStore = defineStore("repo", () => {
     }
   }
 
-  /** Load diff statistics for a task. Best-effort. */
-  async function loadDiffStats(id: string): Promise<void> {
+  // A board mounts one card per task, and each card asks for its diff stats —
+  // 500+ concurrent requests, each possibly a git spawn on the server. They
+  // saturate the browser's per-host connection limit, so the request that
+  // matters (the drawer's full task fetch) queued behind them for seconds
+  // after a reload. Run card requests through a small pool instead, and let the
+  // drawer's own request jump the line.
+  const DIFF_STATS_CONCURRENCY = 3;
+  const diffStatsQueue: string[] = [];
+  /** Ids queued OR in flight — a repeat request for either is redundant. */
+  const diffStatsQueued = new Set<string>();
+  let diffStatsRunning = 0;
+
+  async function fetchDiffStats(id: string): Promise<void> {
     try {
       const r = await api<{
         ok: boolean;
@@ -2456,6 +2467,39 @@ export const useRepoStore = defineStore("repo", () => {
     } catch {
       /* endpoint unavailable — diff stats are nice-to-have */
     }
+  }
+
+  function pumpDiffStats(): void {
+    while (diffStatsRunning < DIFF_STATS_CONCURRENCY && diffStatsQueue.length > 0) {
+      const id = diffStatsQueue.shift() as string;
+      diffStatsRunning++;
+      void fetchDiffStats(id).finally(() => {
+        diffStatsQueued.delete(id);
+        diffStatsRunning--;
+        pumpDiffStats();
+      });
+    }
+  }
+
+  /**
+   * Load diff statistics for a task. Best-effort. Requests are pooled; pass
+   * `priority` (the open drawer's task) to run next instead of waiting behind
+   * the board's cards.
+   */
+  function loadDiffStats(id: string, opts: { priority?: boolean } = {}): Promise<void> {
+    if (diffStatsQueued.has(id)) {
+      const at = diffStatsQueue.indexOf(id);
+      if (opts.priority && at > 0) {
+        diffStatsQueue.splice(at, 1);
+        diffStatsQueue.unshift(id);
+      }
+      return Promise.resolve();
+    }
+    diffStatsQueued.add(id);
+    if (opts.priority) diffStatsQueue.unshift(id);
+    else diffStatsQueue.push(id);
+    pumpDiffStats();
+    return Promise.resolve();
   }
 
   /** Get diff stats for a task, or undefined if not yet fetched. */
