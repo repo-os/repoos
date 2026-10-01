@@ -3,9 +3,6 @@ id: "0611"
 title: Row layout for task preview shots on Changes tab
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "error: Upstream request failed: Insufficient account funds"
 priority: p2
 area: web
 assigned_to: ai
@@ -13,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/row-layout-for-task-preview-shots-on-cha
 model_override: opencode-go/space-bunny-free
 created_at: "2026-10-01T04:34:32Z"
-updated_at: "2026-10-01T04:38:10Z"
+updated_at: "2026-10-01T04:38:13Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -86,3 +83,4 @@ On the task panel ui changes sections where we show the shots taken by the task 
 - 2026-10-01T04:37:52Z · status ready→active, branch
 - 2026-10-01T04:37:54Z · agent exited with an error (opencode) · error: Upstream request failed: Insufficient account funds
 - 2026-10-01T04:38:10Z · model_override
+- 2026-10-01T04:38:13Z · needs_input
