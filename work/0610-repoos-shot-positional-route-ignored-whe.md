@@ -2,7 +2,7 @@
 id: "0610"
 title: "repoos shot: positional route ignored when a declared plan or fallback resolves"
 type: bug
-status: review
+status: done
 priority: p3
 area: [cli, server]
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: ""
 branch: feat/repoos-shot-positional-route-ignored-whe
 model_override: opencode-go/space-bunny-free
 created_at: "2026-09-30T19:56:49Z"
-updated_at: "2026-10-01T07:58:18Z"
+updated_at: "2026-10-01T08:44:16Z"
 ---
 ## Problem
 
@@ -33,3 +33,4 @@ When the caller passes a positional route (or `--selector`), the CLI's plan shou
 - 2026-10-01T07:00:34Z · status inbox→ready
 - 2026-10-01T07:00:35Z · status ready→active, branch
 - 2026-10-01T07:58:18Z · status active→review
+- 2026-10-01T08:44:16Z · status review→done, release:success
