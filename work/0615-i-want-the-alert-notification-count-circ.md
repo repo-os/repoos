@@ -2,7 +2,7 @@
 id: "0615"
 title: Move Hub sidebar alert badges to the URL row
 type: feature
-status: active
+status: review
 priority: p2
 area: macos
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/move-hub-sidebar-alert-badges-to-the-url
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-01T15:28:04Z"
-updated_at: "2026-10-01T15:29:40Z"
+updated_at: "2026-10-01T15:35:17Z"
 ---
 ## Problem
 
@@ -71,3 +71,4 @@ I want the alert/notification count circles on the sidebar for each server to ap
 - 2026-10-01T15:29:35Z · model_override
 - 2026-10-01T15:29:39Z · status inbox→ready
 - 2026-10-01T15:29:40Z · status ready→active, branch
+- 2026-10-01T15:35:17Z · status active→review
