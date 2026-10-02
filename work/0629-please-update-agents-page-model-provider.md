@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-02T19:05:49Z"
+review_passes: 1
 id: "0629"
 title: Revert GitHub Copilot provider to external link only
 type: refactor
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/revert-github-copilot-provider-to-extern
 created_at: "2026-10-02T17:37:54Z"
-updated_at: "2026-10-02T19:04:38Z"
 ---
 ## Problem
 
@@ -81,3 +82,4 @@ Instructions:
 - 2026-10-02T18:20:21Z · status ready→active, branch
 - 2026-10-02T19:00:03Z · body: section Shots
 - 2026-10-02T19:04:38Z · status active→review
+
