@@ -175,7 +175,16 @@ export function shotProblems(body: string | undefined, shots: ShotMeta[]): ShotP
     const m = SHOT_NOTE_RE.exec(line.trim());
     if (!m) continue;
     if (newest && m[1]! <= newest) continue;
-    out.push({ at: m[1]!, status: m[2] as ShotProblem["status"], detail: m[3]!.trim() });
+    const detail = m[3]!.trim();
+    // "N shots already captured — an engineer-made capture pre-empts…" is the
+    // capture standing down because shots exist: not a problem, and it is
+    // re-noted on every handoff.
+    if (/already captured/.test(detail)) continue;
+    const status = m[2] as ShotProblem["status"];
+    // Every handoff retry re-notes the same outcome; show each distinct one once.
+    const dup = out.findIndex((p) => p.status === status && p.detail === detail);
+    if (dup !== -1) out.splice(dup, 1);
+    out.push({ at: m[1]!, status, detail });
   }
   return out;
 }
