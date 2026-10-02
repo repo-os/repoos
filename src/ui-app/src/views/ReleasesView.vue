@@ -567,6 +567,10 @@ async function pollRun(): Promise<void> {
     if (prev === null || wasRunning) {
       if (latest.state === "succeeded") {
         message.value = latest.message;
+        // A successful release resolves any watched failure: clear it so the
+        // promoted failure section yields to normal post-success behavior.
+        error.value = "";
+        runLog.value = "";
         confirmOpen.value = false;
         dropNotesRun();
         await Promise.all([load(), loadDistribution()]);
@@ -749,9 +753,35 @@ onBeforeUnmount(() => {
           </div>
         </section>
 
+        <!-- Most recent run failed: shown ABOVE "Published to" until the next
+             successful release, so a failure is visible without scrolling. -->
+        <section v-if="error && !confirmOpen" class="rel-outcome rel-outcome--fail" role="alert">
+          <strong>{{ error }}</strong>
+          <pre v-if="runLog" class="rel-log">{{ runLog }}</pre>
+          <div class="rel-debugger">
+            <Button
+              variant="outline"
+              size="sm"
+              :disabled="debuggerSending || debuggerSent"
+              @click="sendToDebugger"
+            >
+              <Bug class="btn-ico" aria-hidden="true" />
+              {{
+                debuggerSent
+                  ? "Sent to Debugger"
+                  : debuggerSending
+                    ? "Sending…"
+                    : "Send to Debugger"
+              }}
+            </Button>
+            <span v-if="debuggerErr" class="rel-debugger-err">{{ debuggerErr }}</span>
+          </div>
+        </section>
+
         <!-- Where users install this release. Rendered only when the project
-             declares [[distribution]] destinations; nothing otherwise. -->
-        <section v-if="distribution.length" class="rel-card rel-dist">
+             declares [[distribution]] destinations; stays up (with a loading
+             indicator) while the first lookup is in flight. -->
+        <section v-if="distribution.length || distributionLoading" class="rel-card rel-dist">
           <div class="rel-dist-head">
             <div class="rel-dist-title-row">
               <h2 class="rel-dist-title">Published to</h2>
@@ -774,7 +804,18 @@ onBeforeUnmount(() => {
             </p>
           </div>
 
-          <div class="rel-dist-channels">
+          <!-- First load: the channels list is empty until the lookup lands —
+               show a spinner instead of an apparently-broken empty card. A
+               "Check again" refresh keeps the existing channels visible. -->
+          <div
+            v-if="distributionLoading && !distribution.length"
+            class="rel-dist-loading"
+            role="status"
+          >
+            <span class="rel-dist-loading-spin" aria-hidden="true"></span>
+            Checking distribution channels…
+          </div>
+          <div v-else class="rel-dist-channels">
             <article v-for="channel in distribution" :key="channel.name" class="rel-channel">
               <header class="rel-channel-head">
                 <a
@@ -815,7 +856,8 @@ onBeforeUnmount(() => {
           </div>
         </section>
 
-        <!-- Outcome of the most recent run (survives until the next one). -->
+        <!-- Outcome of the most recent successful run (survives until the next
+             one); a failure is promoted above "Published to" instead. -->
         <section v-if="message && !error" class="rel-outcome rel-outcome--ok" aria-live="polite">
           <div class="rel-outcome-line">
             <strong>{{ message }}</strong>
@@ -829,29 +871,6 @@ onBeforeUnmount(() => {
             rel="noreferrer"
             >Watch the build ↗</a
           >
-        </section>
-
-        <section v-if="error && !confirmOpen" class="rel-outcome rel-outcome--fail" role="alert">
-          <strong>{{ error }}</strong>
-          <pre v-if="runLog" class="rel-log">{{ runLog }}</pre>
-          <div class="rel-debugger">
-            <Button
-              variant="outline"
-              size="sm"
-              :disabled="debuggerSending || debuggerSent"
-              @click="sendToDebugger"
-            >
-              <Bug class="btn-ico" aria-hidden="true" />
-              {{
-                debuggerSent
-                  ? "Sent to Debugger"
-                  : debuggerSending
-                    ? "Sending…"
-                    : "Send to Debugger"
-              }}
-            </Button>
-            <span v-if="debuggerErr" class="rel-debugger-err">{{ debuggerErr }}</span>
-          </div>
         </section>
 
         <Dialog :open="confirmOpen" @update:open="confirmOpen = $event">
@@ -1331,6 +1350,24 @@ onBeforeUnmount(() => {
 .rel-dist-sub code {
   font-family: var(--mono);
   color: var(--txt-dim);
+}
+.rel-dist-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--txt-faint);
+  font-size: 12.5px;
+  padding: 4px 0 2px;
+}
+/* Small inline variant of the shared `.spin` indicator (same keyframes). */
+.rel-dist-loading-spin {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border: 2px solid var(--border);
+  border-top-color: var(--cyan);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
 .rel-dist-channels {
   display: grid;
