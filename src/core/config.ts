@@ -1387,7 +1387,16 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
   if (openrouterApiKey) modelProviders.openrouterApiKey = openrouterApiKey;
   const opencodeGoApiKey = process.env.REPOOS_OPENCODE_GO_API_KEY;
   if (opencodeGoApiKey) modelProviders.opencodeGoApiKey = opencodeGoApiKey;
-  if (modelProviders.openrouterApiKey || modelProviders.opencodeGoApiKey) {
+  const deepinfraApiKey = process.env.REPOOS_DEEPINFRA_API_KEY;
+  if (deepinfraApiKey) modelProviders.deepinfraApiKey = deepinfraApiKey;
+  const githubCopilotToken = process.env.REPOOS_GITHUB_COPILOT_TOKEN;
+  if (githubCopilotToken) modelProviders.githubCopilotToken = githubCopilotToken;
+  if (
+    modelProviders.openrouterApiKey ||
+    modelProviders.opencodeGoApiKey ||
+    modelProviders.deepinfraApiKey ||
+    modelProviders.githubCopilotToken
+  ) {
     cfg.modelProviders = modelProviders;
   }
 
