@@ -86,6 +86,13 @@ const notesError = ref("");
 const notesHint = ref("");
 /** Full command output from a failed release phase (repoos check log, build errors). */
 const runLog = ref("");
+/**
+ * Whether a failure was already showing when the cut dialog opened. The
+ * dialog's inline error block only reports failures from the attempt it
+ * launched; a prior failure stays promoted on the page until a subsequent
+ * release succeeds (#0622).
+ */
+const errorAtOpen = ref(false);
 const debuggerSending = ref(false);
 const debuggerSent = ref(false);
 const debuggerErr = ref("");
@@ -346,9 +353,10 @@ async function copyCommand(command: string): Promise<void> {
 }
 
 function openConfirm(): void {
-  message.value = "";
-  error.value = "";
-  runLog.value = "";
+  // Keep the previous outcome (promoted failure, success message) in place:
+  // the failure clears only when a subsequent release succeeds (#0622).
+  // errorAtOpen keeps an older failure out of the dialog's inline error block.
+  errorAtOpen.value = !!error.value;
   newVersion.value = "";
   notes.value = "";
   notesError.value = "";
@@ -507,8 +515,10 @@ async function generateNotes(): Promise<void> {
 async function release(): Promise<void> {
   if (!newVersionValid.value || running.value || generatingNotes.value) return;
   running.value = true;
-  error.value = "";
-  runLog.value = "";
+  // A prior failure stays promoted while the retry runs — it is replaced by
+  // a new failure or cleared by success in pollRun. The dialog's inline
+  // error block reports only this attempt's outcome.
+  errorAtOpen.value = false;
   notesError.value = "";
   // Whatever draft this session produced is now the cut's payload — stop
   // tracking the run so re-opening the modal can't backfill it again (#0605).
@@ -804,18 +814,14 @@ onBeforeUnmount(() => {
             </p>
           </div>
 
-          <!-- First load: the channels list is empty until the lookup lands —
-               show a spinner instead of an apparently-broken empty card. A
-               "Check again" refresh keeps the existing channels visible. -->
-          <div
-            v-if="distributionLoading && !distribution.length"
-            class="rel-dist-loading"
-            role="status"
-          >
+          <!-- While the lookup is in flight show the spinner: alone on the
+               first load (the card would otherwise look broken-empty), and
+               alongside the channels during a "Check again" recheck. -->
+          <div v-if="distributionLoading" class="rel-dist-loading" role="status">
             <span class="rel-dist-loading-spin" aria-hidden="true"></span>
             Checking distribution channels…
           </div>
-          <div v-else class="rel-dist-channels">
+          <div v-if="distribution.length" class="rel-dist-channels">
             <article v-for="channel in distribution" :key="channel.name" class="rel-channel">
               <header class="rel-channel-head">
                 <a
@@ -909,7 +915,11 @@ onBeforeUnmount(() => {
                 <small>You can leave this page — progress shows here when you return.</small>
               </div>
 
-              <div v-if="error && !running" class="release-modal-error" role="alert">
+              <div
+                v-if="error && !running && !errorAtOpen"
+                class="release-modal-error"
+                role="alert"
+              >
                 <strong>{{ error }}</strong>
                 <pre v-if="runLog" class="rel-log">{{ runLog }}</pre>
                 <div class="rel-debugger">
