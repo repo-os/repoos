@@ -31,7 +31,7 @@ describe("engineer launch permissions", () => {
   });
 
   it("accepts Copilot's non-interactive all-tools permission", () => {
-    expect(engineerPermissionGaps("github copilot", ["--allow-all-tools"])).toEqual([]);
+    expect(engineerPermissionGaps("github copilot", ["--yolo"])).toEqual([]);
   });
 
   it("accepts Codex's unattended sandbox and approval bypass", () => {

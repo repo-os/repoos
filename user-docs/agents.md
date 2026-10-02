@@ -118,23 +118,18 @@ and latency trade-off rather than pinning a named model. RepoOS uses Copilot's
 documented `--model auto --auto-tier <tier>` flags, so it does not need to
 scrape the interactive `/model` picker.
 
-For a managed engineering task, RepoOS uses Copilot's documented
-`--allow-all-tools` mode. This is necessary because Copilot cannot stop for a
-human approval prompt during a headless run, and a small fixed command allowlist
-will eventually miss a real project's build, test, or tooling command. RepoOS
-uses it only inside the task's dedicated worktree and only for engineering
-turns and follow-ups. It does **not** use `--allow-all` or `--yolo`, which would
-also disable Copilot's path and URL verification. Use a trusted task prompt and
-review the resulting branch before moving it to done.
+RepoOS passes Copilot's `--yolo` flag (all tools, paths and URLs) for every role:
+engineer, PM, reviewer, Debugger, RepoOS Guide, and one-shot authoring. Copilot
+cannot stop for a human approval prompt during a headless run, and any denial
+fails the task. Role prompts state the intended work but do not enforce
+read-only access; the repo's git history is the safety net.
 
-Copilot permissions are role-specific:
-
-| RepoOS role | Copilot access |
+| RepoOS role | Intended work with approved tools |
 | --- | --- |
-| Engineer | `--allow-all-tools` inside the task worktree, so it can edit, build, test, and use the project's tooling without an unanswerable approval prompt. |
-| Task PM chat | Only `repoos` CLI commands for approved task-management actions such as creating or updating task metadata. It does not receive arbitrary project-tool access. |
-| Reviewer | `--allow-all-tools` so headless diff and file inspection can run without an approval prompt. The review prompt forbids edits; this flag does not enforce read-only access. |
-| Freeform PM, Debugger, and RepoOS Guide | No tool permission bypass. RepoOS applies freeform PM output itself; the other roles may inspect the repository but cannot edit it. |
+| Engineer | Implement, build, and test in the task worktree. |
+| Task PM chat | Use RepoOS task-management commands as directed by its prompt. |
+| Reviewer | Inspect the diff and report findings without editing. |
+| Freeform PM, Debugger, and RepoOS Guide | Author or inspect as directed by their prompts. |
 
 ### Antigravity CLI (`agy`)
 
