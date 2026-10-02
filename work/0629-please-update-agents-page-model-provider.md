@@ -2,14 +2,14 @@
 id: "0629"
 title: Revert GitHub Copilot provider to external link only
 type: refactor
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-02T17:37:54Z"
-updated_at: "2026-10-02T17:38:38Z"
+updated_at: "2026-10-02T18:20:09Z"
 ---
 ## Problem
 
@@ -65,3 +65,4 @@ Instructions:
 
 - 2026-10-02T17:37:54Z · created · hello@repoos.org
 - 2026-10-02T17:38:38Z · status draft→inbox, title, area, type, body
+- 2026-10-02T18:20:09Z · status inbox→ready
