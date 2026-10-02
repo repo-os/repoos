@@ -692,7 +692,7 @@ async function runAction(): Promise<void> {
   if (busy.value || !action.value) return;
   if (props.task.status === "review" && repo.reviewFor(props.task.id)?.running) return;
   const overrideDependencies = isLaunchAction.value
-    ? confirmDependencyOverride(props.task.blockedBy)
+    ? await confirmDependencyOverride(props.task.blockedBy)
     : false;
   if (props.task.blockedBy?.length && !overrideDependencies && isLaunchAction.value) return;
   // A dirty worktree means restarting would either resume prior work or

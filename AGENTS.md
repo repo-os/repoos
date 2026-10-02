@@ -360,6 +360,12 @@ cannot tell from the code alone:
 
 - **Dropdowns:** Use the custom styled dropdown component for every new
   dropdown in the UI. Never use default, unstyled `<select>` elements.
+- **Confirmations and tooltips:** Never use native browser `alert()`,
+  `confirm()`, or `prompt()` for app actions. Use the shared, designed dialog
+  components in `src/ui-app/src/components/ui/dialog/` and the existing modal
+  styles. Never add a native `title` tooltip for new UI explanations; use a
+  styled tooltip or popover that matches the app, supports keyboard focus, and
+  remains usable on touch screens.
 - **Areas are comma-separated, never `+`.** A task's `area` is a per-repo
   vocabulary (`[[areas]]` in repoos.toml merged with every
   `[[preview.targets]]` area), and one task may carry several: write
