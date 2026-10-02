@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/revert-github-copilot-provider-to-extern
 created_at: "2026-10-02T17:37:54Z"
-updated_at: "2026-10-02T18:20:21Z"
+updated_at: "2026-10-02T19:00:03Z"
 ---
 ## Problem
 
@@ -61,9 +61,22 @@ Instructions:
 1. Modify the UI: Remove the input fields that request a GitHub "API Key" or "Personal Access Token (PAT)" for Copilot billing/usage tracking.
 2. Update the UI text: Add a clear message informing the user that GitHub does not provide a public API for personal Copilot subscription info.
 
+## Shots
+```json
+[
+  {
+    "label": "GitHub Copilot reverted to a link-out row on Model providers",
+    "target": "default",
+    "route": "/agents?tab=providers",
+    "highlight": ".mp-panel > div:nth-child(11)"
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-02T17:37:54Z · created · hello@repoos.org
 - 2026-10-02T17:38:38Z · status draft→inbox, title, area, type, body
 - 2026-10-02T18:20:09Z · status inbox→ready
 - 2026-10-02T18:20:21Z · status ready→active, branch
+- 2026-10-02T19:00:03Z · body: section Shots
