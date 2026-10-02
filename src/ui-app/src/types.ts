@@ -1100,6 +1100,12 @@ export interface ModelProviderRow {
   note: string;
   /** Whether an API key is saved — never the key itself. */
   hasKey: boolean;
+  /**
+   * Stored billing scope for rows that take one (GitHub Copilot): empty for
+   * a personal plan, `org:<slug>` / `enterprise:<slug>` when centrally
+   * billed. An org slug is not secret material. Absent/empty for other rows.
+   */
+  scope?: string;
 }
 
 export interface ModelProvidersResponse {
@@ -1110,6 +1116,8 @@ export interface ModelProvidersResponse {
 export interface ModelProvidersKeyResponse {
   ok: boolean;
   hasKey: boolean;
+  /** Resulting stored billing scope (GitHub Copilot only, not secret material). */
+  scope?: string;
 }
 
 /** One rolling usage window from the opencode Go usage API. */
@@ -1152,7 +1160,56 @@ export interface OpenCodeGoUsage {
   unrecognized: boolean;
 }
 
-export type ModelProviderUsage = OpenRouterUsage | OpenCodeGoUsage;
+/** DeepInfra live spend (GET /api/model-providers/deepinfra/usage). */
+export interface DeepInfraUsage {
+  kind: "deepinfra";
+  checklist: {
+    /**
+     * Ready-to-spend credit — DeepInfra's `stripe_balance` with its sign
+     * flipped (negative balance = funds available). Null when a debt/zero.
+     */
+    availableUsd: number | null;
+    /** Positive `stripe_balance`: money the account owes. */
+    owedUsd: number | null;
+    recentUsd: number | null;
+    limitUsd: number | null;
+    suspended: boolean;
+    suspendReason: string | null;
+    scopedCredits: {
+      name: string;
+      grantedUsd: number | null;
+      remainingUsd: number | null;
+      expired: boolean;
+    }[];
+  } | null;
+  checklistError: string | null;
+  /** Current + previous month totals (converted from upstream cents). */
+  usage: { period: string; totalUsd: number | null }[] | null;
+  usageError: string | null;
+}
+
+/** GitHub Copilot billing usage (GET /api/model-providers/github-copilot/usage). */
+export interface CopilotUsage {
+  kind: "github-copilot";
+  scope: { kind: "personal" | "org" | "enterprise"; slug: string | null };
+  periodLabel: string;
+  user: string | null;
+  rows: {
+    product: string;
+    sku: string;
+    model: string | null;
+    unitType: string | null;
+    /** Usage covered by included quota or discounts. */
+    includedQuantity: number | null;
+    /** Quantity actually billed — never a remaining entitlement. */
+    billedQuantity: number | null;
+    discountAmount: number | null;
+    netAmount: number | null;
+  }[];
+  unrecognized: boolean;
+}
+
+export type ModelProviderUsage = OpenRouterUsage | OpenCodeGoUsage | DeepInfraUsage | CopilotUsage;
 
 export interface DocMeta {
   path: string;
