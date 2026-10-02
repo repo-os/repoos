@@ -372,15 +372,19 @@ export interface AuthConfig {
 }
 
 /**
- * API keys for model providers with a spend/usage API (0327). Like the [auth]
- * secrets these are env-only — sourced from the gitignored `.env` (via
- * REPOOS_OPENROUTER_API_KEY / REPOOS_OPENCODE_GO_API_KEY) or the process
+ * API keys for model providers with a spend/usage API (0327, #0625). Like
+ * the [auth] secrets these are env-only — sourced from the gitignored `.env`
+ * (via REPOOS_OPENROUTER_API_KEY / REPOOS_OPENCODE_GO_API_KEY /
+ * REPOOS_DEEPINFRA_API_KEY / REPOOS_GITHUB_COPILOT_TOKEN) or the process
  * environment, never from a git-tracked repoos.toml key. The Agents page's
  * "Model providers" tab writes them through `setDotEnvSecret`.
  */
 export interface ModelProviderKeysConfig {
   openrouterApiKey?: string;
   opencodeGoApiKey?: string;
+  deepinfraApiKey?: string;
+  /** Classic PAT used for GitHub Copilot billing usage (env-only, #0625). */
+  githubCopilotToken?: string;
 }
 
 /** Resolved configuration (after defaults + repoos.toml merge). */
