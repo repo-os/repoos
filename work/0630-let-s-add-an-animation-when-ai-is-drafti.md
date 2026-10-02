@@ -2,14 +2,14 @@
 id: "0630"
 title: Polish AI release-notes drafting feedback and panel-return state
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-02T23:43:04Z"
-updated_at: "2026-10-02T23:44:10Z"
+updated_at: "2026-10-02T23:44:47Z"
 ---
 ## Problem
 
@@ -72,3 +72,4 @@ Let's add an animation when AI is drafting the release notes, it can be similar 
 - 2026-10-02T23:43:04Z · created · hello@repoos.org
 - 2026-10-02T23:43:05Z · screenshots
 - 2026-10-02T23:44:10Z · status draft→inbox, title, area, body
+- 2026-10-02T23:44:47Z · status inbox→ready
