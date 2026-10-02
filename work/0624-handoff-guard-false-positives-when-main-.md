@@ -2,7 +2,7 @@
 id: "0624"
 title: Handoff guard false-positives when main is merged into a task in review
 type: bug
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
@@ -51,4 +51,4 @@ Related: #0600 (bookkeeping-only drift, uses isAncestor and pathsChangedBetweenC
 - 2026-10-02T07:14:31Z · note: interactive session: fixing round-3 review bugs (post-handoff commit reachable from main; octopus sync merges)
 - 2026-10-02T07:26:14Z · status active→review
 - 2026-10-02T07:26:14Z · status review→active
-- 2026-10-02T07:30:12Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-02T07:30:12Z · status active→review
