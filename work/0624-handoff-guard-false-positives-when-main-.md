@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-02T07:31:38Z"
-review_passes: 4
 id: "0624"
 title: Handoff guard false-positives when main is merged into a task in review
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
@@ -14,6 +12,8 @@ assigned_to: ai
 created_by: ""
 branch: feat/handoff-guard-false-positives-when-main-
 created_at: "2026-10-02T06:09:14Z"
+updated_at: "2026-10-02T07:41:22Z"
+review_passes: 4
 review_rounds: 2
 ---
 ## Problem
@@ -55,4 +55,5 @@ Related: #0600 (bookkeeping-only drift, uses isAncestor and pathsChangedBetweenC
 - 2026-10-02T07:30:12Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
 - 2026-10-02T07:31:37Z · needs_input
 - 2026-10-02T07:31:38Z · needs_input
-
+- 2026-10-02T07:41:22Z · status review→active
+- 2026-10-02T07:41:22Z · note: interactive session: fixing round-4 review bug (ls-tree pathspec metacharacters)
