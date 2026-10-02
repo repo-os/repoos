@@ -1,16 +1,17 @@
 ---
-updated_at: "2026-10-02T19:23:50Z"
-review_passes: 1
 id: "0627"
 title: Add and delete evidence shots from the task drawer
 type: feature
-status: review
+status: active
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: ""
 branch: feat/add-and-delete-evidence-shots-from-the-t
 created_at: "2026-10-02T11:41:24Z"
+updated_at: "2026-10-02T19:23:50Z"
+review_rounds: 1
+review_passes: 1
 ---
 ## Problem
 Evidence shots are only declared by the engineer (via `repoos update --shots`) and captured automatically at handoff. When a reviewer or the human sees a missing or wrong screenshot (#0625: a stale blind `/` capture blocked the corrected one), the only fixes are the CLI or deleting files under `work/.attachments/<id>/shots/` by hand. There is no UI to add a shot, and no way at all to remove a wrong one.
@@ -85,4 +86,4 @@ In the task drawer's Changes / UI changes section:
 - 2026-10-02T18:22:41Z · status ready→active, branch
 - 2026-10-02T19:09:31Z · body: section Shots
 - 2026-10-02T19:22:14Z · status active→review
-
+- 2026-10-02T19:23:50Z · status review→active
