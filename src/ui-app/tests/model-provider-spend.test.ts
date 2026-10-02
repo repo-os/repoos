@@ -85,7 +85,7 @@ describe("parseDeepInfraChecklist", () => {
       recent: 3.2,
       limit: 50,
       suspended: false,
-    });
+    })!;
     expect(parsed.availableUsd).toBe(12.34);
     expect(parsed.owedUsd).toBeNull();
     expect(parsed.recentUsd).toBe(3.2);
@@ -98,9 +98,17 @@ describe("parseDeepInfraChecklist", () => {
       recent: 0,
       limit: null,
       suspended: false,
-    });
+    })!;
     expect(parsed.availableUsd).toBeNull();
     expect(parsed.owedUsd).toBe(7.5);
+  });
+
+  it("returns null for a 200 body missing the required numeric fields", () => {
+    expect(parseDeepInfraChecklist({})).toBeNull();
+    expect(parseDeepInfraChecklist({ stripe_balance: 0 })).toBeNull();
+    expect(parseDeepInfraChecklist({ recent: 0 })).toBeNull();
+    expect(parseDeepInfraChecklist(null)).toBeNull();
+    expect(parseDeepInfraChecklist("<html>gateway</html>")).toBeNull();
   });
 
   it("converts scoped credits from cents to dollars and passes the suspend reason", () => {
@@ -114,7 +122,7 @@ describe("parseDeepInfraChecklist", () => {
         { name: "Llama launch", granted_cents: 1000, remaining_cents: 250, expired: false },
         { name: "Old promo", granted_cents: 500, remaining_cents: 500, expired: true },
       ],
-    });
+    })!;
     expect(parsed.suspendReason).toBe("balance");
     expect(parsed.scopedCredits).toHaveLength(2);
     expect(parsed.scopedCredits[0]).toEqual({
@@ -154,7 +162,7 @@ describe("fetchDeepInfraSpend", () => {
     routes: Record<string, { status?: number; body: unknown }>,
   ): ReturnType<typeof vi.fn> {
     const fn = vi.fn(async (url: string) => {
-      const path = String(url).replace("https://api.deepinfra.com/v1", "").split("?")[0];
+      const path = String(url).replace("https://api.deepinfra.com", "").split("?")[0];
       const hit = routes[path];
       if (!hit) throw new Error(`unexpected URL ${url}`);
       return {
@@ -168,7 +176,7 @@ describe("fetchDeepInfraSpend", () => {
     return fn;
   }
 
-  it("fetches checklist and a two-month usage range with the bearer key", async () => {
+  it("fetches checklist and a two-month usage range at the documented root paths", async () => {
     const fn = stubFetch({
       "/payment/checklist": { body: { stripe_balance: -20, recent: 5, limit: 100 } },
       "/payment/usage": {
@@ -180,8 +188,9 @@ describe("fetchDeepInfraSpend", () => {
     expect(spend.usage?.[0].totalUsd).toBe(5);
     const calls = fn.mock.calls as unknown as [string, RequestInit][];
     expect(calls).toHaveLength(2);
+    expect(calls[0][0]).toBe("https://api.deepinfra.com/payment/checklist");
     expect(calls[1][0]).toMatch(
-      /^https:\/\/api\.deepinfra\.com\/v1\/payment\/usage\?from=\d{4}\.\d{2}&to=\d{4}\.\d{2}$/,
+      /^https:\/\/api\.deepinfra\.com\/payment\/usage\?from=\d{4}\.\d{2}&to=\d{4}\.\d{2}$/,
     );
     for (const [, opts] of calls) {
       expect((opts.headers as Record<string, string>).Authorization).toBe("Bearer di-key");
@@ -198,6 +207,18 @@ describe("fetchDeepInfraSpend", () => {
     expect(spend.checklistError).toBeTruthy();
     expect(spend.usage?.[0].totalUsd).toBe(1);
     expect(spend.usageError).toBeNull();
+  });
+
+  it("treats a malformed 200 body as an unrecognized-format error, not dashes", async () => {
+    stubFetch({
+      "/payment/checklist": { body: { unexpected: "shape" } },
+      "/payment/usage": { body: { months: "nope" } },
+    });
+    const spend = await fetchDeepInfraSpend("di-key");
+    expect(spend.checklist).toBeNull();
+    expect(spend.checklistError).toContain("doesn't recognize");
+    expect(spend.usage).toBeNull();
+    expect(spend.usageError).toContain("doesn't recognize");
   });
 });
 
@@ -285,6 +306,45 @@ describe("parseCopilotUsage", () => {
     expect(parsed.rows[0].billedQuantity).toBe(250);
     expect(parsed.rows[0].includedQuantity).toBeNull();
     expect(parsed.rows[0].netAmount).toBe(8);
+  });
+
+  it("filters non-Copilot items out of the enterprise usage report", () => {
+    const parsed = parseCopilotUsage(
+      {
+        timePeriod: { year: 2026 },
+        usageItems: [
+          {
+            date: "2026-10-01",
+            product: "Actions",
+            sku: "Actions Linux",
+            quantity: 100,
+            unitType: "minutes",
+            pricePerUnit: 0.008,
+            grossAmount: 0.8,
+            discountAmount: 0,
+            netAmount: 0.8,
+          },
+          {
+            date: "2026-10-02",
+            product: "Copilot AI Credits",
+            sku: "AI Credit",
+            model: "GPT-5",
+            unitType: "ai-credits",
+            pricePerUnit: 0.01,
+            grossQuantity: 100,
+            grossAmount: 1.0,
+            discountQuantity: 0,
+            discountAmount: 0,
+            netQuantity: 100,
+            netAmount: 1.0,
+          },
+        ],
+      },
+      { kind: "enterprise", slug: "big-co" },
+    );
+    expect(parsed.rows).toHaveLength(1);
+    expect(parsed.rows[0].sku).toBe("AI Credit");
+    expect(parsed.rows[0].netAmount).toBe(1.0);
   });
 
   it("reports unrecognized when usageItems is missing", () => {
@@ -388,6 +448,31 @@ describe("fetchCopilotUsage", () => {
     stubFetch({ "/user": { status: 401, body: { message: "Bad credentials" } } });
     await expect(fetchCopilotUsage("expired", "")).rejects.toThrow(
       "GitHub rejected the token (401): Bad credentials",
+    );
+  });
+
+  it("hints at the centrally billed endpoints when a personal report 404s", async () => {
+    stubFetch({
+      "/user": { body: { login: "monalisa" } },
+      "/users/monalisa/settings/billing/ai_credit/usage": {
+        status: 404,
+        body: { message: "Not Found" },
+      },
+    });
+    await expect(fetchCopilotUsage("ghp_ok", "")).rejects.toThrow(
+      /404.*billed through an organization or enterprise/,
+    );
+  });
+
+  it("keeps the slug hint on an org-scope 404", async () => {
+    stubFetch({
+      "/organizations/acme/settings/billing/ai_credit/usage": {
+        status: 404,
+        body: { message: "Not Found" },
+      },
+    });
+    await expect(fetchCopilotUsage("ghp_ok", "org:acme")).rejects.toThrow(
+      /404.*Check the org\/enterprise slug/,
     );
   });
 

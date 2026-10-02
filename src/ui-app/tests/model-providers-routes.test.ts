@@ -390,8 +390,8 @@ describe("DeepInfra + GitHub Copilot usage routes (#0625)", () => {
     const root = tmpRoot();
     process.env.REPOOS_DEEPINFRA_API_KEY = "di-live";
     stubFetchByPath({
-      "/v1/payment/checklist": { body: { stripe_balance: -20, recent: 5, limit: 100 } },
-      "/v1/payment/usage": {
+      "/payment/checklist": { body: { stripe_balance: -20, recent: 5, limit: 100 } },
+      "/payment/usage": {
         body: { months: [{ period: "2026.10", total_cost: 500 }], initial_month: "2025.01" },
       },
     });
@@ -408,8 +408,8 @@ describe("DeepInfra + GitHub Copilot usage routes (#0625)", () => {
     const root = tmpRoot();
     process.env.REPOOS_DEEPINFRA_API_KEY = "di-live";
     stubFetchByPath({
-      "/v1/payment/checklist": { status: 401, body: { detail: "Unauthorized" } },
-      "/v1/payment/usage": { status: 401, body: { detail: "Unauthorized" } },
+      "/payment/checklist": { status: 401, body: { detail: "Unauthorized" } },
+      "/payment/usage": { status: 401, body: { detail: "Unauthorized" } },
     });
     const ctx = makeCtx(root);
     const { capture, res } = makeRes();

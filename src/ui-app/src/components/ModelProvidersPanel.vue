@@ -415,6 +415,12 @@ onMounted(() => {
                 <span class="mp-stat-value sm">{{ fmtUsd(m.totalUsd) }}</span>
               </div>
             </div>
+            <div
+              v-else-if="!deepinfraUsage(rowState(row.id).usage)!.usageError"
+              class="mp-part-error"
+            >
+              No usage reported for this period.
+            </div>
             <div v-if="deepinfraUsage(rowState(row.id).usage)!.usageError" class="mp-part-error">
               Usage unavailable: {{ deepinfraUsage(rowState(row.id).usage)!.usageError }}
             </div>
