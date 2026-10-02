@@ -2,13 +2,13 @@
 id: mur8wfy4-vhtdm
 number: "0045"
 title: "please update agents page model providers to revert the github copilot to just the external link, be"
-status: reviewing
+status: "processed"
 type: other
 created_by: hello@repoos.org
 created_at: "2026-10-02T17:36:57.532Z"
-updated_at: "2026-10-02T17:37:51.242Z"
-resolution: ""
-resolved_task: ""
+updated_at: "2026-10-02T17:37:55.287Z"
+resolution: "task"
+resolved_task: "0629"
 ---
 please update agents page model providers to revert the github copilot to just the external link, because after trying the find the right api key I learned that it's deprecated:
 
