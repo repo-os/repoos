@@ -103,3 +103,4 @@ I just noticed this nice release failure section, but it's hidden below the fold
 - 2026-10-02T08:43:44Z · status review→active
 - 2026-10-02T08:49:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-02T08:49:42Z · status active→review
+- 2026-10-02T08:49:42Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
