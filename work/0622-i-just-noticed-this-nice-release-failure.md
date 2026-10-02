@@ -78,3 +78,4 @@ I just noticed this nice release failure section, but it's hidden below the fold
 - 2026-10-02T02:16:16Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-02T02:17:32Z · status review→active
 - 2026-10-02T02:21:47Z · status active→review
+- 2026-10-02T02:21:47Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
