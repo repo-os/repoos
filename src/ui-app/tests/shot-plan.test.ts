@@ -421,6 +421,17 @@ describe("planAutoCapture gates (#0594)", () => {
     expect(plan).toMatchObject({ reason: expect.stringContaining("already captured") });
   });
 
+  it("does not let an earlier automatic capture pre-empt a re-capture", () => {
+    const root = repo();
+    const config = fixtureConfig(root);
+    const store = localShotStore(config, "0594");
+    store.save({ target: "default", data: "aGk=", mime: "image/png", origin: "auto" });
+    const plan = planAutoCapture(config, fakeTask());
+    expect(plan).not.toMatchObject({ reason: expect.stringContaining("already captured") });
+    expect(store.removeAuto()).toBe(1);
+    expect(store.list()).toEqual([]);
+  });
+
   it("stands down outside a repo: nothing matched the changed paths", () => {
     // The fixture dir is not a git worktree, so the diff read fails soft and
     // the gate reports "touches no paths" rather than capturing blind.
