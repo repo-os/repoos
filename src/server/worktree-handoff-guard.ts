@@ -279,10 +279,24 @@ async function commitChangedPaths(wt: string, from: string, to: string): Promise
  *   bookkeeping. Any source path — including a mode-only change (chmod +x,
  *   file → symlink) — is a real post-handoff edit.
  * - A two-parent merge is allowed only when its non-first parent is an
- *   ancestor of main, AND every non-bookkeeping path in its first-parent diff
- *   carries exactly the main parent's mode and blob content (the merge took
- *   main's side verbatim; a conflict resolution that went anywhere else, and
- *   a merge of a branch main never contained, fail).
+ *   ancestor of main, AND it took main's side verbatim on every
+ *   non-bookkeeping path the two sides could disagree on, checked from three
+ *   directions:
+ *
+ *   1. forward — every non-bookkeeping path in the merge's first-parent diff
+ *      carries exactly the main parent's mode and blob content, so the merge
+ *      introduced nothing beyond main;
+ *   2. backward — every non-bookkeeping path the main parent changed (diff of
+ *      `merge-base(first parent, main parent)` to that parent) carries exactly
+ *      the merge result's content, so a conflict resolution that kept the
+ *      task's version ("keep ours", unchanged from the first parent and
+ *      therefore invisible to the forward diff) or combined both sides fails;
+ *   3. removal — every non-bookkeeping path in the overall drift between the
+ *      handoff SHA and HEAD must be unmodified by the task relative to the
+ *      merge base, so a resolution that DISCARDS reviewed task content (keep
+ *      theirs) fails even though its result equals main's content.
+ *
+ *   A merge of a branch main never contained fails on the ancestry check.
  * - Octopus merges (>2 parents) fail closed.
  *
  * Commits already contained in main are skipped entirely: they are
@@ -297,6 +311,7 @@ async function isMainSyncDrift(
   wt: string,
   expectedSha: string,
   actualHead: string,
+  driftPaths: string[],
   filter: WorkFileFilter,
 ): Promise<boolean> {
   // Task-side commits only: reachable from HEAD since the handoff, but not
@@ -315,18 +330,43 @@ async function isMainSyncDrift(
     if (parents.length >= 2) {
       // Octopus merges have no single "main side" to verify against.
       if (parents.length > 2) return false;
-      if (isAncestor(wt, parents[1], "main") !== true) return false;
-      const changed = await commitChangedPaths(wt, parents[0], sha);
+      const [first, mainParent] = parents;
+      if (isAncestor(wt, mainParent, "main") !== true) return false;
+      // Forward: the merge introduced nothing beyond the main parent's content.
+      const changed = await commitChangedPaths(wt, first, sha);
       if (changed === null) return false;
       for (const p of changed) {
         if (isTaskBookkeepingPath(p, filter)) continue;
-        if (!(await treeEntryEquals(wt, sha, parents[1], p))) return false;
+        if (!(await treeEntryEquals(wt, sha, mainParent, p))) return false;
+      }
+      // Backward: nothing the main parent changed was overridden by the
+      // resolution. A path main touched that the merge left at the task-side
+      // ("keep ours") or combined content is unchanged from — or identical
+      // across — the first parent, so the forward diff never lists it; this
+      // direction is what catches those resolutions (#0624 review).
+      const baseRes = await runGit(wt, ["merge-base", first, mainParent], 10_000);
+      if (baseRes.status !== 0) return false;
+      const mainChanged = await commitChangedPaths(wt, baseRes.stdout.trim(), mainParent);
+      if (mainChanged === null) return false;
+      for (const p of mainChanged) {
+        if (isTaskBookkeepingPath(p, filter)) continue;
+        if (!(await treeEntryEquals(wt, sha, mainParent, p))) return false;
       }
     } else {
       const changed = await commitChangedPaths(wt, `${sha}^`, sha);
       if (changed === null) return false;
       if (!changed.every((p) => isTaskBookkeepingPath(p, filter))) return false;
     }
+  }
+  // Removal: a drift path the task had modified relative to where it and main
+  // diverged must not appear in the drift at all — the task's reviewed change
+  // on it was discarded (e.g. a "keep theirs" resolution that restores main's
+  // content exactly, or a rename of task content into `work/*.md`).
+  const driftBase = await runGit(wt, ["merge-base", expectedSha, "main"], 10_000);
+  if (driftBase.status !== 0) return false;
+  for (const p of driftPaths) {
+    if (isTaskBookkeepingPath(p, filter)) continue;
+    if (!(await treeEntryEquals(wt, expectedSha, driftBase.stdout.trim(), p))) return false;
   }
   return true;
 }
@@ -378,14 +418,14 @@ export async function verifyWorktreeHandoffIntegrity(
       const filter = workFileFilter(config as RepoOSConfig);
       const driftPaths = await pathsChangedBetweenCommits(wt, expectedSha, actualHead);
       if (driftPaths !== null) {
-        if (driftPaths.every((p) => isTaskBookkeepingPath(p, filter))) {
-          return { ok: true };
-        }
         // A conflict-free merge of main into the branch while the task is in
         // review (#0624) is not implementation drift: close-out merges main
-        // into a fresh candidate anyway. Allow it when the drift is
-        // bookkeeping-only or made of verified main-sync merges.
-        if (await isMainSyncDrift(wt, expectedSha, actualHead, filter)) {
+        // into a fresh candidate anyway. Allow it when every task-side commit
+        // since handoff is bookkeeping-only (#0600) or a verified main-sync
+        // merge — run even for empty/bookkeeping-only drift, since a merge
+        // that resolved a conflict by keeping the task's side leaves no drift
+        // on that path and only the merge checks can see it.
+        if (await isMainSyncDrift(wt, expectedSha, actualHead, driftPaths, filter)) {
           return { ok: true };
         }
       }

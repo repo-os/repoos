@@ -384,6 +384,77 @@ describe("worktree handoff guard (#0598)", () => {
     }
   });
 
+  it("still fails when a sync merge resolves a conflict by keeping the task's version (#0624 review)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      writeFileSync(join(root, "f.txt"), "base\n");
+      git(root, ["add", "f.txt"]);
+      git(root, ["commit", "-m", "base"]);
+      const branch = "feat/keep-ours";
+      const wt = ensureWorktree(root, branch);
+      writeFileSync(join(wt.path, "f.txt"), "task\n");
+      git(wt.path, ["add", "f.txt"]);
+      git(wt.path, ["commit", "-m", "handoff"]);
+      const sha = git(wt.path, ["rev-parse", "HEAD"]);
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+
+      // Main rewrites the same file; the merge conflicts and is resolved by
+      // keeping the task side. The path is then unchanged from the merge's
+      // first parent, so only the backward check can catch it.
+      writeFileSync(join(root, "f.txt"), "main\n");
+      git(root, ["add", "f.txt"]);
+      git(root, ["commit", "-m", "main rewrite"]);
+      const merge = gitAllowFail(wt.path, ["merge", "main"]);
+      expect(merge.status).not.toBe(0);
+      expect(merge.stdout).toContain("CONFLICT");
+      git(wt.path, ["checkout", "--ours", "--", "f.txt"]);
+      git(wt.path, ["add", "f.txt"]);
+      git(wt.path, ["commit", "-m", "merge main into feat/keep-ours"]);
+
+      const check = await verifyWorktreeHandoffIntegrity(config, branch, sha);
+      expect(check.ok).toBe(false);
+      expect(check.headMoved).toBe(true);
+      expect(check.reason).toContain(WORKTREE_CHANGED_AFTER_HANDOFF_PREFIX);
+    } finally {
+      clean();
+    }
+  });
+
+  it("still fails when a sync merge resolves a conflict by keeping main's side (#0624 review)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      writeFileSync(join(root, "f.txt"), "base\n");
+      git(root, ["add", "f.txt"]);
+      git(root, ["commit", "-m", "base"]);
+      const branch = "feat/keep-theirs";
+      const wt = ensureWorktree(root, branch);
+      writeFileSync(join(wt.path, "f.txt"), "task\n");
+      git(wt.path, ["add", "f.txt"]);
+      git(wt.path, ["commit", "-m", "handoff"]);
+      const sha = git(wt.path, ["rev-parse", "HEAD"]);
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+
+      // Main rewrites the same file; the merge is resolved by taking main's
+      // side, silently discarding the task's reviewed change to f.txt.
+      writeFileSync(join(root, "f.txt"), "main\n");
+      git(root, ["add", "f.txt"]);
+      git(root, ["commit", "-m", "main rewrite"]);
+      const merge = gitAllowFail(wt.path, ["merge", "main"]);
+      expect(merge.status).not.toBe(0);
+      expect(merge.stdout).toContain("CONFLICT");
+      git(wt.path, ["checkout", "--theirs", "--", "f.txt"]);
+      git(wt.path, ["add", "f.txt"]);
+      git(wt.path, ["commit", "-m", "merge main into feat/keep-theirs"]);
+
+      const check = await verifyWorktreeHandoffIntegrity(config, branch, sha);
+      expect(check.ok).toBe(false);
+      expect(check.headMoved).toBe(true);
+      expect(check.reason).toContain(WORKTREE_CHANGED_AFTER_HANDOFF_PREFIX);
+    } finally {
+      clean();
+    }
+  });
+
   it("discard resets the worktree to the handoff commit", async () => {
     const { root, clean } = makeRepo();
     try {
