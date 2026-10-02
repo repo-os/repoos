@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, useId } from "vue";
-import { CircleAlert, ChevronDown, Wrench, LifeBuoy, Copy, Check } from "lucide-vue-next";
+import {
+  CircleAlert,
+  ChevronDown,
+  Wrench,
+  LifeBuoy,
+  Copy,
+  Check,
+  X,
+  GitMerge,
+} from "lucide-vue-next";
 import { api, JSON_OPTS } from "../api";
 import type { RetryHint } from "../lib/retryHints";
 import { copyToClipboard } from "../lib/clipboard";
@@ -59,6 +68,10 @@ const emit = defineEmits<{
   (e: "open-panel"): void;
   (e: "open-debugger"): void;
   (e: "open-support"): void;
+  /** Show the branch's conflicting files in the Debug tab's Merge conflict view. */
+  (e: "open-conflict"): void;
+  /** The user acknowledged the error; the parent hides it (and remembers that). */
+  (e: "dismiss"): void;
 }>();
 /**
  * Surface the redacted support bundle right on the failed-setup path: a failed
@@ -148,17 +161,27 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
 
 <template>
   <div class="done-error" :class="`done-error--${mode}`" role="alert">
-    <button
-      v-if="mode === 'card'"
-      type="button"
-      class="done-error-toggle"
-      :title="'Open the task panel to see the full error'"
-      @click="showMore"
-    >
-      <CircleAlert class="done-error-ico" aria-hidden="true" />
-      <span ref="msgEl" class="done-error-msg clamped">{{ displayLine }}</span>
-      <ChevronDown class="done-error-chev" aria-hidden="true" />
-    </button>
+    <div v-if="mode === 'card'" class="done-error-row">
+      <button
+        type="button"
+        class="done-error-toggle"
+        :title="'Open the task panel to see the full error'"
+        @click="showMore"
+      >
+        <CircleAlert class="done-error-ico" aria-hidden="true" />
+        <span ref="msgEl" class="done-error-msg clamped">{{ displayLine }}</span>
+        <ChevronDown class="done-error-chev" aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        class="done-error-icon-btn"
+        title="Dismiss this error"
+        aria-label="Dismiss error"
+        @click="emit('dismiss')"
+      >
+        <X class="size-3.5" />
+      </button>
+    </div>
     <div v-else class="done-error-static">
       <CircleAlert class="done-error-ico" aria-hidden="true" />
       <span ref="msgEl" class="done-error-msg" :class="{ oneline: collapsed }">{{
@@ -183,6 +206,15 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
         @click="collapsed = !collapsed"
       >
         <ChevronDown class="size-3.5 done-error-chev-flip" :class="{ open: !collapsed }" />
+      </button>
+      <button
+        type="button"
+        class="done-error-icon-btn"
+        title="Dismiss this error"
+        aria-label="Dismiss error"
+        @click="emit('dismiss')"
+      >
+        <X class="size-3.5" />
       </button>
     </div>
 
@@ -237,6 +269,10 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
         <ul>
           <li v-for="f in conflicts" :key="f" class="mono">{{ f }}</li>
         </ul>
+        <button type="button" class="done-error-support" @click="emit('open-conflict')">
+          <GitMerge class="size-3.5" />
+          View the conflicts
+        </button>
       </div>
       <p class="done-error-hint">
         {{

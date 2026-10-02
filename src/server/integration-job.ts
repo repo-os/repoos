@@ -51,6 +51,8 @@ export interface IntegrationJob {
   handoffSha?: string | null;
   /** Candidate merge result SHA (null until candidate is built) */
   candidateSha: string | null;
+  /** When the job entered `failed` (ISO string); lets a refreshed UI re-show the error. */
+  failedAt?: string;
   /** Failure reason or recovery action (when phase is "failed") */
   reason?: string;
   /**
@@ -176,6 +178,7 @@ function readJob(root: string, taskId: string): IntegrationJob | null {
       branchSha: stored.branchSha,
       handoffSha: stored.handoffSha ?? null,
       candidateSha: stored.candidateSha,
+      failedAt: stored.failedAt,
       reason: stored.reason,
       logPath: stored.logPath,
       debugTldr: stored.debugTldr,
@@ -283,6 +286,8 @@ export function createJobCoordinator(root: string): JobCoordinator {
       if (!existing) return null;
 
       const updated: IntegrationJob = { ...existing, ...update, taskId: existing.taskId };
+      if (update.phase === "failed") updated.failedAt ??= new Date().toISOString();
+      else if (update.phase) delete updated.failedAt;
       writeJob(root, updated);
       return updated;
     },
