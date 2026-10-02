@@ -305,6 +305,7 @@ import {
   listTaskShots,
   getTaskShot,
   uploadTaskShot,
+  deleteTaskShot,
   // Config routes
   readConfig,
   patchConfig,
@@ -2743,6 +2744,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", /^\/api\/tasks\/([^/]+)\/shots$/, listTaskShots);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/shots$/, uploadTaskShot);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/shots\/([^/]+)$/, getTaskShot);
+  // Task drawer shot management (#0627): declare-and-capture via POST (the
+  // handler dispatches on the body shape — CLI uploads carry `data`), and
+  // per-shot delete incl. its `## Shots` declaration.
+  router.register("DELETE", /^\/api\/tasks\/([^/]+)\/shots\/([^/]+)$/, deleteTaskShot);
 
   // Config routes
   router.register("GET", "/api/config", readConfig);

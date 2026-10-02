@@ -450,14 +450,19 @@ describe("Changes → UI changes rows (#0611)", () => {
     expect(wrapper.find(".changes-summary[aria-label='Code changes summary']").exists()).toBe(true);
     expect(wrapper.find(".diff-file-list").exists()).toBe(true);
 
-    // No shots and no warning at all: the section disappears, the rest of the tab
-    // is intact.
+    // No shots and no warning at all: nothing is rendered as a problem and the
+    // rest of the tab is intact. Since #0627 the section itself still shows for
+    // an active task with a branch — it carries the Add-shot affordance — while
+    // a task outside active/review keeps the old disappear-entirely behavior.
     shotsPayload = [];
     shotsWarning = undefined;
     const empty = await mountChanges(pinia, makeTask());
     expect(empty.find(".shot-warning").exists()).toBe(false);
-    expect(empty.find(".ui-changes").exists()).toBe(false);
+    expect(empty.find(".ui-changes").exists()).toBe(true);
+    expect(empty.text()).toContain("Add shot");
     expect(empty.find(".changes-summary[aria-label='Code changes summary']").exists()).toBe(true);
     expect(empty.find(".diff-file-list").exists()).toBe(true);
+    const unmanaged = await mountChanges(pinia, makeTask({ status: "ready" }));
+    expect(unmanaged.find(".ui-changes").exists()).toBe(false);
   });
 });

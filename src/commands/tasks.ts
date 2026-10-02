@@ -15,7 +15,7 @@ import { c, statusColor, priorityColor } from "../cli/colors.js";
 import { patchTaskFile, type TaskPatch } from "../server/write.js";
 import { writeHandoffRequest, type HandoffRequest } from "../server/handoff-request.js";
 import { isAncestor } from "../core/git.js";
-import { parseShotPlan } from "../core/shot-plan.js";
+import { declaredShotsSectionContent, parseShotPlan } from "../core/shot-plan.js";
 import { normalizeSectionHeading, replaceSection } from "../core/task.js";
 
 /**
@@ -384,7 +384,7 @@ function shotsSectionContent(raw: string): string {
       `Invalid --shots JSON: ${parsed.errors.join("; ") || "expected at least one shot"}`,
     );
   }
-  return `\`\`\`json\n${JSON.stringify(parsed.shots, null, 2)}\n\`\`\``;
+  return declaredShotsSectionContent(parsed.shots);
 }
 
 /**

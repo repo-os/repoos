@@ -263,6 +263,22 @@ docs-wording-only diff, missing Playwright, a preview that would not boot)
 is information, not an error: it is recorded as a visible note in the task
 log and activity, never a failed handoff. An engineer-made capture with
 [`repoos shot`](/cli#repoos-shot) before handoff pre-empts the automatic one.
+
+Shots can also be added and deleted by hand in the drawer's **UI changes**
+section (#0627) — no CLI needed — while the task is `active` or in `review`:
+
+- **Add shot** opens a plain-input modal (target dropdown, route, label,
+  optional highlight/selector and steps — never raw JSON) that appends the
+  entry to the task's `## Shots` list and captures it immediately, 5–30s, so
+  the new image appears right in the list. A busy preview slot (one preview at
+  a time) is a clear error, never a silent eviction of a preview you're
+  viewing, and a route that fails to load leaves the declaration unwritten.
+  Hand-added shots are stored as declared evidence, so the automatic pass
+  still pre-empts (they count like engineer-made captures).
+- **Delete** on a shot removes the image and its manifest entry — and, when a
+  matching `## Shots` declaration exists, removes that entry too, so the next
+  re-handoff cannot resurrect the deleted evidence. This works for automatic,
+  declared, and legacy untagged shots alike.
 **Shot hygiene (#0613):** a declared `highlight` or `selector` that matches
 nothing at capture time records a visible warning (for example: highlight `.x` matched
 nothing on /route) — capture still succeeds. Duplicate declarations with the

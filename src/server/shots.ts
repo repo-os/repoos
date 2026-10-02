@@ -93,6 +93,12 @@ export interface ShotStore {
     name?: string;
     data: string;
   }): ShotMeta | { error: string };
+  /**
+   * Delete one shot by file name, from the task drawer's per-shot delete
+   * (#0627). Returns the removed shot's metadata (for the caller's activity
+   * note and declaration sync) or null when no such file exists.
+   */
+  remove(name: string): ShotMeta | null;
   /** Delete every shot the server's automatic capture wrote; engineer-made shots stay. */
   removeAuto(): number;
   /** Absolute path for one stored file, or null when it is missing/escapes. */
@@ -250,6 +256,17 @@ export function localShotStore(config: RepoOSConfig, taskId: string): ShotStore 
         mime,
         capturedAt,
       };
+    },
+    remove(name) {
+      const all = list();
+      const shot = all.find((s) => s.name === name);
+      if (!shot) return null;
+      rmSync(join(dir, name), { force: true });
+      writeManifest(
+        dir,
+        readManifest(dir).filter((entry) => entry.name !== name),
+      );
+      return shot;
     },
     removeAuto() {
       const auto = list().filter((shot) => shot.origin === "auto");
