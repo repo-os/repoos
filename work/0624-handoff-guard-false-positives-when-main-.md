@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/handoff-guard-false-positives-when-main-
 created_at: "2026-10-02T06:09:14Z"
-updated_at: "2026-10-02T07:47:10Z"
+updated_at: "2026-10-02T07:51:05Z"
 review_passes: 4
 review_rounds: 2
 ---
@@ -59,3 +59,4 @@ Related: #0600 (bookkeeping-only drift, uses isAncestor and pathsChangedBetweenC
 - 2026-10-02T07:41:22Z · note: interactive session: fixing round-4 review bug (ls-tree pathspec metacharacters)
 - 2026-10-02T07:47:10Z · status active→review
 - 2026-10-02T07:47:10Z · status review→active
+- 2026-10-02T07:51:05Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
