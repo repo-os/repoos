@@ -379,6 +379,15 @@ cannot tell from the code alone:
   are for deliberate exceptions (login/auth, modals); keeping a readable
   line length on inner prose (`max-width: NNch` on one paragraph) is fine.
   See the `.main` comment in `src/ui-app/src/style.css` (#0602).
+- **Table-like label/value rows use aligned columns.** Any UI that renders
+  repeated rows of labeled fields (a `dl` of `dt`/`dd`, or label+value pairs
+  — no literal `<table>` required) must use an aligned two-column layout:
+  labels share one fixed-width column, values align in the second, row
+  spacing is consistent row to row, and multi-value content wraps inside the
+  value cell — never under the label. Use the shared `.kv-rows` utility in
+  `src/ui-app/src/style.css` (plus `.kv-wrap` on multi-value cells) when the
+  same layout appears more than once, tuning `--kv-label-w` per surface;
+  keep component specifics in scoped styles on top (#0623).
 - **Runtime: Bun. Node is only the fallback for machines without Bun.**
   Every `repoos` command re-execs under Bun when it's installed, `bunfig.toml`
   (`[run] bun = true`) runs `package.json` scripts and the Node-shebang tools
