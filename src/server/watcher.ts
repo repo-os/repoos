@@ -67,6 +67,14 @@ export class WorkWatcher {
       }
     }
     this.watchGitState();
+    // Record every task file's current mtime BEFORE the first poll. `pathToMtime`
+    // starts empty, so without this the first reconcile (5s after boot) saw all
+    // ~600 task files as "new" and re-applied each one — three synchronous git
+    // spawns per file — freezing the event loop for 30-60s right after every
+    // restart (the UI's "server did not respond in time" popup). The boot index
+    // build reads the files after this point, so nothing changed since is missed:
+    // a later edit shows up as an mtime difference.
+    if (existsSync(workPath)) this.scanDirectory(workPath, new Set(), false);
     this.pollTimer = setInterval(() => this.reconcile(), DEFAULT_POLL_MS);
     this.pollTimer.unref?.();
   }
@@ -268,7 +276,8 @@ export class WorkWatcher {
     }
   }
 
-  private scanDirectory(dir: string, seenPaths: Set<string>): void {
+  /** `apply: false` only records mtimes (boot seeding); true re-applies new/changed files. */
+  private scanDirectory(dir: string, seenPaths: Set<string>, apply = true): void {
     try {
       for (const entry of readdirSync(dir)) {
         if (entry.startsWith(".")) continue;
@@ -276,7 +285,7 @@ export class WorkWatcher {
         try {
           const stat = statSync(fullPath);
           if (stat.isDirectory()) {
-            this.scanDirectory(fullPath, seenPaths);
+            this.scanDirectory(fullPath, seenPaths, apply);
           } else if (this.isTaskFile(fullPath)) {
             seenPaths.add(fullPath);
             const currentMtime = stat.mtimeMs;
@@ -285,11 +294,11 @@ export class WorkWatcher {
             if (cachedMtime === undefined) {
               // New file not yet tracked
               this.pathToMtime.set(fullPath, currentMtime);
-              this.index.applyFileChange(fullPath);
+              if (apply) this.index.applyFileChange(fullPath);
             } else if (cachedMtime !== currentMtime) {
               // Content changed (mtime differs)
               this.pathToMtime.set(fullPath, currentMtime);
-              this.index.applyFileChange(fullPath);
+              if (apply) this.index.applyFileChange(fullPath);
             }
           }
         } catch {
