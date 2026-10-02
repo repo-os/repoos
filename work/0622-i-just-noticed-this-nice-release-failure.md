@@ -1,19 +1,16 @@
 ---
-updated_at: "2026-10-02T03:19:37Z"
-review_passes: 5
 id: "0622"
 title: Promote release failures above published-to and show loading state
 type: feature
 status: review
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/promote-release-failures-above-published
 created_at: "2026-10-02T01:48:25Z"
+updated_at: "2026-10-02T03:19:37Z"
+review_passes: 5
 merge_conflict_retry_count: 1
 review_rounds: 2
 dev_error_count: 1
@@ -89,4 +86,4 @@ I just noticed this nice release failure section, but it's hidden below the fold
 - 2026-10-02T02:44:52Z · status active→review
 - 2026-10-02T02:44:52Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-02T03:08:50Z · agent exited with an error (pi) · the agent process exited with an error — open the task to see the full output
-
+- 2026-10-02T03:19:37Z · needs_input (dev-error) dismissed by hello@repoos.org
