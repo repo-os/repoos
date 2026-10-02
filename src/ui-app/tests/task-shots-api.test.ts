@@ -182,6 +182,28 @@ describe("POST /api/tasks/:id/shots — declare and capture (#0627)", () => {
     expect((capture.body as { error: string }).error).toContain('"steps" expects an array');
   });
 
+  it("captures an explicitly picked out-of-area configured target (the drawer offers all)", async () => {
+    // The drawer's target dropdown lists every configured target (#0379).
+    // An explicit pick must resolve via the override path — without it an
+    // offered out-of-area target would fail here (review round 2).
+    writeFileSync(
+      join(root, "repoos.toml"),
+      '[preview]\ncommand = "echo preview"\n\n[[preview.targets]]\nname = "web"\nareas = ["server"]\ncommand = "echo web"\n',
+    );
+    repoos = createRepoOS(root);
+    task = repoos.createTask({ title: "Out of area pick" });
+    task = repoos.updateTask(task.id, { status: "active", branch: "feat/y" });
+    mockedCapture.mockResolvedValue(SHOT_RESULT as never);
+
+    const ctx = makeCtx();
+    const { capture, res } = resCapture();
+    await uploadTaskShot(ctx as never, bodyReq({ target: "web", label: "Task drawer open" }), res, {
+      param1: task.id,
+    });
+    expect(capture.statusCode).toBe(201);
+    expect(mockedCapture.mock.calls[0]?.[3]).toMatchObject({ target: "web" });
+  });
+
   it("answers a busy preview slot with 409 + busy, and does NOT write the declaration", async () => {
     mockedCapture.mockResolvedValue({
       error: "the one preview slot is busy: task #0999 has a preview running",
