@@ -51,9 +51,17 @@ Tags with a suffix — `v1.2.0-beta.1`, `v1.2.0-rc.1` — are treated as
 never hands a prerelease to a stable user, and they don't hide the last stable
 tag in the UI.
 
-### The Cut a release modal
+### The Cut a release panel
 
-The modal states **Currently published** and **Suggested next**, then offers
+Cutting a release opens a **side panel** on the Releases page, styled like the
+task drawer. Closing it — the × in the upper right, a click on the scrim, or
+**Cancel** — never resets anything: your typed version and notes, the run log,
+and any in-flight cut or draft are all still there when you reopen. While a
+cut runs, the page's button relabels to **View progress** and reopens the
+panel against the live run. The form only clears once a cut **succeeds**, so
+the next cut starts fresh.
+
+The panel states **Currently published** and **Suggested next**, then offers
 one band with two ways to pick the version:
 
 - **OR · Cut Next** applies the suggested version for you — the everyday
@@ -65,7 +73,7 @@ one band with two ways to pick the version:
 
 **Release notes** are optional. **Generate with AI** starts a **tracked
 draft run**: the button returns at once and the field shows "Drafting…" while
-the agent works, so closing the modal mid-run loses nothing — reopening shows
+the agent works, so closing the panel mid-run loses nothing — reopening shows
 the draft in progress, and the draft is dropped into the editable text area
 the moment the run finishes. Clicking Generate while a draft is already being
 generated can't start a duplicate run.
@@ -76,7 +84,7 @@ delete), keyed by the **release-relevant commits** in the range. Task-file
 bookkeeping commits (`docs(NNNN): add task`, status flips) touch only the work
 dir, so they don't count: a saved draft survives them and Generate stays
 instant. Generate again after a failed cut and RepoOS reuses that saved text
-instead of spending another minute or two on the agent — the modal says
+instead of spending another minute or two on the agent — the panel says
 **Reused saved notes**. A source commit, a new release tag, or deleting the
 file simply means the next generate runs the agent again.
 

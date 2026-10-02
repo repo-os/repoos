@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { Bug, Check, Copy, Sparkles } from "lucide-vue-next";
+import { Bug, Check, Copy, Sparkles, X } from "lucide-vue-next";
 import { copyToClipboard } from "../lib/clipboard";
 import Button from "../components/ui/button.vue";
 import Dialog from "../components/ui/dialog/root.vue";
@@ -75,6 +75,29 @@ const status = ref<ReleaseStatus | null>(null);
 const loading = ref(true);
 const running = ref(false);
 const confirmOpen = ref(false);
+/**
+ * Width of the cut-a-release side panel. Local to this panel on purpose: the
+ * task drawer and New input panel share the ui store's drawer width, and
+ * resizing this one shouldn't drag those along with it.
+ */
+const panelWidth = ref(520);
+
+function startPanelResize(e: MouseEvent): void {
+  const startX = e.clientX;
+  const startW = panelWidth.value;
+  const onMove = (ev: MouseEvent): void => {
+    panelWidth.value = Math.max(
+      420,
+      Math.min(window.innerWidth - 40, startW + startX - ev.clientX),
+    );
+  };
+  const onUp = (): void => {
+    document.removeEventListener("mousemove", onMove);
+    document.removeEventListener("mouseup", onUp);
+  };
+  document.addEventListener("mousemove", onMove);
+  document.addEventListener("mouseup", onUp);
+}
 const newVersion = ref("");
 const message = ref("");
 const error = ref("");
@@ -237,12 +260,11 @@ const phaseLabel = computed(
     })[phase.value],
 );
 
+// Mid-cut this must stay true (#0621): closing the panel is safe now, so the
+// button doubles as the way back in — it relabels to "View progress" while a
+// run is in flight.
 const canOpen = computed(
-  () =>
-    !!status.value?.supported &&
-    status.value.clean &&
-    status.value.onReleaseBranch &&
-    !running.value,
+  () => !!status.value?.supported && status.value.clean && status.value.onReleaseBranch,
 );
 
 /** Wall-clock of the last completed run, from the route's run timestamps. */
@@ -345,22 +367,20 @@ async function copyCommand(command: string): Promise<void> {
   copyTimer = setTimeout(() => (copiedCommand.value = ""), 1600);
 }
 
+/**
+ * Open the cut-a-release panel. Closing the panel is never a reset (#0621):
+ * version, notes, run log, errors and run tracking all live at the view level
+ * and survive close/reopen, so an operator can step away mid-cut or mid-draft
+ * and come back to the same state. A freshly opened panel re-syncs both
+ * server-tracked runs immediately (an in-flight draft or cut is picked up
+ * where it stands), and the form is only cleared once a cut succeeds (see the
+ * success path in `pollRun`) so the *next* cut starts from a clean form.
+ */
 function openConfirm(): void {
-  message.value = "";
-  error.value = "";
-  runLog.value = "";
-  newVersion.value = "";
-  notes.value = "";
-  notesError.value = "";
-  notesHint.value = "";
-  // Reset the draft placement so a re-open can place the same session's
-  // finished draft (the field just cleared); ownership itself is untouched.
-  placedNotesKey.value = null;
   generatingNotes.value = notesRun.value?.state === "running";
-  debuggerSent.value = false;
-  debuggerErr.value = "";
   confirmOpen.value = true;
   void syncNotesRunAtOpen();
+  void pollRun();
 }
 
 /**
@@ -559,7 +579,12 @@ async function pollRun(): Promise<void> {
     const latest = await api<ReleaseRun>("/api/release/run");
     const wasRunning = prev?.state === "running";
     run.value = latest;
-    if (latest.state === "running") return;
+    if (latest.state === "running") {
+      // Sync from the server, not just from this session's own POST (#0621):
+      // a run started elsewhere (or before a reopen) must show as live too.
+      running.value = true;
+      return;
+    }
     running.value = false;
     // Apply the outcome once — on the first observation (a finished run from
     // before this page load owns the "survives until the next one" banner) or
@@ -569,6 +594,16 @@ async function pollRun(): Promise<void> {
         message.value = latest.message;
         confirmOpen.value = false;
         dropNotesRun();
+        // The cut shipped — clear the form so the next open starts fresh.
+        // This is the one reset: closing the panel mid-run never clears it.
+        newVersion.value = "";
+        notes.value = "";
+        error.value = "";
+        runLog.value = "";
+        notesError.value = "";
+        notesHint.value = "";
+        debuggerSent.value = false;
+        debuggerErr.value = "";
         await Promise.all([load(), loadDistribution()]);
       } else if (latest.state === "failed" && latest.message) {
         // A failed phase reports its full command output (repoos check log, build
@@ -726,8 +761,19 @@ onBeforeUnmount(() => {
               }}</span>
             </div>
             <div class="rel-actions rel-next-actions">
-              <Button variant="accent" :disabled="!canOpen" @click="openConfirm">
-                {{ suggestedVersion ? "Cut next release" : "Cut a release" }}
+              <Button
+                variant="accent"
+                data-test-id="cut-release-open"
+                :disabled="!canOpen"
+                @click="openConfirm"
+              >
+                {{
+                  running
+                    ? "View progress"
+                    : suggestedVersion
+                      ? "Cut next release"
+                      : "Cut a release"
+                }}
               </Button>
               <a
                 v-if="status.workflowUrl"
@@ -856,18 +902,26 @@ onBeforeUnmount(() => {
 
         <Dialog :open="confirmOpen" @update:open="confirmOpen = $event">
           <DialogOverlay />
-          <DialogContent class="release-modal">
-            <div class="release-modal-head">
-              <DialogTitle>Cut a release</DialogTitle>
-              <DialogClose class="close-x" aria-label="Close" :disabled="running">×</DialogClose>
+          <DialogContent
+            class="release-drawer"
+            :style="{ width: panelWidth + 'px', 'max-width': '100vw' }"
+          >
+            <div class="drawer-resize" @mousedown.prevent="startPanelResize"></div>
+            <div class="drawer-head">
+              <div class="drawer-head-title">
+                <DialogTitle>Cut a release</DialogTitle>
+              </div>
+              <DialogClose class="close-x" aria-label="Close"
+                ><X class="size-[15px]"
+              /></DialogClose>
             </div>
-            <div class="release-modal-body">
-              <DialogDescription>
+            <div class="drawer-body">
+              <DialogDescription class="release-drawer-desc">
                 Runs <code>repoos check</code>, pushes <code>{{ status.branch }}</code
                 >, then pushes a tag. CI builds and publishes from that tag.
               </DialogDescription>
 
-              <dl class="rel-modal-facts">
+              <dl class="rel-panel-facts">
                 <div>
                   <dt>Currently published</dt>
                   <dd>{{ publishedTag ?? "nothing yet" }}</dd>
@@ -890,7 +944,7 @@ onBeforeUnmount(() => {
                 <small>You can leave this page — progress shows here when you return.</small>
               </div>
 
-              <div v-if="error && !running" class="release-modal-error" role="alert">
+              <div v-if="error && !running" class="release-drawer-error" role="alert">
                 <strong>{{ error }}</strong>
                 <pre v-if="runLog" class="rel-log">{{ runLog }}</pre>
                 <div class="rel-debugger">
@@ -993,8 +1047,9 @@ onBeforeUnmount(() => {
 
               <div v-if="!running" class="rel-field-hint rel-async-hint">
                 <span>
-                  <b>Generate with AI</b> usually takes 1–3 minutes. You can close this dialog and
-                  come back — clicking Generate again reuses the saved draft.
+                  <b>Generate with AI</b> usually takes 1–3 minutes. You can close this panel and
+                  come back — your draft and edits are waiting, and clicking Generate again reuses
+                  the saved draft.
                 </span>
                 <span>
                   <b>Publish</b> usually takes a few minutes (about 5). It's safe to leave while it
@@ -1002,7 +1057,7 @@ onBeforeUnmount(() => {
                 </span>
               </div>
             </div>
-            <div class="release-actions">
+            <div class="release-drawer-actions">
               <Button
                 variant="accent"
                 :disabled="!newVersionValid || running || generatingNotes"
@@ -1011,7 +1066,7 @@ onBeforeUnmount(() => {
                 {{ running ? "Publishing…" : newTag ? `Publish ${newTag}` : "Publish" }}
               </Button>
               <DialogClose as-child
-                ><Button variant="ghost" :disabled="running">Cancel</Button></DialogClose
+                ><Button variant="ghost">{{ running ? "Close" : "Cancel" }}</Button></DialogClose
               >
             </div>
           </DialogContent>
