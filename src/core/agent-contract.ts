@@ -549,6 +549,7 @@ function parsePiRun(stdout: string): RunParseResult {
   let hasAnswer = false;
   let recognized = 0;
   let total = 0;
+  let assistantError = "";
   const contentText = (content: unknown): string => {
     if (typeof content === "string") return content;
     if (!Array.isArray(content)) return "";
@@ -577,6 +578,10 @@ function parsePiRun(stdout: string): RunParseResult {
       if (type === "message_end") {
         const msg = ev.message as Record<string, unknown> | undefined;
         if (msg?.role === "assistant" && /OK/i.test(contentText(msg.content))) hasAnswer = true;
+        // A failed provider call still ends the run cleanly (exit 0); the reason
+        // lives on the assistant message, so surface it instead of "no answer".
+        if (msg?.role === "assistant" && typeof msg.errorMessage === "string" && msg.errorMessage)
+          assistantError = msg.errorMessage;
       }
     } catch {
       /* skip malformed lines */
@@ -590,7 +595,7 @@ function parsePiRun(stdout: string): RunParseResult {
     detail:
       total === 0
         ? "no JSON lines in output"
-        : `${recognized}/${total} recognized events; answer found: ${hasAnswer}`,
+        : `${recognized}/${total} recognized events; answer found: ${hasAnswer}${assistantError ? `; model error: ${assistantError.slice(0, 200)}` : ""}`,
   };
 }
 

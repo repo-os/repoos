@@ -417,7 +417,6 @@ interface DetectRow {
   statusLabel: string;
   color: string;
   /** Sort priority: lower = higher in list. Green=0, amber=1, red=2. */
-  sortOrder: number;
 }
 
 const detectRows = computed<DetectRow[]>(() => {
@@ -428,7 +427,6 @@ const detectRows = computed<DetectRow[]>(() => {
         status: "missing" as DetectStatus,
         statusLabel: "not installed",
         color: "var(--red)",
-        sortOrder: 2,
       };
     }
     if (agent.headless === false) {
@@ -437,7 +435,6 @@ const detectRows = computed<DetectRow[]>(() => {
         status: "desktop" as DetectStatus,
         statusLabel: "desktop only",
         color: "var(--amber)",
-        sortOrder: 1,
       };
     }
     if (agent.auth === false) {
@@ -446,7 +443,6 @@ const detectRows = computed<DetectRow[]>(() => {
         status: "auth" as DetectStatus,
         statusLabel: "sign-in required",
         color: "var(--amber)",
-        sortOrder: 1,
       };
     }
     return {
@@ -454,11 +450,12 @@ const detectRows = computed<DetectRow[]>(() => {
       status: "ok" as DetectStatus,
       statusLabel: "ready",
       color: "var(--green)",
-      sortOrder: 0,
     };
   });
-  // Sort: green (ready) first, then amber, then red — stable within each group.
-  return rows.sort((a, b) => a.sortOrder - b.sortOrder);
+  // Alphabetical by display name; status is conveyed by the badge, not row position.
+  return rows.sort((a, b) =>
+    a.agent.name.localeCompare(b.agent.name, undefined, { sensitivity: "base" }),
+  );
 });
 
 let activeStream: EventSource | null = null;
