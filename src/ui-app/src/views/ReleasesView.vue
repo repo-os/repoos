@@ -132,6 +132,13 @@ let pollTimer: ReturnType<typeof setInterval> | null = null;
  * a failure after a newer poll already applied a success (#0622).
  */
 let runPollSeq = 0;
+/**
+ * True while the release POST is awaiting its response. A poll answered in
+ * that window can only carry the PREVIOUS run's terminal snapshot (the new run
+ * is not created yet), and `runPollSeq` can't undo a response that is already
+ * applied — so `pollRun` ignores terminal snapshots while this is set (#0622).
+ */
+let releasePosting = false;
 let notesPollSeq = 0;
 
 /** "Published to" destinations for the release being viewed (empty when none). */
@@ -536,6 +543,7 @@ async function release(): Promise<void> {
   // releasing flag, and stop the poll loop before this attempt's own outcome
   // is ever observed (review finding on #0622).
   runPollSeq++;
+  releasePosting = true;
   try {
     const result = await api<{ run: ReleaseRun }>(
       "/api/release",
@@ -545,6 +553,7 @@ async function release(): Promise<void> {
         notes: notes.value.trim() || undefined,
       }),
     );
+    releasePosting = false;
     run.value = result.run;
     // Re-assert the releasing flag (kept only when the returned run is still
     // in flight) and drop polls issued while the POST was in flight — they
@@ -554,6 +563,7 @@ async function release(): Promise<void> {
     runPollSeq++;
     startPolling();
   } catch (err) {
+    releasePosting = false;
     // The attempt died before a run was created (e.g. the push was rejected):
     // surface this error and drop the previous run's log, which describes an
     // earlier failure, not this one. `load()` no longer touches run errors.
@@ -561,6 +571,7 @@ async function release(): Promise<void> {
     runLog.value = "";
     await load();
   } finally {
+    releasePosting = false;
     if (run.value?.state !== "running") running.value = false;
   }
 }
@@ -592,6 +603,10 @@ async function pollRun(): Promise<void> {
     // Superseded: a newer poll was issued while this one was in flight, and
     // its response (already applied or still coming) is the newer truth.
     if (seq !== runPollSeq) return;
+    // A terminal snapshot while our own release POST is pending is the
+    // previous run's: applying it would flip `running` off and let Publish
+    // (and the poll loop) stop before this attempt even exists (#0622).
+    if (releasePosting && latest.state !== "running") return;
     const wasRunning = prev?.state === "running";
     run.value = latest;
     if (latest.state === "running") {
@@ -602,9 +617,12 @@ async function pollRun(): Promise<void> {
     }
     running.value = false;
     // Apply the outcome once — on the first observation (a finished run from
-    // before this page load owns the "survives until the next one" banner) or
-    // on a watched running→terminal transition — not on every tick.
-    if (prev === null || wasRunning) {
+    // before this page load owns the "survives until the next one" banner), on
+    // a watched running→terminal transition, or when the terminal run is a
+    // different one than we last saw (another client's whole run fit between
+    // two polls, so we never observed it running) — not on every tick.
+    const newTerminalRun = prev !== null && prev.startedAt !== latest.startedAt;
+    if (prev === null || wasRunning || newTerminalRun) {
       if (latest.state === "succeeded") {
         message.value = latest.message;
         confirmOpen.value = false;
