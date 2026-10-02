@@ -2,7 +2,7 @@
 id: "0622"
 title: Promote release failures above published-to and show loading state
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -91,4 +91,4 @@ I just noticed this nice release failure section, but it's hidden below the fold
 - 2026-10-02T08:34:18Z · note: interactive session: re-handoff so the hand-resolved main-sync conflict (ReleasesView.vue) is reviewed and re-snapshotted
 - 2026-10-02T08:34:53Z · status active→review
 - 2026-10-02T08:34:53Z · status review→active
-- 2026-10-02T08:38:58Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-02T08:38:58Z · status active→review
