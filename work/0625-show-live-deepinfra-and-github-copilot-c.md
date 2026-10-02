@@ -2,7 +2,7 @@
 id: "0625"
 title: Show live DeepInfra and GitHub Copilot credit and usage data
 type: feature
-status: active
+status: review
 priority: p2
 area: [agent, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/show-live-deepinfra-and-github-copilot-c
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-02T08:51:36Z"
-updated_at: "2026-10-02T10:33:58Z"
+updated_at: "2026-10-02T11:04:47Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -100,3 +100,4 @@ Sources: https://docs.deepinfra.com/api-reference/billing/get-checklist ; https:
 - 2026-10-02T10:33:17Z · status review→active
 - 2026-10-02T10:33:57Z · review_cli_override
 - 2026-10-02T10:33:58Z · review_model_override
+- 2026-10-02T11:04:47Z · status active→review
