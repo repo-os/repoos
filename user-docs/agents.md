@@ -178,14 +178,11 @@ bypass.
 
 ### Gemini CLI deprecation
 
-The legacy `gemini` executable remains visible in **Detected Coding Agents** so
-installed tooling and historical task/config records are not erased. It is
-marked **Deprecated** for individual and free users, and new agent assignments
-offer Antigravity instead. The UI says `Use Antigravity CLI (agy) instead` and
-links to the [official Gemini migration guide](https://antigravity.google/docs/cli/gcli-migration/).
-Enterprise and paid API-key Gemini CLI users may still have access. A saved
-legacy Gemini selection is preserved and shown with a migration warning; RepoOS
-does not silently rewrite it or invoke Gemini as a fallback driver.
+The legacy `gemini` executable is no longer part of the **Detected Coding
+Agents** catalog, and RepoOS does not probe for it. New agent assignments offer
+Antigravity instead. A saved legacy Gemini selection (`cli = "gemini"`) is
+preserved and shown with a migration warning in the task and agent editors;
+RepoOS does not silently rewrite it or invoke Gemini as a fallback driver.
 
 ## The lifecycle roles
 

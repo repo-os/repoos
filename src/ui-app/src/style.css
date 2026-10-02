@@ -8010,24 +8010,6 @@
 }
 
 /* detected coding agents panel */
-.detect-deprecated {
-  color: var(--amber);
-  border-color: color-mix(in srgb, var(--amber) 55%, transparent);
-}
-
-.detect-migration-inline {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 4px 8px;
-  align-items: center;
-  color: var(--txt-muted);
-  font-size: 11px;
-}
-
-.detect-migration-inline a {
-  color: var(--cyan);
-}
-
 .agent-legacy-notice {
   margin-top: 8px;
   padding: 8px 10px;
@@ -8092,13 +8074,6 @@
   align-items: center;
   justify-content: center;
 }
-.detect-deprecated-slot {
-  flex: none;
-  width: 7.5rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
 .detect-details {
   flex: 1;
   min-width: 0;
@@ -8108,7 +8083,7 @@
   gap: 8px;
 }
 @media (max-width: 760px) {
-  /* Too narrow for four fixed columns: let version/update wrap below. */
+  /* Too narrow for three fixed columns: let version/update wrap below. */
   .detect-row {
     flex-wrap: wrap;
     row-gap: 4px;
