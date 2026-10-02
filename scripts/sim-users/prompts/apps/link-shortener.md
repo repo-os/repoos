@@ -1,0 +1,1 @@
+**Link shortener.** A small web service with a form to turn a long URL into a short link, short links that redirect to the original, and a stats page showing how many times each link was clicked. Handle bad input sensibly (invalid URLs, duplicate custom slugs). Data should persist between restarts. Include a few automated tests.

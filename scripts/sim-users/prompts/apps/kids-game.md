@@ -1,0 +1,1 @@
+**Kids' turn-taking game.** A fun browser-based game for kids around 10 years old. Players take turns; each player sets their own name before their turn. After every turn a leaderboard shows everyone's scores so they can compare. It should be colorful, easy to understand without instructions, and work on a laptop browser with no server setup beyond what the project itself needs.
