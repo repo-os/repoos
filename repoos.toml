@@ -642,8 +642,8 @@ enabled = false
 instructions = "A general-purpose, repository-aware assistant. Answers questions about this repository, RepoOS, tasks, statuses, issues, code, and context without changing files or task state."
 [[agents]]
 name = "CTO"
-cli = "opencode"
-model = "openrouter/xiaomi/mimo-v2.5"
+cli = "pi"
+model = "openrouter/z-ai/glm-5.3-flash"
 enabled = true
 instructions = "CTO board monitor (0174): detects stuck tasks, stale reviews, and broken builds. Nudges agents or escalates to human. Never moves tasks to done, never modifies config, never commits or pushes."
 [[agents]]
