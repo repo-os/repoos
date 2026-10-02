@@ -22,15 +22,11 @@ import {
   fetchOpenRouterSpend,
   fetchOpenCodeGoUsage,
   fetchDeepInfraSpend,
-  fetchCopilotUsage,
 } from "../../core/providers/spend.js";
 import type { ModelProviderRow } from "../../core/providers/spend.js";
 
 /** Cap on pasted key length — real provider keys are far shorter. */
 const MAX_KEY_LEN = 500;
-
-/** A GitHub Copilot billing scope: empty, or `org:<slug>` / `enterprise:<slug>`. */
-const COPILOT_SCOPE_RE = /^(org|enterprise):[A-Za-z0-9._-]{1,80}$/i;
 
 /**
  * The stored key for a live row, read through process.env FIRST so a save
@@ -45,16 +41,6 @@ export function readProviderKey(config: RepoOSConfig, row: ModelProviderRow): st
   return "";
 }
 
-/**
- * The stored billing scope for rows that take one (GitHub Copilot, #0625).
- * Env-first like the key; empty string when unset. An org slug is not
- * secret material, so it is safe to surface in the row payload.
- */
-export function readProviderScope(row: ModelProviderRow): string {
-  if (!row.scopeEnvVar) return "";
-  return process.env[row.scopeEnvVar]?.trim() ?? "";
-}
-
 export const getModelProviders: RouteHandler = async (ctx, _req, res) => {
   const providers = MODEL_PROVIDERS.map((p) => ({
     id: p.id,
@@ -63,7 +49,6 @@ export const getModelProviders: RouteHandler = async (ctx, _req, res) => {
     dashboardUrl: p.dashboardUrl,
     note: p.note,
     hasKey: readProviderKey(ctx.config, p).length > 0,
-    scope: readProviderScope(p),
   }));
   return json(res, 200, { providers, at: new Date().toISOString() });
 };
@@ -105,10 +90,6 @@ export const getModelProviderUsage: RouteHandler = async (ctx, _req, res, params
       }
       return json(res, 200, { kind: row.id, ...spend, at: new Date().toISOString() });
     }
-    if (row.id === "github-copilot") {
-      const usage = await fetchCopilotUsage(apiKey, readProviderScope(row));
-      return json(res, 200, { kind: row.id, ...usage, at: new Date().toISOString() });
-    }
     return json(res, 400, { error: "Unknown model provider." });
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
@@ -124,7 +105,7 @@ export const setModelProviderKey: RouteHandler = async (ctx, req, res, params) =
       error: `${row.label} does not support saving an API key in RepoOS yet — it renders as a dashboard link-out.`,
     });
   }
-  const body = (await readBody(req)) as { key?: unknown; scope?: unknown };
+  const body = (await readBody(req)) as { key?: unknown };
   if (typeof body.key !== "string") {
     return json(res, 400, { error: "key must be a string." });
   }
@@ -132,24 +113,6 @@ export const setModelProviderKey: RouteHandler = async (ctx, req, res, params) =
   if (key.length > MAX_KEY_LEN) {
     return json(res, 400, { error: "That API key is too long to be valid." });
   }
-  // Optional scope for rows that take one (GitHub Copilot): stored as its own
-  // .env line, never in repoos.toml, and validated so a typo can't silently
-  // point billing queries at the wrong account level.
-  if (typeof body.scope === "string" && row.scopeEnvVar) {
-    const scope = body.scope.trim();
-    if (scope && !COPILOT_SCOPE_RE.test(scope)) {
-      return json(res, 400, {
-        error: "Scope must be empty (personal plan) or org:<name> / enterprise:<name>.",
-      });
-    }
-    try {
-      setDotEnvSecret(ctx.config.root, row.scopeEnvVar, scope);
-    } catch (err) {
-      const reason = err instanceof Error ? err.message : String(err);
-      return json(res, 400, { error: `Could not save the scope: ${reason}` });
-    }
-  }
-  // A save without a scope field simply leaves the stored scope untouched.
   try {
     setDotEnvSecret(ctx.config.root, row.envVar, key);
   } catch (err) {
@@ -157,11 +120,9 @@ export const setModelProviderKey: RouteHandler = async (ctx, req, res, params) =
     return json(res, 400, { error: `Could not save the key: ${reason}` });
   }
   // Deliberately no logging anywhere in this handler, and no echo of the
-  // value — the response carries only the resulting hasKey boolean, plus the
-  // scope label (an org slug, not secret material) when a scope exists.
+  // value — the response carries only the resulting hasKey boolean.
   return json(res, 200, {
     ok: true,
     hasKey: key.length > 0,
-    scope: row.scopeEnvVar ? readProviderScope(row) : "",
   });
 };

@@ -336,7 +336,6 @@ export function summarizeConfigShape(
       openrouterConfigured: Boolean(config.modelProviders?.openrouterApiKey),
       opencodeGoConfigured: Boolean(config.modelProviders?.opencodeGoApiKey),
       deepinfraConfigured: Boolean(config.modelProviders?.deepinfraApiKey),
-      githubCopilotConfigured: Boolean(config.modelProviders?.githubCopilotToken),
     },
     watchdog: { enabled: config.watchdog?.enabled ?? null },
     supervisor: { enabled: config.supervisor?.enabled ?? null },

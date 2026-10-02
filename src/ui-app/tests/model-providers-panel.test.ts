@@ -1,10 +1,10 @@
 /**
  * Component tests for ModelProvidersPanel.vue (0327): provider rows must
  * render with the right affordances — dashboard link-outs for providers with
- * no public individual usage API, and
- * no-API providers, an inline key form for live providers without a saved
- * key, and live figures for the ones with — and the key save/clear flow must
- * hit the right endpoints and never put key material into the DOM.
+ * no public individual usage API, an inline key form for live providers
+ * without a saved key, and live figures for the ones with — and the key
+ * save/clear flow must hit the right endpoints and never put key material
+ * into the DOM.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
@@ -83,11 +83,10 @@ function providersFixture(
     {
       id: "github-copilot",
       label: "GitHub Copilot",
-      kind: "live",
+      kind: "link",
       dashboardUrl: "https://github.com/settings/copilot",
-      note: "AI-credit usage billed to the account this period.",
+      note: "GitHub has deprecated the personal-account billing endpoints and offers no public API for individual Copilot subscription, billing or usage data — check usage in the Copilot settings page.",
       hasKey: false,
-      scope: "",
     },
     {
       id: "antigravity",
@@ -178,12 +177,12 @@ describe("ModelProvidersPanel — row rendering", () => {
     expect(rows).toHaveLength(11);
     expect(rows[0].find(".agent-name").text()).toBe("OpenRouter");
     expect(rows[0].find(".pill-live").exists()).toBe(true);
-    for (const i of [1, 4, 8]) {
+    for (const i of [1, 4]) {
       expect(rows[i].find(".pill-live").exists()).toBe(true);
       expect(rows[i].find(".mp-key-form").exists()).toBe(true);
     }
 
-    for (const i of [2, 3, 5, 6, 7, 9, 10]) {
+    for (const i of [2, 3, 5, 6, 7, 8, 9, 10]) {
       const link = rows[i].find(".mp-dash-link");
       expect(link.exists()).toBe(true);
       expect(link.attributes("href")).toMatch(/^https:\/\//);
@@ -423,12 +422,6 @@ const deepinfraUsageRoute = (body: unknown): StubRoute => ({
   calls: [],
 });
 
-const copilotUsageRoute = (body: unknown): StubRoute => ({
-  match: (url) => url.includes("/api/model-providers/github-copilot/usage"),
-  body,
-  calls: [],
-});
-
 describe("ModelProvidersPanel — DeepInfra live data (#0625)", () => {
   it("renders the sign-corrected balance, owed amount, limit and monthly spend", async () => {
     stubFetch([
@@ -543,36 +536,24 @@ describe("ModelProvidersPanel — DeepInfra live data (#0625)", () => {
   });
 });
 
-describe("ModelProvidersPanel — GitHub Copilot live data (#0625)", () => {
-  it("renders billed usage with the scope label and the not-remaining-quota note", async () => {
+describe("ModelProvidersPanel — GitHub Copilot reverted to a link row (#0629)", () => {
+  it("shows the explanatory note and dashboard link with no key form or usage widgets", async () => {
     stubFetch([
-      providersRoute(providersFixture([{ hasKey: true }, , , , , , , , { hasKey: true }])),
+      providersRoute(providersFixture([{ hasKey: true }, , , , { hasKey: true }])),
       openrouterUsageRoute({
         kind: "openrouter",
-        credits: null,
+        credits: { totalCredits: 100, totalUsage: 20, remaining: 80 },
         creditsError: null,
         key: null,
         keyError: null,
       }),
       goUsageRoute({ kind: "opencode-go", windows: [], unrecognized: true }),
-      copilotUsageRoute({
-        kind: "github-copilot",
-        scope: { kind: "personal", slug: null },
-        periodLabel: "October 2026",
-        user: "monalisa",
-        rows: [
-          {
-            product: "Copilot AI Credits",
-            sku: "AI Credit",
-            model: "GPT-5",
-            unitType: "ai-credits",
-            includedQuantity: 40,
-            billedQuantity: 60,
-            discountAmount: 0.4,
-            netAmount: 0.6,
-          },
-        ],
-        unrecognized: false,
+      deepinfraUsageRoute({
+        kind: "deepinfra",
+        checklist: null,
+        checklistError: null,
+        usage: null,
+        usageError: null,
       }),
     ]);
     const wrapper = mount(ModelProvidersPanel);
@@ -580,115 +561,19 @@ describe("ModelProvidersPanel — GitHub Copilot live data (#0625)", () => {
     await nextTick();
 
     const row = wrapper.findAll(".mp-row")[8];
-    expect(row.text()).toContain("Billed October 2026 · personal plan");
-    expect(row.text()).toContain("$0.60");
-    expect(row.text()).toContain("not remaining quota");
-    expect(row.text()).toContain("60 ai-credits billed");
-    expect(row.text()).toContain("+ 40 included");
-    expect(row.text()).toContain("AI Credit · GPT-5");
-  });
-
-  it("labels a centrally billed scope and the key form pre-fills the stored scope", async () => {
-    stubFetch([
-      providersRoute([
-        ...providersFixture([{ hasKey: true }]).slice(0, 8),
-        { ...providersFixture()[8], hasKey: true, scope: "org:acme" },
-      ]),
-      openrouterUsageRoute({
-        kind: "openrouter",
-        credits: null,
-        creditsError: null,
-        key: null,
-        keyError: null,
-      }),
-      goUsageRoute({ kind: "opencode-go", windows: [], unrecognized: true }),
-      copilotUsageRoute({
-        kind: "github-copilot",
-        scope: { kind: "org", slug: "acme" },
-        periodLabel: "October 2026",
-        user: null,
-        rows: [],
-        unrecognized: false,
-      }),
-    ]);
-    const wrapper = mount(ModelProvidersPanel);
-    await flushPromises();
-    await nextTick();
-
-    const row = wrapper.findAll(".mp-row")[8];
-    expect(row.text()).toContain("org acme");
-    expect(row.text()).toContain("No Copilot usage billed to this account");
-    // Replace key shows the form with the scope pre-filled from the row.
-    const replace = row.findAll("button").find((b) => b.text() === "Replace key");
-    await replace!.trigger("click");
-    await nextTick();
-    const scopeInput = row.findAll(".mp-key-form input[type=text]").at(-1)!;
-    expect((scopeInput.element as HTMLInputElement).value).toBe("org:acme");
-    expect(row.text()).toContain("classic");
-  });
-
-  it("sends the scope alongside the key when saving the Copilot row", async () => {
-    const key = keyRoute(200, { ok: true, hasKey: true, scope: "org:acme" });
-    stubFetch([
-      providersRoute(providersFixture()),
-      key,
-      copilotUsageRoute({
-        kind: "github-copilot",
-        scope: { kind: "org", slug: "acme" },
-        periodLabel: "October 2026",
-        user: null,
-        rows: [],
-        unrecognized: false,
-      }),
-    ]);
-    const wrapper = mount(ModelProvidersPanel);
-    await flushPromises();
-    await nextTick();
-
-    const row = wrapper.findAll(".mp-row")[8];
-    await row.find(".mp-key-form input[type=password]").setValue("ghp-pasted");
-    const scopeInput = row.findAll(".mp-key-form input[type=text]").at(-1)!;
-    await scopeInput.setValue("org:acme");
-    await row.find(".mp-key-form button").trigger("click");
-    await flushPromises();
-    await nextTick();
-
-    expect(key.calls).toHaveLength(1);
-    expect(JSON.parse(key.calls![0].opts!.body as string)).toEqual({
-      key: "ghp-pasted",
-      scope: "org:acme",
-    });
-    expect(wrapper.findAll(".mp-row")[8].find(".mp-key-form").exists()).toBe(false);
-  });
-
-  it("keeps the unrecognized-shape error pointing at the dashboard", async () => {
-    stubFetch([
-      providersRoute(providersFixture([{ hasKey: true }, , , , , , , , { hasKey: true }])),
-      openrouterUsageRoute({
-        kind: "openrouter",
-        credits: null,
-        creditsError: null,
-        key: null,
-        keyError: null,
-      }),
-      goUsageRoute({ kind: "opencode-go", windows: [], unrecognized: true }),
-      copilotUsageRoute({
-        kind: "github-copilot",
-        scope: { kind: "personal", slug: null },
-        periodLabel: "this period",
-        user: null,
-        rows: [],
-        unrecognized: true,
-      }),
-    ]);
-    const wrapper = mount(ModelProvidersPanel);
-    await flushPromises();
-    await nextTick();
-
-    const row = wrapper.findAll(".mp-row")[8];
-    expect(row.text()).toContain("format this build doesn't recognize");
-    expect(row.find(".mp-part-error a").attributes("href")).toBe(
+    expect(row.text()).toContain("GitHub Copilot");
+    // Link-out affordances: pill, external link to the Copilot settings page,
+    // and copy explaining GitHub's lack of a public personal billing API.
+    expect(row.find(".pill-link").text()).toBe("no live data");
+    expect(row.find(".mp-dash-link").attributes("href")).toBe(
       "https://github.com/settings/copilot",
     );
+    expect(row.text()).toContain("no public API");
+    expect(row.text()).toContain("Copilot settings");
+    // No credential collection, no scope field, no usage widgets.
+    expect(row.find(".mp-key-form").exists()).toBe(false);
+    expect(row.find("input").exists()).toBe(false);
+    expect(row.findAll("button").length).toBe(0);
+    expect(row.text()).not.toContain("Replace key");
   });
 });
