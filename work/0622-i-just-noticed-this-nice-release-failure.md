@@ -111,3 +111,4 @@ I just noticed this nice release failure section, but it's hidden below the fold
 - 2026-10-02T08:59:57Z · status active→review
 - 2026-10-02T08:59:58Z · status review→active
 - 2026-10-02T09:03:50Z · status active→review
+- 2026-10-02T09:03:50Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
