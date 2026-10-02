@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-02T00:33:24Z"
+review_passes: 1
 id: "0620"
 title: Remove unimplemented harnesses and deprecated column from Agents
 type: chore
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/remove-unimplemented-harnesses-and-depre
 created_at: "2026-10-02T00:22:00Z"
-updated_at: "2026-10-02T00:32:40Z"
 ---
 ## Problem
 
@@ -78,3 +79,4 @@ Now that we have 10 functional coding harnesses let's remove Gemini, Aider and G
 - 2026-10-02T00:24:50Z · status ready→active, branch
 - 2026-10-02T00:28:25Z · body: section Shots
 - 2026-10-02T00:32:40Z · status active→review
+
