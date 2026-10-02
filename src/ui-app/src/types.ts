@@ -1,6 +1,7 @@
 /** API-facing types for the RepoOS web UI. Mirrors src/core/types.ts. */
 
 import type { RepoCommit } from "../../core/repo-log.js";
+import type { Input } from "../../core/input.js";
 
 export type Status = "draft" | "inbox" | "ready" | "active" | "review" | "done";
 
@@ -554,6 +555,9 @@ export interface BoardUsageStats {
 
 export type RepoEvent =
   | { type: "hello"; taskCount: number; at: string }
+  /** Background PM enrichment of a new input finished (#0628): carries the
+   *  enriched input so open views swap the raw first-line title in place. */
+  | { type: "input.enriched"; id: string; input: Input; at: string }
   | { type: "index.rebuilt"; taskCount: number; at: string }
   /** Repo root checkout git state for the sidebar row (#0584). The server
    *  emits this only when the computed state actually differs. */
