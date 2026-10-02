@@ -2,14 +2,14 @@
 id: "0622"
 title: Promote release failures above published-to and show loading state
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/promote-release-failures-above-published
 created_at: "2026-10-02T01:48:25Z"
-updated_at: "2026-10-02T02:44:33Z"
+updated_at: "2026-10-02T02:44:52Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -81,3 +81,4 @@ I just noticed this nice release failure section, but it's hidden below the fold
 - 2026-10-02T02:31:23Z · status review→active
 - 2026-10-02T02:33:26Z · needs_input (review-rounds-exhausted) dismissed by hello@repoos.org
 - 2026-10-02T02:44:33Z · body: section Shots
+- 2026-10-02T02:44:52Z · status active→review
