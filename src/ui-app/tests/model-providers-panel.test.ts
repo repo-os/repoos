@@ -34,7 +34,7 @@ function providersFixture(over: Partial<ModelProvidersResponse["providers"][numb
       id: "cursor",
       label: "Cursor",
       kind: "link",
-      dashboardUrl: "https://cursor.com/dashboard",
+      dashboardUrl: "https://cursor.com/dashboard/spending",
       note: "Usage and allowance live in Cursor’s Spending dashboard.",
       hasKey: false,
     },
@@ -51,7 +51,7 @@ function providersFixture(over: Partial<ModelProvidersResponse["providers"][numb
       label: "DeepInfra",
       kind: "link",
       dashboardUrl: "https://deepinfra.com/dash/billing",
-      note: "No public billing/usage API.",
+      note: "Live integration pending.",
       hasKey: false,
     },
     {
@@ -180,7 +180,7 @@ describe("ModelProvidersPanel — row rendering", () => {
       expect(link.attributes("rel")).toContain("noopener");
       expect((rows[i].element as HTMLElement).textContent).toContain("Open dashboard ↗");
       expect(rows[i].find(".mp-key-form").exists()).toBe(false);
-      expect(rows[i].find(".pill-link").text()).toBe("dashboard only");
+      expect(rows[i].find(".pill-link").text()).toBe("no live data");
     }
   });
 
