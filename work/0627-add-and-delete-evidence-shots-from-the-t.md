@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/add-and-delete-evidence-shots-from-the-t
 created_at: "2026-10-02T11:41:24Z"
-updated_at: "2026-10-02T18:22:41Z"
+updated_at: "2026-10-02T19:09:31Z"
 ---
 ## Problem
 Evidence shots are only declared by the engineer (via `repoos update --shots`) and captured automatically at handoff. When a reviewer or the human sees a missing or wrong screenshot (#0625: a stale blind `/` capture blocked the corrected one), the only fixes are the CLI or deleting files under `work/.attachments/<id>/shots/` by hand. There is no UI to add a shot, and no way at all to remove a wrong one.
@@ -37,8 +37,49 @@ In the task drawer's Changes / UI changes section:
 - Steps repeater is the fiddly part; keep v1 to the four existing step kinds. Out of scope for v1: a live selector tester and a click-to-pick element picker.
 - Never run `repoos serve` yourself; do not request a preview unless the human asks. Rebuild UI after changes (`bun run build:ui`).
 
+## Shots
+```json
+[
+  {
+    "label": "UI changes section with Add shot and per-shot delete",
+    "target": "default",
+    "route": "/work?task=0627",
+    "highlight": ".ui-changes",
+    "steps": [
+      {
+        "click": "[data-test-id=task-tab-changes]"
+      },
+      {
+        "waitMs": 400
+      }
+    ]
+  },
+  {
+    "label": "Add-shot modal open over the UI changes section",
+    "target": "default",
+    "route": "/work?task=0627",
+    "highlight": ".add-shot-modal",
+    "steps": [
+      {
+        "click": "[data-test-id=task-tab-changes]"
+      },
+      {
+        "waitMs": 400
+      },
+      {
+        "click": "[data-test-id=add-shot]"
+      },
+      {
+        "waitMs": 400
+      }
+    ]
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-02T11:41:24Z · created · unknown
 - 2026-10-02T18:20:44Z · status inbox→ready
 - 2026-10-02T18:22:41Z · status ready→active, branch
+- 2026-10-02T19:09:31Z · body: section Shots
