@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-02T19:51:42Z"
-review_passes: 3
 id: "0627"
 title: Add and delete evidence shots from the task drawer
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
@@ -14,6 +12,8 @@ assigned_to: ai
 created_by: ""
 branch: feat/add-and-delete-evidence-shots-from-the-t
 created_at: "2026-10-02T11:41:24Z"
+updated_at: "2026-10-02T23:42:00Z"
+review_passes: 3
 review_rounds: 2
 ---
 ## Problem
@@ -94,4 +94,4 @@ In the task drawer's Changes / UI changes section:
 - 2026-10-02T19:39:23Z · status review→active
 - 2026-10-02T19:49:49Z · status active→review
 - 2026-10-02T19:51:42Z · needs_input
-
+- 2026-10-02T23:42:00Z · status review→active
