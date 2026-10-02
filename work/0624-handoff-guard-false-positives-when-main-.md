@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/handoff-guard-false-positives-when-main-
 created_at: "2026-10-02T06:09:14Z"
-updated_at: "2026-10-02T07:41:22Z"
+updated_at: "2026-10-02T07:47:10Z"
 review_passes: 4
 review_rounds: 2
 ---
@@ -57,3 +57,5 @@ Related: #0600 (bookkeeping-only drift, uses isAncestor and pathsChangedBetweenC
 - 2026-10-02T07:31:38Z · needs_input
 - 2026-10-02T07:41:22Z · status review→active
 - 2026-10-02T07:41:22Z · note: interactive session: fixing round-4 review bug (ls-tree pathspec metacharacters)
+- 2026-10-02T07:47:10Z · status active→review
+- 2026-10-02T07:47:10Z · status review→active
