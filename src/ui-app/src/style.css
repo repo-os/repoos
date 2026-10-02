@@ -4246,6 +4246,16 @@
   color: var(--txt);
   min-width: 0;
 }
+.done-error-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.done-error-row .done-error-toggle {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+}
 .done-error-toggle {
   display: flex;
   align-items: flex-start;

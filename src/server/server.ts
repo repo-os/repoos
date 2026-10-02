@@ -276,6 +276,7 @@ import {
   getDailyTotals,
   getDiffStatsForTask,
   getDiffForTask,
+  getMergeConflictForTask,
   getWorktreeDirtyForTask,
   getTaskFile,
   taskAction,
@@ -2542,6 +2543,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", /^\/api\/tasks\/([^/]+)\/stats$/, getTaskStats);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/diff-stats$/, getDiffStatsForTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/diff$/, getDiffForTask);
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/merge-conflict$/, getMergeConflictForTask);
   // Uncommitted files in a task's worktree — fetched by the restart dialog so
   // "Start clean" can name what it would discard (#0512).
   router.register("GET", /^\/api\/tasks\/([^/]+)\/worktree-dirty$/, getWorktreeDirtyForTask);

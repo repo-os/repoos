@@ -101,6 +101,7 @@ import type { UsageRange } from "../../core/db.js";
 import { buildIntegrationSnapshot } from "../integration-status.js";
 import { resolvePipelineCheckPlan } from "../check-plan-info.js";
 import { loadDiffSnapshot } from "../diff-snapshot.js";
+import { computeMergeConflict } from "../merge-conflict.js";
 import { previewTargetOptions, type PreviewTargetOption } from "../preview.js";
 import { assessTaskUnderspecified } from "../../core/task-underspecified.js";
 import {
@@ -2253,6 +2254,9 @@ export const getIntegrationJobs: RouteHandler = (ctx, _req, res) => {
       startedAt: job.startedAt,
       reason: job.reason,
       logPath: job.logPath,
+      failedPhase: job.failedPhase,
+      failedAt: job.failedAt,
+      debugTldr: job.debugTldr,
       queuePosition: idx,
     })),
     queueLength: allJobs.length,
@@ -2542,6 +2546,27 @@ export const getDiffForTask: RouteHandler = async (ctx, _req, res, params) => {
   }
   const diff = await getDiff(worktreePath, "main");
   return json(res, 200, { ok: true, diff });
+};
+
+/**
+ * The task branch's live merge conflict against main, as a diff-shaped patch
+ * the Debug tab's "Merge conflict" view renders (empty once resolved).
+ */
+export const getMergeConflictForTask: RouteHandler = async (ctx, _req, res, params) => {
+  const { index, config } = ctx;
+  const task = index.getTask(params.param1);
+  if (!task) return json(res, 404, { error: `Task #${params.param1} not found` });
+  if (!task.branch) {
+    return json(res, 200, {
+      ok: true,
+      conflict: { ok: true, conflicted: false, patch: "", files: [], truncated: false },
+    });
+  }
+  // Task bookkeeping under `work/` is auto-resolved by close-out, never a real conflict.
+  const conflict = await computeMergeConflict(config.root, task.branch, {
+    ignorePrefixes: [`${config.workDir}/`],
+  });
+  return json(res, 200, { ok: true, conflict });
 };
 
 /** Return one file's committed contents from the task's before/after revisions. */
