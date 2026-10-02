@@ -61,12 +61,6 @@ export interface KnownAgent {
   authCheckArgs?: string[];
   /** One-line capability note shown in the Agents UI. */
   capability?: string;
-  /** Legacy tooling that remains visible but must not be offered for new assignments. */
-  deprecated?: boolean;
-  /** Official migration/install documentation for a deprecated tool. */
-  migrationUrl?: string;
-  /** Short caveat shown alongside deprecated tooling. */
-  migrationNote?: string;
 }
 
 /** One discovered binary for an agent (when multiple copies exist on PATH). */
@@ -152,37 +146,12 @@ export const KNOWN_AGENTS: KnownAgent[] = [
     installHint: "npm i -g @openai/codex",
   },
   {
-    id: "gemini",
-    name: "gemini",
-    binary: "gemini",
-    drivable: false,
-    installHint: "Use Antigravity CLI (agy) instead.",
-    deprecated: true,
-    migrationUrl: "https://antigravity.google/docs/cli/gcli-migration/",
-    migrationNote: "Enterprise and paid API-key Gemini CLI users may still have access.",
-  },
-  {
     id: "copilot",
     name: "github copilot",
     cli: "github copilot",
     binary: "copilot",
     drivable: true,
     installHint: "npm i -g @github/copilot",
-  },
-  {
-    id: "aider",
-    name: "aider",
-    binary: "aider",
-    drivable: false,
-    installHint: "pipx install aider-chat",
-  },
-  {
-    id: "goose",
-    name: "goose",
-    binary: "goose",
-    drivable: false,
-    installHint:
-      "curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | bash",
   },
   {
     id: "antigravity",

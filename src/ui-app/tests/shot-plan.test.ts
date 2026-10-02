@@ -277,12 +277,12 @@ describe("buildCapturePlan", () => {
       ["default"],
       [
         { route: "/agents", highlight: ".detect-row", label: "Row" },
-        { route: "/agents", highlight: ".detect-deprecated-slot", label: "Slot" },
+        { route: "/agents", highlight: ".detect-compat-slot", label: "Slot" },
       ],
     );
     expect(entries).toHaveLength(1);
-    expect(entries[0].highlight).toBe(".detect-row, .detect-deprecated-slot");
-    expect(entries[0].highlights).toEqual([".detect-row", ".detect-deprecated-slot"]);
+    expect(entries[0].highlight).toBe(".detect-row, .detect-compat-slot");
+    expect(entries[0].highlights).toEqual([".detect-row", ".detect-compat-slot"]);
     expect(collapsed).toEqual(["Slot"]);
   });
 
