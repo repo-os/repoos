@@ -227,49 +227,106 @@ export function formatWorktreeHandoffFailure(
 }
 
 /**
- * Blob id at `<ref>:<path>`, or null when the path does not exist there.
- * Absent on both sides compares equal (a main-sync deletion).
+ * Mode + type + blob id of the entry at `<ref>:<path>` (e.g.
+ * `"100644 blob abc…"`), `null` when the path does not exist there, or
+ * `{ ok: false }` when git could not answer (fail closed downstream).
  */
-async function blobIdAt(wt: string, ref: string, path: string): Promise<string | null> {
-  const res = await runGit(wt, ["rev-parse", "--verify", `${ref}:${path}`], 10_000);
-  return res.status === 0 ? res.stdout.trim() : null;
+async function treeEntry(
+  wt: string,
+  ref: string,
+  path: string,
+): Promise<{ ok: false } | { ok: true; entry: string | null }> {
+  const res = await runGit(wt, ["ls-tree", ref, "--", path], 10_000);
+  if (res.status !== 0) return { ok: false };
+  const line = res.stdout
+    .split("\n")
+    .map((s) => s.trim())
+    .find(Boolean);
+  if (!line) return { ok: true, entry: null };
+  const meta = (line.split("\t")[0] ?? "").trim().split(/\s+/);
+  return { ok: true, entry: meta.length >= 3 ? meta.slice(0, 3).join(" ") : null };
+}
+
+/** Entries at `<ref>:<path>` carry the same mode, type and blob id. */
+async function treeEntryEquals(wt: string, a: string, b: string, path: string): Promise<boolean> {
+  const ea = await treeEntry(wt, a, path);
+  const eb = await treeEntry(wt, b, path);
+  if (!ea.ok || !eb.ok) return false;
+  return ea.entry === eb.entry;
+}
+
+/** Repo-relative paths a commit (tree diff between two commits) changes. */
+async function commitChangedPaths(wt: string, from: string, to: string): Promise<string[] | null> {
+  const res = await runGit(
+    wt,
+    ["-c", "core.quotepath=false", "diff-tree", "-r", "--no-renames", "--name-only", from, to],
+    15_000,
+  );
+  if (res.status !== 0) return null;
+  return res.stdout
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
 }
 
 /**
- * True when the drift between the handoff SHA and HEAD adds nothing beyond
- * what main already contains (#0624) — e.g. a conflict-free merge of main
- * into the task branch while the task sat in review. For every
- * non-bookkeeping drift path, both of these must hold:
+ * True when the commits between the handoff SHA and HEAD are all either
+ * bookkeeping-only (#0600) or main-sync merges (#0624) — e.g. a conflict-free
+ * merge of main into the task branch while the task sat in review. Checked
+ * per commit, structurally, so it survives main moving on after the sync:
  *
- * 1. HEAD carries exactly main's content for the path — the drift introduced
- *    no content that is not main's (so a merge whose conflict resolution went
- *    anywhere other than main's content fails, as does any author edit).
- * 2. The handoff snapshot carried exactly the merge-base's content for the
- *    path — the task had not modified it relative to where it and main
- *    diverged. Without this half, drift that DELETES task content main never
- *    had (e.g. a source file renamed into `work/*.md`) would pass, because
- *    absent-at-HEAD equals absent-at-main.
+ * - A non-merge commit is allowed only when every path it changes is task
+ *   bookkeeping. Any source path — including a mode-only change (chmod +x,
+ *   file → symlink) — is a real post-handoff edit.
+ * - A two-parent merge is allowed only when its non-first parent is an
+ *   ancestor of main, AND every non-bookkeeping path in its first-parent diff
+ *   carries exactly the main parent's mode and blob content (the merge took
+ *   main's side verbatim; a conflict resolution that went anywhere else, and
+ *   a merge of a branch main never contained, fail).
+ * - Octopus merges (>2 parents) fail closed.
  *
- * This is a tree-level check that subsumes the merge-commit shape (non-first
- * parents being ancestors of main): cherry-picks or rebases of already-landed
- * main commits pass for the same reason. Fails closed when `main` or the
- * merge base is unreadable.
+ * Commits already contained in main are skipped entirely: they are
+ * already-landed content the sync merge merely imported, and they are ordinary
+ * source commits that would otherwise look like post-handoff edits.
+ * The content comparison is against the merge's own main parent, not main's
+ * current tip, so main advancing after a valid sync merge does not re-trip the
+ * guard; ancestry of that parent is what makes the imported content safe.
+ * Fails closed when git cannot answer any step.
  */
 async function isMainSyncDrift(
   wt: string,
   expectedSha: string,
   actualHead: string,
-  driftPaths: string[],
   filter: WorkFileFilter,
 ): Promise<boolean> {
-  const nonBookkeeping = driftPaths.filter((p) => !isTaskBookkeepingPath(p, filter));
-  if (nonBookkeeping.length === 0) return true;
-  const baseRes = await runGit(wt, ["merge-base", expectedSha, "main"], 10_000);
-  if (baseRes.status !== 0) return false;
-  const base = baseRes.stdout.trim();
-  for (const p of nonBookkeeping) {
-    if ((await blobIdAt(wt, actualHead, p)) !== (await blobIdAt(wt, "main", p))) return false;
-    if ((await blobIdAt(wt, expectedSha, p)) !== (await blobIdAt(wt, base, p))) return false;
+  // Task-side commits only: reachable from HEAD since the handoff, but not
+  // already in main (the imported side of a sync merge lives in main).
+  const list = await runGit(
+    wt,
+    ["rev-list", "--parents", actualHead, `^${expectedSha}`, "^main"],
+    15_000,
+  );
+  if (list.status !== 0) return false;
+  const commits = list.stdout
+    .split("\n")
+    .map((line) => line.trim().split(/\s+/))
+    .filter((parts) => parts.length > 0 && parts[0] !== "");
+  for (const [sha, ...parents] of commits) {
+    if (parents.length >= 2) {
+      // Octopus merges have no single "main side" to verify against.
+      if (parents.length > 2) return false;
+      if (isAncestor(wt, parents[1], "main") !== true) return false;
+      const changed = await commitChangedPaths(wt, parents[0], sha);
+      if (changed === null) return false;
+      for (const p of changed) {
+        if (isTaskBookkeepingPath(p, filter)) continue;
+        if (!(await treeEntryEquals(wt, sha, parents[1], p))) return false;
+      }
+    } else {
+      const changed = await commitChangedPaths(wt, `${sha}^`, sha);
+      if (changed === null) return false;
+      if (!changed.every((p) => isTaskBookkeepingPath(p, filter))) return false;
+    }
   }
   return true;
 }
@@ -326,9 +383,9 @@ export async function verifyWorktreeHandoffIntegrity(
         }
         // A conflict-free merge of main into the branch while the task is in
         // review (#0624) is not implementation drift: close-out merges main
-        // into a fresh candidate anyway. Allow it when the drift adds nothing
-        // beyond what main already contains.
-        if (await isMainSyncDrift(wt, expectedSha, actualHead, driftPaths, filter)) {
+        // into a fresh candidate anyway. Allow it when the drift is
+        // bookkeeping-only or made of verified main-sync merges.
+        if (await isMainSyncDrift(wt, expectedSha, actualHead, filter)) {
           return { ok: true };
         }
       }

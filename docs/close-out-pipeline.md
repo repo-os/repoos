@@ -128,11 +128,13 @@ that touch only `work/*.md` task files (RepoOS bookkeeping on the task branch, o
 count as implementation drift. Mixed drift (any source path, or a dirty non-bookkeeping
 tree) still fails. **Exception (#0624):** a conflict-free merge of main into the task
 branch while it is in review does not count either — the guard tolerates HEAD drift when
-every non-bookkeeping path the drift touched carries exactly main's content at HEAD AND
-the handoff snapshot carried exactly the merge-base's content for that path, so the
-drift neither adds content beyond main nor deletes task content main never had. A sync
-merge whose conflict resolution went anywhere other than main's content, a post-handoff
-source edit, or drift that removes task content all still fail. The same check runs again at the start of `syncing` and immediately
+every task-side commit since handoff is either bookkeeping-only, or a two-parent merge
+of a main ancestor that took main's side verbatim: the merge's non-first parent must be
+an ancestor of main, and every non-bookkeeping path in its first-parent diff must match
+that main parent's mode and content exactly (commits already contained in main are
+skipped). A post-handoff source edit — including a mode-only change — a conflict
+resolution that went anywhere other than main's content, a merge of a branch main never
+contained, or drift that removes task content all still fail. The same check runs again at the start of `syncing` and immediately
 before publish; a change mid-close-out aborts before main is mutated and leaves the task
 in `review` with a failed job reason.
 
