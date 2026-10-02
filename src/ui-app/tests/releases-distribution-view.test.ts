@@ -467,4 +467,83 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
     ).toBeTruthy();
     wrapper.unmount();
   });
+
+  it("drops a pre-retry poll that resolves after the retry's run is accepted", async () => {
+    // The review finding on #0622: the poll issued before Publish is clicked
+    // (here the mount poll) can resolve after the retry's POST returns. The
+    // seq guard only orders polls against each other — nothing invalidated a
+    // poll on retry — so the stale response would otherwise overwrite the
+    // retry's running run with the prior failure, clear the releasing flag,
+    // and stop polling, leaving the retry's own outcome unobserved.
+    let resolveStalePoll: ((v: Record<string, unknown>) => void) | undefined;
+    api.mockImplementation((path: string, opts?: { method?: string }) => {
+      if (path === "/api/release" && opts?.method === "POST") {
+        return Promise.resolve({
+          run: {
+            state: "running",
+            phase: "checking",
+            message: "Running checks…",
+            startedAt: "2026-10-01T02:00:00Z",
+            updatedAt: "2026-10-01T02:00:10Z",
+          },
+        });
+      }
+      if (path === "/api/release") return Promise.resolve(releaseStatus());
+      if (path === "/api/release/distribution")
+        return Promise.resolve({
+          releaseVersion: "1.2.3",
+          releaseTag: "v1.2.3",
+          channels: [channel()],
+        });
+      if (path === "/api/release/run") {
+        // The mount poll hangs — it is still in flight when Publish is
+        // clicked; every later poll reports the retry's success.
+        if (!resolveStalePoll)
+          return new Promise<Record<string, unknown>>((resolve) => {
+            resolveStalePoll = resolve;
+          });
+        return Promise.resolve({
+          state: "succeeded",
+          phase: "pushing_tag",
+          message: "Released v1.2.4",
+          startedAt: "2026-10-01T02:00:00Z",
+          updatedAt: "2026-10-01T02:03:00Z",
+        });
+      }
+      return Promise.reject(new Error(`unexpected ${path}`));
+    });
+    const wrapper = await mountView();
+    expect(resolveStalePoll).toBeDefined();
+
+    // Publish while the stale poll is still in flight.
+    button(document.body, "Cut next release")!.click();
+    await flushPromises();
+    const input = document.querySelector<HTMLInputElement>("#rel-version")!;
+    input.value = "1.2.4";
+    input.dispatchEvent(new Event("input"));
+    await flushPromises();
+    const publish = [...document.body.querySelectorAll("button")].find((b) =>
+      b.textContent?.trim().startsWith("Publish"),
+    )!;
+    publish.click();
+    await flushPromises();
+
+    // The retry's run was accepted: the dialog shows the release in progress.
+    expect(document.querySelector(".release-progress")).not.toBeNull();
+    // The stale pre-retry poll now lands with the prior failure — it must be
+    // dropped instead of replacing the running state, clearing the releasing
+    // flag, and stopping the poll loop.
+    resolveStalePoll?.(failedRun);
+    await flushPromises();
+    expect(document.querySelector(".release-progress")).not.toBeNull();
+    expect(document.querySelector(".release-modal-error"))!.toBeNull();
+
+    // Polling continued: the retry's own success is observed and applied.
+    await vi.advanceTimersByTimeAsync(1000);
+    await flushPromises();
+    const ok = wrapper.find(".rel-outcome--ok");
+    expect(ok.exists()).toBe(true);
+    expect(ok.text()).toContain("Released v1.2.4");
+    wrapper.unmount();
+  });
 });

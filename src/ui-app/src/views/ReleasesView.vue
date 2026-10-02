@@ -540,6 +540,12 @@ async function release(): Promise<void> {
   dropNotesRun();
   debuggerSent.value = false;
   debuggerErr.value = "";
+  // Invalidate every poll already in flight for the previous run. A stale
+  // pre-retry response landing after this POST accepts would otherwise
+  // overwrite the new running state with the prior terminal run, clear the
+  // releasing flag, and stop the poll loop before this attempt's own outcome
+  // is ever observed (review finding on #0622).
+  runPollSeq++;
   try {
     const result = await api<{ run: ReleaseRun }>(
       "/api/release",
@@ -550,6 +556,12 @@ async function release(): Promise<void> {
       }),
     );
     run.value = result.run;
+    // Re-assert the releasing flag (kept only when the returned run is still
+    // in flight) and drop polls issued while the POST was in flight — they
+    // raced the run's creation server-side and may carry the previous run's
+    // snapshot. Polls issued after this point see the new run.
+    running.value = result.run.state === "running";
+    runPollSeq++;
     startPolling();
   } catch (err) {
     // The attempt died before a run was created (e.g. the push was rejected):
