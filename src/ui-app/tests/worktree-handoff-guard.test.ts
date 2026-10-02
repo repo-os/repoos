@@ -294,6 +294,96 @@ describe("worktree handoff guard (#0598)", () => {
     }
   });
 
+  it("still fails when a post-handoff commit changes only a file mode (#0624 review)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      writeFileSync(join(root, "f.txt"), "base\n");
+      git(root, ["add", "f.txt"]);
+      git(root, ["commit", "-m", "base"]);
+      const branch = "feat/mode-change";
+      const wt = ensureWorktree(root, branch);
+      writeFileSync(join(wt.path, "impl.txt"), "work\n");
+      git(wt.path, ["add", "impl.txt"]);
+      git(wt.path, ["commit", "-m", "handoff"]);
+      const sha = git(wt.path, ["rev-parse", "HEAD"]);
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+
+      // Content is untouched; only the mode flips.
+      git(wt.path, ["update-index", "--chmod=+x", "f.txt"]);
+      git(wt.path, ["commit", "-m", "chmod +x"]);
+
+      const check = await verifyWorktreeHandoffIntegrity(config, branch, sha);
+      expect(check.ok).toBe(false);
+      expect(check.headMoved).toBe(true);
+      expect(check.reason).toContain(WORKTREE_CHANGED_AFTER_HANDOFF_PREFIX);
+    } finally {
+      clean();
+    }
+  });
+
+  it("allows a sync merge whose main parent predates a later main advance (#0624 review)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      writeFileSync(join(root, "f.txt"), "base\n");
+      git(root, ["add", "f.txt"]);
+      git(root, ["commit", "-m", "base"]);
+      const branch = "feat/main-advanced";
+      const wt = ensureWorktree(root, branch);
+      writeFileSync(join(wt.path, "impl.txt"), "work\n");
+      git(wt.path, ["add", "impl.txt"]);
+      git(wt.path, ["commit", "-m", "handoff"]);
+      const sha = git(wt.path, ["rev-parse", "HEAD"]);
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+
+      // Main advances, the branch syncs it, and THEN main advances again on
+      // the same path — the merge parent is still an ancestor of main.
+      writeFileSync(join(root, "f.txt"), "base\n// main tweak\n");
+      git(root, ["add", "f.txt"]);
+      git(root, ["commit", "-m", "main advance"]);
+      git(wt.path, ["merge", "main", "-m", "merge main into feat/main-advanced"]);
+      writeFileSync(join(root, "f.txt"), "base\n// later main advance\n");
+      git(root, ["add", "f.txt"]);
+      git(root, ["commit", "-m", "later main advance"]);
+
+      const check = await verifyWorktreeHandoffIntegrity(config, branch, sha);
+      expect(check.ok).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("still fails when a post-handoff merge brings in a branch main never contained (#0624 review)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      writeFileSync(join(root, "f.txt"), "base\n");
+      git(root, ["add", "f.txt"]);
+      git(root, ["commit", "-m", "base"]);
+      const branch = "feat/side-merge";
+      const wt = ensureWorktree(root, branch);
+      writeFileSync(join(wt.path, "impl.txt"), "work\n");
+      git(wt.path, ["add", "impl.txt"]);
+      git(wt.path, ["commit", "-m", "handoff"]);
+      const sha = git(wt.path, ["rev-parse", "HEAD"]);
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+
+      // A side branch main does not contain; merging it in post-handoff is
+      // real drift even though the merge is conflict-free.
+      git(root, ["checkout", "-b", "side/wip"]);
+      writeFileSync(join(root, "f.txt"), "base\n// side work\n");
+      git(root, ["add", "f.txt"]);
+      git(root, ["commit", "-m", "side work"]);
+      git(root, ["checkout", "main"]);
+      git(wt.path, ["merge", "side/wip", "-m", "merge side/wip into feat/side-merge"]);
+
+      const check = await verifyWorktreeHandoffIntegrity(config, branch, sha);
+      expect(check.ok).toBe(false);
+      expect(check.headMoved).toBe(true);
+      expect(check.reason).toContain(WORKTREE_CHANGED_AFTER_HANDOFF_PREFIX);
+    } finally {
+      clean();
+    }
+  });
+
   it("discard resets the worktree to the handoff commit", async () => {
     const { root, clean } = makeRepo();
     try {
