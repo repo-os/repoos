@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/promote-release-failures-above-published
 created_at: "2026-10-02T01:48:25Z"
-updated_at: "2026-10-02T02:31:23Z"
+updated_at: "2026-10-02T02:31:24Z"
 review_passes: 3
 review_rounds: 2
 ---
