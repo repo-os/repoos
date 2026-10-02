@@ -1,13 +1,17 @@
 /**
- * Component coverage for the Cut a release modal's two #0590 affordances:
+ * Component coverage for the Cut a release panel's two #0590 affordances:
  *
  * - **Cut Next** — an alternative to typing a semver, sitting in the same band
  *   as the version input and its `→ v…` tag preview. It fills the field with
  *   Suggested next so Publish, the tag preview and every validation rule then
  *   behave exactly as if the operator had typed it.
  * - **Cache reuse** — when the server returns stored notes for an unchanged
- *   commit, the modal fills instantly and says why instead of spending a
+ *   commit, the panel fills instantly and says why instead of spending a
  *   minute-plus on the agent again.
+ *
+ * Plus the #0621 side-panel persistence rules: closing the panel never resets
+ * the session state (form fields, run log, live run progress), and the form
+ * is only cleared once a cut succeeds.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
@@ -105,16 +109,19 @@ async function mountView(): Promise<void> {
   await flushPromises();
 }
 
-/** Open the Cut a release modal and hand back its (teleported) content. */
-async function openModal(): Promise<HTMLElement> {
-  const open = button(document.body, "Cut next release") ?? button(document.body, "Cut a release");
-  expect(open, "modal open button").toBeTruthy();
+/** Open the Cut a release panel and hand back its (teleported) content. */
+async function openPanel(): Promise<HTMLElement> {
+  const open =
+    button(document.body, "Cut next release") ??
+    button(document.body, "View progress") ??
+    button(document.body, "Cut a release");
+  expect(open, "panel open button").toBeTruthy();
   expect(open!.disabled, "open button enabled").toBe(false);
   open!.click();
   await flushPromises();
-  const modal = document.body.querySelector<HTMLElement>(".release-modal");
-  expect(modal, "release modal in the DOM").toBeTruthy();
-  return modal!;
+  const panel = document.body.querySelector<HTMLElement>(".release-drawer");
+  expect(panel, "release panel in the DOM").toBeTruthy();
+  return panel!;
 }
 
 beforeEach(() => {
@@ -132,39 +139,39 @@ afterEach(() => {
 describe("Cut Next shortcut (#0590)", () => {
   it("fills Suggested next and enables Publish without typing", async () => {
     await mountView();
-    const modal = await openModal();
-    const input = modal.querySelector<HTMLInputElement>("#rel-version")!;
+    const panel = await openPanel();
+    const input = panel.querySelector<HTMLInputElement>("#rel-version")!;
     expect(input.value).toBe("");
 
-    const publish = button(modal, "Publish")!;
+    const publish = button(panel, "Publish")!;
     expect(publish.disabled, "nothing typed yet").toBe(true);
 
-    button(modal, "Cut Next")!.click();
+    button(panel, "Cut Next")!.click();
     await flushPromises();
 
     expect(input.value).toBe("0.5.59");
-    expect(modal.querySelector(".rel-version-tag")!.textContent).toContain("v0.5.59");
+    expect(panel.querySelector(".rel-version-tag")!.textContent).toContain("v0.5.59");
     expect(publish.textContent).toContain("Publish v0.5.59");
     expect(publish.disabled).toBe(false);
   });
 
   it("keeps manual entry for custom and prerelease versions", async () => {
     await mountView();
-    const modal = await openModal();
-    const input = modal.querySelector<HTMLInputElement>("#rel-version")!;
+    const panel = await openPanel();
+    const input = panel.querySelector<HTMLInputElement>("#rel-version")!;
 
-    // Raw DOM node (the modal is teleported), so drive v-model by hand:
+    // Raw DOM node (the panel is teleported), so drive v-model by hand:
     // assign then dispatch the input event Vue listens for.
     input.value = "1.2.0-rc.1";
     input.dispatchEvent(new Event("input", { bubbles: true }));
     await flushPromises();
 
-    expect(modal.querySelector(".rel-version-tag")!.textContent).toContain("· prerelease");
-    const publish = button(modal, "Publish")!;
+    expect(panel.querySelector(".rel-version-tag")!.textContent).toContain("· prerelease");
+    const publish = button(panel, "Publish")!;
     expect(publish.textContent).toContain("Publish v1.2.0-rc.1");
     expect(publish.disabled).toBe(false);
     // Cut Next is an addition, not a replacement: it never blocks typing.
-    expect(button(modal, "Cut Next")!.disabled).toBe(false);
+    expect(button(panel, "Cut Next")!.disabled).toBe(false);
   });
 
   it("has nothing to cut when no version is suggested", async () => {
@@ -181,30 +188,172 @@ describe("Cut Next shortcut (#0590)", () => {
     );
     wrapper = mount(ReleasesView, { attachTo: document.body });
     await flushPromises();
-    const modal = await openModal();
+    const panel = await openPanel();
 
-    expect(modal.textContent).toContain("Cut a release");
-    expect(button(modal, "Cut Next")!.disabled).toBe(true);
-    expect(button(modal, "Publish")!.disabled).toBe(true);
+    expect(panel.textContent).toContain("Cut a release");
+    expect(button(panel, "Cut Next")!.disabled).toBe(true);
+    expect(button(panel, "Publish")!.disabled).toBe(true);
   });
 
-  it("works again after the modal is closed and reopened", async () => {
+  it("keeps the typed version when the panel is closed and reopened (#0621)", async () => {
     await mountView();
-    let modal = await openModal();
-    button(modal, "Cut Next")!.click();
+    let panel = await openPanel();
+    button(panel, "Cut Next")!.click();
     await flushPromises();
-    expect(modal.querySelector<HTMLInputElement>("#rel-version")!.value).toBe("0.5.59");
+    expect(panel.querySelector<HTMLInputElement>("#rel-version")!.value).toBe("0.5.59");
 
-    button(modal, "Cancel")!.click();
+    button(panel, "Cancel")!.click();
     await flushPromises();
+    expect(document.querySelector(".release-drawer")).toBeNull();
 
-    modal = await openModal();
-    const input = modal.querySelector<HTMLInputElement>("#rel-version")!;
-    expect(input.value, "reopening clears the typed version").toBe("");
-    button(modal, "Cut Next")!.click();
+    panel = await openPanel();
+    const input = panel.querySelector<HTMLInputElement>("#rel-version")!;
+    // Closing is not a reset: the half-filled form survives the round trip.
+    expect(input.value, "reopening keeps the typed version").toBe("0.5.59");
+    expect(button(panel, "Publish")!.disabled).toBe(false);
+    // And the value stays editable exactly as if it had just been typed.
+    button(panel, "Cut Next")!.click();
     await flushPromises();
     expect(input.value).toBe("0.5.59");
-    expect(button(modal, "Publish")!.disabled).toBe(false);
+  });
+
+  it("keeps typed notes across close and reopen (#0621)", async () => {
+    await mountView();
+    let panel = await openPanel();
+    const textarea = panel.querySelector<HTMLTextAreaElement>("#rel-notes")!;
+    textarea.value = "Operator notes in progress";
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    await flushPromises();
+
+    button(panel, "Cancel")!.click();
+    await flushPromises();
+
+    panel = await openPanel();
+    expect(
+      panel.querySelector<HTMLTextAreaElement>("#rel-notes")!.value,
+      "notes survive the close/reopen",
+    ).toBe("Operator notes in progress");
+  });
+
+  it("shows live cut progress again after closing the panel mid-run (#0621)", async () => {
+    let runState: Record<string, unknown> = {
+      state: "running",
+      phase: "checking",
+      message: "Running checks…",
+      startedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    api.mockImplementation((path: string) => {
+      if (path === "/api/release") return Promise.resolve(releaseStatus());
+      if (path === "/api/release/distribution")
+        return Promise.resolve({ channels: [], releaseVersion: null, releaseTag: null });
+      if (path === "/api/release/run") return Promise.resolve(runState);
+      if (path === "/api/release/notes") return Promise.resolve(notesResponse());
+      if (path === "/api/release/notes/run")
+        return Promise.resolve({
+          state: "idle",
+          startedAt: null,
+          updatedAt: null,
+          error: null,
+          key: null,
+          notes: null,
+          sinceTag: null,
+          commitCount: 0,
+          truncated: false,
+        });
+      return Promise.reject(new Error(`unexpected api call: ${path}`));
+    });
+    wrapper = mount(ReleasesView, { attachTo: document.body });
+    await flushPromises();
+
+    // Mid-run the page button doubles as the way back in.
+    let panel = await openPanel();
+    expect(panel.querySelector(".release-progress")?.textContent).toContain("Running checks");
+
+    // Closing mid-run keeps the state; reopening shows the same live run.
+    button(panel, "Close")!.click();
+    await flushPromises();
+    expect(document.querySelector(".release-drawer")).toBeNull();
+
+    runState = { ...runState, phase: "tagging", message: "Pushing the tag…" };
+    panel = await openPanel();
+    expect(panel.querySelector(".release-progress")?.textContent).toContain("Pushing the tag");
+  });
+
+  it("clears the form only after a successful cut, not on close (#0621)", async () => {
+    let runState: Record<string, unknown> = {
+      state: "idle",
+      phase: null,
+      message: "",
+      startedAt: null,
+      updatedAt: null,
+    };
+    api.mockImplementation((path: string, opts?: RequestInit) => {
+      if (path === "/api/release" && opts?.method === "POST") {
+        // The server answers the cut with the run in flight, as it really does.
+        runState = {
+          state: "running",
+          phase: "committing",
+          message: "Committing the release…",
+          startedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        return Promise.resolve({ run: runState });
+      }
+      if (path === "/api/release") return Promise.resolve(releaseStatus());
+      if (path === "/api/release/distribution")
+        return Promise.resolve({ channels: [], releaseVersion: null, releaseTag: null });
+      if (path === "/api/release/run") return Promise.resolve(runState);
+      if (path === "/api/release/notes") return Promise.resolve(notesResponse());
+      if (path === "/api/release/notes/run")
+        return Promise.resolve({
+          state: "idle",
+          startedAt: null,
+          updatedAt: null,
+          error: null,
+          key: null,
+          notes: null,
+          sinceTag: null,
+          commitCount: 0,
+          truncated: false,
+        });
+      return Promise.reject(new Error(`unexpected api call: ${path}`));
+    });
+    wrapper = mount(ReleasesView, { attachTo: document.body });
+    await flushPromises();
+
+    let panel = await openPanel();
+    button(panel, "Cut Next")!.click();
+    await flushPromises();
+    const textarea = panel.querySelector<HTMLTextAreaElement>("#rel-notes")!;
+    textarea.value = "Ship it";
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    await flushPromises();
+
+    button(panel, "Publish v0.5.59")!.click();
+    await flushPromises();
+    // The run started; the panel is still open with live progress (fields
+    // hidden while running), not reset.
+    expect(panel.querySelector(".release-progress")?.textContent).toContain("Committing");
+    expect(panel.querySelector("#rel-version")).toBeNull();
+
+    // A later poll observes the finished run: the panel closes, and the form
+    // resets so the next cut starts fresh.
+    runState = {
+      state: "succeeded",
+      phase: null,
+      message: "Published v0.5.59",
+      startedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await new Promise((r) => setTimeout(r, 1100));
+    await flushPromises();
+    expect(document.querySelector(".release-drawer")).toBeNull();
+
+    panel = await openPanel();
+    // Fresh form for the next cut — this is the one sanctioned reset.
+    expect(panel.querySelector<HTMLInputElement>("#rel-version")!.value).toBe("");
+    expect(panel.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toBe("");
   });
 });
 
@@ -219,16 +368,16 @@ describe("AI release notes cache reuse (#0590)", () => {
     );
     wrapper = mount(ReleasesView, { attachTo: document.body });
     await flushPromises();
-    const modal = await openModal();
+    const panel = await openPanel();
 
-    button(modal, "Generate with AI")!.click();
+    button(panel, "Generate with AI")!.click();
     await flushPromises();
 
-    expect(modal.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toContain("Highlights");
-    const hint = modal.querySelector(".rel-notes-hint");
+    expect(panel.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toContain("Highlights");
+    const hint = panel.querySelector(".rel-notes-hint");
     expect(hint?.textContent ?? "").toContain("Reused saved notes");
     expect(hint?.textContent ?? "").toContain("no new AI run");
-    expect(modal.querySelector(".rel-notes-error")).toBeNull();
+    expect(panel.querySelector(".rel-notes-error")).toBeNull();
   });
 });
 
@@ -305,24 +454,24 @@ describe("AI release notes tracked run (#0605)", () => {
     });
     wrapper = mount(ReleasesView, { attachTo: document.body });
     await flushPromises();
-    const modal = await openModal();
+    const panel = await openPanel();
 
-    button(modal, "Generate with AI")!.click();
+    button(panel, "Generate with AI")!.click();
     await flushPromises();
 
     // The tracked run is in flight: Drafting state on and the poll alive.
-    expect(button(modal, "Drafting…")!.disabled).toBe(true);
-    expect(button(modal, "Publish")!.disabled).toBe(true);
-    expect(modal.querySelector(".rel-notes-drafting")).toBeTruthy();
+    expect(button(panel, "Drafting…")!.disabled).toBe(true);
+    expect(button(panel, "Publish")!.disabled).toBe(true);
+    expect(panel.querySelector(".rel-notes-drafting")).toBeTruthy();
 
     draftingState = succeededRun();
     await vi.advanceTimersByTimeAsync(1000);
     await flushPromises();
 
-    expect(modal.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toContain("Highlights");
-    expect(modal.querySelector(".rel-notes-drafting")).toBeNull();
-    expect(button(modal, "Generate with AI")).toBeTruthy();
-    expect(modal.querySelector(".rel-notes-error")).toBeNull();
+    expect(panel.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toContain("Highlights");
+    expect(panel.querySelector(".rel-notes-drafting")).toBeNull();
+    expect(button(panel, "Generate with AI")).toBeTruthy();
+    expect(panel.querySelector(".rel-notes-error")).toBeNull();
   });
 
   it("reopening mid-run shows Drafting… and picks up the result when it lands", async () => {
@@ -330,27 +479,27 @@ describe("AI release notes tracked run (#0605)", () => {
     apiWithNotesRun({ run: draftingState });
     wrapper = mount(ReleasesView, { attachTo: document.body });
     await flushPromises();
-    let modal = await openModal();
+    let panel = await openPanel();
 
     // Click Generate, close, and reopen while the run is still going. (The
     // GET already reported a run in flight on mount, so the button reads
     // "Drafting…" from the start — that's the reopen pickup doing its job.)
-    button(modal, "Drafting…")!.click();
+    button(panel, "Drafting…")!.click();
     await flushPromises();
     button(document.body, "Cancel")!.click();
     await flushPromises();
-    expect(document.querySelector(".release-modal")).toBeNull();
+    expect(document.querySelector(".release-drawer")).toBeNull();
 
-    modal = await openModal();
-    expect(button(modal, "Drafting…")).toBeTruthy();
-    expect(modal.querySelector(".rel-notes-drafting")).toBeTruthy();
-    expect(modal.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toBe("");
+    panel = await openPanel();
+    expect(button(panel, "Drafting…")).toBeTruthy();
+    expect(panel.querySelector(".rel-notes-drafting")).toBeTruthy();
+    expect(panel.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toBe("");
 
     draftingState = succeededRun();
     await vi.advanceTimersByTimeAsync(1000);
     await flushPromises();
 
-    expect(modal.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toContain("Highlights");
+    expect(panel.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toContain("Highlights");
   });
 
   it("never backfills from a finished run this session did not watch", async () => {
@@ -360,30 +509,30 @@ describe("AI release notes tracked run (#0605)", () => {
     apiWithNotesRun({ run: runningRun() });
     wrapper = mount(ReleasesView, { attachTo: document.body });
     await flushPromises();
-    const modal = await openModal();
+    const panel = await openPanel();
 
-    expect(modal.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toBe("");
-    expect(button(modal, "Generate with AI")).toBeTruthy();
-    expect(button(modal, "Drafting…")).toBeUndefined();
-    expect(modal.querySelector(".rel-notes-drafting")).toBeNull();
+    expect(panel.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toBe("");
+    expect(button(panel, "Generate with AI")).toBeTruthy();
+    expect(button(panel, "Drafting…")).toBeUndefined();
+    expect(panel.querySelector(".rel-notes-drafting")).toBeNull();
   });
 
   it("surfaces the run's failure on the field instead of a silent nothing", async () => {
     apiWithNotesRun({ run: runningRun() });
     wrapper = mount(ReleasesView, { attachTo: document.body });
     await flushPromises();
-    const modal = await openModal();
+    const panel = await openPanel();
 
-    button(modal, "Generate with AI")!.click();
+    button(panel, "Generate with AI")!.click();
     await flushPromises();
 
     draftingState = { ...idleRun(), state: "failed", error: "The agent returned nothing usable." };
     await vi.advanceTimersByTimeAsync(1000);
     await flushPromises();
 
-    const err = modal.querySelector(".rel-notes-error");
+    const err = panel.querySelector(".rel-notes-error");
     expect(err?.textContent ?? "").toContain("nothing usable");
-    expect(modal.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toBe("");
-    expect(button(modal, "Generate with AI")).toBeTruthy();
+    expect(panel.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toBe("");
+    expect(button(panel, "Generate with AI")).toBeTruthy();
   });
 });
