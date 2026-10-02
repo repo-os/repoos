@@ -2,14 +2,14 @@
 id: "0620"
 title: Remove unimplemented harnesses and deprecated column from Agents
 type: chore
-status: inbox
+status: ready
 priority: p2
 area: [web, ui]
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-02T00:22:00Z"
-updated_at: "2026-10-02T00:22:36Z"
+updated_at: "2026-10-02T00:24:48Z"
 ---
 ## Problem
 
@@ -69,3 +69,4 @@ Now that we have 10 functional coding harnesses let's remove Gemini, Aider and G
 - 2026-10-02T00:22:00Z · created · hello@repoos.org
 - 2026-10-02T00:22:01Z · screenshots
 - 2026-10-02T00:22:36Z · status draft→inbox, title, area, type, body
+- 2026-10-02T00:24:48Z · status inbox→ready
