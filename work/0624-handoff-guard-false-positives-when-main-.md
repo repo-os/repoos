@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/handoff-guard-false-positives-when-main-
 created_at: "2026-10-02T06:09:14Z"
-updated_at: "2026-10-02T06:25:41Z"
+updated_at: "2026-10-02T06:53:20Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -38,3 +38,4 @@ Related: #0600 (bookkeeping-only drift, uses isAncestor and pathsChangedBetweenC
 - 2026-10-02T06:24:24Z · status active→review
 - 2026-10-02T06:24:25Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
 - 2026-10-02T06:25:41Z · status review→active
+- 2026-10-02T06:53:20Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
