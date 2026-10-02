@@ -75,6 +75,9 @@ export interface AdapterContractOptions {
   workDir?: string;
   /** Per-invocation ceiling; live one-shots can be slow. */
   timeoutMs?: number;
+  /** Model passed to the one-shot and resume runs, for harnesses whose default
+   *  model depends on ambient env/auth (pi). Ignored where no `modelArgs` exists. */
+  model?: string;
 }
 
 interface RunParseResult {
@@ -91,6 +94,8 @@ interface ContractCommandTemplates {
   /** Returns args for model listing, or null when the CLI has no model-listing command. */
   models: () => string[] | null;
   run: (dir: string, prompt: string) => string[];
+  /** Args that select a model, inserted at the front of run/resume argv. */
+  modelArgs?: (model: string) => string[];
   resume: (dir: string, sessionId: string, prompt: string) => string[];
   /** Parse run stdout to extract session id and confirm the harness answered. Defaults to opencode parser. */
   parseRun?: (stdout: string) => RunParseResult;
@@ -609,6 +614,7 @@ const PI_CONTRACT: ContractCommandTemplates = {
   help: () => ["--help"],
   models: () => ["--list-models"],
   run: (_dir, prompt) => ["--mode", "json", prompt],
+  modelArgs: (model) => ["--model", model],
   resume: (_dir, sessionId, prompt) => ["--mode", "json", "--session", sessionId, prompt],
   parseRun: parsePiRun,
   autoPermissions: "mode",
@@ -1051,7 +1057,8 @@ export async function runAdapterContract(
     }
 
     // ── headless one-shot (shared with structured-events + auto) ───────
-    const runArgs = templates.run(workDir, PROBE_PROMPT);
+    const modelArgs = opts.model && templates.modelArgs ? templates.modelArgs(opts.model) : [];
+    const runArgs = [...modelArgs, ...templates.run(workDir, PROBE_PROMPT)];
     const oneShot = await spawnCapture(binary, runArgs, { timeoutMs, cwd: workDir });
 
     // Use per-harness parser if provided, else fall back to opencode parser.
@@ -1148,7 +1155,7 @@ export async function runAdapterContract(
         "no session id found in the one-shot output, so a follow-up could not be started",
       );
     } else {
-      const resumeArgs = templates.resume(workDir, sessionId, PROBE_PROMPT);
+      const resumeArgs = [...modelArgs, ...templates.resume(workDir, sessionId, PROBE_PROMPT)];
       const resume = await spawnCapture(binary, resumeArgs, { timeoutMs, cwd: workDir });
       const resumeParsed = templates.parseRun
         ? templates.parseRun(resume.stdout)

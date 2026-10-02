@@ -143,7 +143,7 @@ server belonging to a different repo.
 One-screen health snapshot: server, build freshness, board counts, worktrees,
 tunnel, and git state.
 
-### `repoos doctor [--json] [--verbose] [--probe <cli>] [--binary <path>]`
+### `repoos doctor [--json] [--verbose] [--probe <cli> [--model <id>]] [--binary <path>]`
 
 A read-only readiness preflight for a real project. It checks the repository
 identity (root, git, linked worktree), parses and validates `repoos.toml`,
@@ -182,7 +182,10 @@ temporary directory, then cleans up. Unlike the default report it starts real
 harness runs, so it **may use provider credentials and spend tokens** (the
 one-shot, resume and cancellation seams each start a run). It refuses to run
 headless without `--yes`, and it never reads task files, prompts or project
-content. See [Coding harness compatibility](./coding-harness-compatibility.md).
+content. `--model <id>` optionally pins the model used for the probe's runs (e.g.
+`--probe pi --model openrouter/deepseek/deepseek-v4.1-flash`), for harnesses
+whose default model depends on your environment; it is ignored by harnesses
+that have no model flag. See [Coding harness compatibility](./coding-harness-compatibility.md).
 
 ### `repoos support bundle` / `repoos support inspect`
 

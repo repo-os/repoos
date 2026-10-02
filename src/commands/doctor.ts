@@ -1,5 +1,5 @@
 /**
- * `repoos doctor [--json] [--verbose] [--probe <cli>] [--yes]` — human and
+ * `repoos doctor [--json] [--verbose] [--probe <cli> [--model <id>]] [--yes]` — human and
  * machine rendering of the readiness preflight built in `src/core/doctor.ts`.
  *
  * The command adds no diagnostic logic of its own: it runs the engine, prints
@@ -37,6 +37,8 @@ export interface DoctorCliArgs {
   probe: string | null;
   /** True when `--probe` was given without a value (or before another flag). */
   probeMissingValue: boolean;
+  /** Model for the probe's runs (`--model <id>`), or null for the harness default. */
+  model: string | null;
   /** Explicit binary path for the probe — bypasses PATH resolution. */
   binary: string | null;
 }
@@ -52,15 +54,17 @@ export function parseDoctorArgs(argv: string[]): DoctorCliArgs {
   const yes = argv.includes("--yes");
   const binaryIdx = argv.indexOf("--binary");
   const binary = binaryIdx !== -1 ? (argv[binaryIdx + 1] ?? null) : null;
+  const modelIdx = argv.indexOf("--model");
+  const model = modelIdx !== -1 ? (argv[modelIdx + 1] ?? null) : null;
   const probeArg = argv.indexOf("--probe");
   if (probeArg === -1) {
-    return { json, verbose, yes, probe: null, probeMissingValue: false, binary };
+    return { json, verbose, yes, probe: null, probeMissingValue: false, model, binary };
   }
   const value = argv[probeArg + 1];
   if (!value || value.startsWith("--")) {
-    return { json, verbose, yes, probe: null, probeMissingValue: true, binary };
+    return { json, verbose, yes, probe: null, probeMissingValue: true, model, binary };
   }
-  return { json, verbose, yes, probe: value, probeMissingValue: false, binary };
+  return { json, verbose, yes, probe: value, probeMissingValue: false, model, binary };
 }
 
 function severityColor(severity: DoctorFinding["severity"], text: string): string {
@@ -201,7 +205,7 @@ export function renderDoctor(report: DoctorReport, opts: DoctorRenderOptions = {
   console.log(formatDoctor(report, opts));
 }
 
-/** `repoos doctor [--json] [--verbose] [--probe <cli>] [--yes]` */
+/** `repoos doctor [--json] [--verbose] [--probe <cli> [--model <id>]] [--yes]` */
 export async function cmdDoctor(argv: string[]): Promise<void> {
   const {
     json: asJson,
@@ -209,6 +213,7 @@ export async function cmdDoctor(argv: string[]): Promise<void> {
     probe: probeCli,
     probeMissingValue,
     binary,
+    model,
     verbose,
   } = parseDoctorArgs(argv);
   if (probeMissingValue) {
@@ -217,7 +222,7 @@ export async function cmdDoctor(argv: string[]): Promise<void> {
     return;
   }
   if (probeCli) {
-    await cmdProbe(probeCli, { asJson, yes, binary });
+    await cmdProbe(probeCli, { asJson, yes, binary, model });
     return;
   }
   try {
@@ -243,7 +248,7 @@ export async function cmdDoctor(argv: string[]): Promise<void> {
  */
 async function cmdProbe(
   cli: string,
-  opts: { asJson: boolean; yes: boolean; binary: string | null },
+  opts: { asJson: boolean; yes: boolean; binary: string | null; model: string | null },
 ): Promise<void> {
   const WARNING = [
     "",
@@ -285,6 +290,7 @@ async function cmdProbe(
       cli,
       mode: "live",
       ...(opts.binary ? { bin: opts.binary } : {}),
+      ...(opts.model ? { model: opts.model } : {}),
     });
     if (opts.asJson) {
       console.log(JSON.stringify(result, null, 2));
