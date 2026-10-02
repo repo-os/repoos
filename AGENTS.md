@@ -162,6 +162,13 @@ has a branchless task record, `/done` has a separate checked release path for
 it: it checks main and records release without a candidate merge. Do not erase
 a task's branch metadata to force that path.
 
+**Caveat: agents never commit to `main` on their own initiative.** Direct commits
+to `main` are allowed only as a hotfix the human explicitly asked for in that
+conversation (e.g. "commit this to main"). Permission for one hotfix does not
+carry over to later changes, and an ambiguous request is a reason to ask, not to
+commit. Without that explicit ask, leave work uncommitted or put it on a task
+branch.
+
 **Historical caution (2026-09-16):** external CLI status writes raced a live
 reviewer, which later reverted a task from `done` to `review`. The old advice
 to avoid that race by skipping review or reissuing `mv done` is not the current
