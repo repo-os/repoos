@@ -57,7 +57,7 @@ export const getModelProviderUsage: RouteHandler = async (ctx, _req, res, params
   if (!row) return json(res, 404, { error: "Unknown model provider." });
   if (row.kind !== "live") {
     return json(res, 400, {
-      error: `${row.label} has no live usage API — it renders as a dashboard link-out.`,
+      error: `${row.label} has no live RepoOS usage integration — it renders as a dashboard link-out.`,
     });
   }
   const apiKey = readProviderKey(ctx.config, row);
@@ -92,7 +92,7 @@ export const setModelProviderKey: RouteHandler = async (ctx, req, res, params) =
   if (!row) return json(res, 404, { error: "Unknown model provider." });
   if (row.kind !== "live" || !row.envVar) {
     return json(res, 400, {
-      error: `${row.label} needs no API key — it renders as a dashboard link-out.`,
+      error: `${row.label} does not support saving an API key in RepoOS yet — it renders as a dashboard link-out.`,
     });
   }
   const body = (await readBody(req)) as { key?: unknown };
