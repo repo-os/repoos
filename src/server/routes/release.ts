@@ -293,6 +293,8 @@ export const runRelease: RouteHandler = async (ctx, req, res) => {
  * Synchronous short-circuits keep their instant responses: no enabled agent
  * (400), nothing release-relevant to summarize (200, empty), and a draft for
  * this exact commit context already on disk (200 + `cached: true`, #0590).
+ * `{ cachedOnly: true }` turns the POST into a pure cache lookup (a miss is
+ * 200 with empty notes), which the panel uses on open.
  * A failure of the *agent run* is not instant — it lands in the run state.
  */
 export const generateReleaseNotes: RouteHandler = async (ctx, req, res) => {
@@ -307,11 +309,15 @@ export const generateReleaseNotes: RouteHandler = async (ctx, req, res) => {
     return json(res, 202, { ok: true, run: notesRun });
   }
 
-  const body = (await readBody(req)) as { version?: unknown };
+  const body = (await readBody(req)) as { version?: unknown; cachedOnly?: unknown };
   const version = typeof body.version === "string" && body.version.trim() ? body.version : null;
+  // Lookup only: the panel asks on open whether a saved draft already exists
+  // for the current commits. A miss answers 200 with empty notes and never
+  // starts an agent run (and needs no enabled agent to do so).
+  const cachedOnly = body.cachedOnly === true;
 
   const agent = releaseNotesAgent(config);
-  if (!agent) {
+  if (!agent && !cachedOnly) {
     return json(res, 400, {
       error: "No agent is enabled to draft release notes — enable the PM or Engineer agent.",
     });
@@ -344,6 +350,10 @@ export const generateReleaseNotes: RouteHandler = async (ctx, req, res) => {
         cachedAt: cached.createdAt || null,
       });
     }
+  }
+
+  if (cachedOnly || !agent) {
+    return json(res, 200, { notes: "", sinceTag, commitCount: relevantShas.length, truncated });
   }
 
   const prompt = releaseNotesPrompt(commits, { sinceTag, version, truncated });

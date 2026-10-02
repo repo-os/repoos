@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useUiStore } from "../stores/ui";
 import { Bug, Check, Copy, Sparkles, X } from "lucide-vue-next";
 import { copyToClipboard } from "../lib/clipboard";
@@ -80,7 +80,27 @@ const loadError = ref("");
 const running = ref(false);
 const ui = useUiStore();
 const confirmOpen = ref(false);
-const newVersion = ref("");
+/**
+ * The version being typed survives a page/app reload (the panel itself already
+ * keeps it across close/reopen, #0621). Cleared once a cut succeeds.
+ */
+const VERSION_STORAGE_KEY = "repoos.release.newVersion";
+function readStoredVersion(): string {
+  try {
+    return localStorage.getItem(VERSION_STORAGE_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+const newVersion = ref(readStoredVersion());
+watch(newVersion, (value) => {
+  try {
+    if (value) localStorage.setItem(VERSION_STORAGE_KEY, value);
+    else localStorage.removeItem(VERSION_STORAGE_KEY);
+  } catch {
+    // Storage unavailable: the field simply won't survive a reload.
+  }
+});
 const message = ref("");
 const error = ref("");
 /** Optional release notes; empty means the cut ships with none (the default). */
@@ -385,7 +405,32 @@ function openConfirm(): void {
   generatingNotes.value = notesRun.value?.state === "running";
   confirmOpen.value = true;
   void syncNotesRunAtOpen();
+  void fillSavedNotes();
   void pollRun();
+}
+
+/**
+ * On open, drop an already-saved AI draft for the current commits into an
+ * empty notes field — no agent run, no click. Never overwrites typing, and a
+ * miss or error is silent (the Generate button still works as before).
+ */
+async function fillSavedNotes(): Promise<void> {
+  if (notes.value.trim() || generatingNotes.value || running.value) return;
+  try {
+    const result = await api<{
+      notes?: string | null;
+      cached?: boolean;
+      cachedAt?: string | null;
+      run?: unknown;
+    }>("/api/release/notes", JSON_OPTS("POST", { cachedOnly: true }));
+    if (result.run || !result.cached || !result.notes?.trim()) return;
+    if (notes.value.trim()) return; // typed while the lookup was in flight
+    notes.value = result.notes;
+    const age = result.cachedAt ? relativeTime(result.cachedAt) : "";
+    notesHint.value = `Reused saved notes${age ? ` (${age})` : ""} — no new AI run.`;
+  } catch {
+    // Best effort only.
+  }
 }
 
 /**
