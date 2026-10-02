@@ -2,7 +2,7 @@
 id: "0623"
 title: Align Remote runners tab rows and document table-like row layout
 type: feature
-status: review
+status: active
 priority: p2
 area: [web, agent]
 assigned_to: ai
@@ -72,3 +72,4 @@ Make the checks > remote runners tab more aligned, now it looks messy due to the
 - 2026-10-02T03:15:42Z · body: section Shots
 - 2026-10-02T03:37:13Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-10-02T03:49:39Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-02T03:49:39Z · status review→active
