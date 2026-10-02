@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-02T02:11:28Z"
+review_passes: 1
 id: "0621"
 title: Convert cut-a-release flow from modal to side panel with persistent progress
 type: feature
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/convert-cut-a-release-flow-from-modal-to
 created_at: "2026-10-02T01:44:49Z"
-updated_at: "2026-10-02T02:10:24Z"
 ---
 ## Problem
 
@@ -78,3 +79,4 @@ The "cut a release" modal on the Releases page is getting big now (lots of conte
 - 2026-10-02T02:04:00Z · body: section Shots
 - 2026-10-02T02:10:13Z · status active→review
 - 2026-10-02T02:10:24Z · note: shots: failed — capture of Cut a release opens as a right-hand side drawer panel (was a centered modal) on "default" failed: click: Timeout 5000ms exceeded.
+
