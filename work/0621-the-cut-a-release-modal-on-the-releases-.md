@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/convert-cut-a-release-flow-from-modal-to
 created_at: "2026-10-02T01:44:49Z"
-updated_at: "2026-10-02T01:53:47Z"
+updated_at: "2026-10-02T02:04:00Z"
 ---
 ## Problem
 
@@ -63,6 +63,11 @@ The "cut a release" modal on the Releases page is getting big now (lots of conte
 
 ![Screenshot-2026-10-02-at-09.42.05](/api/tasks/0621/attachments/screenshot-1.png)
 
+## Shots
+```json
+[{"target": "default", "route": "/releases", "label": "Cut a release opens as a right-hand side drawer panel (was a centered modal)", "highlight": ".release-drawer", "steps": [{"click": "button[data-test-id=\"cut-release-open\"]"}, {"waitMs": 500}]}]
+```
+
 ## Activity
 
 - 2026-10-02T01:44:49Z · created · hello@repoos.org
@@ -70,3 +75,4 @@ The "cut a release" modal on the Releases page is getting big now (lots of conte
 - 2026-10-02T01:45:43Z · status draft→inbox, title, area, body
 - 2026-10-02T01:53:35Z · status inbox→ready
 - 2026-10-02T01:53:47Z · status ready→active, branch
+- 2026-10-02T02:04:00Z · body: section Shots
