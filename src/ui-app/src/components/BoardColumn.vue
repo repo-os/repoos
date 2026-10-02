@@ -234,7 +234,7 @@ async function onDrop(e: DragEvent): Promise<void> {
       // Same as clicking Start work — provisions the worktree/branch and
       // spawns the agent, not a bare status write, so it needs the real
       // action rather than repo.setStatus.
-      const overrideDependencies = confirmDependencyOverride(task.blockedBy);
+      const overrideDependencies = await confirmDependencyOverride(task.blockedBy);
       if (task.blockedBy?.length && !overrideDependencies) return;
       if (task.git?.dirty) {
         restartTask.value = task;
