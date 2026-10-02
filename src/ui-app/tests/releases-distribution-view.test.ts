@@ -183,6 +183,10 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
     updatedAt: "2026-10-01T00:01:00Z",
   };
 
+  function button(root: ParentNode, text: string): HTMLButtonElement | null {
+    return [...root.querySelectorAll("button")].find((b) => b.textContent?.trim() === text) ?? null;
+  }
+
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -221,6 +225,67 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
     const wrapper = await mountView();
 
     expect(wrapper.find(".rel-dist-loading").exists()).toBe(false);
+    expect(wrapper.find(".rel-dist-channels").exists()).toBe(true);
+    expect(wrapper.text()).toContain("npm");
+    wrapper.unmount();
+  });
+
+  it("keeps the promoted failure when the retry dialog is opened and closed", async () => {
+    mockWithRun(failedRun);
+    const wrapper = await mountView();
+    expect(wrapper.find(".rel-outcome--fail").exists()).toBe(true);
+
+    button(document.body, "Cut next release")!.click();
+    await flushPromises();
+    // While the dialog is open the page banner yields to it — but the failure
+    // must not be cleared: the promotion ends only when a release succeeds.
+    expect(wrapper.find(".rel-outcome--fail").exists()).toBe(false);
+    // The dialog's inline error block reports this attempt, not the old one.
+    expect(document.querySelector(".release-modal-error"))!.toBeNull();
+
+    button(document.body, "Cancel")!.click();
+    await flushPromises();
+    expect(wrapper.find(".rel-outcome--fail").exists()).toBe(true);
+    expect(wrapper.text()).toContain("repoos check failed");
+    wrapper.unmount();
+  });
+
+  it("shows the spinner alongside channels during a Check again recheck", async () => {
+    let distributionCalls = 0;
+    api.mockImplementation((path: string) => {
+      if (path === "/api/release") return Promise.resolve(releaseStatus());
+      if (path === "/api/release/distribution") {
+        distributionCalls += 1;
+        // First lookup lands; the recheck never does.
+        return distributionCalls === 1
+          ? Promise.resolve({
+              releaseVersion: "1.2.3",
+              releaseTag: "v1.2.3",
+              channels: [channel()],
+            })
+          : new Promise(() => {});
+      }
+      if (path === "/api/release/run")
+        return Promise.resolve({
+          state: "idle",
+          phase: null,
+          message: "",
+          startedAt: null,
+          updatedAt: null,
+        });
+      return Promise.reject(new Error(`unexpected ${path}`));
+    });
+    const wrapper = await mountView();
+    expect(wrapper.find(".rel-dist-loading").exists()).toBe(false);
+
+    const checkAgain = wrapper
+      .findAll("button")
+      .find((b) => b.text() === "Check again")!
+      .trigger("click");
+    await checkAgain;
+    await flushPromises();
+
+    expect(wrapper.find(".rel-dist-loading").exists()).toBe(true);
     expect(wrapper.find(".rel-dist-channels").exists()).toBe(true);
     expect(wrapper.text()).toContain("npm");
     wrapper.unmount();
