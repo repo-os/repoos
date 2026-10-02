@@ -186,9 +186,12 @@ struct ServerSidebarRow: View {
             Text(entry.name)
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            HStack(spacing: ServerSidebarRowLayout.columnSpacing) {
+            // Badges overlay the trailing edge instead of sharing an HStack with the subtitle, so a
+            // narrow sidebar clips the URL under them rather than pushing them out of the row.
+            ZStack(alignment: .trailing) {
                 SidebarClippedSubtitleText(sidebarSubtitle)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                    .clipped()
                 badgesTrigger
                     .fixedSize()
             }
@@ -322,6 +325,13 @@ private struct SidebarClippedSubtitleText: NSViewRepresentable {
 
     func updateNSView(_ field: NSTextField, context: Context) {
         field.stringValue = text
+    }
+
+    /// Take whatever width the row offers (even less than the text needs); NSTextField's intrinsic
+    /// width would otherwise act as a hard minimum and widen the row.
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView field: NSTextField, context: Context) -> CGSize? {
+        let natural = field.intrinsicContentSize
+        return CGSize(width: proposal.width ?? natural.width, height: natural.height)
     }
 }
 
