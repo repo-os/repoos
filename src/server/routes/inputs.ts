@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import type { RouteHandler } from "./types.js";
+import type { RouteContext, RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
 import {
   createInput,
@@ -14,7 +14,13 @@ import {
   type InputStatus,
 } from "../../core/input.js";
 import { commitTaskFile } from "../../core/git.js";
-import { resolvePmAgent, runPrompt, recordOneShotSession } from "../agents.js";
+import type { Agent } from "../../core/types.js";
+import {
+  extractOneShotReportText,
+  resolvePmAgent,
+  runPrompt,
+  recordOneShotSession,
+} from "../agents.js";
 import { getCurrentUser } from "./auth.js";
 
 /**
@@ -37,19 +43,34 @@ function inputPrompt(body: string): string {
     body,
   ].join("\n");
 }
-function parseEnrichment(raw: string): { title?: string; type?: string; area?: string } {
-  const match = raw.match(/\{[\s\S]*\}/);
-  if (!match) return {};
-  try {
-    const value = JSON.parse(match[0]) as Record<string, unknown>;
-    return {
+/**
+ * Pull the PM's enrichment fields out of its reply (#0628). The reply may be
+ * wrapped in prose, or — before this fix — arrive as raw stream-json, where a
+ * single greedy `/\{[\s\S]*\}/` span across JSONL event lines never parses.
+ * Scan every flat `{...}` candidate non-greedily, then fall back to the greedy
+ * span (an object with braces inside a string value), and take the first that
+ * parses with at least one known field. Returns {} when nothing parseable is
+ * found; callers log that rather than dropping enrichment silently.
+ */
+export function parseEnrichment(raw: string): { title?: string; type?: string; area?: string } {
+  const candidates = [...(raw.match(/\{[^{}]*\}/g) ?? [])];
+  const greedy = raw.match(/\{[\s\S]*\}/);
+  if (greedy) candidates.push(greedy[0]);
+  for (const candidate of candidates) {
+    let value: Record<string, unknown>;
+    try {
+      value = JSON.parse(candidate) as Record<string, unknown>;
+    } catch {
+      continue;
+    }
+    const fields = {
       title: typeof value.title === "string" ? value.title : undefined,
       type: typeof value.type === "string" ? value.type : undefined,
       area: typeof value.area === "string" ? value.area : undefined,
     };
-  } catch {
-    return {};
+    if (fields.title || fields.type || fields.area) return fields;
   }
+  return {};
 }
 export const getInputs: RouteHandler = (ctx, _req, res) => json(res, 200, listInputs(ctx.config));
 export const postInput: RouteHandler = async (ctx, req, res) => {
@@ -62,38 +83,87 @@ export const postInput: RouteHandler = async (ctx, req, res) => {
     typeof b.type === "string" ? b.type : "other",
     getCurrentUser(req, ctx.config)?.email ?? (typeof b.createdBy === "string" ? b.createdBy : ""),
   );
-  const pm = resolvePmAgent(ctx.config);
-  if (pm) {
-    try {
-      const result = await runPrompt(pm, inputPrompt(text), { cwd: ctx.config.root });
-      recordOneShotSession(ctx.config.root, pm, result, { sessionType: "pm", taskId: null });
-      if (result.ok && result.output) {
-        const enriched = enrichInput(ctx.config, input.id, parseEnrichment(result.output));
-        commitInput(ctx.config.root, enriched, "capture");
-        return json(res, 201, enriched);
-      }
-    } catch {
-      /* raw input remains safe if enrichment fails */
-    }
-  }
   commitInput(ctx.config.root, input, "capture");
+  // The PM call takes 15-20s; the create panel already promises "creating in
+  // the background", so return the raw input now and enrich asynchronously
+  // (#0628) — open views update in place via the `input.enriched` SSE event.
+  const pm = resolvePmAgent(ctx.config);
+  if (pm) void enrichInputInBackground(ctx, input, pm, text);
   return json(res, 201, input);
 };
+
+/**
+ * Enrich a freshly created input with the PM agent's title/type/area, off the
+ * POST's critical path (#0628). The PM's captured stdout is first reduced to
+ * its final report text (`extractOneShotReportText`) — stream-json drivers
+ * wrap the answer in JSONL events the old greedy regex could never parse —
+ * then parsed, applied, committed, and pushed over SSE. Every failure path
+ * logs a warning: enrichment is never silently dropped, and the input always
+ * keeps its raw (first-line) title until real fields arrive.
+ */
+async function enrichInputInBackground(
+  ctx: RouteContext,
+  input: Input,
+  pm: Agent,
+  text: string,
+): Promise<void> {
+  try {
+    const result = await runPrompt(pm, inputPrompt(text), { cwd: ctx.config.root });
+    recordOneShotSession(ctx.config.root, pm, result, { sessionType: "pm", taskId: null });
+    const report = result.ok ? extractOneShotReportText(pm.cli, result.output ?? "") : "";
+    const fields = parseEnrichment(report);
+    if (!fields.title && !fields.type && !fields.area) {
+      ctx.logger.system("warn", "PM enrichment returned nothing parseable; input keeps raw title", {
+        input: input.id,
+        cli: pm.cli,
+        ...(result.ok ? {} : { error: result.error }),
+      });
+      return;
+    }
+    // Throws "input not found" if the input was deleted while the PM ran —
+    // caught below and logged, same as any other failure.
+    const enriched = enrichInput(ctx.config, input.id, fields);
+    commitInput(ctx.config.root, enriched, "capture");
+    ctx.emitEvent({
+      type: "input.enriched",
+      id: input.id,
+      input: enriched,
+      at: new Date().toISOString(),
+    });
+  } catch (e) {
+    ctx.logger.system("warn", "input enrichment failed; input keeps raw title", {
+      input: input.id,
+      reason: e instanceof Error ? e.message : String(e),
+    });
+  }
+}
 export const patchInput: RouteHandler = async (ctx, req, res, p) => {
   const b = (await readBody(req)) as Record<string, unknown>;
   const hasStatus = b.status !== undefined && b.status !== null;
   const text = typeof b.text === "string" ? b.text : undefined;
   const hasText = text !== undefined;
-  if (!hasStatus && !hasText) return json(res, 400, { error: "status or text is required" });
+  const title = typeof b.title === "string" ? b.title : undefined;
+  const type = typeof b.type === "string" ? b.type : undefined;
+  const area = typeof b.area === "string" ? b.area : undefined;
+  if (!hasStatus && !hasText && title === undefined && type === undefined && area === undefined)
+    return json(res, 400, { error: "status, text, title, type or area is required" });
   if (hasStatus && !["new", "reviewing", "processed"].includes(String(b.status)))
     return json(res, 400, { error: "invalid status" });
   if (hasText && !text.trim()) return json(res, 400, { error: "text is required" });
+  if (title !== undefined && !title.trim()) return json(res, 400, { error: "title is required" });
   try {
     const updated = updateInput(ctx.config, p.param1, {
       ...(hasStatus ? { status: b.status as InputStatus } : {}),
       ...(hasText ? { text } : {}),
+      ...(title !== undefined ? { title } : {}),
+      ...(type !== undefined ? { type } : {}),
+      ...(area !== undefined ? { area } : {}),
     });
-    commitInput(ctx.config.root, updated, hasText ? "edit body" : updated.status);
+    commitInput(
+      ctx.config.root,
+      updated,
+      hasText ? "edit body" : title !== undefined ? "retitle" : updated.status,
+    );
     return json(res, 200, updated);
   } catch (e) {
     const msg = (e as Error).message;
