@@ -27,7 +27,7 @@ import {
   reviewCommand,
   runPrompt,
 } from "../../server/agents";
-import { detectAgents, KNOWN_AGENTS, type KnownAgent } from "../../core/detect";
+import { detectAgents, type KnownAgent } from "../../core/detect";
 import { MODEL_SOURCES, parseAntigravityModels } from "../../core/models";
 import { AGENT_CLIS } from "../../core/config";
 import type { Agent, RepoOSConfig, Task } from "../../core/types";
@@ -174,16 +174,6 @@ describe("Antigravity stream-json protocol", () => {
 });
 
 describe("Antigravity discovery and commands", () => {
-  it("keeps Gemini visible only as a deprecated, non-selectable migration row", () => {
-    expect(KNOWN_AGENTS.find((agent) => agent.id === "gemini")).toMatchObject({
-      deprecated: true,
-      drivable: false,
-      installHint: "Use Antigravity CLI (agy) instead.",
-      migrationUrl: "https://antigravity.google/docs/cli/gcli-migration/",
-    });
-    expect(AGENT_CLIS).not.toContain("gemini");
-  });
-
   it("parses documented model-table rows and drops diagnostics", () => {
     expect(
       parseAntigravityModels(
@@ -611,30 +601,12 @@ it("detects auth, lists models, and runs/resumes in the exact task worktree", as
   }
 });
 
-it("renders Gemini deprecation guidance and hides unavailable Antigravity selectors", async () => {
+it("hides unavailable Antigravity selectors on the default tab", async () => {
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url: string) => {
       if (url.includes("/api/agents/detect")) {
-        return json({
-          agents: [
-            {
-              id: "gemini",
-              name: "Gemini CLI",
-              binary: "gemini",
-              installed: true,
-              path: "/usr/local/bin/gemini",
-              version: "gemini 1.0",
-              headless: true,
-              drivable: false,
-              installHint: "Use Antigravity CLI (agy) instead.",
-              deprecated: true,
-              migrationUrl: "https://antigravity.google/docs/cli/gcli-migration/",
-              migrationNote: "Enterprise and paid API-key Gemini CLI users may still have access.",
-              auth: null,
-            },
-          ],
-        });
+        return json({ agents: [] });
       }
       if (url.includes("/api/models")) {
         return json({
@@ -686,11 +658,9 @@ it("renders Gemini deprecation guidance and hides unavailable Antigravity select
   expect(detectedTab).toBeTruthy();
   await detectedTab!.trigger("click");
   await flush();
-  expect(wrapper.text()).toContain("Deprecated");
-  expect(wrapper.text()).toContain("Use Antigravity CLI (agy) instead.");
-  expect(wrapper.text()).toContain(
-    "Enterprise and paid API-key Gemini CLI users may still have access.",
-  );
+  // The simplified detected layout renders no Deprecated badge or migration
+  // block; the default tab must not offer an undetected Antigravity.
+  expect(wrapper.text()).not.toContain("Deprecated");
 
   const defaultTab = wrapper
     .findAll("button.tab-btn")

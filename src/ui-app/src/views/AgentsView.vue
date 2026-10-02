@@ -910,11 +910,6 @@ onUnmounted(() => {
                 >
                   {{ r.agent.drivable ? "RepoOS driver" : "detected only" }}
                 </span>
-                <span class="detect-deprecated-slot">
-                  <span v-if="r.agent.deprecated" class="agent-badge detect-deprecated"
-                    >Deprecated</span
-                  >
-                </span>
                 <span class="detect-compat-slot">
                   <button
                     v-if="r.agent.compatibility"
@@ -1021,18 +1016,6 @@ onUnmounted(() => {
                     <button class="detect-copy" @click="copyHint(r.agent.installHint)">
                       {{ detectHintCopied === r.agent.installHint ? "copied" : "copy" }}
                     </button>
-                  </span>
-                  <span v-if="r.agent.deprecated" class="detect-migration-inline">
-                    {{ r.agent.installHint }}
-                    <a
-                      v-if="r.agent.migrationUrl"
-                      :href="r.agent.migrationUrl"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Official migration and auth docs
-                    </a>
-                    <span v-if="r.agent.migrationNote">{{ r.agent.migrationNote }}</span>
                   </span>
                   <button
                     type="button"

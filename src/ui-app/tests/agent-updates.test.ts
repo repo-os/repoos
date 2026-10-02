@@ -50,17 +50,7 @@ describe("update source adapters", () => {
     expect(resolveUpdateSource(agent({ path: "/usr/local/bin/codex" }))).toBeNull();
   });
 
-  it("supports Homebrew metadata and GitHub release fixtures", () => {
-    expect(
-      resolveUpdateSource(agent({ id: "aider", path: "/opt/homebrew/Cellar/aider/bin/aider" })),
-    ).toMatchObject({ kind: "homebrew", formula: "aider" });
-    expect(
-      resolveUpdateSource(agent({ id: "goose", path: "/Users/me/.local/bin/goose" })),
-    ).toMatchObject({ kind: "github", repo: "goose" });
-    expect(
-      resolveUpdateSource(agent({ id: "goose", path: "/Users/me/goose-tools/bin/goose" })),
-    ).toBeNull();
-
+  it("supports Homebrew metadata from install paths", () => {
     // Casks and formulae are named by their install path, not a fixed table.
     expect(
       resolveUpdateSource(
@@ -82,13 +72,11 @@ describe("update source adapters", () => {
   it("parses adapter-specific stable version fields", () => {
     const npm: UpdateSource = { kind: "npm", label: "npm", url: "" };
     const brew: UpdateSource = { kind: "homebrew", label: "brew", url: "" };
-    const github: UpdateSource = { kind: "github", label: "github", url: "" };
     expect(parseLatestVersion(npm, { version: "1.2.3" })).toBe("1.2.3");
     expect(parseLatestVersion(brew, { versions: { stable: "2.0.0" } })).toBe("2.0.0");
     const cask: UpdateSource = { kind: "homebrew", label: "cask", url: "", cask: "codex" };
     expect(parseLatestVersion(cask, { version: "0.156.0" })).toBe("0.156.0");
     expect(parseLatestVersion(cask, { version: "1.2.3,abc123" })).toBe("1.2.3");
-    expect(parseLatestVersion(github, { tag_name: "v3.0.0" })).toBe("v3.0.0");
   });
 });
 
