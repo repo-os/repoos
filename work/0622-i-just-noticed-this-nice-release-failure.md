@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-02T02:09:10Z"
+review_passes: 1
 id: "0622"
 title: Promote release failures above published-to and show loading state
 type: feature
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/promote-release-failures-above-published
 created_at: "2026-10-02T01:48:25Z"
-updated_at: "2026-10-02T02:08:21Z"
 ---
 ## Problem
 
@@ -71,3 +72,4 @@ I just noticed this nice release failure section, but it's hidden below the fold
 - 2026-10-02T01:53:44Z · status ready→active, branch
 - 2026-10-02T02:03:44Z · body: section Shots
 - 2026-10-02T02:08:21Z · status active→review
+
