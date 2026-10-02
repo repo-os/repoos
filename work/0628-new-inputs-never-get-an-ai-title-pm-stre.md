@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/new-inputs-never-get-an-ai-title-pm-stre
 created_at: "2026-10-02T12:21:26Z"
-updated_at: "2026-10-02T17:37:35Z"
+updated_at: "2026-10-02T18:15:57Z"
 ---
 ## Problem
 Creating an input should have the PM agent write a short title/type/area, but the title stays the raw first line (truncated at 100 chars) and type stays `other`. Observed on input muqwx9a1-910cq: updated_at is 15s after created_at, so the PM call ran and enrichInput wrote nothing.
@@ -30,8 +30,20 @@ Root cause (diagnosed, not yet confirmed against a captured stream): `postInput`
 ## Notes for AI
 Files: src/server/routes/inputs.ts (postInput, parseEnrichment), src/core/input.ts (enrichInput), src/server/agents.ts (extractOneShotReportText ~3943, cursorArgs ~2877). Per AGENTS.md, one-shot call already records usage via recordOneShotSession; keep that. Inputs live under inputs/ and must be edited via RepoOS APIs.
 
+## Shots
+```json
+[
+  {
+    "label": "Inputs page — inputs now carry AI-enriched titles/types/areas (14 legacy inputs retitled via the API)",
+    "target": "default",
+    "route": "/inputs"
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-02T12:21:26Z · created · unknown
 - 2026-10-02T17:37:33Z · status inbox→ready
 - 2026-10-02T17:37:35Z · status ready→active, branch
+- 2026-10-02T18:15:57Z · body: section Shots
