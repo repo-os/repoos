@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/show-live-deepinfra-and-github-copilot-c
 created_at: "2026-10-02T08:51:36Z"
-updated_at: "2026-10-02T09:35:04Z"
+updated_at: "2026-10-02T09:35:05Z"
 ---
 Replace dashboard link-outs for DeepInfra and GitHub Copilot on Agents > Model providers with supported live data where the account permits it. DeepInfra: evaluate documented authenticated /payment/checklist for credit balance and /payment/usage for spend, including balance sign and units. GitHub Copilot: evaluate the personal AI credit usage REST endpoint for personally billed plans, organization or enterprise endpoints for centrally billed plans, and documented quota interfaces where appropriate. Handle required scopes and account type clearly; do not equate billed usage with remaining entitlement. Reuse the existing key storage pattern, preserve safe errors and dashboard fallback, update UI copy and docs, and add parser, route, and component coverage. Sources: https://docs.deepinfra.com/api-reference/billing/get-checklist ; https://docs.deepinfra.com/api-reference/billing/usage ; https://docs.github.com/en/rest/billing/usage ; https://docs.github.com/en/copilot/how-tos/copilot-sdk/features/usage-and-billing
 
@@ -43,6 +43,17 @@ For both providers:
 
 Copy under each label should explain freshness, units (USD vs credits), and limitations in one line.
 
+## Acceptance criteria
+- [ ] **Registry:** `deepinfra` and `github-copilot` rows in `src/core/providers/spend.ts` move to `kind: "live"` with new `envVar` / `configKey` fields, updated `note` strings, and dashboard URLs unchanged as fallbacks.
+- [ ] **DeepInfra API:** Implement `parseDeepInfraChecklist`, `parseDeepInfraUsage`, and `fetchDeepInfraSpend` (or equivalent) with bearer auth, 8s timeout, typed null-on-unknown-shape parsers (same philosophy as OpenRouter/opencode Go). Unit tests pin real documented fields including **negative `stripe_balance` = spendable** and `recent` spend.
+- [ ] **GitHub Copilot API:** Implement parser(s) + fetcher for the supported personal usage endpoint; document and handle 401/403/404 with user-facing messages (missing scope vs wrong account type). Do **not** claim “remaining quota” unless the response includes an explicit remaining/included pair — otherwise show usage/consumed only with honest labeling.
+- [ ] **Routes:** Extend `GET /api/model-providers/:id/usage` and `POST /api/model-providers/:id/key` in `src/server/routes/model-providers.ts` for both ids; keys never logged or returned.
+- [ ] **UI:** Extend `ModelProvidersPanel.vue` (and shared types) to render DeepInfra + Copilot live payloads alongside OpenRouter/opencode Go; extend `isLive()` (or replace with registry-driven `kind`) so auto-load on `hasKey` works for all live providers.
+- [ ] **Settings:** If new `configKey` fields are added, expose them in Settings schema/UI per repo rule (or justify env-only in Notes if deliberately advanced).
+- [ ] **Docs:** Update user-facing agents/model-provider docs to describe required token types/scopes, what each number means, and dashboard fallback.
+- [ ] **Tests:** Route tests + component/unit coverage for new parsers and at least one happy-path + auth-failure path each; `repoos check --changed main` passes.
+- [ ] **Shots:** Declare `## Shots` with `/agents?tab=model-providers` entries showing DeepInfra and GitHub Copilot rows with live data (or realistic fixture/dev keys), including error-state fallback if keys are absent in CI.
+
 ## Activity
 
 - 2026-10-02T08:51:36Z · created · unknown
@@ -52,3 +63,4 @@ Copy under each label should explain freshness, units (USD vs credits), and limi
 - 2026-10-02T09:33:55Z · needs_input
 - 2026-10-02T09:35:03Z · body: section ## Problem
 - 2026-10-02T09:35:04Z · body: section ## Desired UX
+- 2026-10-02T09:35:05Z · body: section ## Acceptance criteria
