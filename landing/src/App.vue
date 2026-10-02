@@ -649,7 +649,7 @@ const year = new Date().getFullYear();
           <h2
             class="max-w-[22ch] text-[30px] font-bold leading-tight tracking-tight sm:text-[38px]"
           >
-            Not one giant agent. A small team.
+            Not one giant agent. A small engineering team.
           </h2>
           <p class="mt-4 max-w-[52ch] text-[15.5px] leading-relaxed text-[var(--txt-dim)]">
             Different jobs need different instructions, tools and models. RepoOS gives each role one
