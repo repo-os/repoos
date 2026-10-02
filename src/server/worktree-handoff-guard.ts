@@ -24,6 +24,7 @@ import {
   runGit,
   uncommittedWorkFiles,
   workFileFilter,
+  type WorkFileFilter,
   worktreePathForBranch,
 } from "../core/git.js";
 
@@ -226,6 +227,54 @@ export function formatWorktreeHandoffFailure(
 }
 
 /**
+ * Blob id at `<ref>:<path>`, or null when the path does not exist there.
+ * Absent on both sides compares equal (a main-sync deletion).
+ */
+async function blobIdAt(wt: string, ref: string, path: string): Promise<string | null> {
+  const res = await runGit(wt, ["rev-parse", "--verify", `${ref}:${path}`], 10_000);
+  return res.status === 0 ? res.stdout.trim() : null;
+}
+
+/**
+ * True when the drift between the handoff SHA and HEAD adds nothing beyond
+ * what main already contains (#0624) — e.g. a conflict-free merge of main
+ * into the task branch while the task sat in review. For every
+ * non-bookkeeping drift path, both of these must hold:
+ *
+ * 1. HEAD carries exactly main's content for the path — the drift introduced
+ *    no content that is not main's (so a merge whose conflict resolution went
+ *    anywhere other than main's content fails, as does any author edit).
+ * 2. The handoff snapshot carried exactly the merge-base's content for the
+ *    path — the task had not modified it relative to where it and main
+ *    diverged. Without this half, drift that DELETES task content main never
+ *    had (e.g. a source file renamed into `work/*.md`) would pass, because
+ *    absent-at-HEAD equals absent-at-main.
+ *
+ * This is a tree-level check that subsumes the merge-commit shape (non-first
+ * parents being ancestors of main): cherry-picks or rebases of already-landed
+ * main commits pass for the same reason. Fails closed when `main` or the
+ * merge base is unreadable.
+ */
+async function isMainSyncDrift(
+  wt: string,
+  expectedSha: string,
+  actualHead: string,
+  driftPaths: string[],
+  filter: WorkFileFilter,
+): Promise<boolean> {
+  const nonBookkeeping = driftPaths.filter((p) => !isTaskBookkeepingPath(p, filter));
+  if (nonBookkeeping.length === 0) return true;
+  const baseRes = await runGit(wt, ["merge-base", expectedSha, "main"], 10_000);
+  if (baseRes.status !== 0) return false;
+  const base = baseRes.stdout.trim();
+  for (const p of nonBookkeeping) {
+    if ((await blobIdAt(wt, actualHead, p)) !== (await blobIdAt(wt, "main", p))) return false;
+    if ((await blobIdAt(wt, expectedSha, p)) !== (await blobIdAt(wt, base, p))) return false;
+  }
+  return true;
+}
+
+/**
  * Compare the feature worktree to the SHA recorded at handoff. Missing
  * worktree or unreadable git state fails closed.
  */
@@ -271,8 +320,17 @@ export async function verifyWorktreeHandoffIntegrity(
     if (handoffStillReachable === true) {
       const filter = workFileFilter(config as RepoOSConfig);
       const driftPaths = await pathsChangedBetweenCommits(wt, expectedSha, actualHead);
-      if (driftPaths !== null && driftPaths.every((p) => isTaskBookkeepingPath(p, filter))) {
-        return { ok: true };
+      if (driftPaths !== null) {
+        if (driftPaths.every((p) => isTaskBookkeepingPath(p, filter))) {
+          return { ok: true };
+        }
+        // A conflict-free merge of main into the branch while the task is in
+        // review (#0624) is not implementation drift: close-out merges main
+        // into a fresh candidate anyway. Allow it when the drift adds nothing
+        // beyond what main already contains.
+        if (await isMainSyncDrift(wt, expectedSha, actualHead, driftPaths, filter)) {
+          return { ok: true };
+        }
       }
     }
   }

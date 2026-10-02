@@ -28,6 +28,15 @@ function git(root: string, args: string[]): string {
   return execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
 }
 
+function gitAllowFail(root: string, args: string[]): { status: number; stdout: string } {
+  try {
+    return { status: 0, stdout: execFileSync("git", args, { cwd: root, encoding: "utf8" }) };
+  } catch (err) {
+    const e = err as { status?: number; stdout?: string };
+    return { status: e.status ?? 1, stdout: e.stdout ?? "" };
+  }
+}
+
 function makeRepo(): { root: string; clean: () => void } {
   const root = mkdtempSync(join(tmpdir(), "repoos-handoff-guard-"));
   git(root, ["init", "-q"]);
@@ -179,6 +188,107 @@ describe("worktree handoff guard (#0598)", () => {
       const check = await verifyWorktreeHandoffIntegrity(config, branch, sha);
       expect(check.ok).toBe(false);
       expect(check.headMoved).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("allows a conflict-free merge of main into the branch after handoff (#0624)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      // A common base file both sides may touch later.
+      writeFileSync(join(root, "f.txt"), "base\n");
+      git(root, ["add", "f.txt"]);
+      git(root, ["commit", "-m", "base"]);
+      const branch = "feat/main-sync";
+      const wt = ensureWorktree(root, branch);
+      mkdirSync(join(wt.path, "work"), { recursive: true });
+      writeFileSync(join(wt.path, "impl.txt"), "work\n");
+      writeFileSync(join(wt.path, "work", "0624-self.md"), "---\nid: 0624\n---\n");
+      git(wt.path, ["add", "impl.txt", "work/0624-self.md"]);
+      git(wt.path, ["commit", "-m", "handoff"]);
+      const sha = git(wt.path, ["rev-parse", "HEAD"]);
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+
+      // Main advances with already-landed work (source + another task's file).
+      writeFileSync(join(root, "f.txt"), "base\n// main tweak\n");
+      mkdirSync(join(root, "work"), { recursive: true });
+      writeFileSync(join(root, "work", "0623-other.md"), "---\nid: 0623\n---\n");
+      git(root, ["add", "f.txt", "work/0623-other.md"]);
+      git(root, ["commit", "-m", "main advance"]);
+
+      // The main-sync merge lands on the branch after handoff.
+      git(wt.path, ["merge", "main", "-m", "merge main into feat/main-sync"]);
+      const check = await verifyWorktreeHandoffIntegrity(config, branch, sha);
+      expect(check.ok).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("still fails when a post-handoff edit goes beyond what main contains (#0624)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      writeFileSync(join(root, "f.txt"), "base\n");
+      git(root, ["add", "f.txt"]);
+      git(root, ["commit", "-m", "base"]);
+      const branch = "feat/author-edit";
+      const wt = ensureWorktree(root, branch);
+      writeFileSync(join(wt.path, "impl.txt"), "work\n");
+      git(wt.path, ["add", "impl.txt"]);
+      git(wt.path, ["commit", "-m", "handoff"]);
+      const sha = git(wt.path, ["rev-parse", "HEAD"]);
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+
+      // Main advances, and the branch syncs it — but the author also edits
+      // a source file afterwards.
+      writeFileSync(join(root, "f.txt"), "base\n// main tweak\n");
+      git(root, ["add", "f.txt"]);
+      git(root, ["commit", "-m", "main advance"]);
+      git(wt.path, ["merge", "main", "-m", "merge main into feat/author-edit"]);
+      writeFileSync(join(wt.path, "f.txt"), "base\n// author edit\n");
+      git(wt.path, ["add", "f.txt"]);
+      git(wt.path, ["commit", "-m", "review fix"]);
+
+      const check = await verifyWorktreeHandoffIntegrity(config, branch, sha);
+      expect(check.ok).toBe(false);
+      expect(check.headMoved).toBe(true);
+      expect(check.reason).toContain(WORKTREE_CHANGED_AFTER_HANDOFF_PREFIX);
+    } finally {
+      clean();
+    }
+  });
+
+  it("still fails when a sync merge's conflict resolution diverges from main (#0624)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      writeFileSync(join(root, "f.txt"), "base\n");
+      git(root, ["add", "f.txt"]);
+      git(root, ["commit", "-m", "base"]);
+      const branch = "feat/conflicted-sync";
+      const wt = ensureWorktree(root, branch);
+      writeFileSync(join(wt.path, "f.txt"), "task\n");
+      git(wt.path, ["add", "f.txt"]);
+      git(wt.path, ["commit", "-m", "handoff"]);
+      const sha = git(wt.path, ["rev-parse", "HEAD"]);
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+
+      // Main rewrites the same file; the merge on the branch conflicts and is
+      // resolved to content that is neither the task's nor main's.
+      writeFileSync(join(root, "f.txt"), "main\n");
+      git(root, ["add", "f.txt"]);
+      git(root, ["commit", "-m", "main rewrite"]);
+      const merge = gitAllowFail(wt.path, ["merge", "main"]);
+      expect(merge.status).not.toBe(0);
+      expect(merge.stdout).toContain("CONFLICT");
+      writeFileSync(join(wt.path, "f.txt"), "hand-resolved\n");
+      git(wt.path, ["add", "f.txt"]);
+      git(wt.path, ["commit", "-m", "merge main into feat/conflicted-sync"]);
+
+      const check = await verifyWorktreeHandoffIntegrity(config, branch, sha);
+      expect(check.ok).toBe(false);
+      expect(check.headMoved).toBe(true);
+      expect(check.reason).toContain(WORKTREE_CHANGED_AFTER_HANDOFF_PREFIX);
     } finally {
       clean();
     }
