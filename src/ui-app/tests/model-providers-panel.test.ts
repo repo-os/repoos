@@ -12,7 +12,9 @@ import { nextTick } from "vue";
 import ModelProvidersPanel from "../src/components/ModelProvidersPanel.vue";
 import type { ModelProvidersResponse } from "../src/types";
 
-function providersFixture(over: Partial<ModelProvidersResponse["providers"][number]>[] = []) {
+function providersFixture(
+  over: (Partial<ModelProvidersResponse["providers"][number]> | undefined)[] = [],
+) {
   const base: ModelProvidersResponse["providers"] = [
     {
       id: "openrouter",
@@ -49,9 +51,9 @@ function providersFixture(over: Partial<ModelProvidersResponse["providers"][numb
     {
       id: "deepinfra",
       label: "DeepInfra",
-      kind: "link",
+      kind: "live",
       dashboardUrl: "https://deepinfra.com/dash/billing",
-      note: "Live integration pending.",
+      note: "Credit balance, spending limit and monthly spend.",
       hasKey: false,
     },
     {
@@ -81,10 +83,11 @@ function providersFixture(over: Partial<ModelProvidersResponse["providers"][numb
     {
       id: "github-copilot",
       label: "GitHub Copilot",
-      kind: "link",
+      kind: "live",
       dashboardUrl: "https://github.com/settings/copilot",
-      note: "Account details live in GitHub.",
+      note: "AI-credit usage billed to the account this period.",
       hasKey: false,
+      scope: "",
     },
     {
       id: "antigravity",
@@ -103,7 +106,10 @@ function providersFixture(over: Partial<ModelProvidersResponse["providers"][numb
       hasKey: false,
     },
   ];
-  for (const [i, o] of over.entries()) base[i] = { ...base[i], ...o };
+  for (const [i, o] of over.entries()) {
+    // Holes (sparse entries) leave the base row untouched.
+    if (o) base[i] = { ...base[i], ...o };
+  }
   return base;
 }
 
@@ -172,8 +178,12 @@ describe("ModelProvidersPanel — row rendering", () => {
     expect(rows).toHaveLength(11);
     expect(rows[0].find(".agent-name").text()).toBe("OpenRouter");
     expect(rows[0].find(".pill-live").exists()).toBe(true);
+    for (const i of [1, 4, 8]) {
+      expect(rows[i].find(".pill-live").exists()).toBe(true);
+      expect(rows[i].find(".mp-key-form").exists()).toBe(true);
+    }
 
-    for (const i of [2, 3, 4, 5, 6, 7, 8, 9, 10]) {
+    for (const i of [2, 3, 5, 6, 7, 9, 10]) {
       const link = rows[i].find(".mp-dash-link");
       expect(link.exists()).toBe(true);
       expect(link.attributes("href")).toMatch(/^https:\/\//);
@@ -404,5 +414,281 @@ describe("ModelProvidersPanel — live data rendering", () => {
     const row = wrapper.findAll(".mp-row")[0];
     expect(row.text()).toContain("OpenRouter rejected the API key (401)");
     expect(row.find(".mp-retry").exists()).toBe(true);
+  });
+});
+
+const deepinfraUsageRoute = (body: unknown): StubRoute => ({
+  match: (url) => url.includes("/api/model-providers/deepinfra/usage"),
+  body,
+  calls: [],
+});
+
+const copilotUsageRoute = (body: unknown): StubRoute => ({
+  match: (url) => url.includes("/api/model-providers/github-copilot/usage"),
+  body,
+  calls: [],
+});
+
+describe("ModelProvidersPanel — DeepInfra live data (#0625)", () => {
+  it("renders the sign-corrected balance, owed amount, limit and monthly spend", async () => {
+    stubFetch([
+      providersRoute(providersFixture([{ hasKey: true }, , , , { hasKey: true }])),
+      openrouterUsageRoute({
+        kind: "openrouter",
+        credits: null,
+        creditsError: null,
+        key: null,
+        keyError: null,
+      }),
+      goUsageRoute({ kind: "opencode-go", windows: [], unrecognized: true }),
+      deepinfraUsageRoute({
+        kind: "deepinfra",
+        checklist: {
+          availableUsd: 12.5,
+          owedUsd: null,
+          recentUsd: 3.25,
+          limitUsd: 100,
+          suspended: false,
+          suspendReason: null,
+          scopedCredits: [
+            { name: "Llama launch", grantedUsd: 10, remainingUsd: 2.5, expired: false },
+          ],
+        },
+        checklistError: null,
+        usage: [
+          { period: "2026.10", totalUsd: 4.5 },
+          { period: "2026.09", totalUsd: 12 },
+        ],
+        usageError: null,
+      }),
+    ]);
+    const wrapper = mount(ModelProvidersPanel);
+    await flushPromises();
+    await nextTick();
+
+    const row = wrapper.findAll(".mp-row")[4];
+    expect(row.text()).toContain("Available credit");
+    expect(row.text()).toContain("$12.50");
+    expect(row.text()).toContain("Since last invoice");
+    expect(row.text()).toContain("$3.25");
+    expect(row.text()).toContain("Spending limit");
+    expect(row.text()).toContain("Oct 2026");
+    expect(row.text()).toContain("$4.50");
+    expect(row.text()).toContain("$12.00");
+    expect(row.text()).toContain("Llama launch");
+  });
+
+  it("shows an owed amount instead of balance when stripe_balance is positive", async () => {
+    stubFetch([
+      providersRoute(providersFixture([{ hasKey: true }, , , , { hasKey: true }])),
+      openrouterUsageRoute({
+        kind: "openrouter",
+        credits: null,
+        creditsError: null,
+        key: null,
+        keyError: null,
+      }),
+      goUsageRoute({ kind: "opencode-go", windows: [], unrecognized: true }),
+      deepinfraUsageRoute({
+        kind: "deepinfra",
+        checklist: {
+          availableUsd: null,
+          owedUsd: 7.5,
+          recentUsd: 0,
+          limitUsd: null,
+          suspended: true,
+          suspendReason: "balance",
+          scopedCredits: [],
+        },
+        checklistError: null,
+        usage: null,
+        usageError: null,
+      }),
+    ]);
+    const wrapper = mount(ModelProvidersPanel);
+    await flushPromises();
+    await nextTick();
+
+    const row = wrapper.findAll(".mp-row")[4];
+    expect(row.text()).toContain("Account suspended (balance).");
+    expect(row.text()).toContain("plus $7.50 owed");
+  });
+
+  it("keeps the usage half when the checklist is refused, with per-part errors", async () => {
+    stubFetch([
+      providersRoute(providersFixture([{ hasKey: true }, , , , { hasKey: true }])),
+      openrouterUsageRoute({
+        kind: "openrouter",
+        credits: null,
+        creditsError: null,
+        key: null,
+        keyError: null,
+      }),
+      goUsageRoute({ kind: "opencode-go", windows: [], unrecognized: true }),
+      deepinfraUsageRoute({
+        kind: "deepinfra",
+        checklist: null,
+        checklistError: "DeepInfra rejected the API key.",
+        usage: null,
+        usageError: "DeepInfra API returned 500",
+      }),
+    ]);
+    const wrapper = mount(ModelProvidersPanel);
+    await flushPromises();
+    await nextTick();
+
+    const row = wrapper.findAll(".mp-row")[4];
+    expect(row.text()).toContain("Balance unavailable: DeepInfra rejected the API key.");
+    expect(row.text()).toContain("Usage unavailable: DeepInfra API returned 500");
+  });
+});
+
+describe("ModelProvidersPanel — GitHub Copilot live data (#0625)", () => {
+  it("renders billed usage with the scope label and the not-remaining-quota note", async () => {
+    stubFetch([
+      providersRoute(providersFixture([{ hasKey: true }, , , , , , , , { hasKey: true }])),
+      openrouterUsageRoute({
+        kind: "openrouter",
+        credits: null,
+        creditsError: null,
+        key: null,
+        keyError: null,
+      }),
+      goUsageRoute({ kind: "opencode-go", windows: [], unrecognized: true }),
+      copilotUsageRoute({
+        kind: "github-copilot",
+        scope: { kind: "personal", slug: null },
+        periodLabel: "October 2026",
+        user: "monalisa",
+        rows: [
+          {
+            product: "Copilot AI Credits",
+            sku: "AI Credit",
+            model: "GPT-5",
+            unitType: "ai-credits",
+            includedQuantity: 40,
+            billedQuantity: 60,
+            discountAmount: 0.4,
+            netAmount: 0.6,
+          },
+        ],
+        unrecognized: false,
+      }),
+    ]);
+    const wrapper = mount(ModelProvidersPanel);
+    await flushPromises();
+    await nextTick();
+
+    const row = wrapper.findAll(".mp-row")[8];
+    expect(row.text()).toContain("Billed October 2026 · personal plan");
+    expect(row.text()).toContain("$0.60");
+    expect(row.text()).toContain("not remaining quota");
+    expect(row.text()).toContain("60 ai-credits billed");
+    expect(row.text()).toContain("+ 40 included");
+    expect(row.text()).toContain("AI Credit · GPT-5");
+  });
+
+  it("labels a centrally billed scope and the key form pre-fills the stored scope", async () => {
+    stubFetch([
+      providersRoute([
+        ...providersFixture([{ hasKey: true }]).slice(0, 8),
+        { ...providersFixture()[8], hasKey: true, scope: "org:acme" },
+      ]),
+      openrouterUsageRoute({
+        kind: "openrouter",
+        credits: null,
+        creditsError: null,
+        key: null,
+        keyError: null,
+      }),
+      goUsageRoute({ kind: "opencode-go", windows: [], unrecognized: true }),
+      copilotUsageRoute({
+        kind: "github-copilot",
+        scope: { kind: "org", slug: "acme" },
+        periodLabel: "October 2026",
+        user: null,
+        rows: [],
+        unrecognized: false,
+      }),
+    ]);
+    const wrapper = mount(ModelProvidersPanel);
+    await flushPromises();
+    await nextTick();
+
+    const row = wrapper.findAll(".mp-row")[8];
+    expect(row.text()).toContain("org acme");
+    expect(row.text()).toContain("No Copilot usage billed to this account");
+    // Replace key shows the form with the scope pre-filled from the row.
+    const replace = row.findAll("button").find((b) => b.text() === "Replace key");
+    await replace!.trigger("click");
+    await nextTick();
+    const scopeInput = row.findAll(".mp-key-form input[type=text]").at(-1)!;
+    expect((scopeInput.element as HTMLInputElement).value).toBe("org:acme");
+    expect(row.text()).toContain("classic");
+  });
+
+  it("sends the scope alongside the key when saving the Copilot row", async () => {
+    const key = keyRoute(200, { ok: true, hasKey: true, scope: "org:acme" });
+    stubFetch([
+      providersRoute(providersFixture()),
+      key,
+      copilotUsageRoute({
+        kind: "github-copilot",
+        scope: { kind: "org", slug: "acme" },
+        periodLabel: "October 2026",
+        user: null,
+        rows: [],
+        unrecognized: false,
+      }),
+    ]);
+    const wrapper = mount(ModelProvidersPanel);
+    await flushPromises();
+    await nextTick();
+
+    const row = wrapper.findAll(".mp-row")[8];
+    await row.find(".mp-key-form input[type=password]").setValue("ghp-pasted");
+    const scopeInput = row.findAll(".mp-key-form input[type=text]").at(-1)!;
+    await scopeInput.setValue("org:acme");
+    await row.find(".mp-key-form button").trigger("click");
+    await flushPromises();
+    await nextTick();
+
+    expect(key.calls).toHaveLength(1);
+    expect(JSON.parse(key.calls![0].opts!.body as string)).toEqual({
+      key: "ghp-pasted",
+      scope: "org:acme",
+    });
+    expect(wrapper.findAll(".mp-row")[8].find(".mp-key-form").exists()).toBe(false);
+  });
+
+  it("keeps the unrecognized-shape error pointing at the dashboard", async () => {
+    stubFetch([
+      providersRoute(providersFixture([{ hasKey: true }, , , , , , , , { hasKey: true }])),
+      openrouterUsageRoute({
+        kind: "openrouter",
+        credits: null,
+        creditsError: null,
+        key: null,
+        keyError: null,
+      }),
+      goUsageRoute({ kind: "opencode-go", windows: [], unrecognized: true }),
+      copilotUsageRoute({
+        kind: "github-copilot",
+        scope: { kind: "personal", slug: null },
+        periodLabel: "this period",
+        user: null,
+        rows: [],
+        unrecognized: true,
+      }),
+    ]);
+    const wrapper = mount(ModelProvidersPanel);
+    await flushPromises();
+    await nextTick();
+
+    const row = wrapper.findAll(".mp-row")[8];
+    expect(row.text()).toContain("format this build doesn't recognize");
+    expect(row.find(".mp-part-error a").attributes("href")).toBe(
+      "https://github.com/settings/copilot",
+    );
   });
 });

@@ -465,6 +465,9 @@ const ENV_EXAMPLE = `# Copy to .env and fill in what you need — .env is gitign
 # --- Model providers / voice-to-text transcription ---
 # REPOOS_OPENROUTER_API_KEY=...
 # REPOOS_OPENCODE_GO_API_KEY=...
+# REPOOS_DEEPINFRA_API_KEY=...
+# REPOOS_GITHUB_COPILOT_TOKEN=...         # classic PAT — billing endpoints reject fine-grained tokens
+# REPOOS_GITHUB_COPILOT_SCOPE=            # empty = personal plan; org:<name> / enterprise:<name> for centrally billed
 # REPOOS_WHISPER_KEY=...                  # or GROQ_API_KEY / OPENAI_API_KEY directly
 
 # --- Infrastructure ---
