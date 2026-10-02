@@ -559,4 +559,117 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
     expect(ok.text()).toContain("Released v1.2.4");
     wrapper.unmount();
   });
+
+  /** A running notes draft keeps the 1s poll tick alive between run outcomes. */
+  const notesRunning = {
+    state: "running",
+    startedAt: "2026-10-01T01:00:00Z",
+    updatedAt: "2026-10-01T01:00:10Z",
+    error: null,
+    key: "k-notes",
+    notes: null,
+    sinceTag: "v1.2.3",
+    commitCount: 3,
+    truncated: false,
+  };
+
+  it("ignores a previous-run terminal poll that lands while the release POST is pending (#0622 review)", async () => {
+    let resolvePost: ((v: Record<string, unknown>) => void) | undefined;
+    let runCalls = 0;
+    api.mockImplementation((path: string, opts?: { method?: string }) => {
+      if (path === "/api/release" && opts?.method === "POST")
+        return new Promise<Record<string, unknown>>((resolve) => {
+          resolvePost = resolve;
+        });
+      if (path === "/api/release") return Promise.resolve(releaseStatus());
+      if (path === "/api/release/distribution")
+        return Promise.resolve({
+          releaseVersion: "1.2.3",
+          releaseTag: "v1.2.3",
+          channels: [channel()],
+        });
+      if (path === "/api/release/run") {
+        runCalls += 1;
+        // The mount poll and the drawer-open poll are still in flight, so the
+        // 1s tick is alive when Publish is clicked (they are invalidated by
+        // the click, but the tick keeps issuing fresh polls).
+        if (runCalls <= 2) return new Promise<Record<string, unknown>>(() => {});
+        // Polls issued while the POST is pending: the new run doesn't exist
+        // yet, so they carry the PREVIOUS run's terminal snapshot.
+        return Promise.resolve(failedRun);
+      }
+      return Promise.reject(new Error(`unexpected ${path}`));
+    });
+    const wrapper = await mountView();
+
+    button(document.body, "Cut next release")!.click();
+    await flushPromises();
+    const input = document.querySelector<HTMLInputElement>("#rel-version")!;
+    input.value = "1.2.4";
+    input.dispatchEvent(new Event("input"));
+    await flushPromises();
+    [...document.body.querySelectorAll("button")]
+      .find((b) => b.textContent?.trim().startsWith("Publish"))!
+      .click();
+    await flushPromises();
+    expect(resolvePost).toBeDefined();
+    // `running` hides the version field (there is no run to show progress for
+    // until the POST resolves).
+    expect(document.querySelector("#rel-version")).toBeNull();
+
+    // A tick fires while the POST is still pending and reads the previous
+    // failed run. It must not flip the release off or re-enable Publish.
+    await vi.advanceTimersByTimeAsync(1000);
+    await flushPromises();
+    expect(runCalls).toBeGreaterThan(2);
+    expect(document.querySelector("#rel-version")).toBeNull();
+
+    resolvePost?.({
+      run: {
+        state: "running",
+        phase: "checking",
+        message: "Running checks…",
+        startedAt: "2026-10-01T02:00:00Z",
+        updatedAt: "2026-10-01T02:00:10Z",
+      },
+    });
+    await flushPromises();
+    expect(document.querySelector(".release-progress")).not.toBeNull();
+    wrapper.unmount();
+  });
+
+  it("clears the promoted failure when another client's whole run fits between two polls (#0622 review)", async () => {
+    let run: Record<string, unknown> = failedRun;
+    api.mockImplementation((path: string) => {
+      if (path === "/api/release") return Promise.resolve(releaseStatus());
+      if (path === "/api/release/distribution")
+        return Promise.resolve({
+          releaseVersion: "1.2.3",
+          releaseTag: "v1.2.3",
+          channels: [channel()],
+        });
+      if (path === "/api/release/run") return Promise.resolve(run);
+      if (path === "/api/release/notes/run") return Promise.resolve(notesRunning);
+      return Promise.reject(new Error(`unexpected ${path}`));
+    });
+    const wrapper = await mountView();
+    expect(wrapper.find(".rel-outcome--fail").exists()).toBe(true);
+
+    // A different run starts and succeeds entirely between two polls, so this
+    // page never observes it running — only a new terminal run replacing the
+    // failed one.
+    run = {
+      state: "succeeded",
+      phase: "pushing_tag",
+      message: "Released v1.2.4",
+      startedAt: "2026-10-01T03:00:00Z",
+      updatedAt: "2026-10-01T03:03:00Z",
+    };
+    await vi.advanceTimersByTimeAsync(1000);
+    await flushPromises();
+
+    expect(wrapper.find(".rel-outcome--fail").exists()).toBe(false);
+    expect(wrapper.find(".rel-outcome--ok").text()).toContain("Released v1.2.4");
+    wrapper.unmount();
+  });
 });
