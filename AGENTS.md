@@ -477,8 +477,9 @@ cannot tell from the code alone:
   UI evidence, #0603) — a tests-only or task-note diff records a visible
   `shots: skipped` instead, and a missing Playwright shows up as a visible
   `shots: skipped` note, never a failed handoff. The engineer's job
-  is to DECLARE what a review should see — write a `## Shots` section into
-  the task body via `repoos` (a fenced JSON list: `target`, `route`, optional
+  is to DECLARE what a review should see — use
+  `repoos update <id> --shots '<JSON list>'` to write a validated, fenced
+  `## Shots` section (entries take `target`, `route`, optional
   `selector`, optional ordered `steps`
   (`click`/`fill`+`text`/`waitFor`/`waitMs`, plain CSS selectors), an
   optional `highlight` CSS selector outlining what changed, and a human
@@ -492,9 +493,9 @@ cannot tell from the code alone:
   (`fullPage: false`) with changed elements outlined via `highlight`;
   `selector` (element crop) is the exception, `fullPage` stays off. For tabbed
   views prefer `?tab=<id>` routes (e.g. `/agents?tab=detected`) over click
-  steps. Write it with
-  `repoos update <id> --section "<heading>" --section-body "..."` to edit one
-  section without clobbering the body; a full `--body` replace that drops
+  steps. `--shots` accepts JSON without Markdown fences, validates every entry,
+  and edits only that section. The older `--section Shots --section-body` form
+  requires a fenced JSON list and rejects malformed content. A full `--body` replace that drops
   Problem / Desired UX / Acceptance criteria / Notes for AI is refused unless
   `--force` is passed. Manual `repoos shot` remains the tool for checking
   your own work; an engineer-made capture pre-empts the automatic one.
