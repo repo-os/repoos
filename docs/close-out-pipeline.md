@@ -126,7 +126,13 @@ attribution) — the merge gate does not run. **Exception (#0600):** commits aft
 that touch only `work/*.md` task files (RepoOS bookkeeping on the task branch, or
 `syncTaskBranch` merging main and bringing in another task's committed task file) do not
 count as implementation drift. Mixed drift (any source path, or a dirty non-bookkeeping
-tree) still fails. The same check runs again at the start of `syncing` and immediately
+tree) still fails. **Exception (#0624):** a conflict-free merge of main into the task
+branch while it is in review does not count either — the guard tolerates HEAD drift when
+every non-bookkeeping path the drift touched carries exactly main's content at HEAD AND
+the handoff snapshot carried exactly the merge-base's content for that path, so the
+drift neither adds content beyond main nor deletes task content main never had. A sync
+merge whose conflict resolution went anywhere other than main's content, a post-handoff
+source edit, or drift that removes task content all still fail. The same check runs again at the start of `syncing` and immediately
 before publish; a change mid-close-out aborts before main is mutated and leaves the task
 in `review` with a failed job reason.
 
