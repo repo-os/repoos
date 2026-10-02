@@ -83,7 +83,7 @@ import SpecEditModal from "./SpecEditModal.vue";
 import ScreenshotViewer from "./ScreenshotViewer.vue";
 import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
 import { isImageMime, pendingToShots, type ScreenshotShot } from "../lib/screenshot-viewer";
-import { shotRows } from "../lib/shot-rows";
+import { shotProblems, shotRows, uncapturedDeclared } from "../lib/shot-rows";
 import DoneErrorCard from "./DoneErrorCard.vue";
 import DebugPanel from "./DebugPanel.vue";
 import StopWorkConfirmModal from "./StopWorkConfirmModal.vue";
@@ -812,6 +812,11 @@ const taskShots = computed(() => (ui.active ? repo.shotsFor(ui.active.id) : []))
  * still the viewer's start index.
  */
 const uiChangeRows = computed(() => shotRows(taskShots.value, ui.active?.body));
+/** Capture failures/skips since the newest shot, and the declared shots that never landed. */
+const uiShotProblems = computed(() => shotProblems(ui.active?.body, taskShots.value));
+const uiMissingShots = computed(() =>
+  uiShotProblems.value.length ? uncapturedDeclared(taskShots.value, ui.active?.body) : [],
+);
 /** Area/target mismatch warning for the open task, or undefined. */
 const shotWarning = computed(() => (ui.active ? repo.shotWarningFor(ui.active.id) : undefined));
 const shotsViewerOpen = ref(false);
@@ -4922,11 +4927,42 @@ watch(
                thumbnail grid had no room for the `## Shots` spec the reviewer
                actually reads: label, target · route, selector, steps. -->
           <section
-            v-if="ui.active && uiChangeRows.length"
+            v-if="ui.active && (uiChangeRows.length || uiShotProblems.length)"
             class="changes-summary ui-changes"
             aria-label="UI changes"
           >
             <div class="changes-summary-title">UI changes</div>
+            <div
+              v-for="problem in uiShotProblems"
+              :key="problem.at + problem.detail"
+              class="shot-warning shot-problem"
+              role="alert"
+            >
+              <strong>Shots {{ problem.status }}:</strong> {{ problem.detail }}
+            </div>
+            <div
+              v-if="uiMissingShots.length"
+              class="ff-pending-files shot-rows"
+              aria-label="Declared shots that were not captured"
+            >
+              <div
+                v-for="row in uiMissingShots"
+                :key="row.title + row.context"
+                class="ff-pending-file shot-row shot-row-missing"
+              >
+                <div class="shot-row-text">
+                  <span class="ff-pending-file-name" :title="row.title">{{ row.title }}</span>
+                  <span class="shot-row-detail">not captured</span>
+                  <span v-if="row.context" class="shot-row-detail">{{ row.context }}</span>
+                  <span v-if="row.selector" class="shot-row-detail" :title="row.selector">
+                    <span class="shot-row-key">selector</span>{{ row.selector }}
+                  </span>
+                  <span v-if="row.stepsText" class="shot-row-detail" :title="row.stepsText">
+                    <span class="shot-row-key">steps</span>{{ row.stepsText }}
+                  </span>
+                </div>
+              </div>
+            </div>
             <div class="ff-pending-files shot-rows" aria-label="Captured preview shots">
               <div
                 v-for="(row, i) in uiChangeRows"

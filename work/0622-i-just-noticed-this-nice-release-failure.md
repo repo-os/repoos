@@ -9,7 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/promote-release-failures-above-published
 created_at: "2026-10-02T01:48:25Z"
-updated_at: "2026-10-02T02:08:21Z"
+updated_at: "2026-10-02T02:48:58Z"
+review_passes: 4
+review_rounds: 2
 ---
 ## Problem
 
@@ -56,6 +58,9 @@ I just noticed this nice release failure section, but it's hidden below the fold
 ![Screenshot-2026-10-02-at-09.46.27](/api/tasks/0622/attachments/screenshot-1.png)
 ![Screenshot-2026-10-02-at-09.46.06](/api/tasks/0622/attachments/screenshot-2.png)
 
+## Shots
+[{"target": "default", "route": "/releases", "label": "Failure promoted above Published to with loading indicator behavior fixed (#0622 review fix: retry poll race)"}]
+
 ## Activity
 
 - 2026-10-02T01:48:25Z · created · hello@repoos.org
@@ -64,4 +69,18 @@ I just noticed this nice release failure section, but it's hidden below the fold
 - 2026-10-02T01:48:42Z · status draft→inbox, title, area, body
 - 2026-10-02T01:53:31Z · status inbox→ready
 - 2026-10-02T01:53:44Z · status ready→active, branch
+- 2026-10-02T02:03:44Z · body: section Shots
 - 2026-10-02T02:08:21Z · status active→review
+- 2026-10-02T02:09:10Z · status review→active
+- 2026-10-02T02:16:16Z · status active→review
+- 2026-10-02T02:16:16Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-02T02:17:32Z · status review→active
+- 2026-10-02T02:21:47Z · status active→review
+- 2026-10-02T02:21:47Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-02T02:23:20Z · needs_input
+- 2026-10-02T02:31:23Z · status review→active
+- 2026-10-02T02:33:26Z · needs_input (review-rounds-exhausted) dismissed by hello@repoos.org
+- 2026-10-02T02:44:33Z · body: section Shots
+- 2026-10-02T02:44:52Z · status active→review
+- 2026-10-02T02:44:52Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+

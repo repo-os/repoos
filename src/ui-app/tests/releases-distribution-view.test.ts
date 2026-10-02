@@ -3,6 +3,7 @@
  * it renders only when destinations are configured, shows each channel's
  * version/state, and copies every install command independently.
  */
+import { createPinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
 import * as apiMod from "../src/api";
@@ -68,7 +69,10 @@ function mockApi(channels: ReturnType<typeof channel>[]) {
 }
 
 async function mountView(): Promise<VueWrapper> {
-  const wrapper = mount(ReleasesView, { attachTo: document.body });
+  const wrapper = mount(ReleasesView, {
+    attachTo: document.body,
+    global: { plugins: [createPinia()] },
+  });
   await flushPromises();
   return wrapper;
 }
@@ -237,11 +241,13 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
 
     button(document.body, "Cut next release")!.click();
     await flushPromises();
-    // While the dialog is open the page banner yields to it — but the failure
+    // While the drawer is open the page banner yields to it, and under #0621
+    // the drawer shows the still-unresolved failure inline — but the failure
     // must not be cleared: the promotion ends only when a release succeeds.
     expect(wrapper.find(".rel-outcome--fail").exists()).toBe(false);
-    // The dialog's inline error block reports this attempt, not the old one.
-    expect(document.querySelector(".release-modal-error"))!.toBeNull();
+    expect(document.querySelector(".release-drawer-error")?.textContent).toContain(
+      "repoos check failed",
+    );
 
     button(document.body, "Cancel")!.click();
     await flushPromises();
@@ -322,7 +328,7 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
 
     // The POST failed before a run existed. The dialog reports this attempt;
     // the page's status refresh must not clear the promoted failure.
-    expect(document.querySelector(".release-modal-error")?.textContent).toContain(
+    expect(document.querySelector(".release-drawer-error")?.textContent).toContain(
       "git push rejected",
     );
     button(document.body, "Cancel")!.click();
@@ -469,13 +475,14 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
   });
 
   it("drops a pre-retry poll that resolves after the retry's run is accepted", async () => {
-    // The review finding on #0622: the poll issued before Publish is clicked
-    // (here the mount poll) can resolve after the retry's POST returns. The
-    // seq guard only orders polls against each other — nothing invalidated a
-    // poll on retry — so the stale response would otherwise overwrite the
-    // retry's running run with the prior failure, clear the releasing flag,
-    // and stop polling, leaving the retry's own outcome unobserved.
+    // The review finding on #0622: a poll issued before Publish is clicked can
+    // resolve after the retry's POST returns. The seq guard only orders polls
+    // against each other — nothing invalidated a poll on retry — so the stale
+    // response would otherwise overwrite the retry's running run with the prior
+    // failure, clear the releasing flag, and stop polling, leaving the retry's
+    // own outcome unobserved.
     let resolveStalePoll: ((v: Record<string, unknown>) => void) | undefined;
+    let runCalls = 0;
     api.mockImplementation((path: string, opts?: { method?: string }) => {
       if (path === "/api/release" && opts?.method === "POST") {
         return Promise.resolve({
@@ -496,12 +503,17 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
           channels: [channel()],
         });
       if (path === "/api/release/run") {
-        // The mount poll hangs — it is still in flight when Publish is
-        // clicked; every later poll reports the retry's success.
-        if (!resolveStalePoll)
+        runCalls += 1;
+        // The mount poll reports the prior failure (applied as the first
+        // observation — the failure banner is promoted).
+        if (runCalls === 1) return Promise.resolve(failedRun);
+        // The drawer-open re-sync poll (#0621) hangs — it is still in flight
+        // when Publish is clicked.
+        if (runCalls === 2)
           return new Promise<Record<string, unknown>>((resolve) => {
             resolveStalePoll = resolve;
           });
+        // Every poll issued after the retry reports its success.
         return Promise.resolve({
           state: "succeeded",
           phase: "pushing_tag",
@@ -513,11 +525,12 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
       return Promise.reject(new Error(`unexpected ${path}`));
     });
     const wrapper = await mountView();
-    expect(resolveStalePoll).toBeDefined();
+    expect(wrapper.find(".rel-outcome--fail").exists()).toBe(true);
 
-    // Publish while the stale poll is still in flight.
+    // Publish while the drawer's re-sync poll is still in flight.
     button(document.body, "Cut next release")!.click();
     await flushPromises();
+    expect(resolveStalePoll).toBeDefined();
     const input = document.querySelector<HTMLInputElement>("#rel-version")!;
     input.value = "1.2.4";
     input.dispatchEvent(new Event("input"));
@@ -536,7 +549,7 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
     resolveStalePoll?.(failedRun);
     await flushPromises();
     expect(document.querySelector(".release-progress")).not.toBeNull();
-    expect(document.querySelector(".release-modal-error"))!.toBeNull();
+    expect(document.querySelector(".release-drawer-error"))!.toBeNull();
 
     // Polling continued: the retry's own success is observed and applied.
     await vi.advanceTimersByTimeAsync(1000);

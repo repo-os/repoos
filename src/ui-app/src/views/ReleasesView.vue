@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { Bug, Check, Copy, Sparkles } from "lucide-vue-next";
+import { useUiStore } from "../stores/ui";
+import { Bug, Check, Copy, Sparkles, X } from "lucide-vue-next";
 import { copyToClipboard } from "../lib/clipboard";
 import Button from "../components/ui/button.vue";
 import Dialog from "../components/ui/dialog/root.vue";
@@ -77,6 +78,7 @@ const loading = ref(true);
  *  a status refresh can never clear a promoted run-failure banner (#0622). */
 const loadError = ref("");
 const running = ref(false);
+const ui = useUiStore();
 const confirmOpen = ref(false);
 const newVersion = ref("");
 const message = ref("");
@@ -89,13 +91,6 @@ const notesError = ref("");
 const notesHint = ref("");
 /** Full command output from a failed release phase (repoos check log, build errors). */
 const runLog = ref("");
-/**
- * Whether a failure was already showing when the cut dialog opened. The
- * dialog's inline error block only reports failures from the attempt it
- * launched; a prior failure stays promoted on the page until a subsequent
- * release succeeds (#0622).
- */
-const errorAtOpen = ref(false);
 const debuggerSending = ref(false);
 const debuggerSent = ref(false);
 const debuggerErr = ref("");
@@ -255,12 +250,11 @@ const phaseLabel = computed(
     })[phase.value],
 );
 
+// Mid-cut this must stay true (#0621): closing the panel is safe now, so the
+// button doubles as the way back in — it relabels to "View progress" while a
+// run is in flight.
 const canOpen = computed(
-  () =>
-    !!status.value?.supported &&
-    status.value.clean &&
-    status.value.onReleaseBranch &&
-    !running.value,
+  () => !!status.value?.supported && status.value.clean && status.value.onReleaseBranch,
 );
 
 /** Wall-clock of the last completed run, from the route's run timestamps. */
@@ -363,23 +357,20 @@ async function copyCommand(command: string): Promise<void> {
   copyTimer = setTimeout(() => (copiedCommand.value = ""), 1600);
 }
 
+/**
+ * Open the cut-a-release panel. Closing the panel is never a reset (#0621):
+ * version, notes, run log, errors and run tracking all live at the view level
+ * and survive close/reopen, so an operator can step away mid-cut or mid-draft
+ * and come back to the same state. A freshly opened panel re-syncs both
+ * server-tracked runs immediately (an in-flight draft or cut is picked up
+ * where it stands), and the form is only cleared once a cut succeeds (see the
+ * success path in `pollRun`) so the *next* cut starts from a clean form.
+ */
 function openConfirm(): void {
-  // Keep the previous outcome (promoted failure, success message) in place:
-  // the failure clears only when a subsequent release succeeds (#0622).
-  // errorAtOpen keeps an older failure out of the dialog's inline error block.
-  errorAtOpen.value = !!error.value;
-  newVersion.value = "";
-  notes.value = "";
-  notesError.value = "";
-  notesHint.value = "";
-  // Reset the draft placement so a re-open can place the same session's
-  // finished draft (the field just cleared); ownership itself is untouched.
-  placedNotesKey.value = null;
   generatingNotes.value = notesRun.value?.state === "running";
-  debuggerSent.value = false;
-  debuggerErr.value = "";
   confirmOpen.value = true;
   void syncNotesRunAtOpen();
+  void pollRun();
 }
 
 /**
@@ -528,12 +519,11 @@ async function generateNotes(): Promise<void> {
 }
 
 async function release(): Promise<void> {
-  if (!newVersionValid.value || running.value || generatingNotes.value) return;
+  if (!canOpen.value || !newVersionValid.value || running.value || generatingNotes.value) return;
   running.value = true;
   // A prior failure stays promoted while the retry runs — it is replaced by
-  // a new failure or cleared by success in pollRun. The dialog's inline
-  // error block reports only this attempt's outcome.
-  errorAtOpen.value = false;
+  // a new failure or cleared by success in pollRun (#0622). Under #0621 the
+  // drawer shows the still-unresolved failure inline as well.
   notesError.value = "";
   // Whatever draft this session produced is now the cut's payload — stop
   // tracking the run so re-opening the modal can't backfill it again (#0605).
@@ -604,7 +594,12 @@ async function pollRun(): Promise<void> {
     if (seq !== runPollSeq) return;
     const wasRunning = prev?.state === "running";
     run.value = latest;
-    if (latest.state === "running") return;
+    if (latest.state === "running") {
+      // Sync from the server, not just from this session's own POST (#0621):
+      // a run started elsewhere (or before a reopen) must show as live too.
+      running.value = true;
+      return;
+    }
     running.value = false;
     // Apply the outcome once — on the first observation (a finished run from
     // before this page load owns the "survives until the next one" banner) or
@@ -612,12 +607,19 @@ async function pollRun(): Promise<void> {
     if (prev === null || wasRunning) {
       if (latest.state === "succeeded") {
         message.value = latest.message;
-        // A successful release resolves any watched failure: clear it so the
-        // promoted failure section yields to normal post-success behavior.
-        error.value = "";
-        runLog.value = "";
         confirmOpen.value = false;
         dropNotesRun();
+        // The cut shipped — clear the form and the promoted failure so the
+        // next open starts fresh. This is the one reset: closing the panel
+        // mid-run never clears it.
+        newVersion.value = "";
+        notes.value = "";
+        error.value = "";
+        runLog.value = "";
+        notesError.value = "";
+        notesHint.value = "";
+        debuggerSent.value = false;
+        debuggerErr.value = "";
         await Promise.all([load(), loadDistribution()]);
       } else if (latest.state === "failed" && latest.message) {
         // A failed phase reports its full command output (repoos check log, build
@@ -680,6 +682,10 @@ function elapsed(): string {
 }
 
 onMounted(() => {
+  // Deep link for shots/docs (`/releases?drawer=cut`): opens the panel without
+  // a click. It is view-only on a dirty tree or off the release branch — the
+  // publish button and release() are still gated on `canOpen`.
+  if (new URLSearchParams(window.location.search).get("drawer") === "cut") confirmOpen.value = true;
   void load();
   void loadDistribution();
   void pollRun();
@@ -775,8 +781,19 @@ onBeforeUnmount(() => {
               }}</span>
             </div>
             <div class="rel-actions rel-next-actions">
-              <Button variant="accent" :disabled="!canOpen" @click="openConfirm">
-                {{ suggestedVersion ? "Cut next release" : "Cut a release" }}
+              <Button
+                variant="accent"
+                data-test-id="cut-release-open"
+                :disabled="!canOpen"
+                @click="openConfirm"
+              >
+                {{
+                  running
+                    ? "View progress"
+                    : suggestedVersion
+                      ? "Cut next release"
+                      : "Cut a release"
+                }}
               </Button>
               <a
                 v-if="status.workflowUrl"
@@ -916,18 +933,32 @@ onBeforeUnmount(() => {
 
         <Dialog :open="confirmOpen" @update:open="confirmOpen = $event">
           <DialogOverlay />
-          <DialogContent class="release-modal">
-            <div class="release-modal-head">
-              <DialogTitle>Cut a release</DialogTitle>
-              <DialogClose class="close-x" aria-label="Close" :disabled="running">×</DialogClose>
+          <DialogContent
+            class="release-drawer"
+            :style="{ width: ui.drawerWidth + 'px', 'max-width': '100vw' }"
+          >
+            <div class="drawer-resize" @mousedown.prevent="ui.startResize"></div>
+            <div class="drawer-head">
+              <div class="drawer-head-title">
+                <DialogTitle>Cut a release</DialogTitle>
+              </div>
+              <DialogClose class="close-x" aria-label="Close"
+                ><X class="size-[15px]"
+              /></DialogClose>
             </div>
-            <div class="release-modal-body">
-              <DialogDescription>
+            <div class="drawer-body">
+              <DialogDescription class="release-drawer-desc">
                 Runs <code>repoos check</code>, pushes <code>{{ status.branch }}</code
                 >, then pushes a tag. CI builds and publishes from that tag.
               </DialogDescription>
 
-              <dl class="rel-modal-facts">
+              <p v-if="!canOpen && !running" class="ff-notice" role="status">
+                Publishing is disabled: the working tree must be clean and on
+                <code>{{ status.branch }}</code
+                >.
+              </p>
+
+              <dl class="rel-panel-facts">
                 <div>
                   <dt>Currently published</dt>
                   <dd>{{ publishedTag ?? "nothing yet" }}</dd>
@@ -950,11 +981,7 @@ onBeforeUnmount(() => {
                 <small>You can leave this page — progress shows here when you return.</small>
               </div>
 
-              <div
-                v-if="error && !running && !errorAtOpen"
-                class="release-modal-error"
-                role="alert"
-              >
+              <div v-if="error && !running" class="release-drawer-error" role="alert">
                 <strong>{{ error }}</strong>
                 <pre v-if="runLog" class="rel-log">{{ runLog }}</pre>
                 <div class="rel-debugger">
@@ -1057,8 +1084,9 @@ onBeforeUnmount(() => {
 
               <div v-if="!running" class="rel-field-hint rel-async-hint">
                 <span>
-                  <b>Generate with AI</b> usually takes 1–3 minutes. You can close this dialog and
-                  come back — clicking Generate again reuses the saved draft.
+                  <b>Generate with AI</b> usually takes 1–3 minutes. You can close this panel and
+                  come back — your draft and edits are waiting, and clicking Generate again reuses
+                  the saved draft.
                 </span>
                 <span>
                   <b>Publish</b> usually takes a few minutes (about 5). It's safe to leave while it
@@ -1066,16 +1094,16 @@ onBeforeUnmount(() => {
                 </span>
               </div>
             </div>
-            <div class="release-actions">
+            <div class="release-drawer-actions">
               <Button
                 variant="accent"
-                :disabled="!newVersionValid || running || generatingNotes"
+                :disabled="!canOpen || !newVersionValid || running || generatingNotes"
                 @click="release"
               >
                 {{ running ? "Publishing…" : newTag ? `Publish ${newTag}` : "Publish" }}
               </Button>
               <DialogClose as-child
-                ><Button variant="ghost" :disabled="running">Cancel</Button></DialogClose
+                ><Button variant="ghost">{{ running ? "Close" : "Cancel" }}</Button></DialogClose
               >
             </div>
           </DialogContent>
