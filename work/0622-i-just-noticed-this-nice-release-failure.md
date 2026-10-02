@@ -2,7 +2,7 @@
 id: "0622"
 title: Promote release failures above published-to and show loading state
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
@@ -110,4 +110,4 @@ I just noticed this nice release failure section, but it's hidden below the fold
 - 2026-10-02T08:58:54Z · note: interactive session: sequence loadDistribution responses (review bug)
 - 2026-10-02T08:59:57Z · status active→review
 - 2026-10-02T08:59:58Z · status review→active
-- 2026-10-02T09:03:50Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-02T09:03:50Z · status active→review
