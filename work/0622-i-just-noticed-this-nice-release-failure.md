@@ -1,17 +1,17 @@
 ---
-updated_at: "2026-10-02T02:17:32Z"
-review_passes: 2
 id: "0622"
 title: Promote release failures above published-to and show loading state
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/promote-release-failures-above-published
 created_at: "2026-10-02T01:48:25Z"
-review_rounds: 1
+updated_at: "2026-10-02T02:17:32Z"
+review_rounds: 2
+review_passes: 2
 ---
 ## Problem
 
@@ -76,4 +76,4 @@ I just noticed this nice release failure section, but it's hidden below the fold
 - 2026-10-02T02:09:10Z · status review→active
 - 2026-10-02T02:16:16Z · status active→review
 - 2026-10-02T02:16:16Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
-
+- 2026-10-02T02:17:32Z · status review→active
