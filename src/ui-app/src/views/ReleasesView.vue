@@ -140,6 +140,8 @@ let runPollSeq = 0;
  */
 let releasePosting = false;
 let notesPollSeq = 0;
+/** Orders distribution lookups: only the latest one may apply or settle loading. */
+let distributionSeq = 0;
 
 /** "Published to" destinations for the release being viewed (empty when none). */
 const distribution = ref<DistributionChannel[]>([]);
@@ -307,16 +309,22 @@ async function load(): Promise<void> {
  * simply hides the section.
  */
 async function loadDistribution(): Promise<void> {
+  // A release landing while the mount-time lookup is still in flight starts a
+  // second lookup; the older response must not overwrite the newer one or
+  // clear the loading indicator while the newer lookup is still pending.
+  const seq = ++distributionSeq;
   distributionLoading.value = true;
   try {
     const data = await api<DistributionSummary>("/api/release/distribution");
+    if (seq !== distributionSeq) return;
     distribution.value = data.channels ?? [];
     distributionReleaseVersion.value = data.releaseVersion ?? null;
   } catch {
+    if (seq !== distributionSeq) return;
     distribution.value = [];
     distributionReleaseVersion.value = null;
   } finally {
-    distributionLoading.value = false;
+    if (seq === distributionSeq) distributionLoading.value = false;
   }
 }
 
