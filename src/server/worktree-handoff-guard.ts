@@ -278,8 +278,8 @@ async function commitChangedPaths(wt: string, from: string, to: string): Promise
  * - A non-merge commit is allowed only when every path it changes is task
  *   bookkeeping. Any source path — including a mode-only change (chmod +x,
  *   file → symlink) — is a real post-handoff edit.
- * - A two-parent merge is allowed only when its non-first parent is an
- *   ancestor of main, AND it took main's side verbatim on every
+ * - A merge (two-parent, or octopus) is allowed only when every non-first
+ *   parent is an ancestor of main, AND it took main's side verbatim on every
  *   non-bookkeeping path the two sides could disagree on, checked from three
  *   directions:
  *
@@ -297,11 +297,11 @@ async function commitChangedPaths(wt: string, from: string, to: string): Promise
  *      theirs) fails even though its result equals main's content.
  *
  *   A merge of a branch main never contained fails on the ancestry check.
- * - Octopus merges (>2 parents) fail closed.
  *
- * Commits already contained in main are skipped entirely: they are
- * already-landed content the sync merge merely imported, and they are ordinary
- * source commits that would otherwise look like post-handoff edits.
+ * Only the first-parent chain is checked. The imported side of a sync merge is
+ * vetted by the ancestry check, but a commit merely being reachable from main
+ * does not exempt it: a post-handoff source commit on the task's own
+ * first-parent chain fails even if it later landed in main.
  * The content comparison is against the merge's own main parent, not main's
  * current tip, so main advancing after a valid sync merge does not re-trip the
  * guard; ancestry of that parent is what makes the imported content safe.
@@ -314,11 +314,15 @@ async function isMainSyncDrift(
   driftPaths: string[],
   filter: WorkFileFilter,
 ): Promise<boolean> {
-  // Task-side commits only: reachable from HEAD since the handoff, but not
-  // already in main (the imported side of a sync merge lives in main).
+  // Task-side commits only: the first-parent chain from HEAD back to the
+  // handoff. The imported side of a sync merge (its non-first parents) is not
+  // walked — it is vetted by the merge's ancestry-of-main check below. Do NOT
+  // exclude `^main` here: a post-handoff source commit that later became
+  // reachable from main would then skip every check without any verified
+  // sync merge having imported it.
   const list = await runGit(
     wt,
-    ["rev-list", "--parents", actualHead, `^${expectedSha}`, "^main"],
+    ["rev-list", "--first-parent", "--parents", actualHead, `^${expectedSha}`],
     15_000,
   );
   if (list.status !== 0) return false;
@@ -328,29 +332,41 @@ async function isMainSyncDrift(
     .filter((parts) => parts.length > 0 && parts[0] !== "");
   for (const [sha, ...parents] of commits) {
     if (parents.length >= 2) {
-      // Octopus merges have no single "main side" to verify against.
-      if (parents.length > 2) return false;
-      const [first, mainParent] = parents;
-      if (isAncestor(wt, mainParent, "main") !== true) return false;
-      // Forward: the merge introduced nothing beyond the main parent's content.
+      const [first, ...mainParents] = parents;
+      for (const mp of mainParents) {
+        if (isAncestor(wt, mp, "main") !== true) return false;
+      }
+      // A path "matches main" when the merge result carries exactly the mode
+      // and blob of one of the imported (non-first) parents. For the usual
+      // two-parent merge that is the single main parent; an octopus merge may
+      // legitimately take different paths from different parents.
+      const matchesMain = async (p: string): Promise<boolean> => {
+        for (const mp of mainParents) {
+          if (await treeEntryEquals(wt, sha, mp, p)) return true;
+        }
+        return false;
+      };
+      // Forward: the merge introduced nothing beyond the imported content.
       const changed = await commitChangedPaths(wt, first, sha);
       if (changed === null) return false;
       for (const p of changed) {
         if (isTaskBookkeepingPath(p, filter)) continue;
-        if (!(await treeEntryEquals(wt, sha, mainParent, p))) return false;
+        if (!(await matchesMain(p))) return false;
       }
-      // Backward: nothing the main parent changed was overridden by the
+      // Backward: nothing an imported parent changed was overridden by the
       // resolution. A path main touched that the merge left at the task-side
       // ("keep ours") or combined content is unchanged from — or identical
       // across — the first parent, so the forward diff never lists it; this
       // direction is what catches those resolutions (#0624 review).
-      const baseRes = await runGit(wt, ["merge-base", first, mainParent], 10_000);
-      if (baseRes.status !== 0) return false;
-      const mainChanged = await commitChangedPaths(wt, baseRes.stdout.trim(), mainParent);
-      if (mainChanged === null) return false;
-      for (const p of mainChanged) {
-        if (isTaskBookkeepingPath(p, filter)) continue;
-        if (!(await treeEntryEquals(wt, sha, mainParent, p))) return false;
+      for (const mp of mainParents) {
+        const baseRes = await runGit(wt, ["merge-base", first, mp], 10_000);
+        if (baseRes.status !== 0) return false;
+        const mainChanged = await commitChangedPaths(wt, baseRes.stdout.trim(), mp);
+        if (mainChanged === null) return false;
+        for (const p of mainChanged) {
+          if (isTaskBookkeepingPath(p, filter)) continue;
+          if (!(await matchesMain(p))) return false;
+        }
       }
     } else {
       const changed = await commitChangedPaths(wt, `${sha}^`, sha);
