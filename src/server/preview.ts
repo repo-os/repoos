@@ -106,6 +106,32 @@ const MAX_PREVIEWS = 1;
 /** Marks a spawned child so it skips its own boot-time orphan cleanup. */
 const CHILD_ENV = "REPOOS_PREVIEW_CHILD";
 
+/**
+ * Who holds the one preview slot when `startingTaskId` asks for it without
+ * eviction rights (#0627, review round 2): a REGISTERED preview or a start
+ * still in flight. A preview joins the registry only after port reservation,
+ * spawn and readiness, so counting the registry alone would let concurrent
+ * starts for different tasks all pass the check and exceed the cap. Pure so
+ * the concurrency contract is testable without spawning processes. Returns
+ * null when the start may proceed (slot free, or the task already holds it).
+ */
+export function previewCapacityHolder(
+  registryKeys: readonly string[],
+  inflightKeys: readonly string[],
+  startingTaskId: string,
+  max: number,
+): string | null {
+  if (registryKeys.includes(startingTaskId)) return null;
+  // An in-flight start for the SAME task cannot exist here (start returns the
+  // shared inflight promise instead of reaching doStart again) — excluded
+  // defensively. Registered holders come first: they are the oldest.
+  const holders = [
+    ...registryKeys,
+    ...inflightKeys.filter((id) => id !== startingTaskId && !registryKeys.includes(id)),
+  ];
+  return holders.length >= max ? (holders[0] ?? null) : null;
+}
+
 const now = (): string => new Date().toISOString();
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
@@ -647,20 +673,29 @@ export class PreviewManager {
     // With `noEvict`, the check-and-evict becomes a check-and-refuse — the
     // manual shot capture (#0627) must never evict a preview a human is
     // viewing, and doing the check HERE (not in the caller beforehand) closes
-    // the race where another preview starts between the two.
-    if (opts.noEvict && this.registry.size >= MAX_PREVIEWS && !this.registry.has(task.id)) {
-      const oldest = [...this.registry.entries()].sort((a, b) =>
-        a[1].startedAt < b[1].startedAt ? -1 : a[1].startedAt > b[1].startedAt ? 1 : 0,
-      )[0];
-      return {
-        ok: false,
-        busy: true,
-        error:
-          `the one preview slot is busy: task #${oldest?.[0] ?? "?"} has a preview running — ` +
-          "stop it (or wait for it to be evicted), then retry",
-      };
+    // the race where another preview starts between the two. In-flight starts
+    // count too: a preview is only registered after port reservation, spawn
+    // and readiness, so the registry alone would let concurrent starts for
+    // different tasks all pass and exceed the cap (review round 2).
+    if (opts.noEvict) {
+      const holder = previewCapacityHolder(
+        [...this.registry.keys()],
+        [...this.inflight.keys()],
+        task.id,
+        MAX_PREVIEWS,
+      );
+      if (holder) {
+        return {
+          ok: false,
+          busy: true,
+          error:
+            `the one preview slot is busy: task #${holder} has a preview running — ` +
+            "stop it (or wait for it to be evicted), then retry",
+        };
+      }
+    } else {
+      await this.evictIfAtCapacity(task.id);
     }
-    await this.evictIfAtCapacity(task.id);
 
     let port: number;
     try {

@@ -1106,7 +1106,18 @@ async function declareTaskShot(
   // then the default command), so an unresolvable pick fails HERE, in the
   // modal, instead of as a capture failure after the declaration was written.
   const shotContext = computeTaskShotContext(config, task);
-  const resolution = resolveShotTargets(config.preview, task.area, shotContext.changedPaths);
+  // The drawer offers every configured target (#0379), not just the ones the
+  // diff or the task's area resolve to — an explicit pick must be honored
+  // through `resolveShotTargets`' override path, or an offered out-of-area
+  // target would fail here even though it is configured (review round 2).
+  // With no explicit target the default resolution applies (changed paths,
+  // then area, then the default command).
+  const resolution = resolveShotTargets(
+    config.preview,
+    task.area,
+    shotContext.changedPaths,
+    entry.target,
+  );
   if (resolution.names.length === 0) {
     return json(res, 400, {
       error:

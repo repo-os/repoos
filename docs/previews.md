@@ -191,9 +191,14 @@ same route is dispatched by the body's `data` field) and
   capture replaces the task's preview (`startTargetPreview`), while a manual
   add NEVER evicts a running preview. The reservation is atomic —
   `PreviewManager.start({ noEvict: true })` makes the capacity decision at
-  start time, so a preview that begins between the capture's snapshot check
-  and its start is refused, not evicted. The same target's live preview is
-  reused without a restart.
+  start time, counting both registered previews and starts still in flight (a
+  preview is registered only after spawn and readiness, so the registry alone
+  would let concurrent starts exceed the cap) — so a preview that begins
+  between the capture's snapshot check and its start is refused, not evicted.
+  The same target's live preview is reused without a restart. An explicitly
+  picked target is resolved through `resolveShotTargets`' override path, so
+  every target the drawer offers can be captured even when the task's `area`
+  does not name it.
 
 `repoos shot`'s own flags sit on top of that plan (#0610). `buildCliShotPlan`
 (`src/commands/shot.ts`) is a pure function of the task body, the flags and the
