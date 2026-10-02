@@ -73,6 +73,9 @@ const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$/;
 
 const status = ref<ReleaseStatus | null>(null);
 const loading = ref(true);
+/** Page-level failure fetching `/api/release` — separate from run failures so
+ *  a status refresh can never clear a promoted run-failure banner (#0622). */
+const loadError = ref("");
 const running = ref(false);
 const confirmOpen = ref(false);
 const newVersion = ref("");
@@ -127,6 +130,14 @@ const observedNotesKey = ref<string | null>(null);
 /** The run that already placed a draft — blocks duplicate fills per poll tick. */
 const placedNotesKey = ref<string | null>(null);
 let pollTimer: ReturnType<typeof setInterval> | null = null;
+/**
+ * Poll sequence numbers: each issued poll increments its counter, and a
+ * response may only be applied while it is still the most recent request.
+ * A slow earlier request must never overwrite newer state — e.g. re-showing
+ * a failure after a newer poll already applied a success (#0622).
+ */
+let runPollSeq = 0;
+let notesPollSeq = 0;
 
 /** "Published to" destinations for the release being viewed (empty when none). */
 const distribution = ref<DistributionChannel[]>([]);
@@ -279,11 +290,11 @@ function relativeTime(iso: string | null): string {
 
 async function load(): Promise<void> {
   loading.value = true;
-  error.value = "";
+  loadError.value = "";
   try {
     status.value = await api<ReleaseStatus>("/api/release");
   } catch (err) {
-    error.value = err instanceof Error ? err.message : String(err);
+    loadError.value = err instanceof Error ? err.message : String(err);
   } finally {
     loading.value = false;
   }
@@ -420,8 +431,12 @@ function applyNotesRun(next: ReleaseNotesRun): void {
 }
 
 async function pollNotesRun(): Promise<void> {
+  // Same ordering guard as pollRun: drop superseded responses.
+  const seq = ++notesPollSeq;
   try {
-    applyNotesRun(await api<ReleaseNotesRun>("/api/release/notes/run"));
+    const latest = await api<ReleaseNotesRun>("/api/release/notes/run");
+    if (seq !== notesPollSeq) return;
+    applyNotesRun(latest);
   } catch {
     // Keep the current state visible through a short server hiccup.
   }
@@ -537,7 +552,11 @@ async function release(): Promise<void> {
     run.value = result.run;
     startPolling();
   } catch (err) {
+    // The attempt died before a run was created (e.g. the push was rejected):
+    // surface this error and drop the previous run's log, which describes an
+    // earlier failure, not this one. `load()` no longer touches run errors.
     error.value = err instanceof Error ? err.message : String(err);
+    runLog.value = "";
     await load();
   } finally {
     if (run.value?.state !== "running") running.value = false;
@@ -563,10 +582,14 @@ function failureSummary(phaseName: string | null, msg: string): string {
 }
 
 async function pollRun(): Promise<void> {
+  const seq = ++runPollSeq;
   let prev: ReleaseRun | null = null;
   try {
     prev = run.value;
     const latest = await api<ReleaseRun>("/api/release/run");
+    // Superseded: a newer poll was issued while this one was in flight, and
+    // its response (already applied or still coming) is the newer truth.
+    if (seq !== runPollSeq) return;
     const wasRunning = prev?.state === "running";
     run.value = latest;
     if (latest.state === "running") return;
@@ -678,7 +701,7 @@ onBeforeUnmount(() => {
     </header>
 
     <div v-if="loading" class="spin"></div>
-    <p v-else-if="error && !status" class="rel-error">{{ error }}</p>
+    <p v-else-if="loadError && !status" class="rel-error">{{ loadError }}</p>
 
     <template v-else-if="status">
       <div v-if="!status.enabled" class="rel-card rel-empty">

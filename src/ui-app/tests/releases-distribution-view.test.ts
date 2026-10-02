@@ -291,6 +291,93 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
     wrapper.unmount();
   });
 
+  it("keeps the failure banner when a retry fails before a run is created", async () => {
+    api.mockImplementation((path: string, opts?: { method?: string }) => {
+      if (path === "/api/release" && opts?.method === "POST")
+        return Promise.reject(new Error("git push rejected"));
+      if (path === "/api/release") return Promise.resolve(releaseStatus());
+      if (path === "/api/release/distribution")
+        return Promise.resolve({
+          releaseVersion: "1.2.3",
+          releaseTag: "v1.2.3",
+          channels: [channel()],
+        });
+      if (path === "/api/release/run") return Promise.resolve(failedRun);
+      return Promise.reject(new Error(`unexpected ${path}`));
+    });
+    const wrapper = await mountView();
+    expect(wrapper.find(".rel-outcome--fail").exists()).toBe(true);
+
+    button(document.body, "Cut next release")!.click();
+    await flushPromises();
+    const input = document.querySelector<HTMLInputElement>("#rel-version")!;
+    input.value = "1.2.4";
+    input.dispatchEvent(new Event("input"));
+    await flushPromises();
+    const publish = [...document.body.querySelectorAll("button")].find((b) =>
+      b.textContent?.trim().startsWith("Publish"),
+    )!;
+    publish.click();
+    await flushPromises();
+
+    // The POST failed before a run existed. The dialog reports this attempt;
+    // the page's status refresh must not clear the promoted failure.
+    expect(document.querySelector(".release-modal-error")?.textContent).toContain(
+      "git push rejected",
+    );
+    button(document.body, "Cancel")!.click();
+    await flushPromises();
+    expect(wrapper.find(".rel-outcome--fail").exists()).toBe(true);
+    expect(wrapper.text()).toContain("git push rejected");
+    wrapper.unmount();
+  });
+
+  it("ignores a stale run-poll response that arrives after a newer success", async () => {
+    let resolveFirstPoll: ((v: Record<string, unknown>) => void) | undefined;
+    let runCalls = 0;
+    api.mockImplementation((path: string) => {
+      if (path === "/api/release") return Promise.resolve(releaseStatus());
+      if (path === "/api/release/distribution")
+        return Promise.resolve({
+          releaseVersion: "1.2.3",
+          releaseTag: "v1.2.3",
+          channels: [channel()],
+        });
+      if (path === "/api/release/run") {
+        runCalls += 1;
+        // The mount poll hangs; every later poll reports the success.
+        if (runCalls === 1)
+          return new Promise<Record<string, unknown>>((resolve) => {
+            resolveFirstPoll = resolve;
+          });
+        return Promise.resolve({
+          state: "succeeded",
+          phase: "pushing_tag",
+          message: "Released v1.2.4",
+          startedAt: "2026-10-01T02:00:00Z",
+          updatedAt: "2026-10-01T02:03:00Z",
+        });
+      }
+      return Promise.reject(new Error(`unexpected ${path}`));
+    });
+    const wrapper = await mountView();
+
+    // The 1s tick issues a newer poll while the first is still in flight; it
+    // observes and applies the success.
+    await vi.advanceTimersByTimeAsync(1000);
+    await flushPromises();
+    expect(wrapper.find(".rel-outcome--ok").exists()).toBe(true);
+
+    // The hung first poll now lands with the older failure — it must be
+    // dropped instead of resurrecting the failure banner.
+    resolveFirstPoll?.(failedRun);
+    await flushPromises();
+    expect(wrapper.find(".rel-outcome--fail").exists()).toBe(false);
+    expect(wrapper.find(".rel-outcome--ok").exists()).toBe(true);
+    expect(wrapper.find(".rel-outcome--ok").text()).toContain("Released v1.2.4");
+    wrapper.unmount();
+  });
+
   it("promotes the failure outcome above Published to while it is unresolved", async () => {
     mockWithRun(failedRun);
     const wrapper = await mountView();
