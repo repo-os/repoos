@@ -672,4 +672,83 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
     expect(wrapper.find(".rel-outcome--ok").text()).toContain("Released v1.2.4");
     wrapper.unmount();
   });
+
+  it("ignores a superseded distribution lookup that settles after a newer one (#0622 review)", async () => {
+    // The mount-time lookup is slow; a release that succeeds meanwhile starts a
+    // second lookup. The older response must neither overwrite the newer
+    // channels nor clear the loading indicator while the newer one is pending.
+    const lookups: Array<(v: Record<string, unknown>) => void> = [];
+    let run: Record<string, unknown> = {
+      state: "running",
+      phase: "checking",
+      message: "Running checks…",
+      startedAt: "2026-10-01T04:00:00Z",
+      updatedAt: "2026-10-01T04:00:10Z",
+    };
+    api.mockImplementation((path: string) => {
+      if (path === "/api/release") return Promise.resolve(releaseStatus());
+      if (path === "/api/release/distribution")
+        return new Promise<Record<string, unknown>>((resolve) => lookups.push(resolve));
+      if (path === "/api/release/run") return Promise.resolve(run);
+      return Promise.reject(new Error(`unexpected ${path}`));
+    });
+    const wrapper = await mountView();
+    expect(lookups).toHaveLength(1);
+
+    run = {
+      state: "succeeded",
+      phase: "pushing_tag",
+      message: "Released v1.2.4",
+      startedAt: "2026-10-01T04:00:00Z",
+      updatedAt: "2026-10-01T04:03:00Z",
+    };
+    await vi.advanceTimersByTimeAsync(1000);
+    await flushPromises();
+    expect(lookups).toHaveLength(2);
+
+    const summary = (version: string) => ({
+      releaseVersion: version,
+      releaseTag: `v${version}`,
+      channels: [channel({ version })],
+    });
+    // Newer lookup lands first, then the older one finishes last.
+    lookups[1]!(summary("1.2.4"));
+    await flushPromises();
+    lookups[0]!(summary("1.2.3"));
+    await flushPromises();
+
+    expect(wrapper.find(".rel-dist-loading").exists()).toBe(false);
+    expect(wrapper.find(".rel-dist").text()).toContain("1.2.4");
+    expect(wrapper.find(".rel-dist").text()).not.toContain("1.2.3");
+    wrapper.unmount();
+  });
+
+  it("keeps the loading indicator until the latest distribution lookup settles (#0622 review)", async () => {
+    const lookups: Array<(v: Record<string, unknown>) => void> = [];
+    let run: Record<string, unknown> = {
+      state: "running",
+      phase: "checking",
+      message: "Running checks…",
+      startedAt: "2026-10-01T04:00:00Z",
+      updatedAt: "2026-10-01T04:00:10Z",
+    };
+    api.mockImplementation((path: string) => {
+      if (path === "/api/release") return Promise.resolve(releaseStatus());
+      if (path === "/api/release/distribution")
+        return new Promise<Record<string, unknown>>((resolve) => lookups.push(resolve));
+      if (path === "/api/release/run") return Promise.resolve(run);
+      return Promise.reject(new Error(`unexpected ${path}`));
+    });
+    const wrapper = await mountView();
+    run = { ...run, state: "succeeded", message: "Released v1.2.4" };
+    await vi.advanceTimersByTimeAsync(1000);
+    await flushPromises();
+    expect(lookups).toHaveLength(2);
+
+    // The OLDER lookup settles first: the newer one is still pending.
+    lookups[0]!({ releaseVersion: "1.2.3", releaseTag: "v1.2.3", channels: [channel()] });
+    await flushPromises();
+    expect(wrapper.find(".rel-dist-loading").exists()).toBe(true);
+    wrapper.unmount();
+  });
 });
