@@ -18,7 +18,10 @@ import { parseJsonResponse } from "./types.js";
 
 const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 const OPENCODE_GO_USAGE_URL = "https://opencode.ai/zen/go/v1/usage";
-const DEEPINFRA_BASE = "https://api.deepinfra.com/v1";
+// Billing endpoints live at the API root — the /v1 prefix belongs to the
+// inference routes only (openapi.json: servers = https://api.deepinfra.com,
+// paths = /payment/checklist, /payment/usage).
+const DEEPINFRA_BASE = "https://api.deepinfra.com";
 const GITHUB_API_BASE = "https://api.github.com";
 const FETCH_TIMEOUT_MS = 8000;
 
@@ -545,16 +548,20 @@ interface DeepInfraChecklistBody {
 }
 
 /**
- * Parse the authenticated `GET /v1/payment/checklist` response
+ * Parse the authenticated `GET /payment/checklist` response
  * (https://docs.deepinfra.com/api-reference/billing/get-checklist). The sign
  * convention is the trap here: a NEGATIVE `stripe_balance` is credit ready to
  * spend, a POSITIVE one is debt — never render the raw value as a balance.
  * Checklist dollar fields are USD; scoped credits are reported in CENTS and
- * converted here.
+ * converted here. Returns null when the 200 body doesn't carry the required
+ * fields, so a shape change reads as an error instead of an all-dash row.
  */
-export function parseDeepInfraChecklist(body: unknown): DeepInfraChecklist {
-  const c = (body as DeepInfraChecklistBody | null) ?? {};
-  const stripeBalance = num(c.stripe_balance);
+export function parseDeepInfraChecklist(body: unknown): DeepInfraChecklist | null {
+  if (typeof body !== "object" || body === null) return null;
+  const c = body as DeepInfraChecklistBody;
+  // `stripe_balance` and `recent` are required, non-null numbers in the schema.
+  if (num(c.stripe_balance) == null || num(c.recent) == null) return null;
+  const stripeBalance = num(c.stripe_balance) as number;
   const scoped: DeepInfraScopedCredit[] = Array.isArray(c.scoped_credits)
     ? c.scoped_credits.flatMap((s) => {
         if (typeof s !== "object" || s === null) return [];
@@ -666,11 +673,21 @@ export async function fetchDeepInfraSpend(apiKey: string): Promise<DeepInfraSpen
 
   const checklistPart = settle(checklist, "DeepInfra");
   const usagePart = settle(usage, "DeepInfra");
+  const UNRECOGNIZED = "DeepInfra responded in a format this build doesn't recognize.";
+  const checklistParsed =
+    checklistPart.data != null && checklistPart.error == null
+      ? parseDeepInfraChecklist(checklistPart.data)
+      : null;
+  const usageParsed =
+    usagePart.data != null && usagePart.error == null ? parseDeepInfraUsage(usagePart.data) : null;
   return {
-    checklist: checklistPart.data != null ? parseDeepInfraChecklist(checklistPart.data) : null,
-    checklistError: checklistPart.error,
-    usage: usagePart.data != null ? parseDeepInfraUsage(usagePart.data).months : null,
-    usageError: usagePart.error,
+    checklist: checklistParsed,
+    checklistError: checklistParsed ? checklistPart.error : (checklistPart.error ?? UNRECOGNIZED),
+    usage: usageParsed && !usageParsed.unrecognized ? usageParsed.months : null,
+    usageError:
+      usageParsed && !usageParsed.unrecognized
+        ? usagePart.error
+        : (usagePart.error ?? UNRECOGNIZED),
   };
 }
 
@@ -788,9 +805,11 @@ function copilotPeriodLabel(body: CopilotUsageBody): string {
  * Parse the billing usage report response — the AI-credit
  * (`/settings/billing/ai_credit/usage`) and premium-request shapes share the
  * `usageItems[]` layout, and the enterprise `/settings/billing/usage` report
- * differs only in carrying a single `quantity` per item. Copilot line items
- * are amounts BILLED to the account in the period; nothing here is a
- * remaining quota and the UI must not present it as one.
+ * differs only in carrying a single `quantity` per item. Items are filtered
+ * to Copilot products (case-insensitive) — the enterprise report mixes every
+ * billed product (Actions, storage, …) and must not be totaled as Copilot
+ * spend. Line items are amounts BILLED to the account in the period; nothing
+ * here is a remaining quota and the UI must not present it as one.
  */
 export function parseCopilotUsage(body: unknown, scope: CopilotScope): CopilotUsage {
   const b = (body as CopilotUsageBody | null) ?? {};
@@ -800,7 +819,10 @@ export function parseCopilotUsage(body: unknown, scope: CopilotScope): CopilotUs
   const rows = b.usageItems.flatMap((item) => {
     if (typeof item !== "object" || item === null) return [];
     const row = copilotRowFrom(item as Record<string, unknown>);
-    return row ? [row] : [];
+    // The dedicated endpoints report only Copilot items; the enterprise
+    // usage report mixes every product, so the filter matters there.
+    if (!row || !/copilot/i.test(row.product)) return [];
+    return [row];
   });
   return {
     scope,
@@ -822,16 +844,22 @@ function githubHeaders(token: string): Record<string, string> {
 /**
  * GitHub's billing error body is a top-level `message`. Layer the account
  * type onto the common refusals so the UI can say what to fix: 403 with the
- * classic-PAT requirement, 404 when the scope slug doesn't exist.
+ * classic-PAT requirement, 404 with an account-type hint.
  */
-async function throwGithubError(res: Response, body: unknown, label: string): Promise<never> {
+async function throwGithubError(
+  res: Response,
+  body: unknown,
+  label: string,
+  notFoundHint = "",
+): Promise<never> {
   const detail = upstreamError(body, `${label} API returned ${res.status}`);
   if (res.status === 401) throw new Error(`GitHub rejected the token (401): ${detail}`);
   if (res.status === 403)
     throw new Error(
       `GitHub refused the billing report (403): ${detail} — the billing usage endpoints require a classic personal access token, not a fine-grained one.`,
     );
-  if (res.status === 404) throw new Error(`GitHub could not find that account (404): ${detail}`);
+  if (res.status === 404)
+    throw new Error(`GitHub could not find that billing report (404): ${detail}${notFoundHint}`);
   throw new Error(detail);
 }
 
@@ -839,6 +867,7 @@ async function getGithubJson(
   path: string,
   token: string,
   label: string,
+  notFoundHint = "",
 ): Promise<{ body: unknown; status: number }> {
   let res: Response;
   try {
@@ -850,7 +879,7 @@ async function getGithubJson(
     throw new Error(`Could not reach the GitHub API.`);
   }
   const body = await parseJsonResponse<unknown>(res, label);
-  if (res.status >= 400) await throwGithubError(res, body, label);
+  if (res.status >= 400) await throwGithubError(res, body, label, notFoundHint);
   return { body, status: res.status };
 }
 
@@ -886,6 +915,14 @@ export async function fetchCopilotUsage(token: string, scopeRaw: string): Promis
     if (!login) throw new Error("GitHub did not report a login for this token.");
   }
   const path = copilotUsagePath(scopeRaw, login);
-  const usage = await getGithubJson(path, token, "GitHub");
+  // GitHub documents that the user-level Copilot billing endpoints cover
+  // only personally purchased plans; a centrally billed account (or one
+  // outside the enhanced billing platform) 404s even though the login
+  // itself exists. Point that case at the scope setting instead.
+  const notFoundHint =
+    scope.kind === "personal"
+      ? " If this Copilot plan is billed through an organization or enterprise, set the scope on this row to org:<name> or enterprise:<name> instead."
+      : " Check the org/enterprise slug in this row's scope setting.";
+  const usage = await getGithubJson(path, token, "GitHub", notFoundHint);
   return parseCopilotUsage(usage.body, scope);
 }
