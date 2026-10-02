@@ -129,15 +129,16 @@ count as implementation drift. Mixed drift (any source path, or a dirty non-book
 tree) still fails. **Exception (#0624):** a conflict-free merge of main into the task
 branch while it is in review does not count either — the guard tolerates HEAD drift when
 every commit on the task's first-parent chain since handoff is either bookkeeping-only,
-or a merge (two-parent or octopus) of main ancestors that took main's side verbatim:
-every non-first parent must be an ancestor of main, and every non-bookkeeping path in the
-merge's first-parent diff must match an imported parent's mode and content exactly, in
-both directions: paths the merge's first-parent diff touches must match, and paths an
-imported parent changed must match the merge result — so a conflict resolution that kept the task's version
-("keep ours"), combined both sides, or discarded the task's reviewed content ("keep
-theirs") fails. Reachability from main does not exempt a first-parent commit: a post-handoff
-source edit — including a mode-only change, and even one main later absorbed — or a merge of a branch main never contained still
-fails. The same check runs again at the start of `syncing` and immediately
+or a merge (two-parent or octopus) of main ancestors that is exactly what git computes on
+its own: every non-first parent must be an ancestor of main, and the committed tree must
+equal the result of re-running the merge (`git merge-tree --write-tree`) on the merge's
+own parents, on every non-bookkeeping path. A clean content-level merge (the task and main
+edited different lines of the same file) therefore passes, while a conflict resolution
+("keep ours", "keep theirs", combined by hand), an edit slipped into the merge commit, or a
+merge that conflicts fails. Only the task's first-parent chain is checked, and
+reachability from main does not exempt a commit on it: a post-handoff source edit —
+including a mode-only change, and even one main later absorbed — or a merge of a branch
+main never contained still fails. The same check runs again at the start of `syncing` and immediately
 before publish; a change mid-close-out aborts before main is mutated and leaves the task
 in `review` with a failed job reason.
 

@@ -606,6 +606,70 @@ describe("worktree handoff guard (#0598)", () => {
     }
   }, 30_000);
 
+  it("allows a clean content-level merge where the task and main edited different lines of one file (#0624 review)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const lines = Array.from({ length: 12 }, (_, i) => `line ${i + 1}`);
+      writeFileSync(join(root, "f.txt"), `${lines.join("\n")}\n`);
+      git(root, ["add", "f.txt"]);
+      git(root, ["commit", "-m", "base"]);
+      const branch = "feat/clean-content-merge";
+      const wt = ensureWorktree(root, branch);
+      // The task edits the top of the file before handoff.
+      writeFileSync(join(wt.path, "f.txt"), `${["task edit", ...lines.slice(1)].join("\n")}\n`);
+      git(wt.path, ["add", "f.txt"]);
+      git(wt.path, ["commit", "-m", "handoff"]);
+      const sha = git(wt.path, ["rev-parse", "HEAD"]);
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+
+      // Main edits the bottom; git merges both cleanly, so the result differs
+      // from main's blob AND from the task's blob.
+      writeFileSync(join(root, "f.txt"), `${[...lines.slice(0, 11), "main edit"].join("\n")}\n`);
+      git(root, ["add", "f.txt"]);
+      git(root, ["commit", "-m", "main edit"]);
+      git(wt.path, ["merge", "main", "-m", "merge main into feat/clean-content-merge"]);
+      expect(readFileSync(join(wt.path, "f.txt"), "utf8")).toContain("task edit");
+      expect(readFileSync(join(wt.path, "f.txt"), "utf8")).toContain("main edit");
+
+      const check = await verifyWorktreeHandoffIntegrity(config, branch, sha);
+      expect(check.ok).toBe(true);
+    } finally {
+      clean();
+    }
+  }, 30_000);
+
+  it("still fails when an extra edit is slipped into an otherwise clean sync merge commit (#0624 review)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      writeFileSync(join(root, "f.txt"), "base\n");
+      git(root, ["add", "f.txt"]);
+      git(root, ["commit", "-m", "base"]);
+      const branch = "feat/smuggled-edit";
+      const wt = ensureWorktree(root, branch);
+      writeFileSync(join(wt.path, "impl.txt"), "work\n");
+      git(wt.path, ["add", "impl.txt"]);
+      git(wt.path, ["commit", "-m", "handoff"]);
+      const sha = git(wt.path, ["rev-parse", "HEAD"]);
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+
+      writeFileSync(join(root, "f.txt"), "base\nmain\n");
+      git(root, ["add", "f.txt"]);
+      git(root, ["commit", "-m", "main advance"]);
+      // The merge itself is conflict-free, but the committed tree also carries
+      // a task-side edit the replay would not produce.
+      git(wt.path, ["merge", "--no-commit", "--no-ff", "main"]);
+      writeFileSync(join(wt.path, "impl.txt"), "work\n// smuggled\n");
+      git(wt.path, ["add", "impl.txt"]);
+      git(wt.path, ["commit", "-m", "merge main into feat/smuggled-edit"]);
+
+      const check = await verifyWorktreeHandoffIntegrity(config, branch, sha);
+      expect(check.ok).toBe(false);
+      expect(check.headMoved).toBe(true);
+    } finally {
+      clean();
+    }
+  }, 30_000);
+
   it("discard resets the worktree to the handoff commit", async () => {
     const { root, clean } = makeRepo();
     try {
