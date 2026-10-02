@@ -83,6 +83,20 @@ repoos certify opencode --binary ~/.opencode/bin/opencode --yes
 This is useful when you have multiple versions installed or the binary is not
 on `PATH` under the expected name.
 
+### `--model` override
+
+Both commands also accept an optional `--model <id>` that pins the model used
+for the probe's one-shot and resume runs. Use it when a harness picks its default
+model from your environment and that default is not usable — for example pi
+prefers a provider whose API key is set in your shell over its stored login, so a
+stray `OPENAI_API_KEY` can make the one-shot fail with a 401. Currently only pi
+honours it; other harnesses ignore it.
+
+```
+repoos doctor --probe pi --model openrouter/deepseek/deepseek-v4.1-flash --yes
+repoos certify pi --model openrouter/deepseek/deepseek-v4.1-flash --yes
+```
+
 ### Shared machine-wide detect cache
 
 The detected binary and version information is currently per-project (stored in

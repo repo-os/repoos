@@ -385,15 +385,26 @@ describe("doctor compatibility bridge and probe arguments", () => {
       yes: false,
       probe: null,
       probeMissingValue: false,
+      model: null,
       binary: null,
     };
     expect(parseDoctorArgs(["doctor"])).toEqual(base);
+    expect(
+      parseDoctorArgs([
+        "doctor",
+        "--probe",
+        "pi",
+        "--model",
+        "openrouter/deepseek/deepseek-v4.1-flash",
+      ]),
+    ).toEqual({ ...base, probe: "pi", model: "openrouter/deepseek/deepseek-v4.1-flash" });
     expect(parseDoctorArgs(["doctor", "--json", "--probe", "kiro"])).toEqual({
       json: true,
       verbose: false,
       yes: false,
       probe: "kiro",
       probeMissingValue: false,
+      model: null,
       binary: null,
     });
     expect(parseDoctorArgs(["doctor", "--probe", "opencode", "--yes"])).toEqual({
@@ -402,6 +413,7 @@ describe("doctor compatibility bridge and probe arguments", () => {
       yes: true,
       probe: "opencode",
       probeMissingValue: false,
+      model: null,
       binary: null,
     });
     // `--probe` at the end, or followed by another flag, is a usage error — it
@@ -413,6 +425,7 @@ describe("doctor compatibility bridge and probe arguments", () => {
       yes: true,
       probe: null,
       probeMissingValue: true,
+      model: null,
       binary: null,
     });
     expect(parseDoctorArgs(["doctor", "--verbose"])).toEqual({ ...base, verbose: true });
