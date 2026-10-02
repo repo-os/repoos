@@ -133,7 +133,8 @@ Copilot permissions are role-specific:
 | --- | --- |
 | Engineer | `--allow-all-tools` inside the task worktree, so it can edit, build, test, and use the project's tooling without an unanswerable approval prompt. |
 | Task PM chat | Only `repoos` CLI commands for approved task-management actions such as creating or updating task metadata. It does not receive arbitrary project-tool access. |
-| Freeform PM, reviewer, Debugger, and RepoOS Guide | Read-only. RepoOS applies freeform PM output itself; the other roles may inspect the repository but cannot edit it. |
+| Reviewer | `--allow-all-tools` so headless diff and file inspection can run without an approval prompt. The review prompt forbids edits; this flag does not enforce read-only access. |
+| Freeform PM, Debugger, and RepoOS Guide | No tool permission bypass. RepoOS applies freeform PM output itself; the other roles may inspect the repository but cannot edit it. |
 
 ### Antigravity CLI (`agy`)
 

@@ -77,6 +77,11 @@ describe("reviewer usage wiring (0273)", () => {
     const oc = reviewCommand({ ...base, cli: "opencode" }, "review", "/worktree");
     expect(oc.args).toContain("--format");
     expect(oc.args).toContain("json");
+
+    const copilot = reviewCommand({ ...base, cli: "github copilot" }, "review", "/worktree");
+    expect(copilot.args).toContain("--no-ask-user");
+    expect(copilot.args).toContain("--allow-all-tools");
+    expect(copilot.args).not.toEqual(expect.arrayContaining(["--allow-all", "--yolo"]));
   });
 
   it("parseOneShotLine renders claude stream text and swallows voiceless events", () => {

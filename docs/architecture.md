@@ -152,7 +152,7 @@ Adds liveness over the one-shot core. No new business logic.
   Antigravity driver consumes the documented `init`/`step_update`/`result` stream,
   preserves CLI-reported conversation and usage metadata, and surfaces
   permission/auth recovery guidance. Its Copilot CLI driver uses JSONL output
-  and explicit, narrow write/shell permissions; Antigravity's blanket permission
+  and role-specific tool permissions; Antigravity's blanket permission
   bypass is documented as a security tradeoff in `user-docs/agents.md`.
 - `freeform.ts` — parses freeform task description output from the PM agent
   into structured task frontmatter + body.
@@ -163,9 +163,9 @@ Adds liveness over the one-shot core. No new business logic.
 - `branchless-release.ts` — checks main and records release for already-landed
   work with no task branch; it does not merge anything.
 - `review.ts` — the review agent: when a task lands in `review` (by any route),
-  it runs the enabled `reviewer` agent read-only over the task's worktree and
-  writes a short report to `<cacheDir>/reviews/<id>.md` for the human signing
-  off. Advisory: it never edits the repo and never moves a task to `done` —
+  it instructs the enabled `reviewer` agent to work read-only in the task's
+  worktree and writes a short report to `<cacheDir>/reviews/<id>.md` for the
+  human signing off. Advisory: it never edits the repo and never moves a task to `done` —
   a task that comes back `done` is put straight back into `review`.
 - `preview.ts` — starts/stops read-only worktree preview servers on dedicated
   ports. On-demand only (`POST /api/tasks/:id/preview`), capped at ONE running
@@ -281,12 +281,14 @@ that id with `--resume=<session-id>`. It does not use `--continue`, which could
 resume a different task's most recent session.
 
 The driver deliberately does **not** pass `--allow-all` or `--yolo`: those also
-disable Copilot's path and URL verification. Full tool approval is limited to
-managed engineering turns in a task worktree. Task-PM chat receives only
-`shell(repoos:*)`, so it can use RepoOS's constrained task-management commands
-without arbitrary project tooling. Freeform PM authoring, reviews, Debugger,
-and RepoOS Guide conversations get no Copilot permission bypass and remain
-read-only.
+disable Copilot's path and URL verification. Full tool approval is used for
+managed engineering turns and reviewer runs in a task worktree. The reviewer
+needs to run Git diff and file inspection commands in a headless session;
+`--allow-all-tools` is an approval bypass, not a read-only boundary, so its
+prompt forbids edits. Task-PM chat receives only `shell(repoos:*)`, so it can
+use RepoOS's constrained task-management commands without arbitrary project
+tooling. Freeform PM authoring, Debugger, and RepoOS Guide conversations get no
+Copilot permission bypass.
 Copilot's live model listing is not yet a stable CLI interface, so the Agents
 page offers its three documented Auto tiers instead of guessing account-specific
 model IDs. `default` means `Auto · Efficiency`; Balance and Intelligence pass
