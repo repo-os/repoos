@@ -111,18 +111,18 @@ function docsLink(path = ""): string {
 const steps = [
   {
     title: "Write the task",
-    body: "Add a task on the board, or hand the PM agent a rough idea and let it write the spec. A task is a Markdown file in your repo, so you and the agents read the same thing.",
+    body: "Add a task to the board, or give the PM agent a rough idea and let it write the spec. A task is just a Markdown file in your repo.",
   },
   {
     title: "An agent picks it up",
-    body: "RepoOS creates a branch and a worktree, then gives the task to the coding agent you picked. Two active tasks never share a checkout.",
+    body: "RepoOS creates a branch and a worktree, then gives the task to the coding agent you picked. They implement it, then hands it off to the review agent.",
   },
   {
     title: "The checks run",
-    body: "RepoOS runs the checks your project defines: build, typecheck, tests, whatever your repo needs. If they fail, the work doesn't move forward.",
+    body: "RepoOS runs the checks your project defines: build, typecheck, tests, whatever your repo needs. If they fail, the agents continue to work on it.",
   },
   {
-    title: "You approve",
+    title: "A human approves",
     body: "Agents can write the code, run the tests and review each other. They can't approve their own merge. You decide what lands on your main branch.",
   },
 ];
@@ -130,7 +130,7 @@ const steps = [
 const choices = [
   {
     title: "Everything lives in Git",
-    body: "Tasks, docs and inputs are plain files. You can grep, edit, diff and blame them with the tools you already use. There's no second database to keep in sync.",
+    body: "Tasks, docs and inputs are plain Markdown files. You can grep, edit, diff and blame them with the tools you already use. There's no second database to keep in sync.",
   },
   {
     title: "One task, one worktree",
@@ -147,29 +147,29 @@ const choices = [
 ];
 
 const roles = [
-  ["PM", "Turns a rough idea or bug report into a task an engineer can pick up."],
+  ["PM", "Turns a rough idea or bug report into a specced out task an engineer can pick up."],
   ["Engineer", "Implements the task in its own branch and worktree."],
   ["Reviewer", "Reads the spec and the diff and points out real problems before you look."],
-  ["Debugger", "Starts from a failed check and the evidence, instead of restarting the task."],
+  ["Debugger", "Starts from the failed check and the evidence instead of redoing the whole task."],
   ["CTO", "Watches the board for stuck work, tech debt and decisions that need a human."],
 ];
 
 const notList = [
   {
     title: "Not a hosted copy of your project",
-    body: "Your repository is the source of truth. The UI is just a view of files you own.",
+    body: "Your repo is the source of truth. The UI is just a view of files in your repo.",
   },
   {
-    title: "Not an AI layer on Jira",
+    title: "Not an AI layer on Linear or Jira",
     body: "RepoOS deals with the things that change code: tasks, branches, worktrees, checks, reviews and merges.",
   },
   {
     title: "Not a demo",
-    body: "We use it every day on a real codebase, and it's built for that: isolated work, repeatable checks and a history you can read.",
+    body: "We use it every day on real codebases. It gives you isolated work, repeatable checks and a history you can read.",
   },
   {
     title: "Not tied to one model",
-    body: "Bring your own agents and providers, local or cloud. Swap them whenever something better comes along.",
+    body: "Bring your own agents and model providers, local or cloud. Swap them whenever you want.",
   },
 ];
 
@@ -423,29 +423,17 @@ const year = new Date().getFullYear();
             operating system.
           </h1>
           <p class="mt-6 max-w-[50ch] text-[17px] leading-relaxed text-[var(--txt)]">
-            RepoOS is how we run coding agents on a real codebase. Tasks are written down, each one
-            gets its own worktree, your checks run, and a person approves the merge. All of it lives
-            in Git.
+            RepoOS is how we use coding agents on real codebases. Tasks are specced out, each one
+            gets its own worktree, your checks run, and a real person approves the merge. All of it
+            happens in Git.
           </p>
           <p class="mt-4 max-w-[50ch] text-[15.5px] leading-relaxed text-[var(--txt-dim)]">
-            Coding agents write decent code. The hard part is keeping them useful over days of work:
-            they lose context, repeat each other, undo earlier decisions and trample each other's
-            changes. RepoOS is the plumbing that stops that.
+            Coding agents write good code. The hard part is keeping them honest over days of work
+            and hundreds of tasks. They lose context, redo each other's work, undo earlier decisions
+            and step on each other's changes. RepoOS fixes that.
           </p>
 
           <InstallBox class="mt-8" show-note />
-          <p class="mt-3 text-[13px] text-[var(--txt-faint)]">
-            Prefer a desktop app?
-            <a
-              href="https://github.com/repo-os/repoos/releases/latest/download/RepoOSHub.dmg"
-              class="text-[var(--cyan)] hover:underline"
-              >RepoOS Hub for Mac &rarr;</a
-            >
-          </p>
-          <p class="mt-1 text-[12px] text-[var(--txt-faint)]">
-            Current Mac builds are not notarized. After a blocked first launch, use System Settings
-            &rarr; Privacy &amp; Security &rarr; Open Anyway.
-          </p>
         </div>
 
         <figure class="min-w-0">
@@ -458,16 +446,15 @@ const year = new Date().getFullYear();
             </div>
             <img
               src="/board.webp"
-              alt="RepoOS work board from this repository, captured while task #0338 — the landing page — was active in the coding column"
+              alt="The RepoOS work board for this repo, showing what it looked like at task #0338, which built this landing page"
               width="1200"
               height="750"
               fetchpriority="high"
             />
           </div>
           <figcaption class="shot-caption">
-            This is the board from this repository, captured while
-            <span class="text-[var(--violet)]">#0338</span> — the task that built this page — was
-            active.
+            This is the RepoOS board for this repo, showing what it looked like at task
+            <span class="text-[var(--violet)]">#0338</span>, which built this landing page.
           </figcaption>
         </figure>
       </div>
@@ -483,11 +470,11 @@ const year = new Date().getFullYear();
               RepoOS Hub for Mac
             </h2>
             <p class="mt-4 max-w-[60ch] text-[15.5px] leading-relaxed text-[var(--txt-dim)]">
-              If you run RepoOS on more than one repo, or on a remote machine, Hub puts all of those
-              servers in one window. Pin tasks from different servers, see what needs you in the
-              sidebar and the Dock badge, and search everything with Cmd-K. Each server gets its own
-              isolated session, so cookies aren't shared. Remote access uses short-lived tokens kept
-              in your Keychain.
+              If you run RepoOS in more than one repo, or on a remote machine, Hub puts all of those
+              servers in one native window. Pin tasks from different servers, see what needs you in
+              the sidebar and search everything with Cmd-K. Each server gets its own isolated
+              session, so cookies aren't shared. Remote access uses short-lived tokens kept in your
+              Keychain.
             </p>
             <p class="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-[14px]">
               <a
@@ -500,8 +487,8 @@ const year = new Date().getFullYear();
               >
             </p>
             <p class="mt-3 text-[12px] text-[var(--txt-faint)]">
-              Current Mac builds are not notarized. After a blocked first launch, use System
-              Settings &rarr; Privacy &amp; Security &rarr; Open Anyway.
+              Mac builds are not yet notarized. After a blocked first launch, use System Settings
+              &rarr; Privacy &amp; Security &rarr; Open Anyway.
             </p>
           </div>
           <ul class="grid grid-cols-2 gap-2.5 text-[13px] leading-snug text-[var(--txt-dim)]">
@@ -522,7 +509,7 @@ const year = new Date().getFullYear();
         <figure class="mt-8">
           <img
             src="/hub.webp"
-            alt="RepoOS Hub for Mac showing Mission Control for the RepoOS repository, with other servers listed in the sidebar"
+            alt="RepoOS Hub for Mac showing Mission Control for the RepoOS repo, with other servers listed in the sidebar"
             width="2000"
             height="1359"
             loading="lazy"
@@ -538,8 +525,7 @@ const year = new Date().getFullYear();
         <div class="grid items-center gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <p class="text-[15.5px] leading-relaxed text-[var(--txt-dim)]">
             <span class="text-[var(--txt)]">We build RepoOS with RepoOS.</span> The board above is
-            this repository's own. Over <span class="text-[var(--txt)]">550 tasks</span> have gone
-            through the workflow described below.
+            this repo.
           </p>
           <dl class="grid grid-cols-3 gap-2 text-center sm:gap-4">
             <div class="min-w-0">
@@ -579,17 +565,16 @@ const year = new Date().getFullYear();
       </h2>
       <div class="mt-5 grid gap-x-12 gap-y-4 lg:grid-cols-2">
         <p class="text-[15.5px] leading-relaxed text-[var(--txt-dim)]">
-          A good engineering team is more than good programmers. Work gets scoped. Changes happen on
-          branches. Builds and tests have to pass. Someone reviews the result. People remember why
-          decisions were made.
+          A good engineering team is more than a bunch of genius programmers. Work gets scoped.
+          Changes happen in branches. Builds and tests need to pass. Teammates review the code.
+          People remember why decisions were made.
         </p>
         <p class="text-[15.5px] leading-relaxed text-[var(--txt-dim)]">
-          Most agent sessions start with none of that. The agent has to piece the project together
-          from whatever context it's handed. Run several at once and you also have to keep their
-          changes apart and decide what can merge.
+          Most agent sessions have none of that. Each agent has to figure out the project from
+          whatever context it can scrounge. Run several agents at once and you have to keep their
+          changes apart and decide what can safely merge.
           <span class="text-[var(--txt)]"
-            >RepoOS keeps those working habits in the repository, where people and agents can both
-            use them.</span
+            >RepoOS puts that process in the repo, where people and agents can both use it.</span
           >
         </p>
       </div>
@@ -599,7 +584,7 @@ const year = new Date().getFullYear();
           <p class="eyebrow mb-3">Structure</p>
           <h3 class="text-[17px] font-semibold">Every task has a place</h3>
           <p class="mt-3 text-[14px] leading-relaxed text-[var(--txt-dim)]">
-            A task is a Markdown file with a status, an owner and a branch. Starting it creates its
+            A task is a Markdown file with a status, a spec and a branch. Starting it creates its
             own worktree.
           </p>
         </article>
@@ -615,8 +600,8 @@ const year = new Date().getFullYear();
           <p class="eyebrow mb-3">Context</p>
           <h3 class="text-[17px] font-semibold">The project remembers</h3>
           <p class="mt-3 text-[14px] leading-relaxed text-[var(--txt-dim)]">
-            Decisions and conventions live next to the code, so the next session doesn't have to
-            figure them out again.
+            Decisions, conventions and history live in the repo with the code, so new agents don't
+            need to figure them out again.
           </p>
         </article>
       </div>
@@ -629,7 +614,8 @@ const year = new Date().getFullYear();
         How a task gets from an idea to merge
       </h2>
       <p class="mt-4 max-w-[60ch] text-[15.5px] leading-relaxed text-[var(--txt-dim)]">
-        There's no ticket database. The task, its branch and its history live with the code.
+        There's no separate ticket system. The task, its branch and its history live with the code
+        in Git.
       </p>
 
       <ol class="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -653,12 +639,13 @@ const year = new Date().getFullYear();
           </h2>
           <p class="mt-4 max-w-[52ch] text-[15.5px] leading-relaxed text-[var(--txt-dim)]">
             Different jobs need different instructions, tools and models. RepoOS gives each role one
-            job and has them all work from the same board and repository.
+            job and has them all work from the same board in your repo.
           </p>
           <p class="mt-4 max-w-[52ch] text-[15.5px] leading-relaxed text-[var(--txt-dim)]">
-            Roles aren't tied to a provider. Use OpenCode, Claude Code, Codex, GitHub Copilot CLI,
-            Kiro, a local model, whatever you like. Pick one per role, or override it for a single
-            task. RepoOS coordinates the work. It doesn't replace your coding tools.
+            Roles aren't tied to a coding harness or model provider. Use OpenCode, Claude Code,
+            Codex, GitHub Copilot, Cursor, Kiro, OpenRouter, a local model, whatever you like. Pick
+            one per role, or override it per task. RepoOS coordinates the work. It doesn't replace
+            your coding tools.
           </p>
           <p class="mt-4 max-w-[52ch] text-[15.5px] leading-relaxed text-[var(--txt-dim)]">
             Every agent run has a live transcript. If the agent's CLI reports usage, RepoOS records
@@ -705,13 +692,12 @@ const year = new Date().getFullYear();
           You still decide what ships.
         </h2>
         <p class="mx-auto mt-5 max-w-[62ch] text-[15.5px] leading-relaxed text-[var(--txt-dim)]">
-          RepoOS takes over the tedious part of supervising agents. It doesn't replace your
-          judgment.
+          RepoOS handles the tedious parts of managing multiple agents. It doesn't replace your
+          expert human judgment.
         </p>
         <p class="mx-auto mt-4 max-w-[62ch] text-[15.5px] leading-relaxed text-[var(--txt-dim)]">
-          You decide what's worth building, whether the result is good enough, and what lands on
-          your main branch. Agents can plan, code, run checks, review each other and fix failures.
-          The last step is yours.
+          You decide what to build, whether the result is good enough, and what merges to main.
+          Agents plan, code, test, review each other and fix issues. The last step is yours.
         </p>
       </div>
     </section>
@@ -756,11 +742,10 @@ const year = new Date().getFullYear();
             class="cursor-pointer list-none text-[15.5px] font-semibold marker:hidden [&::-webkit-details-marker]:hidden"
           >
             <span class="text-[var(--cyan)] font-mono text-[13px] mr-2">Q</span>Does it sync with
-            Jira?
+            Linear or Jira?
           </summary>
           <p class="mt-3 text-[14px] leading-relaxed text-[var(--txt-dim)]">
-            No. RepoOS works from your repository, not a hosted ticket system, so there's nothing to
-            sync.
+            No. RepoOS works from your repo, not a hosted ticket system, so there's nothing to sync.
           </p>
         </details>
         <details class="panel group p-6">
@@ -771,8 +756,9 @@ const year = new Date().getFullYear();
             from breaking the primary branch?
           </summary>
           <p class="mt-3 text-[14px] leading-relaxed text-[var(--txt-dim)]">
-            Agents work in their own branch and worktree, never in your main checkout. Nothing
-            merges until your checks pass and you approve it. Agents can't approve their own work.
+            Agents work in their own branch and worktree, never on main or your primary branch.
+            Nothing merges until your checks pass and you approve it. Agents can't approve their own
+            work.
           </p>
         </details>
         <details class="panel group p-6">
@@ -795,11 +781,12 @@ const year = new Date().getFullYear();
             new project?
           </summary>
           <p class="mt-3 text-[14px] leading-relaxed text-[var(--txt-dim)]">
-            No. Run <span class="font-mono text-[13px]">repoos init</span> in a repo you already
-            have. It adds a folder for tasks, a folder for docs, an
+            No, although it's good at that. Run
+            <span class="font-mono text-[13px]">repoos init</span> in a repo you already have. It
+            adds a folder for tasks, a folder for docs, an
             <span class="font-mono text-[13px]">AGENTS.md</span> file and a config file, plus a few
             <span class="font-mono text-[13px]">.gitignore</span> entries. Nothing else in the repo
-            changes. It works on a new repo too.
+            changes.
           </p>
         </details>
         <details class="panel group p-6">
@@ -824,7 +811,7 @@ const year = new Date().getFullYear();
         <p class="mx-auto mt-4 max-w-[56ch] text-[14.5px] leading-relaxed text-[var(--txt-dim)]">
           Install RepoOS and run <span class="font-mono text-[13.5px]">repoos init</span> inside a
           repo. It sets things up and opens the board in your browser. Then add tasks, choose agents
-          and review their work.
+          and let them get to work.
         </p>
         <div class="mx-auto mt-6 flex justify-center">
           <InstallBox />
