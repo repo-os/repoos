@@ -912,16 +912,20 @@ async function setStatus(status: string): Promise<void> {
 
 async function startWork(): Promise<void> {
   if (!ui.active) return;
-  const overrideDependencies = confirmDependencyOverride(ui.active.blockedBy);
-  if (ui.active.blockedBy?.length && !overrideDependencies) return;
+  const task = ui.active;
+  const overrideDependencies = await confirmDependencyOverride(task.blockedBy);
+  // Opening the body-teleported dialog can dismiss the drawer behind it.
+  // Restore the task for either choice so Cancel returns to where Start began.
+  if (!ui.active) ui.open(task);
+  if (task.blockedBy?.length && !overrideDependencies) return;
   // A dirty worktree means restarting would either resume prior work or
   // discard it — surface that choice instead of starting silently.
-  if (ui.active.git?.dirty) {
-    restartTask.value = ui.active;
+  if (task.git?.dirty) {
+    restartTask.value = task;
     restartOverrideDependencies.value = overrideDependencies;
     return;
   }
-  await startWorkIn(ui.active, overrideDependencies);
+  await startWorkIn(task, overrideDependencies);
 }
 
 /** True while the Start-work request (engineer agent launch) is in flight. */
@@ -1096,7 +1100,7 @@ function cancelDelete(): void {
 async function startHotfix(target: "branch" | "main"): Promise<void> {
   const task = hotfixTask.value ?? ui.active;
   if (!task) return;
-  const overrideDependencies = confirmDependencyOverride(task.blockedBy);
+  const overrideDependencies = await confirmDependencyOverride(task.blockedBy);
   if (task.blockedBy?.length && !overrideDependencies) return;
   ui.saving = true;
   try {
@@ -2149,7 +2153,7 @@ async function confirmSendToEngineer(note: string): Promise<void> {
     );
     return;
   }
-  const overrideDependencies = confirmDependencyOverride(task.blockedBy);
+  const overrideDependencies = await confirmDependencyOverride(task.blockedBy);
   if (task.blockedBy?.length && !overrideDependencies) return;
   engineerNoteOpen.value = false;
 

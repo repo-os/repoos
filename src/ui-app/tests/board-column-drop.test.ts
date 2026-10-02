@@ -15,6 +15,12 @@ import { createPinia, setActivePinia, type Pinia } from "pinia";
 import { nextTick } from "vue";
 import BoardColumn from "../src/components/BoardColumn.vue";
 import ReviewConfirmDialog from "../src/components/ReviewConfirmDialog.vue";
+import DependencyOverrideDialog from "../src/components/DependencyOverrideDialog.vue";
+import {
+  confirmDependencyOverride,
+  dependencyOverrideBlockers,
+  resolveDependencyOverride,
+} from "../src/lib/task-dependencies";
 import { useRepoStore } from "../src/stores/repo";
 import type { Task } from "../src/types";
 
@@ -78,6 +84,7 @@ function mountColumn(col: typeof COL | typeof REVIEW_COL, pinia: Pinia) {
 }
 
 afterEach(() => {
+  resolveDependencyOverride(false);
   vi.restoreAllMocks();
 });
 
@@ -107,16 +114,16 @@ describe("BoardColumn drop: ready -> active", () => {
       blockedBy: [{ id: "0002", state: "waiting" }],
     });
     repo.tasks = [task];
-    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
     const startWork = vi.spyOn(repo, "startWork").mockResolvedValue(undefined);
 
     const wrapper = mountColumn(COL, pinia);
     await wrapper.find(".board-col").trigger("drop", fakeDrop("0001"));
     await flush();
 
-    expect(confirm).toHaveBeenCalledWith(
-      "Blocked by #0002\n\nStart anyway? The required changes may not be on main yet.",
-    );
+    expect(dependencyOverrideBlockers.value).toEqual(task.blockedBy);
+    expect(startWork).not.toHaveBeenCalled();
+    resolveDependencyOverride(true);
+    await flush();
     expect(startWork).toHaveBeenCalledWith(task, "resume", undefined, true);
   });
 
@@ -128,13 +135,15 @@ describe("BoardColumn drop: ready -> active", () => {
       blockedBy: [{ id: "0002", state: "cancelled" }],
     });
     repo.tasks = [task];
-    vi.spyOn(window, "confirm").mockReturnValue(false);
     const startWork = vi.spyOn(repo, "startWork").mockResolvedValue(undefined);
 
     const wrapper = mountColumn(COL, pinia);
     await wrapper.find(".board-col").trigger("drop", fakeDrop("0001"));
     await flush();
 
+    expect(dependencyOverrideBlockers.value).toEqual(task.blockedBy);
+    resolveDependencyOverride(false);
+    await flush();
     expect(startWork).not.toHaveBeenCalled();
   });
 
@@ -164,10 +173,10 @@ describe("BoardColumn drop: ready -> active", () => {
       git: { ...makeTask().git, dirty: true },
     });
     repo.tasks = [task];
-    vi.spyOn(window, "confirm").mockReturnValue(true);
-
     const wrapper = mountColumn(COL, pinia);
     await wrapper.find(".board-col").trigger("drop", fakeDrop("0001"));
+    await flush();
+    resolveDependencyOverride(true);
     await flush();
 
     const dialog = wrapper.findComponent({ name: "RestartTaskDialog" });
@@ -175,6 +184,23 @@ describe("BoardColumn drop: ready -> active", () => {
       task,
       overrideDependencies: true,
     });
+  });
+});
+
+describe("Dependency override dialog", () => {
+  it("shows the blockers and resolves the Start anyway choice", async () => {
+    const wrapper = mount(DependencyOverrideDialog, { global: { stubs: { Teleport: true } } });
+    const decision = confirmDependencyOverride([{ id: "0002", state: "waiting" }]);
+    await flush();
+
+    expect(wrapper.text()).toContain("Blocked by #0002");
+    expect(wrapper.text()).toContain("unmet prerequisites");
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Start anyway")
+      ?.trigger("click");
+    expect(await decision).toBe(true);
+    wrapper.unmount();
   });
 });
 
