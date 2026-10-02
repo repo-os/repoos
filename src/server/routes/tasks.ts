@@ -92,6 +92,7 @@ import {
   parseShotEntry,
   removeDeclaredShots,
   resolveDeclaredTarget,
+  sameDeclaredShot,
 } from "../../core/shot-plan.js";
 import { resolveShotTargets } from "../../core/shot-targets.js";
 import { captureDeclaredShot } from "../shot-capture.js";
@@ -1088,14 +1089,14 @@ async function declareTaskShot(
   }
   // Validate with the SAME rules `repoos update --shots` enforces — one shared
   // validator (`parseShotEntry` in core), never a second copy.
-  const raw = {
-    ...(typeof body?.target === "string" && body.target ? { target: body.target } : {}),
-    ...(typeof body?.route === "string" && body.route ? { route: body.route } : {}),
-    ...(typeof body?.label === "string" && body.label ? { label: body.label } : {}),
-    ...(typeof body?.highlight === "string" && body.highlight ? { highlight: body.highlight } : {}),
-    ...(typeof body?.selector === "string" && body.selector ? { selector: body.selector } : {}),
-    ...(Array.isArray(body?.steps) ? { steps: body.steps } : {}),
-  };
+  // validator (`parseShotEntry` in core), never a second copy. Fields are
+  // passed VERBATIM so a wrong type reaches the validator and is rejected —
+  // filtering to well-typed values here would let `{ target: 5 }` sneak
+  // through as an omitted target and capture anyway (review round 1).
+  const raw: Record<string, unknown> = {};
+  for (const key of ["target", "route", "label", "highlight", "selector", "steps"] as const) {
+    if (body && body[key] !== undefined) raw[key] = body[key];
+  }
   const parsed = parseShotEntry(raw);
   if (parsed.error || !parsed.shot) {
     return json(res, 400, { error: parsed.error ?? "Invalid shot entry" });
@@ -1125,6 +1126,10 @@ async function declareTaskShot(
     ...(entry.selector ? { selector: entry.selector } : {}),
     ...(entry.steps?.length ? { steps: entry.steps } : {}),
     provenance: { kind: "declared", ...(entry.label ? { label: entry.label } : {}) },
+    // The parsed declaration rides on the stored shot so delete can sync the
+    // exact `## Shots` entry (selector and steps included) instead of guessing
+    // from the shallow fields (#0627 review round 1).
+    declared: entry,
   });
   if ("error" in result) {
     return json(res, result.busy ? 409 : 400, {
@@ -1206,9 +1211,13 @@ export const deleteTaskShot: RouteHandler = async (ctx, _req, res, params) => {
     return json(res, 404, { error: "Shot not found" });
   }
   // Sync the declaration: a matching ## Shots entry would be captured again at
-  // the next handoff. Legacy untagged shots (no origin) and auto/declared all
-  // get the same treatment — the FILE is what is being removed. The body is
-  // re-read from disk so a declaration added concurrently is still seen.
+  // the next handoff. A hand-added shot carries its own full declaration in
+  // the manifest (`removed.declared`), so it syncs THE exact entry — selector
+  // and steps included. Legacy and auto shots (no stored declaration) fall
+  // back to the shallow matcher, which requires at least one identifying
+  // field — an anonymous declaration (steps/highlight only) can never claim a
+  // deleted shot (#0627 review round 1). The body is re-read from disk so a
+  // declaration added concurrently is still seen.
   const removal = removeDeclaredShots(
     parseTask({
       content: readFileSync(task.absPath, "utf8"),
@@ -1217,7 +1226,9 @@ export const deleteTaskShot: RouteHandler = async (ctx, _req, res, params) => {
       defaultStatus: config.defaultStatus,
       defaultAssignee: config.defaultAssignee,
     }).body,
-    (declared) => declaredShotMatchesShot(declared, removed),
+    removed.declared
+      ? (declared) => sameDeclaredShot(declared, removed.declared!)
+      : (declared) => declaredShotMatchesShot(declared, removed),
   );
   try {
     const updated = patchTaskFile(config, task.absPath, {
