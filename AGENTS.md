@@ -169,6 +169,12 @@ carry over to later changes, and an ambiguous request is a reason to ask, not to
 commit. Without that explicit ask, leave work uncommitted or put it on a task
 branch.
 
+**Don't mention a modified `repoos.toml`.** The human edits it for many reasons,
+so an uncommitted `repoos.toml` in `git status` is normal, not news. Never
+mention, ask about, stage or commit it unless you changed it yourself and need
+to tell the human. If you did, say so plainly. Otherwise leave it alone and say
+nothing.
+
 **Historical caution (2026-09-16):** external CLI status writes raced a live
 reviewer, which later reverted a task from `done` to `review`. The old advice
 to avoid that race by skipping review or reissuing `mv done` is not the current
