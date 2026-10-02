@@ -420,6 +420,42 @@ describe("worktree handoff guard (#0598)", () => {
     }
   });
 
+  it("still fails when a sync merge resolves a conflict by keeping the task's version with a pathspec-metacharacter filename (#0624 review)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      writeFileSync(join(root, "[id].ts"), "base\n");
+      git(root, ["add", "[id].ts"]);
+      git(root, ["commit", "-m", "base"]);
+      const branch = "feat/keep-ours-glob";
+      const wt = ensureWorktree(root, branch);
+      writeFileSync(join(wt.path, "[id].ts"), "task\n");
+      git(wt.path, ["add", "[id].ts"]);
+      git(wt.path, ["commit", "-m", "handoff"]);
+      const sha = git(wt.path, ["rev-parse", "HEAD"]);
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+
+      // Main rewrites the same file; the merge conflicts and is resolved by
+      // keeping the task side. The path is then unchanged from the merge's
+      // first parent, so only the backward check can catch it.
+      writeFileSync(join(root, "[id].ts"), "main\n");
+      git(root, ["add", "[id].ts"]);
+      git(root, ["commit", "-m", "main rewrite"]);
+      const merge = gitAllowFail(wt.path, ["merge", "main"]);
+      expect(merge.status).not.toBe(0);
+      expect(merge.stdout).toContain("CONFLICT");
+      git(wt.path, ["checkout", "--ours", "--", "[id].ts"]);
+      git(wt.path, ["add", "[id].ts"]);
+      git(wt.path, ["commit", "-m", "merge main into feat/keep-ours-glob"]);
+
+      const check = await verifyWorktreeHandoffIntegrity(config, branch, sha);
+      expect(check.ok).toBe(false);
+      expect(check.headMoved).toBe(true);
+      expect(check.reason).toContain(WORKTREE_CHANGED_AFTER_HANDOFF_PREFIX);
+    } finally {
+      clean();
+    }
+  });
+
   it("still fails when a sync merge resolves a conflict by keeping main's side (#0624 review)", async () => {
     const { root, clean } = makeRepo();
     try {
@@ -540,6 +576,31 @@ describe("worktree handoff guard (#0598)", () => {
       git(wt.path, ["merge", "side/in-main", "side/wip", "-m", "octopus"]);
       const check = await verifyWorktreeHandoffIntegrity(config, branch, sha);
       expect(check.ok).toBe(false);
+    } finally {
+      clean();
+    }
+  }, 30_000);
+
+  it("allows a safe sync merge when main added a file whose name looks like pathspec magic (#0624 review)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const branch = "feat/magic-name";
+      const wt = ensureWorktree(root, branch);
+      writeFileSync(join(wt.path, "impl.txt"), "work\n");
+      git(wt.path, ["add", "impl.txt"]);
+      git(wt.path, ["commit", "-m", "handoff"]);
+      const sha = git(wt.path, ["rev-parse", "HEAD"]);
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+
+      // Without --literal-pathspecs `git ls-tree` rejects `:!name` as pathspec
+      // magic and the guard would refuse a perfectly safe sync.
+      writeFileSync(join(root, ":!magic.ts"), "main\n");
+      git(root, ["add", "--", ":!magic.ts"]);
+      git(root, ["commit", "-m", "main adds magic-named file"]);
+      git(wt.path, ["merge", "main", "-m", "merge main into feat/magic-name"]);
+
+      const check = await verifyWorktreeHandoffIntegrity(config, branch, sha);
+      expect(check.ok).toBe(true);
     } finally {
       clean();
     }
