@@ -14,7 +14,15 @@
  * next to the PNGs (target name, route, capture time); the image bytes are the
  * source of truth for existence, so a stray file still lists.
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { basename, extname, join, resolve, sep } from "node:path";
 import type { RepoOSConfig } from "../core/types.js";
 import { DEFAULT_PREVIEW_TARGET } from "../core/shot-targets.js";
@@ -41,6 +49,8 @@ export interface ShotMeta {
    * to `label` so the caption is never blank even for legacy manifest entries.
    */
   provenance?: string;
+  /** "auto" when the server's handoff capture wrote it, so a re-capture may replace it. */
+  origin?: "auto";
   /** Repo-relative path, e.g. "work/.attachments/0582/shots/docs-site-1.png". */
   path: string;
   /** API URL the UI loads the image from. */
@@ -59,6 +69,7 @@ interface ShotManifestEntry {
   label?: string;
   /** One-line capture reason (#0603): "declared: <label>" / "auto: matched <glob>". */
   provenance?: string;
+  origin?: "auto";
   mime: string;
   size: number;
   capturedAt: string;
@@ -77,10 +88,13 @@ export interface ShotStore {
     label?: string;
     /** Why the shot exists (#0603), stored verbatim in the manifest. */
     provenance?: string;
+    origin?: "auto";
     mime?: string;
     name?: string;
     data: string;
   }): ShotMeta | { error: string };
+  /** Delete every shot the server's automatic capture wrote; engineer-made shots stay. */
+  removeAuto(): number;
   /** Absolute path for one stored file, or null when it is missing/escapes. */
   resolve(file: string): string | null;
 }
@@ -161,6 +175,7 @@ export function localShotStore(config: RepoOSConfig, taskId: string): ShotStore 
         ...(meta?.route ? { route: meta.route } : {}),
         ...(meta?.label ? { label: meta.label } : {}),
         ...(meta?.provenance ? { provenance: meta.provenance } : {}),
+        ...(meta?.origin ? { origin: meta.origin } : {}),
         path: relPath(config, taskId, file),
         url: shotUrl(taskId, file),
         size,
@@ -214,6 +229,7 @@ export function localShotStore(config: RepoOSConfig, taskId: string): ShotStore 
         ...(input.route ? { route: input.route } : {}),
         ...(input.label ? { label: input.label } : {}),
         ...(input.provenance ? { provenance: input.provenance } : {}),
+        ...(input.origin ? { origin: input.origin } : {}),
         mime,
         size: buf.length,
         capturedAt,
@@ -234,6 +250,18 @@ export function localShotStore(config: RepoOSConfig, taskId: string): ShotStore 
         mime,
         capturedAt,
       };
+    },
+    removeAuto() {
+      const auto = list().filter((shot) => shot.origin === "auto");
+      for (const shot of auto) rmSync(join(dir, shot.name), { force: true });
+      if (auto.length > 0) {
+        const gone = new Set(auto.map((shot) => shot.name));
+        writeManifest(
+          dir,
+          readManifest(dir).filter((entry) => !gone.has(entry.name)),
+        );
+      }
+      return auto.length;
     },
     resolve(file) {
       const base = resolve(dir);

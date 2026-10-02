@@ -82,7 +82,12 @@ export function planAutoCapture(
   | { entries: CaptureEntry[]; errors: string[]; skips: string[]; collapsed: string[] }
   | { reason: string } {
   if (!task.branch) return { reason: "the task has no branch yet" };
-  const existing = localShotStore(config, task.id).list();
+  // Only engineer-made shots pre-empt. A shot the server's own capture wrote is
+  // replaced on re-handoff: otherwise a first capture taken from a stale or
+  // malformed declaration (a blind `/` fallback, #0625) blocks the corrected one.
+  const existing = localShotStore(config, task.id)
+    .list()
+    .filter((shot) => shot.origin !== "auto");
   if (existing.length > 0) {
     return {
       reason:
@@ -212,6 +217,7 @@ export async function runAutoShotCapture(
   let currentTarget: string | undefined;
   let currentUrl = "";
   let captured = 0;
+  let cleared = false;
   try {
     try {
       browser = await launchWebkit();
@@ -280,7 +286,14 @@ export async function runAutoShotCapture(
         );
       }
       await page.close().catch(() => {});
-      const stored = localShotStore(config, task.id).save({
+      const store = localShotStore(config, task.id);
+      // Drop the previous automatic capture only once a replacement exists.
+      if (!cleared) {
+        store.removeAuto();
+        cleared = true;
+      }
+      const stored = store.save({
+        origin: "auto",
         target: entry.target,
         route: entry.route,
         ...(entry.label ? { label: entry.label } : {}),
