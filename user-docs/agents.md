@@ -78,8 +78,12 @@ The page is organised into tabs:
 - **Build Your Team** — built-in agents and chat assistants (see below).
 - **Detected Coding Agents** — what's installed on this machine.
 - **Model Playground** — try a prompt against a CLI/model and compare output.
-- **Model providers** — live spend where a provider exposes an API, plus links
-  to provider dashboards such as Cursor’s Spending page.
+- **Model providers** — live spend where a provider exposes an API (OpenRouter,
+  opencode Go, DeepInfra, GitHub Copilot), plus links to provider dashboards
+  such as Cursor's Spending page. Copilot reports what GitHub billed to the
+  account — a personally billed plan out of the box, or a centrally billed one
+  by setting an `org:`/`enterprise:` scope — and never a remaining-quota
+  figure, because GitHub's billing API doesn't expose one.
 
 Every role card lets you pick the coding agent and model, toggle the role on or
 off, edit its instructions, and **Test** the combination to see whether the CLI
