@@ -35,16 +35,11 @@ describe("pmCommand usage flags (0335)", () => {
     const copilot = pmCommand({ ...base, cli: "github copilot" }, "flesh it out", "/repo");
     expect(copilot.args).toContain("--output-format");
     expect(copilot.args).toContain("json");
+    expect(copilot.args).toContain("--yolo");
   });
 
-  it("never grants permission bypasses — the PM only authors text", () => {
-    for (const cli of [
-      "claude code",
-      "qwen code",
-      "codex",
-      "opencode",
-      "github copilot",
-    ] as const) {
+  it("keeps other PM drivers' permission flags unchanged", () => {
+    for (const cli of ["claude code", "qwen code", "codex", "opencode"] as const) {
       const { args } = pmCommand({ ...base, cli }, "flesh it out", "/repo");
       expect(args).not.toContain("--dangerously-skip-permissions");
       expect(args).not.toContain("--sandbox");

@@ -2843,25 +2843,15 @@ function ensureDrivableCli(cli: string): void {
 const CODEX_ENGINEERING_ARGS = ["--dangerously-bypass-approvals-and-sandbox"];
 
 /**
- * Copilot's non-interactive `-p` mode has nobody to answer its tool-approval
- * prompts. GitHub documents --allow-all-tools as required for this mode: an
- * allowlist inevitably misses valid project commands and makes an engineering
- * turn fail partway through (for example, a stack-specific check command).
- *
- * This is deliberately narrower than --allow-all / --yolo: RepoOS retains
- * Copilot's path and URL verification. The flag is used only for managed
- * engineering turns, which RepoOS starts in the task's dedicated worktree.
- * Task-PM chat has a separate narrow `repoos`-only profile; all other advisory
- * conversations remain read-only.
+ * Copilot's non-interactive `-p` mode has nobody to answer approval prompts, and
+ * `--allow-all-tools` alone still denies path-verification reads (the built-in
+ * `rg` tool on a worktree path failed under --no-ask-user, #0625). So every
+ * Copilot invocation uses `--yolo` (= --allow-all-tools --allow-all-paths
+ * --allow-all-urls). Deliberate: the repo is in git, and a permission denial
+ * fails the task outright. Role prompts describe intended scope but the flag
+ * does not enforce read-only behavior.
  */
-type CopilotPermissionScope = "engineering" | "task-management" | "read-only";
-
-/**
- * Permissions are role-specific, not a property of the Copilot binary alone.
- * The engineer needs arbitrary project tooling; a task PM may only invoke
- * RepoOS's task-management CLI; advisory conversations need no bypass at all.
- */
-function copilotArgs(options: { scope: CopilotPermissionScope }): string[] {
+function copilotArgs(): string[] {
   return [
     "--output-format",
     "json",
@@ -2869,25 +2859,8 @@ function copilotArgs(options: { scope: CopilotPermissionScope }): string[] {
     "--no-auto-update",
     "--no-remote",
     "--no-remote-export",
-    ...(options.scope === "engineering"
-      ? ["--allow-all-tools"]
-      : options.scope === "task-management"
-        ? ["--allow-tool", "shell(repoos:*)"]
-        : []),
+    "--yolo",
   ];
-}
-
-/** The safe Copilot permission profile for a persistent non-engineering chat. */
-function copilotChatPermissionScope(sessionId: string): CopilotPermissionScope {
-  // Task and story PM chats are the one advisory conversation allowed to mutate
-  // task metadata, and taskPmPrompt/storyPmPrompt limit them to `repoos`
-  // commands. Every other chat (Debugger, Ross, and future advisory roles)
-  // remains read-only. A story PM chat is scoped by its `pm-story-v1:` prefix
-  // rather than by being tied to a task, because a story has no task to carry
-  // the flag (#0515).
-  return sessionId.startsWith("pm-task-v2:") || sessionId.startsWith("pm-story-v1:")
-    ? "task-management"
-    : "read-only";
 }
 
 /**
@@ -2931,9 +2904,8 @@ export const ENGINEER_REQUIRED_COMMANDS = ["repoos", "bun", "bunx", "git"] as co
  * - kiro: --trust-all-tools. cursor: --force.
  * - qwen code: --yolo (headless qwen denies every approval-gated tool).
  * - codex: --dangerously-bypass-approvals-and-sandbox for unattended browser checks.
- * - github copilot: --allow-all-tools under --no-ask-user. GitHub documents
- *   it as required for non-interactive mode; unlike --allow-all/--yolo, it
- *   does not disable Copilot's path or URL verification.
+ * - github copilot: --yolo under --no-ask-user (tools, paths and URLs), since
+ *   --allow-all-tools alone still denies path-verification reads.
  * - crush: no flag. Non-interactive `run` sessions auto-approve every
  *   permission request by design (`InitCoderAgentNonInteractive` calls
  *   `Permissions.AutoApproveSession`); `--yolo` is a TTY-only root flag that
@@ -2975,7 +2947,7 @@ export function engineerPermissionGaps(cli: string, args: readonly string[]): st
       return gaps;
     }
     case "github copilot":
-      if (args.includes("--allow-all-tools") || args.includes("--allow-all")) return [];
+      if (args.includes("--yolo") || args.includes("--allow-all")) return [];
       return ENGINEER_REQUIRED_COMMANDS.filter((cmd) => !args.includes(`shell(${cmd}:*)`)).map(
         (cmd) => `\`${cmd}\` is not in the --allow-tool list, so --no-ask-user denies it`,
       );
@@ -3018,12 +2990,7 @@ export function detectPermissionDenial(engine: string | undefined, raw: string):
   return null;
 }
 
-function cliCommand(
-  agent: Agent,
-  mission: string,
-  cwd: string,
-  copilotScope: CopilotPermissionScope = "engineering",
-): { cmd: string; args: string[] } {
+function cliCommand(agent: Agent, mission: string, cwd: string): { cmd: string; args: string[] } {
   const { cli, model } = agent;
   ensureDrivableCli(cli);
   if (cli === "claude code") {
@@ -3068,7 +3035,7 @@ function cliCommand(
   if (cli === "github copilot") {
     return {
       cmd: "copilot",
-      args: ["-p", mission, ...modelArgs(cli, model), ...copilotArgs({ scope: copilotScope })],
+      args: ["-p", mission, ...modelArgs(cli, model), ...copilotArgs()],
     };
   }
   if (cli === "kiro") {
@@ -3153,7 +3120,6 @@ function resumeCommand(
   text: string,
   sessionId?: string,
   cwd?: string,
-  copilotScope: CopilotPermissionScope = "engineering",
 ): { cmd: string; args: string[] } {
   const { cli, model } = agent;
   ensureDrivableCli(cli);
@@ -3212,7 +3178,7 @@ function resumeCommand(
         text,
         ...(isValidCopilotSessionId(sessionId) ? [`--resume=${sessionId}`] : []),
         ...modelArgs(cli, model),
-        ...copilotArgs({ scope: copilotScope }),
+        ...copilotArgs(),
       ],
     };
   }
@@ -3616,6 +3582,7 @@ export function promptCommand(agent: Agent, prompt: string): { cmd: string; args
         "--no-auto-update",
         "--no-remote",
         "--no-remote-export",
+        "--yolo",
       ],
     };
   }
@@ -3656,9 +3623,9 @@ export function promptCommand(agent: Agent, prompt: string): { cmd: string; args
  * the usage tab: structured output flags wherever the driver offers them, so
  * `runPrompt`'s extractUsage/foldUsage sees real tokens/cost and the initial
  * PM flesh-out lands in the ledger with figures instead of a blank row —
- * exactly the treatment the reviewer got in 0273. Unlike `reviewCommand`,
- * no permission-bypass flags: the PM only authors text (its output is applied
- * via `patchTaskFile`), so it must not be able to write files or run tools.
+ * exactly the treatment the reviewer got in 0273. Copilot receives
+ * --yolo like every other Copilot role; the PM prompt still limits
+ * its intended work to authoring text applied through `patchTaskFile`.
  *
  * The JSONL/JSON stdout this produces is parsed back to the final answer with
  * `extractOneShotReportText` and rendered live with `parseOneShotLine` — the
@@ -3707,11 +3674,10 @@ export function pmCommand(
     return { cmd: "codex", args: ["exec", prompt, ...extra, "--json"] };
   }
   if (agent.cli === "github copilot") {
-    // copilotArgs already emits `--output-format json`, so usage is captured;
-    // the read-only scope keeps the authoring pass output-only.
+    // copilotArgs already emits `--output-format json`, so usage is captured.
     return {
       cmd: "copilot",
-      args: ["-p", prompt, ...extra, ...copilotArgs({ scope: "read-only" })],
+      args: ["-p", prompt, ...extra, ...copilotArgs()],
     };
   }
   if (agent.cli === "kiro") {
@@ -3839,12 +3805,10 @@ export function reviewCommand(
     return { cmd: "codex", args: ["exec", prompt, ...extra, "--json"] };
   }
   if (agent.cli === "github copilot") {
-    // copilotArgs already emits `--output-format json`, so usage is captured.
-    // A headless reviewer must inspect diffs with shell commands. Without tool
-    // approval --no-ask-user denies those commands and the review times out.
+    // copilotArgs already emits JSONL and approves tools for headless review.
     return {
       cmd: "copilot",
-      args: ["-p", prompt, ...extra, ...copilotArgs({ scope: "read-only" }), "--allow-all-tools"],
+      args: ["-p", prompt, ...extra, ...copilotArgs()],
     };
   }
   if (agent.cli === "kiro") {
@@ -5103,7 +5067,7 @@ export class AgentRunner {
       agent.name === DEBUGGER_NAME
         ? debuggerPrompt(text, repositoryContext, agent)
         : promptBuilder(text, repositoryContext, agent);
-    const { cmd, args } = cliCommand(agent, mission, cwd, copilotChatPermissionScope(sessionId));
+    const { cmd, args } = cliCommand(agent, mission, cwd);
     return this.spawnOrQueue(sessionId, cmd, args, cwd);
   }
 
@@ -5136,10 +5100,10 @@ export class AgentRunner {
    * `cleanup()` fires `onReviewDone` for the owning ReviewManager to finalize.
    *
    * Unlike `start`/`send`, the review agent is deliberately NOT given
-   * `REPOOS_TASK_ID` / `REPOOS_API_URL`, preserving the read-only boundary that
-   * keeps it from reaching the control plane's task endpoints (review.ts layer
-   * 2). `kind: "review"` is persisted in the durable registry so adoption knows
-   * to re-attach as a review.
+   * `REPOOS_TASK_ID` / `REPOOS_API_URL`, leaving it without a direct pointer to
+   * the control plane's task endpoints (review.ts layer 2). Tool permission
+   * flags may still allow filesystem writes. `kind: "review"` is persisted so
+   * adoption knows to re-attach as a review.
    *
    * `reset: true` (a fresh run) clears any prior conversation; a chat turn
    * (`reset: false`, with `humanEntry`) continues the existing one.
@@ -5270,8 +5234,7 @@ export class AgentRunner {
         d: "Antigravity conversation id unavailable; starting a clearly-labelled fresh turn instead of guessing a session.",
       });
     }
-    const copilotScope = session.task ? "engineering" : copilotChatPermissionScope(taskId);
-    const { cmd, args } = resumeCommand(agent, fullText, sessionId, cwd, copilotScope);
+    const { cmd, args } = resumeCommand(agent, fullText, sessionId, cwd);
     return this.spawnOrQueue(taskId, cmd, args, cwd, session.task, session.branch, {
       skipBoardDivergence: opts.skipBoardDivergence,
     });
@@ -5485,10 +5448,9 @@ export class AgentRunner {
       delete agentEnv.REPOOS_RELOAD_SECRET;
       delete agentEnv.REPOOS_PREVIEW_CHILD;
       agentEnv.REPOOS_AGENT = "1";
-      // A REVIEW turn is deliberately read-only: unlike the engineer/PM, it is
-      // NOT given REPOOS_TASK_ID / REPOOS_API_URL, so it has no pointer at the
-      // control plane's task endpoints and cannot reach /done (review.ts layer
-      // 2). REPOOS_RUN_ID is still bound so any capability-request signal (none
+      // A REVIEW turn is not given REPOOS_TASK_ID / REPOOS_API_URL, so it has no
+      // direct pointer at the control plane's task endpoints. This is not a
+      // filesystem sandbox. REPOOS_RUN_ID is still bound so any signal (none
       // expected) would route to this exact run.
       if (!opts.review) agentEnv.REPOOS_TASK_ID = taskId;
       agentEnv.REPOOS_RUN_ID = runId;

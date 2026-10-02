@@ -244,6 +244,7 @@ describe("model-aware driver commands", () => {
       args: expect.arrayContaining(["-p", "write a task file", "--no-ask-user"]),
     });
     expect(command.args).not.toContain("--output-format");
+    expect(command.args).toContain("--yolo");
   });
 });
 
@@ -500,15 +501,8 @@ describe("claude code driver", () => {
         ).toBe(false);
         const [run] = spawns(fx);
         expect(run.args).toEqual(
-          expect.arrayContaining([
-            "-p",
-            "--output-format",
-            "json",
-            "--no-ask-user",
-            "--allow-all-tools",
-          ]),
+          expect.arrayContaining(["-p", "--output-format", "json", "--no-ask-user", "--yolo"]),
         );
-        expect(run.args).not.toEqual(expect.arrayContaining(["--allow-all", "--yolo"]));
         expect(run.cwd).toBe(realpathSync(cwd));
 
         runner.send("0001", "continue the work", agent("github copilot"));
@@ -557,7 +551,7 @@ describe("claude code driver", () => {
       }
     });
 
-    it("limits task-PM chat to RepoOS commands and keeps debugger chat read-only", async () => {
+    it("approves tools for Copilot PM and debugger chats", async () => {
       const fx = makeFixture();
       const oldPath = withFakePath(fx);
       process.env.REPOOS_FAKEBIN_LOG = fx.log;
@@ -576,11 +570,10 @@ describe("claude code driver", () => {
         await waitFor(() => !runner.isRunning("debugger:0001"), "Copilot debugger turn exit");
 
         const [pmRun, debuggerRun] = spawns(fx);
-        expect(pmRun?.args).toEqual(expect.arrayContaining(["--allow-tool", "shell(repoos:*)"]));
-        expect(pmRun?.args).not.toContain("--allow-all-tools");
-        expect(debuggerRun?.args).not.toEqual(
-          expect.arrayContaining(["--allow-tool", "--allow-all-tools", "--allow-all", "--yolo"]),
-        );
+        expect(pmRun?.args).toContain("--yolo");
+        expect(debuggerRun?.args).toContain("--yolo");
+        expect(pmRun?.args).not.toContain("--allow-tool");
+        expect(debuggerRun?.args).not.toContain("--allow-tool");
       } finally {
         process.env.PATH = oldPath;
         delete process.env.REPOOS_FAKEBIN_LOG;

@@ -226,10 +226,10 @@ run, committed to `main` before the task is created.
   RepoOS Guide agent runs read-only at the repository root with a live task and
   context-document summary. Its streamed transcript uses the same AgentRunner
   and SSE events, so it survives client-side route changes without becoming a task.
-- Review: a task reaching `review` -> live-index event -> the review agent runs
-  read-only in that task's worktree -> its report is stored under `.repoos/` and
-  served by GET /api/tasks/:id/review -> the drawer shows it beside "Move to
-  done", which stays the human's call.
+- Review: a task reaching `review` -> live-index event -> the review agent is
+  instructed to inspect the task's worktree without edits -> its report is
+  stored under `.repoos/` and served by GET /api/tasks/:id/review -> the drawer
+  shows it beside "Move to done", which stays the human's call.
 - Release: after the review-to-done flow merges a task and its post-merge checks
   pass, it appends a `released` entry to that task's Activity log. The Control
   page derives its persistent feature-release timeline from those entries;
@@ -273,22 +273,18 @@ Two guards now exist, both in `src/server/agents.ts`:
 
 RepoOS runs GitHub Copilot CLI (`npm i -g @github/copilot`) in a task worktree
 with `-p`, `--output-format json`, `--no-ask-user`, and
-`--allow-all-tools`. GitHub documents that last flag as required for reliable
-non-interactive work: a static command allowlist cannot cover a real project's
-test/build commands. Its JSONL transcript captures assistant text, tool
+`--yolo`. A headless run cannot answer approval prompts, and a static command
+allowlist cannot cover a real project's test/build commands. Its JSONL transcript captures assistant text, tool
 activity, errors, and the final `sessionId`; follow-up task-chat prompts use
 that id with `--resume=<session-id>`. It does not use `--continue`, which could
 resume a different task's most recent session.
 
-The driver deliberately does **not** pass `--allow-all` or `--yolo`: those also
-disable Copilot's path and URL verification. Full tool approval is used for
-managed engineering turns and reviewer runs in a task worktree. The reviewer
-needs to run Git diff and file inspection commands in a headless session;
-`--allow-all-tools` is an approval bypass, not a read-only boundary, so its
-prompt forbids edits. Task-PM chat receives only `shell(repoos:*)`, so it can
-use RepoOS's constrained task-management commands without arbitrary project
-tooling. Freeform PM authoring, Debugger, and RepoOS Guide conversations get no
-Copilot permission bypass.
+Every Copilot invocation receives `--yolo` (all tools, paths and URLs), including
+task PM chat, one-shot authoring, reviews, Debugger, and RepoOS Guide.
+`--allow-all-tools` alone was not enough: path verification still denied the
+reviewer's built-in `rg` tool on a worktree path (#0625), failing the review.
+Their prompts still define the intended scope, but tool approval is not a
+read-only boundary: Copilot can run commands with the user's normal access.
 Copilot's live model listing is not yet a stable CLI interface, so the Agents
 page offers its three documented Auto tiers instead of guessing account-specific
 model IDs. `default` means `Auto · Efficiency`; Balance and Intelligence pass

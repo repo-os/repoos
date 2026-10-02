@@ -622,7 +622,7 @@ const PI_CONTRACT: ContractCommandTemplates = {
 
 /**
  * GitHub Copilot CLI — `--output-format json` JSONL, session id on `event.sessionId`.
- * `--no-ask-user` suppresses approval prompts; `--allow-all-tools` for headless engineering.
+ * `--no-ask-user` suppresses approval prompts; `--yolo` for headless runs.
  */
 function parseCopilotRun(stdout: string): RunParseResult {
   const KNOWN = new Set([
@@ -682,7 +682,7 @@ const COPILOT_CONTRACT: ContractCommandTemplates = {
     "--no-auto-update",
     "--no-remote",
     "--no-remote-export",
-    "--allow-all-tools",
+    "--yolo",
   ],
   resume: (_dir, sessionId, prompt) => [
     "-p",
@@ -694,7 +694,7 @@ const COPILOT_CONTRACT: ContractCommandTemplates = {
     "--no-auto-update",
     "--no-remote",
     "--no-remote-export",
-    "--allow-all-tools",
+    "--yolo",
   ],
   parseRun: parseCopilotRun,
 };
