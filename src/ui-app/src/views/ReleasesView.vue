@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { useUiStore } from "../stores/ui";
 import { Bug, Check, Copy, Sparkles, X } from "lucide-vue-next";
 import { copyToClipboard } from "../lib/clipboard";
 import Button from "../components/ui/button.vue";
@@ -74,30 +75,8 @@ const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$/;
 const status = ref<ReleaseStatus | null>(null);
 const loading = ref(true);
 const running = ref(false);
+const ui = useUiStore();
 const confirmOpen = ref(false);
-/**
- * Width of the cut-a-release side panel. Local to this panel on purpose: the
- * task drawer and New input panel share the ui store's drawer width, and
- * resizing this one shouldn't drag those along with it.
- */
-const panelWidth = ref(520);
-
-function startPanelResize(e: MouseEvent): void {
-  const startX = e.clientX;
-  const startW = panelWidth.value;
-  const onMove = (ev: MouseEvent): void => {
-    panelWidth.value = Math.max(
-      420,
-      Math.min(window.innerWidth - 40, startW + startX - ev.clientX),
-    );
-  };
-  const onUp = (): void => {
-    document.removeEventListener("mousemove", onMove);
-    document.removeEventListener("mouseup", onUp);
-  };
-  document.addEventListener("mousemove", onMove);
-  document.addEventListener("mouseup", onUp);
-}
 const newVersion = ref("");
 const message = ref("");
 const error = ref("");
@@ -525,7 +504,7 @@ async function generateNotes(): Promise<void> {
 }
 
 async function release(): Promise<void> {
-  if (!newVersionValid.value || running.value || generatingNotes.value) return;
+  if (!canOpen.value || !newVersionValid.value || running.value || generatingNotes.value) return;
   running.value = true;
   error.value = "";
   runLog.value = "";
@@ -666,6 +645,10 @@ function elapsed(): string {
 }
 
 onMounted(() => {
+  // Deep link for shots/docs (`/releases?drawer=cut`): opens the panel without
+  // a click. It is view-only on a dirty tree or off the release branch — the
+  // publish button and release() are still gated on `canOpen`.
+  if (new URLSearchParams(window.location.search).get("drawer") === "cut") confirmOpen.value = true;
   void load();
   void loadDistribution();
   void pollRun();
@@ -904,9 +887,9 @@ onBeforeUnmount(() => {
           <DialogOverlay />
           <DialogContent
             class="release-drawer"
-            :style="{ width: panelWidth + 'px', 'max-width': '100vw' }"
+            :style="{ width: ui.drawerWidth + 'px', 'max-width': '100vw' }"
           >
-            <div class="drawer-resize" @mousedown.prevent="startPanelResize"></div>
+            <div class="drawer-resize" @mousedown.prevent="ui.startResize"></div>
             <div class="drawer-head">
               <div class="drawer-head-title">
                 <DialogTitle>Cut a release</DialogTitle>
@@ -920,6 +903,12 @@ onBeforeUnmount(() => {
                 Runs <code>repoos check</code>, pushes <code>{{ status.branch }}</code
                 >, then pushes a tag. CI builds and publishes from that tag.
               </DialogDescription>
+
+              <p v-if="!canOpen && !running" class="ff-notice" role="status">
+                Publishing is disabled: the working tree must be clean and on
+                <code>{{ status.branch }}</code
+                >.
+              </p>
 
               <dl class="rel-panel-facts">
                 <div>
@@ -1060,7 +1049,7 @@ onBeforeUnmount(() => {
             <div class="release-drawer-actions">
               <Button
                 variant="accent"
-                :disabled="!newVersionValid || running || generatingNotes"
+                :disabled="!canOpen || !newVersionValid || running || generatingNotes"
                 @click="release"
               >
                 {{ running ? "Publishing…" : newTag ? `Publish ${newTag}` : "Publish" }}
