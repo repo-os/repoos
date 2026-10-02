@@ -2,14 +2,14 @@
 id: "0628"
 title: "New inputs never get an AI title: PM stream-json output isn't extracted before parsing"
 type: bug
-status: ready
+status: active
 priority: high
 area: [core, server]
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/new-inputs-never-get-an-ai-title-pm-stre
 created_at: "2026-10-02T12:21:26Z"
-updated_at: "2026-10-02T17:37:33Z"
+updated_at: "2026-10-02T17:37:35Z"
 ---
 ## Problem
 Creating an input should have the PM agent write a short title/type/area, but the title stays the raw first line (truncated at 100 chars) and type stays `other`. Observed on input muqwx9a1-910cq: updated_at is 15s after created_at, so the PM call ran and enrichInput wrote nothing.
@@ -34,3 +34,4 @@ Files: src/server/routes/inputs.ts (postInput, parseEnrichment), src/core/input.
 
 - 2026-10-02T12:21:26Z · created · unknown
 - 2026-10-02T17:37:33Z · status inbox→ready
+- 2026-10-02T17:37:35Z · status ready→active, branch
