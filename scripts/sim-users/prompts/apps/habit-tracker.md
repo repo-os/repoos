@@ -1,0 +1,1 @@
+**Habit tracker.** A web app where I can add habits, check them off each day, and see my current streak for each one. Data should persist between restarts. Include a few automated tests, especially for the streak logic.
