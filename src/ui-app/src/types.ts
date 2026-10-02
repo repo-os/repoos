@@ -1,6 +1,7 @@
 /** API-facing types for the RepoOS web UI. Mirrors src/core/types.ts. */
 
 import type { RepoCommit } from "../../core/repo-log.js";
+import type { DeclaredShot } from "../../core/shot-plan.js";
 
 export type Status = "draft" | "inbox" | "ready" | "active" | "review" | "done";
 
@@ -201,6 +202,12 @@ export interface ShotMeta {
    * "auto: matched <glob>" — shown under the image in the Changes tab.
    */
   provenance?: string;
+  /**
+   * The full declared entry a hand-added shot was captured from (#0627), so
+   * delete can sync the exact `## Shots` declaration. Absent for legacy
+   * captures and the automatic pass.
+   */
+  declared?: DeclaredShot;
   /** Repo-relative path. */
   path: string;
   /** API URL the UI loads the image from. */

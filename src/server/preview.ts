@@ -75,6 +75,8 @@ export interface PreviewResult {
   /** Preview-only config override keys this preview applied (#0464). */
   overrides?: string[];
   error?: string;
+  /** True when the refusal is the one-preview cap (`noEvict`), not a failure (#0627). */
+  busy?: boolean;
 }
 
 /** Result of a trusted server-side health/static probe of a preview URL (#0121). */
@@ -158,6 +160,15 @@ export interface PreviewStartOptions {
    * label in its transcript instead of claiming a choice was made.
    */
   allowAmbiguous?: boolean;
+  /**
+   * Refuse with a busy result instead of FIFO-evicting the oldest preview when
+   * the single slot is taken (#0627). The manual single-entry shot capture
+   * sets this so a preview a human is viewing can never be evicted by a
+   * capture that started in the gap between its own snapshot check and
+   * `start` — the capacity decision is made HERE, atomically with the start.
+   * The automatic handoff capture keeps the default (evicting) behavior.
+   */
+  noEvict?: boolean;
 }
 
 /**
@@ -582,7 +593,7 @@ export class PreviewManager {
         return { ok: false, error };
       }
     }
-    const p = this.doStart(task, targetName);
+    const p = this.doStart(task, targetName, opts);
     this.inflight.set(task.id, p);
     p.finally(() => this.inflight.delete(task.id)).catch(() => {
       /* handled by caller */
@@ -590,7 +601,11 @@ export class PreviewManager {
     return p;
   }
 
-  private async doStart(task: Task, targetName?: string): Promise<PreviewResult> {
+  private async doStart(
+    task: Task,
+    targetName?: string,
+    opts: PreviewStartOptions = {},
+  ): Promise<PreviewResult> {
     if (!task.branch) {
       return { ok: false, error: `Task #${task.id} has no branch to preview` };
     }
@@ -629,6 +644,22 @@ export class PreviewManager {
     // Enforce the concurrent-preview cap (#0198): before launching a new
     // preview, free a slot if at capacity by terminating the oldest running
     // preview (FIFO). A task that already has a preview is a no-op elsewhere.
+    // With `noEvict`, the check-and-evict becomes a check-and-refuse — the
+    // manual shot capture (#0627) must never evict a preview a human is
+    // viewing, and doing the check HERE (not in the caller beforehand) closes
+    // the race where another preview starts between the two.
+    if (opts.noEvict && this.registry.size >= MAX_PREVIEWS && !this.registry.has(task.id)) {
+      const oldest = [...this.registry.entries()].sort((a, b) =>
+        a[1].startedAt < b[1].startedAt ? -1 : a[1].startedAt > b[1].startedAt ? 1 : 0,
+      )[0];
+      return {
+        ok: false,
+        busy: true,
+        error:
+          `the one preview slot is busy: task #${oldest?.[0] ?? "?"} has a preview running — ` +
+          "stop it (or wait for it to be evicted), then retry",
+      };
+    }
     await this.evictIfAtCapacity(task.id);
 
     let port: number;

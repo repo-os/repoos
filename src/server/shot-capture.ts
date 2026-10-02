@@ -24,6 +24,7 @@ import {
   parseShotPlan,
   provenanceCaption,
   type CaptureEntry,
+  type DeclaredShot,
 } from "../core/shot-plan.js";
 import type { ShotMeta } from "./shots.js";
 import { describeTargetPathMatches, resolveShotTargets } from "../core/shot-targets.js";
@@ -104,11 +105,15 @@ async function startTargetPreview(
   previews: PreviewManager,
   task: Task,
   target: string,
-): Promise<{ url: string } | { error: string }> {
+  opts: { noEvict?: boolean } = {},
+): Promise<{ url: string } | { error: string; busy?: boolean }> {
   await previews.stop(task.id);
-  const started = await previews.start(task, target);
+  const started = await previews.start(task, target, opts.noEvict ? { noEvict: true } : {});
   if (!started.ok || !started.url) {
-    return { error: started.error ?? "could not start the preview" };
+    return {
+      error: started.error ?? "could not start the preview",
+      ...(started.busy ? { busy: true } : {}),
+    };
   }
   return { url: started.url.replace(/\/$/, "") };
 }
@@ -372,7 +377,11 @@ export type DeclaredShotCapture =
  * now. The one-preview cap is therefore answered with a structured busy error
  * when ANY preview is running for another task, and when the task's own
  * preview is running a DIFFERENT target; the same target's live preview is
- * reused (no restart, no churn — the CLI rule).
+ * reused (no restart, no churn — the CLI rule). The snapshot checks below are
+ * fast-fails with precise messages; the authoritative reservation passes
+ * `noEvict` to `PreviewManager.start`, so the capacity decision is made
+ * atomically with the start and a preview that starts in between can never be
+ * evicted by this capture.
  *
  * Returns a structured error (never throws) for: busy preview slot,
  * Playwright/WebKit unavailable, a preview that would not boot, or a failed
@@ -384,7 +393,10 @@ export async function captureDeclaredShot(
   config: RepoOSConfig,
   task: Task,
   previews: PreviewManager,
-  entry: CaptureEntry,
+  entry: CaptureEntry & {
+    /** The parsed declaration to store on the shot, for exact delete sync (#0627). */
+    declared?: DeclaredShot;
+  },
 ): Promise<DeclaredShotCapture> {
   // One preview at a time (#0271) — but a manual capture never evicts what a
   // human is viewing; that slot is BUSY, not available.
@@ -426,10 +438,16 @@ export async function captureDeclaredShot(
       return { error: `could not launch the browser: ${(err as Error).message.split("\n")[0]}` };
     }
     if (!url) {
-      const startedPreview = await startTargetPreview(previews, task, entry.target);
+      // The busy decision is made inside `start` (noEvict), atomically with the
+      // start — a snapshot check here alone would race another preview starting
+      // in between and evict the one being viewed (review round 1).
+      const startedPreview = await startTargetPreview(previews, task, entry.target, {
+        noEvict: true,
+      });
       if ("error" in startedPreview) {
         return {
           error: `preview for target "${entry.target}" did not start: ${startedPreview.error}`,
+          ...(startedPreview.busy ? { busy: true } : {}),
         };
       }
       url = startedPreview.url;
@@ -453,6 +471,11 @@ export async function captureDeclaredShot(
       // Deliberately NOT `origin: "auto"` (#0627): a hand-added shot is
       // engineer-made evidence, so re-handoff cleanup keeps it and the
       // automatic capture still pre-empts correctly.
+      // The full parsed declaration rides in the manifest so delete can sync
+      // THE exact `## Shots` entry — selector and steps included (#0627
+      // review round 1); the shallow label/route/target fields alone cannot
+      // distinguish two declarations that differ only there.
+      ...(entry.declared ? { declared: entry.declared } : {}),
       data: captured.png.toString("base64"),
     });
     if ("error" in stored) {

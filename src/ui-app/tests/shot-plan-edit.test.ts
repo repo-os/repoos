@@ -12,6 +12,7 @@ import {
   declaredShotsSectionContent,
   parseShotEntry,
   removeDeclaredShots,
+  sameDeclaredShot,
 } from "../../core/shot-plan.js";
 
 const FENCED = (json: string) => `\`\`\`json\n${json}\n\`\`\``;
@@ -136,5 +137,35 @@ describe("declaredShotMatchesShot", () => {
     expect(declaredShotMatchesShot({ label: "Guide" }, { target: "docs" })).toBe(false);
     expect(declaredShotMatchesShot({ label: "Guide" }, { label: "Other" })).toBe(false);
     expect(declaredShotMatchesShot({ route: "/repo" }, { route: undefined })).toBe(false);
+  });
+
+  it("never lets a declaration with no identifying fields claim any shot", () => {
+    // Steps-only or highlight-only entries cannot be attributed to a specific
+    // capture — treating the absent fields as wildcards would let one claim
+    // ANY deleted shot (review round 1).
+    expect(declaredShotMatchesShot({ steps: [{ click: ".x" }] }, {})).toBe(false);
+    expect(declaredShotMatchesShot({ highlight: ".y" }, { target: "default" })).toBe(false);
+  });
+});
+
+describe("sameDeclaredShot (#0627 review round 1)", () => {
+  it("is true for identical entries in any construction order", () => {
+    expect(
+      sameDeclaredShot({ target: "default", label: "A" }, { label: "A", target: "default" }),
+    ).toBe(true);
+    expect(sameDeclaredShot({}, {})).toBe(true);
+  });
+
+  it("is false when selector or steps differ, even with equal label/route/target", () => {
+    const base = { target: "default", route: "/", label: "A" };
+    expect(sameDeclaredShot(base, { ...base, selector: ".x" })).toBe(false);
+    expect(sameDeclaredShot(base, { ...base, highlight: ".x" })).toBe(false);
+    expect(sameDeclaredShot(base, { ...base, steps: [{ click: ".a" }] })).toBe(false);
+    expect(
+      sameDeclaredShot(
+        { ...base, steps: [{ click: ".a" }, { waitMs: 100 }] },
+        { ...base, steps: [{ click: ".a" }] },
+      ),
+    ).toBe(false);
   });
 });

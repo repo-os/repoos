@@ -156,6 +156,32 @@ describe("POST /api/tasks/:id/shots — declare and capture (#0627)", () => {
     expect(readFileSync(task.absPath, "utf8")).not.toContain("## Shots");
   });
 
+  it("rejects wrong-typed fields instead of treating them as omitted", async () => {
+    // Fields reach the validator verbatim: `{ target: 5 }` must be REJECTED,
+    // never silently narrowed to "no target" and captured anyway (review
+    // round 1).
+    const ctx = makeCtx();
+    const { capture, res } = resCapture();
+    await uploadTaskShot(ctx as never, bodyReq({ target: 5, label: "Wrong type" }), res, {
+      param1: task.id,
+    });
+    expect(capture.statusCode).toBe(400);
+    expect((capture.body as { error: string }).error).toContain(
+      '"target" expects a non-empty string',
+    );
+    expect(mockedCapture).not.toHaveBeenCalled();
+  });
+
+  it("rejects a non-array steps value through the same validator", async () => {
+    const ctx = makeCtx();
+    const { capture, res } = resCapture();
+    await uploadTaskShot(ctx as never, bodyReq({ target: "default", steps: "click .x" }), res, {
+      param1: task.id,
+    });
+    expect(capture.statusCode).toBe(400);
+    expect((capture.body as { error: string }).error).toContain('"steps" expects an array');
+  });
+
   it("answers a busy preview slot with 409 + busy, and does NOT write the declaration", async () => {
     mockedCapture.mockResolvedValue({
       error: "the one preview slot is busy: task #0999 has a preview running",
@@ -242,6 +268,38 @@ describe("DELETE /api/tasks/:id/shots/:name — delete + declaration sync (#0627
     expect(capture.body).toMatchObject({ ok: true, declarationsRemoved: 0 });
     // The unrelated declaration survives.
     expect(readFileSync(task.absPath, "utf8")).toContain('"target": "web"');
+  });
+
+  it("syncs THE exact declaration when the shot carries one (selector/steps included)", async () => {
+    // Two declarations share label/route/target but differ in selector. Only
+    // the stored declaration's exact twin may be removed (review round 1).
+    const declared = {
+      target: "default",
+      route: "/",
+      label: "Task drawer open",
+      selector: ".drawer",
+    };
+    const saved = localShotStore(repoos.config, task.id).save({
+      target: "default",
+      route: "/",
+      label: "Task drawer open",
+      provenance: "declared: Task drawer open",
+      declared,
+      data: PNG_1PX,
+    });
+    if ("error" in saved) throw new Error("seed failed");
+    task = patchSection(
+      declaredShotsSectionContent([{ ...declared, selector: ".other" }, declared]),
+    );
+
+    const ctx = makeCtx();
+    const { capture, res } = resCapture();
+    await deleteTaskShot(ctx as never, emptyReq, res, { param1: task.id, param2: saved.name });
+
+    expect(capture.body).toMatchObject({ ok: true, declarationsRemoved: 1 });
+    const onDisk = readFileSync(task.absPath, "utf8");
+    expect(onDisk).toContain('"selector": ".other"');
+    expect(onDisk).not.toContain('"selector": ".drawer"');
   });
 
   it("404s for an unknown shot name", async () => {

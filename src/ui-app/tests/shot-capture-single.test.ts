@@ -51,15 +51,17 @@ function fakePreviews(
     ok: true,
     url: "http://127.0.0.1:9000",
   },
-): PreviewManager & { stops: string[] } {
+): PreviewManager & { stops: string[]; starts: unknown[] } {
   const stops: string[] = [];
+  const starts: unknown[] = [];
   const runningList = [...running];
   return {
     runningPreviews: () => runningList,
     get: (taskId: string) => runningList.find((r) => r.taskId === taskId)?.info ?? null,
     // Mirror the real manager: a started preview joins the registry so a later
     // stop finds it (the real stop is a no-op with nothing registered).
-    start: async () => {
+    start: async (_task: unknown, _target: unknown, opts: unknown) => {
+      starts.push(opts);
       if (startResult.ok && startResult.url) {
         runningList.push({
           taskId: "0627",
@@ -75,7 +77,8 @@ function fakePreviews(
       stops.push(taskId);
     },
     stops,
-  } as unknown as PreviewManager & { stops: string[] };
+    starts,
+  } as unknown as PreviewManager & { stops: string[]; starts: unknown[] };
 }
 
 // The real page choreography is tested elsewhere; the capture is mocked so the
@@ -153,8 +156,30 @@ describe("captureDeclaredShot busy semantics (#0627)", () => {
     const result = await captureDeclaredShot(config, makeTask("0627"), previews, ENTRY);
     expect("error" in result).toBe(false);
     expect(previews.stops).toEqual(["0627"]);
+    // The busy decision is made atomically inside `start` via the no-evict
+    // option — a preview starting between the snapshot check and the start can
+    // never be evicted by this capture (review round 1).
+    expect(previews.starts).toEqual([{ noEvict: true }]);
     const stored = localShotStore(config, "0627").list();
     expect(stored).toHaveLength(1);
     expect(stored[0]!.target).toBe("default");
+  });
+
+  it("stores the full declaration on the shot for exact delete sync", async () => {
+    const config = setup();
+    const previews = fakePreviews();
+    const declared = {
+      target: "default",
+      label: "Task drawer open",
+      selector: ".drawer",
+      steps: [{ click: ".toggle" }],
+    };
+    const result = await captureDeclaredShot(config, makeTask("0627"), previews, {
+      ...ENTRY,
+      declared,
+    });
+    expect("error" in result).toBe(false);
+    if ("error" in result) return;
+    expect(result.shot.declared).toEqual(declared);
   });
 });

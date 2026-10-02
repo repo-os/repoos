@@ -521,16 +521,39 @@ export function appendDeclaredShot(
  * Does a declared entry describe this captured shot? Compares only the fields
  * both sides record — label, route, target — because `selector`/`steps` live
  * solely in the declaration. Used by the drawer's pairing (ui `shot-rows.ts`)
- * and by delete's declaration-sync (#0627).
+ * and by delete's legacy-shot declaration-sync (#0627).
+ *
+ * An entry with NO identifying fields (no label, route or target) matches
+ * NOTHING: it cannot be attributed to a specific capture, and treating the
+ * absent fields as wildcards would let a declaration carrying only steps or a
+ * highlight claim any deleted shot (review round 1). New hand-added shots
+ * carry their full declaration in the manifest (`ShotMeta.declared`) and are
+ * synced exactly via {@link sameDeclaredShot} instead.
  */
 export function declaredShotMatchesShot(
   entry: DeclaredShot,
   shot: { label?: string; route?: string; target?: string },
 ): boolean {
+  if (!entry.label && !entry.route && !entry.target) return false;
   if (entry.label && entry.label !== shot.label) return false;
   if (entry.route && entry.route !== (shot.route ?? "/")) return false;
   if (entry.target && entry.target !== shot.target) return false;
   return true;
+}
+
+/**
+ * Structural equality of two declared entries (#0627 review round 1): every
+ * field must be present-and-equal, steps compared as an ordered list. Both
+ * sides are post-parse (`parseShot`), so fields are already normalized. This
+ * is the exact rule for syncing a hand-added shot's own declaration on
+ * delete — two declarations that merely share label/route/target but differ
+ * in selector or steps are NOT the same shot's declaration.
+ */
+export function sameDeclaredShot(a: DeclaredShot, b: DeclaredShot): boolean {
+  for (const field of ["label", "target", "route", "selector", "highlight"] as const) {
+    if ((a[field] ?? undefined) !== (b[field] ?? undefined)) return false;
+  }
+  return JSON.stringify(a.steps ?? []) === JSON.stringify(b.steps ?? []);
 }
 
 /**
