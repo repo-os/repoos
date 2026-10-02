@@ -25,6 +25,7 @@ import type { SystemStats } from "./system.js";
 import type { AutoEngineeringDecision } from "./auto-engineering.js";
 import type { IntegrationSnapshot } from "./integration-status.js";
 import type { RepoStatus } from "./repo-status.js";
+import type { Input } from "../core/input.js";
 import { STATUSES, PRIORITIES } from "../core/types.js";
 import { parseTask } from "../core/task.js";
 import {
@@ -158,6 +159,9 @@ export type RepoEvent =
       at: string;
     }
   | { type: "hello"; taskCount: number; at: string }
+  /** Background PM enrichment of a new input finished (#0628): carries the
+   *  enriched input so open views swap the raw first-line title in place. */
+  | { type: "input.enriched"; id: string; input: Input; at: string }
   | { type: "story.definitionsChanged"; at: string }
   /** The PM finished fleshing out a New story (ok or not); `path` is its final file. */
   | {
