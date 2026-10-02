@@ -3840,9 +3840,11 @@ export function reviewCommand(
   }
   if (agent.cli === "github copilot") {
     // copilotArgs already emits `--output-format json`, so usage is captured.
+    // A headless reviewer must inspect diffs with shell commands. Without tool
+    // approval --no-ask-user denies those commands and the review times out.
     return {
       cmd: "copilot",
-      args: ["-p", prompt, ...extra, ...copilotArgs({ scope: "read-only" })],
+      args: ["-p", prompt, ...extra, ...copilotArgs({ scope: "read-only" }), "--allow-all-tools"],
     };
   }
   if (agent.cli === "kiro") {
