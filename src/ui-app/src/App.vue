@@ -18,6 +18,7 @@ import NewInputPanel from "./components/NewInputPanel.vue";
 import UiRecoveryBanner from "./components/UiRecoveryBanner.vue";
 import CopyInspectorOverlay from "./components/CopyInspectorOverlay.vue";
 import ReleaseUpdateNotification from "./components/ReleaseUpdateNotification.vue";
+import DependencyOverrideDialog from "./components/DependencyOverrideDialog.vue";
 import { configureUiRecovery, checkUiBuild, showOffline } from "./lib/uiRecovery";
 import { useUiStore } from "./stores/ui";
 
@@ -110,6 +111,7 @@ onUnmounted(() => {
       <ReleaseUpdateNotification />
       <FloatingHeads />
       <NewInputPanel />
+      <DependencyOverrideDialog />
     </template>
   </div>
 </template>
