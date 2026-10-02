@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/remove-unimplemented-harnesses-and-depre
 created_at: "2026-10-02T00:22:00Z"
-updated_at: "2026-10-02T00:24:50Z"
+updated_at: "2026-10-02T00:28:25Z"
 ---
 ## Problem
 
@@ -64,6 +64,11 @@ Now that we have 10 functional coding harnesses let's remove Gemini, Aider and G
 
 ![Screenshot-2026-10-02-at-08.20.00](/api/tasks/0620/attachments/screenshot-1.png)
 
+## Shots
+```json
+[{"target":"default","route":"/agents?tab=detected","label":"Detected coding agents — simplified row layout with no Deprecated column","highlight":".detect-row"}]
+```
+
 ## Activity
 
 - 2026-10-02T00:22:00Z · created · hello@repoos.org
@@ -71,3 +76,4 @@ Now that we have 10 functional coding harnesses let's remove Gemini, Aider and G
 - 2026-10-02T00:22:36Z · status draft→inbox, title, area, type, body
 - 2026-10-02T00:24:48Z · status inbox→ready
 - 2026-10-02T00:24:50Z · status ready→active, branch
+- 2026-10-02T00:28:25Z · body: section Shots
