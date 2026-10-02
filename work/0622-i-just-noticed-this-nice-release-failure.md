@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-02T02:23:20Z"
-review_passes: 3
 id: "0622"
 title: Promote release failures above published-to and show loading state
 type: feature
@@ -14,6 +12,8 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/promote-release-failures-above-published
 created_at: "2026-10-02T01:48:25Z"
+updated_at: "2026-10-02T02:25:59Z"
+review_passes: 3
 review_rounds: 2
 ---
 ## Problem
