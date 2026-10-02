@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/promote-release-failures-above-published
 created_at: "2026-10-02T01:48:25Z"
-updated_at: "2026-10-02T02:33:26Z"
+updated_at: "2026-10-02T02:44:33Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -59,9 +59,7 @@ I just noticed this nice release failure section, but it's hidden below the fold
 ![Screenshot-2026-10-02-at-09.46.06](/api/tasks/0622/attachments/screenshot-2.png)
 
 ## Shots
-```json
-[{"target": "default", "route": "/releases", "label": "Releases page — failure outcome now renders above the Published-to card when the last run failed, and Published to shows a spinner while its first lookup loads"}]
-```
+[{"target": "default", "route": "/releases", "label": "Failure promoted above Published to with loading indicator behavior fixed (#0622 review fix: retry poll race)"}]
 
 ## Activity
 
@@ -82,3 +80,4 @@ I just noticed this nice release failure section, but it's hidden below the fold
 - 2026-10-02T02:23:20Z · needs_input
 - 2026-10-02T02:31:23Z · status review→active
 - 2026-10-02T02:33:26Z · needs_input (review-rounds-exhausted) dismissed by hello@repoos.org
+- 2026-10-02T02:44:33Z · body: section Shots
