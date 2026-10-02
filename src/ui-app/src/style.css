@@ -4146,6 +4146,39 @@
   transform: rotate(-90deg);
 }
 
+/* Shared table-like label/value rows (#0623): any repeated run of labeled
+   facts (a `dl` of dt/dd — no literal <table> required) uses this instead of
+   hand-rolled flex rows. Labels share one fixed-width column, values align
+   in the second, row spacing is uniform, and multi-value content wraps
+   inside the value cell — never under the label. Tune the label width per
+   surface with `--kv-label-w`; add component specifics in scoped styles. */
+.kv-rows {
+  margin: 0;
+  display: grid;
+  gap: 7px;
+  font-size: 12px;
+}
+.kv-rows > div {
+  display: grid;
+  grid-template-columns: var(--kv-label-w, 92px) minmax(0, 1fr);
+  column-gap: 12px;
+  align-items: baseline;
+}
+.kv-rows dt {
+  color: var(--txt-dim);
+  white-space: nowrap;
+}
+.kv-rows dd {
+  margin: 0;
+  min-width: 0;
+}
+.kv-rows dd.kv-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+}
+
 .field {
   margin-bottom: 13px;
 }
