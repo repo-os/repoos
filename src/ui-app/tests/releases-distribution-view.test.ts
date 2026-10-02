@@ -3,6 +3,7 @@
  * it renders only when destinations are configured, shows each channel's
  * version/state, and copies every install command independently.
  */
+import { createPinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
 import * as apiMod from "../src/api";
@@ -68,7 +69,10 @@ function mockApi(channels: ReturnType<typeof channel>[]) {
 }
 
 async function mountView(): Promise<VueWrapper> {
-  const wrapper = mount(ReleasesView, { attachTo: document.body });
+  const wrapper = mount(ReleasesView, {
+    attachTo: document.body,
+    global: { plugins: [createPinia()] },
+  });
   await flushPromises();
   return wrapper;
 }

@@ -13,6 +13,7 @@
  * the session state (form fields, run log, live run progress), and the form
  * is only cleared once a cut succeeds.
  */
+import { createPinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
 import * as apiMod from "../src/api";
@@ -105,7 +106,7 @@ function button(root: ParentNode, label: string): HTMLButtonElement | undefined 
 
 async function mountView(): Promise<void> {
   mockApi();
-  wrapper = mount(ReleasesView, { attachTo: document.body });
+  wrapper = mount(ReleasesView, { attachTo: document.body, global: { plugins: [createPinia()] } });
   await flushPromises();
 }
 
@@ -186,7 +187,10 @@ describe("Cut Next shortcut (#0590)", () => {
         released: false,
       }),
     );
-    wrapper = mount(ReleasesView, { attachTo: document.body });
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
     await flushPromises();
     const panel = await openPanel();
 
@@ -263,7 +267,10 @@ describe("Cut Next shortcut (#0590)", () => {
         });
       return Promise.reject(new Error(`unexpected api call: ${path}`));
     });
-    wrapper = mount(ReleasesView, { attachTo: document.body });
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
     await flushPromises();
 
     // Mid-run the page button doubles as the way back in.
@@ -319,7 +326,10 @@ describe("Cut Next shortcut (#0590)", () => {
         });
       return Promise.reject(new Error(`unexpected api call: ${path}`));
     });
-    wrapper = mount(ReleasesView, { attachTo: document.body });
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
     await flushPromises();
 
     let panel = await openPanel();
@@ -366,7 +376,10 @@ describe("AI release notes cache reuse (#0590)", () => {
         cachedAt: new Date(Date.now() - 2 * 60_000).toISOString(),
       }),
     );
-    wrapper = mount(ReleasesView, { attachTo: document.body });
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
     await flushPromises();
     const panel = await openPanel();
 
@@ -452,7 +465,10 @@ describe("AI release notes tracked run (#0605)", () => {
     apiWithNotesRun({
       run: runningRun(),
     });
-    wrapper = mount(ReleasesView, { attachTo: document.body });
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
     await flushPromises();
     const panel = await openPanel();
 
@@ -477,7 +493,10 @@ describe("AI release notes tracked run (#0605)", () => {
   it("reopening mid-run shows Drafting… and picks up the result when it lands", async () => {
     draftingState = runningRun();
     apiWithNotesRun({ run: draftingState });
-    wrapper = mount(ReleasesView, { attachTo: document.body });
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
     await flushPromises();
     let panel = await openPanel();
 
@@ -507,7 +526,10 @@ describe("AI release notes tracked run (#0605)", () => {
     // session never observed: reopening must leave the field empty.
     draftingState = succeededRun("Stale pre-existing draft");
     apiWithNotesRun({ run: runningRun() });
-    wrapper = mount(ReleasesView, { attachTo: document.body });
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
     await flushPromises();
     const panel = await openPanel();
 
@@ -519,7 +541,10 @@ describe("AI release notes tracked run (#0605)", () => {
 
   it("surfaces the run's failure on the field instead of a silent nothing", async () => {
     apiWithNotesRun({ run: runningRun() });
-    wrapper = mount(ReleasesView, { attachTo: document.body });
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
     await flushPromises();
     const panel = await openPanel();
 
@@ -534,5 +559,23 @@ describe("AI release notes tracked run (#0605)", () => {
     expect(err?.textContent ?? "").toContain("nothing usable");
     expect(panel.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toBe("");
     expect(button(panel, "Generate with AI")).toBeTruthy();
+  });
+});
+
+describe("?drawer=cut deep link", () => {
+  afterEach(() => window.history.replaceState({}, "", "/"));
+
+  it("opens the panel on a dirty tree but keeps Publish disabled", async () => {
+    window.history.replaceState({}, "", "/releases?drawer=cut");
+    mockApi(releaseStatus({ clean: false }));
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await flushPromises();
+    const panel = document.body.querySelector<HTMLElement>(".release-drawer");
+    expect(panel, "panel opened by the query param").toBeTruthy();
+    expect(button(panel!, "Publish")!.disabled).toBe(true);
+    expect(panel!.textContent).toContain("Publishing is disabled");
   });
 });

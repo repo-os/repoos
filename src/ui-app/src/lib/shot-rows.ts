@@ -145,3 +145,61 @@ export function shotRows(shots: ShotMeta[], body: string | undefined): ShotRow[]
     };
   });
 }
+
+/** A capture that did not produce shots, read back from the task's activity log. */
+export interface ShotProblem {
+  /** `failed` (the capture errored) or `skipped` (it stood down, with a reason). */
+  status: "failed" | "skipped";
+  /** The reason, as the server wrote it. */
+  detail: string;
+  /** ISO timestamp of the activity entry. */
+  at: string;
+}
+
+const SHOT_NOTE_RE = /^-\s+(\S+)\s+·\s+note:\s+shots:\s+(failed|skipped)\s+—\s+(.+)$/;
+
+/**
+ * Failed/skipped capture outcomes for the UI-changes section (#0621 follow-up).
+ * The server records them only as `note: shots: failed — …` activity entries
+ * (a successful capture writes no note), so they're parsed back out of the
+ * body's `## Activity` section. A problem older than the newest captured shot
+ * is superseded by that capture and dropped.
+ */
+export function shotProblems(body: string | undefined, shots: ShotMeta[]): ShotProblem[] {
+  const text = body ?? "";
+  const start = text.search(/^## Activity\s*$/m);
+  if (start === -1) return [];
+  const newest = shots.reduce((max, s) => (s.capturedAt > max ? s.capturedAt : max), "");
+  const out: ShotProblem[] = [];
+  for (const line of text.slice(start).split("\n")) {
+    const m = SHOT_NOTE_RE.exec(line.trim());
+    if (!m) continue;
+    if (newest && m[1]! <= newest) continue;
+    out.push({ at: m[1]!, status: m[2] as ShotProblem["status"], detail: m[3]!.trim() });
+  }
+  return out;
+}
+
+/**
+ * Declared `## Shots` entries that have no captured file — what a reviewer
+ * should have seen but didn't. Matched like `pairDeclared`.
+ */
+export function uncapturedDeclared(
+  shots: ShotMeta[],
+  body: string | undefined,
+): Omit<ShotRow, "meta">[] {
+  const declared = parseShotPlan(body ?? "").shots;
+  const paired = new Set(pairDeclared(shots, declared).filter((e) => e));
+  return declared
+    .filter((entry) => !paired.has(entry))
+    .map((entry) => {
+      const title = entry.label || entry.route || entry.target || "shot";
+      const steps = entry.steps;
+      return {
+        title,
+        context: [entry.target, entry.route].filter((p) => p && p !== title).join(" · "),
+        ...(entry.selector ? { selector: entry.selector } : {}),
+        ...(steps?.length ? { steps, stepsText: describeSteps(steps) } : {}),
+      };
+    });
+}
