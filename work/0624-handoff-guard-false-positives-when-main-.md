@@ -68,3 +68,4 @@ Related: #0600 (bookkeeping-only drift, uses isAncestor and pathsChangedBetweenC
 - 2026-10-02T08:00:09Z · status active→review
 - 2026-10-02T08:00:09Z · status review→active
 - 2026-10-02T08:04:15Z · status active→review
+- 2026-10-02T08:04:15Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
