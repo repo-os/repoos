@@ -20,8 +20,10 @@ I just noticed this nice release failure section, but it's hidden below the fold
 ## Screenshots
 
 ![Screenshot-2026-10-02-at-09.46.27](/api/tasks/0622/attachments/screenshot-1.png)
+![Screenshot-2026-10-02-at-09.46.06](/api/tasks/0622/attachments/screenshot-2.png)
 
 ## Activity
 
 - 2026-10-02T01:48:25Z · created · hello@repoos.org
+- 2026-10-02T01:48:26Z · screenshots
 - 2026-10-02T01:48:26Z · screenshots
