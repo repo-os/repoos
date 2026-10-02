@@ -2,14 +2,14 @@
 id: "0627"
 title: Add and delete evidence shots from the task drawer
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: ""
 branch: feat/add-and-delete-evidence-shots-from-the-t
 created_at: "2026-10-02T11:41:24Z"
-updated_at: "2026-10-02T19:39:23Z"
+updated_at: "2026-10-02T19:49:49Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -89,3 +89,4 @@ In the task drawer's Changes / UI changes section:
 - 2026-10-02T19:23:50Z · status review→active
 - 2026-10-02T19:37:22Z · status active→review
 - 2026-10-02T19:39:23Z · status review→active
+- 2026-10-02T19:49:49Z · status active→review
