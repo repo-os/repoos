@@ -2,7 +2,7 @@
 id: "0622"
 title: Promote release failures above published-to and show loading state
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -74,4 +74,4 @@ I just noticed this nice release failure section, but it's hidden below the fold
 - 2026-10-02T02:03:44Z · body: section Shots
 - 2026-10-02T02:08:21Z · status active→review
 - 2026-10-02T02:09:10Z · status review→active
-- 2026-10-02T02:16:16Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-10-02T02:16:16Z · status active→review
