@@ -236,7 +236,9 @@ async function treeEntry(
   ref: string,
   path: string,
 ): Promise<{ ok: false } | { ok: true; entry: string | null }> {
-  const res = await runGit(wt, ["ls-tree", ref, "--", path], 10_000);
+  // `--literal-pathspecs`: `path` is a filename, not a pattern — without it a
+  // name like `src/[id].ts` matches nothing and two refs "agree" on null.
+  const res = await runGit(wt, ["--literal-pathspecs", "ls-tree", ref, "--", path], 10_000);
   if (res.status !== 0) return { ok: false };
   const line = res.stdout
     .split("\n")
