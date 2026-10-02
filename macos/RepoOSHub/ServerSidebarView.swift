@@ -186,9 +186,9 @@ struct ServerSidebarRow: View {
             Text(entry.name)
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            // Badges overlay the trailing edge instead of sharing an HStack with the subtitle, so a
-            // narrow sidebar clips the URL under them rather than pushing them out of the row.
-            ZStack(alignment: .trailing) {
+            // The subtitle yields width to the fixed-size badges (see sizeThatFits below) and clips,
+            // so a narrow sidebar truncates the URL instead of pushing badges out of the row.
+            HStack(spacing: ServerSidebarRowLayout.columnSpacing) {
                 SidebarClippedSubtitleText(sidebarSubtitle)
                     .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                     .clipped()
