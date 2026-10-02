@@ -455,6 +455,96 @@ describe("worktree handoff guard (#0598)", () => {
     }
   });
 
+  it("still fails when a post-handoff source commit later became reachable from main (#0624 review)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const branch = "feat/landed-edit";
+      const wt = ensureWorktree(root, branch);
+      writeFileSync(join(wt.path, "impl.txt"), "work\n");
+      git(wt.path, ["add", "impl.txt"]);
+      git(wt.path, ["commit", "-m", "handoff"]);
+      const sha = git(wt.path, ["rev-parse", "HEAD"]);
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+
+      // A real post-handoff edit on the task branch, with no main-sync merge —
+      // then main absorbs it, so it is reachable from main. Being in main must
+      // not exempt it from the guard.
+      writeFileSync(join(wt.path, "impl.txt"), "work\n// post-handoff edit\n");
+      git(wt.path, ["add", "impl.txt"]);
+      git(wt.path, ["commit", "-m", "post-handoff edit"]);
+      git(root, ["merge", "--no-edit", branch]);
+
+      const check = await verifyWorktreeHandoffIntegrity(config, branch, sha);
+      expect(check.ok).toBe(false);
+      expect(check.headMoved).toBe(true);
+      expect(check.reason).toContain(WORKTREE_CHANGED_AFTER_HANDOFF_PREFIX);
+    } finally {
+      clean();
+    }
+  });
+
+  it("allows an octopus sync merge whose non-first parents are all in main (#0624 review)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const branch = "feat/octopus-sync";
+      const wt = ensureWorktree(root, branch);
+      writeFileSync(join(wt.path, "impl.txt"), "work\n");
+      git(wt.path, ["add", "impl.txt"]);
+      git(wt.path, ["commit", "-m", "handoff"]);
+      const sha = git(wt.path, ["rev-parse", "HEAD"]);
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+
+      // Two independent lines land in main; neither contains the other.
+      const base = git(root, ["rev-parse", "main"]);
+      for (const n of ["one", "two"]) {
+        git(root, ["checkout", "-q", "-b", `side/${n}`, base]);
+        writeFileSync(join(root, `${n}.txt`), `${n}\n`);
+        git(root, ["add", `${n}.txt`]);
+        git(root, ["commit", "-m", `side ${n}`]);
+        git(root, ["checkout", "-q", "main"]);
+        git(root, ["merge", "--no-ff", "--no-edit", `side/${n}`]);
+      }
+
+      git(wt.path, ["merge", "side/one", "side/two", "-m", "octopus main sync"]);
+      expect(git(wt.path, ["rev-list", "--parents", "-n", "1", "HEAD"]).split(" ")).toHaveLength(4);
+      const check = await verifyWorktreeHandoffIntegrity(config, branch, sha);
+      expect(check.ok).toBe(true);
+    } finally {
+      clean();
+    }
+  }, 30_000);
+
+  it("still fails an octopus merge that includes a branch main never contained (#0624 review)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const branch = "feat/octopus-bad";
+      const wt = ensureWorktree(root, branch);
+      writeFileSync(join(wt.path, "impl.txt"), "work\n");
+      git(wt.path, ["add", "impl.txt"]);
+      git(wt.path, ["commit", "-m", "handoff"]);
+      const sha = git(wt.path, ["rev-parse", "HEAD"]);
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+
+      git(root, ["checkout", "-q", "-b", "side/in-main", "main"]);
+      writeFileSync(join(root, "a.txt"), "a\n");
+      git(root, ["add", "a.txt"]);
+      git(root, ["commit", "-m", "in main"]);
+      git(root, ["checkout", "-q", "main"]);
+      git(root, ["merge", "--no-ff", "--no-edit", "side/in-main"]);
+      git(root, ["checkout", "-q", "-b", "side/wip", "main~1"]);
+      writeFileSync(join(root, "b.txt"), "b\n");
+      git(root, ["add", "b.txt"]);
+      git(root, ["commit", "-m", "wip"]);
+      git(root, ["checkout", "-q", "main"]);
+
+      git(wt.path, ["merge", "side/in-main", "side/wip", "-m", "octopus"]);
+      const check = await verifyWorktreeHandoffIntegrity(config, branch, sha);
+      expect(check.ok).toBe(false);
+    } finally {
+      clean();
+    }
+  }, 30_000);
+
   it("discard resets the worktree to the handoff commit", async () => {
     const { root, clean } = makeRepo();
     try {

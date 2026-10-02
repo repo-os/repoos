@@ -128,15 +128,15 @@ that touch only `work/*.md` task files (RepoOS bookkeeping on the task branch, o
 count as implementation drift. Mixed drift (any source path, or a dirty non-bookkeeping
 tree) still fails. **Exception (#0624):** a conflict-free merge of main into the task
 branch while it is in review does not count either — the guard tolerates HEAD drift when
-every task-side commit since handoff is either bookkeeping-only, or a two-parent merge
-of a main ancestor that took main's side verbatim: the merge's non-first parent must be
-an ancestor of main, and every non-bookkeeping path in its first-parent diff must match
-that main parent's mode and content exactly, in both directions: paths the merge's
-first-parent diff touches must match the main parent, and paths the main parent changed
-must match the merge result — so a conflict resolution that kept the task's version
+every commit on the task's first-parent chain since handoff is either bookkeeping-only,
+or a merge (two-parent or octopus) of main ancestors that took main's side verbatim:
+every non-first parent must be an ancestor of main, and every non-bookkeeping path in the
+merge's first-parent diff must match an imported parent's mode and content exactly, in
+both directions: paths the merge's first-parent diff touches must match, and paths an
+imported parent changed must match the merge result — so a conflict resolution that kept the task's version
 ("keep ours"), combined both sides, or discarded the task's reviewed content ("keep
-theirs") fails (commits already contained in main are skipped). A post-handoff source
-edit — including a mode-only change — or a merge of a branch main never contained still
+theirs") fails. Reachability from main does not exempt a first-parent commit: a post-handoff
+source edit — including a mode-only change, and even one main later absorbed — or a merge of a branch main never contained still
 fails. The same check runs again at the start of `syncing` and immediately
 before publish; a change mid-close-out aborts before main is mutated and leaves the task
 in `review` with a failed job reason.
