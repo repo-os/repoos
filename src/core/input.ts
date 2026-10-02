@@ -199,10 +199,24 @@ export function createInput(c: RepoOSConfig, body: string, type = "other", creat
   );
   return listInputs(c).find((i) => i.id === id)!;
 }
-export type InputPatch = { status?: InputStatus; text?: string };
+export type InputPatch = {
+  status?: InputStatus;
+  text?: string;
+  /** Explicit title (#0628) — overrides the first-line-derived one. */
+  title?: string;
+  type?: string;
+  area?: string;
+};
 
 export function updateInput(c: RepoOSConfig, id: string, patch: InputPatch): Input {
-  if (patch.status === undefined && patch.text === undefined) throw new Error("nothing to update");
+  if (
+    patch.status === undefined &&
+    patch.text === undefined &&
+    patch.title === undefined &&
+    patch.type === undefined &&
+    patch.area === undefined
+  )
+    throw new Error("nothing to update");
   const item = listInputs(c).find((i) => i.id === id);
   if (!item) throw new Error("input not found");
   const file = join(c.root, item.path);
@@ -214,11 +228,17 @@ export function updateInput(c: RepoOSConfig, id: string, patch: InputPatch): Inp
     body = patch.text.trim();
     title = body.split(/\n/)[0].replace(/^#\s*/, "").slice(0, 100) || "Untitled input";
   }
+  // An explicit title patch wins over the body-derived one — this is how a
+  // bad AI enrichment title (or a raw first-line title from before #0628) is
+  // corrected through the API.
+  if (patch.title !== undefined) title = patch.title.trim() || "Untitled input";
   const data: Record<string, unknown> = {
     ...parsed.data,
     status,
     title,
     updated_at: new Date().toISOString(),
+    ...(patch.type !== undefined ? { type: patch.type.trim() } : {}),
+    ...(patch.area !== undefined ? { area: patch.area.trim() } : {}),
   };
   // A manual move out of `processed` invalidates any recorded resolution —
   // leaving it behind would re-display a stale outcome if the input is later
