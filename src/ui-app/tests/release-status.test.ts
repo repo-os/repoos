@@ -784,6 +784,32 @@ describe("POST /api/release/notes draft cache (#0590, #0605)", () => {
     expect(runPrompt).toHaveBeenCalledTimes(1);
   });
 
+  it("cachedOnly answers a saved draft on a hit and never starts the agent on a miss", async () => {
+    const cfg = repoWithCommits();
+    agentDrafts();
+    const lookup = async () => {
+      const post = makeRes();
+      await generateReleaseNotes(
+        notesCtx(cfg),
+        makeReq({ cachedOnly: true }),
+        post.res as never,
+        {},
+      );
+      return post.capture;
+    };
+
+    const miss = await lookup();
+    expect(miss.statusCode).toBe(200);
+    expect(miss.body.notes).toBe("");
+    expect(miss.body.cached).toBeUndefined();
+    expect(runPrompt).not.toHaveBeenCalled();
+
+    await draft(cfg);
+    const hit = await lookup();
+    expect(hit.body).toMatchObject({ cached: true, notes: "- Fixed a thing" });
+    expect(runPrompt).toHaveBeenCalledTimes(1);
+  });
+
   it("regenerates once a source commit moves the relevant context, then serves the new draft from cache", async () => {
     const cfg = repoWithCommits();
     agentDrafts();

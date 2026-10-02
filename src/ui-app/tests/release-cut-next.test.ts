@@ -127,6 +127,7 @@ async function openPanel(): Promise<HTMLElement> {
 
 beforeEach(() => {
   vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: false }));
+  localStorage.clear();
 });
 
 afterEach(() => {
@@ -391,6 +392,48 @@ describe("AI release notes cache reuse (#0590)", () => {
     expect(hint?.textContent ?? "").toContain("Reused saved notes");
     expect(hint?.textContent ?? "").toContain("no new AI run");
     expect(panel.querySelector(".rel-notes-error")).toBeNull();
+  });
+
+  it("fills a saved draft the moment the panel opens, without clicking Generate", async () => {
+    mockApi(releaseStatus(), notesResponse({ cached: true, cachedAt: new Date().toISOString() }));
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await flushPromises();
+    const panel = await openPanel();
+    await flushPromises();
+
+    expect(panel.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toContain("Highlights");
+    expect(panel.querySelector(".rel-notes-hint")?.textContent ?? "").toContain("no new AI run");
+    const lookup = api.mock.calls.find(([path]) => path === "/api/release/notes");
+    expect(JSON.parse(String((lookup?.[1] as { body?: string })?.body))).toMatchObject({
+      cachedOnly: true,
+    });
+  });
+
+  it("keeps the typed version across a page reload (remount)", async () => {
+    mockApi(releaseStatus(), notesResponse({}));
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await flushPromises();
+    let panel = await openPanel();
+    const input = panel.querySelector<HTMLInputElement>("#rel-version")!;
+    input.value = "0.9.1";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    await flushPromises();
+    wrapper.unmount();
+    document.body.innerHTML = "";
+
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await flushPromises();
+    panel = await openPanel();
+    expect(panel.querySelector<HTMLInputElement>("#rel-version")!.value).toBe("0.9.1");
   });
 });
 
