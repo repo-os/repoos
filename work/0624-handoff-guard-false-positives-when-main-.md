@@ -2,12 +2,12 @@
 id: "0624"
 title: Handoff guard false-positives when main is merged into a task in review
 type: bug
-status: ready
+status: active
 priority: p2
 area: core
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/handoff-guard-false-positives-when-main-
 created_at: "2026-10-02T06:09:14Z"
 updated_at: "2026-10-02T06:09:22Z"
 ---
@@ -32,3 +32,4 @@ Related: #0600 (bookkeeping-only drift, uses isAncestor and pathsChangedBetweenC
 
 - 2026-10-02T06:09:14Z · created · unknown
 - 2026-10-02T06:09:22Z · status inbox→ready
+- 2026-10-02T06:09:22Z · status ready→active, branch
