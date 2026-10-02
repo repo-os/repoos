@@ -188,7 +188,7 @@ struct ServerSidebarRow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             // The subtitle yields width to the fixed-size badges (see sizeThatFits below) and clips,
             // so a narrow sidebar truncates the URL instead of pushing badges out of the row.
-            HStack(spacing: ServerSidebarRowLayout.columnSpacing) {
+            HStack(spacing: ServerSidebarRowLayout.columnSpacing / 2) {
                 SidebarClippedSubtitleText(sidebarSubtitle)
                     .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                     .clipped()
