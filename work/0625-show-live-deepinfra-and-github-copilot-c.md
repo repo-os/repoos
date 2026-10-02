@@ -11,7 +11,7 @@ branch: feat/show-live-deepinfra-and-github-copilot-c
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-02T08:51:36Z"
-updated_at: "2026-10-02T11:04:47Z"
+updated_at: "2026-10-02T11:04:48Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -101,3 +101,4 @@ Sources: https://docs.deepinfra.com/api-reference/billing/get-checklist ; https:
 - 2026-10-02T10:33:57Z · review_cli_override
 - 2026-10-02T10:33:58Z · review_model_override
 - 2026-10-02T11:04:47Z · status active→review
+- 2026-10-02T11:04:48Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
