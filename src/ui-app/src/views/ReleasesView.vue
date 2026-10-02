@@ -74,6 +74,9 @@ const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$/;
 
 const status = ref<ReleaseStatus | null>(null);
 const loading = ref(true);
+/** Page-level failure fetching `/api/release` — separate from run failures so
+ *  a status refresh can never clear a promoted run-failure banner (#0622). */
+const loadError = ref("");
 const running = ref(false);
 const ui = useUiStore();
 const confirmOpen = ref(false);
@@ -122,6 +125,23 @@ const observedNotesKey = ref<string | null>(null);
 /** The run that already placed a draft — blocks duplicate fills per poll tick. */
 const placedNotesKey = ref<string | null>(null);
 let pollTimer: ReturnType<typeof setInterval> | null = null;
+/**
+ * Poll sequence numbers: each issued poll increments its counter, and a
+ * response may only be applied while it is still the most recent request.
+ * A slow earlier request must never overwrite newer state — e.g. re-showing
+ * a failure after a newer poll already applied a success (#0622).
+ */
+let runPollSeq = 0;
+/**
+ * True while the release POST is awaiting its response. A poll answered in
+ * that window can only carry the PREVIOUS run's terminal snapshot (the new run
+ * is not created yet), and `runPollSeq` can't undo a response that is already
+ * applied — so `pollRun` ignores terminal snapshots while this is set (#0622).
+ */
+let releasePosting = false;
+let notesPollSeq = 0;
+/** Orders distribution lookups: only the latest one may apply or settle loading. */
+let distributionSeq = 0;
 
 /** "Published to" destinations for the release being viewed (empty when none). */
 const distribution = ref<DistributionChannel[]>([]);
@@ -273,11 +293,11 @@ function relativeTime(iso: string | null): string {
 
 async function load(): Promise<void> {
   loading.value = true;
-  error.value = "";
+  loadError.value = "";
   try {
     status.value = await api<ReleaseStatus>("/api/release");
   } catch (err) {
-    error.value = err instanceof Error ? err.message : String(err);
+    loadError.value = err instanceof Error ? err.message : String(err);
   } finally {
     loading.value = false;
   }
@@ -289,16 +309,22 @@ async function load(): Promise<void> {
  * simply hides the section.
  */
 async function loadDistribution(): Promise<void> {
+  // A release landing while the mount-time lookup is still in flight starts a
+  // second lookup; the older response must not overwrite the newer one or
+  // clear the loading indicator while the newer lookup is still pending.
+  const seq = ++distributionSeq;
   distributionLoading.value = true;
   try {
     const data = await api<DistributionSummary>("/api/release/distribution");
+    if (seq !== distributionSeq) return;
     distribution.value = data.channels ?? [];
     distributionReleaseVersion.value = data.releaseVersion ?? null;
   } catch {
+    if (seq !== distributionSeq) return;
     distribution.value = [];
     distributionReleaseVersion.value = null;
   } finally {
-    distributionLoading.value = false;
+    if (seq === distributionSeq) distributionLoading.value = false;
   }
 }
 
@@ -411,8 +437,12 @@ function applyNotesRun(next: ReleaseNotesRun): void {
 }
 
 async function pollNotesRun(): Promise<void> {
+  // Same ordering guard as pollRun: drop superseded responses.
+  const seq = ++notesPollSeq;
   try {
-    applyNotesRun(await api<ReleaseNotesRun>("/api/release/notes/run"));
+    const latest = await api<ReleaseNotesRun>("/api/release/notes/run");
+    if (seq !== notesPollSeq) return;
+    applyNotesRun(latest);
   } catch {
     // Keep the current state visible through a short server hiccup.
   }
@@ -506,14 +536,22 @@ async function generateNotes(): Promise<void> {
 async function release(): Promise<void> {
   if (!canOpen.value || !newVersionValid.value || running.value || generatingNotes.value) return;
   running.value = true;
-  error.value = "";
-  runLog.value = "";
+  // A prior failure stays promoted while the retry runs — it is replaced by
+  // a new failure or cleared by success in pollRun (#0622). Under #0621 the
+  // drawer shows the still-unresolved failure inline as well.
   notesError.value = "";
   // Whatever draft this session produced is now the cut's payload — stop
   // tracking the run so re-opening the modal can't backfill it again (#0605).
   dropNotesRun();
   debuggerSent.value = false;
   debuggerErr.value = "";
+  // Invalidate every poll already in flight for the previous run. A stale
+  // pre-retry response landing after this POST accepts would otherwise
+  // overwrite the new running state with the prior terminal run, clear the
+  // releasing flag, and stop the poll loop before this attempt's own outcome
+  // is ever observed (review finding on #0622).
+  runPollSeq++;
+  releasePosting = true;
   try {
     const result = await api<{ run: ReleaseRun }>(
       "/api/release",
@@ -523,12 +561,25 @@ async function release(): Promise<void> {
         notes: notes.value.trim() || undefined,
       }),
     );
+    releasePosting = false;
     run.value = result.run;
+    // Re-assert the releasing flag (kept only when the returned run is still
+    // in flight) and drop polls issued while the POST was in flight — they
+    // raced the run's creation server-side and may carry the previous run's
+    // snapshot. Polls issued after this point see the new run.
+    running.value = result.run.state === "running";
+    runPollSeq++;
     startPolling();
   } catch (err) {
+    releasePosting = false;
+    // The attempt died before a run was created (e.g. the push was rejected):
+    // surface this error and drop the previous run's log, which describes an
+    // earlier failure, not this one. `load()` no longer touches run errors.
     error.value = err instanceof Error ? err.message : String(err);
+    runLog.value = "";
     await load();
   } finally {
+    releasePosting = false;
     if (run.value?.state !== "running") running.value = false;
   }
 }
@@ -552,10 +603,18 @@ function failureSummary(phaseName: string | null, msg: string): string {
 }
 
 async function pollRun(): Promise<void> {
+  const seq = ++runPollSeq;
   let prev: ReleaseRun | null = null;
   try {
     prev = run.value;
     const latest = await api<ReleaseRun>("/api/release/run");
+    // Superseded: a newer poll was issued while this one was in flight, and
+    // its response (already applied or still coming) is the newer truth.
+    if (seq !== runPollSeq) return;
+    // A terminal snapshot while our own release POST is pending is the
+    // previous run's: applying it would flip `running` off and let Publish
+    // (and the poll loop) stop before this attempt even exists (#0622).
+    if (releasePosting && latest.state !== "running") return;
     const wasRunning = prev?.state === "running";
     run.value = latest;
     if (latest.state === "running") {
@@ -566,15 +625,19 @@ async function pollRun(): Promise<void> {
     }
     running.value = false;
     // Apply the outcome once — on the first observation (a finished run from
-    // before this page load owns the "survives until the next one" banner) or
-    // on a watched running→terminal transition — not on every tick.
-    if (prev === null || wasRunning) {
+    // before this page load owns the "survives until the next one" banner), on
+    // a watched running→terminal transition, or when the terminal run is a
+    // different one than we last saw (another client's whole run fit between
+    // two polls, so we never observed it running) — not on every tick.
+    const newTerminalRun = prev !== null && prev.startedAt !== latest.startedAt;
+    if (prev === null || wasRunning || newTerminalRun) {
       if (latest.state === "succeeded") {
         message.value = latest.message;
         confirmOpen.value = false;
         dropNotesRun();
-        // The cut shipped — clear the form so the next open starts fresh.
-        // This is the one reset: closing the panel mid-run never clears it.
+        // The cut shipped — clear the form and the promoted failure so the
+        // next open starts fresh. This is the one reset: closing the panel
+        // mid-run never clears it.
         newVersion.value = "";
         notes.value = "";
         error.value = "";
@@ -682,7 +745,7 @@ onBeforeUnmount(() => {
     </header>
 
     <div v-if="loading" class="spin"></div>
-    <p v-else-if="error && !status" class="rel-error">{{ error }}</p>
+    <p v-else-if="loadError && !status" class="rel-error">{{ loadError }}</p>
 
     <template v-else-if="status">
       <div v-if="!status.enabled" class="rel-card rel-empty">
@@ -778,9 +841,35 @@ onBeforeUnmount(() => {
           </div>
         </section>
 
+        <!-- Most recent run failed: shown ABOVE "Published to" until the next
+             successful release, so a failure is visible without scrolling. -->
+        <section v-if="error && !confirmOpen" class="rel-outcome rel-outcome--fail" role="alert">
+          <strong>{{ error }}</strong>
+          <pre v-if="runLog" class="rel-log">{{ runLog }}</pre>
+          <div class="rel-debugger">
+            <Button
+              variant="outline"
+              size="sm"
+              :disabled="debuggerSending || debuggerSent"
+              @click="sendToDebugger"
+            >
+              <Bug class="btn-ico" aria-hidden="true" />
+              {{
+                debuggerSent
+                  ? "Sent to Debugger"
+                  : debuggerSending
+                    ? "Sending…"
+                    : "Send to Debugger"
+              }}
+            </Button>
+            <span v-if="debuggerErr" class="rel-debugger-err">{{ debuggerErr }}</span>
+          </div>
+        </section>
+
         <!-- Where users install this release. Rendered only when the project
-             declares [[distribution]] destinations; nothing otherwise. -->
-        <section v-if="distribution.length" class="rel-card rel-dist">
+             declares [[distribution]] destinations; stays up (with a loading
+             indicator) while the first lookup is in flight. -->
+        <section v-if="distribution.length || distributionLoading" class="rel-card rel-dist">
           <div class="rel-dist-head">
             <div class="rel-dist-title-row">
               <h2 class="rel-dist-title">Published to</h2>
@@ -803,7 +892,14 @@ onBeforeUnmount(() => {
             </p>
           </div>
 
-          <div class="rel-dist-channels">
+          <!-- While the lookup is in flight show the spinner: alone on the
+               first load (the card would otherwise look broken-empty), and
+               alongside the channels during a "Check again" recheck. -->
+          <div v-if="distributionLoading" class="rel-dist-loading" role="status">
+            <span class="rel-dist-loading-spin" aria-hidden="true"></span>
+            Checking distribution channels…
+          </div>
+          <div v-if="distribution.length" class="rel-dist-channels">
             <article v-for="channel in distribution" :key="channel.name" class="rel-channel">
               <header class="rel-channel-head">
                 <a
@@ -844,7 +940,8 @@ onBeforeUnmount(() => {
           </div>
         </section>
 
-        <!-- Outcome of the most recent run (survives until the next one). -->
+        <!-- Outcome of the most recent successful run (survives until the next
+             one); a failure is promoted above "Published to" instead. -->
         <section v-if="message && !error" class="rel-outcome rel-outcome--ok" aria-live="polite">
           <div class="rel-outcome-line">
             <strong>{{ message }}</strong>
@@ -858,29 +955,6 @@ onBeforeUnmount(() => {
             rel="noreferrer"
             >Watch the build ↗</a
           >
-        </section>
-
-        <section v-if="error && !confirmOpen" class="rel-outcome rel-outcome--fail" role="alert">
-          <strong>{{ error }}</strong>
-          <pre v-if="runLog" class="rel-log">{{ runLog }}</pre>
-          <div class="rel-debugger">
-            <Button
-              variant="outline"
-              size="sm"
-              :disabled="debuggerSending || debuggerSent"
-              @click="sendToDebugger"
-            >
-              <Bug class="btn-ico" aria-hidden="true" />
-              {{
-                debuggerSent
-                  ? "Sent to Debugger"
-                  : debuggerSending
-                    ? "Sending…"
-                    : "Send to Debugger"
-              }}
-            </Button>
-            <span v-if="debuggerErr" class="rel-debugger-err">{{ debuggerErr }}</span>
-          </div>
         </section>
 
         <Dialog :open="confirmOpen" @update:open="confirmOpen = $event">
@@ -1375,6 +1449,24 @@ onBeforeUnmount(() => {
 .rel-dist-sub code {
   font-family: var(--mono);
   color: var(--txt-dim);
+}
+.rel-dist-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--txt-faint);
+  font-size: 12.5px;
+  padding: 4px 0 2px;
+}
+/* Small inline variant of the shared `.spin` indicator (same keyframes). */
+.rel-dist-loading-spin {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border: 2px solid var(--border);
+  border-top-color: var(--cyan);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
 .rel-dist-channels {
   display: grid;
