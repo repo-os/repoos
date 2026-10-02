@@ -20,8 +20,10 @@ Also when I create a new input and the AI is making the title I guess, when I cl
 ## Screenshots
 
 ![Screenshot-2026-10-02-at-20.02.33](/api/tasks/0631/attachments/screenshot-1.png)
+![Screenshot-2026-10-02-at-20.02.17](/api/tasks/0631/attachments/screenshot-2.png)
 
 ## Activity
 
 - 2026-10-02T23:44:30Z · created · hello@repoos.org
+- 2026-10-02T23:44:31Z · screenshots
 - 2026-10-02T23:44:31Z · screenshots
