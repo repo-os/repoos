@@ -1,5 +1,5 @@
 import type { Status, Agent, Task, RepoOSConfig } from "../../core/types.js";
-import type { RouteHandler } from "./types.js";
+import type { RouteHandler, RouteContext } from "./types.js";
 import { json, readBody } from "./utils.js";
 import { agentsForConfig } from "../../core/config.js";
 import {
@@ -39,6 +39,7 @@ import {
   type FreeformRunRecord,
 } from "../freeform-runs.js";
 import { randomUUID } from "node:crypto";
+import type { ServerResponse } from "node:http";
 import type { LiveIndex, RepoEvent } from "../live-index.js";
 import type { Logger } from "../../core/logger.js";
 import { getCurrentUser } from "./auth.js";
@@ -85,6 +86,15 @@ import { generateContextPack, resumePreamble } from "../../core/context-pack.js"
 import { mimeForExtension, resolveScreenshot, saveScreenshot } from "../attachments.js";
 import { localShotStore } from "../shots.js";
 import { computeTaskShotContext } from "../shot-context.js";
+import {
+  appendDeclaredShot,
+  declaredShotMatchesShot,
+  parseShotEntry,
+  removeDeclaredShots,
+  resolveDeclaredTarget,
+} from "../../core/shot-plan.js";
+import { resolveShotTargets } from "../../core/shot-targets.js";
+import { captureDeclaredShot } from "../shot-capture.js";
 import { STATUSES } from "../../core/types.js";
 import {
   ACTIVITY_HEADING,
@@ -992,12 +1002,21 @@ export const uploadTaskShot: RouteHandler = async (ctx, req, res, params) => {
     target?: unknown;
     route?: unknown;
     label?: unknown;
+    highlight?: unknown;
+    selector?: unknown;
+    steps?: unknown;
     provenance?: unknown;
     mime?: unknown;
     name?: unknown;
     data?: unknown;
     warnings?: unknown;
   };
+  // One POST route, two shapes (#0627): the CLI's `repoos shot` uploads already-
+  // captured bytes (a `data` field); the drawer's Add shot declares an entry and
+  // lets the server capture it. Dispatch on `data` so the CLI path is untouched.
+  if (typeof body?.data !== "string") {
+    return declareTaskShot(ctx, res, params, body as Record<string, unknown> | undefined);
+  }
   const target =
     typeof body?.target === "string" && body.target.trim() ? body.target.trim() : "default";
   const result = localShotStore(config, taskId).save({
@@ -1027,6 +1046,201 @@ export const uploadTaskShot: RouteHandler = async (ctx, req, res, params) => {
     }
   }
   return json(res, 201, { ok: true, shot: result });
+};
+
+/**
+ * The drawer's Add shot (#0627): validate ONE declared entry with the shared
+ * `parseShotPlan` rules, capture it immediately through the server-owned
+ * preview (never evicting a preview a human is viewing — busy is a structured
+ * error), store it as declared evidence, and append the entry to the task's
+ * `## Shots` list so a later re-handoff captures it again. Capture happens
+ * BEFORE the task-body write so a failed capture never leaves a
+ * declared-but-never-captured entry behind: the response error is the only
+ * trace of a failed attempt.
+ */
+async function declareTaskShot(
+  ctx: RouteContext,
+  res: ServerResponse,
+  params: Record<string, string>,
+  body:
+    | {
+        target?: unknown;
+        route?: unknown;
+        label?: unknown;
+        highlight?: unknown;
+        selector?: unknown;
+        steps?: unknown;
+      }
+    | undefined,
+): Promise<void> {
+  const { config, index, previews } = ctx;
+  const task = index.getTask(params.param1);
+  if (!task) {
+    return json(res, 404, { error: `Task #${params.param1} not found` });
+  }
+  if (task.status !== "active" && task.status !== "review") {
+    return json(res, 400, {
+      error: `Shots can only be added while a task is active or review (#${task.id} is ${task.status})`,
+    });
+  }
+  if (!task.branch) {
+    return json(res, 400, { error: "The task has no branch yet — nothing to capture" });
+  }
+  // Validate with the SAME rules `repoos update --shots` enforces — one shared
+  // validator (`parseShotEntry` in core), never a second copy.
+  const raw = {
+    ...(typeof body?.target === "string" && body.target ? { target: body.target } : {}),
+    ...(typeof body?.route === "string" && body.route ? { route: body.route } : {}),
+    ...(typeof body?.label === "string" && body.label ? { label: body.label } : {}),
+    ...(typeof body?.highlight === "string" && body.highlight ? { highlight: body.highlight } : {}),
+    ...(typeof body?.selector === "string" && body.selector ? { selector: body.selector } : {}),
+    ...(Array.isArray(body?.steps) ? { steps: body.steps } : {}),
+  };
+  const parsed = parseShotEntry(raw);
+  if (parsed.error || !parsed.shot) {
+    return json(res, 400, { error: parsed.error ?? "Invalid shot entry" });
+  }
+  const entry = parsed.shot;
+  // Resolve the target the way the capture would (changed paths, then area,
+  // then the default command), so an unresolvable pick fails HERE, in the
+  // modal, instead of as a capture failure after the declaration was written.
+  const shotContext = computeTaskShotContext(config, task);
+  const resolution = resolveShotTargets(config.preview, task.area, shotContext.changedPaths);
+  if (resolution.names.length === 0) {
+    return json(res, 400, {
+      error:
+        (resolution.reason ?? "no preview target") +
+        " — add a target with [[preview.paths]] matching this task's diff, or configure a default preview",
+    });
+  }
+  const resolved = resolveDeclaredTarget(entry.target, resolution.names);
+  if (resolved.error || !resolved.target) {
+    return json(res, 400, { error: resolved.error ?? "the target could not be resolved" });
+  }
+  const result = await captureDeclaredShot(config, task, previews, {
+    target: resolved.target,
+    route: entry.route ?? "/",
+    ...(entry.label ? { label: entry.label } : {}),
+    ...(entry.highlight ? { highlight: entry.highlight } : {}),
+    ...(entry.selector ? { selector: entry.selector } : {}),
+    ...(entry.steps?.length ? { steps: entry.steps } : {}),
+    provenance: { kind: "declared", ...(entry.label ? { label: entry.label } : {}) },
+  });
+  if ("error" in result) {
+    return json(res, result.busy ? 409 : 400, {
+      error: result.error,
+      ...(result.busy ? { busy: true } : {}),
+    });
+  }
+  // Append the declaration to `## Shots` (section write — no other body
+  // section changes), with an activity note; capture-miss warnings ride the
+  // same note so the capture's caveats are visible without a second write.
+  // The body is re-read from disk right before the section write so an entry a
+  // concurrent writer just added is never clobbered by a stale snapshot.
+  const append = appendDeclaredShot(
+    parseTask({
+      content: readFileSync(task.absPath, "utf8"),
+      absPath: task.absPath,
+      root: config.root,
+      defaultStatus: config.defaultStatus,
+      defaultAssignee: config.defaultAssignee,
+    }).body,
+    entry,
+  );
+  if (append.errors.length > 0) {
+    // The shot itself is captured and stored; the declaration just needs fixing.
+    return json(res, 201, {
+      ok: true,
+      shot: result.shot,
+      warning: `the shot was captured, but the task's ## Shots section could not be updated: ${append.errors.join("; ")}`,
+    });
+  }
+  try {
+    const updated = patchTaskFile(config, task.absPath, {
+      section: { heading: "Shots", content: append.content },
+      note: `shot added: ${entry.target}${entry.route && entry.route !== "/" ? entry.route : ""}${entry.label ? ` – ${entry.label}` : ""}`,
+    });
+    index.applyFileChange(updated.absPath);
+  } catch (error) {
+    return json(res, 201, {
+      ok: true,
+      shot: result.shot,
+      warning: `the shot was captured, but the ## Shots list could not be updated: ${(error as Error).message}`,
+    });
+  }
+  // #0613-style visible warnings: a highlight/selector that matched nothing is
+  // recorded on the task, not silently dropped.
+  for (const warning of result.warnings) {
+    try {
+      patchTaskFile(config, task.absPath, { note: warning });
+    } catch {
+      /* best-effort */
+    }
+  }
+  return json(res, 201, { ok: true, shot: result.shot });
+}
+
+/**
+ * Delete one captured shot from the task drawer (#0627): the PNG, its manifest
+ * entry, and — so a later re-handoff cannot resurrect the evidence — every
+ * `## Shots` declaration that describes it (matched on label/route/target, the
+ * fields both sides share). Only the task `.md` (normal patch path) and the
+ * gitignored `work/.attachments/` tree are touched, so this is safe while a
+ * task is in `review`.
+ */
+export const deleteTaskShot: RouteHandler = async (ctx, _req, res, params) => {
+  const { config, index } = ctx;
+  const taskId = params.param1;
+  const task = index.getTask(taskId);
+  if (!task) {
+    return json(res, 404, { error: `Task #${taskId} not found` });
+  }
+  let name = params.param2;
+  try {
+    name = decodeURIComponent(name);
+  } catch {
+    /* already decoded or plain — keep as-is */
+  }
+  const removed = localShotStore(config, taskId).remove(name);
+  if (!removed) {
+    return json(res, 404, { error: "Shot not found" });
+  }
+  // Sync the declaration: a matching ## Shots entry would be captured again at
+  // the next handoff. Legacy untagged shots (no origin) and auto/declared all
+  // get the same treatment — the FILE is what is being removed. The body is
+  // re-read from disk so a declaration added concurrently is still seen.
+  const removal = removeDeclaredShots(
+    parseTask({
+      content: readFileSync(task.absPath, "utf8"),
+      absPath: task.absPath,
+      root: config.root,
+      defaultStatus: config.defaultStatus,
+      defaultAssignee: config.defaultAssignee,
+    }).body,
+    (declared) => declaredShotMatchesShot(declared, removed),
+  );
+  try {
+    const updated = patchTaskFile(config, task.absPath, {
+      note: `shot removed: ${removed.label || removed.name}`,
+      ...(removal.removed > 0 ? { section: { heading: "Shots", content: removal.content } } : {}),
+    });
+    index.applyFileChange(updated.absPath);
+  } catch (error) {
+    return json(res, 200, {
+      ok: true,
+      removed: removed.name,
+      declarationsRemoved: removal.removed,
+      warning: `the shot was deleted, but the task file could not be updated: ${(error as Error).message}`,
+    });
+  }
+  return json(res, 200, {
+    ok: true,
+    removed: removed.name,
+    declarationsRemoved: removal.removed,
+    ...(removal.errors.length
+      ? { warning: `## Shots could not be read: ${removal.errors.join("; ")}` }
+      : {}),
+  });
 };
 
 // Task logs

@@ -5173,6 +5173,14 @@
   margin-bottom: 8px;
   font-family: "JetBrains Mono", monospace;
 }
+/* Title row that carries an action on the right (the UI changes section's
+ * Add-shot button, #0627): the title keeps its own metrics. */
+.changes-summary-title.changes-summary-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
 .diff-stats {
   display: flex;
   align-items: center;
@@ -10864,6 +10872,224 @@
   overflow: hidden;
   animation: cc-modal-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
+/* Add-shot modal (#0627): declare one ## Shots entry with plain inputs and
+ * capture it immediately. Same modal shell as the commit dialog. */
+.add-shot-modal.drawer-wrap.drawer {
+  top: 50%;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  width: min(560px, 94vw);
+  height: auto;
+  max-height: min(86vh, 720px);
+  transform: translate(-50%, -50%);
+  border-radius: 16px;
+  border: 1px solid var(--border-bright);
+  background: var(--panel-gradient);
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.45),
+    0 0 0 1px var(--border);
+  overflow: hidden auto;
+  animation: cc-modal-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.add-shot-head {
+  padding: 20px 24px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.add-shot-head .close-x {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.add-shot-desc {
+  padding: 12px 24px 0;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.add-shot-desc code {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+  background: var(--panel-solid);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1px 5px;
+  color: var(--txt);
+}
+.add-shot-body {
+  padding: 14px 24px 24px;
+}
+.add-shot-select {
+  height: 40px;
+  width: 100%;
+}
+/* The two selector fields hold CSS, not prose — monospace like the shot rows. */
+.add-shot-body .field input.mono {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+}
+.add-shot-steps-empty {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--txt-dim);
+  line-height: 1.5;
+}
+.add-shot-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+/* One step = kind toggle | inputs | row actions, columns aligned row to row
+ * (#0623's aligned-columns rule applied to a repeater). */
+.add-shot-step {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel-solid);
+}
+.add-shot-step.invalid {
+  border-color: rgba(255, 107, 125, 0.55);
+}
+.add-shot-step-kind {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.add-shot-step-kind-btn {
+  padding: 6px 9px;
+  border: none;
+  background: var(--panel);
+  color: var(--txt-dim);
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  border-right: 1px solid var(--border);
+}
+.add-shot-step-kind-btn:last-child {
+  border-right: none;
+}
+.add-shot-step-kind-btn.active {
+  background: var(--panel-solid);
+  color: var(--txt);
+  font-weight: 600;
+}
+.add-shot-step-kind-btn:focus-visible {
+  outline: none;
+  border-radius: 8px;
+  box-shadow: 0 0 0 2px var(--border-bright);
+  z-index: 1;
+}
+.add-shot-step-inputs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+.add-shot-step-inputs input {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--txt);
+  font-size: 12px;
+  font-family: inherit;
+}
+.add-shot-step-inputs input.mono {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11.5px;
+}
+.add-shot-step-inputs input:focus {
+  outline: none;
+  border-color: var(--border-bright);
+}
+.add-shot-step-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.add-shot-step-btn {
+  width: 24px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--txt-dim);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.add-shot-step-btn:hover:not(:disabled) {
+  border-color: var(--border-bright);
+  color: var(--txt);
+}
+.add-shot-step-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.add-shot-step-btn.danger:hover:not(:disabled) {
+  color: var(--red);
+  border-color: var(--red-border-tint);
+}
+.add-shot-step-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--border-bright);
+}
+
+/* Delete-shot confirm (#0627): same shell as the task delete confirm. */
+.shot-delete-modal.drawer-wrap.drawer {
+  top: 50%;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  width: min(460px, 92vw);
+  height: auto;
+  transform: translate(-50%, -50%);
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--red) 45%, var(--border));
+  background: var(--panel-gradient);
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.45),
+    0 0 0 1px var(--border);
+  overflow: hidden;
+  animation: cc-modal-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.shot-delete-head {
+  padding: 20px 24px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.shot-delete-head .close-x {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.shot-delete-desc {
+  padding: 12px 24px 0;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.shot-delete-desc code {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+  background: var(--panel-solid);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1px 5px;
+  color: var(--txt);
+}
+.shot-delete-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 24px;
+  margin-top: 8px;
+}
+
 /* Commit dialog (sidebar git popup): shares the delete-confirm shell, minus its red border. */
 .commit-modal.drawer-wrap.drawer {
   top: 50%;

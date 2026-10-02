@@ -160,6 +160,33 @@ is honored even when the diff matches no glob; and repos whose UI is itself
 markdown-driven should know a UI-relevant `.md` change counts as content —
 declare the shot with its route.
 
+**Drawer add/delete (#0627).** Shots can also be added and deleted from the
+
+task drawer's UI changes section, while the task is `active` or in `review` —
+`POST /api/tasks/:id/shots` (declare + capture; the CLI's byte-upload on the
+same route is dispatched by the body's `data` field) and
+`DELETE /api/tasks/:id/shots/:name`. The non-obvious rules:
+
+- A hand-added shot is captured BEFORE its declaration is written, so a failed
+  capture (route didn't load, WebKit missing) never leaves a
+  declared-but-never-captured entry behind; the response error is the only
+  trace of the attempt. The stored shot carries the declared provenance but NO
+  `origin: "auto"` — re-handoff cleanup (`removeAuto`) never deletes it, and
+  the automatic pass still treats it as engineer-made (stands down).
+- The single-entry path validates through `parseShotEntry` in
+  `core/shot-plan.ts` — the same validator the CLI's `--shots` uses; there is
+  no second copy.
+- Delete removes the PNG, the manifest entry, AND every `## Shots` declaration
+  that matches on label/route/target (`declaredShotMatchesShot` — the same
+  matcher the drawer's shot↔declaration pairing uses). Without the sync, the
+  next handoff would recapture the deleted evidence. All identical matches are
+  removed, so a declaration can never resurrect a delete through duplication.
+- Busy semantics differ from the handoff pass on purpose: the automatic
+  capture replaces the task's preview (`startTargetPreview`), while a manual
+  add NEVER evicts a running preview — another task's preview or the same
+  task's preview on a different target is a structured 409 busy error; the
+  same target's live preview is reused without a restart.
+
 `repoos shot`'s own flags sit on top of that plan (#0610). `buildCliShotPlan`
 (`src/commands/shot.ts`) is a pure function of the task body, the flags and the
 resolved targets — it used to live inline in `cmdShot`, where a typed route

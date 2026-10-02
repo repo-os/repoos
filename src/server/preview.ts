@@ -485,6 +485,16 @@ export class PreviewManager {
   }
 
   /**
+   * Every running preview, keyed by task id. The single-entry shot capture
+   * (#0627) reads this to fail BUSY instead of silently evicting a preview a
+   * human is viewing — the automatic capture evicts, by design; a manual one
+   * asks.
+   */
+  runningPreviews(): { taskId: string; info: PreviewInfo }[] {
+    return [...this.registry.entries()].map(([taskId, info]) => ({ taskId, info }));
+  }
+
+  /**
    * Start a preview for a task: resolve its preview target from `[preview]`
    * config (#0362), allocate an ephemeral port, spawn the project-declared
    * command rooted at the worktree, and wait for it to come up. Returns
