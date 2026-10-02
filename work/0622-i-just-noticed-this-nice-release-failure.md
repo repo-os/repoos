@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/promote-release-failures-above-published
 created_at: "2026-10-02T01:48:25Z"
-updated_at: "2026-10-02T08:43:44Z"
+updated_at: "2026-10-02T08:49:12Z"
 review_passes: 6
 merge_conflict_retry_count: 1
 review_rounds: 2
@@ -101,3 +101,4 @@ I just noticed this nice release failure section, but it's hidden below the fold
 - 2026-10-02T08:41:23Z · note: interactive session: fixing review bugs in ReleasesView.vue (stale poll during POST; stale error not cleared)
 - 2026-10-02T08:43:44Z · status active→review
 - 2026-10-02T08:43:44Z · status review→active
+- 2026-10-02T08:49:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
