@@ -2,14 +2,14 @@
 id: "0622"
 title: Promote release failures above published-to and show loading state
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-10-02T01:48:25Z"
-updated_at: "2026-10-02T01:48:42Z"
+updated_at: "2026-10-02T01:53:31Z"
 ---
 ## Problem
 
@@ -62,3 +62,4 @@ I just noticed this nice release failure section, but it's hidden below the fold
 - 2026-10-02T01:48:26Z · screenshots
 - 2026-10-02T01:48:26Z · screenshots
 - 2026-10-02T01:48:42Z · status draft→inbox, title, area, body
+- 2026-10-02T01:53:31Z · status inbox→ready
