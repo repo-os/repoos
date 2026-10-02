@@ -2,14 +2,14 @@
 id: "0623"
 title: Align Remote runners tab rows and document table-like row layout
 type: feature
-status: ready
+status: active
 priority: p2
 area: [web, agent]
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/align-remote-runners-tab-rows-and-docume
 created_at: "2026-10-02T03:12:11Z"
-updated_at: "2026-10-02T03:13:12Z"
+updated_at: "2026-10-02T03:13:50Z"
 ---
 ## Problem
 
@@ -63,3 +63,4 @@ Make the checks > remote runners tab more aligned, now it looks messy due to the
 - 2026-10-02T03:12:11Z · screenshots
 - 2026-10-02T03:12:48Z · status draft→inbox, title, area, body
 - 2026-10-02T03:13:12Z · status inbox→ready
+- 2026-10-02T03:13:50Z · status ready→active, branch
