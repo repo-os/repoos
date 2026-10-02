@@ -219,6 +219,18 @@ So a task that appears to bounce between `active` and `review`, or re-runs its
 engineer, is usually a conflict repairing itself. You don't have to click
 anything; watch the activity log for the reason.
 
+### Seeing the conflict, and keeping the error
+
+To see exactly what conflicts, open the task's **Debug** tab and choose
+**Merge conflict** (the error card's **View the conflicts** button jumps there).
+It lists each conflicted file in the same expandable view as the **Changes** tab:
+red lines are the primary branch's version, green lines are the task branch's.
+It is computed live against the current primary branch without touching any
+worktree, so it empties as soon as the conflict is resolved.
+
+A failed Move to done stays on the card until the task is retried successfully
+or you dismiss it with the **×** on the card. A page refresh no longer hides it.
+
 ## Previewing a task's changes
 
 You can preview the running app from a task's branch without merging it. Click

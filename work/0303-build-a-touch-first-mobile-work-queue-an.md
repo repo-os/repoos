@@ -2,15 +2,16 @@
 id: "0303"
 title: Build a touch-first mobile Work queue and task detail flow
 type: feature
-status: inbox
+status: ready
 priority: p1
 area: mobile
 story: RepoOS Hub for Mobile
+depends_on: ["0302"]
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-26T16:45:58Z"
-updated_at: "2026-09-23T06:53:53Z"
+updated_at: "2026-10-02T09:09:43Z"
 ---
 ## Problem
 
@@ -41,3 +42,5 @@ Follow docs/mobile-ux-strategy.md. Do not force the desktop Work DOM and CSS to 
 - 2026-08-26T18:14:10Z · status inbox→ready
 - 2026-09-17T15:13:33Z · status ready→inbox
 - 2026-09-23T06:53:53Z · story
+- 2026-10-02T09:03:05Z · depends_on
+- 2026-10-02T09:09:43Z · status inbox→ready

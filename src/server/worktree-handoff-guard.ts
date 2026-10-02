@@ -20,10 +20,10 @@ import {
   GitDirtyCheckError,
   isAncestor,
   isTaskBookkeepingPath,
-  pathsChangedBetweenCommits,
   runGit,
   uncommittedWorkFiles,
   workFileFilter,
+  type WorkFileFilter,
   worktreePathForBranch,
 } from "../core/git.js";
 
@@ -225,6 +225,135 @@ export function formatWorktreeHandoffFailure(
   return msg;
 }
 
+/** Repo-relative paths a commit (tree diff between two commits) changes. */
+async function commitChangedPaths(wt: string, from: string, to: string): Promise<string[] | null> {
+  const res = await runGit(
+    wt,
+    ["-c", "core.quotepath=false", "diff-tree", "-r", "--no-renames", "--name-only", from, to],
+    15_000,
+  );
+  if (res.status !== 0) return null;
+  return res.stdout
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Recompute what git would produce for a conflict-free merge of `parents`
+ * into `first` and return that tree id, or `null` when the merge conflicts or
+ * git cannot answer. `merge-tree --write-tree` never touches a worktree or
+ * the index. An octopus merge is replayed as a chain of two-way merges, each
+ * intermediate result materialised as a throwaway commit (unreachable, so
+ * `git gc` collects it) to feed the next step.
+ */
+async function replayMergeTree(
+  wt: string,
+  first: string,
+  parents: string[],
+): Promise<string | null> {
+  let left = first;
+  for (let i = 0; i < parents.length; i++) {
+    const res = await runGit(
+      wt,
+      ["merge-tree", "--write-tree", "--no-messages", left, parents[i]],
+      30_000,
+    );
+    if (res.status !== 0) return null; // conflict (1) or error: fail closed
+    const tree = res.stdout.split("\n")[0]?.trim();
+    if (!tree) return null;
+    if (i === parents.length - 1) return tree;
+    const commit = await runGit(
+      wt,
+      [
+        "-c",
+        "user.name=RepoOS",
+        "-c",
+        "user.email=repoos@localhost",
+        "commit-tree",
+        tree,
+        "-p",
+        left,
+        "-p",
+        parents[i],
+        "-m",
+        "replay",
+      ],
+      15_000,
+    );
+    if (commit.status !== 0) return null;
+    left = commit.stdout.trim();
+  }
+  return null;
+}
+
+/**
+ * True when the commits between the handoff SHA and HEAD are all either
+ * bookkeeping-only (#0600) or main-sync merges (#0624) — e.g. a conflict-free
+ * merge of main into the task branch while the task sat in review. Checked
+ * per commit, structurally, so it survives main moving on after the sync:
+ *
+ * - A non-merge commit is allowed only when every path it changes is task
+ *   bookkeeping. Any source path — including a mode-only change (chmod +x,
+ *   file → symlink) — is a real post-handoff edit.
+ * - A merge (two-parent, or octopus) is allowed only when every non-first
+ *   parent is an ancestor of main, AND the committed tree is exactly what git
+ *   computes by merging those parents into the first parent on its own
+ *   (`replayMergeTree`), on every non-bookkeeping path. A clean content-level
+ *   merge — the task and main edited different regions of the same file —
+ *   therefore passes, while anything a person added or decided by hand (a
+ *   conflict resolution, "keep ours/theirs", an edit slipped into the merge
+ *   commit) differs from the replay, or makes it conflict, and fails.
+ *   A merge of a branch main never contained fails on the ancestry check.
+ *
+ * Only the first-parent chain is checked. The imported side of a sync merge is
+ * vetted by the ancestry check, but a commit merely being reachable from main
+ * does not exempt it: a post-handoff source commit on the task's own
+ * first-parent chain fails even if it later landed in main. The replay uses
+ * the merge's own parents, not main's current tip, so main advancing after a
+ * valid sync merge does not re-trip the guard. Fails closed when git cannot
+ * answer any step.
+ */
+async function isMainSyncDrift(
+  wt: string,
+  expectedSha: string,
+  actualHead: string,
+  filter: WorkFileFilter,
+): Promise<boolean> {
+  // Task-side commits only: the first-parent chain from HEAD back to the
+  // handoff. Do NOT exclude `^main` here: a post-handoff source commit that
+  // later became reachable from main would then skip every check without any
+  // verified sync merge having imported it.
+  const list = await runGit(
+    wt,
+    ["rev-list", "--first-parent", "--parents", actualHead, `^${expectedSha}`],
+    15_000,
+  );
+  if (list.status !== 0) return false;
+  const commits = list.stdout
+    .split("\n")
+    .map((line) => line.trim().split(/\s+/))
+    .filter((parts) => parts.length > 0 && parts[0] !== "");
+  for (const [sha, ...parents] of commits) {
+    if (parents.length >= 2) {
+      const [first, ...imported] = parents;
+      for (const mp of imported) {
+        if (isAncestor(wt, mp, "main") !== true) return false;
+      }
+      const replay = await replayMergeTree(wt, first, imported);
+      if (replay === null) return false;
+      const differs = await commitChangedPaths(wt, replay, sha);
+      if (differs === null) return false;
+      if (!differs.every((p) => isTaskBookkeepingPath(p, filter))) return false;
+    } else {
+      const changed = await commitChangedPaths(wt, `${sha}^`, sha);
+      if (changed === null) return false;
+      if (!changed.every((p) => isTaskBookkeepingPath(p, filter))) return false;
+    }
+  }
+  return true;
+}
+
 /**
  * Compare the feature worktree to the SHA recorded at handoff. Missing
  * worktree or unreadable git state fails closed.
@@ -270,8 +399,12 @@ export async function verifyWorktreeHandoffIntegrity(
     const handoffStillReachable = isAncestor(wt, expectedSha, actualHead);
     if (handoffStillReachable === true) {
       const filter = workFileFilter(config as RepoOSConfig);
-      const driftPaths = await pathsChangedBetweenCommits(wt, expectedSha, actualHead);
-      if (driftPaths !== null && driftPaths.every((p) => isTaskBookkeepingPath(p, filter))) {
+      // A conflict-free merge of main into the branch while the task is in
+      // review (#0624) is not implementation drift: close-out merges main
+      // into a fresh candidate anyway. Allow it when every task-side commit
+      // since handoff is bookkeeping-only (#0600) or a verified main-sync
+      // merge.
+      if (await isMainSyncDrift(wt, expectedSha, actualHead, filter)) {
         return { ok: true };
       }
     }

@@ -21,10 +21,8 @@ import {
   Bot,
   Diff,
   ShieldCheck,
-  ChevronsDownUp,
   Coins,
   Bug,
-  Expand,
   Lightbulb,
 } from "lucide-vue-next";
 import type {
@@ -83,9 +81,11 @@ import SpecEditModal from "./SpecEditModal.vue";
 import ScreenshotViewer from "./ScreenshotViewer.vue";
 import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
 import { isImageMime, pendingToShots, type ScreenshotShot } from "../lib/screenshot-viewer";
-import { shotRows } from "../lib/shot-rows";
+import { shotProblems, shotRows, uncapturedDeclared } from "../lib/shot-rows";
 import DoneErrorCard from "./DoneErrorCard.vue";
 import DebugPanel from "./DebugPanel.vue";
+import DiffFileViewer from "./DiffFileViewer.vue";
+import type { DiffFile } from "../lib/diff-files";
 import StopWorkConfirmModal from "./StopWorkConfirmModal.vue";
 import DeleteTaskDialog from "./DeleteTaskDialog.vue";
 import { storyDeepLinkRef, storyOpenLabel } from "../lib/story-deep-link";
@@ -812,6 +812,11 @@ const taskShots = computed(() => (ui.active ? repo.shotsFor(ui.active.id) : []))
  * still the viewer's start index.
  */
 const uiChangeRows = computed(() => shotRows(taskShots.value, ui.active?.body));
+/** Capture failures/skips since the newest shot, and the declared shots that never landed. */
+const uiShotProblems = computed(() => shotProblems(ui.active?.body, taskShots.value));
+const uiMissingShots = computed(() =>
+  uiShotProblems.value.length ? uncapturedDeclared(taskShots.value, ui.active?.body) : [],
+);
 /** Area/target mismatch warning for the open task, or undefined. */
 const shotWarning = computed(() => (ui.active ? repo.shotWarningFor(ui.active.id) : undefined));
 const shotsViewerOpen = ref(false);
@@ -998,6 +1003,12 @@ function cancelAbandonWork(): void {
 function openDebuggerFromError(): void {
   ui.activeTab = "debug";
   ui.debugView = "debugger";
+}
+
+/** Land on this task's Merge conflict view to see exactly what conflicts. */
+function openConflictFromError(): void {
+  ui.activeTab = "debug";
+  ui.debugView = "conflict";
 }
 
 /** The Support page is the next step after a failed close-out. Close this
@@ -2950,89 +2961,11 @@ watch(
   { immediate: true },
 );
 
-/** Parse the unified diff into per-file sections with stats. */
-interface DiffFile {
-  filename: string;
-  lines: string[];
-  added: number;
-  removed: number;
-  type: "added" | "deleted" | "modified";
-}
-
-const diffFiles = computed<DiffFile[]>(() => {
-  if (!taskDiff.value || !taskDiff.value.patch) return [];
-  const sections = taskDiff.value.patch.split(/^diff --git /m);
-  const files: DiffFile[] = [];
-  for (const section of sections) {
-    if (!section.trim()) continue;
-    const lines = section.split("\n");
-    const diffLines = ["diff --git " + lines[0], ...lines.slice(1)];
-    const plusLine = diffLines.find((l) => l.startsWith("+++ "));
-    const minusLine = diffLines.find((l) => l.startsWith("--- "));
-    const isAdd = diffLines.some((l) => l.startsWith("--- /dev/null"));
-    const isDel = diffLines.some((l) => l.startsWith("+++ /dev/null"));
-    const plusName = plusLine ? plusLine.slice(6) : "";
-    const minusName = minusLine ? minusLine.slice(6) : "";
-    const filename = isDel ? minusName : plusName;
-    if (!filename || filename === "/dev/null") continue;
-    let added = 0;
-    let removed = 0;
-    for (const l of diffLines) {
-      if (l.startsWith("+") && !l.startsWith("+++ ")) added++;
-      else if (l.startsWith("-") && !l.startsWith("--- ")) removed++;
-    }
-    files.push({
-      filename,
-      lines: diffLines,
-      added,
-      removed,
-      type: isAdd ? "added" : isDel ? "deleted" : "modified",
-    });
-  }
-  return files;
-});
-
 function openFullDiff(file: DiffFile): void {
   if (!ui.active) return;
   const taskId = ui.active.id;
   ui.close();
   router.push({ name: "diff", params: { taskId }, query: { file: file.filename } });
-}
-
-/** File IDs that are currently collapsed (all expanded by default). */
-const collapsedFiles = reactive(new Set<string>());
-
-function toggleFileCollapse(fileId: string): void {
-  if (collapsedFiles.has(fileId)) collapsedFiles.delete(fileId);
-  else collapsedFiles.add(fileId);
-}
-
-function scrollToDiffFile(fileId: string): void {
-  const el = document.getElementById(fileId);
-  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-/** Reset collapsed state when switching tasks or diffs. */
-watch(
-  () => taskDiff.value,
-  () => {
-    collapsedFiles.clear();
-  },
-);
-
-/** Classify a single diff line for syntax highlighting. */
-function diffLineClass(line: string): string {
-  if (line.startsWith("@@")) return "diff-hunk";
-  if (line.startsWith("+")) return "diff-add";
-  if (line.startsWith("-")) return "diff-rem";
-  if (
-    line.startsWith("diff ") ||
-    line.startsWith("index ") ||
-    line.startsWith("--- ") ||
-    line.startsWith("+++ ")
-  )
-    return "diff-header";
-  return "diff-ctx";
 }
 
 async function sendTurn(): Promise<void> {
@@ -3957,6 +3890,8 @@ watch(
             :task-title="ui.active.title"
             @open-debugger="openDebuggerFromError"
             @open-support="openSupportFromError"
+            @open-conflict="openConflictFromError"
+            @dismiss="repo.dismissDoneError(ui.active.id)"
           />
           <div
             v-if="
@@ -4926,11 +4861,42 @@ watch(
                thumbnail grid had no room for the `## Shots` spec the reviewer
                actually reads: label, target · route, selector, steps. -->
           <section
-            v-if="ui.active && uiChangeRows.length"
+            v-if="ui.active && (uiChangeRows.length || uiShotProblems.length)"
             class="changes-summary ui-changes"
             aria-label="UI changes"
           >
             <div class="changes-summary-title">UI changes</div>
+            <div
+              v-for="problem in uiShotProblems"
+              :key="problem.at + problem.detail"
+              class="shot-warning shot-problem"
+              role="alert"
+            >
+              <strong>Shots {{ problem.status }}:</strong> {{ problem.detail }}
+            </div>
+            <div
+              v-if="uiMissingShots.length"
+              class="ff-pending-files shot-rows"
+              aria-label="Declared shots that were not captured"
+            >
+              <div
+                v-for="row in uiMissingShots"
+                :key="row.title + row.context"
+                class="ff-pending-file shot-row shot-row-missing"
+              >
+                <div class="shot-row-text">
+                  <span class="ff-pending-file-name" :title="row.title">{{ row.title }}</span>
+                  <span class="shot-row-detail">not captured</span>
+                  <span v-if="row.context" class="shot-row-detail">{{ row.context }}</span>
+                  <span v-if="row.selector" class="shot-row-detail" :title="row.selector">
+                    <span class="shot-row-key">selector</span>{{ row.selector }}
+                  </span>
+                  <span v-if="row.stepsText" class="shot-row-detail" :title="row.stepsText">
+                    <span class="shot-row-key">steps</span>{{ row.stepsText }}
+                  </span>
+                </div>
+              </div>
+            </div>
             <div class="ff-pending-files shot-rows" aria-label="Captured preview shots">
               <div
                 v-for="(row, i) in uiChangeRows"
@@ -5023,104 +4989,12 @@ watch(
               <span>Loading full diff… this may take a moment for large changes.</span>
             </div>
             <template v-else>
-              <div v-if="diffFiles.length > 0" class="diff-file-list">
-                <div
-                  v-for="file in diffFiles"
-                  :key="file.filename"
-                  class="diff-file-item"
-                  role="button"
-                  tabindex="0"
-                  @click="scrollToDiffFile(file.filename)"
-                  @keydown.enter="scrollToDiffFile(file.filename)"
-                >
-                  <span class="diff-file-badge" :class="`diff-file-badge-${file.type}`">{{
-                    file.type === "added" ? "A" : file.type === "deleted" ? "D" : "M"
-                  }}</span>
-                  <span class="diff-file-name" :title="file.filename">{{ file.filename }}</span>
-                  <span class="diff-file-delta">
-                    <span v-if="file.added > 0" class="diff-file-add">+{{ file.added }}</span>
-                    <span v-if="file.removed > 0" class="diff-file-rem">−{{ file.removed }}</span>
-                  </span>
-                  <button
-                    type="button"
-                    class="diff-file-expand"
-                    :aria-label="`Expand diff for ${file.filename}`"
-                    title="Open full-screen diff"
-                    @click.stop="openFullDiff(file, $event)"
-                  >
-                    <Expand class="size-3.5" />
-                  </button>
-                </div>
-                <button
-                  v-if="diffFiles.length > 8"
-                  type="button"
-                  class="diff-file-collapse-all"
-                  @click="
-                    collapsedFiles.size === diffFiles.length
-                      ? collapsedFiles.clear()
-                      : diffFiles.forEach((f) => collapsedFiles.add(f.filename))
-                  "
-                >
-                  <ChevronsDownUp class="size-3" />
-                  {{ collapsedFiles.size === diffFiles.length ? "Expand all" : "Collapse all" }}
-                </button>
-              </div>
-              <div v-if="taskDiff.truncated" class="diff-truncated">
-                Diff output was truncated — showing the first ~250 kB.
-              </div>
-              <div class="diff-sections">
-                <div
-                  v-for="file in diffFiles"
-                  :key="file.filename"
-                  :id="file.filename"
-                  class="diff-section"
-                >
-                  <div
-                    class="diff-section-header"
-                    role="button"
-                    tabindex="0"
-                    @click="toggleFileCollapse(file.filename)"
-                    @keydown.enter="toggleFileCollapse(file.filename)"
-                  >
-                    <svg
-                      class="diff-section-chevron"
-                      :class="{ collapsed: collapsedFiles.has(file.filename) }"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                    >
-                      <path
-                        d="m6 9 6 6 6-6"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                    <span class="diff-file-badge" :class="`diff-file-badge-${file.type}`">{{
-                      file.type === "added" ? "A" : file.type === "deleted" ? "D" : "M"
-                    }}</span>
-                    <span class="diff-section-name">{{ file.filename }}</span>
-                    <span class="diff-file-delta">
-                      <span v-if="file.added > 0" class="diff-file-add">+{{ file.added }}</span>
-                      <span v-if="file.removed > 0" class="diff-file-rem">−{{ file.removed }}</span>
-                    </span>
-                    <button
-                      type="button"
-                      class="diff-file-expand diff-file-expand-inline"
-                      :aria-label="`Expand diff for ${file.filename}`"
-                      title="Open full-screen diff"
-                      @click.stop="openFullDiff(file, $event)"
-                    >
-                      <Expand class="size-3.5" />
-                    </button>
-                  </div>
-                  <pre
-                    v-if="!collapsedFiles.has(file.filename)"
-                    class="diff-section-content"
-                  ><code><template v-for="(line, i) in file.lines" :key="i"><span :class="diffLineClass(line)">{{ line }}</span>
-</template></code></pre>
-                </div>
-              </div>
+              <DiffFileViewer
+                :patch="taskDiff.patch"
+                :truncated="taskDiff.truncated"
+                expandable
+                @expand="openFullDiff"
+              />
             </template>
           </template>
         </div>
@@ -5614,17 +5488,6 @@ watch(
   font-size: 13px;
 }
 
-.diff-truncated {
-  padding: 8px 12px;
-  margin-bottom: 8px;
-  background: var(--amber-tint);
-  border: 1px solid var(--amber-border-tint);
-  border-radius: 6px;
-  color: var(--amber);
-  font-size: 12px;
-  font-weight: 500;
-}
-
 .diff-output {
   margin: 0;
   padding: 12px;
@@ -5640,202 +5503,6 @@ watch(
   color: #c9d1d9;
   max-height: 70vh;
   overflow-y: auto;
-}
-
-.diff-header {
-  /* hardcode-ok: theme-independent accent/status text color, verified by the rendered audit (#0596 triage) */
-  color: #8b949e;
-}
-
-.diff-hunk {
-  /* hardcode-ok: theme-independent accent/status text color, verified by the rendered audit (#0596 triage) */
-  color: #79c0ff;
-}
-
-.diff-add {
-  /* hardcode-ok: theme-independent accent/status text color, verified by the rendered audit (#0596 triage) */
-  color: #7ee787;
-}
-
-.diff-rem {
-  /* hardcode-ok: theme-independent accent/status text color, verified by the rendered audit (#0596 triage) */
-  color: #ff7b72;
-}
-
-.diff-ctx {
-  /* hardcode-ok: theme-independent accent/status text color, verified by the rendered audit (#0596 triage) */
-  color: #c9d1d9;
-}
-
-/* File list */
-.diff-file-list {
-  display: flex;
-  flex-direction: column;
-  max-height: 224px;
-  overflow-y: auto;
-  margin-bottom: 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--panel);
-}
-
-.diff-file-item {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  width: 100%;
-  padding: 4px 10px;
-  border: none;
-  border-bottom: 1px solid var(--border);
-  background: transparent;
-  color: var(--txt);
-  cursor: pointer;
-  font: 11.5px/1.5 var(--font-mono);
-  text-align: left;
-}
-
-.diff-file-item:last-child {
-  border-bottom: none;
-}
-
-.diff-file-item:hover {
-  /* hardcode-ok: translucent surface tint layered over theme surfaces (#0596 triage: hover/decoration, no text sits on it) */
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.diff-file-expand {
-  margin-left: 4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  flex: none;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  /* hardcode-ok: translucent surface tint layered over theme surfaces (#0596 triage: hover/decoration, no text sits on it) */
-  background: rgba(255, 255, 255, 0.02);
-  color: var(--txt-dim);
-  cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    color 0.15s ease,
-    background 0.15s ease;
-}
-
-.diff-file-expand:hover,
-.diff-file-expand:focus-visible {
-  border-color: var(--border-bright);
-  color: var(--txt);
-  background: rgba(57, 224, 255, 0.08);
-  outline: none;
-}
-
-.diff-file-expand-inline {
-  margin-left: 0;
-}
-
-.diff-file-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 15px;
-  height: 15px;
-  flex: none;
-  border-radius: 3px;
-  font: 600 9px/1 var(--font-mono);
-  font-weight: 700;
-}
-
-.diff-file-badge-modified {
-  background: var(--amber-tint);
-  color: var(--amber);
-}
-
-.diff-file-badge-added {
-  background: var(--green-tint);
-  color: var(--green);
-}
-
-.diff-file-badge-deleted {
-  background: var(--red-tint);
-  color: var(--red);
-}
-
-.diff-file-name {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--txt);
-}
-
-.diff-file-delta {
-  display: flex;
-  gap: 4px;
-  flex: none;
-  font: 600 10px/1 var(--font-mono);
-}
-
-.diff-file-add {
-  color: var(--green);
-}
-
-.diff-file-rem {
-  color: var(--red);
-}
-
-.diff-file-collapse-all {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
-  border: none;
-  border-top: 1px solid var(--border);
-  background: transparent;
-  color: var(--txt-faint);
-  cursor: pointer;
-  font: 10px/1 var(--font-sans);
-}
-
-.diff-file-collapse-all:hover {
-  color: var(--txt);
-}
-
-.diff-sections {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.diff-section-header {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 7px 12px;
-  cursor: pointer;
-  background: var(--panel-solid);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  user-select: none;
-}
-
-.diff-section-header:hover {
-  background: color-mix(in srgb, var(--txt) 6%, var(--panel-solid));
-}
-
-.diff-section-chevron {
-  width: 13px;
-  height: 13px;
-  flex: none;
-  color: var(--txt-faint);
-  transition: transform 0.15s ease;
-  transform: rotate(0deg);
-}
-
-.diff-section-chevron.collapsed {
-  transform: rotate(-90deg);
 }
 
 .field-optional {
@@ -5862,32 +5529,5 @@ watch(
 .nt-body-textarea:focus {
   outline: none;
   border-color: var(--border-bright);
-}
-
-.diff-section-name {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font: 12px/1.4 var(--font-mono);
-  color: var(--txt);
-}
-
-.diff-section-content {
-  padding: 12px;
-  /* hardcode-ok: translucent surface tint layered over theme surfaces (#0596 triage: hover/decoration, no text sits on it) */
-  background: #0d1117;
-  border: 1px solid var(--border);
-  border-top: none;
-  border-radius: 0 0 8px 8px;
-  overflow-x: auto;
-  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, monospace;
-  font-size: 12px;
-  line-height: 1.6;
-  white-space: pre;
-  color: #c9d1d9;
-  max-height: 70vh;
-  overflow-y: auto;
 }
 </style>

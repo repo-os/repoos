@@ -63,9 +63,10 @@ export const useUiStore = defineStore("ui", () => {
   const activeTab = ref<"details" | "agent" | "review" | "pm" | "changes" | "tokens" | "debug">(
     "details",
   );
-  /** Sub-view of the Debug tab: the task logs (default) or the task-scoped
-   *  Debugger chat. Shared so a "Fix" handoff can land directly on the chat. */
-  const debugView = ref<"logs" | "debugger">("logs");
+  /** Sub-view of the Debug tab: the task logs (default), the task-scoped
+   *  Debugger chat, or the branch's merge conflict. Shared so a "Fix" handoff
+   *  can land directly on the chat. */
+  const debugView = ref<"logs" | "debugger" | "conflict">("logs");
   /**
    * A request for the Debug tab to reveal one task's check execution (#0458).
    * Set when a pipeline stage is clicked: the Debug panel scrolls to (and

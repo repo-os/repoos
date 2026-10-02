@@ -343,7 +343,7 @@ kill:
         sleep 0.2
     done
 
-# restart: build, stop, start, and wait for the HTTP health check
+# restart: stop, build, start, and wait for the HTTP health check
 [group('dev')]
 restart:
     #!/usr/bin/env bash
@@ -352,10 +352,14 @@ restart:
     started_at=$SECONDS
     port=$(bun -p "const fs=require('fs'); try { const t=fs.readFileSync('repoos.toml','utf8'); const m=t.match(/servePort\s*=\s*(\d+)/); m ? m[1] : '7171' } catch { '7171' }" 2>/dev/null || echo 7171)
 
-    echo "==> [1/4] building RepoOS"
-    bun run build
-    echo "==> [2/4] stopping the current server"
+    # Stop BEFORE building. The running server polls for a changed build and
+    # auto-reloads (spawns a replacement and hands over); building first made it
+    # start that handover just as `just kill` terminated it, so the two restarts
+    # raced for the port and one lost with "bind failed".
+    echo "==> [1/4] stopping the current server"
     just kill
+    echo "==> [2/4] building RepoOS"
+    bun run build
     echo "==> [3/4] starting RepoOS on port $port"
     mkdir -p .repoos/logs
     nohup bun dist/cli/index.js serve --host 127.0.0.1 --quiet > .repoos/logs/server.out 2>&1 < /dev/null &

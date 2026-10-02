@@ -618,7 +618,7 @@ access = ["njachowski@gmail.com", "faizullah.misrab@gmail.com", "nick@tukapp.co"
 [[agents]]
 name = "engineer"
 cli = "pi"
-model = "openrouter/deepseek/deepseek-v4.1-flash"
+model = "openrouter/z-ai/glm-5.3-flash"
 enabled = true
 instructions = "Implements tasks: reads the task file, writes clean code, runs `repoos check`, updates the task status. For a UI-visible change, also write a short `## Shots` section into the task body via `repoos update --body` declaring which pages/states to capture (RepoOS captures them automatically at handoff). Uses Bun, not Node: `bun`/`bunx`/`bun run`, never a new bare `node`/`npm`/`npx` call unless it is strictly a fallback for when Bun is missing (AGENTS.md, Conventions, Runtime). Explains what they're doing in chat as they work — reasoning, choices, progress updates. Always write file paths in shell commands relative to the worktree root (e.g. `src/core/x.test.ts`), never with `../`: Copilot's path verification denies paths outside the worktree and, with no one to prompt, fails the turn."
 skills = ["frontend-design", "frontend-testing"]
@@ -642,8 +642,8 @@ enabled = false
 instructions = "A general-purpose, repository-aware assistant. Answers questions about this repository, RepoOS, tasks, statuses, issues, code, and context without changing files or task state."
 [[agents]]
 name = "CTO"
-cli = "opencode"
-model = "openrouter/xiaomi/mimo-v2.5"
+cli = "pi"
+model = "openrouter/z-ai/glm-5.3-flash"
 enabled = true
 instructions = "CTO board monitor (0174): detects stuck tasks, stale reviews, and broken builds. Nudges agents or escalates to human. Never moves tasks to done, never modifies config, never commits or pushes."
 [[agents]]
