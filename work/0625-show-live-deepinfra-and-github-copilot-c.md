@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/show-live-deepinfra-and-github-copilot-c
 created_at: "2026-10-02T08:51:36Z"
-updated_at: "2026-10-02T09:35:05Z"
+updated_at: "2026-10-02T09:35:06Z"
 ---
 Replace dashboard link-outs for DeepInfra and GitHub Copilot on Agents > Model providers with supported live data where the account permits it. DeepInfra: evaluate documented authenticated /payment/checklist for credit balance and /payment/usage for spend, including balance sign and units. GitHub Copilot: evaluate the personal AI credit usage REST endpoint for personally billed plans, organization or enterprise endpoints for centrally billed plans, and documented quota interfaces where appropriate. Handle required scopes and account type clearly; do not equate billed usage with remaining entitlement. Reuse the existing key storage pattern, preserve safe errors and dashboard fallback, update UI copy and docs, and add parser, route, and component coverage. Sources: https://docs.deepinfra.com/api-reference/billing/get-checklist ; https://docs.deepinfra.com/api-reference/billing/usage ; https://docs.github.com/en/rest/billing/usage ; https://docs.github.com/en/copilot/how-tos/copilot-sdk/features/usage-and-billing
 
@@ -54,6 +54,17 @@ Copy under each label should explain freshness, units (USD vs credits), and limi
 - [ ] **Tests:** Route tests + component/unit coverage for new parsers and at least one happy-path + auth-failure path each; `repoos check --changed main` passes.
 - [ ] **Shots:** Declare `## Shots` with `/agents?tab=model-providers` entries showing DeepInfra and GitHub Copilot rows with live data (or realistic fixture/dev keys), including error-state fallback if keys are absent in CI.
 
+## Notes for AI
+- **Follow the OpenRouter pattern** in `src/core/providers/spend.ts` and `src/server/routes/model-providers.ts`: separate parsers from fetchers; parallel fetches where multiple endpoints apply; per-part errors for partial success.
+- **Env vars (proposed — adjust if repo already reserves names):** `REPOOS_DEEPINFRA_API_KEY`, `REPOOS_GITHUB_COPILOT_TOKEN` (or `REPOOS_GITHUB_TOKEN` if shared with other GitHub integrations — grep before inventing a second variable).
+- **DeepInfra checklist** docs: https://docs.deepinfra.com/api-reference/billing/get-checklist — key fields `stripe_balance`, `recent`, `scoped_credits`, `suspended`.
+- **DeepInfra usage** docs: https://docs.deepinfra.com/api-reference/billing/usage — parse defensively; add fixtures from documented schema only.
+- **GitHub billing REST:** https://docs.github.com/en/rest/billing/usage — pick the endpoint(s) that match personal vs org billing; fine-grained PAT scopes must be listed in UI copy.
+- **Copilot usage/billing overview:** https://docs.github.com/en/copilot/how-tos/copilot-sdk/features/usage-and-billing — do not equate SDK metering with Copilot subscription quota unless the REST payload supports it.
+- **Out of scope for this task:** Cursor, Claude Code, and the rest of the link-out rows (#0626 covers Cursor/Claude Code). Antigravity/Kiro remain link-outs.
+- **Sibling:** #0626 — keep env-var naming consistent if both tasks touch GitHub token storage.
+- Rebuild UI after changes (`bun run build:ui`).
+
 ## Activity
 
 - 2026-10-02T08:51:36Z · created · unknown
@@ -64,3 +75,4 @@ Copy under each label should explain freshness, units (USD vs credits), and limi
 - 2026-10-02T09:35:03Z · body: section ## Problem
 - 2026-10-02T09:35:04Z · body: section ## Desired UX
 - 2026-10-02T09:35:05Z · body: section ## Acceptance criteria
+- 2026-10-02T09:35:06Z · body: section ## Notes for AI
