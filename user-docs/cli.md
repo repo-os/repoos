@@ -102,15 +102,18 @@ started manually unless you explicitly confirm the override; missing or
 unverifiable upstream tasks are marked as needing a human. Unknown ids,
 self-dependencies, and cycles are rejected when written.
 
-To replace only one `## Section` in the body (create it if absent) without
-touching the rest — including the Activity log — use `--section "<heading>"`
-with `--section-body "..."`:
+To declare evidence screenshots, pass raw JSON to `--shots`. The CLI validates
+every entry and writes the fenced `## Shots` section itself, leaving the rest of
+the body (including the Activity log) untouched. `repoos new` accepts it too;
+`-` reads the JSON from stdin:
 
-    repoos update 0612 --section "Shots" --section-body '```json
-    [{"target":"default","route":"/agents?tab=detected","label":"Detected tab","highlight":".detect-row"}]
-    ```'
+    repoos update 0612 --shots '[{"target":"default","route":"/agents?tab=detected","label":"Detected tab","highlight":".detect-row"}]'
 
-The section content for `Shots` must be a fenced JSON list, as shown above.
+To replace any other single `## Section` (create it if absent), use
+`--section "<heading>" --section-body "..."`. A `Shots` section written this way
+must be a fenced JSON list, and malformed content is rejected rather than
+silently falling back to a `/` capture. `--shots` cannot be combined with
+`--section` or `--body`.
 
 A full `--body` replace that would drop Problem / Desired UX / Acceptance
 criteria / Notes for AI is refused unless `--force` is passed; the error points

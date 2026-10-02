@@ -15,6 +15,8 @@ import { c, statusColor, priorityColor } from "../cli/colors.js";
 import { patchTaskFile, type TaskPatch } from "../server/write.js";
 import { writeHandoffRequest, type HandoffRequest } from "../server/handoff-request.js";
 import { isAncestor } from "../core/git.js";
+import { parseShotPlan } from "../core/shot-plan.js";
+import { normalizeSectionHeading, replaceSection } from "../core/task.js";
 
 /**
  * RepoOS facade rooted at the LIVE BOARD's checkout (the main checkout), even
@@ -365,26 +367,45 @@ const SPEC_SECTION_NAMES = new Set([
   "Notes for AI",
 ]);
 
+/** Validate declarations before a CLI write can turn them into a blind `/` shot. */
+function shotsError(body: string): string | null {
+  const { errors } = parseShotPlan(body);
+  return errors.length
+    ? `Invalid ## Shots: ${errors.join("; ")}. Use --shots '<JSON list>' to format it automatically.`
+    : null;
+}
+
+/** Accept raw JSON and write the exact fenced format the capture parser reads. */
+function shotsSectionContent(raw: string): string {
+  const body = `## Shots\n\n\`\`\`json\n${raw}\n\`\`\``;
+  const parsed = parseShotPlan(body);
+  if (parsed.errors.length || parsed.shots.length === 0) {
+    throw new Error(
+      `Invalid --shots JSON: ${parsed.errors.join("; ") || "expected at least one shot"}`,
+    );
+  }
+  return `\`\`\`json\n${JSON.stringify(parsed.shots, null, 2)}\n\`\`\``;
+}
+
 /**
  * `repoos update <id> [--title ...] [--area ...] [--story ...] [--priority ...]
  *   [--type ...] [--body ... | --body -] [--branch ...] [--assigned-to ai|human]
  *   [--needs-input true|false] [--questions "Question one\nQuestion two"] [--depends-on ids]
- *   [--section "<heading>"] [--section-body ... | --force]`
+ *   [--shots '<JSON list>' | --section "<heading>" --section-body ... | --force]`
  *
  * Writes directly via patchTaskFile (same path the server's PATCH route uses),
  * so it works with no HTTP round-trip and no session auth — this is the path
  * agents/scripts should use to edit task metadata instead of hitting the API.
  * `--body -` reads the new body from stdin, for large/multiline bodies.
- * `--section "<heading>" --section-body ...` replaces only that `## Section`
- * (create it if absent) without touching the rest of the body — use this to
- * declare `## Shots`. A full `--body` that drops spec headings (Problem /
+ * `--shots '<JSON list>'` validates and formats `## Shots` without clobbering
+ * the rest of the body. A full `--body` that drops spec headings (Problem /
  * Desired UX / Acceptance criteria / Notes for AI) is refused unless `--force`
  * is passed.
  */
 export function cmdUpdate(args: string[]): void {
   const [id, ...rest] = args;
   const usage =
-    '  Usage: repoos update <id> [--title "..."] [--area a,b] [--story "Delivery slice"] [--depends-on 0542,0538] [--priority p] [--type t] [--body "..."|-] [--branch b] [--assigned-to ai|human] [--needs-input true|false] [--questions "Question one\\nQuestion two"] [--clear-questions] [--section "<heading>"] [--section-body ...] [--force]';
+    '  Usage: repoos update <id> [--title "..."] [--area a,b] [--story "Delivery slice"] [--depends-on 0542,0538] [--priority p] [--type t] [--body "..."|-] [--branch b] [--assigned-to ai|human] [--needs-input true|false] [--questions "Question one\\nQuestion two"] [--clear-questions] [--shots "<JSON list>"|- | --section "<heading>" --section-body ...] [--force]';
   if (!id) {
     console.error(c.red(usage));
     process.exitCode = 1;
@@ -394,6 +415,7 @@ export function cmdUpdate(args: string[]): void {
   const patch: TaskPatch = {};
   let pendingSectionHeading: string | null = null;
   let pendingSectionContent: string | undefined;
+  let pendingShots: string | undefined;
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i];
     if (!a.startsWith("--")) {
@@ -435,6 +457,16 @@ export function cmdUpdate(args: string[]): void {
       }
       continue;
     }
+    if (key === "shots") {
+      const raw = rest[++i];
+      if (raw === undefined || pendingShots !== undefined) {
+        console.error(c.red(`  Missing or repeated --shots value\n${usage}`));
+        process.exitCode = 1;
+        return;
+      }
+      pendingShots = raw === "-" ? readFileSync(0, "utf8") : raw;
+      continue;
+    }
     const field = UPDATE_FLAGS[key];
     if (!field) {
       console.error(c.red(`  Unknown flag --${key}\n${usage}`));
@@ -473,6 +505,22 @@ export function cmdUpdate(args: string[]): void {
     return;
   }
 
+  if (pendingShots !== undefined && (pendingSectionHeading !== null || patch.body !== undefined)) {
+    console.error(c.red("  --shots cannot be combined with --section or --body"));
+    process.exitCode = 1;
+    return;
+  }
+
+  try {
+    if (pendingShots !== undefined) {
+      patch.section = { heading: "Shots", content: shotsSectionContent(pendingShots) };
+    }
+  } catch (error) {
+    console.error(c.red(`  ${(error as Error).message}`));
+    process.exitCode = 1;
+    return;
+  }
+
   if (pendingSectionHeading !== null) {
     if (patch.body !== undefined) {
       console.error(
@@ -484,6 +532,26 @@ export function cmdUpdate(args: string[]): void {
       return;
     }
     patch.section = { heading: pendingSectionHeading, content: pendingSectionContent ?? "" };
+  }
+
+  if (
+    patch.section &&
+    normalizeSectionHeading(patch.section.heading).toLowerCase() === "## shots"
+  ) {
+    const error = shotsError(`## Shots\n\n${patch.section.content}`);
+    if (error) {
+      console.error(c.red(`  ${error}`));
+      process.exitCode = 1;
+      return;
+    }
+  }
+  if (patch.body !== undefined) {
+    const error = shotsError(patch.body);
+    if (error) {
+      console.error(c.red(`  ${error}`));
+      process.exitCode = 1;
+      return;
+    }
   }
 
   if (Object.keys(patch).length === 0) {
@@ -517,6 +585,7 @@ const NEW_FLAGS = new Set([
   "depends-on",
   "priority",
   "body",
+  "shots",
   "needs-input",
   "questions",
 ]);
@@ -539,7 +608,7 @@ function parseQuestions(raw: string): string[] {
 /** `repoos new <title> [--ai] [--needs-input true] [--questions "..."] [--depends-on ids]` */
 export function cmdNew(args: string[]): void {
   const usage =
-    '  Usage: repoos new "Task title" [--ai] [--type bug] [--area web,core] [--story "Delivery slice"] [--depends-on 0542,0538] [--priority p1] [--body "..."|-] [--needs-input true|false] [--questions "Question one\\nQuestion two"]';
+    '  Usage: repoos new "Task title" [--ai] [--type bug] [--area web,core] [--story "Delivery slice"] [--depends-on 0542,0538] [--priority p1] [--body "..."|-] [--shots "<JSON list>"|-] [--needs-input true|false] [--questions "Question one\\nQuestion two"]';
   const flags: Record<string, string | boolean> = {};
   const positional: string[] = [];
   for (let i = 0; i < args.length; i++) {
@@ -564,11 +633,26 @@ export function cmdNew(args: string[]): void {
       process.exitCode = 1;
       return;
     }
-    flags[key] = key === "body" && raw === "-" ? readFileSync(0, "utf8") : raw;
+    flags[key] = (key === "body" || key === "shots") && raw === "-" ? readFileSync(0, "utf8") : raw;
   }
   const title = positional.join(" ").trim();
   if (!title) {
     console.error(c.red(usage));
+    process.exitCode = 1;
+    return;
+  }
+  let body = (flags.body as string) || "";
+  try {
+    const error = shotsError(body);
+    if (error) throw new Error(error);
+    if (typeof flags.shots === "string") {
+      if (/(?:^|\n)##\s*Shots\b/i.test(body)) {
+        throw new Error("--shots cannot be combined with an existing ## Shots section in --body");
+      }
+      body = replaceSection(body, "Shots", shotsSectionContent(flags.shots));
+    }
+  } catch (error) {
+    console.error(c.red(`  ${(error as Error).message}`));
     process.exitCode = 1;
     return;
   }
@@ -592,7 +676,7 @@ export function cmdNew(args: string[]): void {
           : undefined,
       priority: (flags.priority as string) || undefined,
       assignedTo: flags.ai ? "ai" : undefined,
-      body: (flags.body as string) || undefined,
+      body: body || undefined,
       needsInput: flags["needs-input"] === "true",
       questions: flags.questions ? parseQuestions(flags.questions as string) : undefined,
     });

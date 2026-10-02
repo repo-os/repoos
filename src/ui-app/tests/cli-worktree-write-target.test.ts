@@ -13,12 +13,20 @@
  */
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  readdirSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { rmFixture } from "./helpers";
 import { ensureWorktree } from "../../core/git";
 import { cmdMv, cmdUpdate, cmdNew } from "../../commands/tasks";
+import { parseShotPlan } from "../../core/shot-plan";
 
 function git(root: string, args: string[]): string {
   return execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
@@ -105,6 +113,68 @@ describe("board-write commands resolve to the main checkout, not cwd (#0202)", (
       });
       expect(process.exitCode).toBe(1);
       expect(readFileSync(taskPath, "utf8")).not.toMatch(/Should not apply/);
+    } finally {
+      process.exitCode = prevExit;
+      clean();
+    }
+  });
+
+  it("cmdUpdate --shots validates JSON and writes a fenced declaration", async () => {
+    const { root, taskPath, clean } = makeRepoWithTask();
+    try {
+      await withCwd(root, () => {
+        cmdUpdate([
+          "0001",
+          "--shots",
+          '[{"target":"default","route":"/agents?tab=providers","label":"Providers"}]',
+        ]);
+      });
+      const body = readFileSync(taskPath, "utf8");
+      expect(body).toContain("## Shots\n```json\n[");
+      expect(parseShotPlan(body)).toEqual({
+        shots: [{ target: "default", route: "/agents?tab=providers", label: "Providers" }],
+        errors: [],
+      });
+    } finally {
+      clean();
+    }
+  });
+
+  it("cmdUpdate rejects an unfenced Shots section before writing", async () => {
+    const { root, taskPath, clean } = makeRepoWithTask();
+    const prevExit = process.exitCode;
+    try {
+      const before = readFileSync(taskPath, "utf8");
+      await withCwd(root, () => {
+        cmdUpdate(["0001", "--section", "Shots", "--section-body", '[{"route":"/agents"}]']);
+      });
+      expect(process.exitCode).toBe(1);
+      expect(readFileSync(taskPath, "utf8")).toBe(before);
+    } finally {
+      process.exitCode = prevExit;
+      clean();
+    }
+  });
+
+  it("cmdNew --shots formats the section and rejects malformed input", async () => {
+    const { root, clean } = makeRepoWithTask();
+    const prevExit = process.exitCode;
+    try {
+      await withCwd(root, () => {
+        cmdNew(["Bad shots", "--shots", "not-json"]);
+      });
+      expect(process.exitCode).toBe(1);
+      expect(readdirSync(join(root, "work"))).toEqual(["0001-test.md"]);
+      process.exitCode = prevExit;
+      await withCwd(root, () => {
+        cmdNew(["Good shots", "--shots", '[{"route":"/agents","label":"Agents"}]']);
+      });
+      const created = readdirSync(join(root, "work")).find((name) => name !== "0001-test.md");
+      expect(created).toBeDefined();
+      expect(parseShotPlan(readFileSync(join(root, "work", created!), "utf8"))).toEqual({
+        shots: [{ route: "/agents", label: "Agents" }],
+        errors: [],
+      });
     } finally {
       process.exitCode = prevExit;
       clean();

@@ -289,8 +289,8 @@ entries (see \`src/core/shot-plan.ts\`). Each entry has \`target\`, \`route\`, a
 optional \`selector\` (element crop — the exception), an optional \`highlight\`
 CSS selector (outlines changed elements), a \`label\`, and optional ordered
 \`steps\` (click/fill/wait, plain CSS selectors). Use \`repoos update <id>
---section "Shots" --section-body "..."\` to declare or edit only that section
-without touching the rest of the body — a full \`--body\` replace that drops
+--shots '<JSON list>'\` to declare it (the CLI validates the JSON and writes the
+fenced section) without touching the rest of the body — a full \`--body\` replace that drops
 Problem / Desired UX / Acceptance criteria / Notes for AI is refused unless
 \`--force\` is passed.
 
