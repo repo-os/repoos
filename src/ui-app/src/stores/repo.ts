@@ -1896,6 +1896,22 @@ export const useRepoStore = defineStore("repo", () => {
   }
 
   /**
+   * Commit every change in the repo root checkout on its current branch (the
+   * sidebar popup's Commit button). Throws the server's refusal (with any
+   * pre-commit hook output on `ApiError.body`) for the dialog to show.
+   */
+  async function commitRepoRoot(
+    message: string,
+  ): Promise<{ ok: boolean; branch: string; sha: string; files: number }> {
+    const r = await api<{ ok: boolean; branch: string; sha: string; files: number }>(
+      "/api/repo/commit",
+      JSON_OPTS("POST", { message }),
+    );
+    void refreshGitStatus();
+    return r;
+  }
+
+  /**
    * Backstops for the push path (#0584): refetch when the tab regains focus
    * or becomes visible, on SSE reconnect (`hello`), and on a slow interval —
    * a stale `clean` is worse than no indicator, so no path may leave one up
@@ -3209,6 +3225,7 @@ export const useRepoStore = defineStore("repo", () => {
     eventCount,
     gitStatus,
     refreshGitStatus,
+    commitRepoRoot,
     flashId,
     transitionState,
     draggingTask,

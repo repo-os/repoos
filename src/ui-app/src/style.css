@@ -1014,9 +1014,27 @@
   color: var(--txt-faint);
 }
 .side-git-pop-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   margin-top: 12px;
   padding-top: 9px;
   border-top: 1px solid var(--border);
+}
+.side-git-commit-btn {
+  padding: 4px 12px;
+  border: 1px solid var(--border-bright);
+  border-radius: 8px;
+  background: var(--panel-solid);
+  color: var(--txt);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.side-git-commit-btn:hover {
+  background: color-mix(in srgb, var(--txt) 8%, var(--panel-solid));
 }
 .side-git-history {
   font-family: "JetBrains Mono", monospace;
@@ -10812,6 +10830,68 @@
     0 0 0 1px var(--border);
   overflow: hidden;
   animation: cc-modal-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* Commit dialog (sidebar git popup): shares the delete-confirm shell, minus its red border. */
+.commit-modal.drawer-wrap.drawer {
+  top: 50%;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  width: min(520px, 94vw);
+  height: auto;
+  transform: translate(-50%, -50%);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--panel-gradient);
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.45),
+    0 0 0 1px var(--border);
+  overflow: hidden;
+  animation: cc-modal-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.commit-modal-head {
+  padding: 20px 24px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.commit-modal-head .close-x {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.commit-modal-desc {
+  padding: 12px 24px 0;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.commit-modal-body {
+  padding: 14px 24px 0;
+}
+.commit-modal-files {
+  max-height: 180px;
+  margin-bottom: 14px;
+}
+.commit-modal-input {
+  min-height: 96px;
+}
+.commit-modal-output {
+  max-height: 200px;
+  overflow: auto;
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-solid);
+  color: var(--txt-dim);
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+.commit-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 20px 24px 24px;
 }
 .delete-confirm-head {
   padding: 20px 24px 0;

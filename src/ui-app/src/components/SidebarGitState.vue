@@ -18,6 +18,7 @@ import { storeToRefs } from "pinia";
 import { useRepoStore } from "../stores/repo";
 import { relTime } from "../lib/time";
 import { authorInitials } from "../lib/repo-history";
+import CommitDialog from "./CommitDialog.vue";
 
 /** A snapshot older than this is history, not state — show `unknown`. */
 const STALE_MS = 90_000;
@@ -142,6 +143,17 @@ function statusWord(code: string): string {
     C: "copied",
   };
   return words[statusLetter(code)] ?? "changed";
+}
+
+/** Commit is only offered for a live, readable, dirty checkout on a real branch. */
+const canCommit = computed(
+  () =>
+    live.value && dirtyCount.value > 0 && !!gitStatus.value?.branch && !gitStatus.value.detached,
+);
+const commitOpen = ref(false);
+function openCommit(): void {
+  closeNow();
+  commitOpen.value = true;
 }
 
 // --- popover open/close: hover, keyboard focus and touch all open it -------
@@ -429,7 +441,16 @@ onBeforeUnmount(() => {
         <RouterLink class="side-git-history" to="/repo?tab=history" @click="closeNow"
           >View history</RouterLink
         >
+        <button v-if="canCommit" type="button" class="side-git-commit-btn" @click="openCommit">
+          Commit
+        </button>
       </footer>
     </div>
   </Teleport>
+
+  <CommitDialog
+    v-model:open="commitOpen"
+    :branch="gitStatus?.branch ?? ''"
+    :files="files.map((f) => f.path)"
+  />
 </template>
