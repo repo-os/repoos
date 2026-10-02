@@ -8,8 +8,9 @@ area: [agent, server]
 assigned_to: ai
 created_by: ""
 branch: feat/show-live-deepinfra-and-github-copilot-c
+review_cli_override: cursor
 created_at: "2026-10-02T08:51:36Z"
-updated_at: "2026-10-02T10:33:17Z"
+updated_at: "2026-10-02T10:33:57Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -96,3 +97,4 @@ Sources: https://docs.deepinfra.com/api-reference/billing/get-checklist ; https:
 - 2026-10-02T10:03:03Z · body: section Shots
 - 2026-10-02T10:31:52Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-10-02T10:33:17Z · status review→active
+- 2026-10-02T10:33:57Z · review_cli_override
