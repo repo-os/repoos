@@ -13,9 +13,7 @@ model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-01T18:46:44Z"
-updated_at: "2026-10-01T23:59:15Z"
-review_passes: 6
-review_rounds: 2
+updated_at: "2026-10-01T18:57:58Z"
 ---
 ## Symptom
 
@@ -103,29 +101,3 @@ Stream at *completed text block* granularity instead of per token:
 - 2026-10-01T18:47:46Z · status inbox→ready
 - 2026-10-01T18:47:47Z · status ready→active, branch
 - 2026-10-01T18:57:58Z · status active→review
-- 2026-10-01T18:57:58Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
-- 2026-10-01T18:58:57Z · status review→active
-- 2026-10-01T19:13:25Z · status active→review
-- 2026-10-01T19:13:25Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
-- 2026-10-01T19:14:35Z · status review→active
-- 2026-10-01T19:18:58Z · status active→review
-- 2026-10-01T19:18:58Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
-- 2026-10-01T19:21:04Z · needs_input
-- 2026-10-01T19:22:42Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Notes for AI
-- 2026-10-01T23:24:25Z · status review→active
-- 2026-10-01T23:24:32Z · needs_input (review-rounds-exhausted) dismissed by hello@repoos.org
-- 2026-10-01T23:29:10Z · status active→review
-- 2026-10-01T23:29:11Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
-- 2026-10-01T23:30:36Z · needs_input
-- 2026-10-01T23:32:57Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Notes for AI
-- 2026-10-01T23:33:43Z · status review→active
-- 2026-10-01T23:41:19Z · status active→review
-- 2026-10-01T23:41:19Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
-- 2026-10-01T23:43:01Z · needs_input
-- 2026-10-01T23:43:01Z · needs_input
-- 2026-10-01T23:45:06Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Notes for AI
-- 2026-10-01T23:46:02Z · status review→active
-- 2026-10-01T23:55:24Z · status active→review
-- 2026-10-01T23:55:24Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
-- 2026-10-01T23:57:03Z · needs_input
-- 2026-10-01T23:59:15Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Notes for AI

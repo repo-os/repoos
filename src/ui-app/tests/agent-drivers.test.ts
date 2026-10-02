@@ -31,11 +31,41 @@ fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args, cwd: pr
 if (path.basename(process.argv[1]) === "pi") {
   process.stdout.write(JSON.stringify({ type: "session", version: 3, id: "sess-pi" }) + "\\n");
   process.stdout.write(JSON.stringify({ type: "turn_start" }) + "\\n");
-  process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_delta", delta: "Hello " } }) + "\\n");
-  process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_delta", delta: "world" } }) + "\\n");
-  process.stdout.write(JSON.stringify({ type: "message_end", message: { role: "assistant", content: [{ type: "text", text: "Hello world" }] } }) + "\\n");
-  process.stdout.write(JSON.stringify({ type: "turn_end" }) + "\\n");
-  process.exit(0);
+  const split = process.env.REPOOS_FAKEBIN_PI_SPLIT_HANDOFF === "1";
+  const wantsHandoff = process.env.REPOOS_FAKEBIN_PI_HANDOFF === "1" || split;
+  const text = wantsHandoff ? "Finished.\\n\\n${HANDOFF_READY_SIGNAL}" : "Hello world";
+  // A split signal arrives as two completed text blocks; only the later one
+  // completes it, so the driver must hold the first rather than flush it raw.
+  const blocks = split ? ["Finished.\\n\\n::repoos-hand", "off-ready::"] : [text];
+  // Mirror the split in the authoritative message too: pi joins content blocks
+  // with newlines, so the signal is broken there and only whole in the
+  // streamed blocks' concatenation.
+  const content = blocks.map((block) => ({ type: "text", text: block }));
+  // Some providers deliver no streamed text blocks at all; the driver must
+  // then backfill from the authoritative message_end text exactly once.
+  const noBlock = process.env.REPOOS_FAKEBIN_PI_NO_BLOCK === "1";
+  if (!noBlock) {
+    process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_start", contentIndex: 0 } }) + "\\n");
+    for (const block of blocks) {
+      process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_delta", contentIndex: 0, delta: block } }) + "\\n");
+      process.stdout.write(JSON.stringify({ type: "message_update", assistantMessageEvent: { type: "text_end", contentIndex: 0, content: block } }) + "\\n");
+    }
+  }
+  if (process.env.REPOOS_FAKEBIN_PI_EXIT_MID === "1") {
+    // Die after a signal-bearing text_end but before message_end: cleanup must
+    // still surface the signal from the held blocks rather than flush it raw.
+    setTimeout(() => process.exit(0), 50);
+  } else if (process.env.REPOOS_FAKEBIN_PI_ERROR_AFTER_BLOCK === "1") {
+    // A text block streamed, then the turn failed with no text: the provider
+    // error must still reach the transcript instead of being suppressed as a
+    // duplicate of the already-streamed text (#0619).
+    process.stdout.write(JSON.stringify({ type: "message_end", message: { role: "assistant", content: [], stopReason: "error", errorMessage: "OpenAI API error (401): Incorrect API key" } }) + "\\n");
+    process.exit(0);
+  } else {
+    process.stdout.write(JSON.stringify({ type: "message_end", message: { role: "assistant", content } }) + "\\n");
+    process.stdout.write(JSON.stringify({ type: "turn_end" }) + "\\n");
+    process.exit(0);
+  }
 }
 if (path.basename(process.argv[1]) === "copilot") {
   process.stdout.write(JSON.stringify({ type: "assistant.message", data: { content: "Copilot response" } }) + "\\n");
@@ -170,6 +200,10 @@ afterEach(() => {
   delete process.env.REPOOS_FAKEBIN_HANDOFF;
   delete process.env.REPOOS_FAKEBIN_CODEX_HANDOFF;
   delete process.env.REPOOS_FAKEBIN_OPENCODE_HANDOFF;
+  delete process.env.REPOOS_FAKEBIN_PI_HANDOFF;
+  delete process.env.REPOOS_FAKEBIN_PI_SPLIT_HANDOFF;
+  delete process.env.REPOOS_FAKEBIN_PI_EXIT_MID;
+  delete process.env.REPOOS_FAKEBIN_PI_NO_BLOCK;
   delete process.env.REPOOS_FAKEBIN_FAIL;
 });
 
@@ -557,7 +591,7 @@ describe("claude code driver", () => {
 });
 
 describe("pi driver", () => {
-  it("streams text deltas and does not duplicate the message_end text", async () => {
+  it("streams completed text blocks and does not duplicate the message_end text", async () => {
     const fx = makeFixture();
     const oldPath = withFakePath(fx);
     process.env.REPOOS_FAKEBIN_LOG = fx.log;
@@ -571,16 +605,74 @@ describe("pi driver", () => {
         .output("0001")!
         .lines.filter((line) => (line as { type?: string }).type === "text")
         .map((line) => (line as { text: string }).text);
-      // Each delta is its own text entry (the UI groups them); the authoritative
-      // message_end text is dropped because its deltas already streamed.
-      expect(texts).toEqual(["Hello ", "world"]);
-      expect(texts.join("")).toBe("Hello world");
+      // The completed text block streams as one paragraph-sized entry; the
+      // authoritative message_end text is dropped because the block already
+      // streamed. Per-token deltas are swallowed (#0619).
+      expect(texts).toEqual(["Hello world"]);
 
       const [run] = spawns(fx);
       expect(run.args).toEqual(expect.arrayContaining(["--mode", "json"]));
     } finally {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
+  it("backfills the message_end text once when no text block streamed", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    process.env.REPOOS_FAKEBIN_PI_NO_BLOCK = "1";
+    try {
+      const runner = new AgentRunner(config(fx.bin), () => {});
+      runner.start(TASK, "feat/x", agent("pi"), { cwd: fx.bin });
+      await waitFor(() => !runner.isRunning("0001"), "pi no-block turn exit");
+
+      const texts = runner
+        .output("0001")!
+        .lines.filter((line) => (line as { type?: string }).type === "text")
+        .map((line) => (line as { text: string }).text);
+      // No text_end arrived, so the authoritative message_end text is the only
+      // source — recorded exactly once, not dropped and not doubled (#0619).
+      expect(texts).toEqual(["Hello world"]);
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      delete process.env.REPOOS_FAKEBIN_PI_NO_BLOCK;
+      fx.clean();
+    }
+  });
+
+  it("surfaces a provider error even after a text block streamed", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    process.env.REPOOS_FAKEBIN_PI_ERROR_AFTER_BLOCK = "1";
+    try {
+      const runner = new AgentRunner(config(fx.bin), () => {});
+      runner.start(TASK, "feat/x", agent("pi"), { cwd: fx.bin });
+      await waitFor(() => !runner.isRunning("0001"), "pi error-after-block turn exit");
+
+      const lines = runner.output("0001")!.lines;
+      const texts = lines
+        .filter((line) => (line as { type?: string }).type === "text")
+        .map((line) => (line as { text: string }).text);
+      // The streamed block is kept (not doubled), and the error is recorded
+      // alongside it — the backfill guard must not swallow the reason the turn
+      // stopped just because text already streamed (#0619).
+      expect(texts).toEqual(["Hello world"]);
+      expect(
+        lines.some(
+          (line) =>
+            (line as { type?: string }).type === "sys" &&
+            (line as { d?: string }).d === "OpenAI API error (401): Incorrect API key",
+        ),
+      ).toBe(true);
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      delete process.env.REPOOS_FAKEBIN_PI_ERROR_AFTER_BLOCK;
       fx.clean();
     }
   });
@@ -790,6 +882,115 @@ describe("structured runner handoff (#0094)", () => {
       });
       runner.start(TASK, "feat/x", agent("opencode"), { cwd: fx.bin });
       await waitFor(() => requests.length === 1, "OpenCode JSON handoff request");
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
+  it("recognizes a pi handoff inside a completed text block and never shows it raw", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    process.env.REPOOS_FAKEBIN_PI_HANDOFF = "1";
+    try {
+      const requests: unknown[] = [];
+      const runner = new AgentRunner(config(fx.bin), () => {}, {
+        onHandoff: (request) => {
+          requests.push(request);
+        },
+      });
+      runner.start(TASK, "feat/x", agent("pi"), { cwd: fx.bin });
+      await waitFor(() => requests.length === 1, "pi JSON handoff request");
+
+      const lines = runner.output("0001")!.lines;
+      const texts = lines
+        .filter((line) => (line as { type?: string }).type === "text")
+        .map((line) => (line as { text: string }).text);
+      // The signal block streams through applySignals, so the transcript carries
+      // the trusted confirmation line instead of the raw signal text — and the
+      // assistant's prose before the signal is preserved (#0619).
+      expect(texts).toContain("Finished.");
+      expect(texts).not.toContain(HANDOFF_READY_SIGNAL);
+      expect(texts.some((text) => text.includes(HANDOFF_READY_SIGNAL))).toBe(false);
+      expect(
+        lines.some(
+          (line) =>
+            (line as { s?: string }).s === "sys" &&
+            (line as { d?: string }).d === "✓ agent requested server-side handoff",
+        ),
+      ).toBe(true);
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
+  it("surfaces a pi handoff split across two text blocks as one confirmation", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    process.env.REPOOS_FAKEBIN_PI_SPLIT_HANDOFF = "1";
+    try {
+      const requests: unknown[] = [];
+      const runner = new AgentRunner(config(fx.bin), () => {}, {
+        onHandoff: (request) => {
+          requests.push(request);
+        },
+      });
+      runner.start(TASK, "feat/x", agent("pi"), { cwd: fx.bin });
+      await waitFor(() => requests.length === 1, "split pi JSON handoff request");
+
+      const lines = runner.output("0001")!.lines;
+      const texts = lines
+        .filter((line) => (line as { type?: string }).type === "text")
+        .map((line) => (line as { text: string }).text);
+      // The prose before the split signal survives; neither raw fragment does.
+      expect(texts).toEqual(["Finished."]);
+      expect(
+        lines.some(
+          (line) =>
+            (line as { s?: string }).s === "sys" &&
+            (line as { d?: string }).d === "✓ agent requested server-side handoff",
+        ),
+      ).toBe(true);
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
+  it("surfaces a pi handoff emitted before its message_end on a mid-message exit", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    process.env.REPOOS_FAKEBIN_PI_HANDOFF = "1";
+    process.env.REPOOS_FAKEBIN_PI_EXIT_MID = "1";
+    try {
+      const requests: unknown[] = [];
+      const runner = new AgentRunner(config(fx.bin), () => {}, {
+        onHandoff: (request) => {
+          requests.push(request);
+        },
+      });
+      runner.start(TASK, "feat/x", agent("pi"), { cwd: fx.bin });
+      await waitFor(() => requests.length === 1, "mid-exit pi handoff request");
+
+      const lines = runner.output("0001")!.lines;
+      const texts = lines
+        .filter((line) => (line as { type?: string }).type === "text")
+        .map((line) => (line as { text: string }).text);
+      expect(texts.some((text) => text.includes(HANDOFF_READY_SIGNAL))).toBe(false);
+      expect(
+        lines.some(
+          (line) =>
+            (line as { s?: string }).s === "sys" &&
+            (line as { d?: string }).d === "✓ agent requested server-side handoff",
+        ),
+      ).toBe(true);
     } finally {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;

@@ -390,10 +390,19 @@ interface Session {
   >;
   /**
    * pi stream only: whether the current assistant message's text was already
-   * streamed via `message_update` deltas, so the authoritative `message_end`
-   * text is not recorded a second time. Reset at each `message_end`.
+   * streamed via completed `message_update` text blocks, so the authoritative
+   * `message_end` text is not recorded a second time. Reset at each
+   * `message_end`.
    */
   piStreamedText?: boolean;
+  /**
+   * pi stream only: completed `message_update` text blocks held back because
+   * they might contain or complete a handoff/preview signal. A signal split
+   * across two blocks is only whole once the later block arrives, so holding
+   * them until `message_end` keeps the raw fragments out of the transcript
+   * (#0619). Flushed at `message_end`, or at process cleanup on a crash.
+   */
+  piPendingText?: AgentOutputEntry[];
   /** The first permission denial seen this turn (detectPermissionDenial). */
   permissionDenial?: string;
   /**
@@ -1274,11 +1283,53 @@ function piToolText(value: unknown): string | undefined {
   return toolOutputText(value);
 }
 
+/**
+ * Could this accumulated pi text contain, or still complete, a runner signal?
+ *
+ * A line that is a prefix of a signal (`::repoos-handoff`) may be completed by
+ * a later block, and a line that starts with a signal is already one — either
+ * way the blocks are held until `message_end`, so a signal split across blocks
+ * is recognized as a whole instead of reaching the transcript as raw
+ * fragments (#0619). A plain block with no signal-like line streams at once.
+ */
+function piTextHoldsSignal(text: string): boolean {
+  for (const line of text.split("\n")) {
+    const trimmed = line.trimStart();
+    if (!trimmed) continue;
+    for (const signal of [HANDOFF_READY_SIGNAL, PREVIEW_REQUEST_SIGNAL]) {
+      if (signal.startsWith(trimmed) || trimmed.startsWith(signal)) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * The assistant's prose in a pi text block, with any signal-bearing line
+ * removed. A signal is rendered in the transcript as the trusted confirmation
+ * line, but prose the assistant wrote around it must survive: for a reply like
+ * `Finished.\n\n::repoos-handoff-ready::` only the signal line is replaced
+ * (#0619).
+ */
+function piTextWithoutSignals(text: string): string {
+  const kept = text.split("\n").filter((line) => {
+    const trimmed = line.trimStart();
+    return !(
+      trimmed.startsWith(HANDOFF_READY_SIGNAL) || trimmed.startsWith(PREVIEW_REQUEST_SIGNAL)
+    );
+  });
+  return kept.join("\n").trim();
+}
+
 export interface PiParseResult {
   entry?: AgentOutputEntry;
   sessionID?: string;
-  /** A live `message_update` text delta (streaming transcript only). */
-  delta?: string;
+  /**
+   * A completed `message_update` text block (pi's `text_end`), streamed to the
+   * transcript as a whole paragraph. `appendPiLine` records it through
+   * `applySignals` and marks the message's text as streamed, so the
+   * authoritative `message_end` copy is not recorded a second time.
+   */
+  textBlock?: boolean;
   /** True when this line is an assistant `message_end` (authoritative text). */
   messageEnd?: boolean;
   toolEvent?: {
@@ -1294,11 +1345,15 @@ export interface PiParseResult {
 /**
  * Parse one line of pi's `--mode json` stream. pi emits strict JSONL: a
  * `session` header carrying the session id, then typed lifecycle, message,
- * tool-execution, and usage events. Streaming `message_update` records are
- * swallowed (their authoritative form arrives as `message_end`, and their
- * cumulative `usage` is consumed by `extractUsage` on the raw line, not as a
- * transcript entry); tool activity arrives as a `tool_execution_start` /
- * `tool_execution_end` pair keyed by `toolCallId`. Returns `null` for
+ * tool-execution, and usage events. A `message_update` carrying a completed
+ * `text_end` block is surfaced as one paragraph-sized text entry — streaming
+ * per token would make the UI render a blank line between every fragment
+ * (#0619). `text_delta`/`thinking_*` updates are swallowed, as is the block's
+ * cumulative `usage` (consumed by `extractUsage` on the raw line, not as a
+ * transcript entry); the authoritative whole message still arrives at
+ * `message_end` and is used as a backfill only when no block streamed. Tool
+ * activity arrives as a `tool_execution_start` / `tool_execution_end` pair
+ * keyed by `toolCallId`. Returns `null` for
  * non-JSON or an unrecognized event type so callers fall back to the plain-line
  * path rather than dropping output silently.
  */
@@ -1320,14 +1375,16 @@ export function parsePiEvent(raw: string): PiParseResult | null {
       return id ? { sessionID: id } : {};
     }
     case "message_update": {
-      // Live streaming: a text delta becomes a transcript text entry so long
-      // responses render as they arrive. The authoritative whole message also
-      // arrives at `message_end`; `appendPiLine` drops that duplicate when a
-      // delta was already streamed. `parseOneShotLine` ignores `delta` and uses
-      // the full `message_end` text, so one-shot report extraction is intact.
+      // Live streaming: a completed `text_end` block becomes one transcript
+      // text entry so responses render as they arrive. Streaming each token
+      // delta instead made the UI draw every fragment as its own paragraph
+      // (#0619). The authoritative whole message also arrives at
+      // `message_end`; `appendPiLine` backfills it only when no block
+      // streamed. `parseOneShotLine` ignores `textBlock` and uses the full
+      // `message_end` text, so one-shot report extraction is intact.
       const inner = ev.assistantMessageEvent as Record<string, unknown> | undefined;
-      if (inner?.type === "text_delta" && typeof inner.delta === "string" && inner.delta) {
-        return { delta: inner.delta };
+      if (inner?.type === "text_end" && typeof inner.content === "string" && inner.content) {
+        return { entry: { type: "text", text: inner.content }, textBlock: true };
       }
       return {};
     }
@@ -3896,7 +3953,11 @@ export function parseOneShotLine(cli: string, raw: string): AgentOutputEntry | n
   }
   if (cli === "pi") {
     const parsed = parsePiEvent(raw);
-    return parsed?.entry ?? null;
+    // One-shot consumers append every entry; surfacing each completed block
+    // and then the authoritative message_end answer would duplicate the reply
+    // (#0619). The message_end text is the whole answer, so ignore the
+    // streaming blocks here.
+    return parsed?.textBlock ? null : (parsed?.entry ?? null);
   }
   return { s: "out", d: raw };
 }
@@ -5874,20 +5935,76 @@ export class AgentRunner {
           state: merged.state,
         });
       }
-    } else if (parsed.delta) {
-      // Live streaming: render each text delta as it arrives. The full message
-      // still arrives at message_end; it is dropped below when deltas streamed.
-      session.piStreamedText = true;
-      this.recordEntry(taskId, session, "out", { type: "text", text: parsed.delta });
-    } else if (parsed.messageEnd) {
+    } else if (parsed.textBlock) {
+      // Live streaming: render each completed text block as it arrives, so a
+      // reply arrives paragraph by paragraph rather than fragment by fragment.
+      // A block whose text could contain or complete a signal is held instead
+      // — a split signal is only whole once the later block arrives, and its
+      // raw fragments must never reach the transcript (#0619). The full
+      // message still arrives at message_end; it is backfilled below only when
+      // no block streamed.
       if (parsed.entry) {
-        // applySignals always runs on the authoritative whole message: a
-        // handoff/preview signal split across deltas is only whole here.
-        const surfaced = this.applySignals(taskId, raw, parsed.entry, session);
-        // Record the text only when it was not already streamed as deltas. A
-        // signal's confirmation line is likewise skipped in that case — the
-        // request itself was still recorded by applySignals above.
-        if (!session.piStreamedText) this.recordEntry(taskId, session, "out", surfaced);
+        session.piStreamedText = true;
+        const pending = (session.piPendingText ??= []);
+        pending.push(parsed.entry);
+        const combined = pending
+          .map((entry) => ("type" in entry && entry.type === "text" ? entry.text : ""))
+          .join("\n");
+        if (!piTextHoldsSignal(combined)) {
+          for (const entry of pending) this.recordEntry(taskId, session, "out", entry);
+          session.piPendingText = undefined;
+        }
+      }
+    } else if (parsed.messageEnd) {
+      const pending = session.piPendingText ?? [];
+      session.piPendingText = undefined;
+      // A signal split across streamed blocks may be broken in the
+      // authoritative text (pi joins content blocks with newlines) but whole
+      // in the held blocks' concatenation, or vice versa — check both, and
+      // record the confirmation line in place of the signal itself.
+      const authoritativeText =
+        parsed.entry && "type" in parsed.entry && parsed.entry.type === "text"
+          ? parsed.entry.text
+          : "";
+      const heldText = pending
+        .map((entry) => ("type" in entry && entry.type === "text" ? entry.text : ""))
+        .join("");
+      const { surfaced, matched } = this.surfacePiText(taskId, raw, session, [
+        authoritativeText,
+        heldText,
+      ]);
+      const entryIsText = !!parsed.entry && "type" in parsed.entry && parsed.entry.type === "text";
+      if (matched && surfaced) {
+        // Keep the prose around the signal; only its own line is replaced by
+        // the confirmation. The held concatenation is preferred when any
+        // block was held, because the authoritative text joins blocks with
+        // newlines and can break a signal that spanned two blocks (#0619).
+        const prose = piTextWithoutSignals(pending.length ? heldText : authoritativeText);
+        if (prose) this.recordEntry(taskId, session, "out", { type: "text", text: prose });
+        this.recordEntry(taskId, session, "out", surfaced);
+      } else if (pending.length) {
+        for (const entry of pending) this.recordEntry(taskId, session, "out", entry);
+      } else if (
+        parsed.entry &&
+        "type" in parsed.entry &&
+        parsed.entry.type === "text" &&
+        !session.piStreamedText
+      ) {
+        // Backfill the authoritative text when no block streamed.
+        this.recordEntry(taskId, session, "out", parsed.entry);
+      }
+      // A non-text `message_end` entry is not a duplicate of streamed assistant
+      // text — a failed turn surfaces its `errorMessage` as a system line.
+      // The backfill guard above suppresses only the duplicate text, so surface
+      // the failure regardless of whether a text block already streamed, or a
+      // partial reply is left with no explanation of why it stopped (#0619).
+      if (parsed.entry && !entryIsText) {
+        this.recordEntry(
+          taskId,
+          session,
+          "out",
+          this.applySignals(taskId, raw, parsed.entry, session),
+        );
       }
       session.piStreamedText = false;
     } else if (parsed.entry) {
@@ -6110,6 +6227,31 @@ export class AgentRunner {
       out = { s: "sys", d: "✓ agent requested server-side handoff" };
     }
     return out;
+  }
+
+  /**
+   * Surface a runner signal from a pi message's text parts.
+   *
+   * The authoritative `message_end` joins content blocks with newlines
+   * (`piMessageText`), which can break a signal split across streamed blocks.
+   * The held blocks are therefore concatenated without separators too, and both
+   * are checked, so a split signal is still recognized. Returns the surfaced
+   * entry (the confirmation line when a signal matched, otherwise the joined
+   * text entry) and whether a signal matched. `undefined` means there was no
+   * text at all. Recording the confirmation here would drop any surrounding
+   * prose, so callers extract the non-signal text with `piTextWithoutSignals`
+   * and record it alongside the confirmation (#0619).
+   */
+  private surfacePiText(
+    taskId: string,
+    raw: string,
+    session: Session,
+    parts: readonly string[],
+  ): { surfaced?: AgentOutputEntry; matched: boolean } {
+    const text = parts.filter((part) => part).join("\n");
+    if (!text) return { matched: false };
+    const surfaced = this.applySignals(taskId, raw, { type: "text", text }, session);
+    return { surfaced, matched: "s" in surfaced && surfaced.s === "sys" };
   }
 
   /**
@@ -6548,6 +6690,25 @@ export class AgentRunner {
       const line = session.pending.trimEnd();
       this.appendLine(taskId, "out", line);
       session.pending = "";
+    }
+    // pi holds completed text blocks until its message_end so a signal split
+    // across them is surfaced whole (#0619). A process that dies mid-message
+    // never sent that message_end, so surface any signal the held blocks
+    // contain (and fire its request) before flushing the rest.
+    if (session?.engine === "pi" && session.piPendingText?.length) {
+      const pending = session.piPendingText;
+      session.piPendingText = undefined;
+      const heldText = pending
+        .map((entry) => ("type" in entry && entry.type === "text" ? entry.text : ""))
+        .join("");
+      const { surfaced, matched } = this.surfacePiText(taskId, "", session, [heldText]);
+      if (matched && surfaced) {
+        const prose = piTextWithoutSignals(heldText);
+        if (prose) this.recordEntry(taskId, session, "out", { type: "text", text: prose });
+        this.recordEntry(taskId, session, "out", surfaced);
+      } else {
+        for (const entry of pending) this.recordEntry(taskId, session, "out", entry);
+      }
     }
     // A zero exit is not success for Antigravity unless the stream ended with
     // a SUCCESS `result` record. A malformed or changed protocol (only unknown
