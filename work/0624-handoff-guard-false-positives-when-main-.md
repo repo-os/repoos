@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-02T06:54:07Z"
+review_passes: 2
 id: "0624"
 title: Handoff guard false-positives when main is merged into a task in review
 type: bug
@@ -9,9 +11,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/handoff-guard-false-positives-when-main-
 created_at: "2026-10-02T06:09:14Z"
-updated_at: "2026-10-02T06:53:20Z"
 review_rounds: 1
-review_passes: 1
 ---
 ## Problem
 Clicking Move to done on #0622 failed with "worktree changed after handoff: HEAD is 0c839fc2 but handoff recorded 26c37f6f" and the Worktree changed after handoff dialog. Nobody edited the task's code. HEAD moved because a clean merge of main (`merge main into feat/promote-release-failures-above-published`) was committed on the branch after handoff. It brought in already-landed main commits (d3a01d75 and the 0621 close-out) and touched 11 source files.
@@ -40,3 +40,4 @@ Related: #0600 (bookkeeping-only drift, uses isAncestor and pathsChangedBetweenC
 - 2026-10-02T06:25:41Z · status review→active
 - 2026-10-02T06:53:20Z · status active→review
 - 2026-10-02T06:53:20Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+
