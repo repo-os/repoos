@@ -41,6 +41,22 @@ describe("shotProblems", () => {
     ]);
   });
 
+  it("ignores the benign already-captured skip and collapses repeats", () => {
+    const note = (t: string, d: string) => `- 2026-10-02T${t}Z · note: shots: skipped — ${d}`;
+    const b = [
+      "## Activity",
+      note(
+        "01:00:00",
+        "1 shot already captured — an engineer-made capture pre-empts the automatic one",
+      ),
+      note("02:00:00", "Playwright unavailable"),
+      note("03:00:00", "Playwright unavailable"),
+    ].join("\n");
+    const problems = shotProblems(b, []);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]!.at).toBe("2026-10-02T03:00:00Z");
+  });
+
   it("is empty with no activity section", () => {
     expect(shotProblems("## Problem\n\nx", [])).toEqual([]);
   });
