@@ -2,14 +2,14 @@
 id: "0622"
 title: Promote release failures above published-to and show loading state
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/promote-release-failures-above-published
 created_at: "2026-10-02T01:48:25Z"
-updated_at: "2026-10-02T03:19:37Z"
+updated_at: "2026-10-02T08:34:18Z"
 review_passes: 5
 merge_conflict_retry_count: 1
 review_rounds: 2
@@ -87,3 +87,5 @@ I just noticed this nice release failure section, but it's hidden below the fold
 - 2026-10-02T02:44:52Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-10-02T03:08:50Z · agent exited with an error (pi) · the agent process exited with an error — open the task to see the full output
 - 2026-10-02T03:19:37Z · needs_input (dev-error) dismissed by hello@repoos.org
+- 2026-10-02T08:34:18Z · status review→active
+- 2026-10-02T08:34:18Z · note: interactive session: re-handoff so the hand-resolved main-sync conflict (ReleasesView.vue) is reviewed and re-snapshotted
