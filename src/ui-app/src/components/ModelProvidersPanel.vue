@@ -130,7 +130,7 @@ onMounted(() => {
     </div>
     <div class="agent-desc">
       Spend and usage per model provider, without leaving RepoOS. Two providers report live numbers
-      behind an API key; the rest link straight to their dashboard.
+      behind an API key; the other rows link to dashboards until live data is connected here.
     </div>
 
     <div v-if="loadError" class="mp-error">{{ loadError }}</div>
@@ -141,7 +141,7 @@ onMounted(() => {
         <div class="mp-row-title">
           <span class="agent-name">{{ row.label }}</span>
           <span class="mp-pill" :class="row.kind === 'live' ? 'pill-live' : 'pill-link'">
-            {{ row.kind === "live" ? "live" : "dashboard only" }}
+            {{ row.kind === "live" ? "live" : "no live data" }}
           </span>
         </div>
         <a class="mp-dash-link" :href="row.dashboardUrl" target="_blank" rel="noopener noreferrer">

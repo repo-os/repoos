@@ -1168,6 +1168,7 @@ async function openDebuggerFromError(): Promise<void> {
       :task-title="task.title"
       @open-panel="openPanelFromError"
       @open-debugger="openDebuggerFromError"
+      @dismiss="repo.dismissDoneError(task.id)"
       @click.stop
     />
   </article>

@@ -20,6 +20,7 @@
  *   GET  /api/docs             -> [{ path, title, mtimeMs }]  (context docs listing)
  *   GET  /api/repo/log         -> git log page { commits, nextCursor, branch } (?branch=&path=&limit=&before=&includeDocs=1)
  *   GET  /api/repo/branches    -> { defaultBranch, branches } local heads, default first
+ *   POST /api/repo/commit      -> commit all changes in the repo root checkout on its current branch { message }
  *   GET  /api/repo/status      -> repo root checkout git state { branch, detached, dirty, head, recentCommits } (#0584)
  *   GET  /api/repo/commits/:sha -> one commit + changed files + patch
  *   GET  /api/repo/commits/:sha/file -> { before, after } contents at parent vs commit
@@ -220,6 +221,7 @@ import {
   getRepoLog,
   getRepoBranches,
   getRepoStatusRoute,
+  commitRepoRoot,
   getRepoCommitRoute,
   getRepoCommitFile,
   getSkills,
@@ -276,6 +278,7 @@ import {
   getDailyTotals,
   getDiffStatsForTask,
   getDiffForTask,
+  getMergeConflictForTask,
   getWorktreeDirtyForTask,
   getTaskFile,
   taskAction,
@@ -2351,6 +2354,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/repo/log", getRepoLog);
   router.register("GET", "/api/repo/branches", getRepoBranches);
   router.register("GET", "/api/repo/status", getRepoStatusRoute);
+  router.register("POST", "/api/repo/commit", commitRepoRoot);
   router.register("GET", /^\/api\/repo\/commits\/([^/]+)\/file$/, getRepoCommitFile);
   router.register("GET", /^\/api\/repo\/commits\/([^/]+)$/, getRepoCommitRoute);
   router.register("POST", "/api/docs/create", createDoc);
@@ -2542,6 +2546,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", /^\/api\/tasks\/([^/]+)\/stats$/, getTaskStats);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/diff-stats$/, getDiffStatsForTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/diff$/, getDiffForTask);
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/merge-conflict$/, getMergeConflictForTask);
   // Uncommitted files in a task's worktree — fetched by the restart dialog so
   // "Start clean" can name what it would discard (#0512).
   router.register("GET", /^\/api\/tasks\/([^/]+)\/worktree-dirty$/, getWorktreeDirtyForTask);

@@ -135,8 +135,10 @@ who owns approval and merging:
   should check it too). Move to done compares the worktree to the handoff
   snapshot and refuses when HEAD moved or the tree is dirty after handoff,
   except commits that change only `work/*.md` task files (RepoOS bookkeeping or
-  a main sync bringing in other tasks' task files — #0600). Real source edits
-  still block close-out. Incident: 2026-09-30, #0594 — four files edited
+  a main sync bringing in other tasks' task files — #0600), and a conflict-free
+  merge of main into the branch that is exactly what git computes on its
+  own (the committed tree equals a `merge-tree` replay of the merge's parents; hand
+  resolutions or edits slipped into the merge still fail — #0624). Real source edits still block close-out. Incident: 2026-09-30, #0594 — four files edited
   mid-close-out never landed.
 - If explicitly taking over a newly created task, claim it through RepoOS
   directly as `active`, without leaving it in `ready` for auto-dispatch to grab.
@@ -161,6 +163,19 @@ not authorize hand-landing other task branches. If such already-landed work
 has a branchless task record, `/done` has a separate checked release path for
 it: it checks main and records release without a candidate merge. Do not erase
 a task's branch metadata to force that path.
+
+**Caveat: agents never commit to `main` on their own initiative.** Direct commits
+to `main` are allowed only as a hotfix the human explicitly asked for in that
+conversation (e.g. "commit this to main"). Permission for one hotfix does not
+carry over to later changes, and an ambiguous request is a reason to ask, not to
+commit. Without that explicit ask, leave work uncommitted or put it on a task
+branch.
+
+**Don't mention a modified `repoos.toml`.** The human edits it for many reasons,
+so an uncommitted `repoos.toml` in `git status` is normal, not news. Never
+mention, ask about, stage or commit it unless you changed it yourself and need
+to tell the human. If you did, say so plainly. Otherwise leave it alone and say
+nothing.
 
 **Historical caution (2026-09-16):** external CLI status writes raced a live
 reviewer, which later reverted a task from `done` to `review`. The old advice
@@ -372,6 +387,15 @@ cannot tell from the code alone:
   are for deliberate exceptions (login/auth, modals); keeping a readable
   line length on inner prose (`max-width: NNch` on one paragraph) is fine.
   See the `.main` comment in `src/ui-app/src/style.css` (#0602).
+- **Table-like label/value rows use aligned columns.** Any UI that renders
+  repeated rows of labeled fields (a `dl` of `dt`/`dd`, or label+value pairs
+  — no literal `<table>` required) must use an aligned two-column layout:
+  labels share one fixed-width column, values align in the second, row
+  spacing is consistent row to row, and multi-value content wraps inside the
+  value cell — never under the label. Use the shared `.kv-rows` utility in
+  `src/ui-app/src/style.css` (plus `.kv-wrap` on multi-value cells) when the
+  same layout appears more than once, tuning `--kv-label-w` per surface;
+  keep component specifics in scoped styles on top (#0623).
 - **Runtime: Bun. Node is only the fallback for machines without Bun.**
   Every `repoos` command re-execs under Bun when it's installed, `bunfig.toml`
   (`[run] bun = true`) runs `package.json` scripts and the Node-shebang tools

@@ -5,7 +5,7 @@
  * that external file edits are picked up by the live index within the poll window.
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RepoOSConfig } from "../../core/types";
@@ -94,6 +94,26 @@ describe("WorkWatcher poll-based reconciliation", () => {
 
     task = index.getTask("0157");
     expect(task?.body).toContain("Updated content from external edit");
+  });
+
+  it("does not re-apply unchanged files on its first poll after start", async () => {
+    // Regression: the mtime cache started empty, so the first reconcile treated
+    // every task file as new and re-applied all of them (3 sync git spawns each),
+    // freezing the server for 30-60s after every restart.
+    const applied: string[] = [];
+    const original = index.applyFileChange.bind(index);
+    index.applyFileChange = (path, opts) => {
+      applied.push(path);
+      return original(path, opts);
+    };
+    (watcher as unknown as { reconcile: () => void }).reconcile();
+    expect(applied).toEqual([]);
+
+    writeFileSync(absPath, TASK_CONTENT_UPDATED);
+    const future = new Date(Date.now() + 5000);
+    utimesSync(absPath, future, future);
+    (watcher as unknown as { reconcile: () => void }).reconcile();
+    expect(applied).toEqual([absPath]);
   });
 
   it("detects new files created externally", async () => {

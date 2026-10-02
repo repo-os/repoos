@@ -121,10 +121,10 @@ function fmtAgo(iso: string): string {
       </div>
       <p v-if="h.detail && !h.healthy" class="rr-detail">{{ h.detail }}</p>
 
-      <dl class="rr-facts">
+      <dl class="kv-rows rr-facts">
         <div>
           <dt>Running now</dt>
-          <dd>
+          <dd class="kv-wrap">
             <template v-if="(h.activeRuns ?? []).length">
               <span
                 v-for="r in h.activeRuns"
@@ -139,7 +139,7 @@ function fmtAgo(iso: string): string {
         </div>
         <div>
           <dt>Queue</dt>
-          <dd>
+          <dd class="kv-wrap">
             <template v-if="h.queued > 0">
               <template v-if="(h.queuedTasks ?? []).length">
                 next: <span class="mono">#{{ h.queuedTasks![0] }}</span>
@@ -154,7 +154,7 @@ function fmtAgo(iso: string): string {
         </div>
         <div>
           <dt>Last completed</dt>
-          <dd>
+          <dd class="kv-wrap">
             <template v-if="h.lastRun">
               <span class="mono">#{{ h.lastRun!.taskId }}</span>
               <span :class="h.lastRun!.ok ? 'rr-ok' : 'rr-bad'">
@@ -274,24 +274,9 @@ function fmtAgo(iso: string): string {
 }
 
 .rr-facts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 24px;
-  margin: 0;
-  font-size: 12px;
-}
-.rr-facts > div {
-  display: flex;
-  gap: 6px;
-}
-.rr-facts dt {
-  color: var(--txt-dim);
-}
-.rr-facts dd {
-  margin: 0;
-}
-.rr-active-run {
-  margin-right: 10px;
+  /* Shared .kv-rows grid does the layout (#0623): fixed label column keeps
+     dt/dd aligned within a card and across stacked host cards. */
+  --kv-label-w: 96px;
 }
 .rr-dim {
   color: var(--txt-dim);

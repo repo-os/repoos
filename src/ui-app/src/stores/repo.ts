@@ -164,6 +164,62 @@ export class MoveToDoneError extends Error {
 /** Pull the conflicting file names out of the server's close-out error. */
 export { extractConflicts } from "../lib/closeOutFailure";
 
+/** The `/api/integration-jobs` fields the done-error hydration reads. */
+interface IntegrationJobSummary {
+  taskId: string;
+  phase: string;
+  reason?: string;
+  logPath?: string;
+  failedPhase?: string;
+  failedAt?: string;
+  debugTldr?: string;
+}
+
+/** A task branch's merge conflict against main, as a diff-shaped patch. */
+export interface MergeConflictReport {
+  ok: boolean;
+  conflicted: boolean;
+  patch: string;
+  files: string[];
+  truncated: boolean;
+  error?: string;
+}
+
+/** Identifies one failure so a dismissal only hides that failure, not the next. */
+function doneErrorKey(err: DoneError): string {
+  return (err.detail ?? err.message).slice(0, 300);
+}
+
+const DONE_ERROR_DISMISSED_KEY = "repoos.doneError.dismissed";
+
+function readDismissedDoneErrors(): Record<string, string> {
+  try {
+    const v = JSON.parse(localStorage.getItem(DONE_ERROR_DISMISSED_KEY) ?? "{}");
+    return v && typeof v === "object" && !Array.isArray(v) ? v : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeDismissedDoneErrors(map: Record<string, string>): void {
+  try {
+    localStorage.setItem(DONE_ERROR_DISMISSED_KEY, JSON.stringify(map));
+  } catch {
+    /* ignore quota / privacy-mode failures */
+  }
+}
+
+function rememberDismissedDoneError(id: string, key: string): void {
+  writeDismissedDoneErrors({ ...readDismissedDoneErrors(), [id]: key });
+}
+
+function forgetDismissedDoneError(id: string): void {
+  const map = readDismissedDoneErrors();
+  if (!(id in map)) return;
+  delete map[id];
+  writeDismissedDoneErrors(map);
+}
+
 /** Cap on retained transcript lines per task in the client. */
 const OUTPUT_MAX_LINES = 2000;
 
@@ -651,6 +707,8 @@ export const useRepoStore = defineStore("repo", () => {
   >({});
   /** Full patch diffs per task. */
   const diffs = ref<Record<string, { patch: string; truncated: boolean } | null>>({});
+  /** Live merge conflict (task branch vs main) per task; undefined until first load. */
+  const mergeConflicts = ref<Record<string, MergeConflictReport | undefined>>({});
   /** Captured preview shots per task (#0582), hydrated on demand. */
   const shots = ref<Record<string, ShotMeta[]>>({});
   /** Area/target mismatch warning per task (#0582), from the shots response. */
@@ -1003,12 +1061,62 @@ export const useRepoStore = defineStore("repo", () => {
     }, 800);
   }
 
-  /** Store or clear the inline move-to-done error for a task. */
-  function setDoneError(id: string, err: DoneError | null): void {
+  /**
+   * Store or clear the inline move-to-done error for a task. A fresh failure
+   * (anything but a refresh-time re-hydration) forgets an earlier dismissal, so
+   * hitting the same error again is never hidden.
+   */
+  function setDoneError(
+    id: string,
+    err: DoneError | null,
+    opts: { hydrated?: boolean } = {},
+  ): void {
     const next = { ...doneErrors.value };
     if (err === null) delete next[id];
-    else next[id] = err;
+    else {
+      next[id] = err;
+      if (!opts.hydrated) forgetDismissedDoneError(id);
+    }
     doneErrors.value = next;
+  }
+
+  /**
+   * The user dismissed this task's move-to-done error: hide it, and remember
+   * which failure it was so a page refresh does not bring it back.
+   */
+  function dismissDoneError(id: string): void {
+    const err = doneErrors.value[id];
+    if (err) rememberDismissedDoneError(id, doneErrorKey(err));
+    setDoneError(id, null);
+  }
+
+  /**
+   * A failed close-out job survives a refresh on the server; re-surface its
+   * error (unless the user dismissed that exact failure) so it cannot be
+   * forgotten and hit again. The live SSE path and this one build the same
+   * `DoneError` from the same (phase, reason).
+   */
+  async function refreshDoneErrors(): Promise<void> {
+    try {
+      const r = await api<{ ok: boolean; jobs: IntegrationJobSummary[] }>("/api/integration-jobs");
+      const dismissed = readDismissedDoneErrors();
+      for (const job of r.jobs ?? []) {
+        if (job.phase !== "failed" || !job.reason) continue;
+        if (doneErrors.value[job.taskId]) continue;
+        const task = tasks.value.find((t) => t.id === job.taskId);
+        if (task && task.status !== "review") continue;
+        const err: DoneError = {
+          ...describeCloseOutFailure(job.failedPhase, job.reason),
+          logPath: job.logPath,
+          failedAt: job.failedAt,
+          tldr: job.debugTldr,
+        };
+        if (dismissed[job.taskId] === doneErrorKey(err)) continue;
+        setDoneError(job.taskId, err, { hydrated: true });
+      }
+    } catch {
+      /* non-fatal — the live SSE path still reports new failures */
+    }
   }
 
   /** The inline move-to-done error for a task, or null when none is pending. */
@@ -1788,6 +1896,22 @@ export const useRepoStore = defineStore("repo", () => {
   }
 
   /**
+   * Commit every change in the repo root checkout on its current branch (the
+   * sidebar popup's Commit button). Throws the server's refusal (with any
+   * pre-commit hook output on `ApiError.body`) for the dialog to show.
+   */
+  async function commitRepoRoot(
+    message: string,
+  ): Promise<{ ok: boolean; branch: string; sha: string; files: number }> {
+    const r = await api<{ ok: boolean; branch: string; sha: string; files: number }>(
+      "/api/repo/commit",
+      JSON_OPTS("POST", { message }),
+    );
+    void refreshGitStatus();
+    return r;
+  }
+
+  /**
    * Backstops for the push path (#0584): refetch when the tab regains focus
    * or becomes visible, on SSE reconnect (`hello`), and on a slow interval —
    * a stale `clean` is worse than no indicator, so no path may leave one up
@@ -1842,6 +1966,7 @@ export const useRepoStore = defineStore("repo", () => {
       void refreshIntegration().catch(() => {
         /* non-fatal hydration */
       });
+      void refreshDoneErrors();
       // Reconnect is a documented miss-window for SSE frames (#0584): the
       // `repo.status` event that kept the sidebar git row live may have fired
       // while this tab was down, and it is not replayed.
@@ -1927,6 +2052,11 @@ export const useRepoStore = defineStore("repo", () => {
       reviewModelOverride: t.reviewModelOverride ?? null,
       releasedAt: t.releasedAt ?? null,
     })) as unknown as Task[];
+    // A close-out error only belongs to a task that is still in review; drop any
+    // re-hydrated before the board loaded (the hydration ran ahead of this fetch).
+    for (const id of Object.keys(doneErrors.value)) {
+      if (!tasks.value.some((t) => t.id === id && t.status === "review")) setDoneError(id, null);
+    }
     // The open drawer holds its own copy of the task; bring it along too.
     void useUiStore().refreshActive();
     // Index hydration is the recovery path after reconnecting while a review
@@ -2581,6 +2711,22 @@ export const useRepoStore = defineStore("repo", () => {
     }
   }
 
+  /**
+   * Compute the task branch's merge conflict against main (the Debug tab's
+   * Merge conflict view). Recomputed on every call so it reflects the current
+   * main; a failed fetch leaves the previous report in place.
+   */
+  async function loadMergeConflict(id: string): Promise<void> {
+    try {
+      const r = await api<{ ok: boolean; conflict: MergeConflictReport }>(
+        `/api/tasks/${id}/merge-conflict`,
+      );
+      if (r.ok) mergeConflicts.value = { ...mergeConflicts.value, [id]: r.conflict };
+    } catch {
+      /* endpoint unavailable — the view shows its loading/empty state */
+    }
+  }
+
   /** Get the full diff for a task, or undefined if not yet fetched. */
   const diffFor = (id: string) => diffs.value[id] ?? undefined;
 
@@ -3079,6 +3225,7 @@ export const useRepoStore = defineStore("repo", () => {
     eventCount,
     gitStatus,
     refreshGitStatus,
+    commitRepoRoot,
     flashId,
     transitionState,
     draggingTask,
@@ -3125,6 +3272,8 @@ export const useRepoStore = defineStore("repo", () => {
     refreshAutoEng,
     integration,
     refreshIntegration,
+    refreshDoneErrors,
+    dismissDoneError,
     retryIntegration,
     cancelDone,
     testRun,
@@ -3206,6 +3355,8 @@ export const useRepoStore = defineStore("repo", () => {
     loadBoardUsage,
     loadDiff,
     diffFor,
+    loadMergeConflict,
+    mergeConflicts,
     loadShots,
     shotsFor,
     shotWarningFor,

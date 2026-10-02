@@ -14,6 +14,8 @@ import Card from "./ui/card.vue";
 import Button from "./ui/button.vue";
 import TaskDebuggerChat from "./TaskDebuggerChat.vue";
 import NoCheckPlanReminder from "./NoCheckPlanReminder.vue";
+import ActivityIndicator from "./ActivityIndicator.vue";
+import DiffFileViewer from "./DiffFileViewer.vue";
 
 const props = defineProps<{ task: Task }>();
 const repo = useRepoStore();
@@ -23,7 +25,40 @@ const ui = useUiStore();
  *  Debugger chat. Both stay reachable (the chat is additive, never a
  *  replacement for the logs — see task #0337). v-model'd so a Fix handoff can
  *  open the Debugger view directly. */
-const view = defineModel<"logs" | "debugger">("view", { default: "logs" });
+const view = defineModel<"logs" | "debugger" | "conflict">("view", { default: "logs" });
+
+/**
+ * Merge conflict view: the branch's live conflict against main, rendered with
+ * the Changes tab's diff UI. Recomputed whenever the view opens (and on
+ * demand), so it tracks main and empties once the conflict is resolved.
+ */
+const conflict = computed(() => repo.mergeConflicts[props.task.id]);
+const conflictLoading = ref(false);
+const conflictCount = computed(
+  () =>
+    (conflict.value?.patch.match(/^@@ conflict /gm) ?? []).length ||
+    (conflict.value?.files.length ?? 0),
+);
+/** Highlight the tab when a conflict is the likely reason the task is stuck. */
+const conflictSuspected = computed(
+  () => props.task.needsMerge || !!repo.doneErrorFor(props.task.id)?.conflicts.length,
+);
+async function loadConflict(): Promise<void> {
+  if (!props.task.branch || conflictLoading.value) return;
+  conflictLoading.value = true;
+  try {
+    await repo.loadMergeConflict(props.task.id);
+  } finally {
+    conflictLoading.value = false;
+  }
+}
+watch(
+  () => [view.value, props.task.id],
+  () => {
+    if (view.value === "conflict") void loadConflict();
+  },
+  { immediate: true },
+);
 
 /**
  * Only tasks that actually have a git worktree cut from main can be synced.
@@ -347,6 +382,15 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
         Debugger
         <span class="debug-tab-dot" />
       </button>
+      <button
+        type="button"
+        class="debug-tab"
+        :class="{ active: view === 'conflict' }"
+        @click="view = 'conflict'"
+      >
+        Merge conflict
+        <span v-if="conflictSuspected" class="debug-tab-dot" />
+      </button>
     </div>
 
     <template v-if="view === 'logs'">
@@ -478,11 +522,64 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
         </div>
       </div>
     </template>
+    <template v-else-if="view === 'conflict'">
+      <p v-if="!task.branch" class="changes-empty">
+        No branch yet — start work to create the worktree.
+      </p>
+      <template v-else>
+        <section class="changes-summary" aria-label="Merge conflict summary">
+          <div class="changes-summary-title">Merge conflict</div>
+          <div v-if="conflict" class="diff-stats">
+            <div class="diff-stat-item">
+              <span class="stat-label">Files:</span>
+              <span class="stat-value">{{ conflict.files.length }}</span>
+            </div>
+            <div class="diff-stat-item">
+              <span class="stat-label">Conflicts:</span>
+              <span class="stat-value" style="color: var(--red)">{{ conflictCount }}</span>
+            </div>
+            <div class="diff-stat-item">
+              <Button variant="outline" size="sm" :disabled="conflictLoading" @click="loadConflict">
+                {{ conflictLoading ? "Checking…" : "Re-check" }}
+              </Button>
+            </div>
+          </div>
+          <div v-else class="diff-stats-loading">
+            <ActivityIndicator size="sm" label="Checking for conflicts…" />
+            Checking for conflicts…
+          </div>
+          <p v-if="conflict?.conflicted" class="debug-conflict-legend">
+            Merging this branch into main conflicts. Red lines are main's version, green lines are
+            this branch's — resolve them in the task's worktree (merge main into the branch), then
+            retry Move to done.
+          </p>
+        </section>
+        <p v-if="conflict && !conflict.ok" class="changes-empty">
+          Couldn't check for conflicts: {{ conflict.error }}
+        </p>
+        <p v-else-if="conflict && !conflict.conflicted" class="changes-empty">
+          No merge conflict — this branch merges cleanly into main.
+        </p>
+        <DiffFileViewer
+          v-else-if="conflict"
+          :patch="conflict.patch"
+          :truncated="conflict.truncated"
+          id-prefix="conflict:"
+        />
+      </template>
+    </template>
     <TaskDebuggerChat v-else :task="task" :active="view === 'debugger'" />
   </div>
 </template>
 
 <style scoped>
+.debug-conflict-legend {
+  margin: 8px 0 0;
+  color: var(--txt-dim);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .debug-panel {
   display: flex;
   flex-direction: column;
