@@ -2,7 +2,7 @@
 id: "0622"
 title: Promote release failures above published-to and show loading state
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/promote-release-failures-above-published
 created_at: "2026-10-02T01:48:25Z"
-updated_at: "2026-10-02T08:49:12Z"
+updated_at: "2026-10-02T08:49:42Z"
 review_passes: 6
 merge_conflict_retry_count: 1
 review_rounds: 2
@@ -102,3 +102,4 @@ I just noticed this nice release failure section, but it's hidden below the fold
 - 2026-10-02T08:43:44Z · status active→review
 - 2026-10-02T08:43:44Z · status review→active
 - 2026-10-02T08:49:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-02T08:49:42Z · status active→review
