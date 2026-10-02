@@ -6,14 +6,12 @@ export const UPDATE_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 export type UpdateStatus = "up_to_date" | "update_available" | "unavailable" | "manual";
 
 export interface UpdateSource {
-  kind: "npm" | "homebrew" | "github";
+  kind: "npm" | "homebrew";
   label: string;
   url: string;
   packageName?: string;
   formula?: string;
   cask?: string;
-  owner?: string;
-  repo?: string;
   updateCommand?: string | null;
 }
 
@@ -38,7 +36,6 @@ const NPM_PACKAGES: Record<string, string> = {
   "claude-code": "@anthropic-ai/claude-code",
   "qwen-code": "@qwen-code/qwen-code",
   codex: "@openai/codex",
-  gemini: "@google/gemini-cli",
   copilot: "@github/copilot",
   kiro: "kiro-cli",
   antigravity: "@google/antigravity",
@@ -46,15 +43,9 @@ const NPM_PACKAGES: Record<string, string> = {
 };
 
 const HOMEBREW_FORMULAS: Record<string, string> = {
-  aider: "aider",
-  goose: "goose",
   // A tap formula, so formulae.brew.sh has no API entry and the check reports
   // "unavailable" rather than guessing a version — upgrade with the tap command.
   crush: "crush",
-};
-
-const GITHUB_RELEASES: Record<string, { owner: string; repo: string }> = {
-  goose: { owner: "block", repo: "goose" },
 };
 
 /** Parse only ordinary numeric semantic versions. Opaque vendor versions stay incomparable. */
@@ -117,21 +108,6 @@ function homebrewSource(agent: DetectedAgent, path: string): UpdateSource | null
   };
 }
 
-function githubSource(agent: DetectedAgent, path: string): UpdateSource | null {
-  const release = GITHUB_RELEASES[agent.id];
-  if (!release || !/(^|\/)(\.local|goose\/(?:bin|current|target))(\/|$)/i.test(path)) {
-    return null;
-  }
-  return {
-    kind: "github",
-    label: `GitHub (${release.owner}/${release.repo})`,
-    url: `https://api.github.com/repos/${release.owner}/${release.repo}/releases/latest`,
-    owner: release.owner,
-    repo: release.repo,
-    updateCommand: null,
-  };
-}
-
 /** Resolve a source only from evidence in the installed binary's location. */
 export function resolveUpdateSource(agent: DetectedAgent): UpdateSource | null {
   if (!agent.installed || !agent.path) return null;
@@ -141,7 +117,7 @@ export function resolveUpdateSource(agent: DetectedAgent): UpdateSource | null {
   } catch {
     /* The original executable path is still useful evidence. */
   }
-  return npmSource(agent, path) ?? homebrewSource(agent, path) ?? githubSource(agent, path);
+  return npmSource(agent, path) ?? homebrewSource(agent, path);
 }
 
 function versionFromPayload(source: UpdateSource, payload: unknown): string | null {
@@ -159,7 +135,7 @@ function versionFromPayload(source: UpdateSource, payload: unknown): string | nu
       ? ((data.versions as Record<string, unknown>).stable as string)
       : null;
   }
-  return typeof data.tag_name === "string" ? data.tag_name : null;
+  return null;
 }
 
 export function parseLatestVersion(source: UpdateSource, payload: unknown): string | null {

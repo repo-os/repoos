@@ -56,8 +56,8 @@ that an explicit, evidence-based claim instead of a hope.
   only when it sits in a `knownIncompatibleRanges` family or a required
   capability is missing.
 - **Unsupported** — inside a `knownIncompatibleRanges` family, outside
-  `supportedRange` on the low side, or a known-undrivable harness (e.g.
-  `gemini`, `aider`).
+  `supportedRange` on the low side, or a known-undrivable harness (one with no
+  RepoOS driver).
 - **Not yet probed** — no contract, version unparseable, or
   `supportedRange`-compatible but without certification evidence yet.
 

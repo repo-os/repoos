@@ -185,17 +185,17 @@ describe("agent compatibility contracts", () => {
   });
 
   it("labels known-but-undrivable harnesses unsupported rather than not probed", () => {
-    // Undrivable agents (gemini, aider, …) have no `cli` field, so the real
-    // detect path passes cli: undefined here — and the result must still be
-    // "unsupported", not "not yet probed".
-    const gemini = compatibilityForAgent({ cli: undefined, version: null, drivable: false });
-    expect(gemini.status).toBe("unsupported");
-    const aider = compatibilityForAgent({
+    // Undrivable agents have no `cli` field, so the real detect path passes
+    // cli: undefined here — and the result must still be "unsupported", not
+    // "not yet probed".
+    const undrivable = compatibilityForAgent({ cli: undefined, version: null, drivable: false });
+    expect(undrivable.status).toBe("unsupported");
+    const undrivableVersioned = compatibilityForAgent({
       cli: undefined,
-      version: "aider 0.60.0",
+      version: "mystery 0.60.0",
       drivable: false,
     });
-    expect(aider.status).toBe("unsupported");
+    expect(undrivableVersioned.status).toBe("unsupported");
     // A drivable harness without a contract stays honestly "not yet probed".
     const kiro = compatibilityForAgent({ cli: "kiro", version: null, drivable: true });
     expect(kiro.status).toBe("not_probed");

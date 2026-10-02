@@ -110,6 +110,13 @@ describe("isDesktopOutputSignature", () => {
 });
 
 describe("detectAgents", () => {
+  it("does not list unimplemented harnesses in the known-agent catalog (#0620)", () => {
+    const ids = KNOWN_AGENTS.map((agent) => agent.id);
+    expect(ids).not.toContain("gemini");
+    expect(ids).not.toContain("aider");
+    expect(ids).not.toContain("goose");
+  });
+
   it("registers GitHub Copilot CLI as a drivable agent", () => {
     expect(KNOWN_AGENTS.find((agent) => agent.id === "copilot")).toMatchObject({
       name: "github copilot",

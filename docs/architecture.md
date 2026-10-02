@@ -62,8 +62,8 @@ Pure logic, no transport. Everything else calls into this.
   updateStatus, updateTask, createTask, reindex. The CLI and server both go
   through this; no business logic lives outside it.
 - `detect.ts` — probes PATH for installed coding agents (opencode, Claude Code,
-  Qwen, Codex, GitHub Copilot CLI, and Antigravity CLI) and reports version,
-  availability, auth state, and migration guidance for deprecated Gemini CLI.
+  Qwen Code, Codex, GitHub Copilot CLI, Antigravity CLI, Kiro, Pi, Cursor, and
+  Crush) and reports version, availability, auth state, and compatibility.
 - `models.ts` — per-CLI model list adapters (e.g. sources `opencode models` and
   `agy models` live for the Agents page dropdown). Each adapter fails soft with
   an `error` reason (binary missing, timed out, not signed in, spawn failed)
