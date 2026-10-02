@@ -2,13 +2,13 @@
 id: muqwzpqn-qvnk1
 number: "0044"
 title: Show AI-working indicator on newly created inputs
-status: new
+status: "processed"
 type: improvement
 area: inputs
 created_by: hello@repoos.org
 created_at: "2026-10-02T12:03:34.799Z"
-updated_at: "2026-10-02T18:15:45.211Z"
-resolution: ""
-resolved_task: ""
+updated_at: "2026-10-02T23:44:31.953Z"
+resolution: "task"
+resolved_task: "0631"
 ---
 Also when I create a new input and the AI is making the title I guess, when I close out and go to see the inputs list, the raw input is there which is good, but there's no indication that the AI is working on it, so we should add an animation there too (good if it's the same one that we see on the new input panel).
