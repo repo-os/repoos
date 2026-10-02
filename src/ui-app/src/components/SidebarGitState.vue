@@ -356,7 +356,6 @@ onBeforeUnmount(() => {
         :aria-expanded="open"
         :aria-controls="open ? POPOVER_ID : undefined"
         aria-label="Git state details: changed files and recent commits"
-        title="Changed files and recent commits"
         @mouseenter="onEnter"
         @mouseleave="onLeave"
         @pointerdown="notePointer"
