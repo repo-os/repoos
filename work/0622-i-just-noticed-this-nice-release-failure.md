@@ -82,3 +82,4 @@ I just noticed this nice release failure section, but it's hidden below the fold
 - 2026-10-02T02:33:26Z · needs_input (review-rounds-exhausted) dismissed by hello@repoos.org
 - 2026-10-02T02:44:33Z · body: section Shots
 - 2026-10-02T02:44:52Z · status active→review
+- 2026-10-02T02:44:52Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
