@@ -2,14 +2,14 @@
 id: "0621"
 title: Convert cut-a-release flow from modal to side panel with persistent progress
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/convert-cut-a-release-flow-from-modal-to
 created_at: "2026-10-02T01:44:49Z"
-updated_at: "2026-10-02T02:04:00Z"
+updated_at: "2026-10-02T02:10:13Z"
 ---
 ## Problem
 
@@ -76,3 +76,4 @@ The "cut a release" modal on the Releases page is getting big now (lots of conte
 - 2026-10-02T01:53:35Z · status inbox→ready
 - 2026-10-02T01:53:47Z · status ready→active, branch
 - 2026-10-02T02:04:00Z · body: section Shots
+- 2026-10-02T02:10:13Z · status active→review
