@@ -1570,8 +1570,7 @@ function checkSecrets(config: RepoOSConfig, env: NodeJS.ProcessEnv): DoctorFindi
   const providerCount =
     (config.modelProviders?.openrouterApiKey ? 1 : 0) +
     (config.modelProviders?.opencodeGoApiKey ? 1 : 0) +
-    (config.modelProviders?.deepinfraApiKey ? 1 : 0) +
-    (config.modelProviders?.githubCopilotToken ? 1 : 0);
+    (config.modelProviders?.deepinfraApiKey ? 1 : 0);
   out.push(
     finding(
       "secrets.model-providers",
