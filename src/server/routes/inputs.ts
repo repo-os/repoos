@@ -33,6 +33,9 @@ function commitInput(root: string, input: Input, verb: string): void {
   commitTaskFile(root, join(root, input.path), `inputs(${input.id}): ${verb}`);
 }
 
+/** Inputs whose PM enrichment is still running (#0631 reconnect reconcile). */
+const enrichingInputIds = new Set<string>();
+
 function inputPrompt(body: string): string {
   return [
     "You are the RepoOS PM agent. Classify this raw human input for triage.",
@@ -72,7 +75,15 @@ export function parseEnrichment(raw: string): { title?: string; type?: string; a
   }
   return {};
 }
-export const getInputs: RouteHandler = (ctx, _req, res) => json(res, 200, listInputs(ctx.config));
+export const getInputs: RouteHandler = (ctx, _req, res) =>
+  json(
+    res,
+    200,
+    listInputs(ctx.config).map((input) => ({
+      ...input,
+      enriching: enrichingInputIds.has(input.id),
+    })),
+  );
 export const postInput: RouteHandler = async (ctx, req, res) => {
   const b = (await readBody(req)) as Record<string, unknown>,
     text = typeof b.text === "string" ? b.text.trim() : "";
@@ -87,9 +98,12 @@ export const postInput: RouteHandler = async (ctx, req, res) => {
   // The PM call takes 15-20s; the create panel already promises "creating in
   // the background", so return the raw input now and enrich asynchronously
   // (#0628) — open views update in place via the `input.enriched` SSE event.
+  // The response also carries `enriching` (#0631): whether a PM agent was
+  // configured and enrichment actually started. Without it, clients can't
+  // tell "spinner until `input.enriched`" from "nothing will ever arrive".
   const pm = resolvePmAgent(ctx.config);
   if (pm) void enrichInputInBackground(ctx, input, pm, text);
-  return json(res, 201, input);
+  return json(res, 201, { ...input, enriching: pm != null });
 };
 
 /**
@@ -97,8 +111,12 @@ export const postInput: RouteHandler = async (ctx, req, res) => {
  * POST's critical path (#0628). The PM's captured stdout is first reduced to
  * its final report text (`extractOneShotReportText`) — stream-json drivers
  * wrap the answer in JSONL events the old greedy regex could never parse —
- * then parsed, applied, committed, and pushed over SSE. Every failure path
- * logs a warning: enrichment is never silently dropped, and the input always
+ * then parsed, applied, committed, and pushed over SSE. Every terminal
+ * outcome — enriched fields applied, nothing parseable, or a failure — emits
+ * the same `input.enriched` event, carrying the input the client should now
+ * render (unchanged on failure). This is the terminal signal for the
+ * inputs-list in-progress state (#0631); failures are additionally logged as
+ * warnings so enrichment is never silently dropped, and the input always
  * keeps its raw (first-line) title until real fields arrive.
  */
 async function enrichInputInBackground(
@@ -107,6 +125,12 @@ async function enrichInputInBackground(
   pm: Agent,
   text: string,
 ): Promise<void> {
+  enrichingInputIds.add(input.id);
+  // What the client should render when enrichment ends: the enriched input on
+  // success, or the input as it exists on disk when enrichment did not apply
+  // (#0631 r4 — re-read so edits during the PM run are not reverted).
+  let outcome = input;
+  let enrichedApplied = false;
   try {
     const result = await runPrompt(pm, inputPrompt(text), { cwd: ctx.config.root });
     recordOneShotSession(ctx.config.root, pm, result, { sessionType: "pm", taskId: null });
@@ -118,24 +142,34 @@ async function enrichInputInBackground(
         cli: pm.cli,
         ...(result.ok ? {} : { error: result.error }),
       });
-      return;
+    } else {
+      // Throws "input not found" if the input was deleted while the PM ran —
+      // caught below and logged, same as any other failure.
+      const enriched = enrichInput(ctx.config, input.id, fields);
+      commitInput(ctx.config.root, enriched, "capture");
+      outcome = enriched;
+      enrichedApplied = true;
     }
-    // Throws "input not found" if the input was deleted while the PM ran —
-    // caught below and logged, same as any other failure.
-    const enriched = enrichInput(ctx.config, input.id, fields);
-    commitInput(ctx.config.root, enriched, "capture");
-    ctx.emitEvent({
-      type: "input.enriched",
-      id: input.id,
-      input: enriched,
-      at: new Date().toISOString(),
-    });
   } catch (e) {
     ctx.logger.system("warn", "input enrichment failed; input keeps raw title", {
       input: input.id,
       reason: e instanceof Error ? e.message : String(e),
     });
   }
+  if (!enrichedApplied) {
+    const current = listInputs(ctx.config).find((i) => i.id === input.id);
+    if (current) outcome = current;
+  }
+  // Terminal event on every path (#0631): the inputs-list pending indicator
+  // clears here, not on a client-side timeout. When enrichment did not apply,
+  // the payload is the current on-disk input (not the creation-time snapshot).
+  ctx.emitEvent({
+    type: "input.enriched",
+    id: input.id,
+    input: outcome,
+    at: new Date().toISOString(),
+  });
+  enrichingInputIds.delete(input.id);
 }
 export const patchInput: RouteHandler = async (ctx, req, res, p) => {
   const b = (await readBody(req)) as Record<string, unknown>;

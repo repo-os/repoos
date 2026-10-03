@@ -3,6 +3,8 @@ import type { Input } from "../../../core/input.js";
 import Button from "./ui/button.vue";
 import { ArrowRight } from "lucide-vue-next";
 import CopyableNumber from "./CopyableNumber.vue";
+import ActivityIndicator from "./ActivityIndicator.vue";
+import { useRepoStore } from "../stores/repo";
 
 const props = defineProps<{
   input: Input;
@@ -14,6 +16,8 @@ const emit = defineEmits<{
   open: [];
   moveNext: [];
 }>();
+
+const repo = useRepoStore();
 </script>
 
 <template>
@@ -35,6 +39,11 @@ const emit = defineEmits<{
           class="rounded-md border border-border bg-[var(--chip-bg)] px-2 py-[2px] font-mono text-[9.5px] text-[var(--txt-dim)]"
           >{{ input.type }}</span
         >
+        <ActivityIndicator
+          v-if="repo.enrichingInputs.has(input.id)"
+          size="sm"
+          label="AI is writing title…"
+        />
       </div>
       <h3 class="mt-[11px] line-clamp-2 text-[13px] font-semibold leading-[1.4]">
         {{ input.title }}

@@ -15,8 +15,8 @@ import { join } from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { Readable, Writable } from "node:stream";
 import { createRepoOS } from "../../core/repoos";
-import { createInput, listInputs } from "../../core/input";
-import { postInput, parseEnrichment, patchInput } from "../../server/routes/inputs";
+import { createInput, listInputs, updateInput } from "../../core/input";
+import { getInputs, postInput, parseEnrichment, patchInput } from "../../server/routes/inputs";
 import { createLogger } from "../../core/logger";
 import { extractOneShotReportText } from "../../server/agents";
 import type { RepoEvent } from "../../server/live-index";
@@ -212,11 +212,42 @@ describe("postInput background enrichment (#0628)", () => {
 
   async function submit(
     text = "Add an export button to the releases tab",
-  ): Promise<{ id: string; path: string; title: string; type: string }> {
+  ): Promise<{ id: string; path: string; title: string; type: string; enriching?: boolean }> {
     const { req, res, capture } = makeReqRes({ text });
     await postInput(h.ctx, req, res, {});
-    return capture.body as { id: string; path: string; title: string; type: string };
+    return capture.body as {
+      id: string;
+      path: string;
+      title: string;
+      type: string;
+      enriching?: boolean;
+    };
   }
+
+  it("lists enriching:true on GET /api/inputs while the PM run is in flight", async () => {
+    let resolveRun!: (v: { ok: boolean; output?: string }) => void;
+    vi.mocked(runPrompt).mockReturnValue(
+      new Promise((resolve) => {
+        resolveRun = resolve;
+      }),
+    );
+
+    const created = await submit();
+    const { req, res, capture } = makeReqRes(null, "GET");
+    await getInputs(h.ctx, req, res, {});
+    expect((capture.body as { enriching?: boolean }[])[0]?.enriching).toBe(true);
+
+    resolveRun({ ok: true, output: CURSOR_STREAM_JSON });
+    await waitFor(() => h.events.length === 1, "input.enriched event");
+
+    const after = makeReqRes(null, "GET");
+    await getInputs(h.ctx, after.req, after.res, {});
+    const row = (after.capture.body as { id: string; title: string; enriching?: boolean }[]).find(
+      (i) => i.id === created.id,
+    );
+    expect(row?.enriching).toBe(false);
+    expect(row?.title).toBe("Add export button to releases");
+  });
 
   it("returns the raw input immediately and enriches in the background", async () => {
     let resolveRun!: (v: { ok: boolean; output?: string }) => void;
@@ -228,8 +259,10 @@ describe("postInput background enrichment (#0628)", () => {
 
     const created = await submit();
     // The POST answered before the PM run resolved: raw first-line title,
-    // nothing enriched yet, no event.
+    // nothing enriched yet, no event — and `enriching` says the background
+    // run actually started (#0631).
     expect(created.title).toBe("Add an export button to the releases tab");
+    expect(created.enriching).toBe(true);
     expect(h.events).toEqual([]);
 
     resolveRun({ ok: true, output: CURSOR_STREAM_JSON });
@@ -261,7 +294,12 @@ describe("postInput background enrichment (#0628)", () => {
 
     const input = listInputs(h.ctx.config).find((i) => i.id === created.id)!;
     expect(input.title).toBe("Add an export button to the releases tab");
-    expect(h.events).toEqual([]);
+    // Terminal event even when nothing was applied (#0631): the inputs-list
+    // pending indicator must clear on a payload that is the unchanged input.
+    expect(h.events).toHaveLength(1);
+    expect(h.events[0].type === "input.enriched" && h.events[0].input.title).toBe(
+      "Add an export button to the releases tab",
+    );
     expect(h.systemLog).toHaveBeenCalledWith(
       "warn",
       "PM enrichment returned nothing parseable; input keeps raw title",
@@ -278,11 +316,31 @@ describe("postInput background enrichment (#0628)", () => {
     const input = listInputs(h.ctx.config).find((i) => i.id === created.id)!;
     expect(input.title).toBe("Add an export button to the releases tab");
     expect(input.type).toBe("other");
-    expect(h.events).toEqual([]);
+    // Terminal event even when the PM run failed (#0631).
+    expect(h.events).toHaveLength(1);
+    expect(h.events[0].type === "input.enriched" && h.events[0].input.type).toBe("other");
     expect(h.systemLog).toHaveBeenCalledWith(
       "warn",
       "PM enrichment returned nothing parseable; input keeps raw title",
       expect.objectContaining({ input: created.id, error: "cursor-agent not found" }),
+    );
+  });
+
+  it("emits the current on-disk input when enrichment fails after the user edited", async () => {
+    let resolveRun!: (v: { ok: boolean; output?: string }) => void;
+    vi.mocked(runPrompt).mockReturnValue(
+      new Promise((resolve) => {
+        resolveRun = resolve;
+      }),
+    );
+
+    const created = await submit();
+    updateInput(h.ctx.config, created.id, { title: "User retitled while enriching" });
+    resolveRun({ ok: true, output: "This input is about exports. No object here." });
+    await waitFor(() => h.events.length === 1, "input.enriched after unparseable");
+
+    expect(h.events[0].type === "input.enriched" && h.events[0].input.title).toBe(
+      "User retitled while enriching",
     );
   });
 
@@ -299,7 +357,10 @@ describe("postInput background enrichment (#0628)", () => {
     resolveRun({ ok: true, output: CURSOR_STREAM_JSON });
     await waitFor(() => h.systemLog.mock.calls.length > 0, "not-found warning");
 
-    expect(h.events).toEqual([]);
+    expect(h.events).toHaveLength(1);
+    // The deleted input can't be re-read, so the terminal event carries the
+    // originally captured input — enough for clients to clear the indicator.
+    expect(h.events[0].type === "input.enriched" && h.events[0].id).toBe(created.id);
     expect(h.systemLog).toHaveBeenCalledWith(
       "warn",
       "input enrichment failed; input keeps raw title",
@@ -309,9 +370,12 @@ describe("postInput background enrichment (#0628)", () => {
 
   it("does not run the PM when no PM agent is configured", async () => {
     vi.mocked(resolvePmAgent).mockReturnValue(null);
-    await submit();
+    const created = await submit();
     expect(vi.mocked(runPrompt)).not.toHaveBeenCalled();
     expect(h.events).toEqual([]);
+    // No enrichment started, so the response must not tell clients to show
+    // an in-progress state (#0631).
+    expect(created.enriching).toBe(false);
   });
 });
 

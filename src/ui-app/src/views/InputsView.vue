@@ -23,6 +23,7 @@ import SelectViewport from "../components/ui/select/viewport.vue";
 import Checkbox from "../components/ui/checkbox.vue";
 import { applyInputCollapseDefaults, revealInputArrivals } from "../lib/inputsBoardCollapse";
 import CopyableNumber from "../components/CopyableNumber.vue";
+import ActivityIndicator from "../components/ActivityIndicator.vue";
 import InputEditModal from "../components/InputEditModal.vue";
 import ScreenshotViewer from "../components/ScreenshotViewer.vue";
 import ScreenshotExpandButton from "../components/ScreenshotExpandButton.vue";
@@ -355,6 +356,11 @@ function tryOpenInput(ref: string, attempt: number): void {
                 :label="inputLabel(i)"
                 :path="`/inputs?input=${encodeURIComponent(i.number || i.id)}`"
                 :aria-label="`Copy link to input ${i.number || i.id}`"
+              />
+              <ActivityIndicator
+                v-if="repo.enrichingInputs.has(i.id)"
+                size="sm"
+                label="AI is writing title…"
               />
               <span class="input-status" :class="i.status"
                 ><span class="state-dot"></span>{{ i.status }}</span
