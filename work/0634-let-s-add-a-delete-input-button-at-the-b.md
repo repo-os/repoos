@@ -12,7 +12,7 @@ model_override: openrouter/openrouter/auto-beta
 review_cli_override: opencode
 review_model_override: openrouter/openrouter/pareto-code
 created_at: "2026-10-03T08:00:36Z"
-updated_at: "2026-10-03T10:26:47Z"
+updated_at: "2026-10-03T10:31:25Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -73,35 +73,16 @@ Let's add a "Delete input" button at the bottom left of the input side panel (si
 ```json
 [
   {
-    "label": "Input drawer with Delete input at bottom left",
+    "label": "Input detail drawer with Delete input control",
     "target": "default",
     "route": "/inputs",
-    "highlight": ".drawer .delete-zone",
-    "steps": [
-      {
-        "click": ".input-row"
-      },
-      {
-        "waitMs": 300
-      }
-    ]
+    "highlight": ".input-detail .delete-zone"
   },
   {
-    "label": "Story panel Details tab with Delete story",
+    "label": "Story Details panel with Delete story control",
     "target": "default",
     "route": "/stories",
-    "highlight": ".story-panel-facts .delete-zone",
-    "steps": [
-      {
-        "click": ".story-head"
-      },
-      {
-        "click": ".drawer-tabs .tab-btn:nth-child(4)"
-      },
-      {
-        "waitMs": 300
-      }
-    ]
+    "highlight": ".story-panel-facts .delete-zone"
   }
 ]
 ```
@@ -125,3 +106,4 @@ Let's add a "Delete input" button at the bottom left of the input side panel (si
 - 2026-10-03T10:25:21Z · review_model_override
 - 2026-10-03T10:26:06Z · model_override
 - 2026-10-03T10:26:47Z · status review→active
+- 2026-10-03T10:31:25Z · body: section Shots
