@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+cli_override: opencode
+model_override: default
 created_at: "2026-10-03T10:29:31Z"
-updated_at: "2026-10-03T10:29:47Z"
+updated_at: "2026-10-03T10:41:36Z"
 ---
 ## Problem
 Two text entry fields in the web UI are completely non-functional. Clicking them produces no cursor, no focus state, and typing does nothing. This blocks any input through these fields.
@@ -47,3 +49,4 @@ These two text entry fields don't work, when I click on them nothing happens, th
 - 2026-10-03T10:29:33Z · screenshots
 - 2026-10-03T10:29:33Z · screenshots
 - 2026-10-03T10:29:47Z · status draft→inbox, title, priority, area, type, body
+- 2026-10-03T10:41:36Z · cli_override, model_override
