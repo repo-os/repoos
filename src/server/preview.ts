@@ -502,6 +502,8 @@ export class PreviewManager {
   private bootErrors = new Map<string, string>();
   /** Starts still in flight per task, so concurrent calls never double-spawn. */
   private inflight = new Map<string, Promise<PreviewResult>>();
+  /** The target each in-flight start was asked for (undefined = unpicked). */
+  private inflightTargets = new Map<string, string | undefined>();
 
   constructor(config: RepoOSConfig, emit: (e: RepoEvent) => void) {
     this.config = config;
@@ -599,7 +601,32 @@ export class PreviewManager {
     // Concurrent starts for the same task (e.g. duplicate transition events)
     // must share one spawn — never double-spawn a process and leak one.
     const inflight = this.inflight.get(task.id);
-    if (inflight) return inflight;
+    if (inflight) {
+      // Joining is only right for the same request. A manual shot capture
+      // (`noEvict`) must not adopt a start it didn't make — it would capture
+      // from whatever target that start serves and then stop a preview
+      // someone else asked for — and a different explicit target is the same
+      // mismatch the registered-preview branch above refuses.
+      const startingTarget = this.inflightTargets.get(task.id);
+      if (opts.noEvict) {
+        return {
+          ok: false,
+          busy: true,
+          error:
+            `a preview for task #${task.id} is already starting` +
+            `${startingTarget ? ` (target: ${startingTarget})` : ""} — wait for it to finish, then retry`,
+        };
+      }
+      if (targetName && startingTarget && startingTarget !== targetName) {
+        return {
+          ok: false,
+          error:
+            `Task #${task.id} already has a preview starting (target: ${startingTarget}). ` +
+            `Stop it before starting "${targetName}".`,
+        };
+      }
+      return inflight;
+    }
     // Enforce the pick server-side, not just by disabling the drawer's button:
     // an ambiguous area with no explicit choice is never resolved to the first
     // target silently (#0379).
@@ -621,7 +648,11 @@ export class PreviewManager {
     }
     const p = this.doStart(task, targetName, opts);
     this.inflight.set(task.id, p);
-    p.finally(() => this.inflight.delete(task.id)).catch(() => {
+    this.inflightTargets.set(task.id, targetName);
+    p.finally(() => {
+      this.inflight.delete(task.id);
+      this.inflightTargets.delete(task.id);
+    }).catch(() => {
       /* handled by caller */
     });
     return p;
