@@ -1229,10 +1229,11 @@ export const useRepoStore = defineStore("repo", () => {
       // the PM wrote title/type/area afterwards — swap it in place so the
       // Inputs view shows the AI-written title without a manual refresh. An
       // id the store has not seen (another tab created it) falls back to a
-      // refetch.
+      // refetch. Either way, the in-progress spinner (#0631) clears.
       const idx = inputs.value.findIndex((i) => i.id === e.id);
       if (idx >= 0) inputs.value[idx] = e.input;
       else void refreshInputs();
+      markEnriched(e.id);
       window.dispatchEvent(new Event("repoos:inputs-updated"));
       return;
     }
@@ -3001,6 +3002,39 @@ export const useRepoStore = defineStore("repo", () => {
   }
 
   const inputs = ref<Input[]>([]);
+
+  /**
+   * Inputs created in this tab whose background PM enrichment has not landed
+   * yet (#0631). The POST returns the raw input immediately (#0628) and the
+   * client learns completion through SSE `input.enriched`; a failure or a
+   * nothing-parseable result never emits that event, so each id also carries
+   * a generous timeout that clears the pending state as a backstop — the card
+   * then stays on its raw title with no stuck spinner.
+   */
+  const enrichingInputs = reactive(new Set<string>());
+  const enrichTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  const ENRICH_PENDING_TIMEOUT_MS = 90_000; // PM call takes 15–20s; leave slack
+  function markEnriching(id: string): void {
+    enrichingInputs.add(id);
+    const prev = enrichTimers.get(id);
+    if (prev) clearTimeout(prev);
+    enrichTimers.set(
+      id,
+      setTimeout(() => {
+        enrichingInputs.delete(id);
+        enrichTimers.delete(id);
+      }, ENRICH_PENDING_TIMEOUT_MS),
+    );
+  }
+  function markEnriched(id: string): void {
+    const t = enrichTimers.get(id);
+    if (t) {
+      clearTimeout(t);
+      enrichTimers.delete(id);
+    }
+    enrichingInputs.delete(id);
+  }
+
   async function refreshInputs(): Promise<void> {
     try {
       inputs.value = await api<Input[]>("/api/inputs");
@@ -3070,6 +3104,10 @@ export const useRepoStore = defineStore("repo", () => {
       const input = await createInput(text);
       created = true;
       for (const s of attachments) await uploadInputAttachment(input.id, s);
+      // The server is now enriching in the background (#0628) — track it so
+      // the Inputs list shows an in-progress state until `input.enriched`
+      // arrives (or the failure backstop clears it, #0631).
+      markEnriching(input.id);
       window.dispatchEvent(new Event("repoos:inputs-updated"));
     } catch (err) {
       onError(err);
@@ -3331,6 +3369,10 @@ export const useRepoStore = defineStore("repo", () => {
     deleteTask,
     createDocument,
     inputs,
+    enrichingInputs,
+    isEnriching: (id: string) => enrichingInputs.has(id),
+    /** Exposed for tests (and potential cross-store use): apply a server event. */
+    applyEvent,
     refreshInputs,
     loadInputs,
     createInput,
