@@ -2,7 +2,7 @@
 id: "0627"
 title: Add and delete evidence shots from the task drawer
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/add-and-delete-evidence-shots-from-the-t
 created_at: "2026-10-02T11:41:24Z"
-updated_at: "2026-10-03T01:01:05Z"
+updated_at: "2026-10-03T01:01:23Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -100,3 +100,4 @@ In the task drawer's Changes / UI changes section:
 - 2026-10-03T00:36:32Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-10-03T00:55:40Z · handoff failed · ui-review handoff failed at check · repoos check failed: $ bun scripts/build.mjs · $ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs · $ vue-tsc --noEmit -p src/ui-app/tsconfig.json && vite build --config src/ui-app/vite.config.ts · [plugin builtin:vite-reporter] · (!) Some chunks are larger than 500 kB after minification. Consider: · - Using dynamic import() to code-split the application · - Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting · - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
 - 2026-10-03T01:01:05Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-03T01:01:23Z · status active→review
