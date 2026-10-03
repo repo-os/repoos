@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-10-03T08:02:53Z"
-updated_at: "2026-10-03T08:03:18Z"
+updated_at: "2026-10-03T08:08:37Z"
 ---
 ## Problem
 
@@ -66,3 +67,4 @@ The "Resolved by Task #0123" is too small and easy for the user to miss seeing, 
 - 2026-10-03T08:02:53Z · created · hello@repoos.org
 - 2026-10-03T08:02:54Z · screenshots
 - 2026-10-03T08:03:18Z · status draft→inbox, title, area, body
+- 2026-10-03T08:08:37Z · model_override
