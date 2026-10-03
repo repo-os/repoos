@@ -845,6 +845,35 @@ describe("POST /api/release/notes draft cache (#0590, #0605)", () => {
     expect(runPrompt).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps a successful tracked run current after bookkeeping-only commits (#0630 review)", async () => {
+    const cfg = repoWithCommits();
+    agentDrafts();
+    await draft(cfg);
+
+    mkdirSync(join(cfg.root, "work"), { recursive: true });
+    writeFileSync(join(cfg.root, "work", "0630-x.md"), "task file\n");
+    realGit(cfg.root, ["add", "work"]);
+    realGit(cfg.root, ["commit", "-m", "docs(0630): add task"]);
+
+    const get = makeRes();
+    await getReleaseNotesRun(notesCtx(cfg), makeReq(), get.res as never, {});
+    expect(get.capture.body).toMatchObject({ state: "succeeded", stale: false });
+  });
+
+  it("marks a tracked run stale when sinceTag changes without a HEAD change (#0630 review)", async () => {
+    const cfg = repoWithCommits(2);
+    agentDrafts();
+    await draft(cfg);
+    const head = headOf(cfg);
+
+    realGit(cfg.root, ["tag", "v0.9.0", "HEAD~1"]);
+    expect(headOf(cfg)).toBe(head);
+
+    const get = makeRes();
+    await getReleaseNotesRun(notesCtx(cfg), makeReq(), get.res as never, {});
+    expect(get.capture.body).toMatchObject({ state: "succeeded", stale: true });
+  });
+
   it("invalidates the draft when a source commit moves the context even after bookkeeping", async () => {
     const cfg = repoWithCommits();
     agentDrafts();

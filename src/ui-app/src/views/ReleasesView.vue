@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useUiStore } from "../stores/ui";
 import { Bug, Check, Copy, Sparkles, X } from "lucide-vue-next";
 import { copyToClipboard } from "../lib/clipboard";
+import ActivityIndicator from "../components/ActivityIndicator.vue";
 import Button from "../components/ui/button.vue";
 import Dialog from "../components/ui/dialog/root.vue";
 import DialogClose from "../components/ui/dialog/close.vue";
@@ -129,10 +130,14 @@ interface ReleaseNotesRun {
   updatedAt: string | null;
   error: string | null;
   key: string | null;
+  /** HEAD snapshot from when the run started; staleness follows the cache key. */
+  head?: string | null;
   notes: string | null;
   sinceTag: string | null;
   commitCount: number;
   truncated: boolean;
+  /** Server-computed: this terminal run describes an older commit context (#0630). */
+  stale?: boolean;
 }
 const notesRun = ref<ReleaseNotesRun | null>(null);
 /**
@@ -440,9 +445,20 @@ async function fillSavedNotes(): Promise<void> {
  * draft or surfaces its failure.
  */
 async function syncNotesRunAtOpen(): Promise<void> {
+  // Same ordering scheme as pollNotesRun: an open sync is one more request
+  // in the same sequence, so a slow response can never overwrite newer poll
+  // state — e.g. re-showing a terminal snapshot after a poll already applied
+  // `running` (which would also let tickStopIfNeeded drop the poll loop)
+  // — #0630 review.
+  const seq = ++notesPollSeq;
   try {
     const latest = await api<ReleaseNotesRun>("/api/release/notes/run");
-    applyNotesRun(latest);
+    if (seq !== notesPollSeq) return;
+    // `atOpen`: the operator is looking at the notes field right now, so a
+    // run that finished while the panel was closed must still be visible —
+    // its failure surfaces as an error, its draft as a ready-to-reuse hint
+    // (the text itself only lands via the cache lookup, #0630).
+    applyNotesRun(latest, true);
   } catch {
     // Keep whatever was set optimistically; the next poll corrects it.
   }
@@ -452,7 +468,7 @@ async function syncNotesRunAtOpen(): Promise<void> {
  * Apply a notes-run snapshot: drive the draft-in-progress flags, and on a
  * terminal state watched by this session place (or offer) the draft.
  */
-function applyNotesRun(next: ReleaseNotesRun): void {
+function applyNotesRun(next: ReleaseNotesRun, atOpen = false): void {
   const prev = notesRun.value;
   notesRun.value = next;
   if (next.state === "running") {
@@ -475,8 +491,29 @@ function applyNotesRun(next: ReleaseNotesRun): void {
       // The operator typed while the draft ran — never drop it silently.
       notesHint.value = "Your AI draft is ready — Generate with AI will replace what you've typed.";
     }
-  } else if (next.state === "failed" && (live || owned)) {
+  } else if (next.state === "failed" && (live || owned || (atOpen && !next.stale))) {
+    // Watched runs surface their failure on the transition; an un-watched one
+    // only at open, and only while it still describes the current commits —
+    // the server keeps its last terminal run forever, so a stale failure is
+    // about a draft context that no longer exists (#0630 review).
     notesError.value = next.error || "The agent returned no release notes.";
+  } else if (
+    atOpen &&
+    next.state === "succeeded" &&
+    next.notes?.trim() &&
+    !next.stale &&
+    !notes.value.trim()
+  ) {
+    // A draft that finished while the panel was closed (or before this page
+    // loaded): don't drop text into the field — a run this session never
+    // watched must not silently fill fresh typing context (#0605) — but say
+    // it's ready, so the reopen never reads as a silent empty form (#0630).
+    notesHint.value = "An AI draft finished while you were away — Generate with AI will reuse it.";
+  } else if (atOpen && next.stale && (next.state === "succeeded" || next.state === "failed")) {
+    // The run predates the current commits: neither "ready" nor its failure
+    // applies. Name the real situation instead of promising reuse (#0630 review).
+    notesHint.value =
+      "Your last AI draft is out of date for the current commits — Generate with AI will draft fresh.";
   }
   tickStopIfNeeded();
 }
@@ -1146,8 +1183,11 @@ onBeforeUnmount(() => {
                   placeholder="What's in this release? Type it here, generate a draft from the commits since the last release, or leave empty."
                 ></textarea>
                 <div v-if="generatingNotes" class="rel-notes-drafting" aria-live="polite">
-                  Drafting release notes from the commits since the last release… you can keep
-                  editing meanwhile.
+                  <ActivityIndicator size="sm" label="Drafting release notes…" />
+                  <span>
+                    Drafting release notes from the commits since the last release… you can keep
+                    editing meanwhile.
+                  </span>
                 </div>
                 <div v-if="notesHint" class="rel-notes-hint">{{ notesHint }}</div>
                 <div v-if="notesError" class="rel-notes-error" role="alert">{{ notesError }}</div>
