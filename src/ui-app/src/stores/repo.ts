@@ -3184,6 +3184,18 @@ export const useRepoStore = defineStore("repo", () => {
     window.dispatchEvent(new Event("repoos:inputs-updated"));
     return updated;
   }
+  /**
+   * Delete an input (#0634): the server removes the markdown file (and its
+   * gitignored attachments). Inputs are not in the live index, so refresh the
+   * local list here and announce it — same pattern as `resolveInput`.
+   */
+  async function deleteInput(id: string): Promise<void> {
+    await api(`/api/inputs/${id}`, { method: "DELETE" });
+    markEnriched(id);
+    await refreshInputs();
+    window.dispatchEvent(new Event("repoos:inputs-updated"));
+  }
+
   async function uploadInputAttachment(id: string, s: PendingScreenshot): Promise<void> {
     await api(
       `/api/inputs/${id}/attachments`,
@@ -3300,6 +3312,20 @@ export const useRepoStore = defineStore("repo", () => {
       await refresh();
     }
     return r;
+  }
+
+  /**
+   * Delete a registered story's definition (#0634). The server emits
+   * `story.definitionsChanged`, which the SSE handler turns into a full
+   * refresh — the derived roll-up then drops (or de-registers) the story
+   * without a reload. Only callable for registered stories; tag-only ones
+   * have no definition file and the panel hides the button.
+   */
+  async function deleteStory(key: string): Promise<void> {
+    await api(`/api/stories/${encodeURIComponent(key)}`, { method: "DELETE" });
+    // Optimistic: drop the definition locally so the panel's story disappears
+    // even if the SSE event races or is missed; the event refresh reconciles.
+    storyDefinitions.value = storyDefinitions.value.filter((d) => d.key !== key);
   }
 
   /** Create a skill manually (name + description + body) or from an uploaded SKILL.md (name + content). */
@@ -3489,10 +3515,12 @@ export const useRepoStore = defineStore("repo", () => {
     updateInput,
     patchInput,
     resolveInput,
+    deleteInput,
     uploadInputAttachment,
     submitInput,
     createFreeformDocument,
     createFreeformStory,
+    deleteStory,
     createSkill,
     createFreeformSkill,
     isRunning,

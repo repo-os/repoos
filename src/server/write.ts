@@ -36,6 +36,7 @@ import { branchCommit, commitTaskFile, currentBranch } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
 import { normalizeTaskDependencies, validateTaskDependencies } from "../core/task-dependencies.js";
 import { appendScreenshotsSection, type ScreenshotMeta } from "./attachments.js";
+import { STORIES_DIR } from "../core/story-definition-files.js";
 
 /**
  * Body sections that are user-owned or append-only: they live in the task body
@@ -560,4 +561,55 @@ function gitTracked(root: string, rel: string): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * Refuse to delete anything outside the given data directory (relative to the
+ * repo root) — the input/story counterparts of `deleteTaskFile`'s work-dir
+ * guard, so the API can never be coaxed into unlinking an arbitrary repo
+ * file. Throws PathGuardError; callers map that to 400.
+ */
+function guardDataDir(config: RepoOSConfig, absPath: string, relDir: string): string {
+  const base = resolve(join(config.root, relDir));
+  const abs = resolve(absPath);
+  if (!(abs.startsWith(base + sep) || abs === base)) {
+    throw new PathGuardError(`Refusing to delete outside ${relDir}: ${abs}`);
+  }
+  return abs;
+}
+
+/**
+ * Unlink a data file and, when git tracks it, commit the removal (fail-soft)
+ * so main stays mergeable — the same contract as `deleteTaskFile`. Throws
+ * WriteError when the file is already gone (callers treat that as 404).
+ */
+function deleteDataFile(config: RepoOSConfig, abs: string, commitMessage: string): string {
+  if (!existsSync(abs)) throw new WriteError(`File not found: ${abs}`);
+  unlinkSync(abs);
+  const rel = relative(config.root, abs);
+  if (gitTracked(config.root, rel)) commitTaskFile(config.root, abs, commitMessage);
+  return abs;
+}
+
+/**
+ * Remove an input's markdown file (#0634). `absPath` must resolve inside the
+ * configured inputs dir. The input's attachments are NOT handled here — they
+ * are gitignored and directory-scoped, so the route removes them via
+ * `removeInputAttachments` after the guarded file delete succeeds.
+ */
+export function deleteInputFile(config: RepoOSConfig, absPath: string, commitMessage: string) {
+  return deleteDataFile(
+    config,
+    guardDataDir(config, absPath, config.inputsDir ?? "inputs"),
+    commitMessage,
+  );
+}
+
+/**
+ * Remove a story definition file (#0634). `absPath` must resolve inside
+ * `stories/`. Only the definition is removed — tasks tagged with the story
+ * name are untouched, matching the derived-story model (`MergedStoryGroup`).
+ */
+export function deleteStoryFile(config: RepoOSConfig, absPath: string, commitMessage: string) {
+  return deleteDataFile(config, guardDataDir(config, absPath, STORIES_DIR), commitMessage);
 }

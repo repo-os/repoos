@@ -54,6 +54,7 @@
  *   GET  /api/tasks/:id/attachments/:file -> serve a stored screenshot image
  *   GET  /api/stories          -> the registered story definitions under `stories/`
  *   POST /api/stories/freeform -> create a story from a freeform description (PM fleshes it out)
+ *   DELETE /api/stories/:key   -> remove a registered story's definition file (tasks keep their tag) #0634
  *   POST /api/stories/:key/pm/message   -> send a message to the PM agent about this story (0515)
  *   POST /api/stories/:key/pm/interrupt -> stop the in-flight PM turn about this story
  *   GET  /api/stories/:key/pm/output    -> { lines, stats } the story PM transcript + live run stats
@@ -254,10 +255,12 @@ import {
   postInput,
   patchInput,
   postResolveInput,
+  deleteInput,
   uploadInputAttachment,
   getInputAttachment,
   getStoryDefinitions,
   createFreeformStory,
+  deleteStory,
   getStoryPmOutput,
   pmStoryMessage,
   pmStoryInterrupt,
@@ -2363,6 +2366,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/inputs", getInputs);
   router.register("POST", "/api/inputs", postInput);
   router.register("PATCH", /^\/api\/inputs\/([^/]+)$/, patchInput);
+  router.register("DELETE", /^\/api\/inputs\/([^/]+)$/, deleteInput);
   router.register("POST", /^\/api\/inputs\/([^/]+)\/resolve$/, postResolveInput);
   router.register("POST", /^\/api\/inputs\/([^/]+)\/attachments$/, uploadInputAttachment);
   router.register("GET", /^\/api\/inputs\/([^/]+)\/attachments\/([^/]+)$/, getInputAttachment);
@@ -2375,6 +2379,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/skills/freeform", createFreeformSkillRoute);
   router.register("GET", "/api/stories", getStoryDefinitions);
   router.register("POST", "/api/stories/freeform", createFreeformStory);
+  // Story delete (#0634) — registered definitions only; tag-only stories 404.
+  router.register("DELETE", /^\/api\/stories\/([^/]+)$/, deleteStory);
   // The story panel's PM chat (#0515) — the story counterparts of the task
   // panel's three PM routes, keyed by the story key the panel already holds.
   router.register("GET", /^\/api\/stories\/([^/]+)\/pm\/output$/, getStoryPmOutput);

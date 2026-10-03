@@ -1,4 +1,12 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { join, resolve } from "node:path";
 import type { RepoOSConfig } from "./types.js";
 import { parseDocument, serializeDocument } from "./frontmatter.js";
@@ -306,6 +314,16 @@ export function saveInputAttachment(
     size: Buffer.byteLength(data, "base64"),
     path: join(inputRoot(c), ".attachments", id, safe),
   };
+}
+
+/**
+ * Remove an input's attachment directory. Attachments are gitignored and
+ * served from disk only, so deleting an input deletes its attachments with
+ * it — there is nothing to commit and nothing recoverable from git. Safe to
+ * call when the directory does not exist (no attachments were ever saved).
+ */
+export function removeInputAttachments(c: RepoOSConfig, id: string): void {
+  rmSync(attDir(c, id), { recursive: true, force: true });
 }
 
 function mimeForName(name: string): string {
