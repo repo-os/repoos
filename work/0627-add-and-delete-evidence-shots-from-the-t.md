@@ -3,6 +3,9 @@ id: "0627"
 title: Add and delete evidence shots from the task drawer
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -120,4 +123,5 @@ In the task drawer's Changes / UI changes section:
 - 2026-10-03T04:00:38Z · status active→review
 - 2026-10-03T04:00:38Z · status review→active
 - 2026-10-03T04:04:40Z · status active→review
+- 2026-10-03T04:07:14Z · needs_input
 - 2026-10-03T04:07:14Z · needs_input
