@@ -482,6 +482,10 @@ async function runHandoffFinalization(
       opts.taskChecks && opts.onTaskCheckEvent
         ? opts.taskChecks.start(task.id, "handoff-finalize", opts.onTaskCheckEvent, {
             scope: checkScope,
+            // The remote host is only known once its row is recorded; until
+            // then don't label the run with this (orchestrating) machine.
+            machine:
+              opts.remoteValidator && remotePreReviewEnabled(config) ? "remote host" : undefined,
           })
         : undefined;
     let remoteOutcome: RemotePreReviewOutcome | { kind: "skip" } = { kind: "skip" };

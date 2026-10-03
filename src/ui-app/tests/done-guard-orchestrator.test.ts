@@ -540,7 +540,7 @@ describe("main-drift booking-only classification (#0386)", () => {
           root,
           baseMainSha: base,
           currentMainSha: head,
-          workDir: "work",
+          dirs: { workDir: "work" },
         }),
       ).toBe(true);
     } finally {
@@ -559,7 +559,7 @@ describe("main-drift booking-only classification (#0386)", () => {
           root,
           baseMainSha: base,
           currentMainSha: head,
-          workDir: "work",
+          dirs: { workDir: "work" },
         }),
       ).toBe(false);
     } finally {
@@ -579,7 +579,7 @@ describe("main-drift booking-only classification (#0386)", () => {
           root,
           baseMainSha: base,
           currentMainSha: head,
-          workDir: "work",
+          dirs: { workDir: "work" },
         }),
       ).toBe(false);
     } finally {
@@ -596,7 +596,147 @@ describe("main-drift booking-only classification (#0386)", () => {
           root,
           baseMainSha: "0000000000000000000000000000000000000000",
           currentMainSha: head,
-          workDir: "work",
+          dirs: { workDir: "work" },
+        }),
+      ).toBe(false);
+    } finally {
+      clean();
+    }
+  });
+});
+
+describe("main-drift bookkeeping classification, inputs/stories/dist (#0637)", () => {
+  function commit(root: string, relPath: string, content: string, message: string): void {
+    const abs = join(root, relPath);
+    mkdirSync(dirname(abs), { recursive: true });
+    writeFileSync(abs, content);
+    git(root, ["add", relPath]);
+    git(root, ["commit", "-m", message]);
+  }
+
+  it("classifies an inputs-only advance as bookkeeping", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const base = git(root, ["rev-parse", "main"]);
+      commit(root, "inputs/0007-email.md", "# email\n", "inputs(0007): capture");
+      const head = git(root, ["rev-parse", "main"]);
+      expect(
+        await mainDriftIsBookkeepingOnly({
+          root,
+          baseMainSha: base,
+          currentMainSha: head,
+          dirs: {},
+        }),
+      ).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("classifies a stories-only advance as bookkeeping", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const base = git(root, ["rev-parse", "main"]);
+      commit(root, "stories/email-launch.md", "# launch\n", 'docs(stories): add "Email launch"');
+      const head = git(root, ["rev-parse", "main"]);
+      expect(
+        await mainDriftIsBookkeepingOnly({
+          root,
+          baseMainSha: base,
+          currentMainSha: head,
+          dirs: {},
+        }),
+      ).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("classifies a dist-only advance as bookkeeping", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const base = git(root, ["rev-parse", "main"]);
+      commit(root, "dist/cli/index.js", "// compiled\n", "build: dist");
+      const head = git(root, ["rev-parse", "main"]);
+      expect(
+        await mainDriftIsBookkeepingOnly({
+          root,
+          baseMainSha: base,
+          currentMainSha: head,
+          dirs: {},
+        }),
+      ).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("classifies a mix of work/inputs/stories/dist as bookkeeping", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const base = git(root, ["rev-parse", "main"]);
+      commit(root, "work/9999-other.md", "# other\n", "docs(9999): update task");
+      commit(root, "inputs/0008-second.md", "# two\n", "inputs(0008): resolved to task #0600");
+      commit(root, "stories/pair.md", "# pair\n", 'docs(stories): add "Pair"');
+      commit(root, "dist/ui/app.js", "// compiled\n", "build: dist");
+      const head = git(root, ["rev-parse", "main"]);
+      expect(
+        await mainDriftIsBookkeepingOnly({
+          root,
+          baseMainSha: base,
+          currentMainSha: head,
+          dirs: {},
+        }),
+      ).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("does NOT exempt docs/ — a docs change can alter a validation result", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const base = git(root, ["rev-parse", "main"]);
+      commit(root, "work/9999-other.md", "# other\n", "docs(9999): update task");
+      commit(root, "docs/runbook.md", "# runbook\n", "docs: update runbook");
+      const head = git(root, ["rev-parse", "main"]);
+      expect(
+        await mainDriftIsBookkeepingOnly({
+          root,
+          baseMainSha: base,
+          currentMainSha: head,
+          dirs: {},
+        }),
+      ).toBe(false);
+    } finally {
+      clean();
+    }
+  });
+
+  it("respects custom workDir/inputsDir/storiesDir values", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const base = git(root, ["rev-parse", "main"]);
+      commit(root, "board/0999-x.md", "# x\n", "docs(0999): update task");
+      commit(root, "inbox/0010-y.md", "# y\n", "inbox(0010): capture");
+      commit(root, "epics/slice.md", "# slice\n", "docs(epics): add slice");
+      const head = git(root, ["rev-parse", "main"]);
+      expect(
+        await mainDriftIsBookkeepingOnly({
+          root,
+          baseMainSha: base,
+          currentMainSha: head,
+          dirs: { workDir: "board", inputsDir: "inbox", storiesDir: "epics" },
+        }),
+      ).toBe(true);
+      // And the DEFAULT prefixes stop covering these paths once custom dirs
+      // are configured — the exemption is config-derived, not constant.
+      expect(
+        await mainDriftIsBookkeepingOnly({
+          root,
+          baseMainSha: base,
+          currentMainSha: head,
+          dirs: {},
         }),
       ).toBe(false);
     } finally {
@@ -787,6 +927,139 @@ describe("validate-phase main-advance resync still merges the branch (#0399)", (
       expect(job?.phase).toBe("failed");
       expect(job?.reason).toMatch(/advanced 6 times in a row while validating/i);
       expect(job?.reason).toMatch(/giving up/i);
+    } finally {
+      clean();
+    }
+  }, 30_000);
+});
+
+describe("validate-phase bookkeeping-only drift does not discard the candidate (#0633, #0637)", () => {
+  it("completes with a single validation when main only gains inputs/work bookkeeping", async () => {
+    // The #0633 timeline: a close-out's remote validation PASSED (260s), then
+    // the server created two tasks from inputs (commits like
+    // `inputs(<id>): capture`, `inputs(<id>): resolved to task #0634`). The
+    // validate-time drift check had no bookkeeping exemption, so the passing
+    // validation was thrown away, the whole gate re-ran on a rebuilt candidate
+    // (282s), and the pipeline blew its 6-minute budget. Same class as
+    // #0376/#0382, one phase earlier.
+    const { root, clean } = makeRepo();
+    try {
+      const feature = ensureWorktree(root, "feat/T22");
+      expect(feature.ok).toBe(true);
+      mkdirSync(join(feature.path, "docs"), { recursive: true });
+      writeFileSync(join(feature.path, "docs", "feature.md"), "# feature\n");
+      git(feature.path, ["add", "docs/feature.md"]);
+      git(feature.path, ["commit", "-m", "feature work"]);
+      const featureSha = git(feature.path, ["rev-parse", "HEAD"]);
+      const oldMainSha = git(root, ["rev-parse", "main"]);
+
+      // Candidate worktree reset to the pre-drift main, as `syncing` leaves it.
+      const cand = ensureWorktree(root, "repoos/integrate/T22");
+      expect(cand.ok).toBe(true);
+      git(cand.path, ["reset", "--hard", "main"]);
+
+      const coordinator = createJobCoordinator(root);
+      coordinator.enqueue({ id: "T22", branch: "feat/T22" } as any);
+      coordinator.updateJob("T22", {
+        phase: "validating",
+        startedAt: new Date().toISOString(),
+        baseMainSha: oldMainSha,
+        branchSha: featureSha,
+        candidateSha: oldMainSha,
+      });
+
+      // Main advances with ONLY bookkeeping: the server captures an input,
+      // resolves it into a task, and stamps an unrelated task file. None of it
+      // is code the candidate was validated against.
+      mkdirSync(join(root, "inputs"), { recursive: true });
+      mkdirSync(join(root, "work"), { recursive: true });
+      writeFileSync(join(root, "inputs", "0634-email.md"), "# email\n");
+      git(root, ["add", "inputs/0634-email.md"]);
+      git(root, ["commit", "-m", "inputs(0634): capture"]);
+      writeFileSync(join(root, "work", "0634-email-task.md"), "---\nid: 0634\n---\n");
+      git(root, ["add", "work/0634-email-task.md"]);
+      git(root, ["commit", "-m", "inputs(0634): resolved to task #0634"]);
+      const driftedMainSha = git(root, ["rev-parse", "main"]);
+      expect(driftedMainSha).not.toBe(oldMainSha);
+
+      const orchestrator = new CloseOutOrchestrator(
+        { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
+        coordinator,
+        createRepositoryLock(root),
+        createRootLock(root),
+      );
+
+      // Re-drive processNext until the job leaves the queue, the way the
+      // server's triggerJobProcessing loop does while a job is still pending.
+      for (let i = 0; i < 8; i++) {
+        const job = coordinator.getJob("T22");
+        if (!job || job.phase === "done" || job.phase === "failed") break;
+        await orchestrator.processNext();
+      }
+
+      const job = coordinator.getJob("T22");
+      expect(job?.phase).toBe("done");
+      // The whole point: never resynced (a rebuilt candidate re-runs the full
+      // gate), never drifted — the candidate validated ONCE, straight through.
+      expect(job?.validateDriftCount).toBeUndefined();
+      expect(job?.publishDriftCount).toBeUndefined();
+      // The recorded base was advanced in place to what the merge landed on,
+      // mirroring the publish-time escape hatch.
+      expect(job?.baseMainSha).toBe(driftedMainSha);
+      // The branch's work actually landed.
+      expect(existsSync(join(root, "docs", "feature.md"))).toBe(true);
+    } finally {
+      clean();
+    }
+  }, 30_000);
+
+  it("still discards the candidate when a src/ change lands on main mid-validation", async () => {
+    // The inverse half of the contract: real code drift is NOT exempt — the
+    // candidate is rebuilt and the drift counter increments, so
+    // MAX_VALIDATE_DRIFT_RETRIES still bounds it.
+    const { root, clean } = makeRepo();
+    try {
+      const feature = ensureWorktree(root, "feat/T23");
+      expect(feature.ok).toBe(true);
+      mkdirSync(join(feature.path, "docs"), { recursive: true });
+      writeFileSync(join(feature.path, "docs", "feature.md"), "# feature\n");
+      git(feature.path, ["add", "docs/feature.md"]);
+      git(feature.path, ["commit", "-m", "feature work"]);
+
+      const cand = ensureWorktree(root, "repoos/integrate/T23");
+      expect(cand.ok).toBe(true);
+      git(cand.path, ["reset", "--hard", "main"]);
+
+      const coordinator = createJobCoordinator(root);
+      coordinator.enqueue({ id: "T23", branch: "feat/T23" } as any);
+      coordinator.updateJob("T23", {
+        phase: "validating",
+        startedAt: new Date().toISOString(),
+        baseMainSha: git(root, ["rev-parse", "main"]),
+      });
+
+      // A competing src/ change lands on main while validating.
+      mkdirSync(join(root, "src"), { recursive: true });
+      writeFileSync(join(root, "src", "drift.ts"), "export const x = 1;\n");
+      git(root, ["add", "src/drift.ts"]);
+      git(root, ["commit", "-m", "feat: competing change"]);
+
+      const orchestrator = new CloseOutOrchestrator(
+        { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
+        coordinator,
+        createRepositoryLock(root),
+        createRootLock(root),
+      );
+
+      const result = await orchestrator.processNext();
+
+      // Drift branch: resynced, NOT validated in place, and the counter moved.
+      expect(result.ok).toBe(false);
+      expect(result.reason).toMatch(/main advanced during validation/);
+      const job = coordinator.getJob("T23");
+      expect(job?.phase).toBe("syncing");
+      expect(job?.validateDriftCount).toBe(1);
+      expect(job?.baseMainSha).toBeNull();
     } finally {
       clean();
     }

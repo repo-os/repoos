@@ -304,9 +304,13 @@ debugging the candidate further.
 Acquires a repo lock and re-checks whether main has drifted since the candidate was
 synced. If it has, the default is to go back to `syncing` and rebuild against the new
 main — correct self-healing for a competing change. Two refinements bound and focus
-that loop (#0386): a drift touching only task bookkeeping (`work/*.md`) or generated
-output (`dist/`) cannot invalidate the candidate's validation, so it
-publishes straight through without a resync; a drift that does touch real code resyncs,
+that loop (#0386, #0637): a drift touching only bookkeeping — task files under the
+work dir, `inputs/` captures, `stories/` definitions, or generated `dist/` output,
+all server-produced commits that can never compete with the task closing out —
+cannot invalidate the candidate's validation, so it
+publishes straight through without a resync; a drift that does touch real code
+(including `docs/` and `user-docs/`, on purpose — the check plan builds user-docs
+and tests may read docs, so a docs change can alter a validation result) resyncs,
 capped at `MAX_PUBLISH_DRIFT_RETRIES` (5) before the job gives up with an actionable
 reason instead of racing forever. It then fast-forward-or-merges the candidate into live
 `main`, removes the candidate worktree/branch and the task's own feature
@@ -513,6 +517,20 @@ branch — that is the bug. And `resynced` must be checked after **both**
 also discover drift, and there it would otherwise be misclassified as a real
 gate failure and fail the job with a misleading "main advanced … revalidating"
 reason.
+
+**Bookkeeping-only drift is exempt at validate time too (#0637).** Until
+#0637, only the publish-time check had the bookkeeping escape hatch; the
+validate-time check reset the job for ANY advance. That re-ran a fully passing
+remote validation whenever the server itself committed inputs/stories/work
+bookkeeping during the (4+ minute) gate — the second half of #0633's
+close-out timeout. `validateCandidate` now runs the same
+`mainDriftIsBookkeepingOnly` check: work-dir, `inputs/`, `stories/` and
+`dist/`-only advances log "main advanced with bookkeeping-only commits —
+validating against the new tip", advance `baseMainSha` in place, and keep the
+existing candidate (the publish merge folds main's bookkeeping in and keeps
+main's work-dir copies, as always). Real code drift — including `docs/` and
+`user-docs/` — still discards and resyncs, still bounded by
+`MAX_VALIDATE_DRIFT_RETRIES`; bookkeeping drift does not consume a retry.
 
 ### 2. Foreign `work/*.md` drift published to main
 

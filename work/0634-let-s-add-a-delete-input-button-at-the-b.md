@@ -2,16 +2,19 @@
 id: "0634"
 title: Add delete buttons to input and story side panels
 type: feature
-status: review
+status: active
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-delete-buttons-to-input-and-story-si
-review_cli_override: pi
-review_model_override: openrouter/openrouter/free
+model_override: openrouter/openrouter/auto-beta
+review_cli_override: opencode
+review_model_override: openrouter/openrouter/pareto-code
 created_at: "2026-10-03T08:00:36Z"
-updated_at: "2026-10-03T09:50:36Z"
+updated_at: "2026-10-03T10:47:03Z"
+review_passes: 2
+review_rounds: 1
 ---
 ## Problem
 
@@ -66,6 +69,46 @@ Let's add a "Delete input" button at the bottom left of the input side panel (si
 
 ![Screenshot-2026-10-03-at-15.33.46](/api/tasks/0634/attachments/screenshot-1.png)
 
+## Shots
+```json
+[
+  {
+    "label": "Input detail drawer with Delete input control",
+    "target": "default",
+    "route": "/inputs",
+    "highlight": ".input-detail .delete-zone",
+    "steps": [
+      {
+        "click": ".input-row:nth-child(1)"
+      },
+      {
+        "waitMs": 300
+      }
+    ]
+  },
+  {
+    "label": "Story Details panel with Delete story control",
+    "target": "default",
+    "route": "/stories",
+    "highlight": ".story-panel-facts .delete-zone",
+    "steps": [
+      {
+        "click": ".story-head:nth-child(1)"
+      },
+      {
+        "waitMs": 300
+      },
+      {
+        "click": ".drawer-tabs .tab-btn:nth-child(4)"
+      },
+      {
+        "waitMs": 300
+      }
+    ]
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-03T08:00:36Z · created · hello@repoos.org
@@ -75,4 +118,18 @@ Let's add a "Delete input" button at the bottom left of the input side panel (si
 - 2026-10-03T08:21:41Z · review_model_override
 - 2026-10-03T08:21:57Z · status inbox→ready
 - 2026-10-03T08:21:58Z · status ready→active, branch
-- 2026-10-03T09:50:36Z · status active→review
+- 2026-10-03T08:51:13Z · body: section Shots
+- 2026-10-03T09:50:37Z · status active→review
+- 2026-10-03T09:50:43Z · note: shots: failed — capture of Input drawer with Delete input at bottom left on "default" failed: click: Error: strict mode violation: locator('.input-row') resolved to 14 elements:
+- 2026-10-03T09:51:53Z · status review→active
+- 2026-10-03T10:07:50Z · status active→review
+- 2026-10-03T10:07:59Z · note: shots: failed — capture of Input drawer with Delete input at bottom left on "default" failed: click: Error: strict mode violation: locator('.input-row') resolved to 14 elements:
+- 2026-10-03T10:25:18Z · review_cli_override, review_model_override
+- 2026-10-03T10:25:21Z · review_model_override
+- 2026-10-03T10:26:06Z · model_override
+- 2026-10-03T10:26:47Z · status review→active
+- 2026-10-03T10:31:25Z · body: section Shots
+- 2026-10-03T10:31:36Z · body: section Shots
+- 2026-10-03T10:31:42Z · status active→review
+- 2026-10-03T10:32:01Z · note: shots: failed — capture of Story Details panel with Delete story control on "default" failed: click: Timeout 5000ms exceeded.
+- 2026-10-03T10:47:03Z · status review→active

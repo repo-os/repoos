@@ -6,7 +6,9 @@ import {
   copyInspectorUiBuildReady,
   formatCopyInspectorPath,
   resolveCopyInspectorTarget,
+  resolveRepoFileTarget,
 } from "../../core/copy-inspector.js";
+import { isTaskFilePath } from "../../core/task.js";
 
 /**
  * Copy-inspector API gate (#0509): the managed repo must have RepoOS UI sources
@@ -55,26 +57,7 @@ export const postCopyInspectorOpen: RouteHandler = async (ctx, req, res) => {
   if (!args.length) {
     return json(res, 400, { error: "invalid editor command" });
   }
-  const [bin, ...spawnArgs] = args;
-  // spawn() reports ENOENT/EACCES asynchronously via "error"; with no listener
-  // that becomes an uncaught exception and takes down the server. Wait for
-  // "spawn" or "error" so a bad editor command comes back as a 500 instead.
-  const launched = await new Promise<boolean>((resolve) => {
-    try {
-      const child = spawn(bin, spawnArgs, {
-        detached: true,
-        stdio: "ignore",
-        cwd: config.root,
-      });
-      child.once("error", () => resolve(false));
-      child.once("spawn", () => {
-        child.unref();
-        resolve(true);
-      });
-    } catch {
-      resolve(false);
-    }
-  });
+  const launched = await spawnDetached(args, config.root);
   if (!launched) {
     return json(res, 500, { error: "failed to launch editor" });
   }
@@ -84,3 +67,77 @@ export const postCopyInspectorOpen: RouteHandler = async (ctx, req, res) => {
     path: formatCopyInspectorPath(target.repoRel, target.line),
   });
 };
+
+/**
+ * The task detail page's "Open in editor" link (#0636): open a task's own
+ * markdown file (under `work/`) in the editor configured for the copy
+ * inspector. Reuses the same gate + `dev.inspector.editorCommand`, but resolves
+ * a general repo-relative file instead of only `src/` sources.
+ */
+export const postOpenInEditor: RouteHandler = async (ctx, req, res) => {
+  const { config } = ctx;
+  if (!copyInspectorApiEnabled(config.root)) {
+    return json(res, 404, { error: "not available" });
+  }
+  if (config.dev?.inspector?.enabled === false) {
+    return json(res, 400, { error: "editor is disabled" });
+  }
+  const command =
+    typeof config.dev?.inspector?.editorCommand === "string"
+      ? config.dev.inspector.editorCommand.trim()
+      : "";
+  if (!command) {
+    return json(res, 400, { error: "no editor command configured" });
+  }
+
+  const body = (await readBody(req)) as { file?: unknown };
+  const file = typeof body.file === "string" ? body.file : "";
+  const target = resolveRepoFileTarget(config.root, file);
+  // Scope the endpoint to task markdown under the configured work dir. The UI
+  // only ever sends `task.path`, but the route is reachable directly, so an
+  // arbitrary repo file (`.env`, a source file) must be refused here — not just
+  // left to the caller (#0636 review). `resolveRepoFileTarget` already
+  // realpath-resolves, so a symlink out of the repo is rejected before this.
+  if (
+    !target ||
+    !isTaskFilePath(config.workDir, target.repoRel, config.taskExtensions ?? [".md"])
+  ) {
+    return json(res, 400, { error: "invalid file path" });
+  }
+
+  const args = buildEditorSpawnArgs(command, target.repoRel, null);
+  if (!args.length) {
+    return json(res, 400, { error: "invalid editor command" });
+  }
+  const launched = await spawnDetached(args, config.root);
+  if (!launched) {
+    return json(res, 500, { error: "failed to launch editor" });
+  }
+
+  return json(res, 200, { ok: true, path: target.repoRel });
+};
+
+/**
+ * Spawn an already-built editor argv detached. Returns false when the binary
+ * cannot be launched; never throws, because an unhandled `error` event on a
+ * detached child would otherwise take down the server.
+ */
+async function spawnDetached(args: string[], root: string): Promise<boolean> {
+  const [bin, ...spawnArgs] = args;
+  return new Promise<boolean>((resolveSpawn) => {
+    try {
+      const child = spawn(bin, spawnArgs, {
+        detached: true,
+        stdio: "ignore",
+        cwd: root,
+      });
+      child.once("error", () => resolveSpawn(false));
+      child.once("spawn", () => {
+        child.unref();
+        resolveSpawn(true);
+      });
+    } catch {
+      resolveSpawn(false);
+    }
+  });
+}

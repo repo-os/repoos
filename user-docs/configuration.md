@@ -69,6 +69,7 @@ workDir = "work"          # task markdown files
 docsDir = "docs"          # context docs an agent reads first
 skillsDir = "skills"      # reusable skills
 inputsDir = "inputs"      # user-submitted inputs and attachments
+storiesDir = "stories"    # story definitions (when [stories] is on)
 cacheDir = ".repoos"      # derived state; safe to delete
 taskExtensions = [".md"]  # file extensions treated as tasks
 
@@ -234,6 +235,7 @@ workDir = "work"
 docsDir = "docs"
 skillsDir = "skills"
 inputsDir = "inputs"
+storiesDir = "stories"
 cacheDir = ".repoos"
 taskExtensions = [".md"]
 ```
@@ -244,6 +246,7 @@ taskExtensions = [".md"]
 | `docsDir` | string | `docs` | yes | Directory holding context docs an agent reads before working. |
 | `skillsDir` | string | `skills` | yes | Directory holding reusable skills (`skills/<name>/SKILL.md`). |
 | `inputsDir` | string | `inputs` | yes | Directory holding user-submitted inputs and their attachments. |
+| `storiesDir` | string | `stories` | yes | Directory holding story definitions (used when Stories are enabled). Must be repo-relative; an absolute or escaping value falls back to the default with a warning. |
 | `cacheDir` | string | `.repoos` | yes | Derived state only — logs, indexes, cached databases. Delete it and RepoOS rebuilds from the task files; nothing of record is lost. |
 | `taskExtensions` | array of strings | `[".md"]` | yes | File extensions treated as tasks. |
 
@@ -745,6 +748,11 @@ enabled = false
 | --- | --- | --- | --- | --- |
 | `stories.enabled` | boolean | `false` | yes | Turns the Stories page, its navigation item (between Work and Checks), and the task drawer's Story field on. |
 
+Story definition files live under `storiesDir` (default `stories`, a top-level
+repo-relative layout key — see *Layout and repository paths*). Existing repos
+need no migration; moving the directory means moving the files and setting the
+key together, with a server restart.
+
 With stories enabled, the task drawer shows **Story** next to **Area** on the top
 row of the details form instead of **Assigned to**; assignee stays in task
 frontmatter and remains writable from the CLI (`repoos update <id> --assigned-to`).
@@ -915,7 +923,7 @@ machine. Enabling it sends repo contents to a third-party host.
 | `remoteValidation.enabled` | boolean | `false` | yes | Master switch for the remote runner. |
 | `remoteValidation.provider` | string | `hetzner` | yes | Runner backend: `hetzner` (disposable cloud VM) or `tailscale` (persistent tailnet machine). |
 | `remoteValidation.tailscaleHost` | string | unset | yes | Tailscale hostname or 100.x.x.x IP of the runner machine — single-host shorthand for the pool (Tailscale provider only). |
-| `remoteValidation.tailscaleHosts` | array | unset | yes | Tailnet host pool (#0521): jobs dispatch to an idle host from this list and queue only when every eligible host is at its per-host limit. Edit as a comma-separated host list in Settings → Remote validation — a save updates the live dispatcher without restarting — or per host with `[[remoteValidation.tailscaleHosts]]` rows in `repoos.toml` (`host`, plus optional `user`, `os`, `labels`, `maxConcurrent`). `remoteValidation.tailscaleHost` is folded in as a host. |
+| `remoteValidation.tailscaleHosts` | array | unset | yes | Tailnet host pool (#0521): jobs dispatch to a host with the fewest active runs, queue only when every eligible host is at its per-host limit, and use this list's top-to-bottom order to break ties. Edit as a comma-separated host list in Settings → Remote validation or reorder plain-list hosts in Checks → Remote runners; saves update the live dispatcher without restarting. Rich `[[remoteValidation.tailscaleHosts]]` rows (`host`, plus optional `user`, `os`, `labels`, `maxConcurrent`) remain editable in `repoos.toml` and are read-only in the Remote runners tab. |
 | `remoteValidation.tailscaleUser` | string | `root` | yes | SSH user on the tailscale host (Tailscale provider only). |
 | `remoteValidation.containerImage` | string | `repoos-ci` | yes | Docker image to run the gate in (Tailscale provider only). |
 | `remoteValidation.serverType` | string | `cax31` | yes | Hetzner server type. Must match the architecture the snapshot was built on. |
@@ -934,7 +942,15 @@ environment-only.
 ### Tailscale host pool
 
 With the `tailscale` provider you can configure a pool of machines. Jobs
-dispatch to whichever host is idle; they queue only when every host is busy.
+dispatch to the host with the fewest active runs; they queue only when every
+eligible host is busy. Equal-load hosts are tried in configured order (top to
+bottom), so the first host gets work when all are idle. Use the up/down controls
+in Checks → Remote runners to reorder a plain string pool; the change applies
+immediately to new runs and does not affect in-flight runs. That page also
+shows per-host load averages, CPU count, memory use/total, free disk in the
+remote work area, and when each read-only SSH sample was taken. Samples run
+while the tab is open, at most every 15 seconds, and time out after five
+seconds; a failed or unreachable host reports unavailable stats.
 There are two authoring forms — pick **one** per config:
 
 **Plain list** (also editable in Settings → Remote validation → "Host pool").
@@ -955,6 +971,12 @@ provider = "tailscale"
 tailscaleHosts = ["bee", "thinkpad", "mini"]
 tailscaleUser = "nick"     # default SSH user for all hosts
 ```
+
+The single-host `tailscaleHost` shorthand is included in the pool. When
+`tailscaleHosts` is empty, it pins that host to the top; remove the shorthand
+from `[remoteValidation]` to control its position using the pool order. When
+`tailscaleHosts` is non-empty, the explicit list's order takes precedence and
+the shorthand does not jump ahead of it.
 
 **Rich rows** — one `[[remoteValidation.tailscaleHosts]]` block per host when
 you need per-host settings (`user`, `os`, `labels`, `maxConcurrent`,

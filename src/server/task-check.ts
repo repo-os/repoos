@@ -104,7 +104,7 @@ export class TaskCheckManager {
     taskId: string,
     kind: TaskCheckKind,
     onEvent: TaskCheckListener,
-    meta: { scope?: string } = {},
+    meta: { scope?: string; machine?: string } = {},
   ): TaskCheckHandle {
     const id = `${taskId}-${kind}-${++this.seq}`;
     const run: TaskCheckRun = {
@@ -120,7 +120,7 @@ export class TaskCheckManager {
       output: "",
       skipped: false,
       scope: meta.scope || "full",
-      machine: localMachineName(),
+      machine: meta.machine || localMachineName(),
     };
     const list = this.runsByTask.get(taskId) ?? [];
     list.push(run);

@@ -163,6 +163,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   docsDir: "docs",
   skillsDir: "skills",
   inputsDir: "inputs",
+  storiesDir: "stories",
   taskExtensions: [".md"],
   defaultStatus: "inbox",
   defaultAssignee: "unassigned",
@@ -833,6 +834,44 @@ function isOverridableConfigPath(path: string): boolean {
 }
 
 /**
+ * Validate a repo-relative directory setting (`storiesDir` today; the shape any
+ * future sibling must satisfy). Returns the cleaned value, or `null` when
+ * unusable — the caller falls back to the default with a warning instead of
+ * pointing RepoOS outside the repo:
+ *
+ *   - empty, absolute (`/x`, `C:\x`), home-relative (`~/x`), or a backslash
+ *     path (a literal filename on POSIX, never a separator)
+ *   - any `..` segment (escaping the repo root)
+ *   - empty or `.` segments beyond the redundant `./` prefix and trailing `/`,
+ *     which are stripped so `./stories/` parses as `stories`
+ *
+ * Warning, not a load failure: a typo in `repoos.toml` must never stop the
+ * server from booting; it just gets the default directory back (#0637).
+ */
+export function normalizeRelativeDir(raw: unknown, key: string): string | null {
+  const invalid = (why: string): null => {
+    console.warn(`[config] ${key} must be a repo-relative directory (${why}) — ignoring "${raw}"`);
+    return null;
+  };
+  if (typeof raw !== "string") return invalid("not a string");
+  let value = raw.trim();
+  if (!value) return invalid("empty");
+  if (/^[/\\]/.test(value) || /^[A-Za-z]:/.test(value) || value.startsWith("~")) {
+    return invalid("must not be absolute or home-relative");
+  }
+  value = value.replace(/\/+$/, "");
+  while (value.startsWith("./")) value = value.slice(2);
+  if (!value) return invalid("empty");
+  for (const segment of value.split("/")) {
+    if (segment === "..") return invalid('must not contain ".."');
+    if (!segment || segment === "." || segment.includes("\\")) {
+      return invalid("must not contain empty or dot segments");
+    }
+  }
+  return value;
+}
+
+/**
  * The preview-only override keys a repo's `repoos.toml` declares that the
  * runtime will actually apply (supported base keys only), sorted. Fail-soft: a
  * missing/unreadable file yields `[]`. Used by the preview manager to report
@@ -897,6 +936,15 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof get("docsDir") === "string") cfg.docsDir = get("docsDir") as string;
     if (typeof get("skillsDir") === "string") cfg.skillsDir = get("skillsDir") as string;
     if (typeof get("inputsDir") === "string") cfg.inputsDir = get("inputsDir") as string;
+    // storiesDir (#0637): validated, not trusted — an absolute or escaping
+    // value falls back to the default ("stories") with a warning, so a bad
+    // entry can never point the story registry or the close-out drift check
+    // outside the repo. Present-but-wrong-typed values warn the same way.
+    const storiesDirRaw = get("storiesDir");
+    if (storiesDirRaw !== undefined) {
+      cfg.storiesDir =
+        normalizeRelativeDir(storiesDirRaw, "storiesDir") ?? DEFAULT_CONFIG.storiesDir;
+    }
     if (Array.isArray(get("taskExtensions")))
       cfg.taskExtensions = get("taskExtensions") as string[];
     if (typeof get("defaultStatus") === "string")
@@ -1565,6 +1613,15 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       description: "Directory holding skills (relative to repo root)",
     },
     {
+      key: "storiesDir",
+      label: "Stories directory",
+      type: "string",
+      tier: "guarded",
+      restartRequired: true,
+      default: DEFAULT_CONFIG.storiesDir,
+      description: "Directory holding story definitions (relative to repo root)",
+    },
+    {
       key: "taskExtensions",
       label: "Task extensions",
       type: "array",
@@ -1872,6 +1929,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "docsDir",
   "skillsDir",
   "inputsDir",
+  "storiesDir",
   "cacheDir",
   "taskExtensions",
   // Board behavior

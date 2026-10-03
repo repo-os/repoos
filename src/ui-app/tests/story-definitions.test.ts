@@ -67,6 +67,29 @@ describe("story definition files", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it("honors a custom storiesDir config value (#0637)", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-story-dir-"));
+    try {
+      const c = { ...config(root), storiesDir: "epics" };
+      const def = writeStoryDefinition(c, {
+        name: "Custom slice",
+        body: "Lives elsewhere.",
+        createdBy: "hello@repoos.org",
+      });
+      expect(def.path).toMatch(/^epics\/.+\.md$/);
+      expect(readFileSync(join(root, def.path), "utf8")).toContain("name: Custom slice");
+      expect(findStoryDefinitionByKey(c, storyKey("custom slice"))?.name).toBe("Custom slice");
+      // Collision paths are prefixed with the configured directory too.
+      expect(collisionFreeStoryPath(c, "Custom slice")).toMatch(/^epics\//);
+      // ...and a definition path outside the configured directory is refused.
+      expect(() =>
+        writeStoryDefinition(c, { name: "Other", body: "x", path: "stories/other.md" }),
+      ).toThrow(/invalid story definition path/);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });
 
 describe("mergeStoriesForDisplay", () => {
