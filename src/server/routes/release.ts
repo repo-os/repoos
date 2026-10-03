@@ -4,6 +4,7 @@ import {
   collectReleaseCommits,
   cutNewRelease,
   getReleaseStatus,
+  releaseHead,
   releaseNotesPrompt,
   type ReleasePhase,
   type ReleaseStatus,
@@ -153,11 +154,19 @@ export interface ReleaseNotesRun {
   error: string | null;
   /** Commit-context cache key the draft was made for (see release-notes-cache.ts). */
   key: string | null;
+  /** HEAD the run was started from — lets readers detect a stale draft (#0630). */
+  head: string | null;
   /** The draft — meaningful only when `succeeded`. */
   notes: string | null;
   sinceTag: string | null;
   commitCount: number;
   truncated: boolean;
+  /**
+   * Set on read: the run's HEAD no longer matches the repo's current HEAD, so
+   * a terminal result describes an older draft context and must not be
+   * presented as current (#0630 review).
+   */
+  stale: boolean;
 }
 
 const idleNotesRun = (): ReleaseNotesRun => ({
@@ -166,10 +175,12 @@ const idleNotesRun = (): ReleaseNotesRun => ({
   updatedAt: null,
   error: null,
   key: null,
+  head: null,
   notes: null,
   sinceTag: null,
   commitCount: 0,
   truncated: false,
+  stale: false,
 });
 
 let notesRun: ReleaseNotesRun = idleNotesRun();
@@ -180,7 +191,24 @@ export async function whenNotesRunSettles(): Promise<void> {
   if (notesRunInFlight) await notesRunInFlight;
 }
 
-export const getReleaseNotesRun: RouteHandler = (_ctx, _req, res) => json(res, 200, notesRun);
+/**
+ * The tracked draft run. A terminal snapshot is annotated with `stale` by
+ * comparing the run's recorded HEAD to the repo's current HEAD — the server
+ * keeps its last terminal run forever, so without this an old success would
+ * tell a reopened panel "Generate with AI will reuse it" (or an old failure
+ * would raise an error) for a draft context that no longer exists (#0630
+ * review). One `rev-parse` per read, only for terminal runs.
+ */
+export const getReleaseNotesRun: RouteHandler = async (ctx, _req, res) => {
+  const { config } = ctx;
+  if (notesRun.state !== "succeeded" && notesRun.state !== "failed") {
+    return json(res, 200, notesRun);
+  }
+  if (!notesRun.head) return json(res, 200, notesRun);
+  const head = await releaseHead(config);
+  const stale = !!head && head !== notesRun.head;
+  return json(res, 200, stale ? { ...notesRun, stale } : notesRun);
+};
 
 /**
  * Which agent drafts release notes. The PM owns authoring, so prefer it; fall
@@ -364,10 +392,12 @@ export const generateReleaseNotes: RouteHandler = async (ctx, req, res) => {
     updatedAt: startedAt,
     error: null,
     key: cacheKey,
+    head,
     notes: null,
     sinceTag,
     commitCount: relevantShas.length,
     truncated,
+    stale: false,
   };
   emitEvent({ type: "release.notesRun", state: "running", at: startedAt });
   notesRunInFlight = draftNotes(config, agent, prompt, { cacheKey, head, sinceTag }, emitEvent)

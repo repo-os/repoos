@@ -130,10 +130,14 @@ interface ReleaseNotesRun {
   updatedAt: string | null;
   error: string | null;
   key: string | null;
+  /** HEAD the run started from — when the repo has moved on, the run is stale. */
+  head?: string | null;
   notes: string | null;
   sinceTag: string | null;
   commitCount: number;
   truncated: boolean;
+  /** Server-computed: this terminal run describes an older commit context (#0630). */
+  stale?: boolean;
 }
 const notesRun = ref<ReleaseNotesRun | null>(null);
 /**
@@ -487,17 +491,23 @@ function applyNotesRun(next: ReleaseNotesRun, atOpen = false): void {
       // The operator typed while the draft ran — never drop it silently.
       notesHint.value = "Your AI draft is ready — Generate with AI will replace what you've typed.";
     }
-  } else if (next.state === "failed" && (live || owned || atOpen)) {
+  } else if (next.state === "failed" && (live || owned || (atOpen && !next.stale))) {
     // Watched runs surface their failure on the transition; an un-watched one
-    // only at open — otherwise a background poll could raise an error for a
-    // run the operator never started (#0630).
+    // only at open, and only while it still describes the current commits —
+    // the server keeps its last terminal run forever, so a stale failure is
+    // about a draft context that no longer exists (#0630 review).
     notesError.value = next.error || "The agent returned no release notes.";
-  } else if (atOpen && next.state === "succeeded" && next.notes?.trim()) {
+  } else if (atOpen && next.state === "succeeded" && next.notes?.trim() && !next.stale) {
     // A draft that finished while the panel was closed (or before this page
     // loaded): don't drop text into the field — a run this session never
     // watched must not silently fill fresh typing context (#0605) — but say
     // it's ready, so the reopen never reads as a silent empty form (#0630).
     notesHint.value = "An AI draft finished while you were away — Generate with AI will reuse it.";
+  } else if (atOpen && next.stale && (next.state === "succeeded" || next.state === "failed")) {
+    // The run predates the current commits: neither "ready" nor its failure
+    // applies. Name the real situation instead of promising reuse (#0630 review).
+    notesHint.value =
+      "Your last AI draft is out of date for the current commits — Generate with AI will draft fresh.";
   }
   tickStopIfNeeded();
 }
