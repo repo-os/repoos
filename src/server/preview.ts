@@ -75,6 +75,8 @@ export interface PreviewResult {
   /** Preview-only config override keys this preview applied (#0464). */
   overrides?: string[];
   error?: string;
+  /** True when the refusal is the one-preview cap (`noEvict`), not a failure (#0627). */
+  busy?: boolean;
 }
 
 /** Result of a trusted server-side health/static probe of a preview URL (#0121). */
@@ -103,6 +105,32 @@ const HEALTH_TIMEOUT_MS = 10_000;
 const MAX_PREVIEWS = 1;
 /** Marks a spawned child so it skips its own boot-time orphan cleanup. */
 const CHILD_ENV = "REPOOS_PREVIEW_CHILD";
+
+/**
+ * Who holds the one preview slot when `startingTaskId` asks for it without
+ * eviction rights (#0627, review round 2): a REGISTERED preview or a start
+ * still in flight. A preview joins the registry only after port reservation,
+ * spawn and readiness, so counting the registry alone would let concurrent
+ * starts for different tasks all pass the check and exceed the cap. Pure so
+ * the concurrency contract is testable without spawning processes. Returns
+ * null when the start may proceed (slot free, or the task already holds it).
+ */
+export function previewCapacityHolder(
+  registryKeys: readonly string[],
+  inflightKeys: readonly string[],
+  startingTaskId: string,
+  max: number,
+): string | null {
+  if (registryKeys.includes(startingTaskId)) return null;
+  // An in-flight start for the SAME task cannot exist here (start returns the
+  // shared inflight promise instead of reaching doStart again) — excluded
+  // defensively. Registered holders come first: they are the oldest.
+  const holders = [
+    ...registryKeys,
+    ...inflightKeys.filter((id) => id !== startingTaskId && !registryKeys.includes(id)),
+  ];
+  return holders.length >= max ? (holders[0] ?? null) : null;
+}
 
 const now = (): string => new Date().toISOString();
 
@@ -158,6 +186,15 @@ export interface PreviewStartOptions {
    * label in its transcript instead of claiming a choice was made.
    */
   allowAmbiguous?: boolean;
+  /**
+   * Refuse with a busy result instead of FIFO-evicting the oldest preview when
+   * the single slot is taken (#0627). The manual single-entry shot capture
+   * sets this so a preview a human is viewing can never be evicted by a
+   * capture that started in the gap between its own snapshot check and
+   * `start` — the capacity decision is made HERE, atomically with the start.
+   * The automatic handoff capture keeps the default (evicting) behavior.
+   */
+  noEvict?: boolean;
 }
 
 /**
@@ -465,6 +502,8 @@ export class PreviewManager {
   private bootErrors = new Map<string, string>();
   /** Starts still in flight per task, so concurrent calls never double-spawn. */
   private inflight = new Map<string, Promise<PreviewResult>>();
+  /** The target each in-flight start was asked for (undefined = unpicked). */
+  private inflightTargets = new Map<string, string | undefined>();
 
   constructor(config: RepoOSConfig, emit: (e: RepoEvent) => void) {
     this.config = config;
@@ -482,6 +521,16 @@ export class PreviewManager {
 
   get(taskId: string): PreviewInfo | null {
     return this.registry.get(taskId) ?? null;
+  }
+
+  /**
+   * Every running preview, keyed by task id. The single-entry shot capture
+   * (#0627) reads this to fail BUSY instead of silently evicting a preview a
+   * human is viewing — the automatic capture evicts, by design; a manual one
+   * asks.
+   */
+  runningPreviews(): { taskId: string; info: PreviewInfo }[] {
+    return [...this.registry.entries()].map(([taskId, info]) => ({ taskId, info }));
   }
 
   /**
@@ -552,7 +601,32 @@ export class PreviewManager {
     // Concurrent starts for the same task (e.g. duplicate transition events)
     // must share one spawn — never double-spawn a process and leak one.
     const inflight = this.inflight.get(task.id);
-    if (inflight) return inflight;
+    if (inflight) {
+      // Joining is only right for the same request. A manual shot capture
+      // (`noEvict`) must not adopt a start it didn't make — it would capture
+      // from whatever target that start serves and then stop a preview
+      // someone else asked for — and a different explicit target is the same
+      // mismatch the registered-preview branch above refuses.
+      const startingTarget = this.inflightTargets.get(task.id);
+      if (opts.noEvict) {
+        return {
+          ok: false,
+          busy: true,
+          error:
+            `a preview for task #${task.id} is already starting` +
+            `${startingTarget ? ` (target: ${startingTarget})` : ""} — wait for it to finish, then retry`,
+        };
+      }
+      if (targetName && startingTarget && startingTarget !== targetName) {
+        return {
+          ok: false,
+          error:
+            `Task #${task.id} already has a preview starting (target: ${startingTarget}). ` +
+            `Stop it before starting "${targetName}".`,
+        };
+      }
+      return inflight;
+    }
     // Enforce the pick server-side, not just by disabling the drawer's button:
     // an ambiguous area with no explicit choice is never resolved to the first
     // target silently (#0379).
@@ -572,15 +646,23 @@ export class PreviewManager {
         return { ok: false, error };
       }
     }
-    const p = this.doStart(task, targetName);
+    const p = this.doStart(task, targetName, opts);
     this.inflight.set(task.id, p);
-    p.finally(() => this.inflight.delete(task.id)).catch(() => {
+    this.inflightTargets.set(task.id, targetName);
+    p.finally(() => {
+      this.inflight.delete(task.id);
+      this.inflightTargets.delete(task.id);
+    }).catch(() => {
       /* handled by caller */
     });
     return p;
   }
 
-  private async doStart(task: Task, targetName?: string): Promise<PreviewResult> {
+  private async doStart(
+    task: Task,
+    targetName?: string,
+    opts: PreviewStartOptions = {},
+  ): Promise<PreviewResult> {
     if (!task.branch) {
       return { ok: false, error: `Task #${task.id} has no branch to preview` };
     }
@@ -619,7 +701,32 @@ export class PreviewManager {
     // Enforce the concurrent-preview cap (#0198): before launching a new
     // preview, free a slot if at capacity by terminating the oldest running
     // preview (FIFO). A task that already has a preview is a no-op elsewhere.
-    await this.evictIfAtCapacity(task.id);
+    // With `noEvict`, the check-and-evict becomes a check-and-refuse — the
+    // manual shot capture (#0627) must never evict a preview a human is
+    // viewing, and doing the check HERE (not in the caller beforehand) closes
+    // the race where another preview starts between the two. In-flight starts
+    // count too: a preview is only registered after port reservation, spawn
+    // and readiness, so the registry alone would let concurrent starts for
+    // different tasks all pass and exceed the cap (review round 2).
+    if (opts.noEvict) {
+      const holder = previewCapacityHolder(
+        [...this.registry.keys()],
+        [...this.inflight.keys()],
+        task.id,
+        MAX_PREVIEWS,
+      );
+      if (holder) {
+        return {
+          ok: false,
+          busy: true,
+          error:
+            `the one preview slot is busy: task #${holder} has a preview running — ` +
+            "stop it (or wait for it to be evicted), then retry",
+        };
+      }
+    } else {
+      await this.evictIfAtCapacity(task.id);
+    }
 
     let port: number;
     try {

@@ -160,6 +160,62 @@ is honored even when the diff matches no glob; and repos whose UI is itself
 markdown-driven should know a UI-relevant `.md` change counts as content —
 declare the shot with its route.
 
+**Drawer add/delete (#0627).** Shots can also be added and deleted from the
+
+task drawer's UI changes section, while the task is `active` or in `review` —
+`POST /api/tasks/:id/shots` (declare + capture; the CLI's byte-upload on the
+same route is dispatched by the body's `data` field) and
+`DELETE /api/tasks/:id/shots/:name`. The non-obvious rules:
+
+- A hand-added shot is captured BEFORE its declaration is written, so a failed
+  capture (route didn't load, WebKit missing) never leaves a
+  declared-but-never-captured entry behind; the response error is the only
+  trace of the attempt. The stored shot carries the declared provenance but NO
+  `origin: "auto"` — re-handoff cleanup (`removeAuto`) never deletes it, and
+  the automatic pass still treats it as engineer-made (stands down).
+- The single-entry path validates through `parseShotEntry` in
+  `core/shot-plan.ts` — the same validator the CLI's `--shots` uses; there is
+  no second copy. Request fields reach the validator verbatim, so a wrong
+  type (`{"target": 5}`) is rejected rather than silently narrowed to an
+  omitted field.
+- Delete removes the PNG and the manifest entry, and then the declaration:
+  a hand-added shot stores its full parsed declaration in the manifest
+  (`ShotMeta.declared`), so delete syncs THE exact `## Shots` entry —
+  selector and steps included, via `sameDeclaredShot`. Legacy and auto shots
+  (captured before that field existed) fall back to the shallow
+  label/route/target matcher, which requires at least one identifying field —
+  an anonymous declaration (steps or highlight only) can never claim a
+  deleted shot. That matcher cannot tell apart declarations differing only in
+  selector/steps, so ALL entries sharing the shot's label/route/target are
+  removed (a leftover would let a re-handoff recapture the deleted evidence)
+  and the response carries a warning naming how many went. (Review rounds 3
+  and 4 pulled opposite ways here: keeping them erased distinct declarations
+  but resurrected evidence; resurrection was judged the worse failure.) Exact
+  hand-added shots remove only their own declaration's twins.
+- Ordering keeps add and delete from half-applying (review round 5). Add
+  parses the current `## Shots` BEFORE capturing, so a malformed list is a 400
+  with no orphan image. Delete writes the task file first and removes the
+  image second: a failed or invalid task-file update is a real error (500/400)
+  with the shot untouched, never a 200 that leaves a declaration to resurrect
+  it. Both routes only work while the task is `active` or `review`; Add
+  rechecks that after the 5-30s capture and, if the task moved on, discards
+  the image and returns 409 without touching the task file.
+- Add-shot warnings (a `highlight`/`selector` that matched nothing) ride the
+  success response as `warning`; the modal stays open showing it, since the
+  shot is already saved.
+- Busy semantics differ from the handoff pass on purpose: the automatic
+  capture replaces the task's preview (`startTargetPreview`), while a manual
+  add NEVER evicts a running preview. The reservation is atomic —
+  `PreviewManager.start({ noEvict: true })` makes the capacity decision at
+  start time, counting both registered previews and starts still in flight (a
+  preview is registered only after spawn and readiness, so the registry alone
+  would let concurrent starts exceed the cap) — so a preview that begins
+  between the capture's snapshot check and its start is refused, not evicted.
+  The same target's live preview is reused without a restart. An explicitly
+  picked target is resolved through `resolveShotTargets`' override path, so
+  every target the drawer offers can be captured even when the task's `area`
+  does not name it.
+
 `repoos shot`'s own flags sit on top of that plan (#0610). `buildCliShotPlan`
 (`src/commands/shot.ts`) is a pure function of the task body, the flags and the
 resolved targets — it used to live inline in `cmdShot`, where a typed route

@@ -26,6 +26,7 @@ import {
 import { basename, extname, join, resolve, sep } from "node:path";
 import type { RepoOSConfig } from "../core/types.js";
 import { DEFAULT_PREVIEW_TARGET } from "../core/shot-targets.js";
+import type { DeclaredShot } from "../core/shot-plan.js";
 import { MAX_SCREENSHOT_BYTES, SCREENSHOT_MIME } from "./attachments.js";
 
 /** One captured shot, as returned to the CLI and the UI. */
@@ -51,6 +52,13 @@ export interface ShotMeta {
   provenance?: string;
   /** "auto" when the server's handoff capture wrote it, so a re-capture may replace it. */
   origin?: "auto";
+  /**
+   * The full declared entry a hand-added shot was captured from (#0627), so
+   * delete can sync THE exact `## Shots` declaration — including selector and
+   * steps, which the shallow fields alone cannot distinguish. Absent for
+   * captures made before #0627 or by the automatic pass.
+   */
+  declared?: DeclaredShot;
   /** Repo-relative path, e.g. "work/.attachments/0582/shots/docs-site-1.png". */
   path: string;
   /** API URL the UI loads the image from. */
@@ -70,6 +78,8 @@ interface ShotManifestEntry {
   /** One-line capture reason (#0603): "declared: <label>" / "auto: matched <glob>". */
   provenance?: string;
   origin?: "auto";
+  /** The hand-added shot's own declared entry (#0627), for exact delete sync. */
+  declared?: DeclaredShot;
   mime: string;
   size: number;
   capturedAt: string;
@@ -89,10 +99,18 @@ export interface ShotStore {
     /** Why the shot exists (#0603), stored verbatim in the manifest. */
     provenance?: string;
     origin?: "auto";
+    /** The hand-added shot's own declared entry (#0627), for exact delete sync. */
+    declared?: DeclaredShot;
     mime?: string;
     name?: string;
     data: string;
   }): ShotMeta | { error: string };
+  /**
+   * Delete one shot by file name, from the task drawer's per-shot delete
+   * (#0627). Returns the removed shot's metadata (for the caller's activity
+   * note and declaration sync) or null when no such file exists.
+   */
+  remove(name: string): ShotMeta | null;
   /** Delete every shot the server's automatic capture wrote; engineer-made shots stay. */
   removeAuto(): number;
   /** Absolute path for one stored file, or null when it is missing/escapes. */
@@ -176,6 +194,7 @@ export function localShotStore(config: RepoOSConfig, taskId: string): ShotStore 
         ...(meta?.label ? { label: meta.label } : {}),
         ...(meta?.provenance ? { provenance: meta.provenance } : {}),
         ...(meta?.origin ? { origin: meta.origin } : {}),
+        ...(meta?.declared ? { declared: meta.declared } : {}),
         path: relPath(config, taskId, file),
         url: shotUrl(taskId, file),
         size,
@@ -230,6 +249,7 @@ export function localShotStore(config: RepoOSConfig, taskId: string): ShotStore 
         ...(input.label ? { label: input.label } : {}),
         ...(input.provenance ? { provenance: input.provenance } : {}),
         ...(input.origin ? { origin: input.origin } : {}),
+        ...(input.declared ? { declared: input.declared } : {}),
         mime,
         size: buf.length,
         capturedAt,
@@ -244,12 +264,24 @@ export function localShotStore(config: RepoOSConfig, taskId: string): ShotStore 
         ...(input.route ? { route: input.route } : {}),
         ...(input.label ? { label: input.label } : {}),
         ...(input.provenance ? { provenance: input.provenance } : {}),
+        ...(input.declared ? { declared: input.declared } : {}),
         path: relPath(config, taskId, file),
         url: shotUrl(taskId, file),
         size: buf.length,
         mime,
         capturedAt,
       };
+    },
+    remove(name) {
+      const all = list();
+      const shot = all.find((s) => s.name === name);
+      if (!shot) return null;
+      rmSync(join(dir, name), { force: true });
+      writeManifest(
+        dir,
+        readManifest(dir).filter((entry) => entry.name !== name),
+      );
+      return shot;
     },
     removeAuto() {
       const auto = list().filter((shot) => shot.origin === "auto");

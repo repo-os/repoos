@@ -24,7 +24,9 @@ import {
   parseShotPlan,
   provenanceCaption,
   type CaptureEntry,
+  type DeclaredShot,
 } from "../core/shot-plan.js";
+import type { ShotMeta } from "./shots.js";
 import { describeTargetPathMatches, resolveShotTargets } from "../core/shot-targets.js";
 import type { LogLevel } from "../core/logger.js";
 import { captureShotPage, type ShotDriverPage } from "../core/shot-page.js";
@@ -49,6 +51,48 @@ const AUTO_VIEWPORT = { width: 1280, height: 800 };
 /** The per-task log line signature the capture writes one entry with. */
 type TaskLog = (taskId: string, level: LogLevel, message: string) => void;
 
+/** One page capture: the PNG plus any highlight/selector miss warnings. */
+export interface CapturedPage {
+  png: Buffer;
+  /** e.g. `highlight .x matched nothing on /route` — the caller decides where these go. */
+  warnings: string[];
+}
+
+/**
+ * Capture ONE entry on a fresh page of `context`: viewport, the shared page
+ * choreography (`captureShotPage`), miss warnings collected instead of noted.
+ * The one piece of the old inline loop that both the handoff pass and the
+ * single-entry Add-shot capture (#0627) run — extracting it keeps the two
+ * paths in lockstep.
+ */
+export async function captureEntryPage(
+  context: SmokeContext,
+  pageUrl: string,
+  entry: CaptureEntry,
+  settleMs: number = AUTO_SETTLE_MS,
+): Promise<CapturedPage> {
+  const warnings: string[] = [];
+  const page = (await context.newPage()) as unknown as ShotDriverPage;
+  try {
+    await page.setViewportSize(AUTO_VIEWPORT);
+    const png = await captureShotPage(
+      page,
+      pageUrl,
+      entry,
+      { waitMs: settleMs, fullPage: false },
+      (selector, route) => {
+        warnings.push(`highlight ${selector} matched nothing on ${route}`);
+      },
+      (selector, route) => {
+        warnings.push(`selector ${selector} matched nothing on ${route}`);
+      },
+    );
+    return { png, warnings };
+  } finally {
+    await page.close().catch(() => {});
+  }
+}
+
 /** In-flight captures, so duplicate review transitions never double-run. */
 const inFlight = new Set<string>();
 
@@ -56,18 +100,41 @@ const inFlight = new Set<string>();
  * One preview per task, so each new target must replace the running one
  * (#0379/#0271) — mirrored from the CLI capture path, here via the
  * PreviewManager the server already owns.
+ *
+ * A `noEvict` caller (the manual single-entry capture) must never stop a
+ * preview: one may have registered after its own snapshot check — the human
+ * clicked Preview while WebKit was launching — and stopping here would evict
+ * exactly the preview someone is viewing, defeating the manager's no-evict
+ * refusal (review round 2). `start` is idempotent for a same-task preview and
+ * refuses (noEvict) instead of evicting others, so the capacity decision stays
+ * atomic with the start; the `reused` flag tells the caller which previews are
+ * not its own to stop.
  */
 async function startTargetPreview(
   previews: PreviewManager,
   task: Task,
   target: string,
-): Promise<{ url: string } | { error: string }> {
-  await previews.stop(task.id);
-  const started = await previews.start(task, target);
+  opts: { noEvict?: boolean } = {},
+): Promise<{ url: string; label?: string; reused: boolean } | { error: string; busy?: boolean }> {
+  const noEvict = opts.noEvict === true;
+  if (!noEvict) await previews.stop(task.id);
+  const before = noEvict ? previews.get(task.id) : null;
+  const started = await previews.start(task, target, noEvict ? { noEvict: true } : {});
   if (!started.ok || !started.url) {
-    return { error: started.error ?? "could not start the preview" };
+    // A same-task preview that registered between the caller's snapshot and
+    // this start makes start refuse (target mismatch) — for a manual capture
+    // that is a busy situation, not a generic failure.
+    const raced = noEvict ? previews.get(task.id) : null;
+    return {
+      error: started.error ?? "could not start the preview",
+      ...(started.busy || raced ? { busy: true } : {}),
+    };
   }
-  return { url: started.url.replace(/\/$/, "") };
+  return {
+    url: started.url.replace(/\/$/, ""),
+    ...(started.label ? { label: started.label } : {}),
+    reused: noEvict && before !== null,
+  };
 }
 
 /**
@@ -246,46 +313,27 @@ export async function runAutoShotCapture(
         currentUrl = started.url;
         currentTarget = entry.target;
       }
-      const page = (await context.newPage()) as unknown as ShotDriverPage;
       const pageUrl = `${currentUrl}${entry.route.startsWith("/") ? entry.route : `/${entry.route}`}`;
       let png: Buffer;
+      let warnings: string[] = [];
       try {
-        await page.setViewportSize(AUTO_VIEWPORT);
-        png = await captureShotPage(
-          page,
-          pageUrl,
-          entry,
-          {
-            waitMs: AUTO_SETTLE_MS,
-            fullPage: false,
-          },
-          (selector, route) => {
-            const msg = `highlight ${selector} matched nothing on ${route}`;
-            log(task.id, "warn", `shots: ${msg}`);
-            try {
-              patchTaskFile(config, task.absPath, { note: msg });
-            } catch {
-              /* the log line already recorded it */
-            }
-          },
-          (selector, route) => {
-            const msg = `selector ${selector} matched nothing on ${route}`;
-            log(task.id, "warn", `shots: ${msg}`);
-            try {
-              patchTaskFile(config, task.absPath, { note: msg });
-            } catch {
-              /* the log line already recorded it */
-            }
-          },
-        );
+        ({ png, warnings } = await captureEntryPage(context, pageUrl, entry));
       } catch (err) {
-        await page.close().catch(() => {});
         return finish(
           "failed",
           `capture of ${entry.label ?? entry.route} on "${entry.target}" failed: ${(err as Error).message.split("\n")[0]}`,
         );
       }
-      await page.close().catch(() => {});
+      // The miss callbacks only collect here; noting them on the task keeps the
+      // pre-extraction behavior (log line + activity note) for the handoff pass.
+      for (const msg of warnings) {
+        log(task.id, "warn", `shots: ${msg}`);
+        try {
+          patchTaskFile(config, task.absPath, { note: msg });
+        } catch {
+          /* the log line already recorded it */
+        }
+      }
       const store = localShotStore(config, task.id);
       // Drop the previous automatic capture only once a replacement exists.
       if (!cleared) {
@@ -322,5 +370,165 @@ export async function runAutoShotCapture(
     // (#0271), so leaving one running after a success OR a failure would hold
     // the single preview slot until the task leaves review.
     if (currentTarget !== undefined) await previews.stop(task.id).catch(() => {});
+  }
+}
+
+/** One-shot capture result for the task drawer's Add-shot action (#0627). */
+export type DeclaredShotCapture =
+  | { shot: ShotMeta; warnings: string[] }
+  | {
+      error: string;
+      /** True when the one-preview cap is the reason — the UI can say so. */ busy?: boolean;
+      /** True when Playwright/WebKit is missing — the error carries the install advice. */ unavailable?: boolean;
+    };
+
+/**
+ * Capture ONE declared entry outside the handoff flow (#0627): start or reuse
+ * a preview for the entry's target, run the same page choreography
+ * (`captureEntryPage`), and store the PNG as a DECLARED shot — no
+ * `origin: "auto"`, so the next handoff's cleanup never deletes it and the
+ * automatic pass still stands down (it only counts non-auto shots as
+ * engineer-made).
+ *
+ * Busy semantics differ from the automatic pass on purpose: `startTargetPreview`
+ * replaces whatever preview runs for the task, which is right at handoff but
+ * wrong for a manual capture — a human may be looking at that preview right
+ * now. The one-preview cap is therefore answered with a structured busy error
+ * when ANY preview is running for another task, and when the task's own
+ * preview is running a DIFFERENT target; the same target's live preview is
+ * reused (no restart, no churn — the CLI rule). The snapshot checks below are
+ * fast-fails with precise messages; the authoritative reservation passes
+ * `noEvict` to `PreviewManager.start`, so the capacity decision is made
+ * atomically with the start and a preview that starts in between can never be
+ * evicted by this capture — it is reused only when it provably serves the
+ * requested target, and otherwise answered with busy while it keeps running
+ * (review round 2).
+ *
+ * Returns a structured error (never throws) for: busy preview slot,
+ * Playwright/WebKit unavailable, a preview that would not boot, or a failed
+ * page capture (e.g. the declared route did not load). The caller appends the
+ * `## Shots` declaration only AFTER a successful capture, so a failed capture
+ * never leaves a declared-but-never-captured entry behind.
+ */
+export async function captureDeclaredShot(
+  config: RepoOSConfig,
+  task: Task,
+  previews: PreviewManager,
+  entry: CaptureEntry & {
+    /** The parsed declaration to store on the shot, for exact delete sync (#0627). */
+    declared?: DeclaredShot;
+  },
+): Promise<DeclaredShotCapture> {
+  // One preview at a time (#0271) — but a manual capture never evicts what a
+  // human is viewing; that slot is BUSY, not available. A same-task preview
+  // whose target cannot be identified (no label — a legacy registry record)
+  // is busy too: reusing it for any requested target could shoot the wrong
+  // one (review round 2).
+  const running = previews.runningPreviews();
+  const own = running.find((r) => r.taskId === task.id);
+  if (own && (!own.info.label || own.info.label !== entry.target)) {
+    return {
+      error: own.info.label
+        ? `a "${own.info.label}" preview is already running for this task — ` +
+          `stop it before capturing "${entry.target}"`
+        : `a preview is already running for this task, but its target could not be ` +
+          `identified — stop it before capturing "${entry.target}"`,
+      busy: true,
+    };
+  }
+  const other = running.find((r) => r.taskId !== task.id);
+  if (other && !own) {
+    return {
+      error:
+        `the one preview slot is busy: task #${other.taskId} has a preview running — ` +
+        "stop it (or wait for it to be evicted), then retry",
+      busy: true,
+    };
+  }
+
+  let browser: SmokeBrowser | undefined;
+  let context: SmokeContext | undefined;
+  let startedPreviewForTask = false;
+  let url = own?.info.url.replace(/\/$/, "");
+  try {
+    try {
+      browser = await launchWebkit();
+      context = await browser.newContext({ serviceWorkers: "block" });
+    } catch (err) {
+      if (isShotCaptureUnavailable(err)) {
+        return {
+          error: `Playwright/WebKit unavailable (${(err as Error).message.split("\n")[0]}). ${INSTALL_ADVICE}`,
+          unavailable: true,
+        };
+      }
+      return { error: `could not launch the browser: ${(err as Error).message.split("\n")[0]}` };
+    }
+    if (!url) {
+      // The busy decision is made inside `start` (noEvict), atomically with the
+      // start — a snapshot check here alone would race another preview starting
+      // in between and evict the one being viewed (review round 1).
+      const startedPreview = await startTargetPreview(previews, task, entry.target, {
+        noEvict: true,
+      });
+      if ("error" in startedPreview) {
+        return {
+          error: `preview for target "${entry.target}" did not start: ${startedPreview.error}`,
+          ...(startedPreview.busy ? { busy: true } : {}),
+        };
+      }
+      if (
+        startedPreview.reused &&
+        (!startedPreview.label || startedPreview.label !== entry.target)
+      ) {
+        // A preview registered between the snapshot above and this start (the
+        // human clicked Preview while WebKit was launching): reuse it only when
+        // it provably serves the requested target, and never stop it.
+        return {
+          error: startedPreview.label
+            ? `a "${startedPreview.label}" preview started for this task while the ` +
+              `capture was preparing — stop it before capturing "${entry.target}"`
+            : `a preview started for this task while the capture was preparing, but its ` +
+              `target could not be identified — stop it before capturing "${entry.target}"`,
+          busy: true,
+        };
+      }
+      url = startedPreview.url;
+      startedPreviewForTask = !startedPreview.reused;
+    }
+    const pageUrl = `${url}${entry.route.startsWith("/") ? entry.route : `/${entry.route}`}`;
+    let captured: CapturedPage;
+    try {
+      captured = await captureEntryPage(context, pageUrl, entry);
+    } catch (err) {
+      return {
+        error: `capture failed: the route may not load — ${(err as Error).message.split("\n")[0]}`,
+      };
+    }
+    const provenance = provenanceCaption(entry.provenance);
+    const stored = localShotStore(config, task.id).save({
+      target: entry.target,
+      route: entry.route,
+      ...(entry.label ? { label: entry.label } : {}),
+      provenance,
+      // Deliberately NOT `origin: "auto"` (#0627): a hand-added shot is
+      // engineer-made evidence, so re-handoff cleanup keeps it and the
+      // automatic capture still pre-empts correctly.
+      // The full parsed declaration rides in the manifest so delete can sync
+      // THE exact `## Shots` entry — selector and steps included (#0627
+      // review round 1); the shallow label/route/target fields alone cannot
+      // distinguish two declarations that differ only there.
+      ...(entry.declared ? { declared: entry.declared } : {}),
+      data: captured.png.toString("base64"),
+    });
+    if ("error" in stored) {
+      return { error: `the shot store rejected the image: ${stored.error}` };
+    }
+    return { shot: stored, warnings: captured.warnings };
+  } finally {
+    await context?.close().catch(() => {});
+    await browser?.close().catch(() => {});
+    // Only a preview THIS capture started gets stopped: a reused running
+    // preview is exactly the one a human may be viewing.
+    if (startedPreviewForTask) await previews.stop(task.id).catch(() => {});
   }
 }

@@ -12,7 +12,7 @@
  * here as a pure function — no API change, no capture change — and the drawer
  * just renders the result.
  */
-import { parseShotPlan } from "../../../core/shot-plan.js";
+import { declaredShotMatchesShot, parseShotPlan } from "../../../core/shot-plan.js";
 import type { DeclaredShot, DeclaredStep } from "../../../core/shot-plan.js";
 import type { ShotMeta } from "../types";
 
@@ -65,15 +65,15 @@ export function describeSteps(steps: DeclaredStep[]): string {
 }
 
 /**
- * Does a declared entry describe this captured file? Only the fields the
- * manifest also records are compared, so this stays usable after a hand-dropped
- * PNG (target "unknown") joins the list.
+/**
+ * Does a declared entry describe this captured file? Shared matcher in core
+ * (`declaredShotMatchesShot`, #0627): only the fields the manifest also
+ * records are compared — label, route, target — so this stays usable after a
+ * hand-dropped PNG (target "unknown") joins the list, and delete's
+ * declaration-sync uses the exact same rule.
  */
 function declaredMatches(declared: DeclaredShot, meta: ShotMeta): boolean {
-  if (declared.label && declared.label !== meta.label) return false;
-  if (declared.route && declared.route !== (meta.route ?? "/")) return false;
-  if (declared.target && declared.target !== meta.target) return false;
-  return true;
+  return declaredShotMatchesShot(declared, meta);
 }
 
 /**

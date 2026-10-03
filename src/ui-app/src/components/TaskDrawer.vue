@@ -24,6 +24,7 @@ import {
   Coins,
   Bug,
   Lightbulb,
+  Trash2,
 } from "lucide-vue-next";
 import type {
   ReviewState,
@@ -82,6 +83,10 @@ import ScreenshotViewer from "./ScreenshotViewer.vue";
 import ScreenshotExpandButton from "./ScreenshotExpandButton.vue";
 import { isImageMime, pendingToShots, type ScreenshotShot } from "../lib/screenshot-viewer";
 import { shotProblems, shotRows, uncapturedDeclared } from "../lib/shot-rows";
+import type { DeclaredShot } from "../../../core/shot-plan.js";
+import type { ShotMeta } from "../types";
+import AddShotModal from "./AddShotModal.vue";
+import DeleteShotDialog from "./DeleteShotDialog.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
 import DebugPanel from "./DebugPanel.vue";
 import DiffFileViewer from "./DiffFileViewer.vue";
@@ -829,6 +834,72 @@ const shotsViewerShots = computed<ScreenshotShot[]>(() =>
 function openShotsViewer(index: number): void {
   shotsViewerStart.value = index;
   shotsViewerOpen.value = true;
+}
+
+// ---- add / delete shots from the drawer (#0627) ----
+/**
+ * Shot management shows while the task is `active` or `review` and has a
+ * branch: a capture needs the worktree's preview, and a delete needs the
+ * task's `## Shots` body. Everything else stays read-only.
+ */
+const canManageShots = computed(
+  () =>
+    !!ui.active &&
+    !!ui.active.branch &&
+    (ui.active.status === "active" || ui.active.status === "review"),
+);
+const addShotOpen = ref(false);
+const addShotBusy = ref(false);
+const addShotError = ref<string | undefined>(undefined);
+const addShotWarning = ref<string | undefined>(undefined);
+const deleteShotTarget = ref<ShotMeta | null>(null);
+const deleteShotBusy = ref(false);
+
+function openAddShot(): void {
+  addShotError.value = undefined;
+  addShotWarning.value = undefined;
+  addShotOpen.value = true;
+}
+function onAddShotOpen(v: boolean): void {
+  addShotOpen.value = v;
+  if (!v) addShotWarning.value = undefined;
+}
+
+async function submitAddShot(entry: DeclaredShot): Promise<void> {
+  if (!ui.active) return;
+  addShotBusy.value = true;
+  addShotError.value = undefined;
+  addShotWarning.value = undefined;
+  const result = await repo.addShot(ui.active.id, entry);
+  addShotBusy.value = false;
+  if (!result.ok) {
+    addShotError.value = result.error;
+    return;
+  }
+  // A warning (highlight/selector matched nothing, declaration not updated)
+  // stays in the modal where the user is looking; they close it themselves.
+  if (result.warning) {
+    addShotWarning.value = result.warning;
+    return;
+  }
+  addShotOpen.value = false;
+  repo.pushToast(`Shot captured (${entry.label || entry.target})`, "success");
+}
+
+async function confirmDeleteShot(): Promise<void> {
+  const target = deleteShotTarget.value;
+  const task = ui.active;
+  if (!target || !task) return;
+  deleteShotBusy.value = true;
+  const result = await repo.deleteShot(task.id, target.name);
+  deleteShotBusy.value = false;
+  deleteShotTarget.value = null;
+  if (!result.ok) {
+    repo.pushToast(result.error, "error");
+    return;
+  }
+  if (result.warning) repo.pushToast(result.warning, "error");
+  else repo.pushToast("Shot deleted", "success");
 }
 
 function onShotFiles(e: Event): void {
@@ -4231,6 +4302,7 @@ watch(
           <button
             type="button"
             class="tab-btn"
+            data-test-id="task-tab-changes"
             :class="{ active: ui.activeTab === 'changes' }"
             @click="ui.activeTab = 'changes'"
           >
@@ -4862,11 +4934,27 @@ watch(
                thumbnail grid had no room for the `## Shots` spec the reviewer
                actually reads: label, target · route, selector, steps. -->
           <section
-            v-if="ui.active && (uiChangeRows.length || uiShotProblems.length)"
+            v-if="ui.active && (uiChangeRows.length || uiShotProblems.length || canManageShots)"
             class="changes-summary ui-changes"
             aria-label="UI changes"
           >
-            <div class="changes-summary-title">UI changes</div>
+            <div class="changes-summary-title changes-summary-head">
+              <span>UI changes</span>
+              <!-- #0627: add a shot and delete one, right here. Shown while the
+                   task is active/review with a branch — a capture needs the
+                   worktree's preview, and both edit only the task .md plus the
+                   gitignored attachments tree. -->
+              <Button
+                v-if="canManageShots"
+                variant="outline"
+                size="sm"
+                data-test-id="add-shot"
+                :disabled="addShotBusy"
+                @click="openAddShot"
+              >
+                {{ addShotBusy ? "Capturing…" : "Add shot" }}
+              </Button>
+            </div>
             <div
               v-for="problem in uiShotProblems"
               :key="problem.at + problem.detail"
@@ -4923,6 +5011,19 @@ watch(
                   </span>
                 </div>
                 <ScreenshotExpandButton :name="row.title" @click="openShotsViewer(i)" />
+                <!-- #0627: per-shot delete, confirm through the shared dialog.
+                     Same remove button the pending-attachment rows use. -->
+                <button
+                  v-if="canManageShots"
+                  type="button"
+                  class="ff-pending-file-remove"
+                  data-test-id="shot-delete"
+                  aria-label="Delete shot"
+                  :disabled="deleteShotBusy"
+                  @click="deleteShotTarget = row.meta"
+                >
+                  <Trash2 class="size-3.5" />
+                </button>
               </div>
             </div>
           </section>
@@ -5376,6 +5477,24 @@ watch(
     :busy="ui.saving"
     @update:open="(v) => !v && cancelDelete()"
     @confirm="deleteTask"
+  />
+
+  <AddShotModal
+    :open="addShotOpen"
+    :targets="previewTargets"
+    :busy="addShotBusy"
+    :error="addShotError"
+    :warning="addShotWarning"
+    @update:open="onAddShotOpen"
+    @submit="submitAddShot"
+  />
+
+  <DeleteShotDialog
+    :open="deleteShotTarget !== null"
+    :shot="deleteShotTarget"
+    :busy="deleteShotBusy"
+    @update:open="(v) => !v && (deleteShotTarget = null)"
+    @confirm="confirmDeleteShot"
   />
 </template>
 

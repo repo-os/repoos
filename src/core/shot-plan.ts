@@ -181,9 +181,21 @@ function parseStep(raw: unknown, where: string): { step?: DeclaredStep; error?: 
   return { step: { waitMs: ms } };
 }
 
-/** Validate one raw JSON entry; returns the typed shot or an error message. */
-function parseShot(raw: unknown, index: number): { shot?: DeclaredShot; error?: string } {
-  const where = `shot #${index + 1}`;
+/**
+ * Validate one raw JSON entry; returns the typed shot or an error message.
+ * Shared with the CLI (`repoos update --shots`) and the server's Add-shot API
+ * (#0627) so a single entry is validated by exactly the same rules the whole
+ * list is — there is no second validator.
+ */
+export function parseShotEntry(
+  raw: unknown,
+  where = "shot",
+): { shot?: DeclaredShot; error?: string } {
+  return parseShot(raw, where);
+}
+
+/** Validate one raw JSON entry at list index `i`; returns the typed shot or an error message. */
+function parseShot(raw: unknown, where: string): { shot?: DeclaredShot; error?: string } {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
     return { error: `${where}: each entry must be an object` };
   }
@@ -240,7 +252,7 @@ export function parseShotPlan(body: string): ParsedShotPlan {
   const shots: DeclaredShot[] = [];
   const errors: string[] = [];
   for (let i = 0; i < items.length; i++) {
-    const parsed = parseShot(items[i], i);
+    const parsed = parseShot(items[i], `shot #${i + 1}`);
     if (parsed.error) errors.push(parsed.error);
     else if (parsed.shot) shots.push(parsed.shot);
   }
@@ -252,7 +264,7 @@ export function parseShotPlan(body: string): ParsedShotPlan {
  * an omitted target → the default target when included, else the sole/first
  * resolved target; anything else must name a resolved target exactly.
  */
-function resolveEntryTarget(
+export function resolveDeclaredTarget(
   declared: string | undefined,
   targets: string[],
 ): { target?: string; error?: string } {
@@ -402,7 +414,7 @@ export function buildCapturePlan(
   const declaredTargeted = new Set<string>();
   for (let i = 0; i < declared.length; i++) {
     const shot = declared[i];
-    const resolved = resolveEntryTarget(shot.target, targets);
+    const resolved = resolveDeclaredTarget(shot.target, targets);
     if (resolved.error) {
       errors.push(`shot #${i + 1}: ${resolved.error}`);
       continue;
@@ -474,4 +486,98 @@ export function buildCapturePlan(
   }
 
   return { entries: deduped, errors, autoSkips, collapsed };
+}
+
+/**
+ * The exact fenced-JSON content a `## Shots` section holds for `shots`, as the
+ * parser and the CLI both write it (#0627). One formatter — the CLI's
+ * `--shots`, the server's Add-shot route and any future writer all produce the
+ * same bytes.
+ */
+export function declaredShotsSectionContent(shots: DeclaredShot[]): string {
+  return `\`\`\`json\n${JSON.stringify(shots, null, 2)}\n\`\`\``;
+}
+
+/**
+ * Append one entry to a task body's declared `## Shots` list and return the
+ * section content to write. The CURRENT body is parsed first so a list that is
+ * already malformed is reported instead of silently dropped by the rewrite.
+ */
+export function appendDeclaredShot(
+  body: string,
+  shot: DeclaredShot,
+): { content: string; errors: string[] } {
+  const parsed = parseShotPlan(body ?? "");
+  if (parsed.errors.length > 0) {
+    return { content: "", errors: parsed.errors };
+  }
+  return {
+    content: declaredShotsSectionContent([...parsed.shots, shot]),
+    errors: [],
+  };
+}
+
+/**
+ * Does a declared entry describe this captured shot? Compares only the fields
+ * both sides record — label, route, target — because `selector`/`steps` live
+ * solely in the declaration. Used by the drawer's pairing (ui `shot-rows.ts`)
+ * and by delete's legacy-shot declaration-sync (#0627).
+ *
+ * An entry with NO identifying fields (no label, route or target) matches
+ * NOTHING: it cannot be attributed to a specific capture, and treating the
+ * absent fields as wildcards would let a declaration carrying only steps or a
+ * highlight claim any deleted shot (review round 1). New hand-added shots
+ * carry their full declaration in the manifest (`ShotMeta.declared`) and are
+ * synced exactly via {@link sameDeclaredShot} instead.
+ */
+export function declaredShotMatchesShot(
+  entry: DeclaredShot,
+  shot: { label?: string; route?: string; target?: string },
+): boolean {
+  if (!entry.label && !entry.route && !entry.target) return false;
+  if (entry.label && entry.label !== shot.label) return false;
+  if (entry.route && entry.route !== (shot.route ?? "/")) return false;
+  if (entry.target && entry.target !== shot.target) return false;
+  return true;
+}
+
+/**
+ * Structural equality of two declared entries (#0627 review round 1): every
+ * field must be present-and-equal, steps compared as an ordered list. Both
+ * sides are post-parse (`parseShot`), so fields are already normalized. This
+ * is the exact rule for syncing a hand-added shot's own declaration on
+ * delete — two declarations that merely share label/route/target but differ
+ * in selector or steps are NOT the same shot's declaration.
+ */
+export function sameDeclaredShot(a: DeclaredShot, b: DeclaredShot): boolean {
+  for (const field of ["label", "target", "route", "selector", "highlight"] as const) {
+    if ((a[field] ?? undefined) !== (b[field] ?? undefined)) return false;
+  }
+  return JSON.stringify(a.steps ?? []) === JSON.stringify(b.steps ?? []);
+}
+
+/**
+ * Remove every declared entry `match` returns true for from a task body's
+ * `## Shots` list and return the section content to write (#0627). Identical
+ * entries are all removed: a delete must not leave a declaration behind that
+ * re-handoff would capture again. A body with no `## Shots` section (or an
+ * already-malformed one, reported in `errors`) removes nothing.
+ */
+export function removeDeclaredShots(
+  body: string,
+  match: (shot: DeclaredShot) => boolean,
+): { content: string; removed: number; errors: string[] } {
+  const parsed = parseShotPlan(body ?? "");
+  if (parsed.errors.length > 0) {
+    return { content: "", removed: 0, errors: parsed.errors };
+  }
+  const kept = parsed.shots.filter((s) => !match(s));
+  if (kept.length === parsed.shots.length) {
+    return { content: "", removed: 0, errors: [] };
+  }
+  return {
+    content: declaredShotsSectionContent(kept),
+    removed: parsed.shots.length - kept.length,
+    errors: [],
+  };
 }
