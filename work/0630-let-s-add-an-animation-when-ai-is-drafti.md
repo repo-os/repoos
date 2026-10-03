@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-03T03:42:15Z"
+review_passes: 4
 id: "0630"
 title: Polish AI release-notes drafting feedback and panel-return state
 type: feature
@@ -11,8 +13,6 @@ branch: feat/polish-ai-release-notes-drafting-feedbac
 cli_override: github copilot
 model_override: default
 created_at: "2026-10-02T23:43:04Z"
-updated_at: "2026-10-03T03:42:15Z"
-review_passes: 3
 handoff_signal_retry_count: 2
 last_check_failure: "repoos check at 2026-10-03T01:32:28.816Z: server-side finalization timed out (deadline exceeded)"
 review_rounds: 2
@@ -115,3 +115,4 @@ Let's add an animation when AI is drafting the release notes, it can be similar 
 - 2026-10-03T03:40:47Z · status active→review
 - 2026-10-03T03:41:01Z · note: shots: failed — capture of Cut-release panel with AI notes area on "default" failed: click: Timeout 5000ms exceeded.
 - 2026-10-03T03:42:15Z · needs_input
+
