@@ -2,7 +2,7 @@
 id: "0632"
 title: Fail over to another remote host before falling back to local
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, web]
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: openrouter/openrouter/pareto-code
 review_cli_override: opencode
 review_model_override: openrouter/openrouter/auto
 created_at: "2026-10-03T06:01:04Z"
-updated_at: "2026-10-03T10:03:39Z"
+updated_at: "2026-10-03T10:21:31Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -48,3 +48,4 @@ See src/server/remote-validation.ts (acquire ~1751, run + timeout handling ~1255
 - 2026-10-03T09:39:16Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-03T10:03:30Z · cli_override, model_override
 - 2026-10-03T10:03:39Z · model_override
+- 2026-10-03T10:21:31Z · status active→review
