@@ -829,6 +829,13 @@ export interface RemoteValidationConfig {
    * an explicit opt-in rather than inheriting the close-out flag.
    */
   useForReleases?: boolean;
+  /**
+   * When a transient failure occurs on one host, retry the run on another
+   * healthy, free host that hasn't been tried yet for this run. Only after
+   * every eligible host has failed does the existing fallback/retryable
+   * behaviour apply. Default true when 2+ hosts are configured.
+   */
+  retryOtherHosts?: boolean;
 }
 
 /**

@@ -210,6 +210,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     idleShutdownMinutes: 8,
     maxServerLifetimeMinutes: 120,
     fallbackToLocal: false,
+    retryOtherHosts: false,
     maxConcurrent: 1,
   },
   // Close-out (Move to done) pipeline budget (#0573): a 6-minute wall clock
@@ -1402,6 +1403,27 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof rvReleases === "boolean") {
       cfg.remoteValidation = { ...cfg.remoteValidation, useForReleases: rvReleases };
     }
+    const rvRetry = parsed["remoteValidation.retryOtherHosts"];
+    if (typeof rvRetry === "boolean") {
+      cfg.remoteValidation = { ...cfg.remoteValidation, retryOtherHosts: rvRetry };
+    }
+    // Default: true when 2+ tailscale hosts are configured, else false. The
+    // guard tests the TOML key, NOT the merged object: DEFAULT_CONFIG already
+    // fills `retryOtherHosts: false`, so a merged-object `=== undefined` check
+    // could never fire and the dynamic default was dead code (#0632 review
+    // round 1). An explicit `false` in repoos.toml must stay false; an absent
+    // key reads as "unset" and gets the conditional default. The host list is
+    // already folded (shorthand `tailscaleHost` + list + [[rows]]) above, so
+    // its length is the resolved pool size.
+    const hostCount = cfg.remoteValidation?.tailscaleHosts?.length ?? 0;
+    if (
+      rvRetry === undefined &&
+      cfg.remoteValidation?.enabled === true &&
+      cfg.remoteValidation?.provider === "tailscale" &&
+      hostCount >= 2
+    ) {
+      cfg.remoteValidation = { ...cfg.remoteValidation, retryOtherHosts: true };
+    }
 
     // [closeOut] section — wall-clock budget for one Move-to-done attempt
     // (#0573). Invalid/negative values are clamped back to the default with a
@@ -1879,6 +1901,16 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "Cut releases on the same Hetzner runner as close-outs (off by default — a release is watched live, so the provision delay reads as a regression; opt in per repo). Only applies when the runner is enabled.",
     },
     {
+      key: "remoteValidation.retryOtherHosts",
+      label: "Remote validation: retry on other hosts",
+      type: "boolean",
+      tier: "restart",
+      restartRequired: true,
+      default: false,
+      description:
+        "When a transient failure occurs on one tailscale host, retry the run on another healthy, free host before falling back to local. Default true when 2+ hosts are configured.",
+    },
+    {
       key: "dev.inspector.enabled",
       label: "Copy inspector",
       type: "boolean",
@@ -2071,6 +2103,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "remoteValidation.maxServerLifetimeMinutes",
   "remoteValidation.maxConcurrent",
   "remoteValidation.fallbackToLocal",
+  "remoteValidation.retryOtherHosts",
   "remoteValidation.useForReleases",
 ];
 
