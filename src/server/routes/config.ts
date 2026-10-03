@@ -487,9 +487,14 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
           return json(res, 400, { error: `${field.label} entries must be non-empty strings` });
         }
         if (list.length === 0) continue;
+        const hostNames = list.map((entry) => {
+          const at = entry.indexOf("@");
+          return at > 0 ? entry.slice(at + 1).trim() : entry;
+        });
         const onDisk = loadConfig(config.root);
         const current = resolveRemoteHosts(onDisk.remoteValidation).map((h) => h.host);
-        const unchanged = current.length === list.length && current.every((h, i) => h === list[i]);
+        const unchanged =
+          current.length === hostNames.length && current.every((h, i) => h === hostNames[i]);
         if (unchanged) continue;
         // Rewrite the [[…]] rows too: keep a surviving host's per-host attrs
         // (user/os/labels/maxConcurrent), drop rows for hosts the user removed
@@ -513,7 +518,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
             .filter((r) => typeof r.host === "string")
             .map((r) => [(r.host as string).trim(), r] as const),
         );
-        const mappedRows = list.map((h) => rowByHost.get(h) ?? { host: h });
+        const mappedRows = hostNames.map((h) => rowByHost.get(h) ?? { host: h });
         // Only keep the pool in [[…]] row form when at least one entry
         // actually carries an attr beyond `host` — otherwise every host is
         // now a bare name and the clean flat-array form is strictly better
@@ -537,7 +542,8 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
         // invented. Independent of the rows/flat choice above — shorthand is
         // its own key either way.
         const shorthand = onDisk.remoteValidation?.tailscaleHost;
-        if (shorthand && !list.includes(shorthand)) {
+        const shorthandHost = shorthand?.includes("@") ? shorthand.split("@").pop() : shorthand;
+        if (shorthand && shorthandHost && !hostNames.includes(shorthandHost)) {
           patch["remoteValidation.tailscaleHost"] = list[0]!;
         }
         continue;

@@ -915,7 +915,7 @@ machine. Enabling it sends repo contents to a third-party host.
 | `remoteValidation.enabled` | boolean | `false` | yes | Master switch for the remote runner. |
 | `remoteValidation.provider` | string | `hetzner` | yes | Runner backend: `hetzner` (disposable cloud VM) or `tailscale` (persistent tailnet machine). |
 | `remoteValidation.tailscaleHost` | string | unset | yes | Tailscale hostname or 100.x.x.x IP of the runner machine — single-host shorthand for the pool (Tailscale provider only). |
-| `remoteValidation.tailscaleHosts` | array | unset | yes | Tailnet host pool (#0521): jobs dispatch to an idle host from this list and queue only when every eligible host is at its per-host limit. Edit as a comma-separated host list in Settings → Remote validation — a save updates the live dispatcher without restarting — or per host with `[[remoteValidation.tailscaleHosts]]` rows in `repoos.toml` (`host`, plus optional `user`, `os`, `labels`, `maxConcurrent`). `remoteValidation.tailscaleHost` is folded in as a host. |
+| `remoteValidation.tailscaleHosts` | array | unset | yes | Tailnet host pool (#0521): jobs dispatch to a host with the fewest active runs, queue only when every eligible host is at its per-host limit, and use this list's top-to-bottom order to break ties. Edit as a comma-separated host list in Settings → Remote validation or reorder plain-list hosts in Checks → Remote runners; saves update the live dispatcher without restarting. Rich `[[remoteValidation.tailscaleHosts]]` rows (`host`, plus optional `user`, `os`, `labels`, `maxConcurrent`) remain editable in `repoos.toml` and are read-only in the Remote runners tab. |
 | `remoteValidation.tailscaleUser` | string | `root` | yes | SSH user on the tailscale host (Tailscale provider only). |
 | `remoteValidation.containerImage` | string | `repoos-ci` | yes | Docker image to run the gate in (Tailscale provider only). |
 | `remoteValidation.serverType` | string | `cax31` | yes | Hetzner server type. Must match the architecture the snapshot was built on. |
@@ -934,7 +934,15 @@ environment-only.
 ### Tailscale host pool
 
 With the `tailscale` provider you can configure a pool of machines. Jobs
-dispatch to whichever host is idle; they queue only when every host is busy.
+dispatch to the host with the fewest active runs; they queue only when every
+eligible host is busy. Equal-load hosts are tried in configured order (top to
+bottom), so the first host gets work when all are idle. Use the up/down controls
+in Checks → Remote runners to reorder a plain string pool; the change applies
+immediately to new runs and does not affect in-flight runs. That page also
+shows per-host load averages, CPU count, memory use/total, free disk in the
+remote work area, and when each read-only SSH sample was taken. Samples run
+while the tab is open, at most every 15 seconds, and time out after five
+seconds; a failed or unreachable host reports unavailable stats.
 There are two authoring forms — pick **one** per config:
 
 **Plain list** (also editable in Settings → Remote validation → "Host pool").
@@ -955,6 +963,12 @@ provider = "tailscale"
 tailscaleHosts = ["bee", "thinkpad", "mini"]
 tailscaleUser = "nick"     # default SSH user for all hosts
 ```
+
+The single-host `tailscaleHost` shorthand is included in the pool. When
+`tailscaleHosts` is empty, it pins that host to the top; remove the shorthand
+from `[remoteValidation]` to control its position using the pool order. When
+`tailscaleHosts` is non-empty, the explicit list's order takes precedence and
+the shorthand does not jump ahead of it.
 
 **Rich rows** — one `[[remoteValidation.tailscaleHosts]]` block per host when
 you need per-host settings (`user`, `os`, `labels`, `maxConcurrent`,
