@@ -2,14 +2,14 @@
 id: "0629"
 title: Revert GitHub Copilot provider to external link only
 type: refactor
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/revert-github-copilot-provider-to-extern
 created_at: "2026-10-02T17:37:54Z"
-updated_at: "2026-10-03T05:34:51Z"
+updated_at: "2026-10-03T05:35:00Z"
 ---
 ## Problem
 
@@ -68,3 +68,4 @@ Instructions:
 - 2026-10-02T18:20:09Z · status inbox→ready
 - 2026-10-02T18:20:21Z · status ready→active, branch
 - 2026-10-03T05:34:51Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-10-03T05:35:00Z · status review→active
