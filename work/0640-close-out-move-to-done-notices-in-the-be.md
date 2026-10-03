@@ -11,7 +11,7 @@ branch: feat/close-out-move-to-done-notices-in-the-be
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-03T16:49:27Z"
-updated_at: "2026-10-03T17:19:51Z"
+updated_at: "2026-10-03T17:51:03Z"
 ---
 ## Problem
 1. The top-bar notice bell (NoticeBell.vue) only knows release notices: NoticeKind is releaseNotesReady | releaseSucceeded | releaseFailed (src/ui-app/src/stores/notices.ts). A Move to done (close-out) that succeeds, fails or times out produces nothing there, so the user has to open the task to learn the outcome. A failed MTD is also not a 'task needing you': the task stays in review and the bell lists it only as 'awaiting sign-off'.
@@ -40,6 +40,32 @@ updated_at: "2026-10-03T17:19:51Z"
 - Do not touch the drift or timeout logic of the pipeline itself here (see #0637). This task only observes outcomes.
 - Done-status filter fix could be hotfixed separately, but keep it in this task unless the human asks.
 
+## Shots
+```json
+[
+  {
+    "label": "Settings → Notifications: Move to done toggles",
+    "target": "default",
+    "route": "/settings?tab=notifications",
+    "highlight": "#settings-panel-notifications .setting-row"
+  },
+  {
+    "label": "Notice bell popover",
+    "target": "default",
+    "route": "/",
+    "highlight": "[data-test-id=\"notice-bell-popover\"]",
+    "steps": [
+      {
+        "click": "[data-test-id=\"notice-bell-trigger\"]"
+      },
+      {
+        "waitMs": 400
+      }
+    ]
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-03T16:49:27Z · created · unknown
@@ -54,3 +80,4 @@ updated_at: "2026-10-03T17:19:51Z"
 - 2026-10-03T16:55:45Z · needs_input
 - 2026-10-03T16:57:56Z · needs_input (underspecified) dismissed by hello@repoos.org
 - 2026-10-03T17:19:51Z · note: Cleanup (#0640): all four stale-flag tasks verified merged and cleared. #0397 close-out candidate 8a4f2b9 was an ancestor of main; #0288 implementation commits 68f0fdee7/576342be2 are in main; #0212 merge 1e2095988 is in main; #0316 was superseded by redo 47cb6dfdb in main. Cleared needs_merge on 0397/0288/0212 and needs_input on 0316 via repoos update --needs-merge/--needs-input false.
+- 2026-10-03T17:51:03Z · body: section Shots
