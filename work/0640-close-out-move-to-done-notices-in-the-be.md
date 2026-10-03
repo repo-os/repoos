@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p2
 area: [web, server]
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+review_cli_override: opencode
 created_at: "2026-10-03T16:49:27Z"
-updated_at: "2026-10-03T16:49:27Z"
+updated_at: "2026-10-03T16:54:57Z"
 ---
 ## Problem
 1. The top-bar notice bell (NoticeBell.vue) only knows release notices: NoticeKind is releaseNotesReady | releaseSucceeded | releaseFailed (src/ui-app/src/stores/notices.ts). A Move to done (close-out) that succeeds, fails or times out produces nothing there, so the user has to open the task to learn the outcome. A failed MTD is also not a 'task needing you': the task stays in review and the bell lists it only as 'awaiting sign-off'.
@@ -41,3 +42,4 @@ updated_at: "2026-10-03T16:49:27Z"
 ## Activity
 
 - 2026-10-03T16:49:27Z · created · unknown
+- 2026-10-03T16:54:57Z · review_cli_override
