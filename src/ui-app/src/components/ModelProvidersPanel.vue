@@ -9,7 +9,6 @@ import type {
   OpenCodeGoUsage,
   OpenRouterUsage,
   DeepInfraUsage,
-  CopilotUsage,
 } from "../types";
 import Button from "./ui/button.vue";
 
@@ -26,9 +25,7 @@ interface RowState {
 const states = reactive<Record<string, RowState>>({});
 
 // Inline key forms — one draft per live row, plus open/saving/error flags.
-// GitHub Copilot also stores an optional billing scope (org/enterprise slug).
 const drafts = reactive<Record<string, string>>({});
-const scopeDrafts = reactive<Record<string, string>>({});
 const saving = reactive<Record<string, boolean>>({});
 const formOpen = reactive<Record<string, boolean>>({});
 const keyErrors = reactive<Record<string, string>>({});
@@ -45,7 +42,6 @@ async function loadProviders(): Promise<void> {
     const res = await api<ModelProvidersResponse>("/api/model-providers");
     rows.value = res.providers;
     for (const row of res.providers) {
-      if (row.scope && scopeDrafts[row.id] === undefined) scopeDrafts[row.id] = row.scope;
       if (row.kind === "live" && row.hasKey && !states[row.id]?.usage) {
         void loadUsage(row.id);
       }
@@ -77,16 +73,11 @@ async function saveKey(row: ModelProviderRow): Promise<void> {
   keyErrors[row.id] = "";
   try {
     const payload: Record<string, string> = { key: drafts[row.id] ?? "" };
-    if (row.id === "github-copilot") payload.scope = scopeDrafts[row.id] ?? "";
     const res = await api<ModelProvidersKeyResponse>(
       `/api/model-providers/${row.id}/key`,
       JSON_OPTS("POST", payload),
     );
     row.hasKey = res.hasKey;
-    if (res.scope !== undefined) {
-      row.scope = res.scope;
-      scopeDrafts[row.id] = res.scope;
-    }
     drafts[row.id] = "";
     formOpen[row.id] = false;
     if (res.hasKey) void loadUsage(row.id);
@@ -108,11 +99,6 @@ function fmtUsd(v: number | null): string {
   return `$${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function fmtQty(v: number | null): string {
-  if (v == null) return "—";
-  return v.toLocaleString("en-US", { maximumFractionDigits: 2 });
-}
-
 /** DeepInfra "2026.10" → "Oct 2026". */
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 function deepInfraPeriod(period: string): string {
@@ -120,17 +106,6 @@ function deepInfraPeriod(period: string): string {
   if (!m) return period;
   const idx = Number(m[2]) - 1;
   return idx >= 0 && idx < 12 ? `${MONTHS[idx]} ${m[1]}` : period;
-}
-
-function copilotScopeLabel(scope: { kind: string; slug: string | null }): string {
-  if (scope.kind === "org") return `org ${scope.slug}`;
-  if (scope.kind === "enterprise") return `enterprise ${scope.slug}`;
-  return "personal plan";
-}
-
-function copilotTotalNet(u: CopilotUsage): number | null {
-  if (!u.rows.length) return null;
-  return u.rows.reduce((sum, r) => sum + (r.netAmount ?? 0), 0);
 }
 
 function fmtResets(iso: string | null): string {
@@ -155,8 +130,6 @@ const goUsage = (u: ModelProviderUsage | null): OpenCodeGoUsage | null =>
   u?.kind === "opencode-go" ? u : null;
 const deepinfraUsage = (u: ModelProviderUsage | null): DeepInfraUsage | null =>
   u?.kind === "deepinfra" ? u : null;
-const copilotUsage = (u: ModelProviderUsage | null): CopilotUsage | null =>
-  u?.kind === "github-copilot" ? u : null;
 
 onMounted(() => {
   void loadProviders();
@@ -169,8 +142,9 @@ onMounted(() => {
       <span class="live-dot"></span>Model providers
     </div>
     <div class="agent-desc">
-      Spend and usage per model provider, without leaving RepoOS. Four providers report live numbers
-      behind an API key; the other rows link to dashboards until live data is connected here.
+      Spend and usage per model provider, without leaving RepoOS. Three providers report live
+      numbers behind an API key; the other rows link to dashboards until live data is connected
+      here.
     </div>
 
     <div v-if="loadError" class="mp-error">{{ loadError }}</div>
@@ -201,15 +175,6 @@ onMounted(() => {
             :aria-label="`${row.label} API key`"
             @keyup.enter="saveKey(row)"
           />
-          <input
-            v-if="row.id === 'github-copilot'"
-            v-model="scopeDrafts[row.id]"
-            type="text"
-            autocomplete="off"
-            placeholder="org:my-org or enterprise:my-ent — empty for a personal plan"
-            aria-label="Copilot billing scope"
-            @keyup.enter="saveKey(row)"
-          />
           <Button variant="outline" size="sm" :disabled="saving[row.id]" @click="saveKey(row)">
             {{ saving[row.id] ? "Saving…" : "Save key" }}
           </Button>
@@ -223,11 +188,6 @@ onMounted(() => {
             Cancel
           </Button>
           <div class="mp-key-hint">
-            <template v-if="row.id === 'github-copilot'">
-              A <strong>classic</strong> personal access token — GitHub's billing endpoints reject
-              fine-grained ones. For a centrally billed plan, also set the scope above with a token
-              from an org owner or enterprise billing manager.
-            </template>
             Stored in <code>.env</code> on this machine (gitignored) — never committed, never
             logged.
           </div>
@@ -423,47 +383,6 @@ onMounted(() => {
             </div>
             <div v-if="deepinfraUsage(rowState(row.id).usage)!.usageError" class="mp-part-error">
               Usage unavailable: {{ deepinfraUsage(rowState(row.id).usage)!.usageError }}
-            </div>
-          </div>
-
-          <!-- GitHub Copilot: billed AI-credit usage for the period -->
-          <div v-else-if="copilotUsage(rowState(row.id).usage)" class="mp-data">
-            <template v-if="!copilotUsage(rowState(row.id).usage)!.unrecognized">
-              <div class="mp-stat mp-stat-hero">
-                <span class="mp-stat-label">
-                  Billed {{ copilotUsage(rowState(row.id).usage)!.periodLabel }} ·
-                  {{ copilotScopeLabel(copilotUsage(rowState(row.id).usage)!.scope) }}
-                </span>
-                <span class="mp-stat-value">{{
-                  fmtUsd(copilotTotalNet(copilotUsage(rowState(row.id).usage)!))
-                }}</span>
-                <span class="mp-stat-sub">amount billed — not remaining quota</span>
-              </div>
-              <div v-if="copilotUsage(rowState(row.id).usage)!.rows.length" class="mp-stat-row">
-                <div
-                  v-for="r in copilotUsage(rowState(row.id).usage)!.rows"
-                  :key="`${r.sku}:${r.model ?? ''}`"
-                  class="mp-stat"
-                >
-                  <span class="mp-stat-label">{{ r.model ? `${r.sku} · ${r.model}` : r.sku }}</span>
-                  <span class="mp-stat-value sm">
-                    {{ fmtQty(r.billedQuantity) }} {{ r.unitType ?? "units" }} billed
-                  </span>
-                  <span v-if="(r.includedQuantity ?? 0) > 0" class="mp-stat-sub">
-                    + {{ fmtQty(r.includedQuantity) }} included
-                  </span>
-                </div>
-              </div>
-              <div v-else class="mp-part-error">
-                No Copilot usage billed to this account for
-                {{ copilotUsage(rowState(row.id).usage)!.periodLabel }}.
-              </div>
-            </template>
-            <div v-else class="mp-part-error">
-              Live usage responded, but in a format this build doesn't recognize — check the
-              <a :href="row.dashboardUrl" target="_blank" rel="noopener noreferrer"
-                >billing settings</a
-              >.
             </div>
           </div>
 
