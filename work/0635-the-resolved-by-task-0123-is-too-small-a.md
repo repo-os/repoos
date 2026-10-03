@@ -2,7 +2,7 @@
 id: "0635"
 title: Make resolved-by-task indicator prominent on input drawer
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
@@ -12,7 +12,7 @@ model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-03T08:02:53Z"
-updated_at: "2026-10-03T08:08:41Z"
+updated_at: "2026-10-03T08:08:42Z"
 ---
 ## Problem
 
@@ -72,3 +72,4 @@ The "Resolved by Task #0123" is too small and easy for the user to miss seeing, 
 - 2026-10-03T08:08:37Z · model_override
 - 2026-10-03T08:08:40Z · review_cli_override
 - 2026-10-03T08:08:41Z · review_model_override
+- 2026-10-03T08:08:42Z · status inbox→ready
