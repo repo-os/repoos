@@ -69,6 +69,7 @@ workDir = "work"          # task markdown files
 docsDir = "docs"          # context docs an agent reads first
 skillsDir = "skills"      # reusable skills
 inputsDir = "inputs"      # user-submitted inputs and attachments
+storiesDir = "stories"    # story definitions (when [stories] is on)
 cacheDir = ".repoos"      # derived state; safe to delete
 taskExtensions = [".md"]  # file extensions treated as tasks
 
@@ -234,6 +235,7 @@ workDir = "work"
 docsDir = "docs"
 skillsDir = "skills"
 inputsDir = "inputs"
+storiesDir = "stories"
 cacheDir = ".repoos"
 taskExtensions = [".md"]
 ```
@@ -244,6 +246,7 @@ taskExtensions = [".md"]
 | `docsDir` | string | `docs` | yes | Directory holding context docs an agent reads before working. |
 | `skillsDir` | string | `skills` | yes | Directory holding reusable skills (`skills/<name>/SKILL.md`). |
 | `inputsDir` | string | `inputs` | yes | Directory holding user-submitted inputs and their attachments. |
+| `storiesDir` | string | `stories` | yes | Directory holding story definitions (used when Stories are enabled). Must be repo-relative; an absolute or escaping value falls back to the default with a warning. |
 | `cacheDir` | string | `.repoos` | yes | Derived state only — logs, indexes, cached databases. Delete it and RepoOS rebuilds from the task files; nothing of record is lost. |
 | `taskExtensions` | array of strings | `[".md"]` | yes | File extensions treated as tasks. |
 
@@ -744,6 +747,11 @@ enabled = false
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
 | `stories.enabled` | boolean | `false` | yes | Turns the Stories page, its navigation item (between Work and Checks), and the task drawer's Story field on. |
+
+Story definition files live under `storiesDir` (default `stories`, a top-level
+repo-relative layout key — see *Layout and repository paths*). Existing repos
+need no migration; moving the directory means moving the files and setting the
+key together, with a server restart.
 
 With stories enabled, the task drawer shows **Story** next to **Area** on the top
 row of the details form instead of **Assigned to**; assignee stays in task
