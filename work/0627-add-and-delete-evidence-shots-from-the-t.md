@@ -1,4 +1,5 @@
 ---
+merge_conflict_retry_count: 1
 updated_at: "2026-10-03T05:34:56Z"
 review_passes: 8
 id: "0627"
@@ -137,4 +138,5 @@ In the task drawer's Changes / UI changes section:
 - 2026-10-03T05:33:23Z · status active→review
 - 2026-10-03T05:34:44Z · note: shots: failed — capture of UI changes section with Add shot and per-shot delete on "default" failed: click: Timeout 5000ms exceeded.
 - 2026-10-03T05:34:53Z · needs_input
+
 

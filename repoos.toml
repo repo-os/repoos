@@ -88,7 +88,7 @@ remoteValidation.containerImage = "repoos-ci"
 #   os = "linux"
 dev.inspector.enabled = true
 dev.inspector.editorCommand = "zed {file}:{line}"
-remoteValidation.tailscaleHosts = ["peckjachowski@mini", "nick@bee", "nick@thinkpad"]
+remoteValidation.tailscaleHosts = ["nick@bee", "nick@thinkpad", "peckjachowski@mini"]
 [board.columns]
 
   draft = "Draft"
