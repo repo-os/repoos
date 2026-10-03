@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-03T03:42:15Z"
-review_passes: 4
 id: "0630"
 title: Polish AI release-notes drafting feedback and panel-return state
 type: feature
@@ -13,6 +11,8 @@ branch: feat/polish-ai-release-notes-drafting-feedbac
 cli_override: github copilot
 model_override: default
 created_at: "2026-10-02T23:43:04Z"
+updated_at: "2026-10-03T03:45:14Z"
+review_passes: 4
 handoff_signal_retry_count: 2
 last_check_failure: "repoos check at 2026-10-03T01:32:28.816Z: server-side finalization timed out (deadline exceeded)"
 review_rounds: 2
