@@ -3,9 +3,6 @@ id: "0640"
 title: "Close-out (Move to done) notices in the bell, and stop stale flags on done tasks listing as needing you"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Desired UX"
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/close-out-move-to-done-notices-in-the-be
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-03T16:49:27Z"
-updated_at: "2026-10-03T16:55:45Z"
+updated_at: "2026-10-03T16:57:56Z"
 ---
 ## Problem
 1. The top-bar notice bell (NoticeBell.vue) only knows release notices: NoticeKind is releaseNotesReady | releaseSucceeded | releaseFailed (src/ui-app/src/stores/notices.ts). A Move to done (close-out) that succeeds, fails or times out produces nothing there, so the user has to open the task to learn the outcome. A failed MTD is also not a 'task needing you': the task stays in review and the bell lists it only as 'awaiting sign-off'.
@@ -55,3 +52,4 @@ updated_at: "2026-10-03T16:55:45Z"
 - 2026-10-03T16:55:41Z · status inbox→ready
 - 2026-10-03T16:55:44Z · status ready→active, branch
 - 2026-10-03T16:55:45Z · needs_input
+- 2026-10-03T16:57:56Z · needs_input (underspecified) dismissed by hello@repoos.org
