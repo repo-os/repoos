@@ -8,8 +8,9 @@ area: [web, server]
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+review_cli_override: pi
 created_at: "2026-10-03T08:00:36Z"
-updated_at: "2026-10-03T08:01:34Z"
+updated_at: "2026-10-03T08:13:58Z"
 ---
 ## Problem
 
@@ -69,3 +70,4 @@ Let's add a "Delete input" button at the bottom left of the input side panel (si
 - 2026-10-03T08:00:36Z · created · hello@repoos.org
 - 2026-10-03T08:00:37Z · screenshots
 - 2026-10-03T08:01:34Z · status draft→inbox, title, area, body
+- 2026-10-03T08:13:58Z · review_cli_override
