@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0630"
 title: Polish AI release-notes drafting feedback and panel-return state
 type: feature
@@ -75,3 +76,4 @@ Let's add an animation when AI is drafting the release notes, it can be similar 
 - 2026-10-02T23:44:47Z · status inbox→ready
 - 2026-10-02T23:44:48Z · status ready→active, branch
 - 2026-10-03T00:36:31Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+
