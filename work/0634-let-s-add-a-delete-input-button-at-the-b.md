@@ -11,7 +11,7 @@ branch: feat/add-delete-buttons-to-input-and-story-si
 review_cli_override: pi
 review_model_override: openrouter/openrouter/free
 created_at: "2026-10-03T08:00:36Z"
-updated_at: "2026-10-03T08:21:58Z"
+updated_at: "2026-10-03T08:51:13Z"
 ---
 ## Problem
 
@@ -66,6 +66,43 @@ Let's add a "Delete input" button at the bottom left of the input side panel (si
 
 ![Screenshot-2026-10-03-at-15.33.46](/api/tasks/0634/attachments/screenshot-1.png)
 
+## Shots
+```json
+[
+  {
+    "label": "Input drawer with Delete input at bottom left",
+    "target": "default",
+    "route": "/inputs",
+    "highlight": ".drawer .delete-zone",
+    "steps": [
+      {
+        "click": ".input-row"
+      },
+      {
+        "waitMs": 300
+      }
+    ]
+  },
+  {
+    "label": "Story panel Details tab with Delete story",
+    "target": "default",
+    "route": "/stories",
+    "highlight": ".story-panel-facts .delete-zone",
+    "steps": [
+      {
+        "click": ".story-head"
+      },
+      {
+        "click": ".drawer-tabs .tab-btn:nth-child(4)"
+      },
+      {
+        "waitMs": 300
+      }
+    ]
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-03T08:00:36Z · created · hello@repoos.org
@@ -75,3 +112,4 @@ Let's add a "Delete input" button at the bottom left of the input side panel (si
 - 2026-10-03T08:21:41Z · review_model_override
 - 2026-10-03T08:21:57Z · status inbox→ready
 - 2026-10-03T08:21:58Z · status ready→active, branch
+- 2026-10-03T08:51:13Z · body: section Shots
