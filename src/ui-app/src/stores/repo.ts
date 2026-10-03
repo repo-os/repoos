@@ -3014,7 +3014,15 @@ export const useRepoStore = defineStore("repo", () => {
   const enrichingInputs = reactive(new Set<string>());
   const enrichTimers = new Map<string, ReturnType<typeof setTimeout>>();
   const ENRICH_PENDING_TIMEOUT_MS = 90_000; // PM call takes 15–20s; leave slack
+  /**
+   * Ids whose `input.enriched` already arrived. The server starts enriching
+   * before the POST returns, so completion can in principle be processed
+   * around registration (e.g. between awaits during attachment uploads);
+   * once seen, a later `markEnriching` must not re-arm a stale spinner.
+   */
+  const enrichedSeen = new Set<string>();
   function markEnriching(id: string): void {
+    if (enrichedSeen.has(id)) return;
     enrichingInputs.add(id);
     const prev = enrichTimers.get(id);
     if (prev) clearTimeout(prev);
@@ -3027,6 +3035,7 @@ export const useRepoStore = defineStore("repo", () => {
     );
   }
   function markEnriched(id: string): void {
+    enrichedSeen.add(id);
     const t = enrichTimers.get(id);
     if (t) {
       clearTimeout(t);
@@ -3103,11 +3112,14 @@ export const useRepoStore = defineStore("repo", () => {
     try {
       const input = await createInput(text);
       created = true;
-      for (const s of attachments) await uploadInputAttachment(input.id, s);
-      // The server is now enriching in the background (#0628) — track it so
-      // the Inputs list shows an in-progress state until `input.enriched`
-      // arrives (or the failure backstop clears it, #0631).
+      // Track enrichment immediately, before the attachment uploads: the
+      // server already started the background PM call when the POST returned,
+      // so the pending state must not depend on the uploads that follow. A
+      // failed upload must not drop tracking (the input is still enriching),
+      // and enrichment finishing during a slow upload still clears the
+      // indicator via `input.enriched` (#0631, review round 2).
       markEnriching(input.id);
+      for (const s of attachments) await uploadInputAttachment(input.id, s);
       window.dispatchEvent(new Event("repoos:inputs-updated"));
     } catch (err) {
       onError(err);
