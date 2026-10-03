@@ -36,7 +36,7 @@ import { branchCommit, commitTaskFile, currentBranch } from "../core/git.js";
 import { buildIndex } from "../core/indexer.js";
 import { normalizeTaskDependencies, validateTaskDependencies } from "../core/task-dependencies.js";
 import { appendScreenshotsSection, type ScreenshotMeta } from "./attachments.js";
-import { STORIES_DIR } from "../core/story-definition-files.js";
+import { storiesDirOf } from "../core/story-definition-files.js";
 
 /**
  * Body sections that are user-owned or append-only: they live in the task body
@@ -611,5 +611,5 @@ export function deleteInputFile(config: RepoOSConfig, absPath: string, commitMes
  * name are untouched, matching the derived-story model (`MergedStoryGroup`).
  */
 export function deleteStoryFile(config: RepoOSConfig, absPath: string, commitMessage: string) {
-  return deleteDataFile(config, guardDataDir(config, absPath, STORIES_DIR), commitMessage);
+  return deleteDataFile(config, guardDataDir(config, absPath, storiesDirOf(config)), commitMessage);
 }
