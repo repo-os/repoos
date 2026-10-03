@@ -3,9 +3,6 @@ id: "0631"
 title: Show enrichment-in-progress on inputs list cards
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p2
 area: web
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-02T23:44:30Z"
-updated_at: "2026-10-03T05:35:10Z"
+updated_at: "2026-10-03T05:36:37Z"
 review_passes: 5
 handoff_signal_retry_count: 2
 review_rounds: 2
@@ -122,3 +119,4 @@ Also when I create a new input and the AI is making the title I guess, when I cl
 - 2026-10-03T05:27:51Z · review_cli_override
 - 2026-10-03T05:27:53Z · review_model_override
 - 2026-10-03T05:35:10Z · status active→review
+- 2026-10-03T05:36:37Z · needs_input
