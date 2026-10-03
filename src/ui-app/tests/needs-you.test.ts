@@ -62,6 +62,12 @@ describe("humanNeedsReasons", () => {
     expect(reasons({ status: "review" })).toEqual(["awaiting sign-off"]);
   });
 
+  it("ignores stale needs_input and needs_merge flags on done tasks", () => {
+    expect(reasons({ status: "done", needsInput: true })).toEqual([]);
+    expect(reasons({ status: "done", needsMerge: true })).toEqual([]);
+    expect(reasons({ status: "done", needsInput: true, needsMerge: true })).toEqual([]);
+  });
+
   it("returns no reason for an ai-assigned inbox task", () => {
     expect(reasons({})).toEqual([]);
   });

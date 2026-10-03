@@ -277,8 +277,10 @@ export function humanNeedsReasons(
 ): string[] {
   const reasons: string[] = [];
   if (t.assignee === "human" && t.status !== "done") reasons.push("assigned to you");
-  if (t.needsInput) reasons.push("needs input");
-  if (t.needsMerge) reasons.push("merge needed");
+  // A finished task needs nothing more; stale flags left by metadata-only moves
+  // to done must not keep it listed.
+  if (t.needsInput && t.status !== "done") reasons.push("needs input");
+  if (t.needsMerge && t.status !== "done") reasons.push("merge needed");
   if (t.status === "review") reasons.push("awaiting sign-off");
   return reasons;
 }
