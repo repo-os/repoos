@@ -2,12 +2,12 @@
 id: "0637"
 title: Don't re-run close-out validation when main only gained inputs/stories bookkeeping; add storiesDir config
 type: bug
-status: ready
+status: active
 priority: p1
 area: [server, core]
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/don-t-re-run-close-out-validation-when-m
 cli_override: opencode
 model_override: openrouter/openrouter/pareto-code
 review_cli_override: opencode
@@ -53,3 +53,4 @@ Two related gaps:
 - 2026-10-03T09:11:18Z · status inbox→ready
 - 2026-10-03T09:11:22Z · review_cli_override
 - 2026-10-03T09:11:27Z · review_model_override
+- 2026-10-03T09:11:27Z · status ready→active, branch
