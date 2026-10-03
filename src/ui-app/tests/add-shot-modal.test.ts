@@ -104,6 +104,17 @@ describe("AddShotModal validation (#0627)", () => {
     ]);
   });
 
+  it("shows a capture warning in the modal and blocks a duplicate submit", async () => {
+    const w = mountModal();
+    await w.setProps({ warning: "highlight .nope matched nothing" });
+    const notice = w.find('[data-test-id="add-shot-warning"]');
+    expect(notice.exists()).toBe(true);
+    expect(notice.text()).toContain("highlight .nope matched nothing");
+    // The shot is already saved: submit is disabled, cancel reads "Close".
+    expect(w.find('button[type="submit"]').attributes("disabled")).toBeDefined();
+    expect(w.text()).toContain("Close");
+  });
+
   it("a click step with a selector validates clean", async () => {
     const w = mountModal();
     await w

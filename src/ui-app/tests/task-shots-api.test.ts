@@ -156,6 +156,25 @@ describe("POST /api/tasks/:id/shots — declare and capture (#0627)", () => {
     expect(readFileSync(task.absPath, "utf8")).not.toContain("## Shots");
   });
 
+  it("returns highlight/selector misses as a warning on the success response", async () => {
+    mockedCapture.mockResolvedValue({
+      ...SHOT_RESULT,
+      warnings: ["highlight .nope matched nothing"],
+    } as never);
+    const { capture, res } = resCapture();
+    await uploadTaskShot(
+      makeCtx() as never,
+      bodyReq({ target: "default", label: "Task drawer open", highlight: ".nope" }),
+      res,
+      { param1: task.id },
+    );
+    expect(capture.statusCode).toBe(201);
+    expect(capture.body).toMatchObject({
+      ok: true,
+      warning: "highlight .nope matched nothing",
+    });
+  });
+
   it("rejects wrong-typed fields instead of treating them as omitted", async () => {
     // Fields reach the validator verbatim: `{ target: 5 }` must be REJECTED,
     // never silently narrowed to "no target" and captured anyway (review
@@ -322,6 +341,34 @@ describe("DELETE /api/tasks/:id/shots/:name — delete + declaration sync (#0627
     const onDisk = readFileSync(task.absPath, "utf8");
     expect(onDisk).toContain('"selector": ".other"');
     expect(onDisk).not.toContain('"selector": ".drawer"');
+  });
+
+  it("removes NO declaration when a legacy shot matches several (ambiguous), and warns", async () => {
+    // Two declarations share label/route/target and differ only in selector.
+    // A legacy/auto shot records neither, so it cannot say which one it came
+    // from — deleting it must not erase distinct declarations (review round 3).
+    const saved = seedShot("Task drawer open");
+    if ("error" in saved) throw new Error("seed failed");
+    const base = { target: "default", route: "/", label: "Task drawer open" };
+    task = patchSection(
+      declaredShotsSectionContent([
+        { ...base, selector: ".a" },
+        { ...base, selector: ".b" },
+      ]),
+    );
+
+    const { capture, res } = resCapture();
+    await deleteTaskShot(makeCtx() as never, emptyReq, res, {
+      param1: task.id,
+      param2: saved.name,
+    });
+
+    expect(capture.statusCode).toBe(200);
+    expect(capture.body).toMatchObject({ ok: true, declarationsRemoved: 0 });
+    expect((capture.body as { warning: string }).warning).toContain("2 ## Shots declarations");
+    const onDisk = readFileSync(task.absPath, "utf8");
+    expect(onDisk).toContain('"selector": ".a"');
+    expect(onDisk).toContain('"selector": ".b"');
   });
 
   it("404s for an unknown shot name", async () => {

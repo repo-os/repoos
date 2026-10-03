@@ -185,8 +185,15 @@ same route is dispatched by the body's `data` field) and
   (captured before that field existed) fall back to the shallow
   label/route/target matcher, which requires at least one identifying field —
   an anonymous declaration (steps or highlight only) can never claim a
-  deleted shot. All identical matches are removed, so a declaration can never
-  resurrect a delete through duplication.
+  deleted shot. That matcher cannot tell apart declarations differing only in
+  selector/steps, so when it matches MORE than one entry delete removes none
+  (`removeDeclaredShots` with `requireUnique`) and returns a warning telling
+  the user to edit `## Shots`; erasing distinct declarations would be worse
+  than leaving one that a re-handoff may recapture. (The exact-match path for
+  hand-added shots still removes every identical twin.)
+- Add-shot warnings (a `highlight`/`selector` that matched nothing) ride the
+  success response as `warning`; the modal stays open showing it, since the
+  shot is already saved.
 - Busy semantics differ from the handoff pass on purpose: the automatic
   capture replaces the task's preview (`startTargetPreview`), while a manual
   add NEVER evicts a running preview. The reservation is atomic —

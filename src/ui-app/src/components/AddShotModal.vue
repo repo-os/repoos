@@ -43,6 +43,12 @@ const props = defineProps<{
   busy?: boolean;
   /** Structured error from the last submit attempt (kept in the modal). */
   error?: string;
+  /**
+   * Set when the shot WAS captured and saved but something needs attention
+   * (a highlight/selector matched nothing). The modal stays open to show it;
+   * the shot is already added, so submitting again is disabled.
+   */
+  warning?: string;
 }>();
 
 const emit = defineEmits<{
@@ -351,12 +357,17 @@ function close(): void {
         </div>
 
         <p v-if="error" class="ff-error" role="alert">{{ error }}</p>
+        <p v-if="warning" class="ff-notice" role="status" data-test-id="add-shot-warning">
+          Shot added. {{ warning }}
+        </p>
 
         <div class="btn-row">
           <DialogClose as-child>
-            <Button variant="outline" type="button" :disabled="busy">Cancel</Button>
+            <Button variant="outline" type="button" :disabled="busy">{{
+              warning ? "Close" : "Cancel"
+            }}</Button>
           </DialogClose>
-          <Button variant="default" type="submit" :disabled="busy || !targets.length">
+          <Button variant="default" type="submit" :disabled="busy || !targets.length || !!warning">
             {{ busy ? "Capturing…" : "Add and capture" }}
           </Button>
         </div>

@@ -1193,7 +1193,11 @@ async function declareTaskShot(
       /* best-effort */
     }
   }
-  return json(res, 201, { ok: true, shot: result.shot });
+  return json(res, 201, {
+    ok: true,
+    shot: result.shot,
+    ...(result.warnings.length ? { warning: result.warnings.join("; ") } : {}),
+  });
 }
 
 /**
@@ -1240,6 +1244,9 @@ export const deleteTaskShot: RouteHandler = async (ctx, _req, res, params) => {
     removed.declared
       ? (declared) => sameDeclaredShot(declared, removed.declared!)
       : (declared) => declaredShotMatchesShot(declared, removed),
+    // The shallow matcher cannot tell declarations apart that differ only in
+    // selector/steps — remove none rather than erase a distinct one.
+    { requireUnique: !removed.declared },
   );
   try {
     const updated = patchTaskFile(config, task.absPath, {
@@ -1261,7 +1268,11 @@ export const deleteTaskShot: RouteHandler = async (ctx, _req, res, params) => {
     declarationsRemoved: removal.removed,
     ...(removal.errors.length
       ? { warning: `## Shots could not be read: ${removal.errors.join("; ")}` }
-      : {}),
+      : removal.ambiguous
+        ? {
+            warning: `the shot was deleted, but ${removal.ambiguous} ## Shots declarations match it and none was removed — edit the list so a re-handoff does not capture it again`,
+          }
+        : {}),
   });
 };
 

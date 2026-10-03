@@ -278,7 +278,9 @@ section (#0627) — no CLI needed — while the task is `active` or in `review`:
 - **Delete** on a shot removes the image and its manifest entry — and, when a
   matching `## Shots` declaration exists, removes that entry too, so the next
   re-handoff cannot resurrect the deleted evidence. This works for automatic,
-  declared, and legacy untagged shots alike.
+  declared, and legacy untagged shots alike. If several declarations could
+  belong to an automatic or legacy shot, none is removed and you're told to
+  edit the list yourself.
 **Shot hygiene (#0613):** a declared `highlight` or `selector` that matches
 nothing at capture time records a visible warning (for example: highlight `.x` matched
 nothing on /route) — capture still succeeds. Duplicate declarations with the
