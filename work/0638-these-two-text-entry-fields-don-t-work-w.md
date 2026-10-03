@@ -3,6 +3,9 @@ id: "0638"
 title: Fix unresponsive text entry fields in web UI
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p1
 area: web
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/fix-unresponsive-text-entry-fields-in-we
 cli_override: opencode
 model_override: openrouter/openrouter/pareto-code
 created_at: "2026-10-03T10:29:31Z"
-updated_at: "2026-10-03T12:16:15Z"
+updated_at: "2026-10-03T12:17:37Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -98,3 +101,4 @@ These two text entry fields don't work, when I click on them nothing happens, th
 - 2026-10-03T11:44:39Z · status active→review
 - 2026-10-03T11:45:58Z · status review→active
 - 2026-10-03T12:16:15Z · status active→review
+- 2026-10-03T12:17:37Z · needs_input
