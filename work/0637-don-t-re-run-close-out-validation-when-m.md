@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-03T10:01:18Z"
+review_passes: 1
 id: "0637"
 title: Don't re-run close-out validation when main only gained inputs/stories bookkeeping; add storiesDir config
 type: bug
@@ -13,7 +15,6 @@ model_override: openrouter/openrouter/pareto-code
 review_cli_override: opencode
 review_model_override: openrouter/openrouter/auto
 created_at: "2026-10-03T08:45:43Z"
-updated_at: "2026-10-03T10:00:04Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -61,3 +62,4 @@ Two related gaps:
 - 2026-10-03T10:00:03Z · status active→review
 - 2026-10-03T10:00:03Z · note: Task body is underspecified: missing sections: Desired UX
 - 2026-10-03T10:00:04Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+
