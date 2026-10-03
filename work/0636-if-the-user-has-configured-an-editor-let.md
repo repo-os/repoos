@@ -2,17 +2,17 @@
 id: "0636"
 title: Show 'Open in editor' link on task detail when editor is configured
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/show-open-in-editor-link-on-task-detail-
 model_override: openrouter/openrouter/auto
 review_cli_override: pi
 review_model_override: openrouter/openrouter/auto-beta
 created_at: "2026-10-03T08:23:48Z"
-updated_at: "2026-10-03T08:39:42Z"
+updated_at: "2026-10-03T08:39:46Z"
 ---
 ## Problem
 The task detail view shows a "Spec" label, but there's no quick way to open the underlying task markdown file in the user's configured editor. When an editor is configured, users should have a right-aligned "Open in editor ->" link on the same line as the "Spec" label (matching the "go to story ->" style above it). Without a configured editor, the link should either be hidden or prompt the user to configure their preferred editor in settings or repoos.toml.
@@ -58,3 +58,4 @@ If the user has configured an editor let's show an "Open in editor ->" on the sa
 - 2026-10-03T08:37:07Z · review_cli_override
 - 2026-10-03T08:37:15Z · review_model_override
 - 2026-10-03T08:39:42Z · status inbox→ready
+- 2026-10-03T08:39:46Z · status ready→active, branch
