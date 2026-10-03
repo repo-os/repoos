@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: ""
 branch: ""
 model_override: openrouter/openrouter/free
-review_cli_override: pi
+review_cli_override: opencode
 created_at: "2026-10-03T06:01:04Z"
-updated_at: "2026-10-03T09:27:58Z"
+updated_at: "2026-10-03T09:27:59Z"
 ---
 ## Problem
 A remote validation run is bound to one host when it starts (pool.acquire in src/server/remote-validation.ts). If that host then fails transiently mid-run (ssh drop, 'remote validation timed out'), nothing retries on the other pool hosts. The caller either falls back to the full local gate on the Air (remoteValidation.fallbackToLocal) or leaves the task retryable. Local fallback has taken 18+ minutes and hit 600s step timeouts, versus about 4 minutes on any remote host. A loaded host (e.g. mini) is probed healthy but runs slow, then times out.
@@ -39,3 +39,4 @@ See src/server/remote-validation.ts (acquire ~1751, run + timeout handling ~1255
 - 2026-10-03T08:42:55Z · status inbox→ready
 - 2026-10-03T09:27:54Z · model_override
 - 2026-10-03T09:27:58Z · review_cli_override
+- 2026-10-03T09:27:59Z · review_cli_override
