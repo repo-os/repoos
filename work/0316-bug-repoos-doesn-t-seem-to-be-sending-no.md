@@ -3,8 +3,6 @@ id: "0316"
 title: Fix notifications not sending and permission prompts not appearing
 type: bug
 status: done
-needs_input: true
-needs_input_reason: dev-error
 priority: p1
 area: web
 assigned_to: ai
@@ -14,7 +12,7 @@ model_override: deepinfra/deepseek-ai/DeepSeek-V4-Pro-0813
 pm_cli_override: claude code
 pm_model_override: haiku
 created_at: "2026-08-28T11:41:43Z"
-updated_at: "2026-08-28T14:34:33Z"
+updated_at: "2026-10-03T17:14:14Z"
 review_rounds: 2
 review_passes: 4
 last_check_failure: "[object Object]"
@@ -74,3 +72,4 @@ Bug: RepoOS doesn't seem to be sending notifications (browser or mac) and it did
 - 2026-08-28T14:32:42Z · status review→active
 - 2026-08-28T14:34:33Z · status active→done
 - 2026-08-28T14:34:33Z · agent exited with an error (opencode) · ✓ Server finalization complete — task moved to review
+- 2026-10-03T17:14:14Z · needs_input
