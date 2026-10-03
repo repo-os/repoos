@@ -3,9 +3,6 @@ id: "0631"
 title: Show enrichment-in-progress on inputs list cards
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p2
 area: web
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/show-enrichment-in-progress-on-inputs-li
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-02T23:44:30Z"
-updated_at: "2026-10-03T03:55:55Z"
+updated_at: "2026-10-03T03:57:02Z"
 review_passes: 3
 handoff_signal_retry_count: 2
 review_rounds: 2
@@ -108,3 +105,4 @@ Also when I create a new input and the AI is making the title I guess, when I cl
 - 2026-10-03T03:55:39Z · body: section Shots
 - 2026-10-03T03:55:45Z · status active→review
 - 2026-10-03T03:55:55Z · note: highlight article.task-card [aria-label="AI is writing title…"] matched nothing on /inputs
+- 2026-10-03T03:57:02Z · needs_input
