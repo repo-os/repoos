@@ -59,3 +59,4 @@ Two related gaps:
 - 2026-10-03T09:44:17Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-03T09:50:32Z · needs_input (underspecified) dismissed by hello@repoos.org
 - 2026-10-03T10:00:03Z · status active→review
+- 2026-10-03T10:00:03Z · note: Task body is underspecified: missing sections: Desired UX
