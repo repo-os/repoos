@@ -655,7 +655,7 @@ describe("AI release notes tracked run (#0605)", () => {
     expect(panel.querySelector(".rel-notes-drafting")).toBeNull();
   });
 
-  it("keeps the version and the draft state across close and reopen mid-run (#0630)", async () => {
+  it("keeps the version and completed draft when the run finishes while the panel is closed (#0630)", async () => {
     draftingState = runningRun();
     apiWithNotesRun({ run: runningRun() });
     wrapper = mount(ReleasesView, {
@@ -675,19 +675,50 @@ describe("AI release notes tracked run (#0605)", () => {
     await flushPromises();
     expect(document.querySelector(".release-drawer")).toBeNull();
 
-    panel = await openPanel();
-    expect(panel.querySelector<HTMLInputElement>("#rel-version")!.value).toBe("0.5.59");
-    expect(button(panel, "Drafting…")).toBeTruthy();
-    expect(panel.querySelector(".rel-notes-drafting .ai")).toBeTruthy();
-
-    // The draft lands while the panel is closed: the field fills and the
-    // version the operator picked is still there for Publish.
+    // The run lands while the panel stays closed. The page keeps polling and
+    // stores both the notes and the selected version for the next open.
     draftingState = succeededRun();
     await vi.advanceTimersByTimeAsync(1000);
     await flushPromises();
+
+    expect(document.querySelector(".release-drawer")).toBeNull();
+    panel = await openPanel();
     expect(panel.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toContain("Highlights");
     expect(panel.querySelector<HTMLInputElement>("#rel-version")!.value).toBe("0.5.59");
     expect(button(panel, "Publish v0.5.59")!.disabled).toBe(false);
+  });
+
+  it("surfaces a failure that arrives while the panel stays closed (#0630)", async () => {
+    draftingState = runningRun();
+    apiWithNotesRun({ run: draftingState });
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await flushPromises();
+    const panel = await openPanel();
+
+    button(panel, "Cut Next")!.click();
+    await flushPromises();
+    button(document.body, "Cancel")!.click();
+    await flushPromises();
+    expect(document.querySelector(".release-drawer")).toBeNull();
+
+    draftingState = {
+      ...runningRun(),
+      state: "failed",
+      error: "The agent gave up.",
+      notes: null,
+    };
+    await vi.advanceTimersByTimeAsync(1000);
+    await flushPromises();
+
+    const reopened = await openPanel();
+    expect(reopened.querySelector<HTMLInputElement>("#rel-version")!.value).toBe("0.5.59");
+    expect(reopened.querySelector(".rel-notes-error")?.textContent ?? "").toContain(
+      "The agent gave up.",
+    );
+    expect(reopened.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toBe("");
   });
 
   it("marks a terminal run from older commits as out of date, not ready (#0630 review)", async () => {

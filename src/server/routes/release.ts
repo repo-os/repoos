@@ -4,7 +4,6 @@ import {
   collectReleaseCommits,
   cutNewRelease,
   getReleaseStatus,
-  releaseHead,
   releaseNotesPrompt,
   type ReleasePhase,
   type ReleaseStatus,
@@ -154,7 +153,7 @@ export interface ReleaseNotesRun {
   error: string | null;
   /** Commit-context cache key the draft was made for (see release-notes-cache.ts). */
   key: string | null;
-  /** HEAD the run was started from — lets readers detect a stale draft (#0630). */
+  /** HEAD the run was started from, retained for diagnostics. */
   head: string | null;
   /** The draft — meaningful only when `succeeded`. */
   notes: string | null;
@@ -193,20 +192,22 @@ export async function whenNotesRunSettles(): Promise<void> {
 
 /**
  * The tracked draft run. A terminal snapshot is annotated with `stale` by
- * comparing the run's recorded HEAD to the repo's current HEAD — the server
- * keeps its last terminal run forever, so without this an old success would
- * tell a reopened panel "Generate with AI will reuse it" (or an old failure
- * would raise an error) for a draft context that no longer exists (#0630
- * review). One `rev-parse` per read, only for terminal runs.
+ * comparing its cache key to the current release-notes context — relevant
+ * commit SHAs plus `sinceTag`. The server keeps its last terminal run forever,
+ * so without this an old success could claim "Generate with AI will reuse it"
+ * after the cache context changed (#0630 review).
  */
 export const getReleaseNotesRun: RouteHandler = async (ctx, _req, res) => {
   const { config } = ctx;
   if (notesRun.state !== "succeeded" && notesRun.state !== "failed") {
     return json(res, 200, notesRun);
   }
-  if (!notesRun.head) return json(res, 200, notesRun);
-  const head = await releaseHead(config);
-  const stale = !!head && head !== notesRun.head;
+  const current = await collectReleaseCommits(config);
+  if (!current.head) return json(res, 200, notesRun);
+  const currentKey = current.relevantShas.length
+    ? releaseNotesCacheKey(current.relevantShas, current.sinceTag)
+    : null;
+  const stale = notesRun.key !== currentKey;
   return json(res, 200, stale ? { ...notesRun, stale } : notesRun);
 };
 

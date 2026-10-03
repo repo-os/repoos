@@ -130,7 +130,7 @@ interface ReleaseNotesRun {
   updatedAt: string | null;
   error: string | null;
   key: string | null;
-  /** HEAD the run started from — when the repo has moved on, the run is stale. */
+  /** HEAD snapshot from when the run started; staleness follows the cache key. */
   head?: string | null;
   notes: string | null;
   sinceTag: string | null;
@@ -497,7 +497,13 @@ function applyNotesRun(next: ReleaseNotesRun, atOpen = false): void {
     // the server keeps its last terminal run forever, so a stale failure is
     // about a draft context that no longer exists (#0630 review).
     notesError.value = next.error || "The agent returned no release notes.";
-  } else if (atOpen && next.state === "succeeded" && next.notes?.trim() && !next.stale) {
+  } else if (
+    atOpen &&
+    next.state === "succeeded" &&
+    next.notes?.trim() &&
+    !next.stale &&
+    !notes.value.trim()
+  ) {
     // A draft that finished while the panel was closed (or before this page
     // loaded): don't drop text into the field — a run this session never
     // watched must not silently fill fresh typing context (#0605) — but say
