@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 2
 id: "0632"
 title: Fail over to another remote host before falling back to local
 type: feature
@@ -44,3 +45,5 @@ See src/server/remote-validation.ts (acquire ~1751, run + timeout handling ~1255
 - 2026-10-03T09:28:02Z · review_model_override
 - 2026-10-03T09:28:03Z · status ready→active, branch
 - 2026-10-03T09:39:16Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+
+
