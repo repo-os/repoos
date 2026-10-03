@@ -1,0 +1,488 @@
+/**
+ * Task-drawer shot management routes (#0627), exercised directly against a
+ * minimal fake RouteContext (no full server boot):
+ *
+ *   - POST /api/tasks/:id/shots dispatches on the body shape: captured bytes
+ *     (`data`) keep the CLI's upload path; a declared entry without bytes is
+ *     validated (shared `parseShotEntry` rules), captured server-side and
+ *     appended to `## Shots` with an activity note,
+ *   - a structured capture error becomes a 409/400 WITHOUT writing the task
+ *     file — no declared-but-never-captured entry,
+ *   - DELETE removes the PNG, its manifest entry, and the matching `## Shots`
+ *     declaration; legacy untagged shots delete the same way,
+ *   - a delete with no matching declaration leaves the section untouched.
+ */
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import type { IncomingMessage, ServerResponse } from "node:http";
+import { createRepoOS } from "../../core/repoos";
+import { loadConfig } from "../../core/config.js";
+import { declaredShotsSectionContent } from "../../core/shot-plan.js";
+import { localShotStore } from "../../server/shots.js";
+import { patchTaskFile } from "../../server/write.js";
+import type { Task } from "../../core/types.js";
+
+const PNG_1PX =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+
+const roots: string[] = [];
+let root: string;
+let repoos: ReturnType<typeof createRepoOS>;
+let task: Task;
+
+vi.mock("../../server/shot-capture.js", () => ({
+  // Only what routes/tasks.ts imports from this module.
+  captureDeclaredShot: vi.fn(),
+}));
+
+import { captureDeclaredShot } from "../../server/shot-capture.js";
+import { deleteTaskShot, uploadTaskShot } from "../../server/routes/tasks.js";
+
+const mockedCapture = vi.mocked(captureDeclaredShot);
+
+const SHOT_RESULT = {
+  shot: {
+    name: "default-1.png",
+    target: "default",
+    route: "/",
+    label: "Task drawer open",
+    provenance: "declared: Task drawer open",
+    path: "work/.attachments/0001/shots/default-1.png",
+    url: "/api/tasks/0001/shots/default-1.png",
+    size: 3,
+    mime: "image/png",
+    capturedAt: new Date().toISOString(),
+  },
+  warnings: [],
+};
+
+function resCapture() {
+  const capture = { statusCode: 0, body: undefined as unknown };
+  const res = {
+    writeHead: (status: number) => {
+      capture.statusCode = status;
+    },
+    end: (data?: unknown) => {
+      if (data) capture.body = JSON.parse(String(data));
+    },
+  };
+  return { capture, res: res as unknown as ServerResponse };
+}
+
+const emptyReq = { [Symbol.asyncIterator]: async function* () {} } as unknown as IncomingMessage;
+
+/** A request whose body is the JSON `entry` (the modal's POST shape). */
+function bodyReq(entry: unknown): IncomingMessage {
+  return {
+    [Symbol.asyncIterator]: async function* () {
+      yield Buffer.from(JSON.stringify(entry), "utf8");
+    },
+  } as unknown as IncomingMessage;
+}
+
+function makeCtx() {
+  const capturedTask = task;
+  return {
+    config: repoos.config,
+    index: {
+      getTask: (id: string) => (id === capturedTask.id ? capturedTask : null),
+      applyFileChange: vi.fn(),
+    },
+    previews: {},
+  };
+}
+
+beforeEach(() => {
+  root = mkdtempSync(join(tmpdir(), "repoos-shots-api-"));
+  roots.push(root);
+  // A default preview command, so a declared shot's target resolves — the
+  // same bare `[preview] command` every simple repo carries.
+  writeFileSync(join(root, "repoos.toml"), '[preview]\ncommand = "echo preview"\n');
+  repoos = createRepoOS(root);
+  task = repoos.createTask({ title: "Drawer shots" });
+  // Active with a branch and one declared shot — the state the drawer offers
+  // add/delete in.
+  const updated = repoos.updateTask(task.id, { status: "active", branch: "feat/x" });
+  task = updated;
+});
+
+afterEach(() => {
+  for (const r of roots.splice(0)) rmSync(r, { recursive: true, force: true });
+  mockedCapture.mockReset();
+});
+
+describe("POST /api/tasks/:id/shots — declare and capture (#0627)", () => {
+  it("captures the entry, appends it to ## Shots and notes the activity", async () => {
+    mockedCapture.mockResolvedValue(SHOT_RESULT as never);
+    const ctx = makeCtx();
+    const { capture, res } = resCapture();
+    await uploadTaskShot(
+      ctx as never,
+      bodyReq({ target: "default", label: "Task drawer open" }),
+      res,
+      { param1: task.id },
+    );
+    expect(capture.statusCode).toBe(201);
+    expect((capture.body as { shot: unknown }).shot).toEqual(SHOT_RESULT.shot);
+    // The entry is declared for the next handoff capture...
+    const onDisk = readFileSync(task.absPath, "utf8");
+    expect(onDisk).toContain('"label": "Task drawer open"');
+    expect(onDisk).toContain("## Shots");
+    // ...and the activity log says what happened.
+    expect(onDisk).toContain("shot added: default – Task drawer open");
+    // Capture received the resolved entry.
+    expect(mockedCapture.mock.calls[0]?.[3]).toMatchObject({
+      target: "default",
+      route: "/",
+      label: "Task drawer open",
+    });
+  });
+
+  it("rejects an invalid entry with the shared validator's message, before any capture", async () => {
+    const ctx = makeCtx();
+    const req = {
+      [Symbol.asyncIterator]: async function* () {
+        yield Buffer.from(JSON.stringify({ target: "default", steps: [{ click: 5 }] }), "utf8");
+      },
+    } as unknown as IncomingMessage;
+    const { capture, res } = resCapture();
+    await uploadTaskShot(ctx as never, req, res, { param1: task.id });
+    expect(capture.statusCode).toBe(400);
+    expect((capture.body as { error: string }).error).toContain('"click" expects a CSS selector');
+    // Nothing captured, nothing written.
+    expect(mockedCapture).not.toHaveBeenCalled();
+    expect(readFileSync(task.absPath, "utf8")).not.toContain("## Shots");
+  });
+
+  it("returns highlight/selector misses as a warning on the success response", async () => {
+    mockedCapture.mockResolvedValue({
+      ...SHOT_RESULT,
+      warnings: ["highlight .nope matched nothing"],
+    } as never);
+    const { capture, res } = resCapture();
+    await uploadTaskShot(
+      makeCtx() as never,
+      bodyReq({ target: "default", label: "Task drawer open", highlight: ".nope" }),
+      res,
+      { param1: task.id },
+    );
+    expect(capture.statusCode).toBe(201);
+    expect(capture.body).toMatchObject({
+      ok: true,
+      warning: "highlight .nope matched nothing",
+    });
+  });
+
+  it("rejects a malformed existing ## Shots BEFORE capturing, leaving no orphan image", async () => {
+    task = patchSection("```json\n[ not json\n```");
+    const { capture, res } = resCapture();
+    await uploadTaskShot(
+      makeCtx() as never,
+      bodyReq({ target: "default", label: "Task drawer open" }),
+      res,
+      { param1: task.id },
+    );
+    expect(capture.statusCode).toBe(400);
+    expect((capture.body as { error: string }).error).toContain("## Shots");
+    expect(mockedCapture).not.toHaveBeenCalled();
+    expect(localShotStore(repoos.config, task.id).list()).toEqual([]);
+  });
+
+  it("discards the capture and writes nothing when the task left active/review mid-capture", async () => {
+    const ctx = makeCtx();
+    // The capture "takes a while"; by the time it resolves the task is done.
+    mockedCapture.mockImplementation(async () => {
+      const saved = localShotStore(repoos.config, task.id).save({
+        target: "default",
+        route: "/",
+        label: "Task drawer open",
+        provenance: "declared: Task drawer open",
+        data: PNG_1PX,
+      });
+      if ("error" in saved) throw new Error("seed failed");
+      ctx.index.getTask = () => ({ ...task, status: "done" }) as never;
+      return { shot: saved, warnings: [] } as never;
+    });
+    const before = readFileSync(task.absPath, "utf8");
+    const { capture, res } = resCapture();
+    await uploadTaskShot(
+      ctx as never,
+      bodyReq({ target: "default", label: "Task drawer open" }),
+      res,
+      {
+        param1: task.id,
+      },
+    );
+    expect(capture.statusCode).toBe(409);
+    expect((capture.body as { error: string }).error).toContain("moved to done");
+    // No orphan image, no declaration, no "shot added" note.
+    expect(localShotStore(repoos.config, task.id).list()).toEqual([]);
+    expect(readFileSync(task.absPath, "utf8")).toBe(before);
+  });
+
+  it("rejects wrong-typed fields instead of treating them as omitted", async () => {
+    // Fields reach the validator verbatim: `{ target: 5 }` must be REJECTED,
+    // never silently narrowed to "no target" and captured anyway (review
+    // round 1).
+    const ctx = makeCtx();
+    const { capture, res } = resCapture();
+    await uploadTaskShot(ctx as never, bodyReq({ target: 5, label: "Wrong type" }), res, {
+      param1: task.id,
+    });
+    expect(capture.statusCode).toBe(400);
+    expect((capture.body as { error: string }).error).toContain(
+      '"target" expects a non-empty string',
+    );
+    expect(mockedCapture).not.toHaveBeenCalled();
+  });
+
+  it("rejects a non-array steps value through the same validator", async () => {
+    const ctx = makeCtx();
+    const { capture, res } = resCapture();
+    await uploadTaskShot(ctx as never, bodyReq({ target: "default", steps: "click .x" }), res, {
+      param1: task.id,
+    });
+    expect(capture.statusCode).toBe(400);
+    expect((capture.body as { error: string }).error).toContain('"steps" expects an array');
+  });
+
+  it("captures an explicitly picked out-of-area configured target (the drawer offers all)", async () => {
+    // The drawer's target dropdown lists every configured target (#0379).
+    // An explicit pick must resolve via the override path — without it an
+    // offered out-of-area target would fail here (review round 2).
+    writeFileSync(
+      join(root, "repoos.toml"),
+      '[preview]\ncommand = "echo preview"\n\n[[preview.targets]]\nname = "web"\nareas = ["server"]\ncommand = "echo web"\n',
+    );
+    repoos = createRepoOS(root);
+    task = repoos.createTask({ title: "Out of area pick" });
+    task = repoos.updateTask(task.id, { status: "active", branch: "feat/y" });
+    mockedCapture.mockResolvedValue(SHOT_RESULT as never);
+
+    const ctx = makeCtx();
+    const { capture, res } = resCapture();
+    await uploadTaskShot(ctx as never, bodyReq({ target: "web", label: "Task drawer open" }), res, {
+      param1: task.id,
+    });
+    expect(capture.statusCode).toBe(201);
+    expect(mockedCapture.mock.calls[0]?.[3]).toMatchObject({ target: "web" });
+  });
+
+  it("answers a busy preview slot with 409 + busy, and does NOT write the declaration", async () => {
+    mockedCapture.mockResolvedValue({
+      error: "the one preview slot is busy: task #0999 has a preview running",
+      busy: true,
+    } as never);
+    const ctx = makeCtx();
+    const { capture, res } = resCapture();
+    await uploadTaskShot(ctx as never, bodyReq({ target: "default" }), res, { param1: task.id });
+    expect(capture.statusCode).toBe(409);
+    expect(capture.body).toMatchObject({ error: expect.stringContaining("busy"), busy: true });
+    expect(readFileSync(task.absPath, "utf8")).not.toContain("## Shots");
+  });
+
+  it("keeps a CLI byte-upload on the legacy path untouched", async () => {
+    const ctx = makeCtx();
+    const req = {
+      [Symbol.asyncIterator]: async function* () {
+        yield Buffer.from(
+          JSON.stringify({ target: "default", label: "CLI shot", data: PNG_1PX }),
+          "utf8",
+        );
+      },
+    } as unknown as IncomingMessage;
+    const { capture, res } = resCapture();
+    await uploadTaskShot(ctx as never, req, res, { param1: task.id });
+    expect(capture.statusCode).toBe(201);
+    expect(mockedCapture).not.toHaveBeenCalled();
+    const stored = localShotStore(repoos.config, task.id).list();
+    expect(stored).toHaveLength(1);
+    expect(stored[0]!.label).toBe("CLI shot");
+  });
+});
+
+describe("DELETE /api/tasks/:id/shots/:name — delete + declaration sync (#0627)", () => {
+  function seedShot(label: string | undefined, withOrigin = false) {
+    return localShotStore(repoos.config, task.id).save({
+      target: "default",
+      route: "/",
+      ...(label ? { label } : {}),
+      ...(withOrigin ? { origin: "auto" as const, provenance: "auto: matched src/**" } : {}),
+      data: PNG_1PX,
+    });
+  }
+
+  it("removes the file, manifest entry and the matching declaration, with a note", async () => {
+    const saved = seedShot("Task drawer open");
+    if ("error" in saved) throw new Error("seed failed");
+    const updated = repoos.updateTask(task.id, {});
+    task = updated;
+    // Declare the shot so the delete has a matching entry to sync.
+    const withSection = patchSection(
+      declaredShotsSectionContent([{ target: "default", route: "/", label: "Task drawer open" }]),
+    );
+    task = withSection;
+    const dir = join(root, repoos.config.workDir, ".attachments", task.id, "shots");
+    expect(existsSync(join(dir, saved.name))).toBe(true);
+
+    const ctx = makeCtx();
+    const { capture, res } = resCapture();
+    await deleteTaskShot(ctx as never, emptyReq, res, { param1: task.id, param2: saved.name });
+
+    expect(capture.statusCode).toBe(200);
+    expect(capture.body).toMatchObject({ ok: true, declarationsRemoved: 1 });
+    expect(existsSync(join(dir, saved.name))).toBe(false);
+    expect(localShotStore(repoos.config, task.id).list()).toEqual([]);
+    const onDisk = readFileSync(task.absPath, "utf8");
+    // The declaration is gone from ## Shots (the note mentioning the label is
+    // exactly where the label SHOULD still appear).
+    expect(onDisk).toContain("```json\n[]");
+    expect(onDisk).not.toContain('"label"');
+    expect(onDisk).toContain("shot removed: Task drawer open");
+  });
+
+  it("deletes a legacy untagged shot and removes nothing from ## Shots when nothing matches", async () => {
+    const saved = seedShot(undefined);
+    if ("error" in saved) throw new Error("seed failed");
+    task = patchSection(declaredShotsSectionContent([{ target: "web", route: "/x" }]));
+
+    const ctx = makeCtx();
+    const { capture, res } = resCapture();
+    await deleteTaskShot(ctx as never, emptyReq, res, { param1: task.id, param2: saved.name });
+
+    expect(capture.statusCode).toBe(200);
+    expect(capture.body).toMatchObject({ ok: true, declarationsRemoved: 0 });
+    // The unrelated declaration survives.
+    expect(readFileSync(task.absPath, "utf8")).toContain('"target": "web"');
+  });
+
+  it("syncs THE exact declaration when the shot carries one (selector/steps included)", async () => {
+    // Two declarations share label/route/target but differ in selector. Only
+    // the stored declaration's exact twin may be removed (review round 1).
+    const declared = {
+      target: "default",
+      route: "/",
+      label: "Task drawer open",
+      selector: ".drawer",
+    };
+    const saved = localShotStore(repoos.config, task.id).save({
+      target: "default",
+      route: "/",
+      label: "Task drawer open",
+      provenance: "declared: Task drawer open",
+      declared,
+      data: PNG_1PX,
+    });
+    if ("error" in saved) throw new Error("seed failed");
+    task = patchSection(
+      declaredShotsSectionContent([{ ...declared, selector: ".other" }, declared]),
+    );
+
+    const ctx = makeCtx();
+    const { capture, res } = resCapture();
+    await deleteTaskShot(ctx as never, emptyReq, res, { param1: task.id, param2: saved.name });
+
+    expect(capture.body).toMatchObject({ ok: true, declarationsRemoved: 1 });
+    const onDisk = readFileSync(task.absPath, "utf8");
+    expect(onDisk).toContain('"selector": ".other"');
+    expect(onDisk).not.toContain('"selector": ".drawer"');
+  });
+
+  it("removes every matching declaration for a legacy shot and says so (no resurrection)", async () => {
+    // Two declarations share label/route/target and differ only in selector.
+    // A legacy shot records neither, so it cannot say which one it came from;
+    // leaving either behind would let a re-handoff recapture the deleted
+    // evidence, so all go and the user is told (review round 4).
+    const saved = seedShot("Task drawer open");
+    if ("error" in saved) throw new Error("seed failed");
+    const base = { target: "default", route: "/", label: "Task drawer open" };
+    task = patchSection(
+      declaredShotsSectionContent([
+        { ...base, selector: ".a" },
+        { ...base, selector: ".b" },
+        { target: "web", route: "/other" },
+      ]),
+    );
+
+    const { capture, res } = resCapture();
+    await deleteTaskShot(makeCtx() as never, emptyReq, res, {
+      param1: task.id,
+      param2: saved.name,
+    });
+
+    expect(capture.statusCode).toBe(200);
+    expect(capture.body).toMatchObject({ ok: true, declarationsRemoved: 2 });
+    expect((capture.body as { warning: string }).warning).toContain("2 ## Shots declarations");
+    const onDisk = readFileSync(task.absPath, "utf8");
+    expect(onDisk).not.toContain('"selector": ".a"');
+    expect(onDisk).not.toContain('"selector": ".b"');
+    // An unrelated declaration is untouched.
+    expect(onDisk).toContain('"route": "/other"');
+  });
+
+  it("refuses to delete outside active/review and leaves the shot alone", async () => {
+    const saved = seedShot("Task drawer open");
+    if ("error" in saved) throw new Error("seed failed");
+    const ctx = makeCtx();
+    ctx.index.getTask = () => ({ ...task, status: "done" }) as never;
+    const { capture, res } = resCapture();
+    await deleteTaskShot(ctx as never, emptyReq, res, { param1: task.id, param2: saved.name });
+    expect(capture.statusCode).toBe(400);
+    expect((capture.body as { error: string }).error).toContain("active or review");
+    expect(localShotStore(repoos.config, task.id).list()).toHaveLength(1);
+  });
+
+  it("refuses to delete while ## Shots is malformed, keeping the image", async () => {
+    const saved = seedShot("Task drawer open");
+    if ("error" in saved) throw new Error("seed failed");
+    task = patchSection("```json\n[ not json\n```");
+    const { capture, res } = resCapture();
+    await deleteTaskShot(makeCtx() as never, emptyReq, res, {
+      param1: task.id,
+      param2: saved.name,
+    });
+    expect(capture.statusCode).toBe(400);
+    expect(localShotStore(repoos.config, task.id).list()).toHaveLength(1);
+  });
+
+  it("reports a failed task-file update as a failure and keeps the image", async () => {
+    const saved = seedShot("Task drawer open");
+    if ("error" in saved) throw new Error("seed failed");
+    task = patchSection(
+      declaredShotsSectionContent([{ target: "default", route: "/", label: "Task drawer open" }]),
+    );
+    chmodSync(task.absPath, 0o444);
+    try {
+      const { capture, res } = resCapture();
+      await deleteTaskShot(makeCtx() as never, emptyReq, res, {
+        param1: task.id,
+        param2: saved.name,
+      });
+      expect(capture.statusCode).toBe(500);
+      expect((capture.body as { error: string }).error).toContain("NOT deleted");
+      // Image and declaration are both still there, so nothing can half-resurrect.
+      expect(localShotStore(repoos.config, task.id).list()).toHaveLength(1);
+      expect(readFileSync(task.absPath, "utf8")).toContain('"label": "Task drawer open"');
+    } finally {
+      chmodSync(task.absPath, 0o644);
+    }
+  });
+
+  it("404s for an unknown shot name", async () => {
+    const { capture, res } = resCapture();
+    await deleteTaskShot(makeCtx() as never, emptyReq, res, {
+      param1: task.id,
+      param2: "missing.png",
+    });
+    expect(capture.statusCode).toBe(404);
+  });
+});
+
+/** Write a `## Shots` section onto the task (same path the route uses). */
+function patchSection(content: string): Task {
+  return patchTaskFile(repoos.config, task.absPath, {
+    section: { heading: "Shots", content },
+  });
+}

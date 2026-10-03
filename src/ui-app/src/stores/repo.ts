@@ -1,6 +1,7 @@
 import { computed, reactive, ref } from "vue";
 import { defineStore } from "pinia";
-import { api, API_TIMEOUT_MS, JSON_OPTS } from "../api";
+import { api, API_TIMEOUT_MS, ApiError, JSON_OPTS } from "../api";
+import type { DeclaredShot } from "../../../core/shot-plan.js";
 import { checkUiBuild, isstaleDismissed, showStaleUi, uiRecoveryState } from "../lib/uiRecovery";
 import { useUiStore, type PendingScreenshot } from "./ui";
 import { useNotificationsStore, type NotificationType } from "./notifications";
@@ -2770,6 +2771,66 @@ export const useRepoStore = defineStore("repo", () => {
   const shotWarningFor = (id: string): string | undefined => shotWarnings.value[id];
 
   /**
+   * Add shot from the task drawer (#0627): declare one entry and have the
+   * server capture it immediately (5–30s). The entry is the declared shot's
+   * own plain fields — never raw JSON. The structured error (with `busy` for
+   * the one-preview cap) is returned so the modal keeps open and keeps the
+   * reason; a success refreshes the shot list so the new image appears.
+   */
+  async function addShot(
+    id: string,
+    entry: DeclaredShot,
+  ): Promise<{ ok: true; warning?: string } | { ok: false; error: string; busy?: boolean }> {
+    try {
+      const r = await api<{
+        ok: boolean;
+        shot?: ShotMeta;
+        warning?: string;
+        error?: string;
+        busy?: boolean;
+      }>(`/api/tasks/${id}/shots`, JSON_OPTS("POST", entry));
+      if (r.ok) {
+        await loadShots(id);
+        return { ok: true, ...(r.warning ? { warning: r.warning } : {}) };
+      }
+      return { ok: false, error: r.error ?? "capture failed", ...(r.busy ? { busy: true } : {}) };
+    } catch (err) {
+      // A non-2xx structured answer (the 409 busy slot) arrives as an
+      // ApiError carrying the body — keep its busy flag for the modal.
+      if (err instanceof ApiError) {
+        const busy = (err.body as { busy?: boolean } | null)?.busy === true;
+        return { ok: false, error: err.message, ...(busy ? { busy: true } : {}) };
+      }
+      return { ok: false, error: (err as Error).message };
+    }
+  }
+
+  /**
+   * Delete one captured shot (#0627): the PNG, its manifest entry, and any
+   * matching `## Shots` declaration, so re-handoff cannot resurrect it.
+   * Refreshes the shot list; the activity note is server-written.
+   */
+  async function deleteShot(
+    id: string,
+    name: string,
+  ): Promise<{ ok: true; warning?: string } | { ok: false; error: string }> {
+    try {
+      const r = await api<{
+        ok: boolean;
+        error?: string;
+        warning?: string;
+      }>(`/api/tasks/${id}/shots/${encodeURIComponent(name)}`, { method: "DELETE" });
+      if (r.ok) {
+        await loadShots(id);
+        return { ok: true, ...(r.warning ? { warning: r.warning } : {}) };
+      }
+      return { ok: false, error: r.error ?? "delete failed" };
+    } catch (err) {
+      return { ok: false, error: (err as Error).message };
+    }
+  }
+
+  /**
    * Merge main into a task's branch (the "sync with main" action). Reuses the
    * same sync path the server already runs automatically on entry into review
    * for the large-divergence case — this lets the user trigger it on demand for
@@ -3378,6 +3439,8 @@ export const useRepoStore = defineStore("repo", () => {
     loadShots,
     shotsFor,
     shotWarningFor,
+    addShot,
+    deleteShot,
     syncTaskBranch,
     sendMessage,
     reviewAgain,
