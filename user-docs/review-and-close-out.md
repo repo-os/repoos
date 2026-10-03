@@ -231,6 +231,12 @@ worktree, so it empties as soon as the conflict is resolved.
 A failed Move to done stays on the card until the task is retried successfully
 or you dismiss it with the **×** on the card. A page refresh no longer hides it.
 
+Every close-out also reports its outcome to the top-bar **notice bell** — landed,
+failed, or timed out — with the server's finish time, so you can see how a run
+ended even if you closed the tab while it was working. See
+[Notices and notifications](/notifications) for the bell and its per-type sound
+and push toggles.
+
 ## Previewing a task's changes
 
 You can preview the running app from a task's branch without merging it. Click

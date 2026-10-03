@@ -22,7 +22,10 @@ export type NotificationType =
   | "needsInput"
   | "releaseNotesReady"
   | "releaseSucceeded"
-  | "releaseFailed";
+  | "releaseFailed"
+  | "closeOutSucceeded"
+  | "closeOutFailed"
+  | "closeOutTimedOut";
 
 /** Every monitorable type, in Settings display order. */
 export const NOTIFICATION_TYPES: NotificationType[] = [
@@ -33,6 +36,9 @@ export const NOTIFICATION_TYPES: NotificationType[] = [
   "releaseNotesReady",
   "releaseSucceeded",
   "releaseFailed",
+  "closeOutSucceeded",
+  "closeOutFailed",
+  "closeOutTimedOut",
 ];
 
 const STORAGE_KEY = "repoos.notifications";
@@ -212,6 +218,9 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   releaseNotesReady: "Release notes ready",
   releaseSucceeded: "Release succeeded",
   releaseFailed: "Release failed",
+  closeOutSucceeded: "Move to done landed",
+  closeOutFailed: "Move to done failed",
+  closeOutTimedOut: "Move to done timed out",
 };
 
 /** One-line Settings description per type; keyed like the labels. */
@@ -223,6 +232,9 @@ export const NOTIFICATION_TYPE_DESCRIPTIONS: Record<NotificationType, string> = 
   releaseNotesReady: "A release-notes draft finished generating.",
   releaseSucceeded: "A release cut finished successfully.",
   releaseFailed: "A release cut failed.",
+  closeOutSucceeded: "A task's Move to done finished and its work landed on main.",
+  closeOutFailed: "A task's Move to done failed; the task stays in review.",
+  closeOutTimedOut: "A task's Move to done ran past its time budget and was stopped.",
 };
 
 export const useNotificationsStore = defineStore("notifications", () => {
