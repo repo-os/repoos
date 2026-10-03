@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { rmFixture } from "./helpers";
@@ -121,6 +121,41 @@ describe("createCloseOutOutcomeStore", () => {
       writeFileSync(join(root, ".repoos", "close-out-outcomes.json"), "{not json");
       const store = createCloseOutOutcomeStore(root);
       expect(store.list()).toEqual([]);
+    } finally {
+      clean();
+    }
+  });
+
+  it("preserves a corrupt file aside instead of clobbering its history on the next record", () => {
+    const { root, clean } = makeRepo();
+    try {
+      mkdirSync(join(root, ".repoos"), { recursive: true });
+      const path = join(root, ".repoos", "close-out-outcomes.json");
+      writeFileSync(path, "{not json: prior history");
+      const errors: unknown[] = [];
+      const store = createCloseOutOutcomeStore(root, ".repoos", (e) => errors.push(e));
+
+      store.record({
+        taskId: "0001",
+        outcome: "succeeded",
+        finishedAt: "2026-10-03T17:00:00.000Z",
+        reason: "",
+      });
+
+      // The unreadable read was reported, and the prior bytes were moved
+      // aside rather than overwritten.
+      expect(errors.length).toBeGreaterThanOrEqual(1);
+      const backups = readdirSync(join(root, ".repoos")).filter((f) =>
+        f.startsWith("close-out-outcomes.json.corrupt-"),
+      );
+      expect(backups).toHaveLength(1);
+      expect(readFileSync(join(root, ".repoos", backups[0]), "utf8")).toBe(
+        "{not json: prior history",
+      );
+      // The new event is written fresh and served.
+      const written = JSON.parse(readFileSync(path, "utf8")) as { taskId: string }[];
+      expect(written.map((e) => e.taskId)).toEqual(["0001"]);
+      expect(store.list().map((e) => e.taskId)).toEqual(["0001"]);
     } finally {
       clean();
     }

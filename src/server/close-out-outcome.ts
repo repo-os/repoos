@@ -22,7 +22,7 @@
  * the life of the process (the SSE push already delivered it live), rather than
  * silently vanishing from the backfill.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 /** How a close-out ended. Timeout stays separate so the UI can advise differently. */
@@ -69,6 +69,8 @@ export function createCloseOutOutcomeStore(
   const path = join(root, cacheDir, FILE);
   /** In-memory mirror; loaded lazily on first use, kept in sync on record. */
   let events: CloseOutOutcomeEvent[] | null = null;
+  /** True when the on-disk file existed but could not be read or parsed. */
+  let unreadable = false;
 
   function load(): CloseOutOutcomeEvent[] {
     if (events) return events;
@@ -79,11 +81,32 @@ export function createCloseOutOutcomeStore(
     try {
       const parsed = JSON.parse(readFileSync(path, "utf8")) as unknown;
       events = Array.isArray(parsed) ? parsed.filter(isOutcomeEvent) : [];
-    } catch {
-      /* corrupt or unreadable: behave as "no outcomes" rather than throwing */
+    } catch (error) {
+      // An unreadable/corrupt file must not be treated as authoritative
+      // emptiness and then clobbered by the next write: report the read
+      // failure and preserve the bytes (renamed aside) before overwriting.
+      unreadable = true;
+      onPersistError?.(error);
       events = [];
     }
     return events;
+  }
+
+  /**
+   * Move a corrupt/unreadable outcomes file aside so a later write cannot
+   * destroy whatever history it still held. Returns false when the file could
+   * not be moved, in which case the caller must NOT overwrite it.
+   */
+  function preserveUnreadable(): boolean {
+    if (!unreadable || !existsSync(path)) return true;
+    const backup = `${path}.corrupt-${new Date().toISOString().replace(/[:.]/g, "-")}`;
+    try {
+      renameSync(path, backup);
+      return true;
+    } catch (error) {
+      onPersistError?.(error);
+      return false;
+    }
   }
 
   return {
@@ -93,6 +116,10 @@ export function createCloseOutOutcomeStore(
       );
       next.push(event);
       events = next.slice(-MAX_EVENTS);
+      // Preserve a corrupt/unreadable file before overwriting it; if it cannot
+      // be preserved, skip the write rather than destroying the history.
+      if (!preserveUnreadable()) return event;
+      unreadable = false;
       try {
         mkdirSync(dirname(path), { recursive: true });
         writeFileSync(path, JSON.stringify(events, null, 2));
