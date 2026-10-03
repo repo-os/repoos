@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 2
 id: "0631"
 title: Show enrichment-in-progress on inputs list cards
 type: feature
@@ -12,7 +13,6 @@ created_at: "2026-10-02T23:44:30Z"
 updated_at: "2026-10-03T01:11:13Z"
 review_rounds: 2
 review_passes: 2
-handoff_signal_retry_count: 1
 ---
 ## Problem
 
@@ -112,3 +112,4 @@ Also when I create a new input and the AI is making the title I guess, when I cl
 - 2026-10-03T01:10:09Z · status active→review
 - 2026-10-03T01:10:25Z · note: shots: failed — capture of Inputs list with enrichment-in-progress indicator on the freshly created card on "default" failed: click: Error: strict mode violation: locator('.drawer-body .btn-row button') resolved to 2 elements:
 - 2026-10-03T01:11:13Z · status review→active
+

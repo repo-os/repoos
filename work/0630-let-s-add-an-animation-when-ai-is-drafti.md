@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 2
 id: "0630"
 title: Polish AI release-notes drafting feedback and panel-return state
 type: feature
@@ -14,7 +15,6 @@ check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-03T01:32:28.816Z: server-side finalization timed out (deadline exceeded)"
 review_rounds: 2
 review_passes: 2
-handoff_signal_retry_count: 1
 ---
 ## Problem
 
@@ -97,3 +97,4 @@ Let's add an animation when AI is drafting the release notes, it can be similar 
 - 2026-10-03T01:07:12Z · status active→review
 - 2026-10-03T01:08:41Z · status review→active
 - 2026-10-03T02:11:32Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+
