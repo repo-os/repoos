@@ -266,6 +266,16 @@ run on two hosts while a third waits. A run that has to wait logs
 the caller's output, and the log records which host ran each job
 (`[runner user@host (os)]`).
 
+When eligible hosts have the same number of active runs, the configured host
+order breaks the tie: hosts are tried from top to bottom, so the first host
+receives a run when all are idle. The Checks → Remote runners tab has up/down
+controls for plain string pools and saves their order immediately; in-flight
+runs keep their existing host. A configured `tailscaleHost` shorthand pins its
+host first only when there is no non-empty `tailscaleHosts` list. Remove the
+shorthand from `repoos.toml` to let the list order control that host. Pools
+using `[[remoteValidation.tailscaleHosts]]` rows are shown read-only in the
+tab; edit their order in `repoos.toml`.
+
 Before a host's first job it is probed over SSH: reachability, the toolchain
 its `runner` says to expect — Docker, the configured `containerImage`
 actually present (not just the daemon reachable — a daemon up with the
@@ -292,7 +302,13 @@ one host it would run on next, so the column totals sum to the real queue
 length — `lastRun` with the run's duration, and #0564's `activeRuns`
 (task id + start time of each in-flight run) plus `queuedTasks`, the FIFO
 next-up task ids attributed to that host). The Checks page's **Remote runners**
-tab renders the same payload live. Host state is in-memory per server process;
+tab renders the same payload live, including a per-host **Server stats** row
+with load averages, CPU count, memory use/total, free space on the remote
+user's home work area, and sample time. While that tab is open, it requests
+read-only SSH samples every 15 seconds with a five-second timeout; samples do
+not acquire a run slot or wait behind validation jobs. Unsupported commands,
+failed SSH, and unreachable hosts show unavailable values rather than blocking
+the status page. Host state is in-memory per server process;
 the durable record of what actually ran lives in the check-run history
 (`.repoos/checks.db`, below) — it is skipped while
 other hosts are healthy, and re-probed later (30 s cooldown, capped at 10

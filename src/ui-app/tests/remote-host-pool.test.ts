@@ -32,6 +32,7 @@ import {
   TailscaleRunner,
   deadlineLockWaitSecs,
   hostLockShell,
+  parseRemoteServerStats,
   prereqProbeCommand,
   type RemoteExecDeps,
   type RemoteExecResult,
@@ -100,11 +101,55 @@ describe("host pool config parsing", () => {
         'remoteValidation.provider = "tailscale"\n' +
         'remoteValidation.tailscaleHost = "peckjachowski@mini"\n' +
         'remoteValidation.tailscaleUser = "peckjachowski"\n' +
-        'remoteValidation.tailscaleHosts = ["peckjachowski@mini", "nick@bee"]\n',
+        'remoteValidation.tailscaleHosts = ["nick@bee", "peckjachowski@mini"]\n',
     );
     const cfg = loadConfig(root);
-    expect(resolveRemoteHosts(cfg.remoteValidation).map((h) => h.host)).toEqual(["mini", "bee"]);
+    expect(resolveRemoteHosts(cfg.remoteValidation).map((h) => h.host)).toEqual(["bee", "mini"]);
     expect(cfg.remoteValidation?.tailscaleHost).toBe("peckjachowski@mini");
+  });
+
+  it("parses Linux and macOS server stats output", () => {
+    const linux = parseRemoteServerStats(
+      "__UPTIME__\n 14:21:03 up 8 days, load average: 0.25, 0.40, 0.75\n" +
+        "__CPU__\n8\n" +
+        "__MEMORY__\nMem: 16000000000 6000000000 10000000000\n" +
+        "__DISK__\nFilesystem 1024-blocks Used Available Capacity Mounted on\n" +
+        "/dev/sda1 1000000 400000 600000 40% /\n",
+      "2026-10-03T00:00:00.000Z",
+    );
+    expect(linux).toEqual({
+      available: true,
+      sampledAt: "2026-10-03T00:00:00.000Z",
+      loadAverage: [0.25, 0.4, 0.75],
+      cpuCount: 8,
+      memoryTotalBytes: 16_000_000_000,
+      memoryUsedBytes: 6_000_000_000,
+      diskFreeBytes: 614_400_000,
+    });
+
+    const macos = parseRemoteServerStats(
+      "__UPTIME__\n15:03  up 2 days,  load averages: 1.12 0.98 0.81\n" +
+        "__CPU__\n10\n" +
+        "__MEMORY__\nMach Virtual Memory Statistics: (page size of 16384 bytes)\n" +
+        "Pages free: 1000.\nPages inactive: 2000.\nPages speculative: 100.\n" +
+        "16384\n17179869184\n" +
+        "__DISK__\nFilesystem 1024-blocks Used Available Capacity Mounted on\n" +
+        "/dev/disk3s1 1000000 400000 600000 40% /System/Volumes/Data\n",
+      "2026-10-03T00:00:00.000Z",
+    );
+    expect(macos).toEqual({
+      available: true,
+      sampledAt: "2026-10-03T00:00:00.000Z",
+      loadAverage: [1.12, 0.98, 0.81],
+      cpuCount: 10,
+      memoryTotalBytes: 17_179_869_184,
+      memoryUsedBytes: 17_179_869_184 - 3100 * 16384,
+      diskFreeBytes: 614_400_000,
+    });
+    expect(parseRemoteServerStats("__UPTIME__\npermission denied\n__CPU__\n")).toMatchObject({
+      available: false,
+      detail: "No server statistics could be parsed.",
+    });
   });
 
   it("pools a flat list plus [[…]] rows, folding the shorthand without duplicates", () => {
@@ -514,6 +559,89 @@ describe("TailscaleRunner pool dispatch (#0521)", () => {
       { ok: true, stage: "check" },
       { ok: true, stage: "check" },
     ]);
+  });
+
+  it("reorders configured hosts immediately and keeps state for an in-flight host", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }, { host: "b" }] });
+    const first = f.runner.validate(opts("prior"));
+    await tick();
+    f.release("a");
+    await first;
+
+    const inFlight = f.runner.validate(opts("active"));
+    await tick();
+    expect(f.pending()).toEqual(["a"]);
+    f.config.remoteValidation!.tailscaleHosts = [{ host: "b" }, { host: "a" }];
+    f.runner.applyConfig();
+
+    expect(f.runner.hostStatus()!.map((host) => host.host)).toEqual(["b", "a"]);
+    expect(f.runner.hostStatus()![1]).toMatchObject({
+      host: "a",
+      inFlight: 1,
+      probed: true,
+      healthy: true,
+      lastRun: { taskId: "prior", ok: true },
+      activeRuns: [{ taskId: "active" }],
+    });
+
+    const next = f.runner.validate(opts("after"));
+    await tick();
+    expect(f.pending().sort()).toEqual(["a", "b"]);
+    f.release("b");
+    f.release("a");
+    await Promise.all([inFlight, next]);
+  });
+
+  it("keeps an active host removed from config at the end until its run finishes", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }, { host: "b" }, { host: "c" }] });
+    const jobs = ["a-run", "b-run", "c-run"].map((taskId) => f.runner.validate(opts(taskId)));
+    await tick();
+    expect(f.pending().sort()).toEqual(["a", "b", "c"]);
+
+    f.config.remoteValidation!.tailscaleHosts = [{ host: "c" }, { host: "a" }];
+    f.runner.applyConfig();
+    expect(f.runner.hostStatus()!.map((host) => host.host)).toEqual(["c", "a", "b"]);
+    expect(f.runner.hostStatus()!.at(-1)).toMatchObject({
+      host: "b",
+      inFlight: 1,
+      activeRuns: [{ taskId: "b-run" }],
+    });
+
+    f.release("a");
+    f.release("b");
+    f.release("c");
+    await Promise.all(jobs);
+  });
+
+  it("samples host stats directly without taking a run slot", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }] });
+    const runRemote = vi.mocked(f.exec.runRemote).getMockImplementation()!;
+    vi.mocked(f.exec.runRemote).mockImplementation(async (host, command, onChunk, timeoutMs) => {
+      if (command.includes("__UPTIME__")) {
+        return {
+          code: 0,
+          timedOut: false,
+          output:
+            "__UPTIME__\nload average: 0.10, 0.20, 0.30\n__CPU__\n4\n" +
+            "__MEMORY__\nMem: 1000 500 500\n__DISK__\nFilesystem 1024-blocks Used Available Capacity Mounted on\n" +
+            "/dev/sda 1000 500 500 50% /\n",
+        };
+      }
+      return runRemote(host, command, onChunk, timeoutMs);
+    });
+
+    f.runner.refreshHostStats();
+    await vi.waitFor(() =>
+      expect(f.runner.hostStatus()![0]!.serverStats).toMatchObject({
+        available: true,
+        cpuCount: 4,
+        memoryUsedBytes: 500,
+        diskFreeBytes: 512_000,
+      }),
+    );
+    expect(f.runner.hostStatus()![0]!.inFlight).toBe(0);
+    expect(f.pending()).toEqual([]);
+    await f.runner.dispose();
   });
 
   it("retries a newly added host whose first probe fails while work is queued", async () => {
