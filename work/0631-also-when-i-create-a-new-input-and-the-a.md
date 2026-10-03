@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-03T02:31:43Z"
-review_passes: 3
 id: "0631"
 title: Show enrichment-in-progress on inputs list cards
 type: feature
@@ -13,7 +11,11 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-enrichment-in-progress-on-inputs-li
+cli_override: cursor
+model_override: default
 created_at: "2026-10-02T23:44:30Z"
+updated_at: "2026-10-03T03:44:54Z"
+review_passes: 3
 handoff_signal_retry_count: 2
 review_rounds: 2
 ---
@@ -120,4 +122,4 @@ Also when I create a new input and the AI is making the title I guess, when I cl
 - 2026-10-03T02:30:46Z · status active→review
 - 2026-10-03T02:30:55Z · note: shots: failed — capture of Inputs list with enrichment-in-progress indicator on the freshly created card on "default" failed: click: Error: strict mode violation: locator('.drawer-body .btn-row button') resolved to 2 elements:
 - 2026-10-03T02:31:43Z · needs_input
-
+- 2026-10-03T03:44:54Z · cli_override, model_override
