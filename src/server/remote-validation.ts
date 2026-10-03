@@ -2557,56 +2557,108 @@ export class TailscaleRunner implements RemoteValidator {
     // MISCONFIGURATION (no host provides what the job needs) is non-retryable
     // so `fallbackToLocal` can't swallow it; a dead host or an expired deadline
     // is transient infra — never a red gate.
-    let slot: HostSlot;
-    try {
-      slot = await this.pool.acquire(capabilities, {
-        taskId: opts.taskId,
-        deadlineAt: opts.deadlineAt,
-        onQueue: (ahead) => {
-          const note = this.queueNote(ahead, capabilities);
-          emit(note);
-          appendRemoteValidationEvent(this.config.root, opts.taskId, {
-            level: "info",
-            phase: "queued",
-            message: note.trim(),
-          });
-        },
-      });
-    } catch (e) {
-      const detail = e instanceof Error ? e.message : String(e);
-      emit(`[remote validation not started: ${detail}]\n`);
-      // The run never reached a host: record the attempt with no machine
-      // attribution; a caller-deadline cancel is 'cancelled', the rest fail.
-      recordRemoteRunHistory(
-        this.config,
-        opts,
-        startedAt,
-        null,
-        e instanceof QueueDeadlineError ? "cancelled" : "fail",
-        detail,
-      );
-      if (e instanceof NoEligibleHostError) return this.configFail(detail, dispatch);
-      return this.infraFail(detail, dispatch);
-    }
+    const retryEnabled =
+      rv.retryOtherHosts === true &&
+      rv.provider === "tailscale" &&
+      (rv.tailscaleHosts?.length ?? 0) >= 2;
+    const maxAttempts = retryEnabled ? Math.max(1, rv.tailscaleHosts?.length ?? 1) : 1;
+    const triedHosts = new Set<string>();
+    let lastSummary: CheckSummary | null = null;
 
-    try {
-      const summary = await this.runValidation(opts, slot, capabilities);
-      // One durable row per validate() — attributed to the host that ran it.
-      // A deadline that passed mid-dispatch (inside runValidation) is a
-      // cancellation, not a gate failure (0564 review).
-      recordRemoteRunHistory(
-        this.config,
-        opts,
-        startedAt,
-        slot.host.host,
-        classifyRunOutcome(summary),
-        summary.detail,
-        summary,
-      );
-      return summary;
-    } finally {
-      slot.release();
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      let slot: HostSlot;
+      try {
+        slot = await this.pool.acquire(capabilities, {
+          taskId: opts.taskId,
+          deadlineAt: opts.deadlineAt,
+          onQueue: (ahead) => {
+            const note = this.queueNote(ahead, capabilities);
+            emit(note);
+            appendRemoteValidationEvent(this.config.root, opts.taskId, {
+              level: "info",
+              phase: "queued",
+              message: note.trim(),
+            });
+          },
+        });
+      } catch (e) {
+        const detail = e instanceof Error ? e.message : String(e);
+        emit(`[remote validation not started: ${detail}]\n`);
+        recordRemoteRunHistory(
+          this.config,
+          opts,
+          startedAt,
+          null,
+          e instanceof QueueDeadlineError ? "cancelled" : "fail",
+          detail,
+        );
+        if (e instanceof NoEligibleHostError) return this.configFail(detail, dispatch);
+        return this.infraFail(detail, dispatch);
+      }
+
+      try {
+        // Skip hosts we've already tried when retrying.
+        if (triedHosts.has(slot.host.host) && attempt < maxAttempts) {
+          // This host was already tried; release and retry with a new one.
+          // (The pool will pick the next best available host on next acquire.)
+          slot.release();
+          // Give the pool a brief moment to settle before re-acquiring.
+          await new Promise((r) => setTimeout(r, 50));
+          continue;
+        }
+        triedHosts.add(slot.host.host);
+        const summary = await this.runValidation(opts, slot, capabilities);
+        recordRemoteRunHistory(
+          this.config,
+          opts,
+          startedAt,
+          slot.host.host,
+          classifyRunOutcome(summary),
+          summary.detail,
+          summary,
+        );
+        lastSummary = summary;
+        if (
+          !summary.ok &&
+          summary.transient &&
+          retryEnabled &&
+          attempt < maxAttempts &&
+          triedHosts.size < maxAttempts
+        ) {
+          // Transient failure on this host — release slot and retry on another host.
+          // The log already records this host's failure; the retry will record the next.
+          // Only retry if there are other hosts that haven't been tried yet.
+          emit(
+            `\n[retrying remote validation on another host — ${slot.host.host} failed transiently]\n`,
+          );
+          appendRemoteValidationEvent(this.config.root, opts.taskId, {
+            level: "warn",
+            phase: "run",
+            message: `retrying on another host after transient failure on ${slot.host.host}`,
+            host: slot.host.host,
+          });
+          slot.release();
+          // Small delay before retry so health retries can settle.
+          await new Promise((r) => setTimeout(r, 200));
+          continue;
+        }
+        return summary;
+      } finally {
+        // Try to release; the guard inside release() prevents double-release.
+        try {
+          slot.release();
+        } catch {
+          /* best effort */
+        }
+      }
     }
+    return (
+      lastSummary ??
+      this.infraFail("remote validation retry loop exhausted", {
+        taskId: opts.taskId,
+        phase: "result",
+      })
+    );
   }
 
   private async runValidation(
