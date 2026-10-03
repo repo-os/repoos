@@ -2,14 +2,15 @@
 id: "0630"
 title: Polish AI release-notes drafting feedback and panel-return state
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: b2cc5489be17d5ff1dfce5bbe5a3296356cb42b7
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-ai-release-notes-drafting-feedbac
 created_at: "2026-10-02T23:43:04Z"
-updated_at: "2026-10-03T00:56:53Z"
+updated_at: "2026-10-03T06:32:14Z"
 ---
 ## Problem
 
@@ -75,3 +76,4 @@ Let's add an animation when AI is drafting the release notes, it can be similar 
 - 2026-10-02T23:44:47Z · status inbox→ready
 - 2026-10-02T23:44:48Z · status ready→active, branch
 - 2026-10-03T00:56:53Z · status active→review
+- 2026-10-03T06:32:14Z · status review→done, release:success
