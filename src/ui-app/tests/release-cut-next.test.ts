@@ -570,6 +570,73 @@ describe("AI release notes tracked run (#0605)", () => {
     expect(panel.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toContain("Highlights");
   });
 
+  it("drops a slow open-sync response that arrives after a newer poll (#0630 review)", async () => {
+    // The panel-open sync and the poll share one sequence: a held-back open
+    // sync resolving AFTER a poll already applied "running" must be dropped,
+    // or it would overwrite the live state with its stale terminal snapshot
+    // and tickStopIfNeeded would stop the poll loop mid-draft.
+    draftingState = runningRun();
+    let calls = 0;
+    let resolveSync: (value: unknown) => void = () => {};
+    const heldSync = new Promise((resolve) => {
+      resolveSync = resolve;
+    });
+    api.mockImplementation((path: string) => {
+      if (path === "/api/release") return Promise.resolve(releaseStatus());
+      if (path === "/api/release/distribution")
+        return Promise.resolve({ channels: [], releaseVersion: null, releaseTag: null });
+      if (path === "/api/release/run")
+        return Promise.resolve({
+          state: "idle",
+          phase: null,
+          message: "",
+          startedAt: null,
+          updatedAt: null,
+        });
+      if (path === "/api/release/notes")
+        return Promise.resolve({
+          notes: "",
+          sinceTag: "v0.5.58",
+          commitCount: 3,
+          truncated: false,
+        });
+      if (path === "/api/release/notes/run") {
+        calls += 1;
+        // Call 1 is the mount poll; call 2 is the panel-open sync (held);
+        // later calls are poll ticks.
+        return calls === 2 ? heldSync : Promise.resolve(draftingState);
+      }
+      return Promise.reject(new Error(`unexpected api call: ${path}`));
+    });
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await flushPromises();
+    const panel = await openPanel();
+    expect(panel.querySelector(".rel-notes-drafting")).toBeTruthy();
+
+    // A poll tick fires first (the newer request) and applies "running";
+    // only then does the held-back open sync resolve with a stale snapshot.
+    await vi.advanceTimersByTimeAsync(1000);
+    await flushPromises();
+    expect(panel.querySelector(".rel-notes-drafting")).toBeTruthy();
+
+    resolveSync(succeededRun("Stale terminal snapshot"));
+    await flushPromises();
+    // The stale snapshot was dropped: still drafting, still nothing placed.
+    expect(panel.querySelector(".rel-notes-drafting")).toBeTruthy();
+    expect(panel.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toBe("");
+    expect(panel.querySelector(".rel-notes-error")).toBeNull();
+
+    // And the poll loop survived: the next tick observes the draft landing.
+    draftingState = succeededRun();
+    await vi.advanceTimersByTimeAsync(1000);
+    await flushPromises();
+    expect(panel.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toContain("Shiny");
+    expect(panel.querySelector(".rel-notes-drafting")).toBeNull();
+  });
+
   it("never backfills from a finished run this session did not watch", async () => {
     // A pre-existing succeeded run from before this page load, with a key the
     // session never observed: reopening must leave the field empty.
