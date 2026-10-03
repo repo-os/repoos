@@ -68,6 +68,19 @@ describe("humanNeedsReasons", () => {
     expect(reasons({ status: "done", needsInput: true, needsMerge: true })).toEqual([]);
   });
 
+  it("does not list a done task for needs_input", () => {
+    expect(reasons({ status: "done", needsInput: true })).toEqual([]);
+  });
+
+  it("does not list a done task for needs_merge", () => {
+    expect(reasons({ status: "done", needsMerge: true })).toEqual([]);
+  });
+
+  it("still lists needs_input / needs_merge on a non-done task (review/active unchanged)", () => {
+    expect(reasons({ status: "review", needsInput: true })).toContain("needs input");
+    expect(reasons({ status: "active", needsMerge: true })).toContain("merge needed");
+  });
+
   it("returns no reason for an ai-assigned inbox task", () => {
     expect(reasons({})).toEqual([]);
   });
@@ -109,6 +122,16 @@ describe("humanNeeds store computed", () => {
   it("excludes ai-assigned tasks with nothing to do", () => {
     const repo = useRepoStore();
     repo.tasks = [makeTask({ id: "1" }), makeTask({ id: "2", status: "active" })];
+    expect(repo.humanNeeds).toEqual([]);
+  });
+
+  it("excludes a done task carrying needs_input or needs_merge", () => {
+    const repo = useRepoStore();
+    repo.tasks = [
+      makeTask({ id: "1", status: "done", needsInput: true }),
+      makeTask({ id: "2", status: "done", needsMerge: true }),
+      makeTask({ id: "3", status: "done", needsInput: true, needsMerge: true }),
+    ];
     expect(repo.humanNeeds).toEqual([]);
   });
 
