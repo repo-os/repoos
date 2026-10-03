@@ -87,3 +87,4 @@ review_passes: 1
 - 2026-10-03T17:57:14Z · note: Task body is underspecified: missing sections: Desired UX
 - 2026-10-03T17:57:48Z · status review→active
 - 2026-10-03T18:12:52Z · status active→review
+- 2026-10-03T18:12:52Z · note: Task body is underspecified: missing sections: Desired UX
