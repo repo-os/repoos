@@ -755,6 +755,16 @@ export interface RemoteHostStatusView {
   lastRun?: { taskId: string; ok: boolean; at: string; durationMs?: number };
   activeRuns?: { taskId: string; startedAt: string }[];
   queuedTasks?: string[];
+  serverStats?: {
+    available: boolean;
+    sampledAt?: string;
+    loadAverage?: [number, number, number];
+    cpuCount?: number;
+    memoryUsedBytes?: number;
+    memoryTotalBytes?: number;
+    diskFreeBytes?: number;
+    detail?: string;
+  };
 }
 
 /** The `/api/remote-validation/status` payload (#0521/#0564). */
@@ -764,6 +774,9 @@ export interface RemoteValidationStatusView {
   provider: "hetzner" | "tailscale";
   tailscaleHosts: string[];
   hosts: RemoteHostStatusView[];
+  tailscaleHost: string;
+  tailscaleHostPinsTop: boolean;
+  hostPoolEditable: boolean;
   activeServer: { id: number; ip: string; ageMinutes: number } | null;
   maxConcurrent: number;
 }

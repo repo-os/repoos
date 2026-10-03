@@ -287,6 +287,18 @@ export interface RemoteHostStatus {
   activeRuns?: { taskId: string; startedAt: string }[];
   /** Task ids of the queued runs waiting for THIS host, FIFO order (#0564). */
   queuedTasks?: string[];
+  serverStats?: RemoteServerStats;
+}
+
+export interface RemoteServerStats {
+  available: boolean;
+  sampledAt?: string;
+  loadAverage?: [number, number, number];
+  cpuCount?: number;
+  memoryUsedBytes?: number;
+  memoryTotalBytes?: number;
+  diskFreeBytes?: number;
+  detail?: string;
 }
 
 export interface RemoteValidator {
@@ -306,6 +318,8 @@ export interface RemoteValidator {
   /** Per-host pool state for the status endpoint (#0521). Optional: the
    *  Hetzner runner is a single server-owned VM with no pool to report. */
   hostStatus?(): RemoteHostStatus[];
+  /** Start non-blocking, independent SSH sampling for configured pool hosts. */
+  refreshHostStats?(): void;
   /**
    * Rebuild dispatch state from the live config after a Settings / raw-TOML
    * save. Without this the pool keeps the boot-time host list until restart
@@ -1568,6 +1582,9 @@ interface PoolHostState {
   probing?: Promise<void>;
   retryTimer?: ReturnType<typeof setTimeout>;
   lastRun?: { taskId: string; ok: boolean; at: string; durationMs?: number };
+  serverStats?: RemoteServerStats;
+  statsRequestedAt?: number;
+  statsSampling?: Promise<void>;
 }
 
 /** One in-flight remote run, attributed to the host executing it (#0564). */
@@ -1588,6 +1605,8 @@ interface PoolWaiter {
 
 /** How long an unhealthy host waits before a probe may retry it. */
 const HEALTH_RETRY_MS = 30_000;
+const SERVER_STATS_REFRESH_MS = 15_000;
+const SERVER_STATS_TIMEOUT_MS = 5_000;
 /**
  * Consecutive failed probes before a host stops being retried. Hitting the cap
  * must not strand queued runs: callers with no `deadlineAt` of their own
@@ -1597,6 +1616,76 @@ const HEALTH_RETRY_MS = 30_000;
  * whose eligible hosts have ALL hit this cap.
  */
 const MAX_HEALTH_RETRIES = 10;
+
+const SERVER_STATS_COMMAND =
+  "printf '__UPTIME__\\n'; uptime 2>/dev/null || true; " +
+  "printf '\\n__CPU__\\n'; (getconf _NPROCESSORS_ONLN 2>/dev/null || nproc 2>/dev/null || " +
+  "sysctl -n hw.ncpu 2>/dev/null) || true; " +
+  "printf '\\n__MEMORY__\\n'; " +
+  "if command -v free >/dev/null 2>&1; then free -b; " +
+  "else vm_stat 2>/dev/null || true; printf '\\n'; " +
+  "sysctl -n hw.pagesize 2>/dev/null || true; " +
+  "sysctl -n hw.memsize 2>/dev/null || true; fi; " +
+  "printf '\\n__DISK__\\n'; df -Pk \"$HOME\" 2>/dev/null || true";
+
+/** Parse the portable, labelled output of SERVER_STATS_COMMAND. */
+export function parseRemoteServerStats(
+  output: string,
+  sampledAt = new Date().toISOString(),
+): RemoteServerStats {
+  const sections = new Map<string, string>();
+  const marker = /(?:^|\n)__([A-Z_]+)__\n/g;
+  let current = "";
+  let previous = 0;
+  for (const match of output.matchAll(marker)) {
+    if (current) sections.set(current, output.slice(previous, match.index).trim());
+    current = match[1]!;
+    previous = match.index! + match[0].length;
+  }
+  if (current) sections.set(current, output.slice(previous).trim());
+
+  const stats: RemoteServerStats = { available: false, sampledAt };
+  const loadText = sections.get("UPTIME") ?? "";
+  const loadMatch = loadText.match(/load averages?:\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/i);
+  if (loadMatch) {
+    stats.loadAverage = [Number(loadMatch[1]), Number(loadMatch[2]), Number(loadMatch[3])];
+  }
+
+  const cpu = Number((sections.get("CPU") ?? "").match(/\d+/)?.[0]);
+  if (Number.isSafeInteger(cpu) && cpu > 0) stats.cpuCount = cpu;
+
+  const memory = sections.get("MEMORY") ?? "";
+  const freeMemory = memory.match(/^\s*Mem:\s+(\d+)\s+(\d+)/m);
+  if (freeMemory) {
+    stats.memoryTotalBytes = Number(freeMemory[1]);
+    stats.memoryUsedBytes = Number(freeMemory[2]);
+  } else {
+    const pageSize = Number(memory.match(/(?:^|\n)(\d+)\s*(?:\n|$)/)?.[1]);
+    const totalBytes = Number(memory.match(/(?:^|\n)(\d{7,})\s*(?:\n|$)/)?.[1]);
+    const pageCount = (label: string): number =>
+      Number(memory.match(new RegExp(`Pages ${label}:\\s*(\\d+)`))?.[1] ?? 0);
+    if (pageSize > 0 && totalBytes > 0) {
+      const availablePages = pageCount("free") + pageCount("inactive") + pageCount("speculative");
+      stats.memoryTotalBytes = totalBytes;
+      stats.memoryUsedBytes = Math.max(0, totalBytes - availablePages * pageSize);
+    }
+  }
+
+  const diskLines = (sections.get("DISK") ?? "").split("\n").slice(1);
+  for (const line of diskLines) {
+    const columns = line.trim().split(/\s+/);
+    if (columns.length >= 6 && /^\d+$/.test(columns[3]!)) {
+      stats.diskFreeBytes = Number(columns[3]) * 1024;
+      break;
+    }
+  }
+
+  stats.available = Boolean(
+    stats.loadAverage || stats.cpuCount || stats.memoryTotalBytes || stats.diskFreeBytes,
+  );
+  if (!stats.available) stats.detail = "No server statistics could be parsed.";
+  return stats;
+}
 
 /**
  * Dispatches remote validation jobs across a pool of tailnet hosts (#0521).
@@ -1720,6 +1809,12 @@ export class TailscaleHostPool {
       this.hosts.splice(i, 1);
     }
 
+    const ordered = wanted
+      .map((spec) => this.hosts.find((host) => host.spec.host === spec.host))
+      .filter((host): host is PoolHostState => host !== undefined);
+    const activeRemoved = this.hosts.filter((host) => host.removed && host.active > 0);
+    this.hosts.splice(0, this.hosts.length, ...ordered, ...activeRemoved);
+
     this.settleIneligibleWaiters();
     if (this.waiters.length) {
       for (const s of this.hosts) {
@@ -1822,7 +1917,7 @@ export class TailscaleHostPool {
       if (this.waiters.length > 0) this.dispatch();
       const nowFree = healthy
         .filter((s) => s.healthy && s.active < s.limit)
-        .sort((a, b) => a.active - b.active);
+        .sort((a, b) => a.active - b.active || this.hosts.indexOf(a) - this.hosts.indexOf(b));
       if (nowFree.length > 0) return this.assign(nowFree[0]!, opts.taskId);
     }
 
@@ -1893,7 +1988,12 @@ export class TailscaleHostPool {
     for (const w of this.waiters) {
       const next = this.liveHosts()
         .filter((s) => hostSatisfies(s.spec, w.capabilities))
-        .sort((a, b) => Number(b.healthy) - Number(a.healthy) || a.active - b.active)[0];
+        .sort(
+          (a, b) =>
+            Number(b.healthy) - Number(a.healthy) ||
+            a.active - b.active ||
+            this.hosts.indexOf(a) - this.hosts.indexOf(b),
+        )[0];
       if (next) {
         const entry = queuedOn.get(next) ?? { count: 0, taskIds: [] };
         // Every waiter counts toward `queued`; next-up task ids surface only
@@ -1917,7 +2017,50 @@ export class TailscaleHostPool {
       lastRun: s.lastRun,
       activeRuns: s.activeRuns.map((r) => ({ ...r })),
       queuedTasks: [...(queuedOn.get(s)?.taskIds ?? [])],
+      serverStats: s.serverStats ?? { available: false },
     }));
+  }
+
+  /** Request stats without acquiring a run slot or entering the run queue. */
+  refreshServerStats(): void {
+    const now = Date.now();
+    for (const host of this.liveHosts()) {
+      if (
+        host.statsSampling ||
+        (host.statsRequestedAt && now - host.statsRequestedAt < SERVER_STATS_REFRESH_MS)
+      ) {
+        continue;
+      }
+      host.statsRequestedAt = now;
+      host.statsSampling = Promise.resolve()
+        .then(() =>
+          this.exec.runRemote(host.ssh, SERVER_STATS_COMMAND, () => {}, SERVER_STATS_TIMEOUT_MS),
+        )
+        .then((result) => {
+          const sampledAt = new Date().toISOString();
+          if (result.code === 0 && !result.timedOut) {
+            host.serverStats = parseRemoteServerStats(result.output, sampledAt);
+          } else {
+            host.serverStats = {
+              available: false,
+              sampledAt,
+              detail: result.timedOut
+                ? "Statistics request timed out."
+                : "Statistics request failed.",
+            };
+          }
+        })
+        .catch((error: unknown) => {
+          host.serverStats = {
+            available: false,
+            sampledAt: new Date().toISOString(),
+            detail: error instanceof Error ? error.message : "Statistics request failed.",
+          };
+        })
+        .finally(() => {
+          host.statsSampling = undefined;
+        });
+    }
   }
 
   /**
@@ -2025,7 +2168,7 @@ export class TailscaleHostPool {
       const w = this.waiters[i]!;
       const free = this.liveHosts()
         .filter((s) => s.healthy && s.active < s.limit && hostSatisfies(s.spec, w.capabilities))
-        .sort((a, b) => a.active - b.active)[0];
+        .sort((a, b) => a.active - b.active || this.hosts.indexOf(a) - this.hosts.indexOf(b))[0];
       if (!free) {
         i++;
         continue;
@@ -2358,6 +2501,10 @@ export class TailscaleRunner implements RemoteValidator {
   /** Per-host pool state for the status endpoint (#0521). */
   hostStatus(): RemoteHostStatus[] {
     return this.pool.status();
+  }
+
+  refreshHostStats(): void {
+    this.pool.refreshServerStats();
   }
 
   /**

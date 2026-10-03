@@ -91,6 +91,7 @@ import {
   agentsForConfig,
   getConfigSchema,
   patchTomlConfig,
+  parseFlatToml,
   loadConfig,
   resolveServePort,
   sanitizeBuiltInAgents,
@@ -2552,8 +2553,18 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // "Start clean" can name what it would discard (#0512).
   router.register("GET", /^\/api\/tasks\/([^/]+)\/worktree-dirty$/, getWorktreeDirtyForTask);
   router.register("GET", /^\/api\/tasks\/([^/]+)\/file$/, getTaskFile);
-  router.register("GET", "/api/remote-validation/status", (_ctx, _req, res) => {
+  router.register("GET", "/api/remote-validation/status", (_ctx, req, res) => {
     const rv = config.remoteValidation ?? {};
+    const rawHostPool = parseFlatToml(readFileSync(join(config.root, "repoos.toml"), "utf8"))[
+      "remoteValidation.tailscaleHosts"
+    ];
+    const hasRichHostRows =
+      Array.isArray(rawHostPool) &&
+      rawHostPool.some((entry) => typeof entry === "object" && entry !== null);
+    const explicitHostList = Array.isArray(rawHostPool) && rawHostPool.length > 0;
+    const resolvedHosts = resolveRemoteHosts(rv);
+    const shorthand = rv.tailscaleHost?.trim();
+    const shorthandHost = shorthand?.includes("@") ? shorthand.split("@").pop() : shorthand;
     let activeServer: { id: number; ip: string; ageMinutes: number } | null = null;
     try {
       const s = JSON.parse(
@@ -2572,6 +2583,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       /* no warm runner */
     }
     const sshKeyEnv = process.env.REPOOS_REMOTE_SSH_KEY;
+    if (new URL(req.url ?? "/", "http://localhost").searchParams.has("includeStats")) {
+      remoteValidator?.refreshHostStats?.();
+    }
     // Per-host pool state (#0521): live from the runner when it exists
     // (`applyConfig` keeps this list in sync with Settings saves). Otherwise
     // the configured list (probed:false) so the drawer still shows hosts when
@@ -2591,6 +2605,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         lastRun: undefined as { taskId: string; ok: boolean; at: string } | undefined,
         activeRuns: [] as { taskId: string; startedAt: string }[],
         queuedTasks: [] as string[],
+        serverStats: { available: false },
       })),
     ];
     return json(res, 200, {
@@ -2606,8 +2621,11 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       sshKeyName: rv.sshKeyName ?? "",
       hasApiToken: !!process.env.HETZNER_API_TOKEN,
       hasSshKey: !!sshKeyEnv && existsSync(sshKeyEnv),
+      tailscaleHosts: resolvedHosts.map((h) => h.host),
       tailscaleHost: rv.tailscaleHost ?? "",
-      tailscaleHosts: resolveRemoteHosts(rv).map((h) => h.host),
+      tailscaleHostPinsTop:
+        !!shorthandHost && !explicitHostList && resolvedHosts[0]?.host === shorthandHost,
+      hostPoolEditable: !hasRichHostRows,
       tailscaleUser: rv.tailscaleUser ?? "root",
       containerImage: rv.containerImage ?? "repoos-ci",
       maxConcurrent: rv.maxConcurrent ?? 1,
