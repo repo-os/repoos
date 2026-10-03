@@ -44,15 +44,18 @@ const props = withDefaults(
     failedAt?: string;
     /** Debugger one-line tl;dr (#0595). Shown in the collapsed line when set. */
     tldr?: string;
+    /** Fixed tl;dr for failures the Debugger doesn't diagnose; `tldr` wins. */
+    summary?: string;
     /** True while the Debugger is generating `tldr`. */
     tldrDiagnosing?: boolean;
   }>(),
   { mode: "card" },
 );
 
+const tldr = computed(() => props.tldr?.trim() || props.summary?.trim() || undefined);
+
 const displayLine = computed(() => {
-  const tldr = props.tldr?.trim();
-  if (tldr && (props.mode === "card" || collapsed.value)) return tldr;
+  if (tldr.value && (props.mode === "card" || collapsed.value)) return tldr.value;
   return props.message;
 });
 

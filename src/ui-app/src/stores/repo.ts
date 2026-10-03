@@ -136,6 +136,8 @@ export interface DoneError {
   hint?: string;
   /** Newline-preserving check/build output excerpt for the expanded panel. */
   detail?: string;
+  /** Fixed tl;dr for failure kinds the Debugger skips; `tldr` wins when set. */
+  summary?: string;
   /**
    * Repo-relative path to the durable log of the failed check's full output
    * (#0428), shown so the untruncated transcript is reachable from the task.
