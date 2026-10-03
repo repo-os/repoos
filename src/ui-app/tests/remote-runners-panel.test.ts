@@ -1,0 +1,107 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { flushPromises, mount } from "@vue/test-utils";
+import { createPinia, setActivePinia } from "pinia";
+import RemoteRunnersPanel from "../src/components/RemoteRunnersPanel.vue";
+
+const jsonResponse = (body: unknown): Response =>
+  ({
+    ok: true,
+    status: 200,
+    statusText: "OK",
+    json: async () => body,
+  }) as unknown as Response;
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+describe("RemoteRunnersPanel", () => {
+  it("shows tie-break guidance and saves keyboard-accessible host reordering", async () => {
+    const calls: Array<{ path: string; method: string; body?: unknown }> = [];
+    let hostSpecs = [
+      { host: "mini", user: "peck" },
+      { host: "bee", user: "nick" },
+    ];
+    const status = () => ({
+      enabled: true,
+      running: true,
+      provider: "tailscale",
+      tailscaleHosts: hostSpecs.map((host) => host.host),
+      tailscaleHost: "peck@mini",
+      tailscaleHostPinsTop: false,
+      hostPoolEditable: true,
+      hosts: hostSpecs.map((host) => ({
+        ...host,
+        labels: [],
+        maxConcurrent: 1,
+        inFlight: 0,
+        queued: 0,
+        probed: true,
+        healthy: true,
+        serverStats: {
+          available: true,
+          sampledAt: "2026-10-03T10:00:00.000Z",
+          loadAverage: [0.1, 0.2, 0.3],
+          cpuCount: 4,
+          memoryUsedBytes: 1_073_741_824,
+          memoryTotalBytes: 4_294_967_296,
+          diskFreeBytes: 8_589_934_592,
+        },
+      })),
+    });
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string | URL, init?: RequestInit) => {
+        const path = String(url);
+        const method = (init?.method ?? "GET").toUpperCase();
+        const body = typeof init?.body === "string" ? JSON.parse(init.body) : undefined;
+        calls.push({ path, method, body });
+        if (path.startsWith("/api/remote-validation/status")) return jsonResponse(status());
+        if (path === "/api/config" && method === "PATCH") {
+          const list = (body as Record<string, unknown>)["remoteValidation.tailscaleHosts"] as
+            | string[]
+            | undefined;
+          if (list) {
+            hostSpecs = list.map((entry) => {
+              const [user, host] = entry.split("@");
+              return { host: host ?? user!, user: host ? user! : "root" };
+            });
+          }
+          return jsonResponse({ ok: true });
+        }
+        throw new Error(`Unexpected request ${method} ${path}`);
+      }),
+    );
+
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const wrapper = mount(RemoteRunnersPanel, {
+      global: { plugins: [pinia], stubs: { "router-link": true } },
+    });
+    await flushPromises();
+
+    expect(wrapper.text()).toContain(
+      "Hosts with equal load are tried top to bottom, so the first host gets the work when all are idle.",
+    );
+    expect(wrapper.text()).toContain("Server stats");
+    expect(wrapper.text()).toContain("Load average");
+    expect(wrapper.find('button[aria-label="Move nick@bee up"]').exists()).toBe(true);
+
+    await wrapper.get('button[aria-label="Move peck@mini down"]').trigger("click");
+    await flushPromises();
+
+    const save = calls.find((call) => call.path === "/api/config" && call.method === "PATCH");
+    expect(save?.body).toEqual({
+      "remoteValidation.tailscaleHosts": ["nick@bee", "peck@mini"],
+    });
+    expect(wrapper.findAll(".rr-host-name").map((name) => name.text())).toEqual([
+      "nick@bee",
+      "peck@mini",
+    ]);
+    expect(
+      wrapper.get('button[aria-label="Move nick@bee up"]').attributes("disabled"),
+    ).toBeDefined();
+    wrapper.unmount();
+  });
+});
