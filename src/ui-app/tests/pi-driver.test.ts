@@ -7,6 +7,7 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+  deterministicSessionId,
   engineerLaunches,
   engineerPermissionGaps,
   engineCancelSignal,
@@ -16,6 +17,8 @@ import {
   parsePiEvent,
   pmCommand,
   promptCommand,
+  reviewCommand,
+  supportsChosenSessionId,
 } from "../../server/agents";
 import type { Agent } from "../../core/types";
 
@@ -53,6 +56,65 @@ describe("pi invocation shapes", () => {
     expect(followUp.cmd).toBe("pi");
     expect(followUp.args).toEqual(["--mode", "json", "--session", "session-id", "continue"]);
     expect(followUp.args).not.toContain("--continue");
+  });
+
+  it("pins a chosen deterministic id on first launch and resumes that exact id", () => {
+    const id = deterministicSessionId("0639", "engineer");
+    const [launch, followUp] = engineerLaunches(agent(), "/tmp/wt", id);
+    // First launch: pi creates the session under the id RepoOS chose.
+    expect(launch.args).toEqual(["--mode", "json", "--session-id", id, "mission"]);
+    // Resume: the SAME id, via --session — never a fresh session and never
+    // pi's ambiguous `--continue`.
+    expect(followUp.args).toEqual(["--mode", "json", "--session", id, "continue"]);
+    expect(followUp.args).not.toContain("--session-id");
+    expect(followUp.args).not.toContain("--continue");
+  });
+
+  it("derives a stable, pi-safe id from task + role", () => {
+    expect(deterministicSessionId("0639", "engineer")).toBe("repoos-0639-engineer");
+    // Role casing never forks one conversation into two ids.
+    expect(deterministicSessionId("0639", "Engineer")).toBe("repoos-0639-engineer");
+    // A different role is a different conversation.
+    expect(deterministicSessionId("0639", "reviewer")).toBe("repoos-0639-reviewer");
+    // Task-id characters pi rejects are folded to `-` and trimmed.
+    expect(deterministicSessionId("task/with:odd chars!", "engineer")).toBe(
+      "repoos-task-with-odd-chars-engineer",
+    );
+    // Always starts and ends alphanumeric, per pi's assertValidSessionId.
+    expect(deterministicSessionId("", "…")).toMatch(/^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$/);
+  });
+
+  it("leaves engines that cannot choose a session id unchanged", () => {
+    expect(supportsChosenSessionId("pi")).toBe(true);
+    // opencode v2 `run` has no way to create a session with a chosen id, so a
+    // would-be launch id must not leak a bogus `--session-id` flag into it.
+    expect(supportsChosenSessionId("opencode")).toBe(false);
+    const opencode = { name: "engineer", cli: "opencode", model: "default", enabled: true };
+    const [launch, followUp] = engineerLaunches(opencode, "/tmp/wt", "repoos-0639-engineer");
+    expect(launch.args).not.toContain("--session-id");
+    expect(followUp.args).not.toContain("--session-id");
+    expect(followUp.args).toContain("--session");
+    expect(followUp.args).toContain("repoos-0639-engineer");
+  });
+
+  it("pins a per-pass id on a fresh review and resumes it on a review chat", () => {
+    const id = "repoos-0639-reviewer-1";
+    const fresh = reviewCommand(agent(), "review this", "/tmp/wt", {
+      sessionId: id,
+      resume: false,
+    });
+    expect(fresh.args).toEqual(["--mode", "json", "--session-id", id, "review this"]);
+    const chat = reviewCommand(agent(), "tell me more", "/tmp/wt", {
+      sessionId: id,
+      resume: true,
+    });
+    expect(chat.args).toEqual(["--mode", "json", "--session", id, "tell me more"]);
+    // One-shot CTO/legacy callers pass no id and keep the old shape.
+    expect(reviewCommand(agent(), "review this", "/tmp/wt").args).toEqual([
+      "--mode",
+      "json",
+      "review this",
+    ]);
   });
 
   it("needs no permission-bypass flag (approval is a property of the mode)", () => {
