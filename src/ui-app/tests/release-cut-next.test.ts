@@ -690,6 +690,47 @@ describe("AI release notes tracked run (#0605)", () => {
     expect(button(panel, "Publish v0.5.59")!.disabled).toBe(false);
   });
 
+  it("marks a terminal run from older commits as out of date, not ready (#0630 review)", async () => {
+    // The server keeps its last terminal run forever; when commits have landed
+    // since, its success must not claim "Generate with AI will reuse it" and
+    // its failure must not raise an error for a context that no longer exists.
+    draftingState = {
+      ...succeededRun("Old draft for old commits"),
+      head: "aaa-old",
+      stale: true,
+    };
+    apiWithNotesRun({ notes: "", sinceTag: "v0.5.58", commitCount: 3, truncated: false });
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await flushPromises();
+    let panel = await openPanel();
+
+    const hint = panel.querySelector(".rel-notes-hint");
+    expect(hint?.textContent ?? "").toContain("out of date");
+    expect(hint?.textContent ?? "").not.toContain("finished while you were away");
+    expect(panel.querySelector(".rel-notes-error")).toBeNull();
+    expect(panel.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toBe("");
+
+    // Same discipline for a stale failure: no error for an old context.
+    draftingState = {
+      ...draftingState,
+      state: "failed",
+      notes: null,
+      error: "Old failure for old commits",
+    };
+    wrapper!.unmount();
+    document.body.innerHTML = "";
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await flushPromises();
+    panel = await openPanel();
+    expect(panel.querySelector(".rel-notes-error")).toBeNull();
+  });
+
   it("surfaces a draft that FAILED while the panel was closed (#0630)", async () => {
     // The run failed before this page load (or while the panel was shut): a
     // fresh session never watched it, but reopening must still say so.

@@ -386,6 +386,16 @@ export async function collectReleaseCommits(
 }
 
 /**
+ * Current HEAD sha, or null when git can't tell. Cheap on purpose: the notes
+ * run route polls it to decide whether a stored terminal draft still describes
+ * the current commits (#0630 review).
+ */
+export async function releaseHead(config: RepoOSConfig): Promise<string | null> {
+  const res = await run("git", ["rev-parse", "HEAD"], config.root);
+  return res.code === 0 ? res.stdout.trim() || null : null;
+}
+
+/**
  * One-shot prompt for drafting release notes from a commit list. Pure and
  * exported so the wording is unit-testable without spawning an agent.
  */
