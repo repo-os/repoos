@@ -2,7 +2,7 @@
 id: "0638"
 title: Fix unresponsive text entry fields in web UI
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
@@ -111,3 +111,4 @@ These two text entry fields don't work, when I click on them nothing happens, th
 - 2026-10-03T13:30:12Z · note: Fixing review findings: AreaPicker focus style, ui-smoke error matching
 - 2026-10-03T13:55:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-03T13:59:59Z · status active→review
+- 2026-10-03T13:59:59Z · status review→active
