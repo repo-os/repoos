@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 review_cli_override: pi
+review_model_override: openrouter/openrouter/free
 created_at: "2026-10-03T08:00:36Z"
-updated_at: "2026-10-03T08:13:58Z"
+updated_at: "2026-10-03T08:21:41Z"
 ---
 ## Problem
 
@@ -71,3 +72,4 @@ Let's add a "Delete input" button at the bottom left of the input side panel (si
 - 2026-10-03T08:00:37Z · screenshots
 - 2026-10-03T08:01:34Z · status draft→inbox, title, area, body
 - 2026-10-03T08:13:58Z · review_cli_override
+- 2026-10-03T08:21:41Z · review_model_override
