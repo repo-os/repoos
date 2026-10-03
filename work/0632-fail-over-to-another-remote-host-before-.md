@@ -13,7 +13,7 @@ model_override: openrouter/openrouter/pareto-code
 review_cli_override: opencode
 review_model_override: openrouter/openrouter/auto
 created_at: "2026-10-03T06:01:04Z"
-updated_at: "2026-10-03T10:22:36Z"
+updated_at: "2026-10-03T11:34:12Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -38,6 +38,28 @@ A remote validation run is bound to one host when it starts (pool.acquire in src
 ## Notes for AI
 See src/server/remote-validation.ts (acquire ~1751, run + timeout handling ~1255, pool.acquire call ~2415), src/server/pre-review-remote-gate.ts (fallbackToLocal handling ~179). Host tie-break is config order when active counts are equal; a separate task covers reordering hosts in the UI.
 
+## Shots
+```json
+[
+  {
+    "label": "Remote validation drawer: retry-on-other-hosts switch above the provider tabs",
+    "target": "default",
+    "route": "/settings",
+    "steps": [
+      {
+        "click": "[id=\"setting-remoteValidation.enabled\"] button"
+      },
+      {
+        "waitFor": ".rvr-tab"
+      },
+      {
+        "waitMs": 400
+      }
+    ]
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-03T06:01:04Z · created · unknown
@@ -52,3 +74,4 @@ See src/server/remote-validation.ts (acquire ~1751, run + timeout handling ~1255
 - 2026-10-03T10:03:39Z · model_override
 - 2026-10-03T10:21:31Z · status active→review
 - 2026-10-03T10:22:36Z · status review→active
+- 2026-10-03T11:34:12Z · body: section Shots
