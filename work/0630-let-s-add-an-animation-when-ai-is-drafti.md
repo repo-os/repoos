@@ -2,14 +2,14 @@
 id: "0630"
 title: Polish AI release-notes drafting feedback and panel-return state
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-ai-release-notes-drafting-feedbac
 created_at: "2026-10-02T23:43:04Z"
-updated_at: "2026-10-03T05:36:47Z"
+updated_at: "2026-10-03T05:36:51Z"
 ---
 ## Problem
 
@@ -75,3 +75,4 @@ Let's add an animation when AI is drafting the release notes, it can be similar 
 - 2026-10-02T23:44:47Z · status inbox→ready
 - 2026-10-02T23:44:48Z · status ready→active, branch
 - 2026-10-03T05:36:47Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-10-03T05:36:51Z · status review→active
