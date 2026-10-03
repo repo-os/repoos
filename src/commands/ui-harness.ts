@@ -17,9 +17,14 @@ export interface SmokeConsoleMessage {
   type(): string;
   text(): string;
 }
+export interface SmokeResponse {
+  status(): number;
+  url(): string;
+}
 export interface SmokePage {
   on(event: "console", handler: (msg: SmokeConsoleMessage) => void): void;
   on(event: "pageerror", handler: (err: Error) => void): void;
+  on(event: "response", handler: (res: SmokeResponse) => void): void;
   route(
     url: string,
     handler: (route: {
@@ -42,6 +47,18 @@ export interface SmokePage {
   setViewportSize(viewport: { width: number; height: number }): Promise<void>;
   waitForFunction(fn: () => unknown, options?: { timeout?: number }): Promise<unknown>;
   waitForTimeout(ms: number): Promise<void>;
+  /**
+   * Real pointer click: unlike `el.click()` in evaluate, the browser runs the
+   * focus-on-click default action, which is the whole point of the #0638
+   * smoke flow (a teleported input must hold focus after a real click).
+   */
+  click(selector: string, options?: { timeout?: number }): Promise<void>;
+  /** Programmatic focus — still dispatches focusin/focusout normally. */
+  focus(selector: string, options?: { timeout?: number }): Promise<void>;
+  keyboard: {
+    type(text: string): Promise<void>;
+    press(key: string): Promise<void>;
+  };
   route(
     url: string,
     handler: (route: {
