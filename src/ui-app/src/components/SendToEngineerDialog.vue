@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import Button from "./ui/button.vue";
+import { useFloatingFocus } from "@/composables/useFloatingFocus";
 
 const props = defineProps<{ open: boolean; busy: boolean; title: string }>();
 const emit = defineEmits<{
@@ -10,6 +11,11 @@ const emit = defineEmits<{
 
 const note = ref("");
 const textarea = ref<HTMLTextAreaElement | null>(null);
+// The overlay is teleported to <body>, outside the drawer's Radix focus scope;
+// without this the note textarea can't hold the caret while the drawer's modal
+// dialog is open (#0638).
+const overlayEl = ref<HTMLElement | null>(null);
+useFloatingFocus(overlayEl);
 
 function onKey(event: KeyboardEvent): void {
   if (event.key === "Escape" && props.open) emit("cancel");
@@ -37,6 +43,7 @@ function confirm(): void {
   <Teleport to="body">
     <div
       v-if="open"
+      ref="overlayEl"
       class="ste-overlay"
       data-overlay-layer="floating"
       role="dialog"
