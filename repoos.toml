@@ -67,8 +67,8 @@ taskExtensions = [".md"]
 skillSuggestions = false
 remoteValidation.useForReleases = false
 remoteValidation.provider = "tailscale"
-remoteValidation.tailscaleHost = "peckjachowski@mini"
-remoteValidation.tailscaleUser = "peckjachowski"
+# remoteValidation.tailscaleHost = "peckjachowski@mini"
+# remoteValidation.tailscaleUser = "peckjachowski"
 remoteValidation.containerImage = "repoos-ci"
 # Host pool — uncomment and replace tailscaleHost/tailscaleUser above to use multiple machines.
 # Jobs dispatch to whichever host is idle; they queue only when every host is busy.
