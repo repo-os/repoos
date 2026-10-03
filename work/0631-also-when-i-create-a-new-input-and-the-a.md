@@ -13,8 +13,9 @@ created_by: hello@repoos.org
 branch: feat/show-enrichment-in-progress-on-inputs-li
 cli_override: cursor
 model_override: composer-2.5
+review_cli_override: cursor
 created_at: "2026-10-02T23:44:30Z"
-updated_at: "2026-10-03T05:23:23Z"
+updated_at: "2026-10-03T05:27:51Z"
 review_passes: 5
 handoff_signal_retry_count: 2
 review_rounds: 2
@@ -117,3 +118,4 @@ Also when I create a new input and the AI is making the title I guess, when I cl
 - 2026-10-03T05:22:31Z · needs_input
 - 2026-10-03T05:22:31Z · needs_input
 - 2026-10-03T05:23:23Z · status review→active
+- 2026-10-03T05:27:51Z · review_cli_override
