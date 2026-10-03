@@ -527,13 +527,9 @@ const hint = computed<CardHint | null>(() => {
         }) ?? codingOrStuckHint(t.id)
       );
     }
-    if (t.needsInput) return needsInputHint(t);
-    // 0381: the engineer is idle (paused) but the PM is chatting about this
-    // task right now — that is the live thing happening.
-    if (pmWorking) return PM_WORKING_HINT;
-    // #0507: the handoff finalization is in flight — the task is still
-    // `active` on purpose, so say what is actually happening rather than
-    // falling through to "paused", which would read as a stopped agent.
+    // A stale needs-input flag (e.g. "review still finding issues") must not
+    // hide the live handoff: the human already sent it back and it is
+    // running checks to return to review.
     if (repo.handoffInFlight(t.id)) {
       return {
         label: "running checks",
@@ -541,6 +537,13 @@ const hint = computed<CardHint | null>(() => {
         cls: "tc-reviewing",
       };
     }
+    if (t.needsInput) return needsInputHint(t);
+    // 0381: the engineer is idle (paused) but the PM is chatting about this
+    // task right now — that is the live thing happening.
+    if (pmWorking) return PM_WORKING_HINT;
+    // #0507: the handoff finalization is in flight — the task is still
+    // `active` on purpose, so say what is actually happening rather than
+    // falling through to "paused", which would read as a stopped agent.
     if (repo.handoffErrorFor(t.id)) {
       return {
         label: "checks failed",
@@ -1162,6 +1165,7 @@ async function openDebuggerFromError(): Promise<void> {
       :hint="repo.doneErrorFor(task.id)!.hint"
       :failed-at="repo.doneErrorFor(task.id)!.failedAt"
       :tldr="repo.doneErrorFor(task.id)!.tldr"
+      :summary="repo.doneErrorFor(task.id)!.summary"
       :tldr-diagnosing="!repo.doneErrorFor(task.id)!.tldr && repo.debugTldrWorkingFor(task.id)"
       :retry-hint="doneErrorRetryHint"
       :task-id="task.id"

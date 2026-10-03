@@ -47,6 +47,26 @@ describe("classifyFailure", () => {
     expect(classifyFailure("validating", `${reason} (while running check)`)).toBe("timeout");
   });
 
+  // Failure kinds the Debugger skips get a fixed one-sentence tl;dr instead;
+  // conflict/validating leave it unset so the Debugger's sentence is the tl;dr.
+  it("gives non-diagnosed failure kinds a fixed summary", () => {
+    const timeout = describeCloseOutFailure(
+      "validating",
+      "close-out timed out after 6m — increase closeOut.timeoutMs or retry when the runner is less loaded",
+    );
+    expect(timeout.summary).toMatch(/timed out.*retry/i);
+    expect(describeCloseOutFailure("publishing", "main has 1 uncommitted file").summary).toMatch(
+      /uncommitted/i,
+    );
+    expect(describeCloseOutFailure("syncing", "could not reset candidate").summary).toMatch(
+      /up to date with main/i,
+    );
+    expect(describeCloseOutFailure("publishing", "push rejected").summary).toMatch(/retry/i);
+    expect(describeCloseOutFailure(undefined, "").summary).toBeTruthy();
+    expect(describeCloseOutFailure("validating", "check failed: boom").summary).toBeUndefined();
+    expect(describeCloseOutFailure("syncing", "merge conflict in a.ts").summary).toBeUndefined();
+  });
+
   it("classifies a dirty publish as dirty, not a conflict", () => {
     expect(classifyFailure("publishing", "main has 1 uncommitted file at publish time")).toBe(
       "dirty",

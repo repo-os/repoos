@@ -70,7 +70,11 @@ type HighlightResult = { matched: number; undo: () => Promise<void> };
  */
 type PageEvaluate = (body: string, arg: string) => Promise<unknown>;
 
-async function applyHighlight(page: ShotDriverPage, selector: string): Promise<HighlightResult> {
+async function applyHighlight(
+  page: ShotDriverPage,
+  selector: string,
+  scroll: boolean,
+): Promise<HighlightResult> {
   const evaluatable = page as unknown as { evaluate?: PageEvaluate };
   const evaluate = evaluatable.evaluate;
   if (typeof evaluate !== "function") return { matched: 0, undo: async () => {} };
@@ -84,8 +88,10 @@ async function applyHighlight(page: ShotDriverPage, selector: string): Promise<H
     const sel = ${JSON.stringify(selector)};
     const skip = ${JSON.stringify(marker)};
     let n = 0;
+    let first = null;
     for (const el of document.querySelectorAll(sel)) {
       if (el instanceof Element) {
+        if (first === null) first = el;
         // Count every match, even an element an earlier overlapping selector
         // already marked — otherwise it would read as "matched nothing".
         el.setAttribute(skip, "");
@@ -99,6 +105,11 @@ async function applyHighlight(page: ShotDriverPage, selector: string): Promise<H
         \`:where([$\{skip}]) { outline: 3px solid ${HIGHLIGHT_COLOR} !important; outline-offset: 2px !important; ` +
     `box-shadow: 0 0 0 6px ${HIGHLIGHT_COLOR}40 !important; border-radius: 3px; }\`;
       document.head.append(style);
+    }
+    // Bring the first match into the viewport (the whole-window capture would
+    // otherwise show the top of the page, not the thing that changed).
+    if (${scroll} && first !== null && typeof first.scrollIntoView === "function") {
+      first.scrollIntoView({ block: "center", inline: "nearest" });
     }
     return n;
   })()`;
@@ -187,8 +198,11 @@ export async function captureShotPage(
       : [];
   const applied: { selector: string; matched: number; undo: () => Promise<void> }[] = [];
   for (const selector of highlightSelectors) {
-    applied.push({ selector, ...(await applyHighlight(page, selector)) });
+    // Only the first highlight scrolls: later ones must not undo its position.
+    applied.push({ selector, ...(await applyHighlight(page, selector, applied.length === 0)) });
   }
+  if (applied.length > 0 && options.waitMs > 0)
+    await page.waitForTimeout(Math.min(options.waitMs, 300));
   try {
     for (const h of applied) {
       if (h.matched === 0 && onHighlightMiss) onHighlightMiss(h.selector, entry.route);

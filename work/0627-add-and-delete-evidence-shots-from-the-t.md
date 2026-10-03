@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-03T05:34:56Z"
+review_passes: 8
 id: "0627"
 title: Add and delete evidence shots from the task drawer
 type: feature
@@ -8,8 +10,11 @@ area: [web, server]
 assigned_to: ai
 created_by: ""
 branch: feat/add-and-delete-evidence-shots-from-the-t
+review_cli_override: cursor
+review_model_override: composer-2.5
 created_at: "2026-10-02T11:41:24Z"
-updated_at: "2026-10-02T19:22:14Z"
+last_check_failure: "repoos check at 2026-10-03T01:05:43.181Z: repoos check failed: - rendering pages... · [32m✓[0m rendering pages... · build complete in 4.43s. · ⏭ landing-build — skipped — no changed path matches landing/** · ⏭ telegram-manager-build — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock… (truncated)"
+review_rounds: 2
 ---
 ## Problem
 Evidence shots are only declared by the engineer (via `repoos update --shots`) and captured automatically at handoff. When a reviewer or the human sees a missing or wrong screenshot (#0625: a stale blind `/` capture blocked the corrected one), the only fixes are the CLI or deleting files under `work/.attachments/<id>/shots/` by hand. There is no UI to add a shot, and no way at all to remove a wrong one.
@@ -37,9 +42,99 @@ In the task drawer's Changes / UI changes section:
 - Steps repeater is the fiddly part; keep v1 to the four existing step kinds. Out of scope for v1: a live selector tester and a click-to-pick element picker.
 - Never run `repoos serve` yourself; do not request a preview unless the human asks. Rebuild UI after changes (`bun run build:ui`).
 
+## Shots
+```json
+[
+  {
+    "label": "UI changes section with Add shot and per-shot delete",
+    "target": "default",
+    "route": "/work?task=0627",
+    "highlight": ".ui-changes",
+    "steps": [
+      {
+        "click": "[data-test-id=task-tab-changes]"
+      },
+      {
+        "waitMs": 400
+      }
+    ]
+  },
+  {
+    "label": "Add-shot modal open over the UI changes section",
+    "target": "default",
+    "route": "/work?task=0627",
+    "highlight": ".add-shot-modal",
+    "steps": [
+      {
+        "click": "[data-test-id=task-tab-changes]"
+      },
+      {
+        "waitMs": 400
+      },
+      {
+        "click": "[data-test-id=add-shot]"
+      },
+      {
+        "waitMs": 400
+      }
+    ]
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-02T11:41:24Z · created · unknown
 - 2026-10-02T18:20:44Z · status inbox→ready
 - 2026-10-02T18:22:41Z · status ready→active, branch
+- 2026-10-02T19:09:31Z · body: section Shots
 - 2026-10-02T19:22:14Z · status active→review
+- 2026-10-02T19:23:50Z · status review→active
+- 2026-10-02T19:37:22Z · status active→review
+- 2026-10-02T19:39:23Z · status review→active
+- 2026-10-02T19:49:49Z · status active→review
+- 2026-10-02T19:51:42Z · needs_input
+- 2026-10-02T23:42:00Z · status review→active
+- 2026-10-03T00:19:01Z · status active→review
+- 2026-10-03T00:19:01Z · status review→active
+- 2026-10-03T00:36:32Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-10-03T00:55:40Z · handoff failed · ui-review handoff failed at check · repoos check failed: $ bun scripts/build.mjs · $ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs · $ vue-tsc --noEmit -p src/ui-app/tsconfig.json && vite build --config src/ui-app/vite.config.ts · [plugin builtin:vite-reporter] · (!) Some chunks are larger than 500 kB after minification. Consider: · - Using dynamic import() to code-split the application · - Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting · - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+- 2026-10-03T01:01:05Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-03T01:01:23Z · status active→review
+- 2026-10-03T01:06:32Z · needs_input
+- 2026-10-03T01:06:32Z · needs_input
+- 2026-10-03T02:28:31Z · status review→active
+- 2026-10-03T02:28:31Z · note: Interactive session addressing review findings (declaration matcher, warnings in modal, stray vitepress temp file)
+- 2026-10-03T02:36:59Z · status active→review
+- 2026-10-03T02:37:00Z · status review→active
+- 2026-10-03T02:40:59Z · status active→review
+- 2026-10-03T02:43:17Z · needs_input
+- 2026-10-03T02:43:17Z · needs_input
+- 2026-10-03T03:33:43Z · status review→active
+- 2026-10-03T03:33:43Z · note: Interactive session addressing review round 4 (in-flight preview join, ambiguous delete)
+- 2026-10-03T03:38:50Z · status active→review
+- 2026-10-03T03:38:50Z · status review→active
+- 2026-10-03T03:42:51Z · status active→review
+- 2026-10-03T03:45:12Z · needs_input
+- 2026-10-03T03:45:12Z · needs_input
+- 2026-10-03T03:50:33Z · status review→active
+- 2026-10-03T03:50:33Z · note: Interactive session addressing review round 5 (add/delete route ordering, delete status guard)
+- 2026-10-03T04:00:38Z · status active→review
+- 2026-10-03T04:00:38Z · status review→active
+- 2026-10-03T04:04:40Z · status active→review
+- 2026-10-03T04:07:14Z · needs_input
+- 2026-10-03T04:07:14Z · needs_input
+- 2026-10-03T04:09:33Z · status review→active
+- 2026-10-03T04:13:15Z · note: Interactive session addressing review round 6 (recheck status after capture)
+- 2026-10-03T04:13:21Z · review_cli_override
+- 2026-10-03T04:13:22Z · review_model_override
+- 2026-10-03T04:35:29Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-03T04:36:03Z · status active→review
+- 2026-10-03T04:36:04Z · status review→active
+- 2026-10-03T05:16:36Z · status active→review
+- 2026-10-03T05:16:36Z · status review→active
+- 2026-10-03T05:20:38Z · handoff failed · task-file handoff failed at check · repoos check failed: - rendering pages... · [32m✓[0m rendering pages... · build complete in 3.59s. · ⏭ landing-build  — skipped — no changed path matches landing/** · ⏭ telegram-manager-build  — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test  — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency  — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-icon-transparency.sh · 1 check(s) failed.
+- 2026-10-03T05:33:23Z · status active→review
+- 2026-10-03T05:34:44Z · note: shots: failed — capture of UI changes section with Add shot and per-shot delete on "default" failed: click: Timeout 5000ms exceeded.
+- 2026-10-03T05:34:53Z · needs_input
+
