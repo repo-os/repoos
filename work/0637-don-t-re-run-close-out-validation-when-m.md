@@ -3,9 +3,6 @@ id: "0637"
 title: Don't re-run close-out validation when main only gained inputs/stories bookkeeping; add storiesDir config
 type: bug
 status: active
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Desired UX"
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: openrouter/openrouter/pareto-code
 review_cli_override: opencode
 review_model_override: openrouter/openrouter/auto
 created_at: "2026-10-03T08:45:43Z"
-updated_at: "2026-10-03T09:44:17Z"
+updated_at: "2026-10-03T09:50:32Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -60,3 +57,4 @@ Two related gaps:
 - 2026-10-03T09:11:27Z · status ready→active, branch
 - 2026-10-03T09:11:28Z · needs_input
 - 2026-10-03T09:44:17Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-03T09:50:32Z · needs_input (underspecified) dismissed by hello@repoos.org
