@@ -188,6 +188,12 @@ off (or its own run fails), nothing extra appears, and it disappears when you
 handle the failure — dismiss the flag, start a fresh review, or move the task
 along. Each diagnosis is booked on the task's Tokens tab under `debugger`.
 
+A failed **Move to done** gets a tl;dr too. Merge conflicts and failed checks are
+diagnosed by the Debugger as above; the failures whose cause is already known — a
+timed-out close-out, uncommitted changes, a branch that couldn't sync with main, a
+publish error — show a fixed one-line tl;dr instead, with no model run, so it
+appears even when the Debugger is off.
+
 ## Where `repoos check` fits
 
 Built-in agents don't run your tests, and their findings are advisory. The

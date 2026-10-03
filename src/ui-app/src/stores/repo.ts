@@ -137,6 +137,8 @@ export interface DoneError {
   hint?: string;
   /** Newline-preserving check/build output excerpt for the expanded panel. */
   detail?: string;
+  /** Fixed tl;dr for failure kinds the Debugger skips; `tldr` wins when set. */
+  summary?: string;
   /**
    * Repo-relative path to the durable log of the failed check's full output
    * (#0428), shown so the untruncated transcript is reachable from the task.
@@ -1225,6 +1227,18 @@ export const useRepoStore = defineStore("repo", () => {
       void refresh();
       return;
     }
+    if (e.type === "input.enriched") {
+      // Background PM enrichment (#0628): the POST returned the raw input and
+      // the PM wrote title/type/area afterwards — swap it in place so the
+      // Inputs view shows the AI-written title without a manual refresh. An
+      // id the store has not seen (another tab created it) falls back to a
+      // refetch.
+      const idx = inputs.value.findIndex((i) => i.id === e.id);
+      if (idx >= 0) inputs.value[idx] = e.input;
+      else void refreshInputs();
+      window.dispatchEvent(new Event("repoos:inputs-updated"));
+      return;
+    }
     if (e.type === "story.pmFinished") {
       // The New story pane acknowledges immediately and the PM fleshes the
       // story out in the background, so report the outcome here.
@@ -1985,6 +1999,7 @@ export const useRepoStore = defineStore("repo", () => {
     for (const t of [
       "hello",
       "index.rebuilt",
+      "input.enriched",
       "task.created",
       "task.updated",
       "task.deleted",
@@ -3066,7 +3081,10 @@ export const useRepoStore = defineStore("repo", () => {
   async function updateInput(id: string, status: string): Promise<Input> {
     return patchInput(id, { status });
   }
-  async function patchInput(id: string, patch: { status?: string; text?: string }): Promise<Input> {
+  async function patchInput(
+    id: string,
+    patch: { status?: string; text?: string; title?: string; type?: string; area?: string },
+  ): Promise<Input> {
     const updated = await api<Input>(`/api/inputs/${id}`, JSON_OPTS("PATCH", patch));
     const idx = inputs.value.findIndex((i) => i.id === id);
     if (idx >= 0) inputs.value[idx] = updated;

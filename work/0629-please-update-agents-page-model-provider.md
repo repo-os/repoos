@@ -1,15 +1,16 @@
 ---
+updated_at: "2026-10-02T19:05:49Z"
+review_passes: 1
 id: "0629"
 title: Revert GitHub Copilot provider to external link only
 type: refactor
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/revert-github-copilot-provider-to-extern
 created_at: "2026-10-02T17:37:54Z"
-updated_at: "2026-10-03T05:35:00Z"
 ---
 ## Problem
 
@@ -61,11 +62,24 @@ Instructions:
 1. Modify the UI: Remove the input fields that request a GitHub "API Key" or "Personal Access Token (PAT)" for Copilot billing/usage tracking.
 2. Update the UI text: Add a clear message informing the user that GitHub does not provide a public API for personal Copilot subscription info.
 
+## Shots
+```json
+[
+  {
+    "label": "GitHub Copilot reverted to a link-out row on Model providers",
+    "target": "default",
+    "route": "/agents?tab=providers",
+    "highlight": ".mp-panel > div:nth-child(11)"
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-02T17:37:54Z · created · hello@repoos.org
 - 2026-10-02T17:38:38Z · status draft→inbox, title, area, type, body
 - 2026-10-02T18:20:09Z · status inbox→ready
 - 2026-10-02T18:20:21Z · status ready→active, branch
-- 2026-10-03T05:34:51Z · watchdog: auto-surfaced stuck task · status active→review · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
-- 2026-10-03T05:35:00Z · status review→active
+- 2026-10-02T19:00:03Z · body: section Shots
+- 2026-10-02T19:04:38Z · status active→review
+

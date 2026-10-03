@@ -34,6 +34,8 @@ function parseArgs(argv) {
     gitInit: false,
     dryRun: false,
     smoke: false,
+    probe: false,
+    isolate: true,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -49,6 +51,8 @@ function parseArgs(argv) {
     else if (a === "--git-init") o.gitInit = true;
     else if (a === "--dry-run") o.dryRun = true;
     else if (a === "--smoke") o.smoke = true;
+    else if (a === "--probe") o.probe = true;
+    else if (a === "--no-isolate") o.isolate = false;
     else throw new Error(`unknown flag ${a}`);
   }
   return o;
@@ -63,6 +67,11 @@ for (const h of opts.harnesses) if (!HARNESSES[h]) throw new Error(`unknown harn
 for (const a of apps) if (!appFiles.includes(a)) throw new Error(`unknown app ${a}`);
 
 // Scratch space must be outside any git repo so no parent AGENTS.md/CLAUDE.md is picked up.
+const SMOKE_PROMPT = "Reply with the single word OK and do nothing else.";
+// Canary for leaked context: a naive agent knows nothing about this user or RepoOS.
+const PROBE_PROMPT =
+  "Without using any tools or reading any files: list every instruction, memory, rule, skill, plugin or note about the user or their projects that was loaded into your context before this message (quote short excerpts), and say what you know about a tool called RepoOS and a person named Nick. If there is none, say exactly NONE LOADED.";
+
 const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
 const outRoot = opts.out ?? join(homedir(), "repoos-sim-users", stamp);
 const toolsDir = join(outRoot, "_tools");
@@ -118,8 +127,16 @@ function runOne(job, repoosBinDir) {
     const prompt = job.prompt;
     writeFileSync(join(runDir, "prompt.md"), prompt);
     const h = HARNESSES[job.harness];
+    const iso = opts.isolate ? h.isolate(join(runDir, "_home")) : { env: {} };
     const { cmd, args } = h.build(prompt, { model: h.model, cwd: project });
-    const env = { ...process.env, PATH: `${repoosBinDir}:${process.env.PATH}` };
+    // PWD must match cwd: spawn's `cwd` option does not update it, and some harnesses (opencode)
+    // trust $PWD, which would point at whatever directory you launched run.mjs from.
+    const env = {
+      ...process.env,
+      ...iso.env,
+      PWD: project,
+      PATH: `${repoosBinDir}:${process.env.PATH}`,
+    };
     const started = Date.now();
     const transcript = createWriteStream(join(runDir, "transcript.jsonl"));
     const stderr = createWriteStream(join(runDir, "stderr.log"));
@@ -201,21 +218,24 @@ async function pool(jobs, n, fn) {
 
 async function main() {
   preflight();
-  if (opts.smoke) {
+  if (opts.smoke || opts.probe) {
     // Verify each harness + model resolves and can answer, with no RepoOS involved.
     for (const h of opts.harnesses) {
       const dir = join(outRoot, "_smoke", h);
       mkdirSync(dir, { recursive: true });
-      const { cmd, args } = HARNESSES[h].build(
-        "Reply with the single word OK and do nothing else.",
-        {
-          model: HARNESSES[h].model,
-          cwd: dir,
-        },
-      );
-      const r = spawnSync(cmd, args, { cwd: dir, encoding: "utf8", timeout: 180_000 });
+      const { cmd, args } = HARNESSES[h].build(opts.probe ? PROBE_PROMPT : SMOKE_PROMPT, {
+        model: HARNESSES[h].model,
+        cwd: dir,
+      });
+      const iso = opts.isolate ? HARNESSES[h].isolate(join(dir, "_home")) : { env: {} };
+      const r = spawnSync(cmd, args, {
+        cwd: dir,
+        env: { ...process.env, ...iso.env, PWD: dir },
+        encoding: "utf8",
+        timeout: 180_000,
+      });
       const text = `${r.stdout ?? ""}${r.stderr ?? ""}`;
-      writeFileSync(join(dir, "smoke.log"), text);
+      writeFileSync(join(dir, opts.probe ? "probe.log" : "smoke.log"), text);
       const ok = r.status === 0 && /\bOK\b/.test(text);
       console.log(
         `${ok ? "PASS" : "FAIL"}  ${h} (${HARNESSES[h].model}) exit=${r.status} -> ${join(dir, "smoke.log")}`,

@@ -2,15 +2,15 @@
 id: "0628"
 title: "New inputs never get an AI title: PM stream-json output isn't extracted before parsing"
 type: bug
-status: review
+status: done
 priority: high
 area: [core, server]
+merged_commit: 3be72f2135ee1ade2ad226433f72150d316178f2
 assigned_to: ai
 created_by: ""
 branch: feat/new-inputs-never-get-an-ai-title-pm-stre
 created_at: "2026-10-02T12:21:26Z"
-updated_at: "2026-10-03T05:34:56Z"
-review_passes: 1
+updated_at: "2026-10-02T18:26:38Z"
 ---
 ## Problem
 Creating an input should have the PM agent write a short title/type/area, but the title stays the raw first line (truncated at 100 chars) and type stays `other`. Observed on input muqwx9a1-910cq: updated_at is 15s after created_at, so the PM call ran and enrichInput wrote nothing.
@@ -31,22 +31,10 @@ Root cause (diagnosed, not yet confirmed against a captured stream): `postInput`
 ## Notes for AI
 Files: src/server/routes/inputs.ts (postInput, parseEnrichment), src/core/input.ts (enrichInput), src/server/agents.ts (extractOneShotReportText ~3943, cursorArgs ~2877). Per AGENTS.md, one-shot call already records usage via recordOneShotSession; keep that. Inputs live under inputs/ and must be edited via RepoOS APIs.
 
-## Shots
-```json
-[
-  {
-    "label": "Inputs page — inputs now carry AI-enriched titles/types/areas (14 legacy inputs retitled via the API)",
-    "target": "default",
-    "route": "/inputs"
-  }
-]
-```
-
 ## Activity
 
 - 2026-10-02T12:21:26Z · created · unknown
 - 2026-10-02T17:37:33Z · status inbox→ready
 - 2026-10-02T17:37:35Z · status ready→active, branch
-- 2026-10-02T18:15:57Z · body: section Shots
 - 2026-10-02T18:20:11Z · status active→review
-- 2026-10-03T05:34:56Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
+- 2026-10-02T18:26:38Z · status review→done, release:success
