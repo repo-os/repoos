@@ -2,7 +2,7 @@
 id: "0640"
 title: "Close-out (Move to done) notices in the bell, and stop stale flags on done tasks listing as needing you"
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/close-out-move-to-done-notices-in-the-be
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-03T16:49:27Z"
-updated_at: "2026-10-03T17:57:48Z"
+updated_at: "2026-10-03T18:12:52Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -86,3 +86,4 @@ review_passes: 1
 - 2026-10-03T17:57:14Z · status active→review
 - 2026-10-03T17:57:14Z · note: Task body is underspecified: missing sections: Desired UX
 - 2026-10-03T17:57:48Z · status review→active
+- 2026-10-03T18:12:52Z · status active→review
