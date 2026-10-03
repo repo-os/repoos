@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-03T00:58:13Z"
+review_passes: 1
 id: "0630"
 title: Polish AI release-notes drafting feedback and panel-return state
 type: feature
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-ai-release-notes-drafting-feedbac
 created_at: "2026-10-02T23:43:04Z"
-updated_at: "2026-10-03T00:56:53Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -89,3 +90,4 @@ Let's add an animation when AI is drafting the release notes, it can be similar 
 - 2026-10-03T00:36:31Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-03T00:51:09Z · body: section Shots
 - 2026-10-03T00:56:53Z · status active→review
+
