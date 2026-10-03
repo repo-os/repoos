@@ -11,7 +11,7 @@ branch: feat/fix-unresponsive-text-entry-fields-in-we
 cli_override: opencode
 model_override: openrouter/openrouter/pareto-code
 created_at: "2026-10-03T10:29:31Z"
-updated_at: "2026-10-03T11:03:33Z"
+updated_at: "2026-10-03T11:29:07Z"
 ---
 ## Problem
 Two text entry fields in the web UI are completely non-functional. Clicking them produces no cursor, no focus state, and typing does nothing. This blocks any input through these fields.
@@ -43,6 +43,42 @@ These two text entry fields don't work, when I click on them nothing happens, th
 ![Screenshot-2026-10-03-at-18.28.12](/api/tasks/0638/attachments/screenshot-1.png)
 ![Screenshot-2026-10-03-at-18.26.44](/api/tasks/0638/attachments/screenshot-2.png)
 
+## Shots
+```json
+[
+  {
+    "label": "Area picker free-text input takes focus and typing (was dead)",
+    "target": "default",
+    "route": "/work?task=0638",
+    "highlight": "input[aria-label=\"Add a custom area\"]",
+    "steps": [
+      {
+        "waitMs": 700
+      },
+      {
+        "click": ".drawer-tabs .tab-btn:first-child"
+      },
+      {
+        "waitMs": 200
+      },
+      {
+        "click": "#et-area"
+      },
+      {
+        "waitMs": 300
+      },
+      {
+        "fill": "input[aria-label=\"Add a custom area\"]",
+        "text": "web"
+      },
+      {
+        "waitMs": 200
+      }
+    ]
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-03T10:29:31Z · created · hello@repoos.org
@@ -54,3 +90,4 @@ These two text entry fields don't work, when I click on them nothing happens, th
 - 2026-10-03T10:41:50Z · status inbox→ready
 - 2026-10-03T10:41:52Z · status ready→active, branch
 - 2026-10-03T11:03:33Z · note: CTO nudge attempted: engineer session stalled (no output since 10:53Z, ~10m); runner rejected the completion reminder with 'agent is busy' — turn appears hung mid-verification (full UI test suite). Flagged to human: pause/resume the session or wait.
+- 2026-10-03T11:29:07Z · body: section Shots
