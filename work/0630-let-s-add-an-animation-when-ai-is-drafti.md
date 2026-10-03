@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-03T02:29:14Z"
-review_passes: 3
 id: "0630"
 title: Polish AI release-notes drafting feedback and panel-return state
 type: feature
@@ -14,8 +12,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-ai-release-notes-drafting-feedbac
 created_at: "2026-10-02T23:43:04Z"
+updated_at: "2026-10-03T02:32:36Z"
+review_passes: 3
 handoff_signal_retry_count: 2
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-03T01:32:28.816Z: server-side finalization timed out (deadline exceeded)"
 review_rounds: 2
 ---
@@ -102,4 +101,5 @@ Let's add an animation when AI is drafting the release notes, it can be similar 
 - 2026-10-03T02:11:32Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-03T02:28:08Z · status active→review
 - 2026-10-03T02:29:14Z · needs_input
+
 
