@@ -38,6 +38,8 @@ status:
     code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 http://127.0.0.1:7171/api/system/logs 2>/dev/null)
     if [ "$code" = "200" ]; then
         echo "  alive: http://127.0.0.1:7171 responded 200"
+    elif [ "$code" = "401" ]; then
+        echo "  alive: http://127.0.0.1:7171 responded 401 (auth is on; the server is up)"
     else
         echo "  not responding (got: ${code:-none})"
     fi
