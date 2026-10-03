@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-03T05:37:03Z"
-review_passes: 2
+updated_at: "2026-10-02T19:05:49Z"
+review_passes: 1
 id: "0629"
 title: Revert GitHub Copilot provider to external link only
 type: refactor
@@ -82,5 +82,4 @@ Instructions:
 - 2026-10-02T18:20:21Z · status ready→active, branch
 - 2026-10-02T19:00:03Z · body: section Shots
 - 2026-10-02T19:04:38Z · status active→review
-
 
