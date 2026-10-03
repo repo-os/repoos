@@ -1595,6 +1595,12 @@ export interface ActiveRemoteRun {
 
 interface PoolWaiter {
   capabilities: string[];
+  /**
+   * Hosts this waiter must never be assigned — failover already tried them
+   * this run (#0632). Enforced by dispatch() so a queued retry can't be
+   * handed the very host that just failed it.
+   */
+  excludeHosts?: ReadonlySet<string>;
   resolve: (slot: HostSlot) => void;
   reject: (err: Error) => void;
   onQueue?: (ahead: number) => void;
@@ -1840,23 +1846,47 @@ export class TailscaleHostPool {
   /**
    * Lease a host providing every capability. Throws {@link NoEligibleHostError}
    * (nobody provides them / no hosts configured), {@link HostsUnavailableError}
-   * (all eligible hosts failed their probe), or {@link QueueDeadlineError}
-   * (still queued when `deadlineAt` passed).
+   * (all eligible hosts failed their probe, or every one of them is in
+   * `excludeHosts`), or {@link QueueDeadlineError} (still queued when
+   * `deadlineAt` passed).
    */
   async acquire(
     capabilities: string[],
-    opts: { onQueue?: (ahead: number) => void; deadlineAt?: number; taskId?: string } = {},
+    opts: {
+      onQueue?: (ahead: number) => void;
+      deadlineAt?: number;
+      taskId?: string;
+      /**
+       * Hosts to skip — failover already tried them this run and they failed
+       * transiently (#0632). Guarantees every attempt lands on a distinct
+       * host while one remains; throws once all eligible hosts are spent.
+       */
+      excludeHosts?: readonly string[];
+    } = {},
   ): Promise<HostSlot> {
+    const excluded = new Set(opts.excludeHosts ?? []);
     const live = this.liveHosts();
     if (live.length === 0) {
       throw new NoEligibleHostError("remoteValidation.tailscaleHost is not configured");
     }
-    const candidates = live.filter((s) => hostSatisfies(s.spec, capabilities));
-    if (candidates.length === 0) {
+    const eligible = live.filter((s) => hostSatisfies(s.spec, capabilities));
+    if (eligible.length === 0) {
       throw new NoEligibleHostError(
         `no remote host provides ${describeCapabilities(capabilities)} ` +
           `(configured: ${live.map((s) => this.describe(s)).join(", ")}) — ` +
           "add a [[remoteValidation.tailscaleHosts]] row whose `os` or `labels` provide it",
+      );
+    }
+    const candidates = eligible.filter((s) => !excluded.has(s.spec.host));
+    if (candidates.length === 0) {
+      // Every host that could run this job was already tried (and failed
+      // transiently) on an earlier attempt (#0632). HostsUnavailableError, not
+      // NoEligibleHostError: the hosts DO provide the capabilities — they are
+      // merely spent for this run — so the caller's transient/retryable
+      // handling applies rather than a config-error gate.
+      throw new HostsUnavailableError(
+        `every host that can run ${describeCapabilities(capabilities)} was already ` +
+          `tried this run (excluded: ${eligible.map((s) => s.spec.host).join(", ")})`,
       );
     }
 
@@ -1926,6 +1956,7 @@ export class TailscaleHostPool {
     return new Promise<HostSlot>((resolve, reject) => {
       const waiter: PoolWaiter = {
         capabilities,
+        excludeHosts: excluded,
         resolve,
         reject,
         onQueue: opts.onQueue,
@@ -1950,7 +1981,7 @@ export class TailscaleHostPool {
         }, ms);
         waiter.timer.unref?.();
       }
-      waiter.onQueue?.(this.queueAheadCount(capabilities, this.waiters.length - 1));
+      waiter.onQueue?.(this.queueAheadCount(capabilities, this.waiters.length - 1, excluded));
       // Opportunistic recovery while queued: re-probe dead candidates so the
       // job can move to one the moment it comes back.
       for (const s of candidates) if (!s.healthy) this.armHealthRetry(s);
@@ -1987,7 +2018,10 @@ export class TailscaleHostPool {
     const queuedOn = new Map<PoolHostState, { count: number; taskIds: string[] }>();
     for (const w of this.waiters) {
       const next = this.liveHosts()
-        .filter((s) => hostSatisfies(s.spec, w.capabilities))
+        .filter(
+          (s) =>
+            hostSatisfies(s.spec, w.capabilities) && !(w.excludeHosts?.has(s.spec.host) ?? false),
+        )
         .sort(
           (a, b) =>
             Number(b.healthy) - Number(a.healthy) ||
@@ -2087,14 +2121,26 @@ export class TailscaleHostPool {
   }
 
   /** Hosts that could take a job with these capabilities. */
-  private hostsEligibleFor(capabilities: string[]): PoolHostState[] {
-    return this.liveHosts().filter((s) => hostSatisfies(s.spec, capabilities));
+  private hostsEligibleFor(
+    capabilities: string[],
+    excludeHosts?: ReadonlySet<string>,
+  ): PoolHostState[] {
+    return this.liveHosts().filter(
+      (s) => hostSatisfies(s.spec, capabilities) && !(excludeHosts?.has(s.spec.host) ?? false),
+    );
   }
 
   /** True when two jobs could be assigned to the same host. */
-  private waitersCompete(a: string[], b: string[]): boolean {
-    const hostsA = new Set(this.hostsEligibleFor(a).map((s) => s.spec.host));
-    return this.hostsEligibleFor(b).some((s) => hostsA.has(s.spec.host));
+  private waitersCompete(
+    a: { capabilities: string[]; excludeHosts?: ReadonlySet<string> },
+    b: { capabilities: string[]; excludeHosts?: ReadonlySet<string> },
+  ): boolean {
+    const hostsA = new Set(
+      this.hostsEligibleFor(a.capabilities, a.excludeHosts).map((s) => s.spec.host),
+    );
+    return this.hostsEligibleFor(b.capabilities, b.excludeHosts).some((s) =>
+      hostsA.has(s.spec.host),
+    );
   }
 
   /**
@@ -2102,12 +2148,19 @@ export class TailscaleHostPool {
    * hosts plus earlier FIFO waiters that compete for the same hosts — not
    * waiters that only need a different host (#0521 review).
    */
-  private queueAheadCount(capabilities: string[], waiterIndex: number): number {
-    const active = this.hostsEligibleFor(capabilities).reduce((n, s) => n + s.active, 0);
+  private queueAheadCount(
+    capabilities: string[],
+    waiterIndex: number,
+    excludeHosts?: ReadonlySet<string>,
+  ): number {
+    const active = this.hostsEligibleFor(capabilities, excludeHosts).reduce(
+      (n, s) => n + s.active,
+      0,
+    );
     let aheadWaiters = 0;
     for (let i = 0; i < waiterIndex; i++) {
       const w = this.waiters[i]!;
-      if (this.waitersCompete(w.capabilities, capabilities)) aheadWaiters++;
+      if (this.waitersCompete(w, { capabilities, excludeHosts })) aheadWaiters++;
     }
     return active + aheadWaiters;
   }
@@ -2167,7 +2220,13 @@ export class TailscaleHostPool {
     for (let i = 0; i < this.waiters.length;) {
       const w = this.waiters[i]!;
       const free = this.liveHosts()
-        .filter((s) => s.healthy && s.active < s.limit && hostSatisfies(s.spec, w.capabilities))
+        .filter(
+          (s) =>
+            s.healthy &&
+            s.active < s.limit &&
+            hostSatisfies(s.spec, w.capabilities) &&
+            !(w.excludeHosts?.has(s.spec.host) ?? false),
+        )
         .sort((a, b) => a.active - b.active || this.hosts.indexOf(a) - this.hosts.indexOf(b))[0];
       if (!free) {
         i++;
@@ -2265,7 +2324,11 @@ export class TailscaleHostPool {
    */
   private settleHopelessWaiters(): void {
     for (const w of [...this.waiters]) {
-      const eligible = this.liveHosts().filter((s) => hostSatisfies(s.spec, w.capabilities));
+      // Usable = eligible AND not excluded by this waiter (#0632): a queued
+      // failover retry can never be served from a host it was told to skip,
+      // so exhaustion of its usable hosts settles it even if excluded hosts
+      // are still healthy.
+      const eligible = this.hostsEligibleFor(w.capabilities, w.excludeHosts);
       const hopeless =
         eligible.length > 0 &&
         eligible.every((s) => !s.healthy && !s.probing && s.healthFails >= MAX_HEALTH_RETRIES);
@@ -2299,7 +2362,11 @@ export class TailscaleHostPool {
         w.reject(new NoEligibleHostError("remoteValidation.tailscaleHost is not configured"));
         continue;
       }
-      if (live.some((s) => hostSatisfies(s.spec, w.capabilities))) continue;
+      // Exclusions count (#0632): if a queued failover retry's usable hosts
+      // were all removed from config, no remaining host can ever serve it —
+      // the capability check alone would leave it waiting on a host it must
+      // not be assigned.
+      if (this.hostsEligibleFor(w.capabilities, w.excludeHosts).length > 0) continue;
       if (!this.settle(w)) continue;
       w.reject(
         new NoEligibleHostError(
@@ -2557,56 +2624,116 @@ export class TailscaleRunner implements RemoteValidator {
     // MISCONFIGURATION (no host provides what the job needs) is non-retryable
     // so `fallbackToLocal` can't swallow it; a dead host or an expired deadline
     // is transient infra — never a red gate.
-    let slot: HostSlot;
-    try {
-      slot = await this.pool.acquire(capabilities, {
-        taskId: opts.taskId,
-        deadlineAt: opts.deadlineAt,
-        onQueue: (ahead) => {
-          const note = this.queueNote(ahead, capabilities);
-          emit(note);
-          appendRemoteValidationEvent(this.config.root, opts.taskId, {
-            level: "info",
-            phase: "queued",
-            message: note.trim(),
-          });
-        },
-      });
-    } catch (e) {
-      const detail = e instanceof Error ? e.message : String(e);
-      emit(`[remote validation not started: ${detail}]\n`);
-      // The run never reached a host: record the attempt with no machine
-      // attribution; a caller-deadline cancel is 'cancelled', the rest fail.
-      recordRemoteRunHistory(
-        this.config,
-        opts,
-        startedAt,
-        null,
-        e instanceof QueueDeadlineError ? "cancelled" : "fail",
-        detail,
-      );
-      if (e instanceof NoEligibleHostError) return this.configFail(detail, dispatch);
-      return this.infraFail(detail, dispatch);
-    }
+    const hostCount = resolveRemoteHosts(rv).length;
+    const retryEnabled =
+      rv.retryOtherHosts === true && rv.provider === "tailscale" && hostCount >= 2;
+    // One attempt per configured host: acquire() excludes every host this run
+    // already tried (#0632), so each iteration leases a host that has not run
+    // yet, and the pool's HostsUnavailableError ends the loop early when the
+    // capability-eligible pool is smaller than the configured one.
+    const maxAttempts = retryEnabled ? Math.max(1, hostCount) : 1;
+    const triedHosts = new Set<string>();
+    let lastSummary: CheckSummary | null = null;
 
-    try {
-      const summary = await this.runValidation(opts, slot, capabilities);
-      // One durable row per validate() — attributed to the host that ran it.
-      // A deadline that passed mid-dispatch (inside runValidation) is a
-      // cancellation, not a gate failure (0564 review).
-      recordRemoteRunHistory(
-        this.config,
-        opts,
-        startedAt,
-        slot.host.host,
-        classifyRunOutcome(summary),
-        summary.detail,
-        summary,
-      );
-      return summary;
-    } finally {
-      slot.release();
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      let slot: HostSlot;
+      try {
+        slot = await this.pool.acquire(capabilities, {
+          taskId: opts.taskId,
+          deadlineAt: opts.deadlineAt,
+          // Failover guarantee: the pool never hands back a host this run
+          // already tried, so a retry cannot re-run the failed host.
+          excludeHosts: [...triedHosts],
+          onQueue: (ahead) => {
+            const note = this.queueNote(ahead, capabilities);
+            emit(note);
+            appendRemoteValidationEvent(this.config.root, opts.taskId, {
+              level: "info",
+              phase: "queued",
+              message: note.trim(),
+            });
+          },
+        });
+      } catch (e) {
+        const detail = e instanceof Error ? e.message : String(e);
+        emit(`[remote validation not started: ${detail}]\n`);
+        const outcome = e instanceof QueueDeadlineError ? "cancelled" : "fail";
+        if (lastSummary) {
+          // A retry could not start — every other eligible host is spent
+          // (HostsUnavailableError), unreachable, or the caller's deadline
+          // expired while the retry queued. Deliberate (#0632 review): the
+          // run's result stays the last attempt's real summary — a transient
+          // failure the caller's fallback/retryable handling understands —
+          // rather than a fresh synthesized infra error discarding what
+          // actually happened. The failed dispatch still gets its history row.
+          recordRemoteRunHistory(this.config, opts, startedAt, null, outcome, detail);
+          appendRemoteValidationEvent(this.config.root, opts.taskId, {
+            level: "warn",
+            phase: "dispatch",
+            message: detail,
+          });
+          return lastSummary;
+        }
+        recordRemoteRunHistory(this.config, opts, startedAt, null, outcome, detail);
+        if (e instanceof NoEligibleHostError) return this.configFail(detail, dispatch);
+        return this.infraFail(detail, dispatch);
+      }
+
+      try {
+        // The pool's exclusion guarantees a host this run has not tried yet.
+        triedHosts.add(slot.host.host);
+        const summary = await this.runValidation(opts, slot, capabilities);
+        recordRemoteRunHistory(
+          this.config,
+          opts,
+          startedAt,
+          slot.host.host,
+          classifyRunOutcome(summary),
+          summary.detail,
+          summary,
+        );
+        lastSummary = summary;
+        // Retry only on a transient failure with untried hosts left, and never
+        // after a deadline cancellation — the caller has no time budget for
+        // another host anyway. Non-transient results (a real red gate,
+        // configError) are the branch's fault, not infra, and never retry.
+        if (
+          !summary.ok &&
+          summary.transient &&
+          !summary.cancelled &&
+          retryEnabled &&
+          triedHosts.size < maxAttempts
+        ) {
+          emit(
+            `\n[retrying remote validation on another host — ${slot.host.host} failed transiently]\n`,
+          );
+          appendRemoteValidationEvent(this.config.root, opts.taskId, {
+            level: "warn",
+            phase: "run",
+            message: `retrying on another host after transient failure on ${slot.host.host}`,
+            host: slot.host.host,
+          });
+          continue; // the slot releases in `finally`
+        }
+        return summary;
+      } finally {
+        // Try to release; the guard inside release() prevents double-release.
+        try {
+          slot.release();
+        } catch {
+          /* best effort */
+        }
+      }
     }
+    // Unreachable while exclusion holds (the final attempt always returns) —
+    // kept as a backstop so the loop can never fall through without a result.
+    return (
+      lastSummary ??
+      this.infraFail("remote validation retry loop exhausted", {
+        taskId: opts.taskId,
+        phase: "result",
+      })
+    );
   }
 
   private async runValidation(

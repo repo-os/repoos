@@ -208,6 +208,53 @@ describe("remoteValidation.tailscaleHosts schema entry (#0521)", () => {
 });
 
 /**
+ * `retryOtherHosts` dynamic default (#0632): the TOML key is absent in most
+ * repos, so the default must be resolved at load time — true when 2+ tailscale
+ * hosts are configured. The old implementation tested the merged config object
+ * for `undefined`, which DEFAULT_CONFIG's `false` always defeats, so the
+ * default-true was dead code.
+ */
+describe("remoteValidation.retryOtherHosts default (#0632)", () => {
+  const base = '[remoteValidation]\nenabled = true\nprovider = "tailscale"\n';
+
+  it("defaults true when two tailscaleHosts are configured and the key is absent", async () => {
+    const root = repo(`${base}tailscaleHosts = ["bee", "mac1"]\n`);
+    expect(loadConfig(root).remoteValidation?.retryOtherHosts).toBe(true);
+    await cleanup();
+  });
+
+  it("counts the tailscaleHost shorthand toward the two-host default", async () => {
+    const root = repo(`${base}tailscaleHost = "peck@mini"\ntailscaleHosts = ["nick@bee"]\n`);
+    expect(loadConfig(root).remoteValidation?.retryOtherHosts).toBe(true);
+    await cleanup();
+  });
+
+  it("stays false with fewer than two hosts", async () => {
+    const root = repo(`${base}tailscaleHosts = ["bee"]\n`);
+    expect(loadConfig(root).remoteValidation?.retryOtherHosts).toBe(false);
+    await cleanup();
+  });
+
+  it("honours an explicit false even with two hosts", async () => {
+    const root = repo(`${base}tailscaleHosts = ["bee", "mac1"]\nretryOtherHosts = false\n`);
+    expect(loadConfig(root).remoteValidation?.retryOtherHosts).toBe(false);
+    await cleanup();
+  });
+
+  it("keeps an explicit true with one host", async () => {
+    const root = repo(`${base}tailscaleHosts = ["bee"]\nretryOtherHosts = true\n`);
+    expect(loadConfig(root).remoteValidation?.retryOtherHosts).toBe(true);
+    await cleanup();
+  });
+
+  it("does not apply to the hetzner provider", async () => {
+    const root = repo('[remoteValidation]\nenabled = true\nprovider = "hetzner"\n');
+    expect(loadConfig(root).remoteValidation?.retryOtherHosts).toBe(false);
+    await cleanup();
+  });
+});
+
+/**
  * Section-scoped writes (#0521 review): `patchTomlConfig` used to match only
  * the full dotted key, so a line written the way the docs show it — under
  * `[remoteValidation]` — was invisible to the patch: a duplicate root line was
