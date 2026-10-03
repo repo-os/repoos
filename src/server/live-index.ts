@@ -159,8 +159,10 @@ export type RepoEvent =
       at: string;
     }
   | { type: "hello"; taskCount: number; at: string }
-  /** Background PM enrichment of a new input finished (#0628): carries the
-   *  enriched input so open views swap the raw first-line title in place. */
+  /** Background PM enrichment of a new input reached its terminal outcome
+   *  (#0628, #0631): carries the input the client should render — enriched on
+   *  success, unchanged on failure — so open views swap it in place and the
+   *  in-progress indicator clears. Emitted on every outcome, not just success. */
   | { type: "input.enriched"; id: string; input: Input; at: string }
   | { type: "story.definitionsChanged"; at: string }
   /** The PM finished fleshing out a New story (ok or not); `path` is its final file. */

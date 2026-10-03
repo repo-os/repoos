@@ -3005,15 +3005,15 @@ export const useRepoStore = defineStore("repo", () => {
 
   /**
    * Inputs created in this tab whose background PM enrichment has not landed
-   * yet (#0631). The POST returns the raw input immediately (#0628) and the
-   * client learns completion through SSE `input.enriched`; a failure or a
-   * nothing-parseable result never emits that event, so each id also carries
-   * a generous timeout that clears the pending state as a backstop — the card
-   * then stays on its raw title with no stuck spinner.
+   * yet (#0631). The POST returns the raw input immediately (#0628) with an
+   * `enriching` flag (a PM agent actually started), and every terminal
+   * outcome — success, unparseable reply, failure — arrives as an SSE
+   * `input.enriched` event that clears the pending state. The per-id timeout
+   * is a pure backstop for a lost SSE stream, not the normal exit path.
    */
   const enrichingInputs = reactive(new Set<string>());
   const enrichTimers = new Map<string, ReturnType<typeof setTimeout>>();
-  const ENRICH_PENDING_TIMEOUT_MS = 90_000; // PM call takes 15–20s; leave slack
+  const ENRICH_PENDING_TIMEOUT_MS = 180_000; // backstop only — see below
   /**
    * Ids whose `input.enriched` already arrived. The server starts enriching
    * before the POST returns, so completion can in principle be processed
@@ -3055,8 +3055,11 @@ export const useRepoStore = defineStore("repo", () => {
   async function loadInputs(): Promise<Input[]> {
     return api<Input[]>("/api/inputs");
   }
-  async function createInput(text: string): Promise<Input> {
-    return api<Input>("/api/inputs", JSON_OPTS("POST", { text }));
+  async function createInput(text: string): Promise<Input & { enriching?: boolean }> {
+    // The POST response carries `enriching` (#0631): whether a configured PM
+    // agent actually started background enrichment. Without it the client
+    // would show a false spinner for inputs the server will never enrich.
+    return api<Input & { enriching?: boolean }>("/api/inputs", JSON_OPTS("POST", { text }));
   }
   async function updateInput(id: string, status: string): Promise<Input> {
     return patchInput(id, { status });
@@ -3117,8 +3120,11 @@ export const useRepoStore = defineStore("repo", () => {
       // so the pending state must not depend on the uploads that follow. A
       // failed upload must not drop tracking (the input is still enriching),
       // and enrichment finishing during a slow upload still clears the
-      // indicator via `input.enriched` (#0631, review round 2).
-      markEnriching(input.id);
+      // indicator via `input.enriched` (#0631, review round 2). The server
+      // only sets `enriching` when a PM agent actually started (#0631 r3);
+      // the timeout below is a pure SSE-loss backstop — the terminal outcome
+      // always arrives as an `input.enriched` event, success or failure.
+      if (input.enriching) markEnriching(input.id);
       for (const s of attachments) await uploadInputAttachment(input.id, s);
       window.dispatchEvent(new Event("repoos:inputs-updated"));
     } catch (err) {

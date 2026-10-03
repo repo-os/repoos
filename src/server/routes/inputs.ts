@@ -87,9 +87,12 @@ export const postInput: RouteHandler = async (ctx, req, res) => {
   // The PM call takes 15-20s; the create panel already promises "creating in
   // the background", so return the raw input now and enrich asynchronously
   // (#0628) — open views update in place via the `input.enriched` SSE event.
+  // The response also carries `enriching` (#0631): whether a PM agent was
+  // configured and enrichment actually started. Without it, clients can't
+  // tell "spinner until `input.enriched`" from "nothing will ever arrive".
   const pm = resolvePmAgent(ctx.config);
   if (pm) void enrichInputInBackground(ctx, input, pm, text);
-  return json(res, 201, input);
+  return json(res, 201, { ...input, enriching: pm != null });
 };
 
 /**
@@ -97,8 +100,12 @@ export const postInput: RouteHandler = async (ctx, req, res) => {
  * POST's critical path (#0628). The PM's captured stdout is first reduced to
  * its final report text (`extractOneShotReportText`) — stream-json drivers
  * wrap the answer in JSONL events the old greedy regex could never parse —
- * then parsed, applied, committed, and pushed over SSE. Every failure path
- * logs a warning: enrichment is never silently dropped, and the input always
+ * then parsed, applied, committed, and pushed over SSE. Every terminal
+ * outcome — enriched fields applied, nothing parseable, or a failure — emits
+ * the same `input.enriched` event, carrying the input the client should now
+ * render (unchanged on failure). This is the terminal signal for the
+ * inputs-list in-progress state (#0631); failures are additionally logged as
+ * warnings so enrichment is never silently dropped, and the input always
  * keeps its raw (first-line) title until real fields arrive.
  */
 async function enrichInputInBackground(
@@ -107,6 +114,9 @@ async function enrichInputInBackground(
   pm: Agent,
   text: string,
 ): Promise<void> {
+  // What the client should render when enrichment ends: the enriched input on
+  // success, the unchanged raw input on every failure path (#0631).
+  let outcome = input;
   try {
     const result = await runPrompt(pm, inputPrompt(text), { cwd: ctx.config.root });
     recordOneShotSession(ctx.config.root, pm, result, { sessionType: "pm", taskId: null });
@@ -118,24 +128,28 @@ async function enrichInputInBackground(
         cli: pm.cli,
         ...(result.ok ? {} : { error: result.error }),
       });
-      return;
+    } else {
+      // Throws "input not found" if the input was deleted while the PM ran —
+      // caught below and logged, same as any other failure.
+      const enriched = enrichInput(ctx.config, input.id, fields);
+      commitInput(ctx.config.root, enriched, "capture");
+      outcome = enriched;
     }
-    // Throws "input not found" if the input was deleted while the PM ran —
-    // caught below and logged, same as any other failure.
-    const enriched = enrichInput(ctx.config, input.id, fields);
-    commitInput(ctx.config.root, enriched, "capture");
-    ctx.emitEvent({
-      type: "input.enriched",
-      id: input.id,
-      input: enriched,
-      at: new Date().toISOString(),
-    });
   } catch (e) {
     ctx.logger.system("warn", "input enrichment failed; input keeps raw title", {
       input: input.id,
       reason: e instanceof Error ? e.message : String(e),
     });
   }
+  // Terminal event on every path (#0631): the inputs-list pending indicator
+  // clears here, not on a client-side timeout. On failure the payload is the
+  // unchanged input, so clients that render it stay correct.
+  ctx.emitEvent({
+    type: "input.enriched",
+    id: input.id,
+    input: outcome,
+    at: new Date().toISOString(),
+  });
 }
 export const patchInput: RouteHandler = async (ctx, req, res, p) => {
   const b = (await readBody(req)) as Record<string, unknown>;
