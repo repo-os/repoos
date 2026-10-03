@@ -334,12 +334,55 @@ describe("RemoteValidationDrawer", () => {
       const { wrapper } = await mountDrawer({ tailscaleHosts: ["bee"], hosts: [hostRow("bee")] });
       const active = wrapper.get(".rvr-tab.active");
       expect(active.text()).toBe("Tailscale");
-      expect(wrapper.findAll('button[role="switch"]')).toHaveLength(2);
+      expect(wrapper.findAll('button[role="switch"]')).toHaveLength(3);
       expect(wrapper.text()).toContain("containerImage: repoos-ci");
       expect(wrapper.text()).not.toContain("HETZNER_API_TOKEN");
       // tailscale setup recipe, not hetzner's
       expect(wrapper.text()).toContain("Install Docker on the runner machine");
       expect(wrapper.text()).not.toContain("Hetzner API token");
+    });
+
+    it("retry-on-other-hosts switch defaults ON and persists explicit values (#0632)", async () => {
+      const { wrapper, config, calls } = await mountDrawer({
+        tailscaleHosts: ["bee"],
+        hosts: [hostRow("bee")],
+      });
+
+      const label = wrapper
+        .findAll("label")
+        .find((l) => l.text().startsWith("Retry on other hosts"));
+      expect(label).toBeTruthy();
+
+      const sw = wrapper.findAll('button[role="switch"]')[2]!;
+      // An unset form value is not an explicit `false` — with the key absent,
+      // the dynamic default (true with 2+ hosts) owns it, so the control
+      // renders ON exactly when the server would retry.
+      expect(sw.attributes("data-state")).toBe("checked");
+
+      // Toggling off persists the explicit opt-out…
+      await sw.trigger("click");
+      await flush();
+      expect(config.form["remoteValidation.retryOtherHosts"]).toBe(false);
+      expect(
+        calls.some(
+          (c) =>
+            c.method === "PATCH" &&
+            (c.body as Record<string, unknown>)?.["remoteValidation.retryOtherHosts"] === false,
+        ),
+      ).toBe(true);
+      expect(sw.attributes("data-state")).toBe("unchecked");
+
+      // …and toggling back on persists the explicit opt-in.
+      await sw.trigger("click");
+      await flush();
+      expect(config.form["remoteValidation.retryOtherHosts"]).toBe(true);
+      expect(
+        calls.some(
+          (c) =>
+            c.method === "PATCH" &&
+            (c.body as Record<string, unknown>)?.["remoteValidation.retryOtherHosts"] === true,
+        ),
+      ).toBe(true);
     });
 
     it("switches to hetzner: readiness, setup steps and pool editor swap over", async () => {

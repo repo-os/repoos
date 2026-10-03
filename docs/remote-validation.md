@@ -117,6 +117,15 @@ capability routing exists to prevent.
 | remote gate red (build/test failed) | `false` | `false` | **non-retryable** fail — fix in the feature branch and resubmit |
 | no host provides a required capability (`configError`) | `false` | `false` | **non-retryable** fail — `remote validation cannot run…`; fix the `remoteValidation` host config, never a local fallback |
 | runner unreachable / provisioning failed / ssh dropped / timed out | `false` | `true` | **retryable** fail (close-out: task stays in `review`; pre-review handoff: may auto-resume the engineer) — unless `remoteValidation.fallbackToLocal`, then run the full gate locally |
+| transient failure on host A (`timeout`, `Killed`, `Broken pipe`) with `retryOtherHosts = true` | `false` | `true` | Retries on the next healthy, free host that hasn't been tried this run; only after every eligible host has failed does the table's retryable/fallback behaviour apply. Non-transient (red gate, `configError`) never retries. Default `true` when 2+ hosts configured. |
+
+### Retry on other hosts (`retryOtherHosts`)
+
+When `remoteValidation.retryOtherHosts` is `true` (default when 2+ `tailscaleHosts` are configured), a transient failure (`timeout`, `Killed`, `Broken pipe`, host unreachable mid-run) on host A retries the full run on the next healthy, free host that was not already tried this run. The guarantee lives in the pool: `acquire` takes an `excludeHosts` list and never leases a host on it, so a retry cannot re-run the host that just failed, and the loop ends the moment no untried eligible host remains. Only after every eligible host has failed does the existing `fallbackToLocal` / retryable behaviour apply — and when the retry itself cannot start (every eligible host spent or unreachable, or the caller's deadline expired while queued), the run keeps the last attempt's real summary instead of a synthesized dispatch error. A non-transient failure (`ok: false`, `transient: false` — a real red gate or `configError`) never retries; it is the branch's fault, not infra. A host is never retried twice within one run (`triedHosts` set), and the caller's `deadlineAt` is respected across all attempts: a queued retry cancels itself the same way as the first attempt, and a deadline-cancelled attempt is not retried.
+
+In the run log and structured events, each attempt records which host ran it (`[runner user@host]`), the exit code, and whether it was `infra` — so a retry history is fully visible in the task's Debug tab (`GET /api/tasks/:id/remote-validation/events`) without opening the raw log. Each attempt also lands its own check-run history row attributed to its host.
+
+Set it in `repoos.toml` (`remoteValidation.retryOtherHosts`), in Settings → Remote validation (the switch above the provider tabs), or via the CLI (`repoos update <id> --body` never edits it — the Settings form is the UI path).
 
 ## VM lifecycle
 
@@ -158,6 +167,7 @@ tailscaleHost = "mybox.tail1234.ts.net"   # single-host shorthand (or 100.x.x.x)
 tailscaleUser = "root"                     # default SSH user (per-host user wins)
 containerImage = "repoos-ci"               # Linux hosts' Docker image
 fallbackToLocal = false
+retryOtherHosts = true         # retry on another healthy host before giving up (default true with 2+ hosts)
 maxConcurrent = 1                          # global per-host limit (see below)
 ```
 
