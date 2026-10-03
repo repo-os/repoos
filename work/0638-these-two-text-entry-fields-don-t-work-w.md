@@ -20,8 +20,10 @@ These two text entry fields don't work, when I click on them nothing happens, th
 ## Screenshots
 
 ![Screenshot-2026-10-03-at-18.28.12](/api/tasks/0638/attachments/screenshot-1.png)
+![Screenshot-2026-10-03-at-18.26.44](/api/tasks/0638/attachments/screenshot-2.png)
 
 ## Activity
 
 - 2026-10-03T10:29:31Z · created · hello@repoos.org
+- 2026-10-03T10:29:33Z · screenshots
 - 2026-10-03T10:29:33Z · screenshots
