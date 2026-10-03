@@ -47,21 +47,36 @@ function info(partial: Partial<PreviewInfo>): PreviewInfo {
 
 function fakePreviews(
   running: { taskId: string; info: PreviewInfo }[] = [],
-  startResult: { ok: boolean; url?: string; error?: string } = {
+  startResult: { ok: boolean; url?: string; error?: string; label?: string } = {
     ok: true,
     url: "http://127.0.0.1:9000",
   },
+  // A preview that registers AFTER the capture's `runningPreviews()` snapshot
+  // (e.g. while WebKit launches): visible to `get`/`start`, not to the
+  // snapshot — the race window under review round 2.
+  racePreview?: { taskId: string; info: PreviewInfo },
 ): PreviewManager & { stops: string[]; starts: unknown[] } {
   const stops: string[] = [];
   const starts: unknown[] = [];
   const runningList = [...running];
   return {
     runningPreviews: () => runningList,
-    get: (taskId: string) => runningList.find((r) => r.taskId === taskId)?.info ?? null,
+    get: (taskId: string) =>
+      runningList.find((r) => r.taskId === taskId)?.info ??
+      (racePreview && racePreview.taskId === taskId ? racePreview.info : null),
     // Mirror the real manager: a started preview joins the registry so a later
-    // stop finds it (the real stop is a no-op with nothing registered).
+    // stop finds it (the real stop is a no-op with nothing registered). With a
+    // race preview armed, `start` idempotently returns the existing preview
+    // instead of spawning — the real manager's existing-check runs first.
     start: async (_task: unknown, _target: unknown, opts: unknown) => {
       starts.push(opts);
+      if (racePreview && racePreview.taskId === "0627") {
+        return {
+          ok: true,
+          url: racePreview.info.url,
+          ...(racePreview.info.label ? { label: racePreview.info.label } : {}),
+        };
+      }
       if (startResult.ok && startResult.url) {
         runningList.push({
           taskId: "0627",
@@ -134,6 +149,56 @@ describe("captureDeclaredShot busy semantics (#0627)", () => {
     });
     expect("error" in result && result.busy).toBe(true);
     expect("error" in result && result.error).toContain("docs");
+  });
+
+  it("is busy when the task's own preview has NO identifiable target label", async () => {
+    const config = setup();
+    const previews = fakePreviews([
+      { taskId: "0627", info: info({ url: "http://127.0.0.1:8000" }) },
+    ]);
+    const result = await captureDeclaredShot(config, makeTask("0627"), previews, ENTRY);
+    // An unlabeled preview could be serving ANY target — reusing it for
+    // "default" might shoot the wrong one (review round 2).
+    expect("error" in result && result.busy).toBe(true);
+    expect("error" in result && result.error).toContain("could not be identified");
+    expect(previews.starts).toEqual([]);
+    expect(previews.stops).toEqual([]);
+    expect(localShotStore(config, "0627").list()).toEqual([]);
+  });
+
+  it("is busy and stops nothing when a DIFFERENT-target preview races in after the snapshot", async () => {
+    const config = setup();
+    // The human clicks Preview while WebKit is launching: the snapshot saw
+    // nothing, but by the time the capture starts a preview, task #0627's own
+    // "docs" preview is registered. Evicting it would be the exact bug the
+    // noEvict option exists to prevent (review round 2).
+    const previews = fakePreviews(
+      [],
+      { ok: true, url: "http://127.0.0.1:9000" },
+      { taskId: "0627", info: info({ label: "docs", url: "http://127.0.0.1:8000" }) },
+    );
+    const result = await captureDeclaredShot(config, makeTask("0627"), previews, ENTRY);
+    expect("error" in result && result.busy).toBe(true);
+    expect("error" in result && result.error).toContain("docs");
+    // Nothing was stopped, and nothing was captured.
+    expect(previews.stops).toEqual([]);
+    expect(localShotStore(config, "0627").list()).toEqual([]);
+  });
+
+  it("reuses a same-target preview that races in after the snapshot without stopping it", async () => {
+    const config = setup();
+    const previews = fakePreviews(
+      [],
+      { ok: true, url: "http://127.0.0.1:9000" },
+      { taskId: "0627", info: info({ label: "default", url: "http://127.0.0.1:8000" }) },
+    );
+    const result = await captureDeclaredShot(config, makeTask("0627"), previews, ENTRY);
+    expect("error" in result).toBe(false);
+    if ("error" in result) return;
+    // Captured from the racing preview, which is left running — it is the
+    // human's, not the capture's to stop.
+    expect(localShotStore(config, "0627").list()[0]!.provenance).toBe("declared: Task drawer open");
+    expect(previews.stops).toEqual([]);
   });
 
   it("reuses the task's own same-target preview without stopping it", async () => {

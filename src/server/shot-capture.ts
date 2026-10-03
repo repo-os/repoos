@@ -100,22 +100,44 @@ const inFlight = new Set<string>();
  * One preview per task, so each new target must replace the running one
  * (#0379/#0271) — mirrored from the CLI capture path, here via the
  * PreviewManager the server already owns.
+ *
+ * A `noEvict` caller (the manual single-entry capture) must never stop a
+ * preview: one may have registered after its own snapshot check — the human
+ * clicked Preview while WebKit was launching — and stopping here would evict
+ * exactly the preview someone is viewing, defeating the manager's no-evict
+ * refusal (review round 2). `start` is idempotent for a same-task preview and
+ * refuses (noEvict) instead of evicting others, so the capacity decision stays
+ * atomic with the start; the `reused` flag tells the caller which previews are
+ * not its own to stop.
  */
 async function startTargetPreview(
   previews: PreviewManager,
   task: Task,
   target: string,
   opts: { noEvict?: boolean } = {},
-): Promise<{ url: string } | { error: string; busy?: boolean }> {
-  await previews.stop(task.id);
-  const started = await previews.start(task, target, opts.noEvict ? { noEvict: true } : {});
+): Promise<
+  | { url: string; label?: string; reused: boolean }
+  | { error: string; busy?: boolean }
+> {
+  const noEvict = opts.noEvict === true;
+  if (!noEvict) await previews.stop(task.id);
+  const before = noEvict ? previews.get(task.id) : null;
+  const started = await previews.start(task, target, noEvict ? { noEvict: true } : {});
   if (!started.ok || !started.url) {
+    // A same-task preview that registered between the caller's snapshot and
+    // this start makes start refuse (target mismatch) — for a manual capture
+    // that is a busy situation, not a generic failure.
+    const raced = noEvict ? previews.get(task.id) : null;
     return {
       error: started.error ?? "could not start the preview",
-      ...(started.busy ? { busy: true } : {}),
+      ...(started.busy || raced ? { busy: true } : {}),
     };
   }
-  return { url: started.url.replace(/\/$/, "") };
+  return {
+    url: started.url.replace(/\/$/, ""),
+    ...(started.label ? { label: started.label } : {}),
+    reused: noEvict && before !== null,
+  };
 }
 
 /**
@@ -381,7 +403,9 @@ export type DeclaredShotCapture =
  * fast-fails with precise messages; the authoritative reservation passes
  * `noEvict` to `PreviewManager.start`, so the capacity decision is made
  * atomically with the start and a preview that starts in between can never be
- * evicted by this capture.
+ * evicted by this capture — it is reused only when it provably serves the
+ * requested target, and otherwise answered with busy while it keeps running
+ * (review round 2).
  *
  * Returns a structured error (never throws) for: busy preview slot,
  * Playwright/WebKit unavailable, a preview that would not boot, or a failed
@@ -399,14 +423,19 @@ export async function captureDeclaredShot(
   },
 ): Promise<DeclaredShotCapture> {
   // One preview at a time (#0271) — but a manual capture never evicts what a
-  // human is viewing; that slot is BUSY, not available.
+  // human is viewing; that slot is BUSY, not available. A same-task preview
+  // whose target cannot be identified (no label — a legacy registry record)
+  // is busy too: reusing it for any requested target could shoot the wrong
+  // one (review round 2).
   const running = previews.runningPreviews();
   const own = running.find((r) => r.taskId === task.id);
-  if (own && own.info.label && own.info.label !== entry.target) {
+  if (own && (!own.info.label || own.info.label !== entry.target)) {
     return {
-      error:
-        `a "${own.info.label}" preview is already running for this task — ` +
-        `stop it before capturing "${entry.target}"`,
+      error: own.info.label
+        ? `a "${own.info.label}" preview is already running for this task — ` +
+          `stop it before capturing "${entry.target}"`
+        : `a preview is already running for this task, but its target could not be ` +
+          `identified — stop it before capturing "${entry.target}"`,
       busy: true,
     };
   }
@@ -450,8 +479,21 @@ export async function captureDeclaredShot(
           ...(startedPreview.busy ? { busy: true } : {}),
         };
       }
+      if (startedPreview.reused && (!startedPreview.label || startedPreview.label !== entry.target)) {
+        // A preview registered between the snapshot above and this start (the
+        // human clicked Preview while WebKit was launching): reuse it only when
+        // it provably serves the requested target, and never stop it.
+        return {
+          error: startedPreview.label
+            ? `a "${startedPreview.label}" preview started for this task while the ` +
+              `capture was preparing — stop it before capturing "${entry.target}"`
+            : `a preview started for this task while the capture was preparing, but its ` +
+              `target could not be identified — stop it before capturing "${entry.target}"`,
+          busy: true,
+        };
+      }
       url = startedPreview.url;
-      startedPreviewForTask = true;
+      startedPreviewForTask = !startedPreview.reused;
     }
     const pageUrl = `${url}${entry.route.startsWith("/") ? entry.route : `/${entry.route}`}`;
     let captured: CapturedPage;
