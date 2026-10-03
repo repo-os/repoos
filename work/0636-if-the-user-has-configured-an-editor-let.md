@@ -12,7 +12,7 @@ model_override: openrouter/openrouter/auto
 review_cli_override: pi
 review_model_override: openrouter/openrouter/auto-beta
 created_at: "2026-10-03T08:23:48Z"
-updated_at: "2026-10-03T08:44:12Z"
+updated_at: "2026-10-03T08:44:28Z"
 ---
 ## Problem
 The task detail view shows a "Spec" label, but there's no quick way to open the underlying task markdown file in the user's configured editor. When an editor is configured, users should have a right-aligned "Open in editor ->" link on the same line as the "Spec" label (matching the "go to story ->" style above it). Without a configured editor, the link should either be hidden or prompt the user to configure their preferred editor in settings or repoos.toml.
@@ -33,6 +33,11 @@ The task detail view shows a "Spec" label, but there's no quick way to open the 
 - If the editor config setting doesn't exist yet, note it in Notes for AI rather than inventing a new settings tab unrequested.
 - Match existing "go to story ->" link styling exactly.
 - Defer: no new settings UI required unless the config mechanism is missing.
+
+Implementation notes (filled in by the engineer):
+- The editor setting already exists: `dev.inspector.editorCommand` (Settings → Advanced → "Copy inspector: editor command", e.g. `zed {file}:{line}`). The link reuses it; no new setting or Settings tab was added.
+- Task markdown lives under `work/`, but the existing open endpoint (`/api/dev/copy-inspector/open`) only accepts `src/` paths. A sibling route, `POST /api/dev/open-in-editor`, resolves a general repo-relative file and reuses the same editor command + spawn logic. No config-schema change.
+- The link only renders when it can actually work: a non-empty editor command, `dev.inspector.enabled` not false, and `repo.health.copyInspectorAvailable` (the dev-only API gate). Otherwise it is hidden, per the accepted "hide" option.
 
 ## Scope
 In scope: adding the link and open-in-editor behavior to the task detail page.
@@ -84,3 +89,4 @@ If the user has configured an editor let's show an "Open in editor ->" on the sa
 - 2026-10-03T08:39:42Z · status inbox→ready
 - 2026-10-03T08:39:46Z · status ready→active, branch
 - 2026-10-03T08:44:12Z · body: section Shots
+- 2026-10-03T08:44:28Z · body: section Notes for AI
