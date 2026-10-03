@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-enrichment-in-progress-on-inputs-li
 created_at: "2026-10-02T23:44:30Z"
-updated_at: "2026-10-03T02:30:46Z"
+updated_at: "2026-10-03T02:30:55Z"
 handoff_signal_retry_count: 2
 review_rounds: 2
 review_passes: 2
@@ -115,3 +115,4 @@ Also when I create a new input and the AI is making the title I guess, when I cl
 - 2026-10-03T02:26:39Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-10-03T02:26:39Z · status review→active
 - 2026-10-03T02:30:46Z · status active→review
+- 2026-10-03T02:30:55Z · note: shots: failed — capture of Inputs list with enrichment-in-progress indicator on the freshly created card on "default" failed: click: Error: strict mode violation: locator('.drawer-body .btn-row button') resolved to 2 elements:
