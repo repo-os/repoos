@@ -14,7 +14,7 @@ branch: feat/show-enrichment-in-progress-on-inputs-li
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-02T23:44:30Z"
-updated_at: "2026-10-03T03:45:19Z"
+updated_at: "2026-10-03T03:52:38Z"
 review_passes: 3
 handoff_signal_retry_count: 2
 review_rounds: 2
@@ -72,31 +72,10 @@ Also when I create a new input and the AI is making the title I guess, when I cl
 ```json
 [
   {
-    "label": "Inputs list with enrichment-in-progress indicator on the freshly created card",
+    "label": "Input card with enrichment ActivityIndicator",
     "target": "default",
     "route": "/inputs",
-    "highlight": ".input-list .ai",
-    "steps": [
-      {
-        "click": ".new-btn"
-      },
-      {
-        "fill": "#new-input-text",
-        "text": "Inputs list should show the AI is still writing the title"
-      },
-      {
-        "click": ".drawer-body .btn-row button"
-      },
-      {
-        "waitMs": 300
-      },
-      {
-        "click": ".ff-done .btn-row button:last-child"
-      },
-      {
-        "waitMs": 400
-      }
-    ]
+    "highlight": ".input-card .enriching-indicator"
   }
 ]
 ```
@@ -125,3 +104,4 @@ Also when I create a new input and the AI is making the title I guess, when I cl
 - 2026-10-03T03:44:54Z · cli_override, model_override
 - 2026-10-03T03:44:55Z · model_override
 - 2026-10-03T03:45:19Z · status review→active
+- 2026-10-03T03:52:38Z · body: section Shots
