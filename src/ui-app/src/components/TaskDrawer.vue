@@ -1517,6 +1517,34 @@ function openAssignedStory(): void {
   void router.push({ name: "stories", query: { story: ref } });
 }
 
+/**
+ * "Open in editor" on the Spec row (#0636). Reuses the copy-inspector's
+ * configured editor command (`dev.inspector.editorCommand`) and its dev-only
+ * API gate, so a task markdown can be opened in the same editor with no
+ * separate setting. The link only appears when it can actually work: the dev
+ * API is available and a command is configured.
+ */
+const editorConfigured = computed(() => {
+  const inspector = (
+    config.data?.dev as { inspector?: { enabled?: boolean; editorCommand?: string } } | undefined
+  )?.inspector;
+  if (inspector?.enabled === false) return false;
+  const cmd = inspector?.editorCommand;
+  return repo.health?.copyInspectorAvailable === true && typeof cmd === "string" && !!cmd.trim();
+});
+
+const openInEditorLabel = "Open this task's markdown file in your configured editor";
+
+async function openTaskInEditor(): Promise<void> {
+  const task = ui.active;
+  if (!task || !editorConfigured.value) return;
+  try {
+    await api("/api/dev/open-in-editor", JSON_OPTS("POST", { file: task.path }));
+  } catch (err) {
+    repo.pushToast(err instanceof Error ? err.message : "Could not open editor", "error");
+  }
+}
+
 const transitioned = computed(() => !!(ui.active && repo.transitionState?.id === ui.active.id));
 
 // ---- Area multi-select (#0583) ----
@@ -4445,6 +4473,16 @@ watch(
                 />
               </svg>
               spec
+            </button>
+            <button
+              v-if="editorConfigured"
+              type="button"
+              class="page-help-link"
+              data-test-id="open-in-editor"
+              :aria-label="openInEditorLabel"
+              @click="openTaskInEditor"
+            >
+              Open in editor ↗
             </button>
           </div>
           <div v-if="specExpanded">

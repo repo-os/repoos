@@ -1,12 +1,11 @@
 ---
-updated_at: "2026-10-03T07:52:23Z"
-review_passes: 1
 id: "0633"
 title: Reorder remote hosts and show per-host server stats on Remote runners
 type: feature
-status: review
+status: done
 priority: p2
 area: [web, server]
+merged_commit: ff2af794b623e330ce4ab08a741e6cb4b55e749b
 assigned_to: ai
 created_by: ""
 branch: feat/reorder-remote-hosts-and-show-per-host-s
@@ -15,6 +14,7 @@ model_override: default
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-03T06:03:47Z"
+updated_at: "2026-10-03T09:16:23Z"
 ---
 ## Problem
 The host pool order in remoteValidation.tailscaleHosts is the tie-break when hosts have equal load (all idle: top host wins), so the first host, mini, gets most runs. The order can only be changed by hand-editing repoos.toml, and getting it right is fragile:
@@ -42,18 +42,6 @@ The host pool order in remoteValidation.tailscaleHosts is the tie-break when hos
 ## Notes for AI
 Round-robin/random tie-breaking, a per-host enable toggle, and load-aware auto-ordering are deliberately out of scope (follow-ups; the stats row is the data they would need). Failover to another host on a transient failure is #0632.
 
-## Shots
-```json
-[
-  {
-    "label": "Remote host order and server stats",
-    "target": "default",
-    "route": "/checks?tab=remote",
-    "highlight": ".rr-host"
-  }
-]
-```
-
 ## Activity
 
 - 2026-10-03T06:03:47Z · created · unknown
@@ -63,7 +51,5 @@ Round-robin/random tie-breaking, a per-host enable toggle, and load-aware auto-o
 - 2026-10-03T06:45:09Z · review_model_override
 - 2026-10-03T06:45:10Z · status inbox→ready
 - 2026-10-03T06:45:34Z · status ready→active, branch
-- 2026-10-03T07:37:21Z · note: CTO monitor nudge (standard completion nudge): your session on #0633 has been idle for ~51m with no worktree activity. If the work is complete, run the scoped pre-review check (`repoos check --changed main`) and request handoff (`repoos mv 0633 review`). If you're blocked, set needs_input or say so in the session.
-- 2026-10-03T07:41:47Z · body: section Shots
 - 2026-10-03T07:51:31Z · status active→review
-
+- 2026-10-03T09:16:23Z · status review→done, release:success

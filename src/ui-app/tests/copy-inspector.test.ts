@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -8,6 +8,7 @@ import {
   formatCopyInspectorPath,
   readDevUiBuild,
   resolveCopyInspectorTarget,
+  resolveRepoFileTarget,
   tokenizeEditorCommand,
 } from "../../core/copy-inspector.js";
 import { copyInspectorApiEnabled } from "../../server/routes/copy-inspector.js";
@@ -37,6 +38,37 @@ describe("copy inspector helpers", () => {
       expect(resolveCopyInspectorTarget(root, "docs/README.md")).toBeNull();
     } finally {
       rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("resolves repo files outside src/ for the task editor, and still rejects escapes", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-repo-file-"));
+    mkdirSync(join(root, "work"), { recursive: true });
+    writeFileSync(join(root, "work", "0636-task.md"), "# Task", "utf8");
+    try {
+      const ok = resolveRepoFileTarget(root, "work/0636-task.md");
+      expect(ok?.repoRel).toBe("work/0636-task.md");
+      expect(ok?.absPath).toBe(realpathSync(join(root, "work", "0636-task.md")));
+      expect(resolveRepoFileTarget(root, "../etc/passwd")).toBeNull();
+      expect(resolveRepoFileTarget(root, "/etc/passwd")).toBeNull();
+      expect(resolveRepoFileTarget(root, "work/missing.md")).toBeNull();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects a symlink that points outside the repo", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-repo-file-link-"));
+    const outside = mkdtempSync(join(tmpdir(), "repoos-outside-"));
+    const secret = join(outside, "secret.md");
+    writeFileSync(secret, "top secret", "utf8");
+    mkdirSync(join(root, "work"), { recursive: true });
+    symlinkSync(secret, join(root, "work", "link.md"));
+    try {
+      expect(resolveRepoFileTarget(root, "work/link.md")).toBeNull();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+      rmSync(outside, { recursive: true, force: true });
     }
   });
 

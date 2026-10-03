@@ -183,6 +183,15 @@ function shouldGlide(): boolean {
 const GLIDE_DURATION_MS = 480;
 const GLIDE_EASING = "cubic-bezier(.22,1,.36,1)";
 
+onMounted(() => {
+  // Hydrate check runs so a reload mid-handoff still reads "running checks"
+  // instead of "paused" (SSE only delivers events from now on).
+  const id = props.task.id;
+  if (props.task.status === "active" && repo.taskChecks[id] === undefined) {
+    void repo.refreshTaskChecks(id);
+  }
+});
+
 /**
  * Optional glide (#0292): when this card mounted into its new column because
  * its status changed, seed a transform that puts it at its old position
