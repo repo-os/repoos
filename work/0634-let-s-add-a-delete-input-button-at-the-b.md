@@ -2,7 +2,7 @@
 id: "0634"
 title: Add delete buttons to input and story side panels
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 review_cli_override: pi
 review_model_override: openrouter/openrouter/free
 created_at: "2026-10-03T08:00:36Z"
-updated_at: "2026-10-03T08:21:41Z"
+updated_at: "2026-10-03T08:21:57Z"
 ---
 ## Problem
 
@@ -73,3 +73,4 @@ Let's add a "Delete input" button at the bottom left of the input side panel (si
 - 2026-10-03T08:01:34Z · status draft→inbox, title, area, body
 - 2026-10-03T08:13:58Z · review_cli_override
 - 2026-10-03T08:21:41Z · review_model_override
+- 2026-10-03T08:21:57Z · status inbox→ready
