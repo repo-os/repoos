@@ -2,7 +2,7 @@
 id: "0630"
 title: Polish AI release-notes drafting feedback and panel-return state
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
@@ -14,7 +14,7 @@ branch: feat/polish-ai-release-notes-drafting-feedbac
 cli_override: github copilot
 model_override: default
 created_at: "2026-10-02T23:43:04Z"
-updated_at: "2026-10-03T03:32:20Z"
+updated_at: "2026-10-03T03:32:34Z"
 review_passes: 3
 handoff_signal_retry_count: 2
 last_check_failure: "repoos check at 2026-10-03T01:32:28.816Z: server-side finalization timed out (deadline exceeded)"
@@ -104,3 +104,4 @@ Let's add an animation when AI is drafting the release notes, it can be similar 
 - 2026-10-03T02:28:08Z · status active→review
 - 2026-10-03T02:29:14Z · needs_input
 - 2026-10-03T03:32:20Z · cli_override, model_override
+- 2026-10-03T03:32:34Z · status review→active
