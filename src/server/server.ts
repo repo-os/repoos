@@ -1117,7 +1117,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Durable close-out outcomes (#0640): recorded when a job ends and pushed
   // over SSE so the notices bell shows success/failure/timeout; the list
   // endpoint backfills a tab that was closed while the run happened.
-  const closeOutOutcomes = createCloseOutOutcomeStore(config.root, config.cacheDir);
+  const closeOutOutcomes = createCloseOutOutcomeStore(config.root, config.cacheDir, (error) =>
+    logger.system("warn", `close-out outcome persistence failed: ${(error as Error).message}`),
+  );
   const repoLock = createRepositoryLock(config.root);
   const rootLock = createRootLock(config.root);
 
@@ -3144,6 +3146,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         closeOutLock,
         rootLock,
         jobCoordinator,
+        closeOutOutcomes,
         remoteValidator,
         reportedStages,
         triggerJobProcessing,

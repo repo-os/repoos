@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { rmFixture } from "./helpers";
@@ -114,18 +114,34 @@ describe("createCloseOutOutcomeStore", () => {
     }
   });
 
-  it("reads as empty (never throws) when the file is corrupt", () => {
+  it("reads as empty (never throws) when the on-disk file is corrupt", () => {
     const { root, clean } = makeRepo();
     try {
+      mkdirSync(join(root, ".repoos"), { recursive: true });
+      writeFileSync(join(root, ".repoos", "close-out-outcomes.json"), "{not json");
       const store = createCloseOutOutcomeStore(root);
+      expect(store.list()).toEqual([]);
+    } finally {
+      clean();
+    }
+  });
+
+  it("keeps a recorded event in memory and reports a persistence failure", () => {
+    const { root, clean } = makeRepo();
+    try {
+      const errors: unknown[] = [];
+      const store = createCloseOutOutcomeStore(root, ".repoos", (e) => errors.push(e));
+      // Turn the cache path into a file so the nested write must fail.
+      writeFileSync(join(root, ".repoos"), "not a directory");
       store.record({
         taskId: "0001",
         outcome: "succeeded",
         finishedAt: "2026-10-03T17:00:00.000Z",
         reason: "",
       });
-      writeFileSync(join(root, ".repoos", "close-out-outcomes.json"), "{not json");
-      expect(store.list()).toEqual([]);
+      expect(errors).toHaveLength(1);
+      // The event is not silently lost — it still serves from this instance.
+      expect(store.list().map((e) => e.taskId)).toEqual(["0001"]);
     } finally {
       clean();
     }

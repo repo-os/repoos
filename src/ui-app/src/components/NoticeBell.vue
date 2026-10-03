@@ -204,7 +204,7 @@ watch(open, (o) => {
               <button
                 type="button"
                 class="notice-body"
-                :title="fullTime(n.createdAt)"
+                :data-tip="fullTime(n.createdAt)"
                 @click="follow(n)"
               >
                 <span class="notice-title" :class="{ unread: !n.read }">{{ n.title }}</span>
