@@ -10,8 +10,9 @@ created_by: ""
 branch: ""
 cli_override: github copilot
 model_override: default
+review_cli_override: cursor
 created_at: "2026-10-03T06:03:47Z"
-updated_at: "2026-10-03T06:45:00Z"
+updated_at: "2026-10-03T06:45:07Z"
 ---
 ## Problem
 The host pool order in remoteValidation.tailscaleHosts is the tie-break when hosts have equal load (all idle: top host wins), so the first host, mini, gets most runs. The order can only be changed by hand-editing repoos.toml, and getting it right is fragile:
@@ -44,3 +45,4 @@ Round-robin/random tie-breaking, a per-host enable toggle, and load-aware auto-o
 - 2026-10-03T06:03:47Z · created · unknown
 - 2026-10-03T06:23:44Z · title, body
 - 2026-10-03T06:45:00Z · cli_override, model_override
+- 2026-10-03T06:45:07Z · review_cli_override
