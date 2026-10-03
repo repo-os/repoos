@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-10-03T09:51:53Z"
-review_passes: 1
 id: "0634"
 title: Add delete buttons to input and story side panels
 type: feature
-status: review
+status: active
 priority: p2
 area: [web, server]
 assigned_to: ai
@@ -13,6 +11,9 @@ branch: feat/add-delete-buttons-to-input-and-story-si
 review_cli_override: pi
 review_model_override: openrouter/openrouter/free
 created_at: "2026-10-03T08:00:36Z"
+updated_at: "2026-10-03T09:51:53Z"
+review_rounds: 1
+review_passes: 1
 ---
 ## Problem
 
@@ -116,4 +117,4 @@ Let's add a "Delete input" button at the bottom left of the input side panel (si
 - 2026-10-03T08:51:13Z · body: section Shots
 - 2026-10-03T09:50:37Z · status active→review
 - 2026-10-03T09:50:43Z · note: shots: failed — capture of Input drawer with Delete input at bottom left on "default" failed: click: Error: strict mode violation: locator('.input-row') resolved to 14 elements:
-
+- 2026-10-03T09:51:53Z · status review→active
