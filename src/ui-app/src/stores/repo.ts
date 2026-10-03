@@ -1143,8 +1143,10 @@ export const useRepoStore = defineStore("repo", () => {
    */
   function handoffInFlight(id: string): boolean {
     const step = handoffSteps.value[id];
-    if (!step) return false;
-    return step !== "done" && step !== "failed";
+    if (step) return step !== "done" && step !== "failed";
+    // After a reload SSE has not replayed `handoff:*`, but the hydrated check
+    // runs still show a finalization gate in flight.
+    return (taskChecks.value[id] ?? []).some((r) => r.running && r.kind === "handoff-finalize");
   }
 
   /** Uncommitted files pending a move-to-done decision (0204/#0512), or [] when the modal is not needed. */
