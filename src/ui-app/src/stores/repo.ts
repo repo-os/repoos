@@ -1993,6 +1993,9 @@ export const useRepoStore = defineStore("repo", () => {
       // card saying "waiting for human" while its engineer is still working.
       void fetchRunning();
       void fetchQueued();
+      // `input.enriched` is not replayed across reconnect; refresh inputs when
+      // this tab is still waiting on background enrichment (#0631).
+      if (enrichingInputs.size > 0) void refreshInputs();
     };
     es.onerror = () => {
       connected.value = false;
@@ -3048,9 +3051,31 @@ export const useRepoStore = defineStore("repo", () => {
     enrichingInputs.delete(id);
   }
 
+  /**
+   * After a missed `input.enriched` frame (SSE reconnect), the inputs list is
+   * authoritative: `enriching: false` means the background run finished and the
+   * row carries the current on-disk fields (#0631 review).
+   */
+  function reconcileEnrichmentPending(): void {
+    if (enrichingInputs.size === 0) return;
+    for (const id of [...enrichingInputs]) {
+      const row = inputs.value.find((i) => i.id === id) as
+        | (Input & { enriching?: boolean })
+        | undefined;
+      if (!row) {
+        markEnriched(id);
+        continue;
+      }
+      if (row.enriching === false) markEnriched(id);
+    }
+  }
+
   async function refreshInputs(): Promise<void> {
+    const hadPending = enrichingInputs.size > 0;
     try {
-      inputs.value = await api<Input[]>("/api/inputs");
+      inputs.value = await api<(Input & { enriching?: boolean })[]>("/api/inputs");
+      reconcileEnrichmentPending();
+      if (hadPending) window.dispatchEvent(new Event("repoos:inputs-updated"));
     } catch {
       /* leave existing value in place on error */
     }

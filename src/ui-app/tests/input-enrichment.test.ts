@@ -16,7 +16,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { Readable, Writable } from "node:stream";
 import { createRepoOS } from "../../core/repoos";
 import { createInput, listInputs, updateInput } from "../../core/input";
-import { postInput, parseEnrichment, patchInput } from "../../server/routes/inputs";
+import { getInputs, postInput, parseEnrichment, patchInput } from "../../server/routes/inputs";
 import { createLogger } from "../../core/logger";
 import { extractOneShotReportText } from "../../server/agents";
 import type { RepoEvent } from "../../server/live-index";
@@ -223,6 +223,31 @@ describe("postInput background enrichment (#0628)", () => {
       enriching?: boolean;
     };
   }
+
+  it("lists enriching:true on GET /api/inputs while the PM run is in flight", async () => {
+    let resolveRun!: (v: { ok: boolean; output?: string }) => void;
+    vi.mocked(runPrompt).mockReturnValue(
+      new Promise((resolve) => {
+        resolveRun = resolve;
+      }),
+    );
+
+    const created = await submit();
+    const { req, res, capture } = makeReqRes(null, "GET");
+    await getInputs(h.ctx, req, res, {});
+    expect((capture.body as { enriching?: boolean }[])[0]?.enriching).toBe(true);
+
+    resolveRun({ ok: true, output: CURSOR_STREAM_JSON });
+    await waitFor(() => h.events.length === 1, "input.enriched event");
+
+    const after = makeReqRes(null, "GET");
+    await getInputs(h.ctx, after.req, after.res, {});
+    const row = (after.capture.body as { id: string; title: string; enriching?: boolean }[]).find(
+      (i) => i.id === created.id,
+    );
+    expect(row?.enriching).toBe(false);
+    expect(row?.title).toBe("Add export button to releases");
+  });
 
   it("returns the raw input immediately and enriches in the background", async () => {
     let resolveRun!: (v: { ok: boolean; output?: string }) => void;

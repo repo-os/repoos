@@ -216,6 +216,41 @@ describe("enrichment-pending tracking (#0631)", () => {
     expect(repo.enrichingInputs.has(id)).toBe(false);
   });
 
+  it("clears pending and applies enriched fields after refreshInputs when SSE was missed", async () => {
+    stubPostInput({ id: "abc-recon", enriching: true });
+    setActivePinia(createPinia());
+    const repo = useRepoStore();
+    repo.inputs.push(rawInput("abc-recon"));
+
+    await repo.submitInput("Saw a bug on the board", []);
+    await flush();
+    expect(repo.enrichingInputs.has("abc-recon")).toBe(true);
+    expect(repo.inputs.find((i) => i.id === "abc-recon")?.title).toBe("Saw a bug on the board");
+
+    const enriched = {
+      ...rawInput("abc-recon"),
+      title: "Board bug when creating tasks",
+      type: "bug",
+      enriching: false,
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string | URL) => {
+        const u = String(url);
+        if (u === "/api/inputs") return Promise.resolve({ ok: true, json: async () => [enriched] });
+        return Promise.reject(new Error("unexpected fetch: " + u));
+      }),
+    );
+
+    await repo.refreshInputs();
+    await flush();
+
+    expect(repo.enrichingInputs.has("abc-recon")).toBe(false);
+    expect(repo.inputs.find((i) => i.id === "abc-recon")?.title).toBe(
+      "Board bug when creating tasks",
+    );
+  });
+
   it("shows the activity indicator on the card while pending, and drops it when enriched", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
