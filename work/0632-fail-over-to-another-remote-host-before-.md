@@ -9,11 +9,11 @@ assigned_to: ai
 created_by: ""
 branch: feat/fail-over-to-another-remote-host-before-
 cli_override: opencode
-model_override: default
+model_override: openrouter/openrouter/pareto-code
 review_cli_override: opencode
 review_model_override: openrouter/openrouter/auto
 created_at: "2026-10-03T06:01:04Z"
-updated_at: "2026-10-03T10:03:30Z"
+updated_at: "2026-10-03T10:03:39Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -47,3 +47,4 @@ See src/server/remote-validation.ts (acquire ~1751, run + timeout handling ~1255
 - 2026-10-03T09:28:03Z · status ready→active, branch
 - 2026-10-03T09:39:16Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-03T10:03:30Z · cli_override, model_override
+- 2026-10-03T10:03:39Z · model_override
