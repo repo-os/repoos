@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-03T08:23:24Z"
-review_passes: 1
 id: "0635"
 title: Make resolved-by-task indicator prominent on input drawer
 type: feature
@@ -14,6 +12,7 @@ model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-03T08:02:53Z"
+updated_at: "2026-10-03T08:22:57Z"
 ---
 ## Problem
 
@@ -65,18 +64,6 @@ The "Resolved by Task #0123" is too small and easy for the user to miss seeing, 
 
 ![Screenshot-2026-10-03-at-16.01.03](/api/tasks/0635/attachments/screenshot-1.png)
 
-## Shots
-```json
-[
-  {
-    "label": "Input drawer: promoted \"Resolved by task\" callout",
-    "target": "default",
-    "route": "/inputs?input=0021",
-    "highlight": ".detail-resolution"
-  }
-]
-```
-
 ## Activity
 
 - 2026-10-03T08:02:53Z · created · hello@repoos.org
@@ -87,6 +74,4 @@ The "Resolved by Task #0123" is too small and easy for the user to miss seeing, 
 - 2026-10-03T08:08:41Z · review_model_override
 - 2026-10-03T08:08:42Z · status inbox→ready
 - 2026-10-03T08:08:44Z · status ready→active, branch
-- 2026-10-03T08:17:00Z · body: section Shots
 - 2026-10-03T08:22:57Z · status active→review
-
