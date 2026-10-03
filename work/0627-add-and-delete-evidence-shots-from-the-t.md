@@ -2,7 +2,7 @@
 id: "0627"
 title: Add and delete evidence shots from the task drawer
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
@@ -14,7 +14,7 @@ branch: feat/add-and-delete-evidence-shots-from-the-t
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-02T11:41:24Z"
-updated_at: "2026-10-03T04:35:29Z"
+updated_at: "2026-10-03T04:36:03Z"
 review_passes: 7
 last_check_failure: "repoos check at 2026-10-03T01:05:43.181Z: repoos check failed: - rendering pages... · [32m✓[0m rendering pages... · build complete in 4.43s. · ⏭ landing-build — skipped — no changed path matches landing/** · ⏭ telegram-manager-build — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock… (truncated)"
 review_rounds: 2
@@ -132,3 +132,4 @@ In the task drawer's Changes / UI changes section:
 - 2026-10-03T04:13:21Z · review_cli_override
 - 2026-10-03T04:13:22Z · review_model_override
 - 2026-10-03T04:35:29Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-03T04:36:03Z · status active→review
