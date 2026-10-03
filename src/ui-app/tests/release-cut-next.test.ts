@@ -522,6 +522,12 @@ describe("AI release notes tracked run (#0605)", () => {
     expect(button(panel, "Drafting…")!.disabled).toBe(true);
     expect(button(panel, "Publish")!.disabled).toBe(true);
     expect(panel.querySelector(".rel-notes-drafting")).toBeTruthy();
+    // #0630: the drafting row carries the shared ActivityIndicator dots, the
+    // same working treatment the task drawer uses for coding/reviewing.
+    expect(panel.querySelector(".rel-notes-drafting .ai[role='status']")).toBeTruthy();
+    expect(panel.querySelector(".rel-notes-drafting .ai")?.getAttribute("aria-label")).toContain(
+      "Drafting release notes",
+    );
 
     draftingState = succeededRun();
     await vi.advanceTimersByTimeAsync(1000);
@@ -580,6 +586,91 @@ describe("AI release notes tracked run (#0605)", () => {
     expect(button(panel, "Generate with AI")).toBeTruthy();
     expect(button(panel, "Drafting…")).toBeUndefined();
     expect(panel.querySelector(".rel-notes-drafting")).toBeNull();
+  });
+
+  it("keeps the version and the draft state across close and reopen mid-run (#0630)", async () => {
+    draftingState = runningRun();
+    apiWithNotesRun({ run: runningRun() });
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await flushPromises();
+    let panel = await openPanel();
+
+    // Pick the version, then start the draft and step away.
+    button(panel, "Cut Next")!.click();
+    await flushPromises();
+    expect(panel.querySelector<HTMLInputElement>("#rel-version")!.value).toBe("0.5.59");
+    button(panel, "Drafting…")!.click();
+    await flushPromises();
+    button(document.body, "Cancel")!.click();
+    await flushPromises();
+    expect(document.querySelector(".release-drawer")).toBeNull();
+
+    panel = await openPanel();
+    expect(panel.querySelector<HTMLInputElement>("#rel-version")!.value).toBe("0.5.59");
+    expect(button(panel, "Drafting…")).toBeTruthy();
+    expect(panel.querySelector(".rel-notes-drafting .ai")).toBeTruthy();
+
+    // The draft lands while the panel is closed: the field fills and the
+    // version the operator picked is still there for Publish.
+    draftingState = succeededRun();
+    await vi.advanceTimersByTimeAsync(1000);
+    await flushPromises();
+    expect(panel.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toContain("Highlights");
+    expect(panel.querySelector<HTMLInputElement>("#rel-version")!.value).toBe("0.5.59");
+    expect(button(panel, "Publish v0.5.59")!.disabled).toBe(false);
+  });
+
+  it("surfaces a draft that FAILED while the panel was closed (#0630)", async () => {
+    // The run failed before this page load (or while the panel was shut): a
+    // fresh session never watched it, but reopening must still say so.
+    draftingState = {
+      ...idleRun(),
+      state: "failed",
+      key: "k-run",
+      error: "The agent gave up.",
+      updatedAt: new Date().toISOString(),
+    };
+    apiWithNotesRun({ notes: "", sinceTag: "v0.5.58", commitCount: 3, truncated: false });
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await flushPromises();
+    let panel = await openPanel();
+
+    const err = panel.querySelector(".rel-notes-error");
+    expect(err?.textContent ?? "").toContain("The agent gave up.");
+    expect(panel.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toBe("");
+
+    // And it stays surfaced across another close/reopen round trip.
+    button(document.body, "Cancel")!.click();
+    await flushPromises();
+    panel = await openPanel();
+    expect(panel.querySelector(".rel-notes-error")?.textContent ?? "").toContain("gave up");
+  });
+
+  it("says a finished draft is ready to reuse when reopening after it completed (#0630)", async () => {
+    // A succeeded run this session never watched must not drop text into the
+    // field (#0605's rule) — but the reopen must not look like nothing
+    // happened either: an explicit hint names the ready draft.
+    draftingState = succeededRun("Draft finished while away");
+    apiWithNotesRun({ notes: "", sinceTag: "v0.5.58", commitCount: 3, truncated: false });
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await flushPromises();
+    const panel = await openPanel();
+
+    expect(panel.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toBe("");
+    const hint = panel.querySelector(".rel-notes-hint");
+    expect(hint?.textContent ?? "").toContain("finished while you were away");
+    expect(hint?.textContent ?? "").toContain("Generate with AI will reuse it");
+    expect(panel.querySelector(".rel-notes-error")).toBeNull();
+    expect(button(panel, "Generate with AI")).toBeTruthy();
   });
 
   it("surfaces the run's failure on the field instead of a silent nothing", async () => {

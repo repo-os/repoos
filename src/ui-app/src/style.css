@@ -11247,11 +11247,18 @@
   font-size: 12px;
   line-height: 1.45;
 }
-/* A notes-draft run is in flight (possibly for a modal reopened mid-run, #0605). */
+/* A notes-draft run is in flight (possibly for a modal reopened mid-run, #0605).
+   The shared ActivityIndicator leads, matching coding/reviewing (#0630). */
 .rel-notes-drafting {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   color: var(--cyan);
   font-size: 12px;
   line-height: 1.45;
+}
+.rel-notes-drafting span {
+  min-width: 0;
 }
 
 .release-drawer-actions {
