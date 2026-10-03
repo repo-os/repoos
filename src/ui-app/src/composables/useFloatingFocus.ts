@@ -23,13 +23,21 @@ import { onBeforeUnmount, type Ref } from "vue";
  *
  * - `focusin` whose target is inside the layer — focus entering the layer
  *   (by click, Tab, or a programmatic `.focus()`).
- * - `focusout` whose target or relatedTarget is inside the layer — focus
- *   moving into the layer, or between two stacked floating layers.
+ * - `focusout` whose relatedTarget is inside the layer — focus moving into
+ *   the layer. The event fires on wherever focus is leaving (typically the
+ *   dialog itself) and bubbles through the dialog's own DOM, which is why it
+ *   must be intercepted at `document` capture; nothing the teleported panel
+ *   does to its own events can reach it.
  *
- * Transitions back out of the layer are left alone: their destination is the
+ * Transitions out of the layer are left alone: their destination is the
  * trap's own scope, which handles them correctly (and keeps its
- * last-focused-element tracking current). The layer root is usually under a
- * `v-if`, so while the layer is closed the ref is null and nothing stops.
+ * last-focused-element tracking current), and the layer's own controls keep
+ * receiving their blur events. Intra-layer moves (Tab between two controls of
+ * the layer) are still hidden — the trap would yank on those too, so their
+ * `focusout` is stopped, which suppresses blur handlers *inside* the layer
+ * for that transition. No current layer control listens for `focusout`.
+ * The layer root is usually under a `v-if`, so while the layer is closed the
+ * ref is null and nothing stops.
  */
 export function useFloatingFocus(layer: Ref<HTMLElement | null>): void {
   const inLayer = (node: EventTarget | null): boolean =>
@@ -40,7 +48,7 @@ export function useFloatingFocus(layer: Ref<HTMLElement | null>): void {
   };
 
   const onFocusOut = (event: FocusEvent): void => {
-    if (inLayer(event.target) || inLayer(event.relatedTarget)) event.stopPropagation();
+    if (inLayer(event.relatedTarget)) event.stopPropagation();
   };
 
   document.addEventListener("focusin", onFocusIn, true);
