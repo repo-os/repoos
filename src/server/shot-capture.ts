@@ -115,10 +115,7 @@ async function startTargetPreview(
   task: Task,
   target: string,
   opts: { noEvict?: boolean } = {},
-): Promise<
-  | { url: string; label?: string; reused: boolean }
-  | { error: string; busy?: boolean }
-> {
+): Promise<{ url: string; label?: string; reused: boolean } | { error: string; busy?: boolean }> {
   const noEvict = opts.noEvict === true;
   if (!noEvict) await previews.stop(task.id);
   const before = noEvict ? previews.get(task.id) : null;
@@ -479,7 +476,10 @@ export async function captureDeclaredShot(
           ...(startedPreview.busy ? { busy: true } : {}),
         };
       }
-      if (startedPreview.reused && (!startedPreview.label || startedPreview.label !== entry.target)) {
+      if (
+        startedPreview.reused &&
+        (!startedPreview.label || startedPreview.label !== entry.target)
+      ) {
         // A preview registered between the snapshot above and this start (the
         // human clicked Preview while WebKit was launching): reuse it only when
         // it provably serves the requested target, and never stop it.

@@ -562,17 +562,28 @@ export function sameDeclaredShot(a: DeclaredShot, b: DeclaredShot): boolean {
  * entries are all removed: a delete must not leave a declaration behind that
  * re-handoff would capture again. A body with no `## Shots` section (or an
  * already-malformed one, reported in `errors`) removes nothing.
+ *
+ * `requireUnique` is for the shallow label/route/target matcher: when it
+ * matches MORE than one entry the shot cannot be attributed to one of them
+ * (they differ only in selector/steps, which the capture does not record), so
+ * nothing is removed and `ambiguous` reports how many matched. Deleting one
+ * capture must never erase other, distinct declarations (#0627 review round 3).
  */
 export function removeDeclaredShots(
   body: string,
   match: (shot: DeclaredShot) => boolean,
-): { content: string; removed: number; errors: string[] } {
+  opts: { requireUnique?: boolean } = {},
+): { content: string; removed: number; errors: string[]; ambiguous?: number } {
   const parsed = parseShotPlan(body ?? "");
   if (parsed.errors.length > 0) {
     return { content: "", removed: 0, errors: parsed.errors };
   }
   const kept = parsed.shots.filter((s) => !match(s));
-  if (kept.length === parsed.shots.length) {
+  const matched = parsed.shots.length - kept.length;
+  if (opts.requireUnique && matched > 1) {
+    return { content: "", removed: 0, errors: [], ambiguous: matched };
+  }
+  if (matched === 0) {
     return { content: "", removed: 0, errors: [] };
   }
   return {

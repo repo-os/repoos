@@ -851,22 +851,39 @@ const canManageShots = computed(
 const addShotOpen = ref(false);
 const addShotBusy = ref(false);
 const addShotError = ref<string | undefined>(undefined);
+const addShotWarning = ref<string | undefined>(undefined);
 const deleteShotTarget = ref<ShotMeta | null>(null);
 const deleteShotBusy = ref(false);
+
+function openAddShot(): void {
+  addShotError.value = undefined;
+  addShotWarning.value = undefined;
+  addShotOpen.value = true;
+}
+function onAddShotOpen(v: boolean): void {
+  addShotOpen.value = v;
+  if (!v) addShotWarning.value = undefined;
+}
 
 async function submitAddShot(entry: DeclaredShot): Promise<void> {
   if (!ui.active) return;
   addShotBusy.value = true;
   addShotError.value = undefined;
+  addShotWarning.value = undefined;
   const result = await repo.addShot(ui.active.id, entry);
   addShotBusy.value = false;
   if (!result.ok) {
     addShotError.value = result.error;
     return;
   }
+  // A warning (highlight/selector matched nothing, declaration not updated)
+  // stays in the modal where the user is looking; they close it themselves.
+  if (result.warning) {
+    addShotWarning.value = result.warning;
+    return;
+  }
   addShotOpen.value = false;
-  if (result.warning) repo.pushToast(result.warning, "error");
-  else repo.pushToast(`Shot captured (${entry.label || entry.target})`, "success");
+  repo.pushToast(`Shot captured (${entry.label || entry.target})`, "success");
 }
 
 async function confirmDeleteShot(): Promise<void> {
@@ -4932,7 +4949,7 @@ watch(
                 size="sm"
                 data-test-id="add-shot"
                 :disabled="addShotBusy"
-                @click="addShotOpen = true"
+                @click="openAddShot"
               >
                 {{ addShotBusy ? "Capturing…" : "Add shot" }}
               </Button>
@@ -5466,7 +5483,8 @@ watch(
     :targets="previewTargets"
     :busy="addShotBusy"
     :error="addShotError"
-    @update:open="(v) => (addShotOpen = v)"
+    :warning="addShotWarning"
+    @update:open="onAddShotOpen"
     @submit="submitAddShot"
   />
 
