@@ -28,8 +28,6 @@ const ENV_KEYS = [
   "REPOOS_OPENROUTER_API_KEY",
   "REPOOS_OPENCODE_GO_API_KEY",
   "REPOOS_DEEPINFRA_API_KEY",
-  "REPOOS_GITHUB_COPILOT_TOKEN",
-  "REPOOS_GITHUB_COPILOT_SCOPE",
 ] as const;
 const tmpRoots: string[] = [];
 
@@ -164,7 +162,7 @@ describe("POST /api/model-providers/:id/key", () => {
       { param1: "openrouter" },
     );
     expect(capture.statusCode).toBe(200);
-    expect(capture.body).toEqual({ ok: true, hasKey: true, scope: "" });
+    expect(capture.body).toEqual({ ok: true, hasKey: true });
     expect(process.env.REPOOS_OPENROUTER_API_KEY).toBe("sk-or-v1-abc");
     expect(readFileSync(join(root, ".env"), "utf8")).toContain(
       "REPOOS_OPENROUTER_API_KEY=sk-or-v1-abc\n",
@@ -234,6 +232,7 @@ describe("POST /api/model-providers/:id/key", () => {
     for (const [id, body, expected] of [
       ["opencode-zen", { key: "x" }, 400],
       ["cursor", { key: "x" }, 400],
+      ["github-copilot", { key: "x" }, 400],
       ["nope", { key: "x" }, 404],
       ["openrouter", { key: 42 }, 400],
       ["openrouter", {}, 400],
@@ -287,7 +286,7 @@ describe("GET /api/model-providers/:id/usage", () => {
     expect(capture.body.error).toContain("No OpenRouter API key saved yet");
   });
 
-  it("marks DeepInfra and GitHub Copilot live and includes the stored Copilot scope", async () => {
+  it("renders GitHub Copilot as a link row with no scope in the payload (#0629)", async () => {
     const root = tmpRoot();
     process.env.REPOOS_GITHUB_COPILOT_TOKEN = "ghp-secret-value";
     process.env.REPOOS_GITHUB_COPILOT_SCOPE = "org:acme";
@@ -296,15 +295,17 @@ describe("GET /api/model-providers/:id/usage", () => {
     await getModelProviders(ctx as never, makeReq(), res as never, {});
     expect(capture.statusCode).toBe(200);
     const copilot = capture.body.providers.find((p: { id: string }) => p.id === "github-copilot");
-    expect(copilot.kind).toBe("live");
-    expect(copilot.hasKey).toBe(true);
-    expect(copilot.scope).toBe("org:acme");
+    expect(copilot.kind).toBe("link");
+    expect(copilot.hasKey).toBe(false);
+    expect(copilot.scope).toBeUndefined();
+    expect(copilot.dashboardUrl).toBe("https://github.com/settings/copilot");
     const deepinfra = capture.body.providers.find((p: { id: string }) => p.id === "deepinfra");
     expect(deepinfra.kind).toBe("live");
     expect(deepinfra.hasKey).toBe(false);
-    expect(deepinfra.scope).toBe("");
-    // The token must never appear anywhere in the response; the org slug may.
+    expect(deepinfra.scope).toBeUndefined();
+    // Even a stale env var must never surface as key material or scope.
     expect(JSON.stringify(capture.body)).not.toContain("ghp-secret-value");
+    expect(JSON.stringify(capture.body)).not.toContain("org:acme");
   });
 
   it("sends the stored key upstream as a bearer token and returns the parsed spend", async () => {
@@ -365,7 +366,7 @@ describe("GET /api/model-providers/:id/usage", () => {
   });
 });
 
-describe("DeepInfra + GitHub Copilot usage routes (#0625)", () => {
+describe("DeepInfra usage routes (#0625) and the reverted Copilot row (#0629)", () => {
   function stubFetchByPath(
     paths: Record<string, { status?: number; body: unknown }>,
   ): ReturnType<typeof vi.fn> {
@@ -418,146 +419,15 @@ describe("DeepInfra + GitHub Copilot usage routes (#0625)", () => {
     expect(capture.body.error).toBeTruthy();
   });
 
-  it("fetches Copilot usage through the resolved personal path and stored scope", async () => {
+  it("refuses a Copilot usage fetch — the reverted link row has no live path (#0629)", async () => {
     const root = tmpRoot();
-    process.env.REPOOS_GITHUB_COPILOT_TOKEN = "ghp-live";
-    stubFetchByPath({
-      "/user": { body: { login: "monalisa" } },
-      "/users/monalisa/settings/billing/ai_credit/usage": {
-        body: {
-          timePeriod: { year: 2026, month: 10 },
-          user: "monalisa",
-          usageItems: [
-            {
-              product: "Copilot AI Credits",
-              sku: "AI Credit",
-              model: "GPT-5",
-              unitType: "ai-credits",
-              pricePerUnit: 0.01,
-              grossQuantity: 100,
-              grossAmount: 1.0,
-              discountQuantity: 40,
-              discountAmount: 0.4,
-              netQuantity: 60,
-              netAmount: 0.6,
-            },
-          ],
-        },
-      },
-    });
+    process.env.REPOOS_GITHUB_COPILOT_TOKEN = "ghp-stale";
     const ctx = makeCtx(root);
     const { capture, res } = makeRes();
     await getModelProviderUsage(ctx as never, makeReq(), res as never, {
       param1: "github-copilot",
     });
-    expect(capture.statusCode).toBe(200);
-    expect(capture.body.kind).toBe("github-copilot");
-    expect(capture.body.scope).toEqual({ kind: "personal", slug: null });
-    expect(capture.body.rows[0].billedQuantity).toBe(60);
-  });
-
-  it("passes the stored org scope through to the centrally billed endpoint", async () => {
-    const root = tmpRoot();
-    process.env.REPOOS_GITHUB_COPILOT_TOKEN = "ghp-live";
-    process.env.REPOOS_GITHUB_COPILOT_SCOPE = "org:acme";
-    const fn = stubFetchByPath({
-      "/organizations/acme/settings/billing/ai_credit/usage": {
-        body: { timePeriod: { year: 2026, month: 10 }, usageItems: [] },
-      },
-    });
-    const ctx = makeCtx(root);
-    const { capture, res } = makeRes();
-    await getModelProviderUsage(ctx as never, makeReq(), res as never, {
-      param1: "github-copilot",
-    });
-    expect(capture.statusCode).toBe(200);
-    expect(capture.body.scope).toEqual({ kind: "org", slug: "acme" });
-    expect(capture.body.rows).toEqual([]);
-    const calls = fn.mock.calls as unknown as [string][];
-    expect(calls.some(([u]) => u.includes("/organizations/acme/settings/billing"))).toBe(true);
-  });
-
-  it("maps a GitHub 403 to a 502 carrying the classic-PAT guidance", async () => {
-    const root = tmpRoot();
-    process.env.REPOOS_GITHUB_COPILOT_TOKEN = "ghp-fg";
-    stubFetchByPath({
-      "/user": { body: { login: "monalisa" } },
-      "/users/monalisa/settings/billing/ai_credit/usage": {
-        status: 403,
-        body: { message: "Resource not accessible by integration" },
-      },
-    });
-    const ctx = makeCtx(root);
-    const { capture, res } = makeRes();
-    await getModelProviderUsage(ctx as never, makeReq(), res as never, {
-      param1: "github-copilot",
-    });
-    expect(capture.statusCode).toBe(502);
-    expect(capture.body.error).toContain("classic personal access token");
-  });
-
-  it("saves a Copilot key with its scope and reports the scope back (never the token)", async () => {
-    const root = tmpRoot();
-    const ctx = makeCtx(root);
-    const { capture, res } = makeRes();
-    await setModelProviderKey(
-      ctx as never,
-      reqWithBody({ key: "  ghp-abc  ", scope: " org:acme " }) as IncomingMessage,
-      res as never,
-      { param1: "github-copilot" },
-    );
-    expect(capture.statusCode).toBe(200);
-    expect(capture.body).toEqual({ ok: true, hasKey: true, scope: "org:acme" });
-    expect(process.env.REPOOS_GITHUB_COPILOT_TOKEN).toBe("ghp-abc");
-    expect(process.env.REPOOS_GITHUB_COPILOT_SCOPE).toBe("org:acme");
-    const env = readFileSync(join(root, ".env"), "utf8");
-    expect(env).toContain("REPOOS_GITHUB_COPILOT_TOKEN=ghp-abc\n");
-    expect(env).toContain("REPOOS_GITHUB_COPILOT_SCOPE=org:acme\n");
-    expect(JSON.stringify(capture.body)).not.toContain("ghp-abc");
-  });
-
-  it("rejects a malformed scope without saving anything", async () => {
-    const root = tmpRoot();
-    const ctx = makeCtx(root);
-    const { capture, res } = makeRes();
-    await setModelProviderKey(
-      ctx as never,
-      reqWithBody({ key: "ghp-abc", scope: "acme" }) as IncomingMessage,
-      res as never,
-      { param1: "github-copilot" },
-    );
     expect(capture.statusCode).toBe(400);
-    expect(capture.body.error).toContain("org:<name>");
-    expect(existsSync(join(root, ".env"))).toBe(false);
-    expect(process.env.REPOOS_GITHUB_COPILOT_TOKEN).toBeUndefined();
-  });
-
-  it("clearing the key leaves the scope untouched unless a scope is sent", async () => {
-    const root = tmpRoot();
-    const ctx = makeCtx(root);
-    await setModelProviderKey(
-      ctx as never,
-      reqWithBody({ key: "ghp-abc", scope: "org:acme" }) as IncomingMessage,
-      makeRes().res as never,
-      { param1: "github-copilot" },
-    );
-    const res2 = makeRes();
-    await setModelProviderKey(
-      ctx as never,
-      reqWithBody({ key: "" }) as IncomingMessage,
-      res2.res as never,
-      { param1: "github-copilot" },
-    );
-    expect(res2.capture.body.hasKey).toBe(false);
-    expect(process.env.REPOOS_GITHUB_COPILOT_SCOPE).toBe("org:acme");
-    const res3 = makeRes();
-    await setModelProviderKey(
-      ctx as never,
-      reqWithBody({ key: "", scope: "" }) as IncomingMessage,
-      res3.res as never,
-      { param1: "github-copilot" },
-    );
-    expect(res3.capture.body.scope).toBe("");
-    expect(process.env.REPOOS_GITHUB_COPILOT_SCOPE).toBeUndefined();
+    expect(capture.body.error).toContain("dashboard link-out");
   });
 });

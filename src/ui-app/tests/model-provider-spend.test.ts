@@ -11,14 +11,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   MODEL_PROVIDERS,
-  copilotUsagePath,
-  fetchCopilotUsage,
   fetchDeepInfraSpend,
   fetchOpenCodeGoUsage,
   fetchOpenRouterSpend,
   modelProviderById,
-  parseCopilotScope,
-  parseCopilotUsage,
   parseDeepInfraChecklist,
   parseDeepInfraUsage,
   parseOpenCodeGoUsage,
@@ -47,7 +43,7 @@ describe("MODEL_PROVIDERS registry", () => {
     ]);
   });
 
-  it("marks the four supported providers live with env vars; the rest as link-outs", () => {
+  it("marks the three supported providers live with env vars; the rest as link-outs", () => {
     const openrouter = modelProviderById("openrouter")!;
     expect(openrouter.kind).toBe("live");
     expect(openrouter.envVar).toBe("REPOOS_OPENROUTER_API_KEY");
@@ -57,16 +53,13 @@ describe("MODEL_PROVIDERS registry", () => {
     const deepinfra = modelProviderById("deepinfra")!;
     expect(deepinfra.kind).toBe("live");
     expect(deepinfra.envVar).toBe("REPOOS_DEEPINFRA_API_KEY");
-    const copilot = modelProviderById("github-copilot")!;
-    expect(copilot.kind).toBe("live");
-    expect(copilot.envVar).toBe("REPOOS_GITHUB_COPILOT_TOKEN");
-    expect(copilot.scopeEnvVar).toBe("REPOOS_GITHUB_COPILOT_SCOPE");
     for (const id of [
       "cursor",
       "opencode-zen",
       "claude-code",
       "qwen-code",
       "codex",
+      "github-copilot",
       "antigravity",
       "kiro",
     ]) {
@@ -75,6 +68,14 @@ describe("MODEL_PROVIDERS registry", () => {
       expect(row.envVar).toBeNull();
       expect(row.dashboardUrl).toMatch(/^https:\/\//);
     }
+    // GitHub deprecated the personal-account billing endpoints the #0625
+    // integration used — Copilot is a link-out again, never a keyed provider.
+    const copilot = modelProviderById("github-copilot")!;
+    expect(copilot.kind).toBe("link");
+    expect(copilot.dashboardUrl).toBe("https://github.com/settings/copilot");
+    expect(copilot.envVar).toBeNull();
+    expect(copilot.configKey).toBeNull();
+    expect(copilot.note).toMatch(/no public api/i);
   });
 });
 
@@ -219,277 +220,6 @@ describe("fetchDeepInfraSpend", () => {
     expect(spend.checklistError).toContain("doesn't recognize");
     expect(spend.usage).toBeNull();
     expect(spend.usageError).toContain("doesn't recognize");
-  });
-});
-
-describe("parseCopilotScope", () => {
-  it("parses empty/personal and the two centrally billed prefixes", () => {
-    expect(parseCopilotScope("")).toEqual({ kind: "personal", slug: null });
-    expect(parseCopilotScope("  ")).toEqual({ kind: "personal", slug: null });
-    expect(parseCopilotScope("org:acme")).toEqual({ kind: "org", slug: "acme" });
-    expect(parseCopilotScope("ENTERPRISE:Big.Co_1")).toEqual({
-      kind: "enterprise",
-      slug: "Big.Co_1",
-    });
-  });
-
-  it("falls back to personal for anything else", () => {
-    expect(parseCopilotScope("acme")).toEqual({ kind: "personal", slug: null });
-    expect(parseCopilotScope("org:")).toEqual({ kind: "personal", slug: null });
-  });
-});
-
-describe("parseCopilotUsage", () => {
-  const scope = { kind: "personal", slug: null } as const;
-
-  it("aggregates the AI-credit usage shape with included vs billed split", () => {
-    const parsed = parseCopilotUsage(
-      {
-        timePeriod: { year: 2026, month: 10 },
-        user: "monalisa",
-        usageItems: [
-          {
-            product: "Copilot AI Credits",
-            sku: "AI Credit",
-            model: "GPT-5",
-            unitType: "ai-credits",
-            pricePerUnit: 0.01,
-            grossQuantity: 100,
-            grossAmount: 1.0,
-            discountQuantity: 40,
-            discountAmount: 0.4,
-            netQuantity: 60,
-            netAmount: 0.6,
-          },
-        ],
-      },
-      scope,
-    );
-    expect(parsed.unrecognized).toBe(false);
-    expect(parsed.periodLabel).toBe("October 2026");
-    expect(parsed.user).toBe("monalisa");
-    expect(parsed.rows[0]).toEqual({
-      product: "Copilot AI Credits",
-      sku: "AI Credit",
-      model: "GPT-5",
-      unitType: "ai-credits",
-      includedQuantity: 40,
-      billedQuantity: 60,
-      discountAmount: 0.4,
-      netAmount: 0.6,
-    });
-  });
-
-  it("handles the enterprise usage-report shape (single quantity, no model)", () => {
-    const parsed = parseCopilotUsage(
-      {
-        timePeriod: { year: 2026 },
-        usageItems: [
-          {
-            date: "2026-10-01",
-            product: "copilot",
-            sku: "Copilot Premium Request",
-            quantity: 250,
-            unitType: "requests",
-            pricePerUnit: 0.04,
-            grossAmount: 10,
-            discountAmount: 2,
-            netAmount: 8,
-            organizationName: "acme",
-          },
-        ],
-      },
-      { kind: "enterprise", slug: "big-co" },
-    );
-    expect(parsed.unrecognized).toBe(false);
-    expect(parsed.periodLabel).toBe("2026");
-    expect(parsed.rows[0].billedQuantity).toBe(250);
-    expect(parsed.rows[0].includedQuantity).toBeNull();
-    expect(parsed.rows[0].netAmount).toBe(8);
-  });
-
-  it("filters non-Copilot items out of the enterprise usage report", () => {
-    const parsed = parseCopilotUsage(
-      {
-        timePeriod: { year: 2026 },
-        usageItems: [
-          {
-            date: "2026-10-01",
-            product: "Actions",
-            sku: "Actions Linux",
-            quantity: 100,
-            unitType: "minutes",
-            pricePerUnit: 0.008,
-            grossAmount: 0.8,
-            discountAmount: 0,
-            netAmount: 0.8,
-          },
-          {
-            date: "2026-10-02",
-            product: "Copilot AI Credits",
-            sku: "AI Credit",
-            model: "GPT-5",
-            unitType: "ai-credits",
-            pricePerUnit: 0.01,
-            grossQuantity: 100,
-            grossAmount: 1.0,
-            discountQuantity: 0,
-            discountAmount: 0,
-            netQuantity: 100,
-            netAmount: 1.0,
-          },
-        ],
-      },
-      { kind: "enterprise", slug: "big-co" },
-    );
-    expect(parsed.rows).toHaveLength(1);
-    expect(parsed.rows[0].sku).toBe("AI Credit");
-    expect(parsed.rows[0].netAmount).toBe(1.0);
-  });
-
-  it("reports unrecognized when usageItems is missing", () => {
-    expect(parseCopilotUsage({ foo: 1 }, scope).unrecognized).toBe(true);
-    expect(parseCopilotUsage(null, scope).unrecognized).toBe(true);
-  });
-});
-
-describe("fetchCopilotUsage", () => {
-  function stubFetch(
-    routes: Record<string, { status?: number; body: unknown }>,
-  ): ReturnType<typeof vi.fn> {
-    const fn = vi.fn(async (url: string, opts?: RequestInit) => {
-      const path = String(url).replace("https://api.github.com", "").split("?")[0];
-      const hit = routes[path];
-      if (!hit) throw new Error(`unexpected URL ${url}`);
-      return {
-        ok: (hit.status ?? 200) < 400,
-        status: hit.status ?? 200,
-        headers: { get: () => "application/json" },
-        json: async () => hit.body,
-      } as unknown as Response;
-    });
-    vi.stubGlobal("fetch", fn);
-    return fn;
-  }
-
-  it("resolves the token's login first, then fetches the personal AI-credit report", async () => {
-    const fn = stubFetch({
-      "/user": { body: { login: "monalisa" } },
-      "/users/monalisa/settings/billing/ai_credit/usage": {
-        body: {
-          timePeriod: { year: 2026, month: 10 },
-          user: "monalisa",
-          usageItems: [
-            {
-              product: "Copilot AI Credits",
-              sku: "AI Credit",
-              model: "GPT-5",
-              unitType: "ai-credits",
-              pricePerUnit: 0.01,
-              grossQuantity: 10,
-              grossAmount: 0.1,
-              discountQuantity: 10,
-              discountAmount: 0.1,
-              netQuantity: 0,
-              netAmount: 0,
-            },
-          ],
-        },
-      },
-    });
-    const usage = await fetchCopilotUsage("ghp_test", "");
-    expect(usage.scope.kind).toBe("personal");
-    expect(usage.user).toBe("monalisa");
-    expect(usage.rows[0].netAmount).toBe(0);
-    const calls = fn.mock.calls as unknown as [string, RequestInit][];
-    expect(calls[0][0]).toBe("https://api.github.com/user");
-    expect(calls[1][0]).toContain("/users/monalisa/settings/billing/ai_credit/usage?year=");
-    for (const [, opts] of calls) {
-      expect((opts.headers as Record<string, string>).Authorization).toBe("Bearer ghp_test");
-      expect((opts.headers as Record<string, string>).Accept).toBe("application/vnd.github+json");
-    }
-  });
-
-  it("goes straight to the org endpoint for an org scope", async () => {
-    stubFetch({
-      "/organizations/acme/settings/billing/ai_credit/usage": {
-        body: { timePeriod: { year: 2026, month: 10 }, usageItems: [] },
-      },
-    });
-    const usage = await fetchCopilotUsage("ghp_test", "org:acme");
-    expect(usage.scope).toEqual({ kind: "org", slug: "acme" });
-    expect(usage.rows).toEqual([]);
-  });
-
-  it("uses the enterprise usage report for an enterprise scope", async () => {
-    stubFetch({
-      "/enterprises/big-co/settings/billing/usage": {
-        body: { timePeriod: { year: 2026 }, usageItems: [] },
-      },
-    });
-    const usage = await fetchCopilotUsage("ghp_test", "enterprise:big-co");
-    expect(usage.scope.kind).toBe("enterprise");
-  });
-
-  it("turns a 403 into the classic-PAT guidance", async () => {
-    stubFetch({
-      "/user": { body: { login: "monalisa" } },
-      "/users/monalisa/settings/billing/ai_credit/usage": {
-        status: 403,
-        body: { message: "Resource not accessible by integration" },
-      },
-    });
-    await expect(fetchCopilotUsage("ghp_fg", "")).rejects.toThrow(
-      /403.*classic personal access token/,
-    );
-  });
-
-  it("turns a 401 into a token rejection with GitHub's message", async () => {
-    stubFetch({ "/user": { status: 401, body: { message: "Bad credentials" } } });
-    await expect(fetchCopilotUsage("expired", "")).rejects.toThrow(
-      "GitHub rejected the token (401): Bad credentials",
-    );
-  });
-
-  it("hints at the centrally billed endpoints when a personal report 404s", async () => {
-    stubFetch({
-      "/user": { body: { login: "monalisa" } },
-      "/users/monalisa/settings/billing/ai_credit/usage": {
-        status: 404,
-        body: { message: "Not Found" },
-      },
-    });
-    await expect(fetchCopilotUsage("ghp_ok", "")).rejects.toThrow(
-      /404.*billed through an organization or enterprise/,
-    );
-  });
-
-  it("keeps the slug hint on an org-scope 404", async () => {
-    stubFetch({
-      "/organizations/acme/settings/billing/ai_credit/usage": {
-        status: 404,
-        body: { message: "Not Found" },
-      },
-    });
-    await expect(fetchCopilotUsage("ghp_ok", "org:acme")).rejects.toThrow(
-      /404.*Check the org\/enterprise slug/,
-    );
-  });
-
-  it("maps network failure to a clear message", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => Promise.reject(new Error("ECONNREFUSED"))),
-    );
-    await expect(fetchCopilotUsage("k", "")).rejects.toThrow("Could not reach the GitHub API.");
-  });
-
-  it("builds the documented paths for every scope", () => {
-    expect(copilotUsagePath("", "mona")).toContain("/users/mona/settings/billing/ai_credit/usage");
-    expect(copilotUsagePath("org:a", "")).toContain(
-      "/organizations/a/settings/billing/ai_credit/usage",
-    );
-    expect(copilotUsagePath("enterprise:e", "")).toContain("/enterprises/e/settings/billing/usage");
   });
 });
 
