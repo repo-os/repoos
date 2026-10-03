@@ -5,6 +5,11 @@
  * Cancel + destructive confirm, busy/disabled while the request runs —
  * parameterized so the input and story panels don't copy-paste a third modal.
  * Copy stays specific to the caller via the title, confirm label and slot.
+ *
+ * #0575 layer marking is handled by the shared primitives themselves: both
+ * `DialogContent` and `DialogOverlay` stamp their dialog's id as
+ * `data-overlay-layer`, so this teleport is never click-transparent — asserted
+ * in tests/input-story-delete-ui.test.ts.
  */
 import Button from "./ui/button.vue";
 import Dialog from "./ui/dialog/root.vue";

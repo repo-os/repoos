@@ -75,6 +75,13 @@ function stubApi(opts: { inputs?: Input[]; deleteError?: boolean } = {}) {
 async function confirmDialog(label: string): Promise<void> {
   const modal = document.body.querySelector(".delete-confirm-modal");
   expect(modal, "confirm dialog did not open").toBeTruthy();
+  // #0575: the modal and its scrim are the shared ui/dialog primitives, which
+  // stamp their own `data-overlay-layer` id — without it Radix's
+  // `pointer-events: none` on <body> would make the layer click-transparent.
+  expect(modal!.getAttribute("data-overlay-layer")).toMatch(/^overlay-/);
+  expect(document.body.querySelector(".overlay")?.getAttribute("data-overlay-layer")).toMatch(
+    /^overlay-/,
+  );
   expect(modal!.textContent).toContain(label);
   const btn = Array.from(modal!.querySelectorAll("button")).find((b) =>
     b.textContent?.includes(label),
