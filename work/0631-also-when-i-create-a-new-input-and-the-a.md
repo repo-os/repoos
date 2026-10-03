@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-03T05:55:25Z"
-review_passes: 7
+updated_at: "2026-10-03T05:37:15Z"
+review_passes: 1
 id: "0631"
 title: Show enrichment-in-progress on inputs list cards
 type: feature
@@ -10,13 +10,7 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-enrichment-in-progress-on-inputs-li
-cli_override: cursor
-model_override: composer-2.5
-review_cli_override: cursor
-review_model_override: composer-2.5
 created_at: "2026-10-02T23:44:30Z"
-handoff_signal_retry_count: 2
-review_rounds: 2
 ---
 ## Problem
 
@@ -67,18 +61,6 @@ Also when I create a new input and the AI is making the title I guess, when I cl
 ![Screenshot-2026-10-02-at-20.02.33](/api/tasks/0631/attachments/screenshot-1.png)
 ![Screenshot-2026-10-02-at-20.02.17](/api/tasks/0631/attachments/screenshot-2.png)
 
-## Shots
-```json
-[
-  {
-    "label": "Input card shows ActivityIndicator while PM enrichment runs",
-    "target": "default",
-    "route": "/inputs",
-    "highlight": ".task-card .activity-indicator"
-  }
-]
-```
-
 ## Activity
 
 - 2026-10-02T23:44:30Z · created · hello@repoos.org
@@ -87,39 +69,5 @@ Also when I create a new input and the AI is making the title I guess, when I cl
 - 2026-10-02T23:44:55Z · status draft→inbox, title, area, body
 - 2026-10-02T23:45:02Z · status inbox→ready
 - 2026-10-02T23:45:11Z · status ready→active, branch
-- 2026-10-03T00:36:31Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-03T00:50:52Z · body: section Shots
-- 2026-10-03T00:55:56Z · status active→review
-- 2026-10-03T00:56:02Z · note: shots: failed — capture of Inputs list with enrichment-in-progress indicator on the freshly created card on "default" failed: click: Error: strict mode violation: locator('.drawer-body .btn-row button') resolved to 2 elements:
-- 2026-10-03T00:57:05Z · status review→active
-- 2026-10-03T01:10:09Z · status active→review
-- 2026-10-03T01:10:25Z · note: shots: failed — capture of Inputs list with enrichment-in-progress indicator on the freshly created card on "default" failed: click: Error: strict mode violation: locator('.drawer-body .btn-row button') resolved to 2 elements:
-- 2026-10-03T01:11:13Z · status review→active
-- 2026-10-03T02:26:39Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
-- 2026-10-03T02:26:39Z · status review→active
-- 2026-10-03T02:30:46Z · status active→review
-- 2026-10-03T02:30:55Z · note: shots: failed — capture of Inputs list with enrichment-in-progress indicator on the freshly created card on "default" failed: click: Error: strict mode violation: locator('.drawer-body .btn-row button') resolved to 2 elements:
-- 2026-10-03T02:31:43Z · needs_input
-- 2026-10-03T03:44:54Z · cli_override, model_override
-- 2026-10-03T03:44:55Z · model_override
-- 2026-10-03T03:45:19Z · status review→active
-- 2026-10-03T03:52:38Z · body: section Shots
-- 2026-10-03T03:55:39Z · body: section Shots
-- 2026-10-03T03:55:45Z · status active→review
-- 2026-10-03T03:55:55Z · note: highlight article.task-card [aria-label="AI is writing title…"] matched nothing on /inputs
-- 2026-10-03T03:57:02Z · needs_input
-- 2026-10-03T03:57:02Z · needs_input
-- 2026-10-03T04:13:59Z · status review→active
-- 2026-10-03T05:20:58Z · body: section Shots
-- 2026-10-03T05:21:07Z · status active→review
-- 2026-10-03T05:21:15Z · note: highlight .task-card .activity-indicator matched nothing on /inputs
-- 2026-10-03T05:22:31Z · needs_input
-- 2026-10-03T05:22:31Z · needs_input
-- 2026-10-03T05:23:23Z · status review→active
-- 2026-10-03T05:27:51Z · review_cli_override
-- 2026-10-03T05:27:53Z · review_model_override
-- 2026-10-03T05:35:10Z · status active→review
-- 2026-10-03T05:36:37Z · needs_input
-- 2026-10-03T05:37:32Z · note: highlight .task-card .activity-indicator matched nothing on /inputs
-- 2026-10-03T05:39:26Z · note: shots: failed — capture of Input card shows ActivityIndicator while PM enrichment runs on "default" failed: screenshot: Timeout 30000ms exceeded.
+- 2026-10-03T00:55:55Z · status active→review
 
