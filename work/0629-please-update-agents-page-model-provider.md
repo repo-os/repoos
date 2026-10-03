@@ -2,14 +2,15 @@
 id: "0629"
 title: Revert GitHub Copilot provider to external link only
 type: refactor
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: da15c3aefe949083967b90603fde3b40c5947534
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/revert-github-copilot-provider-to-extern
 created_at: "2026-10-02T17:37:54Z"
-updated_at: "2026-10-02T19:04:37Z"
+updated_at: "2026-10-03T06:25:34Z"
 ---
 ## Problem
 
@@ -68,3 +69,4 @@ Instructions:
 - 2026-10-02T18:20:09Z · status inbox→ready
 - 2026-10-02T18:20:21Z · status ready→active, branch
 - 2026-10-02T19:04:37Z · status active→review
+- 2026-10-03T06:25:34Z · status review→done, release:success
