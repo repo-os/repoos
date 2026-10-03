@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0631"
 title: Show enrichment-in-progress on inputs list cards
 type: feature
@@ -69,3 +70,4 @@ Also when I create a new input and the AI is making the title I guess, when I cl
 - 2026-10-02T23:45:02Z · status inbox→ready
 - 2026-10-02T23:45:11Z · status ready→active, branch
 - 2026-10-03T00:36:31Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+
