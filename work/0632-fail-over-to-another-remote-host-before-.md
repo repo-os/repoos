@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-03T11:37:22Z"
-review_passes: 2
 id: "0632"
 title: Fail over to another remote host before falling back to local
 type: feature
@@ -15,6 +13,8 @@ model_override: openrouter/openrouter/pareto-code
 review_cli_override: opencode
 review_model_override: openrouter/openrouter/auto
 created_at: "2026-10-03T06:01:04Z"
+updated_at: "2026-10-03T11:39:57Z"
+review_passes: 2
 review_rounds: 1
 handoff_signal_retry_count: 2
 ---
