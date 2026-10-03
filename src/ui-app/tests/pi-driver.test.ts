@@ -247,6 +247,20 @@ describe("pi usage extraction", () => {
     expect(extractUsage(raw)).toEqual({});
   });
 
+  it("drops the negative cost pi computes for variable-priced models", () => {
+    // openrouter/auto lists its price as -1/token, which pi multiplies out.
+    const raw = JSON.stringify({
+      type: "message_end",
+      message: {
+        role: "assistant",
+        usage: { input: 3, output: 133, cost: { input: -3, output: -133, total: -136 } },
+      },
+    });
+    const usage = extractUsage(raw);
+    expect(usage.costUsd).toBeUndefined();
+    expect(usage.inputTokens).toBe(3);
+  });
+
   it("counts one turn per turn_end", () => {
     expect(extractUsage(JSON.stringify({ type: "turn_end" })).turns).toBe(1);
   });
