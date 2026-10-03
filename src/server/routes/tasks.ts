@@ -1168,6 +1168,19 @@ async function declareTaskShot(
       ...(result.busy ? { busy: true } : {}),
     });
   }
+  // The capture takes 5-30s; the task may have left active/review meanwhile
+  // (done, paused back to ready, deleted). Recheck against the live index and
+  // discard the new image rather than edit a task file the restriction says
+  // this route may not touch (review round 6).
+  const current = index.getTask(task.id);
+  if (!current || (current.status !== "active" && current.status !== "review")) {
+    localShotStore(config, task.id).remove(result.shot.name);
+    return json(res, 409, {
+      error: current
+        ? `the shot was discarded: #${task.id} moved to ${current.status} while it was being captured`
+        : `the shot was discarded: #${task.id} no longer exists`,
+    });
+  }
   // Append the declaration to `## Shots` (section write — no other body
   // section changes), with an activity note; capture-miss warnings ride the
   // same note so the capture's caveats are visible without a second write.
