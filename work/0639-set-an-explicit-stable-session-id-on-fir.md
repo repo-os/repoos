@@ -2,7 +2,7 @@
 id: "0639"
 title: Set an explicit stable session id on first launch for pi (cache affinity)
 type: feature
-status: active
+status: review
 priority: medium
 area: core
 assigned_to: ai
@@ -40,4 +40,4 @@ Measurement (14d, sessions table): pi openrouter/z-ai/glm-5.3-flash hit rate 64%
 - 2026-10-03T18:06:13Z · status active→review
 - 2026-10-03T18:06:13Z · note: shots: skipped — the diff (6 changed paths) touches no [[preview.paths]] globs — no UI change to capture
 - 2026-10-03T18:06:40Z · status review→active
-- 2026-10-03T18:14:52Z · note: shots: skipped — the diff (6 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-03T18:14:52Z · status active→review
