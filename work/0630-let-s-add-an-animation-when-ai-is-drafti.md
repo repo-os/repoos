@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/polish-ai-release-notes-drafting-feedbac
 created_at: "2026-10-02T23:43:04Z"
-updated_at: "2026-10-02T23:44:48Z"
+updated_at: "2026-10-03T00:36:31Z"
 ---
 ## Problem
 
@@ -74,3 +74,4 @@ Let's add an animation when AI is drafting the release notes, it can be similar 
 - 2026-10-02T23:44:10Z · status draft→inbox, title, area, body
 - 2026-10-02T23:44:47Z · status inbox→ready
 - 2026-10-02T23:44:48Z · status ready→active, branch
+- 2026-10-03T00:36:31Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
