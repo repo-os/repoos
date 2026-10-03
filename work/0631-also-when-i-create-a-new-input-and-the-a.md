@@ -1,16 +1,17 @@
 ---
-updated_at: "2026-10-03T05:37:15Z"
-review_passes: 1
 id: "0631"
 title: Show enrichment-in-progress on inputs list cards
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 338fd3c319f0925b3ee65445b970c946b3227728
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-enrichment-in-progress-on-inputs-li
 created_at: "2026-10-02T23:44:30Z"
+updated_at: "2026-10-03T06:12:32Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -70,4 +71,4 @@ Also when I create a new input and the AI is making the title I guess, when I cl
 - 2026-10-02T23:45:02Z · status inbox→ready
 - 2026-10-02T23:45:11Z · status ready→active, branch
 - 2026-10-03T00:55:55Z · status active→review
-
+- 2026-10-03T06:12:32Z · status review→done, release:success
