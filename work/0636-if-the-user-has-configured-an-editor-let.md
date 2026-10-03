@@ -2,7 +2,7 @@
 id: "0636"
 title: Show 'Open in editor' link on task detail when editor is configured
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -102,3 +102,4 @@ If the user has configured an editor let's show an "Open in editor ->" on the sa
 - 2026-10-03T09:21:38Z · body: section Notes for AI
 - 2026-10-03T09:39:17Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-10-03T09:39:47Z · status active→review
+- 2026-10-03T09:39:47Z · status review→active
