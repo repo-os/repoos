@@ -942,13 +942,17 @@ function tokensFromObject(obj: Record<string, unknown>): number | undefined {
 
 /** Cost (USD) from a `usage`-shaped JSON object, or undefined if absent. */
 function costFromObject(obj: Record<string, unknown>): number | undefined {
+  // A negative cost is never real spend: OpenRouter's `auto` router lists its
+  // price as -1/token ("variable"), and pi multiplies that out into a negative
+  // dollar figure. Treat it as "no cost reported" so the estimate path applies.
+  const valid = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v) && v >= 0;
   // claude's terminal `result` event reports the authoritative per-turn cost.
-  if (typeof obj.total_cost_usd === "number") return obj.total_cost_usd;
-  if (typeof obj.cost_usd === "number") return obj.cost_usd;
+  if (valid(obj.total_cost_usd)) return obj.total_cost_usd;
+  if (valid(obj.cost_usd)) return obj.cost_usd;
   const usage = findUsage(obj);
   if (usage) {
-    if (typeof usage.cost_usd === "number") return usage.cost_usd;
-    if (typeof usage.total_cost_usd === "number") return usage.total_cost_usd;
+    if (valid(usage.cost_usd)) return usage.cost_usd;
+    if (valid(usage.total_cost_usd)) return usage.total_cost_usd;
   }
   return undefined;
 }
