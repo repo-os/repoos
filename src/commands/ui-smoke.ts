@@ -115,8 +115,17 @@ async function runUISmokeTest(): Promise<void> {
     // below), so one tolerated 404 per such URL keeps the gate honest without
     // masking real failures.
     const benign404Urls = new Set<string>();
+    // Resource-failure console errors, keyed to the URL that failed so each
+    // can be matched against `benign404Urls` rather than tolerated by count.
+    const resourceErrs: { text: string; url: string }[] = [];
     page.on("console", (msg) => {
-      if (msg.type() === "error") consoleErrs.push(msg.text());
+      if (msg.type() !== "error") return;
+      const text = msg.text();
+      if (text.startsWith("Failed to load resource")) {
+        resourceErrs.push({ text, url: msg.location().url });
+      } else {
+        consoleErrs.push(text);
+      }
     });
     page.on("response", (res) => {
       if (res.status() === 404 && /\/api\/tasks\/[^/]+\/stats$/.test(res.url())) {
@@ -429,15 +438,15 @@ async function runUISmokeTest(): Promise<void> {
     }
 
     // Check for zero console errors
-    if (consoleErrs.length > 0) {
-      // Tolerate one generic failed-resource 404 per known-benign stats 404
-      // (the drawer's best-effort usage fetch on a task with no sessions);
-      // everything else — other 404s included — is a real failure.
-      const resource404 = consoleErrs.filter((t) => t.startsWith("Failed to load resource"));
-      const other = consoleErrs.filter((t) => !t.startsWith("Failed to load resource"));
-      const excess404 = resource404.slice(benign404Urls.size);
-      if (other.length > 0 || excess404.length > 0) {
-        const fatal = [...other, ...excess404];
+    {
+      // Tolerate failed-resource errors only for the known-benign stats 404
+      // URLs (the drawer's best-effort usage fetch on a task with no
+      // sessions); every other failed resource is a real failure.
+      const unexpected = resourceErrs
+        .filter((e) => !benign404Urls.has(e.url))
+        .map((e) => e.text + (e.url ? " (" + e.url + ")" : ""));
+      const fatal = [...consoleErrs, ...unexpected];
+      if (fatal.length > 0) {
         let msg = "Console errors (" + fatal.length + "): " + fatal.join("; ");
         if (pageErrors.length > 0) msg += " | Page errors: " + pageErrors.join("; ");
         throw new Error(msg);

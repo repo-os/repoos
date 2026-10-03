@@ -235,7 +235,9 @@ const triggerClasses = cn(
 
           <div class="mx-1 my-1 border-t border-[var(--border)]" style="opacity: 0.4"></div>
 
-          <div class="relative flex w-full items-center gap-2 px-2 pb-2 pt-1">
+          <div
+            class="relative mx-1 mb-1 flex items-center gap-2 rounded-[8px] px-2 py-1 focus-within:ring-1 focus-within:ring-[var(--cyan)]"
+          >
             <Plus class="size-3.5 shrink-0 opacity-50" />
             <input
               v-model="typed"

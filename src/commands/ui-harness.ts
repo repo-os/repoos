@@ -16,6 +16,9 @@ export interface PreviewServer {
 export interface SmokeConsoleMessage {
   type(): string;
   text(): string;
+  /** Where the console message originated — used to key resource errors to
+   * the URL that failed, so known-benign 404s can be tolerated per-URL. */
+  location(): { url: string };
 }
 export interface SmokeResponse {
   status(): number;
