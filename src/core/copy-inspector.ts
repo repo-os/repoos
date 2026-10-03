@@ -2,7 +2,7 @@
  * Dev-only click-to-locate UI copy (#0509): path guards and editor-command parsing.
  * Zero runtime dependencies — spawn uses argv arrays built here.
  */
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 
 /** True when this repo checkout ships editable RepoOS UI sources. */
@@ -62,8 +62,11 @@ export function resolveCopyInspectorTarget(
 /**
  * Resolve a repo-relative file without the copy-inspector's `src/` restriction,
  * so callers can open other tracked files (a task markdown under `work/`) in
- * the configured editor. Same escape guard: the path must be relative, must
- * not contain `..`, and must resolve to a real file inside the repo.
+ * the configured editor. Same escape guard as {@link resolveCopyInspectorTarget},
+ * but hardened against symlinks: both the repo root and the target are
+ * `realpath`-resolved, and the REAL target must stay inside the REAL root, so a
+ * symlink pointing outside the repo cannot smuggle an external file through.
+ * The returned `repoRel` is the real location (what the editor should open).
  */
 export function resolveRepoFileTarget(
   root: string,
@@ -72,14 +75,22 @@ export function resolveRepoFileTarget(
   const rel = file.trim().replace(/\\/g, "/");
   if (!rel || rel.includes("..") || rel.startsWith("/")) return null;
   const abs = resolve(root, rel);
-  const back = relative(root, abs);
-  if (back.startsWith("..") || isAbsolute(back)) return null;
+  let realRoot: string;
+  let realAbs: string;
   try {
-    if (!statSync(abs).isFile()) return null;
+    realRoot = realpathSync(root);
+    realAbs = realpathSync(abs);
   } catch {
     return null;
   }
-  return { absPath: abs, repoRel: back.replace(/\\/g, "/") };
+  const back = relative(realRoot, realAbs);
+  if (!back || back.startsWith("..") || isAbsolute(back)) return null;
+  try {
+    if (!statSync(realAbs).isFile()) return null;
+  } catch {
+    return null;
+  }
+  return { absPath: realAbs, repoRel: back.replace(/\\/g, "/") };
 }
 
 /** Split a configured editor command into argv (no shell). Supports " and ' quotes. */

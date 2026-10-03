@@ -69,6 +69,25 @@ export function utcTimestamp(): string {
 }
 
 /**
+ * Whether a repo-relative path is a task file: a descendant of the configured
+ * work dir (`work/` by default) whose name carries one of the configured task
+ * extensions (`.md` by default). Used to keep the dev "open in editor" API
+ * scoped to task markdown rather than any repo file (#0636 review).
+ */
+export function isTaskFilePath(workDir: string, repoRel: string, extensions: string[]): boolean {
+  const dir = workDir
+    .replace(/\\/g, "/")
+    .replace(/^\.\/+/, "")
+    .replace(/\/+$/, "");
+  const normalized = repoRel.replace(/\\/g, "/");
+  const prefix = dir ? `${dir}/` : "";
+  if (!normalized.startsWith(prefix)) return false;
+  const name = normalized.slice(prefix.length);
+  if (!name) return false;
+  return extensions.some((ext) => ext.length > 0 && name.toLowerCase().endsWith(ext.toLowerCase()));
+}
+
+/**
  * Normalize a legacy date-only or partial timestamp to full ISO-8601 UTC.
  * `2026-06-01` → `2026-06-01T00:00:00Z`. Null passthrough.
  */

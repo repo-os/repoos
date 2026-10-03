@@ -12,6 +12,7 @@ import { join } from "node:path";
 import type { RepoOSConfig } from "../../core/types";
 import {
   extractSection,
+  isTaskFilePath,
   normalizeSectionHeading,
   removeSection,
   replaceSection,
@@ -551,5 +552,28 @@ describe("spec section clobber guard (#0613)", () => {
     } finally {
       clean();
     }
+  });
+});
+
+/**
+ * `isTaskFilePath` (#0636 review) gates the dev "open in editor" route to task
+ * markdown under the configured work dir, so a directly-called endpoint cannot
+ * reach arbitrary repo files.
+ */
+describe("isTaskFilePath", () => {
+  it("accepts a task markdown directly under the work dir", () => {
+    expect(isTaskFilePath("work", "work/0636-task.md", [".md"])).toBe(true);
+    expect(isTaskFilePath("plan/tasks", "plan/tasks/0001-x.md", [".md"])).toBe(true);
+  });
+
+  it("rejects files outside the work dir", () => {
+    expect(isTaskFilePath("work", "src/ui-app/Foo.vue", [".md"])).toBe(false);
+    expect(isTaskFilePath("work", "docs/readme.md", [".md"])).toBe(false);
+    expect(isTaskFilePath("work", "workbook/x.md", [".md"])).toBe(false);
+  });
+
+  it("rejects work-dir files without a task extension", () => {
+    expect(isTaskFilePath("work", "work/notes.txt", [".md"])).toBe(false);
+    expect(isTaskFilePath("work", "work/0636-task", [".md"])).toBe(false);
   });
 });

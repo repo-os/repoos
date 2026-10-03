@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -48,12 +48,27 @@ describe("copy inspector helpers", () => {
     try {
       const ok = resolveRepoFileTarget(root, "work/0636-task.md");
       expect(ok?.repoRel).toBe("work/0636-task.md");
-      expect(ok?.absPath).toBe(join(root, "work", "0636-task.md"));
+      expect(ok?.absPath).toBe(realpathSync(join(root, "work", "0636-task.md")));
       expect(resolveRepoFileTarget(root, "../etc/passwd")).toBeNull();
       expect(resolveRepoFileTarget(root, "/etc/passwd")).toBeNull();
       expect(resolveRepoFileTarget(root, "work/missing.md")).toBeNull();
     } finally {
       rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects a symlink that points outside the repo", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-repo-file-link-"));
+    const outside = mkdtempSync(join(tmpdir(), "repoos-outside-"));
+    const secret = join(outside, "secret.md");
+    writeFileSync(secret, "top secret", "utf8");
+    mkdirSync(join(root, "work"), { recursive: true });
+    symlinkSync(secret, join(root, "work", "link.md"));
+    try {
+      expect(resolveRepoFileTarget(root, "work/link.md")).toBeNull();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+      rmSync(outside, { recursive: true, force: true });
     }
   });
 
