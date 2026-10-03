@@ -18,9 +18,11 @@ import { commitTaskFile } from "../../core/git.js";
 import { normalizeStoryName, storyPmSessionId } from "../../core/stories.js";
 import { mergeStoriesForDisplay, type MergedStoryGroup } from "../../core/story-display.js";
 import { fallbackStoryName } from "../../core/story-definition-files.js";
+import { deleteStoryFile, PathGuardError, WriteError } from "../write.js";
 import { dropPmImages, queuePmImages, type IncomingPmImage } from "../pm-attachments.js";
 import { fleshOutStory } from "../story-pm.js";
 import {
+  findStoryDefinitionByKey,
   listStoryDefinitions,
   markStoryPmChat,
   setStoryPmWorking,
@@ -244,6 +246,47 @@ export const pmStoryMessage: RouteHandler = async (ctx, req, res, params) => {
   emitEvent({ type: "story.definitionsChanged", at: new Date().toISOString() });
 
   return json(res, 200, { ok: true, spawn: { ok: true, pid: result.pid } });
+};
+
+/**
+ * Delete a registered story's definition file (#0634). Only a *registered*
+ * story can be deleted — a tag-only story (tasks tagged with a name that has
+ * no `stories/*.md` file) has no definition to remove, so it 404s here and the
+ * panel hides the button for it. Task files tagged with the story name are
+ * never touched; the tag-only derived story that remains is the documented
+ * outcome, not a side effect to clean up.
+ */
+export const deleteStory: RouteHandler = async (ctx, _req, res, params) => {
+  const { config, emitEvent, logger } = ctx;
+  if (!storiesFeatureEnabled(config)) {
+    return json(res, 404, { error: "stories are not enabled" });
+  }
+  let key = params.param1;
+  try {
+    key = decodeURIComponent(key);
+  } catch {
+    // Same lenient decoding as `resolveStory`.
+  }
+  const definition = findStoryDefinitionByKey(config, key.trim().toLowerCase());
+  if (!definition) {
+    return json(res, 404, { error: `story not found: ${params.param1}` });
+  }
+  try {
+    deleteStoryFile(
+      config,
+      join(config.root, definition.path),
+      `stories(${definition.number || definition.key}): delete`,
+    );
+  } catch (err) {
+    if (err instanceof PathGuardError) return json(res, 400, { error: err.message });
+    if (err instanceof WriteError) return json(res, 404, { error: err.message });
+    throw err;
+  }
+  // The stories/ watcher would emit this too, but emitting here makes the
+  // deletion deterministic for API callers (and non-watched deployments).
+  emitEvent({ type: "story.definitionsChanged", at: new Date().toISOString() });
+  logger.system("info", `story deleted: ${definition.name}`, { story: definition.key });
+  return json(res, 200, { ok: true });
 };
 
 /**
