@@ -14,7 +14,7 @@ branch: feat/show-enrichment-in-progress-on-inputs-li
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-02T23:44:30Z"
-updated_at: "2026-10-03T03:52:38Z"
+updated_at: "2026-10-03T03:55:39Z"
 review_passes: 3
 handoff_signal_retry_count: 2
 review_rounds: 2
@@ -75,7 +75,7 @@ Also when I create a new input and the AI is making the title I guess, when I cl
     "label": "Input card with enrichment ActivityIndicator",
     "target": "default",
     "route": "/inputs",
-    "highlight": ".input-card .enriching-indicator"
+    "highlight": "article.task-card [aria-label=\"AI is writing title…\"]"
   }
 ]
 ```
@@ -105,3 +105,4 @@ Also when I create a new input and the AI is making the title I guess, when I cl
 - 2026-10-03T03:44:55Z · model_override
 - 2026-10-03T03:45:19Z · status review→active
 - 2026-10-03T03:52:38Z · body: section Shots
+- 2026-10-03T03:55:39Z · body: section Shots
