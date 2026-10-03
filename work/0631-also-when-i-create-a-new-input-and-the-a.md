@@ -3,6 +3,9 @@ id: "0631"
 title: Show enrichment-in-progress on inputs list cards
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
 priority: p2
 area: web
 assigned_to: ai
@@ -111,4 +114,5 @@ Also when I create a new input and the AI is making the title I guess, when I cl
 - 2026-10-03T05:20:58Z · body: section Shots
 - 2026-10-03T05:21:07Z · status active→review
 - 2026-10-03T05:21:15Z · note: highlight .task-card .activity-indicator matched nothing on /inputs
+- 2026-10-03T05:22:31Z · needs_input
 - 2026-10-03T05:22:31Z · needs_input
