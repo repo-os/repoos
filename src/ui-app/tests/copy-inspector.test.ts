@@ -8,6 +8,7 @@ import {
   formatCopyInspectorPath,
   readDevUiBuild,
   resolveCopyInspectorTarget,
+  resolveRepoFileTarget,
   tokenizeEditorCommand,
 } from "../../core/copy-inspector.js";
 import { copyInspectorApiEnabled } from "../../server/routes/copy-inspector.js";
@@ -35,6 +36,22 @@ describe("copy inspector helpers", () => {
       expect(ok?.line).toBe(2589);
       expect(resolveCopyInspectorTarget(root, "../etc/passwd")).toBeNull();
       expect(resolveCopyInspectorTarget(root, "docs/README.md")).toBeNull();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("resolves repo files outside src/ for the task editor, and still rejects escapes", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-repo-file-"));
+    mkdirSync(join(root, "work"), { recursive: true });
+    writeFileSync(join(root, "work", "0636-task.md"), "# Task", "utf8");
+    try {
+      const ok = resolveRepoFileTarget(root, "work/0636-task.md");
+      expect(ok?.repoRel).toBe("work/0636-task.md");
+      expect(ok?.absPath).toBe(join(root, "work", "0636-task.md"));
+      expect(resolveRepoFileTarget(root, "../etc/passwd")).toBeNull();
+      expect(resolveRepoFileTarget(root, "/etc/passwd")).toBeNull();
+      expect(resolveRepoFileTarget(root, "work/missing.md")).toBeNull();
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

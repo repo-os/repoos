@@ -59,6 +59,29 @@ export function resolveCopyInspectorTarget(
   return { absPath: abs, repoRel: back.replace(/\\/g, "/"), line: lineNum };
 }
 
+/**
+ * Resolve a repo-relative file without the copy-inspector's `src/` restriction,
+ * so callers can open other tracked files (a task markdown under `work/`) in
+ * the configured editor. Same escape guard: the path must be relative, must
+ * not contain `..`, and must resolve to a real file inside the repo.
+ */
+export function resolveRepoFileTarget(
+  root: string,
+  file: string,
+): { absPath: string; repoRel: string } | null {
+  const rel = file.trim().replace(/\\/g, "/");
+  if (!rel || rel.includes("..") || rel.startsWith("/")) return null;
+  const abs = resolve(root, rel);
+  const back = relative(root, abs);
+  if (back.startsWith("..") || isAbsolute(back)) return null;
+  try {
+    if (!statSync(abs).isFile()) return null;
+  } catch {
+    return null;
+  }
+  return { absPath: abs, repoRel: back.replace(/\\/g, "/") };
+}
+
 /** Split a configured editor command into argv (no shell). Supports " and ' quotes. */
 export function tokenizeEditorCommand(command: string): string[] {
   const out: string[] = [];
