@@ -16,7 +16,7 @@
 import { watch, existsSync, readFileSync, readdirSync, statSync, type FSWatcher } from "node:fs";
 import { join, extname, dirname, resolve } from "node:path";
 import type { RepoOSConfig } from "../core/types.js";
-import { STORIES_DIR } from "../core/story-definition-files.js";
+import { storiesDirOf } from "../core/story-definition-files.js";
 import type { LiveIndex } from "./live-index.js";
 
 const DEBOUNCE_MS = 60;
@@ -61,7 +61,7 @@ export class WorkWatcher {
       }
     }
     if (this.config.stories?.enabled === true) {
-      const storiesPath = join(this.config.root, STORIES_DIR);
+      const storiesPath = join(this.config.root, storiesDirOf(this.config));
       if (existsSync(storiesPath)) {
         this.watchTree(storiesPath);
       }
@@ -315,7 +315,7 @@ export class WorkWatcher {
   }
 
   private isStoryDefinitionFile(absPath: string): boolean {
-    const storiesRoot = join(this.config.root, STORIES_DIR);
+    const storiesRoot = join(this.config.root, storiesDirOf(this.config));
     if (!absPath.startsWith(storiesRoot)) return false;
     return extname(absPath) === ".md";
   }
