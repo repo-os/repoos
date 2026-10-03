@@ -220,6 +220,7 @@ sshKeyName = ""
 idleShutdownMinutes = 8
 maxServerLifetimeMinutes = 120
 fallbackToLocal = false
+retryOtherHosts = true         # retry on another healthy tailscale host before giving up (default true with 2+ hosts)
 useForReleases = false
 ```
 
@@ -927,6 +928,7 @@ machine. Enabling it sends repo contents to a third-party host.
 | `remoteValidation.maxConcurrent` | select (1–8) | `1` | yes | How many remote validation runs may execute at once **per host**; extra runs wait in a FIFO queue. Two full test suites on one machine cause load-induced timeouts that show up as a failed gate. Covers handoff, close-out and release in the server; a host-side lock extends the same limit to standalone `repoos check` runs. |
 | `remoteValidation.fallbackToLocal` | boolean | `false` | yes | When the runner is unreachable, run the full gate locally instead of keeping the task in review for retry. |
 | `remoteValidation.useForReleases` | boolean | `false` | yes | Also validate release cuts on the runner. Off by default because a release is watched live. |
+| `remoteValidation.retryOtherHosts` | boolean | `true` when 2+ hosts configured, else `false` | yes | When a transient failure (timeout, ssh drop, host overload) occurs on one host with the `tailscale` provider, retry the run on another healthy, free host before applying `fallbackToLocal`. A non-transient result (red gate, config error) never retries. Default `true` when at least two hosts are configured (`tailscaleHost` + `tailscaleHosts` or two `tailscaleHosts` entries); `false` otherwise. Only applies to the `tailscale` provider. |
 
 The `HETZNER_API_TOKEN` and `REPOOS_REMOTE_SSH_KEY` credentials are
 environment-only.

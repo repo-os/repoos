@@ -91,6 +91,12 @@ const fallbackToLocal = computed({
     void config.setConfigValues({ "remoteValidation.fallbackToLocal": v });
   },
 });
+const retryOtherHosts = computed({
+  get: () => config.form["remoteValidation.retryOtherHosts"] !== false,
+  set: (v: boolean) => {
+    void config.setConfigValues({ "remoteValidation.retryOtherHosts": v });
+  },
+});
 
 // ── host pool editing (#0521) ────────────────────────────────────────────────
 
@@ -279,6 +285,21 @@ const hetznerSteps: { label: string; body: string; cmd?: string }[] = [
           <Switch
             :checked="fallbackToLocal"
             @update:checked="(v: boolean) => (fallbackToLocal = v)"
+          />
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px">
+          <label style="display: flex; flex-direction: column; gap: 2px">
+            Retry on other hosts when one fails
+            <span class="tunnel-help" style="margin: 0">
+              Default true when 2+ hosts configured. Off: a transient failure on one host fails
+              retryably immediately (close-out stays in review for retry). On: try the next healthy
+              host before giving up.
+            </span>
+          </label>
+          <Switch
+            :checked="retryOtherHosts"
+            @update:checked="(v: boolean) => (retryOtherHosts = v)"
           />
         </div>
 

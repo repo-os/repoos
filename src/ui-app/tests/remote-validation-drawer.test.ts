@@ -334,7 +334,7 @@ describe("RemoteValidationDrawer", () => {
       const { wrapper } = await mountDrawer({ tailscaleHosts: ["bee"], hosts: [hostRow("bee")] });
       const active = wrapper.get(".rvr-tab.active");
       expect(active.text()).toBe("Tailscale");
-      expect(wrapper.findAll('button[role="switch"]')).toHaveLength(2);
+      expect(wrapper.findAll('button[role="switch"]')).toHaveLength(3);
       expect(wrapper.text()).toContain("containerImage: repoos-ci");
       expect(wrapper.text()).not.toContain("HETZNER_API_TOKEN");
       // tailscale setup recipe, not hetzner's
