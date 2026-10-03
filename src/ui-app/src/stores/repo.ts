@@ -1229,10 +1229,14 @@ export const useRepoStore = defineStore("repo", () => {
       // the PM wrote title/type/area afterwards — swap it in place so the
       // Inputs view shows the AI-written title without a manual refresh. An
       // id the store has not seen (another tab created it) falls back to a
-      // refetch. Either way, the in-progress spinner (#0631) clears.
+      // refetch. Either way, the in-progress spinner (#0631) clears. When the
+      // event carries a stale creation-time snapshot (failure before #0631 r4),
+      // keep the newer local row (#0631 r4).
       const idx = inputs.value.findIndex((i) => i.id === e.id);
-      if (idx >= 0) inputs.value[idx] = e.input;
-      else void refreshInputs();
+      if (idx >= 0) {
+        const local = inputs.value[idx];
+        if (e.input.updatedAt >= local.updatedAt) inputs.value[idx] = e.input;
+      } else void refreshInputs();
       markEnriched(e.id);
       window.dispatchEvent(new Event("repoos:inputs-updated"));
       return;

@@ -115,8 +115,10 @@ async function enrichInputInBackground(
   text: string,
 ): Promise<void> {
   // What the client should render when enrichment ends: the enriched input on
-  // success, the unchanged raw input on every failure path (#0631).
+  // success, or the input as it exists on disk when enrichment did not apply
+  // (#0631 r4 — re-read so edits during the PM run are not reverted).
   let outcome = input;
+  let enrichedApplied = false;
   try {
     const result = await runPrompt(pm, inputPrompt(text), { cwd: ctx.config.root });
     recordOneShotSession(ctx.config.root, pm, result, { sessionType: "pm", taskId: null });
@@ -134,6 +136,7 @@ async function enrichInputInBackground(
       const enriched = enrichInput(ctx.config, input.id, fields);
       commitInput(ctx.config.root, enriched, "capture");
       outcome = enriched;
+      enrichedApplied = true;
     }
   } catch (e) {
     ctx.logger.system("warn", "input enrichment failed; input keeps raw title", {
@@ -141,9 +144,13 @@ async function enrichInputInBackground(
       reason: e instanceof Error ? e.message : String(e),
     });
   }
+  if (!enrichedApplied) {
+    const current = listInputs(ctx.config).find((i) => i.id === input.id);
+    if (current) outcome = current;
+  }
   // Terminal event on every path (#0631): the inputs-list pending indicator
-  // clears here, not on a client-side timeout. On failure the payload is the
-  // unchanged input, so clients that render it stay correct.
+  // clears here, not on a client-side timeout. When enrichment did not apply,
+  // the payload is the current on-disk input (not the creation-time snapshot).
   ctx.emitEvent({
     type: "input.enriched",
     id: input.id,
