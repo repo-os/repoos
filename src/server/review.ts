@@ -45,6 +45,7 @@ import {
 } from "../core/review-verdict.js";
 import type { LiveIndex, RepoEvent } from "./live-index.js";
 import {
+  deterministicSessionId,
   estimateCostUsd,
   extractOneShotReportText,
   resolveReviewer,
@@ -653,8 +654,31 @@ export class ReviewManager {
       this.emit({ type: "review", id: task.id, state: "cancelled", at: now() });
       return { ok: false, skipped: true, reason: "review cancelled" };
     }
-    this.spawnDurable(task.id, agent, mission, workdir, run, "run");
+    this.spawnDurable(
+      task.id,
+      agent,
+      mission,
+      workdir,
+      run,
+      "run",
+      undefined,
+      this.reviewerSessionId(task),
+    );
     return { ok: true };
+  }
+
+  /**
+   * The stable id a fresh review pass runs under (#0639). It includes the pass
+   * number so a deliberate "Review again" or a bounce starts a genuinely new
+   * pi session (0110: a fresh assessment), while that pass's own chat turns
+   * resume the same id. The base is the task + role, so a parse miss on the
+   * launch still lands on a deterministic id rather than a cold session.
+   */
+  private reviewerSessionId(task: Task): string {
+    const raw = task.extra?.review_passes;
+    const passes =
+      typeof raw === "number" && Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0;
+    return `${deterministicSessionId(task.id, "reviewer")}-${passes + 1}`;
   }
 
   /**
@@ -672,11 +696,13 @@ export class ReviewManager {
     run: Run,
     mode: "run" | "chat",
     humanEntry?: AgentOutputEntry,
+    sessionId?: string,
   ): void {
     const started = this.runner?.startReview(this.reviewKey(taskId), agent, mission, workdir, {
       reset: mode === "run",
       reviewKind: mode,
       humanEntry,
+      ...(sessionId ? { sessionId } : {}),
     });
     if (!started || !started.ok) {
       this.runs.delete(taskId);

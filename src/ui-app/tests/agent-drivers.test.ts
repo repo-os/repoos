@@ -11,6 +11,7 @@ import { join } from "node:path";
 import {
   AgentRunner,
   type AgentHandoffRequest,
+  deterministicSessionId,
   extractUsage,
   HANDOFF_READY_SIGNAL,
   PREVIEW_REQUEST_SIGNAL,
@@ -593,7 +594,10 @@ describe("pi driver", () => {
       runner.start(TASK, "feat/x", agent("pi"), { cwd: fx.bin });
       await waitFor(() => !runner.isRunning("0001"), "pi turn exit");
 
-      expect(runner.output("0001")!.sessionId).toBe("sess-pi");
+      // The launch pinned RepoOS's deterministic id; pi's own `session` header
+      // ("sess-pi") is only a backfill when no id was chosen, so it must NOT
+      // overwrite the stable one.
+      expect(runner.output("0001")!.sessionId).toBe(deterministicSessionId("0001", "engineer"));
       const texts = runner
         .output("0001")!
         .lines.filter((line) => (line as { type?: string }).type === "text")
@@ -605,6 +609,35 @@ describe("pi driver", () => {
 
       const [run] = spawns(fx);
       expect(run.args).toEqual(expect.arrayContaining(["--mode", "json"]));
+      expect(run.args).toEqual(
+        expect.arrayContaining(["--session-id", deterministicSessionId("0001", "engineer")]),
+      );
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
+  it("resumes the deterministic session id on a follow-up turn", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    try {
+      const runner = new AgentRunner(config(fx.bin), () => {});
+      runner.start(TASK, "feat/x", agent("pi"), { cwd: fx.bin });
+      await waitFor(() => !runner.isRunning("0001"), "pi turn exit");
+
+      const id = deterministicSessionId("0001", "engineer");
+      const sent = runner.send("0001", "keep going", agent("pi"));
+      expect(sent.ok).toBe(true);
+      await waitFor(() => !runner.isRunning("0001"), "pi resume exit");
+
+      const resume = spawns(fx)[1]!;
+      expect(resume.args).toContain("--session");
+      expect(resume.args[resume.args.indexOf("--session") + 1]).toBe(id);
+      expect(resume.args).not.toContain("--session-id");
+      expect(resume.args).not.toContain("--continue");
     } finally {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;

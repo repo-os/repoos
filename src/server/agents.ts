@@ -2960,9 +2960,59 @@ export function engineerPermissionGaps(cli: string, args: readonly string[]): st
   }
 }
 
+/**
+ * CLIs that let RepoOS choose the id of a brand-new session. pi 1.0.0 accepts
+ * `--session-id <id>` ("Use exact project session ID, creating it if missing").
+ * opencode v2's `run` cannot: it only continues an existing `--session` or
+ * mints its own, so it keeps the parse-then-resume behavior. Confirmed against
+ * the installed binaries; see `docs/prompt-caching-audit.md`.
+ */
+export function supportsChosenSessionId(cli: string): boolean {
+  return cli === "pi";
+}
+
+/**
+ * A stable session id RepoOS chooses for a task-role conversation instead of
+ * waiting for the CLI to mint one and then scraping it out of output.
+ * Deterministic: the same (task, role) always yields the same id, so a crash,
+ * a server reload, or a parse miss on the first launch cannot strand the
+ * conversation — the next turn recomputes the identical id and continues the
+ * same provider-side session (prompt-cache affinity) instead of paying for a
+ * cold one. pi forwards this id to providers as cache metadata (OpenRouter
+ * `x-session-id`, OpenAI `prompt_cache_key`).
+ *
+ * The shape must satisfy pi's own `assertValidSessionId`
+ * (`^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$`), so anything else in a task
+ * id or role is folded to `-` and trimmed.
+ *
+ * A fix-up turn (a review bounce, a handoff/check retry, a missed signal) is
+ * the SAME engineer conversation, so it deliberately derives with the
+ * `"engineer"` role; the reviewer is a separate conversation. Roles are
+ * lowercased so `Engineer` and `engineer` cannot silently become two ids for
+ * one conversation.
+ */
+export function deterministicSessionId(taskId: string, role: string): string {
+  const sanitize = (value: string): string =>
+    value
+      .trim()
+      .replace(/[^A-Za-z0-9._-]+/g, "-")
+      .replace(/^[^A-Za-z0-9]+/, "")
+      .replace(/[^A-Za-z0-9]+$/, "");
+  const task = sanitize(taskId) || "task";
+  const roleSlug = sanitize(role).toLowerCase() || "agent";
+  return `repoos-${task}-${roleSlug}`;
+}
+
 /** The start and resume launches an engineer turn can use, for permission checks. */
-export function engineerLaunches(agent: Agent, cwd: string): { cmd: string; args: string[] }[] {
-  return [cliCommand(agent, "mission", cwd), resumeCommand(agent, "continue", "session-id", cwd)];
+export function engineerLaunches(
+  agent: Agent,
+  cwd: string,
+  sessionId?: string,
+): { cmd: string; args: string[] }[] {
+  return [
+    cliCommand(agent, "mission", cwd, sessionId ? { sessionId } : {}),
+    resumeCommand(agent, "continue", sessionId ?? "session-id", cwd),
+  ];
 }
 
 /**
@@ -2994,7 +3044,12 @@ export function detectPermissionDenial(engine: string | undefined, raw: string):
   return null;
 }
 
-function cliCommand(agent: Agent, mission: string, cwd: string): { cmd: string; args: string[] } {
+function cliCommand(
+  agent: Agent,
+  mission: string,
+  cwd: string,
+  opts: { sessionId?: string } = {},
+): { cmd: string; args: string[] } {
   const { cli, model } = agent;
   ensureDrivableCli(cli);
   if (cli === "claude code") {
@@ -3093,10 +3148,19 @@ function cliCommand(agent: Agent, mission: string, cwd: string): { cmd: string; 
     // `--mode json` runs the supplied prompts and exits, streaming strict JSONL
     // to stdout. pi does not prompt for tool approval in a non-interactive run,
     // so the launch carries no bypass flag and needs none (same model as
-    // crush). cwd is set via spawn options.
+    // crush). cwd is set via spawn options. `--session-id` pins the id a later
+    // `--session` resumes exactly; pi rejects combining it with
+    // `--session`/`--continue`/`--resume`, so it is only ever used on a fresh
+    // launch (see deterministicSessionId).
     return {
       cmd: "pi",
-      args: ["--mode", "json", ...modelArgs(cli, model), mission],
+      args: [
+        "--mode",
+        "json",
+        ...(opts.sessionId && supportsChosenSessionId(cli) ? ["--session-id", opts.sessionId] : []),
+        ...modelArgs(cli, model),
+        mission,
+      ],
     };
   }
   // default: opencode's headless `run` mode. `--format json` streams one JSON
@@ -3767,6 +3831,7 @@ export function reviewCommand(
   agent: Agent,
   prompt: string,
   cwd: string,
+  opts: { sessionId?: string; resume?: boolean } = {},
 ): { cmd: string; args: string[] } {
   ensureDrivableCli(agent.cli);
   const extra = modelArgs(agent.cli, agent.model);
@@ -3848,7 +3913,23 @@ export function reviewCommand(
     // The reviewer must run `git diff` and read files. pi auto-approves those
     // in a non-interactive run, so no flag is needed (same model as crush); it
     // cannot be confined to reads — the review boundary is RepoOS's.
-    return { cmd: "pi", args: ["--mode", "json", ...extra, prompt] };
+    // A fresh assessment passes `--session-id` so its continuation is exact;
+    // a follow-up chat (`resume`) continues it, never `--continue` (which
+    // could attach another task's most-recent session).
+    return {
+      cmd: "pi",
+      args: [
+        "--mode",
+        "json",
+        ...(opts.sessionId
+          ? opts.resume
+            ? ["--session", opts.sessionId]
+            : ["--session-id", opts.sessionId]
+          : []),
+        ...extra,
+        prompt,
+      ],
+    };
   }
   return {
     cmd: "opencode",
@@ -4998,6 +5079,16 @@ export class AgentRunner {
       });
     }
     session.engine = engine;
+    // A deterministic id means the conversation survives a parse miss: if the
+    // CLI's session header never reaches us, the next turn recomputes the same
+    // id and resumes the same provider session instead of going cold. A
+    // user-requested fresh conversation must NOT reopen it, so it is skipped
+    // there — the CLI mints a new id, which is captured as usual.
+    let launchSessionId: string | undefined;
+    if (!opts.freshSession && supportsChosenSessionId(agent.cli)) {
+      launchSessionId = deterministicSessionId(task.id, "engineer");
+      session.sessionId = launchSessionId;
+    }
     session.task = task;
     session.branch = branch;
     session.agent = agent.name;
@@ -5023,7 +5114,7 @@ export class AgentRunner {
       opts.resumePreamble,
       selectedSkills,
     );
-    const { cmd, args } = cliCommand(agent, mission, cwd);
+    const { cmd, args } = cliCommand(agent, mission, cwd, { sessionId: launchSessionId });
     return this.spawnOrQueue(task.id, cmd, args, cwd, task, branch);
   }
 
@@ -5117,7 +5208,18 @@ export class AgentRunner {
     agent: Agent,
     mission: string,
     cwd: string,
-    opts: { humanEntry?: AgentOutputEntry; reset?: boolean; reviewKind?: "run" | "chat" } = {},
+    opts: {
+      humanEntry?: AgentOutputEntry;
+      reset?: boolean;
+      reviewKind?: "run" | "chat";
+      /**
+       * A chosen id for a fresh review run (#0639). A review chat turn passes
+       * none and continues the id recorded by its run. Without a run id, pi
+       * minted an id RepoOS could only capture from output — a parse miss
+       * meant the follow-up started cold.
+       */
+      sessionId?: string;
+    } = {},
   ): StartResult {
     if (!DRIVABLE_CLIS.has(agent.cli)) {
       return { ok: false, reason: unsupportedCliMessage(agent.cli) };
@@ -5134,9 +5236,15 @@ export class AgentRunner {
       session.bytes = 0;
     }
     session.workdir = cwd;
-    session.engine = engineForCli(agent.cli);
+    // Same rule as engineer sessions: a session id belongs to the CLI that
+    // minted it, so an engine switch (override edited between turns) drops it
+    // rather than handing one CLI's id to another's resume flag.
+    const engine = engineForCli(agent.cli);
+    if (session.engine !== engine) session.sessionId = undefined;
+    session.engine = engine;
     session.agent = agent.name;
     session.model = agent.model;
+    if (opts.sessionId) session.sessionId = opts.sessionId;
     if (opts.humanEntry) {
       session.lines.push(opts.humanEntry);
       session.bytes += entryBytes(opts.humanEntry);
@@ -5147,7 +5255,13 @@ export class AgentRunner {
       }
     }
     this.sessions.set(sessionKey, session);
-    const { cmd, args } = reviewCommand(agent, mission, cwd);
+    // Persist the chosen id up front: a review is durable, and a reload before
+    // the first output line must not lose the id the follow-up will resume.
+    this.schedulePersist(sessionKey);
+    const { cmd, args } = reviewCommand(agent, mission, cwd, {
+      sessionId: session.sessionId,
+      resume: !opts.reset,
+    });
     return this.spawnTurn(sessionKey, cmd, args, cwd, undefined, "", {
       review: true,
       reviewKind: opts.reviewKind ?? "run",
@@ -5231,7 +5345,19 @@ export class AgentRunner {
       session.sessionId = undefined;
       session.engine = engine;
     }
-    const sessionId = session.sessionId;
+    let sessionId = session.sessionId;
+    // A parse miss on the first launch must not cost a cold session: recompute
+    // the deterministic engineer id and resume it. Only an engineer
+    // conversation qualifies — chats are not task-bound and have no stable id
+    // to fall back to.
+    if (
+      !sessionId &&
+      supportsChosenSessionId(agent.cli) &&
+      classifySessionType(agent.name, taskId) === "engineer"
+    ) {
+      sessionId = deterministicSessionId(taskId, "engineer");
+      session.sessionId = sessionId;
+    }
     if (agent.cli === "antigravity" && !sessionId) {
       this.recordEntry(taskId, session, "sys", {
         type: "sys",
