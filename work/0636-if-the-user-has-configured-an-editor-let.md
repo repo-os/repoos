@@ -12,7 +12,7 @@ model_override: openrouter/openrouter/auto
 review_cli_override: pi
 review_model_override: openrouter/openrouter/auto-beta
 created_at: "2026-10-03T08:23:48Z"
-updated_at: "2026-10-03T08:52:14Z"
+updated_at: "2026-10-03T09:21:38Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -38,8 +38,11 @@ The task detail view shows a "Spec" label, but there's no quick way to open the 
 
 Implementation notes (filled in by the engineer):
 - The editor setting already exists: `dev.inspector.editorCommand` (Settings → Advanced → "Copy inspector: editor command", e.g. `zed {file}:{line}`). The link reuses it; no new setting or Settings tab was added.
-- Task markdown lives under `work/`, but the existing open endpoint (`/api/dev/copy-inspector/open`) only accepts `src/` paths. A sibling route, `POST /api/dev/open-in-editor`, resolves a general repo-relative file and reuses the same editor command + spawn logic. No config-schema change.
+- Task markdown lives under `work/`, but the existing open endpoint (`/api/dev/copy-inspector/open`) only accepts `src/` paths. A sibling route, `POST /api/dev/open-in-editor`, launches the same editor command for the task file. No config-schema change.
+- The new route is scoped to task files: the resolved path must sit under the configured work dir and carry a task extension (`isTaskFilePath`), so a direct call cannot open `.env`, source, or other repo files.
+- `resolveRepoFileTarget` realpath-resolves both the repo root and the target and requires the real target to stay inside the real root, so a symlink pointing out of the repo is refused.
 - The link only renders when it can actually work: a non-empty editor command, `dev.inspector.enabled` not false, and `repo.health.copyInspectorAvailable` (the dev-only API gate). Otherwise it is hidden, per the accepted "hide" option.
+- The link uses `aria-label` only; no native `title` tooltip (repo convention).
 
 ## Scope
 In scope: adding the link and open-in-editor behavior to the task detail page.
@@ -95,3 +98,4 @@ If the user has configured an editor let's show an "Open in editor ->" on the sa
 - 2026-10-03T08:51:34Z · status active→review
 - 2026-10-03T08:51:45Z · note: shots: failed — capture of Task detail Spec row with the new Open in editor link on "default" failed: click: Timeout 5000ms exceeded.
 - 2026-10-03T08:52:14Z · status review→active
+- 2026-10-03T09:21:38Z · body: section Notes for AI
