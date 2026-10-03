@@ -201,10 +201,10 @@ function fmtAgo(iso: string): string {
       </div>
       <p v-if="h.detail && !h.healthy" class="rr-detail">{{ h.detail }}</p>
 
-      <dl class="kv-rows rr-facts">
+      <dl class="rr-cells rr-facts">
         <div>
           <dt>Running now</dt>
-          <dd class="kv-wrap">
+          <dd class="rr-wrap">
             <template v-if="(h.activeRuns ?? []).length">
               <span
                 v-for="r in h.activeRuns"
@@ -219,7 +219,7 @@ function fmtAgo(iso: string): string {
         </div>
         <div>
           <dt>Queue</dt>
-          <dd class="kv-wrap">
+          <dd class="rr-wrap">
             <template v-if="h.queued > 0">
               <template v-if="(h.queuedTasks ?? []).length">
                 next: <span class="mono">#{{ h.queuedTasks![0] }}</span>
@@ -234,7 +234,7 @@ function fmtAgo(iso: string): string {
         </div>
         <div>
           <dt>Last completed</dt>
-          <dd class="kv-wrap">
+          <dd class="rr-wrap">
             <template v-if="h.lastRun">
               <span class="mono">#{{ h.lastRun!.taskId }}</span>
               <span :class="h.lastRun!.ok ? 'rr-ok' : 'rr-bad'">
@@ -250,11 +250,11 @@ function fmtAgo(iso: string): string {
         </div>
       </dl>
       <section class="rr-server-stats" :aria-label="`Server stats for ${h.host}`">
-        <strong>Server stats</strong>
-        <dl class="kv-rows rr-stats">
+        <span class="rr-section-label">Server stats</span>
+        <dl class="rr-cells rr-stats">
           <div>
             <dt>Load average (1/5/15m)</dt>
-            <dd v-if="h.serverStats?.loadAverage" class="kv-wrap">
+            <dd v-if="h.serverStats?.loadAverage" class="rr-wrap">
               {{ h.serverStats.loadAverage.map((load) => load.toFixed(2)).join(" / ") }}
               <template v-if="h.serverStats.cpuCount">
                 · {{ (h.serverStats.loadAverage[0] / h.serverStats.cpuCount).toFixed(2) }} per core
@@ -419,23 +419,54 @@ function fmtAgo(iso: string): string {
   line-height: 1.5;
 }
 
-.rr-facts {
-  /* Shared .kv-rows grid does the layout (#0623): fixed label column keeps
-     dt/dd aligned within a card and across stacked host cards. */
-  --kv-label-w: 96px;
+.rr-cells {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px 20px;
+  font-size: 12.5px;
+}
+.rr-cells > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.rr-cells dt {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--txt-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.rr-cells dd {
+  margin: 0;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+.rr-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
 }
 .rr-server-stats {
   border-top: 1px solid var(--border);
-  padding-top: 8px;
+  padding-top: 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  font-size: 11px;
+  gap: 8px;
 }
-.rr-stats {
-  --kv-label-w: 96px;
+.rr-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--txt-dim);
 }
 .rr-stats-detail {
+  grid-column: 1 / -1;
   color: var(--red);
 }
 .rr-dim {
