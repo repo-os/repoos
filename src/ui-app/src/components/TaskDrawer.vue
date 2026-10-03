@@ -1978,7 +1978,7 @@ function openSkillSuggestion(): void {
 /**
  * The current review substate for a task sitting in `review`:
  * `reviewing` (auto review in progress), `coding` (engineer making changes),
- * or `waiting for human` (review passed, human must approve/merge).
+ * or nothing when the review passed (good to go) and no chip is warranted.
  */
 const activeNeedsInputQuestions = computed(() => (ui.active?.questions?.length ?? 0) > 0);
 
@@ -2042,9 +2042,10 @@ const reviewSubstate = computed<{ label: string; cls: string } | null>(() => {
   if (review.value?.report?.state === "incomplete") {
     return { label: "review incomplete", cls: "rs-incomplete" };
   }
-  if (verdict.value?.label === "good to go") {
-    return { label: "waiting for human", cls: "rs-human" };
-  }
+  // A "good to go" verdict needs nothing from the human beyond the normal
+  // Move to done, so it shows no chip: a "waiting for human" label read like
+  // an unanswered question (needs_input has its own chip).
+  if (verdict.value?.label === "good to go") return null;
   if (verdict.value) {
     return { label: "review findings", cls: "rs-incomplete" };
   }
