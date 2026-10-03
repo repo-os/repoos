@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-03T11:35:38Z"
+review_passes: 1
 id: "0638"
 title: Fix unresponsive text entry fields in web UI
 type: bug
@@ -11,7 +13,6 @@ branch: feat/fix-unresponsive-text-entry-fields-in-we
 cli_override: opencode
 model_override: openrouter/openrouter/pareto-code
 created_at: "2026-10-03T10:29:31Z"
-updated_at: "2026-10-03T11:34:14Z"
 ---
 ## Problem
 Two text entry fields in the web UI are completely non-functional. Clicking them produces no cursor, no focus state, and typing does nothing. This blocks any input through these fields.
@@ -92,3 +93,4 @@ These two text entry fields don't work, when I click on them nothing happens, th
 - 2026-10-03T11:03:33Z · note: CTO nudge attempted: engineer session stalled (no output since 10:53Z, ~10m); runner rejected the completion reminder with 'agent is busy' — turn appears hung mid-verification (full UI test suite). Flagged to human: pause/resume the session or wait.
 - 2026-10-03T11:29:07Z · body: section Shots
 - 2026-10-03T11:34:14Z · status active→review
+
