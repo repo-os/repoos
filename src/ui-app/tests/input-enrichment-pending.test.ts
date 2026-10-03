@@ -23,7 +23,7 @@ async function flush(): Promise<void> {
   for (let i = 0; i < 4; i++) await nextTick();
 }
 
-function stubPostInput(body: { id: string }): void {
+function stubPostInput(body: { id: string; enriching?: boolean }): void {
   vi.stubGlobal(
     "fetch",
     vi.fn((url: string | URL, opts?: RequestInit) => {
@@ -60,7 +60,7 @@ const rawInput = (id: string): Input =>
 
 describe("enrichment-pending tracking (#0631)", () => {
   it("marks the created input enriching on submit and clears on input.enriched", async () => {
-    stubPostInput({ id: "abc-123" });
+    stubPostInput({ id: "abc-123", enriching: true });
     setActivePinia(createPinia());
     const repo = useRepoStore();
 
@@ -84,17 +84,32 @@ describe("enrichment-pending tracking (#0631)", () => {
 
   it("clears the pending state via the backstop timeout when enrichment never emits", async () => {
     vi.useFakeTimers();
-    stubPostInput({ id: "abc-silent" });
+    stubPostInput({ id: "abc-silent", enriching: true });
     setActivePinia(createPinia());
     const repo = useRepoStore();
 
     await repo.submitInput("Saw a bug on the board", []);
     expect(repo.enrichingInputs.has("abc-silent")).toBe(true);
 
-    // No SSE event ever arrives (failure / nothing parseable) — advance past
-    // the backstop and the card must not keep a stuck spinner.
-    vi.advanceTimersByTime(90_001);
+    // No SSE event ever arrives (lost stream) — advance past the backstop and
+    // the card must not keep a stuck spinner. The normal exit path is the
+    // terminal `input.enriched` event; this timeout only covers a dead one.
+    vi.advanceTimersByTime(180_001);
     expect(repo.enrichingInputs.has("abc-silent")).toBe(false);
+  });
+
+  it("does not track enrichment when the server started none (no PM agent)", async () => {
+    stubPostInput({ id: "abc-nopm" });
+    setActivePinia(createPinia());
+    const repo = useRepoStore();
+
+    await repo.submitInput("Saw a bug on the board", []);
+    await flush();
+
+    // The POST response carries no `enriching` flag — no PM agent is
+    // configured, no event will ever arrive, so no spinner (#0631 r3).
+    expect(repo.enrichingInputs.has("abc-nopm")).toBe(false);
+    expect(repo.enrichingInputs.size).toBe(0);
   });
 
   it("tracks enrichment even when an attachment upload fails after creation", async () => {
@@ -103,7 +118,7 @@ describe("enrichment-pending tracking (#0631)", () => {
       vi.fn((url: string | URL, opts?: RequestInit) => {
         const u = String(url);
         if (u === "/api/inputs" && opts?.method === "POST")
-          return Promise.resolve(json({ id: "abc-uploadfail" }));
+          return Promise.resolve(json({ id: "abc-uploadfail", enriching: true }));
         if (u.includes("/attachments")) return Promise.reject(new Error("upload failed"));
         return Promise.reject(new Error("unexpected fetch: " + u));
       }),
@@ -130,7 +145,7 @@ describe("enrichment-pending tracking (#0631)", () => {
       vi.fn((url: string | URL, opts?: RequestInit) => {
         const u = String(url);
         if (u === "/api/inputs" && opts?.method === "POST")
-          return Promise.resolve(json({ id: "abc-slowup" }));
+          return Promise.resolve(json({ id: "abc-slowup", enriching: true }));
         if (u.includes("/attachments"))
           return new Promise((resolve) => {
             uploadGate.release = () => resolve(json({ ok: true, attachment: {} }));
@@ -164,7 +179,7 @@ describe("enrichment-pending tracking (#0631)", () => {
   });
 
   it("never re-arms the indicator for an id whose enrichment already landed", async () => {
-    stubPostInput({ id: "abc-seen" });
+    stubPostInput({ id: "abc-seen", enriching: true });
     setActivePinia(createPinia());
     const repo = useRepoStore();
 

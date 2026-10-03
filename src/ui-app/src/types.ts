@@ -555,8 +555,10 @@ export interface BoardUsageStats {
 
 export type RepoEvent =
   | { type: "hello"; taskCount: number; at: string }
-  /** Background PM enrichment of a new input finished (#0628): carries the
-   *  enriched input so open views swap the raw first-line title in place. */
+  /** Background PM enrichment of a new input reached its terminal outcome
+   *  (#0628, #0631): carries the input the client should render — enriched on
+   *  success, unchanged on failure — so open views swap it in place and the
+   *  in-progress indicator clears. Emitted on every outcome, not just success. */
   | { type: "input.enriched"; id: string; input: Input; at: string }
   | { type: "index.rebuilt"; taskCount: number; at: string }
   /** Repo root checkout git state for the sidebar row (#0584). The server
