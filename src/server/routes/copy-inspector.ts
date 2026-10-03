@@ -8,6 +8,7 @@ import {
   resolveCopyInspectorTarget,
   resolveRepoFileTarget,
 } from "../../core/copy-inspector.js";
+import { isTaskFilePath } from "../../core/task.js";
 
 /**
  * Copy-inspector API gate (#0509): the managed repo must have RepoOS UI sources
@@ -92,7 +93,15 @@ export const postOpenInEditor: RouteHandler = async (ctx, req, res) => {
   const body = (await readBody(req)) as { file?: unknown };
   const file = typeof body.file === "string" ? body.file : "";
   const target = resolveRepoFileTarget(config.root, file);
-  if (!target) {
+  // Scope the endpoint to task markdown under the configured work dir. The UI
+  // only ever sends `task.path`, but the route is reachable directly, so an
+  // arbitrary repo file (`.env`, a source file) must be refused here — not just
+  // left to the caller (#0636 review). `resolveRepoFileTarget` already
+  // realpath-resolves, so a symlink out of the repo is rejected before this.
+  if (
+    !target ||
+    !isTaskFilePath(config.workDir, target.repoRel, config.taskExtensions ?? [".md"])
+  ) {
     return json(res, 400, { error: "invalid file path" });
   }
 

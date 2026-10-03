@@ -33,5 +33,5 @@ Configuration keys are documented in [repoos.toml reference](/configuration#dev-
 With the same editor command configured, the task detail drawer shows **Open in editor ↗**
 next to the **spec** label. It opens the task's own markdown file (`work/<id>-….md`) in
 `dev.inspector.editorCommand`. It reuses the copy inspector's command and dev-build gate,
-but resolves a general repo-relative file rather than only `src/` sources. When no command
+but is scoped to task markdown under the work dir rather than `src/` sources. When no command
 is configured (or the copy inspector is disabled), the link is hidden.

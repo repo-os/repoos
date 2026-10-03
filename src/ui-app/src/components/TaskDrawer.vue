@@ -4479,7 +4479,6 @@ watch(
               type="button"
               class="page-help-link"
               data-test-id="open-in-editor"
-              :title="openInEditorLabel"
               :aria-label="openInEditorLabel"
               @click="openTaskInEditor"
             >
