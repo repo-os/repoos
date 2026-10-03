@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 2
 id: "0632"
 title: Fail over to another remote host before falling back to local
 type: feature
@@ -9,11 +8,13 @@ area: [server, web]
 assigned_to: ai
 created_by: ""
 branch: feat/fail-over-to-another-remote-host-before-
-model_override: openrouter/openrouter/free
+cli_override: opencode
+model_override: default
 review_cli_override: opencode
 review_model_override: openrouter/openrouter/auto
 created_at: "2026-10-03T06:01:04Z"
-updated_at: "2026-10-03T09:39:16Z"
+updated_at: "2026-10-03T10:03:30Z"
+handoff_signal_retry_count: 2
 ---
 ## Problem
 A remote validation run is bound to one host when it starts (pool.acquire in src/server/remote-validation.ts). If that host then fails transiently mid-run (ssh drop, 'remote validation timed out'), nothing retries on the other pool hosts. The caller either falls back to the full local gate on the Air (remoteValidation.fallbackToLocal) or leaves the task retryable. Local fallback has taken 18+ minutes and hit 600s step timeouts, versus about 4 minutes on any remote host. A loaded host (e.g. mini) is probed healthy but runs slow, then times out.
@@ -45,5 +46,4 @@ See src/server/remote-validation.ts (acquire ~1751, run + timeout handling ~1255
 - 2026-10-03T09:28:02Z · review_model_override
 - 2026-10-03T09:28:03Z · status ready→active, branch
 - 2026-10-03T09:39:16Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-
-
+- 2026-10-03T10:03:30Z · cli_override, model_override
