@@ -128,7 +128,7 @@ const machines = computed<MachineSummary[]>(() => {
     const median = full.length ? full[Math.floor(full.length / 2)] : null;
     out.push({
       key,
-      label: key.startsWith("remote:") ? `${key.slice(7)} (remote)` : key.slice(6),
+      label: key.startsWith("remote:") ? `${key.slice(7)} (remote)` : `${key.slice(6)} (local)`,
       runs: list.length,
       passes: list.filter((r) => r.outcome === "pass").length,
       medianFullMs: median,
