@@ -2,7 +2,7 @@
 id: "0637"
 title: Don't re-run close-out validation when main only gained inputs/stories bookkeeping; add storiesDir config
 type: bug
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -58,4 +58,4 @@ Two related gaps:
 - 2026-10-03T09:11:28Z · needs_input
 - 2026-10-03T09:44:17Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-03T09:50:32Z · needs_input (underspecified) dismissed by hello@repoos.org
-- 2026-10-03T10:00:03Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
+- 2026-10-03T10:00:03Z · status active→review
