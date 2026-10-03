@@ -54,10 +54,21 @@ every run), `prompts/triage.md` (for the analysis agent).
 
 ## Contamination
 
-Runs use your real `HOME` so the harnesses stay logged in. The runner warns if a
-non-empty global instruction file exists (`~/.claude/CLAUDE.md`,
-`~/.codex/AGENTS.md`, ...). `~/.claude` memory and any global skills/plugins can
-still leak and are not detected; check before trusting a run's "first time" read.
+Runs use your real `HOME` so the harnesses stay logged in, but each harness is pointed at
+an empty config home with only its login carried over (`isolate()` in `harnesses.mjs`).
+Audited 2026-10-03 with `run.mjs --probe` (asks the agent to list everything loaded about
+the user, with and without isolation; add `--no-isolate` for the raw comparison).
+
+| Harness | What would leak | Isolation | Residual |
+| --- | --- | --- | --- |
+| claude | `~/.claude/projects/<cwd>/memory` (keyed by cwd, so empty for a fresh dir), user settings, skills, MCP | `--setting-sources project,local`, `--disable-slash-commands`, `--strict-mcp-config`, `--no-session-persistence` | account email in the env block (same as any real user) |
+| codex | `~/.codex` config (trusted projects, MCP, notify hook), `memories_1.sqlite`, rules, skills | fresh `CODEX_HOME`, only `auth.json` linked; `--ephemeral --ignore-rules` | none seen |
+| opencode | `~/.config/opencode/opencode.json` (caveman plugin, custom system prompt, permissions); shared background service; it also read this repo's `AGENTS.md` in the raw probe because it trusts the inherited `$PWD` | fresh `XDG_CONFIG_HOME`, `--standalone`, `OPENCODE_DISABLE_CLAUDE_CODE`; the runner now sets `PWD` to the project dir for every harness | generic Anthropic skills synced from the Claude account still appear in the skills catalog |
+| pi | `~/.pi/agent` (no AGENTS.md or skills today) | fresh `PI_CODING_AGENT_DIR`, only `auth.json` and the model catalog carried over; `--no-session` | none seen |
+| cursor | cannot isolate (login is not in `~/.cursor`; no config override) | none | account-level rules/skills; generic synced Claude skills under `~/.claude/skills/synced` listed in its context. Past-chat history is keyed by cwd, so empty. |
+
+Re-run the probe after changing any harness, or after adding global memory files,
+skills or plugins to your own setup.
 
 ## Known gaps
 
