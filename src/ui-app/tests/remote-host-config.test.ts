@@ -130,8 +130,8 @@ describe("remoteValidation.tailscaleHosts schema entry (#0521)", () => {
     });
     expect(res.status).toBe(200);
     const hosts = resolveRemoteHosts(loadConfig(root).remoteValidation);
-    // Order stays parse-stable (shorthand first) and mac1 keeps its row attrs.
-    expect(hosts).toEqual([{ host: "bee" }, { host: "mac1", os: "macos", labels: ["apple"] }]);
+    // The explicit flat list order wins over the shorthand; row attrs survive.
+    expect(hosts).toEqual([{ host: "mac1", os: "macos", labels: ["apple"] }, { host: "bee" }]);
     await cleanup();
   });
 
@@ -233,6 +233,26 @@ describe("patchConfig against section-scoped repoos.toml files", () => {
     // One definition, replaced in place — no root duplicate to override it.
     expect(text.match(/tailscaleHosts\s*=/g)).toHaveLength(1);
     expect(text).toContain('tailscaleHosts = ["bee", "mac1", "linux2"]');
+    await cleanup();
+  });
+
+  it("reorders a plain user@host pool through the config save path", async () => {
+    const root = repo(
+      '[remoteValidation]\nprovider = "tailscale"\n' +
+        'tailscaleHost = "peck@mini"\n' +
+        'tailscaleHosts = ["peck@mini", "nick@bee"]\n',
+    );
+    const res = await patch(root, {
+      "remoteValidation.tailscaleHosts": ["nick@bee", "peck@mini"],
+    });
+    expect(res.status).toBe(200);
+    expect(resolveRemoteHosts(loadConfig(root).remoteValidation)).toEqual([
+      { host: "bee", user: "nick" },
+      { host: "mini", user: "peck" },
+    ]);
+    expect(readFileSync(join(root, "repoos.toml"), "utf8")).toContain(
+      'tailscaleHosts = ["nick@bee", "peck@mini"]',
+    );
     await cleanup();
   });
 
@@ -345,10 +365,12 @@ describe("GET /api/remote-validation/status reflects a same-process save immedia
         tailscaleHosts: string[];
         hosts: Array<{ host: string }>;
         running: boolean;
+        hostPoolEditable: boolean;
       };
       expect(status.running).toBe(true);
       expect(status.tailscaleHosts.sort()).toEqual(["bee", "mac1"]);
       expect(status.hosts.map((h) => h.host).sort()).toEqual(["bee", "mac1"]);
+      expect(status.hostPoolEditable).toBe(false);
     } finally {
       await server.close();
     }

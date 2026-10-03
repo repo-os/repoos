@@ -14,7 +14,8 @@
  *
  * Duplicate hosts merge (first occurrence keeps its position; a later entry's
  * defined fields win), so a rich row can add attributes to a host already
- * listed flat without it appearing twice.
+ * listed flat without it appearing twice. When a pool list is present, that
+ * list controls order and the shorthand only contributes a missing host.
  */
 import type { RemoteValidationConfig, RemoteValidationHost } from "./types.js";
 
@@ -89,10 +90,12 @@ export function parseTailscaleHosts(
 
   const pool: RemoteValidationHost[] = [];
   if (shorthand) pool.push(parseHostString(shorthand));
+  const listedHosts: string[] = [];
   for (const entry of entries) {
     const s = typeof entry === "string" ? entry.trim() : "";
     const row = s ? parseHostString(s) : hostRow(entry);
     if (!row) continue;
+    if (!listedHosts.includes(row.host)) listedHosts.push(row.host);
     const existing = pool.find((h) => h.host === row.host);
     if (existing) {
       // Later defined fields win; a bare string contributes none, so a row can
@@ -104,6 +107,13 @@ export function parseTailscaleHosts(
       continue;
     }
     pool.push(row);
+  }
+  if (listedHosts.length) {
+    const byHost = new Map(pool.map((host) => [host.host, host]));
+    return [
+      ...listedHosts.map((host) => byHost.get(host)!),
+      ...pool.filter((host) => !listedHosts.includes(host.host)),
+    ];
   }
   return pool.length ? pool : undefined;
 }
