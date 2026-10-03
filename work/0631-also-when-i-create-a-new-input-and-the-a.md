@@ -2,14 +2,14 @@
 id: "0631"
 title: Show enrichment-in-progress on inputs list cards
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-enrichment-in-progress-on-inputs-li
 created_at: "2026-10-02T23:44:30Z"
-updated_at: "2026-10-03T00:50:52Z"
+updated_at: "2026-10-03T00:55:56Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -104,3 +104,4 @@ Also when I create a new input and the AI is making the title I guess, when I cl
 - 2026-10-02T23:45:11Z · status ready→active, branch
 - 2026-10-03T00:36:31Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-10-03T00:50:52Z · body: section Shots
+- 2026-10-03T00:55:56Z · status active→review
