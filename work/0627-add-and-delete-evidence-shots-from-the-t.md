@@ -2,7 +2,7 @@
 id: "0627"
 title: Add and delete evidence shots from the task drawer
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
@@ -12,9 +12,8 @@ assigned_to: ai
 created_by: ""
 branch: feat/add-and-delete-evidence-shots-from-the-t
 created_at: "2026-10-02T11:41:24Z"
-updated_at: "2026-10-03T02:37:00Z"
+updated_at: "2026-10-03T02:40:59Z"
 review_passes: 4
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-03T01:05:43.181Z: repoos check failed: - rendering pages... · [32m✓[0m rendering pages... · build complete in 4.43s. · ⏭ landing-build — skipped — no changed path matches landing/** · ⏭ telegram-manager-build — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test — skipped — no changed path matches telegram-manager/** · ⏭ macos-hub-icon-transparency — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock… (truncated)"
 review_rounds: 2
 ---
@@ -109,3 +108,4 @@ In the task drawer's Changes / UI changes section:
 - 2026-10-03T02:28:31Z · note: Interactive session addressing review findings (declaration matcher, warnings in modal, stray vitepress temp file)
 - 2026-10-03T02:36:59Z · status active→review
 - 2026-10-03T02:37:00Z · status review→active
+- 2026-10-03T02:40:59Z · status active→review
