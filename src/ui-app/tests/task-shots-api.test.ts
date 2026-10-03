@@ -13,7 +13,7 @@
  *   - a delete with no matching declaration leaves the section untouched.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
@@ -173,6 +173,21 @@ describe("POST /api/tasks/:id/shots — declare and capture (#0627)", () => {
       ok: true,
       warning: "highlight .nope matched nothing",
     });
+  });
+
+  it("rejects a malformed existing ## Shots BEFORE capturing, leaving no orphan image", async () => {
+    task = patchSection("```json\n[ not json\n```");
+    const { capture, res } = resCapture();
+    await uploadTaskShot(
+      makeCtx() as never,
+      bodyReq({ target: "default", label: "Task drawer open" }),
+      res,
+      { param1: task.id },
+    );
+    expect(capture.statusCode).toBe(400);
+    expect((capture.body as { error: string }).error).toContain("## Shots");
+    expect(mockedCapture).not.toHaveBeenCalled();
+    expect(localShotStore(repoos.config, task.id).list()).toEqual([]);
   });
 
   it("rejects wrong-typed fields instead of treating them as omitted", async () => {
@@ -373,6 +388,54 @@ describe("DELETE /api/tasks/:id/shots/:name — delete + declaration sync (#0627
     expect(onDisk).not.toContain('"selector": ".b"');
     // An unrelated declaration is untouched.
     expect(onDisk).toContain('"route": "/other"');
+  });
+
+  it("refuses to delete outside active/review and leaves the shot alone", async () => {
+    const saved = seedShot("Task drawer open");
+    if ("error" in saved) throw new Error("seed failed");
+    const ctx = makeCtx();
+    ctx.index.getTask = () => ({ ...task, status: "done" }) as never;
+    const { capture, res } = resCapture();
+    await deleteTaskShot(ctx as never, emptyReq, res, { param1: task.id, param2: saved.name });
+    expect(capture.statusCode).toBe(400);
+    expect((capture.body as { error: string }).error).toContain("active or review");
+    expect(localShotStore(repoos.config, task.id).list()).toHaveLength(1);
+  });
+
+  it("refuses to delete while ## Shots is malformed, keeping the image", async () => {
+    const saved = seedShot("Task drawer open");
+    if ("error" in saved) throw new Error("seed failed");
+    task = patchSection("```json\n[ not json\n```");
+    const { capture, res } = resCapture();
+    await deleteTaskShot(makeCtx() as never, emptyReq, res, {
+      param1: task.id,
+      param2: saved.name,
+    });
+    expect(capture.statusCode).toBe(400);
+    expect(localShotStore(repoos.config, task.id).list()).toHaveLength(1);
+  });
+
+  it("reports a failed task-file update as a failure and keeps the image", async () => {
+    const saved = seedShot("Task drawer open");
+    if ("error" in saved) throw new Error("seed failed");
+    task = patchSection(
+      declaredShotsSectionContent([{ target: "default", route: "/", label: "Task drawer open" }]),
+    );
+    chmodSync(task.absPath, 0o444);
+    try {
+      const { capture, res } = resCapture();
+      await deleteTaskShot(makeCtx() as never, emptyReq, res, {
+        param1: task.id,
+        param2: saved.name,
+      });
+      expect(capture.statusCode).toBe(500);
+      expect((capture.body as { error: string }).error).toContain("NOT deleted");
+      // Image and declaration are both still there, so nothing can half-resurrect.
+      expect(localShotStore(repoos.config, task.id).list()).toHaveLength(1);
+      expect(readFileSync(task.absPath, "utf8")).toContain('"label": "Task drawer open"');
+    } finally {
+      chmodSync(task.absPath, 0o644);
+    }
   });
 
   it("404s for an unknown shot name", async () => {
