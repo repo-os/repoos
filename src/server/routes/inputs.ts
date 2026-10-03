@@ -33,6 +33,9 @@ function commitInput(root: string, input: Input, verb: string): void {
   commitTaskFile(root, join(root, input.path), `inputs(${input.id}): ${verb}`);
 }
 
+/** Inputs whose PM enrichment is still running (#0631 reconnect reconcile). */
+const enrichingInputIds = new Set<string>();
+
 function inputPrompt(body: string): string {
   return [
     "You are the RepoOS PM agent. Classify this raw human input for triage.",
@@ -72,7 +75,15 @@ export function parseEnrichment(raw: string): { title?: string; type?: string; a
   }
   return {};
 }
-export const getInputs: RouteHandler = (ctx, _req, res) => json(res, 200, listInputs(ctx.config));
+export const getInputs: RouteHandler = (ctx, _req, res) =>
+  json(
+    res,
+    200,
+    listInputs(ctx.config).map((input) => ({
+      ...input,
+      enriching: enrichingInputIds.has(input.id),
+    })),
+  );
 export const postInput: RouteHandler = async (ctx, req, res) => {
   const b = (await readBody(req)) as Record<string, unknown>,
     text = typeof b.text === "string" ? b.text.trim() : "";
@@ -114,6 +125,7 @@ async function enrichInputInBackground(
   pm: Agent,
   text: string,
 ): Promise<void> {
+  enrichingInputIds.add(input.id);
   // What the client should render when enrichment ends: the enriched input on
   // success, or the input as it exists on disk when enrichment did not apply
   // (#0631 r4 — re-read so edits during the PM run are not reverted).
@@ -157,6 +169,7 @@ async function enrichInputInBackground(
     input: outcome,
     at: new Date().toISOString(),
   });
+  enrichingInputIds.delete(input.id);
 }
 export const patchInput: RouteHandler = async (ctx, req, res, p) => {
   const b = (await readBody(req)) as Record<string, unknown>;
