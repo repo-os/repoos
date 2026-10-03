@@ -3882,6 +3882,7 @@ watch(
             :hint="repo.doneErrorFor(ui.active.id)!.hint"
             :failed-at="repo.doneErrorFor(ui.active.id)!.failedAt"
             :tldr="repo.doneErrorFor(ui.active.id)!.tldr"
+            :summary="repo.doneErrorFor(ui.active.id)!.summary"
             :tldr-diagnosing="
               !repo.doneErrorFor(ui.active.id)!.tldr && repo.debugTldrWorkingFor(ui.active.id)
             "

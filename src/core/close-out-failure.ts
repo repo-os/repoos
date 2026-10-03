@@ -111,6 +111,13 @@ export interface CloseOutFailure {
   detail?: string;
   /** Guidance paragraph; replaces the default conflict hint when set. */
   hint?: string;
+  /**
+   * Fixed one-sentence tl;dr (cause + next action) for failure kinds the
+   * Debugger doesn't diagnose — the cause is already known, so no model run is
+   * needed. Unset for `conflict`/`validating`, whose tl;dr comes from the
+   * Debugger. The card shows the Debugger's sentence in preference when present.
+   */
+  summary?: string;
 }
 
 const CONFLICT_HINT =
@@ -160,6 +167,8 @@ export function describeCloseOutFailure(
           "the branch and worktree are untouched. Retry Move to done when the machine is less " +
           "loaded, or raise the budget in Settings → Close-out timeout (`closeOut.timeoutMs` in " +
           "repoos.toml).",
+        summary:
+          "Move to done timed out before anything merged and your branch is untouched — retry when the machine is quieter, or raise the Close-out timeout in Settings.",
       };
     }
     case "validating": {
@@ -193,6 +202,9 @@ export function describeCloseOutFailure(
         hint: inWorktree
           ? "The task's worktree has uncommitted changes the merge would not carry, and close-out deletes the worktree with them. Commit them on the task branch, then retry."
           : "Main's working tree has uncommitted changes that the merge would overwrite. Commit or stash them on main, then retry.",
+        summary: inWorktree
+          ? "The task worktree has uncommitted changes — commit them on the task branch, then retry Move to done."
+          : "Main has uncommitted changes the merge would overwrite — commit or stash them on main, then retry Move to done.",
       };
     }
     case "syncing":
@@ -204,6 +216,8 @@ export function describeCloseOutFailure(
         step: "sync",
         detail: clean || undefined,
         hint: "The branch could not be brought up to date with main. Fix the issue in the feature branch's worktree, then retry.",
+        summary:
+          "RepoOS couldn't bring this branch up to date with main — fix the issue in the task worktree, then retry Move to done.",
       };
     case "publishing":
       return {
@@ -212,6 +226,7 @@ export function describeCloseOutFailure(
         step: "publish",
         detail: clean || undefined,
         hint: "The merge to main failed at publish time. Retry the close-out.",
+        summary: "The merge to main failed at the final publish step — retry Move to done.",
       };
     default:
       return {
@@ -220,6 +235,8 @@ export function describeCloseOutFailure(
         step: "merge",
         detail: clean || undefined,
         hint: "Retry the close-out. If it keeps failing, check the feature branch's worktree for issues.",
+        summary:
+          "Move to done failed unexpectedly — retry it, and if it keeps failing, check the task worktree for issues.",
       };
   }
 }
