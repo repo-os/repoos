@@ -1942,7 +1942,7 @@ const needsInputHeaderChip = computed<{ label: string; cls: string } | null>(() 
   // The dedicated question banner already signals this — avoid a second chip (#0566).
   if (showAgentQuestionsBanner.value) return null;
   // A stale flag must not hide a live review or engineer session (#0511 R2).
-  if (review.value?.running || repo.isRunning(ui.active.id)) return null;
+  if (review.value?.running || repo.isRunning(ui.active.id) || handoffBusy.value) return null;
   return {
     label: needsInputStatusLabel(ui.active.needsInputReason, activeNeedsInputQuestions.value),
     cls: "rs-needs-input",
