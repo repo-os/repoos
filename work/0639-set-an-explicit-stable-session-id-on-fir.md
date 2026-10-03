@@ -2,7 +2,7 @@
 id: "0639"
 title: Set an explicit stable session id on first launch for pi (cache affinity)
 type: feature
-status: active
+status: review
 priority: medium
 area: core
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/set-an-explicit-stable-session-id-on-fir
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-03T15:54:46Z"
-updated_at: "2026-10-03T16:56:39Z"
+updated_at: "2026-10-03T18:06:12Z"
 ---
 ## Problem
 RepoOS only passes a session id on *resume*, using an id parsed from the harness's output (src/server/agents.ts, launch/resume builders ~L3085-3280). First launches carry none. If the id isn't captured (crash, restart, parse miss), resume silently starts a fresh session and the provider prompt cache goes cold. pi sends its session id to providers (OpenRouter x-session-id, OpenAI prompt_cache_key), so a stable id we choose gives deterministic cache affinity.
@@ -35,3 +35,4 @@ Measurement (14d, sessions table): pi openrouter/z-ai/glm-5.3-flash hit rate 64%
 - 2026-10-03T16:56:27Z · review_model_override
 - 2026-10-03T16:56:37Z · status inbox→ready
 - 2026-10-03T16:56:39Z · status ready→active, branch
+- 2026-10-03T18:06:12Z · status active→review
