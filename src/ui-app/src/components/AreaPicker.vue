@@ -13,16 +13,23 @@
  * dialog is open, Radix puts `pointer-events: none` on `<body>`, and an
  * unmarked teleported layer would be click-transparent.
  *
- * The dialog's Radix focus trap listens for `focusin` on `document` and yanks
- * focus back into the drawer when it lands outside it — which is exactly where
- * this teleported panel (and its free-text input) lives. The panel therefore
- * stops `focusin` from bubbling up to the trap so typing works.
+ * The dialog's Radix focus trap listens for `focusin` and `focusout` on
+ * `document` and yanks focus back into the drawer when it lands outside it —
+ * which is exactly where this teleported panel (and its free-text input)
+ * lives. While the panel is open it mounts its own radix `FocusScope`, whose
+ * guard PAUSES the drawer's trap on radix's shared guard stack (the same
+ * mechanism that makes nested dialogs work) — no event is suppressed, so
+ * document-level focus listeners (the global tooltip handler, #0638 round 2)
+ * keep seeing every transition. The scope deliberately does not trap: it only
+ * borrows the pause, and autofocus on mount/unmount is prevented so
+ * opening/closing the panel never moves focus by itself.
  *
  * With no vocabulary configured (`options` empty) the picker degrades to the
  * free-text entry only — the shared multi-select degrades, it never blocks.
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { ChevronDown, Check, Plus } from "lucide-vue-next";
+import { FocusScope } from "radix-vue";
 import { cn } from "@/lib/utils";
 
 export interface AreaOption {
@@ -185,68 +192,75 @@ const triggerClasses = cn(
     </button>
 
     <Teleport to="body">
-      <div
-        v-if="open"
-        ref="panelEl"
-        data-overlay-layer="floating"
-        role="listbox"
-        aria-multiselectable="true"
-        class="fixed z-[130] max-h-80 overflow-auto rounded-[10px] border border-[var(--border)] bg-[var(--popover)] text-[var(--txt)] shadow-[0_18px_40px_rgba(0,0,0,.45)] py-1"
-        :style="{ top: `${pos.top}px`, left: `${pos.left}px`, minWidth: `${pos.minWidth}px` }"
-        @focusin.stop
-      >
-        <button
-          v-for="row in rows"
-          :key="row.name"
-          type="button"
-          role="option"
-          :aria-selected="selected.some((s) => s.toLowerCase() === row.name.toLowerCase())"
-          class="relative flex w-full cursor-pointer select-none items-center gap-2 rounded-[8px] py-[7px] pl-2 pr-8 text-[13px] text-[var(--txt)] outline-none hover:bg-[var(--cyan-dim)] focus:bg-[var(--cyan-dim)]"
-          @click="toggle(row.name)"
+      <!-- While open, the panel is its own (non-trapping) radix FocusScope:
+           its guard pauses the drawer's focus trap on radix's shared guard
+           stack, so the free-text input can hold the caret — and no focus
+           event is suppressed, so document-level listeners (the global
+           tooltip handler) keep working (#0638). -->
+      <FocusScope v-if="open" as-child @mount-auto-focus.prevent @unmount-auto-focus.prevent>
+        <div
+          ref="panelEl"
+          data-overlay-layer="floating"
+          role="listbox"
+          aria-multiselectable="true"
+          class="fixed z-[130] max-h-80 overflow-auto rounded-[10px] border border-[var(--border)] bg-[var(--popover)] text-[var(--txt)] shadow-[0_18px_40px_rgba(0,0,0,.45)] py-1"
+          :style="{ top: `${pos.top}px`, left: `${pos.left}px`, minWidth: `${pos.minWidth}px` }"
         >
-          <span
-            class="absolute right-2 flex size-3.5 items-center justify-center"
-            :class="
-              selected.some((s) => s.toLowerCase() === row.name.toLowerCase())
-                ? 'opacity-100'
-                : 'opacity-0'
-            "
+          <button
+            v-for="row in rows"
+            :key="row.name"
+            type="button"
+            role="option"
+            :aria-selected="selected.some((s) => s.toLowerCase() === row.name.toLowerCase())"
+            class="relative flex w-full cursor-pointer select-none items-center gap-2 rounded-[8px] py-[7px] pl-2 pr-8 text-[13px] text-[var(--txt)] outline-none hover:bg-[var(--cyan-dim)] focus:bg-[var(--cyan-dim)]"
+            @click="toggle(row.name)"
           >
-            <Check class="size-4 text-[var(--cyan)]" />
-          </span>
-          <span class="flex items-center gap-2 truncate">
-            {{ row.name }}
-            <span v-if="row.description" class="truncate text-[11px] text-[var(--txt-faint)]">{{
-              row.description
-            }}</span>
-          </span>
-        </button>
+            <span
+              class="absolute right-2 flex size-3.5 items-center justify-center"
+              :class="
+                selected.some((s) => s.toLowerCase() === row.name.toLowerCase())
+                  ? 'opacity-100'
+                  : 'opacity-0'
+              "
+            >
+              <Check class="size-4 text-[var(--cyan)]" />
+            </span>
+            <span class="flex items-center gap-2 truncate">
+              {{ row.name }}
+              <span v-if="row.description" class="truncate text-[11px] text-[var(--txt-faint)]">{{
+                row.description
+              }}</span>
+            </span>
+          </button>
 
-        <div class="mx-1 my-1 border-t border-[var(--border)]" style="opacity: 0.4"></div>
+          <div class="mx-1 my-1 border-t border-[var(--border)]" style="opacity: 0.4"></div>
 
-        <div class="relative flex w-full items-center gap-2 px-2 pb-2 pt-1">
-          <Plus class="size-3.5 shrink-0 opacity-50" />
-          <input
-            v-model="typed"
-            type="text"
-            class="w-full bg-transparent text-[13px] text-[var(--txt)] outline-none placeholder:opacity-50"
-            placeholder="type an area, Enter to add"
-            aria-label="Add a custom area"
-            @keydown.enter.prevent="commitTyped"
-          />
+          <div
+            class="relative mx-1 mb-1 flex items-center gap-2 rounded-[8px] px-2 py-1 focus-within:ring-1 focus-within:ring-[var(--cyan)]"
+          >
+            <Plus class="size-3.5 shrink-0 opacity-50" />
+            <input
+              v-model="typed"
+              type="text"
+              class="w-full bg-transparent text-[13px] text-[var(--txt)] outline-none placeholder:opacity-50"
+              placeholder="type an area, Enter to add"
+              aria-label="Add a custom area"
+              @keydown.enter.prevent="commitTyped"
+            />
+          </div>
+          <button
+            v-for="name in unregisteredSelections"
+            :key="'add-' + name.toLowerCase()"
+            type="button"
+            class="mx-1 mb-1 flex w-[calc(100%-0.5rem)] items-center gap-2 rounded-[8px] px-2 py-[6px] text-left text-[12px] text-[var(--txt-dim)] hover:bg-[var(--cyan-dim)] hover:text-[var(--txt)]"
+            :title="'Add ' + name + ' to the declared areas in repoos.toml'"
+            @click="emit('addToVocabulary', name)"
+          >
+            <Plus class="size-3.5 text-[var(--cyan)]" />
+            <span class="truncate">add "{{ name }}" to repoos areas</span>
+          </button>
         </div>
-        <button
-          v-for="name in unregisteredSelections"
-          :key="'add-' + name.toLowerCase()"
-          type="button"
-          class="mx-1 mb-1 flex w-[calc(100%-0.5rem)] items-center gap-2 rounded-[8px] px-2 py-[6px] text-left text-[12px] text-[var(--txt-dim)] hover:bg-[var(--cyan-dim)] hover:text-[var(--txt)]"
-          :title="'Add ' + name + ' to the declared areas in repoos.toml'"
-          @click="emit('addToVocabulary', name)"
-        >
-          <Plus class="size-3.5 text-[var(--cyan)]" />
-          <span class="truncate">add "{{ name }}" to repoos areas</span>
-        </button>
-      </div>
+      </FocusScope>
     </Teleport>
   </div>
 </template>

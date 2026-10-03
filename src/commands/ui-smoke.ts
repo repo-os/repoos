@@ -34,6 +34,49 @@ function makeSmokeFixture(): string {
   const root = mkdtempSync(join(tmpdir(), "repoos-smoke-"));
   mkdirSync(join(root, "work"), { recursive: true });
   writeFileSync(join(root, "repoos.toml"), 'theme = "dark"\nuiTheme = "classic"\n\n');
+  // A review task with a stored report drives the send-to-engineer dialog
+  // flow below (#0638). No `branch` in the frontmatter — review recovery
+  // skips branchless tasks, so the fixture server never spawns a reviewer
+  // for it, and the seeded report is never treated as interrupted work.
+  const now = new Date().toISOString();
+  writeFileSync(
+    join(root, "work", "9001-smoke-review-fixture.md"),
+    [
+      "---",
+      'id: "9001"',
+      "title: Smoke review fixture",
+      "type: feature",
+      "status: review",
+      "priority: p2",
+      "area: web",
+      `created_at: "${now}"`,
+      `updated_at: "${now}"`,
+      "---",
+      "",
+      "Fixture task for the send-to-engineer note dialog in the UI smoke test.",
+      "",
+    ].join("\n"),
+  );
+  mkdirSync(join(root, ".repoos", "reviews"), { recursive: true });
+  writeFileSync(
+    join(root, ".repoos", "reviews", "9001.md"),
+    [
+      "---",
+      'task: "9001"',
+      `at: "${now}"`,
+      "agent: reviewer",
+      "cli: smoke",
+      "model: smoke",
+      "branch: feat/smoke-fixture",
+      "state: ok",
+      "---",
+      "",
+      "## Verdict",
+      "",
+      "good to go",
+      "",
+    ].join("\n"),
+  );
   return root;
 }
 
@@ -65,8 +108,29 @@ async function runUISmokeTest(): Promise<void> {
     const page = await context.newPage();
     const consoleErrs: string[] = [];
     const pageErrors: string[] = [];
+    // Known-benign API 404s, tracked by URL: the drawer's best-effort usage
+    // fetch (`loadTaskUsage`) 404s for a task with no recorded sessions, and
+    // the browser logs every failed resource as a console error. The app
+    // handles the response (same precedent as the /api/ pageerror filter
+    // below), so one tolerated 404 per such URL keeps the gate honest without
+    // masking real failures.
+    const benign404Urls = new Set<string>();
+    // Resource-failure console errors, keyed to the URL that failed so each
+    // can be matched against `benign404Urls` rather than tolerated by count.
+    const resourceErrs: { text: string; url: string }[] = [];
     page.on("console", (msg) => {
-      if (msg.type() === "error") consoleErrs.push(msg.text());
+      if (msg.type() !== "error") return;
+      const text = msg.text();
+      if (text.startsWith("Failed to load resource")) {
+        resourceErrs.push({ text, url: msg.location().url });
+      } else {
+        consoleErrs.push(text);
+      }
+    });
+    page.on("response", (res) => {
+      if (res.status() === 404 && /\/api\/tasks\/[^/]+\/stats$/.test(res.url())) {
+        benign404Urls.add(res.url());
+      }
     });
     page.on("pageerror", (err) => {
       // WebKit reports failed optional API requests as page errors when the
@@ -212,6 +276,127 @@ async function runUISmokeTest(): Promise<void> {
     await page.waitForTimeout(500);
     await assertUtilitySpacing("settings");
 
+    // ── Teleported text fields take real clicks and focus (#0638) ───────
+    // The area picker's free-text input and the send-to-engineer note both
+    // live in body-teleported layers above a modal drawer. The drawer's Radix
+    // focus trap used to yank focus straight back (no caret, no typing), and
+    // an intermediate fix suppressed document-level focus events, which
+    // starved the global tooltip handler. The layers now pause the trap via
+    // their own radix FocusScope, so drive both flows with REAL pointer
+    // clicks (page.click, not el.click() — only real pointer events trigger
+    // the browser's focus-on-click default action): focus must stick, typing
+    // must land, and a focused control inside the layer must still raise the
+    // global tooltip.
+    const goWork = async (): Promise<void> => {
+      await page.evaluate(() => {
+        const navItems = document.querySelectorAll(".nav-item");
+        for (const item of Array.from(navItems)) {
+          if (item.textContent?.includes("Work")) (item as HTMLElement).click();
+        }
+      });
+      await page.waitForTimeout(500);
+    };
+    const assertActive = async (sel: string, what: string): Promise<void> => {
+      const ok = await page.evaluate(
+        (s) => document.activeElement === document.querySelector(s),
+        sel,
+      );
+      if (!ok) throw new Error(`${what} did not take focus on a real click (#0638)`);
+    };
+
+    // (a) Area picker over the New-task drawer's modal dialog.
+    await goWork();
+    await page.click(".new-btn");
+    await page.waitForTimeout(400);
+    await page.click(".drawer-tabs .tab-btn:nth-child(2)"); // Manual mode form
+    await page.waitForTimeout(200);
+    await page.click("#nt-area"); // opens the teleported picker panel
+    await page.waitForTimeout(300);
+    const areaInput = 'input[aria-label="Add a custom area"]';
+    await page.click(areaInput);
+    await assertActive(areaInput, "area picker free-text input");
+    await page.keyboard.type("smoke-area");
+    const typedArea = await page.evaluate(
+      (s) => (document.querySelector(s) as HTMLInputElement | null)?.value ?? "",
+      areaInput,
+    );
+    if (typedArea !== "smoke-area") {
+      throw new Error(`area picker input did not accept typing: "${typedArea}"`);
+    }
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(200);
+    // Enter committed the custom area, so the picker now offers to register
+    // it — a title-carrying control INSIDE the layer. Focusing it must raise
+    // the global tooltip (round-2 regression: suppressed focus events starved
+    // exactly this handler).
+    const offerBtn = 'div[data-overlay-layer="floating"] button[title]';
+    const hasOffer = await page.evaluate((s) => document.querySelector(s) !== null, offerBtn);
+    if (!hasOffer) {
+      throw new Error("custom area was not committed to the picker selection");
+    }
+    await page.focus(offerBtn);
+    await page.waitForTimeout(120);
+    const tooltipShown = await page.evaluate(() => {
+      const tip = document.querySelector(".app-tooltip");
+      return (
+        tip instanceof HTMLElement &&
+        tip.classList.contains("show") &&
+        (tip.textContent ?? "").includes("repoos.toml")
+      );
+    });
+    if (!tooltipShown) {
+      throw new Error("global tooltip did not appear for a focused control inside the area picker");
+    }
+    await page.keyboard.press("Escape"); // close the picker panel
+    await page.keyboard.press("Escape"); // close the new-task drawer
+    await page.waitForTimeout(300);
+
+    // (b) Send-to-engineer note over a review task's drawer. The fixture
+    // seeds task 9001 (status review) with a stored report so the button is
+    // enabled; the flow stops before confirming, so nothing is spawned.
+    await goWork();
+    await page.click('[data-task-id="9001"]');
+    await page.waitForTimeout(600); // drawer opens on the Review tab
+    await page.waitForFunction(
+      () => {
+        const btn = Array.from(document.querySelectorAll("button")).find((b) =>
+          (b.textContent ?? "").includes("Send engineer"),
+        );
+        return Boolean(btn && !btn.hasAttribute("disabled"));
+      },
+      { timeout: 5_000 },
+    );
+    await page.evaluate(() => {
+      const btn = Array.from(document.querySelectorAll("button")).find((b) =>
+        (b.textContent ?? "").includes("Send engineer"),
+      );
+      (btn as HTMLElement).click();
+    });
+    await page.waitForTimeout(300);
+    const noteArea = "textarea.ste-note";
+    await page.click(noteArea);
+    await assertActive(noteArea, "send-to-engineer note textarea");
+    await page.keyboard.type("smoke note text");
+    const noteValue = await page.evaluate(
+      () =>
+        (document.querySelector("textarea.ste-note") as HTMLTextAreaElement | null)?.value ?? "",
+    );
+    if (noteValue !== "smoke note text") {
+      throw new Error(`send-to-engineer note did not accept typing: "${noteValue}"`);
+    }
+    const withNote = await page.evaluate(() =>
+      (document.querySelector(".ste-actions button:nth-child(2)")?.textContent ?? "").includes(
+        "with note",
+      ),
+    );
+    if (!withNote) {
+      throw new Error("confirm button did not reflect the typed note");
+    }
+    await page.keyboard.press("Escape"); // close the note dialog (never confirmed)
+    await page.waitForTimeout(200);
+    await page.keyboard.press("Escape"); // close the drawer
+    await page.waitForTimeout(300);
+
     // ── UI recovery banner regression (#0420) ───────────────────────────
     // Intercept /api/health to return a build hash that differs from the
     // client's, which triggers checkUiBuild → showStaleUi on the next
@@ -253,10 +438,19 @@ async function runUISmokeTest(): Promise<void> {
     }
 
     // Check for zero console errors
-    if (consoleErrs.length > 0) {
-      let msg = "Console errors (" + consoleErrs.length + "): " + consoleErrs.join("; ");
-      if (pageErrors.length > 0) msg += " | Page errors: " + pageErrors.join("; ");
-      throw new Error(msg);
+    {
+      // Tolerate failed-resource errors only for the known-benign stats 404
+      // URLs (the drawer's best-effort usage fetch on a task with no
+      // sessions); every other failed resource is a real failure.
+      const unexpected = resourceErrs
+        .filter((e) => !benign404Urls.has(e.url))
+        .map((e) => e.text + (e.url ? " (" + e.url + ")" : ""));
+      const fatal = [...consoleErrs, ...unexpected];
+      if (fatal.length > 0) {
+        let msg = "Console errors (" + fatal.length + "): " + fatal.join("; ");
+        if (pageErrors.length > 0) msg += " | Page errors: " + pageErrors.join("; ");
+        throw new Error(msg);
+      }
     }
     if (pageErrors.length > 0) {
       throw new Error("Page errors (" + pageErrors.length + "): " + pageErrors.join("; "));
