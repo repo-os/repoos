@@ -228,8 +228,14 @@ engineer launch records it and pins it with `--session-id`; `runner.send`
 resumes the exact id with `--session`. If the id is somehow absent on a resume,
 it is recomputed rather than dropped (never a silent fresh start). A fix-up turn
 is the same engineer conversation, so it derives with the `engineer` role.
-`runner.start`'s explicit **fresh** mode skips the pinned id on purpose — the
-user asked for a new conversation, and pi would otherwise reopen the old one.
+
+An explicit **fresh** start (`runner.start` `freshSession`) gets its own id —
+`freshSessionId()` = the ordinary id plus a unique `-f<base36 ms>` suffix —
+recorded and persisted before spawn. It is deliberately *not* the ordinary id
+(pi would reopen the conversation the user just reset) and it *is* recorded up
+front, so a launch that never emits its `session` header can still be resumed
+later instead of falling back to the ordinary id. A later non-fresh start reuses
+whatever id is already recorded, so a reset is not silently undone.
 
 The reviewer uses `repoos-<task>-reviewer-<pass>`, where `<pass>` is the task's
 `review_passes` counter + 1. The pass suffix is load-bearing: a review is a

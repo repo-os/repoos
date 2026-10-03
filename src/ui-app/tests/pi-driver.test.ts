@@ -13,6 +13,7 @@ import {
   engineCancelSignal,
   extractOneShotReportText,
   extractUsage,
+  freshSessionId,
   parseOneShotLine,
   parsePiEvent,
   pmCommand,
@@ -82,6 +83,16 @@ describe("pi invocation shapes", () => {
     );
     // Always starts and ends alphanumeric, per pi's assertValidSessionId.
     expect(deterministicSessionId("", "…")).toMatch(/^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$/);
+  });
+
+  it("mints a distinct, pi-safe id for an explicit fresh conversation", () => {
+    const ordinary = deterministicSessionId("0639", "engineer");
+    const fresh = freshSessionId("0639", "engineer");
+    // Related to the ordinary id but never equal to it: a fresh reset must not
+    // resume the conversation it just abandoned.
+    expect(fresh.startsWith(`${ordinary}-f`)).toBe(true);
+    expect(fresh).not.toBe(ordinary);
+    expect(fresh).toMatch(/^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$/);
   });
 
   it("leaves engines that cannot choose a session id unchanged", () => {

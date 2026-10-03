@@ -3003,6 +3003,20 @@ export function deterministicSessionId(taskId: string, role: string): string {
   return `repoos-${task}-${roleSlug}`;
 }
 
+/**
+ * A one-off id for an explicit "start fresh" engineer conversation. Unlike
+ * {@link deterministicSessionId} it is deliberately new every time — the whole
+ * point is to abandon the previous conversation — but it is still chosen
+ * client-side and recorded before spawn, so a launch that never emits its
+ * session header can still be resumed instead of falling back to the ordinary
+ * task id (which would reopen the conversation the user just reset). The base
+ * is the deterministic id so the fresh and ordinary conversations stay
+ * visibly related; the `-f<base36 ms>` suffix makes each reset unique.
+ */
+export function freshSessionId(taskId: string, role = "engineer"): string {
+  return `${deterministicSessionId(taskId, role)}-f${Date.now().toString(36)}`;
+}
+
 /** The start and resume launches an engineer turn can use, for permission checks. */
 export function engineerLaunches(
   agent: Agent,
@@ -5079,14 +5093,19 @@ export class AgentRunner {
       });
     }
     session.engine = engine;
-    // A deterministic id means the conversation survives a parse miss: if the
-    // CLI's session header never reaches us, the next turn recomputes the same
-    // id and resumes the same provider session instead of going cold. A
-    // user-requested fresh conversation must NOT reopen it, so it is skipped
-    // there — the CLI mints a new id, which is captured as usual.
+    // Choose this launch's session id client-side so a parse miss cannot strand
+    // the conversation: it is recorded (and persisted) before spawn, so the
+    // next turn resumes the same provider session instead of going cold.
+    // - An explicit fresh start gets a brand-new id, never the ordinary task id
+    //   it is replacing (which would reopen the conversation the user reset).
+    // - Any other start reuses the id already recorded for this conversation —
+    //   a prior fresh id included — falling back to the ordinary task id only
+    //   on the first launch.
     let launchSessionId: string | undefined;
-    if (!opts.freshSession && supportsChosenSessionId(agent.cli)) {
-      launchSessionId = deterministicSessionId(task.id, "engineer");
+    if (supportsChosenSessionId(agent.cli)) {
+      launchSessionId = opts.freshSession
+        ? freshSessionId(task.id, "engineer")
+        : (session.sessionId ?? deterministicSessionId(task.id, "engineer"));
       session.sessionId = launchSessionId;
     }
     session.task = task;
@@ -5094,6 +5113,9 @@ export class AgentRunner {
     session.agent = agent.name;
     session.model = agent.model;
     this.sessions.set(task.id, session);
+    // Persist the chosen id up front: a crash before the first output line must
+    // not lose it, or the next turn would fall back to the ordinary id.
+    this.schedulePersist(task.id);
     const selectedSkills = selectSkillsForRun(task, agent, this.config);
     // Only note it in the transcript when a skill was actually injected — a
     // "no skills selected" line on every single run is pure noise, and nothing
