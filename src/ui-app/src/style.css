@@ -4135,6 +4135,9 @@
 .spec-head .md-h {
   margin-bottom: 0;
 }
+.spec-head .page-help-link {
+  margin-left: auto;
+}
 .spec-toggle {
   display: inline-flex;
   align-items: center;

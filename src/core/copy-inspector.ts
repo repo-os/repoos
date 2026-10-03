@@ -2,7 +2,7 @@
  * Dev-only click-to-locate UI copy (#0509): path guards and editor-command parsing.
  * Zero runtime dependencies — spawn uses argv arrays built here.
  */
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 
 /** True when this repo checkout ships editable RepoOS UI sources. */
@@ -57,6 +57,40 @@ export function resolveCopyInspectorTarget(
   const lineNum =
     typeof line === "number" && Number.isFinite(line) && line >= 1 ? Math.floor(line) : null;
   return { absPath: abs, repoRel: back.replace(/\\/g, "/"), line: lineNum };
+}
+
+/**
+ * Resolve a repo-relative file without the copy-inspector's `src/` restriction,
+ * so callers can open other tracked files (a task markdown under `work/`) in
+ * the configured editor. Same escape guard as {@link resolveCopyInspectorTarget},
+ * but hardened against symlinks: both the repo root and the target are
+ * `realpath`-resolved, and the REAL target must stay inside the REAL root, so a
+ * symlink pointing outside the repo cannot smuggle an external file through.
+ * The returned `repoRel` is the real location (what the editor should open).
+ */
+export function resolveRepoFileTarget(
+  root: string,
+  file: string,
+): { absPath: string; repoRel: string } | null {
+  const rel = file.trim().replace(/\\/g, "/");
+  if (!rel || rel.includes("..") || rel.startsWith("/")) return null;
+  const abs = resolve(root, rel);
+  let realRoot: string;
+  let realAbs: string;
+  try {
+    realRoot = realpathSync(root);
+    realAbs = realpathSync(abs);
+  } catch {
+    return null;
+  }
+  const back = relative(realRoot, realAbs);
+  if (!back || back.startsWith("..") || isAbsolute(back)) return null;
+  try {
+    if (!statSync(realAbs).isFile()) return null;
+  } catch {
+    return null;
+  }
+  return { absPath: realAbs, repoRel: back.replace(/\\/g, "/") };
 }
 
 /** Split a configured editor command into argv (no shell). Supports " and ' quotes. */
