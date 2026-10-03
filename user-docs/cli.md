@@ -89,12 +89,18 @@ done** in the UI, or merge the branch yourself first.
 ### `repoos update <id>`
 
 Edits a task's metadata or body: `--title`, `--area`, `--story`,
-`--depends-on`, `--priority`, `--type`, `--body`, `--branch`, `--assigned-to`.
+`--depends-on`, `--priority`, `--type`, `--body`, `--branch`, `--assigned-to`,
+`--needs-input`, `--needs-merge`.
 
 ```bash
 repoos update 0615 --depends-on 0542,0538
 repoos update 0615 --depends-on ""
+repoos update 0316 --needs-input false
+repoos update 0397 --needs-merge false
 ```
+
+The `--needs-input` / `--needs-merge` flags take `true` or `false`, and clearing
+the flag also clears the reason/detail recorded alongside it.
 
 Dependencies are satisfied only when the upstream task is `done` and Git
 confirms its merged commit is an ancestor of `main`. A blocked task cannot be

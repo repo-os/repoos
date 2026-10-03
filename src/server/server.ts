@@ -148,6 +148,7 @@ import { attachPendingPmImages } from "./pm-attachments.js";
 import { clearStoryPmChat, isStoryPmWorking } from "../core/story-definition-files.js";
 import { completeTask, type DoneStep, type CloseOutLock } from "./done.js";
 import { closeOutPending, createJobCoordinator, type JobCoordinator } from "./integration-job.js";
+import { createCloseOutOutcomeStore } from "./close-out-outcome.js";
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
 import { createRemoteValidator, type RemoteValidator } from "./remote-validation.js";
 import { buildIntegrationSnapshot } from "./integration-status.js";
@@ -288,6 +289,7 @@ import {
   taskAction,
   getIntegrationJob,
   getIntegrationJobs,
+  getCloseOutOutcomes,
   getIntegrationPipeline,
   retryIntegration,
   cancelDone,
@@ -1112,6 +1114,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Integration job coordinator for serialized close-outs (0118)
   const jobCoordinator = createJobCoordinator(config.root);
+  // Durable close-out outcomes (#0640): recorded when a job ends and pushed
+  // over SSE so the notices bell shows success/failure/timeout; the list
+  // endpoint backfills a tab that was closed while the run happened.
+  const closeOutOutcomes = createCloseOutOutcomeStore(config.root, config.cacheDir);
   const repoLock = createRepositoryLock(config.root);
   const rootLock = createRootLock(config.root);
 
@@ -1309,6 +1315,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           remoteValidator,
           taskChecks,
           onTaskCheckEvent,
+          (outcome) => {
+            closeOutOutcomes.record(outcome);
+            emitEvent({ type: "close-out.outcome", outcome, at: outcome.finishedAt });
+          },
         );
         const jobBefore = jobCoordinator.peekNext();
         // Defer auto-reload for the duration of this job's processing: a
@@ -2736,6 +2746,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   );
   router.register("GET", /^\/api\/tasks\/([^/]+)\/integration-job$/, getIntegrationJob);
   router.register("GET", "/api/integration-jobs", getIntegrationJobs);
+  // Durable close-out outcomes (#0640) — the notices bell's hydrate/backstop.
+  router.register("GET", "/api/close-out/outcomes", getCloseOutOutcomes);
   router.register("GET", "/api/check-plan", getCheckPlan);
   // Durable check-run history across all tasks (#0564) — the Runs tab.
   router.register("GET", "/api/check-runs", getCheckRuns);
