@@ -3,6 +3,9 @@ id: "0637"
 title: Don't re-run close-out validation when main only gained inputs/stories bookkeeping; add storiesDir config
 type: bug
 status: active
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Desired UX"
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -13,7 +16,7 @@ model_override: openrouter/openrouter/pareto-code
 review_cli_override: opencode
 review_model_override: openrouter/openrouter/auto
 created_at: "2026-10-03T08:45:43Z"
-updated_at: "2026-10-03T09:11:27Z"
+updated_at: "2026-10-03T09:11:28Z"
 ---
 ## Problem
 #0633's Move to done timed out (closeOut.timeoutMs default 360000 = 6 min) because a fully passing validation was thrown away and re-run. Timeline (UTC, .repoos/logs/tasks/0633.log): close-out started 08:00:14; remote validation passed in 260s at 08:04:42; at 08:05:14 'main drifted during publish — resyncing'; the second remote validation passed in 282s at 08:10:05, past the budget; 'close-out hit its pipeline timeout'.
@@ -54,3 +57,4 @@ Two related gaps:
 - 2026-10-03T09:11:22Z · review_cli_override
 - 2026-10-03T09:11:27Z · review_model_override
 - 2026-10-03T09:11:27Z · status ready→active, branch
+- 2026-10-03T09:11:28Z · needs_input
