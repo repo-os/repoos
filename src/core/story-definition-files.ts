@@ -1,5 +1,6 @@
 /**
- * Git-tracked story definition files under `stories/` (#0486). Node-only I/O.
+ * Git-tracked story definition files (under `storiesDir`, default `stories/`,
+ * #0486). Node-only I/O.
  *
  * Definitions carry a stable zero-padded `number` (#0515) — the story's
  * counterpart to a task's `id` and an input's `number` — so the board can show
@@ -22,7 +23,17 @@ import { FM_DELIM, parseDocument, serializeDocument } from "./frontmatter.js";
 import { normalizeStoryName, storyKey } from "./stories.js";
 import type { StoryDefinition } from "./story-display.js";
 
-export const STORIES_DIR = "stories";
+/**
+ * The stories directory (#0637): `repoos.toml`'s `storiesDir` when set, else
+ * `"stories"`. Every former `STORIES_DIR` constant read goes through the
+ * config so a relocated directory is consistent everywhere — including the
+ * close-out drift check, which exempts this directory from "main moved"
+ * resyncs (commits like `docs(stories): add …` are the server's own
+ * bookkeeping and can never compete with a task being closed out).
+ */
+export function storiesDirOf(config: Pick<RepoOSConfig, "storiesDir">): string {
+  return config.storiesDir || "stories";
+}
 
 /** Frontmatter key order for a story file — `repoos` normalizes on write. */
 const STORY_KEY_ORDER = ["name", "number", "created_at", "created_by"] as const;
@@ -89,7 +100,7 @@ export function fallbackStoryName(text: string): string {
 }
 
 function storiesRoot(config: RepoOSConfig): string {
-  return join(config.root, STORIES_DIR);
+  return join(config.root, storiesDirOf(config));
 }
 
 function isStoryFile(name: string): boolean {
@@ -167,10 +178,11 @@ export function collisionFreeStoryPath(
   ownPath?: string,
 ): string {
   const base = storySlug(name);
-  let path = `${STORIES_DIR}/${base}.md`;
+  const dir = storiesDirOf(config);
+  let path = `${dir}/${base}.md`;
   let n = 2;
   while (path !== ownPath && existsSync(join(config.root, path))) {
-    path = `${STORIES_DIR}/${base}-${n}.md`;
+    path = `${dir}/${base}-${n}.md`;
     n += 1;
   }
   return path;
@@ -202,7 +214,7 @@ export function listStoryDefinitions(config: RepoOSConfig): StoryDefinition[] {
   return readdirSync(dir)
     .filter(isStoryFile)
     .map((file) => {
-      const path = `${STORIES_DIR}/${file}`;
+      const path = `${storiesDirOf(config)}/${file}`;
       try {
         return parseStoryDefinitionFile(readFileSync(join(dir, file), "utf8"), path);
       } catch {
@@ -317,7 +329,7 @@ export function writeStoryDefinition(
     throw new Error(`A story named "${existing.name}" already exists`);
   }
   const path = input.path ?? collisionFreeStoryPath(config, name);
-  if (!path.startsWith(`${STORIES_DIR}/`) || !path.endsWith(".md")) {
+  if (!path.startsWith(`${storiesDirOf(config)}/`) || !path.endsWith(".md")) {
     throw new Error("invalid story definition path");
   }
   const createdAt = new Date().toISOString();

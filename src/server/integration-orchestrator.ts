@@ -166,20 +166,41 @@ function candidateBranchName(taskId: string): string {
 }
 
 /**
- * A path whose change on main can never invalidate a build/test run that
- * already passed on the candidate: task bookkeeping under the work dir, or
- * generated `dist/` output. The publish merge auto-resolves
- * (or ignores) all three, so they are non-code drift by construction.
+ * The bookkeeping directory prefixes (#0637): paths whose change on main can
+ * never invalidate a build/test run that already passed on the candidate —
+ * task bookkeeping under the work dir, human-submitted inputs, story
+ * definitions, and generated `dist/` output. The publish merge auto-resolves
+ * (or ignores) all of these, so they are non-code drift by construction.
+ * The commits are produced by the server itself (`inputs(<id>): capture`,
+ * `docs(stories): add …`, `docs(<id>): update task`), never competing work.
+ *
+ * ONE named list derived from config, so adding another bookkeeping directory
+ * later is a one-line change. Deliberately excludes `docs/` and `user-docs/`:
+ * the check plan builds user-docs and tests may read docs, so a docs change
+ * can alter a validation result and must resync.
  */
-function isNonCodePublishDrift(path: string, workPrefix: string): boolean {
-  return path.startsWith(workPrefix) || path.startsWith("dist/");
+function bookkeepingDirPrefixes(dirs: {
+  workDir?: string;
+  inputsDir?: string;
+  storiesDir?: string;
+}): string[] {
+  return [
+    `${dirs.workDir || "work"}/`,
+    `${dirs.inputsDir || "inputs"}/`,
+    `${dirs.storiesDir || "stories"}/`,
+    "dist/",
+  ];
+}
+
+function isNonCodePublishDrift(path: string, prefixes: string[]): boolean {
+  return prefixes.some((prefix) => path.startsWith(prefix));
 }
 
 /**
  * Is main's advance between `baseMainSha` and `currentMainSha` purely
  * non-code churn?
  *
- * The publish phase normally discards a validated candidate and resyncs from
+ * The close-out pipeline discards a validated candidate and resyncs from
  * scratch whenever main moved, because a code change on main could invalidate
  * the candidate's validation. That is correct for a competing feature merge;
  * it is pure waste for bookkeeping-only drift, which is auto-resolved to
@@ -190,8 +211,11 @@ function isNonCodePublishDrift(path: string, workPrefix: string): boolean {
  * across UNRELATED tasks, not competing feature merges. Skipping the resync
  * for exactly that case lets the candidate land directly instead of
  * rebuilding a byte-identical tree and hoping to win a race it never had to
- * run. A drift touching any real source/config path still resyncs (bounded by
- * MAX_PUBLISH_DRIFT_RETRIES).
+ * run. #0633 added inputs/ and stories/ commits to that burst (the server
+ * creates tasks from inputs while a close-out runs), and the second gap was
+ * the validate phase, which re-ran a fully passing remote validation for the
+ * same reason. A drift touching any real source/config path still resyncs
+ * (bounded by MAX_PUBLISH_DRIFT_RETRIES / MAX_VALIDATE_DRIFT_RETRIES).
  *
  * Fails closed: a git error, or any path that is not bookkeeping/generated,
  * returns false so the caller takes the existing, capped resync path.
@@ -200,23 +224,24 @@ export async function mainDriftIsBookkeepingOnly(opts: {
   root: string;
   baseMainSha: string;
   currentMainSha: string;
-  workDir: string;
+  /** Bookkeeping directories, derived from config (#0637). */
+  dirs: { workDir?: string; inputsDir?: string; storiesDir?: string };
 }): Promise<boolean> {
-  const { root, baseMainSha, currentMainSha, workDir } = opts;
+  const { root, baseMainSha, currentMainSha, dirs } = opts;
   const res = await runGit(
     root,
     ["diff", "--name-only", `${baseMainSha}..${currentMainSha}`],
     10_000,
   );
   if (res.status !== 0) return false;
-  const workPrefix = `${workDir || "work"}/`;
+  const prefixes = bookkeepingDirPrefixes(dirs);
   // No net tree change (e.g. main advanced only via an empty/merge commit) is
   // trivially safe to publish past.
   return res.stdout
     .split("\n")
     .map((s) => s.trim())
     .filter(Boolean)
-    .every((p) => isNonCodePublishDrift(p, workPrefix));
+    .every((p) => isNonCodePublishDrift(p, prefixes));
 }
 
 /**
@@ -1401,43 +1426,70 @@ export class CloseOutOrchestrator {
     const currentMainSha = currentMainRes.stdout.trim();
 
     if (job.baseMainSha && currentMainSha !== job.baseMainSha) {
-      // Main advanced: discard the candidate and reset the job to `syncing` so
-      // the next processNext() rebuilds from the new tip and re-runs the full
-      // syncing → validating cycle. Do NOT merge or validate here, and do NOT
-      // report success: returning syncCandidate's result as success let
-      // processJob promote this un-merged candidate to publishing, which then
-      // merged bare main into itself and published the task as done with none
-      // of its branch's work integrated (#0399). The next syncing phase runs
-      // the same pre-flight conflict check, so a real conflict still reaches
-      // the repair handoff with the identical non-retryable classification.
-      //
-      // Bounded exactly like the publish-time resync (#0386): on a busy board
-      // with a stream of background bookkeeping commits, a candidate whose
-      // validation window keeps being invalidated would otherwise be discarded
-      // and rebuilt forever with no terminal state.
-      const driftCount = (job.validateDriftCount ?? 0) + 1;
-      if (driftCount > MAX_VALIDATE_DRIFT_RETRIES) {
+      // Bookkeeping-only escape hatch (#0637): main advancing via work/,
+      // inputs/, stories/ or dist/ commits cannot invalidate what the gate is
+      // about to check, so rebase the job's recorded base onto the new tip and
+      // keep validating the existing candidate — the same exemption the
+      // publish phase has (#0386). Discarding here threw away a fully passing
+      // remote validation on #0633 (the server created tasks from inputs while
+      // it ran) and blew the pipeline budget re-running it.
+      const bookkeepingOnly = await mainDriftIsBookkeepingOnly({
+        root,
+        baseMainSha: job.baseMainSha,
+        currentMainSha,
+        dirs: this.config,
+      });
+      if (bookkeepingOnly) {
+        this.logger?.integration(
+          job.taskId,
+          "info",
+          "main advanced with bookkeeping-only commits — validating against the new tip",
+          { from: job.baseMainSha, to: currentMainSha },
+        );
+        // Bump the recorded base without touching the drift counter: these
+        // commits are not resyncs, and MAX_VALIDATE_DRIFT_RETRIES keeps
+        // bounding real code drift exactly as before.
+        this.coordinator.updateJob(job.taskId, { baseMainSha: currentMainSha });
+      } else {
+        // Main advanced with a real code change: discard the candidate and
+        // reset the job to `syncing` so the next processNext() rebuilds from
+        // the new tip and re-runs the full syncing → validating cycle. Do NOT
+        // merge or validate here, and do NOT report success: returning
+        // syncCandidate's result as success let processJob promote this
+        // un-merged candidate to publishing, which then merged bare main into
+        // itself and published the task as done with none of its branch's
+        // work integrated (#0399). The next syncing phase runs the same
+        // pre-flight conflict check, so a real conflict still reaches the
+        // repair handoff with the identical non-retryable classification.
+        //
+        // Bounded exactly like the publish-time resync (#0386): on a busy
+        // board with a stream of background bookkeeping commits, a candidate
+        // whose validation window keeps being invalidated would otherwise be
+        // discarded and rebuilt forever with no terminal state.
+        const driftCount = (job.validateDriftCount ?? 0) + 1;
+        if (driftCount > MAX_VALIDATE_DRIFT_RETRIES) {
+          return {
+            ok: false,
+            retryable: false,
+            reason:
+              `main advanced ${driftCount} times in a row while validating the candidate — giving up ` +
+              "rather than revalidating forever. The branch itself is fine, it's just losing the race " +
+              "to land; retry Move-to-done once main quiets down.",
+          };
+        }
+        removeWorktree(root, branch, { force: true }); // throwaway candidate, rebuilt below
+        this.coordinator.updateJob(job.taskId, {
+          phase: "syncing",
+          baseMainSha: null,
+          candidateSha: null,
+          validateDriftCount: driftCount,
+        });
         return {
           ok: false,
-          retryable: false,
-          reason:
-            `main advanced ${driftCount} times in a row while validating the candidate — giving up ` +
-            "rather than revalidating forever. The branch itself is fine, it's just losing the race " +
-            "to land; retry Move-to-done once main quiets down.",
+          resynced: true,
+          reason: `main advanced during validation (${job.baseMainSha} → ${currentMainSha}); revalidating from the new tip`,
         };
       }
-      removeWorktree(root, branch, { force: true }); // throwaway candidate, rebuilt below
-      this.coordinator.updateJob(job.taskId, {
-        phase: "syncing",
-        baseMainSha: null,
-        candidateSha: null,
-        validateDriftCount: driftCount,
-      });
-      return {
-        ok: false,
-        resynced: true,
-        reason: `main advanced during validation (${job.baseMainSha} → ${currentMainSha}); revalidating from the new tip`,
-      };
     }
 
     // Merge feature branch into candidate.
@@ -1999,7 +2051,7 @@ export class CloseOutOrchestrator {
               root,
               baseMainSha: job.baseMainSha,
               currentMainSha,
-              workDir: this.config.workDir,
+              dirs: this.config,
             })
           : false;
 
