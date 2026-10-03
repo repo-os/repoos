@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-enrichment-in-progress-on-inputs-li
 created_at: "2026-10-02T23:44:30Z"
-updated_at: "2026-10-02T23:45:11Z"
+updated_at: "2026-10-03T00:36:31Z"
 ---
 ## Problem
 
@@ -68,3 +68,4 @@ Also when I create a new input and the AI is making the title I guess, when I cl
 - 2026-10-02T23:44:55Z · status draft→inbox, title, area, body
 - 2026-10-02T23:45:02Z · status inbox→ready
 - 2026-10-02T23:45:11Z · status ready→active, branch
+- 2026-10-03T00:36:31Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
