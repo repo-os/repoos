@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-03T10:41:44Z"
+review_passes: 2
 id: "0634"
 title: Add delete buttons to input and story side panels
 type: feature
@@ -12,9 +14,7 @@ model_override: openrouter/openrouter/auto-beta
 review_cli_override: opencode
 review_model_override: openrouter/openrouter/pareto-code
 created_at: "2026-10-03T08:00:36Z"
-updated_at: "2026-10-03T10:36:10Z"
 review_rounds: 1
-review_passes: 1
 ---
 ## Problem
 
@@ -132,3 +132,4 @@ Let's add a "Delete input" button at the bottom left of the input side panel (si
 - 2026-10-03T10:31:36Z · body: section Shots
 - 2026-10-03T10:31:42Z · status active→review
 - 2026-10-03T10:32:01Z · note: shots: failed — capture of Story Details panel with Delete story control on "default" failed: click: Timeout 5000ms exceeded.
+
