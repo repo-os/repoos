@@ -53,6 +53,10 @@ remoteValidation.fallbackToLocal = false
 
 worktreeWarnThreshold = 20
 
+# Move-to-done pipeline budget (ms). The 6 min default leaves under a minute of
+# slack over a ~4.7 min close-out, so one resync (e.g. main moving) times out.
+closeOut.timeoutMs = 600000
+
 # Task worktrees inherit the main checkout's gitignored `.env` (#0373). This
 # repo has auth.enabled = true, and its own `[preview] command` below boots a
 # real server from the task's worktree — which refuses to start without the
