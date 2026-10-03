@@ -261,6 +261,11 @@ describe("inputs side-panel resolve actions (#0359)", () => {
 
     expect(drawer(wrapper).text()).toContain("Resolved by");
     expect(drawer(wrapper).text()).toContain("task #0400");
+    // The task outcome is promoted to an accent callout, not fine print (#0635).
+    const resolution = drawer(wrapper).find(".detail-resolution");
+    expect(resolution.classes()).toContain("is-task");
+    expect(resolution.find(".resolution-label").exists()).toBe(true);
+    expect(resolution.find("button.resolution-link").exists()).toBe(true);
     expect(buttonTexts(wrapper)).not.toContain("Create task");
     wrapper.unmount();
   });
@@ -272,6 +277,7 @@ describe("inputs side-panel resolve actions (#0359)", () => {
     await openFirstInput(wrapper);
 
     expect(drawer(wrapper).text()).toContain("No resolution recorded.");
+    expect(drawer(wrapper).find(".detail-resolution").classes()).not.toContain("is-task");
     wrapper.unmount();
   });
 });

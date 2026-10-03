@@ -451,9 +451,13 @@ function tryOpenInput(ref: string, attempt: number): void {
               Move to {{ nextStatus(activeInput.status) }}</Button
             >
           </div>
-          <div v-if="activeInput.status === 'processed'" class="detail-resolution">
+          <div
+            v-if="activeInput.status === 'processed'"
+            class="detail-resolution"
+            :class="{ 'is-task': activeInput.resolution === 'task' && activeInput.resolvedTask }"
+          >
             <template v-if="activeInput.resolution === 'task' && activeInput.resolvedTask">
-              Resolved by
+              <span class="resolution-label">Resolved by</span>
               <button
                 type="button"
                 class="resolution-link"
@@ -788,22 +792,50 @@ function tryOpenInput(ref: string, attempt: number): void {
   align-items: center;
   flex-wrap: wrap;
   gap: 5px;
-  color: var(--txt-secondary);
+  color: var(--txt-dim);
   font-size: 12px;
+}
+/* A resolved task is the primary outcome of a processed input, so promote it
+   from fine print to an accent callout the eye lands on (#0635). */
+.detail-resolution.is-task {
+  gap: 9px;
+  padding: 9px 12px;
+  border: 1px solid color-mix(in srgb, var(--cyan) 30%, transparent);
+  border-left: 3px solid var(--cyan);
+  border-radius: 9px;
+  background: var(--cyan-dim);
+}
+.resolution-label {
+  color: var(--txt);
+  font-size: 12.5px;
+  font-weight: 600;
 }
 .resolution-link {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 0;
-  border: 0;
-  background: none;
+  gap: 5px;
+  padding: 3px 9px;
+  border: 1px solid color-mix(in srgb, var(--cyan) 55%, transparent);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--cyan) 14%, transparent);
   color: var(--cyan);
   font: inherit;
+  font-size: 12.5px;
+  font-weight: 650;
+  font-family: "JetBrains Mono", monospace;
   cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 .resolution-link:hover {
-  text-decoration: underline;
+  border-color: var(--cyan);
+  background: color-mix(in srgb, var(--cyan) 24%, transparent);
+  text-decoration: none;
+}
+.resolution-link:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 .detail-actions {
   display: flex;
