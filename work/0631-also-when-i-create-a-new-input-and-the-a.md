@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "0631"
 title: Show enrichment-in-progress on inputs list cards
 type: feature
@@ -10,7 +9,8 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/show-enrichment-in-progress-on-inputs-li
 created_at: "2026-10-02T23:44:30Z"
-updated_at: "2026-10-03T00:36:31Z"
+updated_at: "2026-10-03T00:50:52Z"
+handoff_signal_retry_count: 1
 ---
 ## Problem
 
@@ -61,6 +61,39 @@ Also when I create a new input and the AI is making the title I guess, when I cl
 ![Screenshot-2026-10-02-at-20.02.33](/api/tasks/0631/attachments/screenshot-1.png)
 ![Screenshot-2026-10-02-at-20.02.17](/api/tasks/0631/attachments/screenshot-2.png)
 
+## Shots
+```json
+[
+  {
+    "label": "Inputs list with enrichment-in-progress indicator on the freshly created card",
+    "target": "default",
+    "route": "/inputs",
+    "highlight": ".input-list .ai",
+    "steps": [
+      {
+        "click": ".new-btn"
+      },
+      {
+        "fill": "#new-input-text",
+        "text": "Inputs list should show the AI is still writing the title"
+      },
+      {
+        "click": ".drawer-body .btn-row button"
+      },
+      {
+        "waitMs": 300
+      },
+      {
+        "click": ".ff-done .btn-row button:last-child"
+      },
+      {
+        "waitMs": 400
+      }
+    ]
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-02T23:44:30Z · created · hello@repoos.org
@@ -70,4 +103,4 @@ Also when I create a new input and the AI is making the title I guess, when I cl
 - 2026-10-02T23:45:02Z · status inbox→ready
 - 2026-10-02T23:45:11Z · status ready→active, branch
 - 2026-10-03T00:36:31Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-
+- 2026-10-03T00:50:52Z · body: section Shots
