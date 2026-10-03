@@ -2,7 +2,7 @@
 id: "0631"
 title: Show enrichment-in-progress on inputs list cards
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -113,3 +113,4 @@ Also when I create a new input and the AI is making the title I guess, when I cl
 - 2026-10-03T01:10:25Z · note: shots: failed — capture of Inputs list with enrichment-in-progress indicator on the freshly created card on "default" failed: click: Error: strict mode violation: locator('.drawer-body .btn-row button') resolved to 2 elements:
 - 2026-10-03T01:11:13Z · status review→active
 - 2026-10-03T02:26:39Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-03T02:26:39Z · status review→active
