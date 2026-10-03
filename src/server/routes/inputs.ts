@@ -14,6 +14,8 @@ import {
   type InputStatus,
 } from "../../core/input.js";
 import { commitTaskFile } from "../../core/git.js";
+import { removeInputAttachments } from "../../core/input.js";
+import { deleteInputFile, PathGuardError, WriteError } from "../write.js";
 import type { Agent } from "../../core/types.js";
 import {
   extractOneShotReportText,
@@ -243,6 +245,33 @@ export const uploadInputAttachment: RouteHandler = async (ctx, req, res, p) => {
     return json(res, 404, { error: (e as Error).message });
   }
 };
+/**
+ * Delete an input (#0634): remove its markdown file and its (gitignored,
+ * disk-only) attachments, committing the removal when git tracks the file.
+ * Mirrors `deleteTask`: 404 when the input is gone, 400 for a path-guard
+ * refusal. Safe against an in-flight PM enrichment — `enrichInput` re-reads
+ * the input list and throws "input not found", which the enrichment's own
+ * catch already logs without crashing.
+ */
+export const deleteInput: RouteHandler = async (ctx, _req, res, p) => {
+  const input = listInputs(ctx.config).find((i) => i.id === p.param1);
+  if (!input) return json(res, 404, { error: `input not found: ${p.param1}` });
+  try {
+    deleteInputFile(ctx.config, join(ctx.config.root, input.path), `inputs(${input.id}): delete`);
+  } catch (err) {
+    if (err instanceof PathGuardError) return json(res, 400, { error: err.message });
+    if (err instanceof WriteError) return json(res, 404, { error: err.message });
+    throw err;
+  }
+  removeInputAttachments(ctx.config, input.id);
+  // No SSE event: inputs are not in the live index, so the deleting client
+  // refreshes its own list (repo.deleteInput) and other tabs pick the removal
+  // up on their next inputs fetch.
+  enrichingInputIds.delete(input.id);
+  ctx.logger.system("info", `input deleted: ${input.title}`, { input: input.id });
+  return json(res, 200, { ok: true });
+};
+
 export const getInputAttachment: RouteHandler = (ctx, _req, res, p) => {
   try {
     const file = readInputAttachment(ctx.config, p.param1, decodeURIComponent(p.param2));

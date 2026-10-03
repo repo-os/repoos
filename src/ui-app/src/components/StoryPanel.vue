@@ -55,6 +55,7 @@ import DialogDescription from "./ui/dialog/description.vue";
 import DialogTitle from "./ui/dialog/title.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
 import CopyableNumber from "./CopyableNumber.vue";
+import DeleteConfirmDialog from "./DeleteConfirmDialog.vue";
 import StoryPmChat from "./StoryPmChat.vue";
 
 type StoryTab = "story" | "pm" | "tasks" | "details";
@@ -214,6 +215,33 @@ function openTask(task: Task): void {
 function startNewTask(): void {
   emit("close");
   ui.openNewTask("", props.story?.name ?? "");
+}
+
+/**
+ * Delete story (#0634): bottom-left destructive control on the Details tab,
+ * matching the task panel's Delete task. Only a *registered* story can be
+ * deleted — the action removes its `stories/*.md` definition file, and a
+ * tag-only story has no file, so it gets no button (there is nothing to
+ * delete; its tasks are never touched either way). The shared
+ * DeleteConfirmDialog carries the same busy/confirm contract as the task
+ * panel's.
+ */
+const deleteConfirmOpen = ref(false);
+const deleting = ref(false);
+
+async function deleteActiveStory(): Promise<void> {
+  const story = props.story;
+  if (!story?.registered || deleting.value) return;
+  deleting.value = true;
+  try {
+    await repo.deleteStory(story.key);
+    deleteConfirmOpen.value = false;
+    emit("close");
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    deleting.value = false;
+  }
 }
 </script>
 
@@ -429,8 +457,29 @@ function startNewTask(): void {
               story.lastActivity ? relTime(story.lastActivity) : "No activity yet"
             }}</span>
           </div>
+          <div v-if="story.registered" class="delete-zone">
+            <Button
+              variant="destructive"
+              size="sm"
+              :disabled="deleting"
+              @click="deleteConfirmOpen = true"
+            >
+              Delete story
+            </Button>
+          </div>
         </div>
       </div>
     </DialogContent>
   </Dialog>
+  <DeleteConfirmDialog
+    v-model:open="deleteConfirmOpen"
+    title="Delete story?"
+    :busy="deleting"
+    confirm-label="Delete story"
+    @confirm="deleteActiveStory"
+  >
+    This will remove the story definition
+    <strong>{{ story?.name }}</strong
+    >. Tasks tagged with this story keep their tag and are not deleted.
+  </DeleteConfirmDialog>
 </template>

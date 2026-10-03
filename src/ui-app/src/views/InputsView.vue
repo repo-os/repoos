@@ -24,6 +24,7 @@ import Checkbox from "../components/ui/checkbox.vue";
 import { applyInputCollapseDefaults, revealInputArrivals } from "../lib/inputsBoardCollapse";
 import CopyableNumber from "../components/CopyableNumber.vue";
 import ActivityIndicator from "../components/ActivityIndicator.vue";
+import DeleteConfirmDialog from "../components/DeleteConfirmDialog.vue";
 import InputEditModal from "../components/InputEditModal.vue";
 import ScreenshotViewer from "../components/ScreenshotViewer.vue";
 import ScreenshotExpandButton from "../components/ScreenshotExpandButton.vue";
@@ -216,6 +217,28 @@ async function doNothing(): Promise<void> {
     resolveError.value = err instanceof Error ? err.message : String(err);
   } finally {
     resolving.value = false;
+  }
+}
+
+// ── Delete input (#0634): bottom-left destructive control in the detail
+// drawer, matching the task panel's Delete task. The confirm dialog is the
+// shared DeleteConfirmDialog shell; on success the drawer closes and the
+// store refresh (repo.deleteInput) drops the row without a reload.
+const deleteConfirmOpen = ref(false);
+const deleting = ref(false);
+
+async function deleteActiveInput(): Promise<void> {
+  const input = activeInput.value;
+  if (!input || deleting.value) return;
+  deleting.value = true;
+  try {
+    await repo.deleteInput(input.id);
+    deleteConfirmOpen.value = false;
+    activeInput.value = null;
+  } catch (err) {
+    repo.onError(err);
+  } finally {
+    deleting.value = false;
   }
 }
 
@@ -523,14 +546,36 @@ function tryOpenInput(ref: string, attempt: number): void {
                 />
               </div>
             </div>
-          </div></div></DialogContent
-    ></Dialog>
+          </div>
+          <div class="delete-zone">
+            <Button
+              variant="destructive"
+              size="sm"
+              :disabled="deleting"
+              @click="deleteConfirmOpen = true"
+            >
+              Delete input
+            </Button>
+          </div>
+        </div></DialogContent
+      ></Dialog
+    >
     <InputEditModal
       :open="inputEditOpen"
       :body="activeInput?.body ?? ''"
       @update:open="(v) => (inputEditOpen = v)"
       @save="applyInputEdit"
     />
+    <DeleteConfirmDialog
+      v-model:open="deleteConfirmOpen"
+      title="Delete input?"
+      :busy="deleting"
+      confirm-label="Delete input"
+      @confirm="deleteActiveInput"
+    >
+      This will permanently remove
+      <strong>{{ activeInput?.title }}</strong> and its attachments. This cannot be undone.
+    </DeleteConfirmDialog>
     <ScreenshotViewer
       v-model:open="inputDetailViewerOpen"
       :shots="inputDetailViewerShots"
