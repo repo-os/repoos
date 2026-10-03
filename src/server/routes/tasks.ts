@@ -1059,6 +1059,17 @@ export const uploadTaskShot: RouteHandler = async (ctx, req, res, params) => {
  * declared-but-never-captured entry behind: the response error is the only
  * trace of a failed attempt.
  */
+/** The task's CURRENT body from disk, so a concurrent edit is never clobbered by a stale snapshot. */
+function readTaskBody(config: RepoOSConfig, absPath: string): string {
+  return parseTask({
+    content: readFileSync(absPath, "utf8"),
+    absPath,
+    root: config.root,
+    defaultStatus: config.defaultStatus,
+    defaultAssignee: config.defaultAssignee,
+  }).body;
+}
+
 async function declareTaskShot(
   ctx: RouteContext,
   res: ServerResponse,
@@ -1129,6 +1140,15 @@ async function declareTaskShot(
   if (resolved.error || !resolved.target) {
     return json(res, 400, { error: resolved.error ?? "the target could not be resolved" });
   }
+  // The existing `## Shots` list must parse BEFORE anything is captured: a
+  // malformed list cannot take the new declaration, and capturing first would
+  // leave an image with no declaration behind (review round 5).
+  const preflight = appendDeclaredShot(readTaskBody(config, task.absPath), entry);
+  if (preflight.errors.length > 0) {
+    return json(res, 400, {
+      error: `the task's ## Shots section is not a valid list — fix it first: ${preflight.errors.join("; ")}`,
+    });
+  }
   const result = await captureDeclaredShot(config, task, previews, {
     target: resolved.target,
     route: entry.route ?? "/",
@@ -1153,16 +1173,7 @@ async function declareTaskShot(
   // same note so the capture's caveats are visible without a second write.
   // The body is re-read from disk right before the section write so an entry a
   // concurrent writer just added is never clobbered by a stale snapshot.
-  const append = appendDeclaredShot(
-    parseTask({
-      content: readFileSync(task.absPath, "utf8"),
-      absPath: task.absPath,
-      root: config.root,
-      defaultStatus: config.defaultStatus,
-      defaultAssignee: config.defaultAssignee,
-    }).body,
-    entry,
-  );
+  const append = appendDeclaredShot(readTaskBody(config, task.absPath), entry);
   if (append.errors.length > 0) {
     // The shot itself is captured and stored; the declaration just needs fixing.
     return json(res, 201, {
@@ -1215,64 +1226,76 @@ export const deleteTaskShot: RouteHandler = async (ctx, _req, res, params) => {
   if (!task) {
     return json(res, 404, { error: `Task #${taskId} not found` });
   }
+  if (task.status !== "active" && task.status !== "review") {
+    // Same rule as Add: the drawer hides these controls elsewhere, and a
+    // direct API call must not edit shots or task metadata outside them.
+    return json(res, 400, {
+      error: `Shots can only be deleted while a task is active or review (#${task.id} is ${task.status})`,
+    });
+  }
   let name = params.param2;
   try {
     name = decodeURIComponent(name);
   } catch {
     /* already decoded or plain — keep as-is */
   }
-  const removed = localShotStore(config, taskId).remove(name);
-  if (!removed) {
+  const store = localShotStore(config, taskId);
+  const found = store.list().find((shot) => shot.name === name);
+  if (!found) {
     return json(res, 404, { error: "Shot not found" });
   }
   // Sync the declaration: a matching ## Shots entry would be captured again at
   // the next handoff. A hand-added shot carries its own full declaration in
-  // the manifest (`removed.declared`), so it syncs THE exact entry — selector
+  // the manifest (`found.declared`), so it syncs THE exact entry — selector
   // and steps included. Legacy and auto shots (no stored declaration) fall
   // back to the shallow matcher, which requires at least one identifying
   // field — an anonymous declaration (steps/highlight only) can never claim a
   // deleted shot (#0627 review round 1). The body is re-read from disk so a
   // declaration added concurrently is still seen.
   const removal = removeDeclaredShots(
-    parseTask({
-      content: readFileSync(task.absPath, "utf8"),
-      absPath: task.absPath,
-      root: config.root,
-      defaultStatus: config.defaultStatus,
-      defaultAssignee: config.defaultAssignee,
-    }).body,
-    removed.declared
-      ? (declared) => sameDeclaredShot(declared, removed.declared!)
-      : (declared) => declaredShotMatchesShot(declared, removed),
+    readTaskBody(config, task.absPath),
+    found.declared
+      ? (declared) => sameDeclaredShot(declared, found.declared!)
+      : (declared) => declaredShotMatchesShot(declared, found),
   );
+  // Declaration first, image second (review round 5). If the task file cannot
+  // be read or written, nothing has been deleted and the caller gets a real
+  // failure — the other order left a declaration that resurrects the shot at
+  // the next handoff while reporting success.
+  if (removal.errors.length > 0) {
+    return json(res, 400, {
+      error: `the task's ## Shots section is not a valid list — fix it before deleting: ${removal.errors.join("; ")}`,
+    });
+  }
   try {
     const updated = patchTaskFile(config, task.absPath, {
-      note: `shot removed: ${removed.label || removed.name}`,
+      note: `shot removed: ${found.label || found.name}`,
       ...(removal.removed > 0 ? { section: { heading: "Shots", content: removal.content } } : {}),
     });
     index.applyFileChange(updated.absPath);
   } catch (error) {
-    return json(res, 200, {
-      ok: true,
-      removed: removed.name,
-      declarationsRemoved: removal.removed,
-      warning: `the shot was deleted, but the task file could not be updated: ${(error as Error).message}`,
+    return json(res, 500, {
+      error: `the shot was NOT deleted: the task file could not be updated (${(error as Error).message})`,
     });
+  }
+  const removed = store.remove(name);
+  if (!removed) {
+    // Gone between the lookup and now (a concurrent delete) — the declaration
+    // sync above is still correct, so this is success.
+    return json(res, 200, { ok: true, removed: name, declarationsRemoved: removal.removed });
   }
   return json(res, 200, {
     ok: true,
     removed: removed.name,
     declarationsRemoved: removal.removed,
-    ...(removal.errors.length
-      ? { warning: `## Shots could not be read: ${removal.errors.join("; ")}` }
-      : !removed.declared && removal.removed > 1
-        ? {
-            // A legacy/auto shot records no selector or steps, so every
-            // declaration sharing its label/route/target is a candidate. All
-            // go, or a re-handoff would recapture the deleted evidence.
-            warning: `${removal.removed} ## Shots declarations matched this shot and were all removed — re-add any you still want`,
-          }
-        : {}),
+    ...(!removed.declared && removal.removed > 1
+      ? {
+          // A legacy/auto shot records no selector or steps, so every
+          // declaration sharing its label/route/target is a candidate. All
+          // go, or a re-handoff would recapture the deleted evidence.
+          warning: `${removal.removed} ## Shots declarations matched this shot and were all removed — re-add any you still want`,
+        }
+      : {}),
   });
 };
 

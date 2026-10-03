@@ -192,6 +192,12 @@ same route is dispatched by the body's `data` field) and
   and 4 pulled opposite ways here: keeping them erased distinct declarations
   but resurrected evidence; resurrection was judged the worse failure.) Exact
   hand-added shots remove only their own declaration's twins.
+- Ordering keeps add and delete from half-applying (review round 5). Add
+  parses the current `## Shots` BEFORE capturing, so a malformed list is a 400
+  with no orphan image. Delete writes the task file first and removes the
+  image second: a failed or invalid task-file update is a real error (500/400)
+  with the shot untouched, never a 200 that leaves a declaration to resurrect
+  it. Both routes only work while the task is `active` or `review`.
 - Add-shot warnings (a `highlight`/`selector` that matched nothing) ride the
   success response as `warning`; the modal stays open showing it, since the
   shot is already saved.
