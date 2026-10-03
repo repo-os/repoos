@@ -15,7 +15,7 @@ import { join } from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { Readable, Writable } from "node:stream";
 import { createRepoOS } from "../../core/repoos";
-import { createInput, listInputs } from "../../core/input";
+import { createInput, listInputs, updateInput } from "../../core/input";
 import { postInput, parseEnrichment, patchInput } from "../../server/routes/inputs";
 import { createLogger } from "../../core/logger";
 import { extractOneShotReportText } from "../../server/agents";
@@ -298,6 +298,24 @@ describe("postInput background enrichment (#0628)", () => {
       "warn",
       "PM enrichment returned nothing parseable; input keeps raw title",
       expect.objectContaining({ input: created.id, error: "cursor-agent not found" }),
+    );
+  });
+
+  it("emits the current on-disk input when enrichment fails after the user edited", async () => {
+    let resolveRun!: (v: { ok: boolean; output?: string }) => void;
+    vi.mocked(runPrompt).mockReturnValue(
+      new Promise((resolve) => {
+        resolveRun = resolve;
+      }),
+    );
+
+    const created = await submit();
+    updateInput(h.ctx.config, created.id, { title: "User retitled while enriching" });
+    resolveRun({ ok: true, output: "This input is about exports. No object here." });
+    await waitFor(() => h.events.length === 1, "input.enriched after unparseable");
+
+    expect(h.events[0].type === "input.enriched" && h.events[0].input.title).toBe(
+      "User retitled while enriching",
     );
   });
 

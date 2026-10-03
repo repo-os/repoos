@@ -3,8 +3,7 @@
  * its id as "enriching" in the repo store so the Inputs list/board cards show
  * the same ActivityIndicator as the New input panel acknowledgment, until SSE
  * `input.enriched` arrives (clears it, in place) or the failure backstop
- * timeout clears it — the server emits no event when enrichment fails or
- * returns nothing parseable, so without the backstop the spinner would stick.
+ * timeout clears it when the SSE stream is lost.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
@@ -196,6 +195,25 @@ describe("enrichment-pending tracking (#0631)", () => {
     await repo.submitInput("Saw a bug on the board", []);
     await flush();
     expect(repo.enrichingInputs.has("abc-seen")).toBe(false);
+  });
+
+  it("does not revert local edits when input.enriched carries a stale snapshot", async () => {
+    setActivePinia(createPinia());
+    const repo = useRepoStore();
+    const id = "abc-stale";
+    const newer = new Date("2026-10-03T12:00:00.000Z").toISOString();
+    const older = new Date("2026-10-03T11:00:00.000Z").toISOString();
+    repo.inputs.push({ ...rawInput(id), title: "User retitled", updatedAt: newer });
+
+    repo.applyEvent({
+      type: "input.enriched",
+      id,
+      input: { ...rawInput(id), title: "Saw a bug on the board", updatedAt: older },
+      at: new Date().toISOString(),
+    } as unknown as RepoEvent);
+
+    expect(repo.inputs.find((i) => i.id === id)?.title).toBe("User retitled");
+    expect(repo.enrichingInputs.has(id)).toBe(false);
   });
 
   it("shows the activity indicator on the card while pending, and drops it when enriched", async () => {
