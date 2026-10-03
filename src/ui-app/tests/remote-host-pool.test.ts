@@ -19,6 +19,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RepoOSConfig } from "../../core/types.js";
 import { loadConfig } from "../../core/config.js";
+import { getCheckStore } from "../../core/check-store.js";
 import { resolveRemoteHosts, remoteHostUser, hostRunner } from "../../core/remote-hosts.js";
 import { planJobCapabilities, resolveCheckPlan } from "../../core/check-plan.js";
 import {
@@ -28,7 +29,9 @@ import {
   HOST_LOCK_STALE_MINUTES,
   HOST_LOCK_TIMEOUT_EXIT,
   PREREQ_OK_TOKEN,
+  HostsUnavailableError,
   RemoteValidationRunner,
+  TailscaleHostPool,
   TailscaleRunner,
   deadlineLockWaitSecs,
   hostLockShell,
@@ -363,6 +366,13 @@ function poolFixture(opts: {
   dropFirstRunOn?: string;
   /** Listed hosts stay unreachable after their drop: later probes keep failing. */
   stayDown?: string[];
+  /** Every validation run on these hosts is SIGKILLed — runValidation's
+   *  transient `timedOut` path (#0632). */
+  timeoutRunOn?: string[];
+  /** Every validation run on these hosts exits non-zero with ordinary output —
+   *  a real red gate, `transient: false` (#0632). */
+  failRunOn?: string[];
+  retryOtherHosts?: boolean;
   healthRetryMs?: number;
   containerImage?: string;
 }): Fixture {
@@ -382,6 +392,7 @@ function poolFixture(opts: {
       tailscaleHosts: opts.hosts,
       maxConcurrent: opts.maxConcurrent,
       containerImage: opts.containerImage,
+      retryOtherHosts: opts.retryOtherHosts,
     },
   } as unknown as RepoOSConfig;
 
@@ -405,6 +416,14 @@ function poolFixture(opts: {
           };
         }
         return { code: 0, output: `prereq ok ${PREREQ_OK_TOKEN}`, timedOut: false };
+      }
+      if (opts.timeoutRunOn?.includes(host.ip)) {
+        (cmds[host.ip] ??= []).push(cmd);
+        return { code: 0, output: "build running…", timedOut: true };
+      }
+      if (opts.failRunOn?.includes(host.ip)) {
+        (cmds[host.ip] ??= []).push(cmd);
+        return { code: 1, output: "1 test failed\nFAIL src/x.test.ts", timedOut: false };
       }
       if (opts.dropFirstRunOn === host.ip && !dropped.has(host.ip)) {
         // Mark the run as one that WILL drop its ssh connection when released
@@ -856,6 +875,148 @@ describe("TailscaleRunner pool dispatch (#0521)", () => {
     const results = await Promise.all([job1, job2, job3, job4]);
     expect(results.every((r) => r.ok)).toBe(true);
     expect(f.peak()).toBe(2);
+  });
+});
+
+// ── failover to another host (#0632) ─────────────────────────────────────────
+
+describe("failover to another host (#0632)", () => {
+  it("retries on the other host after a transient timeout and succeeds there", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "a" }, { host: "b" }],
+      retryOtherHosts: true,
+      timeoutRunOn: ["a"],
+    });
+
+    const run = f.runner.validate(opts("0632"));
+    // The first attempt (on a) is SIGKILLed immediately; the failover run on b
+    // parks in the fixture until released.
+    for (let i = 0; i < 100 && !f.pending().includes("b"); i++) await tick();
+    expect(f.pending()).toEqual(["b"]);
+    f.release("b");
+
+    const res = await run;
+    expect(res).toEqual({ ok: true, stage: "check" });
+    // Exactly one attempt per host: the slow host timed out once, and the
+    // retry ran on the OTHER host — the loaded host was never re-picked.
+    expect(f.cmds.a).toHaveLength(1);
+    expect(f.cmds.b).toHaveLength(1);
+    const retry = f.runner
+      .remoteEvents("0632")
+      .find((e) => e.phase === "run" && e.level === "warn");
+    expect(retry?.message).toContain("retrying on another host after transient failure on a");
+    // The check-run history shows EACH attempt and which host ran it
+    // (newest first).
+    expect(
+      getCheckStore(f.root)
+        .list()
+        .map((r) => [r.machine, r.outcome]),
+    ).toEqual([
+      ["b", "pass"],
+      ["a", "fail"],
+    ]);
+  });
+
+  it("returns the transient failure after every host has been tried, once each", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "a" }, { host: "b" }],
+      retryOtherHosts: true,
+      timeoutRunOn: ["a", "b"],
+    });
+
+    const res = await f.runner.validate(opts("0632"));
+
+    // All hosts failing falls through to the transient summary exactly as a
+    // single-host failure would — fallbackToLocal/retryable, never a crash
+    // and never a config error.
+    expect(res).toMatchObject({ ok: false, transient: true });
+    expect(String(res.detail)).toContain("timed out");
+    expect(f.cmds.a).toHaveLength(1);
+    expect(f.cmds.b).toHaveLength(1); // a host is never retried within one run
+  });
+
+  it("never retries a non-transient red gate", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "a" }, { host: "b" }],
+      retryOtherHosts: true,
+      failRunOn: ["a"],
+    });
+
+    const res = await f.runner.validate(opts("0632"));
+
+    expect(res).toMatchObject({ ok: false, transient: false });
+    expect(f.cmds.a).toHaveLength(1);
+    expect(f.cmds.b).toBeUndefined(); // the branch's fault — no failover
+  });
+
+  it("fails fast when a capability-filtered pool has no untried host left", async () => {
+    // One eligible host (macos), one configured but useless for this job: the
+    // retry must fail immediately with the last attempt's real summary, not
+    // spin skipping the same host.
+    const f = poolFixture({
+      hosts: [
+        { host: "a", os: "linux" },
+        { host: "b", os: "macos" },
+      ],
+      retryOtherHosts: true,
+      timeoutRunOn: ["b"],
+    });
+
+    const res = await f.runner.validate(opts("0632", { capabilities: ["macos"] }));
+
+    expect(res).toMatchObject({ ok: false, transient: true });
+    expect(String(res.detail)).toContain("timed out"); // the run's real failure, kept
+    expect(f.cmds.b).toHaveLength(1);
+    expect(f.cmds.a).toBeUndefined();
+    // The spent-pool dispatch failure is recorded, machine null (newest first).
+    const rows = getCheckStore(f.root).list();
+    expect(rows.map((r) => [r.machine, r.outcome])).toEqual([
+      [null, "fail"],
+      ["b", "fail"],
+    ]);
+    expect(rows[0]!.detail).toContain("was already tried this run");
+  });
+
+  it("pool.acquire skips excluded hosts and fails fast when all eligible are spent", async () => {
+    const exec: RemoteExecDeps = {
+      bundleRepo: vi.fn(async () => ({ ok: true })),
+      uploadFile: vi.fn(async () => ({ ok: true })),
+      downloadDir: vi.fn(async () => {}),
+      probeTcp: vi.fn(async () => true),
+      runRemote: vi.fn(async (_host, cmd): Promise<RemoteExecResult> => {
+        if (cmd.includes(PREREQ_OK_TOKEN)) {
+          return { code: 0, output: `prereq ok ${PREREQ_OK_TOKEN}`, timedOut: false };
+        }
+        // Never finishes — no validation run should reach a host here.
+        return new Promise<RemoteExecResult>(() => {});
+      }),
+    };
+    const pool = new TailscaleHostPool(
+      {
+        enabled: true,
+        provider: "tailscale",
+        tailscaleHosts: [{ host: "a" }, { host: "b" }],
+        maxConcurrent: 1,
+      } as never,
+      { exec },
+    );
+
+    // The excluded host is never leased, whichever one it is: config-order
+    // tie-breaking must not resurrect it (the round-1 bug — the failed host
+    // came back every time).
+    const s1 = await pool.acquire([], { excludeHosts: ["a"] });
+    expect(s1.host.host).toBe("b");
+    s1.release();
+
+    const s2 = await pool.acquire([], { excludeHosts: ["b"] });
+    expect(s2.host.host).toBe("a");
+    s2.release();
+
+    // Every eligible host spent → immediate HostsUnavailableError (transient
+    // infra), not a NoEligibleHost misconfiguration and not a hang.
+    await expect(pool.acquire([], { excludeHosts: ["a", "b"] })).rejects.toBeInstanceOf(
+      HostsUnavailableError,
+    );
   });
 });
 

@@ -1359,10 +1359,17 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof rvRetry === "boolean") {
       cfg.remoteValidation = { ...cfg.remoteValidation, retryOtherHosts: rvRetry };
     }
-    // Default: true when 2+ tailscale hosts are configured, else false.
+    // Default: true when 2+ tailscale hosts are configured, else false. The
+    // guard tests the TOML key, NOT the merged object: DEFAULT_CONFIG already
+    // fills `retryOtherHosts: false`, so a merged-object `=== undefined` check
+    // could never fire and the dynamic default was dead code (#0632 review
+    // round 1). An explicit `false` in repoos.toml must stay false; an absent
+    // key reads as "unset" and gets the conditional default. The host list is
+    // already folded (shorthand `tailscaleHost` + list + [[rows]]) above, so
+    // its length is the resolved pool size.
     const hostCount = cfg.remoteValidation?.tailscaleHosts?.length ?? 0;
     if (
-      cfg.remoteValidation?.retryOtherHosts === undefined &&
+      rvRetry === undefined &&
       cfg.remoteValidation?.enabled === true &&
       cfg.remoteValidation?.provider === "tailscale" &&
       hostCount >= 2
