@@ -15,6 +15,12 @@
  * retries: a retry that later succeeds appends a second, separate event.
  *
  * A user cancel (Stop MTD) deliberately records nothing: it is not an outcome.
+ *
+ * The server keeps ONE instance per process and shares it with the list route,
+ * so the recorded events are mirrored in memory: a disk write that fails is
+ * reported through `onPersistError` and the event still serves from memory for
+ * the life of the process (the SSE push already delivered it live), rather than
+ * silently vanishing from the backfill.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -57,36 +63,48 @@ function isOutcomeEvent(v: unknown): v is CloseOutOutcomeEvent {
 export function createCloseOutOutcomeStore(
   root: string,
   cacheDir: string = DEFAULT_CACHE_DIR,
+  /** Called when a disk write fails, so the loss is reported, never silent. */
+  onPersistError?: (error: unknown) => void,
 ): CloseOutOutcomeStore {
   const path = join(root, cacheDir, FILE);
+  /** In-memory mirror; loaded lazily on first use, kept in sync on record. */
+  let events: CloseOutOutcomeEvent[] | null = null;
 
-  function read(): CloseOutOutcomeEvent[] {
-    if (!existsSync(path)) return [];
+  function load(): CloseOutOutcomeEvent[] {
+    if (events) return events;
+    if (!existsSync(path)) {
+      events = [];
+      return events;
+    }
     try {
       const parsed = JSON.parse(readFileSync(path, "utf8")) as unknown;
-      return Array.isArray(parsed) ? parsed.filter(isOutcomeEvent) : [];
+      events = Array.isArray(parsed) ? parsed.filter(isOutcomeEvent) : [];
     } catch {
       /* corrupt or unreadable: behave as "no outcomes" rather than throwing */
-      return [];
+      events = [];
     }
+    return events;
   }
 
   return {
     record(event) {
-      const events = read().filter(
+      const next = load().filter(
         (e) => !(e.taskId === event.taskId && e.finishedAt === event.finishedAt),
       );
-      events.push(event);
+      next.push(event);
+      events = next.slice(-MAX_EVENTS);
       try {
         mkdirSync(dirname(path), { recursive: true });
-        writeFileSync(path, JSON.stringify(events.slice(-MAX_EVENTS), null, 2));
-      } catch {
-        /* best-effort: failing to persist must never fail the close-out */
+        writeFileSync(path, JSON.stringify(events, null, 2));
+      } catch (error) {
+        // Keep the in-memory copy and report the failure; the close-out itself
+        // must never fail because a notice could not be written to disk.
+        onPersistError?.(error);
       }
       return event;
     },
     list() {
-      return read().sort((a, b) => b.finishedAt.localeCompare(a.finishedAt));
+      return [...load()].sort((a, b) => b.finishedAt.localeCompare(a.finishedAt));
     },
   };
 }

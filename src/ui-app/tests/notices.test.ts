@@ -24,9 +24,12 @@ class FakeNotification {
 }
 
 class FakeAudioContext {
+  /** Counts oscillator creations so tests can assert whether the bell rang. */
+  static oscillators = 0;
   currentTime = 0;
   destination = {};
   createOscillator() {
+    FakeAudioContext.oscillators++;
     return { type: "sine", frequency: { value: 0 }, connect() {}, start() {}, stop() {} };
   }
   createGain() {
@@ -38,6 +41,7 @@ beforeEach(() => {
   setActivePinia(createPinia());
   localStorage.clear();
   FakeNotification.instances = [];
+  FakeAudioContext.oscillators = 0;
   vi.stubGlobal("Notification", FakeNotification);
   vi.stubGlobal("AudioContext", FakeAudioContext);
   vi.stubGlobal("window", window); // keep JSDOM window (api.ts touches it)
@@ -410,5 +414,43 @@ describe("close-out channel wiring (#0640)", () => {
     useNoticesStore().ingestCloseOutOutcome(closeOut());
     await flush();
     expect(FakeNotification.instances).toHaveLength(0);
+  });
+});
+
+describe("close-out sound toggle suppression (#0640)", () => {
+  const cases = [
+    ["closeOutSucceeded", closeOut()],
+    ["closeOutFailed", closeOut({ outcome: "failed" as const, reason: "boom" })],
+    [
+      "closeOutTimedOut",
+      closeOut({
+        outcome: "timedOut" as const,
+        reason: "close-out timed out after 6m — increase closeOut.timeoutMs",
+      }),
+    ],
+  ] as const;
+
+  it.each(cases)(
+    "disabling %s keeps the bell notice but suppresses the sound",
+    async (type, event) => {
+      const n = useNotificationsStore();
+      n.setSoundEnabled(true);
+      n.setTypeEnabled(type, false);
+      const s = useNoticesStore();
+      s.ingestCloseOutOutcome(event);
+      await flush();
+      // The per-type toggle only gates the channel; the notice stays in the feed.
+      expect(s.activeNotices).toHaveLength(1);
+      expect(FakeAudioContext.oscillators).toBe(0);
+    },
+  );
+
+  it("rings the bell when the close-out type's sound toggle is on", async () => {
+    const n = useNotificationsStore();
+    n.setSoundEnabled(true);
+    n.setTypeEnabled("closeOutSucceeded", true);
+    useNoticesStore().ingestCloseOutOutcome(closeOut());
+    await flush();
+    expect(FakeAudioContext.oscillators).toBeGreaterThan(0);
   });
 });

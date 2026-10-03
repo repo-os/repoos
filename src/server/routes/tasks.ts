@@ -2533,7 +2533,10 @@ export const getIntegrationJob: RouteHandler = (ctx, _req, res, params) => {
  * is the `close-out.outcome` SSE event; this hydrates on load and reconnect.
  */
 export const getCloseOutOutcomes: RouteHandler = (ctx, _req, res) => {
-  const store = createCloseOutOutcomeStore(ctx.config.root, ctx.config.cacheDir);
+  // Prefer the server's shared instance: it mirrors recorded events in memory,
+  // so a failed disk write is still backfilled for the life of the process.
+  const store =
+    ctx.closeOutOutcomes ?? createCloseOutOutcomeStore(ctx.config.root, ctx.config.cacheDir);
   return json(res, 200, { ok: true, outcomes: store.list() });
 };
 
