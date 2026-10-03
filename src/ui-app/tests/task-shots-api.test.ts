@@ -190,6 +190,38 @@ describe("POST /api/tasks/:id/shots — declare and capture (#0627)", () => {
     expect(localShotStore(repoos.config, task.id).list()).toEqual([]);
   });
 
+  it("discards the capture and writes nothing when the task left active/review mid-capture", async () => {
+    const ctx = makeCtx();
+    // The capture "takes a while"; by the time it resolves the task is done.
+    mockedCapture.mockImplementation(async () => {
+      const saved = localShotStore(repoos.config, task.id).save({
+        target: "default",
+        route: "/",
+        label: "Task drawer open",
+        provenance: "declared: Task drawer open",
+        data: PNG_1PX,
+      });
+      if ("error" in saved) throw new Error("seed failed");
+      ctx.index.getTask = () => ({ ...task, status: "done" }) as never;
+      return { shot: saved, warnings: [] } as never;
+    });
+    const before = readFileSync(task.absPath, "utf8");
+    const { capture, res } = resCapture();
+    await uploadTaskShot(
+      ctx as never,
+      bodyReq({ target: "default", label: "Task drawer open" }),
+      res,
+      {
+        param1: task.id,
+      },
+    );
+    expect(capture.statusCode).toBe(409);
+    expect((capture.body as { error: string }).error).toContain("moved to done");
+    // No orphan image, no declaration, no "shot added" note.
+    expect(localShotStore(repoos.config, task.id).list()).toEqual([]);
+    expect(readFileSync(task.absPath, "utf8")).toBe(before);
+  });
+
   it("rejects wrong-typed fields instead of treating them as omitted", async () => {
     // Fields reach the validator verbatim: `{ target: 5 }` must be REJECTED,
     // never silently narrowed to "no target" and captured anyway (review
