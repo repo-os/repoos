@@ -279,8 +279,8 @@ section (#0627) — no CLI needed — while the task is `active` or in `review`:
   matching `## Shots` declaration exists, removes that entry too, so the next
   re-handoff cannot resurrect the deleted evidence. This works for automatic,
   declared, and legacy untagged shots alike. If several declarations could
-  belong to an automatic or legacy shot, none is removed and you're told to
-  edit the list yourself.
+  belong to an automatic or legacy shot, all of them are removed and you're
+  told how many, so re-add any you still want.
 **Shot hygiene (#0613):** a declared `highlight` or `selector` that matches
 nothing at capture time records a visible warning (for example: highlight `.x` matched
 nothing on /route) — capture still succeeds. Duplicate declarations with the

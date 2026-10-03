@@ -1244,9 +1244,6 @@ export const deleteTaskShot: RouteHandler = async (ctx, _req, res, params) => {
     removed.declared
       ? (declared) => sameDeclaredShot(declared, removed.declared!)
       : (declared) => declaredShotMatchesShot(declared, removed),
-    // The shallow matcher cannot tell declarations apart that differ only in
-    // selector/steps — remove none rather than erase a distinct one.
-    { requireUnique: !removed.declared },
   );
   try {
     const updated = patchTaskFile(config, task.absPath, {
@@ -1268,9 +1265,12 @@ export const deleteTaskShot: RouteHandler = async (ctx, _req, res, params) => {
     declarationsRemoved: removal.removed,
     ...(removal.errors.length
       ? { warning: `## Shots could not be read: ${removal.errors.join("; ")}` }
-      : removal.ambiguous
+      : !removed.declared && removal.removed > 1
         ? {
-            warning: `the shot was deleted, but ${removal.ambiguous} ## Shots declarations match it and none was removed — edit the list so a re-handoff does not capture it again`,
+            // A legacy/auto shot records no selector or steps, so every
+            // declaration sharing its label/route/target is a candidate. All
+            // go, or a re-handoff would recapture the deleted evidence.
+            warning: `${removal.removed} ## Shots declarations matched this shot and were all removed — re-add any you still want`,
           }
         : {}),
   });

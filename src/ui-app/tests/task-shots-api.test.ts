@@ -343,10 +343,11 @@ describe("DELETE /api/tasks/:id/shots/:name — delete + declaration sync (#0627
     expect(onDisk).not.toContain('"selector": ".drawer"');
   });
 
-  it("removes NO declaration when a legacy shot matches several (ambiguous), and warns", async () => {
+  it("removes every matching declaration for a legacy shot and says so (no resurrection)", async () => {
     // Two declarations share label/route/target and differ only in selector.
-    // A legacy/auto shot records neither, so it cannot say which one it came
-    // from — deleting it must not erase distinct declarations (review round 3).
+    // A legacy shot records neither, so it cannot say which one it came from;
+    // leaving either behind would let a re-handoff recapture the deleted
+    // evidence, so all go and the user is told (review round 4).
     const saved = seedShot("Task drawer open");
     if ("error" in saved) throw new Error("seed failed");
     const base = { target: "default", route: "/", label: "Task drawer open" };
@@ -354,6 +355,7 @@ describe("DELETE /api/tasks/:id/shots/:name — delete + declaration sync (#0627
       declaredShotsSectionContent([
         { ...base, selector: ".a" },
         { ...base, selector: ".b" },
+        { target: "web", route: "/other" },
       ]),
     );
 
@@ -364,11 +366,13 @@ describe("DELETE /api/tasks/:id/shots/:name — delete + declaration sync (#0627
     });
 
     expect(capture.statusCode).toBe(200);
-    expect(capture.body).toMatchObject({ ok: true, declarationsRemoved: 0 });
+    expect(capture.body).toMatchObject({ ok: true, declarationsRemoved: 2 });
     expect((capture.body as { warning: string }).warning).toContain("2 ## Shots declarations");
     const onDisk = readFileSync(task.absPath, "utf8");
-    expect(onDisk).toContain('"selector": ".a"');
-    expect(onDisk).toContain('"selector": ".b"');
+    expect(onDisk).not.toContain('"selector": ".a"');
+    expect(onDisk).not.toContain('"selector": ".b"');
+    // An unrelated declaration is untouched.
+    expect(onDisk).toContain('"route": "/other"');
   });
 
   it("404s for an unknown shot name", async () => {

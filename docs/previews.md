@@ -186,11 +186,12 @@ same route is dispatched by the body's `data` field) and
   label/route/target matcher, which requires at least one identifying field —
   an anonymous declaration (steps or highlight only) can never claim a
   deleted shot. That matcher cannot tell apart declarations differing only in
-  selector/steps, so when it matches MORE than one entry delete removes none
-  (`removeDeclaredShots` with `requireUnique`) and returns a warning telling
-  the user to edit `## Shots`; erasing distinct declarations would be worse
-  than leaving one that a re-handoff may recapture. (The exact-match path for
-  hand-added shots still removes every identical twin.)
+  selector/steps, so ALL entries sharing the shot's label/route/target are
+  removed (a leftover would let a re-handoff recapture the deleted evidence)
+  and the response carries a warning naming how many went. (Review rounds 3
+  and 4 pulled opposite ways here: keeping them erased distinct declarations
+  but resurrected evidence; resurrection was judged the worse failure.) Exact
+  hand-added shots remove only their own declaration's twins.
 - Add-shot warnings (a `highlight`/`selector` that matched nothing) ride the
   success response as `warning`; the modal stays open showing it, since the
   shot is already saved.
