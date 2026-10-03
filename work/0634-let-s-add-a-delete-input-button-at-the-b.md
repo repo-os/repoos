@@ -13,7 +13,7 @@ model_override: openrouter/openrouter/auto-beta
 review_cli_override: opencode
 review_model_override: openrouter/openrouter/pareto-code
 created_at: "2026-10-03T08:00:36Z"
-updated_at: "2026-10-03T11:21:27Z"
+updated_at: "2026-10-03T11:48:18Z"
 review_passes: 2
 review_rounds: 1
 ---
@@ -136,3 +136,5 @@ Let's add a "Delete input" button at the bottom left of the input side panel (si
 - 2026-10-03T10:47:03Z · status review→active
 - 2026-10-03T11:02:26Z · status active→review
 - 2026-10-03T11:21:27Z · status review→done, release:success
+- 2026-10-03T11:48:18Z · status done→review
+- 2026-10-03T11:48:18Z · status review→done
