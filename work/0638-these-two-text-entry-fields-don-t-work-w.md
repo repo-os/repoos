@@ -2,7 +2,7 @@
 id: "0638"
 title: Fix unresponsive text entry fields in web UI
 type: bug
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: The reviewer sent this back to the engineer 2 times and still found issues. Human review needed.
@@ -16,9 +16,10 @@ model_override: openrouter/openrouter/pareto-code
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-03T10:29:31Z"
-updated_at: "2026-10-03T13:55:12Z"
+updated_at: "2026-10-03T13:59:59Z"
 review_passes: 3
 review_rounds: 2
+dev_error_count: 1
 ---
 ## Problem
 Two text entry fields in the web UI are completely non-functional. Clicking them produces no cursor, no focus state, and typing does nothing. This blocks any input through these fields.
@@ -109,3 +110,4 @@ These two text entry fields don't work, when I click on them nothing happens, th
 - 2026-10-03T13:30:12Z · status review→active
 - 2026-10-03T13:30:12Z · note: Fixing review findings: AreaPicker focus style, ui-smoke error matching
 - 2026-10-03T13:55:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-10-03T13:59:59Z · status active→review
