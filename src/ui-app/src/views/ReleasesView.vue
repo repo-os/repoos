@@ -441,8 +441,15 @@ async function fillSavedNotes(): Promise<void> {
  * draft or surfaces its failure.
  */
 async function syncNotesRunAtOpen(): Promise<void> {
+  // Same ordering scheme as pollNotesRun: an open sync is one more request
+  // in the same sequence, so a slow response can never overwrite newer poll
+  // state — e.g. re-showing a terminal snapshot after a poll already applied
+  // `running` (which would also let tickStopIfNeeded drop the poll loop)
+  // — #0630 review.
+  const seq = ++notesPollSeq;
   try {
     const latest = await api<ReleaseNotesRun>("/api/release/notes/run");
+    if (seq !== notesPollSeq) return;
     // `atOpen`: the operator is looking at the notes field right now, so a
     // run that finished while the panel was closed must still be visible —
     // its failure surfaces as an error, its draft as a ready-to-reuse hint
