@@ -82,3 +82,4 @@ updated_at: "2026-10-03T17:57:14Z"
 - 2026-10-03T17:19:51Z · note: Cleanup (#0640): all four stale-flag tasks verified merged and cleared. #0397 close-out candidate 8a4f2b9 was an ancestor of main; #0288 implementation commits 68f0fdee7/576342be2 are in main; #0212 merge 1e2095988 is in main; #0316 was superseded by redo 47cb6dfdb in main. Cleared needs_merge on 0397/0288/0212 and needs_input on 0316 via repoos update --needs-merge/--needs-input false.
 - 2026-10-03T17:51:03Z · body: section Shots
 - 2026-10-03T17:57:14Z · status active→review
+- 2026-10-03T17:57:14Z · note: Task body is underspecified: missing sections: Desired UX
