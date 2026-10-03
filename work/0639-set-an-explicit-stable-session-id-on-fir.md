@@ -41,3 +41,4 @@ Measurement (14d, sessions table): pi openrouter/z-ai/glm-5.3-flash hit rate 64%
 - 2026-10-03T18:06:13Z · note: shots: skipped — the diff (6 changed paths) touches no [[preview.paths]] globs — no UI change to capture
 - 2026-10-03T18:06:40Z · status review→active
 - 2026-10-03T18:14:52Z · status active→review
+- 2026-10-03T18:14:52Z · note: shots: skipped — the diff (6 changed paths) touches no [[preview.paths]] globs — no UI change to capture
