@@ -6,6 +6,9 @@ coverage/
 
 # user docs site (docs.repoos.org) build cache — .vitepress/dist is covered by dist/
 user-docs/.vitepress/cache/
+# temp bundle Vite writes when loading config.mts; was committed by accident in
+# #0627 and made the preview-target check think the Docs site had code changes
+user-docs/.vitepress/*.timestamp-*.mjs
 
 # macOS
 .DS_Store
