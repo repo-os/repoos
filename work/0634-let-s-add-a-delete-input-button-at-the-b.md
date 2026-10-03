@@ -2,16 +2,16 @@
 id: "0634"
 title: Add delete buttons to input and story side panels
 type: feature
-status: ready
+status: active
 priority: p2
 area: [web, server]
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/add-delete-buttons-to-input-and-story-si
 review_cli_override: pi
 review_model_override: openrouter/openrouter/free
 created_at: "2026-10-03T08:00:36Z"
-updated_at: "2026-10-03T08:21:57Z"
+updated_at: "2026-10-03T08:21:58Z"
 ---
 ## Problem
 
@@ -74,3 +74,4 @@ Let's add a "Delete input" button at the bottom left of the input side panel (si
 - 2026-10-03T08:13:58Z · review_cli_override
 - 2026-10-03T08:21:41Z · review_model_override
 - 2026-10-03T08:21:57Z · status inbox→ready
+- 2026-10-03T08:21:58Z · status ready→active, branch
