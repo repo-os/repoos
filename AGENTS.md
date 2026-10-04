@@ -74,7 +74,10 @@ RepoOS's own; in a managed repo it is that project's. See `docs/README.md`.
 ## Operating loop (managed task-runner agents)
 
 1. Read this file, the assigned task in your worktree, and relevant `docs/`.
-   Run `repoos list` for board context; do not claim another task.
+   Run `repoos list` for board context; do not claim another task. Before
+   reading a large file, run `repoos outline <path>` — it prints the file's
+   symbols with start-end line numbers, so you can read just the range you
+   need (`offset`/`limit`) instead of the whole file.
 2. Work in the dedicated worktree and branch RepoOS assigned. The server has
    already activated the task and created or reused its worktree. Do not edit
    task frontmatter or create a second worktree for it.

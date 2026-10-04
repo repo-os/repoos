@@ -15,6 +15,7 @@ import {
 } from "../commands/tasks.js";
 import { cmdNewDoc } from "../commands/docs.js";
 import { cmdGc } from "../commands/gc.js";
+import { cmdOutline } from "../commands/outline.js";
 import { cmdCheck } from "../commands/check.js";
 import { cmdShot } from "../commands/shot.js";
 import { cmdServe, serveProcessTitle, setServeProcessTitle } from "../commands/serve.js";
@@ -104,6 +105,9 @@ function main(): void {
     "-h",
     "upgrade",
     "uninstall",
+    // Read-only inspection of one file: the build-staleness hash is pure
+    // overhead here, and `outline` is meant to stay well under 200ms.
+    "outline",
   ]);
   if (!skipCheck.has(cmd)) {
     const result = checkBuild();
@@ -179,6 +183,9 @@ function main(): void {
       break;
     case "gc":
       cmdGc(rest);
+      break;
+    case "outline":
+      cmdOutline(rest);
       break;
     case "serve":
     case "server":
