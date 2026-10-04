@@ -3,14 +3,14 @@ id: "0649"
 title: "CTO monitor: skip the LLM call when the board is healthy; record why runs fail and what triggered them"
 type: feature
 status: done
-priority: medium
+priority: p2
 area: core
 merged_commit: da4806db3c014b4e20fadceb3eb3c6b687d54a96
 assigned_to: ai
 created_by: ""
 branch: feat/cto-monitor-skip-the-llm-call-when-the-b
 created_at: "2026-10-04T15:10:22Z"
-updated_at: "2026-10-04T16:31:49Z"
+updated_at: "2026-10-04T16:56:45Z"
 ---
 ## Problem
 
@@ -48,3 +48,4 @@ Separately, 1,457 of 3,601 CTO sessions are `errored` (1,194 of 1,625 on opencod
 - 2026-10-04T15:18:05Z · status ready→active, branch
 - 2026-10-04T16:02:35Z · status active→review
 - 2026-10-04T16:31:49Z · status review→done, release:success
+- 2026-10-04T16:56:45Z · priority
