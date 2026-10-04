@@ -79,8 +79,10 @@ RepoOS's own; in a managed repo it is that project's. See `docs/README.md`.
    already activated the task and created or reused its worktree. Do not edit
    task frontmatter or create a second worktree for it.
 3. Implement the task and update docs directly affected by the change. Run
-   `bun run fmt`, rebuild after UI changes, and run
-   `repoos check --changed main` for the scoped pre-review check. It must pass.
+   `repoos check --changed main` for the scoped pre-review check — it must
+   pass. Add `--fix` (or just `bun run fmt`) to run the `format` step's fixer
+   before the check; handoff also does this and commits the result itself.
+   Rebuild after UI changes.
 4. Request handoff with `repoos mv <id> review` or finish your reply with
    `::repoos-handoff-ready::`, then end your turn. In your own runner session,
    both record a request without changing status. RepoOS commits the branch,
@@ -190,7 +192,7 @@ this repo declares in `repoos.toml` (`[[check.steps]]`, #0446) — for RepoOS
 that is:
 - Build staleness check (`src/` vs `dist/`)
 - Lockfile sync (`bun.lock` vs `package.json`) and the zero-runtime-dependency guard
-- Formatting & lint (`oxfmt --check` + `oxlint`) — **if this fails, run `bun run fmt`, re-stage, and re-run `repoos check`**; build, tests and smoke are skipped until formatting is clean (they `dependsOn` it)
+- Formatting & lint (`oxfmt --check` + `oxlint`) — **if this fails, run `repoos check --fix` (or `bun run fmt`), re-stage, and re-run `repoos check`**; build, tests and smoke are skipped until formatting is clean (they `dependsOn` it). The close-out gate never auto-formats, so an unformatted committed tree still fails there
 - Full build (`tsc` + asset copy), CSS layering and theme-contrast guards, hard-coded-color source guard (`hardcoded-colors`), bare-`require()` guard, task-asset guard
 - Test suite
 - Headless browser UI smoke test (WebKit) — verifies the app mounts, no unrendered mustache in the DOM, and zero console errors
@@ -199,7 +201,7 @@ that is:
 
 Change the gate by editing that plan in `repoos.toml`, not by editing
 `src/commands/check.ts`: a step is `name` + `command` (or a built-in `kind`),
-plus optional `cwd`, `timeoutMs`, `required`, `profiles`, `whenChanged`,
+plus optional `fix`, `cwd`, `timeoutMs`, `required`, `profiles`, `whenChanged`,
 `requires`, `dependsOn`. A required step whose tool is missing FAILS with
 install advice — only an explicitly optional or excluded step may skip.
 Close-out runs the full profile; `repoos check --changed main` is a fast
@@ -343,8 +345,9 @@ cannot tell from the code alone:
   beyond formatting, still run `repoos check` before committing to `main`.
   **The hook skipping task branches means formatting is not enforced at commit
   time there — the close-out gate is the first check.** Always run `bun run fmt`
-  before committing on a task branch, just as you would on `main`, so the gate
-  doesn't fail on a cosmetic formatting delta after the feature work is done.
+  (or `repoos check --fix`) before committing on a task branch, just as you
+  would on `main`; handoff also auto-formats and commits the result (#0651), but
+  commit it yourself so the branch is clean before the gate runs.
   Incident: 2026-09-19, task #0435 — a hand-edit shortened two footnote strings;
   the formatter collapsed the now-short elements to one line, the hook didn't
   fire, and MTD failed twice on `oxfmt --check` before the formatting commit was

@@ -66,6 +66,23 @@ function step(over: Partial<CheckStep> = {}): CheckStep {
 }
 
 describe("loadConfig — [[check.steps]] parsing", () => {
+  it("reads an explicit `fix` command on a step row (#0651)", () => {
+    const root = tmpRepo(`[check]
+version = 1
+
+[[check.steps]]
+name = "rustfmt"
+command = "cargo fmt --check"
+fix = "cargo fmt"
+`);
+    const cfg = loadConfig(root);
+    expect(cfg.check?.steps?.[0].fix).toBe("cargo fmt");
+    const plan = resolveCheckPlan({ check: cfg.check, markers: markers() });
+    expect(plan.steps[0].fix).toBe("cargo fmt");
+    // `--print-plan` round-trips it, so the fixer survives a migration.
+    expect(formatPlanToml(plan)).toContain('fix = "cargo fmt"');
+  });
+
   it("reads the plan version, default profile and step rows", () => {
     const root = tmpRepo(`[check]
 version = 1
@@ -443,6 +460,16 @@ describe("selectSteps — profiles and changed paths", () => {
     expect(stepInProfile(step({ profiles: ["ci"] }), "ci")).toBe(true);
     expect(stepInProfile(step({ profiles: ["ci"] }), "default")).toBe(false);
   });
+
+  it("--step filters to the named steps and reports the rest as filtered (#0651)", () => {
+    const selected = selectSteps(plan, { profile: "default", stepNames: ["backend"] });
+    expect(selected.map((s) => [s.step.name, s.skip?.reason])).toEqual([
+      ["always", "filtered"],
+      ["slow", "profile"],
+      ["backend", undefined],
+    ]);
+    expect(selected[0].skip?.detail).toMatch(/not selected by --step/);
+  });
 });
 
 describe("glob matching for whenChanged", () => {
@@ -543,6 +570,15 @@ describe("parseCheckArgs — repoos check flags", () => {
     expect(parseCheckArgs(["--profile", "full"])).toEqual({ profile: "full" });
     expect(parseCheckArgs(["--changed", "main"])).toEqual({ changed: "main" });
     expect(parseCheckArgs(["--print-plan"])).toEqual({ printPlan: true });
+  });
+
+  it("reads --fix and the repeatable/comma-separated --step (#0651)", () => {
+    expect(parseCheckArgs(["--fix"])).toEqual({ fix: true });
+    expect(parseCheckArgs(["--step", "tests"])).toEqual({ steps: ["tests"] });
+    expect(parseCheckArgs(["--step", "tests", "--step", "build"])).toEqual({
+      steps: ["tests", "build"],
+    });
+    expect(parseCheckArgs(["--steps", "tests,build"])).toEqual({ steps: ["tests", "build"] });
   });
 
   it("ignores unknown flags rather than failing the gate on them", () => {

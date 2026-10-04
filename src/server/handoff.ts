@@ -37,6 +37,7 @@ import type { AgentHandoffRequest, AgentRunner } from "./agents.js";
 import { resolveAgentForTask } from "./agents.js";
 import { patchTaskFile } from "./write.js";
 import { guardReviewTransition } from "./review-guard.js";
+import { runFormatFixes } from "../core/check-format.js";
 import { recordWorktreeHandoffProtection } from "./worktree-handoff-guard.js";
 import type { TaskCheckManager, TaskCheckListener } from "./task-check.js";
 import type { RemoteValidator } from "./remote-validation.js";
@@ -424,6 +425,26 @@ async function runHandoffFinalization(
   if (task.status === "review" && worktreeTask.status === "review") {
     onProgress?.("done");
     return { ok: true, step: "done", detail: "handoff was already finalized" };
+  }
+
+  // Auto-format BEFORE the commit gate (#0651): a format-only violation would
+  // otherwise reject the whole handoff and cost the engineer a full round-trip
+  // (fix, re-check, re-handoff). Running the fixer first means the commit gate
+  // commits the formatted tree and the check below verifies exactly what will
+  // merge. It resolves the repo's own check plan (never a RepoOS-shaped
+  // command), and CLOSE-OUT deliberately does not do this — the merge gate must
+  // still fail an unformatted committed tree. Skipped under `skipChecks` so a
+  // deliberate no-gate override does not rewrite the tree under the human.
+  if (!opts.skipChecks) {
+    try {
+      const fixes = await runFormatFixes(workdir, config);
+      for (const command of fixes.commands) {
+        const failed = fixes.failures.some((f) => f.command === command);
+        console.log(`[repoos] handoff auto-format: ${command}${failed ? " (failed)" : ""}`);
+      }
+    } catch (error) {
+      console.error(`[repoos] handoff auto-format skipped: ${(error as Error).message}`);
+    }
   }
 
   onProgress?.("commit");
