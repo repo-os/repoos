@@ -101,6 +101,12 @@ export interface CheckStep {
   kind?: BuiltinCheckKind;
   /** Shell command to run; absent for a `kind` step. */
   command?: string;
+  /**
+   * Command that fixes what this step checks, for `repoos check --fix` and
+   * handoff auto-format (#0651). `kind = "format"` defaults to the
+   * package.json `fmt` script; a raw `command` step needs one declared.
+   */
+  fix?: string;
   /** Repo-relative working directory; undefined means the repo root. */
   cwd?: string;
   timeoutMs: number;
@@ -185,6 +191,8 @@ function parseStepRow(raw: unknown): CheckStepConfig | null {
   if (name) step.name = name;
   if (kind) step.kind = kind;
   if (command) step.command = command;
+  const fix = typeof r.fix === "string" ? r.fix.trim() : "";
+  if (fix) step.fix = fix;
   const cwd = typeof r.cwd === "string" ? r.cwd.trim() : "";
   if (cwd) step.cwd = cwd;
   const timeoutMs = timeoutOf(r.timeoutMs ?? r.timeout_ms);
@@ -272,6 +280,7 @@ function resolveStep(row: CheckStepConfig, index: number, warnings: string[]): C
     name: rawName,
     kind: command ? undefined : kind,
     command,
+    fix: row.fix,
     cwd: row.cwd,
     timeoutMs: row.timeoutMs ?? DEFAULT_STEP_TIMEOUT_MS,
     required: row.required !== false,
@@ -694,7 +703,7 @@ export function resolveCheckPlan(input: ResolvePlanInput): CheckPlan {
 
 // ── Selection: profiles, changed paths, dependencies ────────────────────
 
-export type SkipReason = "profile" | "changed" | "blocked" | "optional";
+export type SkipReason = "profile" | "changed" | "filtered" | "blocked" | "optional";
 
 export interface SelectedStep {
   step: CheckStep;
@@ -709,6 +718,12 @@ export interface SelectOptions {
    * full run (every step, regardless of `whenChanged`).
    */
   changedPaths?: string[];
+  /**
+   * Only these step names run (#0651). Used by `repoos check --step <name>` so
+   * the failed-steps summary can hand back a command that reruns one step.
+   * Empty means "no filter".
+   */
+  stepNames?: string[];
 }
 
 /** Whether a step belongs to `profile`. `full` includes everything. */
@@ -856,6 +871,15 @@ export function selectSteps(plan: CheckPlan, opts: SelectOptions = {}): Selected
         },
       };
     }
+    if (opts.stepNames?.length && !opts.stepNames.includes(step.name)) {
+      return {
+        step,
+        skip: {
+          reason: "filtered",
+          detail: `skipped — not selected by --step (selected: ${opts.stepNames.join(", ")})`,
+        },
+      };
+    }
     if (opts.changedPaths && !stepMatchesChanged(step, opts.changedPaths)) {
       return {
         step,
@@ -917,6 +941,7 @@ export function formatPlanToml(plan: CheckPlan, check?: CheckConfig): string {
     lines.push("", "[[check.steps]]", `name = ${tomlString(s.name)}`);
     if (s.kind) lines.push(`kind = ${tomlString(s.kind)}`);
     if (s.command) lines.push(`command = ${tomlString(s.command)}`);
+    if (s.fix) lines.push(`fix = ${tomlString(s.fix)}`);
     if (s.cwd) lines.push(`cwd = ${tomlString(s.cwd)}`);
     if (s.timeoutMs !== DEFAULT_STEP_TIMEOUT_MS) lines.push(`timeoutMs = ${s.timeoutMs}`);
     if (!s.required) lines.push("required = false");
