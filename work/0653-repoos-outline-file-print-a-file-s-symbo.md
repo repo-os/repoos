@@ -38,3 +38,4 @@ Success metrics, measured on engineer sessions after this ships versus the 2026-
 - 2026-10-04T17:42:44Z · status inbox→ready
 - 2026-10-04T17:48:54Z · status ready→active, branch
 - 2026-10-04T18:21:10Z · status active→review
+- 2026-10-04T18:21:10Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
