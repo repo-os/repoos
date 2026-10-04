@@ -40,3 +40,4 @@ Design risk is correctness, not speed: a stale cache hit that lets a broken tree
 - 2026-10-04T23:18:50Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
 - 2026-10-04T23:19:43Z · status review→active
 - 2026-10-04T23:24:47Z · status active→review
+- 2026-10-04T23:24:47Z · note: shots: skipped — Docs site matched only documentation content, and no declared shot names a route — docs captures need a declared route, so this target was skipped
