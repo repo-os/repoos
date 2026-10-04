@@ -2,7 +2,7 @@
 id: "0646"
 title: Server dies on uncaught EPIPE from unguarded child stdin writes; log EPIPE with context
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-04T08:56:04Z"
-updated_at: "2026-10-04T08:58:35Z"
+updated_at: "2026-10-04T08:58:36Z"
 ---
 ## Problem
 The control-plane server exits with `fatal: Uncaught exception — EPIPE: broken pipe, write` (see `.repoos/logs/system.log`). It has happened 12 times, four times on 2026-10-03 and four on 2026-10-04 (08:07:49Z, 08:11:47Z, 08:16:06Z, 08:43:16Z). `registerFatalHandlersOnce` in `src/server/server.ts` turns every uncaught exception into `process.exit(1)`, so a stray EPIPE takes the whole server down with no clean shutdown (serve lock left behind) and nothing restarts it when started via `just restart` (nohup).
@@ -40,3 +40,4 @@ Discovered 2026-10-04 while diagnosing why the 7171 server kept dying. Initial t
 - 2026-10-04T08:56:04Z · created · unknown
 - 2026-10-04T08:58:34Z · review_cli_override
 - 2026-10-04T08:58:35Z · review_model_override
+- 2026-10-04T08:58:36Z · status inbox→ready
