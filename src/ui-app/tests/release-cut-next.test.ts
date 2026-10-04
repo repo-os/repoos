@@ -956,4 +956,94 @@ describe("Unpushed AI release notes card (#0641)", () => {
       "Reused the saved draft",
     );
   });
+
+  it("refreshes the card to the newest draft after a fresh generate", async () => {
+    // Regression: a card showing draft A must not keep showing A after a
+    // second generate lands draft B (the primary retry-after-failure path).
+    let currentUnpushed: unknown = unpushed({ notes: "## Draft A\n- old" });
+    api.mockImplementation((path: string) => {
+      if (path === "/api/release") return Promise.resolve(releaseStatus());
+      if (path === "/api/release/distribution")
+        return Promise.resolve({ channels: [], releaseVersion: null, releaseTag: null });
+      if (path === "/api/release/run")
+        return Promise.resolve({
+          state: "idle",
+          phase: null,
+          message: "",
+          startedAt: null,
+          updatedAt: null,
+        });
+      if (path === "/api/release/notes")
+        return Promise.resolve({
+          notes: "## Draft B\n- new",
+          sinceTag: "v0.5.58",
+          commitCount: 3,
+          truncated: false,
+        });
+      if (path === "/api/release/notes/unpushed") return Promise.resolve(currentUnpushed);
+      if (path === "/api/release/notes/run")
+        return Promise.resolve({
+          state: "idle",
+          startedAt: null,
+          updatedAt: null,
+          error: null,
+          key: null,
+          notes: null,
+          sinceTag: null,
+          commitCount: 0,
+          truncated: false,
+        });
+      return Promise.reject(new Error(`unexpected api call: ${path}`));
+    });
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await flushPromises();
+    const panel = await openPanel();
+    await flushPromises();
+    expect(panel.querySelector("[data-test-id='unpushed-release-notes']")?.textContent).toContain(
+      "Draft A",
+    );
+
+    // The newest cache entry is now B; the generate response carries B and the
+    // card must re-read the endpoint rather than keep showing A.
+    currentUnpushed = unpushed({ notes: "## Draft B\n- new" });
+    button(panel, "Generate with AI")!.click();
+    await flushPromises();
+
+    expect(panel.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toContain("Draft B");
+    expect(panel.querySelector("[data-test-id='unpushed-release-notes']")).toBeNull();
+  });
+
+  it("confirms through the designed dialog before replacing typed notes", async () => {
+    mockApi(releaseStatus(), notesResponse({ notes: "" }), unpushed());
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await flushPromises();
+    const panel = await openPanel();
+    await flushPromises();
+
+    const textarea = panel.querySelector<HTMLTextAreaElement>("#rel-notes")!;
+    textarea.value = "Operator text";
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    await flushPromises();
+
+    button(panel, "Use these notes")!.click();
+    await flushPromises();
+
+    // Not a native confirm: a designed dialog asks, and the typed text is
+    // untouched until the confirm is clicked.
+    const dialog = document.body.querySelector(".cc-modal");
+    expect(dialog).toBeTruthy();
+    expect(dialog!.textContent ?? "").toContain("Replace notes with the saved draft?");
+    expect(textarea.value).toBe("Operator text");
+
+    button(document.body, "Replace notes")!.click();
+    await flushPromises();
+    expect(textarea.value).toContain("Something shipped-worthy");
+    expect(document.body.querySelector(".cc-modal")).toBeNull();
+  });
 });
