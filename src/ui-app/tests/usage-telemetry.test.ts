@@ -742,3 +742,50 @@ describe("no-SQLite graceful fallback (0230)", () => {
     expect(board.days).toEqual([]);
   });
 });
+
+describe("reviewer + CTO one-shot recording keeps cache figures", () => {
+  const result = {
+    ok: true,
+    output: "",
+    inputTokens: 500,
+    outputTokens: 40,
+    totalTokens: 540,
+    cacheReadTokens: 9000,
+    cacheCreationTokens: 120,
+    turns: 3,
+  };
+
+  it("ReviewManager review + chat turns persist cacheRead/cacheCreation/turns", async () => {
+    const root = tempRoot();
+    const { ReviewManager } = await import("../../server/review");
+    const mgr = new ReviewManager(configFor(root), () => {});
+    const priv = mgr as unknown as Record<string, (...a: unknown[]) => void>;
+    const at = "2026-10-04T00:00:00.000Z";
+    priv.recordReviewSession("0001", agent({ name: "reviewer" }), result, at, true);
+    priv.recordReviewChatTurn("0001", agent({ name: "reviewer" }), result, at, true);
+    const db = new RepoOSDb(root);
+    for (const id of [`review:0001-${at}`, `review:0001-chat-${at}`]) {
+      const s = db.getSession(id);
+      expect(s?.cacheReadTokens).toBe(9000);
+      expect(s?.cacheCreationTokens).toBe(120);
+      expect(s?.turns).toBe(3);
+    }
+  });
+
+  it("CTOManager run persists cacheRead/cacheCreation/turns", async () => {
+    const root = tempRoot();
+    const { CTOManager } = await import("../../server/cto");
+    const mgr = new CTOManager(configFor(root), () => {});
+    const at = "2026-10-04T00:00:00.000Z";
+    (mgr as unknown as Record<string, (...a: unknown[]) => void>).recordRun(
+      agent({ name: "cto" }),
+      result,
+      at,
+      true,
+    );
+    const s = new RepoOSDb(root).getSession(`cto:${at}`);
+    expect(s?.cacheReadTokens).toBe(9000);
+    expect(s?.cacheCreationTokens).toBe(120);
+    expect(s?.turns).toBe(3);
+  });
+});
