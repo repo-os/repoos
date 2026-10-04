@@ -1,5 +1,5 @@
 /**
- * `repoos certify <cli> [--yes] [--json]` — run the adapter contract suite and,
+ * `repoos certify <cli> [--yes] [--json] [--force]` — run the adapter contract suite and,
  * when every seam passes, write the certification evidence back into
  * `src/core/agent-compatibility.json` automatically.
  *
@@ -11,18 +11,22 @@
  * does — src/core/ in a dev checkout, dist/core/ in a built install — and
  * writes back to whichever file it loaded from.
  */
+import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { runAdapterContract } from "../core/agent-contract.js";
 import type { AgentCompatibilityContract } from "../core/agent-compatibility.js";
 import { parseAgentVersion } from "../core/agent-compatibility.js";
+import { KNOWN_AGENTS, resolveBinary } from "../core/detect.js";
 import { c } from "../cli/colors.js";
 
 export interface CertifyCliArgs {
   cli: string | null;
   yes: boolean;
   json: boolean;
+  /** `--force`: run the probe even when this version is already certified. */
+  force: boolean;
   missingCli: boolean;
   /** Explicit binary path — skips PATH resolution and probes this binary directly. */
   binary: string | null;
@@ -33,6 +37,7 @@ export interface CertifyCliArgs {
 export function parseCertifyArgs(argv: string[]): CertifyCliArgs {
   const yes = argv.includes("--yes");
   const json = argv.includes("--json");
+  const force = argv.includes("--force");
   const binaryIdx = argv.indexOf("--binary");
   const binary = binaryIdx !== -1 ? (argv[binaryIdx + 1] ?? null) : null;
   const modelIdx = argv.indexOf("--model");
@@ -41,7 +46,7 @@ export function parseCertifyArgs(argv: string[]): CertifyCliArgs {
     (a, i) => !a.startsWith("--") && argv[i - 1] !== "--binary" && argv[i - 1] !== "--model",
   );
   const cli = positional[0] ?? null;
-  return { cli, yes, json, missingCli: !cli, binary, model };
+  return { cli, yes, json, force, missingCli: !cli, binary, model };
 }
 
 /** Locate the live manifest file on disk (src or dist). */
@@ -85,8 +90,40 @@ function saveManifest(path: string, manifest: Manifest): void {
   writeFileSync(path, JSON.stringify(manifest, null, 2) + "\n", "utf8");
 }
 
+/**
+ * The installed version when it is already covered by the manifest (equal to or
+ * older than `newestCertifiedVersion`), else null. Reads only `--version` — no
+ * tokens. Any doubt (missing binary, unparsable version, no entry) returns
+ * null so the probe runs.
+ */
+function alreadyCertified(
+  cli: string,
+  binaryOverride: string | null,
+): { version: string; newest: string } | null {
+  try {
+    const known = KNOWN_AGENTS.find((a) => a.cli === cli)?.binary;
+    const bin = binaryOverride ?? (known ? resolveBinary(known) : null);
+    if (!bin || !existsSync(bin)) return null;
+    const out = spawnSync(bin, ["--version"], { encoding: "utf8", timeout: 10_000 });
+    const installed = parseAgentVersion(`${out.stdout ?? ""}\n${out.stderr ?? ""}`);
+    const path = findManifestPath();
+    if (!installed || !path) return null;
+    const entry = loadManifest(path).contracts.find((e) => e.cli === cli);
+    const newest = entry?.newestCertifiedVersion ?? null;
+    const newestParsed = newest ? parseAgentVersion(newest) : null;
+    if (!newest || !newestParsed) return null;
+    for (let i = 0; i < 3; i++) {
+      if (installed[i] > newestParsed[i]) return null;
+      if (installed[i] < newestParsed[i]) break;
+    }
+    return { version: installed.join("."), newest };
+  } catch {
+    return null;
+  }
+}
+
 export async function cmdCertify(argv: string[]): Promise<void> {
-  const { cli, yes, json: asJson, missingCli, binary, model } = parseCertifyArgs(argv);
+  const { cli, yes, json: asJson, force, missingCli, binary, model } = parseCertifyArgs(argv);
 
   if (missingCli || !cli) {
     console.error(c.red("  repoos certify needs a harness id, e.g. `repoos certify opencode`."));
@@ -95,6 +132,29 @@ export async function cmdCertify(argv: string[]): Promise<void> {
     );
     process.exitCode = 1;
     return;
+  }
+
+  // Skip by default when the installed version is already certified: the live
+  // probe spends provider tokens, and re-running it on a covered version only
+  // rewrites the date. `--force` re-probes anyway.
+  if (!force) {
+    const covered = alreadyCertified(cli, binary);
+    if (covered) {
+      if (asJson) {
+        console.log(JSON.stringify({ cli, skipped: true, version: covered.version }, null, 2));
+      } else {
+        console.log("");
+        console.log(
+          "  " +
+            c.green("✔ Skipped") +
+            ` — ${cli} ${covered.version} is already certified` +
+            c.dim(` (newest certified: ${covered.newest}).`),
+        );
+        console.log(c.dim("    Use --force to re-run the live probe anyway."));
+        console.log("");
+      }
+      return;
+    }
   }
 
   const WARNING = [

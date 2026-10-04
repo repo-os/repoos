@@ -127,9 +127,9 @@ const GROUPS: readonly CommandGroup[] = [
       },
       {
         name: "certify",
-        usage: "certify <cli> [--yes] [--json] [--binary <path>]",
+        usage: "certify <cli> [--yes] [--json] [--force] [--binary <path>]",
         desc: "Run the adapter contract suite and record certification evidence",
-        flags: "--yes · --json · --binary <path>",
+        flags: "--yes · --json · --force · --binary <path>",
       },
       {
         name: "support",

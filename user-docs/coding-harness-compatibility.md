@@ -122,7 +122,14 @@ repoos certify "claude code" --binary /usr/local/bin/claude --yes
 
 # JSON output (for CI / scripting):
 repoos certify opencode --yes --json
+
+# Re-probe a version that is already certified (skipped by default):
+repoos certify opencode --yes --force
 ```
+
+By default `certify` reads `--version` first and skips the live probe (no tokens
+spent) when the installed version is already covered by the manifest's
+`newestCertifiedVersion`. Pass `--force` to run it anyway.
 
 When certify passes all seams it:
 
