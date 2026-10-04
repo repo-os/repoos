@@ -187,6 +187,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     autoTransition: true,
   },
   autoEngineeringMode: false,
+  ctoSkipHealthy: true,
   skillSuggestions: false,
   maxActiveTasks: 3,
   worktreeWarnThreshold: 20,
@@ -1036,6 +1037,8 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (Array.isArray(parsed.agents)) cfg.agents = parsed.agents as Agent[];
     if (typeof get("autoEngineeringMode") === "boolean")
       cfg.autoEngineeringMode = get("autoEngineeringMode") as boolean;
+    if (typeof get("ctoSkipHealthy") === "boolean")
+      cfg.ctoSkipHealthy = get("ctoSkipHealthy") as boolean;
     if (typeof get("skillSuggestions") === "boolean")
       cfg.skillSuggestions = get("skillSuggestions") as boolean;
     const maxActiveTasks = get("maxActiveTasks");
@@ -1671,6 +1674,17 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       description: "Automatically select and start ready tasks up to the maximum",
     },
     {
+      key: "ctoSkipHealthy",
+      label: "Skip the CTO on a healthy board",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.ctoSkipHealthy,
+      description:
+        "Don't call the CTO model a monitor tick when no task is stuck, the build is fresh " +
+        "and the process check is normal. Disable to run a full CTO pass on every tick.",
+    },
+    {
       key: "skillSuggestions",
       label: "Auto-suggest skills from completed sessions",
       type: "boolean",
@@ -1970,6 +1984,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "defaultTaskMode",
   "maxActiveTasks",
   "autoEngineeringMode",
+  "ctoSkipHealthy",
   "skillSuggestions",
   "worktreeWarnThreshold",
   "dev.inspector.enabled",
