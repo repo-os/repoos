@@ -11,7 +11,7 @@ branch: feat/surface-unpushed-ai-release-notes-below-
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-04T02:00:15Z"
-updated_at: "2026-10-04T02:20:39Z"
+updated_at: "2026-10-04T02:32:37Z"
 ---
 ## Problem
 When an AI release-notes generation succeeds but the subsequent release cut fails, the user has no visibility into whether those previously generated notes are available for reuse. The user just encountered this after a failed release (only updated `repoos.toml` and tried again on a remote runner). Without a quick reference, the user must guess whether to regenerate notes or reuse existing ones.
@@ -51,6 +51,26 @@ Currently we save the AI generated release notes, but it's a black box to the us
 
 ![Screenshot-2026-10-04-at-09.53.21](/api/tasks/0641/attachments/screenshot-1.png)
 
+## Shots
+```json
+[
+  {
+    "label": "Release panel: saved-but-unreleased AI draft card below the notes field",
+    "target": "default",
+    "route": "/releases",
+    "highlight": "[data-test-id=\"unpushed-release-notes\"]",
+    "steps": [
+      {
+        "click": "[data-test-id=\"cut-release-open\"]"
+      },
+      {
+        "waitMs": 800
+      }
+    ]
+  }
+]
+```
+
 ## Activity
 
 - 2026-10-04T02:00:15Z · created · hello@repoos.org
@@ -60,3 +80,4 @@ Currently we save the AI generated release notes, but it's a black box to the us
 - 2026-10-04T02:20:12Z · review_model_override
 - 2026-10-04T02:20:15Z · status inbox→ready
 - 2026-10-04T02:20:39Z · status ready→active, branch
+- 2026-10-04T02:32:37Z · body: section Shots
