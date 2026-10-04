@@ -40,6 +40,7 @@ sessions, reprioritise.
 ### Engineer — `missionFor()` (`src/server/agents.ts`)
 
 ```
+[ workingDirectoryHeader ] ← absolute workdir + "main checkout off-limits" (#0654)
 [ contextPack ]          ← generateContextPack(), see below
 [ resumePreamble ]       ← dirty-worktree summary, or Ross/Debugger board dump
 [ agent.instructions ]   ← stable per agent
