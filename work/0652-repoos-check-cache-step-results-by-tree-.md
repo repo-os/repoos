@@ -1,0 +1,32 @@
+---
+id: "0652"
+title: "repoos check: cache step results by tree hash so unchanged reruns return instantly"
+type: feature
+status: inbox
+priority: medium
+area: core
+assigned_to: ""
+created_by: ""
+branch: ""
+created_at: "2026-10-04T16:32:02Z"
+updated_at: "2026-10-04T16:32:02Z"
+---
+## Problem
+40% of repoos check runs by engineer agents (181 of 456) had no edit or write since the previous check (upper bound: some follow bun run fmt, which changes files without an edit call). Full runs are slow (opencode-measured p90 about 185s for check, 88s for build). 141 of 203 sessions also ran bun run build by hand even though the check builds.
+
+## Desired UX
+Re-running repoos check on a tree whose relevant inputs have not changed returns cached passing step results immediately and says so. Failed steps are never cached as passes.
+
+## Acceptance criteria
+- Per-step cache keyed by a hash of the step's inputs (tracked and untracked files that matter, tool versions, step config, runtime); a step is re-run when any input differs.
+- Close-out and the remote/CI gate always run the full plan uncached (or provably equivalent); cache is local to interactive/pre-review runs. State this decision in docs/close-out-pipeline.md.
+- Output labels cached steps (e.g. 'cached, tree <hash>') so nobody mistakes them for fresh runs; a --no-cache flag forces a fresh run.
+- Non-deterministic steps (smoke, contrast audit) are either keyed on build output hash or excluded; document which.
+- Tests: hit, miss on edit, miss on config change, never caches a failure, close-out bypass.
+
+## Notes for AI
+Design risk is correctness, not speed: a stale cache hit that lets a broken tree through the gate is worse than the time saved. Prefer excluding a step to caching it unsafely. Ties into #0xxx auto-format/summary task only by sharing check output; keep independent.
+
+## Activity
+
+- 2026-10-04T16:32:02Z · created · unknown
