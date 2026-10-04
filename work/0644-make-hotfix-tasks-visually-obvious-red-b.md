@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-04T09:46:37Z"
-review_passes: 1
 id: "0644"
 title: "Make hotfix tasks visually obvious: red badge, red outline, drawer banner"
 type: feature
@@ -13,6 +11,7 @@ branch: feat/make-hotfix-tasks-visually-obvious-red-b
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-04T06:43:13Z"
+updated_at: "2026-10-04T09:22:16Z"
 ---
 ## Problem
 Hotfix tasks are easy to miss. On the board card the only indicator is a plain unstyled `hotfix` word (`.tc-hotfix` in `TaskCard.vue` has no CSS and uses a native `title` tooltip). The task drawer shows nothing at all, even though `task.hotfix` and `task.hotfixTarget` are available. A hotfix runs in the main checkout, skips preview and the review report, and blocks the checkout, so it should be unmistakable.
@@ -38,40 +37,6 @@ Files: `src/ui-app/src/components/TaskCard.vue` (around the `tc-hotfix` span), `
 ## Scope
 Covers: hotfix visibility on card and drawer. Deferred: changing hotfix behaviour itself.
 
-## Shots
-```json
-[
-  {
-    "label": "Hotfix card on the board: red outline and HOTFIX badge",
-    "target": "default",
-    "route": "/?status=done",
-    "highlight": ".task-card.hotfix-done, .task-card.hotfix-done .hotfix-badge",
-    "steps": [
-      {
-        "waitFor": ".board"
-      },
-      {
-        "waitMs": 400
-      }
-    ]
-  },
-  {
-    "label": "Hotfix task drawer: red badge, banner, and Review marked skipped",
-    "target": "default",
-    "route": "/work?task=0247",
-    "highlight": ".hotfix-banner, .drawer-head .hotfix-badge, .tab-hotfix-skip",
-    "steps": [
-      {
-        "waitFor": ".hotfix-banner"
-      },
-      {
-        "waitMs": 400
-      }
-    ]
-  }
-]
-```
-
 ## Activity
 
 - 2026-10-04T06:43:13Z · created · unknown
@@ -79,8 +44,4 @@ Covers: hotfix visibility on card and drawer. Deferred: changing hotfix behaviou
 - 2026-10-04T07:23:58Z · review_model_override
 - 2026-10-04T07:24:06Z · status inbox→ready
 - 2026-10-04T07:24:09Z · status ready→active, branch
-- 2026-10-04T07:50:49Z · body: section Shots
-- 2026-10-04T09:45:50Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-04T09:45:54Z · status active→review
-- 2026-10-04T09:46:13Z · note: shots: failed — capture of Hotfix card on the board: red outline and HOTFIX badge on "default" failed: waitFor: Timeout 5000ms exceeded.
-
+- 2026-10-04T09:22:16Z · status active→review
