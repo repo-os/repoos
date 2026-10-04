@@ -9,9 +9,18 @@
  * served through the `theme` query param, so the installed-app icon tracks
  * the OS appearance the same way the native dock icon does.
  *
+ * Installs stay distinguishable the way the pre-#0645 renderer intended: the
+ * conic gradient's start angle is rotated by a name-derived offset, so every
+ * repo gets a unique arrangement while the exact macOS palette and the
+ * hexagon mark are preserved (the native dock icon's own orientation is the
+ * `nameAngle` 0 case).
+ *
  * When a `color` (hex) is supplied (the repo's chosen color from the color
  * picker, #0280), it replaces the accent — the gradient start and the hexagon
  * outline — so the installed-app icon still reflects the chosen repo color.
+ *
+ * Maskable icons render edge-to-edge (no breathing-room inset), matching the
+ * native `AppIcon` artwork rather than the inset dock artwork.
  *
  * Pure zlib (node:zlib) PNG encoding — no image libraries.
  */
@@ -87,6 +96,13 @@ function hexToRgb(hex: string): RGB | null {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255] as RGB;
 }
 
+/** Stable 0-359° gradient rotation from the repo name, so installs differ. */
+function nameAngle(name: string): number {
+  let h = 2167;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return h % 360;
+}
+
 /** Linear blend from `a` to `b` by fraction `f` (0..1), like NSColor.blended. */
 function blend(a: RGB, b: RGB, f: number): RGB {
   return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f];
@@ -129,7 +145,12 @@ function toPixel(v: number, origin: number, scale: number): number {
  * Rasterize the icon at `size` (already supersampled) as non-premultiplied
  * RGBA. Only the outer rounded clip paints pixels; corners stay transparent.
  */
-function drawIconPixels(size: number, palette: Palette, edgeToEdge: boolean): Uint8ClampedArray {
+function drawIconPixels(
+  size: number,
+  palette: Palette,
+  edgeToEdge: boolean,
+  startAngleDeg: number,
+): Uint8ClampedArray {
   // Keep the dock icon's breathing room; maskable/app artwork can reach the
   // canvas edge. Matches `canvasInset` in the native generator.
   const inset = edgeToEdge ? 0 : (size * 3) / 30;
@@ -167,9 +188,10 @@ function drawIconPixels(size: number, palette: Palette, edgeToEdge: boolean): Ui
   const markMax = svgOrigin + svgScale + hexHalf;
 
   // Conic gradient starts at 200° (math coords) and sweeps accent→secondary
-  // over the first half, secondary→accent over the second.
+  // over the first half, secondary→accent over the second. The name-derived
+  // rotation shifts that start so installs differ without changing the palette.
   const TAU = Math.PI * 2;
-  const startAngle = (200 * Math.PI) / 180;
+  const startAngle = (startAngleDeg * Math.PI) / 180;
   const gradientColor = (x: number, y: number): RGB => {
     // Screen y grows downward; flip it to match the native math coordinate.
     const angle = Math.atan2(-(y - center), x - center);
@@ -311,18 +333,27 @@ function encodePng(width: number, height: number, rgba: Uint8Array): Buffer {
 
 /**
  * Render the PWA app icon as a PNG, matching the macOS Hub dock icon.
+ * @param name repo/instance name; rotates the gradient so installs differ
+ *        while the macOS palette and mark stay identical.
  * @param size icon dimensions (square)
  * @param color optional hex color (e.g. the repo's chosen color) that
  *        replaces the accent (gradient start + hexagon outline).
  * @param theme light/dark artwork variant (defaults to dark).
+ * @param maskable render edge-to-edge for `purpose: "maskable"` use.
  */
-export function renderPwaIcon(size: number, color?: string, theme: IconTheme = "dark"): Buffer {
+export function renderPwaIcon(
+  name: string,
+  size: number,
+  color?: string,
+  theme: IconTheme = "dark",
+  maskable = false,
+): Buffer {
   const base = THEMES[theme] ?? THEMES.dark;
   const custom = color ? hexToRgb(color) : null;
   const palette: Palette = custom ? { ...base, accent: custom } : base;
 
   const hiSize = size * SUPERSAMPLE;
-  const hi = drawIconPixels(hiSize, palette, false);
+  const hi = drawIconPixels(hiSize, palette, maskable, 200 + nameAngle(name));
   const rgba = downsample(hi, hiSize, size);
   return encodePng(size, size, rgba);
 }

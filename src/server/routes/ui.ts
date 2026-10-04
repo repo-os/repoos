@@ -15,11 +15,26 @@ function themeFromUrl(req: { url?: string }): "light" | "dark" {
   return url?.searchParams.get("theme") === "light" ? "light" : "dark";
 }
 
-/** Build an `/icons/*.png` URL, URL-encoding the color (`#` must not become a fragment). */
-function iconSrc(size: number, color: string | null, theme: "light" | "dark"): string {
+/** True when the request asks for the edge-to-edge maskable artwork. */
+function maskableFromUrl(req: { url?: string }): boolean {
+  const url = req.url ? new URL(req.url, "http://localhost") : null;
+  return url?.searchParams.get("maskable") === "1";
+}
+
+/**
+ * Build an `/icons/*.png` URL. The color is URL-encoded so `#` is not treated
+ * as a URL fragment, and `maskable` selects the edge-to-edge artwork.
+ */
+function iconSrc(
+  size: number,
+  color: string | null,
+  theme: "light" | "dark",
+  maskable = false,
+): string {
   const params = new URLSearchParams();
   if (color) params.set("c", color);
   params.set("theme", theme);
+  if (maskable) params.set("maskable", "1");
   return `/icons/icon-${size}.png?${params.toString()}`;
 }
 
@@ -90,11 +105,21 @@ export function buildPwaManifest(name: string, color: string | null): PwaManifes
         type: "image/png",
         media: "(prefers-color-scheme: dark)",
       },
+      // Maskable installs follow the OS appearance too, and use the
+      // edge-to-edge artwork (the native AppIcon variant).
       {
-        src: iconSrc(512, color, "dark"),
+        src: iconSrc(512, color, "light", true),
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        src: iconSrc(512, color, "dark", true),
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
+        media: "(prefers-color-scheme: dark)",
       },
     ],
   };
@@ -130,12 +155,14 @@ export const serveStaticFile: RouteHandler = (ctx, _req, res, params) => {
 };
 
 // Icon rendering function - will be called from main server with the repo's
-// name-derived artwork. Takes an explicit light/dark theme (#0645).
-let renderIconFn: ((size: number, color?: string, theme?: "light" | "dark") => Buffer) | null =
-  null;
+// name-derived artwork. Takes an explicit light/dark theme and maskable flag
+// (#0645).
+let renderIconFn:
+  | ((size: number, color?: string, theme?: "light" | "dark", maskable?: boolean) => Buffer)
+  | null = null;
 
 export function setIconRenderer(
-  fn: (size: number, color?: string, theme?: "light" | "dark") => Buffer,
+  fn: (size: number, color?: string, theme?: "light" | "dark", maskable?: boolean) => Buffer,
 ) {
   renderIconFn = fn;
 }
@@ -153,7 +180,7 @@ export const serveIcon: RouteHandler = (_ctx, req, res, params) => {
     return;
   }
   const color = colorFromUrl(req);
-  const png = renderIconFn(size, color ?? undefined, themeFromUrl(req));
+  const png = renderIconFn(size, color ?? undefined, themeFromUrl(req), maskableFromUrl(req));
   res.writeHead(200, {
     "Content-Type": "image/png",
     "Cache-Control": "max-age=86400",
