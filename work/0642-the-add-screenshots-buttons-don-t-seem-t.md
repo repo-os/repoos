@@ -2,7 +2,7 @@
 id: "0642"
 title: Fix add-screenshot button on installed PWA (macOS)
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: [mobile, macos]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-04T05:04:17Z"
-updated_at: "2026-10-04T05:05:39Z"
+updated_at: "2026-10-04T05:05:47Z"
 ---
 ## Problem
 The "add screenshots" buttons do not work on an installed PWA on macOS. The issue affects both the New Task and New Input panels.
@@ -43,3 +43,4 @@ The add screenshots buttons don't seem to work on an installed pwa on this machi
 - 2026-10-04T05:04:31Z · status draft→inbox, title, area, type, body
 - 2026-10-04T05:05:37Z · review_cli_override
 - 2026-10-04T05:05:39Z · review_model_override
+- 2026-10-04T05:05:47Z · status inbox→ready
