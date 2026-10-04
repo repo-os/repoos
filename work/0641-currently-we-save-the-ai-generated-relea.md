@@ -2,16 +2,17 @@
 id: "0641"
 title: Surface unpushed AI release notes below generate button
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 935cdcecc698a3723af936073feadff4bb48a2dc
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/surface-unpushed-ai-release-notes-below-
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-04T02:00:15Z"
-updated_at: "2026-10-04T02:40:14Z"
+updated_at: "2026-10-04T03:31:13Z"
 ---
 ## Problem
 When an AI release-notes generation succeeds but the subsequent release cut fails, the user has no visibility into whether those previously generated notes are available for reuse. The user just encountered this after a failed release (only updated `repoos.toml` and tried again on a remote runner). Without a quick reference, the user must guess whether to regenerate notes or reuse existing ones.
@@ -61,3 +62,4 @@ Currently we save the AI generated release notes, but it's a black box to the us
 - 2026-10-04T02:20:15Z · status inbox→ready
 - 2026-10-04T02:20:39Z · status ready→active, branch
 - 2026-10-04T02:40:14Z · status active→review
+- 2026-10-04T03:31:13Z · status review→done, release:success
