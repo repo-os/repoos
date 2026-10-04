@@ -22,6 +22,7 @@
  *   GET  /api/repo/branches    -> { defaultBranch, branches } local heads, default first
  *   POST /api/repo/commit      -> commit all changes in the repo root checkout on its current branch { message }
  *   GET  /api/repo/status      -> repo root checkout git state { branch, detached, dirty, head, recentCommits } (#0584)
+ *   GET  /api/repo/working-diff[/file] -> uncommitted edits in the root checkout
  *   GET  /api/repo/commits/:sha -> one commit + changed files + patch
  *   GET  /api/repo/commits/:sha/file -> { before, after } contents at parent vs commit
  *   POST /api/docs/create      -> create a document { path, content }; returns { ok, path }
@@ -228,6 +229,8 @@ import {
   commitRepoRoot,
   getRepoCommitRoute,
   getRepoCommitFile,
+  getRepoWorkingDiff,
+  getRepoWorkingDiffFile,
   getSkills,
   getRegistryCurated,
   searchRegistry,
@@ -2397,6 +2400,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", "/api/repo/branches", getRepoBranches);
   router.register("GET", "/api/repo/status", getRepoStatusRoute);
   router.register("POST", "/api/repo/commit", commitRepoRoot);
+  router.register("GET", "/api/repo/working-diff", getRepoWorkingDiff);
+  router.register("GET", "/api/repo/working-diff/file", getRepoWorkingDiffFile);
   router.register("GET", /^\/api\/repo\/commits\/([^/]+)\/file$/, getRepoCommitFile);
   router.register("GET", /^\/api\/repo\/commits\/([^/]+)$/, getRepoCommitRoute);
   router.register("POST", "/api/docs/create", createDoc);

@@ -327,13 +327,26 @@ describe("sidebar git-state popover (#0584)", () => {
     repo.gitStatus = status();
     const wrapper = await mountRow();
 
-    await wrapper.find(".side-git-info").trigger("mouseenter");
+    // The whole row is the hover target, not just the icon (the real events
+    // do not bubble, so the row itself is what these trigger).
+    await wrapper.find(".side-git").trigger("mouseenter");
     await flushPromises();
     expect(document.querySelector(".side-git-pop")).not.toBeNull();
 
-    await wrapper.find(".side-git-info").trigger("mouseleave");
+    await wrapper.find(".side-git").trigger("mouseleave");
     await new Promise((r) => setTimeout(r, 300));
     expect(document.querySelector(".side-git-pop")).toBeNull();
+  });
+
+  it("offers a View diff link to the working-tree diff while dirty", async () => {
+    setHoverCapability(true);
+    const repo = useRepoStore();
+    repo.gitStatus = status({ dirty: [{ path: "a.ts", status: " M" }] });
+    const wrapper = await mountRow();
+    await wrapper.find(".side-git").trigger("mouseenter");
+    await flushPromises();
+    const link = document.querySelector<HTMLAnchorElement>("[data-test-id=side-git-view-diff]");
+    expect(link?.getAttribute("href")).toBe("/repo/working-diff");
   });
 
   it("opens from a tap on a no-hover device and stays open", async () => {

@@ -7,6 +7,8 @@ import { readCheckRun } from "../../core/check-results-store.js";
 import {
   getCommitFileContents,
   getRepoCommit,
+  getWorkingTreeDiff,
+  getWorkingTreeFileContents,
   listRepoBranches,
   listRepoLog,
   MAX_LOG_LIMIT,
@@ -171,6 +173,19 @@ export const getRepoCommitFile: RouteHandler = async (ctx, req, res, params) => 
   const rawPath = q.get("path") ?? "";
   const path = rawPath.replace(/^(?:a|b)\//, "");
   const result = await getCommitFileContents(ctx.config.root, sha, path);
+  if (!result.ok) return json(res, errorStatus(result.code), result);
+  return json(res, 200, result);
+};
+
+export const getRepoWorkingDiff: RouteHandler = async (ctx, _req, res) => {
+  const result = await getWorkingTreeDiff(ctx.config.root);
+  if (!result.ok) return json(res, errorStatus(result.code), result);
+  return json(res, 200, result);
+};
+
+export const getRepoWorkingDiffFile: RouteHandler = async (ctx, req, res) => {
+  const path = (query(req.url).get("path") ?? "").replace(/^(?:a|b)\//, "");
+  const result = await getWorkingTreeFileContents(ctx.config.root, path);
   if (!result.ok) return json(res, errorStatus(result.code), result);
   return json(res, 200, result);
 };

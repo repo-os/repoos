@@ -6,6 +6,8 @@
  * fields and a NUL record terminator — never parsed from human `git log`
  * pretty-print.
  */
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { isGitRepo, runGit, type DiffResult } from "./git.js";
 
 export const DEFAULT_LOG_LIMIT = 50;
@@ -368,6 +370,49 @@ export async function getRepoCommit(
   const { patch, truncated } = truncatePatch(patchOut);
 
   return { ...commit, files, patch, truncated };
+}
+
+/**
+ * Uncommitted edits in the repo root checkout (`git diff HEAD`): staged and
+ * unstaged changes to tracked files, as one patch. Untracked files are not in
+ * it — git has no patch for a path it does not track yet.
+ */
+export async function getWorkingTreeDiff(
+  root: string,
+): Promise<(DiffResult & { ok: true }) | RepoLogError> {
+  if (!isGitRepo(root)) return { ok: false, error: "not a git repository", code: "not-git" };
+  const run = await runGit(root, ["diff", "--patch", "HEAD"], DIFF_TIMEOUT_MS);
+  const out = run.status === 0 || run.stdout ? run.stdout : "";
+  return { ok: true, ...truncatePatch(out) };
+}
+
+/** A tracked file at HEAD vs on disk, for the working-tree diff's full-file view. */
+export async function getWorkingTreeFileContents(
+  root: string,
+  filePath: string,
+): Promise<
+  | { ok: true; before: string; after: string; existsBefore: boolean; existsAfter: boolean }
+  | RepoLogError
+> {
+  if (!isGitRepo(root)) return { ok: false, error: "not a git repository", code: "not-git" };
+  if (!isValidPathFilter(filePath)) return { ok: false, error: "invalid path", code: "invalid" };
+  const beforeRun = await runGit(root, ["show", `HEAD:${filePath}`], 10_000);
+  const existsBefore = beforeRun.status === 0 && !beforeRun.timedOut;
+  let after = "";
+  let existsAfter = false;
+  try {
+    after = await readFile(join(root, filePath), "utf8");
+    existsAfter = true;
+  } catch {
+    /* deleted in the working tree */
+  }
+  return {
+    ok: true,
+    before: existsBefore ? beforeRun.stdout : "",
+    after,
+    existsBefore,
+    existsAfter,
+  };
 }
 
 export async function getCommitFileContents(

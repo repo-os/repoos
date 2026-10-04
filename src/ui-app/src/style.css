@@ -1033,6 +1033,14 @@
   font-weight: 600;
   cursor: pointer;
 }
+.side-git-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+a.side-git-commit-btn {
+  text-decoration: none;
+}
 .side-git-commit-btn:hover {
   background: color-mix(in srgb, var(--txt) 8%, var(--panel-solid));
 }
