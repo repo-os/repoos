@@ -211,3 +211,42 @@ Not a large dent in total task *wall-time* (output generation still dominates)
    text), directly measurable against the Phase 0 numbers.
 3. **Finding 2** — delta-based context for Ross/Debugger.
 4. **Finding 3** — direct-API oracle path, prototype + measure first.
+
+---
+
+## Session identity (cache affinity) — #0639
+
+RepoOS used to learn a session id only by *parsing it out of the CLI's output*
+(`parsePiEvent`'s `session` header, opencode's `session_id` event), and
+only passed it back on `runner.send`. A first launch carried no id, so a crash,
+a server reload, or a parse miss left the next turn with nothing to resume and
+pi minted a fresh session — a cold provider cache.
+
+`deterministicSessionId(taskId, role)` now derives the id client-side
+(`repoos-<task>-<role>`, sanitized to pi's `assertValidSessionId` shape). The
+engineer launch records it and pins it with `--session-id`; `runner.send`
+resumes the exact id with `--session`. If the id is somehow absent on a resume,
+it is recomputed rather than dropped (never a silent fresh start). A fix-up turn
+is the same engineer conversation, so it derives with the `engineer` role.
+
+An explicit **fresh** start (`runner.start` `freshSession`) gets its own id —
+`freshSessionId()` = the ordinary id plus a unique `-f<base36 ms>` suffix —
+recorded and persisted before spawn. It is deliberately *not* the ordinary id
+(pi would reopen the conversation the user just reset) and it *is* recorded up
+front, so a launch that never emits its `session` header can still be resumed
+later instead of falling back to the ordinary id. A later non-fresh start reuses
+whatever id is already recorded, so a reset is not silently undone.
+
+The reviewer uses `repoos-<task>-reviewer-<pass>`, where `<pass>` is the task's
+`review_passes` counter + 1. The pass suffix is load-bearing: a review is a
+*fresh assessment* every time (0110), so a deliberate "Review again" or a review
+bounce must start a new pi session — a shared id would make pi reopen the prior
+chat and anchor the new assessment on the old verdict. Within one pass, the
+review's chat follow-ups resume the same id.
+
+**opencode v2.0.11 cannot do this.** `opencode run` exposes only `--continue`
+and `--session <id>` (continue an existing session); there is no
+`--session-id`/`--create-session` flag, and `opencode session`'s subcommands are
+`list`/`delete`/`export`/`import` — no "create with a chosen id". So opencode
+keeps the current parse-then-resume behavior; a first opencode launch still
+mints its own id. Re-check on an opencode upgrade.
