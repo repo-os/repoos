@@ -63,7 +63,12 @@ function notesResponse(overrides: Record<string, unknown> = {}) {
 }
 
 /** Answers every endpoint the view touches on mount or button press. */
-function answer(path: string, status: Record<string, unknown>, notes: unknown): Promise<unknown> {
+function answer(
+  path: string,
+  status: Record<string, unknown>,
+  notes: unknown,
+  unpushed: unknown = null,
+): Promise<unknown> {
   if (path === "/api/release") return Promise.resolve(status);
   if (path === "/api/release/distribution")
     return Promise.resolve({ channels: [], releaseVersion: null, releaseTag: null });
@@ -76,6 +81,7 @@ function answer(path: string, status: Record<string, unknown>, notes: unknown): 
       updatedAt: null,
     });
   if (path === "/api/release/notes") return Promise.resolve(notes);
+  if (path === "/api/release/notes/unpushed") return Promise.resolve(unpushed);
   if (path === "/api/release/notes/run")
     return Promise.resolve({
       state: "idle",
@@ -94,8 +100,9 @@ function answer(path: string, status: Record<string, unknown>, notes: unknown): 
 function mockApi(
   status: Record<string, unknown> = releaseStatus(),
   notes: unknown = notesResponse(),
+  unpushed: unknown = null,
 ): void {
-  api.mockImplementation((path: string) => answer(path, status, notes));
+  api.mockImplementation((path: string) => answer(path, status, notes, unpushed));
 }
 
 function button(root: ParentNode, label: string): HTMLButtonElement | undefined {
@@ -850,5 +857,193 @@ describe("?drawer=cut deep link", () => {
     expect(panel, "panel opened by the query param").toBeTruthy();
     expect(button(panel!, "Publish")!.disabled).toBe(true);
     expect(panel!.textContent).toContain("Publishing is disabled");
+  });
+});
+
+/**
+ * The saved-but-unreleased draft card (#0641): a generated draft that never
+ * shipped appears below the notes field with enough context (age, distance
+ * from main, the text) to decide whether to reuse it for a retry.
+ */
+describe("Unpushed AI release notes card (#0641)", () => {
+  function unpushed(overrides: Record<string, unknown> = {}) {
+    return {
+      notes: "## Old draft\n- Something shipped-worthy",
+      createdAt: new Date(Date.now() - 7 * 60_000).toISOString(),
+      head: "abc1234def",
+      headShort: "abc1234",
+      sinceTag: "v0.5.58",
+      commitsBehind: 3,
+      commits: ["def5678 fix the thing", "aaa1111 tweak layout"],
+      currentHead: "def5678abc",
+      currentHeadShort: "def5678",
+      ...overrides,
+    };
+  }
+
+  it("shows the saved draft with age, distance from main, and its text", async () => {
+    mockApi(releaseStatus(), notesResponse({ notes: "" }), unpushed());
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await flushPromises();
+    const panel = await openPanel();
+    await flushPromises();
+
+    const card = panel.querySelector("[data-test-id='unpushed-release-notes']");
+    expect(card, "unpushed notes card").toBeTruthy();
+    const text = card!.textContent ?? "";
+    expect(text).toContain("Saved AI draft not yet released");
+    expect(text).toContain("Generated 7m ago");
+    expect(text).toContain("3 commits behind");
+    expect(text).toContain("never pushed with a release");
+    expect(text).toContain("Something shipped-worthy");
+    expect(text).toContain("abc1234");
+    expect(text).toContain("fix the thing");
+  });
+
+  it("stays hidden when there is no unreleased draft", async () => {
+    mockApi(releaseStatus(), notesResponse({ notes: "" }), null);
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await flushPromises();
+    const panel = await openPanel();
+    await flushPromises();
+    expect(panel.querySelector("[data-test-id='unpushed-release-notes']")).toBeNull();
+  });
+
+  it("does not repeat notes that the cache lookup already placed in the editor", async () => {
+    const saved = unpushed({ notes: "## Highlights\n- Shiny" });
+    mockApi(
+      releaseStatus(),
+      notesResponse({ cached: true, notes: "## Highlights\n- Shiny" }),
+      saved,
+    );
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await flushPromises();
+    const panel = await openPanel();
+    await flushPromises();
+
+    expect(panel.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toContain("Highlights");
+    expect(panel.querySelector("[data-test-id='unpushed-release-notes']")).toBeNull();
+  });
+
+  it("Use these notes drops the saved draft into the editor", async () => {
+    mockApi(releaseStatus(), notesResponse({ notes: "" }), unpushed());
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await flushPromises();
+    const panel = await openPanel();
+    await flushPromises();
+
+    expect(panel.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toBe("");
+    button(panel, "Use these notes")!.click();
+    await flushPromises();
+
+    const value = panel.querySelector<HTMLTextAreaElement>("#rel-notes")!.value;
+    expect(value).toContain("Something shipped-worthy");
+    // Once it is in the editor, the card is redundant.
+    expect(panel.querySelector("[data-test-id='unpushed-release-notes']")).toBeNull();
+    expect(panel.querySelector(".rel-notes-hint")?.textContent ?? "").toContain(
+      "Reused the saved draft",
+    );
+  });
+
+  it("refreshes the card to the newest draft after a fresh generate", async () => {
+    // Regression: a card showing draft A must not keep showing A after a
+    // second generate lands draft B (the primary retry-after-failure path).
+    let currentUnpushed: unknown = unpushed({ notes: "## Draft A\n- old" });
+    api.mockImplementation((path: string) => {
+      if (path === "/api/release") return Promise.resolve(releaseStatus());
+      if (path === "/api/release/distribution")
+        return Promise.resolve({ channels: [], releaseVersion: null, releaseTag: null });
+      if (path === "/api/release/run")
+        return Promise.resolve({
+          state: "idle",
+          phase: null,
+          message: "",
+          startedAt: null,
+          updatedAt: null,
+        });
+      if (path === "/api/release/notes")
+        return Promise.resolve({
+          notes: "## Draft B\n- new",
+          sinceTag: "v0.5.58",
+          commitCount: 3,
+          truncated: false,
+        });
+      if (path === "/api/release/notes/unpushed") return Promise.resolve(currentUnpushed);
+      if (path === "/api/release/notes/run")
+        return Promise.resolve({
+          state: "idle",
+          startedAt: null,
+          updatedAt: null,
+          error: null,
+          key: null,
+          notes: null,
+          sinceTag: null,
+          commitCount: 0,
+          truncated: false,
+        });
+      return Promise.reject(new Error(`unexpected api call: ${path}`));
+    });
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await flushPromises();
+    const panel = await openPanel();
+    await flushPromises();
+    expect(panel.querySelector("[data-test-id='unpushed-release-notes']")?.textContent).toContain(
+      "Draft A",
+    );
+
+    // The newest cache entry is now B; the generate response carries B and the
+    // card must re-read the endpoint rather than keep showing A.
+    currentUnpushed = unpushed({ notes: "## Draft B\n- new" });
+    button(panel, "Generate with AI")!.click();
+    await flushPromises();
+
+    expect(panel.querySelector<HTMLTextAreaElement>("#rel-notes")!.value).toContain("Draft B");
+    expect(panel.querySelector("[data-test-id='unpushed-release-notes']")).toBeNull();
+  });
+
+  it("confirms through the designed dialog before replacing typed notes", async () => {
+    mockApi(releaseStatus(), notesResponse({ notes: "" }), unpushed());
+    wrapper = mount(ReleasesView, {
+      attachTo: document.body,
+      global: { plugins: [createPinia()] },
+    });
+    await flushPromises();
+    const panel = await openPanel();
+    await flushPromises();
+
+    const textarea = panel.querySelector<HTMLTextAreaElement>("#rel-notes")!;
+    textarea.value = "Operator text";
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    await flushPromises();
+
+    button(panel, "Use these notes")!.click();
+    await flushPromises();
+
+    // Not a native confirm: a designed dialog asks, and the typed text is
+    // untouched until the confirm is clicked.
+    const dialog = document.body.querySelector(".cc-modal");
+    expect(dialog).toBeTruthy();
+    expect(dialog!.textContent ?? "").toContain("Replace notes with the saved draft?");
+    expect(textarea.value).toBe("Operator text");
+
+    button(document.body, "Replace notes")!.click();
+    await flushPromises();
+    expect(textarea.value).toContain("Something shipped-worthy");
+    expect(document.body.querySelector(".cc-modal")).toBeNull();
   });
 });

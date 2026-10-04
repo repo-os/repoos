@@ -9,6 +9,7 @@ import { spawn } from "node:child_process";
 import { join, relative, resolve } from "node:path";
 import type { ReleaseConfig, RepoOSConfig } from "../core/types.js";
 import { captureOutput } from "./done.js";
+import { listCachedReleaseNotes } from "./release-notes-cache.js";
 import type { RemoteValidator } from "./remote-validation.js";
 import {
   checkEnvAfterRemoteGate,
@@ -276,6 +277,116 @@ export async function getReleaseStatus(
       ? githubUrl(release.repository, `actions/workflows/${release.workflow.split("/").pop()}`)
       : null,
   };
+}
+
+/**
+ * The most recent AI-drafted release notes that never made it out with a
+ * release, for the panel to offer as a retry (#0641).
+ *
+ * The draft cache stores the commit context (`head`, `sinceTag`) a draft was
+ * made from, so "was this ever released?" is a git question over that stored
+ * context rather than new state: a draft is *unpushed* while its generation
+ * HEAD is not reachable from the latest release tag. Once a cut succeeds, the
+ * fresh tag is created on top of that HEAD, so the draft drops out of the
+ * result on the next read.
+ */
+export interface UnpushedReleaseNotes {
+  notes: string;
+  /** ISO timestamp of when the draft was generated. */
+  createdAt: string;
+  /** Full SHA of HEAD when the draft was generated. */
+  head: string;
+  /** Short SHA of that commit. */
+  headShort: string;
+  /** Tag the underlying draft range started after (context only). */
+  sinceTag: string | null;
+  /** Commits on the branch since the draft's context; null when unknown. */
+  commitsBehind: number | null;
+  /** Newest-first subjects of those commits, capped for the panel. */
+  commits: string[];
+  /** Current branch HEAD, so the panel can name the distance. */
+  currentHead: string | null;
+  currentHeadShort: string | null;
+}
+
+const UNPUSHED_NOTES_COMMIT_LIMIT = 5;
+
+/**
+ * The newest cached draft that was not released, or null. Walks cache entries
+ * newest-first so an older-but-unreleased entry is still surfaced when a newer
+ * one has since shipped. Uses the same `exec` seam as the rest of this module.
+ */
+export async function findUnpushedReleaseNotes(
+  config: RepoOSConfig,
+  exec: Run = run,
+): Promise<UnpushedReleaseNotes | null> {
+  const entries = listCachedReleaseNotes(config.root, config.cacheDir);
+  if (!entries.length) return null;
+
+  const [headRes, latestRes] = await Promise.all([
+    exec("git", ["rev-parse", "HEAD"], config.root),
+    exec("git", ["describe", "--tags", "--abbrev=0"], config.root),
+  ]);
+  const currentHead = headRes.code === 0 ? headRes.stdout.trim() || null : null;
+  const latestTag = latestRes.code === 0 ? latestRes.stdout.trim() || null : null;
+
+  for (const entry of entries) {
+    if (!entry.head) continue;
+    // Reachable from the latest release tag means it already shipped with that
+    // release, so it is not the "unpushed" draft the panel is looking for.
+    if (latestTag) {
+      const anc = await exec(
+        "git",
+        ["merge-base", "--is-ancestor", entry.head, latestTag],
+        config.root,
+      );
+      if (anc.code === 0) continue;
+    }
+    let commitsBehind: number | null = null;
+    let commits: string[] = [];
+    if (currentHead) {
+      const countRes = await exec(
+        "git",
+        ["rev-list", "--count", `${entry.head}..${currentHead}`],
+        config.root,
+      );
+      if (countRes.code === 0) {
+        const count = Number(countRes.stdout.trim());
+        if (Number.isFinite(count)) commitsBehind = count;
+      }
+      const logRes = await exec(
+        "git",
+        [
+          "log",
+          "-n",
+          String(UNPUSHED_NOTES_COMMIT_LIMIT),
+          "--pretty=format:%h %s",
+          `${entry.head}..${currentHead}`,
+        ],
+        config.root,
+      );
+      if (logRes.code === 0) {
+        commits = logRes.stdout
+          .split("\n")
+          .map((line) => line.trim())
+          .filter(Boolean);
+      }
+    }
+    const shortRes = await exec("git", ["rev-parse", "--short", entry.head], config.root);
+    const shortHead = shortRes.code === 0 ? shortRes.stdout.trim() : "";
+    return {
+      notes: entry.notes,
+      createdAt: entry.createdAt,
+      head: entry.head,
+      headShort: shortHead || entry.head.slice(0, 7),
+      sinceTag: entry.sinceTag,
+      commitsBehind,
+      commits,
+      currentHead,
+      currentHeadShort: currentHead ? currentHead.slice(0, 7) : null,
+    };
+  }
+  return null;
 }
 
 /**
