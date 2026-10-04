@@ -2,7 +2,7 @@
 id: "0647"
 title: Add diff button for dirty changed files in task panel
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: ""
 cli_override: opencode
 created_at: "2026-10-04T11:35:24Z"
-updated_at: "2026-10-04T11:37:26Z"
+updated_at: "2026-10-04T11:37:29Z"
 ---
 ## Problem
 When a branch has changed/dirty files, there's no quick way to see that diff from the task panel. The full-screen diff functionality already exists in the changes tab of the task panel, but it isn't reused here.
@@ -50,3 +50,4 @@ When there are changed files making the branch dirty let's add a diff button her
 - 2026-10-04T11:36:00Z · status draft→inbox, title, area, body
 - 2026-10-04T11:37:08Z · cli_override, model_override
 - 2026-10-04T11:37:26Z · model_override
+- 2026-10-04T11:37:29Z · status inbox→ready
