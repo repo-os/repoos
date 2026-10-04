@@ -2,16 +2,17 @@
 id: "0640"
 title: "Close-out (Move to done) notices in the bell, and stop stale flags on done tasks listing as needing you"
 type: feature
-status: review
+status: done
 priority: p2
 area: [web, server]
+merged_commit: 37cdf43f1a377c96dad394d6f3d15419d08242fb
 assigned_to: ai
 created_by: ""
 branch: feat/close-out-move-to-done-notices-in-the-be
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-03T16:49:27Z"
-updated_at: "2026-10-03T18:19:25Z"
+updated_at: "2026-10-04T01:30:09Z"
 ---
 ## Problem
 1. The top-bar notice bell (NoticeBell.vue) only knows release notices: NoticeKind is releaseNotesReady | releaseSucceeded | releaseFailed (src/ui-app/src/stores/notices.ts). A Move to done (close-out) that succeeds, fails or times out produces nothing there, so the user has to open the task to learn the outcome. A failed MTD is also not a 'task needing you': the task stays in review and the bell lists it only as 'awaiting sign-off'.
@@ -53,3 +54,4 @@ updated_at: "2026-10-03T18:19:25Z"
 - 2026-10-03T16:55:44Z · status ready→active, branch
 - 2026-10-03T17:57:13Z · status active→review
 - 2026-10-03T18:19:25Z · note: Cleanup (#0640): all four stale-flag tasks verified merged and their flags cleared. #0397 close-out candidate 8a4f2b9 is an ancestor of main; #0288 impl commits 68f0fdee7/576342be2 are in main; #0212 merge 1e2095988 is in main; #0316 was superseded by redo 47cb6dfdb in main. Cleared needs_merge on 0397/0288/0212 and needs_input on 0316 via repoos update.
+- 2026-10-04T01:30:09Z · status review→done, release:success
