@@ -5421,8 +5421,18 @@
   background: var(--cyan-dim);
   color: var(--txt);
 }
+/* The file input must stay rendered, not `display: none`. In a WKWebView-hosted
+ * installed PWA (Safari "Add to Dock", the macOS Hub) a programmatic
+ * `.click()` on a `display: none` file input never reaches
+ * `WKUIDelegate.runOpenPanelWith`, so the picker silently does nothing. Hide it
+ * visually instead — the same technique as `.pm-shot-input` and Tailwind's
+ * `sr-only` used by the Settings bug-report upload, both of which work (#0642). */
 .shot-dropzone .shot-input {
-  display: none;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 /* Captured preview shots (#0582) — the UI-changes section in the Changes tab
  * and the area/target mismatch warning shown near the preview control.
