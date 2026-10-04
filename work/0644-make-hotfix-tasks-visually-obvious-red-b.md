@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p3
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
+review_cli_override: cursor
 created_at: "2026-10-04T06:43:13Z"
-updated_at: "2026-10-04T06:43:13Z"
+updated_at: "2026-10-04T07:23:56Z"
 ---
 ## Problem
 Hotfix tasks are easy to miss. On the board card the only indicator is a plain unstyled `hotfix` word (`.tc-hotfix` in `TaskCard.vue` has no CSS and uses a native `title` tooltip). The task drawer shows nothing at all, even though `task.hotfix` and `task.hotfixTarget` are available. A hotfix runs in the main checkout, skips preview and the review report, and blocks the checkout, so it should be unmistakable.
@@ -38,3 +39,4 @@ Covers: hotfix visibility on card and drawer. Deferred: changing hotfix behaviou
 ## Activity
 
 - 2026-10-04T06:43:13Z · created · unknown
+- 2026-10-04T07:23:56Z · review_cli_override
