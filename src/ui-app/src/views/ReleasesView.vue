@@ -1020,7 +1020,7 @@ onBeforeUnmount(() => {
             </template>
           </div>
 
-          <div v-if="blockers.length" class="rel-blockers">
+          <div v-if="blockers.length" class="rel-blockers" role="status">
             <div v-for="b in blockers" :key="b">{{ b }}</div>
           </div>
 
@@ -1621,11 +1621,13 @@ onBeforeUnmount(() => {
 
 .rel-blockers {
   margin-top: 16px;
-  border-left: 2px solid var(--amber);
-  padding-left: 12px;
+  border: 1px solid var(--amber-border-tint);
+  background: var(--amber-tint);
+  color: var(--amber);
+  border-radius: 12px;
+  padding: 10px 14px;
   display: grid;
   gap: 5px;
-  color: var(--txt-dim);
   font-size: 13px;
 }
 
