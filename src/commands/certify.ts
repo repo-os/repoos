@@ -15,7 +15,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
-import { runAdapterContract } from "../core/agent-contract.js";
+import { resolveProbeModel, runAdapterContract } from "../core/agent-contract.js";
 import type { AgentCompatibilityContract } from "../core/agent-compatibility.js";
 import { parseAgentVersion } from "../core/agent-compatibility.js";
 import { KNOWN_AGENTS, resolveBinary } from "../core/detect.js";
@@ -53,15 +53,16 @@ export function parseCertifyArgs(argv: string[]): CertifyCliArgs {
 function findManifestPath(): string | null {
   const manifestUrl = new URL("../core/agent-compatibility.json", import.meta.url);
   const candidates: string[] = [];
+  // The committed manifest is src/'s copy; dist/ is gitignored build output, so
+  // a run from a built checkout must still write src/ or the evidence is lost.
+  candidates.push(join(process.cwd(), "src/core/agent-compatibility.json"));
   if (manifestUrl.protocol === "file:") {
     candidates.push(fileURLToPath(manifestUrl));
   }
-  candidates.push(
-    join(process.cwd(), "src/core/agent-compatibility.json"),
-    join(process.cwd(), "dist/core/agent-compatibility.json"),
-  );
+  candidates.push(join(process.cwd(), "dist/core/agent-compatibility.json"));
   const root = process.env.REPOOS_ROOT;
   if (root) {
+    candidates.unshift(join(root, "src/core/agent-compatibility.json"));
     candidates.push(
       join(root, "src/core/agent-compatibility.json"),
       join(root, "dist/core/agent-compatibility.json"),
@@ -246,7 +247,8 @@ export async function cmdCertify(argv: string[]): Promise<void> {
   const manifest = loadManifest(manifestPath);
   const versionStr = result.detectedVersion ? result.detectedVersion.join(".") : null;
   const now = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-  const source = `repoos certify ${cli} live probe — ${result.capabilities.length}/${result.capabilities.length} seams passed on ${result.startedAt} against binary ${result.binary}`;
+  const probeModelUsed = resolveProbeModel(cli, "live", model);
+  const source = `repoos certify ${cli} live probe — ${result.capabilities.length}/${result.capabilities.length} seams passed on ${result.startedAt} against binary ${result.binary}${probeModelUsed ? ` on model ${probeModelUsed}` : ""}`;
 
   let contract = manifest.contracts.find((c) => c.cli === cli);
   if (!contract) {

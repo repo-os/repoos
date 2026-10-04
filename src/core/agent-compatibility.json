@@ -19,7 +19,7 @@
         "cancellation"
       ],
       "verifiedAt": "2026-09-22",
-      "verificationSource": "repoos certify opencode live probe — 8/8 seams passed on 2026-09-22T12:16:06.932Z against binary /Users/nick/.opencode/bin/opencode",
+      "verificationSource": "repoos certify opencode live probe \u2014 8/8 seams passed on 2026-09-22T12:16:06.932Z against binary /Users/nick/.opencode/bin/opencode",
       "upgradeGuidance": "Install the current OpenCode v2 release, then review its local capabilities and this compatibility contract before important work.",
       "officialUrl": "https://opencode.ai/docs/"
     },
@@ -28,7 +28,7 @@
       "name": "Claude Code",
       "supportedMajor": 2,
       "supportedRange": ">=2.0.0 <3.0.0",
-      "newestCertifiedVersion": "2.1.267",
+      "newestCertifiedVersion": "2.1.285",
       "knownIncompatibleRanges": [],
       "requiredCapabilities": [
         "version",
@@ -40,8 +40,8 @@
         "session-continuation",
         "cancellation"
       ],
-      "verifiedAt": "2026-09-22",
-      "verificationSource": "repoos certify claude code live probe — 8/8 seams passed on 2026-09-22T12:33:39.501Z against binary /opt/homebrew/bin/claude",
+      "verifiedAt": "2026-10-04",
+      "verificationSource": "repoos certify claude code live probe \u2014 8/8 seams passed on 2026-10-04T11:40:05.266Z against binary /opt/homebrew/bin/claude on model claude-haiku-4-5-20251001",
       "upgradeGuidance": "Install the latest Claude Code release from npm: npm i -g @anthropic-ai/claude-code",
       "officialUrl": "https://docs.anthropic.com/en/docs/claude-code"
     },
@@ -72,7 +72,7 @@
       "name": "Codex",
       "supportedMajor": 0,
       "supportedRange": ">=0.100.0 <1.0.0",
-      "newestCertifiedVersion": "0.155.0",
+      "newestCertifiedVersion": "0.160.0",
       "knownIncompatibleRanges": [],
       "requiredCapabilities": [
         "version",
@@ -84,8 +84,8 @@
         "session-continuation",
         "cancellation"
       ],
-      "verifiedAt": "2026-09-22",
-      "verificationSource": "repoos certify codex live probe — 8/8 seams passed on 2026-09-22T12:37:23.138Z against binary /opt/homebrew/bin/codex",
+      "verifiedAt": "2026-10-04",
+      "verificationSource": "repoos certify codex live probe \u2014 8/8 seams passed on 2026-10-04T11:40:24.290Z against binary /opt/homebrew/bin/codex on model gpt-5.6-luna",
       "upgradeGuidance": "Install the latest Codex CLI: npm i -g @openai/codex",
       "officialUrl": "https://github.com/openai/codex"
     },
@@ -107,7 +107,7 @@
         "cancellation"
       ],
       "verifiedAt": "2026-10-02",
-      "verificationSource": "repoos certify cursor live probe — 8/8 seams passed on 2026-10-02T01:04:47.097Z against binary /Users/nick/.local/bin/cursor-agent",
+      "verificationSource": "repoos certify cursor live probe \u2014 8/8 seams passed on 2026-10-02T01:04:47.097Z against binary /Users/nick/.local/bin/cursor-agent",
       "upgradeGuidance": "Install the latest cursor-agent: curl https://cursor.com/install -fsS | bash",
       "officialUrl": "https://docs.cursor.com/agent"
     },
@@ -116,7 +116,7 @@
       "name": "Kiro",
       "supportedMajor": 2,
       "supportedRange": ">=2.0.0 <3.0.0",
-      "newestCertifiedVersion": "2.23.0",
+      "newestCertifiedVersion": "2.27.1",
       "knownIncompatibleRanges": [],
       "requiredCapabilities": [
         "version",
@@ -126,8 +126,8 @@
         "auto-permissions",
         "cancellation"
       ],
-      "verifiedAt": "2026-09-22",
-      "verificationSource": "repoos certify kiro live probe — 8/8 seams passed on 2026-09-22T12:41:45.721Z against binary /Users/nick/.local/bin/kiro-cli",
+      "verifiedAt": "2026-10-04",
+      "verificationSource": "repoos certify kiro live probe \u2014 8/8 seams passed on 2026-10-04T11:41:33.078Z against binary /Users/nick/.local/bin/kiro-cli",
       "upgradeGuidance": "Install the latest kiro-cli: npm i -g kiro-cli",
       "officialUrl": "https://kiro.dev/docs/"
     },
@@ -136,7 +136,7 @@
       "name": "Antigravity",
       "supportedMajor": 1,
       "supportedRange": ">=1.0.0 <2.0.0",
-      "newestCertifiedVersion": "1.2.8",
+      "newestCertifiedVersion": "1.2.16",
       "knownIncompatibleRanges": [],
       "requiredCapabilities": [
         "version",
@@ -148,8 +148,8 @@
         "session-continuation",
         "cancellation"
       ],
-      "verifiedAt": "2026-09-22",
-      "verificationSource": "repoos certify antigravity live probe — 8/8 seams passed on 2026-09-22T12:40:11.027Z against binary /Users/nick/.local/bin/agy",
+      "verifiedAt": "2026-10-04",
+      "verificationSource": "repoos certify antigravity live probe \u2014 8/8 seams passed on 2026-10-04T11:40:36.419Z against binary /Users/nick/.local/bin/agy on model gemini-3.8-flash-low",
       "upgradeGuidance": "Install or update Antigravity: curl -fsSL https://antigravity.google/cli/install.sh | bash",
       "officialUrl": "https://antigravity.google/docs/"
     },
@@ -158,7 +158,7 @@
       "name": "GitHub Copilot",
       "supportedMajor": 1,
       "supportedRange": ">=1.0.0 <2.0.0",
-      "newestCertifiedVersion": "1.0.87",
+      "newestCertifiedVersion": "1.0.91",
       "knownIncompatibleRanges": [],
       "requiredCapabilities": [
         "version",
@@ -170,8 +170,8 @@
         "session-continuation",
         "cancellation"
       ],
-      "verifiedAt": "2026-09-22",
-      "verificationSource": "repoos certify github copilot live probe — 8/8 seams passed on 2026-09-22T12:47:48.942Z against binary /opt/homebrew/bin/copilot",
+      "verifiedAt": "2026-10-04",
+      "verificationSource": "repoos certify github copilot live probe \u2014 8/8 seams passed on 2026-10-04T11:40:49.760Z against binary /opt/homebrew/bin/copilot on model copilot-auto-efficiency",
       "upgradeGuidance": "Install or update the GitHub Copilot CLI: run `copilot update` or reinstall from https://cli.github.com/",
       "officialUrl": "https://docs.github.com/en/copilot/github-copilot-in-the-cli"
     },
@@ -198,9 +198,9 @@
     {
       "cli": "pi",
       "name": "pi",
-      "supportedMajor": 0,
-      "supportedRange": ">=0.99.0 <1.0.0",
-      "newestCertifiedVersion": "0.99.2",
+      "supportedMajor": 1,
+      "supportedRange": ">=1.0.0 <2.0.0",
+      "newestCertifiedVersion": "1.0.0",
       "knownIncompatibleRanges": [],
       "requiredCapabilities": [
         "version",
@@ -212,8 +212,8 @@
         "session-continuation",
         "cancellation"
       ],
-      "verifiedAt": "2026-10-02",
-      "verificationSource": "repoos certify pi live probe — 8/8 seams passed on 2026-10-02T01:04:44.658Z against binary /Users/nick/.local/bin/pi",
+      "verifiedAt": "2026-10-04",
+      "verificationSource": "repoos certify pi live probe \u2014 8/8 seams passed on 2026-10-04T11:42:16.118Z against binary /Users/nick/.local/bin/pi on model openrouter/z-ai/glm-5.3-flash",
       "upgradeGuidance": "pi is pre-1.0, so `--mode json` and session flags can change between minor releases; the supported range is deliberately narrow. Upgrade with `npm i -g @earendil-works/pi-coding-agent`, then run `repoos doctor --probe pi --yes` and update this contract only after a documented passing probe.",
       "officialUrl": "https://github.com/earendil-works/pi-coding-agent"
     }

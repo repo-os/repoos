@@ -373,6 +373,7 @@ const CLAUDE_CODE_CONTRACT: ContractCommandTemplates = {
   help: () => ["--help"],
   // No standalone `models` subcommand — model listing is via the UI/config.
   models: () => null,
+  modelArgs: (model) => ["--model", model],
   run: (_dir, prompt) => [
     "-p",
     prompt,
@@ -420,6 +421,7 @@ const CODEX_CONTRACT: ContractCommandTemplates = {
   version: () => ["--version"],
   help: () => ["--help"],
   models: () => null,
+  modelArgs: (model) => ["--model", model],
   run: (_dir, prompt) => ["exec", prompt, "--json", "--approve-for-me"],
   // --approve-for-me must come before the `resume` subcommand (exec-level flag).
   resume: (_dir, sessionId, prompt) => [
@@ -614,7 +616,13 @@ const PI_CONTRACT: ContractCommandTemplates = {
   help: () => ["--help"],
   models: () => ["--list-models"],
   run: (_dir, prompt) => ["--mode", "json", prompt],
-  modelArgs: (model) => ["--model", model],
+  // `provider/model` splits like `modelArgs()` in agents.ts; a bare id passes through.
+  modelArgs: (model) => {
+    const slash = model.indexOf("/");
+    return slash > 0 && slash < model.length - 1
+      ? ["--provider", model.slice(0, slash), "--model", model.slice(slash + 1)]
+      : ["--model", model];
+  },
   resume: (_dir, sessionId, prompt) => ["--mode", "json", "--session", sessionId, prompt],
   parseRun: parsePiRun,
   autoPermissions: "mode",
@@ -673,6 +681,11 @@ const COPILOT_CONTRACT: ContractCommandTemplates = {
   version: () => ["version"],
   help: () => ["--help"],
   models: () => null,
+  // `copilot-auto-efficiency` is RepoOS's name for Copilot Auto's cheapest tier.
+  modelArgs: (model) =>
+    model === "copilot-auto-efficiency"
+      ? ["--model", "auto", "--auto-tier", "efficiency"]
+      : ["--model", model],
   run: (_dir, prompt) => [
     "-p",
     prompt,
@@ -704,6 +717,7 @@ const ANTIGRAVITY_CONTRACT: ContractCommandTemplates = {
   version: () => ["--version"],
   help: () => ["--help"],
   models: () => ["models"],
+  modelArgs: (model) => ["--model", model],
   run: (_dir, prompt) => [
     "-p",
     prompt,
@@ -736,6 +750,31 @@ const CONTRACT_TEMPLATES: Record<string, (binary: string) => ContractCommandTemp
   crush: () => CRUSH_CONTRACT,
   pi: () => PI_CONTRACT,
 };
+
+/**
+ * Cheap model each harness is pinned to for live probes, so certifying all of
+ * them doesn't run flagship models for "Reply with the single word OK."
+ * Harnesses absent here (opencode, cursor, kiro, crush, qwen code) have no
+ * model flag wired in the contract and run on their configured default.
+ * `--model <id>` overrides.
+ */
+export const DEFAULT_PROBE_MODELS: Record<string, string> = {
+  "claude code": "claude-haiku-4-5-20251001",
+  codex: "gpt-5.6-luna",
+  antigravity: "gemini-3.8-flash-low",
+  "github copilot": "copilot-auto-efficiency",
+  pi: "openrouter/z-ai/glm-5.3-flash",
+};
+
+/** The model a live probe of `cli` runs on: explicit, else the cheap pin, else harness default. */
+export function resolveProbeModel(
+  cli: string,
+  mode: "fixture" | "live",
+  explicit?: string | null,
+): string | null {
+  if (explicit) return explicit;
+  return mode === "live" ? (DEFAULT_PROBE_MODELS[cli] ?? null) : null;
+}
 
 const DEFAULT_TIMEOUT_MS: Record<"fixture" | "live", number> = {
   fixture: 15_000,
@@ -1057,7 +1096,8 @@ export async function runAdapterContract(
     }
 
     // ── headless one-shot (shared with structured-events + auto) ───────
-    const modelArgs = opts.model && templates.modelArgs ? templates.modelArgs(opts.model) : [];
+    const probeModel = resolveProbeModel(cli, mode, opts.model);
+    const modelArgs = probeModel && templates.modelArgs ? templates.modelArgs(probeModel) : [];
     const runArgs = [...modelArgs, ...templates.run(workDir, PROBE_PROMPT)];
     const oneShot = await spawnCapture(binary, runArgs, { timeoutMs, cwd: workDir });
 
