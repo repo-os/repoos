@@ -66,6 +66,19 @@ Section order as emitted:
 | 8 | **### Bootstrap Telemetry** (per-step `durationMs`) | **changes every run** |
 | 9 | ### Git Workflow | static |
 
+File ranking (#0650) is a self-contained lexical scorer in
+`src/core/keyword-rank.ts`: task terms are weighted by IDF over the `src/`
+corpus, each file scores `(1 + log tf) × idf` over its content plus a
+path-match and an exported-name bonus, and the title is weighted well above the
+body (body boilerplate otherwise dilutes the signal — see
+`DEFAULT_BODY_WEIGHT`). Area, import proximity, test pairing and recency remain
+as smaller additive boosts. The per-file term index is cached in
+`repo-map.json`, keyed on HEAD like the rest of the repo map, so generation
+cost does not re-tokenize the tree on every pack. Measured recall over 427
+completed tasks rose from 30.0% to 73.6% (zero-hit 30.9% → 1.9%);
+`scripts/context-pack-eval.ts` reproduces the table from cached packs and git
+history.
+
 Sections 4–9 are ~6–8 KB of stable-or-static content sitting **after** the
 volatile Worktree State (section 3). The context pack is cached internally
 (`contextCachePath`, keyed on HEAD + worktree state) — but that saves
