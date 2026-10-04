@@ -6,7 +6,11 @@ import { join } from "node:path";
 import type { RepoOSConfig } from "../../core/types";
 import type { RemoteValidator, CheckSummary } from "../../server/remote-validation";
 import { cutNewRelease, getReleaseStatus, type ReleaseCommandRunner } from "../../server/release";
-import { collectReleaseCommits, releaseNotesPrompt } from "../../server/release";
+import {
+  collectReleaseCommits,
+  findUnpushedReleaseNotes,
+  releaseNotesPrompt,
+} from "../../server/release";
 import {
   generateReleaseNotes,
   getReleaseNotesRun,
@@ -946,5 +950,114 @@ describe("POST /api/release/notes draft cache (#0590, #0605)", () => {
     // The stored draft still points at the commit context it was made from.
     expect(entries[Object.keys(entries)[0]].head).toBe(goodHead);
     expect(entries[Object.keys(entries)[0]].notes).toBe("- Fixed a thing");
+  });
+});
+
+// ── Surfacing a generated-but-unreleased draft (#0641): the panel shows the
+// newest cached draft whose generation HEAD is not reachable from the latest
+// release tag, so an operator can reuse it for a retry after a failed cut.
+
+describe("findUnpushedReleaseNotes (#0641)", () => {
+  function repo(messages: string[]): RepoOSConfig {
+    const cfg = config();
+    realGit(cfg.root, ["init", "-q"]);
+    realGit(cfg.root, ["config", "user.email", "t@example.com"]);
+    realGit(cfg.root, ["config", "user.name", "Test"]);
+    for (const message of messages) realGit(cfg.root, ["commit", "--allow-empty", "-m", message]);
+    return cfg;
+  }
+  function headOf(cfg: RepoOSConfig): string {
+    return execFileSync("git", ["rev-parse", "HEAD"], { cwd: cfg.root, encoding: "utf8" }).trim();
+  }
+  function writeCache(
+    cfg: RepoOSConfig,
+    entries: Record<
+      string,
+      { notes: string; head: string; sinceTag?: string | null; createdAt: string }
+    >,
+  ): void {
+    mkdirSync(join(cfg.root, cfg.cacheDir), { recursive: true });
+    writeFileSync(
+      join(cfg.root, cfg.cacheDir, "release-notes.json"),
+      JSON.stringify({ version: 2, entries }),
+    );
+  }
+
+  it("is null without a stored draft", async () => {
+    const cfg = repo(["one"]);
+    expect(await findUnpushedReleaseNotes(cfg)).toBeNull();
+  });
+
+  it("returns the newest draft when no release has been cut", async () => {
+    const cfg = repo(["one"]);
+    const head = headOf(cfg);
+    writeCache(cfg, {
+      k1: { notes: "- Shiny", head, sinceTag: null, createdAt: "2026-10-04T00:00:00Z" },
+    });
+    const result = await findUnpushedReleaseNotes(cfg);
+    expect(result).toMatchObject({
+      notes: "- Shiny",
+      head,
+      headShort: head.slice(0, 7),
+      commitsBehind: 0,
+      commits: [],
+    });
+  });
+
+  it("drops a draft that shipped with the latest release tag", async () => {
+    const cfg = repo(["one"]);
+    const head = headOf(cfg);
+    writeCache(cfg, {
+      k1: { notes: "- Shiny", head, sinceTag: null, createdAt: "2026-10-04T00:00:00Z" },
+    });
+    realGit(cfg.root, ["tag", "v1.0.0", head]);
+    expect(await findUnpushedReleaseNotes(cfg)).toBeNull();
+  });
+
+  it("reports how far behind main the draft is and what landed since", async () => {
+    const cfg = repo(["one"]);
+    const head = headOf(cfg);
+    writeCache(cfg, {
+      k1: { notes: "- Shiny", head, sinceTag: null, createdAt: "2026-10-04T00:00:00Z" },
+    });
+    realGit(cfg.root, ["commit", "--allow-empty", "-m", "fix a thing"]);
+    realGit(cfg.root, ["commit", "--allow-empty", "-m", "fix another thing"]);
+    const result = await findUnpushedReleaseNotes(cfg);
+    expect(result).not.toBeNull();
+    expect(result!.commitsBehind).toBe(2);
+    expect(result!.commits).toHaveLength(2);
+    expect(result!.commits.join(" ")).toContain("fix another thing");
+    expect(result!.commits.join(" ")).toContain("fix a thing");
+    expect(result!.currentHeadShort).toBe(headOf(cfg).slice(0, 7));
+  });
+
+  it("skips a newer released draft and surfaces an unreleased one", async () => {
+    const cfg = repo(["one"]);
+    // A side commit that never reaches the released line, so it is not
+    // covered by the tag even though a newer draft on main is.
+    realGit(cfg.root, ["checkout", "-q", "-b", "side"]);
+    realGit(cfg.root, ["commit", "--allow-empty", "-m", "side work"]);
+    const sideHead = headOf(cfg);
+    realGit(cfg.root, ["checkout", "-q", "-"]);
+    realGit(cfg.root, ["commit", "--allow-empty", "-m", "main work"]);
+    const mainHead = headOf(cfg);
+    realGit(cfg.root, ["tag", "v1.0.0", mainHead]);
+    writeCache(cfg, {
+      recent: {
+        notes: "- Released",
+        head: mainHead,
+        sinceTag: null,
+        createdAt: "2026-10-04T00:00:01Z",
+      },
+      older: {
+        notes: "- Never shipped",
+        head: sideHead,
+        sinceTag: null,
+        createdAt: "2026-10-04T00:00:00Z",
+      },
+    });
+    const result = await findUnpushedReleaseNotes(cfg);
+    expect(result).not.toBeNull();
+    expect(result).toMatchObject({ notes: "- Never shipped", head: sideHead });
   });
 });

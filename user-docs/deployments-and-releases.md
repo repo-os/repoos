@@ -88,6 +88,14 @@ instead of spending another minute or two on the agent — the panel says
 **Reused saved notes**. A source commit, a new release tag, or deleting the
 file simply means the next generate runs the agent again.
 
+If a draft was generated but the cut then failed, it stays visible: a **Saved
+AI draft not yet released** card sits below the notes field with how long ago
+it was generated, how far `main` has moved since (and what changed), the full
+text, and a **Use these notes** button that puts it back in the editor. That
+means a retry after a failed cut — including one where you only tweaked
+`repoos.toml` in between — doesn't spend another minute or two on the agent.
+The card disappears once a cut succeeds and the draft has shipped.
+
 ### Distribution destinations: "Published to"
 
 A release is one versioned artifact; the places users install it from are its

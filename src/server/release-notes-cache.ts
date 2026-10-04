@@ -83,6 +83,29 @@ function readCache(root: string, cacheDir: string): ReleaseNotesCacheFile | null
 }
 
 /**
+ * Every stored draft, newest first. Used by the release panel to surface a
+ * draft that was generated but never made it out with a release. Never
+ * throws: a missing or corrupt file simply means no entries.
+ */
+export function listCachedReleaseNotes(
+  root: string,
+  cacheDir: string,
+): Array<ReleaseNotesCacheEntry & { key: string }> {
+  const cache = readCache(root, cacheDir);
+  if (!cache) return [];
+  return Object.entries(cache.entries)
+    .map(([key, entry]) => ({
+      key,
+      notes: typeof entry.notes === "string" ? entry.notes : "",
+      head: typeof entry.head === "string" ? entry.head : "",
+      sinceTag: typeof entry.sinceTag === "string" ? entry.sinceTag : null,
+      createdAt: typeof entry.createdAt === "string" ? entry.createdAt : "",
+    }))
+    .filter((entry) => entry.notes.trim() !== "")
+    .sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+}
+
+/**
  * The stored draft for this commit context, or null on a miss. Never throws:
  * a cache problem must degrade to "generate again", not to a failed cut.
  */
