@@ -3,13 +3,13 @@ id: "0654"
 title: "Engineer prompt: state the absolute worktree path first, and mark the main checkout as off-limits"
 type: improvement
 status: inbox
-priority: medium
+priority: p2
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-04T16:38:19Z"
-updated_at: "2026-10-04T16:38:19Z"
+updated_at: "2026-10-04T16:56:47Z"
 ---
 ## Problem
 Engineer agents sometimes work against the main checkout instead of their task worktree. Analysis of 234 engineer sessions (2026-10-05): 73 calls in 20 sessions (about 10%) used paths under the main checkout (/Users/nick/code/nick/repoos/{src,docs,work,user-docs}/...) instead of the worktree: 33 reads, 30 shell commands, 8 greps, 1 edit, 1 write. Mostly reads, so the main risk is reading stale or divergent code (main moves while the branch does not), plus the rare stray edit. AGENTS.md already warns that harness file tools start in the main checkout.
@@ -32,3 +32,4 @@ The mission is already per-task (the context pack comes first and varies), so pu
 ## Activity
 
 - 2026-10-04T16:38:19Z · created · unknown
+- 2026-10-04T16:56:47Z · priority
