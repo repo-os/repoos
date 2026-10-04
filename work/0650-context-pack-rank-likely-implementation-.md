@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/context-pack-rank-likely-implementation-
 created_at: "2026-10-04T15:14:59Z"
-updated_at: "2026-10-04T15:17:56Z"
+updated_at: "2026-10-04T16:07:24Z"
 ---
 ## Problem
 
@@ -53,3 +53,4 @@ Caveats: the pack is the last cached one per task, not necessarily the first; "f
 - 2026-10-04T15:14:59Z · created · unknown
 - 2026-10-04T15:16:13Z · status inbox→ready
 - 2026-10-04T15:17:56Z · status ready→active, branch
+- 2026-10-04T16:07:24Z · note: Recall eval (#0650), full 427-task corpus (cached pack vs the src/ files each task committed): baseline 30.0% mean recall / 20% median / 30.9% zero-hit / 8.1% precision; new ranker 73.6% / 75% / 1.9% / 22.1%; union 76.2%. Reproduce: bun scripts/context-pack-eval.ts (defaults to the repo root; --root/--limit available).
