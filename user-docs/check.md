@@ -52,6 +52,7 @@ definition of done. Only a step you mark `required = false` is advisory.
 | `name` | derived | Identifies the step in output and in `dependsOn`. Lowercase, no spaces. |
 | `command` | — | Shell command to run. |
 | `kind` | — | A built-in guard instead of a command (see below). |
+| `fix` | derived for `format` | Command that fixes what the step checks, run by `repoos check --fix` and at handoff. A `kind = "format"` step defaults to the package.json `fmt` script; a raw command step has none unless declared. Never weakens close-out — see below. |
 | `cwd` | repo root | Repo-relative directory to run in — a monorepo step can target `backend/`. |
 | `timeoutMs` | `600000` | Kill the step after this long. |
 | `required` | `true` | `false` makes a failure advisory instead of gating. |
@@ -72,7 +73,7 @@ or a JS build:
 | `staleness` | `src/` matches the last `dist/.build-info.json` build | Your repo doesn't use RepoOS's build contract |
 | `lockfile-sync` | `bun.lock` matches `package.json` | There is no `bun.lock` |
 | `zero-runtime-deps` | `package.json` has empty `dependencies` | The package isn't named `repoos` (this is RepoOS's own invariant, not a rule for your repo) |
-| `format` | Runs your `fmt:check` script | No such script |
+| `format` | Runs your `fmt:check` script; with `--fix`, runs the `fmt` script (or the step's `fix`) first | No such script |
 | `lint` | Runs your `lint` script | No such script |
 | `build` | Runs your `build` script | No such script |
 | `tests` | Runs your `test` script (or a test directory) | No test suite |
@@ -182,6 +183,40 @@ dependsOn = ["check-fmt:check", "check-lint", "build"]
 
 It skips with install advice when Playwright/WebKit is missing, exactly like
 the smoke step.
+
+## Auto-formatting before the check
+
+A format-only violation otherwise costs a whole handoff round-trip, so the
+`format` step can fix itself before it is checked:
+
+```bash
+repoos check --fix          # run each format step's fixer, then the gate
+```
+
+The fixer is the step's `fix` command, or — for a `kind = "format"` step with
+none — the package.json `fmt` script (the conventional counterpart of
+`fmt:check`). A raw `command` step is never guessed at: declare `fix = "..."`
+if it has one.
+
+Handoff runs the same fixers just before it commits, so the committed tree is
+the formatted tree the gate then verifies. **Close-out never does this**: the
+merge gate must keep failing an unformatted committed tree, and only `--fix`
+and handoff opt in.
+
+## The failed-steps summary
+
+Every run ends with a fixed-position summary — failed step names and the exact
+command that reruns each one — so it always survives `tail -20`:
+
+```
+  ── Failed steps ──
+  ✗ check-fmt:check — fix: bun run fmt · rerun: repoos check --step check-fmt:check
+```
+
+`--step <name>` (repeatable, or comma-separated) runs only the named steps, so
+the rerun command is genuinely one step rather than the whole gate. The summary
+is printed after the terminal `N check(s) failed.` line; the close-out parser
+reads the `── Results ──` block above it and never sees it.
 
 ## Profiles
 

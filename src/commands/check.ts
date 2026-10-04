@@ -60,6 +60,7 @@ import {
   type StepRunResult,
   type StepStatus,
 } from "../core/check-runner.js";
+import { formatFixCommand } from "../core/check-format.js";
 import { writeCheckRun } from "../core/check-results-store.js";
 import { extractFailedTests } from "../core/check-failure-summary.js";
 import { envToRunContext, getCheckStore, localMachineName } from "../core/check-store.js";
@@ -995,6 +996,14 @@ export interface CheckOptions {
   printPlan?: boolean;
   /** Skip the remote runner even when `remoteValidation.enabled` (#0520). */
   localTestsOnly?: boolean;
+  /**
+   * Run each `format` step's fixer before its check (#0651). Off by default,
+   * so the close-out gate still fails an unformatted committed tree; handoff
+   * opts in. `kind = "format"` fixes via the `fmt` script, or a step's `fix`.
+   */
+  fix?: boolean;
+  /** Only run these step names — backs `repoos check --step <name>` (#0651). */
+  steps?: string[];
 }
 
 /** Parse `repoos check` flags. Unknown flags are ignored, never fatal. */
@@ -1006,8 +1015,22 @@ export function parseCheckArgs(argv: string[] = []): CheckOptions {
     else if (a === "--changed") opts.changed = argv[++i];
     else if (a === "--print-plan") opts.printPlan = true;
     else if (a === "--local-tests") opts.localTestsOnly = true;
+    else if (a === "--fix") opts.fix = true;
+    else if (a === "--step") {
+      opts.steps = [...(opts.steps ?? []), ...splitStepArg(argv[++i])];
+    } else if (a === "--steps") {
+      opts.steps = [...(opts.steps ?? []), ...splitStepArg(argv[++i])];
+    }
   }
   return opts;
+}
+
+/** One `--step` value, accepting a comma-separated list. */
+function splitStepArg(value: string | undefined): string[] {
+  return (value ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 interface PkgJson {
@@ -1037,6 +1060,8 @@ interface StepContext {
   requires: string[];
   /** Git ref for changed-path mode, when active. */
   changedRef?: string;
+  /** Fix command to run before the check, when `--fix` is active. */
+  fixCommand?: string;
 }
 
 /** What a built-in `kind` handler returns. */
@@ -1469,13 +1494,39 @@ const BUILTIN_HANDLERS: Record<BuiltinCheckKind, (ctx: StepContext) => Promise<B
   staleness: stepStaleness,
   "lockfile-sync": stepLockfileSync,
   "zero-runtime-deps": stepZeroRuntimeDeps,
-  format: (ctx) =>
-    runScript(ctx, "fmt:check", {
+  format: async (ctx) => {
+    // `--fix` runs the fixer first, so a format-only violation passes instead
+    // of failing the gate. A fixer that itself fails is reported as the step's
+    // failure; the check still runs and would name the remaining problem.
+    if (ctx.fixCommand) {
+      // Check the step's declared tools before spawning the fixer, so a machine
+      // without the runner gets the install advice instead of a raw spawn error.
+      const blocked = prereqs(ctx);
+      if (blocked) return { ...blocked, command: ctx.fixCommand };
+      console.log(c.dim(`  · auto-format: ${ctx.fixCommand}`));
+      const fix = await runCommand({
+        command: ctx.fixCommand,
+        cwd: ctx.cwd,
+        timeoutMs: 120_000,
+        echo: false,
+      });
+      if (fix.status !== "passed") {
+        const out = fix.output.trim();
+        return {
+          status: fix.status === "timeout" ? "timeout" : "failed",
+          command: ctx.fixCommand,
+          detail: `auto-format \`${ctx.fixCommand}\` failed${out ? `:\n${out}` : ""}`,
+          output: fix.output,
+        };
+      }
+    }
+    return runScript(ctx, "fmt:check", {
       label: "Formatting",
       hint: "run `bun run fmt` to fix",
       timeoutMs: 120_000,
       echo: false,
-    }),
+    });
+  },
   lint: (ctx) =>
     runScript(ctx, "lint", {
       label: "Lint",
@@ -1602,6 +1653,10 @@ export interface RunPlanOptions {
   changedPaths?: string[];
   /** Git ref the changed paths came from — the Tests step scopes itself to it. */
   changedRef?: string;
+  /** Run each `format` step's fixer before its check (#0651). */
+  fix?: boolean;
+  /** Only run these step names (`repoos check --step`). Empty means all. */
+  stepNames?: string[];
   onStart?: (step: CheckStep) => void;
   onResult?: (result: StepRunResult) => void;
 }
@@ -1623,7 +1678,11 @@ export async function runCheckPlan(
   const { repoRoot } = opts;
   const cfg = opts.cfg ?? loadConfig(repoRoot);
   const pkg = readPkg(repoRoot);
-  const selected = selectSteps(plan, { profile: opts.profile, changedPaths: opts.changedPaths });
+  const selected = selectSteps(plan, {
+    profile: opts.profile,
+    changedPaths: opts.changedPaths,
+    stepNames: opts.stepNames,
+  });
   const results: StepRunResult[] = [];
   const push = (r: StepRunResult): StepRunResult => {
     results.push(r);
@@ -1675,6 +1734,7 @@ export async function runCheckPlan(
         scriptPkg: readPkg(cwd),
         requires: step.requires,
         changedRef: opts.changedRef,
+        fixCommand: opts.fix ? (formatFixCommand(step, repoRoot) ?? undefined) : undefined,
       });
     } else if (missingBinaries(step.requires).length > 0) {
       outcome = {
@@ -1792,6 +1852,23 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   if (plan.errors.length > 0) {
     console.log(c.red(`\n  ✗ ${plan.errors[0]}\n`));
     process.exit(1);
+  }
+
+  // A `--step` that names nothing is a typo, not a run that verified nothing:
+  // without this, every step would be filtered out and the run could read green.
+  if (opts.steps?.length) {
+    const known = new Set(plan.steps.map((s) => s.name));
+    const unknown = opts.steps.filter((n) => !known.has(n));
+    if (unknown.length > 0) {
+      const available = plan.steps.map((s) => s.name).join(", ") || "(none)";
+      console.log(
+        c.red(
+          `\n  ✗ --step names no step in this plan: ${unknown.join(", ")}. ` +
+            `Available steps: ${available}\n`,
+        ),
+      );
+      process.exit(1);
+    }
   }
 
   // #0592: an EMPTY plan (no declared steps, no legacy keys, nothing
@@ -1986,6 +2063,8 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
       // honest without a cast.
       changedPaths: changedPaths ?? undefined,
       changedRef,
+      fix: opts.fix,
+      stepNames: opts.steps,
       onStart: (step) => {
         heading(step.name);
         console.log(c.dim(`  · ${describeStep(step)}`));
@@ -2061,6 +2140,26 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
           "\n",
       ),
     );
+  }
+
+  // ── Failed-steps summary (#0651) ─────────────────────────────────────
+  // Fixed position, at the very end of the run and short enough that `tail -20`
+  // always contains it: an agent that pipes the gate through `tail`/`grep` must
+  // still see WHICH step failed and the one command that reruns it, instead of
+  // re-running the whole gate because the failing step scrolled out of view.
+  // Printed AFTER the terminal line so `parseCheckResults` stops before it.
+  const stepByName = new Map(plan.steps.map((s) => [s.name, s]));
+  console.log(c.bold(c.cyan("\n  ── Failed steps ──")));
+  if (gatingFailures.length === 0) {
+    console.log(c.green("  ✔ none"));
+  } else {
+    for (const r of gatingFailures) {
+      const step = stepByName.get(r.name);
+      const fix = step ? formatFixCommand(step, repoRoot) : null;
+      const rerun = rerunCommandFor(r.name, profile, plan.defaultProfile, changedRef);
+      const fixPart = fix && fix !== r.command ? `fix: ${fix} · ` : "";
+      console.log(`  ${c.red("✗")} ${r.name} — ${c.dim(`${fixPart}rerun: ${rerun}`)}`);
+    }
   }
 
   // Persist the run for the Checks surface (#0447) before exiting. Fail-soft:
@@ -2159,6 +2258,25 @@ function recordRunHistoryRow(row: {
   } catch {
     /* never fail the gate on a history write */
   }
+}
+
+/**
+ * The command that reruns one step (#0651), preserving the run's profile and
+ * changed-path scope so a close-out failure (`--profile full`) is reproducible.
+ */
+function rerunCommandFor(
+  name: string,
+  profile: string,
+  defaultProfile: string,
+  changedRef?: string,
+): string {
+  const parts = ["repoos", "check"];
+  if (profile && profile !== (defaultProfile || DEFAULT_PROFILE)) {
+    parts.push("--profile", profile);
+  }
+  parts.push("--step", name);
+  if (changedRef) parts.push("--changed", changedRef);
+  return parts.join(" ");
 }
 
 /**

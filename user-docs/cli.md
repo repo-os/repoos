@@ -245,7 +245,13 @@ non-zero on any failure, so it works in CI as well as locally.
 repoos check --profile full      # every declared step, including slow ones
 repoos check --changed main      # fast pre-review pass over changed paths
 repoos check --print-plan        # print the resolved plan as [[check.steps]]
+repoos check --fix               # run each format step's fixer before its check
+repoos check --step tests        # run only the named step(s), to re-check one
 ```
+
+Every run ends with a short failed-steps summary naming each failed step and the
+`repoos check --step <name>` command that reruns it. `--fix` never applies at
+close-out, so an unformatted committed tree still fails the merge gate.
 
 ### `repoos shot`
 
