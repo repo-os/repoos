@@ -120,6 +120,66 @@ export function runGit(root: string, args: string[], timeout: number): Promise<G
   });
 }
 
+/**
+ * Does git's output describe transient lock contention rather than a real
+ * failure? `git` refuses to start a write while another process (or a stale
+ * fsmonitor/daemon) holds `<gitdir>/index.lock`:
+ *
+ *   fatal: Unable to create '/repo/.git/index.lock': File exists.
+ *
+ * A lock is normally held for milliseconds, so the close-out retries briefly
+ * instead of failing a whole publish on it (observed on #0642, where the lock
+ * was already gone by the time the failure was inspected, leaving only
+ * `fsmonitor` daemons running and no known holder).
+ */
+export function isGitLockContention(text: string): boolean {
+  return /Unable to create [^\n]*\.lock|Another git process seems to be running|index\.lock/i.test(
+    text,
+  );
+}
+
+/** `retryOnGitLock` predicate for a raw `runGit` result: the lock text, or null. */
+export function gitRunLockContention(r: { status: number | null; stderr: string }): string | null {
+  return r.status !== 0 && isGitLockContention(r.stderr) ? r.stderr : null;
+}
+
+export interface GitLockRetryOptions {
+  /** Total attempts including the first. Default 5. */
+  attempts?: number;
+  /** Base backoff; retry N waits `baseDelayMs * N`. Default 100ms. */
+  baseDelayMs?: number;
+  /** Called before each retry with the 1-based retry number and the lock text. */
+  onRetry?: (attempt: number, text: string) => void;
+}
+
+/**
+ * Retry `fn` while it reports git lock contention, with a short bounded
+ * backoff. `lockText` returns the lock explanation when the result is a
+ * contention failure and `null` for anything else (success, a real error), so
+ * this never retries an unrelated failure and never loops forever.
+ *
+ * Shared by the write operations in the close-out publish path (#0643): the
+ * holder is usually a short-lived fsmonitor/task-file commit, so a few hundred
+ * milliseconds of patience turns a spurious publish failure into a success.
+ */
+export async function retryOnGitLock<T>(
+  fn: () => Promise<T>,
+  lockText: (result: T) => string | null,
+  opts: GitLockRetryOptions = {},
+): Promise<T> {
+  const attempts = Math.max(1, opts.attempts ?? 5);
+  const baseDelayMs = Math.max(0, opts.baseDelayMs ?? 100);
+  let result = await fn();
+  for (let attempt = 1; attempt < attempts; attempt++) {
+    const text = lockText(result);
+    if (!text) break;
+    opts.onRetry?.(attempt, text);
+    await new Promise((resolve) => setTimeout(resolve, baseDelayMs * attempt));
+    result = await fn();
+  }
+  return result;
+}
+
 export function isGitRepo(root: string): boolean {
   return git(root, ["rev-parse", "--is-inside-work-tree"]) === "true";
 }

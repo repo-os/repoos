@@ -317,7 +317,20 @@ reason instead of racing forever. It then fast-forward-or-merges the candidate i
 worktree/branch, and marks the task `done`.
 
 If a job fails here (rare — validation already passed), main was NOT touched; the repo
-lock guarantees that. Safe to just retry.
+lock guarantees that. Safe to just retry. Two recovery details (#0643):
+
+- **A failed publish restores the checkout it moved.** Publishing switches the main
+  checkout to the primary branch before merging — for a branch-mode hotfix that
+  checkout *is* the task's "worktree" (checked out on its `hotfix/…` branch). If the
+  publish fails before the merge lands, the orchestrator checks the previous branch
+  back out in a `finally`, so the hotfix branch keeps a worktree and the retry no
+  longer dies with `feature branch … worktree not found`. The sync phase also reads the
+  task branch ref directly, so a hotfix whose branch is not checked out anywhere still
+  syncs.
+- **A transient `index.lock` is retried.** The writes in the publish path (the checkout
+  and the merge) go through `retryOnGitLock` (`src/core/git.ts`) — a short, bounded
+  backoff that retries *only* lock-contention failures. If the lock outlives the retry
+  window, the failure names `index.lock` and says retrying Move to done is safe.
 
 #### Close-out outcome events (#0640)
 

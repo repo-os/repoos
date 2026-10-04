@@ -47,6 +47,9 @@ import {
   getDiffStats,
   getChangedFilePaths,
   GitDirtyCheckError,
+  isGitLockContention,
+  gitRunLockContention,
+  retryOnGitLock,
   type MergeBranchResult,
 } from "../core/git.js";
 import { sweepAndWarn } from "../core/worktree-gc.js";
@@ -1333,23 +1336,27 @@ export class CloseOutOrchestrator {
 
     // Validate and record the feature branch SHA.
     const taskBranch = job.branch ?? job.taskId;
-    // Check if the feature branch exists (critical: avoid merging unrelated history)
     const taskWtPath = worktreePathForBranch(root, taskBranch);
-    if (!taskWtPath) {
-      return {
-        ok: false,
-        reason: `feature branch ${taskBranch} worktree not found`,
-      };
+    let branchSha: string | null = null;
+    if (taskWtPath) {
+      const branchShaRes = await runGit(taskWtPath, ["rev-parse", "HEAD"], 4000);
+      if (branchShaRes.status === 0) branchSha = branchShaRes.stdout.trim();
+    } else if (this.getTask?.(job.taskId)?.hotfix) {
+      // A branch-mode hotfix's branch normally lives in the MAIN checkout. After
+      // a failed publish left that checkout on `main` (the `finally` in
+      // publishCandidate now restores it) there is no linked worktree to read,
+      // so use the branch ref directly. `git merge <branch>` in the candidate
+      // below resolves the same ref. Scoped to hotfix tasks: every other task
+      // still needs its feature worktree and still fails with the actionable
+      // "worktree not found" when it is genuinely missing, so non-hotfix
+      // close-out behaviour is unchanged.
+      branchSha = branchCommit(root, taskBranch);
+    }
+    if (!branchSha) {
+      return { ok: false, reason: `feature branch ${taskBranch} worktree not found` };
     }
 
-    const branchShaRes = await runGit(taskWtPath, ["rev-parse", "HEAD"], 4000);
-    if (branchShaRes.status !== 0) {
-      return { ok: false, reason: "could not get feature branch SHA" };
-    }
-
-    this.coordinator.updateJob(job.taskId, {
-      branchSha: branchShaRes.stdout.trim(),
-    });
+    this.coordinator.updateJob(job.taskId, { branchSha });
 
     return { ok: true, candidateSha: baseMainSha };
   }
@@ -2063,6 +2070,14 @@ export class CloseOutOrchestrator {
       };
     }
 
+    // Set once the publish merge actually lands on main. After that the
+    // checkout must stay on `main` for cleanup, never be restored.
+    let mergedIntoMain = false;
+    // The branch the main checkout was on before publish switched it to
+    // `main`. For a branch-mode hotfix that is its hotfix branch; a failure
+    // before the merge puts it back so the retry finds the branch (#0643).
+    let restoreBranch: string | null = null;
+
     try {
       // Final SHA check: ensure candidate is still based on current main (holding the lock).
       const currentMainRes = await runGit(root, ["rev-parse", `${mainBranch}^{commit}`], 4000);
@@ -2145,11 +2160,21 @@ export class CloseOutOrchestrator {
       // all target the correct branch.
       const currentHead = currentBranch(root);
       if (currentHead && currentHead !== mainBranch) {
-        const checkoutRes = await runGit(root, ["checkout", mainBranch], 10_000);
+        restoreBranch = currentHead;
+        // A checkout writes the index, so it can lose the same race as the
+        // merge below; retry a short-lived lock before giving up (#0643).
+        const checkoutRes = await retryOnGitLock(
+          () => runGit(root, ["checkout", mainBranch], 10_000),
+          gitRunLockContention,
+        );
         if (checkoutRes.status !== 0) {
+          restoreBranch = null; // never switched — nothing to restore below
+          const lockHint = isGitLockContention(checkoutRes.stderr)
+            ? " git held a lock through the retry window; the candidate was NOT merged and retrying is safe once the lock clears."
+            : " The candidate was NOT merged; retry.";
           return {
             ok: false,
-            reason: `could not switch main checkout from ${currentHead} to ${mainBranch} before publishing (${checkoutRes.stderr.trim()}). The candidate was NOT merged; retry.`,
+            reason: `could not switch main checkout from ${currentHead} to ${mainBranch} before publishing (${checkoutRes.stderr.trim()}).${lockHint}`,
           };
         }
         // HEAD moved in the main checkout: the sidebar git-state indicator
@@ -2264,10 +2289,25 @@ export class CloseOutOrchestrator {
         return this.timeoutResult();
       }
 
-      const publishMerge = await mergeBranch(root, branch, {
-        autoResolve: [],
-        autoResolveOurs: [`${this.config.workDir}/`],
-      });
+      const publishMerge = await retryOnGitLock(
+        () =>
+          mergeBranch(root, branch, {
+            autoResolve: [],
+            autoResolveOurs: [`${this.config.workDir}/`],
+          }),
+        (r) =>
+          !r.merged && isGitLockContention(r.reason ?? "") ? (r.reason ?? "index.lock") : null,
+        {
+          onRetry: (attempt, text) =>
+            this.logger?.integration(
+              job.taskId,
+              "warn",
+              `git lock contention while merging candidate to main — retrying (attempt ${attempt})`,
+              { detail: text },
+            ),
+        },
+      );
+      if (publishMerge.merged) mergedIntoMain = true;
       if (!publishMerge.merged) {
         if (publishMerge.conflicts.length > 0) {
           return {
@@ -2284,9 +2324,12 @@ export class CloseOutOrchestrator {
             reason: `main has uncommitted files blocking the merge. The candidate was NOT merged; commit or stash those on main (or use "Commit & continue") and retry.`,
           };
         }
+        const lockHint = isGitLockContention(publishMerge.reason ?? "")
+          ? " — git held a lock on the index through the retry window; the candidate was NOT merged, and retrying Move to done once the lock clears is safe."
+          : "";
         return {
           ok: false,
-          reason: `could not merge to main: ${publishMerge.reason ?? "unknown error"}`,
+          reason: `could not merge to main: ${publishMerge.reason ?? "unknown error"}${lockHint}`,
         };
       }
 
@@ -2359,8 +2402,24 @@ export class CloseOutOrchestrator {
       this.onProgress?.("done");
       return { ok: true };
     } finally {
-      this.rootLock?.release(job.taskId);
+      // A failed publish must not strand the checkout on `main` (#0643). For a
+      // branch-mode hotfix the "task worktree" IS this main checkout sitting on
+      // the hotfix branch; publish switched it to `main` to merge. If the merge
+      // did not land, put the branch back so the retry's sync phase finds its
+      // branch again instead of failing "feature branch … worktree not found"
+      // forever. The restore checkout can itself hit a transient lock, so it
+      // reuses the same bounded retry. Fail-soft: the publish failure reason is
+      // what the user sees either way.
+      const branchToRestore = restoreBranch;
+      if (!mergedIntoMain && branchToRestore && currentBranch(root) === mainBranch) {
+        const restore = await retryOnGitLock(
+          () => runGit(root, ["checkout", branchToRestore], 10_000),
+          gitRunLockContention,
+        );
+        if (restore.status === 0) notifyGitMutation(root, "checkout");
+      }
       // Always release the lock when done publishing.
+      this.rootLock?.release(job.taskId);
       if (this.repoLock) {
         this.repoLock.release(job.taskId);
       }
