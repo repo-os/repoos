@@ -3509,7 +3509,38 @@ export function selectSkillsForRun(task: Task, agent: Agent, config: RepoOSConfi
     .map(({ skill }) => skill);
 }
 
-function missionFor(
+/**
+ * The first lines of every managed engineer prompt: the absolute working
+ * directory, a requirement to use absolute paths under it, and — for an
+ * ordinary worktree task — the main checkout named as off-limits.
+ *
+ * A hotfix runs in the main checkout itself, not a linked worktree, so the
+ * off-limits line is omitted and the wording never claims a worktree it does
+ * not have. `branch` is the recorded task branch; for a main-target hotfix the
+ * checkout is actually on `main`, so label that instead.
+ */
+export function workingDirectoryHeader(
+  task: Task,
+  branch: string,
+  workdir: string,
+  config: RepoOSConfig,
+): string {
+  const useAbsolute = `Use absolute paths under ${workdir} for every file read, edit, and command.`;
+  if (task.hotfix) {
+    const realBranch = task.hotfixTarget === "main" ? "main" : branch;
+    return [
+      `Working directory: ${workdir} (the main checkout, on branch ${realBranch} — work here).`,
+      useAbsolute,
+    ].join("\n");
+  }
+  return [
+    `Working directory: ${workdir} (a git worktree checked out on branch ${branch} — work here).`,
+    useAbsolute,
+    `The main checkout at ${config.root} is off-limits for this task — do not read or edit it; it may be stale or divergent from your branch.`,
+  ].join("\n");
+}
+
+export function missionFor(
   task: Task,
   branch: string,
   workdir: string,
@@ -3524,6 +3555,12 @@ function missionFor(
   const worktreeTask = join(workdir, relative(config.root, task.path));
   const baseBranch = currentBranch(config.root) ?? "main";
   const parts: string[] = [];
+
+  // Task-specific and deliberately first (see the CACHING note below): the
+  // context pack already varies per task and sits ahead of the stable fail-safe
+  // block, so a variable header here does not cost a prefix cache that exists
+  // today. Keep it short — it is the only content guaranteed to be read.
+  parts.push(workingDirectoryHeader(task, branch, workdir, config), "");
 
   if (contextPack) {
     parts.push(contextPack);
@@ -3566,7 +3603,6 @@ function missionFor(
 
   parts.push(
     `Task #${task.id}: ${task.title}`,
-    `Working directory: ${workdir} (a git worktree checked out on branch ${branch} — work here).`,
     `Task file (read this worktree copy for the specification): ${worktreeTask}`,
     "",
     "Run this fail-safe checklist IN ORDER. Do not stop until it is fully checked off:",
