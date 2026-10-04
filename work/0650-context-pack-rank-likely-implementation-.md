@@ -2,14 +2,14 @@
 id: "0650"
 title: "Context pack: rank Likely Implementation Files by task-text keyword relevance (recall 30% to 55%+)"
 type: feature
-status: inbox
+status: ready
 priority: medium
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-04T15:14:59Z"
-updated_at: "2026-10-04T15:14:59Z"
+updated_at: "2026-10-04T15:16:13Z"
 ---
 ## Problem
 
@@ -51,3 +51,4 @@ Caveats: the pack is the last cached one per task, not necessarily the first; "f
 ## Activity
 
 - 2026-10-04T15:14:59Z · created · unknown
+- 2026-10-04T15:16:13Z · status inbox→ready
