@@ -2,14 +2,14 @@
 id: "0649"
 title: "CTO monitor: skip the LLM call when the board is healthy; record why runs fail and what triggered them"
 type: feature
-status: inbox
+status: ready
 priority: medium
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-04T15:10:22Z"
-updated_at: "2026-10-04T15:10:22Z"
+updated_at: "2026-10-04T15:12:44Z"
 ---
 ## Problem
 
@@ -43,3 +43,4 @@ Separately, 1,457 of 3,601 CTO sessions are `errored` (1,194 of 1,625 on opencod
 ## Activity
 
 - 2026-10-04T15:10:22Z · created · unknown
+- 2026-10-04T15:12:44Z · status inbox→ready
