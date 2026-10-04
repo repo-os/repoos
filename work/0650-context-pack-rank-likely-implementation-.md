@@ -2,7 +2,7 @@
 id: "0650"
 title: "Context pack: rank Likely Implementation Files by task-text keyword relevance (recall 30% to 55%+)"
 type: feature
-status: active
+status: review
 priority: medium
 area: core
 assigned_to: ai
@@ -61,4 +61,5 @@ Caveats: the pack is the last cached one per task, not necessarily the first; "f
 - 2026-10-04T16:20:49Z · status active→review
 - 2026-10-04T17:02:24Z · status review→active
 - 2026-10-04T17:02:24Z · note: sent back after worktree changed post-handoff
-- 2026-10-04T17:02:46Z · note: shots: skipped — the diff (5 changed paths) touches no [[preview.paths]] globs — no UI change to capture
+- 2026-10-04T17:02:46Z · status active→review
+- 2026-10-04T17:02:46Z · note: review without checks by hello@repoos.org
