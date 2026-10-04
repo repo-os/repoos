@@ -361,6 +361,7 @@ watch(repoName, () => {
       <RotateCcw v-else class="size-[13px]" />
       <span>{{ restarting ? "Restarting…" : "New version available" }}</span>
     </button>
+    <NoticeBell />
     <button
       class="theme-toggle"
       type="button"
@@ -371,7 +372,6 @@ watch(repoName, () => {
       <Moon v-if="isDark" :size="15" :stroke-width="1.8" />
       <Sun v-else :size="15" :stroke-width="1.8" />
     </button>
-    <NoticeBell />
     <div class="help-menu-wrapper">
       <button
         ref="helpMenuTrigger"

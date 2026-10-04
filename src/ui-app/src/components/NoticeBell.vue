@@ -287,7 +287,8 @@ watch(open, (o) => {
   font-weight: 800;
   line-height: 1;
   color: var(--amber);
-  background: var(--amber-tint);
+  /* tint layered over a solid base so the badge isn't see-through */
+  background: linear-gradient(var(--amber-tint), var(--amber-tint)), var(--panel-solid);
   border: 1px solid var(--amber-border-tint);
 }
 
