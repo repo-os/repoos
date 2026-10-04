@@ -2,7 +2,7 @@
 id: "0641"
 title: Surface unpushed AI release notes below generate button
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/surface-unpushed-ai-release-notes-below-
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-04T02:00:15Z"
-updated_at: "2026-10-04T02:47:16Z"
+updated_at: "2026-10-04T02:52:20Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -114,3 +114,4 @@ Currently we save the AI generated release notes, but it's a black box to the us
 - 2026-10-04T02:40:26Z · note: shots: failed — capture of Release panel: saved-but-unreleased AI draft card below the notes field on "default" failed: click: Timeout 5000ms exceeded.
 - 2026-10-04T02:40:55Z · status review→active
 - 2026-10-04T02:47:16Z · body: section Shots
+- 2026-10-04T02:52:20Z · status active→review
