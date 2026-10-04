@@ -26,6 +26,7 @@ import ActivityIndicator from "./ActivityIndicator.vue";
 import DoneErrorCard from "./DoneErrorCard.vue";
 import CopyableNumber from "./CopyableNumber.vue";
 import AgentModelModal from "./AgentModelModal.vue";
+import HotfixBadge from "./HotfixBadge.vue";
 import { confirmDependencyOverride, dependencyBlockerLabel } from "../lib/task-dependencies";
 
 const props = withDefaults(
@@ -886,6 +887,8 @@ async function openDebuggerFromError(): Promise<void> {
       'needs-input': needsInputSurfaces(task),
       'done-needs-ack': ackPending,
       'ai-created-ack': createAckPending,
+      hotfix: task.hotfix,
+      'hotfix-done': task.hotfix && task.status === 'done',
       dragging,
       'has-action': !!action,
     }"
@@ -911,12 +914,7 @@ async function openDebuggerFromError(): Promise<void> {
           title="branch drifted from main — move to done to sync and merge"
           >needs merge</span
         >
-        <span
-          v-if="task.hotfix"
-          class="tc-hotfix"
-          :title="`Hotfix — runs in main checkout${task.hotfixTarget === 'main' ? ' directly on main' : ' on branch ' + task.branch}`"
-          >hotfix</span
-        >
+        <HotfixBadge v-if="task.hotfix" :target="task.hotfixTarget" :branch="task.branch" />
         <span
           class="ml-auto rounded-[5px] px-[6px] py-[2px] font-mono text-[9px] font-bold"
           :class="task.priority"

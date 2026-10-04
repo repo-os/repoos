@@ -76,6 +76,8 @@ import RestartTaskDialog from "./RestartTaskDialog.vue";
 import DirtyCheckoutDialog from "./DirtyCheckoutDialog.vue";
 import WorktreeHandoffConflictDialog from "./WorktreeHandoffConflictDialog.vue";
 import HotfixConfirmDialog from "./HotfixConfirmDialog.vue";
+import HotfixBadge from "./HotfixBadge.vue";
+import { hotfixBannerText } from "../lib/hotfix";
 import ReviewConfirmDialog from "./ReviewConfirmDialog.vue";
 import SendToEngineerDialog from "./SendToEngineerDialog.vue";
 import SpecEditModal from "./SpecEditModal.vue";
@@ -3731,6 +3733,11 @@ watch(
               <span class="tc-prio" :class="ui.active.priority" style="margin-left: auto">
                 {{ ui.active.priority }}
               </span>
+              <HotfixBadge
+                v-if="ui.active.hotfix"
+                :target="ui.active.hotfixTarget"
+                :branch="ui.active.branch"
+              />
             </div>
             <!-- #0569: the header title IS the title editor. Click it to edit
                  in place; Enter/blur commits and autosaves, Esc cancels. -->
@@ -3765,6 +3772,9 @@ watch(
             <X class="size-[15px]" />
           </DialogClose>
         </div>
+        <p v-if="ui.active.hotfix" class="hotfix-note hotfix-banner" role="status">
+          {{ hotfixBannerText(ui.active.hotfixTarget, ui.active.branch) }}
+        </p>
         <div class="drawer-quickbar">
           <!-- #0507: the handoff finalization is in flight. The task is still
                `active` on purpose, so without this it would read as "nothing
@@ -3996,7 +4006,9 @@ watch(
           />
           <div
             v-if="
-              (ui.active.status === 'active' || ui.active.status === 'review') && ui.active.preview
+              (ui.active.status === 'active' || ui.active.status === 'review') &&
+              ui.active.preview &&
+              !ui.active.hotfix
             "
             class="quickbar-row"
           >
@@ -4040,7 +4052,8 @@ watch(
             v-if="
               (ui.active.status === 'active' || ui.active.status === 'review') &&
               !ui.active.preview &&
-              !ui.active.branch
+              !ui.active.branch &&
+              !ui.active.hotfix
             "
             class="preview-hint"
           >
@@ -4050,7 +4063,8 @@ watch(
             v-else-if="
               (ui.active.status === 'active' || ui.active.status === 'review') &&
               !ui.active.preview &&
-              !ui.active.git?.worktreeExists
+              !ui.active.git?.worktreeExists &&
+              !ui.active.hotfix
             "
             class="preview-hint"
           >
@@ -4060,7 +4074,9 @@ watch(
           </p>
           <div
             v-else-if="
-              (ui.active.status === 'active' || ui.active.status === 'review') && !ui.active.preview
+              (ui.active.status === 'active' || ui.active.status === 'review') &&
+              !ui.active.preview &&
+              !ui.active.hotfix
             "
             class="quickbar-row"
           >
@@ -4120,6 +4136,14 @@ watch(
               Start preview
             </Button>
           </div>
+          <p
+            v-if="
+              ui.active.hotfix && (ui.active.status === 'active' || ui.active.status === 'review')
+            "
+            class="hotfix-note"
+          >
+            Hotfix tasks run in the main checkout — no preview is served.
+          </p>
           <p
             v-if="ui.active && shotWarning"
             class="preview-hint shot-warning-preview"
@@ -4323,10 +4347,16 @@ watch(
             type="button"
             class="tab-btn"
             :class="{ active: ui.activeTab === 'review' }"
+            :data-tip="
+              ui.active.hotfix
+                ? 'Hotfix tasks skip the review report — the change lands through the hotfix flow instead.'
+                : undefined
+            "
             @click="ui.activeTab = 'review'"
           >
             <ShieldCheck class="tab-icon" />
             Review
+            <span v-if="ui.active.hotfix" class="tab-hotfix-skip">skipped</span>
           </button>
           <button
             type="button"
@@ -4706,6 +4736,9 @@ watch(
           </div>
         </div>
         <div v-else-if="ui.activeTab === 'review'" class="drawer-body drawer-session-body">
+          <p v-if="ui.active.hotfix" class="hotfix-note" role="status">
+            Hotfix tasks skip the review report — the change lands through the hotfix flow instead.
+          </p>
           <div v-if="ui.active" class="agent-override-bar">
             <div class="agent-pick-grid">
               <div class="agent-field" style="grid-column: 1 / -1">
