@@ -122,8 +122,22 @@ describe("agent session persistence", () => {
     const runner = new AgentRunner(fx.config, () => {});
     runner.start(fx.task, fx.task.branch, agent, { cwd: fx.root });
     await waitFor(() => (runner.output(fx.task.id)?.lines.length ?? 0) === 2, "streamed lines");
-    expect(existsSync(fx.file)).toBe(false);
-    await waitFor(() => existsSync(fx.file), "debounced transcript write");
+    // Debouncing means the streamed lines are not flushed on arrival. The runner
+    // deliberately persists the chosen session id 500ms after `start()` (so a
+    // crash before the first line cannot lose it), so a file may already exist
+    // by the time the lines stream; asserting the file is absent raced that
+    // on-start persist under check load, where `start()` can take longer than
+    // the debounce. Assert instead on the content: the *last* streamed line
+    // resets the debounce timer, so it cannot be on disk yet.
+    const firstLine = "persisted output";
+    const lastLine = '{"session_id":"session-persisted"}';
+    const linesOnDisk = (): { d?: string }[] => {
+      if (!existsSync(fx.file)) return [];
+      return (JSON.parse(readFileSync(fx.file, "utf8")) as { lines: { d?: string }[] }).lines;
+    };
+    expect(linesOnDisk().some((l) => l.d === lastLine)).toBe(false);
+    await waitFor(() => linesOnDisk().some((l) => l.d === lastLine), "debounced transcript write");
+    expect(linesOnDisk().some((l) => l.d === firstLine)).toBe(true);
     expect(runner.isRunning(fx.task.id)).toBe(true);
     await waitFor(() => !runner.isRunning(fx.task.id), "held fixture exit");
   });

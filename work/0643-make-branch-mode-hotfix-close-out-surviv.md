@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-04T09:48:02Z"
-review_passes: 1
 id: "0643"
 title: Make branch-mode hotfix close-out survive a failed publish and index.lock contention
 type: bug
@@ -11,8 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/make-branch-mode-hotfix-close-out-surviv
 created_at: "2026-10-04T06:43:06Z"
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-10-04T08:06:00.141Z: repoos check failed: ✗ UI smoke test failed: Console errors (1): Failed to preconnect to https://fonts.googleapis.com/. Error: The Internet connection appears to be offline. · error: script \"smoke\" exited with code 1 · ⏭ user-docs-build — skipped — no changed path matches user-docs/** · ⏭ landing-build — skipped — no changed path matches landing/** · ⏭ telegram-manager-build — skipped — no changed path matches telegram-manager/** · ⏭ telegram-manager-test — skipped — no changed path matches tele… (truncated)"
+updated_at: "2026-10-04T09:24:30Z"
 ---
 ## Problem
 Observed on #0642 (2026-10-04). Move to done on a branch-mode hotfix failed at publish with `could not merge to main: error: Unable to create .git/index.lock: File exists`, and every retry then failed in the sync phase with `feature branch hotfix/… worktree not found`.
@@ -44,8 +41,4 @@ Covers: hotfix close-out recovery and git lock tolerance in the publish path. De
 - 2026-10-04T06:43:06Z · created · unknown
 - 2026-10-04T07:28:19Z · status inbox→ready
 - 2026-10-04T07:28:27Z · status ready→active, branch
-- 2026-10-04T08:58:38Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-10-04T09:47:24Z · status active→review
-- 2026-10-04T09:47:24Z · note: review without checks by hello@repoos.org
-- 2026-10-04T09:47:24Z · note: shots: skipped — the diff (6 changed paths) touches no [[preview.paths]] globs — no UI change to capture
-
+- 2026-10-04T09:24:30Z · status active→review
