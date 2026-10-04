@@ -3,6 +3,7 @@ import { json, readBody } from "./utils.js";
 import {
   collectReleaseCommits,
   cutNewRelease,
+  findUnpushedReleaseNotes,
   getReleaseStatus,
   releaseNotesPrompt,
   type ReleasePhase,
@@ -210,6 +211,14 @@ export const getReleaseNotesRun: RouteHandler = async (ctx, _req, res) => {
   const stale = notesRun.key !== currentKey;
   return json(res, 200, stale ? { ...notesRun, stale } : notesRun);
 };
+
+/**
+ * The newest AI-drafted notes that were generated but never pushed with a
+ * release (#0641). The panel shows them below the Generate button so an
+ * operator can decide to reuse them for a retry after a failed cut.
+ */
+export const getUnpushedReleaseNotes: RouteHandler = async (ctx, _req, res) =>
+  json(res, 200, await findUnpushedReleaseNotes(ctx.config));
 
 /**
  * Which agent drafts release notes. The PM owns authoring, so prefer it; fall

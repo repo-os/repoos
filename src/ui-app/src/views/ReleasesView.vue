@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useUiStore } from "../stores/ui";
-import { Bug, Check, Copy, Sparkles, X } from "lucide-vue-next";
+import { Bug, Check, Copy, FileClock, RotateCcw, Sparkles, X } from "lucide-vue-next";
 import { copyToClipboard } from "../lib/clipboard";
 import ActivityIndicator from "../components/ActivityIndicator.vue";
 import Button from "../components/ui/button.vue";
@@ -139,7 +139,30 @@ interface ReleaseNotesRun {
   /** Server-computed: this terminal run describes an older commit context (#0630). */
   stale?: boolean;
 }
+
+/**
+ * The newest AI draft that was generated but never pushed with a release
+ * (#0641). Rendered as a card below the notes field so an operator can decide
+ * whether to reuse it for a retry after a failed cut.
+ */
+interface UnpushedReleaseNotes {
+  notes: string;
+  createdAt: string;
+  head: string;
+  headShort: string;
+  sinceTag: string | null;
+  commitsBehind: number | null;
+  commits: string[];
+  currentHead: string | null;
+  currentHeadShort: string | null;
+}
 const notesRun = ref<ReleaseNotesRun | null>(null);
+/**
+ * The newest AI draft that was generated but never pushed with a release
+ * (#0641). Shown as a card below the notes field so an operator can decide
+ * whether to reuse it for a retry after a failed cut.
+ */
+const unpushedNotes = ref<UnpushedReleaseNotes | null>(null);
 /**
  * The draft run this page session owns: set while a run is observed running
  * (live or via reopening during one). Only runs this session watched may
@@ -411,7 +434,52 @@ function openConfirm(): void {
   confirmOpen.value = true;
   void syncNotesRunAtOpen();
   void fillSavedNotes();
+  void loadUnpushedNotes();
   void pollRun();
+}
+
+/**
+ * Load the newest generated-but-unreleased draft, if any. Best effort: an
+ * absent card must never block the cut panel, so a failure leaves it hidden.
+ */
+async function loadUnpushedNotes(): Promise<void> {
+  try {
+    const data = await api<UnpushedReleaseNotes | null>("/api/release/notes/unpushed");
+    unpushedNotes.value = data && data.notes?.trim() ? data : null;
+  } catch {
+    // Best effort only.
+  }
+}
+
+/**
+ * The card duplicates the editor once its text is already there (for example
+ * when the cache lookup auto-filled the draft for the current commits), so
+ * hide it in that case rather than showing the same notes twice.
+ */
+const showUnpushedCard = computed(() => {
+  const saved = unpushedNotes.value;
+  if (!saved?.notes.trim() || running.value) return false;
+  return notes.value.trim() !== saved.notes.trim();
+});
+
+/**
+ * Drop the saved draft into the editor for a retry. Only asks before
+ * discarding text the operator actually typed; placing an identical draft is
+ * a no-op.
+ */
+function useUnpushedNotes(): void {
+  const saved = unpushedNotes.value;
+  if (!saved) return;
+  if (
+    notes.value.trim() &&
+    notes.value.trim() !== saved.notes.trim() &&
+    !confirm("Replace the release notes you've typed with the saved draft?")
+  ) {
+    return;
+  }
+  notes.value = saved.notes;
+  notesError.value = "";
+  notesHint.value = `Reused the saved draft from ${relativeTime(saved.createdAt) || "earlier"}.`;
 }
 
 /**
@@ -497,6 +565,7 @@ function applyNotesRun(next: ReleaseNotesRun, atOpen = false): void {
     // the server keeps its last terminal run forever, so a stale failure is
     // about a draft context that no longer exists (#0630 review).
     notesError.value = next.error || "The agent returned no release notes.";
+    void loadUnpushedNotes();
   } else if (
     atOpen &&
     next.state === "succeeded" &&
@@ -738,6 +807,9 @@ async function pollRun(): Promise<void> {
           lines.length > 1 ? failureSummary(latest.phase, latest.message) : latest.message;
         runLog.value = lines.length > 1 ? latest.message : "";
       }
+      // A terminal cut changes what is "unpushed": success retires the draft,
+      // failure promotes the freshly generated one. Refresh the card (#0641).
+      void loadUnpushedNotes();
     }
   } catch {
     // Keep the existing stage visible through a short server reload.
@@ -1192,6 +1264,52 @@ onBeforeUnmount(() => {
                 <div v-if="notesHint" class="rel-notes-hint">{{ notesHint }}</div>
                 <div v-if="notesError" class="rel-notes-error" role="alert">{{ notesError }}</div>
               </div>
+
+              <!-- The newest generated draft that never made it out with a
+                   release (#0641): enough context to decide whether to reuse it
+                   for a retry after a failed cut. -->
+              <article
+                v-if="showUnpushedCard && unpushedNotes"
+                class="rel-notes-stale"
+                data-test-id="unpushed-release-notes"
+              >
+                <div class="rel-notes-stale-head">
+                  <div class="rel-notes-stale-title">
+                    <FileClock class="rel-notes-stale-ico" aria-hidden="true" />
+                    <strong>Saved AI draft not yet released</strong>
+                  </div>
+                  <Button variant="outline" size="sm" type="button" @click="useUnpushedNotes">
+                    <RotateCcw class="btn-ico" aria-hidden="true" />
+                    Use these notes
+                  </Button>
+                </div>
+                <p class="rel-notes-stale-meta">
+                  Generated {{ relativeTime(unpushedNotes.createdAt) || "earlier" }}
+                  <template v-if="unpushedNotes.headShort">
+                    from <code>{{ unpushedNotes.headShort }}</code>
+                  </template>
+                  <template v-if="unpushedNotes.commitsBehind !== null">
+                    · {{ unpushedNotes.commitsBehind }}
+                    {{ unpushedNotes.commitsBehind === 1 ? "commit" : "commits" }} behind
+                    <code>{{ unpushedNotes.currentHeadShort ?? "main" }}</code>
+                  </template>
+                  · never pushed with a release
+                </p>
+                <p v-if="unpushedNotes.commits.length" class="rel-notes-stale-commits">
+                  New since this draft:
+                  <span v-for="commit in unpushedNotes.commits" :key="commit">{{ commit }}</span>
+                  <span
+                    v-if="
+                      unpushedNotes.commitsBehind !== null &&
+                      unpushedNotes.commitsBehind > unpushedNotes.commits.length
+                    "
+                  >
+                    and
+                    {{ unpushedNotes.commitsBehind - unpushedNotes.commits.length }} more
+                  </span>
+                </p>
+                <pre class="rel-notes-stale-body">{{ unpushedNotes.notes }}</pre>
+              </article>
 
               <div v-if="!running" class="rel-field-hint rel-async-hint">
                 <span>
