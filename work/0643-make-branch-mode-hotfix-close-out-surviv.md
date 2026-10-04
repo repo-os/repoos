@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0643"
 title: Make branch-mode hotfix close-out survive a failed publish and index.lock contention
 type: bug
@@ -44,3 +45,4 @@ Covers: hotfix close-out recovery and git lock tolerance in the publish path. De
 - 2026-10-04T07:28:19Z · status inbox→ready
 - 2026-10-04T07:28:27Z · status ready→active, branch
 - 2026-10-04T08:58:38Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+

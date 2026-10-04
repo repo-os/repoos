@@ -182,6 +182,34 @@ Adds liveness over the one-shot core. No new business logic.
   plane down. `POST /api/server/restart` (a human explicitly asking) bypasses
   the backoff.
 
+### Child stdin writes must not crash the server (#0646)
+
+A child process that exits before draining its stdin — an `ssh` to a remote
+validation host that drops or times out, a Codex app-server that dies during
+startup — makes the next write to `child.stdin` fail with `EPIPE: broken pipe,
+write`. That error surfaces on the child's **stdin stream**, not the child's own
+`error` event, so a caller that only attaches `child.on("error")` never sees it
+and it becomes an uncaught exception. `registerFatalHandlersOnce` in
+`server.ts` then called `process.exit(1)`, taking the whole control plane down
+and leaving the serve lock behind. On 2026-10-03/04 the server died this way 12
+times; the fatal record had no stack because Bun throws a non-`Error` for the
+stream failure, so the origin was unknowable from the log.
+
+Two rules came out of it:
+
+- **Every child stdin write goes through `writeChildStdin`
+  (`src/core/child-stdin.ts`)** — never `child.stdin.write()`/`.end()` directly.
+  The helper attaches the `error` listener *before* the write, logs the failing
+  command at warn, and reports the error to the caller so it can resolve as a
+  failed/empty result. `remote-validation.ts` (`runLocalWithStdin`) and
+  `models.ts` (Codex app-server) are the two current call sites.
+- **A process-level `EPIPE`/`syscall: "write"` does not exit the server.** The
+  fatal handler classifies it (`isBenignEpipe`) and logs it at error level with
+  the command context, then keeps serving; every other uncaught error keeps the
+  log-and-exit behaviour. `describeFatalError` records `origin`, error `name`,
+  `code`, `syscall`, `String(err)` and a captured stack (`new Error().stack`)
+  for the non-`Error` throws that used to log `stack: undefined`.
+
 ### src/ui-app — the web UI
 
 The Vite + Vue 3 SFC application reads from the API on load, subscribes to the
